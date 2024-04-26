@@ -226,7 +226,6 @@ detections to the standard output and send them over to Postee webhook on
 http://postee-svc:8082:
 
 ```console
-helm repo add aqua https://aquasecurity.github.io/helm-charts
 helm install tracee ./deploy/helm/tracee \
   --namespace tracee-system \
   --set hostPID=true \

@@ -19,8 +19,8 @@ statfunc int save_str_arr_to_buf(args_buffer_t *, const char __user *const __use
 statfunc int save_args_str_arr_to_buf(args_buffer_t *, const char *, const char *, int, u8);
 statfunc int save_sockaddr_to_buf(args_buffer_t *, struct socket *, u8);
 statfunc int save_args_to_submit_buf(event_data_t *, args_t *);
-statfunc int events_perf_submit(program_data_t *, u32 id, long);
-statfunc int signal_perf_submit(void *, controlplane_signal_t *sig, u32 id);
+statfunc int events_perf_submit(program_data_t *, long);
+statfunc int signal_perf_submit(void *, controlplane_signal_t *);
 
 // FUNCTIONS
 
@@ -346,13 +346,13 @@ statfunc int save_args_to_submit_buf(event_data_t *event, args_t *args)
     unsigned int arg_num = 0;
     short family = 0;
 
-    if (event->param_types == 0)
+    if (event->config.param_types == 0)
         return 0;
 
 #pragma unroll
     for (i = 0; i < 6; i++) {
         int size = 0;
-        u8 type = DEC_ARG(i, event->param_types);
+        u8 type = DEC_ARG(i, event->config.param_types);
         u8 index = i;
         switch (type) {
             case NONE_T:
@@ -444,11 +444,11 @@ statfunc int save_args_to_submit_buf(event_data_t *event, args_t *args)
     return arg_num;
 }
 
-statfunc int events_perf_submit(program_data_t *p, u32 id, long ret)
+statfunc int events_perf_submit(program_data_t *p, long ret)
 {
-    p->event->context.eventid = id;
     p->event->context.retval = ret;
 
+    // enrich event with task context
     init_task_context(&p->event->context.task, p->event->task, p->config->options);
     // keep task_info updated
     bpf_probe_read_kernel(&p->task_info->context, sizeof(task_context_t), &p->event->context.task);
@@ -473,10 +473,8 @@ statfunc int events_perf_submit(program_data_t *p, u32 id, long ret)
     return bpf_perf_event_output(p->ctx, &events, BPF_F_CURRENT_CPU, p->event, size);
 }
 
-statfunc int signal_perf_submit(void *ctx, controlplane_signal_t *sig, u32 id)
+statfunc int signal_perf_submit(void *ctx, controlplane_signal_t *sig)
 {
-    sig->event_id = id;
-
     u32 size =
         sizeof(u32) + sizeof(u8) + sig->args_buf.offset; // signal id + argnum + arg buffer size
 

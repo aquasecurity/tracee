@@ -26,8 +26,8 @@ tracee \f[B]--events\f[R] [<event-name1(,[-]event-name2\&...)> |
 <set1(,[-]event-name1,[-]event-name2\&...)> |
 <event1.args.arg-field[=|!=]value> |
 <event1.retval[=|!=|<|>|<=|>=]value> |
-<event1.context.context-field[=|!=|<|>|<=|>=]value> |
-<event.context.container>] \&...
+<event1.scope.scope-field[=|!=|<|>|<=|>=]value> |
+<event.scope.container>] \&...
 .SS DESCRIPTION
 .PP
 The \f[B]--events\f[R] flag allows you to select which events to trace
@@ -49,8 +49,8 @@ Event return value: Filter events based on their return value using
 The event return value expression follows the syntax of a numerical
 expression.
 .IP \[bu] 2
-Event context fields: Filter events based on the non-argument fields
-defined in the trace.Event struct using `event-name.context.field'.
+Event scope fields: Filter events based on the non-argument fields
+defined in the trace.Event struct using `event-name.scope.field'.
 Refer to the json tags in the trace.Event struct located in the
 types/trace package for the correct field names, and the event filtering
 section in the documentation for a full list.
@@ -72,7 +72,7 @@ Available for:
 .IP \[bu] 2
 return value
 .IP \[bu] 2
-context fields
+scope fields
 .PP
 NOTE: Expressions containing `<' or `>' tokens must be escaped!
 .SS STRING EXPRESSION OPERATORS
@@ -85,7 +85,7 @@ event arguments
 .IP \[bu] 2
 return value
 .IP \[bu] 2
-context fields
+scope fields
 .PP
 Strings can be compared as a prefix if ending with `*', or as a suffix
 if starting with `*'.
@@ -202,7 +202,7 @@ the following flag:
 .IP
 .nf
 \f[C]
---events openat.context.processName=ls
+--events openat.scope.processName=ls
 \f[R]
 .fi
 .RE
@@ -213,7 +213,7 @@ the following flag:
 .IP
 .nf
 \f[C]
---events security_file_open.context.container
+--events security_file_open.scope.container
 \f[R]
 .fi
 .RE

@@ -1,9 +1,9 @@
 package filters
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -115,16 +115,20 @@ func TestBoolFilterClone(t *testing.T) {
 	err := filter.Parse("=false")
 	require.NoError(t, err)
 
-	copy := filter.Clone().(*BoolFilter)
+	copy := filter.Clone()
 
-	if !reflect.DeepEqual(filter, copy) {
-		t.Errorf("Clone did not produce an identical copy")
+	opt1 := cmp.AllowUnexported(
+		BoolFilter{},
+	)
+	if !cmp.Equal(filter, copy, opt1) {
+		diff := cmp.Diff(filter, copy, opt1)
+		t.Errorf("Clone did not produce an identical copy\ndiff: %s", diff)
 	}
 
 	// ensure that changes to the copy do not affect the original
 	err = copy.Parse("=true")
 	require.NoError(t, err)
-	if reflect.DeepEqual(filter, copy) {
+	if cmp.Equal(filter, copy, opt1) {
 		t.Errorf("Changes to copied filter affected the original")
 	}
 }

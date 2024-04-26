@@ -2,6 +2,7 @@ package filters
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -11,25 +12,28 @@ import (
 )
 
 type ArgFilter struct {
-	filters map[events.ID]map[string]Filter
+	filters map[events.ID]map[string]Filter[*StringFilter]
 	enabled bool
 }
 
+// Compile-time check to ensure that ArgFilter implements the Cloner interface
+var _ utils.Cloner[*ArgFilter] = &ArgFilter{}
+
 func NewArgFilter() *ArgFilter {
 	return &ArgFilter{
-		filters: map[events.ID]map[string]Filter{},
+		filters: map[events.ID]map[string]Filter[*StringFilter]{},
 		enabled: false,
 	}
 }
 
 // GetEventFilters returns the argument filters map for a specific event
 // writing to the map may have unintentional consequences, avoid doing so
-func (filter *ArgFilter) GetEventFilters(eventID events.ID) map[string]Filter {
-	return filter.filters[eventID]
+func (af *ArgFilter) GetEventFilters(eventID events.ID) map[string]Filter[*StringFilter] {
+	return af.filters[eventID]
 }
 
-func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
-	if !filter.Enabled() {
+func (af *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
+	if !af.Enabled() {
 		return true
 	}
 
@@ -42,9 +46,10 @@ func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 		return true
 	}
 
-	for argName, filter := range filter.filters[eventID] {
+	for argName, f := range af.filters[eventID] {
 		found := false
 		var argVal interface{}
+
 		for _, arg := range args {
 			if arg.Name == argName {
 				found = true
@@ -55,11 +60,11 @@ func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 		if !found {
 			return false
 		}
+
 		// TODO: use type assertion instead of string conversion
-		if argName != "syscall" {
-			argVal = fmt.Sprint(argVal)
-		}
-		res := filter.Filter(argVal)
+		argVal = fmt.Sprint(argVal)
+
+		res := f.Filter(argVal)
 		if !res {
 			return false
 		}
@@ -68,7 +73,7 @@ func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 	return true
 }
 
-func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
+func (af *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
 	// Event argument filter has the following format: "event.args.argname=argval"
 	// filterName have the format event.argname, and operatorAndValues have the format "=argval"
 	parts := strings.Split(filterName, ".")
@@ -111,82 +116,113 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 		return InvalidEventArgument(argName)
 	}
 
-	err := filter.parseFilter(id, argName, operatorAndValues, func() Filter {
-		// TODO: map argument type to an appropriate filter constructor
-		return NewStringFilter()
-	})
+	// valueHandler is passed to the filter constructor to allow for custom value handling
+	// before the filter is applied
+	valueHandler := func(val string) (string, error) {
+		switch id {
+		case events.SysEnter,
+			events.SysExit:
+			if argName == "syscall" { // handle either syscall name or syscall id
+				_, err := strconv.Atoi(val)
+				if err != nil {
+					// if val is a syscall name, then we need to convert it to a syscall id
+					syscallID, ok := events.Core.GetDefinitionIDByName(val)
+					if !ok {
+						return val, errfmt.Errorf("invalid syscall name: %s", val)
+					}
+					val = strconv.Itoa(int(syscallID))
+				}
+			}
+		case events.HookedSyscall:
+			if argName == "syscall" { // handle either syscall name or syscall id
+				argEventID, err := strconv.Atoi(val)
+				if err == nil {
+					// if val is a syscall id, then we need to convert it to a syscall name
+					val = events.Core.GetDefinitionByID(events.ID(argEventID)).GetName()
+				}
+			}
+		}
+
+		return val, nil
+	}
+
+	err := af.parseFilter(id, argName, operatorAndValues,
+		func() Filter[*StringFilter] {
+			// TODO: map argument type to an appropriate filter constructor
+			return NewStringFilter(valueHandler)
+		})
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
-	filter.Enable()
+	af.Enable()
 
 	return nil
 }
 
 // parseFilter adds an argument filter with the relevant filterConstructor
 // The user must responsibly supply a reliable Filter object.
-func (filter *ArgFilter) parseFilter(id events.ID, argName string, operatorAndValues string, filterConstructor func() Filter) error {
-	if _, ok := filter.filters[id]; !ok {
-		filter.filters[id] = map[string]Filter{}
+func (af *ArgFilter) parseFilter(id events.ID, argName string, operatorAndValues string, filterConstructor func() Filter[*StringFilter]) error {
+	if _, ok := af.filters[id]; !ok {
+		af.filters[id] = map[string]Filter[*StringFilter]{}
 	}
 
-	if _, ok := filter.filters[id][argName]; !ok {
+	if _, ok := af.filters[id][argName]; !ok {
 		// store new event arg filter if missing
 		argFilter := filterConstructor()
-		filter.filters[id][argName] = argFilter
+		af.filters[id][argName] = argFilter
 	}
 
 	// extract the arg filter and parse expression into it
-	argFilter := filter.filters[id][argName]
-	err := argFilter.Parse(operatorAndValues)
+	f := af.filters[id][argName]
+	err := f.Parse(operatorAndValues)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// store the arg filter again
-	filter.filters[id][argName] = argFilter
+	af.filters[id][argName] = f
 
 	return nil
 }
 
-func (filter *ArgFilter) Enable() {
-	filter.enabled = true
-	for _, filterMap := range filter.filters {
+func (af *ArgFilter) Enable() {
+	af.enabled = true
+	for _, filterMap := range af.filters {
 		for _, f := range filterMap {
 			f.Enable()
 		}
 	}
 }
 
-func (filter *ArgFilter) Disable() {
-	filter.enabled = false
-	for _, filterMap := range filter.filters {
+func (af *ArgFilter) Disable() {
+	af.enabled = false
+	for _, filterMap := range af.filters {
 		for _, f := range filterMap {
 			f.Disable()
 		}
 	}
 }
 
-func (filter *ArgFilter) Enabled() bool {
-	return filter.enabled
+func (af *ArgFilter) Enabled() bool {
+	return af.enabled
 }
 
-func (filter *ArgFilter) Clone() utils.Cloner {
-	if filter == nil {
+func (af *ArgFilter) Clone() *ArgFilter {
+	if af == nil {
 		return nil
 	}
 
 	n := NewArgFilter()
 
-	for eventID, filterMap := range filter.filters {
-		n.filters[eventID] = map[string]Filter{}
+	for eventID, filterMap := range af.filters {
+		n.filters[eventID] = map[string]Filter[*StringFilter]{}
 		for argName, f := range filterMap {
-			n.filters[eventID][argName] = f.Clone().(Filter)
+			n.filters[eventID][argName] = f.Clone()
 		}
 	}
 
-	n.enabled = filter.enabled
+	n.enabled = af.enabled
 
 	return n
 }

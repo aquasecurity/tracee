@@ -24,11 +24,14 @@ type Policy struct {
 	ContIDFilter      *filters.StringFilter
 	RetFilter         *filters.RetFilter
 	ArgFilter         *filters.ArgFilter
-	ContextFilter     *filters.ContextFilter
+	ScopeFilter       *filters.ScopeFilter
 	ProcessTreeFilter *filters.ProcessTreeFilter
 	BinaryFilter      *filters.BinaryFilter
 	Follow            bool
 }
+
+// Compile-time check to ensure that Policy implements the Cloner interface
+var _ utils.Cloner[*Policy] = &Policy{}
 
 func NewPolicy() *Policy {
 	return &Policy{
@@ -40,28 +43,28 @@ func NewPolicy() *Policy {
 		NewPidFilter:      filters.NewBoolFilter(),
 		MntNSFilter:       filters.NewUIntFilter(),
 		PidNSFilter:       filters.NewUIntFilter(),
-		UTSFilter:         filters.NewStringFilter(),
-		CommFilter:        filters.NewStringFilter(),
+		UTSFilter:         filters.NewStringFilter(nil),
+		CommFilter:        filters.NewStringFilter(nil),
 		ContFilter:        filters.NewBoolFilter(),
 		NewContFilter:     filters.NewBoolFilter(),
-		ContIDFilter:      filters.NewStringFilter(),
+		ContIDFilter:      filters.NewStringFilter(nil),
 		RetFilter:         filters.NewRetFilter(),
 		ArgFilter:         filters.NewArgFilter(),
-		ContextFilter:     filters.NewContextFilter(),
+		ScopeFilter:       filters.NewScopeFilter(),
 		ProcessTreeFilter: filters.NewProcessTreeFilter(),
 		BinaryFilter:      filters.NewBinaryFilter(),
 		Follow:            false,
 	}
 }
 
-// ContainerFilterEnabled returns true when the policy has at least one container filter type enabled
+// ContainerFilterEnabled returns true if the policy has at least one container filter type enabled.
 func (p *Policy) ContainerFilterEnabled() bool {
 	return (p.ContFilter.Enabled() && p.ContFilter.Value()) ||
 		(p.NewContFilter.Enabled() && p.NewContFilter.Value()) ||
 		p.ContIDFilter.Enabled()
 }
 
-func (p *Policy) Clone() utils.Cloner {
+func (p *Policy) Clone() *Policy {
 	if p == nil {
 		return nil
 	}
@@ -71,21 +74,21 @@ func (p *Policy) Clone() utils.Cloner {
 	n.ID = p.ID
 	n.Name = p.Name
 	maps.Copy(n.EventsToTrace, p.EventsToTrace)
-	n.UIDFilter = p.UIDFilter.Clone().(*filters.UIntFilter[uint32])
-	n.PIDFilter = p.PIDFilter.Clone().(*filters.UIntFilter[uint32])
-	n.NewPidFilter = p.NewPidFilter.Clone().(*filters.BoolFilter)
-	n.MntNSFilter = p.MntNSFilter.Clone().(*filters.UIntFilter[uint64])
-	n.PidNSFilter = p.PidNSFilter.Clone().(*filters.UIntFilter[uint64])
-	n.UTSFilter = p.UTSFilter.Clone().(*filters.StringFilter)
-	n.CommFilter = p.CommFilter.Clone().(*filters.StringFilter)
-	n.ContFilter = p.ContFilter.Clone().(*filters.BoolFilter)
-	n.NewContFilter = p.NewContFilter.Clone().(*filters.BoolFilter)
-	n.ContIDFilter = p.ContIDFilter.Clone().(*filters.StringFilter)
-	n.RetFilter = p.RetFilter.Clone().(*filters.RetFilter)
-	n.ArgFilter = p.ArgFilter.Clone().(*filters.ArgFilter)
-	n.ContextFilter = p.ContextFilter.Clone().(*filters.ContextFilter)
-	n.ProcessTreeFilter = p.ProcessTreeFilter.Clone().(*filters.ProcessTreeFilter)
-	n.BinaryFilter = p.BinaryFilter.Clone().(*filters.BinaryFilter)
+	n.UIDFilter = p.UIDFilter.Clone()
+	n.PIDFilter = p.PIDFilter.Clone()
+	n.NewPidFilter = p.NewPidFilter.Clone()
+	n.MntNSFilter = p.MntNSFilter.Clone()
+	n.PidNSFilter = p.PidNSFilter.Clone()
+	n.UTSFilter = p.UTSFilter.Clone()
+	n.CommFilter = p.CommFilter.Clone()
+	n.ContFilter = p.ContFilter.Clone()
+	n.NewContFilter = p.NewContFilter.Clone()
+	n.ContIDFilter = p.ContIDFilter.Clone()
+	n.RetFilter = p.RetFilter.Clone()
+	n.ArgFilter = p.ArgFilter.Clone()
+	n.ScopeFilter = p.ScopeFilter.Clone()
+	n.ProcessTreeFilter = p.ProcessTreeFilter.Clone()
+	n.BinaryFilter = p.BinaryFilter.Clone()
 	n.Follow = p.Follow
 
 	return n

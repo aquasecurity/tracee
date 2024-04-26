@@ -71,7 +71,8 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", privileged: true, inline: <<-SHELL
     VAGRANT_HOME="/home/vagrant"
     GO_VERSION="1.21.6"
-    OPA_VERSION="v0.61.0"
+    OPA_VERSION="v0.63.0"
+    KUBECTL_VERSION="v1.29"
 
     # silence 'dpkg-preconfigure: unable to re-open stdin: No such file or directory'
     export DEBIAN_FRONTEND=noninteractive
@@ -127,9 +128,11 @@ Vagrant.configure("2") do |config|
     # kubectl
     #
 
-    apt-get install --yes apt-transport-https ca-certificates curl
-    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
-    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+    apt-get install -y apt-transport-https ca-certificates curl
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/$KUBECTL_VERSION/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/$KUBECTL_VERSION/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list
+    chmod 644 /etc/apt/sources.list.d/kubernetes.list
     apt-get update
     apt-get install --yes kubectl
     echo 'source <(kubectl completion bash)' >> $VAGRANT_HOME/.profile
@@ -152,7 +155,7 @@ Vagrant.configure("2") do |config|
     # opa
     #
 
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/$OPA_VERSION/opa_linux_#{arch}
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/$OPA_VERSION/opa_linux_#{arch}_static
     chmod 755 /usr/bin/opa
   SHELL
 end

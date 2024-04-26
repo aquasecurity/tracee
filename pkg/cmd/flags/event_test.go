@@ -153,18 +153,18 @@ func TestParseEventFlag(t *testing.T) {
 		},
 		{
 			name:      "ValidEventFlag",
-			eventFlag: "openat.context.userId=0",
+			eventFlag: "openat.scope.userId=0",
 			expected: []eventFlag{
 				{
-					full:              "openat.context.userId=0",
-					eventFilter:       "openat.context.userId",
+					full:              "openat.scope.userId=0",
+					eventFilter:       "openat.scope.userId",
 					eventName:         "openat",
-					eventOptionType:   "context",
+					eventOptionType:   "scope",
 					eventOptionName:   "userId",
 					operator:          "=",
 					values:            "0",
 					operatorAndValues: "=0",
-					filter:            "context.userId=0",
+					filter:            "scope.userId=0",
 				},
 			},
 			expectedError: nil,
@@ -207,13 +207,13 @@ func TestParseEventFlag(t *testing.T) {
 		},
 		{
 			name:      "ValidEventFlag",
-			eventFlag: "open.context.container",
+			eventFlag: "open.scope.container",
 			expected: []eventFlag{
 				{
-					full:              "open.context.container",
-					eventFilter:       "open.context.container",
+					full:              "open.scope.container",
+					eventFilter:       "open.scope.container",
 					eventName:         "open",
-					eventOptionType:   "context",
+					eventOptionType:   "scope",
 					eventOptionName:   "container",
 					operator:          "",
 					values:            "",

@@ -10,28 +10,36 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
+// ValueHandler is a function that can be passed to StringFilter to handle values when they are parsed
+type ValueHandler func(string) (string, error)
+
 type StringFilter struct {
-	equal       map[string]struct{}
-	notEqual    map[string]struct{}
-	prefixes    sets.PrefixSet
-	suffixes    sets.SuffixSet
-	contains    map[string]struct{}
-	notPrefixes sets.PrefixSet
-	notSuffixes sets.SuffixSet
-	notContains map[string]struct{}
-	enabled     bool
+	valueHandler ValueHandler
+	equal        map[string]struct{}
+	notEqual     map[string]struct{}
+	prefixes     sets.PrefixSet
+	suffixes     sets.SuffixSet
+	contains     map[string]struct{}
+	notPrefixes  sets.PrefixSet
+	notSuffixes  sets.SuffixSet
+	notContains  map[string]struct{}
+	enabled      bool
 }
 
-func NewStringFilter() *StringFilter {
+// Compile-time check to ensure that StringFilter implements the Cloner interface
+var _ utils.Cloner[*StringFilter] = &StringFilter{}
+
+func NewStringFilter(valHandler ValueHandler) *StringFilter {
 	return &StringFilter{
-		equal:       map[string]struct{}{},
-		notEqual:    map[string]struct{}{},
-		prefixes:    sets.NewPrefixSet(),
-		suffixes:    sets.NewSuffixSet(),
-		notPrefixes: sets.NewPrefixSet(),
-		notSuffixes: sets.NewSuffixSet(),
-		contains:    map[string]struct{}{},
-		notContains: map[string]struct{}{},
+		valueHandler: valHandler,
+		equal:        map[string]struct{}{},
+		notEqual:     map[string]struct{}{},
+		prefixes:     sets.NewPrefixSet(),
+		suffixes:     sets.NewSuffixSet(),
+		notPrefixes:  sets.NewPrefixSet(),
+		notSuffixes:  sets.NewSuffixSet(),
+		contains:     map[string]struct{}{},
+		notContains:  map[string]struct{}{},
 	}
 }
 
@@ -110,8 +118,19 @@ func (f *StringFilter) Parse(operatorAndValues string) error {
 
 	values := strings.Split(valuesString, ",")
 
-	for _, val := range values {
-		err := f.add(val, stringToOperator(operatorString))
+	var (
+		val string
+		err error
+	)
+	for _, val = range values {
+		if f.valueHandler != nil {
+			val, err = f.valueHandler(val)
+			if err != nil {
+				return errfmt.WrapError(err)
+			}
+		}
+
+		err = f.add(val, stringToOperator(operatorString))
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -237,16 +256,15 @@ func (f *StringFilter) Equalities() StringFilterEqualities {
 	}
 }
 
-func (f *StringFilter) Clone() utils.Cloner {
+func (f *StringFilter) Clone() *StringFilter {
 	if f == nil {
 		return nil
 	}
 
-	n := NewStringFilter()
+	n := NewStringFilter(f.valueHandler)
 
 	maps.Copy(n.equal, f.equal)
 	maps.Copy(n.notEqual, f.notEqual)
-	f.prefixes.Clone()
 	n.prefixes = *f.prefixes.Clone()
 	n.suffixes = *f.suffixes.Clone()
 	maps.Copy(n.contains, f.contains)

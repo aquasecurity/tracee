@@ -56,6 +56,24 @@ affinity: {}
 
 webhook: ""
 
+# extraWebhookTemplates is a list of additional webhook templates that can be used by
+# the traceeConfig or config.output.webhook fields
+# in the example below, the goTemplate content will be mounted as /tracee/templates/template1.tmpl
+extraWebhookTemplates: []
+# - name: "template1.tmpl"
+#   goTemplate: |
+#   {
+#     "hostname": "{{ .HostName }}",
+#     "message": "Signature name: \"{{ .Metadata.Properties.signatureName }}\" description:\n{{ .Metadata.Description }}",
+#     "severity": "{{ .Metadata.Properties.Severity }}",
+#     "time": "{{ dateInZone "2006-01-02T15:04:05Z" (now) "UTC" }}",
+#     "tags": {
+#       "category": "{{ .Metadata.Properties.Category }}",
+#       "external_id": "{{ .Metadata.Properties.external_id }}",
+#       "signature_id": "{{ .Metadata.Properties.signatureId }}"
+#     }
+#   }
+
 traceeConfig: {}
 
 config:
@@ -87,7 +105,7 @@ config:
     # webhook:
     #   name: "webhook1"
     #   contentType: "application/json"
-    #   goTemplate: ""
+    #   goTemplate: "/tracee/templates/template1.tmpl"
     #   host: ""
     #   port: "8080"
     #   protocol: http
@@ -101,3 +119,6 @@ operator:
   serviceAccount:
     name: "tracee-operator"
   healthProbeBindAddress: :8081
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}

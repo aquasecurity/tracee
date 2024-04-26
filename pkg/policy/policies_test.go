@@ -2,9 +2,16 @@ package policy
 
 import (
 	"reflect"
+	"sync"
+	"sync/atomic"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/filters/sets"
 )
 
 func TestPoliciesClone(t *testing.T) {
@@ -13,11 +20,16 @@ func TestPoliciesClone(t *testing.T) {
 	policies := NewPolicies()
 
 	p1 := NewPolicy()
+	p1.Name = "p1"
 	err := p1.PIDFilter.Parse("=1")
 	require.NoError(t, err)
 
 	p2 := NewPolicy()
+	p2.Name = "p2"
 	err = p2.UIDFilter.Parse("=2")
+	require.NoError(t, err)
+
+	err = p2.ArgFilter.Parse("read.args.fd", "=argval", events.Core.NamesToIDs())
 	require.NoError(t, err)
 
 	err = policies.Add(p1)
@@ -25,68 +37,51 @@ func TestPoliciesClone(t *testing.T) {
 	err = policies.Add(p2)
 	require.NoError(t, err)
 
-	copy := policies.Clone().(*Policies)
+	copy := policies.Clone()
 
-	if !arePoliciesEqual(policies, copy) {
-		t.Errorf("Clone did not produce an identical copy")
+	opt1 := cmp.AllowUnexported(
+		Policies{},
+		sync.Mutex{},
+		sync.RWMutex{},
+		atomic.Int32{},
+		filters.StringFilter{},
+		filters.UIntFilter[uint32]{},
+		filters.UIntFilter[uint64]{},
+		filters.BoolFilter{},
+		filters.RetFilter{},
+		filters.ArgFilter{},
+		filters.ScopeFilter{},
+		filters.ProcessTreeFilter{},
+		filters.BinaryFilter{},
+		sets.PrefixSet{},
+		sets.SuffixSet{},
+	)
+	opt2 := cmp.FilterPath(
+		func(p cmp.Path) bool {
+			// ignore the function field
+			// https://cs.opensource.google/go/go/+/refs/tags/go1.22.0:src/reflect/deepequal.go;l=187
+			return p.Last().Type().Kind() == reflect.Func
+		},
+		cmp.Ignore(),
+	)
+	if !cmp.Equal(policies, copy, opt1, opt2) {
+		diff := cmp.Diff(policies, copy, opt1, opt2)
+		t.Errorf("Clone did not produce an identical copy\ndiff: %s", diff)
 	}
 
 	// ensure that changes to the copy do not affect the original
 	p3 := NewPolicy()
+	p3.Name = "p3"
 	err = p3.CommFilter.Parse("=comm")
 	require.NoError(t, err)
 	err = copy.Add(p3)
 	require.NoError(t, err)
 
-	if arePoliciesEqual(policies, copy) {
-		t.Errorf("Changes to copied policy affected the original")
+	p1, err = copy.LookupByName("p1")
+	require.NoError(t, err)
+	p1.Name = "p1-modified"
+
+	if cmp.Equal(policies, copy, opt1, opt2) {
+		t.Errorf("Changes to copied policy affected the original: %+v", policies)
 	}
-}
-
-// arePoliciesEqual is a helper function for TestPoliciesClone
-// since reflect.DeepEqual does not dereference pointers which are keys in maps.
-// TODO: remove this when Policies is refactored to not use pointers as keys in maps
-func arePoliciesEqual(p1, p2 *Policies) bool {
-	// check non-pointer fields
-	if !areNonPointerFieldsEqual(p1, p2) {
-		return false
-	}
-
-	// then compare the maps with pointers as keys
-	return areMapsEqual(p1.filterEnabledPoliciesMap, p2.filterEnabledPoliciesMap) &&
-		areMapsEqual(p1.filterUserlandPoliciesMap, p2.filterUserlandPoliciesMap)
-}
-
-func areMapsEqual(map1, map2 map[*Policy]int) bool {
-	if len(map1) != len(map2) {
-		return false
-	}
-
-	for k1, v1 := range map1 {
-		found := false
-		for k2, v2 := range map2 {
-			if reflect.DeepEqual(k1, k2) && v1 == v2 {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-
-	return true
-}
-
-func areNonPointerFieldsEqual(p1, p2 *Policies) bool {
-	return p1.version == p2.version &&
-		reflect.DeepEqual(p1.bpfInnerMaps, p2.bpfInnerMaps) &&
-		reflect.DeepEqual(p1.policiesArray, p2.policiesArray) &&
-		p1.uidFilterMin == p2.uidFilterMin &&
-		p1.uidFilterMax == p2.uidFilterMax &&
-		p1.pidFilterMin == p2.pidFilterMin &&
-		p1.pidFilterMax == p2.pidFilterMax &&
-		p1.uidFilterableInUserland == p2.uidFilterableInUserland &&
-		p1.pidFilterableInUserland == p2.pidFilterableInUserland &&
-		p1.containerFiltersEnabled == p2.containerFiltersEnabled
 }

@@ -26,11 +26,12 @@ import (
 
 func SymbolsCollision(soLoader sharedobjs.DynamicSymbolsLoader, policies *policy.Policies,
 ) DeriveFunction {
-	symbolsCollisionFilters := map[string]filters.Filter{}
+	symbolsCollisionFilters := map[string]filters.Filter[*filters.StringFilter]{}
 
 	// pick white and black lists from the filters (TODO: change this)
-	for policies := range policies.Map() {
-		f := policies.ArgFilter.GetEventFilters(events.SymbolsCollision)
+	for it := policies.CreateAllIterator(); it.HasNext(); {
+		p := it.Next()
+		f := p.ArgFilter.GetEventFilters(events.SymbolsCollision)
 		maps.Copy(symbolsCollisionFilters, f)
 	}
 

@@ -302,7 +302,9 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		return bitmap
 	}
 
-	for p := range policies.FilterableInUserlandMap() { // range through each userland filterable policy
+	// range through each userland filterable policy
+	for it := policies.CreateUserlandIterator(); it.HasNext(); {
+		p := it.Next()
 		// Policy ID is the bit offset in the bitmap.
 		bitOffset := uint(p.ID)
 
@@ -323,8 +325,8 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		// Do the userland filtering
 		//
 
-		// 1. event context filters
-		if !p.ContextFilter.Filter(*event) {
+		// 1. event scope filters
+		if !p.ScopeFilter.Filter(*event) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
@@ -464,7 +466,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 			}
 
 			// Get a bitmap with all policies containing container filters
-			policiesWithContainerFilter := policies.ContainerFilterEnabled()
+			policiesWithContainerFilter := policies.WithContainerFilterEnabled()
 
 			// Filter out events that don't have a container ID from all the policies that
 			// have container filters. This will guarantee that any of those policies

@@ -23,7 +23,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
           fetch-depth: 0
@@ -32,7 +32,7 @@ jobs:
       #   with:
       #     cosign-release: 'v2.0.2'
       - name: Login to docker.io registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -57,7 +57,6 @@ jobs:
       #   shell: bash
   release-snapshot-aarch64:
     name: Release Snapshot (aarch64)
-    needs: [ release-snapshot-x86_64 ]
     runs-on: 
       - graas_ami-03217ce7c37572c4d_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}
       - EXECUTION_TYPE=LONG
@@ -67,7 +66,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
           fetch-depth: 0
@@ -76,7 +75,7 @@ jobs:
       #   with:
       #     cosign-release: 'v2.0.2'
       - name: Login to docker.io registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -109,7 +108,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
           fetch-depth: 0
@@ -118,7 +117,7 @@ jobs:
       #   with:
       #     cosign-release: 'v2.0.2'
       - name: Login to docker.io registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -129,6 +128,12 @@ jobs:
             aquasec/tracee:x86_64-dev \
             aquasec/tracee:aarch64-dev
           docker manifest push aquasec/tracee:dev
+
+          timestamp=$(date +%Y%m%d-%H%M%S%Z)
+          docker manifest create aquasec/tracee:dev-$timestamp \
+            aquasec/tracee:x86_64-dev \
+            aquasec/tracee:aarch64-dev
+          docker manifest push aquasec/tracee:dev-$timestamp
         shell: bash
       # Disabled to avoid generating too many sigstore cosign signatures
       # - name: Sign Docker image

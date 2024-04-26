@@ -45,11 +45,13 @@ data:
                 protocol: {{ .protocol | default "http" }}
                 host: {{ .host | default "localhost" }}
                 port: {{ .port | default "8080" }}
-                timeout: {{ .timeout | default "3s" }}
-                {{- if .goTemplate }}
-                gotemplate: {{ .goTemplate }}
+                {{ if .timeout }}
+                timeout: {{ .timeout }}
                 {{- end }}
-                content-type: {{ .contentType | default "application/json" }}
+                gotemplate: {{ .goTemplate }}
+                {{- if .contentType }}
+                content-type: {{ .contentType }}
+                {{- end }}
         {{- end }}
     {{- if .Values.config.blobPerfBufferSize }}
     blob-perf-buffer-size: {{ .Values.config.blobPerfBufferSize}}

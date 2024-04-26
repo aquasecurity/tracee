@@ -126,6 +126,7 @@ enum event_id_e
     MODULE_LOAD,
     MODULE_FREE,
     MAX_EVENT_ID,
+    NO_EVENT_SUBMIT,
 };
 
 enum signal_event_id_e
@@ -361,7 +362,7 @@ typedef struct event_data {
     event_context_t context;
     args_buffer_t args_buf;
     struct task_struct *task;
-    u64 param_types;
+    event_config_t config;
     policies_config_t policies_config;
 } event_data_t;
 

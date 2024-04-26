@@ -436,7 +436,7 @@ typedef struct pid_filter_version pid_filter_version_t;
 struct mnt_ns_filter {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 256);
-    __type(key, u64);
+    __type(key, u32);
     __type(value, eq_t);
 } mnt_ns_filter SEC(".maps");
 
@@ -456,7 +456,7 @@ typedef struct mnt_ns_filter_version mnt_ns_filter_version_t;
 struct pid_ns_filter {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 256);
-    __type(key, u64);
+    __type(key, u32);
     __type(value, eq_t);
 } pid_ns_filter SEC(".maps");
 

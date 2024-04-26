@@ -781,8 +781,7 @@ test-signatures: \
 
 .PHONY: test-upstream-libbpfgo
 test-upstream-libbpfgo: \
-	.checkver_$(CMD_GO) \
-	$(OUTPUT_DIR)/libbpf/libbpf.a
+	.checkver_$(CMD_GO)
 #
 	./tests/libbpfgo.sh $(GO_ENV_EBPF)
 

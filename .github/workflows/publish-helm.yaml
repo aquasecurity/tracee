@@ -22,29 +22,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
       - name: Install Helm
-        uses: azure/setup-helm@18bc76811624f360dbd7f18c2d4ecb32c7b87bab
+        uses: azure/setup-helm@b7246b12e77f7134dc2d460a3d5bad15bbe29390 # v4.1.0
         with:
-          version: v3.5.0
+          version: v3.14.3
       - name: Set up python
-        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6
+        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
         with:
-          python-version: 3.7
+          python-version: 3.12.3
       - name: Set up aqua charts
         run: |
           helm repo add aqua https://aquasecurity.github.io/helm-charts
       - name: Setup Chart Linting
         id: lint
-        uses: helm/chart-testing-action@dae259e86a35ff09145c0805e2d7dd3f7207064a
+        uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
       - name: Setup Kubernetes cluster (KIND)
-        uses: helm/kind-action@9e8295d178de23cbfbd8fa16cf844eec1d773a07 # v1.2.0
+        uses: helm/kind-action@99576bfa6ddf9a8e612d83b513da5a75875caced # v1.9.0
         with:
           version: ${{ env.KIND_VERSION }}
-          image: ${{ env.KIND_IMAGE }}
+          node_image: ${{ env.KIND_IMAGE }}
       - name: Run chart-testing
         run: ct lint-and-install --validate-maintainers=false --charts ${{ env.CHART_DIR }}
       - name: Install chart-releaser
@@ -70,7 +70,7 @@ jobs:
             --charts-repo https://${{ env.GH_OWNER }}.github.io/${{ env.HELM_REP }}/ \
             --index-path index.yaml
       - name: Push index file
-        uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37
+        uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # v1.1.1
         env:
           API_TOKEN_GITHUB: ${{ secrets.ORG_REPO_TOKEN }}
         with:

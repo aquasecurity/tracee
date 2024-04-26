@@ -126,8 +126,8 @@ func PrepareCapture(captureSlice []string, newBinary bool) (config.CaptureConfig
 			capture.Net.CaptureLength = 96 // default payload
 		} else if strings.HasPrefix(c, "pcap:") {
 			capture.Net.CaptureSingle = false // remove default mode
-			context := strings.TrimPrefix(c, "pcap:")
-			fields := strings.Split(context, ",")
+			scope := strings.TrimPrefix(c, "pcap:")
+			fields := strings.Split(scope, ",")
 			for _, field := range fields {
 				if field == "single" {
 					capture.Net.CaptureSingle = true
@@ -144,33 +144,33 @@ func PrepareCapture(captureSlice []string, newBinary bool) (config.CaptureConfig
 			}
 			capture.Net.CaptureLength = 96 // default payload
 		} else if strings.HasPrefix(c, "pcap-options:") {
-			context := strings.TrimPrefix(c, "pcap-options:")
-			context = strings.ToLower(context) // normalize
-			if context == "none" {
+			scope := strings.TrimPrefix(c, "pcap-options:")
+			scope = strings.ToLower(scope) // normalize
+			if scope == "none" {
 				capture.Net.CaptureFiltered = false // proforma
-			} else if context == "filtered" {
+			} else if scope == "filtered" {
 				capture.Net.CaptureFiltered = true
 			}
 		} else if strings.HasPrefix(c, "pcap-snaplen:") {
-			context := strings.TrimPrefix(c, "pcap-snaplen:")
+			scope := strings.TrimPrefix(c, "pcap-snaplen:")
 			var amount uint64
 			var err error
-			context = strings.ToLower(context) // normalize
-			if context == "default" {
+			scope = strings.ToLower(scope) // normalize
+			if scope == "default" {
 				amount = 96 // default payload
-			} else if context == "max" {
+			} else if scope == "max" {
 				amount = (1 << 16) - 1 // max length for IP packets
-			} else if context == "headers" {
+			} else if scope == "headers" {
 				amount = 0 // sets headers only length for capturing (default)
-			} else if strings.HasSuffix(context, "kb") ||
-				strings.HasSuffix(context, "k") {
-				context = strings.TrimSuffix(context, "kb")
-				context = strings.TrimSuffix(context, "k")
-				amount, err = strconv.ParseUint(context, 10, 64)
+			} else if strings.HasSuffix(scope, "kb") ||
+				strings.HasSuffix(scope, "k") {
+				scope = strings.TrimSuffix(scope, "kb")
+				scope = strings.TrimSuffix(scope, "k")
+				amount, err = strconv.ParseUint(scope, 10, 64)
 				amount *= 1024 // result in bytes
-			} else if strings.HasSuffix(context, "b") {
-				context = strings.TrimSuffix(context, "b")
-				amount, err = strconv.ParseUint(context, 10, 64)
+			} else if strings.HasSuffix(scope, "b") {
+				scope = strings.TrimSuffix(scope, "b")
+				amount, err = strconv.ParseUint(scope, 10, 64)
 			} else {
 				return config.CaptureConfig{}, errfmt.Errorf("could not parse pcap snaplen: missing b or kb ?")
 			}

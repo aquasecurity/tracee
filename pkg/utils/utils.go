@@ -8,9 +8,18 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 )
 
-// Cloner is an interface for objects that can be cloned
-type Cloner interface {
-	Clone() Cloner
+// Cloner is a generic interface for objects that can clone themselves.
+type Cloner[T any] interface {
+	Clone() T
+}
+
+// Iterator is a generic interface for iterators.
+type Iterator[T any] interface {
+	// HasNext returns true if there are more elements to iterate.
+	HasNext() bool
+
+	// Next returns the next element in the iteration.
+	Next() T
 }
 
 func ParseSymbol(address uint64, table *helpers.KernelSymbolTable) helpers.KernelSymbol {

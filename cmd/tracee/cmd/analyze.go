@@ -37,27 +37,12 @@ func init() {
 		"Define which signature events to load",
 	)
 
-	// TODO: decide if we want to bind this flag to viper, since we already have a similar
-	// flag in rootCmd, conflicting with each other.
-	// The same goes for the other flags (signatures-dir, rego), also in rootCmd.
-	//
-	// err := viper.BindPFlag("events", analyze.Flags().Lookup("events"))
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-	// 	os.Exit(1)
-	// }
-
 	// signatures-dir
 	analyze.Flags().StringArray(
 		"signatures-dir",
 		[]string{},
 		"Directory where to search for signatures in OPA (.rego) and Go plugin (.so) formats",
 	)
-	// err = viper.BindPFlag("signatures-dir", analyze.Flags().Lookup("signatures-dir"))
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-	// 	os.Exit(1)
-	// }
 
 	// rego
 	analyze.Flags().StringArray(
@@ -65,11 +50,13 @@ func init() {
 		[]string{},
 		"Control event rego settings",
 	)
-	// err = viper.BindPFlag("rego", analyze.Flags().Lookup("rego"))
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-	// 	os.Exit(1)
-	// }
+
+	analyze.Flags().StringArrayP(
+		"log",
+		"l",
+		[]string{"info"},
+		"Logger options [debug|info|warn...]",
+	)
 }
 
 var analyze = &cobra.Command{
@@ -84,7 +71,21 @@ Tracee can be used to collect events and store it in a file. This file can be us
 eg:
 tracee --events ptrace --output=json:events.json
 tracee analyze --events anti_debugging events.json`,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		bindViperFlag(cmd, "events")
+		bindViperFlag(cmd, "log")
+		bindViperFlag(cmd, "rego")
+		bindViperFlag(cmd, "signatures-dir")
+	},
 	Run: func(cmd *cobra.Command, args []string) {
+		logFlags := viper.GetStringSlice("log")
+
+		logCfg, err := flags.PrepareLogger(logFlags, true)
+		if err != nil {
+			logger.Fatalw("Failed to prepare logger", "error", err)
+		}
+		logger.Init(logCfg)
+
 		inputFile, err := os.Open(args[0])
 		if err != nil {
 			logger.Fatalw("Failed to get signatures-dir flag", "err", err)
@@ -121,7 +122,11 @@ tracee analyze --events anti_debugging events.json`,
 			logger.Fatalw("No signature event loaded")
 		}
 
-		fmt.Printf("Loading %d signature events\n", len(sigs))
+		logger.Infow(
+			"Signatures loaded",
+			"total", len(sigs),
+			"signatures", getSigsNames(sigs),
+		)
 
 		_ = initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
 
@@ -218,4 +223,24 @@ func process(finding *detect.Finding) {
 	}
 
 	fmt.Println(string(jsonEvent))
+}
+
+func bindViperFlag(cmd *cobra.Command, flag string) {
+	err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
+	if err != nil {
+		logger.Fatalw("Error binding viper flag", "flag", flag, "error", err)
+	}
+}
+
+func getSigsNames(sigs []detect.Signature) []string {
+	var sigsNames []string
+	for _, sig := range sigs {
+		sigMeta, err := sig.GetMetadata()
+		if err != nil {
+			logger.Warnw("Failed to get signature metadata", "err", err)
+			continue
+		}
+		sigsNames = append(sigsNames, sigMeta.Name)
+	}
+	return sigsNames
 }

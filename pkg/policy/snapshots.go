@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	maxSnapshots = MaxPolicies
+	maxSnapshots = PolicyMax
 )
 
 // snapshot is a snapshot of the Policies at a given version.
@@ -78,7 +78,7 @@ func (s *snapshots) Store(ps *Policies) {
 		s.lastVersion++
 	}
 
-	ps.SetVersion(s.lastVersion)
+	ps.version = s.lastVersion // set new version in Policies
 
 	snap := &snapshot{
 		time:     time.Now(),

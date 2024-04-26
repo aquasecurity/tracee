@@ -22,17 +22,17 @@ jobs:
       id-token: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ github.event.inputs.ref }}
           submodules: true
           fetch-depth: 0
       - name: Install Cosign
-        uses: sigstore/cosign-installer@main
+        uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
         with:
           cosign-release: 'v2.0.2'
       - name: Login to docker.io registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -57,7 +57,6 @@ jobs:
     name: Release (aarch64)
     env:
       GH_TOKEN: ${{ github.token }}
-    needs: [ release-x86_64 ]
     runs-on: [ "github-self-hosted_ami-03217ce7c37572c4d_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}" ]
     permissions:
       contents: write
@@ -65,17 +64,17 @@ jobs:
       id-token: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ github.event.inputs.ref }}
           submodules: true
           fetch-depth: 0
       - name: Install Cosign
-        uses: sigstore/cosign-installer@main
+        uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
         with:
           cosign-release: 'v2.0.2'
       - name: Login to docker.io registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -106,17 +105,17 @@ jobs:
       id-token: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ github.event.inputs.ref }}
           submodules: true
           fetch-depth: 0
       - name: Install Cosign
-        uses: sigstore/cosign-installer@main
+        uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
         with:
           cosign-release: 'v2.0.2'
       - name: Login to docker.io registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}

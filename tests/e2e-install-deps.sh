@@ -1,4 +1,7 @@
-#!/bin/bash -e
+#!/bin/bash
+
+set -e
+set -x # for debugging
 
 # This script installs the dependencies for compiling tracee and running the e2e
 # tests. Note that for llvm, binaries might be installed from the OS package
@@ -15,15 +18,6 @@
 # are required).
 
 ARCH=$(uname -m)
-
-disable_unattended_upgrades() {
-    # This is a pain point. Make sure to always disable anything touching the
-    # dpkg database, otherwise it will fail with locking errors.
-    systemctl stop unattended-upgrades || true
-    systemctl disable --now unattended-upgrades || true
-    apt-get remove -y --purge unattended-upgrades || true
-    apt-get remove -y --purge ubuntu-advantage-tools || true
-}
 
 wait_for_apt_locks() {
     local lock="/var/lib/dpkg/lock"
@@ -89,6 +83,16 @@ wait_for_apt_locks() {
     done
 }
 
+disable_unattended_upgrades() {
+    # This is a pain point. Make sure to always disable anything touching the
+    # dpkg database, otherwise it will fail with locking errors.
+    systemctl stop unattended-upgrades || true
+    systemctl disable --now unattended-upgrades || true
+
+    wait_for_apt_locks
+    apt-get remove -y --purge unattended-upgrades || true
+    apt-get remove -y --purge ubuntu-advantage-tools || true
+}
 
 remove_llvm_alternatives() {
     update-alternatives --remove-all cc || true
@@ -191,8 +195,8 @@ install_clang_from_github() {
         LLVM_URL=$LLVM_URL"clang+llvm-14.0.6-aarch64-linux-gnu.tar.xz"
     fi
 
-    LLVM_FILE=$(echo $(basename $LLVM_URL))
-    LLVM_DIR=$(echo $LLVM_FILE | sed 's:.tar.xz::g')
+    LLVM_FILE=$(basename $LLVM_URL)
+    LLVM_DIR="${LLVM_FILE%.tar.xz}"
 
     # Download
     rm -f "/tmp/$LLVM_FILE"
@@ -201,8 +205,8 @@ install_clang_from_github() {
     # Install
     cd /usr/local
     rm -rf ./clang
-    tar xfJ /tmp/$LLVM_FILE
-    mv $LLVM_DIR ./clang
+    tar xfJ /tmp/"$LLVM_FILE"
+    mv "$LLVM_DIR" ./clang
     cd -
 
     link_llvm_usr_local_clang
@@ -215,7 +219,7 @@ install_golang_from_github() {
         GO_URL="https://go.dev/dl/go1.21.6.linux-arm64.tar.gz"
     fi
 
-    GO_FILE=$(echo $(basename $GO_URL))
+    GO_FILE=$(basename $GO_URL)
 
     # Download
     rm -f "/tmp/$GO_FILE"
@@ -224,26 +228,30 @@ install_golang_from_github() {
     # Install
     cd /usr/local
     rm -rf ./go
-    tar xfz /tmp/$GO_FILE
+    tar xfz /tmp/"$GO_FILE"
     cd -
 
     link_golang_usr_local_go
 }
 
 install_clang_os_packages() {
+    wait_for_apt_locks
     apt-get install -y llvm-14 clang-14 clangd-14 lld-14
     update_llvm_alternatives
 }
 
 install_gcc11_os_packages() {
+    wait_for_apt_locks
     apt-get install -y gcc-11
 }
 
 install_gcc12_os_packages() {
+    wait_for_apt_locks
     apt-get install -y gcc-12
 }
 
 remove_llvm_os_packages() {
+    wait_for_apt_locks
     apt-get remove -y clang-12 clangd-12 lld-12 llvm-12 || true
     apt-get remove -y clang-13 clangd-13 lld-13 llvm-13 || true
     apt-get remove -y clang-14 clangd-14 lld-14 llvm-14 || true
@@ -251,6 +259,7 @@ remove_llvm_os_packages() {
 }
 
 remove_golang_os_packages() {
+    wait_for_apt_locks
     apt-get remove -y golang golang-go
     apt-get --purge autoremove -y
 }
@@ -262,14 +271,16 @@ remove_golang_os_packages() {
 
 KERNEL=$(uname -r)
 
+# shellcheck source=/dev/null
+# See SC1091
 . /etc/os-release
 
 if [[ $ID == "ubuntu" ]]; then
     export DEBIAN_FRONTEND=noninteractive
 
     disable_unattended_upgrades
-    wait_for_apt_locks
 
+    wait_for_apt_locks
     apt-get update
     # apt-get dist-upgrade -y
     # apt-get --purge autoremove -y

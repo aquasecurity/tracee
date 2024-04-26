@@ -95,7 +95,7 @@ func BenchmarkMatchFilter100(b *testing.B) {
 }
 
 func benchmarkStringFilter(b *testing.B, len int) {
-	filter := filters.NewStringFilter()
+	filter := filters.NewStringFilter(nil)
 	err := filter.Parse(fmt.Sprintf("=%s", strings.Join(filterVals, ",")))
 	require.NoError(b, err)
 
