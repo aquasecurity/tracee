@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TraceeServiceClient interface {
-	GetEventDefinition(ctx context.Context, in *GetEventDefinitionRequest, opts ...grpc.CallOption) (*GetEventDefinitionResponse, error)
+	GetEventDefinitions(ctx context.Context, in *GetEventDefinitionsRequest, opts ...grpc.CallOption) (*GetEventDefinitionsResponse, error)
 	StreamEvents(ctx context.Context, in *StreamEventsRequest, opts ...grpc.CallOption) (TraceeService_StreamEventsClient, error)
 	EnableEvent(ctx context.Context, in *EnableEventRequest, opts ...grpc.CallOption) (*EnableEventResponse, error)
 	DisableEvent(ctx context.Context, in *DisableEventRequest, opts ...grpc.CallOption) (*DisableEventResponse, error)
@@ -37,9 +37,9 @@ func NewTraceeServiceClient(cc grpc.ClientConnInterface) TraceeServiceClient {
 	return &traceeServiceClient{cc}
 }
 
-func (c *traceeServiceClient) GetEventDefinition(ctx context.Context, in *GetEventDefinitionRequest, opts ...grpc.CallOption) (*GetEventDefinitionResponse, error) {
-	out := new(GetEventDefinitionResponse)
-	err := c.cc.Invoke(ctx, "/tracee.v1beta1.TraceeService/GetEventDefinition", in, out, opts...)
+func (c *traceeServiceClient) GetEventDefinitions(ctx context.Context, in *GetEventDefinitionsRequest, opts ...grpc.CallOption) (*GetEventDefinitionsResponse, error) {
+	out := new(GetEventDefinitionsResponse)
+	err := c.cc.Invoke(ctx, "/tracee.v1beta1.TraceeService/GetEventDefinitions", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (c *traceeServiceClient) GetVersion(ctx context.Context, in *GetVersionRequ
 // All implementations must embed UnimplementedTraceeServiceServer
 // for forward compatibility
 type TraceeServiceServer interface {
-	GetEventDefinition(context.Context, *GetEventDefinitionRequest) (*GetEventDefinitionResponse, error)
+	GetEventDefinitions(context.Context, *GetEventDefinitionsRequest) (*GetEventDefinitionsResponse, error)
 	StreamEvents(*StreamEventsRequest, TraceeService_StreamEventsServer) error
 	EnableEvent(context.Context, *EnableEventRequest) (*EnableEventResponse, error)
 	DisableEvent(context.Context, *DisableEventRequest) (*DisableEventResponse, error)
@@ -121,8 +121,8 @@ type TraceeServiceServer interface {
 type UnimplementedTraceeServiceServer struct {
 }
 
-func (UnimplementedTraceeServiceServer) GetEventDefinition(context.Context, *GetEventDefinitionRequest) (*GetEventDefinitionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetEventDefinition not implemented")
+func (UnimplementedTraceeServiceServer) GetEventDefinitions(context.Context, *GetEventDefinitionsRequest) (*GetEventDefinitionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEventDefinitions not implemented")
 }
 func (UnimplementedTraceeServiceServer) StreamEvents(*StreamEventsRequest, TraceeService_StreamEventsServer) error {
 	return status.Errorf(codes.Unimplemented, "method StreamEvents not implemented")
@@ -149,20 +149,20 @@ func RegisterTraceeServiceServer(s grpc.ServiceRegistrar, srv TraceeServiceServe
 	s.RegisterService(&TraceeService_ServiceDesc, srv)
 }
 
-func _TraceeService_GetEventDefinition_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetEventDefinitionRequest)
+func _TraceeService_GetEventDefinitions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEventDefinitionsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TraceeServiceServer).GetEventDefinition(ctx, in)
+		return srv.(TraceeServiceServer).GetEventDefinitions(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/tracee.v1beta1.TraceeService/GetEventDefinition",
+		FullMethod: "/tracee.v1beta1.TraceeService/GetEventDefinitions",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TraceeServiceServer).GetEventDefinition(ctx, req.(*GetEventDefinitionRequest))
+		return srv.(TraceeServiceServer).GetEventDefinitions(ctx, req.(*GetEventDefinitionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -250,8 +250,8 @@ var TraceeService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*TraceeServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetEventDefinition",
-			Handler:    _TraceeService_GetEventDefinition_Handler,
+			MethodName: "GetEventDefinitions",
+			Handler:    _TraceeService_GetEventDefinitions_Handler,
 		},
 		{
 			MethodName: "EnableEvent",

@@ -15,12 +15,12 @@ message GetVersionResponse {
     string version = 1;
 }
 
-message GetEventDefinitionRequest {
-    string name = 1;
+message GetEventDefinitionsRequest {
+    repeated string event_names = 1;
     // TODO: tags
 }
 
-message GetEventDefinitionResponse {
+message GetEventDefinitionsResponse {
     repeated EventDefinition definitions = 1;
 }
 
@@ -50,7 +50,7 @@ message StreamEventsResponse {
 }
 
 service TraceeService {
-    rpc GetEventDefinition(GetEventDefinitionRequest) returns (GetEventDefinitionResponse);
+    rpc GetEventDefinitions(GetEventDefinitionsRequest) returns (GetEventDefinitionsResponse);
     rpc StreamEvents(StreamEventsRequest) returns (stream StreamEventsResponse);
 
     rpc EnableEvent(EnableEventRequest) returns (EnableEventResponse);
