@@ -240,7 +240,7 @@ func getSigsNames(sigs []detect.Signature) []string {
 			logger.Warnw("Failed to get signature metadata", "err", err)
 			continue
 		}
-		sigsNames = append(sigsNames, sigMeta.Name)
+		sigsNames = append(sigsNames, sigMeta.ID)
 	}
 	return sigsNames
 }
