@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.19+insiders-4.53.7">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.20+insiders-4.53.8">
     
     
       
@@ -3192,6 +3192,84 @@
         
           <li class="md-nav__item">
   <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security_bprm_creds_for_exec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        security_bprm_creds_for_exec
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="security_bprm_creds_for_exec">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sys_enter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sys_enter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="sys_enter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Purpose
@@ -17748,6 +17826,84 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#security_bprm_creds_for_exec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        security_bprm_creds_for_exec
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="security_bprm_creds_for_exec">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sys_enter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sys_enter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="sys_enter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -17831,17 +17987,33 @@ while providing as much as possible the arguments as used by the kernel.</p>
 <h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
 <p>kprobe</p>
 <h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
-<p>Fetch the arguments of exec_binprm</p>
+<p>To retrieve the arguments of exec_binprm.
+Used for kernels older than 5.8.</p>
 <h3 id="exec_binprm_1">exec_binprm<a class="headerlink" href="#exec_binprm_1" title="Permanent link">&para;</a></h3>
 <h4 id="type_1">Type<a class="headerlink" href="#type_1" title="Permanent link">&para;</a></h4>
 <p>kretprobe</p>
 <h4 id="purpose_1">Purpose<a class="headerlink" href="#purpose_1" title="Permanent link">&para;</a></h4>
-<p>Fetch the return value of exec_binprm</p>
+<p>To retrieve the return value of exec_binprm and generate the event.
+Used for kernels older than 5.8.</p>
+<h3 id="security_bprm_creds_for_exec">security_bprm_creds_for_exec<a class="headerlink" href="#security_bprm_creds_for_exec" title="Permanent link">&para;</a></h3>
+<h4 id="type_2">Type<a class="headerlink" href="#type_2" title="Permanent link">&para;</a></h4>
+<p>kprobe</p>
+<h4 id="purpose_2">Purpose<a class="headerlink" href="#purpose_2" title="Permanent link">&para;</a></h4>
+<p>To retrieve the arguments for the event.
+Relevant from kernel version 5.8 onwards, as the function was added in that kernel.</p>
+<h3 id="sys_enter">sys_enter<a class="headerlink" href="#sys_enter" title="Permanent link">&para;</a></h3>
+<h4 id="type_3">Type<a class="headerlink" href="#type_3" title="Permanent link">&para;</a></h4>
+<p>tracepoint</p>
+<h4 id="purpose_3">Purpose<a class="headerlink" href="#purpose_3" title="Permanent link">&para;</a></h4>
+<p>To obtain the return code of the execution, determining whether to generate the event.
+For a failed execution, an event will be generated using the information from the <code>security_bprm_creds_for_exec</code> hook.
+Relevant from kernel version 5.8 onwards, matching the <code>security_bprm_creds_for_exec</code> hook.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="go">./tracee -e process_execution_failed</span>
 </code></pre></div>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<p>Currently, only covers failed executions that are happening within exec_binprm. Other failures may occur at an earlier stage.</p>
+<p>The <code>exec_binprm</code> symbol is not available in some systems, potentially resulting in the failure to load the event in kernels older than 5.8.
+For kernels older than 5.8, the event only encompasses failed executions occurring within <code>exec_binprm</code>. Other failures may occur at an earlier stage. Newer versions do not account for failures before <code>security_bprm_creds_for_exec</code>, which precedes <code>exec_binprm</code>.</p>
 <h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
 <p>execve,execveat,bprm_check,sched_process_exec</p>
 
