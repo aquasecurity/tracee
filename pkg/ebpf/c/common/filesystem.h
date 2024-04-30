@@ -170,12 +170,10 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
         return 0;
     }
 
-    struct path f_path;
-    bpf_probe_read_kernel(&f_path, bpf_core_type_size(struct path), path);
     char slash = '/';
     int zero = 0;
-    struct dentry *dentry = f_path.dentry;
-    struct vfsmount *vfsmnt = f_path.mnt;
+    struct dentry *dentry = BPF_CORE_READ(path, dentry);
+    struct vfsmount *vfsmnt = BPF_CORE_READ(path, mnt);
     struct mount *mnt_parent_p;
     struct mount *mnt_p = real_mount(vfsmnt);
     bpf_core_read(&mnt_parent_p, sizeof(struct mount *), &mnt_p->mnt_parent);
