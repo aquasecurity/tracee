@@ -132,7 +132,10 @@ func readWriteCaptureTest(t *testing.T, captureDir string, workingDir string) er
 		return err
 	}
 
-	statInfo := fi.Sys().(*syscall.Stat_t)
+	statInfo, ok := fi.Sys().(*syscall.Stat_t)
+	if !ok {
+		t.Logf("type assertion failed: expected *syscall.Stat_t")
+	}
 	inode := statInfo.Ino
 
 	// Write "Hello World" into the file
@@ -172,7 +175,10 @@ func readWritevCaptureTest(t *testing.T, captureDir string, workingDir string) e
 		return err
 	}
 
-	statInfo := fi.Sys().(*syscall.Stat_t)
+	statInfo, ok := fi.Sys().(*syscall.Stat_t)
+	if !ok {
+		t.Logf("type assertion failed: expected *syscall.Stat_t")
+	}
 	inode := statInfo.Ino
 
 	// Strings to write
@@ -251,7 +257,10 @@ func readWritePipe(t *testing.T, captureDir string, workingDir string) error {
 
 	finfo, err := pipe.Stat()
 	require.NoError(t, err)
-	statInfo := finfo.Sys().(*syscall.Stat_t)
+	statInfo, ok := finfo.Sys().(*syscall.Stat_t)
+	if !ok {
+		t.Logf("type assertion failed: expected *syscall.Stat_t")
+	}
 	inode := statInfo.Ino
 
 	// Write "Hello World!" to the named pipe

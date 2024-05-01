@@ -438,11 +438,17 @@ func TestSymbolsCollisionArgsGenerator_deriveArgs(t *testing.T) {
 						assert.Equal(t, testCase.loadingSO.Path, args[0])
 						path := args[1]
 						require.IsType(t, "", path)
-						path = path.(string)
+						path, ok := path.(string)
+						if !ok {
+							t.Error("Failed to cast path's value")
+						}
 						if path == lso.so.Path {
 							col := args[2]
 							require.IsType(t, []string{}, col)
-							col = col.([]string)
+							col, ok = col.([]string)
+							if !ok {
+								t.Error("Failed to cast path arg's value")
+							}
 							assert.ElementsMatch(t, col, lso.expectedCollisions)
 							found = true
 							break
