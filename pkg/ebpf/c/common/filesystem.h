@@ -427,7 +427,7 @@ statfunc void fill_vfs_file_bin_args_io_data(io_data_t io_data, bin_args_t *bin_
         bin_args->iov_len = io_data.len;
         bin_args->iov_idx = 0;
         struct iovec io_vec;
-        bpf_probe_read_kernel(&io_vec, sizeof(struct iovec), &bin_args->vec[0]);
+        bpf_probe_read_user(&io_vec, sizeof(struct iovec), &bin_args->vec[0]);
         bin_args->ptr = io_vec.iov_base;
         bin_args->full_size = io_vec.iov_len;
     }
