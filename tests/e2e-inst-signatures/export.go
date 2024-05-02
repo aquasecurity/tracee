@@ -9,6 +9,7 @@ var ExportedSignatures = []detect.Signature{
 	// Instrumentation e2e signatures
 	&e2eProcessExecuteFailed{},
 	&e2eVfsWrite{},
+	&e2eVfsWritev{},
 	&e2eFileModification{},
 	&e2eSecurityInodeRename{},
 	&e2eContainersDataSource{},
