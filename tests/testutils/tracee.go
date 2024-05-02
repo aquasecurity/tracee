@@ -14,9 +14,9 @@ import (
 //
 
 const (
-	readinessPollTime    = 200 * time.Millisecond
-	httpRequestTimeout   = 1 * time.Second
-	traceeStartupTimeout = 5 * time.Second
+	readinessPollTime           = 200 * time.Millisecond
+	httpRequestTimeout          = 1 * time.Second
+	TraceeDefaultStartupTimeout = 5 * time.Second
 )
 
 var (
@@ -63,7 +63,7 @@ func NewRunningTracee(givenCtx context.Context, cmdLine string) *RunningTracee {
 }
 
 // Start starts the tracee process.
-func (r *RunningTracee) Start() (<-chan TraceeStatus, error) {
+func (r *RunningTracee) Start(timeout time.Duration) (<-chan TraceeStatus, error) {
 	var err error
 
 	imReady := func(s TraceeStatus) {
@@ -93,7 +93,7 @@ func (r *RunningTracee) Start() (<-chan TraceeStatus, error) {
 			imReady(TraceeStarted) // ready: running
 			break
 		}
-		if time.Since(now) > traceeStartupTimeout {
+		if time.Since(now) > timeout {
 			imReady(TraceeTimedout) // ready: timedout
 			break
 		}

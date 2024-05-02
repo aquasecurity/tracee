@@ -97,8 +97,6 @@ func checkIfPprofExist() error {
 
 // TestMetricsExist tests if the metrics endpoint returns all metrics.
 func TestMetricsandPprofExist(t *testing.T) {
-	t.Parallel()
-
 	if !testutils.IsSudoCmdAvailableForThisUser() {
 		t.Skip("skipping: sudo command is not available for this user")
 	}
@@ -107,7 +105,7 @@ func TestMetricsandPprofExist(t *testing.T) {
 	running := testutils.NewRunningTracee(context.Background(), cmd)
 
 	// start tracee
-	ready, runErr := running.Start()
+	ready, runErr := running.Start(testutils.TraceeDefaultStartupTimeout)
 	require.NoError(t, runErr)
 
 	t.Cleanup(func() {
