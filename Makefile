@@ -757,7 +757,7 @@ $(OUTPUT_DIR)/syscaller: \
 test-integration: \
 	.checkver_$(CMD_GO) \
 	$(OUTPUT_DIR)/syscaller \
-	tracee-ebpf
+	tracee
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
