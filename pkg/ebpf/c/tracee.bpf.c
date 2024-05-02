@@ -2933,8 +2933,7 @@ statfunc u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
         // Save binary chunk and file position of write
         bpf_probe_read_kernel(
             (void **) &(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &bin_args->start_off);
-        bpf_probe_read_kernel(
-            (void **) &(file_buf_p->buf[F_CHUNK_OFF]), F_CHUNK_SIZE, bin_args->ptr);
+        bpf_probe_read_user((void **) &(file_buf_p->buf[F_CHUNK_OFF]), F_CHUNK_SIZE, bin_args->ptr);
         bin_args->ptr += F_CHUNK_SIZE;
         bin_args->start_off += F_CHUNK_SIZE;
 
@@ -2954,7 +2953,7 @@ statfunc u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
     if (chunk_size) {
         // Save last chunk
         chunk_size = chunk_size & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
-        bpf_probe_read_kernel((void **) &(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, bin_args->ptr);
+        bpf_probe_read_user((void **) &(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, bin_args->ptr);
         bpf_probe_read_kernel(
             (void **) &(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
         bpf_probe_read_kernel(
