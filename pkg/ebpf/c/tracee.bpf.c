@@ -715,7 +715,9 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 }
 
 // number of iterations - value that the verifier was seen to cope with - the higher, the better
-#define MAX_NUM_MODULES 450
+#define MAX_NUM_MODULES         450
+#define HISTORY_SCAN_FAILURE    0
+#define HISTORY_SCAN_SUCCESSFUL 1
 
 enum
 {
@@ -723,6 +725,7 @@ enum
     KSET = 1 << 1,
     MOD_TREE = 1 << 2,
     NEW_MOD = 1 << 3,
+    HISTORY_SCAN_FINISHED = 1 << 4,
     FULL_SCAN = 1 << 30,
     HIDDEN_MODULE = 1 << 31,
 };
@@ -869,7 +872,7 @@ statfunc int find_modules_from_module_kset_list(program_data_t *p)
     struct list_head *head = &(mod_kset->list);
     struct kobject *pos = list_first_entry_ebpf(head, typeof(*pos), entry);
     struct kobject *n = list_next_entry_ebpf(pos, entry);
-    u32 flags = KSET | HIDDEN_MODULE;
+    u32 flags = KSET;
 
 #pragma unroll
     for (int i = 0; i < MAX_NUM_MODULES; i++) {
@@ -923,7 +926,7 @@ statfunc int walk_mod_tree(program_data_t *p, struct rb_node *root, int idx)
     struct latch_tree_node *ltn;
     struct module *mod;
     struct rb_node *curr = root;
-    u32 flags = MOD_TREE | HIDDEN_MODULE;
+    u32 flags = MOD_TREE;
 
 #pragma unroll
     for (int i = 0; i < MAX_NUM_MODULES; i++) {
@@ -1179,6 +1182,9 @@ int lkm_seeker_kset_tail(struct pt_regs *ctx)
     int ret = find_modules_from_module_kset_list(&p);
     if (ret < 0) {
         tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_HID_KER_MOD, ret);
+        u32 flags = HISTORY_SCAN_FINISHED;
+        lkm_seeker_send_to_userspace(
+            (struct module *) HISTORY_SCAN_FAILURE, &flags, &p); // Report failure of history scan
         return -1;
     }
 
@@ -1199,13 +1205,20 @@ int lkm_seeker_mod_tree_tail(struct pt_regs *ctx)
     if (!init_tailcall_program_data(&p, ctx))
         return -1;
 
+    u32 flags = HISTORY_SCAN_FINISHED;
+
     // This method is efficient only when the kernel is compiled with
     // CONFIG_MODULES_TREE_LOOKUP=y
     int ret = find_modules_from_mod_tree(&p);
     if (ret < 0) {
         tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_HID_KER_MOD, ret);
+        lkm_seeker_send_to_userspace(
+            (struct module *) HISTORY_SCAN_FAILURE, &flags, &p); // Report failure of history scan
         return -1;
     }
+
+    // Report to userspace that the history scan finished successfully
+    lkm_seeker_send_to_userspace((struct module *) HISTORY_SCAN_SUCCESSFUL, &flags, &p);
 
     bpf_tail_call(ctx, &prog_array, TAIL_HIDDEN_KERNEL_MODULE_PROC);
 
