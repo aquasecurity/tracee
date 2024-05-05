@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.20+insiders-4.53.8">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.21+insiders-4.53.8">
     
     
       
@@ -17758,6 +17758,13 @@
 <p>Introducing this secondary event source is strategic: it reduces interference with actively traced events, leading to more accurate and granular updates in the process tree.</p>
 </blockquote>
 <p>The number of processes retained in the tree hinges on cache size. We have two separate caches at play: one for processes and another for threads. Both default to a size of 32K, supporting tracking for up to 32,768 processes and the same number of threads. It's worth noting that these are LRU caches: once full, they'll evict the least recently accessed entries to accommodate fresh ones.</p>
+<p>The process tree query the procfs upon initialization and during runtime to fill missing data:
+* During initialization, it runs over all procfs to fill all existing processes and threads
+* During runtime, it queries specific processes in the case of missing information caused by missing events. </p>
+<blockquote>
+<p>[!CAUTION]
+The procfs query might increase the feature toll on CPU and memory. The runtime query might have a snowball effect on lost events, as it will reduce the system resources in the processes of filling missing information.</p>
+</blockquote>
 <h2 id="command-line-option">Command Line Option<a class="headerlink" href="#command-line-option" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>tracee<span class="w"> </span>--proctree<span class="w"> </span><span class="nb">help</span>
 Example:
@@ -17766,8 +17773,9 @@ Example:
 <span class="w">      </span>events<span class="w">       </span><span class="p">|</span><span class="w"> </span>process<span class="w"> </span>tree<span class="w"> </span>is<span class="w"> </span>built<span class="w"> </span>from<span class="w"> </span>events.
 <span class="w">      </span>signals<span class="w">      </span><span class="p">|</span><span class="w"> </span>process<span class="w"> </span>tree<span class="w"> </span>is<span class="w"> </span>built<span class="w"> </span>from<span class="w"> </span>signals.
 <span class="w">      </span>both<span class="w">         </span><span class="p">|</span><span class="w"> </span>process<span class="w"> </span>tree<span class="w"> </span>is<span class="w"> </span>built<span class="w"> </span>from<span class="w"> </span>both<span class="w"> </span>events<span class="w"> </span>and<span class="w"> </span>signals.
-<span class="w">  </span>--proctree<span class="w"> </span>process-cache<span class="o">=</span><span class="m">8192</span><span class="w">  </span><span class="p">|</span><span class="w"> </span>will<span class="w"> </span>cache<span class="w"> </span>up<span class="w"> </span>to<span class="w"> </span><span class="m">8192</span><span class="w"> </span>processes<span class="w"> </span><span class="k">in</span><span class="w"> </span>the<span class="w"> </span>tree<span class="w"> </span><span class="o">(</span>LRU<span class="w"> </span>cache<span class="o">)</span>.
-<span class="w">  </span>--proctree<span class="w"> </span>thread-cache<span class="o">=</span><span class="m">4096</span><span class="w">   </span><span class="p">|</span><span class="w"> </span>will<span class="w"> </span>cache<span class="w"> </span>up<span class="w"> </span>to<span class="w"> </span><span class="m">4096</span><span class="w"> </span>threads<span class="w"> </span><span class="k">in</span><span class="w"> </span>the<span class="w"> </span>tree<span class="w"> </span><span class="o">(</span>LRU<span class="w"> </span>cache<span class="o">)</span>.
+<span class="w">  </span>--proctree<span class="w"> </span>process-cache<span class="o">=</span><span class="m">8192</span><span class="w">   </span><span class="p">|</span><span class="w"> </span>will<span class="w"> </span>cache<span class="w"> </span>up<span class="w"> </span>to<span class="w"> </span><span class="m">8192</span><span class="w"> </span>processes<span class="w"> </span><span class="k">in</span><span class="w"> </span>the<span class="w"> </span>tree<span class="w"> </span><span class="o">(</span>LRU<span class="w"> </span>cache<span class="o">)</span>.
+<span class="w">  </span>--proctree<span class="w"> </span>thread-cache<span class="o">=</span><span class="m">4096</span><span class="w">    </span><span class="p">|</span><span class="w"> </span>will<span class="w"> </span>cache<span class="w"> </span>up<span class="w"> </span>to<span class="w"> </span><span class="m">4096</span><span class="w"> </span>threads<span class="w"> </span><span class="k">in</span><span class="w"> </span>the<span class="w"> </span>tree<span class="w"> </span><span class="o">(</span>LRU<span class="w"> </span>cache<span class="o">)</span>.
+<span class="w">  </span>--proctree<span class="w"> </span>disable-procfs-query<span class="w"> </span><span class="p">|</span><span class="w"> </span>Will<span class="w"> </span>disable<span class="w"> </span>procfs<span class="w"> </span>quering<span class="w"> </span>during<span class="w"> </span>runtime
 
 Use<span class="w"> </span>comma<span class="w"> </span>OR<span class="w"> </span>use<span class="w"> </span>the<span class="w"> </span>flag<span class="w"> </span>multiple<span class="w"> </span><span class="nb">times</span><span class="w"> </span>to<span class="w"> </span>choose<span class="w"> </span>multiple<span class="w"> </span>options:
 <span class="w">  </span>--proctree<span class="w"> </span><span class="nv">source</span><span class="o">=</span>A,process-cache<span class="o">=</span>B,thread-cache<span class="o">=</span>C
@@ -18051,7 +18059,7 @@ Use<span class="w"> </span>comma<span class="w"> </span>OR<span class="w"> </spa
     <script id="__config" type="application/json">{"base": "../../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../../../assets/javascripts/workers/search.1e90e0fb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../../../assets/javascripts/bundle.0d59af3e.min.js"></script>
+      <script src="../../../../../assets/javascripts/bundle.10eaffea.min.js"></script>
       
     
   </body>
