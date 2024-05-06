@@ -4902,7 +4902,7 @@ int BPF_KPROBE(trace_ret_inotify_find_inode)
     return events_perf_submit(&p, 0);
 }
 
-statfunc int execute_failed_tail0(struct pt_regs *ctx, program_data_t *p, u32 tail_call_id)
+statfunc int submit_process_execute_failed(struct pt_regs *ctx, program_data_t *p)
 {
     if (!evaluate_scope_filters(p))
         return 0;
@@ -4935,7 +4935,7 @@ statfunc int execute_failed_tail0(struct pt_regs *ctx, program_data_t *p, u32 ta
     const char *interpreter_path = get_binprm_interp(bprm);
     save_str_to_buf(&p->event->args_buf, (void *) interpreter_path, 6);
 
-    bpf_tail_call(ctx, &prog_array, tail_call_id);
+    bpf_tail_call(ctx, &prog_array, TAIL_PROCESS_EXECUTE_FAILED1);
     return -1;
 }
 
@@ -5005,13 +5005,13 @@ int BPF_KPROBE(trace_ret_exec_binprm)
     program_data_t p = {};
     if (!init_program_data(&p, ctx, PROCESS_EXECUTION_FAILED))
         return 0;
-    return execute_failed_tail0(ctx, &p, TAIL_EXEC_BINPRM1);
+    return submit_process_execute_failed(ctx, &p);
 }
 
 SEC("kretprobe/trace_execute_failed1")
 int BPF_KPROBE(trace_execute_failed1)
 {
-    return execute_failed_tail1(ctx, TAIL_EXEC_BINPRM2);
+    return execute_failed_tail1(ctx, TAIL_PROCESS_EXECUTE_FAILED2);
 }
 
 SEC("kretprobe/trace_execute_failed2")
@@ -5027,23 +5027,11 @@ int BPF_KPROBE(trace_security_bprm_creds_for_exec)
     program_data_t p = {};
     if (!init_program_data(&p, ctx, SECURITY_BPRM_CREDS_FOR_EXEC))
         return 0;
-    return execute_failed_tail0(ctx, &p, TAIL_SECURITY_BPRM_CREDS_FOR_EXEC1);
-}
-
-SEC("kretprobe/trace_security_bprm_creds_for_exec1")
-int BPF_KPROBE(trace_security_bprm_creds_for_exec1)
-{
-    return execute_failed_tail1(ctx, TAIL_SECURITY_BPRM_CREDS_FOR_EXEC2);
-}
-
-SEC("kretprobe/trace_security_bprm_creds_for_exec2")
-int BPF_KPROBE(trace_security_bprm_creds_for_exec2)
-{
-    return execute_failed_tail2(ctx);
+    return submit_process_execute_failed(ctx, &p);
 }
 
 SEC("kretprobe/execute_finished")
-int BPF_KPROBE(execute_finished)
+int BPF_KPROBE(trace_execute_finished)
 {
     program_data_t p = {};
     if (!init_program_data(&p, ctx, EXECUTE_FINISHED))

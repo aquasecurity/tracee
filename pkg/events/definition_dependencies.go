@@ -135,14 +135,12 @@ const (
 	TailSchedProcessExecEventSubmit
 	TailVfsRead
 	TailVfsReadv
-	TailExecBinprm1
-	TailExecBinprm2
+	TailProcessExecuteFailed1
+	TailProcessExecuteFailed2
 	TailHiddenKernelModuleProc
 	TailHiddenKernelModuleKset
 	TailHiddenKernelModuleModTree
 	TailHiddenKernelModuleNewModOnly
-	TailSecurityBprmCredsForExec1
-	TailSecurityBprmCredsForExec2
 	MaxTail
 )
 

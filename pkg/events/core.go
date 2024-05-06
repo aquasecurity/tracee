@@ -12917,11 +12917,11 @@ var CoreEvents = map[ID]Definition{
 		internal: true,
 		dependencies: Dependencies{
 			probes: []Probe{
-				{handle: probes.SecurityBprmCredsForExec, required: false}, // TODO: Change to required once fallback are supported
+				{handle: probes.SecurityBprmCredsForExec, required: false}, // TODO: Change to required once fallbacks are supported
 			},
 			tailCalls: []TailCall{
-				{"prog_array", "trace_security_bprm_creds_for_exec1", []uint32{TailSecurityBprmCredsForExec1}},
-				{"prog_array", "trace_security_bprm_creds_for_exec2", []uint32{TailSecurityBprmCredsForExec2}},
+				{"prog_array", "trace_execute_failed1", []uint32{TailProcessExecuteFailed1}},
+				{"prog_array", "trace_execute_failed2", []uint32{TailProcessExecuteFailed2}},
 			},
 		},
 		params: []trace.ArgMeta{
@@ -12952,8 +12952,8 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.ExecBinprmRet, required: false},
 			},
 			tailCalls: []TailCall{
-				{"prog_array", "trace_execute_failed1", []uint32{TailExecBinprm1}},
-				{"prog_array", "trace_execute_failed2", []uint32{TailExecBinprm2}},
+				{"prog_array", "trace_execute_failed1", []uint32{TailProcessExecuteFailed1}},
+				{"prog_array", "trace_execute_failed2", []uint32{TailProcessExecuteFailed2}},
 			},
 		},
 		params: []trace.ArgMeta{
