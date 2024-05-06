@@ -24,7 +24,6 @@ import (
 
 var (
 	foundHiddenKernModsCache *lru.Cache[uint64, struct{}]
-	eventsFromHistoryScan    *lru.Cache[*trace.Event, struct{}]
 	allModsMap               *bpf.BPFMap
 	newModuleOnlyMap         *bpf.BPFMap
 	recentDeletedModulesMap  *bpf.BPFMap
@@ -32,13 +31,12 @@ var (
 )
 
 const (
-	ProcModules         uint32 = 1 << 0 // A hidden module detected by /proc/modules logic
-	kset                       = 1 << 1 // A hidden module detected by kset logic
-	modTree                    = 1 << 2 // A hidden module detected by mod tree logic
-	NewMod                     = 1 << 3 // A new modules only scan - without HiddenModule flag on, this is not yet a detection. See newModsCheckForHidden
-	historyScanFinished        = 1 << 4
-	FullScan                   = 1 << 30 // Do a full scan - received after a new module was loaded (and finished running his init function)
-	HiddenModule               = 1 << 31 // Submit the module as event to user
+	ProcModules  uint32 = 1 << 0  // A hidden module detected by /proc/modules logic
+	kset                = 1 << 1  // A hidden module detected by kset logic
+	modTree             = 1 << 2  // A hidden module detected by mod tree logic
+	NewMod              = 1 << 3  // A new modules only scan - without HiddenModule flag on, this is not yet a detection. See newModsCheckForHidden
+	FullScan            = 1 << 30 // Do a full scan - received after a new module was loaded (and finished running his init function)
+	HiddenModule        = 1 << 31 // Submit the module as event to user
 )
 
 // ScanRequest the structure that is passed in the wake up channel
@@ -48,14 +46,14 @@ type ScanRequest struct {
 }
 
 func HiddenKernelModule() DeriveFunction {
-	return deriveMultipleEvents(events.HiddenKernelModule, deriveHiddenKernelModulesArgs())
+	return deriveSingleEvent(events.HiddenKernelModule, deriveHiddenKernelModulesArgs())
 }
 
-func deriveHiddenKernelModulesArgs() multiDeriveArgsFunction {
-	return func(event trace.Event) ([][]interface{}, []error) {
+func deriveHiddenKernelModulesArgs() deriveArgsFunction {
+	return func(event trace.Event) ([]interface{}, error) {
 		address, err := parse.ArgVal[uint64](event.Args, "address")
 		if err != nil {
-			return nil, []error{err}
+			return nil, err
 		}
 
 		if _, found := foundHiddenKernModsCache.Get(address); found {
@@ -64,125 +62,65 @@ func deriveHiddenKernelModulesArgs() multiDeriveArgsFunction {
 
 		flags, err := parse.ArgVal[uint32](event.Args, "flags")
 		if err != nil {
-			return nil, []error{err}
+			return nil, err
 		}
 
 		// revive:disable
 
 		if flags&HiddenModule != 0 {
-			// Empty-block needed: continue an event to user submission.
+			// empty-block needed: continue an event to user submission.
+
 		} else if flags&FullScan != 0 {
 			// No need to send the address: doing a full generic scan.
 			wakeupChannel <- ScanRequest{Flags: flags}
 			return nil, nil
+
 		} else if flags&NewMod != 0 {
-			// Address field unused in this case: use it as start scan time then.
+			// address field unused in this case: use it as start scan time then.
 			startScanTime := address
 			err := newModsCheckForHidden(startScanTime, flags)
-			if err != nil {
-				return nil, []error{err}
-			}
-			return nil, nil
-		} else if flags&kset != 0 || flags&modTree != 0 {
-			// These types of scan only happens once on tracee's startup.
-			// Cache results and only send them out when receiving that the history scan finished successfully
-			eventsFromHistoryScan.Add(&event, struct{}{})
-			return nil, nil
-		} else if flags&historyScanFinished != 0 {
-			// Happens only once on tracee's startup when the scan finished (successfully/unsuccessfully)
-			return handleHistoryScanFinished(address)
+			return nil, err
 		}
 
 		// revive:enable
 
-		// Add to cache not to report it multiple times
-		foundHiddenKernModsCache.Add(address, struct{}{})
+		// Parse module name if possible
 
-		return [][]interface{}{extractFromEvent(event.Args, address)}, nil
-	}
-}
-
-// InitHiddenKernelModules initializes the module components
-func InitHiddenKernelModules(modsMap *bpf.BPFMap, newModMap *bpf.BPFMap, deletedModMap *bpf.BPFMap) error {
-	allModsMap = modsMap
-	newModuleOnlyMap = newModMap
-	recentDeletedModulesMap = deletedModMap
-
-	var err error
-	foundHiddenKernModsCache, err = lru.New[uint64, struct{}](2048)
-	if err != nil {
-		return err
-	}
-
-	eventsFromHistoryScan, err = lru.New[*trace.Event, struct{}](50) // If there are more hidden modules found in history scan, it'll report only the size of the LRU
-	return err
-}
-
-// handleHistoryScanFinished handles the case where the history scan finished
-func handleHistoryScanFinished(scanStatus uint64) ([][]interface{}, []error) {
-	// Address field unused in this case: use it as a flag for scan status
-	if scanStatus == 0 {
-		// Finished unsuccessfully, abort publishing events derived from this scan
-		// since the scan didn't really finish and the events might be the false positives
-		eventsFromHistoryScan.Purge()
-		return nil, nil
-	}
-
-	var res [][]interface{}
-	for {
-		e, _, ok := eventsFromHistoryScan.RemoveOldest()
-		if !ok {
-			break
-		}
-
-		address, err := parse.ArgVal[uint64](e.Args, "address")
+		var name string
+		nameBytes, err := parse.ArgVal[[]byte](event.Args, "name")
 		if err != nil {
-			return nil, []error{err}
+			name = ""
+			// Don't fail hard, submit it without a name!
+			logger.Debugw("Failed extracting hidden module name")
+		} else {
+			// Remove the trailing terminating characters.
+			name = string(nameBytes[:bytes.IndexByte(nameBytes[:], 0)])
 		}
 
-		if _, found := foundHiddenKernModsCache.Get(address); found {
-			continue
+		// Parse module srcversion if possible
+
+		var srcversion string
+		srcversionBytes, err := parse.ArgVal[[]byte](event.Args, "srcversion")
+		if err != nil {
+			srcversion = ""
+			// Don't fail hard, submit it without a srcversion!
+			logger.Debugw("Failed extracting hidden module srcversion")
+		} else {
+			// Remove the trailing terminating characters
+			srcversion = string(srcversionBytes[:bytes.IndexByte(srcversionBytes[:], 0)])
 		}
+
+		addrHex := fmt.Sprintf("0x%x", address)
+		if len(addrHex) == 2 {
+			logger.Warnw("Failed converting module address to hex")
+		}
+
+		// Add to cache not to report it multiple times
 
 		foundHiddenKernModsCache.Add(address, struct{}{})
-		res = append(res, extractFromEvent(e.Args, address)) // Note using the event from LRU and not the event received in the derived event
+
+		return []interface{}{addrHex, name, srcversion}, nil
 	}
-
-	return res, nil // Send all the events
-}
-
-// extractFromEvent extract arguments from the trace.Argument
-func extractFromEvent(args []trace.Argument, address uint64) []interface{} {
-	// Parse module name if possible
-	var name string
-	nameBytes, err := parse.ArgVal[[]byte](args, "name")
-	if err != nil {
-		name = ""
-		// Don't fail hard, submit it without a name!
-		logger.Debugw("Failed extracting hidden module name")
-	} else {
-		// Remove the trailing terminating characters.
-		name = string(nameBytes[:bytes.IndexByte(nameBytes[:], 0)])
-	}
-
-	// Parse module srcversion if possible
-	var srcversion string
-	srcversionBytes, err := parse.ArgVal[[]byte](args, "srcversion")
-	if err != nil {
-		srcversion = ""
-		// Don't fail hard, submit it without a srcversion!
-		logger.Debugw("Failed extracting hidden module srcversion")
-	} else {
-		// Remove the trailing terminating characters
-		srcversion = string(srcversionBytes[:bytes.IndexByte(srcversionBytes[:], 0)])
-	}
-
-	addrHex := fmt.Sprintf("0x%x", address)
-	if len(addrHex) == 2 {
-		logger.Warnw("Failed converting module address to hex")
-	}
-
-	return []interface{}{addrHex, name, srcversion}
 }
 
 // newModsCheckForHidden monitors only new added modules (added while tracee is
@@ -238,6 +176,17 @@ func newModsCheckForHidden(startScanTime uint64, flags uint32) error {
 			return nil
 		},
 	)
+}
+
+// InitHiddenKernelModules initializes the module components
+func InitHiddenKernelModules(modsMap *bpf.BPFMap, newModMap *bpf.BPFMap, deletedModMap *bpf.BPFMap) error {
+	allModsMap = modsMap
+	newModuleOnlyMap = newModMap
+	recentDeletedModulesMap = deletedModMap
+
+	var err error
+	foundHiddenKernModsCache, err = lru.New[uint64, struct{}](2048)
+	return err
 }
 
 // clearMap a utility to clear a map.
