@@ -18,9 +18,8 @@ Example:
       events       | process tree is built from events.
       signals      | process tree is built from signals.
       both         | process tree is built from both events and signals.
-  --proctree process-cache=8192   | will cache up to 8192 processes in the tree (LRU cache).
-  --proctree thread-cache=4096    | will cache up to 4096 threads in the tree (LRU cache).
-  --proctree disable-procfs-query | Will disable procfs queries during runtime
+  --proctree process-cache=8192  | will cache up to 8192 processes in the tree (LRU cache).
+  --proctree thread-cache=4096   | will cache up to 4096 threads in the tree (LRU cache).
 
 Use comma OR use the flag multiple times to choose multiple options:
   --proctree source=A,process-cache=B,thread-cache=C
@@ -32,11 +31,9 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 	var err error
 
 	config := proctree.ProcTreeConfig{
-		Source:               proctree.SourceNone, // disabled by default
-		ProcessCacheSize:     proctree.DefaultProcessCacheSize,
-		ThreadCacheSize:      proctree.DefaultThreadCacheSize,
-		ProcfsInitialization: true,
-		ProcfsQuerying:       true,
+		Source:           proctree.SourceNone, // disabled by default
+		ProcessCacheSize: proctree.DefaultProcessCacheSize,
+		ThreadCacheSize:  proctree.DefaultThreadCacheSize,
 	}
 
 	cacheSet := false
@@ -91,10 +88,6 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 					config.ThreadCacheSize = size
 				}
 				cacheSet = true
-				continue
-			}
-			if strings.HasPrefix(value, "disable-procfs-query") {
-				config.ProcfsQuerying = false
 				continue
 			}
 			err = fmt.Errorf("unrecognized proctree option format: %v", value)

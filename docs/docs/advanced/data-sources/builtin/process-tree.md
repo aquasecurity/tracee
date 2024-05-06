@@ -16,13 +16,6 @@ The underlying structure is populated using the core `sched_process_fork`, `sche
 
 The number of processes retained in the tree hinges on cache size. We have two separate caches at play: one for processes and another for threads. Both default to a size of 32K, supporting tracking for up to 32,768 processes and the same number of threads. It's worth noting that these are LRU caches: once full, they'll evict the least recently accessed entries to accommodate fresh ones.
 
-The process tree query the procfs upon initialization and during runtime to fill missing data:
-* During initialization, it runs over all procfs to fill all existing processes and threads
-* During runtime, it queries specific processes in the case of missing information caused by missing events. 
-
-> [!CAUTION]
-> The procfs query might increase the feature toll on CPU and memory. The runtime query might have a snowball effect on lost events, as it will reduce the system resources in the processes of filling missing information.
-
 ## Command Line Option
 
 ```bash
@@ -33,9 +26,8 @@ Example:
       events       | process tree is built from events.
       signals      | process tree is built from signals.
       both         | process tree is built from both events and signals.
-  --proctree process-cache=8192   | will cache up to 8192 processes in the tree (LRU cache).
-  --proctree thread-cache=4096    | will cache up to 4096 threads in the tree (LRU cache).
-  --proctree disable-procfs-query | Will disable procfs quering during runtime
+  --proctree process-cache=8192  | will cache up to 8192 processes in the tree (LRU cache).
+  --proctree thread-cache=4096   | will cache up to 4096 threads in the tree (LRU cache).
 
 Use comma OR use the flag multiple times to choose multiple options:
   --proctree source=A,process-cache=B,thread-cache=C
