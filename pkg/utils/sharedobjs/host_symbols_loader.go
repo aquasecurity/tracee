@@ -2,6 +2,7 @@ package sharedobjs
 
 import (
 	"debug/elf"
+	"errors"
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	"golang.org/x/exp/maps"
@@ -14,7 +15,7 @@ import (
 // The logic of the loader here is used on absolute paths, so container relative paths won't work here.
 // This object operation requires the CAP_DAC_OVERRIDE to access files across the system.
 type HostSymbolsLoader struct {
-	loadingFunc func(path string) (*dynamicSymbols, error)
+	loadingFunc func(path string) (*DynamicSymbols, error)
 	soCache     soDynamicSymbolsCache
 }
 
@@ -64,7 +65,7 @@ func (soLoader *HostSymbolsLoader) GetImportedSymbols(soInfo ObjInfo) (map[strin
 	return syms.Imported, nil
 }
 
-func (soLoader *HostSymbolsLoader) loadSOSymbols(soInfo ObjInfo) (*dynamicSymbols, error) {
+func (soLoader *HostSymbolsLoader) loadSOSymbols(soInfo ObjInfo) (*DynamicSymbols, error) {
 	syms, ok := soLoader.soCache.Get(soInfo.Id)
 	if ok {
 		return syms, nil
@@ -78,8 +79,8 @@ func (soLoader *HostSymbolsLoader) loadSOSymbols(soInfo ObjInfo) (*dynamicSymbol
 }
 
 type soDynamicSymbolsCache interface {
-	Get(ObjID) (*dynamicSymbols, bool)
-	Add(obj ObjInfo, dynamicSymbols *dynamicSymbols)
+	Get(ObjID) (*DynamicSymbols, bool)
+	Add(obj ObjInfo, dynamicSymbols *DynamicSymbols)
 }
 
 // dynamicSymbolsLRUCache is a lru for examined shared objects symbols, in order to reduce file access.
@@ -89,22 +90,22 @@ type dynamicSymbolsLRUCache struct {
 
 // Get SO instance from the lru.
 // Return the SO symbols from lru and if the SO symbols were in the lru.
-func (soCache *dynamicSymbolsLRUCache) Get(objID ObjID) (*dynamicSymbols, bool) {
+func (soCache *dynamicSymbolsLRUCache) Get(objID ObjID) (*DynamicSymbols, bool) {
 	objInfoIface, ok := soCache.lru.Get(objID)
 	if ok {
-		objInfo := objInfoIface.(*dynamicSymbols)
+		objInfo := objInfoIface.(*DynamicSymbols)
 		return objInfo, true
 	}
 
 	return nil, false
 }
 
-func (soCache *dynamicSymbolsLRUCache) Add(obj ObjInfo, dynamicSymbols *dynamicSymbols) {
+func (soCache *dynamicSymbolsLRUCache) Add(obj ObjInfo, dynamicSymbols *DynamicSymbols) {
 	soCache.lru.Add(obj.Id, dynamicSymbols)
 }
 
 // loadSharedObjectDynamicSymbols loads all dynamic symbols of a shared object file in given path.
-func loadSharedObjectDynamicSymbols(path string) (*dynamicSymbols, error) {
+func loadSharedObjectDynamicSymbols(path string) (*DynamicSymbols, error) {
 	var err error
 	var loadedObject *elf.File
 
@@ -116,6 +117,11 @@ func loadSharedObjectDynamicSymbols(path string) (*dynamicSymbols, error) {
 
 	loadedObject, err = elf.Open(path)
 	if err != nil {
+		// We need to distinguish between errors from ELF file parsing and unsupported types
+		var formatError *elf.FormatError
+		if errors.As(err, &formatError) {
+			return nil, InitUnsupportedFileError(err)
+		}
 		return nil, errfmt.WrapError(err)
 	}
 	defer func() {
@@ -132,7 +138,7 @@ func loadSharedObjectDynamicSymbols(path string) (*dynamicSymbols, error) {
 	return parseDynamicSymbols(dynamicSymbols), nil
 }
 
-func parseDynamicSymbols(dynamicSymbols []elf.Symbol) *dynamicSymbols {
+func parseDynamicSymbols(dynamicSymbols []elf.Symbol) *DynamicSymbols {
 	objSymbols := NewSOSymbols()
 	for _, sym := range dynamicSymbols {
 		if sym.Library != "" || sym.Value == 0 {

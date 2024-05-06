@@ -19,24 +19,24 @@ type testSOInstance struct {
 }
 
 type symbolsLoaderMock struct {
-	cache      map[sharedobjs.ObjInfo]map[string]bool
-	shouldFail bool
+	cache         map[sharedobjs.ObjInfo]map[string]bool
+	returnedError error
 }
 
-func initLoaderMock(shouldFail bool) symbolsLoaderMock {
-	return symbolsLoaderMock{cache: make(map[sharedobjs.ObjInfo]map[string]bool), shouldFail: shouldFail}
+func initLoaderMock(returnedError error) symbolsLoaderMock {
+	return symbolsLoaderMock{cache: make(map[sharedobjs.ObjInfo]map[string]bool), returnedError: returnedError}
 }
 
 func (loader symbolsLoaderMock) GetDynamicSymbols(info sharedobjs.ObjInfo) (map[string]bool, error) {
-	if loader.shouldFail {
-		return nil, errors.New("loading error")
+	if loader.returnedError != nil {
+		return nil, loader.returnedError
 	}
 	return loader.cache[info], nil
 }
 
 func (loader symbolsLoaderMock) GetExportedSymbols(info sharedobjs.ObjInfo) (map[string]bool, error) {
-	if loader.shouldFail {
-		return nil, errors.New("loading error")
+	if loader.returnedError != nil {
+		return nil, loader.returnedError
 	}
 	return loader.cache[info], nil
 }
@@ -168,7 +168,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			testCase := testCase
 
 			errChan := setMockLogger(logger.DebugLevel)
-			mockLoader := initLoaderMock(false)
+			mockLoader := initLoaderMock(nil)
 			mockLoader.addSOSymbols(testCase.loadingSO)
 
 			t.Run(testCase.name, func(t *testing.T) {
@@ -199,7 +199,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 		t.Run("Debug", func(t *testing.T) {
 			errChan := setMockLogger(logger.DebugLevel)
 			defer logger.SetLogger(baseLogger)
-			mockLoader := initLoaderMock(true)
+			mockLoader := initLoaderMock(errors.New("loading error"))
 			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil)
 
 			// First error should be always returned
@@ -219,7 +219,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 		t.Run("No debug", func(t *testing.T) {
 			errChan := setMockLogger(logger.WarnLevel)
 			defer logger.SetLogger(baseLogger)
-			mockLoader := initLoaderMock(true)
+			mockLoader := initLoaderMock(errors.New("loading error"))
 			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil)
 
 			// First error should create warning
@@ -228,6 +228,24 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			assert.Nil(t, eventArgs)
 			assert.NotEmpty(t, errChan)
 			<-errChan
+			assert.Empty(t, errChan)
+
+			// Error should be suppressed
+			eventArgs, err = gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			assert.NoError(t, err)
+			assert.Nil(t, eventArgs)
+			assert.Empty(t, errChan)
+		})
+		t.Run("Non-ELF", func(t *testing.T) {
+			errChan := setMockLogger(logger.DebugLevel)
+			defer logger.SetLogger(baseLogger)
+			mockLoader := initLoaderMock(sharedobjs.InitUnsupportedFileError(nil))
+			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil)
+
+			// First error should create warning
+			eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			assert.NoError(t, err)
+			assert.Nil(t, eventArgs)
 			assert.Empty(t, errChan)
 
 			// Error should be suppressed
