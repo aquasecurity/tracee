@@ -5920,6 +5920,10 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 
     neteventctx.bytes = 0; // event arg size: no payload by default (changed inside skb prog)
 
+    // initialize task context before submit since it will not be available when
+    // submitting the network event.
+    init_task_context(&eventctx->task, p.event->task, p.config->options);
+
     // TODO: log collisions
     bpf_map_update_elem(cgrpctxmap, &indexer, &neteventctx, BPF_NOEXIST);
 
