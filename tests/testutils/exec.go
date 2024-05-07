@@ -96,7 +96,8 @@ func ExecPinnedCmdWithTimeout(command string, timeout time.Duration) (int, error
 // ExecCmdBgWithSudoAndCtx executes a command with sudo in the background, and returns the PID of
 // the process and a channel to wait for the command to exit (Check RunningTracee object about how
 // to use this).
-func ExecCmdBgWithSudoAndCtx(ctx context.Context, command string) (int, chan error) {
+// The function will return an error if the command execution fails
+func ExecCmdBgWithSudoAndCtx(ctx context.Context, command string) (int, chan error, error) {
 	cmdStatus := make(chan error)
 
 	// Use sudo to raise privileges (sysattrs require capabilities).
@@ -107,20 +108,22 @@ func ExecCmdBgWithSudoAndCtx(ctx context.Context, command string) (int, chan err
 	command, args, err := ParseCmd(command)
 	if err != nil {
 		fmt.Printf("Failed to parse command\n")
-		cmdStatus <- &failedToParseCmd{command: command, err: err}
-		return -1, cmdStatus
+		close(cmdStatus)
+		return -1, cmdStatus, &failedToParseCmd{command: command, err: err}
 	}
 
 	cmd := exec.Command(command, args...) // CommandContext can't be used due to sudo privileges
 	cmd.Stderr = os.Stderr
 
 	pid := atomic.Int64{}
-	wg := sync.WaitGroup{}
+	commandStartWG := sync.WaitGroup{}
+	commandEndWG := sync.WaitGroup{}
 
 	// Start the command in a separate, pinned and locked goroutine (to a single CPU and OS thread).
 	// TODO: Adjust here so amount of CPUs is controlled ?
 
-	wg.Add(1)
+	var commandStartErr error
+	commandStartWG.Add(1)
 	go func(pid *atomic.Int64) {
 		// Will make the command to inherit the current process' CPU affinity.
 		_ = PinProccessToCPU()         // pin this goroutine to a specific CPU
@@ -131,22 +134,30 @@ func ExecCmdBgWithSudoAndCtx(ctx context.Context, command string) (int, chan err
 		if err != nil {
 			// This isn't a cmd exec failed error, but rather a cmd start failed error.
 			pid.Store(-1)
-			cmdStatus <- &failedToStartCommand{command: command, err: err}
+			commandStartErr = &failedToStartCommand{command: command, err: err}
 		} else {
+			commandEndWG.Add(1)
 			go func() {
 				// Note: cmd exec failed errors are async and happen here on cmd.Wait().
 				pid.Store(int64(cmd.Process.Pid)) // store PID
 				err := cmd.Wait()                 // block until command exits
-				pid.Store(-1)                     // so PID is non positive on failed executions
-				cmdStatus <- err                  // signal command exited
+				if err != nil {
+					pid.Store(-1) // so PID is non-positive on failed executions
+					cmdStatus <- err
+				}
+				commandEndWG.Done()
 			}()
 		}
 
 		time.Sleep(1 * time.Second) // wait 1 sec for the command to start (or not)
-		wg.Done()                   // signal command started
+		commandStartWG.Done()       // signal command started
 	}(&pid)
 
-	wg.Wait() // synchronize: wait for 1 sec feedback (cmd has started or not)
+	commandStartWG.Wait() // synchronize: wait for 1 sec feedback (cmd has started or not)
+	if commandStartErr != nil {
+		close(cmdStatus)
+		return -1, cmdStatus, commandStartErr
+	}
 
 	// Kill the command if the context is canceled (and signal that it was killed).
 
@@ -167,11 +178,12 @@ func ExecCmdBgWithSudoAndCtx(ctx context.Context, command string) (int, chan err
 				}
 			}
 		}
-		cmdStatus <- nil // signal command exited
+		commandEndWG.Wait()
+		close(cmdStatus) // signal command exited
 	}(&pid)
 
 	// Return the PID (or -1) and the channel to wait for the command to exit.
-	return int(pid.Load()), cmdStatus
+	return int(pid.Load()), cmdStatus, nil
 }
 
 // DiscoverChildProcesses discovers all child processes of a given PID.
