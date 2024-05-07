@@ -57,6 +57,11 @@ func (sig *e2eDNS) OnEvent(event protocol.Event) error {
 	}
 
 	if eventObj.EventName == "net_packet_dns" {
+		// validate tast context
+		if eventObj.HostName == "" {
+			return nil
+		}
+
 		dns, err := helpers.GetProtoDNSByName(eventObj, "proto_dns")
 		if err != nil {
 			return err

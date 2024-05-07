@@ -43,6 +43,11 @@ func (sig *e2eTCP) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "net_packet_tcp":
+		// validate tast context
+		if eventObj.HostName == "" {
+			return nil
+		}
+
 		src, err := helpers.GetTraceeStringArgumentByName(eventObj, "src")
 		if err != nil {
 			return err
