@@ -54,6 +54,11 @@ func (sig *e2eHTTP) OnEvent(event protocol.Event) error {
 	}
 
 	if eventObj.EventName == "net_packet_http" {
+		// validate tast context
+		if eventObj.HostName == "" {
+			return nil
+		}
+
 		http, err := helpers.GetProtoHTTPByName(eventObj, "proto_http")
 		if err != nil {
 			return err
