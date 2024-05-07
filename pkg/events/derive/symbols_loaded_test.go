@@ -202,27 +202,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			mockLoader := initLoaderMock(errors.New("loading error"))
 			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil)
 
-			// First error should be always returned
-			eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
-			assert.NoError(t, err)
-			assert.Nil(t, eventArgs)
-			assert.NotEmpty(t, errChan)
-			<-errChan
-			assert.Empty(t, errChan)
-
-			// Debug mode should return errors always
-			eventArgs, err = gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
-			assert.NoError(t, err)
-			assert.Nil(t, eventArgs)
-			assert.NotEmpty(t, errChan)
-		})
-		t.Run("No debug", func(t *testing.T) {
-			errChan := setMockLogger(logger.WarnLevel)
-			defer logger.SetLogger(baseLogger)
-			mockLoader := initLoaderMock(errors.New("loading error"))
-			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil)
-
-			// First error should create warning
+			// First error should always be logged for debug
 			eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
 			assert.NoError(t, err)
 			assert.Nil(t, eventArgs)
@@ -236,7 +216,25 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			assert.Nil(t, eventArgs)
 			assert.Empty(t, errChan)
 		})
-		t.Run("Non-ELF", func(t *testing.T) {
+		t.Run("No debug", func(t *testing.T) {
+			errChan := setMockLogger(logger.WarnLevel)
+			defer logger.SetLogger(baseLogger)
+			mockLoader := initLoaderMock(errors.New("loading error"))
+			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil)
+
+			// First error should create debug log, so we won't see it
+			eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			assert.NoError(t, err)
+			assert.Nil(t, eventArgs)
+			assert.Empty(t, errChan)
+
+			// Error should be suppressed
+			eventArgs, err = gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			assert.NoError(t, err)
+			assert.Nil(t, eventArgs)
+			assert.Empty(t, errChan)
+		})
+		t.Run("Non-ELF error", func(t *testing.T) {
 			errChan := setMockLogger(logger.DebugLevel)
 			defer logger.SetLogger(baseLogger)
 			mockLoader := initLoaderMock(sharedobjs.InitUnsupportedFileError(nil))
