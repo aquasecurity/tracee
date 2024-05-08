@@ -230,8 +230,14 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, kSyms *helpers.Ke
 		SignalSchedProcessFork:     NewTraceProbe(RawTracepoint, "sched:sched_process_fork", "sched_process_fork_signal"),
 		SignalSchedProcessExec:     NewTraceProbe(RawTracepoint, "sched:sched_process_exec", "sched_process_exec_signal"),
 		SignalSchedProcessExit:     NewTraceProbe(RawTracepoint, "sched:sched_process_exit", "sched_process_exit_signal"),
-		ExecuteFinished:            NewTraceProbe(Tracepoint, "syscalls:sys_exit_execve", "execute_finished"),
-		ExecuteAtFinished:          NewTraceProbe(Tracepoint, "syscalls:sys_exit_execveat", "execute_finished"),
+		ExecuteFinishedX86:         NewTraceProbe(KretProbe, "__x64_sys_execve", "execute_finished"),
+		ExecuteAtFinishedX86:       NewTraceProbe(KretProbe, "__x64_sys_execveat", "execute_finished"),
+		ExecuteFinishedCompatX86:   NewTraceProbe(KretProbe, "__ia32_compat_sys_execve", "execute_finished"),
+		ExecuteAtFinishedCompatX86: NewTraceProbe(KretProbe, "__ia32_compat_sys_execveat", "execute_finished"),
+		ExecuteFinishedARM:         NewTraceProbe(KretProbe, "__arm64_sys_execve", "execute_finished"),
+		ExecuteAtFinishedARM:       NewTraceProbe(KretProbe, "__arm64_sys_execveat", "execute_finished"),
+		ExecuteFinishedCompatARM:   NewTraceProbe(KretProbe, "__arm64_compat_sys_execve", "execute_finished"),
+		ExecuteAtFinishedCompatARM: NewTraceProbe(KretProbe, "__arm64_compat_sys_execveat", "execute_finished"),
 	}
 
 	if !netEnabled {

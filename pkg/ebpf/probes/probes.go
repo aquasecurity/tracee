@@ -139,6 +139,12 @@ const (
 	SignalSchedProcessFork
 	SignalSchedProcessExec
 	SignalSchedProcessExit
-	ExecuteFinished
-	ExecuteAtFinished
+	ExecuteFinishedX86
+	ExecuteAtFinishedX86
+	ExecuteFinishedCompatX86
+	ExecuteAtFinishedCompatX86
+	ExecuteFinishedARM
+	ExecuteAtFinishedARM
+	ExecuteFinishedCompatARM
+	ExecuteAtFinishedCompatARM
 )
