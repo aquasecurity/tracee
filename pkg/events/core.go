@@ -12896,8 +12896,15 @@ var CoreEvents = map[ID]Definition{
 		internal: true,
 		dependencies: Dependencies{
 			probes: []Probe{
-				{handle: probes.ExecuteFinished, required: false},   // TODO: Change to required once fallback are supported
-				{handle: probes.ExecuteAtFinished, required: false}, // TODO: Change to required once fallback are supported
+				// TODO: Change all of these probes to tracepoints (requires debugfs)
+				{handle: probes.ExecuteFinishedX86, required: false},
+				{handle: probes.ExecuteAtFinishedX86, required: false},
+				{handle: probes.ExecuteFinishedCompatX86, required: false},
+				{handle: probes.ExecuteAtFinishedCompatX86, required: false},
+				{handle: probes.ExecuteFinishedARM, required: false},
+				{handle: probes.ExecuteAtFinishedARM, required: false},
+				{handle: probes.ExecuteFinishedCompatARM, required: false},
+				{handle: probes.ExecuteAtFinishedCompatARM, required: false},
 			},
 		},
 	},
