@@ -5042,17 +5042,17 @@ int BPF_KPROBE(trace_security_bprm_creds_for_exec2)
     return execute_failed_tail2(ctx);
 }
 
-SEC("tracepoint/execute_finished")
-int execute_finished(struct sys_exit_tracepoint_args *args)
+SEC("kretprobe/execute_finished")
+int BPF_KPROBE(execute_finished)
 {
     program_data_t p = {};
-    if (!init_program_data(&p, args, EXECUTE_FINISHED))
+    if (!init_program_data(&p, ctx, EXECUTE_FINISHED))
         return -1;
 
     if (!evaluate_scope_filters(&p))
         return 0;
 
-    long exec_ret = args->ret;
+    long exec_ret = PT_REGS_RC(ctx);
     return events_perf_submit(&p, exec_ret);
 }
 
