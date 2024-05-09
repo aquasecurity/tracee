@@ -20,14 +20,30 @@ type DynamicSymbolsLoader interface {
 	GetImportedSymbols(info ObjInfo) (map[string]bool, error)
 }
 
-type dynamicSymbols struct {
+type DynamicSymbols struct {
 	Exported map[string]bool
 	Imported map[string]bool
 }
 
-func NewSOSymbols() dynamicSymbols {
-	return dynamicSymbols{
+func NewSOSymbols() DynamicSymbols {
+	return DynamicSymbols{
 		Exported: make(map[string]bool),
 		Imported: make(map[string]bool),
 	}
+}
+
+type UnsupportedFileError struct {
+	err error
+}
+
+func InitUnsupportedFileError(err error) *UnsupportedFileError {
+	return &UnsupportedFileError{err: err}
+}
+
+func (fileTypeErr *UnsupportedFileError) Error() string {
+	return fileTypeErr.err.Error()
+}
+
+func (fileTypeErr *UnsupportedFileError) Unwrap() error {
+	return fileTypeErr.err
 }
