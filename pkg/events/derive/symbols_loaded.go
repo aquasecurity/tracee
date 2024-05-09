@@ -1,6 +1,7 @@
 package derive
 
 import (
+	"errors"
 	"path"
 	"strings"
 
@@ -133,6 +134,12 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 	// This error happens frequently in some environments, so we need to silence it to reduce spam.
 	// Either way, this is not a critical error so we don't return it.
 	if err != nil {
+		// High level languages like Java might load non-ELF files
+		// There is no need to log errors for such cases
+		var notElfErr *sharedobjs.UnsupportedFileError
+		if errors.As(err, &notElfErr) {
+			return nil, nil
+		}
 		// TODO: rate limit frequent errors for overloaded envs
 		_, ok := symbsLoadedGen.returnedErrors[err.Error()]
 		if !ok {
