@@ -3,6 +3,7 @@
 #
 name: Performance Pipeline
 on:
+  workflow_dispatch: {}
   push:
     branches:
       - main
