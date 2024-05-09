@@ -19,7 +19,7 @@ jobs:
     runs-on: [self-hosted, perf]
     steps:
       - name: AWS Authentication
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        uses: aws-actions/configure-aws-credentials@50ac8dd1e1b10d09dac7b8727528b91bed831ac0 # v3.0.2
         env:
           AWS_PROFILE: ${{ secrets.AWS_PROFILE }}
         with:
@@ -40,10 +40,12 @@ jobs:
           docker push $PR_REPO:$GITHUB_SHA
   network-benchmark:
     name: Network Performance Gate
+    needs:
+      - publish-pr-image
     runs-on: [self-hosted, perf]
     steps:
       - name: AWS Authentication
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        uses: aws-actions/configure-aws-credentials@50ac8dd1e1b10d09dac7b8727528b91bed831ac0 # v3.0.2
         env:
           AWS_PROFILE: ${{ secrets.AWS_PROFILE }}
         with:
