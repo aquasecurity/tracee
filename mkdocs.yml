@@ -46,7 +46,6 @@ nav:
                             - Dropped Executable: docs/events/builtin/signatures/dropped_executable.md
                             - Dynamic Code Loading: docs/events/builtin/signatures/dynamic_code_loading.md
                             - Fileless Execution: docs/events/builtin/signatures/fileless_execution.md
-                            - Format: docs/events/builtin/signatures/format.md
                             - Hidden File Created: docs/events/builtin/signatures/hidden_file_created.md
                             - Illegitimate Shell: docs/events/builtin/signatures/illegitimate_shell.md
                             - K8S API Connection: docs/events/builtin/signatures/kubernetes_api_connection.md
