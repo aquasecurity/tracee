@@ -11,18 +11,18 @@ import (
 )
 
 type soCacheMock struct {
-	get func(ObjID) (*dynamicSymbols, bool)
-	add func(obj ObjInfo, dynamicSymbols *dynamicSymbols)
+	get func(ObjID) (*DynamicSymbols, bool)
+	add func(obj ObjInfo, dynamicSymbols *DynamicSymbols)
 }
 
-func (s soCacheMock) Get(identification ObjID) (*dynamicSymbols, bool) {
+func (s soCacheMock) Get(identification ObjID) (*DynamicSymbols, bool) {
 	if s.get != nil {
 		return s.get(identification)
 	}
 	return nil, false
 }
 
-func (s soCacheMock) Add(obj ObjInfo, dynamicSymbols *dynamicSymbols) {
+func (s soCacheMock) Add(obj ObjInfo, dynamicSymbols *DynamicSymbols) {
 	if s.add != nil {
 		s.add(obj, dynamicSymbols)
 	}
@@ -38,7 +38,7 @@ var testLoadedObjectInfo = ObjInfo{
 	MountNS: 1,
 }
 
-var testDynamicSymbols = &dynamicSymbols{
+var testDynamicSymbols = &DynamicSymbols{
 	Exported: map[string]bool{"open": true, "close": true},
 	Imported: map[string]bool{"syscall": true},
 }
@@ -49,11 +49,11 @@ func TestHostSharedObjectSymbolsLoader_GetDynamicSymbols(t *testing.T) {
 	t.Run("Happy flow", func(t *testing.T) {
 		t.Parallel()
 
-		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
+		failLoadingFunc := func(path string) (*DynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
 		cache := soCacheMock{
-			get: func(identification ObjID) (*dynamicSymbols, bool) {
+			get: func(identification ObjID) (*DynamicSymbols, bool) {
 				return testDynamicSymbols, true
 			},
 		}
@@ -69,7 +69,7 @@ func TestHostSharedObjectSymbolsLoader_GetDynamicSymbols(t *testing.T) {
 	t.Run("Sad flow", func(t *testing.T) {
 		t.Parallel()
 
-		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
+		failLoadingFunc := func(path string) (*DynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
 		cache := soCacheMock{}
@@ -89,11 +89,11 @@ func TestHostSharedObjectSymbolsLoader_GetExportedSymbols(t *testing.T) {
 	t.Run("Happy flow", func(t *testing.T) {
 		t.Parallel()
 
-		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
+		failLoadingFunc := func(path string) (*DynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
 		cache := soCacheMock{
-			get: func(identification ObjID) (*dynamicSymbols, bool) {
+			get: func(identification ObjID) (*DynamicSymbols, bool) {
 				return testDynamicSymbols, true
 			},
 		}
@@ -109,7 +109,7 @@ func TestHostSharedObjectSymbolsLoader_GetExportedSymbols(t *testing.T) {
 	t.Run("Sad flow", func(t *testing.T) {
 		t.Parallel()
 
-		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
+		failLoadingFunc := func(path string) (*DynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
 		cache := soCacheMock{}
@@ -129,11 +129,11 @@ func TestHostSharedObjectSymbolsLoader_GetImportedSymbols(t *testing.T) {
 	t.Run("Happy flow", func(t *testing.T) {
 		t.Parallel()
 
-		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
+		failLoadingFunc := func(path string) (*DynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
 		cache := soCacheMock{
-			get: func(identification ObjID) (*dynamicSymbols, bool) {
+			get: func(identification ObjID) (*DynamicSymbols, bool) {
 				return testDynamicSymbols, true
 			},
 		}
@@ -149,7 +149,7 @@ func TestHostSharedObjectSymbolsLoader_GetImportedSymbols(t *testing.T) {
 	t.Run("Sad flow", func(t *testing.T) {
 		t.Parallel()
 
-		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
+		failLoadingFunc := func(path string) (*DynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
 		cache := soCacheMock{}
@@ -169,11 +169,11 @@ func TestHostSharedObjectSymbolsLoader_loadSOSymbols(t *testing.T) {
 	t.Run("Cached SO", func(t *testing.T) {
 		t.Parallel()
 
-		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
+		failLoadingFunc := func(path string) (*DynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
 		cache := soCacheMock{
-			get: func(identification ObjID) (*dynamicSymbols, bool) {
+			get: func(identification ObjID) (*DynamicSymbols, bool) {
 				return testDynamicSymbols, true
 			},
 		}
@@ -189,12 +189,12 @@ func TestHostSharedObjectSymbolsLoader_loadSOSymbols(t *testing.T) {
 	t.Run("Uncached non existing SO", func(t *testing.T) {
 		t.Parallel()
 
-		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
+		failLoadingFunc := func(path string) (*DynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
-		cachedSymbols := make(map[ObjInfo]*dynamicSymbols)
+		cachedSymbols := make(map[ObjInfo]*DynamicSymbols)
 		cache := soCacheMock{
-			add: func(obj ObjInfo, dynamicSymbols *dynamicSymbols) {
+			add: func(obj ObjInfo, dynamicSymbols *DynamicSymbols) {
 				cachedSymbols[obj] = dynamicSymbols
 			},
 		}
@@ -211,14 +211,14 @@ func TestHostSharedObjectSymbolsLoader_loadSOSymbols(t *testing.T) {
 	t.Run("Uncached existing SO", func(t *testing.T) {
 		t.Parallel()
 
-		cachedSymbols := make(map[ObjInfo]*dynamicSymbols)
+		cachedSymbols := make(map[ObjInfo]*DynamicSymbols)
 		cache := soCacheMock{
-			add: func(obj ObjInfo, dynamicSymbols *dynamicSymbols) {
+			add: func(obj ObjInfo, dynamicSymbols *DynamicSymbols) {
 				cachedSymbols[obj] = dynamicSymbols
 			},
 		}
 		soLoader := HostSymbolsLoader{
-			loadingFunc: func(path string) (*dynamicSymbols, error) {
+			loadingFunc: func(path string) (*DynamicSymbols, error) {
 				return testDynamicSymbols, nil
 			},
 			soCache: cache,
@@ -238,7 +238,7 @@ func TestParseDynamicSymbols(t *testing.T) {
 	testCases := []struct {
 		Name          string
 		Input         []elf.Symbol
-		ExpecteResult dynamicSymbols
+		ExpecteResult DynamicSymbols
 	}{
 		{
 			Name:          "No symbols",
@@ -248,7 +248,7 @@ func TestParseDynamicSymbols(t *testing.T) {
 		{
 			Name:  "Full details import symbols",
 			Input: []elf.Symbol{{Name: "__ctype_toupper_loc", Info: 18, Section: elf.SHN_UNDEF + 12, Version: "GLIBC_2.3", Library: "libc.so.6"}},
-			ExpecteResult: dynamicSymbols{
+			ExpecteResult: DynamicSymbols{
 				Exported: make(map[string]bool),
 				Imported: map[string]bool{
 					"__ctype_toupper_loc": true,
@@ -258,7 +258,7 @@ func TestParseDynamicSymbols(t *testing.T) {
 		{
 			Name:  "Missing details import symbol",
 			Input: []elf.Symbol{{Name: "cap_to_text", Info: 18, Section: elf.SHN_UNDEF}},
-			ExpecteResult: dynamicSymbols{
+			ExpecteResult: DynamicSymbols{
 				Exported: make(map[string]bool),
 				Imported: map[string]bool{
 					"cap_to_text": true,
@@ -268,7 +268,7 @@ func TestParseDynamicSymbols(t *testing.T) {
 		{
 			Name:  "Export import symbol",
 			Input: []elf.Symbol{{Name: "_obstack_memory_used", Info: 18, Section: elf.SHN_UNDEF + 12, Value: 55424, Size: 38}},
-			ExpecteResult: dynamicSymbols{
+			ExpecteResult: DynamicSymbols{
 				Exported: map[string]bool{
 					"_obstack_memory_used": true,
 				},
@@ -282,7 +282,7 @@ func TestParseDynamicSymbols(t *testing.T) {
 				{Name: "cap_to_text", Info: 18, Section: elf.SHN_UNDEF},
 				{Name: "_obstack_memory_used", Info: 18, Section: elf.SHN_UNDEF + 12, Value: 55424, Size: 38},
 			},
-			ExpecteResult: dynamicSymbols{
+			ExpecteResult: DynamicSymbols{
 				Exported: map[string]bool{
 					"_obstack_memory_used": true,
 				},
