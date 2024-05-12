@@ -103,6 +103,7 @@ const (
 	SecurityBpfProg
 	ProcessExecuteFailed
 	SecurityPathNotify
+	SetFsPwd
 	HiddenKernelModuleSeeker
 	ModuleLoad
 	ModuleFree
@@ -13008,6 +13009,31 @@ var CoreEvents = map[ID]Definition{
 			{Type: "dev_t", Name: "dev"},
 			{Type: "u64", Name: "mask"},
 			{Type: "unsigned int", Name: "obj_type"},
+		},
+	},
+	SetFsPwd: {
+		id:      SetFsPwd,
+		id32Bit: Sys32Undefined,
+		name:    "set_fs_pwd",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SetFsPwd, required: true},
+				{handle: probes.SyscallEnter__Internal, required: true},
+			},
+			tailCalls: []TailCall{
+				{
+					"sys_enter_init_tail",
+					"sys_enter_init",
+					[]uint32{
+						uint32(Chdir),
+					},
+				},
+			},
+		},
+		sets: []string{"syscalls"},
+		params: []trace.ArgMeta{
+			{Type: "const char*", Name: "unresolved_path"},
+			{Type: "const char*", Name: "resolved_path"},
 		},
 	},
 	//

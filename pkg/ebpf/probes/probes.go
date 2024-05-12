@@ -129,6 +129,7 @@ const (
 	ExecBinprmRet
 	SecurityPathNotify
 	SecurityBprmCredsForExec
+	SetFsPwd
 	HiddenKernelModuleSeeker
 	TpProbeRegPrioMayExist
 	HiddenKernelModuleVerifier

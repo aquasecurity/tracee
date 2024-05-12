@@ -20,6 +20,7 @@ var ExportedSignatures = []detect.Signature{
 	&e2eDnsDataSource{},
 	&e2eWritableDatasourceSig{},
 	&e2eSecurityPathNotify{},
+	&e2eSetFsPwd{},
 }
 
 var ExportedDataSources = []detect.DataSource{
