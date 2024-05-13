@@ -1,6 +1,8 @@
 package derive
 
 import (
+	"errors"
+
 	"github.com/hashicorp/golang-lru/simplelru"
 	"golang.org/x/exp/maps"
 
@@ -182,15 +184,19 @@ func (gen *SymbolsCollisionArgsGenerator) findShObjsCollisions(
 		// get exported symbols from the shared object BEING loaded
 		loadingShObj.exportedSymbols, err = gen.soLoader.GetExportedSymbols(loadingShObj.ObjInfo)
 		if err != nil {
+			// High level languages like Java might load non-ELF files
+			// There is no need to log errors for such cases
+			var notElfErr *sharedobjs.UnsupportedFileError
+			if errors.As(err, &notElfErr) {
+				return nil, nil
+			}
 			// TODO: rate limit frequent errors for overloaded envs
 			_, ok := gen.returnedErrorsMap[err.Error()]
 			if !ok {
 				gen.returnedErrorsMap[err.Error()] = true
-				logger.Warnw("symbols_loaded", "object loaded", loadingShObj.ObjInfo, "error", err.Error())
-			} else {
 				logger.Debugw("symbols_loaded", "object loaded", loadingShObj.ObjInfo, "error", err.Error())
 			}
-			return nil, errfmt.WrapError(err)
+			return nil, nil
 		}
 		loadingShObj.FilterSymbols(gen.symbolsBlacklistMap)    // del symbols NOT in blacklist
 		loadingShObj.FilterOutSymbols(gen.symbolsWhitelistMap) // del symbols IN the white list
