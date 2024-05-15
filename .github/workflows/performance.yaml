@@ -46,7 +46,7 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           PERF_CLUSTER: ${{ secrets.PERF_CLUSTER_NAME }}
         run: |
-          aws eks update-kubeconfig --region $AWS_REGION --name my-cluster
+          aws eks update-kubeconfig --region $AWS_REGION --name $PERF_CLUSTER
           ./performance/benchmark/network/bench.sh $PR_REPO:$GITHUB_SHA
       # Download previous benchmark result from cache (if exists)
       - name: Download previous benchmark data
