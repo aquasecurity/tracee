@@ -1,7 +1,17 @@
 #!/bin/bash -x
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+BENCHMARK_POLICY="$SCRIPT_DIR/../common/bench.yaml"
+LOADGENERATOR_YAML="$SCRIPT_DIR/manifests/loadgenerator.yaml"
+MICROSVCS_YAML="$SCRIPT_DIR/manifests/microservices.yaml"
+TRACEE_YAML="$SCRIPT_DIR/../common/tracee.yaml"
+
 CleanUp() {
-    kubectl delete -f manifests/policies/bench.yaml -f manifests/loadgenerator.yaml -f manifests/microservices.yaml -f manifests/tracee.yaml
+    kubectl delete \
+    -f $BENCHMARK_POLICY \
+    -f $LOADGENERATOR_YAML \
+    -f $MICROSVCS_YAML \
+    -f $TRACEE_YAML
     exit 1
 }
 
@@ -22,7 +32,7 @@ trap CleanUp SIGINT SIGTERM SIGTSTP ERR
 benchmark_node=$(kubectl get nodes -l type=bench,benchmark-test=boutique-msvc | awk '{print $1}' | tail -n 1)
 base_node=$(kubectl get nodes -l type=base,benchmark-test=boutique-msvc | awk '{print $1}' | tail -n 1)
 
-kubectl apply -f manifests/policies/bench.yaml -f manifests/microservices.yaml -f manifests/tracee.yaml
+kubectl apply -f $BENCHMARK_POLICY -f $MICROSVCS_YAML -f $TRACEE_YAML
 kubectl patch daemonset tracee -p '{"spec":{"template":{"spec":{"containers":[{"name":"tracee","image":'\"$TRACEE_IMAGE\"'}]}}}}'
 
 daemonsets=("adservice" "cartservice" "checkoutservice" "currencyservice" "emailservice" "frontend" "paymentservice" "productcatalogservice" "recommendationservice" "redis-cart" "shippingservice" "tracee")
@@ -37,7 +47,7 @@ wait
 
 # start loadgenerator
 
-kubectl apply -f manifests/loadgenerator.yaml
+kubectl apply -f $LOADGENERATOR_YAML
 
 # stabilize again...
 kubectl rollout status daemonset loadgenerator
@@ -61,8 +71,8 @@ printf '%s = %f%%\n' "overhead" $overhead
 
 # create json output
 jq -n '{name: $bench_name, value: $bench_v, unit: "%"}' \
-    --arg bench_name $BENCHMARK_NAME \
-    --arg bench_v $overhead > bench_output.json
+--arg bench_name $BENCHMARK_NAME \
+--arg bench_v $overhead > bench_output.json
 
 # call cleanup manually
 

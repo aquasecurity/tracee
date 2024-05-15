@@ -51,9 +51,7 @@ jobs:
         # 4. Move back to the base repository path
         run: |
           aws eks update-kubeconfig --region $AWS_REGION --name $PERF_CLUSTER
-          cd ./performance/benchmark/network
-          ./bench.sh $PR_REPO:$GITHUB_SHA
-          cd ../../..
+          make bench-network
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@1846227a307d8c0149b960b986d46f8f4c95db0c #v1.20.1
         with:
