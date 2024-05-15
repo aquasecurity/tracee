@@ -6,12 +6,16 @@ LOADGENERATOR_YAML="$SCRIPT_DIR/manifests/loadgenerator.yaml"
 MICROSVCS_YAML="$SCRIPT_DIR/manifests/microservices.yaml"
 TRACEE_YAML="$SCRIPT_DIR/../common/tracee.yaml"
 
-CleanUp() {
+Cleanup() {
     kubectl delete \
     -f $BENCHMARK_POLICY \
     -f $LOADGENERATOR_YAML \
     -f $MICROSVCS_YAML \
     -f $TRACEE_YAML
+}
+
+CleanupOnError() {
+    Cleanup
     exit 1
 }
 
@@ -25,7 +29,7 @@ BENCHMARK_NAME="tracee_network_benchmark"
 
 # add cleanup procedure
 
-trap CleanUp SIGINT SIGTERM SIGTSTP ERR
+trap CleanupOnError SIGINT SIGTERM SIGTSTP ERR
 
 # setup benchmark
 
@@ -74,6 +78,7 @@ jq -n '{name: $bench_name, value: $bench_v, unit: "%"}' \
 --arg bench_name $BENCHMARK_NAME \
 --arg bench_v $overhead > bench_output.json
 
-# call cleanup manually
+# Cleanup
 
-CleanUp
+Cleanup
+
