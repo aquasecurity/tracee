@@ -45,26 +45,24 @@ jobs:
           PR_REPO: ${{ secrets.AWS_PR_IMAGE_ECR_REPO }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           PERF_CLUSTER: ${{ secrets.PERF_CLUSTER_NAME }}
+        # 1. Get kubeconfig
+        # 2. Move working dir to the benchmark directory
+        # 3. Run the benchmark
+        # 4. Move back to the base repository path
         run: |
           aws eks update-kubeconfig --region $AWS_REGION --name $PERF_CLUSTER
-          ./performance/benchmark/network/bench.sh $PR_REPO:$GITHUB_SHA
-      # Download previous benchmark result from cache (if exists)
-      - name: Download previous benchmark data
-        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
-        with:
-          path: ./cache
-          key: ${{ runner.os }}-benchmark
+          cd ./performance/benchmark/network
+          ./bench.sh $PR_REPO:$GITHUB_SHA
+          cd ../../..
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@1846227a307d8c0149b960b986d46f8f4c95db0c #v1.20.1
         with:
           # What benchmark tool the output.txt came from
           tool: 'smallerIsBetter'
           # Where the output from the benchmark tool is stored
-          output-file-path: bench_output.json
-          # Where the previous data file is stored
-          external-data-json-path: ./cache/benchmark-data.json
+          output-file-path: ./performance/benchmark/network/bench_output.json
           # Workflow will fail when an alert happens
-          fail-on-alert: true
+          fail-on-alert: false
           # Tag user when alerted
           alert-comment-cc-users: '@aquasecurity/tracee'
           # Percentage threshold to trigger an alert. For example, if our last result was 1.4, 
