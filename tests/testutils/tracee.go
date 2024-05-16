@@ -80,9 +80,8 @@ func (r *RunningTracee) Start(timeout time.Duration) (<-chan TraceeStatus, error
 		goto exit
 	}
 
-	r.pid, r.cmdStatus = ExecCmdBgWithSudoAndCtx(r.ctx, r.cmdLine)
-	if r.pid < 0 {
-		err = <-r.cmdStatus   // receive error from the command
+	r.pid, r.cmdStatus, err = ExecCmdBgWithSudoAndCtx(r.ctx, r.cmdLine)
+	if err != nil {
 		imReady(TraceeFailed) // ready: failed
 		goto exit
 	}
@@ -104,13 +103,17 @@ exit:
 }
 
 // Stop stops the tracee process.
-func (r *RunningTracee) Stop() error {
+func (r *RunningTracee) Stop() []error {
 	if r.pid == 0 {
 		return nil // cmd was never started
 	}
 
 	r.cancel()
-	return <-r.cmdStatus // will receive nil if the process exited successfully
+	var errs []error
+	for err := range r.cmdStatus {
+		errs = append(errs, err)
+	}
+	return errs
 }
 
 // IsReady checks if the tracee process is ready.
