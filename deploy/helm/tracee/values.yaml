@@ -57,7 +57,7 @@ affinity: {}
 webhook: ""
 
 # extraWebhookTemplates is a list of additional webhook templates that can be used by
-# the traceeConfig or config.output.webhook fields
+# the configFile or config.output.webhook fields
 # in the example below, the goTemplate content will be mounted as /tracee/templates/template1.tmpl
 extraWebhookTemplates: []
 # - name: "template1.tmpl"
@@ -74,8 +74,12 @@ extraWebhookTemplates: []
 #     }
 #   }
 
-traceeConfig: {}
+# The configFile field specifies the Tracee configuration file path and can be
+# changed directly via CLI command using --set-file configFile=myconfig.yaml
+configFile: {}
 
+# This config field holds default values for Tracee configuration and each field
+# can be changed individually via CLI command, using --set config.field=value
 config:
   blobPerfBufferSize: ""
   perfBufferSize: 1024
@@ -101,7 +105,7 @@ config:
       execHash: dev-inode
       sortEvents: false
     # uncomment config.output.webhook to enable a single webhook
-    # to configure multiple webhooks, use the traceeConfig field
+    # to configure multiple webhooks, use the configFile field
     # webhook:
     #   name: "webhook1"
     #   contentType: "application/json"

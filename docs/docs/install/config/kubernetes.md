@@ -57,5 +57,5 @@ or to provide a complete config file:
 ```
  helm install tracee aqua/tracee \
         --namespace tracee --create-namespace \
-        --set-file traceeConfig=myconfig.yaml
+        --set-file configFile=myconfig.yaml
 ```
