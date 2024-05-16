@@ -11,12 +11,17 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"gotest.tools/assert"
 
 	"github.com/aquasecurity/tracee/tests/testutils"
 )
 
 func Test_TraceeCapture(t *testing.T) {
+	// Make sure we don't leak any goroutines since we run Tracee many times in this test.
+	// If a test case fails, ignore the leak since it's probably caused by the aborted test.
+	defer goleak.VerifyNone(t)
+
 	if !testutils.IsSudoCmdAvailableForThisUser() {
 		t.Skip("skipping: sudo command is not available for this user")
 	}
@@ -90,12 +95,12 @@ func Test_TraceeCapture(t *testing.T) {
 			err := tc.test(t, captureDir, homeDir)
 			if err != nil {
 				t.Errorf("test %s failed: %v", tc.name, err)
-				runErr = running.Stop() // stop tracee
-				require.NoError(t, runErr)
+				cmdErrs := running.Stop() // stop tracee
+				require.Empty(t, cmdErrs)
 				t.Fail()
 			}
-			runErr = running.Stop() // stop tracee
-			require.NoError(t, runErr)
+			cmdErrs := running.Stop() // stop tracee
+			require.Empty(t, cmdErrs)
 		})
 	}
 }
