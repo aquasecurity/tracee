@@ -6,9 +6,9 @@ metadata:
   labels:
     {{- include "tracee.labels" . | nindent 4 }}
 data:
-  {{- if .Values.traceeConfig }}
+  {{- if .Values.configFile }}
   config.yaml:
-    {{- toYaml .Values.traceeConfig | nindent 4 }}
+    {{- toYaml .Values.configFile | nindent 4 }}
   {{- else }}
   config.yaml: |-
     cache:
