@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 
 	"github.com/aquasecurity/tracee/tests/testutils"
 )
@@ -97,6 +98,10 @@ func checkIfPprofExist() error {
 
 // TestMetricsExist tests if the metrics endpoint returns all metrics.
 func TestMetricsandPprofExist(t *testing.T) {
+	// Make sure we don't leak any goroutines since we run Tracee many times in this test.
+	// If a test case fails, ignore the leak since it's probably caused by the aborted test.
+	defer goleak.VerifyNone(t)
+
 	if !testutils.IsSudoCmdAvailableForThisUser() {
 		t.Skip("skipping: sudo command is not available for this user")
 	}
@@ -107,11 +112,6 @@ func TestMetricsandPprofExist(t *testing.T) {
 	// start tracee
 	ready, runErr := running.Start(testutils.TraceeDefaultStartupTimeout)
 	require.NoError(t, runErr)
-
-	t.Cleanup(func() {
-		runErr = running.Stop() // stop tracee
-		require.NoError(t, runErr)
-	})
 
 	r := <-ready // block until tracee is ready (or not)
 	switch r {
@@ -130,4 +130,7 @@ func TestMetricsandPprofExist(t *testing.T) {
 	// check if all metrics exist
 	require.NoError(t, metricsErr)
 	require.NoError(t, pprofErr)
+
+	cmdErrs := running.Stop() // stop tracee
+	require.Empty(t, cmdErrs)
 }
