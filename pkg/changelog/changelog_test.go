@@ -1,84 +1,162 @@
-package changelog
+package changelog_test
 
 import (
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/aquasecurity/tracee/pkg/changelog"
 )
 
 func TestChangelog(t *testing.T) {
 	t.Parallel()
 
-	cl := NewChangelog[int]()
+	t.Run("GetCurrent on an empty changelog", func(t *testing.T) {
+		cl := changelog.NewChangelog[int](3)
 
-	// Test GetCurrent on an empty changelog
-	if cl.GetCurrent() != 0 {
-		t.Errorf("GetCurrent on empty changelog should return 0")
-	}
+		// Test GetCurrent on an empty changelog
+		assert.Zero(t, cl.GetCurrent())
+	})
 
-	// Test SetCurrent and GetCurrent
-	cl.SetCurrent(42)
-	if cl.GetCurrent() != 42 {
-		t.Errorf("GetCurrent after SetCurrent should return 42")
-	}
+	t.Run("Set and get", func(t *testing.T) {
+		cl := changelog.NewChangelog[int](3)
+		testVal := 42
 
-	// Test Get on an empty changelog
+		cl.SetCurrent(testVal)
+		assert.Equal(t, testVal, cl.GetCurrent())
+	})
 
-	cl = NewChangelog[int]()
+	t.Run("Get on an empty changelog", func(t *testing.T) {
+		cl := changelog.NewChangelog[int](3)
 
-	if cl.Get(time.Now()) != 0 {
-		t.Errorf("Get on empty changelog should return 0")
-	}
+		assert.Zero(t, cl.GetCurrent())
+	})
 
-	// Test 1 second interval among changes
+	t.Run("Test 1 second interval among changes", func(t *testing.T) {
+		cl := changelog.NewChangelog[int](3)
 
-	cl = NewChangelog[int]()
+		cl.SetCurrent(1)
+		time.Sleep(2 * time.Second)
+		cl.SetCurrent(2)
+		time.Sleep(2 * time.Second)
+		cl.SetCurrent(3)
 
-	cl.SetCurrent(1)
-	time.Sleep(2 * time.Second)
-	cl.SetCurrent(2)
-	time.Sleep(2 * time.Second)
-	cl.SetCurrent(3)
+		now := time.Now()
 
-	now := time.Now()
+		assert.Equal(t, 1, cl.Get(now.Add(-4*time.Second)))
+		assert.Equal(t, 2, cl.Get(now.Add(-2*time.Second)))
+		assert.Equal(t, 3, cl.Get(now))
+	})
 
-	if cl.Get(now.Add(-4*time.Second)) != 1 {
-		t.Errorf("Get on changelog should return 1")
-	}
-	if cl.Get(now.Add(-2*time.Second)) != 2 {
-		t.Errorf("Get on changelog should return 2")
-	}
-	if cl.Get(now) != 3 {
-		t.Errorf("Get on changelog should return 3")
-	}
+	t.Run("Test 100 milliseconds interval among changes", func(t *testing.T) {
+		cl := changelog.NewChangelog[int](3)
 
-	// Test 100 milliseconds interval among changes
-	// NOTE: If this test becomes flaky we can change/remove it.
+		cl.SetCurrent(1)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(2)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(3)
 
-	cl = NewChangelog[int]()
+		now := time.Now()
 
-	cl.SetCurrent(1)
-	time.Sleep(100 * time.Millisecond)
-	cl.SetCurrent(2)
-	time.Sleep(100 * time.Millisecond)
-	cl.SetCurrent(3)
+		assert.Equal(t, 1, cl.Get(now.Add(-200*time.Millisecond)))
+		assert.Equal(t, 2, cl.Get(now.Add(-100*time.Millisecond)))
+		assert.Equal(t, 3, cl.Get(now))
+	})
 
-	now = time.Now()
+	t.Run("Test getting all values at once", func(t *testing.T) {
+		cl := changelog.NewChangelog[int](3)
 
-	if cl.Get(now.Add(-200*time.Millisecond)) != 1 {
-		t.Errorf("Get on changelog should return 1")
-	}
-	if cl.Get(now.Add(-100*time.Millisecond)) != 2 {
-		t.Errorf("Get on changelog should return 2")
-	}
-	if cl.Get(now) != 3 {
-		t.Errorf("Get on changelog should return 3")
-	}
+		cl.SetCurrent(1)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(2)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(3)
 
-	// Test getting all values at once
+		expected := []int{1, 2, 3}
+		assert.Equal(t, expected, cl.GetAll())
+	})
 
-	expected := []int{1, 2, 3}
-	if !reflect.DeepEqual(cl.GetAll(), expected) {
-		t.Errorf("GetAll should return %v, but got %v", expected, cl.GetAll())
-	}
+	t.Run("Pass max size wit repeated values", func(t *testing.T) {
+		cl := changelog.NewChangelog[int](3)
+
+		cl.SetCurrent(1)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(2)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(2)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(3)
+
+		now := time.Now()
+		assert.Equal(t, 1, cl.Get(now.Add(-300*time.Millisecond)))
+		assert.Equal(t, 2, cl.Get(now.Add(-200*time.Millisecond)))
+		assert.Equal(t, 2, cl.Get(now.Add(-100*time.Millisecond)))
+		assert.Equal(t, 3, cl.Get(now))
+		assert.Len(t, cl.GetAll(), 3)
+	})
+
+	t.Run("Pass max size with unique values", func(t *testing.T) {
+		cl := changelog.NewChangelog[int](3)
+
+		cl.SetCurrent(1)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(2)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(3)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(4)
+
+		now := time.Now()
+		assert.Equal(t, 0, cl.Get(now.Add(-300*time.Millisecond)))
+		assert.Equal(t, 2, cl.Get(now.Add(-200*time.Millisecond)))
+		assert.Equal(t, 3, cl.Get(now.Add(-100*time.Millisecond)))
+		assert.Equal(t, 4, cl.Get(now.Add(time.Millisecond)))
+		assert.Len(t, cl.GetAll(), 3)
+	})
+
+	t.Run("Pass max size with new old value", func(t *testing.T) {
+		cl := changelog.NewChangelog[int](3)
+
+		cl.SetCurrent(1)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(2)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(3)
+
+		now := time.Now()
+		cl.Set(4, now.Add(-400*time.Millisecond))
+
+		// Make sure that the new value was not added
+		assert.Equal(t, 0, cl.Get(now.Add(-300*time.Millisecond)))
+
+		// Sanity check
+		assert.Equal(t, 1, cl.Get(now.Add(-200*time.Millisecond)))
+		assert.Equal(t, 2, cl.Get(now.Add(-100*time.Millisecond)))
+		assert.Equal(t, 3, cl.Get(now))
+		assert.Len(t, cl.GetAll(), 3)
+	})
+
+	t.Run("Zero sized changelog", func(t *testing.T) {
+		cl := changelog.NewChangelog[int](0)
+
+		cl.SetCurrent(1)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(2)
+		time.Sleep(100 * time.Millisecond)
+		cl.SetCurrent(3)
+
+		now := time.Now()
+		cl.Set(4, now.Add(-400*time.Millisecond))
+
+		// Make sure that the new value was not added
+
+		// Sanity check
+		assert.Equal(t, 0, cl.Get(now.Add(-300*time.Millisecond)))
+		assert.Equal(t, 0, cl.Get(now.Add(-200*time.Millisecond)))
+		assert.Equal(t, 0, cl.Get(now.Add(-100*time.Millisecond)))
+		assert.Equal(t, 0, cl.Get(now))
+		assert.Empty(t, cl.GetAll())
+	})
 }
