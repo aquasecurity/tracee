@@ -43,7 +43,7 @@ func TestServer(t *testing.T) {
 
 func grpcClient(protocol, addr string) pb.TraceeServiceClient {
 	sock := protocol + ":" + addr
-	conn, err := grpc.Dial(sock, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(sock, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}

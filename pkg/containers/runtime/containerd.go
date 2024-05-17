@@ -30,7 +30,7 @@ func ContainerdEnricher(socket string) (ContainerEnricher, error) {
 		return nil, errfmt.WrapError(err)
 	}
 
-	conn, err := grpc.Dial(unixSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(unixSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		if errC := client.Close(); errC != nil {
 			logger.Errorw("Closing containerd connection", "error", errC)

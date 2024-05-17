@@ -63,7 +63,7 @@ func main() {
 		printAndExit("empty value given\n")
 	}
 
-	conn, err := grpc.Dial(
+	conn, err := grpc.NewClient(
 		"unix:///tmp/tracee.sock",
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
