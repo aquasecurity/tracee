@@ -28,9 +28,9 @@ func NewProcess(hash uint32) *Process {
 		processHash: hash,
 		parentHash:  0,
 		info:        NewTaskInfo(),
-		executable:  NewFileInfo(),
-		interpreter: NewFileInfo(),
-		interp:      NewFileInfo(),
+		executable:  NewFileInfo(5), // Binary's history is much more important to save
+		interpreter: NewFileInfo(2),
+		interp:      NewFileInfo(2),
 		children:    make(map[uint32]struct{}),
 		threads:     make(map[uint32]struct{}),
 		mutex:       &sync.RWMutex{},
