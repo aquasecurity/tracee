@@ -17,7 +17,7 @@ type crioEnricher struct {
 
 func CrioEnricher(socket string) (ContainerEnricher, error) {
 	unixSocket := "unix://" + strings.TrimPrefix(socket, "unix://")
-	conn, err := grpc.Dial(unixSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(unixSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
