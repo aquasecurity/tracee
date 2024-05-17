@@ -32,20 +32,20 @@ type FileInfo struct {
 }
 
 // NewFileInfo creates a new file.
-func NewFileInfo() *FileInfo {
+func NewFileInfo(maxLogSize int) *FileInfo {
 	return &FileInfo{
-		path:      ch.NewChangelog[string](),
-		dev:       ch.NewChangelog[int](),
-		ctime:     ch.NewChangelog[int](),
-		inode:     ch.NewChangelog[int](),
-		inodeMode: ch.NewChangelog[int](),
+		path:      ch.NewChangelog[string](maxLogSize),
+		dev:       ch.NewChangelog[int](maxLogSize),
+		ctime:     ch.NewChangelog[int](maxLogSize),
+		inode:     ch.NewChangelog[int](maxLogSize),
+		inodeMode: ch.NewChangelog[int](maxLogSize),
 		mutex:     &sync.RWMutex{},
 	}
 }
 
 // NewFileInfoFeed creates a new file with values from the given feed.
-func NewFileInfoFeed(feed FileInfoFeed) *FileInfo {
-	new := NewFileInfo()
+func NewFileInfoFeed(maxLogSize int, feed FileInfoFeed) *FileInfo {
+	new := NewFileInfo(maxLogSize)
 	new.SetFeed(feed)
 	return new
 }

@@ -46,11 +46,13 @@ type TaskInfo struct {
 // NewTaskInfo creates a new task.
 func NewTaskInfo() *TaskInfo {
 	return &TaskInfo{
-		name:   ch.NewChangelog[string](),
-		pPid:   ch.NewChangelog[int](),
-		nsPPid: ch.NewChangelog[int](),
-		uid:    ch.NewChangelog[int](),
-		gid:    ch.NewChangelog[int](),
+		name: ch.NewChangelog[string](5),
+		// All the folloowing values changes are currently not monitored by the process tree.
+		// Hence, for now, they will only contain one value in the changelog
+		pPid:   ch.NewChangelog[int](1),
+		nsPPid: ch.NewChangelog[int](1),
+		uid:    ch.NewChangelog[int](1),
+		gid:    ch.NewChangelog[int](1),
 		mutex:  &sync.RWMutex{},
 	}
 }
