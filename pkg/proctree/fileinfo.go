@@ -66,9 +66,19 @@ func (fi *FileInfo) SetFeedAt(feed FileInfoFeed, targetTime time.Time) {
 	fi.setFeedAt(feed, targetTime)
 }
 
+// Paths theoretically has no limit, but we do need to set a limit for the sake of
+// managing memory more responsibly.
+const MaxPathLen = 1024
+
 func (fi *FileInfo) setFeedAt(feed FileInfoFeed, targetTime time.Time) {
 	if feed.Path != "" {
-		fi.path.Set(feed.Path, targetTime)
+		filePath := feed.Path
+		if len(filePath) > MaxPathLen {
+			// Take only the end of the path, as the specific file name and location are the most
+			// important parts.
+			filePath = filePath[len(filePath)-MaxPathLen:]
+		}
+		fi.path.Set(filePath, targetTime)
 	}
 	if feed.Dev >= 0 {
 		fi.dev.Set(feed.Dev, targetTime)
