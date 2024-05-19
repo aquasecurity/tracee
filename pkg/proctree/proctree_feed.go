@@ -236,23 +236,10 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 		utils.NsSinceBootTimeToTime(feed.TimeStamp),
 	)
 
-	process.GetInterpreter().SetFeedAt(
-		FileInfoFeed{
-			Path:      feed.InterpreterPath,
-			Dev:       int(feed.InterpreterDev),
-			Ctime:     int(feed.InterpreterCtime),
-			Inode:     int(feed.InterpreterInode),
-			InodeMode: -1, // no inode mode for interpreter
-		},
-		utils.NsSinceBootTimeToTime(feed.TimeStamp),
-	)
-
-	process.GetInterp().SetFeedAt(
-		FileInfoFeed{
-			Path: feed.Interp,
-		},
-		utils.NsSinceBootTimeToTime(feed.TimeStamp),
-	)
+	// The interpreter and interp info are taking a lot of memory.
+	// As their usage is still unclear in the process tree, it was decided
+	// to not save their information until it was clear how they would be used.
+	// TODO: Decide whether remove the interpreter and interp from the tree or add them back.
 
 	return nil
 }
