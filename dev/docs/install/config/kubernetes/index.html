@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.23+insiders-4.53.8">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.24+insiders-4.53.9">
     
     
       
@@ -17524,12 +17524,12 @@
 <p>You can customize specific options with the helm installation:</p>
 <div class="highlight"><pre><span></span><code>helm install tracee aqua/tracee \
         --namespace tracee --create-namespace \
-        --set config.blobPerfEventSize=1024
+        --set config.blobPerfBufferSize=1024
 </code></pre></div>
 <p>or after installation:</p>
 <div class="highlight"><pre><span></span><code>helm install tracee aqua/tracee \
         --namespace tracee --create-namespace \
-        --set config.output[0]=table \
+        --set config.output.format=table
 </code></pre></div>
 <p>or to provide a complete config file:</p>
 <div class="highlight"><pre><span></span><code> helm install tracee aqua/tracee \
@@ -17582,7 +17582,7 @@
     <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../../assets/javascripts/workers/search.1e90e0fb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.8d004be9.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.e3055991.min.js"></script>
       
     
   </body>
