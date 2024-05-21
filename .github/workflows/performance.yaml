@@ -40,6 +40,7 @@ jobs:
           docker tag tracee:latest $PR_REPO:$GITHUB_SHA
           docker push $PR_REPO:$GITHUB_SHA
           docker logout $REPO
+          docker rmi tracee:latest $PR_REPO:$GITHUB_SHA
   network-benchmark:
     name: Network Performance Gate
     needs:
