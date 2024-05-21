@@ -8,7 +8,7 @@ runs:
       run: |
         sudo apt-get update
         sudo apt-get install -y bsdutils build-essential pkgconf
-        sudo apt-get install -y zlib1g-dev libelf-dev
+        sudo apt-get install -y zlib1g-dev libelf-dev libzstd-dev
         sudo apt-get install -y software-properties-common
       shell: bash
     - name: Install Golang
