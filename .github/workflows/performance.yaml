@@ -66,14 +66,14 @@ jobs:
         # 4. Move back to the base repository path
         run: |
           aws eks update-kubeconfig --region $AWS_REGION --name $PERF_CLUSTER
-          make bench-network
+          make bench-network IMAGE=$PR_REPO:$GITHUB_SHA OUTPUT=bench_output.json
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@1846227a307d8c0149b960b986d46f8f4c95db0c #v1.20.1
         with:
           # What benchmark tool the output.txt came from
           tool: 'customSmallerIsBetter'
           # Where the output from the benchmark tool is stored
-          output-file-path: ./performance/benchmark/network/bench_output.json
+          output-file-path: bench_output.json
           # Workflow will fail when an alert happens
           fail-on-alert: false
           # Tag user when alerted

@@ -999,4 +999,4 @@ k8s-generate: ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyOb
 # benchmarks
 .PHONY: bench-network
 bench-network:
-	./performance/benchmark/network/bench.sh
+	./performance/benchmark/network/bench.sh $(IMAGE) $(OUTPUT) $(TIME)
