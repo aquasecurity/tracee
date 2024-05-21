@@ -95,7 +95,7 @@ Vagrant.configure("2") do |config|
       ln -s "$path" "${path%-*}"
     done
 
-    apt-get install --yes zlib1g-dev libelf-dev
+    apt-get install --yes zlib1g-dev libelf-dev libzstd-dev
     apt-get install --yes protobuf-compiler
     apt-get install --yes linux-tools-"$(uname -r)" ||
       apt-get install --yes linux-tools-generic

@@ -56,6 +56,7 @@ CMD_CONTROLLER_GEN ?= controller-gen
 
 LIB_ELF ?= libelf
 LIB_ZLIB ?= zlib
+LIB_ZSTD ?= libzstd
 
 define pkg_config
 	$(CMD_PKGCONFIG) --libs $(1)
@@ -172,6 +173,7 @@ env:
 	@echo ---------------------------------------
 	@echo "LIB_ELF                  $(LIB_ELF)"
 	@echo "LIB_ZLIB                 $(LIB_ZLIB)"
+	@echo "LIB_ZSTD                 $(LIB_ZSTD)"
 	@echo ---------------------------------------
 	@echo "VERSION                  $(VERSION)"
 	@echo "LAST_GIT_TAG             $(LAST_GIT_TAG)"
@@ -316,7 +318,7 @@ $(OUTPUT_DIR)/btfhub:
 #
 
 LIBBPF_CFLAGS = "-fPIC"
-LIBBPF_LDLAGS =
+LIBBPF_LDFLAGS =
 LIBBPF_SRC = ./3rdparty/libbpf/src
 
 $(OUTPUT_DIR)/libbpf/libbpf.a: \
@@ -392,7 +394,10 @@ TRACEE_SRC_DIRS = ./cmd/ ./pkg/ ./signatures/
 TRACEE_SRC = $(shell find $(TRACEE_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
 
 CUSTOM_CGO_CFLAGS = "-I$(abspath $(OUTPUT_DIR)/libbpf)"
-CUSTOM_CGO_LDFLAGS = "$(shell $(call pkg_config, $(LIB_ELF))) $(shell $(call pkg_config, $(LIB_ZLIB))) $(abspath $(OUTPUT_DIR)/libbpf/libbpf.a)"
+CUSTOM_CGO_LDFLAGS = "$(shell $(call pkg_config, $(LIB_ELF))) \
+	$(shell $(call pkg_config, $(LIB_ZLIB))) \
+	$(shell $(call pkg_config, $(LIB_ZSTD))) \
+	$(abspath $(OUTPUT_DIR)/libbpf/libbpf.a)"
 
 GO_ENV_EBPF =
 GO_ENV_EBPF += GOOS=linux
@@ -439,6 +444,7 @@ $(OUTPUT_DIR)/tracee: \
 	| .checkver_$(CMD_GO) \
 	.checklib_$(LIB_ELF) \
 	.checklib_$(LIB_ZLIB) \
+	.checklib_$(LIB_ZSTD) \
 	btfhub \
 	signatures
 #
@@ -472,6 +478,7 @@ $(OUTPUT_DIR)/tracee-ebpf: \
 	| .checkver_$(CMD_GO) \
 	.checklib_$(LIB_ELF) \
 	.checklib_$(LIB_ZLIB) \
+	.checklib_$(LIB_ZSTD) \
 	btfhub
 #
 	$(MAKE) $(OUTPUT_DIR)/btfhub
