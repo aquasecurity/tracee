@@ -19,6 +19,13 @@ jobs:
     name: Publish PR Image
     runs-on: [self-hosted, perf]
     steps:
+      - name: AWS Authentication
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        env:
+          AWS_PROFILE: ${{ secrets.AWS_PROFILE }}
+        with:
+          aws-region: ${{ secrets.AWS_REGION}}
+          role-to-assume: ${{ secrets.AWS_RUNNER_ROLE_ARN }}
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Build Image and Publish
@@ -38,6 +45,13 @@ jobs:
       - publish-pr-image
     runs-on: [self-hosted, perf]
     steps:
+      - name: AWS Authentication
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        env:
+          AWS_PROFILE: ${{ secrets.AWS_PROFILE }}
+        with:
+          aws-region: ${{ secrets.AWS_REGION}}
+          role-to-assume: ${{ secrets.AWS_RUNNER_ROLE_ARN }}
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Run Benchmark
