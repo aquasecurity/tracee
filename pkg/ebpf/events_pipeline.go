@@ -8,11 +8,13 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/aquasecurity/tracee/pkg/apiutils"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
+	"github.com/aquasecurity/tracee/pkg/types"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -631,7 +633,20 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 			case <-ctx.Done():
 				return
 			default:
-				t.streamsManager.Publish(ctx, *event)
+				eventProto, err := apiutils.ConvertTraceeEventToProto(*event)
+				if err != nil {
+					logger.Errorw("error can't create event proto: " + err.Error())
+					t.handleError(err)
+				}
+
+				eventWrapper := &types.Event{
+					Event:                 eventProto,
+					PoliciesVersion:       event.PoliciesVersion,
+					MatchedPoliciesKernel: event.MatchedPoliciesKernel,
+					MatchedPoliciesUser:   event.MatchedPoliciesUser,
+				}
+
+				t.streamsManager.Publish(ctx, eventWrapper)
 				_ = t.stats.EventCount.Increment()
 				t.eventsPool.Put(event)
 			}
