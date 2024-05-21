@@ -71,7 +71,7 @@ jobs:
         uses: benchmark-action/github-action-benchmark@1846227a307d8c0149b960b986d46f8f4c95db0c #v1.20.1
         with:
           # What benchmark tool the output.txt came from
-          tool: 'smallerIsBetter'
+          tool: 'customSmallerIsBetter'
           # Where the output from the benchmark tool is stored
           output-file-path: ./performance/benchmark/network/bench_output.json
           # Workflow will fail when an alert happens
