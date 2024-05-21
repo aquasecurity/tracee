@@ -264,6 +264,22 @@ remove_golang_os_packages() {
     apt-get --purge autoremove -y
 }
 
+install_libzstd_os_packages() {
+    case $ID in
+    "ubuntu")
+        wait_for_apt_locks
+        apt-get install -y libzstd-dev
+    ;;
+    "almalinux")
+        yum install -y libzstd-devel
+    ;;
+    *)
+        echo "Unsupported OS: $ID"
+        exit 1
+    ;;
+    esac
+}
+
 # Main logic.
 
 # Note: I left commented out the commands that would (re)install clang-14. This
@@ -328,3 +344,6 @@ if [[ $ID == "almalinux" ]]; then
     remove_golang_usr_bin_files
     install_golang_from_github
 fi
+
+# for static builds libelf might require libzstd
+install_libzstd_os_packages
