@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/aquasecurity/tracee/pkg/types"
 )
 
 // Stream is a stream of events
@@ -12,18 +12,18 @@ type Stream struct {
 	// policy mask is a bitmap of policies that this stream is interested in
 	policyMask uint64
 	// events is a channel that is used to receive events from the stream
-	events chan trace.Event
+	events chan *types.Event
 }
 
 // ReceiveEvents returns a read-only channel for receiving events from the stream
-func (s *Stream) ReceiveEvents() <-chan trace.Event {
+func (s *Stream) ReceiveEvents() <-chan *types.Event {
 	return s.events
 }
 
 // Publish publishes an event to the stream,
 // but first check if this stream is interested in this event,
 // by checking the event's policy mask against the stream's policy mask.
-func (s *Stream) publish(ctx context.Context, event trace.Event) {
+func (s *Stream) publish(ctx context.Context, event *types.Event) {
 	if s.shouldIgnorePolicy(event) {
 		return
 	}
@@ -43,7 +43,7 @@ func (s *Stream) publish(ctx context.Context, event trace.Event) {
 }
 
 // shouldIgnorePolicy checks if the stream should ignore the event
-func (s *Stream) shouldIgnorePolicy(event trace.Event) bool {
+func (s *Stream) shouldIgnorePolicy(event *types.Event) bool {
 	return s.policyMask&event.MatchedPoliciesUser == 0
 }
 
@@ -73,7 +73,7 @@ func (sm *StreamsManager) Subscribe(policyMask uint64, chanSize int) *Stream {
 
 	stream := &Stream{
 		policyMask: policyMask,
-		events:     make(chan trace.Event, chanSize),
+		events:     make(chan *types.Event, chanSize),
 	}
 
 	sm.subscribers[stream] = struct{}{}
@@ -94,7 +94,7 @@ func (sm *StreamsManager) Unsubscribe(stream *Stream) {
 }
 
 // Publish publishes an event to all streams
-func (sm *StreamsManager) Publish(ctx context.Context, event trace.Event) {
+func (sm *StreamsManager) Publish(ctx context.Context, event *types.Event) {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 
