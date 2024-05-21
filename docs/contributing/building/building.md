@@ -14,10 +14,11 @@
 
     1. **clang** && **llvm** (12, 13 or 14)
     1. **golang** (1.21)
-    1. **libelf** and **libelf-dev**  
+    1. **libelf** and **libelf-dev**
        (or elfutils-libelf and elfutils-libelf-devel)
-    1. **zlib1g** and **zlib1g-dev**  
+    1. **zlib1g** and **zlib1g-dev**
        (or zlib and zlib-devel)
+    1. **libzstd-dev** for static build (libelf linkage)
     1. **clang-format-12** (specific version) for `fix-fmt`
 
     > You might take a look at the following files to understand how to have a
