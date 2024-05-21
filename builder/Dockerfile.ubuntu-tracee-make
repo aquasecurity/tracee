@@ -22,6 +22,13 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 130 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-12 --slave /usr/bin/llc llc /usr/bin/llc-12 --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-12 --slave /usr/bin/clangd clangd /usr/bin/clangd-12 && \
     update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 140 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-14 --slave /usr/bin/llc llc /usr/bin/llc-14 --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-14 --slave /usr/bin/clangd clangd /usr/bin/clangd-14
 
+# install bpftool from btfhub
+
+RUN cd /tmp && \
+    git clone https://github.com/aquasecurity/btfhub.git && \
+    cd ./btfhub && \
+    ./3rdparty/bpftool.sh
+
 # install OPA
 
 RUN altarch=$(uname -m | sed 's:x86_64:amd64:g' | sed 's:aarch64:arm64:g') && \
