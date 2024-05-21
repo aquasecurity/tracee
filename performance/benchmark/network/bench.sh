@@ -19,11 +19,11 @@ CleanupOnError() {
     exit 1
 }
 
-# constants
+# arguments
 
 TRACEE_IMAGE=${1:-"docker.io/aquasec/tracee:0.20.0"}
-BENCH_TIME=${2:-900}
-RESULT_ID=${3:-"default"}
+BENCH_OUTPUT=${2:-"bench_output.json"}
+BENCH_TIME=${3:-900}
 BENCHMARK_NAME="tracee_network_benchmark"
 
 
