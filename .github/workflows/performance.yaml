@@ -36,9 +36,10 @@ jobs:
           PR_REPO: ${{ secrets.AWS_PR_IMAGE_ECR_REPO }}
         run: |
           make -f builder/Makefile.tracee-container build-tracee
-          aws ecr get-login-password --region $AWS_REGION | sudo docker login --username $REPO_USER --password-stdin $REPO
+          aws ecr get-login-password --region $AWS_REGION | docker login --username $REPO_USER --password-stdin $REPO
           docker tag tracee:latest $PR_REPO:$GITHUB_SHA
           docker push $PR_REPO:$GITHUB_SHA
+          docker logout $REPO
   network-benchmark:
     name: Network Performance Gate
     needs:
