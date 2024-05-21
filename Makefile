@@ -724,6 +724,7 @@ test-unit: \
 		-shuffle on \
 		-v \
 		-coverprofile=coverage.txt \
+		-covermode=atomic \
 		./cmd/... \
 		./pkg/... \
 		./signatures/... \

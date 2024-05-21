@@ -224,6 +224,11 @@ jobs:
       - name: Run Unit Tests
         run: |
           make test-unit
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.txt
   #
   # INTEGRATION TESTS
   #
