@@ -12,7 +12,7 @@ import (
 // NOTE: thread-safety guaranteed by the ProbeGroup big lock.
 
 //
-// traceProbe
+// traceProbe tests
 //
 
 type ProbeType uint8
