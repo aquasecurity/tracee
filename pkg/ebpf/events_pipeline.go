@@ -342,7 +342,7 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		}
 
 		// 3. event arguments filters
-		if !p.ArgFilter.Filter(eventID, event.Args) {
+		if !p.DataFilter.Filter(eventID, event.Args) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}

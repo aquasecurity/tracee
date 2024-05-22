@@ -23,7 +23,7 @@ type Policy struct {
 	NewContFilter     *filters.BoolFilter
 	ContIDFilter      *filters.StringFilter
 	RetFilter         *filters.RetFilter
-	ArgFilter         *filters.ArgFilter
+	DataFilter        *filters.DataFilter
 	ScopeFilter       *filters.ScopeFilter
 	ProcessTreeFilter *filters.ProcessTreeFilter
 	BinaryFilter      *filters.BinaryFilter
@@ -49,7 +49,7 @@ func NewPolicy() *Policy {
 		NewContFilter:     filters.NewBoolFilter(),
 		ContIDFilter:      filters.NewStringFilter(nil),
 		RetFilter:         filters.NewRetFilter(),
-		ArgFilter:         filters.NewArgFilter(),
+		DataFilter:        filters.NewDataFilter(),
 		ScopeFilter:       filters.NewScopeFilter(),
 		ProcessTreeFilter: filters.NewProcessTreeFilter(),
 		BinaryFilter:      filters.NewBinaryFilter(),
@@ -85,7 +85,7 @@ func (p *Policy) Clone() *Policy {
 	n.NewContFilter = p.NewContFilter.Clone()
 	n.ContIDFilter = p.ContIDFilter.Clone()
 	n.RetFilter = p.RetFilter.Clone()
-	n.ArgFilter = p.ArgFilter.Clone()
+	n.DataFilter = p.DataFilter.Clone()
 	n.ScopeFilter = p.ScopeFilter.Clone()
 	n.ProcessTreeFilter = p.ProcessTreeFilter.Clone()
 	n.BinaryFilter = p.BinaryFilter.Clone()

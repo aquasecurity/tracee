@@ -1620,12 +1620,12 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 		if !isChosen {
 			continue
 		}
-		printMemDumpFilters := p.ArgFilter.GetEventFilters(events.PrintMemDump)
+		printMemDumpFilters := p.DataFilter.GetEventFilters(events.PrintMemDump)
 		if len(printMemDumpFilters) == 0 {
 			errs = append(errs, errfmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
-				"please provide it via -e print_mem_dump.args.address=<hex address>"+
-				", -e print_mem_dump.args.symbol_name=<owner>:<symbol> or "+
-				"-e print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol", p.ID))
+				"please provide it via -e print_mem_dump.data.address=<hex address>"+
+				", -e print_mem_dump.data.symbol_name=<owner>:<symbol> or "+
+				"-e print_mem_dump.data.symbol_name=<symbol> if specifying a system owned symbol", p.ID))
 
 			continue
 		}

@@ -11,28 +11,28 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-type ArgFilter struct {
+type DataFilter struct {
 	filters map[events.ID]map[string]Filter[*StringFilter]
 	enabled bool
 }
 
-// Compile-time check to ensure that ArgFilter implements the Cloner interface
-var _ utils.Cloner[*ArgFilter] = &ArgFilter{}
+// Compile-time check to ensure that DataFilter implements the Cloner interface
+var _ utils.Cloner[*DataFilter] = &DataFilter{}
 
-func NewArgFilter() *ArgFilter {
-	return &ArgFilter{
+func NewDataFilter() *DataFilter {
+	return &DataFilter{
 		filters: map[events.ID]map[string]Filter[*StringFilter]{},
 		enabled: false,
 	}
 }
 
-// GetEventFilters returns the argument filters map for a specific event
+// GetEventFilters returns the data filters map for a specific event
 // writing to the map may have unintentional consequences, avoid doing so
-func (af *ArgFilter) GetEventFilters(eventID events.ID) map[string]Filter[*StringFilter] {
+func (af *DataFilter) GetEventFilters(eventID events.ID) map[string]Filter[*StringFilter] {
 	return af.filters[eventID]
 }
 
-func (af *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
+func (af *DataFilter) Filter(eventID events.ID, data []trace.Argument) bool {
 	if !af.Enabled() {
 		return true
 	}
@@ -46,14 +46,14 @@ func (af *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 		return true
 	}
 
-	for argName, f := range af.filters[eventID] {
+	for dataName, f := range af.filters[eventID] {
 		found := false
-		var argVal interface{}
+		var dataVal interface{}
 
-		for _, arg := range args {
-			if arg.Name == argName {
+		for _, d := range data {
+			if d.Name == dataName {
 				found = true
-				argVal = arg.Value
+				dataVal = d.Value
 				break
 			}
 		}
@@ -62,9 +62,9 @@ func (af *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 		}
 
 		// TODO: use type assertion instead of string conversion
-		argVal = fmt.Sprint(argVal)
+		dataVal = fmt.Sprint(dataVal)
 
-		res := f.Filter(argVal)
+		res := f.Filter(dataVal)
 		if !res {
 			return false
 		}
@@ -73,21 +73,22 @@ func (af *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 	return true
 }
 
-func (af *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
-	// Event argument filter has the following format: "event.args.argname=argval"
-	// filterName have the format event.argname, and operatorAndValues have the format "=argval"
+func (af *DataFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
+	// Event data filter has the following format: "event.data.dataname=dataval"
+	// filterName have the format event.dataname, and operatorAndValues have the format "=dataval"
 	parts := strings.Split(filterName, ".")
 	if len(parts) != 3 {
 		return InvalidExpression(filterName + operatorAndValues)
 	}
-	if parts[1] != "args" {
+	// option "args" will be deprecate in future
+	if (parts[1] != "data") && (parts[1] != "args") {
 		return InvalidExpression(filterName + operatorAndValues)
 	}
 
 	eventName := parts[0]
-	argName := parts[2]
+	dataName := parts[2]
 
-	if eventName == "" || argName == "" {
+	if eventName == "" || dataName == "" {
 		return InvalidExpression(filterName + operatorAndValues)
 	}
 
@@ -102,18 +103,18 @@ func (af *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNa
 	eventDefinition := events.Core.GetDefinitionByID(id)
 	eventParams := eventDefinition.GetParams()
 
-	// check if argument name exists for this event
-	argFound := false
+	// check if data name exists for this event
+	dataFound := false
 	for i := range eventParams {
-		if eventParams[i].Name == argName {
-			argFound = true
+		if eventParams[i].Name == dataName {
+			dataFound = true
 			break
 		}
 	}
 
 	// if the event is a signature event, we allow filtering on dynamic argument
-	if !argFound && !eventDefinition.IsSignature() {
-		return InvalidEventArgument(argName)
+	if !dataFound && !eventDefinition.IsSignature() {
+		return InvalidEventData(dataName)
 	}
 
 	// valueHandler is passed to the filter constructor to allow for custom value handling
@@ -122,7 +123,7 @@ func (af *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNa
 		switch id {
 		case events.SysEnter,
 			events.SysExit:
-			if argName == "syscall" { // handle either syscall name or syscall id
+			if dataName == "syscall" { // handle either syscall name or syscall id
 				_, err := strconv.Atoi(val)
 				if err != nil {
 					// if val is a syscall name, then we need to convert it to a syscall id
@@ -134,11 +135,11 @@ func (af *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNa
 				}
 			}
 		case events.HookedSyscall:
-			if argName == "syscall" { // handle either syscall name or syscall id
-				argEventID, err := strconv.Atoi(val)
+			if dataName == "syscall" { // handle either syscall name or syscall id
+				dataEventID, err := strconv.Atoi(val)
 				if err == nil {
 					// if val is a syscall id, then we need to convert it to a syscall name
-					val = events.Core.GetDefinitionByID(events.ID(argEventID)).GetName()
+					val = events.Core.GetDefinitionByID(events.ID(dataEventID)).GetName()
 				}
 			}
 		}
@@ -146,9 +147,9 @@ func (af *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNa
 		return val, nil
 	}
 
-	err := af.parseFilter(id, argName, operatorAndValues,
+	err := af.parseFilter(id, dataName, operatorAndValues,
 		func() Filter[*StringFilter] {
-			// TODO: map argument type to an appropriate filter constructor
+			// TODO: map data type to an appropriate filter constructor
 			return NewStringFilter(valueHandler)
 		})
 	if err != nil {
@@ -160,33 +161,33 @@ func (af *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNa
 	return nil
 }
 
-// parseFilter adds an argument filter with the relevant filterConstructor
+// parseFilter adds an data filter with the relevant filterConstructor
 // The user must responsibly supply a reliable Filter object.
-func (af *ArgFilter) parseFilter(id events.ID, argName string, operatorAndValues string, filterConstructor func() Filter[*StringFilter]) error {
+func (af *DataFilter) parseFilter(id events.ID, dataName string, operatorAndValues string, filterConstructor func() Filter[*StringFilter]) error {
 	if _, ok := af.filters[id]; !ok {
 		af.filters[id] = map[string]Filter[*StringFilter]{}
 	}
 
-	if _, ok := af.filters[id][argName]; !ok {
-		// store new event arg filter if missing
-		argFilter := filterConstructor()
-		af.filters[id][argName] = argFilter
+	if _, ok := af.filters[id][dataName]; !ok {
+		// store new event data filter if missing
+		dataFilter := filterConstructor()
+		af.filters[id][dataName] = dataFilter
 	}
 
-	// extract the arg filter and parse expression into it
-	f := af.filters[id][argName]
+	// extract the data filter and parse expression into it
+	f := af.filters[id][dataName]
 	err := f.Parse(operatorAndValues)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
-	// store the arg filter again
-	af.filters[id][argName] = f
+	// store the data filter again
+	af.filters[id][dataName] = f
 
 	return nil
 }
 
-func (af *ArgFilter) Enable() {
+func (af *DataFilter) Enable() {
 	af.enabled = true
 	for _, filterMap := range af.filters {
 		for _, f := range filterMap {
@@ -195,7 +196,7 @@ func (af *ArgFilter) Enable() {
 	}
 }
 
-func (af *ArgFilter) Disable() {
+func (af *DataFilter) Disable() {
 	af.enabled = false
 	for _, filterMap := range af.filters {
 		for _, f := range filterMap {
@@ -204,21 +205,21 @@ func (af *ArgFilter) Disable() {
 	}
 }
 
-func (af *ArgFilter) Enabled() bool {
+func (af *DataFilter) Enabled() bool {
 	return af.enabled
 }
 
-func (af *ArgFilter) Clone() *ArgFilter {
+func (af *DataFilter) Clone() *DataFilter {
 	if af == nil {
 		return nil
 	}
 
-	n := NewArgFilter()
+	n := NewDataFilter()
 
 	for eventID, filterMap := range af.filters {
 		n.filters[eventID] = map[string]Filter[*StringFilter]{}
-		for argName, f := range filterMap {
-			n.filters[eventID][argName] = f.Clone()
+		for dataName, f := range filterMap {
+			n.filters[eventID][dataName] = f.Clone()
 		}
 	}
 

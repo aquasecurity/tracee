@@ -24,8 +24,8 @@ func InvalidEventName(event string) error {
 	return fmt.Errorf("invalid event name in filter: %s", event)
 }
 
-func InvalidEventArgument(argument string) error {
-	return fmt.Errorf("invalid filter event argument: %s", argument)
+func InvalidEventData(data string) error {
+	return fmt.Errorf("invalid filter event data: %s", data)
 }
 
 func InvalidScopeField(field string) error {

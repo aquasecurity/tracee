@@ -126,7 +126,7 @@ func (ps *Policies) updateUserlandPolicies() {
 			continue
 		}
 
-		if p.ArgFilter.Enabled() ||
+		if p.DataFilter.Enabled() ||
 			p.RetFilter.Enabled() ||
 			p.ScopeFilter.Enabled() ||
 			(p.UIDFilter.Enabled() && ps.uidFilterableInUserland) ||

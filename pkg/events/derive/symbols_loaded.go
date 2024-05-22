@@ -26,7 +26,7 @@ func SymbolsLoaded(
 
 	for it := policies.CreateAllIterator(); it.HasNext(); {
 		p := it.Next()
-		f := p.ArgFilter.GetEventFilters(events.SymbolsLoaded)
+		f := p.DataFilter.GetEventFilters(events.SymbolsLoaded)
 		maps.Copy(symbolsLoadedFilters, f)
 	}
 

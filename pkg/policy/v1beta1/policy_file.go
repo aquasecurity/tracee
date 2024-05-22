@@ -200,14 +200,15 @@ func (p PolicyFile) validateRules() error {
 				return errfmt.Errorf("policy %s, invalid filter operator: %s", p.GetName(), f)
 			}
 
-			// args
-			if strings.HasPrefix(f, "args") {
+			// data
+			// option "args" will be deprecate in future
+			if strings.HasPrefix(f, "data") || strings.HasPrefix(f, "args") {
 				s := strings.Split(f, ".")
 				if len(s) == 1 {
-					return errfmt.Errorf("policy %s, arg name can't be empty", p.GetName())
+					return errfmt.Errorf("policy %s, data name can't be empty", p.GetName())
 				}
 
-				err := validateEventArg(p.GetName(), r.Event, s[1])
+				err := validateEventData(p.GetName(), r.Event, s[1])
 				if err != nil {
 					return err
 				}
@@ -251,22 +252,22 @@ func validateEvent(policyName, eventName string) error {
 	return nil
 }
 
-func validateEventArg(policyName, eventName, argName string) error {
-	s := strings.Split(argName, "!=")
+func validateEventData(policyName, eventName, dataName string) error {
+	s := strings.Split(dataName, "!=")
 
 	if len(s) == 1 {
-		s = strings.Split(argName, "=")
+		s = strings.Split(dataName, "=")
 	}
 
 	if len(s) == 1 {
-		return errfmt.Errorf("policy %s, arg %s value can't be empty", policyName, s[0])
+		return errfmt.Errorf("policy %s, data %s value can't be empty", policyName, s[0])
 	}
 
 	if s[1] == "" {
-		return errfmt.Errorf("policy %s, arg %s value can't be empty", policyName, s[0])
+		return errfmt.Errorf("policy %s, data %s value can't be empty", policyName, s[0])
 	}
 
-	argName = s[0]
+	dataName = s[0]
 
 	eventDefID, ok := events.Core.GetDefinitionIDByName(eventName)
 	if !ok {
@@ -281,12 +282,12 @@ func validateEventArg(policyName, eventName, argName string) error {
 		}
 	}
 	for _, p := range eventDefinition.GetParams() {
-		if p.Name == argName {
+		if p.Name == dataName {
 			return nil
 		}
 	}
 
-	return errfmt.Errorf("policy %s, event %s does not have argument %s", policyName, eventName, argName)
+	return errfmt.Errorf("policy %s, event %s does not have data %s", policyName, eventName, dataName)
 }
 
 // PoliciesFromPaths returns a slice of policies from the given paths
