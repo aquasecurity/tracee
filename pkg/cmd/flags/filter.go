@@ -24,8 +24,8 @@ Available boolean expressions: container.
 Event flag selects events or sets of events to trace according to predefined sets, which can be listed by using the 'list' flag.
 Event flag uses a dash prefix to filter out events: '-'.
 
-Event arguments can be accessed using 'event_name.args.event_arg' and provide a way to filter an event by its arguments.
-Event arguments allow the following operators: '=', '!='.
+Event data can be accessed using 'event_name.data.event_arg' and provide a way to filter an event by its data.
+Event data allow the following operators: '=', '!='.
 Strings can be compared as a prefix if ending with '*' or as suffix if starting with '*'.
 
 Event return value can be accessed using 'event_name.retval' and provide a way to filter an event by its return value.
@@ -77,10 +77,10 @@ Event examples:
   --events '-open*,-dup*'                                       | don't trace events prefixed by "open" or "dup"
   --events fs                                                   | trace all file-system related events
   --events fs --events -open,-openat                            | trace all file-system related events, but not open(at)
-  --events close.args.fd=5                                      | only trace 'close' events that have 'fd' equals 5
-  --events openat.args.pathname='/tmp*'                         | only trace 'openat' events that have 'pathname' prefixed by /tmp
-  --events openat.args.pathname='*shadow'                       | only trace 'openat' events that have 'pathname' suffixed by shadow
-  --events openat.args.pathname!=/tmp/1,/bin/ls                 | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
+  --events close.data.fd=5                                      | only trace 'close' events that have 'fd' equals 5
+  --events openat.data.pathname='/tmp*'                         | only trace 'openat' events that have 'pathname' prefixed by /tmp
+  --events openat.data.pathname='*shadow'                       | only trace 'openat' events that have 'pathname' suffixed by shadow
+  --events openat.data.pathname!=/tmp/1,/bin/ls                 | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
   --events openat.scope.processName=ls                          | only trace 'openat' events that have 'processName' equal to 'ls'
   --events security_file_open.scope.container                   | only trace 'security_file_open' events coming from a container
 

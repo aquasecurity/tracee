@@ -70,8 +70,10 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeM
 			eventFlags = append(eventFlags, evtFlags...)
 
 			for _, f := range r.Filters {
-				// event argument or return value filter
-				if strings.HasPrefix(f, "args.") || strings.HasPrefix(f, "retval") {
+				// event data or return value filter
+				// option "args." will be deprecate in future
+				if strings.HasPrefix(f, "data.") || strings.HasPrefix(f, "args.") ||
+					strings.HasPrefix(f, "retval") {
 					evtFilterFlags, err := parseEventFlag(fmt.Sprintf("%s.%s", r.Event, f))
 					if err != nil {
 						return nil, nil, errfmt.WrapError(err)
@@ -297,8 +299,8 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 				continue
 			}
 
-			if evtFlag.eventOptionType == "args" {
-				err := p.ArgFilter.Parse(evtFilter, operatorAndValues, eventsNameToID)
+			if evtFlag.eventOptionType == "data" || evtFlag.eventOptionType == "args" {
+				err := p.DataFilter.Parse(evtFilter, operatorAndValues, eventsNameToID)
 				if err != nil {
 					return nil, err
 				}

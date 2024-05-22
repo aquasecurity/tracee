@@ -103,7 +103,7 @@ func initCmd() error {
 		"events",
 		"e",
 		[]string{},
-		"[name|name.args.pathname...]\tSelect events to trace and event filters",
+		"[name|name.data.pathname...]\tSelect events to trace and event filters",
 	)
 
 	// policy is not bound to viper
