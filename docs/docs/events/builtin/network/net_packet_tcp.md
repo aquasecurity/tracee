@@ -62,7 +62,7 @@ for the default run"). As arguments for this event you will find: `src`, `dst`,
 Example:
 
 ```console
-tracee --output json --events net_packet_tcp --events net_packet_tcp.args.src=fd12:3456:789a::2
+tracee --output json --events net_packet_tcp --events net_packet_tcp.data.src=fd12:3456:789a::2
 ```
 
 ```json

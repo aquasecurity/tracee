@@ -10,7 +10,7 @@ To switch on the `Process Tree` feature, run the command:
 sudo tracee --output option:sort-events --output json --output option:parse-arguments --proctree source=both --events <event_type>
 ```
 
-The underlying structure is populated using the core `sched_process_fork`, `sched_process_exec`, and `sched_process_exit` events and their args. There's also an option to bootstrap the process tree through a secondary route using internal signal events.
+The underlying structure is populated using the core `sched_process_fork`, `sched_process_exec`, and `sched_process_exit` events and their data. There's also an option to bootstrap the process tree through a secondary route using internal signal events.
 
 > Introducing this secondary event source is strategic: it reduces interference with actively traced events, leading to more accurate and granular updates in the process tree.
 

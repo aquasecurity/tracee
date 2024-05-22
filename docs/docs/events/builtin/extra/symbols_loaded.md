@@ -40,7 +40,7 @@ To catch SO which tries to override the `fopen` function of `libc`, we can use t
 the following way:
 
 ```console
-./dist/tracee -e symbols_loaded.args.symbols=fopen -e symbols_loaded.args.library_path!=libc
+./dist/tracee -e symbols_loaded.data.symbols=fopen -e symbols_loaded.data.library_path!=libc
 ```
 
 ## Issues

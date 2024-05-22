@@ -151,7 +151,7 @@ spec:
     - event: openat
       filters:
         - comm=cat
-        - args.pathname=/tmp*
+        - data.pathname=/tmp*
     # trace all container creations and removals
     - event: container_create
     - event: container_remove
