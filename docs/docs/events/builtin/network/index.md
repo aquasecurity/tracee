@@ -28,7 +28,7 @@ activity in common protocols.
 Trace all TCP packets sent to port 80 anywhere, from any process:
 
 ```console
-tracee --output json --events net_packet_tcp.args.dst_port=80
+tracee --output json --events net_packet_tcp.data.dst_port=80
 ```
 
 ```json
@@ -41,7 +41,7 @@ tracee --output json --events net_packet_tcp.args.dst_port=80
 Trace all DNS packets received ONLY from Google DNS server '8.8.8.8':
 
 ```console
-tracee --output json --events net_packet_dns.args.src=8.8.8.8
+tracee --output json --events net_packet_dns.data.src=8.8.8.8
 
 ```
 

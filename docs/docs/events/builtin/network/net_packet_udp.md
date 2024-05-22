@@ -35,7 +35,7 @@ for the default run"). As arguments for this event you will find: `src`, `dst`,
 Example:
 
 ```console
-tracee --output json --events net_packet_udp --events net_packet_udp.args.src=fd12:3456:789a::2
+tracee --output json --events net_packet_udp --events net_packet_udp.data.src=fd12:3456:789a::2
 ```
 
 ```json

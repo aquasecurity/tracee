@@ -20,10 +20,10 @@ spec:
 	  - event: dropped_executable
 	  - event: security_file_open
 	    filters:
-		- args.pathname=/tmp/*
+		- data.pathname=/tmp/*
 ```
 
-This policy applies to any workload (`global`) and will log the `dropped_executable`, and `security_file_open` events. An argument filter (`args.pathname`) is set on the `security_file_open` event to log only files which were opened from the `/tmp` directory.
+This policy applies to any workload (`global`) and will log the `dropped_executable`, and `security_file_open` events. A data filter (`data.pathname`) is set on the `security_file_open` event to log only files which were opened from the `/tmp` directory.
 
 !!! Note TODO
     Note that currently each event type can only be defined once in a policy

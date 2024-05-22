@@ -24,10 +24,10 @@ tracee \f[B]--events\f[R] - Select which events to trace
 tracee \f[B]--events\f[R] [<event-name1(,[-]event-name2\&...)> |
 <[-]event-name1(,set1\&...)> |
 <set1(,[-]event-name1,[-]event-name2\&...)> |
-<event1.args.arg-field[=|!=]value> |
+<event1.data.data-field[=|!=]value> |
 <event1.retval[=|!=|<|>|<=|>=]value> |
-<event1.scope.scope-field[=|!=|<|>|<=|>=]value> |
-<event.scope.container>] \&...
+<event1.scope.field[=|!=|<|>|<=|>=]value> | <event.scope.container>]
+\&...
 .SS DESCRIPTION
 .PP
 The \f[B]--events\f[R] flag allows you to select which events to trace
@@ -40,9 +40,9 @@ Event or set name: Select specific events using
 To exclude events, prepend the event name with a dash `-':
 `-event-name'.
 .IP \[bu] 2
-Event arguments: Filter events based on their arguments using
-`event-name.args.event_arg'.
-The event argument expression follows the syntax of a string expression.
+Event data: Filter events based on their data using
+`event-name.data.event_data'.
+The event data expression follows the syntax of a string expression.
 .IP \[bu] 2
 Event return value: Filter events based on their return value using
 `event-name.retval'.
@@ -158,7 +158,7 @@ following flag:
 .IP
 .nf
 \f[C]
---events close.args.fd=5
+--events close.data.fd=5
 \f[R]
 .fi
 .RE
@@ -169,7 +169,7 @@ use the following flag:
 .IP
 .nf
 \f[C]
---events openat.args.pathname=\[aq]/tmp*\[aq]
+--events openat.data.pathname=\[aq]/tmp*\[aq]
 \f[R]
 .fi
 .RE
@@ -180,7 +180,7 @@ use the following flag:
 .IP
 .nf
 \f[C]
---events openat.args.pathname=\[aq]*shadow\[aq]
+--events openat.data.pathname=\[aq]*shadow\[aq]
 \f[R]
 .fi
 .RE
@@ -191,7 +191,7 @@ To exclude `openat' events that have `pathname' equal to `/tmp/1' or
 .IP
 .nf
 \f[C]
---events openat.args.pathname!=/tmp/1,/bin/ls
+--events openat.data.pathname!=/tmp/1,/bin/ls
 \f[R]
 .fi
 .RE

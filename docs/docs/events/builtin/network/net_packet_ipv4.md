@@ -49,7 +49,7 @@ fields`.
 Example:
 
 ``` console
-tracee --output json --events net_packet_ipv4 --events net_packet_ipv4.args.src=10.10.11.2
+tracee --output json --events net_packet_ipv4 --events net_packet_ipv4.data.src=10.10.11.2
 ```
 
 ```json

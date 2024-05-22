@@ -256,10 +256,12 @@ spec:
 	rules:
 	    event: security_file_open
 	    filters:
-		- args.pathname=/tmp*
+		- data.pathname=/tmp*
 ```
 
-Arguments can be found on the respective event definition, in this case [security_file_open](https://github.com/aquasecurity/tracee/blob/main/pkg/events/events.goL5293-L529), or the user can test the event output in CLI before defining a policy, e.g:
+Data fields can be found on the respective event definition, in this case [security_file_open](https://github.com/aquasecurity/tracee/blob/656eb976fbb66aba54c5f306019258e436d4814a/pkg/events/core.go#L11502-L11533) - be aware of possible changes to the definition linked above, so always check the main branch.
+
+ Or the user can test the event output in CLI before defining a policy, e.g:
 
 ```console
 tracee -e security_file_open --output json
