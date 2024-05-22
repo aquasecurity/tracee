@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"math"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
+
+	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // This struct represents the context of a packet capture.
