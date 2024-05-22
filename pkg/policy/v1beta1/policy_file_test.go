@@ -328,12 +328,12 @@ func TestPolicyValidate(t *testing.T) {
 			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy retval-not-an-integer, retval must be an integer: lala"),
 		},
 		{
-			testName: "empty arg name 1",
+			testName: "empty data name 1",
 			policy: PolicyFile{
 				APIVersion: "tracee.aquasec.com/v1beta1",
 				Kind:       "Policy",
 				Metadata: Metadata{
-					Name: "empty-filter-arg-1",
+					Name: "empty-filter-data-1",
 				},
 				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
@@ -342,21 +342,21 @@ func TestPolicyValidate(t *testing.T) {
 						{
 							Event: "write",
 							Filters: []string{
-								"args",
+								"data",
 							},
 						},
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty-filter-arg-1, invalid filter operator: args"),
+			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty-filter-data-1, invalid filter operator: data"),
 		},
 		{
-			testName: "empty arg name 3",
+			testName: "empty data name 3",
 			policy: PolicyFile{
 				APIVersion: "tracee.aquasec.com/v1beta1",
 				Kind:       "Policy",
 				Metadata: Metadata{
-					Name: "empty-filter-arg-3",
+					Name: "empty-filter-data-3",
 				},
 				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
@@ -365,21 +365,21 @@ func TestPolicyValidate(t *testing.T) {
 						{
 							Event: "write",
 							Filters: []string{
-								"args=",
+								"data=",
 							},
 						},
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty-filter-arg-3, arg name can't be empty"),
+			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty-filter-data-3, data name can't be empty"),
 		},
 		{
-			testName: "empty arg name 4",
+			testName: "empty data name 4",
 			policy: PolicyFile{
 				APIVersion: "tracee.aquasec.com/v1beta1",
 				Kind:       "Policy",
 				Metadata: Metadata{
-					Name: "empty-filter-arg-4",
+					Name: "empty-filter-data-4",
 				},
 				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
@@ -388,21 +388,21 @@ func TestPolicyValidate(t *testing.T) {
 						{
 							Event: "write",
 							Filters: []string{
-								"args=lala",
+								"data=lala",
 							},
 						},
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty-filter-arg-4, arg name can't be empty"),
+			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty-filter-data-4, data name can't be empty"),
 		},
 		{
-			testName: "invalid arg",
+			testName: "invalid data",
 			policy: PolicyFile{
 				APIVersion: "tracee.aquasec.com/v1beta1",
 				Kind:       "Policy",
 				Metadata: Metadata{
-					Name: "invalid-arg",
+					Name: "invalid-data",
 				},
 				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
@@ -411,21 +411,22 @@ func TestPolicyValidate(t *testing.T) {
 						{
 							Event: "openat",
 							Filters: []string{
-								"args.lala=1",
+								"data.lala=1",
 							},
 						},
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.validateEventArg: policy invalid-arg, event openat does not have argument lala"),
+			expectedError: errors.New("v1beta1.validateEventData: policy invalid-data, event openat does not have data lala"),
 		},
+		// keep a single args (deprecated) filter test that shall break on future removal
 		{
-			testName: "empty arg value",
+			testName: "invalid args",
 			policy: PolicyFile{
 				APIVersion: "tracee.aquasec.com/v1beta1",
 				Kind:       "Policy",
 				Metadata: Metadata{
-					Name: "empty-arg-value",
+					Name: "invalid-args",
 				},
 				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
@@ -434,21 +435,68 @@ func TestPolicyValidate(t *testing.T) {
 						{
 							Event: "openat",
 							Filters: []string{
-								"args.pathname=",
+								"data.lala=1",
 							},
 						},
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.validateEventArg: policy empty-arg-value, arg pathname value can't be empty"),
+			expectedError: errors.New("v1beta1.validateEventData: policy invalid-args, event openat does not have data lala"),
 		},
 		{
-			testName: "empty arg value",
+			testName: "empty data value",
 			policy: PolicyFile{
 				APIVersion: "tracee.aquasec.com/v1beta1",
 				Kind:       "Policy",
 				Metadata: Metadata{
-					Name: "empty-arg-value",
+					Name: "empty-data-value",
+				},
+				Spec: k8s.PolicySpec{
+					Scope:          []string{"global"},
+					DefaultActions: []string{"log"},
+					Rules: []k8s.Rule{
+						{
+							Event: "openat",
+							Filters: []string{
+								"data.pathname=",
+							},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("v1beta1.validateEventData: policy empty-data-value, data pathname value can't be empty"),
+		},
+		{
+			testName: "empty data value",
+			policy: PolicyFile{
+				APIVersion: "tracee.aquasec.com/v1beta1",
+				Kind:       "Policy",
+				Metadata: Metadata{
+					Name: "empty-data-value",
+				},
+				Spec: k8s.PolicySpec{
+					Scope:          []string{"global"},
+					DefaultActions: []string{"log"},
+					Rules: []k8s.Rule{
+						{
+							Event: "openat",
+							Filters: []string{
+								"data.pathname!=",
+							},
+						},
+					},
+				},
+			},
+			expectedError: errors.New("v1beta1.validateEventData: policy empty-data-value, data pathname value can't be empty"),
+		},
+		// deprecated this test after deprecated args option
+		{
+			testName: "empty args value",
+			policy: PolicyFile{
+				APIVersion: "tracee.aquasec.com/v1beta1",
+				Kind:       "Policy",
+				Metadata: Metadata{
+					Name: "empty-args-value",
 				},
 				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
@@ -463,15 +511,15 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.validateEventArg: policy empty-arg-value, arg pathname value can't be empty"),
+			expectedError: errors.New("v1beta1.validateEventData: policy empty-args-value, data pathname value can't be empty"),
 		},
 		{
-			testName: "signature filter arg",
+			testName: "signature filter data",
 			policy: PolicyFile{
 				APIVersion: "tracee.aquasec.com/v1beta1",
 				Kind:       "Policy",
 				Metadata: Metadata{
-					Name: "signature-filter-arg",
+					Name: "signature-filter-data",
 				},
 				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
@@ -480,8 +528,8 @@ func TestPolicyValidate(t *testing.T) {
 						{
 							Event: "fake_signature",
 							Filters: []string{
-								"args.lala=lala",
-								"args.lele!=lele",
+								"data.lala=lala",
+								"data.lele!=lele",
 							},
 						},
 					},

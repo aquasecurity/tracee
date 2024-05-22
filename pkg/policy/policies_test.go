@@ -29,7 +29,7 @@ func TestPoliciesClone(t *testing.T) {
 	err = p2.UIDFilter.Parse("=2")
 	require.NoError(t, err)
 
-	err = p2.ArgFilter.Parse("read.args.fd", "=argval", events.Core.NamesToIDs())
+	err = p2.DataFilter.Parse("read.data.fd", "=dataval", events.Core.NamesToIDs())
 	require.NoError(t, err)
 
 	err = policies.Add(p1)
@@ -49,7 +49,7 @@ func TestPoliciesClone(t *testing.T) {
 		filters.UIntFilter[uint64]{},
 		filters.BoolFilter{},
 		filters.RetFilter{},
-		filters.ArgFilter{},
+		filters.DataFilter{},
 		filters.ScopeFilter{},
 		filters.ProcessTreeFilter{},
 		filters.BinaryFilter{},
