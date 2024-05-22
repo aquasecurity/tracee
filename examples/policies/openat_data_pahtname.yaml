@@ -1,7 +1,7 @@
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-  name: openat-args-pathname
+  name: openat-data-pathname
   annotations:
     description: traces openat under /tmp/*
 spec:
@@ -10,4 +10,4 @@ spec:
   rules:
     - event: openat
       filters:
-        - args.pathname=/tmp*
+        - data.pathname=/tmp*
