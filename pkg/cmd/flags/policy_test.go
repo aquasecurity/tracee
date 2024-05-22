@@ -719,7 +719,45 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 		// events
 		//
 
-		// args filter
+		// data filter
+		{
+			testName: "data filter",
+			policy: v1beta1.PolicyFile{
+				Metadata: v1beta1.Metadata{
+					Name: "data-filter",
+				},
+				Spec: k8s.PolicySpec{
+					Scope:          []string{"global"},
+					DefaultActions: []string{"log"},
+					Rules: []k8s.Rule{
+						{
+							Event:   "security_file_open",
+							Filters: []string{"data.pathname=/etc/passwd"},
+						},
+					},
+				},
+			},
+			expPolicyScopeMap: PolicyScopeMap{},
+			expPolicyEventMap: PolicyEventMap{
+				0: {
+					policyName: "data-filter",
+					eventFlags: []eventFlag{
+						{
+							full:              "security_file_open",
+							eventName:         "security_file_open",
+							operatorAndValues: "",
+						},
+						{
+							full:              "security_file_open.data.pathname=/etc/passwd",
+							eventName:         "security_file_open",
+							eventFilter:       "security_file_open.data.pathname",
+							operatorAndValues: "=/etc/passwd",
+						},
+					},
+				},
+			},
+		},
+		// keep a single args (deprecated) filter test that shall break on future removal
 		{
 			testName: "args filter",
 			policy: v1beta1.PolicyFile{
@@ -1836,19 +1874,25 @@ func TestCreatePolicies(t *testing.T) {
 		expectPolicyErr error
 	}{
 		{
-			testName:        "invalid argfilter 1",
-			evtFlags:        []string{"open.args"},
+			testName:        "invalid datafilter 1",
+			evtFlags:        []string{"open.data"},
 			expectPolicyErr: filters.InvalidExpression("open."),
 		},
 		{
-			testName:        "invalid argfilter 2",
-			evtFlags:        []string{"open.args.bla=5"},
-			expectPolicyErr: filters.InvalidEventArgument("bla"),
+			testName:        "invalid datafilter 2",
+			evtFlags:        []string{"open.data.bla=5"},
+			expectPolicyErr: filters.InvalidEventData("bla"),
 		},
 		{
-			testName:        "invalid argfilter 3",
+			testName:        "invalid datafilter 3",
 			evtFlags:        []string{"open.bla=5"},
 			expectPolicyErr: InvalidFilterFlagFormat("open.bla=5"),
+		},
+		// keep a single args (deprecated) filter test that shall break on future removal
+		{
+			testName:        "invalid argsfilter 1",
+			evtFlags:        []string{"open.args.bla=5"},
+			expectPolicyErr: filters.InvalidEventData("bla"),
 		},
 		{
 			testName:        "invalid scope filter 1",
@@ -1986,7 +2030,7 @@ func TestCreatePolicies(t *testing.T) {
 		},
 		{
 			testName: "argfilter",
-			evtFlags: []string{"openat.args.pathname=/bin/ls,/tmp/tracee", "openat.args.pathname!=/etc/passwd"},
+			evtFlags: []string{"openat.data.pathname=/bin/ls,/tmp/tracee", "openat.data.pathname!=/etc/passwd"},
 		},
 		{
 			testName: "retfilter",
@@ -2022,7 +2066,7 @@ func TestCreatePolicies(t *testing.T) {
 		},
 		{
 			testName: "adding retval filter then argfilter",
-			evtFlags: []string{"open.retval=5", "security_file_open.args.pathname=/etc/shadow"},
+			evtFlags: []string{"open.retval=5", "security_file_open.data.pathname=/etc/shadow"},
 		},
 
 		{

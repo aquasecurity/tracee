@@ -24,7 +24,7 @@ func TestPolicyClone(t *testing.T) {
 		filters.UIntFilter[uint64]{},
 		filters.BoolFilter{},
 		filters.RetFilter{},
-		filters.ArgFilter{},
+		filters.DataFilter{},
 		filters.ScopeFilter{},
 		filters.ProcessTreeFilter{},
 		filters.BinaryFilter{},

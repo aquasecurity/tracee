@@ -12,17 +12,17 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func TestArgsFilterClone(t *testing.T) {
+func TestDataFilterClone(t *testing.T) {
 	t.Parallel()
 
-	filter := NewArgFilter()
-	err := filter.Parse("read.args.fd", "=argval", events.Core.NamesToIDs())
+	filter := NewDataFilter()
+	err := filter.Parse("read.data.fd", "=dataval", events.Core.NamesToIDs())
 	require.NoError(t, err)
 
 	copy := filter.Clone()
 
 	opt1 := cmp.AllowUnexported(
-		ArgFilter{},
+		DataFilter{},
 		StringFilter{},
 		sets.PrefixSet{},
 		sets.SuffixSet{},
@@ -42,7 +42,7 @@ func TestArgsFilterClone(t *testing.T) {
 	}
 
 	// ensure that changes to the copy do not affect the original
-	err = copy.Parse("read.args.buf", "=argval", events.Core.NamesToIDs())
+	err = copy.Parse("read.data.buf", "=dataval", events.Core.NamesToIDs())
 	require.NoError(t, err)
 	if cmp.Equal(filter, copy, opt1, opt2) {
 		t.Errorf("Changes to copied filter affected the original %+v", filter)
@@ -59,7 +59,7 @@ func newArgument(argName, argType string, argValue interface{}) trace.Argument {
 	}
 }
 
-func TestArgsFilter_Filter(t *testing.T) {
+func TestDatasFilter_Filter(t *testing.T) {
 	t.Parallel()
 
 	tt := []struct {
@@ -71,9 +71,21 @@ func TestArgsFilter_Filter(t *testing.T) {
 		args                   []trace.Argument
 		expected               bool
 	}{
+		// keep a single args (deprecated) filter test that shall break on future removal
 		{
-			name:                   "Matching argument value as int",
-			parseFilterName:        "read.args.fd",
+			name:                   "Matching args value as int",
+			parseFilterName:        "write.args.fd",
+			parseOperatorAndValues: "=3",
+			parseEventNamesToID:    events.Core.NamesToIDs(),
+			eventID:                events.Write,
+			args: []trace.Argument{
+				newArgument("fd", "int", 3),
+			},
+			expected: true,
+		},
+		{
+			name:                   "Matching data value as int",
+			parseFilterName:        "read.data.fd",
 			parseOperatorAndValues: "=3",
 			parseEventNamesToID:    events.Core.NamesToIDs(),
 			eventID:                events.Read,
@@ -83,8 +95,8 @@ func TestArgsFilter_Filter(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:                   "Non-matching argument value as int",
-			parseFilterName:        "read.args.fd",
+			name:                   "Non-matching data value as int",
+			parseFilterName:        "read.data.fd",
 			parseOperatorAndValues: "=3",
 			parseEventNamesToID:    events.Core.NamesToIDs(),
 			eventID:                events.Read,
@@ -94,8 +106,8 @@ func TestArgsFilter_Filter(t *testing.T) {
 			expected: false,
 		},
 		{
-			name:                   "Matching argument value as string",
-			parseFilterName:        "open.args.pathname",
+			name:                   "Matching data value as string",
+			parseFilterName:        "open.data.pathname",
 			parseOperatorAndValues: "=/etc/passwd",
 			parseEventNamesToID:    events.Core.NamesToIDs(),
 			eventID:                events.Open,
@@ -105,8 +117,8 @@ func TestArgsFilter_Filter(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:                   "Non-matching argument value as string",
-			parseFilterName:        "open.args.pathname",
+			name:                   "Non-matching data value as string",
+			parseFilterName:        "open.data.pathname",
 			parseOperatorAndValues: "=/etc/passwd",
 			parseEventNamesToID:    events.Core.NamesToIDs(),
 			eventID:                events.Open,
@@ -116,10 +128,10 @@ func TestArgsFilter_Filter(t *testing.T) {
 			expected: false,
 		},
 
-		// Test cases for syscall argument value of sys_enter and sys_exit events
+		// Test cases for syscall data value of sys_enter and sys_exit events
 		{
-			name:                   "Matching 'syscall' argument value of sys_enter as string",
-			parseFilterName:        "sys_enter.args.syscall",
+			name:                   "Matching 'syscall' data value of sys_enter as string",
+			parseFilterName:        "sys_enter.data.syscall",
 			parseOperatorAndValues: "=open", // string value (syscall name)
 			parseEventNamesToID:    events.Core.NamesToIDs(),
 			eventID:                events.SysEnter,
@@ -129,8 +141,8 @@ func TestArgsFilter_Filter(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:                   "Matching 'syscall' argument value of sys_exit as string",
-			parseFilterName:        "sys_exit.args.syscall",
+			name:                   "Matching 'syscall' data value of sys_exit as string",
+			parseFilterName:        "sys_exit.data.syscall",
 			parseOperatorAndValues: "=2", // int value (syscall id)
 			parseEventNamesToID:    events.Core.NamesToIDs(),
 			eventID:                events.SysExit,
@@ -140,8 +152,8 @@ func TestArgsFilter_Filter(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:                   "Non-matching 'syscall' argument value of sys_enter as int",
-			parseFilterName:        "sys_exit.args.syscall",
+			name:                   "Non-matching 'syscall' data value of sys_enter as int",
+			parseFilterName:        "sys_exit.data.syscall",
 			parseOperatorAndValues: "=2", // int value (syscall number), fails to match
 			parseEventNamesToID:    events.Core.NamesToIDs(),
 			eventID:                events.SysExit,
@@ -151,8 +163,8 @@ func TestArgsFilter_Filter(t *testing.T) {
 			expected: false,
 		},
 		{
-			name:                   "Non-matching 'syscall' argument value of sys_enter as string",
-			parseFilterName:        "sys_exit.args.syscall",
+			name:                   "Non-matching 'syscall' data value of sys_enter as string",
+			parseFilterName:        "sys_exit.data.syscall",
 			parseOperatorAndValues: "=open", // string value (syscall name), fails to match
 			parseEventNamesToID:    events.Core.NamesToIDs(),
 			eventID:                events.SysExit,
@@ -162,10 +174,10 @@ func TestArgsFilter_Filter(t *testing.T) {
 			expected: false,
 		},
 
-		// Test cases for syscall argument value of hooked_syscall event
+		// Test cases for syscall data value of hooked_syscall event
 		{
-			name:                   "Matching 'syscall' argument value of hooked_syscall as string",
-			parseFilterName:        "hooked_syscall.args.syscall",
+			name:                   "Matching 'syscall' data value of hooked_syscall as string",
+			parseFilterName:        "hooked_syscall.data.syscall",
 			parseOperatorAndValues: "=open", // string value (syscall name)
 			parseEventNamesToID:    events.Core.NamesToIDs(),
 			eventID:                events.HookedSyscall,
@@ -175,8 +187,8 @@ func TestArgsFilter_Filter(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:                   "Matching 'syscall' argument value of hooked_syscall as int",
-			parseFilterName:        "hooked_syscall.args.syscall",
+			name:                   "Matching 'syscall' data value of hooked_syscall as int",
+			parseFilterName:        "hooked_syscall.data.syscall",
 			parseOperatorAndValues: "=2", // int value (syscall id)
 			parseEventNamesToID:    events.Core.NamesToIDs(),
 			eventID:                events.HookedSyscall,
@@ -186,8 +198,8 @@ func TestArgsFilter_Filter(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:                   "Non-matching 'syscall' argument value of hooked_syscall as string",
-			parseFilterName:        "hooked_syscall.args.syscall",
+			name:                   "Non-matching 'syscall' data value of hooked_syscall as string",
+			parseFilterName:        "hooked_syscall.data.syscall",
 			parseOperatorAndValues: "=open", // string value (syscall name), fails to match
 			parseEventNamesToID:    events.Core.NamesToIDs(),
 			eventID:                events.HookedSyscall,
@@ -197,8 +209,8 @@ func TestArgsFilter_Filter(t *testing.T) {
 			expected: false,
 		},
 		{
-			name:                   "Non-matching 'syscall' argument value of hooked_syscall as int",
-			parseFilterName:        "hooked_syscall.args.syscall",
+			name:                   "Non-matching 'syscall' data value of hooked_syscall as int",
+			parseFilterName:        "hooked_syscall.data.syscall",
 			parseOperatorAndValues: "=2", // int value (syscall id), fails to match
 			parseEventNamesToID:    events.Core.NamesToIDs(),
 			eventID:                events.HookedSyscall,
@@ -215,7 +227,7 @@ func TestArgsFilter_Filter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := NewArgFilter()
+			filter := NewDataFilter()
 			err := filter.Parse(tc.parseFilterName, tc.parseOperatorAndValues, tc.parseEventNamesToID)
 			require.NoError(t, err)
 

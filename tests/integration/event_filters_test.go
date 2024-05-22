@@ -296,13 +296,13 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAllInOrderSequentially,
 		},
 		{
-			name: "event: args: trace event set in a specific policy with args pathname finishing with 'ls'",
+			name: "event: data: trace event set in a specific policy with data pathname finishing with 'ls'",
 			policyFiles: []policyFileWithID{
 				{
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "event-args",
+							Name: "event-data",
 						},
 						Spec: k8s.PolicySpec{
 							Scope: []string{
@@ -313,7 +313,7 @@ func Test_EventFilters(t *testing.T) {
 								{
 									Event: "execve",
 									Filters: []string{
-										"args.pathname=*ls",
+										"data.pathname=*ls",
 									},
 								},
 							},
@@ -328,7 +328,7 @@ func Test_EventFilters(t *testing.T) {
 					1*time.Second,
 					[]trace.Event{
 						expectEvent(anyHost, "integration.tes", // note that comm name is from the go test binary that runs the command
-							testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event-args"), orPolIDs(42), expectArg("pathname", "*ls")),
+							testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event-data"), orPolIDs(42), expectArg("pathname", "*ls")),
 					},
 					[]string{},
 				),
@@ -338,13 +338,13 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAllInOrderSequentially,
 		},
 		{
-			name: "event: args: trace event set in a specific policy with args pathname starting with * wildcard",
+			name: "event: data: trace event set in a specific policy with data pathname starting with * wildcard",
 			policyFiles: []policyFileWithID{
 				{
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "event-args",
+							Name: "event-data",
 						},
 						Spec: k8s.PolicySpec{
 							Scope: []string{
@@ -355,7 +355,7 @@ func Test_EventFilters(t *testing.T) {
 								{
 									Event: "execve",
 									Filters: []string{
-										"args.pathname=*/almost/improbable/path", // no event expected
+										"data.pathname=*/almost/improbable/path", // no event expected
 									},
 								},
 							},
@@ -374,13 +374,13 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAllInOrderSequentially,
 		},
 		{
-			name: "comm: event: args: trace event set in a specific policy with args from ls command",
+			name: "comm: event: data: trace event set in a specific policy with data from ls command",
 			policyFiles: []policyFileWithID{
 				{
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm-event-args",
+							Name: "comm-event-data",
 						},
 						Spec: k8s.PolicySpec{
 							Scope: []string{
@@ -391,7 +391,7 @@ func Test_EventFilters(t *testing.T) {
 								{
 									Event: "security_file_open",
 									Filters: []string{
-										"args.pathname=*integration",
+										"data.pathname=*integration",
 									},
 								},
 							},
@@ -405,7 +405,7 @@ func Test_EventFilters(t *testing.T) {
 					0,
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("comm-event-args"), orPolIDs(42), expectArg("pathname", "*integration")),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("comm-event-data"), orPolIDs(42), expectArg("pathname", "*integration")),
 					},
 					[]string{},
 				),
@@ -549,13 +549,13 @@ func Test_EventFilters(t *testing.T) {
 		// TODO: Add pid>0 pid<1000
 		// TODO: Add u>0 u!=1000
 		{
-			name: "pid: event: args: trace event sched_switch with args from pid 0",
+			name: "pid: event: data: trace event sched_switch with data from pid 0",
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "pid-0-event-args",
+							Name: "pid-0-event-data",
 						},
 						Spec: k8s.PolicySpec{
 							Scope: []string{
@@ -566,7 +566,7 @@ func Test_EventFilters(t *testing.T) {
 								{
 									Event: "sched_switch",
 									Filters: []string{
-										"args.next_comm=systemd",
+										"data.next_comm=systemd",
 									},
 								},
 							},
@@ -580,7 +580,7 @@ func Test_EventFilters(t *testing.T) {
 					500*time.Millisecond,
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid-0-event-args"), orPolIDs(1), expectArg("next_comm", "systemd")),
+						expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid-0-event-data"), orPolIDs(1), expectArg("next_comm", "systemd")),
 					},
 					[]string{},
 				),
@@ -951,13 +951,13 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAllEvtsEqualToOne,
 		},
 		{
-			name: "event: args: context: only security_file_open from \"execve\" syscall",
+			name: "event: data: context: only security_file_open from \"execve\" syscall",
 			policyFiles: []policyFileWithID{
 				{
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "event-args-context",
+							Name: "event-data-context",
 						},
 						Spec: k8s.PolicySpec{
 							Scope: []string{
@@ -969,7 +969,7 @@ func Test_EventFilters(t *testing.T) {
 									Event: "security_file_open",
 									Filters: []string{
 										"syscall=execve", // context
-										"args.pathname=*ls",
+										"data.pathname=*ls",
 									},
 								},
 							},
@@ -984,7 +984,7 @@ func Test_EventFilters(t *testing.T) {
 					1*time.Second,
 					[]trace.Event{
 						expectEvent(anyHost, "bash", // note that comm name is from the runner
-							testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("event-args-context"), orPolIDs(42), expectArg("pathname", "*ls")),
+							testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("event-data-context"), orPolIDs(42), expectArg("pathname", "*ls")),
 					},
 					[]string{},
 				),
@@ -1037,7 +1037,7 @@ func Test_EventFilters(t *testing.T) {
 		// // This is currently not possible since signature events are dynamically
 		// // created and an event like anti_debugging is not known in advance.
 		// {
-		// 	name: "comm: event: args: sign: trace sys events + signature events in separate policies",
+		// 	name: "comm: event: data: sign: trace sys events + signature events in separate policies",
 		// 	policyFiles: []policyFileWithID{
 		// 		{
 		// 			id: 3,
@@ -1056,13 +1056,13 @@ func Test_EventFilters(t *testing.T) {
 		// 		{
 		// 			id: 5,
 		// 			policyFile: v1beta1.PolicyFile{
-		// 				Name:          "event-args",
+		// 				Name:          "event-data",
 		// 				Scope:         []string{},
 		// 				DefaultActions: []string{"log"},
 		// 				Rules: []k8s.Rule{
 		// 					{
 		// 						Event:  "ptrace",
-		// 						Filters: []string{"args.pid=0"},
+		// 						Filters: []string{"data.pid=0"},
 		// 					},
 		// 				},
 		// 			},
@@ -1095,7 +1095,7 @@ func Test_EventFilters(t *testing.T) {
 		// 			"strace ls",
 		// 			1*time.Second,
 		// 			[]trace.Event{
-		// 				expectEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.Ptrace, orPolNames("event-args"), orPolIDs(5)),
+		// 				expectEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.Ptrace, orPolNames("event-data"), orPolIDs(5)),
 		// 				expectEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.anti_debugging, orPolNames("sign"), orPolIDs(9)),
 		// 			},
 		// 			[]string{},
@@ -1546,13 +1546,13 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAtLeastOneForEach,
 		},
 		{
-			name: "comm: event: args: trace event set in a specific policy with args from fakeprog1 and fakeprog2 commands",
+			name: "comm: event: data: trace event set in a specific policy with data from fakeprog1 and fakeprog2 commands",
 			policyFiles: []policyFileWithID{
 				{
 					id: 64,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm-event-args-64",
+							Name: "comm-event-data-64",
 						},
 						Spec: k8s.PolicySpec{
 							Scope: []string{
@@ -1563,9 +1563,9 @@ func Test_EventFilters(t *testing.T) {
 								{
 									Event: "openat",
 									Filters: []string{
-										"args.dirfd=0",
-										"args.flags=0",
-										"args.mode=0",
+										"data.dirfd=0",
+										"data.flags=0",
+										"data.mode=0",
 									},
 								},
 							},
@@ -1576,7 +1576,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm-event-args-42",
+							Name: "comm-event-data-42",
 						},
 						Spec: k8s.PolicySpec{
 							Scope: []string{
@@ -1587,8 +1587,8 @@ func Test_EventFilters(t *testing.T) {
 								{
 									Event: "open",
 									Filters: []string{
-										"args.flags=0",
-										"args.mode=0",
+										"data.flags=0",
+										"data.mode=0",
 									},
 								},
 							},
@@ -1602,7 +1602,7 @@ func Test_EventFilters(t *testing.T) {
 					0,
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-args-64"), orPolIDs(64),
+						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-data-64"), orPolIDs(64),
 							expectArg("dirfd", int32(0)),
 							expectArg("flags", int32(0)),
 							expectArg("mode", uint32(0)),
@@ -1615,7 +1615,7 @@ func Test_EventFilters(t *testing.T) {
 					0,
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "fakeprog2", testutils.CPUForTests, anyPID, 0, events.Open, orPolNames("comm-event-args-42"), orPolIDs(42),
+						expectEvent(anyHost, "fakeprog2", testutils.CPUForTests, anyPID, 0, events.Open, orPolNames("comm-event-data-42"), orPolIDs(42),
 							expectArg("flags", int32(0)),
 							expectArg("mode", uint32(0)),
 						),

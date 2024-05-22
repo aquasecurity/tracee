@@ -475,7 +475,7 @@ func TestSymbolsCollision(t *testing.T) {
 
 			// Prepare mocked filters for the existing test cases
 
-			filterName := "symbols_collision.args.symbols"
+			filterName := "symbols_collision.data.symbols"
 			eventsNameToID := map[string]events.ID{"symbols_collision": events.SymbolsCollision}
 
 			p := policy.NewPolicy()
@@ -483,12 +483,12 @@ func TestSymbolsCollision(t *testing.T) {
 
 			if len(testCase.blackList) > 0 {
 				operAndValsBlack := fmt.Sprintf("!=%s", strings.Join(testCase.blackList, ","))
-				err := p.ArgFilter.Parse(filterName, operAndValsBlack, eventsNameToID)
+				err := p.DataFilter.Parse(filterName, operAndValsBlack, eventsNameToID)
 				require.NoError(t, err)
 			}
 			if len(testCase.whiteList) > 0 {
 				operAndValsWhite := fmt.Sprintf("=%s", strings.Join(testCase.whiteList, ","))
-				err := p.ArgFilter.Parse(filterName, operAndValsWhite, eventsNameToID)
+				err := p.DataFilter.Parse(filterName, operAndValsWhite, eventsNameToID)
 				require.NoError(t, err)
 			}
 
