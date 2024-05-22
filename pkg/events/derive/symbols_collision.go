@@ -259,8 +259,10 @@ func (procLoadedObjsCache *loadedObjsPerProcessCache) GetLoadedObjsPerProcess(
 
 	loadedObjsIface, ok := procLoadedObjsCache.cache.Get(pid) // loaded objs per process (ObjInfo)
 	if ok {
-		loadedObjs = loadedObjsIface.([]sharedobjs.ObjInfo)
-		return loadedObjs, true // true if process existed in the cache
+		if objs, ok := loadedObjsIface.([]sharedobjs.ObjInfo); ok {
+			loadedObjs = objs
+			return loadedObjs, true
+		}
 	}
 
 	return nil, false
@@ -336,8 +338,9 @@ func (socCache collisionChecksCache) getObjCollisionsAndCollisionKey(
 		collisionsIface, ok = socCache.cache.Get(key)
 	}
 	if ok {
-		collisions := collisionsIface.([]string)
-		return key, collisions, true
+		if collisions, ok := collisionsIface.([]string); ok {
+			return key, collisions, true
+		}
 	}
 
 	return collisionsKey{}, nil, false // no collisions found

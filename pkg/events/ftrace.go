@@ -169,7 +169,10 @@ func checkFtraceHooks(eventsCounter counter.Counter, out chan *trace.Event, base
 		}
 
 		args[countIndex].Value = newCount
-		symbol := args[symbolIndex].Value.(string)
+		symbol, ok := args[symbolIndex].Value.(string)
+		if !ok {
+			return errors.New("failed to cast symbol's value")
+		}
 
 		// Verify that we didn't report this symbol already, and it wasn't changed.
 		// If we reported the symbol in the past, and now the count has reduced - report only if the callback was changed

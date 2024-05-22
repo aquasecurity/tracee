@@ -345,20 +345,23 @@ func getThreat(description string, metadata map[string]interface{}) *pb.Threat {
 }
 
 func getSeverity(metadata map[string]interface{}) pb.Severity {
-	switch metadata["Severity"].(int) {
-	case 0:
-		return pb.Severity_INFO
-	case 1:
-		return pb.Severity_LOW
-	case 2:
-		return pb.Severity_MEDIUM
-	case 3:
-		return pb.Severity_HIGH
-	case 4:
-		return pb.Severity_CRITICAL
+	severityValue, ok := metadata["Severity"].(int)
+	if ok {
+		switch severityValue {
+		case 0:
+			return pb.Severity_INFO
+		case 1:
+			return pb.Severity_LOW
+		case 2:
+			return pb.Severity_MEDIUM
+		case 3:
+			return pb.Severity_HIGH
+		case 4:
+			return pb.Severity_CRITICAL
+		}
 	}
 
-	return -1
+	return pb.Severity_INFO
 }
 
 func getStackAddress(stackAddresses []uint64) []*pb.StackAddress {

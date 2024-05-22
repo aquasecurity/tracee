@@ -2172,7 +2172,10 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 					}
 					switch v := expArg.Value.(type) {
 					case string:
-						actVal := actArg.Value.(string)
+						actVal, ok := actArg.Value.(string)
+						if !ok {
+							return fmt.Errorf("failed to cast arg's value")
+						}
 						if strings.Contains(v, "*") {
 							v = strings.ReplaceAll(v, "*", "")
 							if !strings.Contains(actVal, v) {
@@ -2305,7 +2308,10 @@ func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 					}
 					switch v := expArg.Value.(type) {
 					case string:
-						actVal := actArg.Value.(string)
+						actVal, ok := actArg.Value.(string)
+						if !ok {
+							return fmt.Errorf("failed to cast arg's value")
+						}
 						if strings.Contains(v, "*") {
 							v = strings.ReplaceAll(v, "*", "")
 							if !strings.Contains(actVal, v) {
@@ -2424,7 +2430,10 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 					}
 					switch v := expArg.Value.(type) {
 					case string:
-						actVal := actArg.Value.(string)
+						actVal, ok := actArg.Value.(string)
+						if !ok {
+							return fmt.Errorf("failed to cast arg's value")
+						}
 						if strings.Contains(v, "*") {
 							v = strings.ReplaceAll(v, "*", "")
 							if !strings.Contains(actVal, v) {
@@ -2523,7 +2532,10 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 				}
 				switch v := expArg.Value.(type) {
 				case string:
-					actVal := actArg.Value.(string)
+					actVal, ok := actArg.Value.(string)
+					if !ok {
+						return fmt.Errorf("failed to cast arg's value")
+					}
 					if strings.Contains(v, "*") {
 						v = strings.ReplaceAll(v, "*", "")
 						if !strings.Contains(actVal, v) {

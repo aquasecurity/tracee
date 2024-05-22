@@ -71,8 +71,10 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for j := 0; j < decodeEvts; j++ {
 				ctx := <-decodeChan
-				evt := evtPool.Get().(*trace.Event)
-
+				evt, ok := evtPool.Get().(*trace.Event)
+				if !ok {
+					b.Error("Failed to get event from pool")
+				}
 				evt.Timestamp = int(ctx.Ts)
 				evt.ThreadStartTime = int(ctx.StartTime)
 				evt.ProcessorID = int(ctx.ProcessorId)
@@ -125,7 +127,10 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 
 				// get an event from the pool, fill it with data and
 				// pass it to the other stages
-				evtCopy := evtPool.Get().(*trace.Event)
+				evtCopy, ok := evtPool.Get().(*trace.Event)
+				if !ok {
+					b.Error("Failed to get event from pool")
+				}
 				*evtCopy = *evt // shallow copy
 				sinkChan <- evt
 				if j < deriveEvts {

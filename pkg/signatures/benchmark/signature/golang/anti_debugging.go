@@ -56,7 +56,10 @@ func (sig *antiDebugging) OnEvent(event protocol.Event) error {
 	if err != nil {
 		return err
 	}
-	requestString := request.Value.(string)
+	requestString, ok := request.Value.(string)
+	if !ok {
+		return fmt.Errorf("failed to cast request's value")
+	}
 	if requestString != "PTRACE_TRACEME" {
 		return nil
 	}

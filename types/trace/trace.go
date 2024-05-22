@@ -226,7 +226,10 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 	switch arg.Type {
 	case "const char*const*", "const char**":
 		if arg.Value != nil {
-			argValue := arg.Value.([]interface{})
+			argValue, ok := arg.Value.([]interface{})
+			if !ok {
+				return fmt.Errorf("const char*const*: type error")
+			}
 			arg.Value = jsonConvertToStringSlice(argValue)
 		} else {
 			arg.Value = []string{}

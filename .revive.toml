@@ -127,7 +127,7 @@ enableAllRules = true
 [rule.var-declaration]
     Disabled = false
 [rule.unchecked-type-assertion]
-    Disabled = true
+    Disabled = false
 [rule.unconditional-recursion]
     Disabled = false
 [rule.unexported-naming]

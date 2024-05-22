@@ -217,7 +217,11 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			}
 
 			// get an event pointer from the pool
-			evt := t.eventsPool.Get().(*trace.Event)
+			evt, ok := t.eventsPool.Get().(*trace.Event)
+			if !ok {
+				t.handleError(errfmt.Errorf("failed to get event from pool"))
+				continue
+			}
 
 			// populate all the fields of the event used in this stage, and reset the rest
 
