@@ -214,6 +214,11 @@ func (c *CgroupV1) init() error {
 	// 2. discover where cgroup is mounted
 	c.mountpoint = c.mounted.GetMountpoint()
 
+	inode := c.mounted.GetMountpointInode()
+	if inode != 1 {
+		logger.Warnw("Cgroup mountpoint is not in the host cgroup namespace", "mountpoint", c.mountpoint, "inode", inode)
+	}
+
 	return nil
 }
 
@@ -264,6 +269,11 @@ func (c *CgroupV2) init() error {
 
 	// 2. discover where cgroup is mounted
 	c.mountpoint = c.mounted.GetMountpoint()
+
+	inode := c.mounted.GetMountpointInode()
+	if inode != 1 {
+		logger.Warnw("Cgroup mountpoint is not in the host cgroup namespace", "mountpoint", c.mountpoint, "inode", inode)
+	}
 
 	return nil
 }
