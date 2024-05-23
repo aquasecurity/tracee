@@ -7,7 +7,6 @@ import (
 	"strings"
 	"syscall"
 
-	"golang.org/x/exp/slices"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
@@ -38,6 +37,7 @@ type MountHostOnce struct {
 	target  string
 	fsType  string
 	data    string
+	mpInode int
 	managed bool
 	mounted bool
 }
@@ -60,6 +60,14 @@ func NewMountHostOnce(source, fstype, data, where string) (*MountHostOnce, error
 			return nil, errfmt.WrapError(err)
 		}
 		m.managed = true // managed by this object
+
+		// Try to get the inode number of the current mountpoint.
+		var stat syscall.Stat_t
+		if err := syscall.Stat(m.target, &stat); err != nil {
+			logger.Warnw("Stat failed", "mountpoint", m.target, "error", err)
+		} else {
+			m.mpInode = int(stat.Ino)
+		}
 	}
 
 	m.mounted = true
@@ -143,10 +151,14 @@ func (m *MountHostOnce) GetMountpoint() string {
 	return m.target
 }
 
+func (m *MountHostOnce) GetMountpointInode() int {
+	return m.mpInode
+}
+
 // private
 
 func (m *MountHostOnce) isMountedByOS(where string) (bool, error) {
-	mp, err := SearchMountpointFromHost(m.fsType, m.data)
+	mp, inode, err := SearchMountpointFromHost(m.fsType, m.data)
 	if err != nil || mp == "" {
 		return false, errfmt.WrapError(err)
 	}
@@ -155,8 +167,9 @@ func (m *MountHostOnce) isMountedByOS(where string) (bool, error) {
 	}
 
 	m.target = mp // replace given target dir with existing mountpoint
+	m.mpInode = inode
 	m.mounted = true
-	m.managed = false // proforma
+	m.managed = false
 
 	return true, nil
 }
@@ -189,15 +202,30 @@ func IsFileSystemSupported(fsType string) (bool, error) {
 	return false, nil
 }
 
-// SearchMountpointFromHost returns the last mountpoint for a given filesystem type
-// containing a searchable string. It confirms the mount originates from the root file
-// system.
-func SearchMountpointFromHost(fstype string, search string) (string, error) {
+// SearchMountpointFromHost scans the /proc/self/mountinfo file to find the oldest
+// mountpoint of a specified filesystem type (fstype) that contains a given
+// searchable string (search) in its path. This is useful in environments like
+// containers where multiple mountpoints may exist, and we need to find the one
+// that belongs to the host namespace.
+//
+// Parameters:
+// - fstype: The filesystem type to search for (e.g., "cgroup2", "ext4").
+// - search: The substring to search for within the mountpoint path (e.g., "/sys/fs/cgroup").
+//
+// Returns:
+// - string: The path of the oldest matching mountpoint.
+// - int: The inode number of the matching mountpoint.
+// - error: Any error encountered while reading the /proc/mounts file.
+func SearchMountpointFromHost(fstype string, search string) (string, int, error) {
+	const mountpointIndex = 4
+	const fsTypeIndex = 8
+
 	mp := ""
+	inode := 0
 
 	file, err := os.Open(procMounts)
 	if err != nil {
-		return "", errfmt.WrapError(err)
+		return "", 0, errfmt.WrapError(err)
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
@@ -208,24 +236,31 @@ func SearchMountpointFromHost(fstype string, search string) (string, error) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.Split(scanner.Text(), " ")
-		mountRoot := line[3]
-		mountpoint := line[4]
-		sepIndex := slices.Index(line, "-")
-		fsTypeIndex := sepIndex + 1
+		if len(line) <= fsTypeIndex {
+			continue // Skip lines that do not have enough fields
+		}
+
+		mountpoint := line[mountpointIndex]
 		currFstype := line[fsTypeIndex]
-		// Check for the following 3 conditions:
-		// 1. The fs type is the one we search for
-		// 2. The mountpoint contains the path we are searching
-		// 3. The root path in the mounted filesystem is that of the host.
-		//	  This means, that the root of the mounted filesystem is /.
-		//    For example, if we are searching for /sys/fs/cgroup, we want to
-		//    be sure that it is not actually .../sys/fs/cgroup, but strictly
-		//    the searched path.
-		if fstype == currFstype && strings.Contains(mountpoint, search) && mountRoot == "/" {
-			mp = mountpoint
-			break
+
+		// Check if the current line matches the desired filesystem type and contains the search string.
+		if fstype == currFstype && strings.Contains(mountpoint, search) {
+			// Try to get the inode number of the current mountpoint.
+			var stat syscall.Stat_t
+			if err := syscall.Stat(mountpoint, &stat); err != nil {
+				logger.Warnw("Stat failed", "mountpoint", mountpoint, "error", err)
+				continue // Skip this mountpoint if stat fails
+			}
+			currInode := int(stat.Ino)
+
+			// Update the result if this is the first match or if the current mountpoint is older or shorter in path length.
+			if inode == 0 || currInode < inode ||
+				(currInode == inode && len(mountpoint) < len(mp)) {
+				mp = mountpoint
+				inode = currInode
+			}
 		}
 	}
 
-	return mp, nil
+	return mp, inode, nil
 }
