@@ -181,9 +181,13 @@ func (clv *Changelog[T]) enforceSizeBoundary() {
 			return false
 		})
 
-		clv.changes = clv.changes[len(clv.changes)-clv.maxSize:]
-		for i := 0; i < boundaryDiff; i++ {
-			delete(clv.timestamps, clv.changes[i].timestamp)
+		if boundaryDiff == 0 {
+			return
+		}
+		removedChanges := clv.changes[:boundaryDiff]
+		clv.changes = clv.changes[boundaryDiff:]
+		for _, removedChange := range removedChanges {
+			delete(clv.timestamps, removedChange.timestamp)
 		}
 	}
 }
