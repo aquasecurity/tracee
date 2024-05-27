@@ -40,6 +40,8 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 	if feed.ChildTid == 0 || feed.ChildPid == 0 {
 		return errfmt.Errorf("invalid child task")
 	}
+
+	feedTimeStamp := utils.NsSinceEpochToTime(feed.TimeStamp)
 	// Parent PID or TID might be 0 for init (and docker containers)
 	// if feed.ParentTid == 0 || feed.ParentPid == 0 {
 	// 	return errfmt.Errorf("invalid parent task")
@@ -61,7 +63,7 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 				Uid:         -1, // do not change the parent uid
 				Gid:         -1, // do not change the parent gid
 			},
-			utils.NsSinceBootTimeToTime(feed.TimeStamp),
+			feedTimeStamp,
 		)
 		if pt.procfsQuery {
 			pt.FeedFromProcFSAsync(int(feed.ParentPid)) // try to enrich ppid and name from procfs
@@ -99,7 +101,7 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 				Uid:         -1, // do not change the parent ui
 				Gid:         -1, // do not change the parent gid
 			},
-			utils.NsSinceBootTimeToTime(feed.TimeStamp),
+			feedTimeStamp,
 		)
 		if pt.procfsQuery {
 			pt.FeedFromProcFSAsync(int(feed.LeaderPid)) // try to enrich name from procfs if needed
@@ -125,11 +127,11 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 	if feed.ChildHash == feed.LeaderHash {
 		leader.GetExecutable().SetFeedAt(
 			parent.GetExecutable().GetFeed(),
-			utils.NsSinceBootTimeToTime(feed.TimeStamp),
+			feedTimeStamp,
 		)
 		leader.GetInterpreter().SetFeedAt(
 			parent.GetInterpreter().GetFeed(),
-			utils.NsSinceBootTimeToTime(feed.TimeStamp),
+			feedTimeStamp,
 		)
 	}
 
@@ -149,7 +151,7 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 				Uid:         -1, // do not change the thread uid
 				Gid:         -1, // do not change the thread gid
 			},
-			utils.NsSinceBootTimeToTime(feed.TimeStamp),
+			feedTimeStamp,
 		)
 	}
 
@@ -222,7 +224,7 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 
 	process.GetInfo().SetNameAt(
 		feed.CmdPath,
-		utils.NsSinceBootTimeToTime(feed.TimeStamp),
+		utils.NsSinceEpochToTime(feed.TimeStamp),
 	)
 
 	process.GetExecutable().SetFeedAt(
@@ -233,13 +235,8 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 			Inode:     int(feed.Inode),
 			InodeMode: int(feed.InodeMode),
 		},
-		utils.NsSinceBootTimeToTime(feed.TimeStamp),
+		utils.NsSinceEpochToTime(feed.TimeStamp),
 	)
-
-	// The interpreter and interp info are taking a lot of memory.
-	// As their usage is still unclear in the process tree, it was decided
-	// to not save their information until it was clear how they would be used.
-	// TODO: Decide whether remove the interpreter and interp from the tree or add them back.
 
 	return nil
 }

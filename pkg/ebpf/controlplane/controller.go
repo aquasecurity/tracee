@@ -8,6 +8,7 @@ import (
 	"github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/ebpf/reltime"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
@@ -28,6 +29,7 @@ type Controller struct {
 	cgroupManager  *containers.Containers
 	processTree    *proctree.ProcessTree
 	enrichDisabled bool
+	timeNormalizer reltime.TimeNormalizer
 }
 
 // NewController creates a new controller.
@@ -36,6 +38,7 @@ func NewController(
 	cgroupManager *containers.Containers,
 	enrichDisabled bool,
 	procTree *proctree.ProcessTree,
+	timeNormalizer reltime.TimeNormalizer,
 ) (*Controller, error) {
 	var err error
 
@@ -46,6 +49,7 @@ func NewController(
 		cgroupManager:  cgroupManager,
 		processTree:    procTree,
 		enrichDisabled: enrichDisabled,
+		timeNormalizer: timeNormalizer,
 	}
 
 	p.signalBuffer, err = bpfModule.InitPerfBuf("signals", p.signalChan, p.lostSignalChan, 1024)

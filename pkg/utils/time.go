@@ -75,13 +75,19 @@ func getBootTimeInJiffies() int64 {
 // Boot time functions
 //
 
+// Common clock IDs
+const (
+	CLOCK_MONOTONIC = unix.CLOCK_MONOTONIC // Time since a boot (not including time spent in suspend)
+	CLOCK_BOOTTIME  = unix.CLOCK_BOOTTIME  // Time since a boot (including time spent in suspend)
+)
+
 // GetStartTimeNS returns the system start time in nanoseconds (using CLOCK_MONOTONIC).
-func GetStartTimeNS() int64 {
+func GetStartTimeNS(clockID int32) int64 {
 	var ts unix.Timespec
 
 	// Tracee bpf code uses monotonic clock as event timestamp. Get current
 	// monotonic clock so tracee can calculate event timestamps relative to it.
-	err := unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
+	err := unix.ClockGettime(clockID, &ts)
 	if err != nil {
 		logger.Debugw("error getting monotonic time", "err", err)
 		return 0
@@ -90,18 +96,18 @@ func GetStartTimeNS() int64 {
 }
 
 // GetBootTimeNS returns the boot time of the system in nanoseconds.
-func GetBootTimeNS() int64 {
+func GetBootTimeNS(clockID int32) int64 {
 	// Calculate the boot time using the monotonic time (since this is the clock
 	// we're using as a timestamp) Note: this is NOT the real boot time, as the
 	// monotonic clock doesn't take into account system sleeps.
-	startTime := GetStartTimeNS()
+	startTime := GetStartTimeNS(clockID)
 	bootTime := time.Now().UnixNano() - startTime
 	return bootTime
 }
 
 // GetBootTime returns the boot time of the system in time.Time format.
-func GetBootTime() time.Time {
-	startTime := GetStartTimeNS()
+func GetBootTime(clockID int32) time.Time {
+	startTime := GetStartTimeNS(clockID)
 	uptime := time.Duration(startTime) * time.Nanosecond
 	return time.Now().Add(-uptime)
 }
@@ -126,8 +132,12 @@ func ClockTicksToNsSinceBootTime(ticks int64) uint64 {
 }
 
 // NsSinceBootTimeToTime converts nanoseconds timestamp (since boot) to a time.Time object.
-func NsSinceBootTimeToTime(ns uint64) time.Time {
+func NsSinceBootTimeToTime(clockID int32, ns uint64) time.Time {
 	duration := time.Duration(int64(ns))
-	bootTime := GetBootTime()
+	bootTime := GetBootTime(clockID)
 	return bootTime.Add(duration)
+}
+
+func NsSinceEpochToTime(ns uint64) time.Time {
+	return time.Unix(0, int64(ns))
 }

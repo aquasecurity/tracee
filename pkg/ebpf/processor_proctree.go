@@ -2,7 +2,6 @@ package ebpf
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -75,7 +74,7 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 
 	return t.processTree.FeedFromFork(
 		proctree.ForkFeed{
-			TimeStamp:       childStartTime, // event timestamp is the same
+			TimeStamp:       uint64(t.timeNormalizer.NormalizeTime(int(childStartTime))), // event timestamp is the same
 			ChildHash:       childHash,
 			ParentHash:      parentHash,
 			LeaderHash:      leaderHash,
@@ -83,17 +82,17 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 			ParentNsTid:     parentNsTid,
 			ParentPid:       parentPid,
 			ParentNsPid:     parentNsPid,
-			ParentStartTime: parentStartTime,
+			ParentStartTime: uint64(t.timeNormalizer.NormalizeTime(int(parentStartTime))),
 			LeaderTid:       leaderTid,
 			LeaderNsTid:     leaderNsTid,
 			LeaderPid:       leaderPid,
 			LeaderNsPid:     leaderNsPid,
-			LeaderStartTime: leaderStartTime,
+			LeaderStartTime: uint64(t.timeNormalizer.NormalizeTime(int(leaderStartTime))),
 			ChildTid:        childTid,
 			ChildNsTid:      childNsTid,
 			ChildPid:        childPid,
 			ChildNsPid:      childNsPid,
-			ChildStartTime:  childStartTime,
+			ChildStartTime:  uint64(t.timeNormalizer.NormalizeTime(int(childStartTime))),
 		},
 	)
 }
@@ -186,7 +185,7 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 
 	return t.processTree.FeedFromExec(
 		proctree.ExecFeed{
-			TimeStamp:         timestamp,
+			TimeStamp:         uint64(t.timeNormalizer.NormalizeTime(int(timestamp))),
 			TaskHash:          taskHash,
 			ParentHash:        0, // regular pipeline does not have parent hash
 			LeaderHash:        0, // regular pipeline does not have leader hash
@@ -237,7 +236,7 @@ func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
 
 	return t.processTree.FeedFromExit(
 		proctree.ExitFeed{
-			TimeStamp:  timestamp, // time of exit is already a timestamp
+			TimeStamp:  uint64(t.timeNormalizer.NormalizeTime(int(timestamp))), // time of exit is already a timestamp
 			TaskHash:   taskHash,
 			ParentHash: 0, // regular pipeline does not have parent hash
 			LeaderHash: 0, // regular pipeline does not have leader hash
@@ -270,7 +269,7 @@ func (t *Tracee) procTreeAddBinInfo(event *trace.Event) error {
 	}
 
 	// Event timestamp is changed to relative (or not) at the end of all processors only.
-	eventTimestamp := time.Unix(0, int64(event.Timestamp)+int64(t.bootTime))
+	eventTimestamp := utils.NsSinceEpochToTime(uint64(t.timeNormalizer.NormalizeTime(event.Timestamp)))
 
 	executable := currentProcess.GetExecutable()
 

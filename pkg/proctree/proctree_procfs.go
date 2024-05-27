@@ -13,7 +13,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 )
 
-const debugMsgs = false // debug messages can be too verbose, so they are disabled by default
+const debugMsgs = false                    // debug messages can be too verbose, so they are disabled by default
+const ProcfsClockId = utils.CLOCK_BOOTTIME // Procfs uses jiffies, which are based on boottime
 
 const (
 	AllPIDs = 0
@@ -178,7 +179,7 @@ func dealWithProc(pt *ProcessTree, givenPid int) error {
 			Gid:         -1,     // do not change the parent gid
 			StartTimeNS: startTimeNs,
 		},
-		utils.NsSinceBootTimeToTime(uint64(start)), // try to be the first changelog entry
+		utils.NsSinceBootTimeToTime(ProcfsClockId, uint64(start)), // try to be the first changelog entry
 	)
 
 	// TODO: Update executable with information from /proc/<pid>/exe
@@ -247,7 +248,7 @@ func dealWithThread(pt *ProcessTree, givenPid int, givenTid int) error {
 			Gid:         -1,     // do not change the parent gid
 			StartTimeNS: startTimeNs,
 		},
-		utils.NsSinceBootTimeToTime(uint64(start)), // try to be the first changelog entry
+		utils.NsSinceBootTimeToTime(ProcfsClockId, uint64(start)), // try to be the first changelog entry
 	)
 
 	// thread group leader (leader tid is the same as the thread's pid, so we can find it)

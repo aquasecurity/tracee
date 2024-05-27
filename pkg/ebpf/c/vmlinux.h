@@ -266,6 +266,8 @@ struct task_struct {
     struct pid *thread_pid;
     struct list_head thread_group;
     u64 start_time;
+    u64 start_boottime;
+    u64 real_start_time;
     const struct cred *real_cred;
     char comm[16];
     struct files_struct *files;
@@ -675,6 +677,7 @@ enum bpf_func_id
     BPF_FUNC_probe_write_user = 36,
     BPF_FUNC_override_return = 58,
     BPF_FUNC_sk_storage_get = 107,
+    BPF_FUNC_ktime_get_boot_ns = 125,
     BPF_FUNC_copy_from_user = 148,
     BPF_FUNC_for_each_map_elem = 164,
 };
