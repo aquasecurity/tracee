@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.24+insiders-4.53.10">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.25+insiders-4.53.11">
     
     
       
@@ -17659,7 +17659,7 @@
 <h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
 <p>tracee <strong>--events</strong> - Select which events to trace</p>
 <h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--events</strong> [&lt;event-name1(,[-]event-name2...)&gt; | &lt;[-]event-name1(,set1...)&gt; | &lt;set1(,[-]event-name1,[-]event-name2...)&gt; | &lt;event1.args.arg-field[=|!=]value&gt; | &lt;event1.retval[=|!=|&lt;|&gt;|&lt;=|&gt;=]value&gt; | &lt;event1.scope.field[=|!=|&lt;|&gt;|&lt;=|&gt;=]value&gt; | &lt;event.scope.container&gt;] ...</p>
+<p>tracee <strong>--events</strong> [&lt;event-name1(,[-]event-name2...)&gt; | &lt;[-]event-name1(,set1...)&gt; | &lt;set1(,[-]event-name1,[-]event-name2...)&gt; | &lt;event1.data.data-field[=|!=]value&gt; | &lt;event1.retval[=|!=|&lt;|&gt;|&lt;=|&gt;=]value&gt; | &lt;event1.scope.field[=|!=|&lt;|&gt;|&lt;=|&gt;=]value&gt; | &lt;event.scope.container&gt;] ...</p>
 <h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>The <strong>--events</strong> flag allows you to select which events to trace by defining filters.</p>
 <h2 id="filters">FILTERS<a class="headerlink" href="#filters" title="Permanent link">&para;</a></h2>
@@ -17668,7 +17668,7 @@
 <p>Event or set name: Select specific events using 'event-name1,event-name2...' or predefined event sets using 'event_set_name1,event_set_name2...'. To exclude events, prepend the event name with a dash '-': '-event-name'.</p>
 </li>
 <li>
-<p>Event arguments: Filter events based on their arguments using 'event-name.args.event_arg'. The event argument expression follows the syntax of a string expression.</p>
+<p>Event data: Filter events based on their data using 'event-name.data.event_data'. The event data expression follows the syntax of a string expression.</p>
 </li>
 <li>
 <p>Event return value: Filter events based on their return value using 'event-name.retval'. The event return value expression follows the syntax of a numerical expression.</p>
@@ -17733,22 +17733,22 @@
 <ul>
 <li>To trace only 'close' events that have 'fd' equal to 5, use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--events close.args.fd=5</span>
+<div class="highlight"><pre><span></span><code><span class="go">--events close.data.fd=5</span>
 </code></pre></div>
 <ul>
 <li>To trace only 'openat' events that have 'pathname' prefixed by '/tmp', use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--events openat.args.pathname=&#39;/tmp*&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="go">--events openat.data.pathname=&#39;/tmp*&#39;</span>
 </code></pre></div>
 <ul>
 <li>To trace only 'openat' events that have 'pathname' suffixed by 'shadow', use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--events openat.args.pathname=&#39;*shadow&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="go">--events openat.data.pathname=&#39;*shadow&#39;</span>
 </code></pre></div>
 <ul>
 <li>To exclude 'openat' events that have 'pathname' equal to '/tmp/1' or '/bin/ls', use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--events openat.args.pathname!=/tmp/1,/bin/ls</span>
+<div class="highlight"><pre><span></span><code><span class="go">--events openat.data.pathname!=/tmp/1,/bin/ls</span>
 </code></pre></div>
 <ul>
 <li>To trace only 'openat' events that have 'processName' equal to 'ls', use the following flag:</li>

@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.24+insiders-4.53.10">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.25+insiders-4.53.11">
     
     
       
@@ -17789,7 +17789,7 @@ shared object necessary to examine its shared objects.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
 <p>To catch SO which tries to override the <code>fopen</code> function of <code>libc</code>, we can use the event in
 the following way:</p>
-<div class="highlight"><pre><span></span><code><span class="go">./dist/tracee -e symbols_loaded.args.symbols=fopen -e symbols_loaded.args.library_path!=libc</span>
+<div class="highlight"><pre><span></span><code><span class="go">./dist/tracee -e symbols_loaded.data.symbols=fopen -e symbols_loaded.data.library_path!=libc</span>
 </code></pre></div>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
 <p>Because the event is implemented in user-mode, it needs to open and read files.

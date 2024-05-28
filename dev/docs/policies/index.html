@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.24+insiders-4.53.10">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.25+insiders-4.53.11">
     
     
       
@@ -17423,9 +17423,9 @@
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">security_file_open</span>
 <span class="w">        </span><span class="nt">filters</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">args.pathname=/tmp/*</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data.pathname=/tmp/*</span>
 </code></pre></div>
-<p>This policy applies to any workload (<code>global</code>) and will log the <code>dropped_executable</code>, and <code>security_file_open</code> events. An argument filter (<code>args.pathname</code>) is set on the <code>security_file_open</code> event to log only files which were opened from the <code>/tmp</code> directory.</p>
+<p>This policy applies to any workload (<code>global</code>) and will log the <code>dropped_executable</code>, and <code>security_file_open</code> events. A data filter (<code>data.pathname</code>) is set on the <code>security_file_open</code> event to log only files which were opened from the <code>/tmp</code> directory.</p>
 <div class="admonition note todo">
 <p class="admonition-title">Note</p>
 <p>Note that currently each event type can only be defined once in a policy</p>

@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.24+insiders-4.53.10">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.25+insiders-4.53.11">
     
     
       
@@ -17726,7 +17726,7 @@
 <p>To switch on the <code>Process Tree</code> feature, run the command:</p>
 <div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>tracee<span class="w"> </span>--output<span class="w"> </span>option:sort-events<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span>--output<span class="w"> </span>option:parse-arguments<span class="w"> </span>--proctree<span class="w"> </span><span class="nv">source</span><span class="o">=</span>both<span class="w"> </span>--events<span class="w"> </span>&lt;event_type&gt;
 </code></pre></div>
-<p>The underlying structure is populated using the core <code>sched_process_fork</code>, <code>sched_process_exec</code>, and <code>sched_process_exit</code> events and their args. There's also an option to bootstrap the process tree through a secondary route using internal signal events.</p>
+<p>The underlying structure is populated using the core <code>sched_process_fork</code>, <code>sched_process_exec</code>, and <code>sched_process_exit</code> events and their data. There's also an option to bootstrap the process tree through a secondary route using internal signal events.</p>
 <blockquote>
 <p>Introducing this secondary event source is strategic: it reduces interference with actively traced events, leading to more accurate and granular updates in the process tree.</p>
 </blockquote>
