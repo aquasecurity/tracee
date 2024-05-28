@@ -9,14 +9,14 @@ with other shared object already loaded to the process. This event can help in i
 occasion that a shared object tries to override some symbol of another library.
 
 ### Configuring the event
-The event is configured using arguments filtering.
+The event is configured using data filtering.
 #### symbols
 Configure the watched symbols that upon collision will trigger the event.
 Specify the full name of the symbol for each symbol.
 Notice that only watched symbols will be outputed by the event, and the default is watching all symbols.
 The use is only with the `=` or `!=` operators, and wildcards aren't supported.
 
-## Arguments
+## Data
 * `loaded_path`:`const char*`[K] - the path of the file loaded.
 * `collision_path`:`const char*`[K,TOCTOU] - the path of the file already loaded, which has collision with the new loaded one.
 * `symbols`:`const char*const*`[U,TOCTOU] - list of symbols collided between the files.
