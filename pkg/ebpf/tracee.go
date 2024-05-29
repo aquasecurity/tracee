@@ -121,6 +121,11 @@ type Tracee struct {
 	policyManager *policyManager
 	// The dependencies of events used by Tracee
 	eventsDependencies *dependencies.Manager
+
+	// Ksymbols needed to be kept alive in table.
+	// This doens't mean they are required for tracee to function.
+	// TOOD: remove this in favor of dependency manager nodes
+	requiredKsyms []string
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -238,6 +243,7 @@ func New(cfg config.Config) (*Tracee, error) {
 			func(id events.ID) events.Dependencies {
 				return events.Core.GetDefinitionByID(id).GetDependencies()
 			}),
+		requiredKsyms: []string{},
 	}
 
 	t.eventsDependencies.SubscribeAdd(
@@ -378,26 +384,11 @@ func New(cfg config.Config) (*Tracee, error) {
 }
 
 // Init initialize tracee instance and it's various subsystems, potentially
-// performing external system operations to initialize them. NOTE: any
-// initialization logic, especially one that causes side effects, should go
-// here and not New().
+// performing external system operations to initialize them.
+// NOTE: any initialization logic, especially one that causes side effects
+// should go here and not New().
 func (t *Tracee) Init(ctx gocontext.Context) error {
 	var err error
-
-	// Init kernel symbols map
-
-	err = capabilities.GetInstance().Specific(
-		func() error {
-			t.kernelSymbols, err = helpers.NewKernelSymbolTable()
-			return err
-		},
-		cap.SYSLOG,
-	)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	t.validateKallsymsDependencies() // disable events w/ missing ksyms dependencies
 
 	// Initialize buckets cache
 
@@ -486,6 +477,40 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 			t.eventsParamTypes[id] = append(t.eventsParamTypes[id], bufferdecoder.GetParamType(param.Type))
 		}
 	}
+
+	// Initialize eBPF probes
+	err = capabilities.GetInstance().EBPF(
+		func() error {
+			return t.initBPFProbes()
+		},
+	)
+	if err != nil {
+		t.Close()
+		return errfmt.WrapError(err)
+	}
+
+	// Init kernel symbols map
+	err = t.initKsymTableRequiredSyms()
+	if err != nil {
+		return err
+	}
+
+	err = capabilities.GetInstance().Specific(
+		func() error {
+			t.kernelSymbols, err = helpers.NewKernelSymbolTable(
+				helpers.WithRequiredSymbols(t.requiredKsyms),
+			)
+			// Cleanup memory in list
+			t.requiredKsyms = []string{}
+			return err
+		},
+		cap.SYSLOG,
+	)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	t.validateKallsymsDependencies() // disable events w/ missing ksyms dependencies
 
 	// Initialize eBPF programs and maps
 
@@ -601,11 +626,11 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 		if events.Core.GetDefinitionByID(events.ID(index)).IsSyscall() {
 			// Optimization: enable enter/exit probes only if at least one syscall is enabled.
 			once.Do(func() {
-				err := t.probes.Attach(probes.SyscallEnter__Internal)
+				err := t.probes.Attach(probes.SyscallEnter__Internal, t.kernelSymbols)
 				if err != nil {
 					logger.Errorw("error attaching to syscall enter", "error", err)
 				}
-				err = t.probes.Attach(probes.SyscallExit__Internal)
+				err = t.probes.Attach(probes.SyscallExit__Internal, t.kernelSymbols)
 				if err != nil {
 					logger.Errorw("error attaching to syscall enter", "error", err)
 				}
@@ -862,6 +887,104 @@ func (t *Tracee) newConfig(cfg *policy.PoliciesConfig, version uint16) *Config {
 	}
 }
 
+func (t *Tracee) initKsymTableRequiredSyms() error {
+	// Get all required symbols needed in the table
+	// 1. all event ksym dependencies
+	// 2. specific cases (hooked_seq_ops, hooked_symbols, print_mem_dump)
+	for id := range t.eventsState {
+		if !events.Core.IsDefined(id) {
+			return errfmt.Errorf("event %d is not defined", id)
+		}
+
+		depsNode, ok := t.eventsDependencies.GetEvent(id)
+		if !ok {
+			logger.Warnw("failed to extract required ksymbols from event", "event_id", id)
+			continue
+		}
+		// Add directly dependant symbols
+		deps := depsNode.GetDependencies()
+		ksyms := deps.GetKSymbols()
+		ksymNames := make([]string, len(ksyms))
+		for _, sym := range ksyms {
+			ksymNames = append(ksymNames, sym.GetSymbolName())
+		}
+		t.requiredKsyms = append(t.requiredKsyms, ksymNames...)
+
+		// If kprobe/kretprobe, the event name itself is a required symbol
+		depsProbes := deps.GetProbes()
+		for _, probeDep := range depsProbes {
+			probe := t.probes.GetProbeByHandle(probeDep.GetHandle())
+			traceProbe, ok := probe.(*probes.TraceProbe)
+			if !ok {
+				continue
+			}
+			probeType := traceProbe.GetProbeType()
+			switch probeType {
+			case probes.KProbe, probes.KretProbe:
+				t.requiredKsyms = append(t.requiredKsyms, traceProbe.GetEventName())
+			}
+		}
+	}
+
+	// Specific cases
+	if _, ok := t.eventsState[events.HookedSeqOps]; ok {
+		for _, seqName := range derive.NetSeqOps {
+			t.requiredKsyms = append(t.requiredKsyms, seqName)
+		}
+	}
+	if _, ok := t.eventsState[events.HookedSyscall]; ok {
+		t.requiredKsyms = append(t.requiredKsyms, events.SyscallPrefix+"ni_syscall", "sys_ni_syscall")
+		for i, kernelRestrictionArr := range events.SyscallSymbolNames {
+			syscallName := t.getSyscallNameByKerVer(kernelRestrictionArr)
+			if syscallName == "" {
+				logger.Debugw("hooked_syscall (symbol): skipping syscall", "index", i)
+				continue
+			}
+
+			t.requiredKsyms = append(t.requiredKsyms, events.SyscallPrefix+syscallName)
+		}
+	}
+	if _, ok := t.eventsState[events.PrintMemDump]; ok {
+		for it := t.config.Policies.CreateAllIterator(); it.HasNext(); {
+			p := it.Next()
+			// This might break in the future if PrintMemDump will become a dependency of another event.
+			_, isChosen := p.EventsToTrace[events.PrintMemDump]
+			if !isChosen {
+				continue
+			}
+			printMemDumpFilters := p.DataFilter.GetEventFilters(events.PrintMemDump)
+			if len(printMemDumpFilters) == 0 {
+				continue
+			}
+			symbolsFilter, ok := printMemDumpFilters["symbol_name"].(*filters.StringFilter)
+			if symbolsFilter == nil || !ok {
+				continue
+			}
+
+			for _, field := range symbolsFilter.Equal() {
+				symbolSlice := strings.Split(field, ":")
+				splittedLen := len(symbolSlice)
+				var name string
+				if splittedLen == 1 {
+					name = symbolSlice[0]
+				} else if splittedLen == 2 {
+					name = symbolSlice[1]
+				} else {
+					continue
+				}
+				t.requiredKsyms = append(
+					t.requiredKsyms,
+					name,
+					"sys_"+name,
+					"__x64_sys_"+name,
+					"__arm64_sys_"+name,
+				)
+			}
+		}
+	}
+	return nil
+}
+
 // getUnavKsymsPerEvtID returns event IDs and symbols that are unavailable to them.
 func (t *Tracee) getUnavKsymsPerEvtID() map[events.ID][]string {
 	unavSymsPerEvtID := map[events.ID][]string{}
@@ -1088,7 +1211,7 @@ func (t *Tracee) attachProbes() error {
 
 	// Attach probes to their respective eBPF programs or cancel events if a required probe is missing.
 	for probe, evtID := range probesToEvents {
-		err = t.probes.Attach(probe.GetHandle(), t.cgroups) // attach bpf program to probe
+		err = t.probes.Attach(probe.GetHandle(), t.cgroups, t.kernelSymbols) // attach bpf program to probe
 		if err != nil {
 			for _, evtID := range evtID {
 				evtName := events.Core.GetDefinitionByID(evtID).GetName()
@@ -1112,9 +1235,8 @@ func (t *Tracee) attachProbes() error {
 	return nil
 }
 
-func (t *Tracee) initBPF() error {
+func (t *Tracee) initBPFProbes() error {
 	var err error
-
 	// Execute code with higher privileges: ring1 (required)
 
 	newModuleArgs := bpf.NewModuleArgs{
@@ -1132,10 +1254,16 @@ func (t *Tracee) initBPF() error {
 
 	// Initialize probes
 
-	t.probes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled(), t.kernelSymbols)
+	t.probes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled())
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
+
+	return nil
+}
+
+func (t *Tracee) initBPF() error {
+	var err error
 
 	// Load the eBPF object into kernel
 
