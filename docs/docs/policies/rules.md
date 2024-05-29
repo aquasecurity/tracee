@@ -6,7 +6,7 @@ Below are several examples on configuring events in the Tracee Policy.
 
 ## Events
 
-Every event that is specified within the `rules` section supports three types of filters: `scope`, `arguments` and `return value`. 
+Every event that is specified within the `rules` section supports three types of filters: `scope`, `data` and `return value`.
 
 ### Type of Events
 
@@ -239,17 +239,17 @@ filters:
 ```
 
         
-## Argument filter
+## Data filter
 
-Events have arguments, which can be filtered. 
+Events contain data that can be filtered.
 
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-argument-filter
+	name: sample-data-filter
 	annotations:
-		description: sample argument filter
+		description: sample data filter
 spec:
 	scope:
 	    - global

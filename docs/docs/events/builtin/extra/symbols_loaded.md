@@ -10,8 +10,8 @@ usage in the system, or inform on the occasion that a shared object tries to ove
 some symbol of another library.
 
 ### Configuring the event
-The event is configured using arguments filtering.
-For each argument, a filter can be used to configure the operation:
+The event is configured using data filtering.
+For each data, a filter can be used to configure the operation:
 #### symbols
 Configure the watched symbols by the event.
 Specify the full name of the symbol for each symbol.
@@ -23,7 +23,7 @@ If only a name is given, then any shared object inside the known libraries direc
 starts with the prefix will be whitelisted.
 The use is only with the `!=` operator, and wildcards aren't supported.
 
-## Arguments
+## Data
 * `library_path`:`const char*`[K] - the path of the shared object file loaded.
 * `symbols`:`const char*const*`[U,TOCTOU] - the watched symbols exported by the shared object.
 
