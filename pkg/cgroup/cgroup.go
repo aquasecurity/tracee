@@ -396,40 +396,61 @@ func GetCgroupControllerHierarchy(subsys string) (int, error) {
 	return value, nil
 }
 
-// GetCgroupPath walks the cgroup fs and provides the cgroup directory path of
-// given cgroupId and subPath (related to cgroup fs root dir). If subPath is
-// empty, then all directories from cgroup fs will be searched for the given
-// cgroupId.
+// GetCgroupPath iteratively searches the cgroup filesystem for the directory
+// that matches the given cgroupId and optional subPath. If subPath is empty,
+// all directories within the cgroup filesystem are searched.
 //
-// Returns found cgroup path, its ctime, and an error if relevant
+// Parameters:
+// - rootDir: The root directory of the cgroup filesystem.
+// - cgroupId: The cgroup ID to search for.
+// - subPath: An optional subpath to narrow the search.
+//
+// Returns:
+// - The path of the found cgroup directory.
+// - The creation time (ctime) of the found cgroup directory.
+// - An error if the directory could not be found or an I/O error occurred.
+//
+// Note: For cgroupfs, the inode number of a cgroupfs entry matches the cgroup ID.
+// This function leverages this fact by checking if the lower 32 bits of the cgroup ID
+// match the inode number of the entry to identify the desired cgroup directory.
 func GetCgroupPath(rootDir string, cgroupId uint64, subPath string) (string, time.Time, error) {
-	entries, err := os.ReadDir(rootDir)
-	if err != nil {
-		return "", time.Time{}, errfmt.WrapError(err)
-	}
+	// Stack to hold directories to explore
+	stack := []string{rootDir}
 
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
+	for len(stack) > 0 {
+		// Pop the last directory from the stack
+		currentDir := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		// Read directory entries
+		entries, err := os.ReadDir(currentDir)
+		if err != nil {
+			return "", time.Time{}, errfmt.WrapError(err)
 		}
 
-		entryPath := filepath.Join(rootDir, entry.Name())
-		if strings.HasSuffix(entryPath, subPath) {
-			// Lower 32 bits of the cgroup id == inode number of matching cgroupfs entry
-			var stat syscall.Stat_t
-			if err := syscall.Stat(entryPath, &stat); err == nil {
-				// Check if this cgroup path belongs to cgroupId
-				if (stat.Ino & 0xFFFFFFFF) == (cgroupId & 0xFFFFFFFF) {
-					ctime := time.Unix(stat.Ctim.Sec, stat.Ctim.Nsec)
-					return entryPath, ctime, nil
+		for _, entry := range entries {
+			// Skip non-directory entries
+			if !entry.IsDir() {
+				continue
+			}
+
+			entryPath := filepath.Join(currentDir, entry.Name())
+
+			// Check if the entry matches the subPath (if provided)
+			if strings.HasSuffix(entryPath, subPath) {
+				// Retrieve inode information
+				var stat syscall.Stat_t
+				if err := syscall.Stat(entryPath, &stat); err == nil {
+					// Check if the lower 32 bits of the cgroupId match the inode number
+					if (stat.Ino & 0xFFFFFFFF) == (cgroupId & 0xFFFFFFFF) {
+						ctime := time.Unix(stat.Ctim.Sec, stat.Ctim.Nsec)
+						return entryPath, ctime, nil
+					}
 				}
 			}
-		}
 
-		// No match at this dir level: continue recursively
-		path, ctime, err := GetCgroupPath(entryPath, cgroupId, subPath)
-		if err == nil {
-			return path, ctime, nil
+			// Push the directory to the stack for further exploration
+			stack = append(stack, entryPath)
 		}
 	}
 
