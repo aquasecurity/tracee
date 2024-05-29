@@ -11,8 +11,10 @@ import (
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // RegoSignature is an abstract signature that is implemented in rego
@@ -158,7 +160,18 @@ func (sig *RegoSignature) getSelectedEvents(pkgName string) ([]detect.SignatureE
 // if bool is "returned", a true evaluation will generate a Finding with no data
 // if document is "returned", any non-empty evaluation will generate a Finding with the document as the Finding's "Data"
 func (sig *RegoSignature) OnEvent(event protocol.Event) error {
-	input := rego.EvalInput(event.Payload)
+	ee, ok := event.Payload.(trace.Event)
+
+	if !ok {
+		return fmt.Errorf("failed to cast event's payload")
+	}
+
+	err := events.ParseArgs(&ee)
+	if err != nil {
+		return fmt.Errorf("rego aio: failed to parse event data: %v", err)
+	}
+
+	input := rego.EvalInput(ee)
 	results, err := sig.matchPQ.Eval(context.TODO(), input)
 	if err != nil {
 		return fmt.Errorf("evaluating rego: %w", err)

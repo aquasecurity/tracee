@@ -349,6 +349,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 				Payload: "just some stuff",
 			},
 			finding: nil,
+			error:   "failed to cast event's payload",
 		},
 	}
 

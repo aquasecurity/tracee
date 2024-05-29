@@ -11,6 +11,7 @@ import (
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/open-policy-agent/opa/rego"
 
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -194,6 +195,12 @@ func (a *aio) OnEvent(event protocol.Event) error {
 	if !ok {
 		return fmt.Errorf("failed to cast event's payload")
 	}
+
+	err := events.ParseArgs(&ee)
+	if err != nil {
+		return fmt.Errorf("rego aio: failed to parse event data: %v", err)
+	}
+
 	input := rego.EvalInput(ee)
 
 	ctx := context.TODO()
