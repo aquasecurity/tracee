@@ -3410,10 +3410,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#arguments" class="md-nav__link">
+  <a href="#data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Arguments
+        Data
       
     </span>
   </a>
@@ -17672,10 +17672,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#arguments" class="md-nav__link">
+  <a href="#data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Arguments
+        Data
       
     </span>
   </a>
@@ -17818,13 +17818,13 @@
 with other shared object already loaded to the process. This event can help in inform on the 
 occasion that a shared object tries to override some symbol of another library.</p>
 <h3 id="configuring-the-event">Configuring the event<a class="headerlink" href="#configuring-the-event" title="Permanent link">&para;</a></h3>
-<p>The event is configured using arguments filtering.</p>
+<p>The event is configured using data filtering.</p>
 <h4 id="symbols">symbols<a class="headerlink" href="#symbols" title="Permanent link">&para;</a></h4>
 <p>Configure the watched symbols that upon collision will trigger the event.
 Specify the full name of the symbol for each symbol.
 Notice that only watched symbols will be outputed by the event, and the default is watching all symbols.
 The use is only with the <code>=</code> or <code>!=</code> operators, and wildcards aren't supported.</p>
-<h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
+<h2 id="data">Data<a class="headerlink" href="#data" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>loaded_path</code>:<code>const char*</code>[K] - the path of the file loaded.</li>
 <li><code>collision_path</code>:<code>const char*</code>[K,TOCTOU] - the path of the file already loaded, which has collision with the new loaded one.</li>

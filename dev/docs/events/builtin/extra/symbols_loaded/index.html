@@ -3448,10 +3448,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#arguments" class="md-nav__link">
+  <a href="#data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Arguments
+        Data
       
     </span>
   </a>
@@ -17655,10 +17655,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#arguments" class="md-nav__link">
+  <a href="#data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Arguments
+        Data
       
     </span>
   </a>
@@ -17763,8 +17763,8 @@ was loaded to current process. This event can help in identifying some shared ob
 usage in the system, or inform on the occasion that a shared object tries to override
 some symbol of another library.</p>
 <h3 id="configuring-the-event">Configuring the event<a class="headerlink" href="#configuring-the-event" title="Permanent link">&para;</a></h3>
-<p>The event is configured using arguments filtering.
-For each argument, a filter can be used to configure the operation:</p>
+<p>The event is configured using data filtering.
+For each data, a filter can be used to configure the operation:</p>
 <h4 id="symbols">symbols<a class="headerlink" href="#symbols" title="Permanent link">&para;</a></h4>
 <p>Configure the watched symbols by the event.
 Specify the full name of the symbol for each symbol.
@@ -17775,7 +17775,7 @@ The path can be absolute, or just a library name.
 If only a name is given, then any shared object inside the known libraries directories which
 starts with the prefix will be whitelisted.
 The use is only with the <code>!=</code> operator, and wildcards aren't supported.</p>
-<h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
+<h2 id="data">Data<a class="headerlink" href="#data" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>library_path</code>:<code>const char*</code>[K] - the path of the shared object file loaded.</li>
 <li><code>symbols</code>:<code>const char*const*</code>[U,TOCTOU] - the watched symbols exported by the shared object.</li>

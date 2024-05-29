@@ -16167,10 +16167,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#argument-filter" class="md-nav__link">
+  <a href="#data-filter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Argument filter
+        Data filter
       
     </span>
   </a>
@@ -17964,10 +17964,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#argument-filter" class="md-nav__link">
+  <a href="#data-filter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Argument filter
+        Data filter
       
     </span>
   </a>
@@ -18006,7 +18006,7 @@
 <p>Rules are part of the Tracee Policy, which defines which events to trace. The events that are part of a specific policy are recorded in the <code>rules</code> section of the Tracee Policy. It is possible to define multiple events within each policy. The <a href="../../events/">events</a> section provides further information on the type of events that Tracee can track.</p>
 <p>Below are several examples on configuring events in the Tracee Policy.</p>
 <h2 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h2>
-<p>Every event that is specified within the <code>rules</code> section supports three types of filters: <code>scope</code>, <code>arguments</code> and <code>return value</code>. </p>
+<p>Every event that is specified within the <code>rules</code> section supports three types of filters: <code>scope</code>, <code>data</code> and <code>return value</code>.</p>
 <h3 id="type-of-events">Type of Events<a class="headerlink" href="#type-of-events" title="Permanent link">&para;</a></h3>
 <p><strong><a href="../../events/builtin/syscalls/">A syscall</a></strong></p>
 <p>Example Scope Section referencing the <code>open</code> syscall:</p>
@@ -18155,14 +18155,14 @@
 <span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">podUid=66c2778945e29dfd36532d63c38c2ce4ed16a002c44cb254b8e</span>
 </code></pre></div>
-<h2 id="argument-filter">Argument filter<a class="headerlink" href="#argument-filter" title="Permanent link">&para;</a></h2>
-<p>Events have arguments, which can be filtered. </p>
+<h2 id="data-filter">Data filter<a class="headerlink" href="#data-filter" title="Permanent link">&para;</a></h2>
+<p>Events contain data that can be filtered.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tracee.aquasec.com/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Policy</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample-argument-filter</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample-data-filter</span>
 <span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample argument filter</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample data filter</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">scope</span><span class="p">:</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
