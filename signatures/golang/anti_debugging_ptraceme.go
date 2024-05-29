@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 
+	libbpfgo "github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -11,12 +13,12 @@ import (
 
 type AntiDebuggingPtraceme struct {
 	cb            detect.SignatureHandler
-	ptraceTraceMe string
+	ptraceTraceMe int
 }
 
 func (sig *AntiDebuggingPtraceme) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
-	sig.ptraceTraceMe = "PTRACE_TRACEME"
+	sig.ptraceTraceMe = int(libbpfgo.PTRACE_TRACEME.Value())
 	return nil
 }
 
@@ -52,7 +54,7 @@ func (sig *AntiDebuggingPtraceme) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "ptrace":
-		requestArg, err := helpers.GetTraceeStringArgumentByName(eventObj, "request")
+		requestArg, err := helpers.GetTraceeIntArgumentByName(eventObj, "request")
 		if err != nil {
 			return err
 		}

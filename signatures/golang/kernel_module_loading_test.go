@@ -60,7 +60,7 @@ func TestKernelModuleLoading(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "type",
 							},
-							Value: interface{}("kernel-module"),
+							Value: trace.KernelReadKernelModule,
 						},
 					},
 				},
@@ -75,7 +75,7 @@ func TestKernelModuleLoading(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "type",
 								},
-								Value: interface{}("kernel-module"),
+								Value: trace.KernelReadKernelModule,
 							},
 						},
 					}.ToProtocol(),
@@ -107,7 +107,7 @@ func TestKernelModuleLoading(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "type",
 							},
-							Value: interface{}("firmware"),
+							Value: trace.KernelReadFirmware,
 						},
 					},
 				},
