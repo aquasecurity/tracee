@@ -61,22 +61,29 @@ func (sig *KernelModuleLoading) OnEvent(event protocol.Event) error {
 			Data:        nil,
 		})
 	case "security_kernel_read_file":
-		loadedType, err := helpers.GetTraceeStringArgumentByName(eventObj, "type")
+		loadedType, err := helpers.GetTraceeArgumentByName(eventObj, "type", helpers.GetArgOps{})
 		if err != nil {
 			return err
 		}
 
-		if loadedType == "kernel-module" {
-			metadata, err := sig.GetMetadata()
-			if err != nil {
-				return err
-			}
-			sig.cb(&detect.Finding{
-				SigMetadata: metadata,
-				Event:       event,
-				Data:        nil,
-			})
+		kernelReadType, ok := loadedType.Value.(trace.KernelReadType)
+		if !ok {
+			return nil
 		}
+
+		if kernelReadType != trace.KernelReadKernelModule {
+			return nil
+		}
+
+		metadata, err := sig.GetMetadata()
+		if err != nil {
+			return err
+		}
+		sig.cb(&detect.Finding{
+			SigMetadata: metadata,
+			Event:       event,
+			Data:        nil,
+		})
 	}
 
 	return nil

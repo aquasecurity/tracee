@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -11,14 +12,14 @@ import (
 
 type PtraceCodeInjection struct {
 	cb             detect.SignatureHandler
-	ptracePokeText string
-	ptracePokeData string
+	ptracePokeText int
+	ptracePokeData int
 }
 
 func (sig *PtraceCodeInjection) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
-	sig.ptracePokeText = "PTRACE_POKETEXT"
-	sig.ptracePokeData = "PTRACE_POKEDATA"
+	sig.ptracePokeText = int(parsers.PTRACE_POKETEXT.Value())
+	sig.ptracePokeData = int(parsers.PTRACE_POKEDATA.Value())
 	return nil
 }
 
@@ -54,7 +55,7 @@ func (sig *PtraceCodeInjection) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "ptrace":
-		requestArg, err := helpers.GetTraceeStringArgumentByName(eventObj, "request")
+		requestArg, err := helpers.GetTraceeIntArgumentByName(eventObj, "request")
 		if err != nil {
 			return err
 		}

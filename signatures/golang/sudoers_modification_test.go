@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -35,7 +36,7 @@ func TestSudoersModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_WRONLY"),
+							Value: buildFlagArgValue(parsers.O_WRONLY),
 						},
 					},
 				},
@@ -56,7 +57,7 @@ func TestSudoersModification(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "flags",
 								},
-								Value: interface{}("O_WRONLY"),
+								Value: buildFlagArgValue(parsers.O_WRONLY),
 							},
 						},
 					}.ToProtocol(),
@@ -94,7 +95,7 @@ func TestSudoersModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_WRONLY"),
+							Value: buildFlagArgValue(parsers.O_WRONLY),
 						},
 					},
 				},
@@ -115,7 +116,7 @@ func TestSudoersModification(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "flags",
 								},
-								Value: interface{}("O_WRONLY"),
+								Value: buildFlagArgValue(parsers.O_WRONLY),
 							},
 						},
 					}.ToProtocol(),
@@ -247,7 +248,7 @@ func TestSudoersModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_RDONLY"),
+							Value: buildFlagArgValue(parsers.O_RDONLY),
 						},
 					},
 				},
@@ -270,7 +271,7 @@ func TestSudoersModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_WRONLY"),
+							Value: buildFlagArgValue(parsers.O_WRONLY),
 						},
 					},
 				},
