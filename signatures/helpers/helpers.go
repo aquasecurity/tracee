@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // IsFileWrite returns whether the passed file permissions string contains
 // o_wronly or o_rdwr
-func IsFileWrite(flags string) bool {
-	flagsLow := strings.ToLower(flags)
-	if strings.Contains(flagsLow, "o_wronly") || strings.Contains(flagsLow, "o_rdwr") {
+func IsFileWrite(flags int) bool {
+	accessMode := uint64(flags) & parsers.O_ACCMODE.Value()
+	if accessMode == parsers.O_WRONLY.Value() || accessMode == parsers.O_RDWR.Value() {
 		return true
 	}
 	return false
@@ -19,9 +20,9 @@ func IsFileWrite(flags string) bool {
 
 // IsFileRead returns whether the passed file permissions string contains
 // o_rdonly or o_rdwr
-func IsFileRead(flags string) bool {
-	flagsLow := strings.ToLower(flags)
-	if strings.Contains(flagsLow, "o_rdonly") || strings.Contains(flagsLow, "o_rdwr") {
+func IsFileRead(flags int) bool {
+	accessMode := uint64(flags) & parsers.O_ACCMODE.Value()
+	if accessMode == parsers.O_RDONLY.Value() || accessMode == parsers.O_RDWR.Value() {
 		return true
 	}
 	return false
