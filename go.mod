@@ -31,7 +31,7 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.25.0
-	golang.org/x/sys v0.18.0
+	golang.org/x/sys v0.20.0
 	google.golang.org/grpc v1.62.1
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -180,3 +180,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.68 // indirect
 )
+
+replace github.com/aquasecurity/libbpfgo/helpers => github.com/NDStrahilevitz/libbpfgo/helpers v0.0.0-20240529163709-716c1f89c0dd
