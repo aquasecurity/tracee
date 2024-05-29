@@ -64,12 +64,44 @@ func GetTraceeIntArgumentByName(event trace.Event, argName string) (int, error) 
 	if err != nil {
 		return 0, err
 	}
-	argInt, ok := arg.Value.(int32)
+
+	argInt32, ok := arg.Value.(int32)
 	if ok {
-		return int(argInt), nil
+		return int(argInt32), nil
+	}
+	argInt64, ok := arg.Value.(int64)
+	if ok {
+		return int(argInt64), nil
+	}
+	argInt, ok := arg.Value.(int)
+	if ok {
+		return argInt, nil
 	}
 
-	return 0, fmt.Errorf("can't convert argument %v to int", argName)
+	return 0, fmt.Errorf("can't convert argument %v to int (argument is of type %T)", argName, arg.Value)
+}
+
+// GetTraceeUIntArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as int.
+func GetTraceeUintArgumentByName(event trace.Event, argName string) (uint, error) {
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return 0, err
+	}
+
+	argUint32, ok := arg.Value.(uint32)
+	if ok {
+		return uint(argUint32), nil
+	}
+	argUint64, ok := arg.Value.(uint64)
+	if ok {
+		return uint(argUint64), nil
+	}
+	argUint, ok := arg.Value.(uint)
+	if ok {
+		return argUint, nil
+	}
+
+	return 0, fmt.Errorf("can't convert argument %v to int (argument is of type %T)", argName, arg.Value)
 }
 
 // GetTraceeSliceStringArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as []string.
