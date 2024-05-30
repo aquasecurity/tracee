@@ -85,7 +85,7 @@ func (sig *LdPreload) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		flags, err := helpers.GetTraceeStringArgumentByName(eventObj, "flags")
+		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
 		if err != nil {
 			return err
 		}

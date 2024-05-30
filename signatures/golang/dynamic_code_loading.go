@@ -11,12 +11,12 @@ import (
 
 type DynamicCodeLoading struct {
 	cb        detect.SignatureHandler
-	alertText string
+	alertType trace.MemProtAlert
 }
 
 func (sig *DynamicCodeLoading) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
-	sig.alertText = "Protection changed from W to E!"
+	sig.alertType = trace.ProtAlertMprotectWXToX
 	return nil
 }
 
@@ -52,12 +52,13 @@ func (sig *DynamicCodeLoading) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "mem_prot_alert":
-		alert, err := helpers.GetTraceeStringArgumentByName(eventObj, "alert")
+		alert, err := helpers.GetTraceeUintArgumentByName(eventObj, "alert")
 		if err != nil {
 			return err
 		}
+		memProtAlert := trace.MemProtAlert(alert)
 
-		if alert == sig.alertText {
+		if memProtAlert == sig.alertType {
 			metadata, err := sig.GetMetadata()
 			if err != nil {
 				return err

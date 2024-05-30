@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -35,7 +37,7 @@ func TestSudoersModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_WRONLY"),
+							Value: buildFlagArgValue(helpers.O_WRONLY),
 						},
 					},
 				},
@@ -56,7 +58,7 @@ func TestSudoersModification(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "flags",
 								},
-								Value: interface{}("O_WRONLY"),
+								Value: buildFlagArgValue(helpers.O_WRONLY),
 							},
 						},
 					}.ToProtocol(),
@@ -94,7 +96,7 @@ func TestSudoersModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_WRONLY"),
+							Value: buildFlagArgValue(helpers.O_WRONLY),
 						},
 					},
 				},
@@ -115,7 +117,7 @@ func TestSudoersModification(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "flags",
 								},
-								Value: interface{}("O_WRONLY"),
+								Value: buildFlagArgValue(helpers.O_WRONLY),
 							},
 						},
 					}.ToProtocol(),
@@ -247,7 +249,7 @@ func TestSudoersModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_RDONLY"),
+							Value: buildFlagArgValue(helpers.O_RDONLY),
 						},
 					},
 				},
@@ -270,7 +272,7 @@ func TestSudoersModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_WRONLY"),
+							Value: buildFlagArgValue(helpers.O_WRONLY),
 						},
 					},
 				},

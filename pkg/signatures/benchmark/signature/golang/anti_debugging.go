@@ -3,6 +3,8 @@ package golang
 import (
 	"fmt"
 
+	libbpfgo "github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -12,6 +14,7 @@ import (
 type antiDebugging struct {
 	cb       detect.SignatureHandler
 	metadata detect.SignatureMetadata
+	logger   detect.Logger
 }
 
 func NewAntiDebuggingSignature() (detect.Signature, error) {
@@ -30,6 +33,7 @@ func NewAntiDebuggingSignature() (detect.Signature, error) {
 
 func (sig *antiDebugging) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
+	sig.logger = ctx.Logger
 	return nil
 }
 
@@ -52,22 +56,30 @@ func (sig *antiDebugging) OnEvent(event protocol.Event) error {
 	if ee.EventName != "ptrace" {
 		return nil
 	}
-	request, err := helpers.GetTraceeArgumentByName(ee, "request", helpers.GetArgOps{DefaultArgs: false})
+	requestArg, err := helpers.GetTraceeIntArgumentByName(ee, "request")
 	if err != nil {
 		return err
 	}
-	requestString, ok := request.Value.(string)
-	if !ok {
-		return fmt.Errorf("failed to cast request's value")
-	}
-	if requestString != "PTRACE_TRACEME" {
+
+	if uint64(requestArg) != libbpfgo.PTRACE_TRACEME.Value() {
 		return nil
 	}
+
+	var ptraceRequestData string
+	requestString, err := libbpfgo.ParsePtraceRequestArgument(uint64(requestArg))
+
+	if err != nil {
+		ptraceRequestData = fmt.Sprint(requestArg)
+		sig.logger.Debugw("anti_debugging sig: failed to parse ptrace request argument: %v", err)
+	} else {
+		ptraceRequestData = requestString.String()
+	}
+
 	sig.cb(&detect.Finding{
 		SigMetadata: sig.metadata,
 		Event:       event,
 		Data: map[string]interface{}{
-			"ptrace request": requestString,
+			"ptrace request": ptraceRequestData,
 		},
 	})
 	return nil

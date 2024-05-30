@@ -59,7 +59,7 @@ func (sig *CgroupNotifyOnReleaseModification) OnEvent(event protocol.Event) erro
 		}
 		basename := path.Base(pathname)
 
-		flags, err := helpers.GetTraceeStringArgumentByName(eventObj, "flags")
+		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
 		if err != nil {
 			return err
 		}

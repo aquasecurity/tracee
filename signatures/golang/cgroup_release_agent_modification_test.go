@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -35,7 +37,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_WRONLY"),
+							Value: interface{}(buildFlagArgValue(helpers.O_WRONLY)),
 						},
 					},
 				},
@@ -56,7 +58,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "flags",
 								},
-								Value: interface{}("O_WRONLY"),
+								Value: interface{}(buildFlagArgValue(helpers.O_WRONLY)),
 							},
 						},
 					}.ToProtocol(),
@@ -141,7 +143,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_RDONLY"),
+							Value: interface{}(buildFlagArgValue(helpers.O_RDONLY)),
 						},
 					},
 				},
@@ -164,7 +166,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_WRONLY"),
+							Value: interface{}(buildFlagArgValue(helpers.O_WRONLY)),
 						},
 					},
 				},
