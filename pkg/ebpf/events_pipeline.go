@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"fmt"
 	"strconv"
 	"sync"
 	"unsafe"
 
+	bpf "github.com/aquasecurity/libbpfgo"
+
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -724,13 +728,30 @@ func (t *Tracee) handleError(err error) {
 // printers).
 func (t *Tracee) parseArguments(e *trace.Event) error {
 	if t.config.Output.ParseArguments {
-		err := events.ParseArgs(e)
+		err := parsers.ParseArgs(e)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
 
 		if t.config.Output.ParseArgumentsFDs {
-			return events.ParseArgsFDs(e, uint64(t.getOrigEvtTimestamp(e)), t.FDArgPathMap)
+			return parseArgsFDs(e, uint64(t.getOrigEvtTimestamp(e)), t.FDArgPathMap)
+		}
+	}
+
+	return nil
+}
+
+func parseArgsFDs(event *trace.Event, origTimestamp uint64, fdArgPathMap *bpf.BPFMap) error {
+	if fdArg := parsers.GetArg(event, "fd"); fdArg != nil {
+		if fd, isInt32 := fdArg.Value.(int32); isInt32 {
+			ts := origTimestamp
+			bs, err := fdArgPathMap.GetValue(unsafe.Pointer(&ts))
+			if err != nil {
+				return errfmt.WrapError(err)
+			}
+
+			fpath := string(bytes.Trim(bs, "\x00"))
+			fdArg.Value = fmt.Sprintf("%d=%s", fd, fpath)
 		}
 	}
 

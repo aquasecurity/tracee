@@ -9,6 +9,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/aquasecurity/libbpfgo v0.7.0-libbpf-1.4
 	github.com/aquasecurity/tracee/api v0.0.0-20240607205742-90c301111aee
+	github.com/aquasecurity/tracee/pkg/events/parsers v0.0.0-00010101000000-000000000000
 	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20240607205742-90c301111aee
 	github.com/aquasecurity/tracee/types v0.0.0-20240607205742-90c301111aee
 	github.com/containerd/containerd v1.7.17
@@ -76,6 +77,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
+	github.com/moby/moby v26.1.3+incompatible // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/moby/sys/user v0.1.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
@@ -105,7 +107,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240515191416-fc5f0ca64291 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gotest.tools/v3 v3.4.0 // indirect
 	k8s.io/apiextensions-apiserver v0.30.1 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240430033511-f0e62f92d13f // indirect
@@ -177,3 +178,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.69 // indirect
 )
+
+replace github.com/aquasecurity/tracee/pkg/events/parsers => ./pkg/events/parsers
