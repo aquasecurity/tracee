@@ -352,16 +352,18 @@ func (k *KernelConfig) Exists(option KernelConfigOption) bool {
 // AND its value is the same as the one provided by KernelConfigOptionValue
 func (k *KernelConfig) ExistsValue(option KernelConfigOption, value interface{}) bool {
 	if cfg, ok := k.configs[option]; ok {
-		switch cfg.(type) {
+		switch v := cfg.(type) {
 		case KernelConfigOptionValue:
 			if value == ANY {
 				return true
-			} else if k.configs[option].(KernelConfigOptionValue) == value {
+			} else if v == value {
 				return true
 			}
 		case string:
-			if strings.Compare(k.configs[option].(string), value.(string)) == 0 {
-				return true
+			if strValue, ok := value.(string); ok {
+				if strings.Compare(v, strValue) == 0 {
+					return true
+				}
 			}
 		}
 	}
