@@ -3,8 +3,6 @@ package config
 import (
 	"io"
 
-	"github.com/aquasecurity/libbpfgo/helpers"
-
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -12,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 // Config is a struct containing user defined configuration of tracee
@@ -27,8 +26,8 @@ type Config struct {
 	MaxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BTFObjPath         string
 	BPFObjBytes        []byte
-	KernelConfig       *helpers.KernelConfig
-	OSInfo             *helpers.OSInfo
+	KernelConfig       *environment.KernelConfig
+	OSInfo             *environment.OSInfo
 	Sockets            runtime.Sockets
 	NoContainersEnrich bool
 	EngineConfig       engine.Config

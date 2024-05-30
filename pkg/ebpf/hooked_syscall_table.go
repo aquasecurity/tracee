@@ -8,13 +8,13 @@ import (
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 var expectedSyscallTableInit = false
@@ -78,7 +78,7 @@ func (t *Tracee) isAboveSatisfied(aboveRequirement string) (bool, error) {
 		return false, err
 	}
 
-	if kerVerCmpAbove == helpers.KernelVersionOlder || kerVerCmpAbove == helpers.KernelVersionEqual { // above requirement is older/equal running kernel (aka satisfies requirement)
+	if kerVerCmpAbove == environment.KernelVersionOlder || kerVerCmpAbove == environment.KernelVersionEqual { // above requirement is older/equal running kernel (aka satisfies requirement)
 		return true, nil
 	}
 
@@ -92,7 +92,7 @@ func (t *Tracee) isBelowSatisfied(belowRequirement string) (bool, error) {
 		return false, err
 	}
 
-	if kerVerCmpBelow == helpers.KernelVersionNewer { // below requirement is newer than running kernel (aka satisfies requirement)
+	if kerVerCmpBelow == environment.KernelVersionNewer { // below requirement is newer than running kernel (aka satisfies requirement)
 		return true, nil
 	}
 

@@ -10,12 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aquasecurity/libbpfgo/helpers"
-
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/proctree"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	uproc "github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -78,7 +77,7 @@ func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 
 	cfg.KernelConfig = kernelConfig
 
-	osInfo, err := helpers.GetOSInfo()
+	osInfo, err := environment.GetOSInfo()
 	if err != nil {
 		return nil, err
 	}

@@ -2,9 +2,9 @@ package probes
 
 import (
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 // NOTE: thread-safety guaranteed by the ProbeGroup big lock.
@@ -63,7 +63,7 @@ func (p *Uprobe) attach(module *bpf.Module, args ...interface{}) error {
 		return errfmt.WrapError(err)
 	}
 
-	offset, err := helpers.SymbolToOffset(p.binaryPath, p.symbolName)
+	offset, err := utils.SymbolToOffset(p.binaryPath, p.symbolName)
 	if err != nil {
 		return errfmt.Errorf("error finding %s function offset: %v", p.symbolName, err)
 	}

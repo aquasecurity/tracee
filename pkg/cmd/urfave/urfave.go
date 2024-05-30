@@ -3,8 +3,6 @@ package urfave
 import (
 	cli "github.com/urfave/cli/v2"
 
-	"github.com/aquasecurity/libbpfgo/helpers"
-
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
@@ -14,6 +12,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
@@ -48,10 +47,10 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// OS release information
 
-	osInfo, err := helpers.GetOSInfo()
+	osInfo, err := environment.GetOSInfo()
 	if err != nil {
 		logger.Debugw("OSInfo", "warning: os-release file could not be found", "error", err) // only to be enforced when BTF needs to be downloaded, later on
-		logger.Debugw("OSInfo", "os_release_field", helpers.OS_KERNEL_RELEASE, "OS_KERNEL_RELEASE", osInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
+		logger.Debugw("OSInfo", "os_release_field", environment.OS_KERNEL_RELEASE, "OS_KERNEL_RELEASE", osInfo.GetOSReleaseFieldValue(environment.OS_KERNEL_RELEASE))
 	} else {
 		osInfoSlice := make([]interface{}, 0)
 		for k, v := range osInfo.GetOSReleaseAllFieldValues() {
@@ -139,11 +138,11 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Check kernel lockdown
 
-	lockdown, err := helpers.Lockdown()
+	lockdown, err := environment.Lockdown()
 	if err != nil {
 		logger.Debugw("OSInfo", "lockdown", err)
 	}
-	if err == nil && lockdown == helpers.CONFIDENTIALITY {
+	if err == nil && lockdown == environment.CONFIDENTIALITY {
 		return runner, errfmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 	}
 
@@ -151,7 +150,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Check if ftrace is enabled
 
-	enabled, err := helpers.FtraceEnabled()
+	enabled, err := environment.FtraceEnabled()
 	if err != nil {
 		return runner, err
 	}
