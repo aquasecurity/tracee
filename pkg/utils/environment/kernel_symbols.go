@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 const (
@@ -215,7 +217,11 @@ func (k *KernelSymbolTable) processLines(chans []chan *KernelSymbol) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Warnw("error closing kallsyms file", "error", err)
+		}
+	}()
 
 	// Send all lines to all channels.
 	scanner := bufio.NewScanner(file)
