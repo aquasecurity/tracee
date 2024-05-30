@@ -148,4 +148,5 @@ const (
 	ExecuteAtFinishedARM
 	ExecuteFinishedCompatARM
 	ExecuteAtFinishedCompatARM
+	NoProbe = 10000
 )

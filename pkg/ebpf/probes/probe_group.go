@@ -7,14 +7,11 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 //
 // ProbeGroup
 //
-
-var kernelSymbolTable *environment.KernelSymbolTable
 
 // ProbeGroup is a collection of probes.
 type ProbeGroup struct {
@@ -33,26 +30,17 @@ func NewProbeGroup(m *bpf.Module, p map[Handle]Probe) *ProbeGroup {
 }
 
 // GetProbe returns a probe type by its handle.
-func (p *ProbeGroup) GetProbeType(handle Handle) string {
+func (p *ProbeGroup) GetProbeType(handle Handle) ProbeType {
 	p.probesLock.Lock()
 	defer p.probesLock.Unlock()
 
 	if r, ok := p.probes[handle]; ok {
 		if probe, ok := r.(*TraceProbe); ok {
-			switch probe.probeType {
-			case KProbe:
-				return "kprobe"
-			case KretProbe:
-				return "kretprobe"
-			case Tracepoint:
-				return "tracepoint"
-			case RawTracepoint:
-				return "raw_tracepoint"
-			}
+			return probe.probeType
 		}
 	}
 
-	return ""
+	return InvalidProbeType
 }
 
 // Attach attaches a probe's program to its hook, by given handle.
@@ -106,12 +94,7 @@ func (p *ProbeGroup) GetProbeByHandle(handle Handle) Probe {
 }
 
 // NewDefaultProbeGroup initializes the default ProbeGroup (TODO: extensions will use probe groups)
-func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, kSyms *environment.KernelSymbolTable) (*ProbeGroup, error) {
-	if kSyms == nil {
-		return nil, errfmt.Errorf("kernel symbol table is nil")
-	}
-	kernelSymbolTable = kSyms // keep a reference to the kernel symbol table instead of creating a new one
-
+func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, error) {
 	binaryPath := "/proc/self/exe"
 
 	allProbes := map[Handle]Probe{

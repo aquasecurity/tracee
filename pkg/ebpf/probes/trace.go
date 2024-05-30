@@ -7,6 +7,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 // NOTE: thread-safety guaranteed by the ProbeGroup big lock.
@@ -22,7 +23,22 @@ const (
 	KretProbe            // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kp
 	Tracepoint           // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-tracep
 	RawTracepoint        // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#7-raw-tracep
+	InvalidProbeType
 )
+
+func (t ProbeType) String() string {
+	switch t {
+	case KProbe:
+		return "kprobe"
+	case KretProbe:
+		return "kretprobe"
+	case Tracepoint:
+		return "tracepoint"
+	case RawTracepoint:
+		return "raw_tracepoint"
+	}
+	return ""
+}
 
 // When attaching a traceProbe, by handle, to its eBPF program:
 //
@@ -77,6 +93,19 @@ func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 		return errfmt.WrapError(err)
 	}
 
+	var ksyms *environment.KernelSymbolTable
+
+	for _, arg := range args {
+		switch a := arg.(type) {
+		case *environment.KernelSymbolTable:
+			ksyms = a
+		}
+	}
+
+	if ksyms == nil {
+		return errfmt.Errorf("trace probes needs kernel symbols table argument")
+	}
+
 	// KProbe and KretProbe
 
 	switch p.probeType {
@@ -94,7 +123,7 @@ func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 		// kernels it won't fail when trying to attach to a symbol that has
 		// multiple addresses.
 		//
-		syms, err := kernelSymbolTable.GetSymbolByName(p.eventName)
+		syms, err := ksyms.GetSymbolByName(p.eventName)
 		if err != nil {
 			goto rollback
 		}
