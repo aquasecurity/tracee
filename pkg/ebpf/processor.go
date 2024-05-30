@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/aquasecurity/libbpfgo/helpers"
-
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -138,7 +137,7 @@ func initKernelReadFileTypes() {
 	// simply check for the enum value in bpf code. This will make the event more stable for
 	// existing kernels as well as future kernels as well.
 
-	osInfo, err := helpers.GetOSInfo()
+	osInfo, err := environment.GetOSInfo()
 	if err != nil {
 		return
 	}
@@ -164,7 +163,7 @@ func initKernelReadFileTypes() {
 		return
 	}
 
-	if kernel593ComparedToRunningKernel == helpers.KernelVersionOlder {
+	if kernel593ComparedToRunningKernel == environment.KernelVersionOlder {
 		// running kernel version: >=5.9.3
 		kernelReadFileTypes = map[int32]trace.KernelReadType{
 			0: trace.KernelReadUnknown,
@@ -175,9 +174,9 @@ func initKernelReadFileTypes() {
 			5: trace.KernelReadSecurityPolicy,
 			6: trace.KernelReadx509Certificate,
 		}
-	} else if kernel570ComparedToRunningKernel == helpers.KernelVersionOlder /* Running kernel is newer than 5.7.0 */ &&
-		kernel592ComparedToRunningKernel != helpers.KernelVersionOlder /* Running kernel is equal or older than 5.9.2*/ &&
-		kernel5818ComparedToRunningKernel != helpers.KernelVersionEqual /* Running kernel is not 5.8.18 */ {
+	} else if kernel570ComparedToRunningKernel == environment.KernelVersionOlder /* Running kernel is newer than 5.7.0 */ &&
+		kernel592ComparedToRunningKernel != environment.KernelVersionOlder /* Running kernel is equal or older than 5.9.2*/ &&
+		kernel5818ComparedToRunningKernel != environment.KernelVersionEqual /* Running kernel is not 5.8.18 */ {
 		// running kernel version: >=5.7 && <=5.9.2 && !=5.8.18
 		kernelReadFileTypes = map[int32]trace.KernelReadType{
 			0: trace.KernelReadUnknown,
@@ -190,9 +189,9 @@ func initKernelReadFileTypes() {
 			7: trace.KernelReadSecurityPolicy,
 			8: trace.KernelReadx509Certificate,
 		}
-	} else if kernel5818ComparedToRunningKernel == helpers.KernelVersionEqual /* Running kernel is 5.8.18 */ ||
-		(kernel570ComparedToRunningKernel == helpers.KernelVersionNewer && /* Running kernel is older than 5.7.0 */
-			kernel4180ComparedToRunningKernel != helpers.KernelVersionOlder) /* Running kernel is 4.18 or newer */ {
+	} else if kernel5818ComparedToRunningKernel == environment.KernelVersionEqual /* Running kernel is 5.8.18 */ ||
+		(kernel570ComparedToRunningKernel == environment.KernelVersionNewer && /* Running kernel is older than 5.7.0 */
+			kernel4180ComparedToRunningKernel != environment.KernelVersionOlder) /* Running kernel is 4.18 or newer */ {
 		// running kernel version: ==5.8.18 || (<5.7 && >=4.18)
 		kernelReadFileTypes = map[int32]trace.KernelReadType{
 			0: trace.KernelReadUnknown,

@@ -7,10 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aquasecurity/libbpfgo/helpers"
-
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -255,9 +254,9 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	socketDomainArg, err := helpers.ParseSocketDomainArgument(uint64(family))
+	socketDomainArg, err := parsers.ParseSocketDomainArgument(uint64(family))
 	if err != nil {
-		socketDomainArg = helpers.AF_UNSPEC
+		socketDomainArg = parsers.AF_UNSPEC
 	}
 	res["sa_family"] = socketDomainArg.String()
 	switch family {

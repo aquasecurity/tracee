@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	libbfgo "github.com/aquasecurity/libbpfgo/helpers"
-
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -22,7 +21,7 @@ func (sig *e2eSetFsPwd) Init(ctx detect.SignatureContext) error {
 
 	// Find if this system has the bpf_probe_read_user_str helper.
 	// If it doesn't we won't expect the unresolved path to contain anything
-	ksyms, err := libbfgo.NewKernelSymbolTable()
+	ksyms, err := environment.NewKernelSymbolTable()
 	if err != nil {
 		return err
 	}

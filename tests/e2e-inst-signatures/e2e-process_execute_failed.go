@@ -5,8 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	bpfhelpers "github.com/aquasecurity/libbpfgo/helpers"
-
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -15,14 +14,14 @@ import (
 
 type e2eProcessExecuteFailed struct {
 	cb                    detect.SignatureHandler
-	osInfo                *bpfhelpers.OSInfo
+	osInfo                *environment.OSInfo
 	markUnsupportedKernel sync.Once
 }
 
 func (sig *e2eProcessExecuteFailed) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	var err error
-	sig.osInfo, err = bpfhelpers.GetOSInfo()
+	sig.osInfo, err = environment.GetOSInfo()
 	if err != nil {
 		return err
 	}
@@ -61,12 +60,12 @@ func (sig *e2eProcessExecuteFailed) OnEvent(event protocol.Event) error {
 		var err error
 		sig.markUnsupportedKernel.Do(
 			func() {
-				var comp bpfhelpers.KernelVersionComparison
+				var comp environment.KernelVersionComparison
 				comp, err = sig.osInfo.CompareOSBaseKernelRelease("5.7")
 				if err != nil {
 					return
 				}
-				if comp == bpfhelpers.KernelVersionNewer { // < V5.8
+				if comp == environment.KernelVersionNewer { // < V5.8
 					m, _ := sig.GetMetadata()
 
 					sig.cb(&detect.Finding{

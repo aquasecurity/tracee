@@ -6,8 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/libbpfgo/helpers"
-
+	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -30,14 +29,14 @@ func TestParseArgs(t *testing.T) {
 							Name: "optname",
 							Type: "int",
 						},
-						Value: int32(helpers.SO_LOCK_FILTER.Value()),
+						Value: int32(parsers.SO_LOCK_FILTER.Value()),
 					},
 					{
 						ArgMeta: trace.ArgMeta{
 							Name: "level",
 							Type: "int",
 						},
-						Value: int32(helpers.SOL_IP.Value()),
+						Value: int32(parsers.SOL_IP.Value()),
 					},
 				},
 				expectedArgs: []trace.Argument{
@@ -46,14 +45,14 @@ func TestParseArgs(t *testing.T) {
 							Name: "optname",
 							Type: "string",
 						},
-						Value: helpers.SO_LOCK_FILTER.String(),
+						Value: parsers.SO_LOCK_FILTER.String(),
 					},
 					{
 						ArgMeta: trace.ArgMeta{
 							Name: "level",
 							Type: "string",
 						},
-						Value: helpers.SOL_IP.String(),
+						Value: parsers.SOL_IP.String(),
 					},
 				},
 			},
@@ -65,7 +64,7 @@ func TestParseArgs(t *testing.T) {
 							Name: "optname",
 							Type: "int",
 						},
-						Value: int32(helpers.SO_ATTACH_FILTER.Value()),
+						Value: int32(parsers.SO_ATTACH_FILTER.Value()),
 					},
 				},
 				expectedArgs: []trace.Argument{
@@ -86,7 +85,7 @@ func TestParseArgs(t *testing.T) {
 							Name: "optname",
 							Type: "int",
 						},
-						Value: int32(helpers.SO_LOCK_FILTER.Value()),
+						Value: int32(parsers.SO_LOCK_FILTER.Value()),
 					},
 				},
 				expectedArgs: []trace.Argument{
@@ -95,7 +94,7 @@ func TestParseArgs(t *testing.T) {
 							Name: "optname",
 							Type: "string",
 						},
-						Value: helpers.SO_LOCK_FILTER.String(),
+						Value: parsers.SO_LOCK_FILTER.String(),
 					},
 				},
 			},
@@ -137,14 +136,14 @@ func TestParseArgs(t *testing.T) {
 							Name: "optname",
 							Type: "int",
 						},
-						Value: int32(helpers.SO_LOCK_FILTER.Value()),
+						Value: int32(parsers.SO_LOCK_FILTER.Value()),
 					},
 					{
 						ArgMeta: trace.ArgMeta{
 							Name: "level",
 							Type: "int",
 						},
-						Value: int32(helpers.SOL_IP.Value()),
+						Value: int32(parsers.SOL_IP.Value()),
 					},
 				},
 				expectedArgs: []trace.Argument{
@@ -153,14 +152,14 @@ func TestParseArgs(t *testing.T) {
 							Name: "optname",
 							Type: "string",
 						},
-						Value: helpers.SO_LOCK_FILTER.String(),
+						Value: parsers.SO_LOCK_FILTER.String(),
 					},
 					{
 						ArgMeta: trace.ArgMeta{
 							Name: "level",
 							Type: "string",
 						},
-						Value: helpers.SOL_IP.String(),
+						Value: parsers.SOL_IP.String(),
 					},
 				},
 			},
@@ -172,7 +171,7 @@ func TestParseArgs(t *testing.T) {
 							Name: "optname",
 							Type: "int",
 						},
-						Value: int32(helpers.SO_GET_FILTER.Value()),
+						Value: int32(parsers.SO_GET_FILTER.Value()),
 					},
 				},
 				expectedArgs: []trace.Argument{
