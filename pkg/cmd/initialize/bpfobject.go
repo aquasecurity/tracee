@@ -7,21 +7,20 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aquasecurity/libbpfgo/helpers"
-
 	embed "github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 // BpfObject sets up and configures a BPF object for tracing and monitoring
 // system events within the kernel. It takes pointers to tracee.Config,
-// helpers.KernelConfig, and helpers.OSInfo structures, as well as an
+// environment.KernelConfig, and environment.OSInfo structures, as well as an
 // installation path and a version string. The function unpacks the CO-RE eBPF
 // object binary, checks if BTF is enabled, unpacks the BTF file from BTF Hub if
 // necessary, and assigns the kernel configuration and BPF object bytes.
-func BpfObject(cfg *config.Config, kConfig *helpers.KernelConfig, osInfo *helpers.OSInfo, installPath string, version string) error {
+func BpfObject(cfg *config.Config, kConfig *environment.KernelConfig, osInfo *environment.OSInfo, installPath string, version string) error {
 	btfFilePath, err := checkEnvPath("TRACEE_BTF_FILE")
 	if btfFilePath == "" && err != nil {
 		return errfmt.WrapError(err)
@@ -39,7 +38,7 @@ func BpfObject(cfg *config.Config, kConfig *helpers.KernelConfig, osInfo *helper
 
 	// BTF unavailable: check embedded BTF files
 
-	if !helpers.OSBTFEnabled() && btfFilePath == "" {
+	if !environment.OSBTFEnabled() && btfFilePath == "" {
 		unpackBTFFile := filepath.Join(installPath, "/tracee.btf")
 		err = unpackBTFHub(unpackBTFFile, osInfo)
 		if err == nil {
@@ -86,13 +85,13 @@ func unpackCOREBinary() ([]byte, error) {
 // an OSInfo struct containing information about the OS, including OS ID,
 // version ID, kernel release, and architecture. It returns an error if any of
 // the directory creation, file opening, or file copying operations fail.
-func unpackBTFHub(outFilePath string, osInfo *helpers.OSInfo) error {
+func unpackBTFHub(outFilePath string, osInfo *environment.OSInfo) error {
 	var btfFilePath string
 
-	osId := osInfo.GetOSReleaseFieldValue(helpers.OS_ID)
-	versionId := strings.Replace(osInfo.GetOSReleaseFieldValue(helpers.OS_VERSION_ID), "\"", "", -1)
-	kernelRelease := osInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE)
-	arch := osInfo.GetOSReleaseFieldValue(helpers.OS_ARCH)
+	osId := osInfo.GetOSReleaseFieldValue(environment.OS_ID)
+	versionId := strings.Replace(osInfo.GetOSReleaseFieldValue(environment.OS_VERSION_ID), "\"", "", -1)
+	kernelRelease := osInfo.GetOSReleaseFieldValue(environment.OS_KERNEL_RELEASE)
+	arch := osInfo.GetOSReleaseFieldValue(environment.OS_ARCH)
 
 	if err := os.MkdirAll(filepath.Dir(outFilePath), 0755); err != nil {
 		return errfmt.Errorf("could not create temp dir: %s", err.Error())

@@ -14,7 +14,6 @@ import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
@@ -42,6 +41,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -79,7 +79,7 @@ type Tracee struct {
 	// Internal Data
 	readFiles     map[string]string
 	pidsInMntns   bucketscache.BucketsCache // first n PIDs in each mountns
-	kernelSymbols *helpers.KernelSymbolTable
+	kernelSymbols *environment.KernelSymbolTable
 	// eBPF
 	bpfModule *bpf.Module
 	probes    *probes.ProbeGroup
@@ -388,7 +388,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	err = capabilities.GetInstance().Specific(
 		func() error {
-			t.kernelSymbols, err = helpers.NewKernelSymbolTable()
+			t.kernelSymbols, err = environment.NewKernelSymbolTable()
 			return err
 		},
 		cap.SYSLOG,

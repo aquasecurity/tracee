@@ -1,12 +1,11 @@
 package derive
 
 import (
-	"github.com/aquasecurity/libbpfgo/helpers"
-
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -28,11 +27,11 @@ var NetSeqOpsFuncs = [4]string{
 	"stop",
 }
 
-func HookedSeqOps(kernelSymbols *helpers.KernelSymbolTable) DeriveFunction {
+func HookedSeqOps(kernelSymbols *environment.KernelSymbolTable) DeriveFunction {
 	return deriveSingleEvent(events.HookedSeqOps, deriveHookedSeqOpsArgs(kernelSymbols))
 }
 
-func deriveHookedSeqOpsArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgsFunction {
+func deriveHookedSeqOpsArgs(kernelSymbols *environment.KernelSymbolTable) deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		seqOpsArr, err := parse.ArgVal[[]uint64](event.Args, "net_seq_ops")
 		if err != nil || len(seqOpsArr) < 1 {

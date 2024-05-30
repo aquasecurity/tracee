@@ -1,13 +1,12 @@
 package initialize
 
 import (
-	"github.com/aquasecurity/libbpfgo/helpers"
-
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
-func KernelConfig() (*helpers.KernelConfig, error) {
-	kernelConfig, err := helpers.InitKernelConfig()
+func KernelConfig() (*environment.KernelConfig, error) {
+	kernelConfig, err := environment.InitKernelConfig()
 	if err != nil {
 		// do not fail if we cannot init kconfig - print out warning messages
 		logger.Warnw("KConfig: could not check enabled kconfig features", "error", err)
@@ -15,10 +14,10 @@ func KernelConfig() (*helpers.KernelConfig, error) {
 		return kernelConfig, nil
 	}
 
-	kernelConfig.AddNeeded(helpers.CONFIG_BPF, helpers.BUILTIN)
-	kernelConfig.AddNeeded(helpers.CONFIG_BPF_SYSCALL, helpers.BUILTIN)
-	kernelConfig.AddNeeded(helpers.CONFIG_KPROBE_EVENTS, helpers.BUILTIN)
-	kernelConfig.AddNeeded(helpers.CONFIG_BPF_EVENTS, helpers.BUILTIN)
+	kernelConfig.AddNeeded(environment.CONFIG_BPF, environment.BUILTIN)
+	kernelConfig.AddNeeded(environment.CONFIG_BPF_SYSCALL, environment.BUILTIN)
+	kernelConfig.AddNeeded(environment.CONFIG_KPROBE_EVENTS, environment.BUILTIN)
+	kernelConfig.AddNeeded(environment.CONFIG_BPF_EVENTS, environment.BUILTIN)
 	missing := kernelConfig.CheckMissing()
 	if len(missing) > 0 {
 		// do not fail if there are missing options, let it fail later by trying
