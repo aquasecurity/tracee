@@ -4,6 +4,8 @@ import (
 	"debug/elf"
 	"errors"
 	"fmt"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // SymbolToOffset attempts to resolve a 'symbol' name in the binary found at
@@ -13,7 +15,11 @@ func SymbolToOffset(path, symbol string) (uint32, error) {
 	if err != nil {
 		return 0, fmt.Errorf("could not open elf file to resolve symbol offset: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			logger.Warnw("error closing file", "path", path, "error", err)
+		}
+	}()
 
 	regularSymbols, regularSymbolsErr := f.Symbols()
 	dynamicSymbols, dynamicSymbolsErr := f.DynamicSymbols()
