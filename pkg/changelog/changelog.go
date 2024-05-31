@@ -77,8 +77,7 @@ func (clv *Changelog[T]) Get(targetTime time.Time) T {
 
 	idx := clv.findIndex(targetTime)
 	if idx == 0 {
-		var zero T
-		return zero
+		return returnZero[T]()
 	}
 
 	return clv.changes[idx-1].value
@@ -112,7 +111,10 @@ func (clv *Changelog[T]) setAt(value T, targetTime time.Time) {
 	// If the timestamp is already set, update that value only.
 	_, ok := clv.timestamps[targetTime]
 	if ok {
-		index := clv.findIndex(targetTime)
+		index := clv.findIndex(targetTime) - 1
+		if index < 0 {
+			logger.Debugw("changelog internal error: illegal index for existing timestamp")
+		}
 		if !clv.changes[index].timestamp.Equal(targetTime) { // sanity check only (time exists already)
 			logger.Debugw("changelog internal error: timestamp mismatch")
 			return
@@ -151,10 +153,10 @@ func (clv *Changelog[T]) findIndex(target time.Time) int {
 
 	for left < right {
 		middle := (left + right) / 2
-		if clv.changes[middle].timestamp.Before(target) {
-			left = middle + 1
-		} else {
+		if clv.changes[middle].timestamp.After(target) {
 			right = middle
+		} else {
+			left = middle + 1
 		}
 	}
 
