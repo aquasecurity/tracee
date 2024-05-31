@@ -31,13 +31,9 @@ func symNotFoundErr(v interface{}) error {
 // Interface implementation
 //
 
-type name struct {
-	name string
-}
+type name string
 
-type addr struct {
-	addr uint64
-}
+type addr uint64
 
 type nameAndOwner struct {
 	name  string
@@ -50,21 +46,47 @@ type addrAndOwner struct {
 }
 
 type KernelSymbolTable struct {
-	symbols      map[name][]*KernelSymbol
-	addrs        map[addr][]*KernelSymbol
-	symByName    map[nameAndOwner][]*KernelSymbol
-	symByAddr    map[addrAndOwner][]*KernelSymbol
-	textSegStart uint64
-	textSegEnd   uint64
-	updateLock   *sync.RWMutex
-	updateWg     *sync.WaitGroup
+	symbols       map[name][]*KernelSymbol
+	addrs         map[addr][]*KernelSymbol
+	requiredSyms  map[string]struct{}
+	requiredAddrs map[uint64]struct{}
+	onlyRequired  bool
+	symByName     map[nameAndOwner][]*KernelSymbol
+	symByAddr     map[addrAndOwner][]*KernelSymbol
+	updateLock    *sync.Mutex
+	updateWg      *sync.WaitGroup
 }
 
-func NewKernelSymbolTable() (*KernelSymbolTable, error) {
+func NewKernelSymbolTable(opts ...KSymbTableOption) (*KernelSymbolTable, error) {
 	k := KernelSymbolTable{
-		updateLock: &sync.RWMutex{},
+		updateLock: &sync.Mutex{},
 	}
+	for _, opt := range opts {
+		err := opt(&k)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	k.onlyRequired = k.requiredAddrs != nil || k.requiredSyms != nil
+
 	return &k, k.Refresh()
+}
+
+type KSymbTableOption func(k *KernelSymbolTable) error
+
+func WithRequiredSymbols(reqSyms []string) KSymbTableOption {
+	return func(k *KernelSymbolTable) error {
+		k.requiredSyms = sliceToValidationMap(reqSyms)
+		return nil
+	}
+}
+
+func WithRequiredAddresses(reqAddrs []uint64) KSymbTableOption {
+	return func(k *KernelSymbolTable) error {
+		k.requiredAddrs = sliceToValidationMap(reqAddrs)
+		return nil
+	}
 }
 
 //
@@ -73,18 +95,30 @@ func NewKernelSymbolTable() (*KernelSymbolTable, error) {
 
 // TextSegmentContains returns true if the given address is in the kernel text segment.
 func (k *KernelSymbolTable) TextSegmentContains(addr uint64) (bool, error) {
-	k.updateLock.RLock()
-	defer k.updateLock.RUnlock()
+	k.updateLock.Lock()
+	defer k.updateLock.Unlock()
 
-	return addr >= k.textSegStart && addr < k.textSegEnd, nil
+	segStart, segEnd, err := k.getTextSegmentAddresses()
+	if err != nil {
+		return false, err
+	}
+
+	return addr >= segStart && addr < segEnd, nil
 }
 
 // GetSymbolByName returns all the symbols with the given name.
+// NOTE: If table is in required only mode, method will add the new symbol
+// and rescan the file.
 func (k *KernelSymbolTable) GetSymbolByName(n string) ([]KernelSymbol, error) {
-	k.updateLock.RLock()
-	defer k.updateLock.RUnlock()
+	k.updateLock.Lock()
+	defer k.updateLock.Unlock()
 
-	symbols, exist := k.symbols[name{n}]
+	err := k.validateOrAddRequiredSym(name(n))
+	if err != nil {
+		return []KernelSymbol{}, nil
+	}
+
+	symbols, exist := k.symbols[name(n)]
 	if !exist {
 		return []KernelSymbol{}, symNotFoundErr(n)
 	}
@@ -93,13 +127,20 @@ func (k *KernelSymbolTable) GetSymbolByName(n string) ([]KernelSymbol, error) {
 }
 
 // GetSymbolByAddr returns all the symbols with the given address.
-func (k *KernelSymbolTable) GetSymbolByAddr(a uint64) ([]KernelSymbol, error) {
-	k.updateLock.RLock()
-	defer k.updateLock.RUnlock()
+// NOTE: If table is in required only mode, method will add the new symbol
+// and rescan the file.
+func (k *KernelSymbolTable) GetSymbolByAddr(address uint64) ([]KernelSymbol, error) {
+	k.updateLock.Lock()
+	defer k.updateLock.Unlock()
 
-	symbols, exist := k.addrs[addr{a}]
+	err := k.validateOrAddRequiredAddr(addr(address))
+	if err != nil {
+		return []KernelSymbol{}, err
+	}
+
+	symbols, exist := k.addrs[addr(address)]
 	if !exist {
-		return []KernelSymbol{}, symNotFoundErr(a)
+		return []KernelSymbol{}, symNotFoundErr(address)
 	}
 
 	return copySliceOfPointersToSliceOfStructs(symbols), nil
@@ -107,8 +148,13 @@ func (k *KernelSymbolTable) GetSymbolByAddr(a uint64) ([]KernelSymbol, error) {
 
 // GetSymbolByOwnerAndName returns all the symbols with the given owner and name.
 func (k *KernelSymbolTable) GetSymbolByOwnerAndName(o, n string) ([]KernelSymbol, error) {
-	k.updateLock.RLock()
-	defer k.updateLock.RUnlock()
+	k.updateLock.Lock()
+	defer k.updateLock.Unlock()
+
+	err := k.validateOrAddRequiredSym(name(n))
+	if err != nil {
+		return []KernelSymbol{}, err
+	}
 
 	symbols, exist := k.symByName[nameAndOwner{n, o}]
 	if !exist {
@@ -120,8 +166,13 @@ func (k *KernelSymbolTable) GetSymbolByOwnerAndName(o, n string) ([]KernelSymbol
 
 // GetSymbolByOwnerAndAddr returns all the symbols with the given owner and address.
 func (k *KernelSymbolTable) GetSymbolByOwnerAndAddr(o string, a uint64) ([]KernelSymbol, error) {
-	k.updateLock.RLock()
-	defer k.updateLock.RUnlock()
+	k.updateLock.Lock()
+	defer k.updateLock.Unlock()
+
+	err := k.validateOrAddRequiredAddr(addr(a))
+	if err != nil {
+		return []KernelSymbol{}, err
+	}
 
 	symbols, exist := k.symByAddr[addrAndOwner{a, o}]
 	if !exist {
@@ -146,8 +197,11 @@ func (k *KernelSymbolTable) GetSymbolByOwnerAndAddr(o string, a uint64) ([]Kerne
 
 // Refresh refreshes the KernelSymbolTable, reading the symbols from /proc/kallsyms.
 func (k *KernelSymbolTable) Refresh() error {
-	k.updateLock.Lock()
-	defer k.updateLock.Unlock()
+	// Refresh may be called internally, after lock was already taken
+	needUnlock := k.updateLock.TryLock()
+	if needUnlock {
+		defer k.updateLock.Unlock()
+	}
 
 	// re-initialize the maps to include all new symbols.
 	k.symbols = make(map[name][]*KernelSymbol)
@@ -184,8 +238,7 @@ func (k *KernelSymbolTable) Refresh() error {
 	// Finally, wait for the map update goroutines to finish.
 	k.updateWg.Wait()
 
-	// Get the kernel text segment addresses.
-	return k.getTextSegmentAddresses()
+	return nil
 }
 
 //
@@ -193,16 +246,50 @@ func (k *KernelSymbolTable) Refresh() error {
 //
 
 // getTextSegmentAddresses gets the start and end addresses of the kernel text segment.
-func (k *KernelSymbolTable) getTextSegmentAddresses() error {
+func (k *KernelSymbolTable) getTextSegmentAddresses() (uint64, uint64, error) {
 	stext, exist1 := k.symByName[nameAndOwner{"_stext", "system"}]
 	etext, exist2 := k.symByName[nameAndOwner{"_etext", "system"}]
 
 	if !exist1 || !exist2 {
-		return fmt.Errorf("kernel text segment symbol(s) not found")
+		return 0, 0, fmt.Errorf("kernel text segment symbol(s) not found")
 	}
 
-	k.textSegStart = stext[0].Address
-	k.textSegEnd = etext[0].Address
+	textSegStart := stext[0].Address
+	textSegEnd := etext[0].Address
+
+	return textSegStart, textSegEnd, nil
+}
+
+// validateOrAddRequiredSym checks if the given symbol is in the required list.
+// If not, it adds it and rescans the kernel symbols.
+func (k *KernelSymbolTable) validateOrAddRequiredSym(n name) error {
+	if !k.onlyRequired {
+		return nil
+	}
+
+	s := string(n)
+	if _, ok := k.requiredSyms[s]; !ok {
+		k.requiredSyms[s] = struct{}{}
+		err := k.Refresh()
+		return err
+	}
+
+	return nil
+}
+
+// validateOrAddRequiredAddr checks if the given address is in the required list.
+// If not, it adds it and rescans the kernel symbols.
+func (k *KernelSymbolTable) validateOrAddRequiredAddr(addr addr) error {
+	if !k.onlyRequired {
+		return nil
+	}
+
+	a := uint64(addr)
+	if _, ok := k.requiredAddrs[a]; !ok {
+		k.requiredAddrs[a] = struct{}{}
+		err := k.Refresh()
+		return err
+	}
 
 	return nil
 }
@@ -231,6 +318,13 @@ func (k *KernelSymbolTable) processLines(chans []chan *KernelSymbol) error {
 			continue
 		}
 		if sym := parseLine(fields); sym != nil {
+			if k.onlyRequired {
+				_, symRequired := k.requiredSyms[sym.Name]
+				_, addrRequired := k.requiredAddrs[sym.Address]
+				if !symRequired && !addrRequired {
+					continue
+				}
+			}
 			for _, ch := range chans {
 				ch <- sym
 			}
@@ -250,7 +344,7 @@ func (k *KernelSymbolTable) updateSymbolMap(symbolChan chan *KernelSymbol) {
 	defer k.updateWg.Done()
 
 	for sym := range symbolChan {
-		key := name{sym.Name}
+		key := name(sym.Name)
 		k.symbols[key] = append(k.symbols[key], sym)
 	}
 }
@@ -260,7 +354,7 @@ func (k *KernelSymbolTable) updateAddrsMap(addrChan chan *KernelSymbol) {
 	defer k.updateWg.Done()
 
 	for sym := range addrChan {
-		key := addr{sym.Address}
+		key := addr(sym.Address)
 		k.addrs[key] = append(k.addrs[key], sym)
 	}
 }
@@ -320,4 +414,12 @@ func copySliceOfPointersToSliceOfStructs(s []*KernelSymbol) []KernelSymbol {
 		ret = append(ret, *v)
 	}
 	return ret
+}
+
+func sliceToValidationMap[T comparable](items []T) map[T]struct{} {
+	res := make(map[T]struct{})
+	for _, item := range items {
+		res[item] = struct{}{}
+	}
+	return res
 }
