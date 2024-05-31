@@ -17,9 +17,10 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
-var configHZOnce, clockTickOnce sync.Once
+var configHZOnce, clockTickOnce, bootTimeOnce sync.Once
 var configHZ int
 var userHZ int64
+var bootTime int64 // To normalize times, this should be constant
 
 // GetSystemHZ returns an approximation of CONFIG_HZ (the kernel timer interrupt).
 func GetSystemHZ() int {
@@ -91,19 +92,20 @@ func GetStartTimeNS() int64 {
 
 // GetBootTimeNS returns the boot time of the system in nanoseconds.
 func GetBootTimeNS() int64 {
-	// Calculate the boot time using the monotonic time (since this is the clock
-	// we're using as a timestamp) Note: this is NOT the real boot time, as the
-	// monotonic clock doesn't take into account system sleeps.
-	startTime := GetStartTimeNS()
-	bootTime := time.Now().UnixNano() - startTime
+	bootTimeOnce.Do(
+		func() {
+			// Calculate the boot time using the monotonic time (since this is the clock
+			// we're using as a timestamp) Note: this is NOT the real boot time, as the
+			// monotonic clock doesn't take into account system sleeps.
+			startTime := GetStartTimeNS()
+			bootTime = time.Now().UnixNano() - startTime
+		})
 	return bootTime
 }
 
 // GetBootTime returns the boot time of the system in time.Time format.
 func GetBootTime() time.Time {
-	startTime := GetStartTimeNS()
-	uptime := time.Duration(startTime) * time.Nanosecond
-	return time.Now().Add(-uptime)
+	return time.Unix(0, GetBootTimeNS())
 }
 
 //
