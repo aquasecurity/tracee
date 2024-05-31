@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -26,7 +27,7 @@ func Test_convertEventWithProcessContext(t *testing.T) {
 		HostParentProcessID: 6,
 		UserID:              7,
 		ProcessName:         "processTest",
-		EventID:             8,
+		EventID:             int(events.Execve),
 		EventName:           "eventTest",
 		MatchedPolicies:     []string{"policyTest"},
 		Syscall:             "syscall",
@@ -46,7 +47,7 @@ func Test_convertEventWithProcessContext(t *testing.T) {
 	assert.Equal(t, uint32(5), protoEvent.Context.Process.Parent.NamespacedPid.Value)
 	assert.Equal(t, uint32(6), protoEvent.Context.Process.Parent.Pid.Value)
 	assert.Equal(t, uint32(7), protoEvent.Context.Process.RealUser.Id.Value)
-	assert.Equal(t, uint32(8), protoEvent.Id)
+	assert.Equal(t, pb.EventId_execve, protoEvent.Id)
 	assert.Equal(t, uint32(9), protoEvent.Context.Process.Thread.EntityId.Value)
 	assert.Equal(t, uint32(10), protoEvent.Context.Process.EntityId.Value)
 	assert.Equal(t, uint32(11), protoEvent.Context.Process.Parent.EntityId.Value)
