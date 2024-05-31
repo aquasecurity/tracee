@@ -293,7 +293,7 @@ func initCmd() error {
 	rootCmd.Flags().StringP(
 		"input",
 		"i",
-		"ebpf",
+		"",
 		"[json|rego]\t\t\tControl how and where input events stream is received",
 	)
 

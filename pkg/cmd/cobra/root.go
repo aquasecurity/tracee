@@ -104,7 +104,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 
 	var inputProducer producer.EventsProducer
-	if input.Kind != "ebpf" {
+	if input != nil {
 		inputProducer, err = producer.New(input)
 		if err != nil {
 			return runner, err
