@@ -170,8 +170,20 @@ func (pt *ProcessTree) GetOrCreateProcessByHash(hash uint32) *Process {
 
 	process, ok := pt.processes.Get(hash)
 	if !ok {
-		process = NewProcess(hash) // create a new process
+		// Each process must have a thread with thread ID matching its process ID.
+		// Both share the same info as both represent the same task in the kernel.
+		thread, ok := pt.threads.Get(hash)
+		if !ok {
+			process = NewProcess(hash) // create a new process
+			thread = NewThreadWithInfo(hash, process.GetInfo())
+			pt.threads.Add(hash, thread)
+		} else {
+			process = NewProcessWithInfo(hash, thread.GetInfo())
+		}
 		pt.processes.Add(hash, process)
+		process.AddThread(hash)
+		thread.SetLeaderHash(hash)
+
 		return process
 	}
 
@@ -197,7 +209,14 @@ func (pt *ProcessTree) GetOrCreateThreadByHash(hash uint32) *Thread {
 
 	thread, ok := pt.threads.Get(hash)
 	if !ok {
-		thread = NewThread(hash) // create a new thread
+		// Create a new thread
+		// If the thread is a leader task, sync its info with the process instance info.
+		process, ok := pt.processes.Get(hash)
+		if ok {
+			thread = NewThreadWithInfo(hash, process.GetInfo())
+		} else {
+			thread = NewThread(hash)
+		}
 		pt.threads.Add(hash, thread)
 		return thread
 	}
