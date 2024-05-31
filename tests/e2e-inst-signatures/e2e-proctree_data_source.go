@@ -120,20 +120,25 @@ func (sig *e2eProcessTreeDataSource) OnEvent(event protocol.Event) error {
 
 // checkThread checks if thread info in the data source matches the info from the event.
 func (sig *e2eProcessTreeDataSource) checkThread(eventObj *trace.Event) error {
-	debug := func(custom string) string {
-		return fmt.Sprintf(
-			"thread (tid:%d, pid: %d, ppid: %d, time: %d, hash: %d) %s",
-			eventObj.ThreadID, eventObj.HostProcessID, eventObj.HostParentProcessID,
-			eventObj.ThreadStartTime, eventObj.ProcessEntityId, custom,
-		)
-	}
-
 	threadTimeInfo, err := sig.processTreeDS.GetEventThreadInfo(eventObj)
 	if err != nil {
 		return err
 	}
 	queryTime := time.Unix(0, int64(eventObj.Timestamp))
 	threadInfo := threadTimeInfo.Info
+
+	debug := func(custom string) string {
+		return fmt.Sprintf(
+			"thread in event (tid:%d, pid: %d, ppid: %d, time: %d, hash: %d, name: %s) doesn't "+
+				"match thread in proctree (tid:%d, pid: %d, time: %d, hash: %d, "+
+				"name: %s) - %s",
+			eventObj.ThreadID, eventObj.HostProcessID, eventObj.HostParentProcessID,
+			eventObj.ThreadStartTime, eventObj.ProcessEntityId, eventObj.ProcessName,
+			threadInfo.Tid, threadInfo.Pid, threadInfo.StartTime.UnixNano(), threadInfo.EntityId,
+			threadInfo.Name,
+			custom,
+		)
+	}
 
 	// Compare TID, NS TID and PID
 	if threadInfo.Tid != eventObj.HostThreadID {
@@ -148,26 +153,32 @@ func (sig *e2eProcessTreeDataSource) checkThread(eventObj *trace.Event) error {
 	if threadTimeInfo.Timestamp != queryTime {
 		return fmt.Errorf(debug("no match for info timestamp"))
 	}
+	if threadInfo.Name != eventObj.ProcessName {
+		return fmt.Errorf(debug("no match for thread name"))
+	}
 
 	return nil
 }
 
 // checkProcess checks if process info in the data source matches the info from the event.
 func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
-	debug := func(custom string) string {
-		return fmt.Sprintf(
-			"process (tid: %d pid: %d, ppid: %d, time: %d, hash: %d) %s",
-			eventObj.ThreadID, eventObj.HostProcessID, eventObj.HostParentProcessID,
-			eventObj.ThreadStartTime, eventObj.ProcessEntityId, custom,
-		)
-	}
-
 	processTimeInfo, err := sig.processTreeDS.GetEventProcessInfo(eventObj)
 	if err != nil {
 		return err
 	}
 	queryTime := time.Unix(0, int64(eventObj.Timestamp))
 	processInfo := processTimeInfo.Info
+
+	debug := func(custom string) string {
+		return fmt.Sprintf(
+			"process in event (tid: %d pid: %d, ppid: %d, time: %d, hash: %d) "+
+				"doesn't match process in proctree (pid: %d, ppid: %d, hash: %d) - %s",
+			eventObj.ThreadID, eventObj.HostProcessID, eventObj.HostParentProcessID,
+			eventObj.ThreadStartTime, eventObj.ProcessEntityId,
+			processInfo.Pid, processInfo.Ppid, processInfo.EntityId,
+			custom,
+		)
+	}
 
 	// Compare PID, NS PID and PPID
 	if processInfo.Pid != eventObj.HostProcessID {

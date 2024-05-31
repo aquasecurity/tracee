@@ -30,6 +30,16 @@ func NewThread(hash uint32) *Thread {
 	}
 }
 
+// NewThreadWithInfo creates a new thread with an initialized task info.
+func NewThreadWithInfo(hash uint32, info *TaskInfo) *Thread {
+	return &Thread{
+		threadHash: hash,
+		parentHash: 0,
+		info:       info,
+		mutex:      &sync.RWMutex{},
+	}
+}
+
 // Getters
 
 // GetHash returns the hash of the thread.

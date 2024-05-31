@@ -22,16 +22,37 @@ type Process struct {
 	mutex *sync.RWMutex // mutex to protect the process
 }
 
+const (
+	executableChangelogSize = 5 // Binary's history is much more important to save
+	// TODO: Decide whether remove the interpreter and interp from the tree or add them back
+	interpreterChangelogSize = 0
+	interpChangelogSize      = 0
+)
+
 // NewProcess creates a new process.
 func NewProcess(hash uint32) *Process {
 	return &Process{
 		processHash: hash,
 		parentHash:  0,
 		info:        NewTaskInfo(),
-		executable:  NewFileInfo(5), // Binary's history is much more important to save
-		// TODO: Decide whether remove the interpreter and interp from the tree or add them back
-		interpreter: NewFileInfo(0),
-		interp:      NewFileInfo(0),
+		executable:  NewFileInfo(executableChangelogSize),
+		interpreter: NewFileInfo(interpreterChangelogSize),
+		interp:      NewFileInfo(interpChangelogSize),
+		children:    make(map[uint32]struct{}),
+		threads:     make(map[uint32]struct{}),
+		mutex:       &sync.RWMutex{},
+	}
+}
+
+// NewProcessWithInfo creates a new thread with an initialized task info.
+func NewProcessWithInfo(hash uint32, info *TaskInfo) *Process {
+	return &Process{
+		processHash: hash,
+		parentHash:  0,
+		info:        info,
+		executable:  NewFileInfo(executableChangelogSize),
+		interpreter: NewFileInfo(interpreterChangelogSize),
+		interp:      NewFileInfo(interpChangelogSize),
 		children:    make(map[uint32]struct{}),
 		threads:     make(map[uint32]struct{}),
 		mutex:       &sync.RWMutex{},

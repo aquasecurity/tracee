@@ -1,6 +1,8 @@
 package proctree
 
 import (
+	"path/filepath"
+
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -192,6 +194,8 @@ type ExecFeed struct {
 	InvokedFromKernel int32
 }
 
+const COMM_LEN = 16
+
 // FeedFromExec feeds the process tree with an exec event.
 func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 	if feed.LeaderHash != 0 && feed.TaskHash != feed.LeaderHash {
@@ -220,9 +224,12 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 		process.SetParentHash(feed.ParentHash) // faster than checking if already set
 	}
 
+	execTimestamp := utils.NsSinceBootTimeToTime(feed.TimeStamp)
+	basename := filepath.Base(feed.CmdPath)
+	comm := basename[:min(len(basename), COMM_LEN)]
 	process.GetInfo().SetNameAt(
-		feed.CmdPath,
-		utils.NsSinceBootTimeToTime(feed.TimeStamp),
+		comm,
+		execTimestamp,
 	)
 
 	process.GetExecutable().SetFeedAt(
@@ -233,7 +240,7 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 			Inode:     int(feed.Inode),
 			InodeMode: int(feed.InodeMode),
 		},
-		utils.NsSinceBootTimeToTime(feed.TimeStamp),
+		execTimestamp,
 	)
 
 	// The interpreter and interp info are taking a lot of memory.
