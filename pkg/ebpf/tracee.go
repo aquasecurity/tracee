@@ -483,7 +483,9 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	err = capabilities.GetInstance().Specific(
 		func() error {
 			t.kernelSymbols, err = environment.NewKernelSymbolTable(
-				environment.WithRequiredSymbols(t.requiredKsyms),
+			// WithRequiredSymbols will break events that depend on ksyms on a not deterministic way.
+			// i.e.: hooked_syscall
+			// environment.WithRequiredSymbols(t.requiredKsyms),
 			)
 			// Cleanup memory in list
 			t.requiredKsyms = []string{}
