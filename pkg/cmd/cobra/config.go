@@ -404,6 +404,9 @@ func (c *OutputConfig) flags() []string {
 	if c.Options.ParseArguments {
 		flags = append(flags, "option:parse-arguments")
 	}
+	if c.Options.DisableParseArguments {
+		flags = append(flags, "option:disable-parse-arguments")
+	}
 	if c.Options.ParseArgumentsFDs {
 		flags = append(flags, "option:parse-arguments-fds")
 	}
@@ -475,14 +478,15 @@ func (c *OutputConfig) flags() []string {
 }
 
 type OutputOptsConfig struct {
-	None              bool   `mapstructure:"none"`
-	StackAddresses    bool   `mapstructure:"stack-addresses"`
-	ExecEnv           bool   `mapstructure:"exec-env"`
-	RelativeTime      bool   `mapstructure:"relative-time"`
-	ExecHash          string `mapstructure:"exec-hash"`
-	ParseArguments    bool   `mapstructure:"parse-arguments"`
-	ParseArgumentsFDs bool   `mapstructure:"parse-arguments-fds"`
-	SortEvents        bool   `mapstructure:"sort-events"`
+	None                  bool   `mapstructure:"none"`
+	StackAddresses        bool   `mapstructure:"stack-addresses"`
+	ExecEnv               bool   `mapstructure:"exec-env"`
+	RelativeTime          bool   `mapstructure:"relative-time"`
+	ExecHash              string `mapstructure:"exec-hash"`
+	ParseArguments        bool   `mapstructure:"parse-arguments"`
+	DisableParseArguments bool   `mapstructure:"disable-parse-arguments"`
+	ParseArgumentsFDs     bool   `mapstructure:"parse-arguments-fds"`
+	SortEvents            bool   `mapstructure:"sort-events"`
 }
 
 type OutputFormatConfig struct {

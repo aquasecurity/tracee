@@ -73,12 +73,6 @@ func TraceeEbpfPrepareOutput(outputSlice []string, newBinary bool) (PrepareOutpu
 
 	printerConfigs := make([]config.PrinterConfig, 0)
 
-	if printerKind == "table" {
-		if err := setOption(traceeConfig, "parse-arguments", newBinary); err != nil {
-			return outConfig, err
-		}
-	}
-
 	if outPath == "" {
 		stdoutConfig := config.PrinterConfig{
 			Kind:       printerKind,

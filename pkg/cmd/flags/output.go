@@ -19,7 +19,9 @@ type PrepareOutputResult struct {
 
 func PrepareOutput(outputSlice []string, newBinary bool) (PrepareOutputResult, error) {
 	outConfig := PrepareOutputResult{}
-	traceeConfig := &config.OutputConfig{}
+	traceeConfig := &config.OutputConfig{
+		ParseArguments: true,
+	}
 
 	// outpath:format
 	printerMap := make(map[string]string)
@@ -105,6 +107,8 @@ func setOption(cfg *config.OutputConfig, option string, newBinary bool) error {
 		cfg.RelativeTime = true
 	case "parse-arguments":
 		cfg.ParseArguments = true
+	case "disable-parse-arguments":
+		cfg.ParseArguments = false
 	case "parse-arguments-fds":
 		cfg.ParseArgumentsFDs = true
 		cfg.ParseArguments = true // no point in parsing file descriptor args only
@@ -158,11 +162,6 @@ func getPrinterConfigs(printerMap map[string]string, traceeConfig *config.Output
 	printerConfigs := make([]config.PrinterConfig, 0, len(printerMap))
 
 	for outPath, printerKind := range printerMap {
-		if printerKind == "table" {
-			if err := setOption(traceeConfig, "parse-arguments", newBinary); err != nil {
-				return nil, err
-			}
-		}
 
 		outFile := os.Stdout
 		var err error
