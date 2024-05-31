@@ -14,7 +14,8 @@ const (
 	All            ID = 0xfffffff - 1
 	Undefined      ID = 0xfffffff - 2
 	Sys32Undefined ID = 0xfffffff - 3
-	Unsupported    ID = 10000
+	Unsupported    ID = 9000
+	MaxBuiltinID   ID = 10000 - 1
 )
 
 type ID int32
