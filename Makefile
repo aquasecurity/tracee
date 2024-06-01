@@ -685,12 +685,16 @@ clean-e2e-net-signatures:
 # e2e instrumentation signatures
 
 E2E_INST_DIR ?= tests/e2e-inst-signatures
+E2E_INST_FILES_TO_EXCLUDE ?= ""
+# Loop through each filename in the environment variable and construct the exclusion part of the find command
+IGNORE_FILES := $(foreach file,$(shell echo $(E2E_INST_FILES_TO_EXCLUDE)),! -name '$(file)')
 E2E_INST_SRC := $(shell find $(E2E_INST_DIR) \
 		-type f \
 		-name '*.go' \
 		! -name '*_test.go' \
 		! -path '$(E2E_INST_DIR)/scripts/*' \
 		! -path '$(E2E_INST_DIR)/datasourcetest/*' \
+		$(IGNORE_FILES) \
 		)
 
 .PHONY: e2e-inst-signatures

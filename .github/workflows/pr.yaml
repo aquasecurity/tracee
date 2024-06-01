@@ -352,6 +352,8 @@ jobs:
           fi
       - name: "Instrumentation Test"
         run: ./tests/e2e-inst-test.sh
+      - name: "Analyze Mode Instrumentation Test"
+        run: ./tests/e2e-analyze-inst-test.sh
       - name: "Network Test"
         run: ./tests/e2e-net-test.sh
       - name: "Kernel Test"

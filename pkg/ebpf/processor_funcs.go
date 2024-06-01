@@ -25,7 +25,7 @@ import (
 // processWriteEvent processes a write event by indexing the written file.
 func (t *Tracee) processWriteEvent(event *trace.Event) error {
 	// only capture written files
-	if !t.config.Capture.FileWrite.Capture {
+	if t.config.Capture == nil || !t.config.Capture.FileWrite.Capture {
 		return nil
 	}
 	filePath, err := parse.ArgVal[string](event.Args, "pathname")

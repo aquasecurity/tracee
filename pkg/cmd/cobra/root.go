@@ -209,7 +209,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// TODO: support proctree in analyze mode
 	var procTreeFlags = []string{"none"}
-	if input != nil {
+	if input == nil {
 		procTreeFlags, err = GetFlagsFromViper("proctree")
 		if err != nil {
 			return runner, err
