@@ -12195,6 +12195,11 @@ var CoreEvents = map[ID]Definition{
 				SyscallTableCheck,
 				DoInitModule,
 			},
+			capabilities: Capabilities{
+				base: []cap.Value{
+					cap.SYSLOG, // read /proc/kallsyms
+				},
+			},
 		},
 		sets: []string{},
 		params: []trace.ArgMeta{
