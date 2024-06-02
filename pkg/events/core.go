@@ -12196,6 +12196,11 @@ var CoreEvents = map[ID]Definition{
 				SyscallTableCheck,
 				DoInitModule,
 			},
+			capabilities: Capabilities{
+				base: []cap.Value{
+					cap.SYSLOG, // read /proc/kallsyms
+				},
+			},
 		},
 		sets: []string{},
 		params: []trace.ArgMeta{
@@ -12444,6 +12449,11 @@ var CoreEvents = map[ID]Definition{
 			probes: []Probe{
 				{handle: probes.DoInitModule, required: true},
 				{handle: probes.DoInitModuleRet, required: true},
+			},
+			capabilities: Capabilities{
+				base: []cap.Value{
+					cap.SYSLOG, // read /proc/kallsyms
+				},
 			},
 		},
 		sets: []string{},
