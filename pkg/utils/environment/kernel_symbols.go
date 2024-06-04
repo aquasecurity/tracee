@@ -171,63 +171,6 @@ func (k *KernelSymbolTable) GetSymbolByOwnerAndAddr(owner string, addr uint64) (
 	return copySliceOfPointersToSliceOfStructs(symbols), nil
 }
 
-// Refresh is the exported method that acquires the lock and calls the internal refresh method.
-func (k *KernelSymbolTable) Refresh() error {
-	k.updateLock.Lock()
-	defer k.updateLock.Unlock()
-	return k.refresh()
-}
-
-// Concurrency logic for updating the maps: faster than a single goroutine that
-// updates all maps OR multiple goroutines with fine grained locking (turned out
-// to be slower than a single goroutine).
-//
-// Simple file parsing (no processing) takes ~0.200 seconds on a 4-core machine.
-// If buffer is increased to 4MB, it might take ~0.150 seconds. A simple
-// mono-threaded implementation that parses + processes the lines takes ~0.700
-// seconds. This approach takes ~0.350 seconds (2x speedup).
-//
-// NOTE: The procfs file reading cannot be paralelized because procfs does not
-// implement mmap (if it was, the reading could be done in parallel chunks and
-// processed in different goroutines).
-
-// Refresh refreshes the KernelSymbolTable, reading the symbols from /proc/kallsyms.
-func (k *KernelSymbolTable) refresh() error {
-	// Re-initialize the maps to include all new symbols.
-	k.symbols = make(map[string][]*KernelSymbol)
-	k.addrs = make(map[uint64][]*KernelSymbol)
-	k.symByName = make(map[nameAndOwner][]*KernelSymbol)
-	k.symByAddr = make(map[addrAndOwner][]*KernelSymbol)
-
-	// Create the channels for the map update goroutines.
-	symbolChan := make(chan *KernelSymbol, chanBuffer)
-	addrChan := make(chan *KernelSymbol, chanBuffer)
-	symByNameChan := make(chan *KernelSymbol, chanBuffer)
-	symByAddrChan := make(chan *KernelSymbol, chanBuffer)
-
-	k.updateWg.Add(4)
-
-	// Start map update goroutines.
-	go k.updateSymbolMap(symbolChan)
-	go k.updateAddrsMap(addrChan)
-	go k.updateSymByNameMap(symByNameChan)
-	go k.updateSymByAddrMap(symByAddrChan)
-
-	// Send kallsyms lines to the map update goroutines.
-	if err := k.processLines([]chan *KernelSymbol{
-		symbolChan,
-		addrChan,
-		symByNameChan,
-		symByAddrChan,
-	}); err != nil {
-		return err
-	}
-
-	k.updateWg.Wait()
-
-	return nil
-}
-
 // getTextSegmentAddresses gets the start and end addresses of the kernel text segment.
 func (k *KernelSymbolTable) getTextSegmentAddresses() (uint64, uint64, error) {
 	stext, exist1 := k.symByName[nameAndOwner{"_stext", "system"}]
@@ -277,8 +220,22 @@ func (k *KernelSymbolTable) validateOrAddRequired(checkRequired func() bool, add
 	return nil
 }
 
-// processLines processes lines from kallsyms and sends them to map update goroutines.
-func (k *KernelSymbolTable) processLines(chans []chan *KernelSymbol) error {
+// Refresh is the exported method that acquires the lock and calls the internal refresh method.
+func (k *KernelSymbolTable) Refresh() error {
+	k.updateLock.Lock()
+	defer k.updateLock.Unlock()
+	return k.refresh()
+}
+
+// refresh refreshes the KernelSymbolTable, reading the symbols from /proc/kallsyms.
+func (k *KernelSymbolTable) refresh() error {
+	// Re-initialize the maps to include all new symbols.
+	k.symbols = make(map[string][]*KernelSymbol)
+	k.addrs = make(map[uint64][]*KernelSymbol)
+	k.symByName = make(map[nameAndOwner][]*KernelSymbol)
+	k.symByAddr = make(map[addrAndOwner][]*KernelSymbol)
+
+	// Open the kallsyms file.
 	file, err := os.Open(kallsymsPath)
 	if err != nil {
 		return err
@@ -289,73 +246,34 @@ func (k *KernelSymbolTable) processLines(chans []chan *KernelSymbol) error {
 		}
 	}()
 
+	// Read the kallsyms file line by line and process each line.
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		fields := strings.Fields(scanner.Text())
 		if len(fields) < 3 {
 			continue
 		}
-		if sym := parseKallsymsLine(fields); sym != nil {
-			if k.onlyRequired {
-				_, symRequired := k.requiredSyms[sym.Name]
-				_, addrRequired := k.requiredAddrs[sym.Address]
-				if !symRequired && !addrRequired {
-					continue
-				}
-			}
-			for _, ch := range chans {
-				ch <- sym
+		sym := parseKallsymsLine(fields)
+		if sym == nil {
+			continue
+		}
+
+		if k.onlyRequired {
+			_, symRequired := k.requiredSyms[sym.Name]
+			_, addrRequired := k.requiredAddrs[sym.Address]
+			if !symRequired && !addrRequired {
+				continue
 			}
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return err
-	}
 
-	for _, ch := range chans {
-		close(ch)
-	}
-
-	return nil
-}
-
-// updateSymbolMap updates the symbols map from the symbolChan.
-func (k *KernelSymbolTable) updateSymbolMap(symbolChan chan *KernelSymbol) {
-	defer k.updateWg.Done()
-
-	for sym := range symbolChan {
 		k.symbols[sym.Name] = append(k.symbols[sym.Name], sym)
+		k.addrs[sym.Address] = append(k.addrs[sym.Address], sym)
+		k.symByName[nameAndOwner{sym.Name, sym.Owner}] = append(k.symByName[nameAndOwner{sym.Name, sym.Owner}], sym)
+		k.symByAddr[addrAndOwner{sym.Address, sym.Owner}] = append(k.symByAddr[addrAndOwner{sym.Address, sym.Owner}], sym)
 	}
-}
+	err = scanner.Err()
 
-// updateAddrsMap updates the addrs map from the addrChan.
-func (k *KernelSymbolTable) updateAddrsMap(addrChan chan *KernelSymbol) {
-	defer k.updateWg.Done()
-
-	for sym := range addrChan {
-		key := sym.Address
-		k.addrs[key] = append(k.addrs[key], sym)
-	}
-}
-
-// updateSymByNameMap updates the symByName map from the symByNameChan.
-func (k *KernelSymbolTable) updateSymByNameMap(symByNameChan chan *KernelSymbol) {
-	defer k.updateWg.Done()
-
-	for sym := range symByNameChan {
-		key := nameAndOwner{sym.Name, sym.Owner}
-		k.symByName[key] = append(k.symByName[key], sym)
-	}
-}
-
-// updateSymByAddrMap updates the symByAddr map from the symByAddrChan.
-func (k *KernelSymbolTable) updateSymByAddrMap(symByAddrChan chan *KernelSymbol) {
-	defer k.updateWg.Done()
-
-	for sym := range symByAddrChan {
-		key := addrAndOwner{sym.Address, sym.Owner}
-		k.symByAddr[key] = append(k.symByAddr[key], sym)
-	}
+	return err
 }
 
 // parseKallsymsLine parses a line from /proc/kallsyms and returns a KernelSymbol.
