@@ -67,6 +67,8 @@ func deriveHiddenKernelModulesArgs() multiDeriveArgsFunction {
 			return nil, []error{err}
 		}
 
+		a := fmt.Sprintf("%x", address)
+		logger.Infow("ORI: derive event", "flags", flags, "address", a)
 		// revive:disable
 
 		if flags&HiddenModule != 0 {
@@ -213,6 +215,8 @@ func newModsCheckForHidden(startScanTime uint64, flags uint32) error {
 				}
 				insertTime := binary.LittleEndian.Uint64(curVal[0:8])
 				lastSeenTime := binary.LittleEndian.Uint64(curVal[8:16])
+				hexaddr := fmt.Sprintf("%x", addr)
+				logger.Infow("ORIII", "addr", hexaddr, "insertTime", insertTime, "startScanTime", startScanTime, "lastSeenTime", lastSeenTime)
 				if insertTime <= startScanTime && lastSeenTime < startScanTime {
 					// It was inserted before the current scan, and we did not
 					// see it in the scan: it is hidden. The receiving end will

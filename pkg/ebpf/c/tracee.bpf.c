@@ -4305,9 +4305,10 @@ int tracepoint__module__module_load(struct bpf_raw_tracepoint_args *ctx)
         u64 mod_addr = (u64) mod;
         // new_module_map - must be after the module is added to modules list,
         // otherwise there's a risk for race condition
-        bpf_map_update_elem(&new_module_map, &mod_addr, &new_mod, BPF_ANY);
+        bpf_map_update_elem(&new_module_map, &mod_addr, &new_mod, BPF_NOEXIST);
 
         last_module_insert_time = insert_time;
+        bpf_printk("module_load name=%s addr=%llx insert_time=%llu", mod->name, mod_addr, insert_time);
     }
 
     if (!evaluate_scope_filters(&p))
@@ -4339,6 +4340,7 @@ int tracepoint__module__module_free(struct bpf_raw_tracepoint_args *ctx)
 
         kernel_deleted_mod_t deleted_mod = {.deleted_time = bpf_ktime_get_ns()};
         bpf_map_update_elem(&recent_deleted_module_map, &mod_addr, &deleted_mod, BPF_ANY);
+        bpf_printk("module_free addr=%llx deleted_time=%llu", mod_addr, deleted_mod.deleted_time);
     }
 
     if (!evaluate_scope_filters(&p))
