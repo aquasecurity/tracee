@@ -27,7 +27,7 @@ func (t *Tracee) populateEventFilterMaps() error {
 		eventFilters := map[string]filters.Filter[*filters.StringFilter]{}
 		for it := t.config.Policies.CreateAllIterator(); it.HasNext(); {
 			p := it.Next()
-			f := p.ArgFilter.GetEventFilters(eventID)
+			f := p.DataFilter.GetEventFilters(eventID)
 			if len(f) == 0 {
 				continue
 			}
@@ -41,7 +41,10 @@ func (t *Tracee) populateEventFilterMaps() error {
 		err := handler(eventFilters, t.bpfModule)
 		if err != nil {
 			logger.Errorw("Failed to handle event filter for event " + events.Core.GetDefinitionByID(eventID).GetName() + ", err: " + err.Error())
-			t.eventsDependencies.RemoveEvent(eventID)
+			err = t.eventsDependencies.RemoveEvent(eventID)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

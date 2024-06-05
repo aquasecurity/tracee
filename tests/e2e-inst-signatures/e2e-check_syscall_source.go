@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	libbfgo "github.com/aquasecurity/libbpfgo/helpers"
+	libbpfgo "github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -24,11 +24,11 @@ func (sig *e2eCheckSyscallSource) Init(ctx detect.SignatureContext) error {
 
 	// Find if this system uses maple trees to manage VMAs.
 	// If so we don't expect any check_syscall_source event to be submitted.
-	ksyms, err := libbfgo.NewKernelSymbolTable()
+	ksyms, err := libbpfgo.NewKernelSymbolsMap()
 	if err != nil {
 		return err
 	}
-	_, err = ksyms.GetSymbolByName("mt_find")
+	_, err = ksyms.GetSymbolByName("system", "mt_find")
 	if err != nil {
 		sig.hasMapleTree = false
 	} else {
