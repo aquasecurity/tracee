@@ -5205,8 +5205,9 @@ statfunc enum vma_type get_vma_type(struct vm_area_struct *vma)
     if (vma_is_heap(vma))
         return VMA_HEAP;
 
-    if (vma_is_anon(vma))
+    if (vma_is_anon(vma) && !vma_is_vdso(vma)) {
         return VMA_ANON;
+    }
 
     return VMA_OTHER;
 }

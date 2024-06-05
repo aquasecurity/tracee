@@ -18,6 +18,8 @@ statfunc unsigned long get_vma_start(struct vm_area_struct *);
 statfunc struct vm_area_struct *find_vma(struct task_struct *task, u64 addr);
 statfunc bool vma_is_stack(struct vm_area_struct *vma);
 statfunc bool vma_is_heap(struct vm_area_struct *vma);
+statfunc bool vma_is_anon(struct vm_area_struct *vma);
+statfunc bool vma_is_vdso(struct vm_area_struct *vma);
 
 // FUNCTIONS
 
@@ -154,6 +156,19 @@ statfunc bool vma_is_heap(struct vm_area_struct *vma)
 statfunc bool vma_is_anon(struct vm_area_struct *vma)
 {
     return BPF_CORE_READ(vma, vm_file) == NULL;
+}
+
+statfunc bool vma_is_vdso(struct vm_area_struct *vma)
+{
+    struct vm_special_mapping *special_mapping =
+        (struct vm_special_mapping *) BPF_CORE_READ(vma, vm_private_data);
+    if (special_mapping == NULL)
+        return false;
+
+    // read only 6 characters (7 with NULL terminator), enough to compare with "[vdso]"
+    char mapping_name[7];
+    bpf_probe_read_str(&mapping_name, 7, BPF_CORE_READ(special_mapping, name));
+    return has_prefix("[vdso]", mapping_name, 6);
 }
 
 #endif

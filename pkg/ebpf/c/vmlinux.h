@@ -291,6 +291,16 @@ struct rb_node {
     struct rb_node *rb_left;
 } __attribute__((aligned(sizeof(long))));
 
+struct vm_area_struct;
+
+struct vm_operations_struct {
+    const char *(*name)(struct vm_area_struct *vma);
+};
+
+struct vm_special_mapping {
+    const char *name;
+};
+
 struct vm_area_struct {
     union {
         struct {
@@ -301,7 +311,9 @@ struct vm_area_struct {
     struct rb_node vm_rb;
     struct mm_struct *vm_mm;
     long unsigned int vm_flags;
+    const struct vm_operations_struct *vm_ops;
     struct file *vm_file;
+    void *vm_private_data;
 };
 
 typedef unsigned int __kernel_gid32_t;
