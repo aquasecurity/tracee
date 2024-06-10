@@ -1239,51 +1239,86 @@ func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree
 	return nil
 }
 
-// attachProbes attaches selected events probes to their respective eBPF progs
-func (t *Tracee) attachProbes() error {
-	var err error
-
-	// Get probe dependencies for a given event ID
-	getProbeDeps := func(id events.ID) []events.Probe {
-		depsNode, _ := t.eventsDependencies.GetEvent(id)
-		deps := depsNode.GetDependencies()
-		return deps.GetProbes()
+// attachEvent attaches the probes of the given event to their respective eBPF programs.
+// Calling attachment of probes if a supported behavior, and will do nothing
+// if it has been attached already.
+// Return whether the event was successfully attached or not.
+func (t *Tracee) attachEvent(id events.ID) error {
+	evtName := events.Core.GetDefinitionByID(id).GetName()
+	depsNode, err := t.eventsDependencies.GetEvent(id)
+	if err != nil {
+		logger.Errorw("Missing event in dependencies", "event", evtName)
+		return err
 	}
-
-	// Get the list of probes to attach for each event being traced.
-	probesToEvents := make(map[events.Probe][]events.ID)
-	for id := range t.eventsState {
-		if !events.Core.IsDefined(id) {
+	for _, probe := range depsNode.GetDependencies().GetProbes() {
+		err := t.probes.Attach(probe.GetHandle(), t.cgroups, t.kernelSymbols)
+		if err == nil {
 			continue
 		}
-		for _, probeDep := range getProbeDeps(id) {
-			probesToEvents[probeDep] = append(probesToEvents[probeDep], id)
+		if probe.IsRequired() {
+			logger.Warnw(
+				"Cancelling event and its dependencies because of a missing probe",
+				"missing probe", probe.GetHandle(), "event", evtName,
+				"error", err,
+			)
+			return err
 		}
+		logger.Debugw(
+			"Failed to attach non-required probe for event",
+			"event", evtName,
+			"probe", probe.GetHandle(), "error", err,
+		)
 	}
+	return nil
+}
+
+// attachProbes attaches selected events probes to their respective eBPF programs.
+func (t *Tracee) attachProbes() error {
+	// Subscribe to all watchers on the dependencies to attach and/or detach
+	// probes upon changes
+	t.eventsDependencies.SubscribeAdd(
+		dependencies.ProbeNodeType,
+		func(node interface{}) []dependencies.Action {
+			probeNode, ok := node.(*dependencies.ProbeNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested")
+				return nil
+			}
+			err := t.probes.Attach(probeNode.GetHandle(), t.cgroups, t.kernelSymbols)
+			if err != nil {
+				return []dependencies.Action{dependencies.NewCancelNodeAddAction(err)}
+			}
+			return nil
+		})
+
+	t.eventsDependencies.SubscribeRemove(
+		dependencies.ProbeNodeType,
+		func(node interface{}) []dependencies.Action {
+			probeNode, ok := node.(*dependencies.ProbeNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested")
+				return nil
+			}
+			err := t.probes.Detach(probeNode.GetHandle())
+			if err != nil {
+				logger.Debugw("Failed to detach probe",
+					"probe", probeNode.GetHandle(),
+					"error", err)
+			}
+			return nil
+		})
 
 	// Attach probes to their respective eBPF programs or cancel events if a required probe is missing.
-	for probe, evtID := range probesToEvents {
-		err = t.probes.Attach(probe.GetHandle(), t.cgroups, t.kernelSymbols) // attach bpf program to probe
+	for eventID := range t.eventsState {
+		err := t.attachEvent(eventID)
 		if err != nil {
-			for _, evtID := range evtID {
-				evtName := events.Core.GetDefinitionByID(evtID).GetName()
-				if probe.IsRequired() {
-					t.eventsDependencies.RemoveEvent(evtID)
-					logger.Warnw(
-						"Cancelling event and its dependencies because of missing probe",
-						"missing probe", probe.GetHandle(), "event", evtName,
-						"error", err,
-					)
-				} else {
-					logger.Debugw(
-						"Failed to attach non-required probe for event",
-						"event", evtName,
-						"probe", probe.GetHandle(), "error", err,
-					)
-				}
+			err := t.eventsDependencies.RemoveEvent(eventID)
+			if err != nil {
+				logger.Warnw("Failed to remove event from dependencies manager", "remove reason", "failed probes attachment", "error", err)
 			}
 		}
 	}
+	// TODO: Update the eBPF maps according to events state after failure of attachments
 	return nil
 }
 
@@ -1342,17 +1377,6 @@ func (t *Tracee) initBPF() error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-
-	// Attach eBPF programs to selected event's probes
-
-	err = t.attachProbes()
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Update all ProcessTreeFilters after probes are attached: reduce the
-	// possible race window between the bpf programs updating the maps and
-	// userland reading procfs and also dealing with same maps.
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
 	_, err = t.config.Policies.UpdateBPF(t.bpfModule, t.containers, t.eventsState, t.eventsParamTypes, false, true)
@@ -1416,6 +1440,14 @@ func (t *Tracee) initBPF() error {
 	if err != nil {
 		return errfmt.Errorf("error initializing logs perf map: %v", err)
 	}
+
+	// Attach eBPF programs to selected event's probes
+
+	// TODO: Solve race window between ProcessTreeFilters initialization through procfs and the
+	// attachment of the probes that update the filters from the eBPF side. Maybe perform another
+	// iteration on procfs to fill in any missing data.
+
+	err = t.attachProbes()
 
 	return errfmt.WrapError(err)
 }
