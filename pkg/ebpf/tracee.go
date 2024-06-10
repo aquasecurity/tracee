@@ -1004,50 +1004,83 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 	return nil
 }
 
-// getUnavKsymsPerEvtID returns event IDs and symbols that are unavailable to them.
-func (t *Tracee) getUnavKsymsPerEvtID() map[events.ID][]string {
-	unavSymsPerEvtID := map[events.ID][]string{}
+// getUnavailbaleKsymbols return all kernel symbols missing from given symbols
+func getUnavailbaleKsymbols(ksymbols []events.KSymbol, kernelSymbols *environment.KernelSymbolTable) []events.KSymbol {
+	var unavailableSymbols []events.KSymbol
 
-	evtDefSymDeps := func(id events.ID) []events.KSymbol {
-		depsNode, _ := t.eventsDependencies.GetEvent(id)
-		deps := depsNode.GetDependencies()
-		return deps.GetKSymbols()
-	}
-
-	for evtID := range t.eventsState {
-		for _, symDep := range evtDefSymDeps(evtID) {
-			sym, err := t.kernelSymbols.GetSymbolByName(symDep.GetSymbolName())
-			symName := symDep.GetSymbolName()
-			if err != nil {
-				// If the symbol is not found, it means it's unavailable.
-				unavSymsPerEvtID[evtID] = append(unavSymsPerEvtID[evtID], symName)
-				continue
-			}
-			for _, s := range sym {
-				if s.Address == 0 {
-					// Same if the symbol is found but its address is 0.
-					unavSymsPerEvtID[evtID] = append(unavSymsPerEvtID[evtID], symName)
-				}
+	for _, ksymbol := range ksymbols {
+		sym, err := kernelSymbols.GetSymbolByName(ksymbol.GetSymbolName())
+		if err != nil {
+			// If the symbol is not found, it means it's unavailable.
+			unavailableSymbols = append(unavailableSymbols, ksymbol)
+			continue
+		}
+		for _, s := range sym {
+			if s.Address == 0 {
+				// Same if the symbol is found but its address is 0.
+				unavailableSymbols = append(unavailableSymbols, ksymbol)
 			}
 		}
 	}
-
-	return unavSymsPerEvtID
+	return unavailableSymbols
 }
 
 // validateKallsymsDependencies load all symbols required by events dependencies
 // from the kallsyms file to check for missing symbols. If some symbols are
 // missing, it will cancel their event with informative error message.
 func (t *Tracee) validateKallsymsDependencies() {
-	// Cancel events with unavailable symbols dependencies
-	for eventToCancel, missingDepSyms := range t.getUnavKsymsPerEvtID() {
-		eventNameToCancel := events.Core.GetDefinitionByID(eventToCancel).GetName()
-		logger.Debugw(
-			"Event canceled because of missing kernel symbol dependency",
-			"missing symbols", missingDepSyms, "event", eventNameToCancel,
-		)
-		// Cancel the event, it depencies and its dependant events
-		t.eventsDependencies.RemoveEvent(eventToCancel)
+	evtDefSymDeps := func(id events.ID) []events.KSymbol {
+		depsNode, _ := t.eventsDependencies.GetEvent(id)
+		deps := depsNode.GetDependencies()
+		return deps.GetKSymbols()
+	}
+
+	validateEvent := func(eventId events.ID) bool {
+		missingDepSyms := getUnavailbaleKsymbols(evtDefSymDeps(eventId), t.kernelSymbols)
+		shouldFailEvent := false
+		for _, symDep := range missingDepSyms {
+			if symDep.IsRequired() {
+				shouldFailEvent = true
+				break
+			}
+		}
+		if shouldFailEvent {
+			eventNameToCancel := events.Core.GetDefinitionByID(eventId).GetName()
+			var missingSymsNames []string
+			for _, symDep := range missingDepSyms {
+				missingSymsNames = append(missingSymsNames, symDep.GetSymbolName())
+			}
+			logger.Warnw(
+				"Event canceled because of missing kernel symbol dependency",
+				"missing symbols", missingSymsNames, "event", eventNameToCancel,
+			)
+			return false
+		}
+		return true
+	}
+
+	t.eventsDependencies.SubscribeAdd(
+		dependencies.EventNodeType,
+		func(node interface{}) []dependencies.Action {
+			eventNode, ok := node.(*dependencies.EventNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested")
+				return nil
+			}
+			if !validateEvent(eventNode.GetID()) {
+				return []dependencies.Action{dependencies.NewCancelNodeAddAction(fmt.Errorf("event is missing ksymbols"))}
+			}
+			return nil
+		})
+
+	for eventId := range t.eventsState {
+		if !validateEvent(eventId) {
+			// Cancel the event, its dependencies and its dependent events
+			err := t.eventsDependencies.RemoveEvent(eventId)
+			if err != nil {
+				logger.Warnw("Failed to remove event from dependencies manager", "remove reason", "missing ksymbols", "error", err)
+			}
+		}
 	}
 }
 
