@@ -12,9 +12,9 @@ type EventNode struct {
 	id                 events.ID
 	explicitlySelected bool
 	dependencies       events.Dependencies
-	// There won't be more than a couple of dependants, so a slice is better for
+	// There won't be more than a couple of dependents, so a slice is better for
 	// both performance and supporting efficient thread-safe operation in the future
-	dependants []events.ID
+	dependents []events.ID
 }
 
 func newDependenciesNode(id events.ID, dependencies events.Dependencies, chosenDirectly bool) *EventNode {
@@ -22,7 +22,7 @@ func newDependenciesNode(id events.ID, dependencies events.Dependencies, chosenD
 		id:                 id,
 		explicitlySelected: chosenDirectly,
 		dependencies:       dependencies,
-		dependants:         make([]events.ID, 0),
+		dependents:         make([]events.ID, 0),
 	}
 }
 
@@ -34,13 +34,13 @@ func (en *EventNode) GetDependencies() events.Dependencies {
 	return en.dependencies
 }
 
-func (en *EventNode) GetDependants() []events.ID {
-	return slices.Clone[[]events.ID](en.dependants)
+func (en *EventNode) GetDependents() []events.ID {
+	return slices.Clone[[]events.ID](en.dependents)
 }
 
-func (en *EventNode) IsDependencyOf(dependant events.ID) bool {
-	for _, d := range en.dependants {
-		if d == dependant {
+func (en *EventNode) IsDependencyOf(dependent events.ID) bool {
+	for _, d := range en.dependents {
+		if d == dependent {
 			return true
 		}
 	}
@@ -59,14 +59,14 @@ func (en *EventNode) unmarkAsExplicitlySelected() {
 	en.explicitlySelected = false
 }
 
-func (en *EventNode) addDependant(dependant events.ID) {
-	en.dependants = append(en.dependants, dependant)
+func (en *EventNode) addDependent(dependent events.ID) {
+	en.dependents = append(en.dependents, dependent)
 }
 
-func (en *EventNode) removeDependant(dependant events.ID) {
-	for i, d := range en.dependants {
-		if d == dependant {
-			en.dependants = append(en.dependants[:i], en.dependants[i+1:]...)
+func (en *EventNode) removeDependent(dependent events.ID) {
+	for i, d := range en.dependents {
+		if d == dependent {
+			en.dependents = append(en.dependents[:i], en.dependents[i+1:]...)
 			break
 		}
 	}

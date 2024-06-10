@@ -1,10 +1,14 @@
 package dependencies_test
 
 import (
+	"errors"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 )
@@ -35,7 +39,9 @@ func TestManager_AddEvent(t *testing.T) {
 				events.ID(1): events.NewDependencies(
 					[]events.ID{events.ID(2)},
 					nil,
-					nil,
+					[]events.Probe{
+						events.NewProbe(probes.SchedProcessExec, true),
+					},
 					nil,
 					events.Capabilities{},
 				),
@@ -49,14 +55,19 @@ func TestManager_AddEvent(t *testing.T) {
 				events.ID(1): events.NewDependencies(
 					[]events.ID{events.ID(2)},
 					nil,
-					nil,
+					[]events.Probe{
+						events.NewProbe(probes.SchedProcessExec, true),
+						events.NewProbe(probes.SchedProcessExit, true),
+					},
 					nil,
 					events.Capabilities{},
 				),
 				events.ID(2): events.NewDependencies(
 					[]events.ID{events.ID(3)},
 					nil,
-					nil,
+					[]events.Probe{
+						events.NewProbe(probes.SchedProcessExec, true),
+					},
 					nil,
 					events.Capabilities{},
 				),
@@ -65,41 +76,119 @@ func TestManager_AddEvent(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range testCases {
-		t.Run(
-			testCase.name, func(t *testing.T) {
+	t.Run("Sanity", func(t *testing.T) {
+		for _, testCase := range testCases {
+			t.Run(testCase.name, func(t *testing.T) {
 				// Create a new Manager instance
 				m := dependencies.NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
 				var eventsAdditions []events.ID
 				m.SubscribeAdd(
-					func(newEvtNode *dependencies.EventNode) {
-						eventsAdditions = append(eventsAdditions, newEvtNode.GetID())
-					})
+					dependencies.EventNodeType,
+					func(node interface{}) []dependencies.Action {
+						newEventNode := node.(*dependencies.EventNode)
+						eventsAdditions = append(eventsAdditions, newEventNode.GetID())
+						return nil
+					},
+				)
 
 				// Check that multiple selects are not causing any issues
 				for i := 0; i < 3; i++ {
-					m.SelectEvent(testCase.eventToAdd)
+					_, err := m.SelectEvent(testCase.eventToAdd)
+					require.NoError(t, err)
 
+					depProbes := make(map[probes.Handle][]events.ID)
 					for id, expDep := range testCase.deps {
-						evtNode, ok := m.GetEvent(id)
-						assert.True(t, ok)
+						evtNode, err := m.GetEvent(id)
+						assert.NoError(t, err)
 						dep := evtNode.GetDependencies()
 						assert.ElementsMatch(t, expDep.GetIDs(), dep.GetIDs())
 
+						for _, probe := range dep.GetProbes() {
+							depProbes[probe.GetHandle()] = append(
+								depProbes[probe.GetHandle()],
+								id,
+							)
+						}
+
 						// Test dependencies building
 						for _, dependency := range dep.GetIDs() {
-							dependencyNode, ok := m.GetEvent(dependency)
-							assert.True(t, ok)
-							dependants := dependencyNode.GetDependants()
-							assert.Contains(t, dependants, id)
+							dependencyNode, err := m.GetEvent(dependency)
+							assert.NoError(t, err)
+							dependents := dependencyNode.GetDependents()
+							assert.Contains(t, dependents, id)
 						}
 
 						// Test addition watcher logic
 						assert.Contains(t, eventsAdditions, id)
 					}
+					for handle, ids := range depProbes {
+						probeNode, err := m.GetProbe(handle)
+						require.NoError(t, err, handle)
+						assert.ElementsMatch(t, ids, probeNode.GetDependents())
+					}
 				}
-			})
-	}
+			},
+			)
+		}
+	})
+	t.Run("Add cancel", func(t *testing.T) {
+		for _, testCase := range testCases {
+			t.Run(testCase.name, func(t *testing.T) {
+				// Create a new Manager instance
+				m := dependencies.NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
+				var eventsAdditions, eventsRemove []events.ID
+				// Count additions
+				m.SubscribeAdd(
+					dependencies.EventNodeType,
+					func(node interface{}) []dependencies.Action {
+						newEventNode := node.(*dependencies.EventNode)
+						eventsAdditions = append(eventsAdditions, newEventNode.GetID())
+						return nil
+					},
+				)
+
+				// Count removes
+				m.SubscribeRemove(
+					dependencies.EventNodeType,
+					func(node interface{}) []dependencies.Action {
+						removeEventNode := node.(*dependencies.EventNode)
+						eventsRemove = append(eventsRemove, removeEventNode.GetID())
+						return nil
+					},
+				)
+
+				// Cancel event add
+				m.SubscribeAdd(
+					dependencies.EventNodeType,
+					func(node interface{}) []dependencies.Action {
+						newEventNode := node.(*dependencies.EventNode)
+						if newEventNode.GetID() == testCase.eventToAdd {
+							return []dependencies.Action{dependencies.NewCancelNodeAddAction(errors.New("fail"))}
+						}
+						return nil
+					},
+				)
+
+				_, err := m.SelectEvent(testCase.eventToAdd)
+				require.IsType(t, &dependencies.ErrNodeAddCancelled{}, err)
+
+				// Check that all the dependencies were cancelled
+				depProbes := make(map[probes.Handle][]events.ID)
+				for id := range testCase.deps {
+					_, err := m.GetEvent(id)
+					assert.ErrorIs(t, err, dependencies.ErrNodeNotFound, id)
+				}
+				for handle := range depProbes {
+					_, err := m.GetProbe(handle)
+					assert.ErrorIs(t, err, dependencies.ErrNodeNotFound, handle)
+				}
+				assert.Len(t, eventsAdditions, len(testCase.deps))
+				assert.Len(t, eventsRemove, len(testCase.deps))
+				assert.ElementsMatch(t, eventsAdditions, eventsRemove)
+			},
+			)
+		}
+	})
 }
 
 func TestManager_RemoveEvent(t *testing.T) {
@@ -125,7 +214,9 @@ func TestManager_RemoveEvent(t *testing.T) {
 				events.ID(1): events.NewDependencies(
 					[]events.ID{events.ID(2)},
 					nil,
-					nil,
+					[]events.Probe{
+						events.NewProbe(probes.SchedProcessExec, true),
+					},
 					nil,
 					events.Capabilities{},
 				),
@@ -140,14 +231,19 @@ func TestManager_RemoveEvent(t *testing.T) {
 				events.ID(1): events.NewDependencies(
 					[]events.ID{events.ID(2)},
 					nil,
-					nil,
+					[]events.Probe{
+						events.NewProbe(probes.SchedProcessExec, true),
+						events.NewProbe(probes.SchedProcessExit, true),
+					},
 					nil,
 					events.Capabilities{},
 				),
 				events.ID(2): events.NewDependencies(
 					[]events.ID{events.ID(3)},
 					nil,
-					nil,
+					[]events.Probe{
+						events.NewProbe(probes.SchedProcessExec, true),
+					},
 					nil,
 					events.Capabilities{},
 				),
@@ -163,21 +259,29 @@ func TestManager_RemoveEvent(t *testing.T) {
 				events.ID(4): events.NewDependencies(
 					[]events.ID{events.ID(1)},
 					nil,
-					nil,
+					[]events.Probe{
+						events.NewProbe(probes.SchedProcessExec, true),
+						events.NewProbe(probes.SchedProcessFork, true),
+					},
 					nil,
 					events.Capabilities{},
 				),
 				events.ID(1): events.NewDependencies(
 					[]events.ID{events.ID(2)},
 					nil,
-					nil,
+					[]events.Probe{
+						events.NewProbe(probes.SchedProcessExec, true),
+						events.NewProbe(probes.SchedProcessExit, true),
+					},
 					nil,
 					events.Capabilities{},
 				),
 				events.ID(2): events.NewDependencies(
 					[]events.ID{events.ID(3)},
 					nil,
-					nil,
+					[]events.Probe{
+						events.NewProbe(probes.SchedProcessExec, true),
+					},
 					nil,
 					events.Capabilities{},
 				),
@@ -193,14 +297,20 @@ func TestManager_RemoveEvent(t *testing.T) {
 				events.ID(4): events.NewDependencies(
 					[]events.ID{events.ID(3)},
 					nil,
-					nil,
+					[]events.Probe{
+						events.NewProbe(probes.SchedProcessExec, true),
+						events.NewProbe(probes.SchedProcessFork, true),
+					},
 					nil,
 					events.Capabilities{},
 				),
 				events.ID(1): events.NewDependencies(
 					[]events.ID{events.ID(2)},
 					nil,
-					nil,
+					[]events.Probe{
+						events.NewProbe(probes.SchedProcessExec, true),
+						events.NewProbe(probes.SchedProcessExit, true),
+					},
 					nil,
 					events.Capabilities{},
 				),
@@ -224,26 +334,52 @@ func TestManager_RemoveEvent(t *testing.T) {
 
 				var eventsRemoved []events.ID
 				m.SubscribeRemove(
-					func(removedEvtNode *dependencies.EventNode) {
+					dependencies.EventNodeType,
+					func(node interface{}) []dependencies.Action {
+						removedEvtNode := node.(*dependencies.EventNode)
 						eventsRemoved = append(eventsRemoved, removedEvtNode.GetID())
+						return nil
 					})
 
 				for _, preAddedEvent := range testCase.preAddedEvents {
-					m.SelectEvent(preAddedEvent)
+					_, err := m.SelectEvent(preAddedEvent)
+					require.NoError(t, err)
 				}
 
-				m.SelectEvent(testCase.eventToAdd)
+				_, err := m.SelectEvent(testCase.eventToAdd)
+				require.NoError(t, err)
+
+				expectedDepProbes := make(map[probes.Handle][]events.ID)
+				for id, expDep := range testCase.deps {
+					if slices.Contains(testCase.expectedRemovedEvents, id) {
+						continue
+					}
+					for _, probe := range expDep.GetProbes() {
+						expectedDepProbes[probe.GetHandle()] = append(expectedDepProbes[probe.GetHandle()], id)
+					}
+				}
 
 				// Check that multiple removes are not causing any issues
 				for i := 0; i < 3; i++ {
-					m.RemoveEvent(testCase.eventToAdd)
+					err := m.RemoveEvent(testCase.eventToAdd)
+					if i == 0 {
+						require.NoError(t, err)
+					} else {
+						assert.ErrorIs(t, err, dependencies.ErrNodeNotFound, testCase.name)
+					}
 
 					for _, id := range testCase.expectedRemovedEvents {
-						_, ok := m.GetEvent(id)
-						assert.False(t, ok)
+						_, err := m.GetEvent(id)
+						assert.Error(t, err)
 
 						// Test indirect addition watcher logic
 						assert.Contains(t, eventsRemoved, id)
+					}
+
+					for handle, ids := range expectedDepProbes {
+						probeNode, err := m.GetProbe(handle)
+						require.NoError(t, err, handle)
+						assert.ElementsMatch(t, ids, probeNode.GetDependents())
 					}
 				}
 			})
@@ -372,23 +508,28 @@ func TestManager_UnselectEvent(t *testing.T) {
 
 				var eventsRemoved []events.ID
 				m.SubscribeRemove(
-					func(removedEvtNode *dependencies.EventNode) {
+					dependencies.EventNodeType,
+					func(node interface{}) []dependencies.Action {
+						removedEvtNode := node.(*dependencies.EventNode)
 						eventsRemoved = append(eventsRemoved, removedEvtNode.GetID())
+						return nil
 					})
 
 				for _, preAddedEvent := range testCase.preAddedEvents {
-					m.SelectEvent(preAddedEvent)
+					_, err := m.SelectEvent(preAddedEvent)
+					require.NoError(t, err)
 				}
 
-				m.SelectEvent(testCase.eventToAdd)
+				_, err := m.SelectEvent(testCase.eventToAdd)
+				require.NoError(t, err)
 
 				// Check that multiple unselects are not causing any issues
 				for i := 0; i < 3; i++ {
 					m.UnselectEvent(testCase.eventToAdd)
 
 					for _, id := range testCase.expectedRemovedEvents {
-						_, ok := m.GetEvent(id)
-						assert.False(t, ok)
+						_, err := m.GetEvent(id)
+						assert.Error(t, err)
 
 						// Test indirect addition watcher logic
 						assert.Contains(t, eventsRemoved, id)

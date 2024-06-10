@@ -180,19 +180,19 @@ func (t *Tracee) addDependenciesToStateRecursive(eventNode *dependencies.EventNo
 	eventID := eventNode.GetID()
 	for _, dependencyEventID := range eventNode.GetDependencies().GetIDs() {
 		t.addDependencyEventToState(dependencyEventID, []events.ID{eventID})
-		dependencyNode, ok := t.eventsDependencies.GetEvent(dependencyEventID)
-		if ok {
+		dependencyNode, err := t.eventsDependencies.GetEvent(dependencyEventID)
+		if err == nil {
 			t.addDependenciesToStateRecursive(dependencyNode)
 		}
 	}
 }
 
-func (t *Tracee) chooseEvent(eventID events.ID, chosenState events.EventState) {
+func (t *Tracee) selectEvent(eventID events.ID, chosenState events.EventState) {
 	t.addEventState(eventID, chosenState)
-	t.eventsDependencies.SelectEvent(eventID)
-	eventNode, ok := t.eventsDependencies.GetEvent(eventID)
-	if !ok {
-		logger.Errorw("Event is missing from dependency right after being selected")
+	eventNode, err := t.eventsDependencies.SelectEvent(eventID)
+	if err != nil {
+		logger.Errorw("Event selection failed",
+			"event", events.Core.GetDefinitionByID(eventID).GetName())
 		return
 	}
 	t.addDependenciesToStateRecursive(eventNode)
@@ -200,10 +200,10 @@ func (t *Tracee) chooseEvent(eventID events.ID, chosenState events.EventState) {
 
 // addDependencyEventToState adds to tracee's state an event that is a dependency of other events.
 // The difference from chosen events is that it doesn't affect its eviction.
-func (t *Tracee) addDependencyEventToState(evtID events.ID, dependantEvts []events.ID) {
+func (t *Tracee) addDependencyEventToState(evtID events.ID, dependentEvts []events.ID) {
 	newState := events.EventState{}
-	for _, dependantEvent := range dependantEvts {
-		newState.Submit |= t.eventsState[dependantEvent].Submit
+	for _, dependentEvent := range dependentEvts {
+		newState.Submit |= t.eventsState[dependentEvent].Submit
 	}
 	t.addEventState(evtID, newState)
 	if events.Core.GetDefinitionByID(evtID).IsSignature() {
@@ -212,7 +212,7 @@ func (t *Tracee) addDependencyEventToState(evtID events.ID, dependantEvts []even
 }
 
 func (t *Tracee) removeEventFromState(evtID events.ID) {
-	logger.Debugw("Cancel event", "event", events.Core.GetDefinitionByID(evtID).GetName())
+	logger.Debugw("Remove event from state", "event", events.Core.GetDefinitionByID(evtID).GetName())
 	delete(t.eventsState, evtID)
 	delete(t.eventSignatures, evtID)
 }
@@ -246,13 +246,29 @@ func New(cfg config.Config) (*Tracee, error) {
 		requiredKsyms: []string{},
 	}
 
+	// TODO: As dynamic event addition or removal becomes a thing, we should subscribe all the watchers
+	// before selecting them. There is no reason to select the event in the New function anyhow.
 	t.eventsDependencies.SubscribeAdd(
-		func(node *dependencies.EventNode) {
-			t.addDependencyEventToState(node.GetID(), node.GetDependants())
+		dependencies.EventNodeType,
+		func(node interface{}) []dependencies.Action {
+			eventNode, ok := node.(*dependencies.EventNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested")
+				return nil
+			}
+			t.addDependencyEventToState(eventNode.GetID(), eventNode.GetDependents())
+			return nil
 		})
 	t.eventsDependencies.SubscribeRemove(
-		func(node *dependencies.EventNode) {
-			t.removeEventFromState(node.GetID())
+		dependencies.EventNodeType,
+		func(node interface{}) []dependencies.Action {
+			eventNode, ok := node.(*dependencies.EventNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested")
+				return nil
+			}
+			t.removeEventFromState(eventNode.GetID())
+			return nil
 		})
 
 	// Initialize capabilities rings soon
@@ -265,32 +281,32 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Initialize events state with mandatory events (TODO: review this need for sched exec)
 
-	t.chooseEvent(events.SchedProcessFork, events.EventState{})
-	t.chooseEvent(events.SchedProcessExec, events.EventState{})
-	t.chooseEvent(events.SchedProcessExit, events.EventState{})
+	t.selectEvent(events.SchedProcessFork, events.EventState{})
+	t.selectEvent(events.SchedProcessExec, events.EventState{})
+	t.selectEvent(events.SchedProcessExit, events.EventState{})
 
 	// Control Plane Events
 
-	t.chooseEvent(events.SignalCgroupMkdir, policy.AlwaysSubmit)
-	t.chooseEvent(events.SignalCgroupRmdir, policy.AlwaysSubmit)
+	t.selectEvent(events.SignalCgroupMkdir, policy.AlwaysSubmit)
+	t.selectEvent(events.SignalCgroupRmdir, policy.AlwaysSubmit)
 
 	// Control Plane Process Tree Events
 
 	pipeEvts := func() {
-		t.chooseEvent(events.SchedProcessFork, policy.AlwaysSubmit)
-		t.chooseEvent(events.SchedProcessExec, policy.AlwaysSubmit)
-		t.chooseEvent(events.SchedProcessExit, policy.AlwaysSubmit)
+		t.selectEvent(events.SchedProcessFork, policy.AlwaysSubmit)
+		t.selectEvent(events.SchedProcessExec, policy.AlwaysSubmit)
+		t.selectEvent(events.SchedProcessExit, policy.AlwaysSubmit)
 	}
 	signalEvts := func() {
-		t.chooseEvent(events.SignalSchedProcessFork, policy.AlwaysSubmit)
-		t.chooseEvent(events.SignalSchedProcessExec, policy.AlwaysSubmit)
-		t.chooseEvent(events.SignalSchedProcessExit, policy.AlwaysSubmit)
+		t.selectEvent(events.SignalSchedProcessFork, policy.AlwaysSubmit)
+		t.selectEvent(events.SignalSchedProcessExec, policy.AlwaysSubmit)
+		t.selectEvent(events.SignalSchedProcessExit, policy.AlwaysSubmit)
 	}
 
 	// DNS Cache events
 
 	if t.config.DNSCacheConfig.Enable {
-		t.chooseEvent(events.NetPacketDNS, policy.AlwaysSubmit)
+		t.selectEvent(events.NetPacketDNS, policy.AlwaysSubmit)
 	}
 
 	switch t.config.ProcTree.Source {
@@ -306,7 +322,7 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Pseudo events added by capture (if enabled by the user)
 
 	for eventID, eCfg := range GetCaptureEventsList(cfg) {
-		t.chooseEvent(eventID, eCfg)
+		t.selectEvent(eventID, eCfg)
 	}
 
 	// Events chosen by the user
@@ -323,7 +339,7 @@ func New(cfg config.Config) (*Tracee, error) {
 			}
 			utils.SetBit(&submit, uint(p.ID))
 			utils.SetBit(&emit, uint(p.ID))
-			t.chooseEvent(e, events.EventState{Submit: submit, Emit: emit})
+			t.selectEvent(e, events.EventState{Submit: submit, Emit: emit})
 
 			policyManager.EnableRule(p.ID, e)
 		}
@@ -337,8 +353,8 @@ func New(cfg config.Config) (*Tracee, error) {
 		if !events.Core.IsDefined(id) {
 			return t, errfmt.Errorf("event %d is not defined", id)
 		}
-		depsNode, ok := t.eventsDependencies.GetEvent(id)
-		if ok {
+		depsNode, err := t.eventsDependencies.GetEvent(id)
+		if err == nil {
 			deps := depsNode.GetDependencies()
 			evtCaps := deps.GetCapabilities()
 			err = caps.BaseRingAdd(evtCaps.GetBase()...)
@@ -899,9 +915,9 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 			return errfmt.Errorf("event %d is not defined", id)
 		}
 
-		depsNode, ok := t.eventsDependencies.GetEvent(id)
-		if !ok {
-			logger.Warnw("failed to extract required ksymbols from event", "event_id", id)
+		depsNode, err := t.eventsDependencies.GetEvent(id)
+		if err != nil {
+			logger.Warnw("failed to extract required ksymbols from event", "event_id", id, "error", err)
 			continue
 		}
 		// Add directly dependant symbols
