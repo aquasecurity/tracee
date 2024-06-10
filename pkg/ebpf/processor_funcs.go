@@ -16,6 +16,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/pkg/filehash"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -102,7 +103,7 @@ func (t *Tracee) processReadEvent(event *trace.Event) error {
 
 // processKernelReadFile processes a security read event and changes the read type value.
 func processKernelReadFile(event *trace.Event) error {
-	readTypeArg := events.GetArg(event, "type")
+	readTypeArg := parsers.GetArg(event, "type")
 	readTypeInt, ok := readTypeArg.Value.(int32)
 	if !ok {
 		return errfmt.Errorf("missing argument %s in event %s", "type", event.EventName)
@@ -287,7 +288,7 @@ func (t *Tracee) processHookedProcFops(event *trace.Event) error {
 		}
 		hookedFops = append(hookedFops, trace.HookedSymbolData{SymbolName: functionName, ModuleOwner: hookingFunction.Owner})
 	}
-	err = events.SetArgValue(event, hookedFopsPointersArgName, hookedFops)
+	err = parsers.SetArgValue(event, hookedFopsPointersArgName, hookedFops)
 	if err != nil {
 		return err
 	}
@@ -326,15 +327,15 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 		return errfmt.WrapError(err)
 	}
 	arch = string(bytes.TrimRight(utsName.Machine[:], "\x00"))
-	err = events.SetArgValue(event, "arch", arch)
+	err = parsers.SetArgValue(event, "arch", arch)
 	if err != nil {
 		return err
 	}
-	err = events.SetArgValue(event, "symbol_name", symbol.Name)
+	err = parsers.SetArgValue(event, "symbol_name", symbol.Name)
 	if err != nil {
 		return err
 	}
-	err = events.SetArgValue(event, "symbol_owner", symbol.Owner)
+	err = parsers.SetArgValue(event, "symbol_owner", symbol.Owner)
 	if err != nil {
 		return err
 	}
@@ -394,7 +395,7 @@ func (t *Tracee) processSchedProcessFork(event *trace.Event) error {
 // normalizeEventArgTime normalizes the event arg time to be relative to tracee start time or
 // current time.
 func (t *Tracee) normalizeEventArgTime(event *trace.Event, argName string) error {
-	arg := events.GetArg(event, argName)
+	arg := parsers.GetArg(event, argName)
 	if arg == nil {
 		return errfmt.Errorf("couldn't find argument %s of event %s", argName, event.EventName)
 	}

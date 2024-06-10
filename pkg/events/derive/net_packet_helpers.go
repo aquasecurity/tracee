@@ -12,7 +12,7 @@ import (
 	"github.com/google/gopacket/layers"
 
 	"github.com/aquasecurity/tracee/pkg/dnscache"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -82,7 +82,7 @@ func strToLower(given string) string {
 
 // parsePayloadArg returns the packet payload from the event.
 func parsePayloadArg(event *trace.Event) ([]byte, error) {
-	payloadArg := events.GetArg(event, "payload")
+	payloadArg := parsers.GetArg(event, "payload")
 	if payloadArg == nil {
 		return nil, noPayloadError()
 	}

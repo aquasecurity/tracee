@@ -9,6 +9,7 @@ import (
 	"github.com/google/gopacket/layers"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -103,7 +104,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 
 		// sanity checks
 
-		payloadArg := events.GetArg(event, "payload")
+		payloadArg := parsers.GetArg(event, "payload")
 		if payloadArg == nil {
 			logger.Debugw("Network capture: no payload packet")
 			return

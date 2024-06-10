@@ -8,9 +8,8 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/moby/moby/pkg/parsers/kernel"
 	"golang.org/x/sys/unix"
-
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 type SystemFunctionArgument interface {
@@ -264,7 +263,10 @@ func ParseOpenFlagArgument(rawValue uint64) (OpenFlagArgument, error) {
 	}
 
 	if len(f) == 0 {
-		return OpenFlagArgument{}, fmt.Errorf("no valid open flag values present in raw value: 0x%x", rawValue)
+		return OpenFlagArgument{}, fmt.Errorf(
+			"no valid open flag values present in raw value: 0x%x",
+			rawValue,
+		)
 	}
 
 	return OpenFlagArgument{rawValue: rawValue, stringValue: strings.Join(f, "|")}, nil
@@ -3262,7 +3264,7 @@ func ParseLegacyGUPFlags(rawValue uint64) LegacyGUPFlag {
 var currentOSGUPFlagsParse uint32
 var skipDetermineGUPFlagsFunc uint32
 
-const gupFlagsChangeVersion = "6.3.0"
+var gupFlagsChangeVersion, _ = kernel.ParseRelease("6.3.0")
 
 // ParseGUPFlagsCurrentOS parse the GUP flags received according to current machine OS version.
 // It uses optimizations to perform better than ParseGUPFlagsForOS
@@ -3272,21 +3274,14 @@ func ParseGUPFlagsCurrentOS(rawValue uint64) (SystemFunctionArgument, error) {
 		legacyParsing
 	)
 	if atomic.LoadUint32(&skipDetermineGUPFlagsFunc) == 0 {
-		osInfo, err := environment.GetOSInfo()
+		currentVersion, err := kernel.GetKernelVersion()
 		if err != nil {
-			return nil, fmt.Errorf("error getting current OS info - %s", err)
+			return nil, fmt.Errorf("error getting current kernel version - %s", err)
 		}
-		compare, err := osInfo.CompareOSBaseKernelRelease(gupFlagsChangeVersion)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"error comparing OS versions to determine how to parse GUP flags - %s",
-				err,
-			)
-		}
-		if compare == environment.KernelVersionOlder {
-			atomic.StoreUint32(&currentOSGUPFlagsParse, legacyParsing)
-		} else {
+		if kernel.CompareKernelVersion(*currentVersion, *gupFlagsChangeVersion) >= 0 {
 			atomic.StoreUint32(&currentOSGUPFlagsParse, newVersionsParsing)
+		} else {
+			atomic.StoreUint32(&currentOSGUPFlagsParse, legacyParsing)
 		}
 		// Avoid doing this check in the future
 		atomic.StoreUint32(&skipDetermineGUPFlagsFunc, 1)
@@ -3305,19 +3300,17 @@ func ParseGUPFlagsCurrentOS(rawValue uint64) (SystemFunctionArgument, error) {
 }
 
 // ParseGUPFlagsForOS parse the GUP flags received according to given OS version.
-func ParseGUPFlagsForOS(osInfo *environment.OSInfo, rawValue uint64) (SystemFunctionArgument, error) {
-	compare, err := osInfo.CompareOSBaseKernelRelease(gupFlagsChangeVersion)
+func ParseGUPFlagsForOS(kernelVersion string, rawValue uint64) (
+	SystemFunctionArgument, error,
+) {
+	parsedVersion, err := kernel.ParseRelease(kernelVersion)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"error comparing OS versions to determine how to parse GUP flags - %s",
-			err,
-		)
+		return nil, fmt.Errorf("error parsing given kernel version - %s", err)
 	}
-
-	if compare == environment.KernelVersionOlder {
-		return ParseLegacyGUPFlags(rawValue), nil
+	if kernel.CompareKernelVersion(*parsedVersion, *gupFlagsChangeVersion) >= 0 {
+		return ParseGUPFlags(rawValue), nil
 	}
-	return ParseGUPFlags(rawValue), nil
+	return ParseLegacyGUPFlags(rawValue), nil
 }
 
 // =====================================================
@@ -3586,6 +3579,50 @@ func ParseFsNotifyObjType(rawValue uint64) (FsNotifyObjType, error) {
 	v, ok := fsNotifyObjTypeMap[rawValue]
 	if !ok {
 		return FsNotifyObjType{}, fmt.Errorf("not a valid argument: %d", rawValue)
+	}
+	return v, nil
+}
+
+// =====================================================
+
+// BpfAttachType is the type of probe the BPF program was attach to.
+// This type is not of the kernel, but unique to Tracee. It must match the
+// `bpf_attach_type_e` enum in the bpf code.
+type BpfAttachType struct {
+	rawValue    int32
+	stringValue string
+}
+
+var (
+	BPF_RAW_TRACEPOINT = BpfAttachType{rawValue: 0, stringValue: "raw_tracepoint"}
+	PERF_TRACEPOINT    = BpfAttachType{rawValue: 1, stringValue: "tracepoint"}
+	PERF_KPROBE        = BpfAttachType{rawValue: 2, stringValue: "kprobe"}
+	PERF_KRETPROBE     = BpfAttachType{rawValue: 3, stringValue: "kretprobe"}
+	PERF_UPROBE        = BpfAttachType{rawValue: 4, stringValue: "uprobe"}
+	PERF_URETPROBE     = BpfAttachType{rawValue: 5, stringValue: "uretprobe"}
+)
+
+var attachTypeMap = map[int32]BpfAttachType{
+	int32(BPF_RAW_TRACEPOINT.Value()): BPF_RAW_TRACEPOINT,
+	int32(PERF_TRACEPOINT.Value()):    PERF_TRACEPOINT,
+	int32(PERF_KPROBE.Value()):        PERF_KPROBE,
+	int32(PERF_KRETPROBE.Value()):     PERF_KRETPROBE,
+	int32(PERF_UPROBE.Value()):        PERF_UPROBE,
+	int32(PERF_URETPROBE.Value()):     PERF_URETPROBE,
+}
+
+func (attachType BpfAttachType) Value() uint64 {
+	return uint64(attachType.rawValue)
+}
+
+func (attachType BpfAttachType) String() string {
+	return attachType.stringValue
+}
+
+func ParseBpfAttachType(attachType int32) (BpfAttachType, error) {
+	v, ok := attachTypeMap[attachType]
+	if !ok {
+		return BpfAttachType{}, fmt.Errorf("not a valid argument: %d", attachType)
 	}
 	return v, nil
 }
