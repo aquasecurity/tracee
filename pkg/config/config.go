@@ -3,6 +3,7 @@ package config
 import (
 	"io"
 
+	"github.com/aquasecurity/tracee/environment"
 	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
@@ -10,7 +11,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 // Config is a struct containing user defined configuration of tracee

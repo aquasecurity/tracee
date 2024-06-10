@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/aquasecurity/tracee/environment"
 	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/proctree"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 

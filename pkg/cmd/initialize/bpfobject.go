@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	embed "github.com/aquasecurity/tracee"
+	"github.com/aquasecurity/tracee/environment"
 	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 // BpfObject sets up and configures a BPF object for tracing and monitoring

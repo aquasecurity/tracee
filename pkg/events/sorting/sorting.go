@@ -105,9 +105,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aquasecurity/tracee/environment"
 	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/logger"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 

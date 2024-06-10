@@ -15,6 +15,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
+	"github.com/aquasecurity/tracee/environment"
 	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
@@ -41,7 +42,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/pkg/utils"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"

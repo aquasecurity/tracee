@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
+	"github.com/aquasecurity/tracee/environment"
 )
 
 type SystemFunctionArgument interface {
