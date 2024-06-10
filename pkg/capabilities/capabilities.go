@@ -9,8 +9,8 @@ import (
 
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
+	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 var caps *Capabilities // singleton for all packages

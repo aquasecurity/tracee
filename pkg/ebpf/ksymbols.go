@@ -3,9 +3,9 @@ package ebpf
 import (
 	"unsafe"
 
+	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // TODO: Just like recent change in `KernelSymbolTable`, in kernel_symbols.go,

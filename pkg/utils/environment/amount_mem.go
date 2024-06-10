@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/logger"
 )
 
 // GetMEMAmountInMBs reads meminfo file and returns MemTotal in megabytes

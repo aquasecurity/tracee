@@ -7,8 +7,8 @@ import (
 	"strings"
 	"unsafe"
 
+	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 const BPFMaxLogFileLen = 72 // BPF_MAX_LOG_FILE_LEN

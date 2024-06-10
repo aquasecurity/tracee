@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func captureHelp() string {

@@ -7,9 +7,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // ContainerPathResolver generates an accessible absolute path from the root

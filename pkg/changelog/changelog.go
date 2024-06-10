@@ -4,7 +4,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/logger"
 )
 
 type comparable interface {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/logger"
 )
 
 var (

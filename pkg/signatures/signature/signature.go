@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	embedded "github.com/aquasecurity/tracee"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/regosig"
 	"github.com/aquasecurity/tracee/types/detect"
 )

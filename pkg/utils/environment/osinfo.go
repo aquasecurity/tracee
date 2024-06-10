@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/logger"
 )
 
 type OSReleaseID uint32
