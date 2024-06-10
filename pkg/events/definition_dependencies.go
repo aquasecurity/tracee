@@ -80,6 +80,10 @@ type Probe struct {
 	required bool // tracee fails if probe can't be attached
 }
 
+func NewProbe(handle probes.Handle, required bool) Probe {
+	return Probe{handle: handle, required: required}
+}
+
 func (p Probe) GetHandle() probes.Handle {
 	return p.handle
 }
@@ -95,6 +99,10 @@ type KSymbol struct {
 	required bool // tracee fails if symbol is not found
 }
 
+func NewKSymbol(symbol string, required bool) KSymbol {
+	return KSymbol{symbol: symbol, required: required}
+}
+
 func (ks KSymbol) GetSymbolName() string {
 	return ks.symbol
 }
@@ -108,6 +116,10 @@ func (ks KSymbol) IsRequired() bool {
 type Capabilities struct {
 	base []cap.Value // always effective
 	ebpf []cap.Value // effective when using eBPF
+}
+
+func NewCapabilities(base []cap.Value, ebpf []cap.Value) Capabilities {
+	return Capabilities{base: base, ebpf: ebpf}
 }
 
 func (c Capabilities) GetBase() []cap.Value {
