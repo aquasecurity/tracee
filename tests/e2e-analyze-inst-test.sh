@@ -117,6 +117,8 @@ for TEST in $TESTS; do
 		continue
 	fi
 
+	cp $capture_events_file /tmp/$TEST-events.json
+	cp $capture_log /tmp/$TEST-logs
 
 	info "ANALYZING EVENTS"
 
