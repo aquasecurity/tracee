@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/errfmt"
 )
 
 const possibleCPUsFilePath = "/sys/devices/system/cpu/possible"

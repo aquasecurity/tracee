@@ -9,8 +9,8 @@ import (
 
 	miniosha "github.com/minio/sha256-simd"
 
+	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/logger"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 // ComputeFileHashAtPath attempts to open a file at a path and calculate its

@@ -3,7 +3,7 @@ package flags
 import (
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/errfmt"
 )
 
 // PolicyScopeMap maps policy id to its pre-parsed scope flag fields

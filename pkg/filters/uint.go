@@ -9,7 +9,7 @@ import (
 	"golang.org/x/exp/constraints"
 	"golang.org/x/exp/maps"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 

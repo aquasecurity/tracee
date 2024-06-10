@@ -1,8 +1,8 @@
 package sharedobjs
 
 import (
+	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 // ContainersSymbolsLoader is a decorator for SO loaders that resolves containers-relative paths to

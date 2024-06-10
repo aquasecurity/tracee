@@ -6,7 +6,7 @@ import (
 
 	docker "github.com/docker/docker/client"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/errfmt"
 )
 
 type dockerEnricher struct {

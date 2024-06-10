@@ -3,9 +3,9 @@ package flags
 import (
 	"strings"
 
+	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 func containersHelp() string {

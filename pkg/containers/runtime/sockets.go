@@ -3,7 +3,7 @@ package runtime
 import (
 	"os"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/errfmt"
 )
 
 // Sockets represent existing container runtime connections

@@ -9,6 +9,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/aquasecurity/libbpfgo v0.7.0-libbpf-1.4
 	github.com/aquasecurity/tracee/api v0.0.0-20240607205742-90c301111aee
+	github.com/aquasecurity/tracee/errfmt v0.0.0-00010101000000-000000000000
 	github.com/aquasecurity/tracee/logger v0.0.0-00010101000000-000000000000
 	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20240607205742-90c301111aee
 	github.com/aquasecurity/tracee/types v0.0.0-20240607205742-90c301111aee
@@ -180,4 +181,7 @@ require (
 )
 
 // To be removed in a sequential PR
-replace github.com/aquasecurity/tracee/logger => ./logger
+replace (
+	github.com/aquasecurity/tracee/errfmt => ./errfmt
+	github.com/aquasecurity/tracee/logger => ./logger
+)

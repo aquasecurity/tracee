@@ -4,8 +4,8 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/logger"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 // TODO: add states to the EventGroup struct (to keep states of events from that group)

@@ -9,9 +9,9 @@ import (
 
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
+	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 

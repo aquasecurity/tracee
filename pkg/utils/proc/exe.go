@@ -5,8 +5,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/logger"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 // GetProcNS returns the namespace ID of a given namespace and process.

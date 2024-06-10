@@ -5,7 +5,7 @@ import (
 
 	"github.com/open-policy-agent/opa/compile"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/pkg/signatures/rego"
 )
 

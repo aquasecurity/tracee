@@ -3,8 +3,8 @@ package pcaps
 import (
 	lru "github.com/hashicorp/golang-lru/v2"
 
+	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/logger"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 

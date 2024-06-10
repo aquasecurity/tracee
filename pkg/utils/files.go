@@ -8,8 +8,8 @@ import (
 
 	"golang.org/x/sys/unix"
 
+	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/logger"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 // OpenExistingDir open a directory with given path, and return the os.File of it.

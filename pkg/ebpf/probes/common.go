@@ -3,7 +3,7 @@ package probes
 import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/errfmt"
 )
 
 // enableDisableAutoload enables or disables an eBPF program automatic attachment to/from its hook.

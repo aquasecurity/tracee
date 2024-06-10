@@ -3,8 +3,8 @@ package filehash
 import (
 	"fmt"
 
+	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/pkg/config"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 const hostDigest = "host"

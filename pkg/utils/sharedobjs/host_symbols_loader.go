@@ -7,8 +7,8 @@ import (
 	"github.com/hashicorp/golang-lru/simplelru"
 	"golang.org/x/exp/maps"
 
+	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/logger"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 // HostSymbolsLoader is responsible for efficient reading of shared object's symbols.

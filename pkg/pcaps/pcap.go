@@ -7,8 +7,8 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcapgo"
 
+	"github.com/aquasecurity/tracee/errfmt"
 	"github.com/aquasecurity/tracee/logger"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
