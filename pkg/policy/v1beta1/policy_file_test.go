@@ -35,7 +35,7 @@ func TestPolicyValidate(t *testing.T) {
 		nil,
 	)
 
-	err := events.Core.Add(9000, fakeSigEventDefinition)
+	err := events.Core.Add(events.StartSignatureID, fakeSigEventDefinition)
 	assert.NilError(t, err)
 
 	tests := []struct {

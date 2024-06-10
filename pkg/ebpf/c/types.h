@@ -130,6 +130,11 @@ enum event_id_e
     SECURITY_BPRM_CREDS_FOR_EXEC,
     MAX_EVENT_ID,
     NO_EVENT_SUBMIT,
+
+    // Test events IDs
+    EXEC_TEST = 8000,
+    TEST_MISSING_KSYMBOLS,
+    TEST_FAILED_ATTACH,
 };
 
 enum signal_event_id_e

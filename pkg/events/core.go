@@ -173,6 +173,13 @@ const (
 	MaxSignatureID   ID = 6999
 )
 
+// Test events
+const (
+	ExecTest ID = 8000 + iota
+	MissingKsymbol
+	FailedAttach
+)
+
 //
 // All Events
 //
@@ -13622,6 +13629,57 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u16", Name: "dst_port"},
 			{Type: "const char **", Name: "src_dns"},
 			{Type: "const char **", Name: "dst_dns"},
+		},
+	},
+
+	// Test Events
+	ExecTest: {
+		id:      ExecTest,
+		id32Bit: Sys32Undefined,
+		name:    "exec_test",
+		version: NewVersion(1, 0, 0),
+		syscall: false,
+		sets:    []string{"tests", "dependencies"},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.ExecTest, required: true},
+				{handle: probes.EmptyKprobe, required: true},
+			},
+		},
+		params: []trace.ArgMeta{},
+	},
+	MissingKsymbol: {
+		id:      MissingKsymbol,
+		id32Bit: Sys32Undefined,
+		name:    "missing_ksymbol",
+		version: NewVersion(1, 0, 0),
+		syscall: false,
+		sets:    []string{"tests", "dependencies"},
+		params:  []trace.ArgMeta{},
+		dependencies: Dependencies{
+			kSymbols: []KSymbol{
+				{symbol: "non_existing_symbol", required: true},
+			},
+			probes: []Probe{
+				{handle: probes.ExecTest, required: true},
+			},
+			ids: []ID{ExecTest},
+		},
+	},
+	FailedAttach: {
+		id:      FailedAttach,
+		id32Bit: Sys32Undefined,
+		name:    "failed_attach",
+		version: NewVersion(1, 0, 0),
+		syscall: false,
+		sets:    []string{"tests", "dependencies"},
+		params:  []trace.ArgMeta{},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.TestUnavailableHook, required: true},
+				{handle: probes.ExecTest, required: true},
+			},
+			ids: []ID{ExecTest},
 		},
 	},
 }
