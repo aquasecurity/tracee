@@ -339,6 +339,11 @@ func SetLogger(l LoggerInterface) {
 	pkgLogger.l = l
 }
 
+// GetLogger gets the package-level base logger
+func GetLogger() LoggerInterface {
+	return pkgLogger.l
+}
+
 // SetLevel sets package-level base logger level,
 // it is threadsafe
 func SetLevel(level Level) {

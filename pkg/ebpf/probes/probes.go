@@ -149,3 +149,10 @@ const (
 	ExecuteFinishedCompatARM
 	ExecuteAtFinishedCompatARM
 )
+
+// Test probe handles
+const (
+	TestUnavailableHook = 1000 + iota
+	ExecTest
+	EmptyKprobe
+)

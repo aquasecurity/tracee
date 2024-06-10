@@ -6798,3 +6798,50 @@ int sched_process_exit_signal(struct bpf_raw_tracepoint_args *ctx)
 }
 
 // END OF Control Plane Programs
+
+// Tests
+
+SEC("kprobe/empty_kprobe")
+int BPF_KPROBE(empty_kprobe)
+{
+    return 0;
+}
+
+SEC("raw_tracepoint/exec_test")
+int tracepoint__exec_test(struct bpf_raw_tracepoint_args *ctx)
+{
+    // Check if test file was executed
+    struct linux_binprm *bprm = (struct linux_binprm *) ctx->args[2];
+    if (bprm == NULL)
+        return -1;
+    struct file *file = get_file_ptr_from_bprm(bprm);
+    void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
+    if (file_path == NULL || !has_prefix("/tmp/test", file_path, 9))
+        return 0;
+
+    // Submit all test events
+    int ret = 0;
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    if (!reset_event(p.event, EXEC_TEST))
+        return 0;
+    if (evaluate_scope_filters(&p))
+        ret |= events_perf_submit(&p, 0);
+
+    if (!reset_event(p.event, TEST_MISSING_KSYMBOLS))
+        return 0;
+    if (evaluate_scope_filters(&p))
+        ret |= events_perf_submit(&p, 0);
+
+    if (!reset_event(p.event, TEST_FAILED_ATTACH))
+        return 0;
+    if (evaluate_scope_filters(&p))
+        ret |= events_perf_submit(&p, 0);
+
+    return 0;
+}
