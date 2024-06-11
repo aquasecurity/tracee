@@ -47,31 +47,62 @@ CMD_CONTROLLER_GEN ?= controller-gen
 		echo "missing required tool $*"
 		exit 1
 	else
-		touch $@ # avoid target rebuilds due to inexistent file
+		touch $@ # avoid target rebuilds due to non-existing file
 	fi
 
 #
 # libs
 #
 
-LIB_ELF ?= libelf
-LIB_ZLIB ?= zlib
-LIB_ZSTD ?= libzstd
+LIB_BPF ?= libbpf
 
-define pkg_config
-	$(CMD_PKGCONFIG) --libs $(1)
-endef
+# Recursively get private requirements of a library.
+# It ignores libbpf as it is in 3rdparty, but considers its requirements.
+fetch_priv_reqs_recursive = \
+get_priv_reqs_recursive() { \
+	lib=$$1; \
+	processed_libs=$$2; \
+	if echo "$$processed_libs" | grep -qw "$$lib"; then \
+		return; \
+	fi; \
+	processed_libs="$$processed_libs $$lib"; \
+	if [ "$$lib" = "libbpf" ]; then \
+		priv_reqs=$$(PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(CMD_PKGCONFIG) --print-requires-private $$lib); \
+	else \
+		echo $$lib; \
+		priv_reqs=$$($(CMD_PKGCONFIG) --print-requires-private $$lib); \
+	fi; \
+	for req in $$priv_reqs; do \
+		if echo "$$processed_libs" | grep -qw "$$req"; then \
+			continue; \
+		fi; \
+	done; \
+	for req in $$priv_reqs; do \
+		get_priv_reqs_recursive $$req "$$processed_libs"; \
+	done; \
+}; \
+\
+get_all_priv_reqs() { \
+	lib=$$1; \
+	get_priv_reqs_recursive $$lib ""; \
+}; \
+\
+get_all_priv_reqs $$1
 
 .checklib_%: \
 	| .check_$(CMD_PKGCONFIG)
 #
-	@$(CMD_PKGCONFIG) --silence-errors --validate $* 2>/dev/null
-	if [ $$? -ne 0 ]; then
-		echo "missing lib $*"
-		exit 1
-	else
-		touch $@ # avoid target rebuilds due to inexistent file
-	fi
+	@{ \
+		$(eval required_libs := $(shell sh -c '$(fetch_priv_reqs_recursive) $*'))
+		$(eval output := $(shell sh -c '\
+		for lib in "$(required_libs)"; do \
+			$(CMD_PKGCONFIG) --silence-errors --validate $$lib 2>/dev/null || echo "$$lib"; \
+		done'))
+		if [ -n "$(output)" ]; then \
+			echo "missing required library: $(output)"; \
+			exit 1; \
+		fi; \
+	} && touch $@ # avoid target rebuilds due to non-existing file
 
 #
 # tools version
@@ -88,7 +119,7 @@ CLANG_VERSION = $(shell $(CMD_CLANG) --version 2>/dev/null | \
 		echo "your current clang version is ${CLANG_VERSION}"
 		exit 1
 	fi
-	touch $@ # avoid target rebuilds over and over due to inexistent file
+	touch $@ # avoid target rebuilds over and over due to non-existing file
 
 GO_VERSION = $(shell $(CMD_GO) version 2>/dev/null | $(CMD_AWK) '{print $$3}' | $(CMD_SED) 's:go::g' | $(CMD_CUT) -d. -f1,2)
 GO_VERSION_MAJ = $(shell echo $(GO_VERSION) | $(CMD_CUT) -d'.' -f1)
@@ -171,9 +202,7 @@ env:
 	@echo "CMD_TR                   $(CMD_TR)"
 	@echo "CMD_PROTOC               $(CMD_PROTOC)"
 	@echo ---------------------------------------
-	@echo "LIB_ELF                  $(LIB_ELF)"
-	@echo "LIB_ZLIB                 $(LIB_ZLIB)"
-	@echo "LIB_ZSTD                 $(LIB_ZSTD)"
+	@echo "LIB_BPF                  $(LIB_BPF)"
 	@echo ---------------------------------------
 	@echo "VERSION                  $(VERSION)"
 	@echo "LAST_GIT_TAG             $(LAST_GIT_TAG)"
@@ -320,8 +349,11 @@ $(OUTPUT_DIR)/btfhub:
 LIBBPF_CFLAGS = "-fPIC"
 LIBBPF_LDFLAGS =
 LIBBPF_SRC = ./3rdparty/libbpf/src
+LIBBPF_DESTDIR = $(OUTPUT_DIR)/libbpf
+LIBBPF_OBJDIR = $(LIBBPF_DESTDIR)/obj
+LIBBPF_OBJ = $(LIBBPF_OBJDIR)/libbpf.a
 
-$(OUTPUT_DIR)/libbpf/libbpf.a: \
+$(LIBBPF_OBJ): \
 	$(LIBBPF_SRC) \
 	$(wildcard $(LIBBPF_SRC)/*.[ch]) \
 	| .checkver_$(CMD_CLANG) $(OUTPUT_DIR)
@@ -332,9 +364,10 @@ $(OUTPUT_DIR)/libbpf/libbpf.a: \
 		$(MAKE) \
 		-C $(LIBBPF_SRC) \
 		BUILD_STATIC_ONLY=1 \
-		DESTDIR=$(abspath ./$(OUTPUT_DIR)/libbpf/) \
-		OBJDIR=$(abspath ./$(OUTPUT_DIR)/libbpf/obj) \
-		INCLUDEDIR= LIBDIR= UAPIDIR= prefix= libdir= \
+		DESTDIR=$(abspath $(LIBBPF_DESTDIR)) \
+		OBJDIR=$(abspath $(LIBBPF_OBJDIR)) \
+		LIBDIR=$(abspath $(LIBBPF_OBJDIR)) \
+		INCLUDEDIR= UAPIDIR= prefix= libdir= \
 		install install_uapi_headers
 
 $(LIBBPF_SRC): \
@@ -355,7 +388,7 @@ TRACEE_EBPF_OBJ_HEADERS = $(shell find pkg/ebpf/c -name *.h)
 bpf: $(OUTPUT_DIR)/tracee.bpf.o
 
 $(OUTPUT_DIR)/tracee.bpf.o: \
-	$(OUTPUT_DIR)/libbpf/libbpf.a \
+	$(LIBBPF_OBJ) \
 	$(TRACEE_EBPF_OBJ_SRC) \
 	$(TRACEE_EBPF_OBJ_HEADERS)
 #
@@ -382,23 +415,21 @@ clean-bpf:
 #
 
 STATIC ?= 0
-GO_TAGS_EBPF = core,ebpf
-CGO_EXT_LDFLAGS_EBPF =
-
-ifeq ($(STATIC), 1)
-    CGO_EXT_LDFLAGS_EBPF += -static
-    GO_TAGS_EBPF := $(GO_TAGS_EBPF),netgo
-endif
-
 TRACEE_SRC_DIRS = ./cmd/ ./pkg/ ./signatures/
 TRACEE_SRC = $(shell find $(TRACEE_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
-
+GO_TAGS_EBPF = core,ebpf
+CGO_EXT_LDFLAGS_EBPF =
 CUSTOM_CGO_CFLAGS = "-I$(abspath $(OUTPUT_DIR)/libbpf)"
-CUSTOM_CGO_LDFLAGS = "$(shell $(call pkg_config, $(LIB_ELF))) \
-	$(shell $(call pkg_config, $(LIB_ZLIB))) \
-	$(shell $(call pkg_config, $(LIB_ZSTD))) \
-	$(abspath $(OUTPUT_DIR)/libbpf/libbpf.a)"
+PKG_CONFIG_PATH = $(LIBBPF_OBJDIR)
+PKG_CONFIG_FLAG =
 
+ifeq ($(STATIC), 1)
+    GO_TAGS_EBPF := $(GO_TAGS_EBPF),netgo
+    CGO_EXT_LDFLAGS_EBPF += -static
+    PKG_CONFIG_FLAG = --static
+endif
+
+CUSTOM_CGO_LDFLAGS = "$(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(CMD_PKGCONFIG) $(PKG_CONFIG_FLAG) --libs $(LIB_BPF))"
 GO_ENV_EBPF =
 GO_ENV_EBPF += GOOS=linux
 GO_ENV_EBPF += CC=$(CMD_CLANG)
@@ -442,9 +473,7 @@ $(OUTPUT_DIR)/tracee: \
 	$(OUTPUT_DIR)/tracee.bpf.o \
 	$(TRACEE_SRC) \
 	| .checkver_$(CMD_GO) \
-	.checklib_$(LIB_ELF) \
-	.checklib_$(LIB_ZLIB) \
-	.checklib_$(LIB_ZSTD) \
+	.checklib_$(LIB_BPF) \
 	btfhub \
 	signatures
 #
@@ -476,9 +505,7 @@ $(OUTPUT_DIR)/tracee-ebpf: \
 	$(OUTPUT_DIR)/tracee.bpf.o \
 	$(TRACEE_SRC) \
 	| .checkver_$(CMD_GO) \
-	.checklib_$(LIB_ELF) \
-	.checklib_$(LIB_ZLIB) \
-	.checklib_$(LIB_ZSTD) \
+	.checklib_$(LIB_BPF) \
 	btfhub
 #
 	$(MAKE) $(OUTPUT_DIR)/btfhub
@@ -629,9 +656,10 @@ TRACEE_GPTDOCS_SRC = $(shell find $(TRACEE_GPTDOCS_SRC_DIRS) \
 tracee-gptdocs: $(OUTPUT_DIR)/tracee-gptdocs
 
 $(OUTPUT_DIR)/tracee-gptdocs: \
-	.checkver_$(CMD_GO) \
 	$(TRACEE_GPTDOCS_SRC) \
-	| $(OUTPUT_DIR)
+	$(LIBBPF_OBJ) \
+	| .checkver_$(CMD_GO) \
+	$(OUTPUT_DIR)
 #
 	$(MAKE) $(OUTPUT_DIR)/btfhub
 	$(MAKE) btfhub
@@ -754,7 +782,7 @@ test-types: \
 
 .PHONY: $(OUTPUT_DIR)/syscaller
 $(OUTPUT_DIR)/syscaller: \
-	$(OUTPUT_DIR)/libbpf/libbpf.a \
+	$(LIBBPF_OBJ) \
 	| .check_$(CMD_GO)
 #
 	$(GO_ENV_EBPF) \
