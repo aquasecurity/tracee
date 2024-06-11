@@ -601,12 +601,12 @@ message Context {
 
 message Process  {
     optional Executable executable = 1;
-    google.protobuf.UInt32Value entity_id = 2;
-    google.protobuf.UInt32Value pid = 3;
-    google.protobuf.UInt32Value namespaced_pid = 4;
+    google.protobuf.UInt32Value unique_id = 2;
+    google.protobuf.UInt32Value host_pid = 3;
+    google.protobuf.UInt32Value pid = 4;
     optional User real_user = 5;
     optional Thread thread = 6;
-    optional Process parent = 7;
+    repeated Process ancestors = 7;
 }
 
 message Executable {
@@ -618,11 +618,11 @@ message User {
 }
 
 message Thread {
-    google.protobuf.Timestamp start = 1;
+    google.protobuf.Timestamp start_time = 1;
     string name = 2;
-    google.protobuf.UInt32Value entity_id = 3;
-    google.protobuf.UInt32Value tid = 4;
-    google.protobuf.UInt32Value namespaced_tid = 5;
+    google.protobuf.UInt32Value unique_id = 3;
+    google.protobuf.UInt32Value host_tid = 4;
+    google.protobuf.UInt32Value tid = 5;
     string syscall = 6;
     bool compat = 7;
     optional UserStackTrace user_stack_trace = 8;
@@ -641,7 +641,7 @@ message Container {
     string id = 1;
     string name = 2; 
     ContainerImage image = 3;
-    bool started = 4;
+    bool is_running = 4;
 }
 
 message ContainerImage {
