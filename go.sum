@@ -406,8 +406,6 @@ github.com/agnivade/levenshtein v1.1.1/go.mod h1:veldBMzWxcCG2ZvUTKD2kJNRdCk5hVb
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/aquasecurity/libbpfgo v0.7.0-libbpf-1.4 h1:rQ94U12Xlz2tncE8Rxnw3vpp/9hgUIEu3/Lv0/XQM0Q=
 github.com/aquasecurity/libbpfgo v0.7.0-libbpf-1.4/go.mod h1:iI7QCIZ3kXG0MR+FHsDZck6cYs1y1HyZP3sMObBg0sk=
-github.com/aquasecurity/tracee/api v0.0.0-20240607205742-90c301111aee h1:HmrzEVS2gfUUlB/S1fLB7vvqEnf2Vk7DraAETX6PGMk=
-github.com/aquasecurity/tracee/api v0.0.0-20240607205742-90c301111aee/go.mod h1:km0QNkaoOVxU/IYF/Pw/ju/2SO1mYn+HJOIyMDtnfkE=
 github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20240607205742-90c301111aee h1:1KJy6Z2bSpmKQVPShU7hhbXgGVOgMwvzf9rjoWMTYEg=
 github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20240607205742-90c301111aee/go.mod h1:SX08YRCsPFh8CvCvzkV8FSn1sqWAarNVEJq9RSZoF/8=
 github.com/aquasecurity/tracee/types v0.0.0-20240607205742-90c301111aee h1:PDQn0NcQnF/O8wX2zDak0TteAR89IMUTcCm1IwVmo0M=
@@ -781,6 +779,8 @@ github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6L
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.11.0 h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=
 github.com/rogpeppe/go-internal v1.11.0/go.mod h1:ddIwULY96R17DhadqLgMfk9H9tvdUzkipdSkR5nkCZA=
+github.com/rscampos/tracee/api v0.0.0-20240610220949-0b917df42ba7 h1:KHzhuO5U7LtFUDkk7YUabZjZ0Y0Z03/TFGFfBuCtRek=
+github.com/rscampos/tracee/api v0.0.0-20240610220949-0b917df42ba7/go.mod h1:km0QNkaoOVxU/IYF/Pw/ju/2SO1mYn+HJOIyMDtnfkE=
 github.com/russross/blackfriday/v2 v2.1.0 h1:JIOH55/0cWyOuilr9/qlrm0BSXldqnqwMsf35Ld67mk=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/sagikazarmark/locafero v0.4.0 h1:HApY1R9zGo4DBgr7dqsTH/JJxLTTsOt7u6keLGt6kNQ=
