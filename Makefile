@@ -552,9 +552,9 @@ TRACEE_RULES_SRC=$(shell find $(TRACEE_RULES_SRC_DIRS) -type f -name '*.go')
 tracee-rules: $(OUTPUT_DIR)/tracee-rules
 
 $(OUTPUT_DIR)/tracee-rules: \
-	.checkver_$(CMD_GO) \
 	$(TRACEE_RULES_SRC) \
-	| $(OUTPUT_DIR) \
+	| .checkver_$(CMD_GO) \
+	$(OUTPUT_DIR) \
 	signatures
 #
 	$(GO_ENV_RULES) $(CMD_GO) build \
@@ -630,9 +630,9 @@ TRACEE_BENCH_SRC = $(shell find $(TRACEE_BENCH_SRC_DIRS) \
 tracee-bench: $(OUTPUT_DIR)/tracee-bench
 
 $(OUTPUT_DIR)/tracee-bench: \
-	.checkver_$(CMD_GO) \
 	$(TRACEE_BENCH_SRC) \
-	| $(OUTPUT_DIR)
+	| .checkver_$(CMD_GO) \
+	$(OUTPUT_DIR)
 #
 	$(CMD_GO) build \
 		-v -o $@ \
@@ -747,9 +747,9 @@ clean-e2e-inst-signatures:
 
 .PHONY: test-unit
 test-unit: \
-	.checkver_$(CMD_GO) \
 	tracee-ebpf \
-	test-types
+	test-types \
+	| .checkver_$(CMD_GO)
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
@@ -765,7 +765,7 @@ test-unit: \
 
 .PHONY: test-types
 test-types: \
-	.checkver_$(CMD_GO)
+	| .checkver_$(CMD_GO)
 #
 	# Note that we must changed the directory here because types is a standalone Go module.
 	@cd ./types && $(CMD_GO) test \
@@ -790,9 +790,9 @@ $(OUTPUT_DIR)/syscaller: \
 
 .PHONY: test-integration
 test-integration: \
-	.checkver_$(CMD_GO) \
 	$(OUTPUT_DIR)/syscaller \
-	tracee
+	tracee \
+	| .checkver_$(CMD_GO)
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
@@ -816,7 +816,7 @@ test-signatures: \
 
 .PHONY: test-upstream-libbpfgo
 test-upstream-libbpfgo: \
-	.checkver_$(CMD_GO)
+	| .checkver_$(CMD_GO)
 #
 	./tests/libbpfgo.sh $(GO_ENV_EBPF)
 
@@ -826,8 +826,8 @@ test-upstream-libbpfgo: \
 
 .PHONY: test-performance
 test-performance: \
-	.checkver_$(CMD_GO) \
-	tracee
+	tracee \
+	| .checkver_$(CMD_GO)
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
@@ -871,8 +871,8 @@ check-code:: \
 
 .PHONY: check-vet
 check-vet: \
-	.checkver_$(CMD_GO) \
-	tracee-ebpf
+	tracee-ebpf \
+	| .checkver_$(CMD_GO)
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) vet \
@@ -881,9 +881,9 @@ check-vet: \
 
 .PHONY: check-staticcheck
 check-staticcheck: \
-	.checkver_$(CMD_GO) \
 	tracee-ebpf \
-	| .check_$(CMD_STATICCHECK)
+	| .checkver_$(CMD_GO) \
+	.check_$(CMD_STATICCHECK)
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_STATICCHECK) -f stylish \
@@ -892,9 +892,9 @@ check-staticcheck: \
 
 .PHONY: check-err
 check-err: \
-	.checkver_$(CMD_GO) \
 	tracee-ebpf \
-	| .check_$(CMD_ERRCHECK)
+	| .checkver_$(CMD_GO) \
+	.check_$(CMD_ERRCHECK)
 #
 	@$(CMD_ERRCHECK) \
 		-tags $(GO_TAGS_EBPF) \
@@ -1009,8 +1009,8 @@ clean:
 tracee-operator: $(OUTPUT_DIR)/tracee-operator
 
 $(OUTPUT_DIR)/tracee-operator: \
-	.checkver_$(CMD_GO) \
-	| $(OUTPUT_DIR)
+	| .checkver_$(CMD_GO) \
+	$(OUTPUT_DIR)
 #
 	$(CMD_GO) build \
 		-v -o $@ \
