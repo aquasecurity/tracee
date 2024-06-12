@@ -125,7 +125,7 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
     // exit, exit_group and rt_sigreturn syscalls don't return
     if (sys->id != SYSCALL_EXIT && sys->id != SYSCALL_EXIT_GROUP &&
         sys->id != SYSCALL_RT_SIGRETURN) {
-        sys->ts = bpf_ktime_get_ns();
+        sys->ts = get_current_time_in_ns();
         task_info->syscall_traced = true;
     }
 
@@ -718,7 +718,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 }
 
 // number of iterations - value that the verifier was seen to cope with - the higher, the better
-#define MAX_NUM_MODULES         450
+#define MAX_NUM_MODULES         440
 #define HISTORY_SCAN_FAILURE    0
 #define HISTORY_SCAN_SUCCESSFUL 1
 
@@ -988,7 +988,7 @@ statfunc int find_modules_from_mod_tree(program_data_t *p)
 static __always_inline u64 check_new_mods_only(program_data_t *p)
 {
     struct module *pos, *n;
-    u64 start_scan_time = bpf_ktime_get_ns();
+    u64 start_scan_time = get_current_time_in_ns();
     char modules_sym[8] = "modules";
     kernel_new_mod_t *new_mod;
     u64 mod_addr;
@@ -1008,7 +1008,7 @@ static __always_inline u64 check_new_mods_only(program_data_t *p)
         mod_addr = (u64) pos;
         new_mod = bpf_map_lookup_elem(&new_module_map, &mod_addr);
         if (new_mod) {
-            new_mod->last_seen_time = bpf_ktime_get_ns();
+            new_mod->last_seen_time = get_current_time_in_ns();
         }
     }
 
@@ -1151,7 +1151,7 @@ int uprobe_lkm_seeker(struct pt_regs *ctx)
         return 0;
     }
 
-    start_scan_time_init_shown_mods = bpf_ktime_get_ns();
+    start_scan_time_init_shown_mods = get_current_time_in_ns();
     int ret = init_shown_modules();
     if (ret != 0) {
         tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_HID_KER_MOD, ret);
@@ -4308,7 +4308,7 @@ int tracepoint__module__module_load(struct bpf_raw_tracepoint_args *ctx)
     struct module *mod = (struct module *) ctx->args[0];
 
     if (event_is_selected(HIDDEN_KERNEL_MODULE_SEEKER, p.event->context.policies_version)) {
-        u64 insert_time = bpf_ktime_get_ns();
+        u64 insert_time = get_current_time_in_ns();
         kernel_new_mod_t new_mod = {.insert_time = insert_time};
         u64 mod_addr = (u64) mod;
         // new_module_map - must be after the module is added to modules list,
@@ -4345,7 +4345,7 @@ int tracepoint__module__module_free(struct bpf_raw_tracepoint_args *ctx)
         // risk of race condition
         bpf_map_delete_elem(&new_module_map, &mod_addr);
 
-        kernel_deleted_mod_t deleted_mod = {.deleted_time = bpf_ktime_get_ns()};
+        kernel_deleted_mod_t deleted_mod = {.deleted_time = get_current_time_in_ns()};
         bpf_map_update_elem(&recent_deleted_module_map, &mod_addr, &deleted_mod, BPF_ANY);
     }
 
@@ -5397,7 +5397,7 @@ statfunc u32 cgroup_skb_submit_flow(struct __sk_buff *ctx,
                                     u32 event_type, u32 size, u32 flow)
 {
     netflowvalue_t *netflowvalptr, netflowvalue = {
-                                       .last_update = bpf_ktime_get_ns(),
+                                       .last_update = get_current_time_in_ns(),
                                        .direction = flow_unknown,
                                    };
 
@@ -6620,7 +6620,7 @@ int sched_process_fork_signal(struct bpf_raw_tracepoint_args *ctx)
     // userland tgid = kernel pid
 
     // The event timestamp, so process tree info can be changelog'ed.
-    u64 timestamp = bpf_ktime_get_ns();
+    u64 timestamp = get_current_time_in_ns();
     save_to_submit_buf(&signal->args_buf, &timestamp, sizeof(u64), 0);
 
     // Parent information.
@@ -6707,7 +6707,7 @@ int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
     u32 leader_hash = hash_task_id(get_task_host_pid(leader), get_task_start_time(leader));
 
     // The event timestamp, so process tree info can be changelog'ed.
-    u64 timestamp = bpf_ktime_get_ns();
+    u64 timestamp = get_current_time_in_ns();
     save_to_submit_buf(&signal->args_buf, &timestamp, sizeof(u64), 0);
 
     save_to_submit_buf(&signal->args_buf, (void *) &task_hash, sizeof(u32), 1);
@@ -6802,7 +6802,7 @@ int sched_process_exit_signal(struct bpf_raw_tracepoint_args *ctx)
     u32 leader_hash = hash_task_id(get_task_host_pid(leader), get_task_start_time(leader));
 
     // The event timestamp, so process tree info can be changelog'ed.
-    u64 timestamp = bpf_ktime_get_ns();
+    u64 timestamp = get_current_time_in_ns();
     save_to_submit_buf(&signal->args_buf, &timestamp, sizeof(u64), 0);
 
     save_to_submit_buf(&signal->args_buf, (void *) &task_hash, sizeof(u32), 1);
