@@ -42,6 +42,7 @@ enum event_id_e
 {
     // Net events IDs
     NET_PACKET_BASE = 700,
+    NET_PACKET_RAW,
     NET_PACKET_IP,
     NET_PACKET_TCP,
     NET_PACKET_UDP,

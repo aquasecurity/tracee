@@ -98,16 +98,17 @@ typedef struct nethdrs_t {
 
 typedef enum net_packet {
     CAP_NET_PACKET = 1 << 0,
+    SUB_NET_PACKET_RAW = 1 << 1,
     // Layer 3
-    SUB_NET_PACKET_IP = 1 << 1,
+    SUB_NET_PACKET_IP = 1 << 2,
     // Layer 4
-    SUB_NET_PACKET_TCP = 1 << 2,
-    SUB_NET_PACKET_UDP = 1 << 3,
-    SUB_NET_PACKET_ICMP = 1 << 4,
-    SUB_NET_PACKET_ICMPV6 = 1 << 5,
+    SUB_NET_PACKET_TCP = 1 << 3,
+    SUB_NET_PACKET_UDP = 1 << 4,
+    SUB_NET_PACKET_ICMP = 1 << 5,
+    SUB_NET_PACKET_ICMPV6 = 1 << 6,
     // Layer 7
-    SUB_NET_PACKET_DNS = 1 << 6,
-    SUB_NET_PACKET_HTTP = 1 << 7,
+    SUB_NET_PACKET_DNS = 1 << 7,
+    SUB_NET_PACKET_HTTP = 1 << 8,
 } net_packet_t;
 
 typedef struct net_event_contextmd {

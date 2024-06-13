@@ -25,6 +25,7 @@ type ID int32
 // Common events (used by all architectures).
 const (
 	NetPacketBase ID = iota + 700
+	NetPacketRaw
 	NetPacketIPBase
 	NetPacketTCPBase
 	NetPacketUDPBase
@@ -13235,6 +13236,21 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets:   []string{"network_events"},
 		params: []trace.ArgMeta{},
+	},
+	NetPacketRaw: {
+		id:      NetPacketRaw,
+		id32Bit: Sys32Undefined,
+		name:    "net_packet_raw",
+		version: NewVersion(1, 0, 0),
+		dependencies: Dependencies{
+			ids: []ID{
+				NetPacketBase,
+			},
+		},
+		sets: []string{"packets"},
+		params: []trace.ArgMeta{
+			{Type: "bytes", Name: "data"},
+		},
 	},
 	NetPacketIPBase: {
 		id:       NetPacketIPBase,
