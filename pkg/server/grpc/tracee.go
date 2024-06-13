@@ -777,30 +777,40 @@ func getProcess(e trace.Event) *pb.Process {
 		executable = &pb.Executable{Path: e.Executable.Path}
 	}
 
+	ancestors := getAncestors(e)
+
 	return &pb.Process{
-		Executable:    executable,
-		EntityId:      wrapperspb.UInt32(e.ProcessEntityId),
-		Pid:           wrapperspb.UInt32(uint32(e.HostProcessID)),
-		NamespacedPid: wrapperspb.UInt32(uint32(e.ProcessID)),
+		Executable: executable,
+		UniqueId:   wrapperspb.UInt32(e.ProcessEntityId),
+		HostPid:    wrapperspb.UInt32(uint32(e.HostProcessID)),
+		Pid:        wrapperspb.UInt32(uint32(e.ProcessID)),
 		RealUser: &pb.User{
 			Id: wrapperspb.UInt32(uint32(e.UserID)),
 		},
 		Thread: &pb.Thread{
-			Start:          threadStartTime,
+			StartTime:      threadStartTime,
 			Name:           e.ProcessName,
-			EntityId:       wrapperspb.UInt32(e.ThreadEntityId),
-			Tid:            wrapperspb.UInt32(uint32(e.HostThreadID)),
-			NamespacedTid:  wrapperspb.UInt32(uint32(e.ThreadID)),
+			UniqueId:       wrapperspb.UInt32(e.ThreadEntityId),
+			HostTid:        wrapperspb.UInt32(uint32(e.HostThreadID)),
+			Tid:            wrapperspb.UInt32(uint32(e.ThreadID)),
 			Syscall:        e.Syscall,
 			Compat:         e.ContextFlags.ContainerStarted,
 			UserStackTrace: userStackTrace,
 		},
-		Parent: &pb.Process{
-			EntityId:      wrapperspb.UInt32(e.ParentEntityId),
-			Pid:           wrapperspb.UInt32(uint32(e.HostParentProcessID)),
-			NamespacedPid: wrapperspb.UInt32(uint32(e.ParentProcessID)),
-		},
+		Ancestors: ancestors,
 	}
+}
+
+func getAncestors(e trace.Event) []*pb.Process {
+	var ancestors []*pb.Process
+	if e.ParentEntityId != 0 {
+		ancestors = append(ancestors, &pb.Process{
+			UniqueId: wrapperspb.UInt32(e.ParentEntityId),
+			HostPid:  wrapperspb.UInt32(uint32(e.HostParentProcessID)),
+			Pid:      wrapperspb.UInt32(uint32(e.ParentProcessID)),
+		})
+	}
+	return ancestors
 }
 
 func getContainer(e trace.Event) *pb.Container {
