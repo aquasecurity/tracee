@@ -180,8 +180,10 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				continue
 			}
 			eventDefinition := events.Core.GetDefinitionByID(eventId)
-			args := make([]trace.Argument, len(eventDefinition.GetParams()))
-			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), eventDefinition, eventId)
+			evtParams := eventDefinition.GetParams()
+			evtName := eventDefinition.GetName()
+			args := make([]trace.Argument, len(evtParams))
+			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), evtParams, evtName, eventId)
 			if err != nil {
 				t.handleError(err)
 				continue
@@ -244,7 +246,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.Container = containerData
 			evt.Kubernetes = kubernetesData
 			evt.EventID = int(eCtx.EventID)
-			evt.EventName = eventDefinition.GetName()
+			evt.EventName = evtName
 			evt.PoliciesVersion = eCtx.PoliciesVersion
 			evt.MatchedPoliciesKernel = eCtx.MatchedPolicies
 			evt.MatchedPoliciesUser = 0

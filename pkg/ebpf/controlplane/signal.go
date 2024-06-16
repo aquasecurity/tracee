@@ -30,8 +30,10 @@ func (sig *signal) Unmarshal(buffer []byte) error {
 		return errfmt.Errorf("failed to get event %d configuration", sig.id)
 	}
 	eventDefinition := events.Core.GetDefinitionByID(sig.id)
-	sig.args = make([]trace.Argument, len(eventDefinition.GetParams()))
-	err = ebpfDecoder.DecodeArguments(sig.args, int(argnum), eventDefinition, sig.id)
+	evtParams := eventDefinition.GetParams()
+	evtName := eventDefinition.GetName()
+	sig.args = make([]trace.Argument, len(evtParams))
+	err = ebpfDecoder.DecodeArguments(sig.args, int(argnum), evtParams, evtName, sig.id)
 	if err != nil {
 		return errfmt.Errorf("failed to decode signal arguments: %v", err)
 	}
