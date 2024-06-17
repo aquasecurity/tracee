@@ -112,6 +112,21 @@ for TEST in $TESTS; do
         fi
         "${TESTS_DIR}"/hooked_syscall.sh
         ;;
+    FTRACE_HOOK)
+        if [[ ! -d /lib/modules/${KERNEL}/build ]]; then
+            info "skip ftrace_hook test, no kernel headers"
+            continue
+        fi
+        if [[ "$KERNEL" == *"amzn"* ]]; then
+            info "skip ftrace_hook test in amazon linux"
+            continue
+        fi
+        if [[ $ARCH == "aarch64" ]]; then
+            info "skip ftrace_hook test in aarch64"
+            continue
+        fi
+        "${TESTS_DIR}"/ftrace_hook.sh
+        ;;
     esac
 
     # Run tracee
@@ -175,6 +190,9 @@ for TEST in $TESTS; do
     case $TEST in
     HOOKED_SYSCALL)
         # wait for tracee hooked event to be processed
+        sleep 15
+        ;;
+    FTRACE_HOOK)
         sleep 15
         ;;
     *)
