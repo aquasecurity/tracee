@@ -21,6 +21,7 @@ var ExportedSignatures = []detect.Signature{
 	&e2eWritableDatasourceSig{},
 	&e2eSecurityPathNotify{},
 	&e2eSetFsPwd{},
+	&e2eFtraceHook{},
 }
 
 var ExportedDataSources = []detect.DataSource{
