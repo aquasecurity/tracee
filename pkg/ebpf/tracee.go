@@ -1634,6 +1634,7 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 
 	type probeMapKey struct {
 		programName string
+		eventName   string
 		probeType   probes.ProbeType
 	}
 	// We need to count how many ftrace based hooks will be placed on each symbol.
@@ -1669,9 +1670,14 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 						continue
 					}
 				}
+				if !p.IsAttached() {
+					// Don't fill the map with entries that didn't get hook (missing symbol etc)
+					continue
+				}
 				key := probeMapKey{
 					programName: p.GetProgramName(),
 					probeType:   p.GetProbeType(),
+					eventName:   p.GetEventName(),
 				}
 
 				_, found := uniqueHooksMap[key]
