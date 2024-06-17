@@ -3,9 +3,9 @@ package k8s
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
-	"k8s.io/kubectl/pkg/scheme"
 
 	"github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 )
@@ -20,7 +20,8 @@ func New() (*Client, error) {
 		return nil, err
 	}
 
-	err = v1beta1.AddToScheme(scheme.Scheme)
+	scheme := runtime.NewScheme()
+	err = v1beta1.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +29,7 @@ func New() (*Client, error) {
 	crdConfig := *config
 	crdConfig.ContentConfig.GroupVersion = &v1beta1.GroupVersion
 	crdConfig.APIPath = "/apis"
-	crdConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme.Scheme)
+	crdConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme)
 	crdConfig.UserAgent = rest.DefaultKubernetesUserAgent()
 
 	client, err := rest.UnversionedRESTClientFor(&crdConfig)

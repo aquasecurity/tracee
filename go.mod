@@ -39,7 +39,6 @@ require (
 	k8s.io/apimachinery v0.30.1
 	k8s.io/client-go v0.30.1
 	k8s.io/cri-api v0.30.1
-	k8s.io/kubectl v0.30.1
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.69
 	sigs.k8s.io/controller-runtime v0.18.2
 )
