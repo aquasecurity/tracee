@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // KernelConfigOption is an abstraction of the key in key=value syntax of the kernel config file
@@ -269,9 +267,7 @@ func (k *KernelConfig) initKernelConfig(configFilePath string) error {
 func (k *KernelConfig) readConfigFromBootConfigRelease(filePath string) error {
 	file, _ := os.Open(filePath) // already checked
 	k.readConfigFromScanner(file)
-	if err := file.Close(); err != nil {
-		logger.Errorw("Closing file", "error", err)
-	}
+	_ = file.Close()
 
 	return nil
 }
@@ -281,12 +277,8 @@ func (k *KernelConfig) readConfigFromProcConfigGZ(filePath string) error {
 	file, _ := os.Open(filePath) // already checked
 	zreader, _ := gzip.NewReader(file)
 	k.readConfigFromScanner(zreader)
-	if err := zreader.Close(); err != nil {
-		logger.Errorw("Closing reader", "error", err)
-	}
-	if err := file.Close(); err != nil {
-		logger.Errorw("Closing file", "error", err)
-	}
+	_ = zreader.Close()
+	_ = file.Close()
 
 	return nil
 }
