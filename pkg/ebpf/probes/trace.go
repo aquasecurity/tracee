@@ -81,6 +81,10 @@ func (p *TraceProbe) GetProbeType() ProbeType {
 	return p.probeType
 }
 
+func (p *TraceProbe) IsAttached() bool {
+	return p.attached
+}
+
 func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 	if p.attached {
 		return nil // already attached, it is ok to call attach again
