@@ -105,11 +105,6 @@ for TEST in $TESTS; do
             info "skip hooked_syscall test in aarch64"
             continue
         fi
-        if [[ "$VERSION_CODENAME" == "mantic" ]]; then
-            # https://github.com/aquasecurity/tracee/issues/3628
-            info "skip hooked_syscall in mantic 6.5 kernel, broken"
-            continue
-        fi
         "${TESTS_DIR}"/hooked_syscall.sh
         ;;
     FTRACE_HOOK)
