@@ -42,12 +42,12 @@ jobs:
       - name: Scan Docker Image for Vulnerabilities
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "tracee:latest"
+          image-ref: "tracee:dev"
           severity: "CRITICAL"
           exit-code: "1"
       - name: Publish to docker.io registry
         run: |
-          docker image tag tracee:latest aquasec/tracee:x86_64-dev
+          docker image tag tracee:dev aquasec/tracee:x86_64-dev
           docker image push aquasec/tracee:x86_64-dev
         shell: bash
       # Disabled to avoid generating too many sigstore cosign signatures
@@ -85,12 +85,12 @@ jobs:
       - name: Scan Docker Image for Vulnerabilities
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "tracee:latest"
+          image-ref: "tracee:dev"
           severity: "CRITICAL"
           exit-code: "1"
       - name: Publish to docker.io registry
         run: |
-          docker image tag tracee:latest aquasec/tracee:aarch64-dev
+          docker image tag tracee:dev aquasec/tracee:aarch64-dev
           docker image push aquasec/tracee:aarch64-dev
         shell: bash
       # Disabled to avoid generating too many sigstore cosign signatures
