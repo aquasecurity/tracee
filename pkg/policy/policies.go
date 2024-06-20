@@ -34,6 +34,7 @@ type Policies struct {
 
 	// computed values
 
+	// policies
 	userlandPolicies        []*Policy // reduced list with userland filterable policies (read in a hot path)
 	uidFilterMin            uint64
 	uidFilterMax            uint64
@@ -43,6 +44,9 @@ type Policies struct {
 	pidFilterableInUserland bool
 	filterableInUserland    uint64 // bitmap of policies that must be filtered in userland
 	containerFiltersEnabled uint64 // bitmap of policies that have at least one container filter type enabled
+	// rules
+	lastRulesVersions map[events.ID]uint8
+	policyRulesMap    map[ruleKey]map[int]*Policy
 }
 
 func NewPolicies() *Policies {
@@ -63,6 +67,8 @@ func NewPolicies() *Policies {
 		pidFilterableInUserland: false,
 		filterableInUserland:    0,
 		containerFiltersEnabled: 0,
+		lastRulesVersions:       map[events.ID]uint8{},
+		policyRulesMap:          map[ruleKey]map[int]*Policy{},
 	}
 }
 
@@ -109,6 +115,24 @@ func (ps *Policies) set(id int, p *Policy) error {
 	ps.policiesList = append(ps.policiesList, p)
 
 	ps.compute()
+
+	for eID := range p.EventsToTrace {
+		newRuleID := ps.lastRulesVersions[eID] + 1
+		// check against the maximum 64
+		// set new rules version
+		p.ruleVersionByEvent[eID] = newRuleID
+		ps.lastRulesVersions[eID] = newRuleID
+
+		// update policyRulesMap
+		rkey := ruleKey{
+			eventID: eID,
+			ruleID:  newRuleID,
+		}
+		if _, ok := ps.policyRulesMap[rkey]; !ok {
+			ps.policyRulesMap[rkey] = make(map[int]*Policy)
+		}
+		ps.policyRulesMap[rkey][id] = p
+	}
 
 	return nil
 }

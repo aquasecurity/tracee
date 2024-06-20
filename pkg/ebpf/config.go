@@ -23,7 +23,7 @@ type Config struct {
 	CgroupV1Hid     uint32
 	_               uint16 // padding free for further use
 	PoliciesVersion uint16
-	PoliciesConfig  policy.PoliciesConfig
+	PoliciesConfig  policy.RulesConfig
 }
 
 // UpdateBPF updates the ConfigMap BPF map with the current config.

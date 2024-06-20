@@ -40,6 +40,7 @@ func TestPoliciesClone(t *testing.T) {
 	copy := policies.Clone()
 
 	opt1 := cmp.AllowUnexported(
+		Policy{},
 		Policies{},
 		sync.Mutex{},
 		sync.RWMutex{},

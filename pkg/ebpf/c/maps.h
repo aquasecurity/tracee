@@ -373,204 +373,193 @@ typedef struct elf_files_map elf_files_map_t;
 //
 
 #define MAX_FILTER_VERSION 64 // max amount of filter versions to track
-struct policies_config_map {
-    __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, 1);
-    __type(key, u32);
-    __type(value, policies_config_t);
-} policies_config_map SEC(".maps");
 
-typedef struct policies_config_map policies_config_map_t;
-
-// map of policies config maps
-struct policies_config_version {
-    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
-    __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, u16);
-    __array(values, policies_config_map_t);
-} policies_config_version SEC(".maps");
-
-typedef struct policies_config_version policies_config_version_t;
+typedef struct rule_key {
+    u32 event_id;
+    u8 rules_id;
+    u8 padding1; // free for further use
+    u16 padding2; // free for further use
+} rule_key_t;
 
 // filter events by UID prototype, for specific UIDs either by == or !=
-struct uid_filter {
+struct uid_fltr {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 256);
     __type(key, u32);
     __type(value, eq_t);
-} uid_filter SEC(".maps");
+} uid_fltr SEC(".maps");
 
-typedef struct uid_filter uid_filter_t;
+typedef struct uid_fltr uid_filter_t;
 
 // map of UID filters maps
-struct uid_filter_version {
+struct uid_fltr_outer {
     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
     __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, u16);
+    __type(key, rule_key_t);
     __array(values, uid_filter_t);
-} uid_filter_version SEC(".maps");
+} uid_fltr_outer SEC(".maps");
 
-typedef struct uid_filter_version uid_filter_version_t;
+typedef struct uid_fltr_outer uid_fltr_outer_t;
 
 // filter events by PID
-struct pid_filter {
+struct pid_fltr {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 256);
     __type(key, u32);
     __type(value, eq_t);
-} pid_filter SEC(".maps");
+} pid_fltr SEC(".maps");
 
-typedef struct pid_filter pid_filter_t;
+typedef struct pid_fltr pid_filter_t;
 
 // map of PID filters maps
-struct pid_filter_version {
+struct pid_fltr_outer {
     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
     __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, u16);
+    __type(key, rule_key_t);
     __array(values, pid_filter_t);
-} pid_filter_version SEC(".maps");
+} pid_fltr_outer SEC(".maps");
 
-typedef struct pid_filter_version pid_filter_version_t;
+typedef struct pid_fltr_outer pid_fltr_outer_t;
 
 // filter events by mount namespace id
-struct mnt_ns_filter {
+struct mntns_fltr {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 256);
     __type(key, u32);
     __type(value, eq_t);
-} mnt_ns_filter SEC(".maps");
+} mntns_fltr SEC(".maps");
 
-typedef struct mnt_ns_filter mnt_ns_filter_t;
+typedef struct mntns_fltr mnt_ns_filter_t;
 
 // map of mount namespace filters maps
-struct mnt_ns_filter_version {
+struct mntns_fltr_outer {
     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
     __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, u16);
+    __type(key, rule_key_t);
     __array(values, mnt_ns_filter_t);
-} mnt_ns_filter_version SEC(".maps");
+} mntns_fltr_outer SEC(".maps");
 
-typedef struct mnt_ns_filter_version mnt_ns_filter_version_t;
+typedef struct mntns_fltr_outer mntns_fltr_outer_t;
 
 // filter events by pid namespace id
-struct pid_ns_filter {
+struct pidns_fltr {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 256);
     __type(key, u32);
     __type(value, eq_t);
-} pid_ns_filter SEC(".maps");
+} pidns_fltr SEC(".maps");
 
-typedef struct pid_ns_filter pid_ns_filter_t;
+typedef struct pidns_fltr pid_ns_filter_t;
 
 // map of pid namespace filters maps
-struct pid_ns_filter_version {
+struct pidns_fltr_outer {
     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
     __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, u16);
+    __type(key, rule_key_t);
     __array(values, pid_ns_filter_t);
-} pid_ns_filter_version SEC(".maps");
+} pidns_fltr_outer SEC(".maps");
 
-typedef struct pid_ns_filter_version pid_ns_filter_version_t;
+typedef struct pidns_fltr_outer pidns_fltr_outer_t;
 
 // filter events by uts namespace name
-struct uts_ns_filter {
+struct utsns_fltr {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 256);
     __type(key, string_filter_t);
     __type(value, eq_t);
-} uts_ns_filter SEC(".maps");
+} utsns_fltr SEC(".maps");
 
-typedef struct uts_ns_filter uts_ns_filter_t;
+typedef struct utsns_fltr uts_ns_filter_t;
 
 // map of uts namespace filters maps
-struct uts_ns_filter_version {
+struct utsns_fltr_outer {
     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
     __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, u16);
+    __type(key, rule_key_t);
     __array(values, uts_ns_filter_t);
-} uts_ns_filter_version SEC(".maps");
+} utsns_fltr_outer SEC(".maps");
 
-typedef struct uts_ns_filter_version uts_ns_filter_version_t;
+typedef struct utsns_fltr_outer utsns_fltr_outer_t;
 
 // filter events by command name
-struct comm_filter {
+struct comm_fltr {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 256);
     __type(key, string_filter_t);
     __type(value, eq_t);
-} comm_filter SEC(".maps");
+} comm_fltr SEC(".maps");
 
-typedef struct comm_filter comm_filter_t;
+typedef struct comm_fltr comm_filter_t;
 
 // map of command name filters maps
-struct comm_filter_version {
+struct comm_fltr_outer {
     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
     __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, u16);
+    __type(key, rule_key_t);
     __array(values, comm_filter_t);
-} comm_filter_version SEC(".maps");
+} comm_fltr_outer SEC(".maps");
 
-typedef struct comm_filter_version comm_filter_version_t;
+typedef struct comm_fltr_outer comm_fltr_outer_t;
 
 // filter events by cgroup id
-struct cgroup_id_filter {
+struct cgrpid_fltr {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 256);
     __type(key, u32);
     __type(value, eq_t);
-} cgroup_id_filter SEC(".maps");
+} cgrpid_fltr SEC(".maps");
 
-typedef struct cgroup_id_filter cgroup_id_filter_t;
+typedef struct cgrpid_fltr cgroup_id_filter_t;
 
 // map of cgroup id filters maps
-struct cgroup_id_filter_version {
+struct cgrpid_fltr_outer {
     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
     __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, u16);
+    __type(key, rule_key_t);
     __array(values, cgroup_id_filter_t);
-} cgroup_id_filter_version SEC(".maps");
+} cgrpid_fltr_outer SEC(".maps");
 
-typedef struct cgroup_id_filter_version cgroup_id_filter_version_t;
+typedef struct cgrpid_fltr_outer cgrpid_fltr_outer_t;
 
 // filter events by binary path and mount namespace
-struct binary_filter {
+struct bin_fltr {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 256);
     __type(key, binary_t);
     __type(value, eq_t);
-} binary_filter SEC(".maps");
+} bin_fltr SEC(".maps");
 
-typedef struct binary_filter binary_filter_t;
+typedef struct bin_fltr binary_filter_t;
 
 // map of binary filters maps
-struct binary_filter_version {
+struct bin_fltr_outer {
     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
     __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, u16);
+    __type(key, rule_key_t);
     __array(values, binary_filter_t);
-} binary_filter_version SEC(".maps");
+} bin_fltr_outer SEC(".maps");
 
-typedef struct binary_filter_version binary_filter_version_t;
+typedef struct bin_fltr_outer binary_filter_version_t;
 
 // filter events by the ancestry of the traced process
-struct process_tree_map {
+struct ptree_fltr {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 10240);
     __type(key, u32);
     __type(value, eq_t);
-} process_tree_map SEC(".maps");
+} ptree_fltr SEC(".maps");
 
-typedef struct process_tree_map process_tree_map_t;
+typedef struct ptree_fltr ptree_fltr_t;
 
 // map of process tree maps
-struct process_tree_map_version {
+struct ptree_fltr_outer {
     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
     __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, u16);
-    __array(values, process_tree_map_t);
-} process_tree_map_version SEC(".maps");
+    __type(key, rule_key_t);
+    __array(values, ptree_fltr_t);
+} ptree_fltr_outer SEC(".maps");
 
-typedef struct process_tree_map_version process_tree_map_version_t;
+typedef struct ptree_fltr_outer ptree_fltr_outer_t;
 
 // map to persist event configuration data
 struct events_map {
@@ -583,14 +572,14 @@ struct events_map {
 typedef struct events_map events_map_t;
 
 // map of events maps
-struct events_map_version {
-    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
-    __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, u16);
-    __array(values, events_map_t);
-} events_map_version SEC(".maps");
+// struct events_map_version {
+//     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+//     __uint(max_entries, MAX_FILTER_VERSION);
+//     __type(key, u16);
+//     __array(values, events_map_t);
+// } events_map_version SEC(".maps");
 
-typedef struct events_map_version events_map_version_t;
+// typedef struct events_map_version events_map_version_t;
 
 //
 // perf event maps

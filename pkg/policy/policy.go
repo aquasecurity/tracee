@@ -28,6 +28,8 @@ type Policy struct {
 	ProcessTreeFilter *filters.ProcessTreeFilter
 	BinaryFilter      *filters.BinaryFilter
 	Follow            bool
+
+	ruleVersionByEvent map[events.ID]uint8
 }
 
 // Compile-time check to ensure that Policy implements the Cloner interface
@@ -35,25 +37,26 @@ var _ utils.Cloner[*Policy] = &Policy{}
 
 func NewPolicy() *Policy {
 	return &Policy{
-		ID:                0,
-		Name:              "",
-		EventsToTrace:     map[events.ID]string{},
-		UIDFilter:         filters.NewUInt32Filter(),
-		PIDFilter:         filters.NewUInt32Filter(),
-		NewPidFilter:      filters.NewBoolFilter(),
-		MntNSFilter:       filters.NewUIntFilter(),
-		PidNSFilter:       filters.NewUIntFilter(),
-		UTSFilter:         filters.NewStringFilter(nil),
-		CommFilter:        filters.NewStringFilter(nil),
-		ContFilter:        filters.NewBoolFilter(),
-		NewContFilter:     filters.NewBoolFilter(),
-		ContIDFilter:      filters.NewStringFilter(nil),
-		RetFilter:         filters.NewRetFilter(),
-		DataFilter:        filters.NewDataFilter(),
-		ScopeFilter:       filters.NewScopeFilter(),
-		ProcessTreeFilter: filters.NewProcessTreeFilter(),
-		BinaryFilter:      filters.NewBinaryFilter(),
-		Follow:            false,
+		ID:                 0,
+		Name:               "",
+		EventsToTrace:      map[events.ID]string{},
+		UIDFilter:          filters.NewUInt32Filter(),
+		PIDFilter:          filters.NewUInt32Filter(),
+		NewPidFilter:       filters.NewBoolFilter(),
+		MntNSFilter:        filters.NewUIntFilter(),
+		PidNSFilter:        filters.NewUIntFilter(),
+		UTSFilter:          filters.NewStringFilter(nil),
+		CommFilter:         filters.NewStringFilter(nil),
+		ContFilter:         filters.NewBoolFilter(),
+		NewContFilter:      filters.NewBoolFilter(),
+		ContIDFilter:       filters.NewStringFilter(nil),
+		RetFilter:          filters.NewRetFilter(),
+		DataFilter:         filters.NewDataFilter(),
+		ScopeFilter:        filters.NewScopeFilter(),
+		ProcessTreeFilter:  filters.NewProcessTreeFilter(),
+		BinaryFilter:       filters.NewBinaryFilter(),
+		Follow:             false,
+		ruleVersionByEvent: map[events.ID]uint8{},
 	}
 }
 
@@ -90,6 +93,7 @@ func (p *Policy) Clone() *Policy {
 	n.ProcessTreeFilter = p.ProcessTreeFilter.Clone()
 	n.BinaryFilter = p.BinaryFilter.Clone()
 	n.Follow = p.Follow
+	maps.Copy(n.ruleVersionByEvent, p.ruleVersionByEvent)
 
 	return n
 }

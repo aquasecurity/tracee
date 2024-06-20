@@ -896,13 +896,12 @@ func (t *Tracee) getOptionsConfig() uint32 {
 
 // newConfig returns a new Config instance based on the current Tracee state and
 // the given policies config and version.
-func (t *Tracee) newConfig(cfg *policy.PoliciesConfig, version uint16) *Config {
+func (t *Tracee) newConfig(version uint16) *Config {
 	return &Config{
 		TraceePid:       uint32(os.Getpid()),
 		Options:         t.getOptionsConfig(),
 		CgroupV1Hid:     uint32(t.cgroups.GetDefaultCgroupHierarchyID()),
 		PoliciesVersion: version,
-		PoliciesConfig:  *cfg,
 	}
 }
 
@@ -1217,7 +1216,7 @@ func (t *Tracee) populateBPFMaps() error {
 
 // populateFilterMaps populates the eBPF maps with the given policies
 func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree bool) error {
-	polCfg, err := newPolicies.UpdateBPF(
+	err := newPolicies.UpdateBPF(
 		t.bpfModule,
 		t.containers,
 		t.eventsState,
@@ -1231,7 +1230,7 @@ func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree
 
 	// Create new config with updated policies and update eBPF map
 
-	cfg := t.newConfig(polCfg, newPolicies.Version())
+	cfg := t.newConfig(newPolicies.Version())
 	if err := cfg.UpdateBPF(t.bpfModule); err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1379,7 +1378,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
-	_, err = t.config.Policies.UpdateBPF(t.bpfModule, t.containers, t.eventsState, t.eventsParamTypes, false, true)
+	err = t.config.Policies.UpdateBPF(t.bpfModule, t.containers, t.eventsState, t.eventsParamTypes, false, true)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

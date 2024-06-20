@@ -154,7 +154,7 @@ int sys_enter_submit(struct bpf_raw_tracepoint_args *ctx)
     if (!reset_event(p.event, sys->id))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         goto out;
 
     if (p.config->options & OPT_TRANSLATE_FD_FILEPATH && has_syscall_fd_arg(sys->id)) {
@@ -281,7 +281,7 @@ int sys_exit_submit(struct bpf_raw_tracepoint_args *ctx)
 
     long ret = ctx->args[1];
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         goto out;
 
     // exec syscalls are different since the pointers are invalid after a successful exec.
@@ -311,7 +311,7 @@ int trace_sys_enter(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, RAW_SYS_ENTER))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     // always submit since this won't be attached otherwise
@@ -338,7 +338,7 @@ int trace_sys_exit(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, RAW_SYS_EXIT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     // always submit since this won't be attached otherwise
@@ -373,7 +373,7 @@ int syscall__execve_enter(void *ctx)
     if (!reset_event(p.event, SYSCALL_EXECVE))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     save_str_to_buf(&p.event->args_buf, (void *) sys->args.args[0] /*filename*/, 0);
@@ -403,7 +403,7 @@ int syscall__execve_exit(void *ctx)
     if (!reset_event(p.event, SYSCALL_EXECVE))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     save_str_to_buf(&p.event->args_buf, (void *) sys->args.args[0] /*filename*/, 0);
@@ -431,7 +431,7 @@ int syscall__execveat_enter(void *ctx)
     if (!reset_event(p.event, SYSCALL_EXECVEAT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0] /*dirfd*/, sizeof(int), 0);
@@ -463,7 +463,7 @@ int syscall__execveat_exit(void *ctx)
     if (!reset_event(p.event, SYSCALL_EXECVEAT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0] /*dirfd*/, sizeof(int), 0);
@@ -548,7 +548,7 @@ int sys_dup_exit_tail(void *ctx)
     if (!reset_event(p.event, SOCKET_DUP))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     if (sys->id == SYSCALL_DUP) {
@@ -574,7 +574,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, SCHED_PROCESS_FORK))
         return 0;
 
-    // NOTE: update proc_info_map before evaluate_scope_filters() as the entries are needed in other
+    // NOTE: update proc_info_map before evaluate_rule_filters() as the entries are needed in other
     // places.
 
     struct task_struct *parent = (struct task_struct *) ctx->args[0];
@@ -624,21 +624,25 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
             return 0;
         }
 
-        c_proc_info->follow_in_scopes = get_scopes_to_follow(&p); // follow task for matched scopes
+        c_proc_info->follow_in_rules = get_rules_to_follow(&p); // follow task for matched scopes
         c_proc_info->new_proc = true; // started after tracee (new_pid filter)
     }
 
     // Update the process tree map (filter related) if the parent has an entry.
 
-    policies_config_t *policies_cfg = &p.event->policies_config;
+    rules_config_t *rules_cfg = &p.event->config.rules_config;
 
-    if (policies_cfg->proc_tree_filter_enabled_scopes) {
-        u16 version = p.event->context.policies_version;
+    if (rules_cfg->proc_tree_filter_enabled) {
+        rule_key_t rkey = {
+            .event_id = p.event->context.eventid,
+            .rules_id = p.event->context.rules_id,
+        };
+        
         // Give the compiler a hint about the map type, otherwise libbpf will complain
         // about missing type information. i.e.: "can't determine value size for type".
-        process_tree_map_t *inner_proc_tree_map = &process_tree_map;
+        ptree_fltr_t *inner_proc_tree_map = &ptree_fltr;
 
-        inner_proc_tree_map = bpf_map_lookup_elem(&process_tree_map_version, &version);
+        inner_proc_tree_map = bpf_map_lookup_elem(&ptree_fltr_outer, &rkey);
         if (inner_proc_tree_map != NULL) {
             eq_t *tgid_filtered = bpf_map_lookup_elem(inner_proc_tree_map, &parent_pid);
             if (tgid_filtered) {
@@ -649,7 +653,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         }
     }
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     // Submit the event
@@ -1289,7 +1293,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, SCHED_PROCESS_EXEC))
         return 0;
 
-    // Perform checks below before evaluate_scope_filters(), so tracee can filter by newly created containers
+    // Perform checks below before evaluate_rule_filters(), so tracee can filter by newly created containers
     // or processes. Assume that a new container, or pod, has started when a process of a newly
     // created cgroup and mount ns executed a binary.
 
@@ -1315,15 +1319,15 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
 
     proc_info_t *proc_info = p.proc_info;
-    proc_info->follow_in_scopes = get_scopes_to_follow(&p); // follow task for matched scopes
+    proc_info->follow_in_rules = get_rules_to_follow(&p); // follow task for matched scopes
     proc_info->new_proc = true; // task has started after tracee started running
 
-    // Extract the binary name to be used in evaluate_scope_filters
+    // Extract the binary name to be used in evaluate_rule_filters
     __builtin_memset(proc_info->binary.path, 0, MAX_BIN_PATH_SIZE);
     bpf_probe_read_kernel_str(proc_info->binary.path, MAX_BIN_PATH_SIZE, file_path);
     proc_info->binary.mnt_id = p.event->context.task.mnt_id;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     // Note: From v5.9+, there are two interesting fields in bprm that could be added:
@@ -1426,12 +1430,12 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, SCHED_PROCESS_EXIT))
         return 0;
 
-    // evaluate matched_policies before removing this pid from the maps
-    evaluate_scope_filters(&p);
+    // evaluate matched_rules before removing this pid from the maps
+    evaluate_rule_filters(&p);
 
     bpf_map_delete_elem(&task_info_map, &p.event->context.task.host_tid);
 
-    if (!policies_matched(p.event))
+    if (!rules_matched(p.event))
         return 0;
 
     long exit_code = get_task_exit_code(p.event->task);
@@ -1475,13 +1479,13 @@ int tracepoint__sched__sched_process_free(struct bpf_raw_tracepoint_args *ctx)
             return 0;
 
         // remove it only from the current policies version map
-        u16 version = cfg->policies_version;
+        u16 version = 1; // Need to unversionize the map
 
         // Give the compiler a hint about the map type, otherwise libbpf will complain
         // about missing type information. i.e.: "can't determine value size for type".
-        process_tree_map_t *inner_proc_tree_map = &process_tree_map;
+        ptree_fltr_t *inner_proc_tree_map = &ptree_fltr;
 
-        inner_proc_tree_map = bpf_map_lookup_elem(&process_tree_map_version, &version);
+        inner_proc_tree_map = bpf_map_lookup_elem(&ptree_fltr_outer, &version);
         if (inner_proc_tree_map != NULL)
             bpf_map_delete_elem(inner_proc_tree_map, &tgid);
     }
@@ -1506,7 +1510,7 @@ int syscall__accept4(void *ctx)
     if (!reset_event(p.event, SOCKET_ACCEPT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct socket *old_sock = (struct socket *) saved_args.args[0];
@@ -1535,7 +1539,7 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, SCHED_SWITCH))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct task_struct *prev = (struct task_struct *) ctx->args[1];
@@ -1560,7 +1564,7 @@ int BPF_KPROBE(trace_filldir64)
     if (!init_program_data(&p, ctx, HIDDEN_INODES))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     char *process_name = (char *) PT_REGS_PARM2(ctx);
@@ -1580,7 +1584,7 @@ int BPF_KPROBE(trace_call_usermodehelper)
     if (!init_program_data(&p, ctx, CALL_USERMODE_HELPER))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     void *path = (void *) PT_REGS_PARM1(ctx);
@@ -1603,7 +1607,7 @@ int BPF_KPROBE(trace_do_exit)
     if (!init_program_data(&p, ctx, DO_EXIT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     long code = PT_REGS_PARM1(ctx);
@@ -1996,7 +2000,7 @@ int BPF_KPROBE(trace_security_file_ioctl)
     if (!init_program_data(&p, ctx, BPF_ATTACH))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     unsigned int cmd = PT_REGS_PARM2(ctx);
@@ -2019,7 +2023,7 @@ int BPF_KPROBE(trace_tracepoint_probe_register_prio_may_exist)
     if (!init_program_data(&p, ctx, BPF_ATTACH))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct tracepoint *tp = (struct tracepoint *) PT_REGS_PARM1(ctx);
@@ -2043,7 +2047,7 @@ int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, CGROUP_ATTACH_TASK))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     char *path = (char *) ctx->args[1];
@@ -2068,7 +2072,7 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, CGROUP_MKDIR))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct cgroup *dst_cgrp = (struct cgroup *) ctx->args[0];
@@ -2094,7 +2098,7 @@ int tracepoint__cgroup__cgroup_rmdir(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, CGROUP_RMDIR))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct cgroup *dst_cgrp = (struct cgroup *) ctx->args[0];
@@ -2119,7 +2123,7 @@ int BPF_KPROBE(trace_security_bprm_check)
     if (!init_program_data(&p, ctx, SECURITY_BPRM_CHECK))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct linux_binprm *bprm = (struct linux_binprm *) PT_REGS_PARM1(ctx);
@@ -2161,7 +2165,7 @@ int BPF_KPROBE(trace_security_file_open)
     if (!init_program_data(&p, ctx, SECURITY_FILE_OPEN))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
@@ -2211,7 +2215,7 @@ int BPF_KPROBE(trace_security_sb_mount)
     if (!init_program_data(&p, ctx, SECURITY_SB_MOUNT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     const char *dev_name = (const char *) PT_REGS_PARM1(ctx);
@@ -2249,7 +2253,7 @@ int BPF_KPROBE(trace_security_inode_unlink)
         bpf_map_delete_elem(&elf_files_map, &unlinked_file_id);
     }
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     void *dentry_path = get_dentry_path_str(dentry);
@@ -2270,7 +2274,7 @@ int BPF_KPROBE(trace_commit_creds)
     if (!init_program_data(&p, ctx, COMMIT_CREDS))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct cred *new_cred = (struct cred *) PT_REGS_PARM1(ctx);
@@ -2353,7 +2357,7 @@ int BPF_KPROBE(trace_switch_task_namespaces)
     if (!init_program_data(&p, ctx, SWITCH_TASK_NS))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct task_struct *task = (struct task_struct *) PT_REGS_PARM1(ctx);
@@ -2403,7 +2407,7 @@ int BPF_KPROBE(trace_cap_capable)
     if (!init_program_data(&p, ctx, CAP_CAPABLE))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     int cap = PT_REGS_PARM3(ctx);
@@ -2424,7 +2428,7 @@ int BPF_KPROBE(trace_security_socket_create)
     if (!init_program_data(&p, ctx, SECURITY_SOCKET_CREATE))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     int family = (int) PT_REGS_PARM1(ctx);
@@ -2447,7 +2451,7 @@ int BPF_KPROBE(trace_security_inode_symlink)
     if (!init_program_data(&p, ctx, SECURITY_INODE_SYMLINK))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     // struct inode *dir = (struct inode *)PT_REGS_PARM1(ctx);
@@ -2469,7 +2473,7 @@ int BPF_KPROBE(trace_proc_create)
     if (!init_program_data(&p, ctx, PROC_CREATE))
         return 0;
 
-    if (!evaluate_scope_filters((&p)))
+    if (!evaluate_rule_filters((&p)))
         return 0;
 
     char *name = (char *) PT_REGS_PARM1(ctx);
@@ -2488,7 +2492,7 @@ int BPF_KPROBE(trace_debugfs_create_file)
     if (!init_program_data(&p, ctx, DEBUGFS_CREATE_FILE))
         return 0;
 
-    if (!evaluate_scope_filters((&p)))
+    if (!evaluate_rule_filters((&p)))
         return 0;
 
     char *name = (char *) PT_REGS_PARM1(ctx);
@@ -2512,7 +2516,7 @@ int BPF_KPROBE(trace_debugfs_create_dir)
     if (!init_program_data(&p, ctx, DEBUGFS_CREATE_DIR))
         return 0;
 
-    if (!evaluate_scope_filters((&p)))
+    if (!evaluate_rule_filters((&p)))
         return 0;
 
     char *name = (char *) PT_REGS_PARM1(ctx);
@@ -2532,7 +2536,7 @@ int BPF_KPROBE(trace_security_socket_listen)
     if (!init_program_data(&p, ctx, SECURITY_SOCKET_LISTEN))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
@@ -2569,7 +2573,7 @@ int BPF_KPROBE(trace_security_socket_connect)
     if (!init_program_data(&p, ctx, SECURITY_SOCKET_CONNECT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     u64 addr_len = PT_REGS_PARM3(ctx);
@@ -2681,7 +2685,7 @@ int BPF_KPROBE(trace_security_socket_accept)
     struct socket *new_sock = (struct socket *) PT_REGS_PARM2(ctx);
     syscall_data_t *sys = &p.task_info->syscall_data;
 
-    if (event_is_selected(SOCKET_ACCEPT, p.event->context.policies_version)) {
+    if (event_is_selected(SOCKET_ACCEPT, p.event->context.rules_id)) {
         args_t args = {};
         args.args[0] = (unsigned long) sock;
         args.args[1] = (unsigned long) new_sock;
@@ -2689,7 +2693,7 @@ int BPF_KPROBE(trace_security_socket_accept)
         save_args(&args, SOCKET_ACCEPT);
     }
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     // Load the arguments given to the accept syscall (which eventually invokes this function)
@@ -2722,7 +2726,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     if (!init_program_data(&p, ctx, SECURITY_SOCKET_BIND))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
@@ -2805,7 +2809,7 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
     if (!init_program_data(&p, ctx, SECURITY_SOCKET_SETSOCKOPT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
@@ -3021,7 +3025,7 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
     if (!init_program_data(&p, ctx, event_id))
         goto out;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         goto tail;
 
     loff_t start_pos;
@@ -3108,7 +3112,7 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
     if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     if ((p.config->options & OPT_CAPTURE_FILES_WRITE) == 0)
@@ -3314,7 +3318,7 @@ statfunc int do_vfs_write_magic_return(struct pt_regs *ctx, bool is_buf)
     if (!init_program_data(&p, ctx, MAGIC_WRITE))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     u32 bytes_written = PT_REGS_RC(ctx);
@@ -3414,7 +3418,7 @@ int BPF_KPROBE(trace_mmap_alert)
     if (!init_program_data(&p, ctx, MEM_PROT_ALERT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     // Load the arguments given to the mmap syscall (which eventually invokes this function)
@@ -3458,7 +3462,7 @@ int BPF_KPROBE(trace_ret_do_mmap)
     if (!init_program_data(&p, ctx, DO_MMAP))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     dev_t s_dev;
@@ -3513,7 +3517,7 @@ int BPF_KPROBE(trace_security_mmap_file)
     unsigned long prot = (unsigned long) PT_REGS_PARM2(ctx);
     unsigned long mmap_flags = (unsigned long) PT_REGS_PARM3(ctx);
 
-    if (evaluate_scope_filters(&p) && (prot & VM_EXEC) == VM_EXEC &&
+    if (evaluate_rule_filters(&p) && (prot & VM_EXEC) == VM_EXEC &&
         p.event->context.syscall == SYSCALL_MMAP) {
         file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
 
@@ -3532,7 +3536,7 @@ int BPF_KPROBE(trace_security_mmap_file)
     if (!reset_event(p.event, SECURITY_MMAP_FILE))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     if (!file_path)
@@ -3576,7 +3580,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
     void *addr = (void *) sys->args.args[0];
     size_t len = sys->args.args[1];
 
-    if (evaluate_scope_filters(&p)) {
+    if (evaluate_rule_filters(&p)) {
         file_info = get_file_info(file);
 
         save_str_to_buf(&p.event->args_buf, file_info.pathname_p, 0);
@@ -3597,7 +3601,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
     if (!reset_event(p.event, MEM_PROT_ALERT))
         return 0;
 
-    if (!evaluate_scope_filters(&p) && !(p.config->options & OPT_EXTRACT_DYN_CODE))
+    if (!evaluate_rule_filters(&p) && !(p.config->options & OPT_EXTRACT_DYN_CODE))
         return 0;
 
     // only get file info if it wasn't already initialized
@@ -3634,7 +3638,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
             should_extract_code = true;
     }
 
-    if (should_alert && policies_matched(p.event))
+    if (should_alert && rules_matched(p.event))
         submit_mem_prot_alert_event(
             &p.event->args_buf, alert, addr, len, reqprot, prev_prot, file_info);
 
@@ -3723,7 +3727,7 @@ int BPF_KPROBE(trace_security_bpf)
     int cmd = (int) PT_REGS_PARM1(ctx);
 
     // send security_bpf event if filters match
-    if (evaluate_scope_filters(&p)) {
+    if (evaluate_rule_filters(&p)) {
         save_to_submit_buf(&p.event->args_buf, (void *) &cmd, sizeof(int), 0);
         events_perf_submit(&p, 0);
     }
@@ -3734,7 +3738,7 @@ int BPF_KPROBE(trace_security_bpf)
     union bpf_attr *attr = (union bpf_attr *) PT_REGS_PARM2(ctx);
 
     // send bpf_attach event if filters match
-    if (evaluate_scope_filters(&p))
+    if (evaluate_rule_filters(&p))
         check_bpf_link(&p, attr, cmd);
 
     // Capture BPF object loaded
@@ -3780,7 +3784,7 @@ statfunc int arm_kprobe_handler(struct pt_regs *ctx)
     if (!init_program_data(&p, ctx, KPROBE_ATTACH))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct kprobe *kp = (struct kprobe *) saved_args.args[0];
@@ -3822,7 +3826,7 @@ int BPF_KPROBE(trace_security_bpf_map)
     if (!init_program_data(&p, ctx, SECURITY_BPF_MAP))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct bpf_map *map = (struct bpf_map *) PT_REGS_PARM1(ctx);
@@ -3862,10 +3866,10 @@ int BPF_KPROBE(trace_security_bpf_prog)
 
     bpf_map_delete_elem(&bpf_attach_tmp_map, &p.event->context.task.host_tid);
 
-    if (event_is_selected(BPF_ATTACH, p.event->context.policies_version))
+    if (event_is_selected(BPF_ATTACH, p.event->context.rules_id))
         bpf_map_update_elem(&bpf_attach_map, &prog_id, &val, BPF_ANY);
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     bool is_load = false;
@@ -3900,7 +3904,7 @@ int BPF_KPROBE(trace_bpf_check)
     if (!init_program_data(&p, ctx, SECURITY_BPF_PROG))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     // this probe is triggered when a bpf program is loaded.
@@ -3975,7 +3979,7 @@ int BPF_KPROBE(trace_check_map_func_compatibility)
     if (!init_program_data(&p, ctx, SECURITY_BPF_PROG))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     int func_id = (int) PT_REGS_PARM3(ctx);
@@ -3990,7 +3994,7 @@ int BPF_KPROBE(trace_check_helper_call)
     if (!init_program_data(&p, ctx, SECURITY_BPF_PROG))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     int func_id;
@@ -4013,7 +4017,7 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     if (!init_program_data(&p, ctx, SECURITY_KERNEL_READ_FILE))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
@@ -4039,7 +4043,7 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
     if (!init_program_data(&p, ctx, SECURITY_POST_READ_FILE))
         return 0;
 
-    if (!evaluate_scope_filters(&p) && !(p.config->options & OPT_CAPTURE_MODULES))
+    if (!evaluate_rule_filters(&p) && !(p.config->options & OPT_CAPTURE_MODULES))
         return 0;
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
@@ -4048,7 +4052,7 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
     enum kernel_read_file_id type_id = (enum kernel_read_file_id) PT_REGS_PARM4(ctx);
 
     // Send event if chosen
-    if (policies_matched(p.event)) {
+    if (rules_matched(p.event)) {
         void *file_path = get_path_str(&file->f_path);
         save_str_to_buf(&p.event->args_buf, file_path, 0);
         save_to_submit_buf(&p.event->args_buf, &size, sizeof(loff_t), 1);
@@ -4089,7 +4093,7 @@ int BPF_KPROBE(trace_security_inode_mknod)
     if (!init_program_data(&p, ctx, SECURITY_INODE_MKNOD))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct dentry *dentry = (struct dentry *) PT_REGS_PARM2(ctx);
@@ -4111,7 +4115,7 @@ int BPF_KPROBE(trace_device_add)
     if (!init_program_data(&p, ctx, DEVICE_ADD))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct device *dev = (struct device *) PT_REGS_PARM1(ctx);
@@ -4143,7 +4147,7 @@ int BPF_KPROBE(trace_ret__register_chrdev)
     if (!init_program_data(&p, ctx, REGISTER_CHRDEV))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     unsigned int major_number = (unsigned int) saved_args.args[0];
@@ -4223,7 +4227,7 @@ int BPF_KPROBE(trace_ret_do_splice)
     if (!init_program_data(&p, ctx, DIRTY_PIPE_SPLICE))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     // Catch only successful splice
@@ -4307,7 +4311,7 @@ int tracepoint__module__module_load(struct bpf_raw_tracepoint_args *ctx)
 
     struct module *mod = (struct module *) ctx->args[0];
 
-    if (event_is_selected(HIDDEN_KERNEL_MODULE_SEEKER, p.event->context.policies_version)) {
+    if (event_is_selected(HIDDEN_KERNEL_MODULE_SEEKER, p.event->context.rules_id)) {
         u64 insert_time = bpf_ktime_get_ns();
         kernel_new_mod_t new_mod = {.insert_time = insert_time};
         u64 mod_addr = (u64) mod;
@@ -4318,7 +4322,7 @@ int tracepoint__module__module_load(struct bpf_raw_tracepoint_args *ctx)
         last_module_insert_time = insert_time;
     }
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     const char *version = BPF_CORE_READ(mod, version);
@@ -4339,7 +4343,7 @@ int tracepoint__module__module_free(struct bpf_raw_tracepoint_args *ctx)
 
     struct module *mod = (struct module *) ctx->args[0];
 
-    if (event_is_selected(HIDDEN_KERNEL_MODULE_SEEKER, p.event->context.policies_version)) {
+    if (event_is_selected(HIDDEN_KERNEL_MODULE_SEEKER, p.event->context.rules_id)) {
         u64 mod_addr = (u64) mod;
         // We must delete before the actual deletion from modules list occurs, otherwise there's a
         // risk of race condition
@@ -4349,7 +4353,7 @@ int tracepoint__module__module_free(struct bpf_raw_tracepoint_args *ctx)
         bpf_map_update_elem(&recent_deleted_module_map, &mod_addr, &deleted_mod, BPF_ANY);
     }
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     const char *version = BPF_CORE_READ(mod, version);
@@ -4381,7 +4385,7 @@ int BPF_KPROBE(trace_ret_do_init_module)
     struct module *mod = (struct module *) saved_args.args[0];
 
     // trigger the lkm seeker
-    if (evaluate_scope_filters(&p)) {
+    if (evaluate_rule_filters(&p)) {
         u64 addr = (u64) mod;
         u32 flags = FULL_SCAN;
         lkm_seeker_send_to_userspace((struct module *) addr, &flags, &p);
@@ -4394,7 +4398,7 @@ int BPF_KPROBE(trace_ret_do_init_module)
     if (!reset_event(p.event, DO_INIT_MODULE))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     save_str_to_buf(&p.event->args_buf, &mod->name, 0);
@@ -4429,7 +4433,7 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     proc_info->interpreter.id.inode = get_inode_nr_from_file(loaded_elf);
     proc_info->interpreter.id.ctime = get_ctime_nanosec_from_file(loaded_elf);
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     save_str_to_buf(&p.event->args_buf, (void *) elf_pathname, 0);
@@ -4461,7 +4465,7 @@ int BPF_KPROBE(trace_security_file_permission)
     if (!init_program_data(&p, ctx, HOOKED_PROC_FOPS))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct file_operations *fops = (struct file_operations *) BPF_CORE_READ(f_inode, i_fop);
@@ -4510,7 +4514,7 @@ int tracepoint__task__task_rename(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, TASK_RENAME))
         return 0;
 
-    if (!evaluate_scope_filters((&p)))
+    if (!evaluate_rule_filters((&p)))
         return 0;
 
     struct task_struct *tsk = (struct task_struct *) ctx->args[0];
@@ -4531,7 +4535,7 @@ int BPF_KPROBE(trace_security_inode_rename)
     if (!init_program_data(&p, ctx, SECURITY_INODE_RENAME))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct dentry *old_dentry = (struct dentry *) PT_REGS_PARM2(ctx);
@@ -4560,7 +4564,7 @@ int BPF_KPROBE(trace_ret_kallsyms_lookup_name)
     if (!init_program_data(&p, ctx, KALLSYMS_LOOKUP_NAME))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     char *name = (char *) saved_args.args[0];
@@ -4587,7 +4591,7 @@ int BPF_KPROBE(trace_do_sigaction)
     if (!init_program_data(&p, ctx, DO_SIGACTION))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     // Initialize all relevant arguments values
@@ -4659,7 +4663,7 @@ statfunc int common_utimes(struct pt_regs *ctx)
     if (!init_program_data(&p, ctx, VFS_UTIMES))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct path *path = (struct path *) PT_REGS_PARM1(ctx);
@@ -4702,7 +4706,7 @@ int BPF_KPROBE(trace_do_truncate)
     if (!init_program_data(&p, ctx, DO_TRUNCATE))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct dentry *dentry = (struct dentry *) PT_REGS_PARM2(ctx);
@@ -4727,7 +4731,7 @@ int BPF_KPROBE(trace_fd_install)
     if (!init_program_data(&p, ctx, FILE_MODIFICATION))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct file *file = (struct file *) PT_REGS_PARM2(ctx);
@@ -4756,7 +4760,7 @@ int BPF_KPROBE(trace_filp_close)
     if (!init_program_data(&p, ctx, FILE_MODIFICATION))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
@@ -4801,7 +4805,7 @@ statfunc int common_file_modification_ret(struct pt_regs *ctx)
     if (!init_program_data(&p, ctx, FILE_MODIFICATION))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct file *file = (struct file *) saved_args.args[0];
@@ -4892,7 +4896,7 @@ int BPF_KPROBE(trace_ret_inotify_find_inode)
     if (!init_program_data(&p, ctx, INOTIFY_WATCH))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct path *path = (struct path *) saved_args.args[1];
@@ -4912,7 +4916,7 @@ int BPF_KPROBE(trace_ret_inotify_find_inode)
 
 statfunc int submit_process_execute_failed(struct pt_regs *ctx, program_data_t *p)
 {
-    if (!evaluate_scope_filters(p))
+    if (!evaluate_rule_filters(p))
         return 0;
 
     struct linux_binprm *bprm = (struct linux_binprm *) PT_REGS_PARM1(ctx);
@@ -5045,7 +5049,7 @@ int BPF_KPROBE(trace_execute_finished)
     if (!init_program_data(&p, ctx, EXECUTE_FINISHED))
         return -1;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     long exec_ret = PT_REGS_RC(ctx);
@@ -5059,7 +5063,7 @@ int BPF_KPROBE(trace_security_path_notify)
     if (!init_program_data(&p, ctx, SECURITY_PATH_NOTIFY))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     struct path *path = (struct path *) PT_REGS_PARM1(ctx);
@@ -5087,7 +5091,7 @@ int BPF_KPROBE(trace_set_fs_pwd)
     if (!init_program_data(&p, ctx, SET_FS_PWD))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     syscall_data_t *sys = &p.task_info->syscall_data;
@@ -5199,8 +5203,8 @@ statfunc u64 sizeof_net_event_context_t(void)
 statfunc void set_net_task_context(event_data_t *event, net_task_context_t *netctx)
 {
     netctx->task = event->task;
-    netctx->policies_version = event->context.policies_version;
-    netctx->matched_policies = event->context.matched_policies;
+    // netctx->policies_version = event->context.policies_version;
+    netctx->matched_rules = event->context.matched_rules;
     netctx->syscall = event->context.syscall;
     __builtin_memset(&netctx->taskctx, 0, sizeof(task_context_t));
     __builtin_memcpy(&netctx->taskctx, &event->context.task, sizeof(task_context_t));
@@ -5244,17 +5248,16 @@ statfunc u64 should_submit_net_event(net_event_context_t *neteventctx,
                                      net_packet_t packet_type)
 {
     enum event_id_e evt_id = net_packet_to_net_event(packet_type);
+    rule_key_t key = {
+        .event_id = evt_id,
+        .rules_id = neteventctx->eventctx.rules_id,
+    };
 
-    u16 version = neteventctx->eventctx.policies_version;
-    void *inner_events_map = bpf_map_lookup_elem(&events_map_version, &version);
-    if (inner_events_map == NULL)
-        return 0;
-
-    event_config_t *evt_config = bpf_map_lookup_elem(inner_events_map, &evt_id);
+    event_config_t *evt_config = bpf_map_lookup_elem(&events_map, &key);
     if (evt_config == NULL)
         return 0;
 
-    return evt_config->submit_for_policies & neteventctx->eventctx.matched_policies;
+    return evt_config->submit_for_rules & neteventctx->eventctx.matched_rules;
 }
 
 #pragma clang diagnostic pop // -Waddress-of-packed-member
@@ -5279,7 +5282,7 @@ statfunc bool should_submit_flow_event(net_event_context_t *neteventctx)
     if (evt_config == NULL)
         return 0;
 
-    u64 should = evt_config->submit_for_policies & neteventctx->eventctx.matched_policies;
+    u64 should = evt_config->submit_for_rules & neteventctx->eventctx.matched_rules;
 
     // Cache the result so next time we don't need to check again.
     if (should)
@@ -5544,7 +5547,7 @@ int BPF_KRETPROBE(trace_ret_sock_alloc_file)
     if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     // pick from entry from entrymap
@@ -5685,7 +5688,7 @@ int BPF_KPROBE(trace_security_socket_recvmsg)
     if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     return update_net_inodemap(sock, p.event);
@@ -5710,7 +5713,7 @@ int BPF_KPROBE(trace_security_socket_sendmsg)
     if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     return update_net_inodemap(sock, p.event);
@@ -5840,8 +5843,8 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     eventctx->eventid = NET_PACKET_IP;                      // will be changed in skb program
     eventctx->stack_id = 0;                                 // no stack trace
     eventctx->processor_id = p.event->context.processor_id; // copy from current ctx
-    eventctx->policies_version = netctx->policies_version;  // pick policies_version from net ctx
-    eventctx->matched_policies = netctx->matched_policies;  // pick matched_policies from net ctx
+    // eventctx->policies_version = netctx->policies_version;  // pick policies_version from net ctx
+    eventctx->matched_rules = netctx->matched_rules;        // pick matched_rules from net ctx
     eventctx->syscall = NO_SYSCALL;                         // ingress has no orig syscall
     if (type == BPF_CGROUP_INET_EGRESS)
         eventctx->syscall = netctx->syscall; // egress does have an orig syscall
@@ -6825,22 +6828,22 @@ int tracepoint__exec_test(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_rule_filters(&p))
         return 0;
 
     if (!reset_event(p.event, EXEC_TEST))
         return 0;
-    if (evaluate_scope_filters(&p))
+    if (evaluate_rule_filters(&p))
         ret |= events_perf_submit(&p, 0);
 
     if (!reset_event(p.event, TEST_MISSING_KSYMBOLS))
         return 0;
-    if (evaluate_scope_filters(&p))
+    if (evaluate_rule_filters(&p))
         ret |= events_perf_submit(&p, 0);
 
     if (!reset_event(p.event, TEST_FAILED_ATTACH))
         return 0;
-    if (evaluate_scope_filters(&p))
+    if (evaluate_rule_filters(&p))
         ret |= events_perf_submit(&p, 0);
 
     return 0;

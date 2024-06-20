@@ -34,8 +34,8 @@ typedef struct event_context {
     s64 retval;
     u32 stack_id;
     u16 processor_id; // ID of the processor that processed the event
-    u16 policies_version;
-    u64 matched_policies;
+    u8 rules_id;
+    u64 matched_rules;
 } event_context_t;
 
 enum event_id_e
@@ -250,7 +250,7 @@ typedef struct io_data {
 
 typedef struct proc_info {
     bool new_proc;        // set if this process was started after tracee. Used with new_pid filter
-    u64 follow_in_scopes; // set if this process was traced before. Used with the follow filter
+    u64 follow_in_rules; // set if this process was traced before. Used with the follow filter
     struct binary binary;
     u32 binary_no_mnt; // used in binary lookup when we don't care about mount ns. always 0.
     file_info_t interpreter;
@@ -290,60 +290,64 @@ typedef struct ksym_name {
 typedef struct equality {
     // bitmask with scopes on which a equal '=' filter is set
     // its bit value will depend on the filter's equality precedence order
-    u64 equal_in_scopes;
+    u64 equal_in_rules;
     // bitmask with scopes on which a filter equality is set
-    u64 equality_set_in_scopes;
+    u64 equality_set_in_rules;
 } eq_t;
 
-typedef struct policies_config {
+typedef struct rules_config {
     // enabled scopes bitmask per filter
-    u64 uid_filter_enabled_scopes;
-    u64 pid_filter_enabled_scopes;
-    u64 mnt_ns_filter_enabled_scopes;
-    u64 pid_ns_filter_enabled_scopes;
-    u64 uts_ns_filter_enabled_scopes;
-    u64 comm_filter_enabled_scopes;
-    u64 cgroup_id_filter_enabled_scopes;
-    u64 cont_filter_enabled_scopes;
-    u64 new_cont_filter_enabled_scopes;
-    u64 new_pid_filter_enabled_scopes;
-    u64 proc_tree_filter_enabled_scopes;
-    u64 bin_path_filter_enabled_scopes;
-    u64 follow_filter_enabled_scopes;
+    u64 uid_filter_enabled;
+    u64 pid_filter_enabled;
+    u64 mnt_ns_filter_enabled;
+    u64 pid_ns_filter_enabled;
+    u64 uts_ns_filter_enabled;
+    u64 comm_filter_enabled;
+    u64 cgroup_id_filter_enabled;
+    u64 cont_filter_enabled;
+    u64 new_cont_filter_enabled;
+    u64 new_pid_filter_enabled;
+    u64 proc_tree_filter_enabled;
+    u64 bin_path_filter_enabled;
+    u64 follow_filter_enabled;
     // filter_out bitmask per filter
-    u64 uid_filter_out_scopes;
-    u64 pid_filter_out_scopes;
-    u64 mnt_ns_filter_out_scopes;
-    u64 pid_ns_filter_out_scopes;
-    u64 uts_ns_filter_out_scopes;
-    u64 comm_filter_out_scopes;
-    u64 cgroup_id_filter_out_scopes;
-    u64 cont_filter_out_scopes;
-    u64 new_cont_filter_out_scopes;
-    u64 new_pid_filter_out_scopes;
-    u64 proc_tree_filter_out_scopes;
-    u64 bin_path_filter_out_scopes;
+    u64 uid_filter_out;
+    u64 pid_filter_out;
+    u64 mnt_ns_filter_out;
+    u64 pid_ns_filter_out;
+    u64 uts_ns_filter_out;
+    u64 comm_filter_out;
+    u64 cgroup_id_filter_out;
+    u64 cont_filter_out;
+    u64 new_cont_filter_out;
+    u64 new_pid_filter_out;
+    u64 proc_tree_filter_out;
+    u64 bin_path_filter_out;
     // bitmask with scopes that have at least one filter enabled
-    u64 enabled_scopes;
+    u64 enabled;
     // global min max
     u64 uid_max;
     u64 uid_min;
     u64 pid_max;
     u64 pid_min;
-} policies_config_t;
+} rules_config_t;
 
 typedef struct config_entry {
     u32 tracee_pid;
     u32 options;
     u32 cgroup_v1_hid;
     u16 padding; // free for further use
-    u16 policies_version;
-    policies_config_t policies_config;
+    // u16 policies_version;
 } config_entry_t;
 
 typedef struct event_config {
-    u64 submit_for_policies;
     u64 param_types;
+    u32 padding1; // free for further use
+    u16 padding2; // free for further use
+    u8 padding3;  // free for further use
+    u8 rules_id;
+    u64 submit_for_rules; // rules_config.enabled pode ser usado no lugar
+    rules_config_t rules_config;
 } event_config_t;
 
 enum capture_options_e
@@ -371,7 +375,6 @@ typedef struct event_data {
     args_buffer_t args_buf;
     struct task_struct *task;
     event_config_t config;
-    policies_config_t policies_config;
 } event_data_t;
 
 // A control plane signal - sent to indicate some critical event which should be processed
