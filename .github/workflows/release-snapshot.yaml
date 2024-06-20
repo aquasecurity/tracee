@@ -30,7 +30,7 @@ jobs:
       # - name: Install Cosign
       #   uses: sigstore/cosign-installer@main
       #   with:
-      #     cosign-release: 'v2.0.2'
+      #     cosign-release: 'v2.2.4'
       - name: Login to docker.io registry
         uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         with:
@@ -73,7 +73,7 @@ jobs:
       # - name: Install Cosign
       #   uses: sigstore/cosign-installer@main
       #   with:
-      #     cosign-release: 'v2.0.2'
+      #     cosign-release: 'v2.2.4'
       - name: Login to docker.io registry
         uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         with:
@@ -115,7 +115,7 @@ jobs:
       # - name: Install Cosign
       #   uses: sigstore/cosign-installer@main
       #   with:
-      #     cosign-release: 'v2.0.2'
+      #     cosign-release: 'v2.2.4'
       - name: Login to docker.io registry
         uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         with:
