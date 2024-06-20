@@ -5,10 +5,10 @@ kind: ServiceAccount
 metadata:
   name: tracee
   labels:
-    helm.sh/chart: tracee-0.20.0
+    helm.sh/chart: tracee-0.21.0
     app.kubernetes.io/name: tracee
     app.kubernetes.io/instance: tracee
-    app.kubernetes.io/version: "0.20.0"
+    app.kubernetes.io/version: "0.21.0"
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: tracee/templates/serviceaccount.yaml
@@ -17,10 +17,10 @@ kind: ServiceAccount
 metadata:
   name: tracee-operator
   labels:
-    helm.sh/chart: tracee-0.20.0
+    helm.sh/chart: tracee-0.21.0
     app.kubernetes.io/name: tracee
     app.kubernetes.io/instance: tracee
-    app.kubernetes.io/version: "0.20.0"
+    app.kubernetes.io/version: "0.21.0"
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: tracee/templates/tracee-config.yaml
@@ -29,10 +29,10 @@ kind: ConfigMap
 metadata:
   name: tracee-config
   labels:
-    helm.sh/chart: tracee-0.20.0
+    helm.sh/chart: tracee-0.21.0
     app.kubernetes.io/name: tracee
     app.kubernetes.io/instance: tracee
-    app.kubernetes.io/version: "0.20.0"
+    app.kubernetes.io/version: "0.21.0"
     app.kubernetes.io/managed-by: Helm
 data:
   config.yaml: |-
@@ -118,10 +118,10 @@ kind: DaemonSet
 metadata:
   name: tracee
   labels:
-    helm.sh/chart: tracee-0.20.0
+    helm.sh/chart: tracee-0.21.0
     app.kubernetes.io/name: tracee
     app.kubernetes.io/instance: tracee
-    app.kubernetes.io/version: "0.20.0"
+    app.kubernetes.io/version: "0.21.0"
     app.kubernetes.io/managed-by: Helm
 spec:
   selector:
@@ -140,7 +140,7 @@ spec:
         {}
       containers:
         - name: tracee
-          image: "docker.io/aquasec/tracee:0.20.0"
+          image: "docker.io/aquasec/tracee:0.21.0"
           imagePullPolicy: IfNotPresent
           command:
             - /tracee/tracee
@@ -218,10 +218,10 @@ kind: Deployment
 metadata:
   name: tracee-operator
   labels:
-    helm.sh/chart: tracee-0.20.0
+    helm.sh/chart: tracee-0.21.0
     app.kubernetes.io/name: tracee
     app.kubernetes.io/instance: tracee
-    app.kubernetes.io/version: "0.20.0"
+    app.kubernetes.io/version: "0.21.0"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -238,7 +238,7 @@ spec:
         {}
       containers:
       - name: tracee-operator
-        image: "docker.io/aquasec/tracee:0.20.0"
+        image: "docker.io/aquasec/tracee:0.21.0"
         imagePullPolicy: IfNotPresent
         command:
           - /tracee/tracee-operator
