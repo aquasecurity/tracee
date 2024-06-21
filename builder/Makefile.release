@@ -154,6 +154,41 @@ release: \
 	.check_$(CMD_TAR) \
 	.check_$(CMD_CHECKSUM) \
 	.check_$(CMD_GITHUB)
+#
+# note: TAGS created by release-snapshot workflow
+#
+
+#
+# RELEASE
+#
+
+ifneq ("$(SNAPSHOT)", "1")
+#
+# create release notes (x86_64 only, other arches will be added after release)
+#
+ifeq ($(ARCH),x86_64)
+	$(CMD_TOUCH) $(RELEASE_NOTES)
+	echo '## Docker Image' >> $(RELEASE_NOTES)
+	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):$(IMAGE_TAG)`' >> $(RELEASE_NOTES);
+	echo '  ' >> $(RELEASE_NOTES);
+	echo '## Docker Images (per architecture)  ' >> $(RELEASE_NOTES)
+	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):x86_64-$(IMAGE_TAG)`' >> $(RELEASE_NOTES);
+	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):aarch64-$(IMAGE_TAG)`' >> $(RELEASE_NOTES);
+endif
+#
+# release it (x86_64 only, other arches will be added after release)
+#
+ifeq ($(ARCH),x86_64)
+	$(CMD_GITHUB) release create $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS) --title $(SNAPSHOT_VERSION) --notes-file $(RELEASE_NOTES)
+endif
+#
+# add artifacts to the already created release (by x86_64 arch)
+#
+ifeq ($(ARCH),aarch64)
+	$(CMD_GITHUB) release upload $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS)
+endif
+
+endif
 
 #
 # build tracee
@@ -196,42 +231,6 @@ archive:
 # tarball
 	$(CMD_TAR) -cvzf $(OUT_ARCHIVE) $(RELEASE_FILES) && \
 		$(CMD_CHECKSUM) $(OUT_ARCHIVE) > $(OUT_CHECKSUMS)
-
-#
-# note: TAGS created by release-snapshot workflow
-#
-
-#
-# RELEASE
-#
-
-ifneq ("$(SNAPSHOT)", "1")
-#
-# create release notes (x86_64 only, other arches will be added after release)
-#
-ifeq ($(ARCH),x86_64)
-	$(CMD_TOUCH) $(RELEASE_NOTES)
-	echo '## Docker Image' >> $(RELEASE_NOTES)
-	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):$(IMAGE_TAG)`' >> $(RELEASE_NOTES);
-	echo '  ' >> $(RELEASE_NOTES);
-	echo '## Docker Images (per architecture)  ' >> $(RELEASE_NOTES)
-	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):x86_64-$(IMAGE_TAG)`' >> $(RELEASE_NOTES);
-	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):aarch64-$(IMAGE_TAG)`' >> $(RELEASE_NOTES);
-endif
-#
-# release it (x86_64 only, other arches will be added after release)
-#
-ifeq ($(ARCH),x86_64)
-	$(CMD_GITHUB) release create $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS) --title $(SNAPSHOT_VERSION) --notes-file $(RELEASE_NOTES)
-endif
-#
-# add artifacts to the already created release (by x86_64 arch)
-#
-ifeq ($(ARCH),aarch64)
-	$(CMD_GITHUB) release upload $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS)
-endif
-
-endif
 
 .PHONY: clean
 clean:
