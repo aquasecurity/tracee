@@ -13,6 +13,12 @@ ARG GO_VERSION=1.22.0
 ARG OPA_VERSION=v0.63.0
 
 
+# This workaround is required since OPA 0.65.0 (latest published release) has cve-2024-24790.
+# After solved we can rollback to the commented installation lines below.
+#
+# Stage 1: Set the base image to get the OPA binary
+FROM openpolicyagent/opa:0.66.0-dev-static as opa-extractor
+
 #
 # tracee-base
 #
@@ -30,10 +36,14 @@ RUN apk --no-cache update && \
     apk --no-cache add libc6-compat
 
 # install OPA
-ARG OPA_VERSION
-RUN altarch=$(uname -m | sed 's:x86_64:amd64:g' | sed 's:aarch64:arm64:g') && \
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/${OPA_VERSION}/opa_linux_${altarch}_static && \
-    chmod 755 /usr/bin/opa
+
+# ARG OPA_VERSION
+# RUN altarch=$(uname -m | sed 's:x86_64:amd64:g' | sed 's:aarch64:arm64:g') && \
+# curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/${OPA_VERSION}/opa_linux_${altarch}_static && \
+# chmod 755 /usr/bin/opa
+
+# Stage 2: Copy the OPA binary from the OPA extractor
+COPY --from=opa-extractor /opa /usr/bin/opa
 
 #
 # tracee-make-base
