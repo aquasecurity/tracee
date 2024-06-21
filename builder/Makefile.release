@@ -160,7 +160,7 @@ release: \
 	$(MAKE) -f builder/Makefile.tracee-make alpine-prepare
 	$(MAKE) -f builder/Makefile.tracee-make alpine-make ARG="clean"
 #
-	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee
+	BTFHUB=1 SNAPSHOT=$(SNAPSHOT) $(MAKE) -f builder/Makefile.tracee-container build-tracee
 #
 # build binaries (tracee, tracee-ebpf, tracee-rules, rules)
 #
