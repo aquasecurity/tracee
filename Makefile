@@ -910,9 +910,8 @@ check-err: \
 
 LOGFROM ?= main
 
-.PHONY: check-pr
-check-pr: \
-	check-fmt check-lint check-code \
+.PHONY: format-pr
+format-pr: \
 	| .check_$(CMD_GIT)
 #
 	@echo
@@ -944,6 +943,13 @@ check-pr: \
 	@echo
 	@echo "👆 PR Comment END"
 	@echo
+
+.PHONY: check-pr
+check-pr: \
+	check-fmt \
+	check-lint \
+	check-code \
+	format-pr
 
 #
 # tracee.proto
