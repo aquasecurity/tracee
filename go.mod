@@ -2,7 +2,7 @@ module github.com/aquasecurity/tracee
 
 go 1.21
 
-toolchain go1.21.5
+toolchain go1.22.4
 
 require (
 	github.com/IBM/fluent-forward-go v0.2.1
