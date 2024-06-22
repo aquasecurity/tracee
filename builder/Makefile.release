@@ -145,37 +145,15 @@ PUSH_DOCKER_REPO ?= aquasec/tracee
 .PHONY: release
 release: \
 	$(OUTPUT_DIR) \
+	build-tracee-btfhub \
+	build-tracee-binary-static \
+	build-tracee-binary-shared \
+	archive \
 	| .check_tree \
 	.check_$(CMD_DOCKER) \
 	.check_$(CMD_TAR) \
 	.check_$(CMD_CHECKSUM) \
 	.check_$(CMD_GITHUB)
-#
-# SNAPSHOT
-#
-
-#
-# build official container image (CO-RE + BTFHUB).
-#
-	$(MAKE) -f builder/Makefile.tracee-make alpine-prepare
-	$(MAKE) -f builder/Makefile.tracee-make alpine-make ARG="clean"
-#
-	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee
-#
-# build binaries (tracee, tracee-ebpf, tracee-rules, rules)
-#
-	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare
-	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
-# static
-	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf"
-	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee"
-	$(CMD_MV) dist/tracee-ebpf dist/tracee-ebpf-static
-	$(CMD_MV) dist/tracee dist/tracee-static
-# shared libs
-	BTFHUB=0 STATIC=0 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
-# tarball
-	$(CMD_TAR) -cvzf $(OUT_ARCHIVE) $(RELEASE_FILES)
-	$(CMD_CHECKSUM) $(OUT_ARCHIVE) > $(OUT_CHECKSUMS)
 #
 # note: TAGS created by release-snapshot workflow
 #
@@ -211,6 +189,48 @@ ifeq ($(ARCH),aarch64)
 endif
 
 endif
+
+#
+# build tracee
+#
+
+.PHONY: alpine-prepare
+alpine-prepare:
+	$(MAKE) -f builder/Makefile.tracee-make alpine-prepare && \
+		$(MAKE) -f builder/Makefile.tracee-make alpine-prepare ARG="clean"
+
+.PHONY: build-tracee-btfhub
+build-tracee-btfhub: alpine-prepare
+# build official container image (CO-RE + BTFHUB)
+	BTFHUB=1 SNAPSHOT=$(SNAPSHOT) $(MAKE) -f builder/Makefile.tracee-container build-tracee
+
+#
+# build binaries (tracee, tracee-ebpf, tracee-rules, rules)
+#
+
+.PHONY: ubuntu-prepare
+ubuntu-prepare:
+	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare && \
+		$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
+
+.PHONY: build-tracee-binary-static
+build-tracee-binary-static: ubuntu-prepare
+# static
+	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf" && \
+		BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee" && \
+		$(CMD_MV) dist/tracee-ebpf dist/tracee-ebpf-static
+		$(CMD_MV) dist/tracee dist/tracee-static
+
+.PHONY: build-tracee-binary-shared
+build-tracee-binary-shared: ubuntu-prepare
+# shared libs
+	BTFHUB=0 STATIC=0 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
+
+.PHONY: archive
+archive:
+# tarball
+	$(CMD_TAR) -cvzf $(OUT_ARCHIVE) $(RELEASE_FILES) && \
+		$(CMD_CHECKSUM) $(OUT_ARCHIVE) > $(OUT_CHECKSUMS)
 
 .PHONY: clean
 clean:
