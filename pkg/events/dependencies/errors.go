@@ -24,6 +24,11 @@ func (cancelErr *ErrNodeAddCancelled) Error() string {
 	return fmt.Sprintf("node add was cancelled, reasons: \"%s\"", strings.Join(errorsStrings, "\", \""))
 }
 
+func (cancelErr *ErrNodeAddCancelled) Is(err error) bool {
+	_, ok := err.(*ErrNodeAddCancelled)
+	return ok
+}
+
 func (cancelErr *ErrNodeAddCancelled) AddReason(reason error) {
 	cancelErr.Reasons = append(cancelErr.Reasons, reason)
 }

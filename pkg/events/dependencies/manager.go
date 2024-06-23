@@ -1,6 +1,7 @@
 package dependencies
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -28,6 +29,7 @@ type Manager struct {
 	probes             map[probes.Handle]*ProbeNode
 	onAdd              map[NodeType][]func(node interface{}) []Action
 	onRemove           map[NodeType][]func(node interface{}) []Action
+	onChange           map[NodeType][]func(previousNode interface{}, newNode interface{}) []Action
 	dependenciesGetter func(events.ID) events.Dependencies
 }
 
@@ -37,6 +39,7 @@ func NewDependenciesManager(dependenciesGetter func(events.ID) events.Dependenci
 		probes:             make(map[probes.Handle]*ProbeNode),
 		onAdd:              make(map[NodeType][]func(node interface{}) []Action),
 		onRemove:           make(map[NodeType][]func(node interface{}) []Action),
+		onChange:           make(map[NodeType][]func(previousNode interface{}, newNode interface{}) []Action),
 		dependenciesGetter: dependenciesGetter,
 	}
 }
@@ -51,6 +54,12 @@ func (m *Manager) SubscribeAdd(subscribeType NodeType, onAdd func(node interface
 // Remove watchers are called in reverse order of their subscription.
 func (m *Manager) SubscribeRemove(subscribeType NodeType, onRemove func(node interface{}) []Action) {
 	m.onRemove[subscribeType] = append([]func(node interface{}) []Action{onRemove}, m.onRemove[subscribeType]...)
+}
+
+// SubscribeChange adds a watcher function called upon the change of an event in the tree.
+// Change watchers are called in the order of their subscription.
+func (m *Manager) SubscribeChange(subscribeType NodeType, onChange func(previousNode interface{}, newNode interface{}) []Action) {
+	m.onChange[subscribeType] = append([]func(previousNode interface{}, newNode interface{}) []Action{onChange}, m.onChange[subscribeType]...)
 }
 
 // GetEvent returns the dependencies of the given event.
@@ -105,10 +114,30 @@ func (m *Manager) RemoveEvent(id events.ID) error {
 	if node == nil {
 		return ErrNodeNotFound
 	}
-	m.removeEventNodeFromDependencies(node)
-	m.removeNode(node)
-	m.removeEventDependents(node)
-	return nil
+	return m.removeEvent(node)
+}
+
+// FailEvent is similar to RemoveEvent, except for the fact that instead of
+// removing the current event it will try to use its fallback dependencies.
+// The old events dependencies of it will be removed in any case.
+// The event will be removed if it has no fallback though, and with it the events
+// that depend on it.
+// The return value specifies if the event was removed or not from the tree
+func (m *Manager) FailEvent(id events.ID) (bool, error) {
+	node := m.getEventNode(id)
+	if node == nil {
+		return false, ErrNodeNotFound
+	}
+	fallback, err := m.failEvent(node)
+	if err != nil {
+		// The more crucial error is the one of the failure
+		_ = m.removeEvent(node)
+		return true, err
+	}
+	if !fallback {
+		return true, m.removeEvent(node)
+	}
+	return false, nil
 }
 
 // buildEvent adds a new node for the given event if it does not exist in the tree.
@@ -136,15 +165,26 @@ func (m *Manager) buildEvent(id events.ID, dependentEvents []events.ID) (*EventN
 	}
 	_, err := m.buildEventNode(node)
 	if err != nil {
-		m.removeEventNodeFromDependencies(node)
-		return nil, err
+		// Try to fallback on dependencies before cancelling addition
+		fallback, failError := m.failEvent(node)
+		if failError != nil {
+			return nil, failError
+		}
+		if !fallback {
+			return nil, err
+		}
 	}
 	err = m.addNode(node)
 	if err != nil {
-		m.removeEventNodeFromDependencies(node)
-		// As the add watchers were called, remove watchers need to be called to clean after them.
-		m.triggerOnRemove(node)
-		return nil, err
+		// Try to fallback on dependencies before cancelling addition
+		fallback, failError := m.failEvent(node)
+		if failError != nil || !fallback {
+			m.triggerOnRemove(node)
+			if failError != nil {
+				return nil, failError
+			}
+			return nil, err
+		}
 	}
 	return node, nil
 }
@@ -208,9 +248,22 @@ func (m *Manager) addNode(node interface{}) error {
 
 	err = m.triggerOnAdd(node)
 	if err != nil {
-		return err
+		if errors.Is(err, &ErrNodeAddCancelled{}) && nodeType == EventNodeType {
+			fallback, failErr := m.failEvent(node.(*EventNode))
+			if failErr != nil {
+				return failErr
+			}
+			// If succeeded to fallback - move on with addition
+			if fallback {
+				goto addNode
+			}
+			return nil
+		} else {
+			return err
+		}
 	}
 
+addNode:
 	switch nodeType {
 	case EventNodeType:
 		m.addEventNode(node.(*EventNode))
@@ -288,6 +341,43 @@ func (m *Manager) triggerOnRemove(node interface{}) {
 	for _, onRemove := range removeWatchers {
 		onRemove(node)
 	}
+}
+
+// triggerOnChange triggers all on-change watchers
+func (m *Manager) triggerOnChange(previousNode interface{}, newNode interface{}) error {
+	nodeType, err := getNodeType(newNode)
+	if err != nil {
+		logger.Debugw("failed to get node type", "error", err)
+		return ErrNodeType
+	}
+
+	var actions []Action
+	changeWatchers := m.onChange[nodeType]
+	for _, onChange := range changeWatchers {
+		actions = append(actions, onChange(previousNode, newNode)...)
+	}
+	changeWatchers = m.onChange[AllNodeTypes]
+	for _, onChange := range changeWatchers {
+		actions = append(actions, onChange(previousNode, newNode)...)
+	}
+
+	var cancelNodeAddErr *ErrNodeAddCancelled
+	shouldCancel := false
+	for _, action := range actions {
+		switch typedAction := action.(type) {
+		case *CancelNodeAddAction:
+			shouldCancel = true
+			if cancelNodeAddErr == nil {
+				err = NewErrNodeAddCancelled([]error{typedAction.Reason})
+			} else {
+				cancelNodeAddErr.AddReason(typedAction.Reason)
+			}
+		}
+	}
+	if shouldCancel {
+		return cancelNodeAddErr
+	}
+	return nil
 }
 
 func getNodeType(node interface{}) (NodeType, error) {
@@ -374,4 +464,40 @@ func (m *Manager) addProbe(probeNode *ProbeNode) {
 // removeNode removes the node from the tree.
 func (m *Manager) removeProbe(handle *ProbeNode) {
 	delete(m.probes, handle.GetHandle())
+}
+
+// The return value specifies if the event succeeded in fallback
+func (m *Manager) failEvent(eventNode *EventNode) (bool, error) {
+	if eventNode == nil {
+		return false, ErrNodeNotFound
+	}
+	// Event can have multiple fallbacks, so try in a loop until fail to fallback
+	for {
+		clonedNode := eventNode.clone()
+		m.removeEventNodeFromDependencies(eventNode)
+		if !eventNode.fallback() {
+			return false, nil
+		}
+		_, err := m.buildEventNode(eventNode)
+		if err != nil {
+			return false, err
+		}
+		err = m.triggerOnChange(clonedNode, eventNode)
+		if err != nil {
+			if errors.Is(err, &ErrNodeAddCancelled{}) {
+				continue
+			}
+			return false, err
+		}
+		// Fallback succeeded
+		break
+	}
+	return true, nil
+}
+
+func (m *Manager) removeEvent(eventNode *EventNode) error {
+	m.removeEventNodeFromDependencies(eventNode)
+	m.removeNode(eventNode)
+	m.removeEventDependents(eventNode)
+	return nil
 }
