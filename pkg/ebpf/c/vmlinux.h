@@ -899,6 +899,11 @@ struct kprobe {
 struct seq_file {
 };
 
+struct rlimit {
+    u64 rlim_cur;
+    u64 rlim_max;
+};
+
 struct seq_operations {
     void *(*start)(struct seq_file *m, loff_t *pos);
     void (*stop)(struct seq_file *m, void *v);
