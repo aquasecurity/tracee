@@ -154,41 +154,39 @@ release: \
 	.check_$(CMD_TAR) \
 	.check_$(CMD_CHECKSUM) \
 	.check_$(CMD_GITHUB)
-#
-# note: TAGS created by release-snapshot workflow
-#
 
 #
-# RELEASE
+# release rule recipes
 #
-
 ifneq ("$(SNAPSHOT)", "1")
 #
-# create release notes (x86_64 only, other arches will be added after release)
+# official release
 #
-ifeq ($(ARCH),x86_64)
-	$(CMD_TOUCH) $(RELEASE_NOTES)
-	echo '## Docker Image' >> $(RELEASE_NOTES)
-	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):$(IMAGE_TAG)`' >> $(RELEASE_NOTES);
-	echo '  ' >> $(RELEASE_NOTES);
-	echo '## Docker Images (per architecture)  ' >> $(RELEASE_NOTES)
-	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):x86_64-$(IMAGE_TAG)`' >> $(RELEASE_NOTES);
-	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):aarch64-$(IMAGE_TAG)`' >> $(RELEASE_NOTES);
-endif
-#
-# release it (x86_64 only, other arches will be added after release)
-#
-ifeq ($(ARCH),x86_64)
-	$(CMD_GITHUB) release create $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS) --title $(SNAPSHOT_VERSION) --notes-file $(RELEASE_NOTES)
-endif
-#
-# add artifacts to the already created release (by x86_64 arch)
-#
-ifeq ($(ARCH),aarch64)
-	$(CMD_GITHUB) release upload $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS)
+
+# if not released yet, create a github release without artifacts.
+# be aware that if changes are made to the release branch, the github release
+# must be deleted so the next triggered action can recreate it updated.
+# note: docker TAGS created by release workflows (not here).
+	@( \
+		$(CMD_GITHUB) release view $(SNAPSHOT_VERSION) > /dev/null 2>&1 && \
+		echo "Release $(SNAPSHOT_VERSION) already exists" \
+	) || \
+	( \
+		echo "Creating release $(SNAPSHOT_VERSION)" && \
+		echo '## Docker Image' > $(RELEASE_NOTES) && \
+		echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):$(IMAGE_TAG)`' >> $(RELEASE_NOTES) && \
+		echo '  ' >> $(RELEASE_NOTES) && \
+		echo '## Docker Images (per architecture)  ' >> $(RELEASE_NOTES) && \
+		echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):x86_64-$(IMAGE_TAG)`' >> $(RELEASE_NOTES) && \
+		echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):aarch64-$(IMAGE_TAG)`' >> $(RELEASE_NOTES) && \
+		$(CMD_GITHUB) release create $(SNAPSHOT_VERSION) --title $(SNAPSHOT_VERSION) --notes-file $(RELEASE_NOTES) \
+	)
+
+# upload artifacts to release (clobbering existing with same name)
+	@echo "Uploading artifacts to release $(SNAPSHOT_VERSION)" && \
+		$(CMD_GITHUB) release upload --clobber $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS)
 endif
 
-endif
 
 #
 # build tracee
