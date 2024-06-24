@@ -11,6 +11,8 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+var packetContextVersion = "1.0"
+
 // This struct represents the context of a packet capture.
 // Packet captures can be per process, command, container or a single capture,
 // which affects the context info relevant to it.
@@ -19,6 +21,8 @@ import (
 // For example, if a process changes its name, this won't be reflected in the
 // capture's context information.
 type PacketContext struct {
+	Version string `json:"version"`
+
 	// Present for container, command and process captures
 	Container  *ContainerContext  `json:"container,omitempty"`
 	Kubernetes *KubernetesContext `json:"kubernetes,omitempty"`
@@ -61,7 +65,7 @@ type KubernetesContext struct {
 }
 
 func initPacketContext(event *trace.Event, t PcapType) PacketContext {
-	ctx := PacketContext{}
+	ctx := PacketContext{Version: packetContextVersion}
 
 	if t == Container || t == Command || t == Process {
 		ctx.Container = &ContainerContext{
