@@ -110,6 +110,7 @@ const (
 	ModuleFree
 	ExecuteFinished
 	SecurityBprmCredsForExec
+	SecurityTaskSetrlimit
 	MaxCommonID
 )
 
@@ -13052,6 +13053,23 @@ var CoreEvents = map[ID]Definition{
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "unresolved_path"},
 			{Type: "const char*", Name: "resolved_path"},
+		},
+	},
+	SecurityTaskSetrlimit: {
+		id:      SecurityTaskSetrlimit,
+		id32Bit: Sys32Undefined,
+		name:    "security_task_setrlimit",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SecurityTaskSetrlimit, required: true},
+			},
+		},
+		sets: []string{"lsm"},
+		params: []trace.ArgMeta{
+			{Type: "u32", Name: "target_host_pid"},
+			{Type: "int", Name: "resource"},
+			{Type: "u64", Name: "new_rlim_cur"},
+			{Type: "u64", Name: "new_rlim_max"},
 		},
 	},
 	//

@@ -5104,6 +5104,32 @@ int BPF_KPROBE(trace_set_fs_pwd)
     return events_perf_submit(&p, 0);
 }
 
+SEC("kprobe/security_task_setrlimit")
+int BPF_KPROBE(trace_security_task_setrlimit)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, SECURITY_TASK_SETRLIMIT))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    struct task_struct *task = (struct task_struct *) PT_REGS_PARM1(ctx);
+    unsigned int resource = (unsigned int) PT_REGS_PARM2(ctx);
+    struct rlimit *new_rlim = (struct rlimit *) PT_REGS_PARM3(ctx);
+
+    u32 target_host_tgid = get_task_host_tgid(task);
+    u64 new_rlim_cur = BPF_CORE_READ(new_rlim, rlim_cur);
+    u64 new_rlim_max = BPF_CORE_READ(new_rlim, rlim_max);
+
+    save_to_submit_buf(&p.event->args_buf, &target_host_tgid, sizeof(u32), 0);
+    save_to_submit_buf(&p.event->args_buf, &resource, sizeof(unsigned int), 1);
+    save_to_submit_buf(&p.event->args_buf, &new_rlim_cur, sizeof(u64), 2);
+    save_to_submit_buf(&p.event->args_buf, &new_rlim_max, sizeof(u64), 3);
+
+    return events_perf_submit(&p, 0);
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)

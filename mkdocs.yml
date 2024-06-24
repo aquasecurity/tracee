@@ -104,6 +104,7 @@ nav:
                             - security_file_mprotect: docs/events/builtin/extra/security_file_mprotect.md
                             - security_inode_unlink: docs/events/builtin/extra/security_inode_unlink.md
                             - security_sb_mount: docs/events/builtin/extra/security_sb_mount.md
+                            - security_task_setrlimit: docs/events/builtin/extra/security_task_setrlimit.md
                             - security_socket_accept: docs/events/builtin/extra/security_socket_accept.md
                             - security_socket_bind: docs/events/builtin/extra/security_socket_bind.md
                             - security_socket_connect: docs/events/builtin/extra/security_socket_connect.md

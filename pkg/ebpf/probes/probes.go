@@ -148,6 +148,7 @@ const (
 	ExecuteAtFinishedARM
 	ExecuteFinishedCompatARM
 	ExecuteAtFinishedCompatARM
+	SecurityTaskSetrlimit
 )
 
 // Test probe handles
