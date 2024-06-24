@@ -51,17 +51,17 @@ type ProcessContext struct {
 }
 
 type ContainerContext struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	ImageName   string `json:"image"`
-	ImageDigest string `json:"imageDigest"`
+	ID          string `json:"id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	ImageName   string `json:"image,omitempty"`
+	ImageDigest string `json:"imageDigest,omitempty"`
 }
 
 type KubernetesContext struct {
-	PodName      string `json:"podName"`
-	PodNamespace string `json:"podNamespace"`
-	PodUID       string `json:"podUID"`
-	PodSandbox   bool   `json:"podSandbox"`
+	PodName      string `json:"podName,omitempty"`
+	PodNamespace string `json:"podNamespace,omitempty"`
+	PodUID       string `json:"podUID,omitempty"`
+	PodSandbox   bool   `json:"podSandbox,omitempty"`
 }
 
 func initPacketContext(event *trace.Event, t PcapType) PacketContext {
