@@ -9,11 +9,13 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	traceetime "github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 )
 
-const debugMsgs = false // debug messages can be too verbose, so they are disabled by default
+const debugMsgs = false                         // debug messages can be too verbose, so they are disabled by default
+const ProcfsClockId = traceetime.CLOCK_BOOTTIME // Procfs uses jiffies, which are based on boottime
 
 const (
 	AllPIDs = 0
@@ -107,7 +109,7 @@ func getProcessByPID(pt *ProcessTree, givenPid int) (*Process, error) {
 		return nil, errfmt.Errorf("%v", err)
 	}
 
-	startTimeNs := utils.ClockTicksToNsSinceBootTime(stat.StartTime)
+	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(stat.StartTime)
 	hash := utils.HashTaskID(uint32(status.GetPid()), startTimeNs) // status pid == tid
 
 	return pt.GetOrCreateProcessByHash(hash), nil
@@ -149,7 +151,7 @@ func dealWithProc(pt *ProcessTree, givenPid int) error {
 	}
 
 	// process hash
-	startTimeNs := utils.ClockTicksToNsSinceBootTime(start)
+	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(start)
 	hash := utils.HashTaskID(uint32(pid), startTimeNs)
 
 	// update tree for the given process
@@ -165,6 +167,8 @@ func dealWithProc(pt *ProcessTree, givenPid int) error {
 		}
 	}
 
+	procfsTimeStamp := uint64(pt.timeNormalizer.NormalizeTime(int(startTimeNs)))
+
 	procInfo.SetFeedAt(
 		TaskInfoFeed{
 			Name:        name,   // command name (add "procfs+" to debug if needed)
@@ -176,9 +180,9 @@ func dealWithProc(pt *ProcessTree, givenPid int) error {
 			NsPPid:      nsppid, // status: nsppid == nsppid
 			Uid:         -1,     // do not change the parent uid
 			Gid:         -1,     // do not change the parent gid
-			StartTimeNS: startTimeNs,
+			StartTimeNS: procfsTimeStamp,
 		},
-		utils.NsSinceBootTimeToTime(uint64(start)), // try to be the first changelog entry
+		traceetime.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
 	)
 
 	// TODO: Update executable with information from /proc/<pid>/exe
@@ -222,7 +226,7 @@ func dealWithThread(pt *ProcessTree, givenPid int, givenTid int) error {
 	}
 
 	// thread hash
-	startTimeNs := utils.ClockTicksToNsSinceBootTime(start)
+	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(start)
 	hash := utils.HashTaskID(uint32(pid), startTimeNs)
 
 	// update tree for the given thread
@@ -233,6 +237,8 @@ func dealWithThread(pt *ProcessTree, givenPid int, givenTid int) error {
 	if threadInfo.GetName() != "" && threadInfo.GetPPid() != 0 {
 		return nil
 	}
+
+	procfsTimeStamp := uint64(pt.timeNormalizer.NormalizeTime(int(startTimeNs)))
 
 	threadInfo.SetFeedAt(
 		TaskInfoFeed{
@@ -245,9 +251,9 @@ func dealWithThread(pt *ProcessTree, givenPid int, givenTid int) error {
 			NsPPid:      nsppid, // status: nsppid == nsppid
 			Uid:         -1,     // do not change the parent uid
 			Gid:         -1,     // do not change the parent gid
-			StartTimeNS: startTimeNs,
+			StartTimeNS: procfsTimeStamp,
 		},
-		utils.NsSinceBootTimeToTime(uint64(start)), // try to be the first changelog entry
+		traceetime.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
 	)
 
 	// thread group leader (leader tid is the same as the thread's pid, so we can find it)

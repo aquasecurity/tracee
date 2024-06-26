@@ -564,7 +564,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 			proctreeConfig.ProcfsInitialization = false
 			proctreeConfig.ProcfsQuerying = false
 		}
-		t.processTree, err = proctree.NewProcessTree(ctx, proctreeConfig)
+		t.processTree, err = proctree.NewProcessTree(ctx, proctreeConfig, t.timeNormalizer)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
