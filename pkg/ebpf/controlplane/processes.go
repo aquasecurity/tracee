@@ -73,7 +73,7 @@ func (ctrl *Controller) procTreeForkProcessor(args []trace.Argument) error {
 
 	return ctrl.processTree.FeedFromFork(
 		proctree.ForkFeed{
-			TimeStamp:       timestamp,
+			TimeStamp:       uint64(ctrl.timeNormalizer.NormalizeTime(int(timestamp))),
 			ChildHash:       childHash,
 			ParentHash:      parentHash,
 			LeaderHash:      leaderHash,
@@ -81,17 +81,17 @@ func (ctrl *Controller) procTreeForkProcessor(args []trace.Argument) error {
 			ParentNsTid:     parentNsTid,
 			ParentPid:       parentPid,
 			ParentNsPid:     parentNsPid,
-			ParentStartTime: parentStartTime,
+			ParentStartTime: uint64(ctrl.timeNormalizer.NormalizeTime(int(parentStartTime))),
 			LeaderTid:       leaderTid,
 			LeaderNsTid:     leaderNsTid,
 			LeaderPid:       leaderPid,
 			LeaderNsPid:     leaderNsPid,
-			LeaderStartTime: leaderStartTime,
+			LeaderStartTime: uint64(ctrl.timeNormalizer.NormalizeTime(int(leaderStartTime))),
 			ChildTid:        childTid,
 			ChildNsTid:      childNsTid,
 			ChildPid:        childPid,
 			ChildNsPid:      childNsPid,
-			ChildStartTime:  childStartTime,
+			ChildStartTime:  uint64(ctrl.timeNormalizer.NormalizeTime(int(childStartTime))),
 		},
 	)
 }
@@ -154,7 +154,7 @@ func (ctrl *Controller) procTreeExecProcessor(args []trace.Argument) error {
 
 	return ctrl.processTree.FeedFromExec(
 		proctree.ExecFeed{
-			TimeStamp:         timestamp,
+			TimeStamp:         uint64(ctrl.timeNormalizer.NormalizeTime(int(timestamp))),
 			TaskHash:          taskHash,
 			ParentHash:        parentHash,
 			LeaderHash:        leaderHash,
@@ -208,7 +208,7 @@ func (ctrl *Controller) procTreeExitProcessor(args []trace.Argument) error {
 
 	return ctrl.processTree.FeedFromExit(
 		proctree.ExitFeed{
-			TimeStamp:  timestamp, // time of exit is already a timestamp
+			TimeStamp:  uint64(ctrl.timeNormalizer.NormalizeTime(int(timestamp))), // time of exit is already a timestamp
 			TaskHash:   taskHash,
 			ParentHash: parentHash,
 			LeaderHash: leaderHash,
