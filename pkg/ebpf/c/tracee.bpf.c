@@ -5238,6 +5238,8 @@ statfunc enum event_id_e net_packet_to_net_event(net_packet_t packet_type)
         case CAP_NET_PACKET:
             return NET_CAPTURE_BASE;
         // Packets
+        case SUB_NET_PACKET_RAW:
+            return NET_PACKET_RAW;
         case SUB_NET_PACKET_IP:
             return NET_PACKET_IP;
         case SUB_NET_PACKET_TCP:
@@ -6201,7 +6203,10 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
     if (!dest)
         return 1; // satisfy verifier for clang-12 generated binaries
 
-    // fastpath: submit the IP base event
+    // fastpath: submit the raw packet and IP base events
+
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_RAW))
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_RAW, FULL);
 
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_IP, HEADERS);
