@@ -5,7 +5,7 @@ import (
 	"time"
 
 	ch "github.com/aquasecurity/tracee/pkg/changelog"
-	"github.com/aquasecurity/tracee/pkg/utils"
+	traceetime "github.com/aquasecurity/tracee/pkg/time"
 )
 
 // TaskInfoFeed allows external packages to set/get multiple values of a task at once.
@@ -360,40 +360,33 @@ func (ti *TaskInfo) GetGidAt(targetTime time.Time) int {
 	return ti.gid.Get(targetTime)
 }
 
-// GetStartTimeNS returns the startTimeNS of the task.
+// GetStartTimeNS returns the start time of the task in nanoseconds since epoch
 func (ti *TaskInfo) GetStartTimeNS() uint64 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 	return ti.startTimeNS
 }
 
-// GetStartTime returns the "real" start time of the task.
+// GetStartTime returns the start time of the task.
 func (ti *TaskInfo) GetStartTime() time.Time {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
-	// Returns a real "time" to be used for the task.
-	duration := time.Duration(int64(ti.startTimeNS))
-	bootTime := utils.GetBootTime()
-	return bootTime.Add(duration)
+	return traceetime.NsSinceEpochToTime(ti.startTimeNS)
 }
 
-// GetExitTimeNS returns the exitTime of the task.
+// GetExitTimeNS returns the exitTime of the task in nanoseconds since epoch
 func (ti *TaskInfo) GetExitTimeNS() uint64 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 	return ti.exitTimeNS
 }
 
-// GetExitTime returns the "real" exit time of the task.
+// GetExitTime returns the exit time of the task.
 func (ti *TaskInfo) GetExitTime() time.Time {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
-
-	// Returns a real "time" to be used for the task.
-	duration := time.Duration(int64(ti.exitTimeNS))
-	bootTime := utils.GetBootTime()
-	return bootTime.Add(duration)
+	return traceetime.NsSinceEpochToTime(ti.exitTimeNS)
 }
 
 // IsAlive returns true if the task has exited.
@@ -409,13 +402,13 @@ func (ti *TaskInfo) IsAliveAt(targetTime time.Time) bool {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 	if ti.exitTimeNS != 0 {
-		if targetTime.After(utils.NsSinceBootTimeToTime(ti.exitTimeNS)) {
+		if targetTime.After(traceetime.NsSinceEpochToTime(ti.exitTimeNS)) {
 			return false
 		}
 	}
 	// If start time is not initialized it will count as 0 ns, meaning it will be before any
 	// query time given.
-	if targetTime.Before(utils.NsSinceBootTimeToTime(ti.startTimeNS)) {
+	if targetTime.Before(traceetime.NsSinceEpochToTime(ti.startTimeNS)) {
 		return false
 	}
 	return true

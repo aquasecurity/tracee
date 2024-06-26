@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	traceetime "github.com/aquasecurity/tracee/pkg/time"
 )
 
 //
@@ -72,17 +73,18 @@ type ProcTreeConfig struct {
 
 // ProcessTree is a tree of processes and threads.
 type ProcessTree struct {
-	processes   *lru.Cache[uint32, *Process] // hash -> process
-	threads     *lru.Cache[uint32, *Thread]  // hash -> threads
-	procfsChan  chan int                     // channel of pids to read from procfs
-	procfsOnce  *sync.Once                   // busy loop debug message throttling
-	ctx         context.Context              // context for the process tree
-	mutex       *sync.RWMutex                // mutex for the process tree
-	procfsQuery bool
+	processes      *lru.Cache[uint32, *Process] // hash -> process
+	threads        *lru.Cache[uint32, *Thread]  // hash -> threads
+	procfsChan     chan int                     // channel of pids to read from procfs
+	procfsOnce     *sync.Once                   // busy loop debug message throttling
+	ctx            context.Context              // context for the process tree
+	mutex          *sync.RWMutex                // mutex for the process tree
+	procfsQuery    bool
+	timeNormalizer traceetime.TimeNormalizer
 }
 
 // NewProcessTree creates a new process tree.
-func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, error) {
+func NewProcessTree(ctx context.Context, config ProcTreeConfig, timeNormalizer traceetime.TimeNormalizer) (*ProcessTree, error) {
 	procEvited := 0
 	thrEvicted := 0
 
@@ -136,11 +138,12 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 	}()
 
 	procTree := &ProcessTree{
-		processes:   processes,
-		threads:     threads,
-		ctx:         ctx,
-		mutex:       &sync.RWMutex{},
-		procfsQuery: config.ProcfsQuerying,
+		processes:      processes,
+		threads:        threads,
+		ctx:            ctx,
+		mutex:          &sync.RWMutex{},
+		procfsQuery:    config.ProcfsQuerying,
+		timeNormalizer: timeNormalizer,
 	}
 
 	if config.ProcfsInitialization {
