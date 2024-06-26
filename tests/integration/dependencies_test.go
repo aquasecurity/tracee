@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
 	"github.com/aquasecurity/tracee/pkg/config"
@@ -87,8 +86,6 @@ func Test_EventsDependencies(t *testing.T) {
 		},
 	}
 
-	logOutChan, restoreLogger := testutils.SetTestLogger(logger.DebugLevel)
-
 	// Each test will run a test binary that triggers the "exec_test" event.
 	// Upon its execution, which events are evicted and which not will be tested
 	createCmdEvents := func(expectedEventsIDs []events.ID, unexpectedEventsIDs []events.ID) []cmdEvents {
@@ -132,8 +129,11 @@ func Test_EventsDependencies(t *testing.T) {
 				policy.Snapshots().Store(testConfig.Policies)
 
 				ctx, cancel := context.WithCancel(context.Background())
-				done := make(chan struct{})
-				logsResultChan := testutils.TestLogs(t, testCaseInst.expectedLogs, logOutChan, done)
+
+				// set test logger
+				logsDone := make(chan struct{})
+				logOutChan, restoreLogger := testutils.SetTestLogger(t, logger.DebugLevel)
+				logsResultChan := testutils.TestLogs(t, testCaseInst.expectedLogs, logOutChan, logsDone)
 
 				// start tracee
 				trc, err := startTracee(ctx, t, testConfig, nil, nil)
@@ -142,15 +142,14 @@ func Test_EventsDependencies(t *testing.T) {
 					t.Fatal(err)
 				}
 				t.Logf("  --- started tracee ---")
-
-				stream := trc.SubscribeAll()
-				defer trc.Unsubscribe(stream)
-
 				err = waitForTraceeStart(trc)
 				if err != nil {
 					cancel()
 					t.Fatal(err)
 				}
+
+				stream := trc.SubscribeAll()
+				defer trc.Unsubscribe(stream)
 
 				// start a goroutine to read events from the channel into the buffer
 				buf := newEventBuffer()
@@ -165,30 +164,54 @@ func Test_EventsDependencies(t *testing.T) {
 					}
 				}(ctx, buf)
 
-				testAttachedKprobes(t, testCaseInst.expectedKprobes, testCaseInst.unexpectedKprobes)
+				var failed bool
+				var testCmdEvents []cmdEvents
 
-				// Test events
-				testCmdEvents := createCmdEvents(testCaseInst.expectedEvents, testCaseInst.unexpectedEvents)
-				require.NoError(t, ExpectAtLeastOneForEach(t, testCmdEvents, buf, false))
+				// test kprobes
+				err = testAttachedKprobes(testCaseInst.expectedKprobes, testCaseInst.unexpectedKprobes)
+				if err != nil {
+					t.Logf("Test %s failed: %v", t.Name(), err)
+					failed = true
+					goto cleanup
+				}
 
+				// test events
+				testCmdEvents = createCmdEvents(testCaseInst.expectedEvents, testCaseInst.unexpectedEvents)
+				err = ExpectAtLeastOneForEach(t, testCmdEvents, buf, false)
+				if err != nil {
+					t.Logf("Test %s failed: %v", t.Name(), err)
+					failed = true
+					goto cleanup
+				}
+
+				close(logsDone)
+				if !<-logsResultChan {
+					t.Logf("Test %s failed: not all logs were found", t.Name())
+					failed = true
+				}
+			cleanup:
+				// ensure that logsDone is closed
+				select {
+				case <-logsDone:
+				default:
+					close(logsDone)
+				}
+				restoreLogger()
 				cancel()
 				errStop := waitForTraceeStop(trc)
 				if errStop != nil {
 					t.Log(errStop)
+					failed = true
 				} else {
 					t.Logf("  --- stopped tracee ---")
 				}
-				close(done)
 
-				assert.True(t, <-logsResultChan)
+				if failed {
+					t.Fail()
+				}
 			},
 		)
 	}
-	// Wait for all Tracee's goroutines to finish
-	// TODO: Remove this sleep once all Tracee's goroutines are guaranteed to complete
-	// by the time tracee.Running() returns false.
-	time.Sleep(15 * time.Second)
-	restoreLogger()
 }
 
 func createGenericEventForCmdEvents(eventId events.ID) trace.Event {
@@ -227,18 +250,26 @@ func GetAttachedKprobes() ([]string, error) {
 	return probes, nil
 }
 
-func testAttachedKprobes(t *testing.T, expectedKprobes []string, unexpectedKprobes []string) {
+func testAttachedKprobes(expectedKprobes []string, unexpectedKprobes []string) error {
 	// Get the initial list of kprobes
 	attachedKprobes, err := GetAttachedKprobes()
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 
 	// Check if the expected kprobes were added
 	for _, probe := range expectedKprobes {
-		assert.Contains(t, attachedKprobes, probe)
+		if !slices.Contains(attachedKprobes, probe) {
+			return fmt.Errorf("expected kprobe %s not found", probe)
+		}
 	}
 
 	// Check if the unexpected kprobes were added
 	for _, probe := range unexpectedKprobes {
-		assert.NotContains(t, attachedKprobes, probe)
+		if slices.Contains(attachedKprobes, probe) {
+			return fmt.Errorf("unexpected kprobe %s found", probe)
+		}
 	}
+
+	return nil
 }

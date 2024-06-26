@@ -15,7 +15,9 @@ import (
 // SetTestLogger create a logger which prints the logs to the returned channel.
 // This function is meant to be used by tests to check logs, and by that test the
 // flow of Tracee from outside.
-func SetTestLogger(l logger.Level) (loggerOutput <-chan []byte, restoreLogger func()) {
+func SetTestLogger(t *testing.T, l logger.Level) (loggerOutput <-chan []byte, restoreLogger func()) {
+	t.Logf("  --- setting test logger ---")
+
 	mw, logChan := newChannelWriter()
 	chanLogger := logger.NewLogger(
 		logger.LoggerConfig{
@@ -26,6 +28,7 @@ func SetTestLogger(l logger.Level) (loggerOutput <-chan []byte, restoreLogger fu
 	)
 	currentLogger := logger.GetLogger()
 	restoreLogger = func() {
+		t.Logf("  --- restoring default logger ---")
 		err := chanLogger.Sync()
 		logger.SetLogger(currentLogger)
 		mw.Close()
