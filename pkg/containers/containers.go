@@ -285,14 +285,29 @@ func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId, bo
 			id = strings.TrimPrefix(id, "libpod-")
 		}
 
-		if matched := containerIdFromCgroupRegex.MatchString(id); matched {
-			if runtime == cruntime.Unknown && i > 0 && cgroupParts[i-1] == "docker" {
+		if runtime != cruntime.Unknown {
+			// Return the first match, closest to the root dir path component, so that the
+			// container id of the outer container is returned. The container root is
+			// determined by being matched on the last path part.
+			return id, runtime, i == len(cgroupParts)-1
+		}
+
+		if matched := containerIdFromCgroupRegex.MatchString(id); matched && i > 0 {
+			prevPart := cgroupParts[i-1]
+			if prevPart == "docker" {
 				// non-systemd docker with format: .../docker/01adbf...f26db7f/
 				runtime = cruntime.Docker
 			}
-			if runtime == cruntime.Unknown && i > 0 && cgroupParts[i-1] == "actions_job" {
+			if prevPart == "actions_job" {
 				// non-systemd docker with format in GitHub Actions: .../actions_job/01adbf...f26db7f/
 				runtime = cruntime.Docker
+			}
+			if strings.HasPrefix(prevPart, "pod") {
+				// generic containerd path with format: ...kubepods/<besteffort|burstable>/podXXX/01adbf...f26db7f/
+				// NOTE: this workaround may turn out to be wrong, and other runtime distributions may use the same path pattern.
+				// The fix relies on us finding this kind of pattern only in containerd envs and being explicitly mentioned in their source code.
+				// If this ever doesn't work out, we will need to match the runtime based on the running kubelet daemon.
+				runtime = cruntime.Containerd
 			}
 
 			// Return the first match, closest to the root dir path component, so that the
