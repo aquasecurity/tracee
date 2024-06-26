@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -157,6 +158,9 @@ func aggregateLog(l *Logger, lvl Level, msg string, ci *callerInfo) bool {
 // It does NOT override those options.
 // For the case where innerAggregation is set to true, it will only aggregate if pkg logger's aggregation config is also set to true.
 func Log(lvl Level, innerAggregation bool, msg string, keysAndValues ...interface{}) {
+	pkgMutex.RLock()
+	defer pkgMutex.RUnlock()
+
 	if innerAggregation {
 		switch lvl {
 		case DebugLevel:
@@ -219,6 +223,9 @@ func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 }
 
 func Debugw(msg string, keysAndValues ...interface{}) {
+	pkgMutex.RLock()
+	defer pkgMutex.RUnlock()
+
 	debugw(1, pkgLogger, msg, keysAndValues...)
 }
 
@@ -241,6 +248,9 @@ func infow(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 }
 
 func Infow(msg string, keysAndValues ...interface{}) {
+	pkgMutex.RLock()
+	defer pkgMutex.RUnlock()
+
 	infow(1, pkgLogger, msg, keysAndValues...)
 }
 
@@ -263,6 +273,9 @@ func warnw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 }
 
 func Warnw(msg string, keysAndValues ...interface{}) {
+	pkgMutex.RLock()
+	defer pkgMutex.RUnlock()
+
 	warnw(1, pkgLogger, msg, keysAndValues...)
 }
 
@@ -285,6 +298,9 @@ func errorw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 }
 
 func Errorw(msg string, keysAndValues ...interface{}) {
+	pkgMutex.RLock()
+	defer pkgMutex.RUnlock()
+
 	errorw(1, pkgLogger, msg, keysAndValues...)
 }
 
@@ -307,6 +323,9 @@ func fatalw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 }
 
 func Fatalw(msg string, keysAndValues ...interface{}) {
+	pkgMutex.RLock()
+	defer pkgMutex.RUnlock()
+
 	fatalw(1, pkgLogger, msg, keysAndValues...)
 }
 
@@ -322,16 +341,22 @@ func (l *Logger) Sync() error {
 var (
 	// Package-level Logger
 	pkgLogger = &Logger{}
+	pkgMutex  = &sync.RWMutex{}
 )
 
 // Current returns the package-level base logger
 func Current() *Logger {
+	pkgMutex.RLock()
+	defer pkgMutex.RUnlock()
+
 	return pkgLogger
 }
 
 // SetLogger sets package-level base logger
-// It's not thread safe so if required use it always at the beginning
 func SetLogger(l LoggerInterface) {
+	pkgMutex.Lock()
+	defer pkgMutex.Unlock()
+
 	if l == nil {
 		panic("Logger cannot be nil")
 	}
@@ -341,18 +366,27 @@ func SetLogger(l LoggerInterface) {
 
 // GetLogger gets the package-level base logger
 func GetLogger() LoggerInterface {
+	pkgMutex.RLock()
+	defer pkgMutex.RUnlock()
+
 	return pkgLogger.l
 }
 
 // SetLevel sets package-level base logger level,
 // it is threadsafe
 func SetLevel(level Level) {
+	pkgMutex.Lock()
+	defer pkgMutex.Unlock()
+
 	pkgLogger.cfg.SetLevel(level)
 }
 
 // Init sets the package-level base logger using given config
 // It's not thread safe so if required use it always at the beginning
 func Init(cfg LoggingConfig) {
+	pkgMutex.Lock()
+	defer pkgMutex.Unlock()
+
 	// set the config
 	pkgLogger.cfg = cfg
 
