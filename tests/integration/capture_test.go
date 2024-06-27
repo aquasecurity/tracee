@@ -12,7 +12,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
-	"gotest.tools/assert"
 
 	"github.com/aquasecurity/tracee/tests/testutils"
 )
@@ -91,16 +90,33 @@ func Test_TraceeCapture(t *testing.T) {
 				t.Fatal("tracee is already running")
 			}
 
+			var failed bool
+
 			captureDir := tc.directory + "/out/host/"
 			err := tc.test(t, captureDir, homeDir)
 			if err != nil {
-				t.Errorf("test %s failed: %v", tc.name, err)
-				cmdErrs := running.Stop() // stop tracee
-				require.Empty(t, cmdErrs)
+				failed = true
+				t.Logf("test %s failed: %v", tc.name, err)
+			}
+			defer func() {
+				t.Logf("removing directory %s", tc.directory)
+				err := os.RemoveAll(tc.directory)
+				if err != nil {
+					t.Logf("failed to remove directory %s: %v", tc.directory, err)
+				}
+			}()
+
+			cmdErrs := running.Stop() // stop tracee
+			if len(cmdErrs) > 0 {
+				failed = true
+				t.Logf("failed to stop tracee: %v", cmdErrs)
+			} else {
+				t.Logf("  --- stopped tracee ---")
+			}
+
+			if failed {
 				t.Fail()
 			}
-			cmdErrs := running.Stop() // stop tracee
-			require.Empty(t, cmdErrs)
 		})
 	}
 }
@@ -256,10 +272,12 @@ func readWritePipe(t *testing.T, captureDir string, workingDir string) error {
 	}()
 
 	finfo, err := pipe.Stat()
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	statInfo, ok := finfo.Sys().(*syscall.Stat_t)
 	if !ok {
-		t.Logf("type assertion failed: expected *syscall.Stat_t")
+		return fmt.Errorf("type assertion failed: expected *syscall.Stat_t")
 	}
 	inode := statInfo.Ino
 
@@ -323,10 +341,17 @@ func assertEntries(t *testing.T, captureDir string, input string, readOut string
 		}
 	}
 	// Found 2 entries
-	assert.Equal(t, found, 2)
+	if found != 2 {
+		return fmt.Errorf("expected 2 entries in capture dir, found %d", found)
+	}
 
 	// Compare captured data to expected data
-	assert.Equal(t, input, string(writeCaptureFile))
-	assert.Equal(t, readOut, string(readCaptureFile))
+	if string(writeCaptureFile) != input {
+		return fmt.Errorf("expected write capture file %s, got %s", input, writeCaptureFile)
+	}
+	if string(readCaptureFile) != readOut {
+		return fmt.Errorf("expected read capture file %s, got %s", readOut, readCaptureFile)
+	}
+
 	return nil
 }
