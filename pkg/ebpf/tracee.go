@@ -118,7 +118,7 @@ type Tracee struct {
 	// Streams
 	streamsManager *streams.StreamsManager
 	// policyManager manages policy state
-	policyManager *policyManager
+	policyManager *policy.PolicyManager
 
 	// Ksymbols needed to be kept alive in table.
 	// This does not mean they are required for tracee to function.
@@ -223,7 +223,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		return nil, errfmt.Errorf("validation error: %v", err)
 	}
 
-	policyManager := newPolicyManager()
+	policyManager := policy.NewPolicyManager()
 
 	// Create Tracee
 
