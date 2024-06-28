@@ -5,6 +5,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -26,7 +27,7 @@ func (t *Tracee) UpdateKallsyms() error {
 
 	// Wrap long method names.
 	evtDefSymDeps := func(id events.ID) []events.KSymbol {
-		depsNode, _ := t.eventsDependencies.GetEvent(id)
+		depsNode, _ := dependencies.GetManagerInstance().GetEvent(id)
 		deps := depsNode.GetDependencies()
 		return deps.GetKSymbols()
 	}

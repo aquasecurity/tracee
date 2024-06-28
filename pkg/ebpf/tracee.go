@@ -119,8 +119,6 @@ type Tracee struct {
 	streamsManager *streams.StreamsManager
 	// policyManager manages policy state
 	policyManager *policyManager
-	// The dependencies of events used by Tracee
-	eventsDependencies *dependencies.Manager
 
 	// Ksymbols needed to be kept alive in table.
 	// This does not mean they are required for tracee to function.
@@ -180,7 +178,7 @@ func (t *Tracee) addDependenciesToStateRecursive(eventNode *dependencies.EventNo
 	eventID := eventNode.GetID()
 	for _, dependencyEventID := range eventNode.GetDependencies().GetIDs() {
 		t.addDependencyEventToState(dependencyEventID, []events.ID{eventID})
-		dependencyNode, err := t.eventsDependencies.GetEvent(dependencyEventID)
+		dependencyNode, err := dependencies.GetManagerInstance().GetEvent(dependencyEventID)
 		if err == nil {
 			t.addDependenciesToStateRecursive(dependencyNode)
 		}
@@ -189,7 +187,7 @@ func (t *Tracee) addDependenciesToStateRecursive(eventNode *dependencies.EventNo
 
 func (t *Tracee) selectEvent(eventID events.ID, chosenState events.EventState) {
 	t.addEventState(eventID, chosenState)
-	eventNode, err := t.eventsDependencies.SelectEvent(eventID)
+	eventNode, err := dependencies.GetManagerInstance().SelectEvent(eventID)
 	if err != nil {
 		logger.Errorw("Event selection failed",
 			"event", events.Core.GetDefinitionByID(eventID).GetName())
@@ -239,16 +237,17 @@ func New(cfg config.Config) (*Tracee, error) {
 		eventSignatures: make(map[events.ID]bool),
 		streamsManager:  streams.NewStreamsManager(),
 		policyManager:   policyManager,
-		eventsDependencies: dependencies.NewDependenciesManager(
-			func(id events.ID) events.Dependencies {
-				return events.Core.GetDefinitionByID(id).GetDependencies()
-			}),
-		requiredKsyms: []string{},
+		requiredKsyms:   []string{},
 	}
+
+	eventsDependencies := dependencies.NewDependenciesManager(
+		func(id events.ID) events.Dependencies {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
 
 	// TODO: As dynamic event addition or removal becomes a thing, we should subscribe all the watchers
 	// before selecting them. There is no reason to select the event in the New function anyhow.
-	t.eventsDependencies.SubscribeAdd(
+	eventsDependencies.SubscribeAdd(
 		dependencies.EventNodeType,
 		func(node interface{}) []dependencies.Action {
 			eventNode, ok := node.(*dependencies.EventNode)
@@ -259,7 +258,7 @@ func New(cfg config.Config) (*Tracee, error) {
 			t.addDependencyEventToState(eventNode.GetID(), eventNode.GetDependents())
 			return nil
 		})
-	t.eventsDependencies.SubscribeRemove(
+	eventsDependencies.SubscribeRemove(
 		dependencies.EventNodeType,
 		func(node interface{}) []dependencies.Action {
 			eventNode, ok := node.(*dependencies.EventNode)
@@ -353,7 +352,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		if !events.Core.IsDefined(id) {
 			return t, errfmt.Errorf("event %d is not defined", id)
 		}
-		depsNode, err := t.eventsDependencies.GetEvent(id)
+		depsNode, err := eventsDependencies.GetEvent(id)
 		if err == nil {
 			deps := depsNode.GetDependencies()
 			evtCaps := deps.GetCapabilities()
@@ -915,7 +914,7 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 			return errfmt.Errorf("event %d is not defined", id)
 		}
 
-		depsNode, err := t.eventsDependencies.GetEvent(id)
+		depsNode, err := dependencies.GetManagerInstance().GetEvent(id)
 		if err != nil {
 			logger.Warnw("failed to extract required ksymbols from event", "event_id", id, "error", err)
 			continue
@@ -1029,8 +1028,10 @@ func getUnavailbaleKsymbols(ksymbols []events.KSymbol, kernelSymbols *environmen
 // from the kallsyms file to check for missing symbols. If some symbols are
 // missing, it will cancel their event with informative error message.
 func (t *Tracee) validateKallsymsDependencies() {
+	depsInstance := dependencies.GetManagerInstance()
+
 	evtDefSymDeps := func(id events.ID) []events.KSymbol {
-		depsNode, _ := t.eventsDependencies.GetEvent(id)
+		depsNode, _ := depsInstance.GetEvent(id)
 		deps := depsNode.GetDependencies()
 		return deps.GetKSymbols()
 	}
@@ -1059,7 +1060,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 		return true
 	}
 
-	t.eventsDependencies.SubscribeAdd(
+	depsInstance.SubscribeAdd(
 		dependencies.EventNodeType,
 		func(node interface{}) []dependencies.Action {
 			eventNode, ok := node.(*dependencies.EventNode)
@@ -1076,7 +1077,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 	for eventId := range t.eventsState {
 		if !validateEvent(eventId) {
 			// Cancel the event, its dependencies and its dependent events
-			err := t.eventsDependencies.RemoveEvent(eventId)
+			err := depsInstance.RemoveEvent(eventId)
 			if err != nil {
 				logger.Warnw("Failed to remove event from dependencies manager", "remove reason", "missing ksymbols", "error", err)
 			}
@@ -1245,7 +1246,7 @@ func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree
 // Return whether the event was successfully attached or not.
 func (t *Tracee) attachEvent(id events.ID) error {
 	evtName := events.Core.GetDefinitionByID(id).GetName()
-	depsNode, err := t.eventsDependencies.GetEvent(id)
+	depsNode, err := dependencies.GetManagerInstance().GetEvent(id)
 	if err != nil {
 		logger.Errorw("Missing event in dependencies", "event", evtName)
 		return err
@@ -1274,9 +1275,11 @@ func (t *Tracee) attachEvent(id events.ID) error {
 
 // attachProbes attaches selected events probes to their respective eBPF programs.
 func (t *Tracee) attachProbes() error {
+	depsInstance := dependencies.GetManagerInstance()
+
 	// Subscribe to all watchers on the dependencies to attach and/or detach
 	// probes upon changes
-	t.eventsDependencies.SubscribeAdd(
+	depsInstance.SubscribeAdd(
 		dependencies.ProbeNodeType,
 		func(node interface{}) []dependencies.Action {
 			probeNode, ok := node.(*dependencies.ProbeNode)
@@ -1291,7 +1294,7 @@ func (t *Tracee) attachProbes() error {
 			return nil
 		})
 
-	t.eventsDependencies.SubscribeRemove(
+	depsInstance.SubscribeRemove(
 		dependencies.ProbeNodeType,
 		func(node interface{}) []dependencies.Action {
 			probeNode, ok := node.(*dependencies.ProbeNode)
@@ -1312,7 +1315,7 @@ func (t *Tracee) attachProbes() error {
 	for eventID := range t.eventsState {
 		err := t.attachEvent(eventID)
 		if err != nil {
-			err := t.eventsDependencies.RemoveEvent(eventID)
+			err := depsInstance.RemoveEvent(eventID)
 			if err != nil {
 				logger.Warnw("Failed to remove event from dependencies manager", "remove reason", "failed probes attachment", "error", err)
 			}
