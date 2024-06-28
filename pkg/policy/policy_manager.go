@@ -1,4 +1,4 @@
-package ebpf
+package policy
 
 import (
 	"sync"
@@ -7,8 +7,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
-// policyManager is a thread-safe struct that manages the enabled policies for each rule
-type policyManager struct {
+// PolicyManager is a thread-safe struct that manages the enabled policies for each rule
+type PolicyManager struct {
 	mutex sync.Mutex
 	rules map[events.ID]*eventState
 }
@@ -19,8 +19,8 @@ type eventState struct {
 	enabled    bool
 }
 
-func newPolicyManager() *policyManager {
-	return &policyManager{
+func NewPolicyManager() *PolicyManager {
+	return &PolicyManager{
 		mutex: sync.Mutex{},
 		rules: make(map[events.ID]*eventState),
 	}
@@ -28,7 +28,7 @@ func newPolicyManager() *policyManager {
 
 // IsEnabled tests if a event, or a policy per event is enabled (in the future it will also check if a policy is enabled)
 // TODO: add metrics about an event being enabled/disabled, or a policy being enabled/disabled?
-func (pm *policyManager) IsEnabled(matchedPolicies uint64, ruleId events.ID) bool {
+func (pm *PolicyManager) IsEnabled(matchedPolicies uint64, ruleId events.ID) bool {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
@@ -40,7 +40,7 @@ func (pm *policyManager) IsEnabled(matchedPolicies uint64, ruleId events.ID) boo
 }
 
 // IsRuleEnabled returns true if a given event policy is enabled for a given rule
-func (pm *policyManager) IsRuleEnabled(matchedPolicies uint64, ruleId events.ID) bool {
+func (pm *PolicyManager) IsRuleEnabled(matchedPolicies uint64, ruleId events.ID) bool {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
@@ -48,7 +48,7 @@ func (pm *policyManager) IsRuleEnabled(matchedPolicies uint64, ruleId events.ID)
 }
 
 // not synchronized, use IsRuleEnabled instead
-func (pm *policyManager) isRuleEnabled(matchedPolicies uint64, ruleId events.ID) bool {
+func (pm *PolicyManager) isRuleEnabled(matchedPolicies uint64, ruleId events.ID) bool {
 	state, ok := pm.rules[ruleId]
 	if !ok {
 		return false
@@ -58,7 +58,7 @@ func (pm *policyManager) isRuleEnabled(matchedPolicies uint64, ruleId events.ID)
 }
 
 // IsEventEnabled returns true if a given event policy is enabled for a given rule
-func (pm *policyManager) IsEventEnabled(evenId events.ID) bool {
+func (pm *PolicyManager) IsEventEnabled(evenId events.ID) bool {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
@@ -66,7 +66,7 @@ func (pm *policyManager) IsEventEnabled(evenId events.ID) bool {
 }
 
 // not synchronized, use IsEventEnabled instead
-func (pm *policyManager) isEventEnabled(evenId events.ID) bool {
+func (pm *PolicyManager) isEventEnabled(evenId events.ID) bool {
 	state, ok := pm.rules[evenId]
 	if !ok {
 		return false
@@ -76,7 +76,7 @@ func (pm *policyManager) isEventEnabled(evenId events.ID) bool {
 }
 
 // EnableRule enables a rule for a given event policy
-func (pm *policyManager) EnableRule(policyId int, ruleId events.ID) {
+func (pm *PolicyManager) EnableRule(policyId int, ruleId events.ID) {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
@@ -93,7 +93,7 @@ func (pm *policyManager) EnableRule(policyId int, ruleId events.ID) {
 }
 
 // DisableRule disables a rule for a given event policy
-func (pm *policyManager) DisableRule(policyId int, ruleId events.ID) {
+func (pm *PolicyManager) DisableRule(policyId int, ruleId events.ID) {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
@@ -110,7 +110,7 @@ func (pm *policyManager) DisableRule(policyId int, ruleId events.ID) {
 }
 
 // EnableEvent enables a given event
-func (pm *policyManager) EnableEvent(eventId events.ID) {
+func (pm *PolicyManager) EnableEvent(eventId events.ID) {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
@@ -124,7 +124,7 @@ func (pm *policyManager) EnableEvent(eventId events.ID) {
 }
 
 // DisableEvent disables a given event
-func (pm *policyManager) DisableEvent(eventId events.ID) {
+func (pm *PolicyManager) DisableEvent(eventId events.ID) {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
