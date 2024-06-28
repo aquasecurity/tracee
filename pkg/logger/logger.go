@@ -354,12 +354,12 @@ func Current() *Logger {
 
 // SetLogger sets package-level base logger
 func SetLogger(l LoggerInterface) {
-	pkgMutex.Lock()
-	defer pkgMutex.Unlock()
-
 	if l == nil {
 		panic("Logger cannot be nil")
 	}
+
+	pkgMutex.Lock()
+	defer pkgMutex.Unlock()
 
 	pkgLogger.l = l
 }
@@ -384,15 +384,15 @@ func SetLevel(level Level) {
 // Init sets the package-level base logger using given config
 // It's not thread safe so if required use it always at the beginning
 func Init(cfg LoggingConfig) {
+	if cfg.Logger == nil {
+		panic("can't initialize a nil Logger")
+	}
+
 	pkgMutex.Lock()
 	defer pkgMutex.Unlock()
 
 	// set the config
 	pkgLogger.cfg = cfg
-
-	if cfg.Logger == nil {
-		panic("can't initialize a nil Logger")
-	}
 
 	pkgLogger.l = cfg.Logger
 	pkgLogger.logCount = newLogCounter()
