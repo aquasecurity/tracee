@@ -3,6 +3,7 @@ package dependencies
 import (
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -18,11 +19,18 @@ const (
 	IllegalNodeType NodeType = "illegal"
 )
 
+var (
+	// Temporary singleton as a transition for decoupling. Manager will be a dependency injected.
+	managerInstance *Manager
+	once            sync.Once
+	mu              sync.Mutex // workaround mutex to protect the singleton instance in the tests
+)
+
 // Manager is a management tree for the current dependencies of events.
 // As events can depend on multiple things (e.g events, probes), it manages their connections in the form of a tree.
 // The tree supports watcher functions for adding and removing nodes.
 // The watchers should be used as the way to handle changes in events, probes or any other node type in Tracee.
-// The manager is *not* thread-safe.
+// The manager is *NOT* thread-safe.
 type Manager struct {
 	events             map[events.ID]*EventNode
 	probes             map[probes.Handle]*ProbeNode
@@ -32,13 +40,40 @@ type Manager struct {
 }
 
 func NewDependenciesManager(dependenciesGetter func(events.ID) events.Dependencies) *Manager {
-	return &Manager{
-		events:             make(map[events.ID]*EventNode),
-		probes:             make(map[probes.Handle]*ProbeNode),
-		onAdd:              make(map[NodeType][]func(node interface{}) []Action),
-		onRemove:           make(map[NodeType][]func(node interface{}) []Action),
-		dependenciesGetter: dependenciesGetter,
+	mu.Lock()
+	defer mu.Unlock()
+
+	once.Do(func() {
+		managerInstance = &Manager{
+			events:             make(map[events.ID]*EventNode),
+			probes:             make(map[probes.Handle]*ProbeNode),
+			onAdd:              make(map[NodeType][]func(node interface{}) []Action),
+			onRemove:           make(map[NodeType][]func(node interface{}) []Action),
+			dependenciesGetter: dependenciesGetter,
+		}
+	})
+
+	return managerInstance
+}
+
+func GetManagerInstance() *Manager {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if managerInstance == nil {
+		panic("Manager instance not initialized. Call NewDependenciesManager first.")
 	}
+
+	return managerInstance
+}
+
+// ResetManagerFromTests is a workaround for tests to reset the manager instance.
+// TODO: remove this when the manager is refactored to be thread-safe.
+func ResetManagerFromTests() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	once = sync.Once{}
 }
 
 // SubscribeAdd adds a watcher function called upon the addition of an event to the tree.
