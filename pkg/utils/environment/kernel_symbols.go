@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 const (
@@ -241,9 +239,7 @@ func (k *KernelSymbolTable) refresh() error {
 		return err
 	}
 	defer func() {
-		if err := file.Close(); err != nil {
-			logger.Warnw("error closing kallsyms file", "error", err)
-		}
+		_ = file.Close()
 	}()
 
 	// Read the kallsyms file line by line and process each line.

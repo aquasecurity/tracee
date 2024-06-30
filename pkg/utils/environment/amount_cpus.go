@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 const possibleCPUsFilePath = "/sys/devices/system/cpu/possible"
@@ -18,7 +16,7 @@ func GetCPUAmount() (int, error) {
 			return cpusAmount, nil
 		}
 	}
-	return 0, errfmt.WrapError(err)
+	return 0, err
 }
 
 const singleValue = 1
@@ -37,25 +35,25 @@ func parsePossibleCPUAmountFromCPUFileFormat(cpuFileContent string) (int, error)
 	var usedSize, groupSize int
 	bitmapsRegions := strings.Split(cpuFileContent, ",")
 	if len(bitmapsRegions) > 1 {
-		return 0, errfmt.Errorf("possible cpus should be following indexes starting with 0, so multiple regions is not allowed")
+		return 0, fmt.Errorf("possible cpus should be following indexes starting with 0, so multiple regions is not allowed")
 	}
 	cpusAmount := 0
 	n, _ := fmt.Sscanf(bitmapsRegions[0], "%d-%d:%d/%d", &rangeStart, &rangeEnd, &usedSize, &groupSize)
 	switch n {
 	case singleValue:
 		if rangeStart != 0 {
-			return 0, errfmt.Errorf("possible cpus must start from the index 0, so single CPU index value must be 0")
+			return 0, fmt.Errorf("possible cpus must start from the index 0, so single CPU index value must be 0")
 		}
 		cpusAmount = 1
 	case rangeValues:
 		if rangeStart != 0 {
-			return 0, errfmt.Errorf("possible cpus should be following indexes range starting with 0")
+			return 0, fmt.Errorf("possible cpus should be following indexes range starting with 0")
 		}
 		cpusAmount = rangeEnd - rangeStart + 1
 	case rangeValuesWithGroups:
-		return 0, errfmt.Errorf("possible cpus should be following indexes, but received groups format")
+		return 0, fmt.Errorf("possible cpus should be following indexes, but received groups format")
 	default:
-		return 0, errfmt.Errorf("unknown possible cpu file format")
+		return 0, fmt.Errorf("unknown possible cpu file format")
 	}
 	return cpusAmount, nil
 }

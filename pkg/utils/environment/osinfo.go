@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 type OSReleaseID uint32
@@ -219,9 +217,7 @@ func (btfi *OSInfo) discoverOSDistro() error {
 	}
 
 	defer func() {
-		if err := file.Close(); err != nil {
-			logger.Warnw("error closing os-release file", "error", err)
-		}
+		_ = file.Close()
 	}()
 	scanner := bufio.NewScanner(file)
 
