@@ -26,12 +26,14 @@ import (
 // `sched_process_exec` event for handling.
 //
 
-func SymbolsCollision(soLoader sharedobjs.DynamicSymbolsLoader, policies *policy.Policies,
+func SymbolsCollision(
+	soLoader sharedobjs.DynamicSymbolsLoader,
+	pManager *policy.PolicyManager,
 ) DeriveFunction {
 	symbolsCollisionFilters := map[string]filters.Filter[*filters.StringFilter]{}
 
 	// pick white and black lists from the filters (TODO: change this)
-	for it := policies.CreateAllIterator(); it.HasNext(); {
+	for it := pManager.CreateAllIterator(); it.HasNext(); {
 		p := it.Next()
 		f := p.DataFilter.GetEventFilters(events.SymbolsCollision)
 		maps.Copy(symbolsCollisionFilters, f)

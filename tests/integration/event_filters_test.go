@@ -16,7 +16,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
-	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/signatures/helpers"
@@ -1717,7 +1716,6 @@ func Test_EventFilters(t *testing.T) {
 				},
 			}
 			config.Policies = testutils.NewPolicies(tc.policyFiles)
-			policy.Snapshots().Store(config.Policies)
 
 			ctx, cancel := context.WithCancel(context.Background())
 

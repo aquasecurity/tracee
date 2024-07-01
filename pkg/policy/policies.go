@@ -80,8 +80,10 @@ func (ps *Policies) Count() int {
 	return ps.count()
 }
 
+// Deprecated: Version returns the version of the Policies.
+// Will be removed soon.
 func (ps *Policies) Version() uint16 {
-	return ps.version
+	return 1 // version will be removed soon
 }
 
 // WithContainerFilterEnabled returns a bitmap of policies that have at least one container filter type enabled.
