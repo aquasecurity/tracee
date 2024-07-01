@@ -9,7 +9,7 @@ import (
 
 // PolicyManager is a thread-safe struct that manages the enabled policies for each rule
 type PolicyManager struct {
-	mutex sync.Mutex
+	mu    sync.RWMutex
 	rules map[events.ID]*eventState
 }
 
@@ -21,7 +21,7 @@ type eventState struct {
 
 func NewPolicyManager() *PolicyManager {
 	return &PolicyManager{
-		mutex: sync.Mutex{},
+		mu:    sync.RWMutex{},
 		rules: make(map[events.ID]*eventState),
 	}
 }
@@ -29,8 +29,8 @@ func NewPolicyManager() *PolicyManager {
 // IsEnabled tests if a event, or a policy per event is enabled (in the future it will also check if a policy is enabled)
 // TODO: add metrics about an event being enabled/disabled, or a policy being enabled/disabled?
 func (pm *PolicyManager) IsEnabled(matchedPolicies uint64, ruleId events.ID) bool {
-	pm.mutex.Lock()
-	defer pm.mutex.Unlock()
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
 
 	if !pm.isEventEnabled(ruleId) {
 		return false
@@ -41,8 +41,8 @@ func (pm *PolicyManager) IsEnabled(matchedPolicies uint64, ruleId events.ID) boo
 
 // IsRuleEnabled returns true if a given event policy is enabled for a given rule
 func (pm *PolicyManager) IsRuleEnabled(matchedPolicies uint64, ruleId events.ID) bool {
-	pm.mutex.Lock()
-	defer pm.mutex.Unlock()
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
 
 	return pm.isRuleEnabled(matchedPolicies, ruleId)
 }
@@ -59,8 +59,8 @@ func (pm *PolicyManager) isRuleEnabled(matchedPolicies uint64, ruleId events.ID)
 
 // IsEventEnabled returns true if a given event policy is enabled for a given rule
 func (pm *PolicyManager) IsEventEnabled(evenId events.ID) bool {
-	pm.mutex.Lock()
-	defer pm.mutex.Unlock()
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
 
 	return pm.isEventEnabled(evenId)
 }
@@ -77,8 +77,8 @@ func (pm *PolicyManager) isEventEnabled(evenId events.ID) bool {
 
 // EnableRule enables a rule for a given event policy
 func (pm *PolicyManager) EnableRule(policyId int, ruleId events.ID) {
-	pm.mutex.Lock()
-	defer pm.mutex.Unlock()
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 
 	state, ok := pm.rules[ruleId]
 	if !ok {
@@ -94,8 +94,8 @@ func (pm *PolicyManager) EnableRule(policyId int, ruleId events.ID) {
 
 // DisableRule disables a rule for a given event policy
 func (pm *PolicyManager) DisableRule(policyId int, ruleId events.ID) {
-	pm.mutex.Lock()
-	defer pm.mutex.Unlock()
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 
 	state, ok := pm.rules[ruleId]
 	if !ok {
@@ -111,8 +111,8 @@ func (pm *PolicyManager) DisableRule(policyId int, ruleId events.ID) {
 
 // EnableEvent enables a given event
 func (pm *PolicyManager) EnableEvent(eventId events.ID) {
-	pm.mutex.Lock()
-	defer pm.mutex.Unlock()
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 
 	state, ok := pm.rules[eventId]
 	if !ok {
@@ -125,8 +125,8 @@ func (pm *PolicyManager) EnableEvent(eventId events.ID) {
 
 // DisableEvent disables a given event
 func (pm *PolicyManager) DisableEvent(eventId events.ID) {
-	pm.mutex.Lock()
-	defer pm.mutex.Unlock()
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 
 	state, ok := pm.rules[eventId]
 	if !ok {
