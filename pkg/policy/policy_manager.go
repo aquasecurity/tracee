@@ -3,14 +3,19 @@ package policy
 import (
 	"sync"
 
+	bpf "github.com/aquasecurity/libbpfgo"
+
+	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 // PolicyManager is a thread-safe struct that manages the enabled policies for each rule
 type PolicyManager struct {
-	mu    sync.RWMutex
-	rules map[events.ID]*eventState
+	mu       sync.RWMutex
+	policies *Policies
+	rules    map[events.ID]*eventState
 }
 
 // eventState is a struct that holds the state of a given event
@@ -19,10 +24,15 @@ type eventState struct {
 	enabled    bool
 }
 
-func NewPolicyManager() *PolicyManager {
+func NewPolicyManager(ps *Policies) *PolicyManager {
+	if ps == nil {
+		ps = NewPolicies()
+	}
+
 	return &PolicyManager{
-		mu:    sync.RWMutex{},
-		rules: make(map[events.ID]*eventState),
+		mu:       sync.RWMutex{},
+		policies: ps,
+		rules:    make(map[events.ID]*eventState),
 	}
 }
 
@@ -135,4 +145,71 @@ func (pm *PolicyManager) DisableEvent(eventId events.ID) {
 	}
 
 	state.enabled = false
+}
+
+//
+// Policies methods made available by PolicyManager.
+// Some are transitive (tidying), some are not.
+//
+
+func (pm *PolicyManager) CreateUserlandIterator() utils.Iterator[*Policy] {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	// The returned iterator is not thread-safe since its underlying data is not a copy.
+	// A possible solution would be to use the snapshot mechanism with timestamps instead
+	// of version numbers.
+	return pm.policies.CreateUserlandIterator()
+}
+
+func (pm *PolicyManager) CreateAllIterator() utils.Iterator[*Policy] {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	// The returned iterator is not thread-safe since its underlying data is not a copy.
+	// A possible solution would be to use the snapshot mechanism with timestamps instead
+	// of version numbers.
+	return pm.policies.CreateAllIterator()
+}
+
+func (pm *PolicyManager) FilterableInUserland(bitmap uint64) bool {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	return (bitmap & pm.policies.FilterableInUserland()) != 0
+}
+
+func (pm *PolicyManager) WithContainerFilterEnabled() uint64 {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	return pm.policies.WithContainerFilterEnabled()
+}
+
+func (pm *PolicyManager) MatchedNames(matched uint64) []string {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	return pm.policies.MatchedNames(matched)
+}
+
+func (pm *PolicyManager) LookupByName(name string) (*Policy, error) {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	return pm.policies.LookupByName(name)
+}
+
+func (pm *PolicyManager) UpdateBPF(
+	bpfModule *bpf.Module,
+	cts *containers.Containers,
+	eventsState map[events.ID]events.EventState,
+	eventsParams map[events.ID][]bufferdecoder.ArgType,
+	createNewMaps bool,
+	updateProcTree bool,
+) (*PoliciesConfig, error) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+
+	return pm.policies.UpdateBPF(bpfModule, cts, eventsState, eventsParams, createNewMaps, updateProcTree)
 }

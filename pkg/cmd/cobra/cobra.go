@@ -231,7 +231,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 
 	cfg.Policies = policies
-	policy.Snapshots().Store(cfg.Policies)
 
 	// Output command line flags
 

@@ -15,7 +15,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/tests/testutils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -127,7 +126,6 @@ func Test_EventsDependencies(t *testing.T) {
 					},
 				}
 				testConfig.Policies = testutils.BuildPoliciesFromEvents(testCaseInst.events)
-				policy.Snapshots().Store(testConfig.Policies)
 
 				ctx, cancel := context.WithCancel(context.Background())
 

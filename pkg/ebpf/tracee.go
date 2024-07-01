@@ -223,8 +223,6 @@ func New(cfg config.Config) (*Tracee, error) {
 		return nil, errfmt.Errorf("validation error: %v", err)
 	}
 
-	policyManager := policy.NewPolicyManager()
-
 	// Create Tracee
 
 	t := &Tracee{
@@ -236,9 +234,14 @@ func New(cfg config.Config) (*Tracee, error) {
 		eventsState:     make(map[events.ID]events.EventState),
 		eventSignatures: make(map[events.ID]bool),
 		streamsManager:  streams.NewStreamsManager(),
-		policyManager:   policyManager,
+		policyManager:   policy.NewPolicyManager(cfg.Policies),
 		requiredKsyms:   []string{},
 	}
+
+	// In the future Tracee Config will be changed in runtime, and will demand a proper
+	// object to manage it. config.Config is currently a transient object that should be
+	// used only to create the Tracee instance.
+	t.config.Policies = nil // policies must be managed by the policy manager
 
 	eventsDependencies := dependencies.NewDependenciesManager(
 		func(id events.ID) events.Dependencies {
@@ -328,7 +331,7 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// TODO: extract this to a function to be called from here and from
 	// policies changes.
-	for it := t.config.Policies.CreateAllIterator(); it.HasNext(); {
+	for it := t.policyManager.CreateAllIterator(); it.HasNext(); {
 		p := it.Next()
 		for e := range p.EventsToTrace {
 			var submit, emit uint64
@@ -340,7 +343,7 @@ func New(cfg config.Config) (*Tracee, error) {
 			utils.SetBit(&emit, uint(p.ID))
 			t.selectEvent(e, events.EventState{Submit: submit, Emit: emit})
 
-			policyManager.EnableRule(p.ID, e)
+			t.policyManager.EnableRule(p.ID, e)
 		}
 	}
 
@@ -675,7 +678,7 @@ func (t *Tracee) initDerivationTable() error {
 	shouldSubmit := func(id events.ID) func() bool {
 		return func() bool { return t.eventsState[id].Submit > 0 }
 	}
-	symbolsCollisions := derive.SymbolsCollision(t.contSymbolsLoader, t.config.Policies)
+	symbolsCollisions := derive.SymbolsCollision(t.contSymbolsLoader, t.policyManager)
 
 	executeFailedGen, err := derive.InitProcessExecuteFailedGenerator()
 	if err != nil {
@@ -719,7 +722,7 @@ func (t *Tracee) initDerivationTable() error {
 				Enabled: shouldSubmit(events.SymbolsLoaded),
 				DeriveFunction: derive.SymbolsLoaded(
 					t.contSymbolsLoader,
-					t.config.Policies,
+					t.policyManager,
 				),
 			},
 			events.SymbolsCollision: {
@@ -895,12 +898,12 @@ func (t *Tracee) getOptionsConfig() uint32 {
 
 // newConfig returns a new Config instance based on the current Tracee state and
 // the given policies config and version.
-func (t *Tracee) newConfig(cfg *policy.PoliciesConfig, version uint16) *Config {
+func (t *Tracee) newConfig(cfg *policy.PoliciesConfig) *Config {
 	return &Config{
 		TraceePid:       uint32(os.Getpid()),
 		Options:         t.getOptionsConfig(),
 		CgroupV1Hid:     uint32(t.cgroups.GetDefaultCgroupHierarchyID()),
-		PoliciesVersion: version,
+		PoliciesVersion: 1, // version will be removed soon
 		PoliciesConfig:  *cfg,
 	}
 }
@@ -963,7 +966,7 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 		}
 	}
 	if _, ok := t.eventsState[events.PrintMemDump]; ok {
-		for it := t.config.Policies.CreateAllIterator(); it.HasNext(); {
+		for it := t.policyManager.CreateAllIterator(); it.HasNext(); {
 			p := it.Next()
 			// This might break in the future if PrintMemDump will become a dependency of another event.
 			_, isChosen := p.EventsToTrace[events.PrintMemDump]
@@ -1145,7 +1148,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize config and filter maps
-	err = t.populateFilterMaps(t.config.Policies, false)
+	err = t.populateFilterMaps(false)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1217,8 +1220,8 @@ func (t *Tracee) populateBPFMaps() error {
 }
 
 // populateFilterMaps populates the eBPF maps with the given policies
-func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree bool) error {
-	polCfg, err := newPolicies.UpdateBPF(
+func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
+	polCfg, err := t.policyManager.UpdateBPF(
 		t.bpfModule,
 		t.containers,
 		t.eventsState,
@@ -1232,7 +1235,7 @@ func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree
 
 	// Create new config with updated policies and update eBPF map
 
-	cfg := t.newConfig(polCfg, newPolicies.Version())
+	cfg := t.newConfig(polCfg)
 	if err := cfg.UpdateBPF(t.bpfModule); err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1382,7 +1385,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
-	_, err = t.config.Policies.UpdateBPF(t.bpfModule, t.containers, t.eventsState, t.eventsParamTypes, false, true)
+	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventsState, t.eventsParamTypes, false, true)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1715,11 +1718,11 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	var matchedPolicies uint64
 
-	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64, pols *policy.Policies) {
-		event.PoliciesVersion = pols.Version()
+	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64, pManager *policy.PolicyManager) {
+		event.PoliciesVersion = 1 // version will be removed soon
 		event.MatchedPoliciesKernel = matchedPolicies
 		event.MatchedPoliciesUser = matchedPolicies
-		event.MatchedPolicies = pols.MatchedNames(matchedPolicies)
+		event.MatchedPolicies = pManager.MatchedNames(matchedPolicies)
 	}
 
 	policiesMatch := func(state events.EventState) uint64 {
@@ -1731,7 +1734,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	matchedPolicies = policiesMatch(t.eventsState[events.InitNamespaces])
 	if matchedPolicies > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
-		setMatchedPolicies(&systemInfoEvent, matchedPolicies, t.config.Policies)
+		setMatchedPolicies(&systemInfoEvent, matchedPolicies, t.policyManager)
 		out <- &systemInfoEvent
 		_ = t.stats.EventCount.Increment()
 	}
@@ -1743,7 +1746,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		existingContainerEvents := events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich)
 		for i := range existingContainerEvents {
 			event := &(existingContainerEvents[i])
-			setMatchedPolicies(event, matchedPolicies, t.config.Policies)
+			setMatchedPolicies(event, matchedPolicies, t.policyManager)
 			out <- event
 			_ = t.stats.EventCount.Increment()
 		}
@@ -1754,7 +1757,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	matchedPolicies = policiesMatch(t.eventsState[events.FtraceHook])
 	if matchedPolicies > 0 {
 		ftraceBaseEvent := events.GetFtraceBaseEvent()
-		setMatchedPolicies(ftraceBaseEvent, matchedPolicies, t.config.Policies)
+		setMatchedPolicies(ftraceBaseEvent, matchedPolicies, t.policyManager)
 		logger.Debugw("started ftraceHook goroutine")
 
 		// TODO: Ideally, this should be inside the goroutine and be computed before each run,
@@ -1823,18 +1826,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 
 	var errs []error
 
-	// We want to use the policies of relevant to the triggering event
-	policies, err := policy.Snapshots().Get(event.PoliciesVersion)
-	if err != nil {
-		logger.Debugw("Error getting policies for print_mem_dump event", "error", err)
-		// For fallback, try to use latest policies
-		policies, err = policy.Snapshots().GetLast()
-		if err != nil {
-			return []error{err}
-		}
-	}
-
-	for it := policies.CreateAllIterator(); it.HasNext(); {
+	for it := t.policyManager.CreateAllIterator(); it.HasNext(); {
 		p := it.Next()
 		// This might break in the future if PrintMemDump will become a dependency of another event.
 		_, isChosen := p.EventsToTrace[events.PrintMemDump]
@@ -1972,7 +1964,7 @@ func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
 	var policyMask uint64
 
 	for _, policyName := range policyNames {
-		p, err := t.config.Policies.LookupByName(policyName)
+		p, err := t.policyManager.LookupByName(policyName)
 		if err != nil {
 			return nil, err
 		}
@@ -2023,7 +2015,7 @@ func (t *Tracee) EnableRule(policyNames []string, ruleId string) error {
 	}
 
 	for _, policyName := range policyNames {
-		p, err := t.config.Policies.LookupByName(policyName)
+		p, err := t.policyManager.LookupByName(policyName)
 		if err != nil {
 			return err
 		}
@@ -2042,7 +2034,7 @@ func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
 	}
 
 	for _, policyName := range policyNames {
-		p, err := t.config.Policies.LookupByName(policyName)
+		p, err := t.policyManager.LookupByName(policyName)
 		if err != nil {
 			return err
 		}
