@@ -1,4 +1,4 @@
-package dependencies_test
+package dependencies
 
 import (
 	"errors"
@@ -10,7 +10,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 )
 
 func getTestDependenciesFunc(deps map[events.ID]events.Dependencies) func(events.ID) events.Dependencies {
@@ -80,17 +79,18 @@ func TestManager_AddEvent(t *testing.T) {
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
 				// Create a new Manager instance
-				m := dependencies.NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
+				m := NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
 				defer func() {
-					dependencies.ResetManagerFromTests()
+					ResetManagerFromTests()
 					t.Logf("  --- reset dependencies ---")
 				}()
 
 				var eventsAdditions []events.ID
 				m.SubscribeAdd(
-					dependencies.EventNodeType,
-					func(node interface{}) []dependencies.Action {
-						newEventNode := node.(*dependencies.EventNode)
+					EventNodeType,
+					func(node interface{}) []Action {
+						newEventNode, ok := node.(*EventNode)
+						require.True(t, ok)
 						eventsAdditions = append(eventsAdditions, newEventNode.GetID())
 						return nil
 					},
@@ -140,18 +140,19 @@ func TestManager_AddEvent(t *testing.T) {
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
 				// Create a new Manager instance
-				m := dependencies.NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
+				m := NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
 				defer func() {
-					dependencies.ResetManagerFromTests()
+					ResetManagerFromTests()
 					t.Logf("  --- reset dependencies ---")
 				}()
 
 				var eventsAdditions, eventsRemove []events.ID
 				// Count additions
 				m.SubscribeAdd(
-					dependencies.EventNodeType,
-					func(node interface{}) []dependencies.Action {
-						newEventNode := node.(*dependencies.EventNode)
+					EventNodeType,
+					func(node interface{}) []Action {
+						newEventNode, ok := node.(*EventNode)
+						require.True(t, ok)
 						eventsAdditions = append(eventsAdditions, newEventNode.GetID())
 						return nil
 					},
@@ -159,9 +160,10 @@ func TestManager_AddEvent(t *testing.T) {
 
 				// Count removes
 				m.SubscribeRemove(
-					dependencies.EventNodeType,
-					func(node interface{}) []dependencies.Action {
-						removeEventNode := node.(*dependencies.EventNode)
+					EventNodeType,
+					func(node interface{}) []Action {
+						removeEventNode, ok := node.(*EventNode)
+						require.True(t, ok)
 						eventsRemove = append(eventsRemove, removeEventNode.GetID())
 						return nil
 					},
@@ -169,28 +171,29 @@ func TestManager_AddEvent(t *testing.T) {
 
 				// Cancel event add
 				m.SubscribeAdd(
-					dependencies.EventNodeType,
-					func(node interface{}) []dependencies.Action {
-						newEventNode := node.(*dependencies.EventNode)
+					EventNodeType,
+					func(node interface{}) []Action {
+						newEventNode, ok := node.(*EventNode)
+						require.True(t, ok)
 						if newEventNode.GetID() == testCase.eventToAdd {
-							return []dependencies.Action{dependencies.NewCancelNodeAddAction(errors.New("fail"))}
+							return []Action{NewCancelNodeAddAction(errors.New("fail"))}
 						}
 						return nil
 					},
 				)
 
 				_, err := m.SelectEvent(testCase.eventToAdd)
-				require.IsType(t, &dependencies.ErrNodeAddCancelled{}, err)
+				require.IsType(t, &ErrNodeAddCancelled{}, err)
 
 				// Check that all the dependencies were cancelled
 				depProbes := make(map[probes.Handle][]events.ID)
 				for id := range testCase.deps {
 					_, err := m.GetEvent(id)
-					assert.ErrorIs(t, err, dependencies.ErrNodeNotFound, id)
+					assert.ErrorIs(t, err, ErrNodeNotFound, id)
 				}
 				for handle := range depProbes {
 					_, err := m.GetProbe(handle)
-					assert.ErrorIs(t, err, dependencies.ErrNodeNotFound, handle)
+					assert.ErrorIs(t, err, ErrNodeNotFound, handle)
 				}
 				assert.Len(t, eventsAdditions, len(testCase.deps))
 				assert.Len(t, eventsRemove, len(testCase.deps))
@@ -340,17 +343,18 @@ func TestManager_RemoveEvent(t *testing.T) {
 		t.Run(
 			testCase.name, func(t *testing.T) {
 				// Create a new Manager instance
-				m := dependencies.NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
+				m := NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
 				defer func() {
-					dependencies.ResetManagerFromTests()
+					ResetManagerFromTests()
 					t.Logf("  --- reset dependencies ---")
 				}()
 
 				var eventsRemoved []events.ID
 				m.SubscribeRemove(
-					dependencies.EventNodeType,
-					func(node interface{}) []dependencies.Action {
-						removedEvtNode := node.(*dependencies.EventNode)
+					EventNodeType,
+					func(node interface{}) []Action {
+						removedEvtNode, ok := node.(*EventNode)
+						require.True(t, ok)
 						eventsRemoved = append(eventsRemoved, removedEvtNode.GetID())
 						return nil
 					})
@@ -379,7 +383,7 @@ func TestManager_RemoveEvent(t *testing.T) {
 					if i == 0 {
 						require.NoError(t, err)
 					} else {
-						assert.ErrorIs(t, err, dependencies.ErrNodeNotFound, testCase.name)
+						assert.ErrorIs(t, err, ErrNodeNotFound, testCase.name)
 					}
 
 					for _, id := range testCase.expectedRemovedEvents {
@@ -518,17 +522,18 @@ func TestManager_UnselectEvent(t *testing.T) {
 		t.Run(
 			testCase.name, func(t *testing.T) {
 				// Create a new Manager instance
-				m := dependencies.NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
+				m := NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
 				defer func() {
-					dependencies.ResetManagerFromTests()
+					ResetManagerFromTests()
 					t.Logf("  --- reset dependencies ---")
 				}()
 
 				var eventsRemoved []events.ID
 				m.SubscribeRemove(
-					dependencies.EventNodeType,
-					func(node interface{}) []dependencies.Action {
-						removedEvtNode := node.(*dependencies.EventNode)
+					EventNodeType,
+					func(node interface{}) []Action {
+						removedEvtNode, ok := node.(*EventNode)
+						require.True(t, ok)
 						eventsRemoved = append(eventsRemoved, removedEvtNode.GetID())
 						return nil
 					})
