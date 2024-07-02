@@ -1,7 +1,6 @@
 package policy
 
 import (
-	"sync"
 	"sync/atomic"
 
 	bpf "github.com/aquasecurity/libbpfgo"
@@ -23,8 +22,6 @@ var AlwaysSubmit = events.EventState{
 }
 
 type policies struct {
-	rwmu sync.RWMutex
-
 	bpfInnerMaps      map[string]*bpf.BPFMapLow // BPF inner maps
 	policiesArray     [PolicyMax]*Policy        // underlying policies array for fast access of empty slots
 	policiesMapByID   map[int]*Policy           // all policies map by ID
@@ -46,7 +43,6 @@ type policies struct {
 
 func NewPolicies() *policies {
 	return &policies{
-		rwmu:                    sync.RWMutex{},
 		bpfInnerMaps:            map[string]*bpf.BPFMapLow{},
 		policiesArray:           [PolicyMax]*Policy{},
 		policiesMapByID:         map[int]*Policy{},
@@ -109,9 +105,6 @@ func set(ps *policies, id int, p *Policy) error {
 // add adds a policy.
 // The policy ID (index) is automatically assigned to the first empty slot.
 func (ps *policies) add(p *Policy) error {
-	ps.rwmu.Lock()
-	defer ps.rwmu.Unlock()
-
 	if p == nil {
 		return PolicyNilError()
 	}
@@ -136,9 +129,6 @@ func (ps *policies) add(p *Policy) error {
 // A policy overwrite is allowed only if the policy that is going to be overwritten
 // has the same ID and name.
 func (ps *policies) set(p *Policy) error {
-	ps.rwmu.Lock()
-	defer ps.rwmu.Unlock()
-
 	if p == nil {
 		return PolicyNilError()
 	}
@@ -158,9 +148,6 @@ func (ps *policies) set(p *Policy) error {
 
 // remove removes a policy by name.
 func (ps *policies) remove(name string) error {
-	ps.rwmu.Lock()
-	defer ps.rwmu.Unlock()
-
 	p, ok := ps.policiesMapByName[name]
 	if !ok {
 		return PolicyNotFoundByNameError(name)
@@ -183,9 +170,6 @@ func (ps *policies) lookupById(id int) (*Policy, error) {
 		return nil, PoliciesOutOfRangeError(id)
 	}
 
-	ps.rwmu.RLock()
-	defer ps.rwmu.RUnlock()
-
 	p := ps.policiesArray[id]
 	if p == nil {
 		return nil, PolicyNotFoundByIDError(id)
@@ -195,9 +179,6 @@ func (ps *policies) lookupById(id int) (*Policy, error) {
 
 // lookupByName returns a policy by name.
 func (ps *policies) lookupByName(name string) (*Policy, error) {
-	ps.rwmu.RLock()
-	defer ps.rwmu.RUnlock()
-
 	if p, ok := ps.policiesMapByName[name]; ok {
 		return p, nil
 	}
@@ -208,9 +189,6 @@ func (ps *policies) lookupByName(name string) (*Policy, error) {
 // matchedNames returns a list of matched policies names based on
 // the given matched bitmap.
 func (ps *policies) matchedNames(matched uint64) []string {
-	ps.rwmu.RLock()
-	defer ps.rwmu.RUnlock()
-
 	names := []string{}
 
 	for _, p := range ps.allFromMap() {
@@ -247,8 +225,6 @@ func (ps *policies) Clone() *policies {
 	nPols := NewPolicies()
 
 	// Deep copy of all policies
-	ps.rwmu.RLock()
-	defer ps.rwmu.RUnlock()
 	for _, p := range ps.allFromArray() {
 		if p == nil {
 			continue
