@@ -9,7 +9,8 @@
 
 enum kconfig_key_e
 {
-    ARCH_HAS_SYSCALL_WRAPPER = 1000U
+    ARCH_HAS_SYSCALL_WRAPPER = 1000U,
+    MMU = 1001U
 };
 
 // PROTOTYPES

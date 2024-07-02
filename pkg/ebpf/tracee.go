@@ -1213,6 +1213,12 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
+	// Populate maps according to BPF-level event argument filters
+	err = t.populateEventFilterMaps()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	return nil
 }
 
