@@ -455,9 +455,6 @@ func (ps *policies) updateBPF(
 	createNewMaps bool,
 	updateProcTree bool,
 ) (*PoliciesConfig, error) {
-	ps.rwmu.Lock()
-	defer ps.rwmu.Unlock()
-
 	if createNewMaps {
 		// Create new events map version
 		if err := ps.createNewEventsMapVersion(bpfModule, eventsState, eventsParams); err != nil {
