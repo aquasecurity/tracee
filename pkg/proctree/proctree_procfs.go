@@ -13,7 +13,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 )
 
-const debugMsgs = false // debug messages can be too verbose, so they are disabled by default
+const debugMsgs = false                    // debug messages can be too verbose, so they are disabled by default
+const ProcfsClockId = utils.CLOCK_BOOTTIME // Procfs uses jiffies, which are based on boottime
 
 const (
 	AllPIDs = 0
@@ -165,6 +166,8 @@ func dealWithProc(pt *ProcessTree, givenPid int) error {
 		}
 	}
 
+	procfsTimeStamp := uint64(pt.timeNormalizer.NormalizeTime(int(startTimeNs)))
+
 	procInfo.SetFeedAt(
 		TaskInfoFeed{
 			Name:        name,   // command name (add "procfs+" to debug if needed)
@@ -176,9 +179,9 @@ func dealWithProc(pt *ProcessTree, givenPid int) error {
 			NsPPid:      nsppid, // status: nsppid == nsppid
 			Uid:         -1,     // do not change the parent uid
 			Gid:         -1,     // do not change the parent gid
-			StartTimeNS: startTimeNs,
+			StartTimeNS: procfsTimeStamp,
 		},
-		utils.NsSinceBootTimeToTime(uint64(start)), // try to be the first changelog entry
+		utils.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
 	)
 
 	// TODO: Update executable with information from /proc/<pid>/exe
@@ -234,6 +237,8 @@ func dealWithThread(pt *ProcessTree, givenPid int, givenTid int) error {
 		return nil
 	}
 
+	procfsTimeStamp := uint64(pt.timeNormalizer.NormalizeTime(int(startTimeNs)))
+
 	threadInfo.SetFeedAt(
 		TaskInfoFeed{
 			Name:        name,   // command name (add "procfs+" to debug if needed)
@@ -245,9 +250,9 @@ func dealWithThread(pt *ProcessTree, givenPid int, givenTid int) error {
 			NsPPid:      nsppid, // status: nsppid == nsppid
 			Uid:         -1,     // do not change the parent uid
 			Gid:         -1,     // do not change the parent gid
-			StartTimeNS: startTimeNs,
+			StartTimeNS: procfsTimeStamp,
 		},
-		utils.NsSinceBootTimeToTime(uint64(start)), // try to be the first changelog entry
+		utils.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
 	)
 
 	// thread group leader (leader tid is the same as the thread's pid, so we can find it)
