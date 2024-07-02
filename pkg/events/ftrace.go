@@ -147,6 +147,8 @@ func checkFtraceHooks(eventsCounter counter.Counter, out chan *trace.Event, base
 			continue
 		}
 
+		ftraceLine = strings.ReplaceAll(ftraceLine, "\t", " ")
+
 		params := ftraceDef.GetParams()
 		args := initFtraceArgs(params)
 		err = parseEventArgs(ftraceLine, args) // Fill args
