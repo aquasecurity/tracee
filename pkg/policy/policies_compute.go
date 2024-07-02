@@ -9,7 +9,7 @@ import (
 // and sets the related bitmap that is used to prevent the iteration of the entire map.
 //
 // It must be called at every runtime policies changes.
-func (ps *Policies) compute() {
+func (ps *policies) compute() {
 	ps.calculateGlobalMinMax()
 	ps.updateContainerFilterEnabled()
 	ps.updateUserlandPolicies()
@@ -23,7 +23,7 @@ func (ps *Policies) compute() {
 //
 // The scope filter types relevant for this function are just UIDFilter and
 // PIDFilter.
-func (ps *Policies) calculateGlobalMinMax() {
+func (ps *policies) calculateGlobalMinMax() {
 	var (
 		uidMinFilterCount int
 		uidMaxFilterCount int
@@ -106,7 +106,7 @@ func (ps *Policies) calculateGlobalMinMax() {
 	}
 }
 
-func (ps *Policies) updateContainerFilterEnabled() {
+func (ps *policies) updateContainerFilterEnabled() {
 	ps.containerFiltersEnabled = 0
 
 	for _, p := range ps.allFromMap() {
@@ -117,7 +117,7 @@ func (ps *Policies) updateContainerFilterEnabled() {
 }
 
 // updateUserlandPolicies sets the userlandPolicies list and the filterableInUserland bitmap.
-func (ps *Policies) updateUserlandPolicies() {
+func (ps *policies) updateUserlandPolicies() {
 	userlandList := []*Policy{}
 	ps.filterableInUserland = 0
 

@@ -22,10 +22,9 @@ var AlwaysSubmit = events.EventState{
 	Submit: PolicyAll,
 }
 
-type Policies struct {
+type policies struct {
 	rwmu sync.RWMutex
 
-	version           uint16                    // updated on snapshot store
 	bpfInnerMaps      map[string]*bpf.BPFMapLow // BPF inner maps
 	policiesArray     [PolicyMax]*Policy        // underlying policies array for fast access of empty slots
 	policiesMapByID   map[int]*Policy           // all policies map by ID
@@ -45,10 +44,9 @@ type Policies struct {
 	containerFiltersEnabled uint64 // bitmap of policies that have at least one container filter type enabled
 }
 
-func NewPolicies() *Policies {
-	return &Policies{
+func NewPolicies() *policies {
+	return &policies{
 		rwmu:                    sync.RWMutex{},
-		version:                 0,
 		bpfInnerMaps:            map[string]*bpf.BPFMapLow{},
 		policiesArray:           [PolicyMax]*Policy{},
 		policiesMapByID:         map[int]*Policy{},
@@ -67,43 +65,36 @@ func NewPolicies() *Policies {
 }
 
 // Compile-time check to ensure that Policies implements the Cloner interface
-var _ utils.Cloner[*Policies] = &Policies{}
+var _ utils.Cloner[*policies] = &policies{}
 
-func (ps *Policies) count() int {
+func (ps *policies) count() int {
 	return len(ps.policiesMapByID)
 }
 
-func (ps *Policies) Count() int {
-	ps.rwmu.RLock()
-	defer ps.rwmu.RUnlock()
-
-	return ps.count()
-}
-
-// Deprecated: Version returns the version of the Policies.
+// Deprecated: version returns the version of the Policies.
 // Will be removed soon.
-func (ps *Policies) Version() uint16 {
+func (ps *policies) version() uint16 {
 	return 1 // version will be removed soon
 }
 
-// WithContainerFilterEnabled returns a bitmap of policies that have at least one container filter type enabled.
-func (ps *Policies) WithContainerFilterEnabled() uint64 {
+// withContainerFilterEnabled returns a bitmap of policies that have at least one container filter type enabled.
+func (ps *policies) withContainerFilterEnabled() uint64 {
 	return ps.containerFiltersEnabled
 }
 
-// ContainerFilterEnabled returns true if at least one policy has a container filter type enabled.
-func (ps *Policies) ContainerFilterEnabled() bool {
-	return ps.WithContainerFilterEnabled() > 0
+// containerFilterEnabled returns true if at least one policy has a container filter type enabled.
+func (ps *policies) containerFilterEnabled() bool {
+	return ps.withContainerFilterEnabled() > 0
 }
 
-// FilterableInUserland returns a bitmap of policies that must be filtered in userland
+// filterInUserland returns a bitmap of policies that must be filtered in userland
 // (ArgFilter, RetFilter, ScopeFilter, UIDFilter and PIDFilter).
-func (ps *Policies) FilterableInUserland() uint64 {
+func (ps *policies) filterInUserland() uint64 {
 	return atomic.LoadUint64(&ps.filterableInUserland)
 }
 
-// set sets a policy at the given ID (index).
-func (ps *Policies) set(id int, p *Policy) error {
+// set sets a policy in the policies, given an ID.
+func set(ps *policies, id int, p *Policy) error {
 	p.ID = id
 	ps.policiesArray[id] = p
 	ps.policiesMapByID[id] = p
@@ -115,9 +106,9 @@ func (ps *Policies) set(id int, p *Policy) error {
 	return nil
 }
 
-// Add adds a policy.
+// add adds a policy.
 // The policy ID (index) is automatically assigned to the first empty slot.
-func (ps *Policies) Add(p *Policy) error {
+func (ps *policies) add(p *Policy) error {
 	ps.rwmu.Lock()
 	defer ps.rwmu.Unlock()
 
@@ -134,17 +125,17 @@ func (ps *Policies) Add(p *Policy) error {
 	// search for the first empty slot
 	for id, slot := range ps.allFromArray() {
 		if slot == nil {
-			return ps.set(id, p)
+			return set(ps, id, p)
 		}
 	}
 
 	return nil
 }
 
-// Set sets a policy.
+// set sets a policy.
 // A policy overwrite is allowed only if the policy that is going to be overwritten
 // has the same ID and name.
-func (ps *Policies) Set(p *Policy) error {
+func (ps *policies) set(p *Policy) error {
 	ps.rwmu.Lock()
 	defer ps.rwmu.Unlock()
 
@@ -162,11 +153,11 @@ func (ps *Policies) Set(p *Policy) error {
 		return PolicyAlreadyExistsError(existing.Name, existing.ID)
 	}
 
-	return ps.set(id, p)
+	return set(ps, id, p)
 }
 
-// Remove removes a policy by name.
-func (ps *Policies) Remove(name string) error {
+// remove removes a policy by name.
+func (ps *policies) remove(name string) error {
 	ps.rwmu.Lock()
 	defer ps.rwmu.Unlock()
 
@@ -186,8 +177,8 @@ func (ps *Policies) Remove(name string) error {
 	return nil
 }
 
-// LookupById returns a policy by ID.
-func (ps *Policies) LookupById(id int) (*Policy, error) {
+// lookupById returns a policy by ID.
+func (ps *policies) lookupById(id int) (*Policy, error) {
 	if !isIDInRange(id) {
 		return nil, PoliciesOutOfRangeError(id)
 	}
@@ -202,8 +193,8 @@ func (ps *Policies) LookupById(id int) (*Policy, error) {
 	return p, nil
 }
 
-// LookupByName returns a policy by name.
-func (ps *Policies) LookupByName(name string) (*Policy, error) {
+// lookupByName returns a policy by name.
+func (ps *policies) lookupByName(name string) (*Policy, error) {
 	ps.rwmu.RLock()
 	defer ps.rwmu.RUnlock()
 
@@ -214,9 +205,9 @@ func (ps *Policies) LookupByName(name string) (*Policy, error) {
 	return nil, PolicyNotFoundByNameError(name)
 }
 
-// MatchedNames returns a list of matched policies names based on
+// matchedNames returns a list of matched policies names based on
 // the given matched bitmap.
-func (ps *Policies) MatchedNames(matched uint64) []string {
+func (ps *policies) matchedNames(matched uint64) []string {
 	ps.rwmu.RLock()
 	defer ps.rwmu.RUnlock()
 
@@ -231,8 +222,24 @@ func (ps *Policies) MatchedNames(matched uint64) []string {
 	return names
 }
 
+// allFromMap returns a map of allFromMap policies by ID.
+// When iterating, the order is not guaranteed.
+func (ps *policies) allFromMap() map[int]*Policy {
+	return ps.policiesMapByID
+}
+
+// allFromArray returns an slice of the underlying policies array.
+// When iterating, the order is guaranteed.
+func (ps *policies) allFromArray() []*Policy {
+	return ps.policiesArray[:]
+}
+
+func isIDInRange(id int) bool {
+	return id >= 0 && id < PolicyMax
+}
+
 // Clone returns a deep copy of Policies.
-func (ps *Policies) Clone() *Policies {
+func (ps *policies) Clone() *policies {
 	if ps == nil {
 		return nil
 	}
@@ -246,27 +253,11 @@ func (ps *Policies) Clone() *Policies {
 		if p == nil {
 			continue
 		}
-		if err := nPols.Set(p.Clone()); err != nil {
+		if err := nPols.set(p.Clone()); err != nil {
 			logger.Errorw("Cloning policy %s: %v", p.Name, err)
 			return nil
 		}
 	}
 
 	return nPols
-}
-
-// allFromMap returns a map of allFromMap policies by ID.
-// When iterating, the order is not guaranteed.
-func (ps *Policies) allFromMap() map[int]*Policy {
-	return ps.policiesMapByID
-}
-
-// allFromArray returns an slice of the underlying policies array.
-// When iterating, the order is guaranteed.
-func (ps *Policies) allFromArray() []*Policy {
-	return ps.policiesArray[:]
-}
-
-func isIDInRange(id int) bool {
-	return id >= 0 && id < PolicyMax
 }

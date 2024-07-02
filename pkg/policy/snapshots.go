@@ -14,9 +14,9 @@ const (
 
 // snapshot is a snapshot of the Policies at a given version.
 type snapshot struct {
-	time     time.Time
-	version  uint16
-	policies *Policies
+	time    time.Time
+	version uint16
+	ps      *policies
 }
 
 // snapshots is a circular buffer of snapshots.
@@ -27,7 +27,7 @@ type snapshots struct {
 	nextIdx     int
 	lastIdx     int
 	storedCnt   int
-	prune       func(*Policies) []error
+	prune       func(*policies) []error
 }
 
 var (
@@ -60,7 +60,7 @@ func Snapshots() *snapshots {
 // public and pass the prune function as a parameter.
 // SetPruneFunc sets the prune function to be called by PruneSnapshotsOlderThan
 // and Store (when overwriting a snapshot).
-func (s *snapshots) SetPruneFunc(prune func(*Policies) []error) {
+func (s *snapshots) SetPruneFunc(prune func(*policies) []error) {
 	s.murw.Lock()
 	defer s.murw.Unlock()
 
@@ -68,7 +68,7 @@ func (s *snapshots) SetPruneFunc(prune func(*Policies) []error) {
 }
 
 // Store stores a snapshot of the Policies.
-func (s *snapshots) Store(ps *Policies) {
+func (s *snapshots) Store(ps *policies) {
 	s.murw.Lock()
 	defer s.murw.Unlock()
 
@@ -78,12 +78,12 @@ func (s *snapshots) Store(ps *Policies) {
 		s.lastVersion++
 	}
 
-	ps.version = s.lastVersion // set new version in Policies
+	// TODO: set value to reference this snapshot as unique (perhaps a timestamp)
 
 	snap := &snapshot{
-		time:     time.Now(),
-		version:  s.lastVersion,
-		policies: ps,
+		time:    time.Now(),
+		version: s.lastVersion,
+		ps:      ps,
 	}
 
 	nextSlot := s.snaps[s.nextIdx]
@@ -91,7 +91,7 @@ func (s *snapshots) Store(ps *Policies) {
 		if s.prune == nil {
 			logger.Warnw("prune function not set, snapshot will not be pruned, only overwritten", "version", nextSlot.version)
 		} else {
-			errs := s.prune(nextSlot.policies)
+			errs := s.prune(nextSlot.ps)
 			for _, err := range errs {
 				logger.Errorw("failed to prune snapshot", "version", nextSlot.version, "error", err)
 			}
@@ -107,7 +107,7 @@ func (s *snapshots) Store(ps *Policies) {
 }
 
 // Get returns a snapshot of the Policies at a given version.
-func (s *snapshots) Get(polsVersion uint16) (*Policies, error) {
+func (s *snapshots) Get(polsVersion uint16) (*policies, error) {
 	s.murw.RLock()
 	defer s.murw.RUnlock()
 
@@ -121,7 +121,7 @@ func (s *snapshots) Get(polsVersion uint16) (*Policies, error) {
 		idx := (startIdx - i + maxSnapshots) % maxSnapshots
 		snap := s.snaps[idx]
 		if snap.version == polsVersion {
-			return snap.policies, nil
+			return snap.ps, nil
 		}
 	}
 
@@ -129,7 +129,7 @@ func (s *snapshots) Get(polsVersion uint16) (*Policies, error) {
 }
 
 // GetLast returns the most recent snapshot of the Policies.
-func (s *snapshots) GetLast() (*Policies, error) {
+func (s *snapshots) GetLast() (*policies, error) {
 	s.murw.RLock()
 	defer s.murw.RUnlock()
 
@@ -137,7 +137,7 @@ func (s *snapshots) GetLast() (*Policies, error) {
 		return nil, errfmt.Errorf("no snapshots stored")
 	}
 
-	return s.snaps[s.lastIdx].policies, nil
+	return s.snaps[s.lastIdx].ps, nil
 }
 
 // TODO: call this function periodically
@@ -183,7 +183,7 @@ func (s *snapshots) PruneSnapshotsOlderThan(d time.Duration) []error {
 			break
 		}
 
-		errs = append(errs, s.prune(snap.policies)...)
+		errs = append(errs, s.prune(snap.ps)...)
 
 		// remove snapshot even if pruning failed
 		s.snaps[idx] = nil

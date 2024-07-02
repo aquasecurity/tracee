@@ -21,7 +21,7 @@ func resetSnapshots() {
 }
 
 func setPruneFunc() {
-	Snapshots().SetPruneFunc(func(ps *Policies) []error {
+	Snapshots().SetPruneFunc(func(ps *policies) []error {
 		errs := []error{}
 		for _, bpfMap := range ps.bpfInnerMaps {
 			err := syscall.Close(bpfMap.FileDescriptor())
@@ -37,7 +37,7 @@ func setPruneFunc() {
 func TestStoreSnapshot(t *testing.T) {
 	resetSnapshots()
 
-	ps := &Policies{}
+	ps := &policies{}
 	Snapshots().Store(ps)
 	assert.Equal(t, uint16(1), uint16(ps.version))
 
@@ -50,7 +50,7 @@ func TestStoreSnapshot(t *testing.T) {
 func TestGetSnapshot(t *testing.T) {
 	resetSnapshots()
 
-	ps := &Policies{}
+	ps := &policies{}
 	Snapshots().Store(ps)
 
 	// get the snapshot for the version just stored
@@ -66,10 +66,10 @@ func TestGetSnapshot(t *testing.T) {
 func TestGetLastSnapshot(t *testing.T) {
 	resetSnapshots()
 
-	ps1 := &Policies{}
+	ps1 := &policies{}
 	Snapshots().Store(ps1)
 
-	ps2 := &Policies{}
+	ps2 := &policies{}
 	Snapshots().Store(ps2)
 
 	// after storing two snapshots, the last one should be ps2
@@ -84,7 +84,7 @@ func TestCircularBufferOverwrite(t *testing.T) {
 
 	// create and store maxSnapshots
 	for i := 0; i < maxSnapshots; i++ {
-		ps := &Policies{}
+		ps := &policies{}
 		Snapshots().Store(ps)
 		assert.Equal(t, uint16(i+1), uint16(ps.version))
 	}
@@ -94,7 +94,7 @@ func TestCircularBufferOverwrite(t *testing.T) {
 	assert.NoError(t, err)
 
 	// store one more snapshot to overwrite the first snapshot in the buffer
-	psOverwrite := &Policies{}
+	psOverwrite := &policies{}
 	Snapshots().Store(psOverwrite)
 	assert.Equal(t, uint16(maxSnapshots+1), psOverwrite.version)
 
@@ -149,7 +149,7 @@ func TestConcurrentSnapshots(t *testing.T) {
 				<-startStoreCh
 
 				// store a snapshot
-				ps := &Policies{}
+				ps := &policies{}
 				Snapshots().Store(ps)
 
 				if atomic.CompareAndSwapInt32(&readyForRetrieve, 0, 1) {
@@ -209,14 +209,14 @@ func TestWrapAround(t *testing.T) {
 	snaps.lastVersion = math.MaxUint16 - 1
 
 	// store a snapshot, this should increase version to math.MaxUint16
-	ps1 := &Policies{}
+	ps1 := &policies{}
 	Snapshots().Store(ps1)
 
 	// verify that the version is set to math.MaxUint16
 	assert.Equal(t, uint16(math.MaxUint16), uint16(ps1.version))
 
 	// store another snapshot, this should trigger the wrap-around and reset the version to 1
-	ps2 := &Policies{}
+	ps2 := &policies{}
 	Snapshots().Store(ps2)
 
 	// verify that the wrap-around occurred
@@ -235,7 +235,7 @@ func TestPruneSnapshotsOlderThan(t *testing.T) {
 	// Helper function to store numSnapshots snapshots immediately
 	storeSnapshots := func() {
 		for i := 0; i < numSnapshots; i++ {
-			ps := &Policies{}
+			ps := &policies{}
 			Snapshots().Store(ps)
 		}
 	}

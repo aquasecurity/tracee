@@ -88,7 +88,7 @@ func updateEqualities[T comparable](
 
 // computeFilterEqualities computes the equalities for each filter type in the policies
 // updating the provided filtersEqualities struct.
-func (ps *Policies) computeFilterEqualities(
+func (ps *policies) computeFilterEqualities(
 	fEqs *filtersEqualities,
 	cts *containers.Containers,
 ) error {
@@ -161,7 +161,7 @@ func (ps *Policies) computeFilterEqualities(
 
 // computeProcTreeEqualities computes the equalities for the process tree filter
 // in the policies updating the provided eqs map.
-func (ps *Policies) computeProcTreeEqualities(eqs map[uint32]equality) {
+func (ps *policies) computeProcTreeEqualities(eqs map[uint32]equality) {
 	for _, p := range ps.allFromMap() {
 		policyID := uint(p.ID)
 
