@@ -235,7 +235,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		eventsState:     make(map[events.ID]events.EventState),
 		eventSignatures: make(map[events.ID]bool),
 		streamsManager:  streams.NewStreamsManager(),
-		policyManager:   policy.NewPolicyManager(cfg.Policies),
+		policyManager:   policy.NewPolicyManager(cfg.InitialPolicies...),
 		eventsDependencies: dependencies.NewDependenciesManager(
 			func(id events.ID) events.Dependencies {
 				return events.Core.GetDefinitionByID(id).GetDependencies()
@@ -243,10 +243,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		requiredKsyms: []string{},
 	}
 
-	// In the future Tracee Config will be changed in runtime, and will demand a proper
-	// object to manage it. config.Config is currently a transient object that should be
-	// used only to create the Tracee instance.
-	t.config.Policies = nil // policies must be managed by the policy manager
+	t.config.InitialPolicies = []*policy.Policy{} // clear initial policies to avoid wrong references
 
 	// TODO: As dynamic event addition or removal becomes a thing, we should subscribe all the watchers
 	// before selecting them. There is no reason to select the event in the New function anyhow.

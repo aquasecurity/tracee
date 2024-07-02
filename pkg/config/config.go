@@ -13,9 +13,12 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
-// Config is a struct containing user defined configuration of tracee
+// Config is a struct containing user defined configuration to initialize Tracee
+//
+// NOTE: In the future, Tracee config will be changed at run time and will require
+// proper management.
 type Config struct {
-	Policies           *policy.Policies
+	InitialPolicies    []*policy.Policy
 	Capture            *CaptureConfig
 	Capabilities       *CapabilitiesConfig
 	Output             *OutputConfig

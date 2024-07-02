@@ -7,7 +7,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
 )
 
-func createPoliciesFromK8SPolicy(policies []k8s.PolicyInterface) (*policy.Policies, error) {
+func createPoliciesFromK8SPolicy(policies []k8s.PolicyInterface) ([]*policy.Policy, error) {
 	policyScopeMap, policyEventsMap, err := flags.PrepareFilterMapsFromPolicies(policies)
 	if err != nil {
 		return nil, err
@@ -16,7 +16,7 @@ func createPoliciesFromK8SPolicy(policies []k8s.PolicyInterface) (*policy.Polici
 	return flags.CreatePolicies(policyScopeMap, policyEventsMap, true)
 }
 
-func createPoliciesFromPolicyFiles(policyFlags []string) (*policy.Policies, error) {
+func createPoliciesFromPolicyFiles(policyFlags []string) ([]*policy.Policy, error) {
 	policyFiles, err := v1beta1.PoliciesFromPaths(policyFlags)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func createPoliciesFromPolicyFiles(policyFlags []string) (*policy.Policies, erro
 	return flags.CreatePolicies(policyScopeMap, policyEventsMap, true)
 }
 
-func createPoliciesFromCLIFlags(scopeFlags, eventFlags []string) (*policy.Policies, error) {
+func createPoliciesFromCLIFlags(scopeFlags, eventFlags []string) ([]*policy.Policy, error) {
 	policyScopeMap, err := flags.PrepareScopeMapFromFlags(scopeFlags)
 	if err != nil {
 		return nil, err

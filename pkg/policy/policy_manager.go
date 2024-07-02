@@ -8,6 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
@@ -24,9 +25,12 @@ type eventState struct {
 	enabled    bool
 }
 
-func NewPolicyManager(ps *Policies) *PolicyManager {
-	if ps == nil {
-		ps = NewPolicies()
+func NewPolicyManager(policies ...*Policy) *PolicyManager {
+	ps := NewPolicies()
+	for _, p := range policies {
+		if err := ps.Set(p); err != nil {
+			logger.Errorw("failed to set policy", "error", err)
+		}
 	}
 
 	return &PolicyManager{
