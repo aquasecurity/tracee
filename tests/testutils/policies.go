@@ -1,6 +1,8 @@
 package testutils
 
 import (
+	"fmt"
+
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/events"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
@@ -10,8 +12,9 @@ import (
 
 // BuildPoliciesFromEvents create a Policies instance with a single policy,
 // which chooses the given events without filters or scopes
-func BuildPoliciesFromEvents(eventsToChoose []events.ID) *policy.Policies {
+func BuildPoliciesFromEvents(eventsToChoose []events.ID) []*policy.Policy {
 	var policyRules []k8s.Rule
+
 	for _, event := range eventsToChoose {
 		eventDef := events.Core.GetDefinitionByID(event)
 		rule := k8s.Rule{
@@ -20,6 +23,7 @@ func BuildPoliciesFromEvents(eventsToChoose []events.ID) *policy.Policies {
 		}
 		policyRules = append(policyRules, rule)
 	}
+
 	policiesFiles := []PolicyFileWithID{
 		{
 			Id: 1,
@@ -34,11 +38,12 @@ func BuildPoliciesFromEvents(eventsToChoose []events.ID) *policy.Policies {
 			},
 		},
 	}
+
 	return NewPolicies(policiesFiles)
 }
 
-// NewPolicies creates a new policies object with the given policies files with IDs.
-func NewPolicies(polsFilesID []PolicyFileWithID) *policy.Policies {
+// NewPolicies creates a slice of policies setting the ID of each policy to the given ID.
+func NewPolicies(polsFilesID []PolicyFileWithID) []*policy.Policy {
 	var polsFiles []k8s.PolicyInterface
 
 	for _, polFile := range polsFilesID {
@@ -55,14 +60,22 @@ func NewPolicies(polsFilesID []PolicyFileWithID) *policy.Policies {
 		panic(err)
 	}
 
-	policiesWithIDSet := policy.NewPolicies()
-	for it := policies.CreateAllIterator(); it.HasNext(); {
-		pol := it.Next()
-		pol.ID = polsFilesID[pol.ID].Id - 1
-		_ = policiesWithIDSet.Set(pol)
+	for i := range policies {
+		found := false
+		for j := range polsFilesID {
+			if policies[i].Name == polsFilesID[j].PolicyFile.Metadata.Name {
+				policies[i].ID = polsFilesID[j].Id - 1
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			panic(fmt.Errorf("policy %s not found in polsFilesID", policies[i].Name))
+		}
 	}
 
-	return policiesWithIDSet
+	return policies
 }
 
 type PolicyFileWithID struct {

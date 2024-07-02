@@ -8,7 +8,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
@@ -103,7 +102,7 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeM
 }
 
 // CreatePolicies creates a Policies object from the scope and events maps.
-func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMap, newBinary bool) (*policy.Policies, error) {
+func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMap, newBinary bool) ([]*policy.Policy, error) {
 	eventsNameToID := events.Core.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
@@ -112,7 +111,7 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 		}
 	}
 
-	policies := policy.NewPolicies()
+	policies := make([]*policy.Policy, 0, len(policyScopeMap))
 	for policyIdx, policyScopeFilters := range policyScopeMap {
 		p := policy.NewPolicy()
 		p.ID = policyIdx
@@ -316,10 +315,7 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 			return nil, err
 		}
 
-		err = policies.Set(p)
-		if err != nil {
-			logger.Warnw("Setting policy", "error", err)
-		}
+		policies = append(policies, p)
 	}
 
 	return policies, nil

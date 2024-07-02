@@ -1714,7 +1714,7 @@ func Test_EventFilters(t *testing.T) {
 					BypassCaps: true,
 				},
 			}
-			config.Policies = testutils.NewPolicies(tc.policyFiles)
+			config.InitialPolicies = testutils.NewPolicies(tc.policyFiles)
 
 			ctx, cancel := context.WithCancel(context.Background())
 
