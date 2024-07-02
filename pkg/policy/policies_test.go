@@ -17,7 +17,7 @@ import (
 func TestPoliciesClone(t *testing.T) {
 	t.Parallel()
 
-	policies := NewPolicies()
+	ps := NewPolicies()
 
 	p1 := NewPolicy()
 	p1.Name = "p1"
@@ -32,15 +32,15 @@ func TestPoliciesClone(t *testing.T) {
 	err = p2.DataFilter.Parse("read.data.fd", "=dataval", events.Core.NamesToIDs())
 	require.NoError(t, err)
 
-	err = policies.Add(p1)
+	err = ps.add(p1)
 	require.NoError(t, err)
-	err = policies.Add(p2)
+	err = ps.add(p2)
 	require.NoError(t, err)
 
-	copy := policies.Clone()
+	copy := ps.Clone()
 
 	opt1 := cmp.AllowUnexported(
-		Policies{},
+		policies{},
 		sync.Mutex{},
 		sync.RWMutex{},
 		atomic.Int32{},
@@ -64,8 +64,8 @@ func TestPoliciesClone(t *testing.T) {
 		},
 		cmp.Ignore(),
 	)
-	if !cmp.Equal(policies, copy, opt1, opt2) {
-		diff := cmp.Diff(policies, copy, opt1, opt2)
+	if !cmp.Equal(ps, copy, opt1, opt2) {
+		diff := cmp.Diff(ps, copy, opt1, opt2)
 		t.Errorf("Clone did not produce an identical copy\ndiff: %s", diff)
 	}
 
@@ -74,14 +74,14 @@ func TestPoliciesClone(t *testing.T) {
 	p3.Name = "p3"
 	err = p3.CommFilter.Parse("=comm")
 	require.NoError(t, err)
-	err = copy.Add(p3)
+	err = copy.add(p3)
 	require.NoError(t, err)
 
-	p1, err = copy.LookupByName("p1")
+	p1, err = copy.lookupByName("p1")
 	require.NoError(t, err)
 	p1.Name = "p1-modified"
 
-	if cmp.Equal(policies, copy, opt1, opt2) {
-		t.Errorf("Changes to copied policy affected the original: %+v", policies)
+	if cmp.Equal(ps, copy, opt1, opt2) {
+		t.Errorf("Changes to copied policy affected the original: %+v", ps)
 	}
 }

@@ -112,7 +112,7 @@ func updateOuterMap(m *bpf.Module, mapName string, mapVersion uint16, innerMap *
 }
 
 // createNewFilterMapsVersion creates a new version of the filter maps.
-func (ps *Policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
+func (ps *policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 	mapsNames := map[string]string{ // inner map name: outer map name
 		UIDFilterMap:         UIDFilterMapVersion,
 		PIDFilterMap:         PIDFilterMapVersion,
@@ -125,7 +125,7 @@ func (ps *Policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 		BinaryFilterMap:      BinaryFilterMapVersion,
 	}
 
-	polsVersion := ps.Version()
+	polsVersion := ps.version()
 	for innerMapName, outerMapName := range mapsNames {
 		// TODO: This only spawns new inner filter maps. Their termination must
 		// be tackled by the versioning mechanism.
@@ -156,12 +156,12 @@ func (ps *Policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 }
 
 // createNewEventsMapVersion creates a new version of the events map.
-func (ps *Policies) createNewEventsMapVersion(
+func (ps *policies) createNewEventsMapVersion(
 	bpfModule *bpf.Module,
 	eventsState map[events.ID]events.EventState,
 	eventsParams map[events.ID][]bufferdecoder.ArgType,
 ) error {
-	polsVersion := ps.Version()
+	polsVersion := ps.version()
 	innerMapName := "events_map"
 	outerMapName := "events_map_version"
 
@@ -203,7 +203,7 @@ func (ps *Policies) createNewEventsMapVersion(
 }
 
 // updateUIntFilterBPF updates the BPF maps for the given uint equalities.
-func (ps *Policies) updateUIntFilterBPF(uintEqualities map[uint64]equality, innerMapName string) error {
+func (ps *policies) updateUIntFilterBPF(uintEqualities map[uint64]equality, innerMapName string) error {
 	// UInt equalities
 	// 1. uid_filter        u32, eq_t
 	// 2. pid_filter        u32, eq_t
@@ -238,7 +238,7 @@ const (
 )
 
 // updateStringFilterBPF updates the BPF maps for the given string equalities.
-func (ps *Policies) updateStringFilterBPF(strEqualities map[string]equality, innerMapName string) error {
+func (ps *policies) updateStringFilterBPF(strEqualities map[string]equality, innerMapName string) error {
 	// String equalities
 	// 1. uts_ns_filter  string_filter_t, eq_t
 	// 2. comm_filter    string_filter_t, eq_t
@@ -267,7 +267,7 @@ func (ps *Policies) updateStringFilterBPF(strEqualities map[string]equality, inn
 }
 
 // updateProcTreeFilterBPF updates the BPF maps for the given process tree equalities.
-func (ps *Policies) updateProcTreeFilterBPF(procTreeEqualities map[uint32]equality, innerMapName string) error {
+func (ps *policies) updateProcTreeFilterBPF(procTreeEqualities map[uint32]equality, innerMapName string) error {
 	// ProcessTree equality
 	// 1. process_tree_filter  u32, eq_t
 
@@ -361,7 +361,7 @@ const (
 )
 
 // updateBinaryFilterBPF updates the BPF maps for the given binary equalities.
-func (ps *Policies) updateBinaryFilterBPF(binEqualities map[filters.NSBinary]equality, innerMapName string) error {
+func (ps *policies) updateBinaryFilterBPF(binEqualities map[filters.NSBinary]equality, innerMapName string) error {
 	// BinaryNS equality
 	// 1. binary_filter  binary_t, eq_t
 
@@ -444,10 +444,10 @@ func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBina
 	return nil
 }
 
-// UpdateBPF updates the BPF maps with the policies filters.
+// updateBPF updates the BPF maps with the policies filters.
 // createNewMaps indicates whether new maps should be created or not.
 // updateProcTree indicates whether the process tree map should be updated or not.
-func (ps *Policies) UpdateBPF(
+func (ps *policies) updateBPF(
 	bpfModule *bpf.Module,
 	cts *containers.Containers,
 	eventsState map[events.ID]events.EventState,
@@ -553,8 +553,8 @@ func (ps *Policies) UpdateBPF(
 }
 
 // createNewPoliciesConfigMap creates a new version of the policies config map
-func (ps *Policies) createNewPoliciesConfigMap(bpfModule *bpf.Module) error {
-	version := ps.Version()
+func (ps *policies) createNewPoliciesConfigMap(bpfModule *bpf.Module) error {
+	version := ps.version()
 	newInnerMap, err := createNewInnerMap(bpfModule, PoliciesConfigMap, version)
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -623,7 +623,7 @@ func (pc *PoliciesConfig) UpdateBPF(bpfConfigMap *bpf.BPFMapLow) error {
 }
 
 // computePoliciesConfig computes the policies config from the policies.
-func (ps *Policies) computePoliciesConfig() *PoliciesConfig {
+func (ps *policies) computePoliciesConfig() *PoliciesConfig {
 	cfg := &PoliciesConfig{}
 
 	for _, p := range ps.allFromMap() {
