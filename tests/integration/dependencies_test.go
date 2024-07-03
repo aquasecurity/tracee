@@ -13,7 +13,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/tests/testutils"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -146,10 +145,6 @@ func Test_EventsDependencies(t *testing.T) {
 					cancel()
 					t.Fatal(err)
 				}
-				defer func() {
-					dependencies.ResetManagerFromTests()
-					t.Logf("  --- reset dependencies ---")
-				}()
 
 				stream := trc.SubscribeAll()
 				defer trc.Unsubscribe(stream)

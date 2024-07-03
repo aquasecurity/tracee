@@ -14,7 +14,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -1732,10 +1731,6 @@ func Test_EventFilters(t *testing.T) {
 				cancel()
 				t.Fatal(err)
 			}
-			defer func() {
-				dependencies.ResetManagerFromTests()
-				t.Logf("  --- reset dependencies ---")
-			}()
 
 			stream := trc.SubscribeAll()
 			defer trc.Unsubscribe(stream)
