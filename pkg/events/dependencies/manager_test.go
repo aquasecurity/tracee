@@ -80,10 +80,6 @@ func TestManager_AddEvent(t *testing.T) {
 			t.Run(testCase.name, func(t *testing.T) {
 				// Create a new Manager instance
 				m := NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
-				defer func() {
-					ResetManagerFromTests()
-					t.Logf("  --- reset dependencies ---")
-				}()
 
 				var eventsAdditions []events.ID
 				m.SubscribeAdd(
@@ -141,10 +137,6 @@ func TestManager_AddEvent(t *testing.T) {
 			t.Run(testCase.name, func(t *testing.T) {
 				// Create a new Manager instance
 				m := NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
-				defer func() {
-					ResetManagerFromTests()
-					t.Logf("  --- reset dependencies ---")
-				}()
 
 				var eventsAdditions, eventsRemove []events.ID
 				// Count additions
@@ -344,10 +336,6 @@ func TestManager_RemoveEvent(t *testing.T) {
 			testCase.name, func(t *testing.T) {
 				// Create a new Manager instance
 				m := NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
-				defer func() {
-					ResetManagerFromTests()
-					t.Logf("  --- reset dependencies ---")
-				}()
 
 				var eventsRemoved []events.ID
 				m.SubscribeRemove(
@@ -523,10 +511,6 @@ func TestManager_UnselectEvent(t *testing.T) {
 			testCase.name, func(t *testing.T) {
 				// Create a new Manager instance
 				m := NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
-				defer func() {
-					ResetManagerFromTests()
-					t.Logf("  --- reset dependencies ---")
-				}()
 
 				var eventsRemoved []events.ID
 				m.SubscribeRemove(
