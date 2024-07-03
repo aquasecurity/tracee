@@ -639,10 +639,12 @@ func (t *Tracee) getStackAddresses(stackID uint32) []uint64 {
 	// The ID could have aged out of the Map, as it only holds a finite number of
 	// Stack IDs in it's Map
 	var stackBytes []byte
-	var err error
-	err = capabilities.GetInstance().EBPF(func() error {
-		stackBytes, err = t.StackAddressesMap.GetValue(unsafe.Pointer(&stackID))
-		return err
+	err := capabilities.GetInstance().EBPF(func() error {
+		bytes, e := t.StackAddressesMap.GetValue(unsafe.Pointer(&stackID))
+		if e != nil {
+			stackBytes = bytes
+		}
+		return e
 	})
 	if err != nil {
 		logger.Debugw("failed to get StackAddress", "error", err)
