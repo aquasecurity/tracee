@@ -116,99 +116,97 @@ func Test_EventsDependencies(t *testing.T) {
 	}
 
 	for _, testCaseInst := range testCases {
-		t.Run(
-			testCaseInst.name, func(t *testing.T) {
-				// prepare tracee config
-				testConfig := config.Config{
-					Capabilities: &config.CapabilitiesConfig{
-						BypassCaps: true,
-					},
-				}
-				testConfig.Policies = testutils.BuildPoliciesFromEvents(testCaseInst.events)
+		t.Run(testCaseInst.name, func(t *testing.T) {
+			// prepare tracee config
+			testConfig := config.Config{
+				Capabilities: &config.CapabilitiesConfig{
+					BypassCaps: true,
+				},
+			}
+			testConfig.Policies = testutils.BuildPoliciesFromEvents(testCaseInst.events)
 
-				ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(context.Background())
 
-				// set test logger
-				logsDone := make(chan struct{})
-				logOutChan, restoreLogger := testutils.SetTestLogger(t, logger.DebugLevel)
-				logsResultChan := testutils.TestLogs(t, testCaseInst.expectedLogs, logOutChan, logsDone)
+			// set test logger
+			logsDone := make(chan struct{})
+			logOutChan, restoreLogger := testutils.SetTestLogger(t, logger.DebugLevel)
+			logsResultChan := testutils.TestLogs(t, testCaseInst.expectedLogs, logOutChan, logsDone)
 
-				// start tracee
-				trc, err := startTracee(ctx, t, testConfig, nil, nil)
-				if err != nil {
-					cancel()
-					t.Fatal(err)
-				}
-				t.Logf("  --- started tracee ---")
-				err = waitForTraceeStart(trc)
-				if err != nil {
-					cancel()
-					t.Fatal(err)
-				}
-
-				stream := trc.SubscribeAll()
-				defer trc.Unsubscribe(stream)
-
-				// start a goroutine to read events from the channel into the buffer
-				buf := newEventBuffer()
-				go func(ctx context.Context, buf *eventBuffer) {
-					for {
-						select {
-						case <-ctx.Done():
-							return
-						case evt := <-stream.ReceiveEvents():
-							buf.addEvent(evt)
-						}
-					}
-				}(ctx, buf)
-
-				var failed bool
-				var testCmdEvents []cmdEvents
-
-				// test kprobes
-				err = testAttachedKprobes(testCaseInst.expectedKprobes, testCaseInst.unexpectedKprobes)
-				if err != nil {
-					t.Logf("Test %s failed: %v", t.Name(), err)
-					failed = true
-					goto cleanup
-				}
-
-				// test events
-				testCmdEvents = createCmdEvents(testCaseInst.expectedEvents, testCaseInst.unexpectedEvents)
-				err = ExpectAtLeastOneForEach(t, testCmdEvents, buf, false)
-				if err != nil {
-					t.Logf("Test %s failed: %v", t.Name(), err)
-					failed = true
-					goto cleanup
-				}
-
-				close(logsDone)
-				if !<-logsResultChan {
-					t.Logf("Test %s failed: not all logs were found", t.Name())
-					failed = true
-				}
-			cleanup:
-				// ensure that logsDone is closed
-				select {
-				case <-logsDone:
-				default:
-					close(logsDone)
-				}
-				restoreLogger()
+			// start tracee
+			trc, err := startTracee(ctx, t, testConfig, nil, nil)
+			if err != nil {
 				cancel()
-				errStop := waitForTraceeStop(trc)
-				if errStop != nil {
-					t.Log(errStop)
-					failed = true
-				} else {
-					t.Logf("  --- stopped tracee ---")
-				}
+				t.Fatal(err)
+			}
+			t.Logf("  --- started tracee ---")
+			err = waitForTraceeStart(trc)
+			if err != nil {
+				cancel()
+				t.Fatal(err)
+			}
 
-				if failed {
-					t.Fail()
+			stream := trc.SubscribeAll()
+			defer trc.Unsubscribe(stream)
+
+			// start a goroutine to read events from the channel into the buffer
+			buf := newEventBuffer()
+			go func(ctx context.Context, buf *eventBuffer) {
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case evt := <-stream.ReceiveEvents():
+						buf.addEvent(evt)
+					}
 				}
-			},
-		)
+			}(ctx, buf)
+
+			var failed bool
+			var testCmdEvents []cmdEvents
+
+			// test kprobes
+			err = testAttachedKprobes(testCaseInst.expectedKprobes, testCaseInst.unexpectedKprobes)
+			if err != nil {
+				t.Logf("Test %s failed: %v", t.Name(), err)
+				failed = true
+				goto cleanup
+			}
+
+			// test events
+			testCmdEvents = createCmdEvents(testCaseInst.expectedEvents, testCaseInst.unexpectedEvents)
+			err = ExpectAtLeastOneForEach(t, testCmdEvents, buf, false)
+			if err != nil {
+				t.Logf("Test %s failed: %v", t.Name(), err)
+				failed = true
+				goto cleanup
+			}
+
+			close(logsDone)
+			if !<-logsResultChan {
+				t.Logf("Test %s failed: not all logs were found", t.Name())
+				failed = true
+			}
+		cleanup:
+			// ensure that logsDone is closed
+			select {
+			case <-logsDone:
+			default:
+				close(logsDone)
+			}
+			restoreLogger()
+			cancel()
+			errStop := waitForTraceeStop(trc)
+			if errStop != nil {
+				t.Log(errStop)
+				failed = true
+			} else {
+				t.Logf("  --- stopped tracee ---")
+			}
+
+			if failed {
+				t.Fail()
+			}
+		})
 	}
 }
 
