@@ -246,7 +246,11 @@ func readWritevCaptureTest(t *testing.T, captureDir string, workingDir string) e
 
 func readWritePipe(t *testing.T, captureDir string, workingDir string) error {
 	namedPipe := fmt.Sprintf("%s/pipe_test", workingDir)
-	err := syscall.Mkfifo(namedPipe, 0666)
+	err := os.Remove(namedPipe)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	err = syscall.Mkfifo(namedPipe, 0666)
 	if err != nil {
 		return err
 	}
