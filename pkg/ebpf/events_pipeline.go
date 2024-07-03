@@ -9,6 +9,7 @@ import (
 	"unsafe"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -637,7 +638,12 @@ func (t *Tracee) getStackAddresses(stackID uint32) []uint64 {
 	// Lookup the StackID in the map
 	// The ID could have aged out of the Map, as it only holds a finite number of
 	// Stack IDs in it's Map
-	stackBytes, err := t.StackAddressesMap.GetValue(unsafe.Pointer(&stackID))
+	var stackBytes []byte
+	var err error
+	err = capabilities.GetInstance().EBPF(func() error {
+		stackBytes, err = t.StackAddressesMap.GetValue(unsafe.Pointer(&stackID))
+		return err
+	})
 	if err != nil {
 		logger.Debugw("failed to get StackAddress", "error", err)
 		return stackAddresses[0:0]
@@ -656,7 +662,12 @@ func (t *Tracee) getStackAddresses(stackID uint32) []uint64 {
 
 	// Attempt to remove the ID from the map so we don't fill it up
 	// But if this fails continue on
-	_ = t.StackAddressesMap.DeleteKey(unsafe.Pointer(&stackID))
+	err = capabilities.GetInstance().EBPF(func() error {
+		return t.StackAddressesMap.DeleteKey(unsafe.Pointer(&stackID))
+	})
+	if err != nil {
+		logger.Debugw("failed to delete stack address from eBPF map", "error", err)
+	}
 
 	return stackAddresses[0:stackCounter]
 }
