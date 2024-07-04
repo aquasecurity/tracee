@@ -109,13 +109,7 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 					continue
 				}
 				// note: size of buffer will determine maximum extracted file size! (as writes from kernel are immediate)
-				if t.config.Output.RelativeTime {
-					// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.
-					mprotectMeta.Ts -= t.startTime
-				} else {
-					// To get the current ("wall") time, we add the boot time into it.
-					mprotectMeta.Ts += t.bootTime
-				}
+				mprotectMeta.Ts = uint64(t.timeNormalizer.NormalizeTime(int(mprotectMeta.Ts)))
 				filename = fmt.Sprintf("bin.pid-%d.ts-%d", mprotectMeta.Pid, mprotectMeta.Ts)
 			} else if meta.BinType == bufferdecoder.SendKernelModule {
 				err = metaBuffDecoder.DecodeKernelModuleMeta(&kernelModuleMeta)
