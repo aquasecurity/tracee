@@ -353,37 +353,10 @@ func (t *Tracee) normalizeEventCtxTimes(event *trace.Event) error {
 		// derived events are normalized from their base event, skip the processing
 		return nil
 	}
-
-	//
-	// Currently, the timestamp received from the bpf code is of the monotonic clock.
-	//
-	// TODO: The monotonic clock doesn't take into account system sleep time.
-	// Starting from kernel 5.7, we can get the timestamp relative to the system boot time
-	// instead which is preferable.
-
-	if t.config.Output.RelativeTime {
-		// monotonic time since tracee started: timestamp - tracee starttime
-		event.Timestamp = event.Timestamp - int(t.startTime)
-		event.ThreadStartTime = event.ThreadStartTime - int(t.startTime)
-	} else {
-		// current ("wall") time: add boot time to timestamp
-		event.Timestamp = event.Timestamp + int(t.bootTime)
-		event.ThreadStartTime = event.ThreadStartTime + int(t.bootTime)
-	}
+	event.Timestamp = t.timeNormalizer.NormalizeTime(event.Timestamp)
+	event.ThreadStartTime = t.timeNormalizer.NormalizeTime(event.ThreadStartTime)
 
 	return nil
-}
-
-// getOrigEvtTimestamp returns the original timestamp of the event.
-// To be used only when the event timestamp was normalized via normalizeEventCtxTimes.
-func (t *Tracee) getOrigEvtTimestamp(event *trace.Event) int {
-	if t.config.Output.RelativeTime {
-		// if the time was normalized relative to tracee start time, add the start time back
-		return event.Timestamp + int(t.startTime)
-	}
-
-	// if the time was normalized to "wall" time, subtract the boot time
-	return event.Timestamp - int(t.bootTime)
 }
 
 // processSchedProcessFork processes a sched_process_fork event by normalizing the start time.
@@ -402,13 +375,7 @@ func (t *Tracee) normalizeEventArgTime(event *trace.Event, argName string) error
 	if !ok {
 		return errfmt.Errorf("argument %s of event %s is not of type uint64", argName, event.EventName)
 	}
-	if t.config.Output.RelativeTime {
-		// monotonic time since tracee started: timestamp - tracee starttime
-		arg.Value = argTime - t.startTime
-	} else {
-		// current ("wall") time: add boot time to timestamp
-		arg.Value = argTime + t.bootTime
-	}
+	arg.Value = t.timeNormalizer.NormalizeTime(int(argTime))
 	return nil
 }
 
