@@ -2,9 +2,12 @@ package flags
 
 import (
 	"errors"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/config"
 )
@@ -399,8 +402,17 @@ func TestPrepareOutput(t *testing.T) {
 		t.Run(testcase.testName, func(t *testing.T) {
 			// t.Parallel()
 
+			defer func() {
+				for _, printer := range testcase.expectedOutput.PrinterConfigs {
+					if strings.HasPrefix(printer.OutPath, "/tmp") {
+						_ = os.Remove(printer.OutPath)
+					}
+				}
+			}()
+
 			output, err := PrepareOutput(testcase.outputSlice, false)
 			if err != nil {
+				require.NotNil(t, testcase.expectedError)
 				assert.Contains(t, err.Error(), testcase.expectedError.Error())
 			} else {
 				assert.Equal(t, testcase.expectedOutput.TraceeConfig, output.TraceeConfig)
