@@ -11,6 +11,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
@@ -127,7 +128,11 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	cfg.InitialPolicies = policies
 
 	containerFilterEnabled := func() bool {
-		for _, p := range cfg.InitialPolicies {
+		for _, v := range cfg.InitialPolicies {
+			p, ok := v.(*policy.Policy)
+			if !ok {
+				continue
+			}
 			if p.ContainerFilterEnabled() {
 				return true
 			}

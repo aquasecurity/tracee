@@ -3,16 +3,26 @@ package derive
 import (
 	"fmt"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 )
+
+// assureIsRoot skips the test if it is not run as root
+func assureIsRoot(t *testing.T) {
+	if syscall.Geteuid() != 0 {
+		t.Skipf("***** %s must be run as ROOT *****", t.Name())
+	}
+}
 
 type testSO struct {
 	so                 loadingSharedObj
@@ -462,6 +472,8 @@ func TestSymbolsCollisionArgsGenerator_deriveArgs(t *testing.T) {
 }
 
 func TestSymbolsCollision(t *testing.T) {
+	assureIsRoot(t)
+
 	testCases := getSymbolsCollisionTestCases()
 	pid := 1
 
@@ -492,7 +504,14 @@ func TestSymbolsCollision(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			pManager := policy.NewPolicyManager(p)
+			capabilities.Initialize(true)
+
+			evtsDepsManager := dependencies.NewDependenciesManager(
+				func(id events.ID) events.Dependencies {
+					return events.Core.GetDefinitionByID(id).GetDependencies()
+				})
+
+			pManager := policy.NewPolicyManager(policy.ManagerConfig{}, evtsDepsManager, p)
 
 			// Pick derive function from mocked tests
 			deriveFunc := SymbolsCollision(mockLoader, pManager)

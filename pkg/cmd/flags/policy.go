@@ -102,7 +102,7 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeM
 }
 
 // CreatePolicies creates a Policies object from the scope and events maps.
-func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMap, newBinary bool) ([]*policy.Policy, error) {
+func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMap, newBinary bool) ([]interface{}, error) {
 	eventsNameToID := events.Core.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
@@ -111,7 +111,7 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 		}
 	}
 
-	policies := make([]*policy.Policy, 0, len(policyScopeMap))
+	policies := make([]interface{}, 0, len(policyScopeMap))
 	for policyIdx, policyScopeFilters := range policyScopeMap {
 		p := policy.NewPolicy()
 		p.ID = policyIdx

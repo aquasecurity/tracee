@@ -31,12 +31,12 @@ func (t *Tracee) UpdateKallsyms() error {
 		return deps.GetKSymbols()
 	}
 
-	// Get the symbols all events being traced require (t.eventsState already
+	// Get the symbols all events being traced require (t.policyManager already
 	// includes dependent events, no need to recurse again).
 
 	var allReqSymbols []string
 
-	for evtID := range t.eventsState {
+	for _, evtID := range t.policyManager.EventsToTrace() {
 		for _, symDep := range evtDefSymDeps(evtID) {
 			allReqSymbols = append(allReqSymbols, symDep.GetSymbolName())
 		}

@@ -207,7 +207,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	// Try to get policies from kubernetes CRD, policy files and CLI in that order
 
 	var k8sPolicies []v1beta1.PolicyInterface
-	var policies []*policy.Policy
+	var policies []interface{}
 
 	k8sClient, err := k8s.New()
 	if err == nil {
@@ -248,7 +248,11 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	// Create printer
 
 	containerFilterEnabled := func() bool {
-		for _, p := range cfg.InitialPolicies {
+		for _, v := range cfg.InitialPolicies {
+			p, ok := v.(*policy.Policy)
+			if !ok {
+				continue
+			}
 			if p.ContainerFilterEnabled() {
 				return true
 			}

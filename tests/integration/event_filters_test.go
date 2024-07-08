@@ -1708,6 +1708,8 @@ func Test_EventFilters(t *testing.T) {
 			// wait for the previous test to cool down
 			coolDown(t, tc.coolDown)
 
+			// capabilities.ResetCapabilities()
+
 			// prepare tracee config
 			config := config.Config{
 				Capabilities: &config.CapabilitiesConfig{

@@ -12,7 +12,7 @@ import (
 
 // BuildPoliciesFromEvents create a Policies instance with a single policy,
 // which chooses the given events without filters or scopes
-func BuildPoliciesFromEvents(eventsToChoose []events.ID) []*policy.Policy {
+func BuildPoliciesFromEvents(eventsToChoose []events.ID) []interface{} {
 	var policyRules []k8s.Rule
 
 	for _, event := range eventsToChoose {
@@ -43,7 +43,7 @@ func BuildPoliciesFromEvents(eventsToChoose []events.ID) []*policy.Policy {
 }
 
 // NewPolicies creates a slice of policies setting the ID of each policy to the given ID.
-func NewPolicies(polsFilesID []PolicyFileWithID) []*policy.Policy {
+func NewPolicies(polsFilesID []PolicyFileWithID) []interface{} {
 	var polsFiles []k8s.PolicyInterface
 
 	for _, polFile := range polsFilesID {
@@ -60,18 +60,23 @@ func NewPolicies(polsFilesID []PolicyFileWithID) []*policy.Policy {
 		panic(err)
 	}
 
-	for i := range policies {
+	for i, v := range policies {
+		p, ok := v.(*policy.Policy)
+		if !ok {
+			panic(fmt.Errorf("policy %d is not a *policy.Policy", i))
+		}
+
 		found := false
 		for j := range polsFilesID {
-			if policies[i].Name == polsFilesID[j].PolicyFile.Metadata.Name {
-				policies[i].ID = polsFilesID[j].Id - 1
+			if p.Name == polsFilesID[j].PolicyFile.Metadata.Name {
+				p.ID = polsFilesID[j].Id - 1
 				found = true
 				break
 			}
 		}
 
 		if !found {
-			panic(fmt.Errorf("policy %s not found in polsFilesID", policies[i].Name))
+			panic(fmt.Errorf("policy %s not found in polsFilesID", p.Name))
 		}
 	}
 
