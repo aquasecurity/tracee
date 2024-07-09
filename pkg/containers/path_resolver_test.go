@@ -67,7 +67,11 @@ func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
 		testMntNS := 1
 		testFilePath := "/tmp/tmp.so"
 
-		err := capabilities.Initialize(true) // initialize capabilities
+		err := capabilities.Initialize(
+			capabilities.Config{
+				Bypass: true,
+			},
+		) // initialize capabilities
 		assert.NoError(t, err)
 
 		for _, testCase := range testCases {

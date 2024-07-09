@@ -33,7 +33,9 @@ func Test_Initialize_And_GetInstance_Concurrent(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			err := Initialize(true)
+			err := Initialize(Config{
+				Bypass: true,
+			})
 			assert.NoError(t, err)
 		}()
 	}

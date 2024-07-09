@@ -76,7 +76,11 @@ func main() {
 			// happens after Find() is called) in that case.
 
 			bypass := c.Bool("allcaps") || !isRoot()
-			err = capabilities.Initialize(bypass)
+			err = capabilities.Initialize(
+				capabilities.Config{
+					Bypass: bypass,
+				},
+			)
 			if err != nil {
 				return err
 			}
