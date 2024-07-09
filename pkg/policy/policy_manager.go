@@ -16,13 +16,7 @@ import (
 type PolicyManager struct {
 	mu    sync.RWMutex
 	ps    *policies
-	rules map[events.ID]*eventState
-}
-
-// eventState is a struct that holds the state of a given event
-type eventState struct {
-	policyMask uint64
-	enabled    bool
+	rules map[events.ID]*eventFlags
 }
 
 func NewPolicyManager(policies ...*Policy) *PolicyManager {
@@ -36,119 +30,137 @@ func NewPolicyManager(policies ...*Policy) *PolicyManager {
 	return &PolicyManager{
 		mu:    sync.RWMutex{},
 		ps:    ps,
-		rules: make(map[events.ID]*eventState),
+		rules: make(map[events.ID]*eventFlags),
 	}
 }
 
 // IsEnabled tests if a event, or a policy per event is enabled (in the future it will also check if a policy is enabled)
 // TODO: add metrics about an event being enabled/disabled, or a policy being enabled/disabled?
-func (pm *PolicyManager) IsEnabled(matchedPolicies uint64, ruleId events.ID) bool {
+func (pm *PolicyManager) IsEnabled(matchedPolicies uint64, id events.ID) bool {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
-	if !pm.isEventEnabled(ruleId) {
+	if !pm.isEventEnabled(id) {
 		return false
 	}
 
-	return pm.isRuleEnabled(matchedPolicies, ruleId)
+	return pm.isRuleEnabled(matchedPolicies, id)
 }
 
 // IsRuleEnabled returns true if a given event policy is enabled for a given rule
-func (pm *PolicyManager) IsRuleEnabled(matchedPolicies uint64, ruleId events.ID) bool {
+func (pm *PolicyManager) IsRuleEnabled(matchedPolicies uint64, id events.ID) bool {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
-	return pm.isRuleEnabled(matchedPolicies, ruleId)
+	return pm.isRuleEnabled(matchedPolicies, id)
 }
 
 // not synchronized, use IsRuleEnabled instead
-func (pm *PolicyManager) isRuleEnabled(matchedPolicies uint64, ruleId events.ID) bool {
-	state, ok := pm.rules[ruleId]
+func (pm *PolicyManager) isRuleEnabled(matchedPolicies uint64, id events.ID) bool {
+	flags, ok := pm.rules[id]
 	if !ok {
 		return false
 	}
 
-	return state.policyMask&matchedPolicies != 0
+	return flags.policiesEmit&matchedPolicies != 0
 }
 
 // IsEventEnabled returns true if a given event policy is enabled for a given rule
-func (pm *PolicyManager) IsEventEnabled(evenId events.ID) bool {
+func (pm *PolicyManager) IsEventEnabled(id events.ID) bool {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
-	return pm.isEventEnabled(evenId)
+	return pm.isEventEnabled(id)
 }
 
 // not synchronized, use IsEventEnabled instead
-func (pm *PolicyManager) isEventEnabled(evenId events.ID) bool {
-	state, ok := pm.rules[evenId]
+func (pm *PolicyManager) isEventEnabled(id events.ID) bool {
+	flags, ok := pm.rules[id]
 	if !ok {
 		return false
 	}
 
-	return state.enabled
+	return flags.enabled
 }
 
 // EnableRule enables a rule for a given event policy
-func (pm *PolicyManager) EnableRule(policyId int, ruleId events.ID) {
+func (pm *PolicyManager) EnableRule(policyId int, id events.ID) error {
+	if !isIDInRange(policyId) {
+		return PoliciesOutOfRangeError(policyId)
+	}
+
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
-	state, ok := pm.rules[ruleId]
+	flags, ok := pm.rules[id]
 	if !ok {
 		// if you enabling/disabling a rule for an event that
 		// was not enabled/disabled yet, we assume the event should be enabled
-		state = &eventState{enabled: true}
+		flags = newEventFlags(
+			eventFlagsWithEnabled(true),
+		)
+		pm.rules[id] = flags
 	}
 
-	utils.SetBit(&state.policyMask, uint(policyId))
+	flags.enableEmission(policyId)
 
-	pm.rules[ruleId] = state
+	return nil
 }
 
 // DisableRule disables a rule for a given event policy
-func (pm *PolicyManager) DisableRule(policyId int, ruleId events.ID) {
+func (pm *PolicyManager) DisableRule(policyId int, id events.ID) error {
+	if !isIDInRange(policyId) {
+		return PoliciesOutOfRangeError(policyId)
+	}
+
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
-	state, ok := pm.rules[ruleId]
+	flags, ok := pm.rules[id]
 	if !ok {
 		// if you enabling/disabling a rule for an event that
 		// was not enabled/disabled yet, we assume the event should be enabled
-		state = &eventState{enabled: true}
+		flags = newEventFlags(
+			eventFlagsWithEnabled(true),
+		)
+		pm.rules[id] = flags
 	}
 
-	utils.ClearBit(&state.policyMask, uint(policyId))
+	flags.disableEmission(policyId)
 
-	pm.rules[ruleId] = state
+	return nil
 }
 
 // EnableEvent enables a given event
-func (pm *PolicyManager) EnableEvent(eventId events.ID) {
+func (pm *PolicyManager) EnableEvent(id events.ID) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
-	state, ok := pm.rules[eventId]
+	flags, ok := pm.rules[id]
 	if !ok {
-		pm.rules[eventId] = &eventState{enabled: true}
+		pm.rules[id] = newEventFlags(
+			eventFlagsWithEnabled(true),
+		)
 		return
 	}
 
-	state.enabled = true
+	flags.enableEvent()
 }
 
 // DisableEvent disables a given event
-func (pm *PolicyManager) DisableEvent(eventId events.ID) {
+func (pm *PolicyManager) DisableEvent(id events.ID) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
-	state, ok := pm.rules[eventId]
+	flags, ok := pm.rules[id]
 	if !ok {
-		pm.rules[eventId] = &eventState{enabled: false}
+		pm.rules[id] = newEventFlags(
+			eventFlagsWithEnabled(false),
+		)
 		return
 	}
 
-	state.enabled = false
+	flags.disableEvent()
 }
 
 //
