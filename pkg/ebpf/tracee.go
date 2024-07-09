@@ -275,7 +275,16 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Initialize capabilities rings soon
 
-	err = capabilities.Initialize(t.config.Capabilities.BypassCaps)
+	useBaseEbpf := func(cfg config.Config) bool {
+		return cfg.Output.StackAddresses
+	}
+
+	err = capabilities.Initialize(
+		capabilities.Config{
+			Bypass:   t.config.Capabilities.BypassCaps,
+			BaseEbpf: useBaseEbpf(t.config),
+		},
+	)
 	if err != nil {
 		return t, errfmt.WrapError(err)
 	}

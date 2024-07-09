@@ -27,14 +27,20 @@ const (
 )
 
 type Capabilities struct {
-	have   *cap.Set
-	all    map[cap.Value]map[RingType]bool
-	bypass bool
-	lock   *sync.Mutex // big lock to guarantee all threads are on the same ring
+	have     *cap.Set
+	all      map[cap.Value]map[RingType]bool
+	bypass   bool
+	baseEbpf bool
+	lock     *sync.Mutex // big lock to guarantee all threads are on the same ring
+}
+
+type Config struct {
+	Bypass   bool
+	BaseEbpf bool
 }
 
 // Initialize initializes the "caps" instance (singleton).
-func Initialize(bypass bool) error {
+func Initialize(cfg Config) error {
 	var err error
 
 	once.Do(func() {
@@ -44,20 +50,23 @@ func Initialize(bypass bool) error {
 		caps.lock.Lock()
 		defer caps.lock.Unlock()
 
-		err = caps.initialize(bypass)
+		err = caps.initialize(cfg)
 	})
 
 	return errfmt.WrapError(err)
 }
 
 // GetInstance returns current "caps" instance. It initializes capabilities if
-// needed, bypassing the privilege dropping by default.
+// needed, bypassing the privilege dropping by default, and not adding eBPF to the base.
 func GetInstance() *Capabilities {
 	capsMutex.Lock()
 	defer capsMutex.Unlock()
 
 	if caps == nil {
-		err := Initialize(true)
+		err := Initialize(Config{
+			Bypass:   true,
+			BaseEbpf: false,
+		})
 		if err != nil {
 			return nil
 		}
@@ -66,11 +75,13 @@ func GetInstance() *Capabilities {
 	return caps
 }
 
-func (c *Capabilities) initialize(bypass bool) error {
-	if bypass {
+func (c *Capabilities) initialize(cfg Config) error {
+	if cfg.Bypass {
 		c.bypass = true
 		return nil
 	}
+
+	c.baseEbpf = cfg.BaseEbpf
 
 	c.all = make(map[cap.Value]map[RingType]bool)
 
@@ -99,10 +110,17 @@ func (c *Capabilities) initialize(bypass bool) error {
 
 	// Add eBPF related capabilities to eBPF ring
 
-	err = c.eBPFRingAdd(
-		cap.IPC_LOCK,
-		cap.SYS_RESOURCE,
-	)
+	if c.baseEbpf {
+		err = c.baseRingAdd(
+			cap.IPC_LOCK,
+			cap.SYS_RESOURCE,
+		)
+	} else {
+		err = c.eBPFRingAdd(
+			cap.IPC_LOCK,
+			cap.SYS_RESOURCE,
+		)
+	}
 	if err != nil {
 		logger.Fatalw("Adding initial capabilities to EBPF ring", "error", err)
 	}
@@ -130,22 +148,41 @@ func (c *Capabilities) initialize(bypass bool) error {
 	hasBPF, _ := c.have.GetFlag(cap.Permitted, cap.BPF)
 	if hasBPF {
 		if paranoid < 2 {
-			err = c.eBPFRingAdd(
-				cap.BPF,
-				cap.PERFMON,
+			if c.baseEbpf {
+				err = c.baseRingAdd(
+					cap.BPF,
+					cap.PERFMON,
+				)
+			} else {
+				err = c.eBPFRingAdd(
+					cap.BPF,
+					cap.PERFMON,
+				)
+			}
+		} else {
+			if c.baseEbpf {
+				err = c.baseRingAdd(
+					cap.SYS_ADMIN,
+				)
+			} else {
+				err = c.eBPFRingAdd(
+					cap.SYS_ADMIN,
+				)
+			}
+		}
+		if err != nil {
+			logger.Fatalw("Adding eBPF capabilities to EBPF ring", "error", err)
+		}
+	} else {
+		if c.baseEbpf {
+			err = c.baseRingAdd(
+				cap.SYS_ADMIN,
 			)
 		} else {
 			err = c.eBPFRingAdd(
 				cap.SYS_ADMIN,
 			)
 		}
-		if err != nil {
-			logger.Fatalw("Adding eBPF capabilities to EBPF ring", "error", err)
-		}
-	} else {
-		err = c.eBPFRingAdd(
-			cap.SYS_ADMIN,
-		)
 		if err != nil {
 			logger.Fatalw("Adding eBPF capabilities to EBPF ring", "error", err)
 		}
@@ -187,7 +224,7 @@ func (c *Capabilities) EBPF(cb func() error) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if !c.bypass {
+	if !c.bypass && !c.baseEbpf {
 		err = c.apply(EBPF) // move to ring EBPF
 		if err != nil {
 			return errfmt.WrapError(err)
@@ -196,7 +233,7 @@ func (c *Capabilities) EBPF(cb func() error) error {
 
 	errCb := cb() // callback
 
-	if !c.bypass {
+	if !c.bypass && !c.baseEbpf {
 		err = c.apply(Base) // back to ring Base
 		if err != nil {
 			return errfmt.WrapError(err)
