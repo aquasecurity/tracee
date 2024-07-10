@@ -268,9 +268,9 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			// thus the need to continue with those within the pipeline.
 			if t.matchPolicies(evt) == 0 {
 				_, hasDerivation := t.eventDerivations[eventId]
-				_, hasSignature := t.eventSignatures[eventId]
+				reqBySig := t.policyManager.IsRequiredBySignature(eventId)
 
-				if !hasDerivation && !hasSignature {
+				if !hasDerivation && !reqBySig {
 					_ = t.stats.EventsFiltered.Increment()
 					t.eventsPool.Put(evt)
 					continue
@@ -598,7 +598,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 
 			// Only emit events requested by the user and matched by at least one policy.
 			id := events.ID(event.EventID)
-			event.MatchedPoliciesUser &= t.eventsState[id].Emit
+			event.MatchedPoliciesUser = t.policyManager.MatchEvent(id, event.MatchedPoliciesUser)
 			if event.MatchedPoliciesUser == 0 {
 				t.eventsPool.Put(event)
 				continue
