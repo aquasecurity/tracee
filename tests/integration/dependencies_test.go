@@ -123,7 +123,12 @@ func Test_EventsDependencies(t *testing.T) {
 					BypassCaps: true,
 				},
 			}
-			testConfig.InitialPolicies = testutils.BuildPoliciesFromEvents(testCaseInst.events)
+			ps := testutils.BuildPoliciesFromEvents(testCaseInst.events)
+			initialPolicies := make([]interface{}, 0, len(ps))
+			for _, p := range ps {
+				initialPolicies = append(initialPolicies, p)
+			}
+			testConfig.InitialPolicies = initialPolicies
 
 			ctx, cancel := context.WithCancel(context.Background())
 

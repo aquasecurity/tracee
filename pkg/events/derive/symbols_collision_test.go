@@ -492,7 +492,7 @@ func TestSymbolsCollision(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			pManager := policy.NewPolicyManager(p)
+			pManager := policy.NewPolicyManager(policy.ManagerConfig{}, p)
 
 			// Pick derive function from mocked tests
 			deriveFunc := SymbolsCollision(mockLoader, pManager)
