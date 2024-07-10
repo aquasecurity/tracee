@@ -6,29 +6,40 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
+
+type ManagerConfig struct {
+	DNSCacheConfig dnscache.Config
+	ProcTreeConfig proctree.ProcTreeConfig
+	CaptureConfig  config.CaptureConfig
+}
 
 // PolicyManager is a thread-safe struct that manages the enabled policies for each rule
 type PolicyManager struct {
 	mu    sync.RWMutex
+	cfg   ManagerConfig
 	ps    *policies
 	rules map[events.ID]*eventFlags
 }
 
-func NewPolicyManager(policies ...*Policy) *PolicyManager {
+func NewPolicyManager(cfg ManagerConfig, initialPolicies ...*Policy) *PolicyManager {
 	ps := NewPolicies()
-	for _, p := range policies {
+	for _, p := range initialPolicies {
 		if err := ps.set(p); err != nil {
-			logger.Errorw("failed to set policy", "error", err)
+			logger.Errorw("failed to set initial policy", "error", err)
 		}
 	}
 
 	return &PolicyManager{
 		mu:    sync.RWMutex{},
+		cfg:   cfg,
 		ps:    ps,
 		rules: make(map[events.ID]*eventFlags),
 	}

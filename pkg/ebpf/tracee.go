@@ -229,6 +229,55 @@ func New(cfg config.Config) (*Tracee, error) {
 		return nil, errfmt.Errorf("validation error: %v", err)
 	}
 
+	// Initialize Policy Manager
+
+	initialPolicies := make([]*policy.Policy, 0, len(cfg.InitialPolicies))
+	for _, v := range cfg.InitialPolicies {
+		p, ok := v.(*policy.Policy)
+		if !ok {
+			return nil, errfmt.Errorf("invalid policy type: %T", v)
+		}
+		initialPolicies = append(initialPolicies, p)
+	}
+
+	// NOTE: This deep copy ensures that the inner slices are not shared between
+	// the original and the injected config.
+	// TODO: This logic should be removed when config changes in runtime is a thing.
+	getNewCaptureConfig := func() config.CaptureConfig {
+		fileReadPathFilter := make([]string, 0, len(cfg.Capture.FileRead.PathFilter))
+		copy(fileReadPathFilter, cfg.Capture.FileRead.PathFilter)
+		fileRead := config.FileCaptureConfig{
+			Capture:    cfg.Capture.FileRead.Capture,
+			PathFilter: fileReadPathFilter,
+			TypeFilter: cfg.Capture.FileRead.TypeFilter,
+		}
+
+		fileWritePathFilter := make([]string, 0, len(cfg.Capture.FileWrite.PathFilter))
+		copy(fileWritePathFilter, cfg.Capture.FileWrite.PathFilter)
+		fileWrite := config.FileCaptureConfig{
+			Capture:    cfg.Capture.FileWrite.Capture,
+			PathFilter: fileWritePathFilter,
+			TypeFilter: cfg.Capture.FileWrite.TypeFilter,
+		}
+
+		return config.CaptureConfig{
+			FileRead:  fileRead,
+			FileWrite: fileWrite,
+			Module:    cfg.Capture.Module,
+			Exec:      cfg.Capture.Exec,
+			Mem:       cfg.Capture.Mem,
+			Bpf:       cfg.Capture.Bpf,
+			Net:       cfg.Capture.Net,
+		}
+	}
+
+	pmCfg := policy.ManagerConfig{
+		DNSCacheConfig: cfg.DNSCacheConfig,
+		ProcTreeConfig: cfg.ProcTree,
+		CaptureConfig:  getNewCaptureConfig(),
+	}
+	pm := policy.NewPolicyManager(pmCfg, initialPolicies...)
+
 	// Create Tracee
 
 	t := &Tracee{
@@ -240,7 +289,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		eventsState:     make(map[events.ID]events.EventState),
 		eventSignatures: make(map[events.ID]bool),
 		streamsManager:  streams.NewStreamsManager(),
-		policyManager:   policy.NewPolicyManager(cfg.InitialPolicies...),
+		policyManager:   pm,
 		eventsDependencies: dependencies.NewDependenciesManager(
 			func(id events.ID) events.Dependencies {
 				return events.Core.GetDefinitionByID(id).GetDependencies()
@@ -248,7 +297,9 @@ func New(cfg config.Config) (*Tracee, error) {
 		requiredKsyms: []string{},
 	}
 
-	t.config.InitialPolicies = []*policy.Policy{} // clear initial policies to avoid wrong references
+	// clear initial policies to avoid wrong references
+	initialPolicies = nil
+	t.config.InitialPolicies = nil
 
 	// TODO: As dynamic event addition or removal becomes a thing, we should subscribe all the watchers
 	// before selecting them. There is no reason to select the event in the New function anyhow.
