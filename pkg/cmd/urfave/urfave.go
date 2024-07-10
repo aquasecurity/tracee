@@ -121,14 +121,19 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	policies, err := flags.CreatePolicies(policyScopeMap, policyEventsMap, false)
+	initialPolicies, err := flags.CreatePolicies(policyScopeMap, policyEventsMap, false)
 	if err != nil {
 		return runner, err
 	}
-	cfg.InitialPolicies = policies
+
+	ps := make([]interface{}, 0, len(initialPolicies))
+	for _, p := range initialPolicies {
+		ps = append(ps, p)
+	}
+	cfg.InitialPolicies = ps
 
 	containerFilterEnabled := func() bool {
-		for _, p := range cfg.InitialPolicies {
+		for _, p := range initialPolicies {
 			if p.ContainerFilterEnabled() {
 				return true
 			}
