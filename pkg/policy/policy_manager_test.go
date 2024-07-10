@@ -7,12 +7,19 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 )
 
 func TestPolicyManagerEnableRule(t *testing.T) {
 	t.Parallel()
 
-	policyManager := NewPolicyManager(ManagerConfig{})
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.Dependencies {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	policyManager, err := NewManager(ManagerConfig{}, depsManager)
+	assert.NoError(t, err)
 
 	policy1Mached := uint64(0b10)
 	policy2Mached := uint64(0b100)
@@ -22,7 +29,7 @@ func TestPolicyManagerEnableRule(t *testing.T) {
 	assert.False(t, policyManager.IsRuleEnabled(policy2Mached, events.SecurityBPF))
 	assert.False(t, policyManager.IsRuleEnabled(policy1And2Mached, events.SecurityBPF))
 
-	err := policyManager.EnableRule(1, events.SecurityBPF)
+	err = policyManager.EnableRule(1, events.SecurityBPF)
 	assert.NoError(t, err)
 
 	assert.True(t, policyManager.IsRuleEnabled(policy1Mached, events.SecurityBPF))
@@ -43,13 +50,19 @@ func TestPolicyManagerEnableRule(t *testing.T) {
 func TestPolicyManagerDisableRule(t *testing.T) {
 	t.Parallel()
 
-	policyManager := NewPolicyManager(ManagerConfig{})
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.Dependencies {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	policyManager, err := NewManager(ManagerConfig{}, depsManager)
+	assert.NoError(t, err)
 
 	policy1Mached := uint64(0b10)
 	policy2Mached := uint64(0b100)
 	policy1And2Mached := uint64(0b110)
 
-	err := policyManager.EnableRule(1, events.SecurityBPF)
+	err = policyManager.EnableRule(1, events.SecurityBPF)
 	assert.NoError(t, err)
 
 	assert.True(t, policyManager.IsRuleEnabled(policy1Mached, events.SecurityBPF))
@@ -86,7 +99,13 @@ func TestPolicyManagerEnableAndDisableRuleConcurrent(t *testing.T) {
 		events.FileModification,
 	}
 
-	policyManager := NewPolicyManager(ManagerConfig{})
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.Dependencies {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	policyManager, err := NewManager(ManagerConfig{}, depsManager)
+	assert.NoError(t, err)
 
 	var wg sync.WaitGroup
 
@@ -125,7 +144,13 @@ func TestPolicyManagerEnableAndDisableRuleConcurrent(t *testing.T) {
 func TestPolicyManagerEnableEvent(t *testing.T) {
 	t.Parallel()
 
-	policyManager := NewPolicyManager(ManagerConfig{})
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.Dependencies {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	policyManager, err := NewManager(ManagerConfig{}, depsManager)
+	assert.NoError(t, err)
 
 	assert.False(t, policyManager.isEventEnabled(events.SecurityBPF))
 	assert.False(t, policyManager.isEventEnabled(events.SecurityFileOpen))
@@ -143,7 +168,13 @@ func TestPolicyManagerEnableEvent(t *testing.T) {
 func TestPolicyManagerDisableEvent(t *testing.T) {
 	t.Parallel()
 
-	policyManager := NewPolicyManager(ManagerConfig{})
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.Dependencies {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	policyManager, err := NewManager(ManagerConfig{}, depsManager)
+	assert.NoError(t, err)
 
 	policyManager.EnableEvent(events.SecurityBPF)
 	policyManager.EnableEvent(events.SecurityFileOpen)
@@ -180,7 +211,13 @@ func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 		events.FileModification,
 	}
 
-	policyManager := NewPolicyManager(ManagerConfig{})
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.Dependencies {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	policyManager, err := NewManager(ManagerConfig{}, depsManager)
+	assert.NoError(t, err)
 
 	// activate events
 	for _, e := range eventsToDisable {
@@ -224,7 +261,13 @@ func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 func TestEnableRuleAlsoEnableEvent(t *testing.T) {
 	t.Parallel()
 
-	policyManager := NewPolicyManager(ManagerConfig{})
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.Dependencies {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	policyManager, err := NewManager(ManagerConfig{}, depsManager)
+	assert.NoError(t, err)
 
 	assert.False(t, policyManager.IsEventEnabled(events.SecurityBPF))
 
@@ -236,7 +279,13 @@ func TestEnableRuleAlsoEnableEvent(t *testing.T) {
 func TestDisableRuleAlsoEnableEvent(t *testing.T) {
 	t.Parallel()
 
-	policyManager := NewPolicyManager(ManagerConfig{})
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.Dependencies {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	policyManager, err := NewManager(ManagerConfig{}, depsManager)
+	assert.NoError(t, err)
 
 	assert.False(t, policyManager.IsEventEnabled(events.SecurityFileOpen))
 
@@ -248,7 +297,13 @@ func TestDisableRuleAlsoEnableEvent(t *testing.T) {
 func TestPolicyManagerIsEnabled(t *testing.T) {
 	t.Parallel()
 
-	policyManager := NewPolicyManager(ManagerConfig{})
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.Dependencies {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	policyManager, err := NewManager(ManagerConfig{}, depsManager)
+	assert.NoError(t, err)
 
 	policy1Mached := uint64(0b10)
 	policy2Mached := uint64(0b100)

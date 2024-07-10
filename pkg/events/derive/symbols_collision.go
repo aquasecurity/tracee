@@ -28,7 +28,7 @@ import (
 
 func SymbolsCollision(
 	soLoader sharedobjs.DynamicSymbolsLoader,
-	pManager *policy.PolicyManager,
+	pManager *policy.Manager,
 ) DeriveFunction {
 	symbolsCollisionFilters := map[string]filters.Filter[*filters.StringFilter]{}
 

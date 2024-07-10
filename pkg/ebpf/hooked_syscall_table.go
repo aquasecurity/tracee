@@ -25,7 +25,7 @@ func (t *Tracee) hookedSyscallTableRoutine(ctx gocontext.Context) {
 	logger.Debugw("Starting hookedSyscallTable goroutine")
 	defer logger.Debugw("Stopped hookedSyscallTable goroutine")
 
-	if t.eventsState[events.HookedSyscall].Submit == 0 {
+	if !t.policyManager.IsEventToSubmit(events.HookedSyscall) {
 		return
 	}
 
