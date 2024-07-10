@@ -118,6 +118,11 @@ func main() {
 				Value: 1024, // 4 MB of contiguous pages
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 			},
+			&cli.IntFlag{
+				Name:  "pipeline-channel-size",
+				Value: 10000,
+				Usage: "size, in event objects, of each pipeline stage's output channel",
+			},
 			&cli.StringFlag{
 				Name:  "install-path",
 				Value: "/tmp/tracee",

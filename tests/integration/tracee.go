@@ -95,6 +95,7 @@ func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 
 	cfg.PerfBufferSize = 1024
 	cfg.BlobPerfBufferSize = 1024
+	cfg.PipelineChannelSize = 10000
 
 	// No process tree in the integration tests
 	cfg.ProcTree = proctree.ProcTreeConfig{

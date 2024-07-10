@@ -16,12 +16,12 @@ import (
 
 // engineEvents stage in the pipeline allows signatures detection to be executed in the pipeline
 func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
-	out := make(chan *trace.Event)
+	out := make(chan *trace.Event, t.config.PipelineChannelSize)
 	errc := make(chan error, 1)
 
 	engineOutput := make(chan *detect.Finding, 10000)
 	engineInput := make(chan protocol.Event, 10000)
-	engineOutputEvents := make(chan *trace.Event, 10000)
+	engineOutputEvents := make(chan *trace.Event, t.config.PipelineChannelSize)
 	source := engine.EventSources{Tracee: engineInput}
 
 	// Prepare built in data sources

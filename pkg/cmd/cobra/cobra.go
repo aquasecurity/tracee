@@ -72,9 +72,10 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	// Initialize a tracee config structure
 
 	cfg := config.Config{
-		PerfBufferSize:     viper.GetInt("perf-buffer-size"),
-		BlobPerfBufferSize: viper.GetInt("blob-perf-buffer-size"),
-		NoContainersEnrich: viper.GetBool("no-containers"),
+		PerfBufferSize:      viper.GetInt("perf-buffer-size"),
+		BlobPerfBufferSize:  viper.GetInt("blob-perf-buffer-size"),
+		PipelineChannelSize: viper.GetInt("pipeline-channel-size"),
+		NoContainersEnrich:  viper.GetBool("no-containers"),
 	}
 
 	// OS release information
