@@ -214,11 +214,11 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 // processDoFinitModule handles a do_finit_module event and triggers other hooking detection logic.
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	// Check if related events are being traced.
-	_, okSyscalls := t.eventsState[events.HookedSyscall]
-	_, okSeqOps := t.eventsState[events.HookedSeqOps]
-	_, okProcFops := t.eventsState[events.HookedProcFops]
-	_, okMemDump := t.eventsState[events.PrintMemDump]
-	_, okFtrace := t.eventsState[events.FtraceHook]
+	okSyscalls := t.policyManager.IsEventSelected(events.HookedSyscall)
+	okSeqOps := t.policyManager.IsEventSelected(events.HookedSeqOps)
+	okProcFops := t.policyManager.IsEventSelected(events.HookedProcFops)
+	okMemDump := t.policyManager.IsEventSelected(events.PrintMemDump)
+	okFtrace := t.policyManager.IsEventSelected(events.FtraceHook)
 
 	if !okSyscalls && !okSeqOps && !okProcFops && !okMemDump && !okFtrace {
 		return nil

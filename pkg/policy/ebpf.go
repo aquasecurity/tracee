@@ -158,7 +158,7 @@ func (ps *policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 // createNewEventsMapVersion creates a new version of the events map.
 func (ps *policies) createNewEventsMapVersion(
 	bpfModule *bpf.Module,
-	eventsState map[events.ID]events.EventState,
+	rules map[events.ID]*eventFlags,
 	eventsParams map[events.ID][]bufferdecoder.ArgType,
 ) error {
 	polsVersion := ps.version()
@@ -179,11 +179,11 @@ func (ps *policies) createNewEventsMapVersion(
 	// store pointer to the new inner map version
 	ps.bpfInnerMaps[innerMapName] = newInnerMap
 
-	for id, ecfg := range eventsState {
+	for id, ecfg := range rules {
 		eventConfigVal := make([]byte, 16)
 
 		// bitmap of policies that require this event to be submitted
-		binary.LittleEndian.PutUint64(eventConfigVal[0:8], ecfg.Submit)
+		binary.LittleEndian.PutUint64(eventConfigVal[0:8], ecfg.policiesSubmit)
 
 		// encoded event's parameter types
 		var paramTypes uint64
@@ -450,14 +450,14 @@ func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBina
 func (ps *policies) updateBPF(
 	bpfModule *bpf.Module,
 	cts *containers.Containers,
-	eventsState map[events.ID]events.EventState,
+	rules map[events.ID]*eventFlags,
 	eventsParams map[events.ID][]bufferdecoder.ArgType,
 	createNewMaps bool,
 	updateProcTree bool,
 ) (*PoliciesConfig, error) {
 	if createNewMaps {
 		// Create new events map version
-		if err := ps.createNewEventsMapVersion(bpfModule, eventsState, eventsParams); err != nil {
+		if err := ps.createNewEventsMapVersion(bpfModule, rules, eventsParams); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 	}

@@ -181,16 +181,20 @@ func (d *DefinitionGroup) IDs32ToIDs() map[ID]ID {
 }
 
 // GetTailCalls returns a list of tailcalls of all definitions in the group (for initialization).
-func (d *DefinitionGroup) GetTailCalls(state map[ID]EventState) []TailCall {
+func (d *DefinitionGroup) GetTailCalls(evtsToSubmit []ID) []TailCall {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
 	var tailCalls []TailCall
 
-	for evtDefID, evtDef := range d.definitions {
-		if state[evtDefID].Submit > 0 { // only traced events to provide their tailcalls
-			tailCalls = append(tailCalls, evtDef.GetDependencies().GetTailCalls()...)
+	for _, id := range evtsToSubmit {
+		def, ok := d.definitions[id]
+		if !ok {
+			logger.Errorw("definition not found", "id", id)
+			continue
 		}
+
+		tailCalls = append(tailCalls, def.GetDependencies().GetTailCalls()...)
 	}
 
 	return tailCalls
