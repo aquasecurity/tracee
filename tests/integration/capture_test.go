@@ -2,17 +2,23 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
+	"path"
 	"strings"
 	"syscall"
 	"testing"
 	"time"
 	"unsafe"
 
+	"github.com/google/gopacket/pcapgo"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
+	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/tests/testutils"
 )
 
@@ -34,36 +40,39 @@ func Test_TraceeCapture(t *testing.T) {
 	pipeReadFilter := fmt.Sprintf("read=%s/pipe*", homeDir)
 
 	tt := []struct {
-		name        string
-		coolDown    time.Duration
-		directory   string
-		writeFilter string
-		readFilter  string
-		test        func(t *testing.T, captureDir string, workingDir string) error
+		name           string
+		coolDown       time.Duration
+		directory      string
+		captureFilters []string
+		test           func(t *testing.T, captureDir string, workingDir string) error
 	}{
 		{
-			name:        "capture write/read",
-			coolDown:    0 * time.Second,
-			directory:   "/tmp/tracee/1",
-			writeFilter: outputWriteFilter,
-			readFilter:  outputReadFilter,
-			test:        readWriteCaptureTest,
+			name:           "capture write/read",
+			coolDown:       0 * time.Second,
+			directory:      "/tmp/tracee/1",
+			captureFilters: []string{outputWriteFilter, outputReadFilter},
+			test:           readWriteCaptureTest,
 		},
 		{
-			name:        "capture write/readv",
-			coolDown:    2 * time.Second,
-			directory:   "/tmp/tracee/2",
-			writeFilter: outputWriteFilter,
-			readFilter:  outputReadFilter,
-			test:        readWritevCaptureTest,
+			name:           "capture write/readv",
+			coolDown:       2 * time.Second,
+			directory:      "/tmp/tracee/2",
+			captureFilters: []string{outputWriteFilter, outputReadFilter},
+			test:           readWritevCaptureTest,
 		},
 		{
-			name:        "capture pipe write/read",
-			coolDown:    2 * time.Second,
-			directory:   "/tmp/tracee/3",
-			writeFilter: pipeWriteFilter,
-			readFilter:  pipeReadFilter,
-			test:        readWritePipe,
+			name:           "capture pipe write/read",
+			coolDown:       2 * time.Second,
+			directory:      "/tmp/tracee/3",
+			captureFilters: []string{pipeWriteFilter, pipeReadFilter},
+			test:           readWritePipe,
+		},
+		{
+			name:           "capture packet context",
+			coolDown:       0 * time.Second,
+			directory:      "/tmp/tracee/4",
+			captureFilters: []string{"network", "pcap:single,command,container,process"},
+			test:           packetContext,
 		},
 	}
 
@@ -71,7 +80,10 @@ func Test_TraceeCapture(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			coolDown(t, tc.coolDown)
-			cmd := fmt.Sprintf("--events init_namespaces -c %s -c %s -c dir:%s", tc.readFilter, tc.writeFilter, tc.directory)
+			cmd := fmt.Sprintf("--events init_namespaces -c dir:%s", tc.directory)
+			for _, filter := range tc.captureFilters {
+				cmd = fmt.Sprintf("%s -c %s", cmd, filter)
+			}
 			running := testutils.NewRunningTracee(context.Background(), cmd)
 
 			// start tracee
@@ -92,7 +104,7 @@ func Test_TraceeCapture(t *testing.T) {
 
 			var failed bool
 
-			captureDir := tc.directory + "/out/host/"
+			captureDir := path.Join(tc.directory, "out")
 			err := tc.test(t, captureDir, homeDir)
 			if err != nil {
 				failed = true
@@ -121,12 +133,8 @@ func Test_TraceeCapture(t *testing.T) {
 	}
 }
 
-func fileCaptureLocation(captureDir string, inode uint64, dev uint64, oper string) string {
-	return fmt.Sprintf("%s/%s.dev-%d.inode-%d", captureDir, oper, dev, inode)
-}
-
 func readWriteCaptureTest(t *testing.T, captureDir string, workingDir string) error {
-	outputFile := fmt.Sprintf("%s/output.txt", workingDir)
+	outputFile := path.Join(workingDir, "output.txt")
 	const input string = "Hello World\n"
 	file, err := os.Create(outputFile)
 	if err != nil {
@@ -170,7 +178,7 @@ func readWriteCaptureTest(t *testing.T, captureDir string, workingDir string) er
 }
 
 func readWritevCaptureTest(t *testing.T, captureDir string, workingDir string) error {
-	outputFile := fmt.Sprintf("%s/output.txt", workingDir)
+	outputFile := path.Join(workingDir, "output.txt")
 	file, err := os.Create(outputFile)
 	if err != nil {
 		return err
@@ -245,7 +253,7 @@ func readWritevCaptureTest(t *testing.T, captureDir string, workingDir string) e
 }
 
 func readWritePipe(t *testing.T, captureDir string, workingDir string) error {
-	namedPipe := fmt.Sprintf("%s/pipe_test", workingDir)
+	namedPipe := path.Join(workingDir, "pipe_test")
 	err := os.Remove(namedPipe)
 	if err != nil && !os.IsNotExist(err) {
 		return err
@@ -307,7 +315,9 @@ func assertEntries(t *testing.T, captureDir string, input string, readOut string
 	// Ensure capture files are generated
 	coolDown(t, 5*time.Second)
 
-	entries, err := os.ReadDir(captureDir)
+	hostCaptureDir := path.Join(captureDir, "host")
+
+	entries, err := os.ReadDir(hostCaptureDir)
 	if err != nil {
 		return err
 	}
@@ -329,13 +339,13 @@ func assertEntries(t *testing.T, captureDir string, input string, readOut string
 			continue
 		}
 		if strings.HasPrefix(entryName, "read") {
-			readCaptureFile, err = os.ReadFile(captureDir + entryName)
+			readCaptureFile, err = os.ReadFile(path.Join(hostCaptureDir, entryName))
 			if err != nil {
 				return err
 			}
 			found++
 		} else if strings.HasPrefix(entryName, "write") {
-			writeCaptureFile, err = os.ReadFile(captureDir + entryName)
+			writeCaptureFile, err = os.ReadFile(path.Join(hostCaptureDir, entryName))
 			if err != nil {
 				return err
 			}
@@ -355,6 +365,173 @@ func assertEntries(t *testing.T, captureDir string, input string, readOut string
 	}
 	if string(readCaptureFile) != readOut {
 		return fmt.Errorf("expected read capture file %s, got %s", readOut, readCaptureFile)
+	}
+
+	return nil
+}
+
+func getPacketContext(pcapFile string) (pcaps.PacketContext, error) {
+	packetContext := pcaps.PacketContext{}
+
+	reader, err := os.Open(pcapFile)
+	if err != nil {
+		return packetContext, err
+	}
+	pcapReader, err := pcapgo.NewNgReader(reader, pcapgo.DefaultNgReaderOptions)
+	if err != nil {
+		return packetContext, err
+	}
+
+	// Get the first interface
+	iface, err := pcapReader.Interface(0)
+	if err != nil {
+		return packetContext, err
+	}
+
+	// Unmarshal the interface description JSON to PacketContext
+	err = json.Unmarshal([]byte(iface.Description), &packetContext)
+	return packetContext, err
+}
+
+func findProcessPcapFile(dir string, processName string) (string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return "", err
+	}
+	var pcap string
+	found := false
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), "ping_") && strings.HasSuffix(entry.Name(), ".pcap") {
+			if found {
+				return "", fmt.Errorf("found multiple pcap files for process %s", processName)
+			}
+			pcap = entry.Name()
+			found = true
+		}
+	}
+	if !found {
+		return "", fmt.Errorf("could not find ping pcap")
+	}
+
+	return pcap, nil
+}
+
+func assertContext(t *testing.T, pcapFile string, pcapType pcaps.PcapType, hostName *string, containerId *string, processName *string, processID *int) error {
+	packetContext, err := getPacketContext(pcapFile)
+	if err != nil {
+		return err
+	}
+
+	// Single pcap should have empty context
+	if pcapType == pcaps.Single {
+		assert.Nil(t, packetContext.Container)
+		assert.Nil(t, packetContext.Kubernetes)
+		assert.Equal(t, "", packetContext.HostName)
+		assert.Equal(t, "", packetContext.ProcessName)
+		assert.Nil(t, packetContext.Process)
+		return nil
+	}
+
+	// Container, command and process pcaps should have container, kubernetes and hostname info
+	if pcapType == pcaps.Container || pcapType == pcaps.Command || pcapType == pcaps.Process {
+		assert.NotNil(t, packetContext.Container)
+		assert.Equal(t, *containerId, packetContext.Container.ID)
+		assert.NotNil(t, packetContext.Kubernetes)
+		// TODO: test kubernetes info validity
+		assert.Equal(t, *hostName, packetContext.HostName)
+	}
+
+	// Command and process pcaps should have process name
+	if pcapType == pcaps.Command || pcapType == pcaps.Process {
+		assert.Equal(t, *processName, packetContext.ProcessName)
+	} else {
+		assert.Equal(t, "", packetContext.ProcessName)
+	}
+
+	// Process pcaps should have process info
+	if pcapType == pcaps.Process {
+		assert.NotNil(t, packetContext.Process)
+		assert.Equal(t, *processID, packetContext.Process.ProcessID)
+	} else {
+		assert.Nil(t, packetContext.Process)
+	}
+
+	return nil
+}
+
+func packetContext(t *testing.T, captureDir string, workingDir string) error {
+	var emptyString = ""
+	var ping = "ping"
+
+	pcapDir := path.Join(captureDir, "pcap")
+	hostName, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+
+	// Ping localhost from host
+	cmd := exec.Command("ping", "-c", "1", "127.0.0.1")
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	pid := cmd.Process.Pid
+
+	// Ping localhost from a container (use busybox because it's smaller than alpine)
+	cmd = exec.Command("docker", "run", "-d", "--rm", "busybox", "ping", "-c", "1", "127.0.0.1")
+	// Get the container ID from the output
+	output, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	containerId := strings.TrimSuffix(string(output), "\n")
+	containerHostname := containerId[0:12]
+
+	// Ensure packets are written to pcap files
+	coolDown(t, 5*time.Second)
+
+	// Test context of single pcap
+	err = assertContext(t, path.Join(pcapDir, "single.pcap"), pcaps.Single, nil, nil, nil, nil)
+	if err != nil {
+		return err
+	}
+
+	// Test context of container pcaps
+	err = assertContext(t, path.Join(pcapDir, "containers", "host.pcap"), pcaps.Container, &hostName, &emptyString, nil, nil)
+	if err != nil {
+		return err
+	}
+	err = assertContext(t, path.Join(pcapDir, "containers", fmt.Sprintf("%s.pcap", containerId[0:11])), pcaps.Container, &containerHostname, &containerId, nil, nil)
+	if err != nil {
+		return err
+	}
+
+	// Test context of command pcaps
+	err = assertContext(t, path.Join(pcapDir, "commands", "host", "ping.pcap"), pcaps.Command, &hostName, &emptyString, &ping, nil)
+	if err != nil {
+		return err
+	}
+	err = assertContext(t, path.Join(pcapDir, "commands", containerId[0:11], "ping.pcap"), pcaps.Command, &containerHostname, &containerId, &ping, nil)
+	if err != nil {
+		return err
+	}
+
+	// Test context of process pcaps
+	pcapFile, err := findProcessPcapFile(path.Join(pcapDir, "processes", "host"), "ping")
+	if err != nil {
+		return err
+	}
+	err = assertContext(t, path.Join(pcapDir, "processes", "host", pcapFile), pcaps.Process, &hostName, &emptyString, &ping, &pid)
+	if err != nil {
+		return err
+	}
+	pcapFile, err = findProcessPcapFile(path.Join(pcapDir, "processes", containerId[0:11]), "ping")
+	if err != nil {
+		return err
+	}
+	var one = 1
+	err = assertContext(t, path.Join(pcapDir, "processes", containerId[0:11], pcapFile), pcaps.Process, &containerHostname, &containerId, &ping, &one)
+	if err != nil {
+		return err
 	}
 
 	return nil
