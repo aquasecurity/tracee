@@ -3,12 +3,14 @@ package ebpf
 import (
 	gocontext "context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"unsafe"
 
 	"kernel.org/pub/linux/libs/security/libcap/cap"
@@ -541,20 +543,21 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Checking the kernel symbol needs to happen after obtaining the capability;
 	// otherwise, we get a warning.
 	usedClockID := traceetime.CLOCK_BOOTTIME
-	err = capabilities.GetInstance().Specific(
+	err = capabilities.GetInstance().EBPF(
 		func() error {
-			// If bpf_ktime_get_boot_ns is not available, eBPF will generate events based on monotonic time.
-			if _, err = t.kernelSymbols.GetSymbolByName("bpf_ktime_get_boot_ns"); err != nil {
-				// The only case handled is when the symbol is not found
-				if strings.Contains(err.Error(), "symbol not found") {
-					usedClockID = traceetime.CLOCK_MONOTONIC
-					err = nil
-				}
+			supported, innerErr := bpf.BPFHelperIsSupported(bpf.BPFProgTypeKprobe, bpf.BPFFuncKtimeGetBootNs)
+
+			// only report if operation not permitted
+			if errors.Is(innerErr, syscall.EPERM) {
+				return err
 			}
-			return err
-		},
-		cap.SYSLOG,
-	)
+
+			// If BPFFuncKtimeGetBootNs is not available, eBPF will generate events based on monotonic time.
+			if !supported {
+				usedClockID = traceetime.CLOCK_MONOTONIC
+			}
+			return nil
+		})
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
