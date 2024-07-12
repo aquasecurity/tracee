@@ -237,7 +237,6 @@ env:
 	@echo "CGO_EXT_LDFLAGS_RULES    $(CGO_EXT_LDFLAGS_RULES)"
 	@echo ---------------------------------------
 	@echo "GO_ENV_EBPF              $(GO_ENV_EBPF)"
-	@echo "GO_ENV_RULES             $(GO_ENV_RULES)"
 	@echo ---------------------------------------
 	@echo "TRACEE_SRC               $(TRACEE_SRC)"
 	@echo "TRACEE_SRC_DIRS          $(TRACEE_SRC_DIRS)"
@@ -349,6 +348,7 @@ $(OUTPUT_DIR)/btfhub:
 LIBBPF_CFLAGS = "-fPIC"
 LIBBPF_LDFLAGS =
 LIBBPF_SRC = ./3rdparty/libbpf/src
+LIBBPF_INCLUDE_UAPI = $(abspath ./3rdparty/libbpf/include/uapi)
 LIBBPF_DESTDIR = $(OUTPUT_DIR)/libbpf
 LIBBPF_OBJDIR = $(LIBBPF_DESTDIR)/obj
 LIBBPF_OBJ = $(LIBBPF_OBJDIR)/libbpf.a
@@ -419,7 +419,7 @@ TRACEE_SRC_DIRS = ./cmd/ ./pkg/ ./signatures/
 TRACEE_SRC = $(shell find $(TRACEE_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
 GO_TAGS_EBPF = core,ebpf
 CGO_EXT_LDFLAGS_EBPF =
-CUSTOM_CGO_CFLAGS = "-I$(abspath $(OUTPUT_DIR)/libbpf)"
+CUSTOM_CGO_CFLAGS = "-I$(abspath $(OUTPUT_DIR)/libbpf) -I$(LIBBPF_INCLUDE_UAPI)"
 PKG_CONFIG_PATH = $(LIBBPF_OBJDIR)
 PKG_CONFIG_FLAG =
 
@@ -529,22 +529,6 @@ clean-tracee-ebpf:
 # tracee-rules (deprecated)
 #
 
-STATIC ?= 0
-GO_TAGS_RULES =
-CGO_EXT_LDFLAGS_RULES =
-
-ifeq ($(STATIC), 1)
-    CGO_EXT_LDFLAGS_RULES += -static
-    GO_TAGS_RULES := netgo
-endif
-
-GO_ENV_RULES =
-GO_ENV_RULES += GOOS=linux
-GO_ENV_RULES += CC=$(CMD_CLANG)
-GO_ENV_RULES += GOARCH=$(GO_ARCH)
-GO_ENV_RULES += CGO_CFLAGS=
-GO_ENV_RULES += CGO_LDFLAGS=
-
 TRACEE_RULES_SRC_DIRS = ./cmd/tracee-rules/ ./pkg/signatures/
 TRACEE_RULES_SRC=$(shell find $(TRACEE_RULES_SRC_DIRS) -type f -name '*.go')
 
@@ -557,7 +541,7 @@ $(OUTPUT_DIR)/tracee-rules: \
 	$(OUTPUT_DIR) \
 	signatures
 #
-	$(GO_ENV_RULES) $(CMD_GO) build \
+	$(GO_ENV_EBPF) $(CMD_GO) build \
 		-tags $(GO_TAGS_RULES) \
 		-ldflags="$(GO_DEBUG_FLAG) \
 			-extldflags \"$(CGO_EXT_LDFLAGS_RULES)\" \
@@ -601,7 +585,7 @@ $(OUTPUT_DIR)/signatures: \
 	$(OUTPUT_DIR)
 #
 	$(CMD_MKDIR) -p $@
-	$(GO_ENV_RULES) $(CMD_GO) build \
+	$(GO_ENV_EBPF) $(CMD_GO) build \
 		--buildmode=plugin \
 		-o $@/builtin.so \
 		$(GOSIGNATURES_SRC)
@@ -700,7 +684,7 @@ $(OUTPUT_DIR)/e2e-net-signatures: \
 	$(OUTPUT_DIR)
 #
 	$(CMD_MKDIR) -p $@
-	$(GO_ENV_RULES) $(CMD_GO) build \
+	$(GO_ENV_EBPF) $(CMD_GO) build \
 		--buildmode=plugin \
 		-o $@/builtin.so \
 		$(E2E_NET_SRC)
@@ -731,7 +715,7 @@ $(OUTPUT_DIR)/e2e-inst-signatures: \
 	$(OUTPUT_DIR)
 #
 	$(CMD_MKDIR) -p $@
-	$(GO_ENV_RULES) $(CMD_GO) build \
+	$(GO_ENV_EBPF) $(CMD_GO) build \
 		--buildmode=plugin \
 		-o $@/builtin.so \
 		$(E2E_INST_SRC)
