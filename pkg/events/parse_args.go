@@ -293,6 +293,18 @@ func ParseArgs(event *trace.Event) error {
 				parseOrEmptyString(objTypeArg, objTypeArgument, err)
 			}
 		}
+	case CheckSyscallSource:
+		if syscallArg := GetArg(event, "syscall"); syscallArg != nil {
+			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
+				if Core.IsDefined(ID(id)) {
+					eventDefinition := Core.GetDefinitionByID(ID(id))
+					if eventDefinition.IsSyscall() {
+						syscallArg.Value = eventDefinition.GetName()
+						syscallArg.Type = "string"
+					}
+				}
+			}
+		}
 	}
 
 	return nil

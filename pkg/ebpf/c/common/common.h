@@ -62,7 +62,7 @@ static __inline int has_prefix(char *prefix, char *str, int n)
     }
 
     // prefix is too long
-    return 0;
+    return 1;
 }
 
 #endif
