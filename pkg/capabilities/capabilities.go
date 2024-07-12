@@ -409,17 +409,23 @@ func (c *Capabilities) setProc() error {
 
 func (c *Capabilities) set(t RingType, values ...cap.Value) error {
 	for _, v := range values {
-		c.all[v][t] = true
+		m, exists := c.all[v]
+		if !exists {
+			return fmt.Errorf("failed to set capability %v: not supported", v)
+		}
+		m[t] = true
 	}
-
 	return nil
 }
 
 func (c *Capabilities) unset(t RingType, values ...cap.Value) error {
 	for _, v := range values {
-		c.all[v][t] = false
+		m, exists := c.all[v]
+		if !exists {
+			return fmt.Errorf("failed to unset capability %v: not supported", v)
+		}
+		m[t] = false
 	}
-
 	return nil
 }
 
