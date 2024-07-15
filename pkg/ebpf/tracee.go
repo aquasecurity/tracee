@@ -352,7 +352,10 @@ func New(cfg config.Config) (*Tracee, error) {
 			utils.SetBit(&emit, uint(p.ID))
 			t.selectEvent(e, events.EventState{Submit: submit, Emit: emit})
 
-			t.policyManager.EnableRule(p.ID, e)
+			err := t.policyManager.EnableRule(p.ID, e)
+			if err != nil {
+				logger.Errorw("Failed to enable rule", "policy", p.ID, "event", e, "error", err)
+			}
 		}
 	}
 
@@ -2066,7 +2069,10 @@ func (t *Tracee) EnableRule(policyNames []string, ruleId string) error {
 			return err
 		}
 
-		t.policyManager.EnableRule(p.ID, eventID)
+		err = t.policyManager.EnableRule(p.ID, eventID)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -2085,7 +2091,10 @@ func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
 			return err
 		}
 
-		t.policyManager.DisableRule(p.ID, eventID)
+		err = t.policyManager.DisableRule(p.ID, eventID)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
