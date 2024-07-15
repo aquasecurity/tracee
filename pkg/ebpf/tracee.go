@@ -549,7 +549,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 			// only report if operation not permitted
 			if errors.Is(innerErr, syscall.EPERM) {
-				return err
+				return innerErr
 			}
 
 			// If BPFFuncKtimeGetBootNs is not available, eBPF will generate events based on monotonic time.
