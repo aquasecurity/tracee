@@ -20,6 +20,7 @@ on:
       - "docs/man/**"
       - "go.mod"
       - "go.sum"
+      - "Makefile"
       - "**.c"
       - "**.h"
       - "**.go"
