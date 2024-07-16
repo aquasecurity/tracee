@@ -18,24 +18,25 @@ import (
 // NOTE: In the future, Tracee config will be changed at run time and will require
 // proper management.
 type Config struct {
-	InitialPolicies    []*policy.Policy
-	Capture            *CaptureConfig
-	Capabilities       *CapabilitiesConfig
-	Output             *OutputConfig
-	Cache              queue.CacheConfig
-	ProcTree           proctree.ProcTreeConfig
-	PerfBufferSize     int
-	BlobPerfBufferSize int
-	MaxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
-	BTFObjPath         string
-	BPFObjBytes        []byte
-	KernelConfig       *environment.KernelConfig
-	OSInfo             *environment.OSInfo
-	Sockets            runtime.Sockets
-	NoContainersEnrich bool
-	EngineConfig       engine.Config
-	MetricsEnabled     bool
-	DNSCacheConfig     dnscache.Config
+	InitialPolicies     []*policy.Policy
+	Capture             *CaptureConfig
+	Capabilities        *CapabilitiesConfig
+	Output              *OutputConfig
+	Cache               queue.CacheConfig
+	ProcTree            proctree.ProcTreeConfig
+	PerfBufferSize      int
+	BlobPerfBufferSize  int
+	PipelineChannelSize int
+	MaxPidsCache        int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
+	BTFObjPath          string
+	BPFObjBytes         []byte
+	KernelConfig        *environment.KernelConfig
+	OSInfo              *environment.OSInfo
+	Sockets             runtime.Sockets
+	NoContainersEnrich  bool
+	EngineConfig        engine.Config
+	MetricsEnabled      bool
+	DNSCacheConfig      dnscache.Config
 }
 
 // Validate does static validation of the configuration

@@ -2029,7 +2029,7 @@ func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
 func (t *Tracee) subscribe(policyMask uint64) *streams.Stream {
 	// TODO: the channel size matches the pipeline channel size,
 	// but we should make it configurable in the future.
-	return t.streamsManager.Subscribe(policyMask, 10000)
+	return t.streamsManager.Subscribe(policyMask, t.config.PipelineChannelSize)
 }
 
 // Unsubscribe unsubscribes stream
