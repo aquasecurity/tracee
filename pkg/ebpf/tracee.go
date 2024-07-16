@@ -1063,7 +1063,11 @@ func getUnavailbaleKsymbols(ksymbols []events.KSymbol, kernelSymbols *environmen
 // missing, it will cancel their event with informative error message.
 func (t *Tracee) validateKallsymsDependencies() {
 	evtDefSymDeps := func(id events.ID) []events.KSymbol {
-		depsNode, _ := t.eventsDependencies.GetEvent(id)
+		depsNode, err := t.eventsDependencies.GetEvent(id)
+		if err != nil {
+			logger.Debugw("Failed to get dependencies for event", "id", id, "error", err)
+			return nil
+		}
 		deps := depsNode.GetDependencies()
 		return deps.GetKSymbols()
 	}
