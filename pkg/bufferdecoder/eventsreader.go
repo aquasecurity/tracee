@@ -1,7 +1,6 @@
 package bufferdecoder
 
 import (
-	"bytes"
 	"encoding/binary"
 	"net"
 	"strconv"
@@ -373,21 +372,29 @@ func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 func readStringVarFromBuff(decoder *EbpfDecoder, max int) (string, error) {
 	var err error
 	var char int8
-	res := make([]byte, max)
+	res := make([]byte, 0, max)
+
 	err = decoder.DecodeInt8(&char)
 	if err != nil {
 		return "", errfmt.Errorf("error reading null terminated string: %v", err)
 	}
-	var count int
-	for count = 1; char != 0 && count < max; count++ {
+
+	count := 1 // first char is already decoded
+	for char != 0 && count < max {
 		res = append(res, byte(char))
+
+		// decode next char
 		err = decoder.DecodeInt8(&char)
 		if err != nil {
 			return "", errfmt.Errorf("error reading null terminated string: %v", err)
 		}
+		count++
 	}
-	res = bytes.TrimLeft(res[:], "\000")
-	decoder.cursor += max - count // move cursor to end of buffer
+
+	// The exact reason for this Trim is not known, so remove it for now,
+	// since it increases processing time.
+	// res = bytes.TrimLeft(res[:], "\000")
+	decoder.cursor += max - count // move cursor to the end of the buffer
 	return string(res), nil
 }
 
