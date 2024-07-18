@@ -4,6 +4,8 @@
 # This test is executed by github workflows inside the action runners
 #
 
+set -x
+
 ARCH=$(uname -m)
 
 TRACEE_STARTUP_TIMEOUT=30
