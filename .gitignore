@@ -23,6 +23,7 @@ compile_commands.json
 .cache*
 .trunk*
 .vagrant
+goenv.mk
 
 # binaries and build files
 dist

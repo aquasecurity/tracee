@@ -13,6 +13,15 @@ MAKE = make
 MAKEFLAGS += --no-print-directory
 
 #
+# env
+#
+
+GOENV_MK = goenv.mk
+
+# load Go environment variables
+-include $(GOENV_MK)
+
+#
 # tools
 #
 
@@ -370,6 +379,21 @@ $(LIBBPF_OBJ): \
 		INCLUDEDIR= UAPIDIR= prefix= libdir= \
 		install install_uapi_headers
 
+.ONESHELL:
+$(GOENV_MK): $(LIBBPF_OBJ)
+	@{
+		$(eval GO_ENV_EBPF = )
+		$(eval GO_ENV_EBPF += GOOS=linux)
+		$(eval GO_ENV_EBPF += CC=$(CMD_CLANG))
+		$(eval GO_ENV_EBPF += GOARCH=$(GO_ARCH))
+		$(eval GO_ENV_EBPF += CGO_CFLAGS=$(CUSTOM_CGO_CFLAGS))
+
+		$(eval CUSTOM_CGO_LDFLAGS := "$(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(CMD_PKGCONFIG) $(PKG_CONFIG_FLAG) --libs $(LIB_BPF))")
+		$(eval GO_ENV_EBPF := $(GO_ENV_EBPF) CGO_LDFLAGS=$(CUSTOM_CGO_LDFLAGS))
+		export GO_ENV_EBPF=$(GO_ENV_EBPF)
+		echo 'GO_ENV_EBPF := $(GO_ENV_EBPF)' > $@
+	}
+
 $(LIBBPF_SRC): \
 	| .check_$(CMD_GIT)
 #
@@ -429,14 +453,6 @@ ifeq ($(STATIC), 1)
     PKG_CONFIG_FLAG = --static
 endif
 
-CUSTOM_CGO_LDFLAGS = "$(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(CMD_PKGCONFIG) $(PKG_CONFIG_FLAG) --libs $(LIB_BPF))"
-GO_ENV_EBPF =
-GO_ENV_EBPF += GOOS=linux
-GO_ENV_EBPF += CC=$(CMD_CLANG)
-GO_ENV_EBPF += GOARCH=$(GO_ARCH)
-GO_ENV_EBPF += CGO_CFLAGS=$(CUSTOM_CGO_CFLAGS)
-GO_ENV_EBPF += CGO_LDFLAGS=$(CUSTOM_CGO_LDFLAGS)
-
 TRACEE_PROTOS = ./api/v1beta1/*.proto
 
 #
@@ -472,6 +488,7 @@ tracee: $(OUTPUT_DIR)/tracee
 $(OUTPUT_DIR)/tracee: \
 	$(OUTPUT_DIR)/tracee.bpf.o \
 	$(TRACEE_SRC) \
+	$(GOENV_MK) \
 	| .checkver_$(CMD_GO) \
 	.checklib_$(LIB_BPF) \
 	btfhub \
@@ -504,6 +521,7 @@ tracee-ebpf: $(OUTPUT_DIR)/tracee-ebpf
 $(OUTPUT_DIR)/tracee-ebpf: \
 	$(OUTPUT_DIR)/tracee.bpf.o \
 	$(TRACEE_SRC) \
+	$(GOENV_MK) \
 	| .checkver_$(CMD_GO) \
 	.checklib_$(LIB_BPF) \
 	btfhub
@@ -537,7 +555,9 @@ tracee-rules: $(OUTPUT_DIR)/tracee-rules
 
 $(OUTPUT_DIR)/tracee-rules: \
 	$(TRACEE_RULES_SRC) \
+	$(GOENV_MK) \
 	| .checkver_$(CMD_GO) \
+	.checklib_$(LIB_BPF) \
 	$(OUTPUT_DIR) \
 	signatures
 #
@@ -580,7 +600,9 @@ signatures: $(OUTPUT_DIR)/signatures
 $(OUTPUT_DIR)/signatures: \
 	$(GOSIGNATURES_SRC) \
 	$(REGO_SIGNATURES_SRC) \
+	$(GOENV_MK) \
 	| .checkver_$(CMD_GO) \
+	.checklib_$(LIB_BPF) \
 	.check_$(CMD_INSTALL) \
 	$(OUTPUT_DIR)
 #
@@ -641,8 +663,9 @@ tracee-gptdocs: $(OUTPUT_DIR)/tracee-gptdocs
 
 $(OUTPUT_DIR)/tracee-gptdocs: \
 	$(TRACEE_GPTDOCS_SRC) \
-	$(LIBBPF_OBJ) \
+	$(GOENV_MK) \
 	| .checkver_$(CMD_GO) \
+	.checklib_$(LIB_BPF) \
 	$(OUTPUT_DIR)
 #
 	$(MAKE) $(OUTPUT_DIR)/btfhub
@@ -766,8 +789,9 @@ test-types: \
 
 .PHONY: $(OUTPUT_DIR)/syscaller
 $(OUTPUT_DIR)/syscaller: \
-	$(LIBBPF_OBJ) \
-	| .check_$(CMD_GO)
+	$(GOENV_MK) \
+	| .check_$(CMD_GO) \
+	.checklib_$(LIB_BPF)
 #
 	$(GO_ENV_EBPF) \
 	$(CMD_GO) build -o $(OUTPUT_DIR)/syscaller ./tests/integration/syscaller/cmd
@@ -989,6 +1013,7 @@ man: clean-man $(MAN_FILES)
 clean:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)
+	$(CMD_RM) -f $(GOENV_MK)
 	$(CMD_RM) -f .*.md5
 	$(CMD_RM) -f .check*
 	$(CMD_RM) -f .*-pkgs*
