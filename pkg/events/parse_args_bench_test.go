@@ -278,3 +278,22 @@ func BenchmarkParseArgs(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkParseArgs_Uintptr(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		ptraceEvent := &trace.Event{
+			EventID: int(Ptrace),
+			Args: []trace.Argument{
+				{ArgMeta: trace.ArgMeta{Name: "request"}, Value: int64(0)},
+				{ArgMeta: trace.ArgMeta{Name: "pid"}, Value: int32(0)},
+				{ArgMeta: trace.ArgMeta{Name: "addr"}, Value: ^uintptr(0)},
+				{ArgMeta: trace.ArgMeta{Name: "data"}, Value: ^uintptr(0)},
+			},
+		}
+
+		err := ParseArgs(ptraceEvent)
+		if err != nil {
+			b.Errorf("Error parsing args: %v", err)
+		}
+	}
+}
