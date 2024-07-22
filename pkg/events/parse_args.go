@@ -13,6 +13,18 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+func emptyString(arg *trace.Argument) {
+	arg.Type = "string"
+	arg.Value = ""
+}
+
+func parseOrEmptyString(arg *trace.Argument, sysArg parsers.SystemFunctionArgument, err error) {
+	emptyString(arg)
+	if err == nil {
+		arg.Value = sysArg.String()
+	}
+}
+
 func ParseArgs(event *trace.Event) error {
 	for _, arg := range event.Args {
 		if ptr, isUintptr := arg.Value.(uintptr); isUintptr {
@@ -20,18 +32,6 @@ func ParseArgs(event *trace.Event) error {
 			if err != nil {
 				return err
 			}
-		}
-	}
-
-	emptyString := func(arg *trace.Argument) {
-		arg.Type = "string"
-		arg.Value = ""
-	}
-
-	parseOrEmptyString := func(arg *trace.Argument, sysArg parsers.SystemFunctionArgument, err error) {
-		emptyString(arg)
-		if err == nil {
-			arg.Value = sysArg.String()
 		}
 	}
 
