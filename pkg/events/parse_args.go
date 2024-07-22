@@ -26,12 +26,11 @@ func parseOrEmptyString(arg *trace.Argument, sysArg parsers.SystemFunctionArgume
 }
 
 func ParseArgs(event *trace.Event) error {
-	for _, arg := range event.Args {
-		if ptr, isUintptr := arg.Value.(uintptr); isUintptr {
-			err := SetArgValue(event, arg.Name, "0x"+strconv.FormatUint(uint64(ptr), 16))
-			if err != nil {
-				return err
-			}
+	for i := range event.Args {
+		if ptr, isUintptr := event.Args[i].Value.(uintptr); isUintptr {
+			v := []byte{'0', 'x'}
+			v = strconv.AppendUint(v, uint64(ptr), 16)
+			event.Args[i].Value = string(v)
 		}
 	}
 
