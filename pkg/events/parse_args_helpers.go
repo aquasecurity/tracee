@@ -68,13 +68,19 @@ func parseMemProtAlert(arg *trace.Argument, alert uint32) {
 }
 
 func parseSyscall(arg *trace.Argument, id int32) {
-	if Core.IsDefined(ID(id)) {
-		eventDefinition := Core.GetDefinitionByID(ID(id))
-		if eventDefinition.IsSyscall() {
-			arg.Value = eventDefinition.GetName()
-			arg.Type = "string"
-		}
+	// Bypass the lock contention accessing the read-only map directly, avoiding
+	// locking the map for reading.
+	//
+	// NOTE: This might cause data races in the future if the map is modified.
+	// One solution to keep better CPU time is to segregate the map into two maps:
+	// one for proper core (read-only) events and another for the dynamic events.
+	def, ok := CoreEvents[ID(id)]
+	if !ok || !def.IsSyscall() {
+		return
 	}
+
+	arg.Type = "string"
+	arg.Value = def.GetName()
 }
 
 func parsePtraceRequestArgument(arg *trace.Argument, req uint64) {
