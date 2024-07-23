@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestOptionsContainedInArgument(t *testing.T) {
+func TestOptionsAreContainedInArgument(t *testing.T) {
 	attachTests := []struct {
 		testName          string
 		rawArgument       uint64
@@ -57,11 +57,23 @@ func TestOptionsContainedInArgument(t *testing.T) {
 			options:           []SystemFunctionArgument{CAP_CHOWN},
 			expectedContained: true,
 		},
+		{
+			testName:          "not present1",
+			rawArgument:       CAP_CHOWN.Value(),
+			options:           []SystemFunctionArgument{CAP_DAC_OVERRIDE},
+			expectedContained: false,
+		},
+		{
+			testName:          "not present2",
+			rawArgument:       CAP_CHOWN.Value() | CAP_DAC_READ_SEARCH.Value(),
+			options:           []SystemFunctionArgument{CAP_DAC_OVERRIDE, CAP_DAC_READ_SEARCH},
+			expectedContained: false,
+		},
 	}
 
 	for _, ts := range attachTests {
 		t.Run(ts.testName, func(test *testing.T) {
-			isContained := OptionAreContainedInArgument(ts.rawArgument, ts.options...)
+			isContained := OptionsAreContainedInArgument(ts.rawArgument, ts.options...)
 			assert.Equal(test, ts.expectedContained, isContained)
 		})
 	}
