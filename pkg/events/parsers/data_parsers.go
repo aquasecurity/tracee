@@ -18,16 +18,15 @@ type SystemFunctionArgument interface {
 	Value() uint64
 }
 
-// OptionsAreContainedInArgument checks whether the argument (rawArgument)
+// optionsAreContainedInArgument checks whether the argument (rawArgument)
 // contains all of the 'options' such as with flags passed to the clone flag.
-// This function takes an arbitrary number of SystemCallArguments. It will
-// only return true if each and every option is present in rawArgument.
+// This function takes an arbitrary number of uint64.
+// It will only return true if each and every option is present in rawArgument.
 // Typically linux syscalls have multiple options specified in a single
 // argument via bitmasks = which this function checks for.
-func OptionsAreContainedInArgument(rawArgument uint64, options ...SystemFunctionArgument) bool {
+func optionsAreContainedInArgument(rawArgument uint64, options ...uint64) bool {
 	for _, opt := range options {
-		optValue := opt.Value()
-		if rawArgument&optValue != optValue {
+		if rawArgument&opt != opt {
 			return false
 		}
 	}
@@ -81,76 +80,76 @@ func ParseCloneFlags(rawValue uint64) (CloneFlagArgument, error) {
 	}
 
 	var f []string
-	if OptionsAreContainedInArgument(rawValue, CLONE_VM) {
+	if optionsAreContainedInArgument(rawValue, CLONE_VM.Value()) {
 		f = append(f, CLONE_VM.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_FS) {
+	if optionsAreContainedInArgument(rawValue, CLONE_FS.Value()) {
 		f = append(f, CLONE_FS.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_FILES) {
+	if optionsAreContainedInArgument(rawValue, CLONE_FILES.Value()) {
 		f = append(f, CLONE_FILES.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_SIGHAND) {
+	if optionsAreContainedInArgument(rawValue, CLONE_SIGHAND.Value()) {
 		f = append(f, CLONE_SIGHAND.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_PIDFD) {
+	if optionsAreContainedInArgument(rawValue, CLONE_PIDFD.Value()) {
 		f = append(f, CLONE_PIDFD.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_PTRACE) {
+	if optionsAreContainedInArgument(rawValue, CLONE_PTRACE.Value()) {
 		f = append(f, CLONE_PTRACE.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_VFORK) {
+	if optionsAreContainedInArgument(rawValue, CLONE_VFORK.Value()) {
 		f = append(f, CLONE_VFORK.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_PARENT) {
+	if optionsAreContainedInArgument(rawValue, CLONE_PARENT.Value()) {
 		f = append(f, CLONE_PARENT.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_THREAD) {
+	if optionsAreContainedInArgument(rawValue, CLONE_THREAD.Value()) {
 		f = append(f, CLONE_THREAD.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_NEWNS) {
+	if optionsAreContainedInArgument(rawValue, CLONE_NEWNS.Value()) {
 		f = append(f, CLONE_NEWNS.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_SYSVSEM) {
+	if optionsAreContainedInArgument(rawValue, CLONE_SYSVSEM.Value()) {
 		f = append(f, CLONE_SYSVSEM.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_SETTLS) {
+	if optionsAreContainedInArgument(rawValue, CLONE_SETTLS.Value()) {
 		f = append(f, CLONE_SETTLS.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_PARENT_SETTID) {
+	if optionsAreContainedInArgument(rawValue, CLONE_PARENT_SETTID.Value()) {
 		f = append(f, CLONE_PARENT_SETTID.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_CHILD_CLEARTID) {
+	if optionsAreContainedInArgument(rawValue, CLONE_CHILD_CLEARTID.Value()) {
 		f = append(f, CLONE_CHILD_CLEARTID.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_DETACHED) {
+	if optionsAreContainedInArgument(rawValue, CLONE_DETACHED.Value()) {
 		f = append(f, CLONE_DETACHED.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_UNTRACED) {
+	if optionsAreContainedInArgument(rawValue, CLONE_UNTRACED.Value()) {
 		f = append(f, CLONE_UNTRACED.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_CHILD_SETTID) {
+	if optionsAreContainedInArgument(rawValue, CLONE_CHILD_SETTID.Value()) {
 		f = append(f, CLONE_CHILD_SETTID.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_NEWCGROUP) {
+	if optionsAreContainedInArgument(rawValue, CLONE_NEWCGROUP.Value()) {
 		f = append(f, CLONE_NEWCGROUP.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_NEWUTS) {
+	if optionsAreContainedInArgument(rawValue, CLONE_NEWUTS.Value()) {
 		f = append(f, CLONE_NEWUTS.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_NEWIPC) {
+	if optionsAreContainedInArgument(rawValue, CLONE_NEWIPC.Value()) {
 		f = append(f, CLONE_NEWIPC.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_NEWUSER) {
+	if optionsAreContainedInArgument(rawValue, CLONE_NEWUSER.Value()) {
 		f = append(f, CLONE_NEWUSER.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_NEWPID) {
+	if optionsAreContainedInArgument(rawValue, CLONE_NEWPID.Value()) {
 		f = append(f, CLONE_NEWPID.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_NEWNET) {
+	if optionsAreContainedInArgument(rawValue, CLONE_NEWNET.Value()) {
 		f = append(f, CLONE_NEWNET.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, CLONE_IO) {
+	if optionsAreContainedInArgument(rawValue, CLONE_IO.Value()) {
 		f = append(f, CLONE_IO.String())
 	}
 	if len(f) == 0 {
@@ -208,61 +207,61 @@ func ParseOpenFlagArgument(rawValue uint64) (OpenFlagArgument, error) {
 
 	// access mode
 	switch {
-	case OptionsAreContainedInArgument(rawValue, O_WRONLY):
+	case optionsAreContainedInArgument(rawValue, O_WRONLY.Value()):
 		f = append(f, O_WRONLY.String())
-	case OptionsAreContainedInArgument(rawValue, O_RDWR):
+	case optionsAreContainedInArgument(rawValue, O_RDWR.Value()):
 		f = append(f, O_RDWR.String())
 	default:
 		f = append(f, O_RDONLY.String())
 	}
 
 	// file creation and status flags
-	if OptionsAreContainedInArgument(rawValue, O_CREAT) {
+	if optionsAreContainedInArgument(rawValue, O_CREAT.Value()) {
 		f = append(f, O_CREAT.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_EXCL) {
+	if optionsAreContainedInArgument(rawValue, O_EXCL.Value()) {
 		f = append(f, O_EXCL.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_NOCTTY) {
+	if optionsAreContainedInArgument(rawValue, O_NOCTTY.Value()) {
 		f = append(f, O_NOCTTY.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_TRUNC) {
+	if optionsAreContainedInArgument(rawValue, O_TRUNC.Value()) {
 		f = append(f, O_TRUNC.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_APPEND) {
+	if optionsAreContainedInArgument(rawValue, O_APPEND.Value()) {
 		f = append(f, O_APPEND.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_NONBLOCK) {
+	if optionsAreContainedInArgument(rawValue, O_NONBLOCK.Value()) {
 		f = append(f, O_NONBLOCK.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_SYNC) {
+	if optionsAreContainedInArgument(rawValue, O_SYNC.Value()) {
 		f = append(f, O_SYNC.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, FASYNC) {
+	if optionsAreContainedInArgument(rawValue, FASYNC.Value()) {
 		f = append(f, FASYNC.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_LARGEFILE) {
+	if optionsAreContainedInArgument(rawValue, O_LARGEFILE.Value()) {
 		f = append(f, O_LARGEFILE.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_DIRECTORY) {
+	if optionsAreContainedInArgument(rawValue, O_DIRECTORY.Value()) {
 		f = append(f, O_DIRECTORY.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_NOFOLLOW) {
+	if optionsAreContainedInArgument(rawValue, O_NOFOLLOW.Value()) {
 		f = append(f, O_NOFOLLOW.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_CLOEXEC) {
+	if optionsAreContainedInArgument(rawValue, O_CLOEXEC.Value()) {
 		f = append(f, O_CLOEXEC.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_DIRECT) {
+	if optionsAreContainedInArgument(rawValue, O_DIRECT.Value()) {
 		f = append(f, O_DIRECT.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_NOATIME) {
+	if optionsAreContainedInArgument(rawValue, O_NOATIME.Value()) {
 		f = append(f, O_NOATIME.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_PATH) {
+	if optionsAreContainedInArgument(rawValue, O_PATH.Value()) {
 		f = append(f, O_PATH.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, O_TMPFILE) {
+	if optionsAreContainedInArgument(rawValue, O_TMPFILE.Value()) {
 		f = append(f, O_TMPFILE.String())
 	}
 
@@ -303,13 +302,13 @@ func ParseAccessMode(rawValue uint64) (AccessModeArgument, error) {
 	if rawValue == 0x0 {
 		f = append(f, F_OK.String())
 	} else {
-		if OptionsAreContainedInArgument(rawValue, R_OK) {
+		if optionsAreContainedInArgument(rawValue, R_OK.Value()) {
 			f = append(f, R_OK.String())
 		}
-		if OptionsAreContainedInArgument(rawValue, W_OK) {
+		if optionsAreContainedInArgument(rawValue, W_OK.Value()) {
 			f = append(f, W_OK.String())
 		}
-		if OptionsAreContainedInArgument(rawValue, X_OK) {
+		if optionsAreContainedInArgument(rawValue, X_OK.Value()) {
 			f = append(f, X_OK.String())
 		}
 	}
@@ -353,31 +352,31 @@ func ParseExecFlag(rawValue uint64) (ExecFlagArgument, error) {
 	}
 
 	var f []string
-	if OptionsAreContainedInArgument(rawValue, AT_EMPTY_PATH) {
+	if optionsAreContainedInArgument(rawValue, AT_EMPTY_PATH.Value()) {
 		f = append(f, AT_EMPTY_PATH.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, AT_SYMLINK_NOFOLLOW) {
+	if optionsAreContainedInArgument(rawValue, AT_SYMLINK_NOFOLLOW.Value()) {
 		f = append(f, AT_SYMLINK_NOFOLLOW.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, AT_EACCESS) {
+	if optionsAreContainedInArgument(rawValue, AT_EACCESS.Value()) {
 		f = append(f, AT_EACCESS.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, AT_REMOVEDIR) {
+	if optionsAreContainedInArgument(rawValue, AT_REMOVEDIR.Value()) {
 		f = append(f, AT_REMOVEDIR.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, AT_NO_AUTOMOUNT) {
+	if optionsAreContainedInArgument(rawValue, AT_NO_AUTOMOUNT.Value()) {
 		f = append(f, AT_NO_AUTOMOUNT.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, AT_STATX_SYNC_TYPE) {
+	if optionsAreContainedInArgument(rawValue, AT_STATX_SYNC_TYPE.Value()) {
 		f = append(f, AT_STATX_SYNC_TYPE.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, AT_STATX_FORCE_SYNC) {
+	if optionsAreContainedInArgument(rawValue, AT_STATX_FORCE_SYNC.Value()) {
 		f = append(f, AT_STATX_FORCE_SYNC.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, AT_STATX_DONT_SYNC) {
+	if optionsAreContainedInArgument(rawValue, AT_STATX_DONT_SYNC.Value()) {
 		f = append(f, AT_STATX_DONT_SYNC.String())
 	}
-	if OptionsAreContainedInArgument(rawValue, AT_RECURSIVE) {
+	if optionsAreContainedInArgument(rawValue, AT_RECURSIVE.Value()) {
 		f = append(f, AT_RECURSIVE.String())
 	}
 	if len(f) == 0 {
@@ -1315,10 +1314,10 @@ func ParseSocketType(rawValue uint64) (SocketTypeArgument, error) {
 		f = append(f, strconv.Itoa(int(rawValue)))
 	}
 
-	if OptionsAreContainedInArgument(rawValue, SOCK_NONBLOCK) {
+	if optionsAreContainedInArgument(rawValue, SOCK_NONBLOCK.Value()) {
 		f = append(f, "SOCK_NONBLOCK")
 	}
-	if OptionsAreContainedInArgument(rawValue, SOCK_CLOEXEC) {
+	if optionsAreContainedInArgument(rawValue, SOCK_CLOEXEC.Value()) {
 		f = append(f, "SOCK_CLOEXEC")
 	}
 
@@ -1364,62 +1363,62 @@ func ParseInodeMode(rawValue uint64) (InodeModeArgument, error) {
 
 	// File Type
 	switch {
-	case OptionsAreContainedInArgument(rawValue, S_IFSOCK):
+	case optionsAreContainedInArgument(rawValue, S_IFSOCK.Value()):
 		f = append(f, S_IFSOCK.String())
-	case OptionsAreContainedInArgument(rawValue, S_IFLNK):
+	case optionsAreContainedInArgument(rawValue, S_IFLNK.Value()):
 		f = append(f, S_IFLNK.String())
-	case OptionsAreContainedInArgument(rawValue, S_IFREG):
+	case optionsAreContainedInArgument(rawValue, S_IFREG.Value()):
 		f = append(f, S_IFREG.String())
-	case OptionsAreContainedInArgument(rawValue, S_IFBLK):
+	case optionsAreContainedInArgument(rawValue, S_IFBLK.Value()):
 		f = append(f, S_IFBLK.String())
-	case OptionsAreContainedInArgument(rawValue, S_IFDIR):
+	case optionsAreContainedInArgument(rawValue, S_IFDIR.Value()):
 		f = append(f, S_IFDIR.String())
-	case OptionsAreContainedInArgument(rawValue, S_IFCHR):
+	case optionsAreContainedInArgument(rawValue, S_IFCHR.Value()):
 		f = append(f, S_IFCHR.String())
-	case OptionsAreContainedInArgument(rawValue, S_IFIFO):
+	case optionsAreContainedInArgument(rawValue, S_IFIFO.Value()):
 		f = append(f, S_IFIFO.String())
 	}
 
 	// File Mode
 	// Owner
-	if OptionsAreContainedInArgument(rawValue, S_IRWXU) {
+	if optionsAreContainedInArgument(rawValue, S_IRWXU.Value()) {
 		f = append(f, S_IRWXU.String())
 	} else {
-		if OptionsAreContainedInArgument(rawValue, S_IRUSR) {
+		if optionsAreContainedInArgument(rawValue, S_IRUSR.Value()) {
 			f = append(f, S_IRUSR.String())
 		}
-		if OptionsAreContainedInArgument(rawValue, S_IWUSR) {
+		if optionsAreContainedInArgument(rawValue, S_IWUSR.Value()) {
 			f = append(f, S_IWUSR.String())
 		}
-		if OptionsAreContainedInArgument(rawValue, S_IXUSR) {
+		if optionsAreContainedInArgument(rawValue, S_IXUSR.Value()) {
 			f = append(f, S_IXUSR.String())
 		}
 	}
 	// Group
-	if OptionsAreContainedInArgument(rawValue, S_IRWXG) {
+	if optionsAreContainedInArgument(rawValue, S_IRWXG.Value()) {
 		f = append(f, S_IRWXG.String())
 	} else {
-		if OptionsAreContainedInArgument(rawValue, S_IRGRP) {
+		if optionsAreContainedInArgument(rawValue, S_IRGRP.Value()) {
 			f = append(f, S_IRGRP.String())
 		}
-		if OptionsAreContainedInArgument(rawValue, S_IWGRP) {
+		if optionsAreContainedInArgument(rawValue, S_IWGRP.Value()) {
 			f = append(f, S_IWGRP.String())
 		}
-		if OptionsAreContainedInArgument(rawValue, S_IXGRP) {
+		if optionsAreContainedInArgument(rawValue, S_IXGRP.Value()) {
 			f = append(f, S_IXGRP.String())
 		}
 	}
 	// Others
-	if OptionsAreContainedInArgument(rawValue, S_IRWXO) {
+	if optionsAreContainedInArgument(rawValue, S_IRWXO.Value()) {
 		f = append(f, S_IRWXO.String())
 	} else {
-		if OptionsAreContainedInArgument(rawValue, S_IROTH) {
+		if optionsAreContainedInArgument(rawValue, S_IROTH.Value()) {
 			f = append(f, S_IROTH.String())
 		}
-		if OptionsAreContainedInArgument(rawValue, S_IWOTH) {
+		if optionsAreContainedInArgument(rawValue, S_IWOTH.Value()) {
 			f = append(f, S_IWOTH.String())
 		}
-		if OptionsAreContainedInArgument(rawValue, S_IXOTH) {
+		if optionsAreContainedInArgument(rawValue, S_IXOTH.Value()) {
 			f = append(f, S_IXOTH.String())
 		}
 	}
@@ -1469,7 +1468,7 @@ func ParseMmapProt(rawValue uint64) MmapProtArgument {
 
 	var sb strings.Builder
 	for _, a := range mmapProtArgs {
-		if OptionsAreContainedInArgument(rawValue, a) {
+		if optionsAreContainedInArgument(rawValue, a.Value()) {
 			if sb.Len() > 0 {
 				sb.WriteByte('|')
 			}

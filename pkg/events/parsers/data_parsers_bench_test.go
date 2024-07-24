@@ -26,50 +26,50 @@ func BenchmarkParseMmapProt(b *testing.B) {
 
 var optionsAreContainedInArgumentTestTable = []struct {
 	rawArgument uint64
-	options     []SystemFunctionArgument
+	options     []uint64
 }{
 	{
 		rawArgument: 0x0,
-		options:     []SystemFunctionArgument{CLONE_CHILD_CLEARTID},
+		options:     []uint64{CLONE_CHILD_CLEARTID.Value()},
 	},
 	{
 		rawArgument: PTRACE_TRACEME.Value(),
-		options:     []SystemFunctionArgument{PTRACE_TRACEME},
+		options:     []uint64{PTRACE_TRACEME.Value()},
 	},
 	{
 		rawArgument: PTRACE_TRACEME.Value(),
-		options:     []SystemFunctionArgument{PTRACE_TRACEME, PTRACE_TRACEME},
+		options:     []uint64{PTRACE_TRACEME.Value(), PTRACE_ATTACH.Value()},
 	},
 	{
 		rawArgument: PTRACE_PEEKTEXT.Value(),
-		options:     []SystemFunctionArgument{PTRACE_TRACEME},
+		options:     []uint64{PTRACE_TRACEME.Value()},
 	},
 	{
 		rawArgument: PTRACE_TRACEME.Value() | PTRACE_GETSIGMASK.Value(),
-		options:     []SystemFunctionArgument{PTRACE_TRACEME, PTRACE_GETSIGMASK},
+		options:     []uint64{PTRACE_TRACEME.Value(), PTRACE_GETSIGMASK.Value()},
 	},
 	{
 		rawArgument: BPF_MAP_CREATE.Value(),
-		options:     []SystemFunctionArgument{BPF_MAP_CREATE},
+		options:     []uint64{BPF_MAP_CREATE.Value()},
 	},
 	{
 		rawArgument: CAP_CHOWN.Value(),
-		options:     []SystemFunctionArgument{CAP_CHOWN},
+		options:     []uint64{CAP_CHOWN.Value()},
 	},
 	{
 		rawArgument: PTRACE_TRACEME.Value() | PTRACE_GETSIGMASK.Value(),
-		options:     []SystemFunctionArgument{PTRACE_TRACEME, PTRACE_GETSIGMASK},
+		options:     []uint64{PTRACE_TRACEME.Value(), PTRACE_GETSIGMASK.Value()},
 	},
 	{
 		rawArgument: 0x0,
-		options:     []SystemFunctionArgument{PTRACE_TRACEME, PTRACE_GETSIGMASK, PTRACE_ATTACH, PTRACE_DETACH},
+		options:     []uint64{PTRACE_TRACEME.Value(), PTRACE_GETSIGMASK.Value(), PTRACE_ATTACH.Value(), PTRACE_DETACH.Value()},
 	},
 }
 
-func BenchmarkOptionsAreContainedInArgument(b *testing.B) {
+func Benchmark_optionsAreContainedInArgument(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for _, tc := range optionsAreContainedInArgumentTestTable {
-			_ = OptionsAreContainedInArgument(tc.rawArgument, tc.options...)
+			_ = optionsAreContainedInArgument(tc.rawArgument, tc.options...)
 		}
 	}
 }
