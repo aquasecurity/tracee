@@ -73,3 +73,19 @@ func Benchmark_optionsAreContainedInArgument(b *testing.B) {
 		}
 	}
 }
+
+func Benchmark_optionsAreContainedInArgumentWithOnlyOne(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for _, tc := range optionsAreContainedInArgumentTestTable {
+			_ = optionsAreContainedInArgument(tc.rawArgument, tc.options[0])
+		}
+	}
+}
+
+func Benchmark_optionIsContainedInArgument(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for _, tc := range optionsAreContainedInArgumentTestTable {
+			_ = optionIsContainedInArgument(tc.rawArgument, tc.options[0])
+		}
+	}
+}
