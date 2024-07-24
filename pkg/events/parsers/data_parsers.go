@@ -1443,6 +1443,16 @@ var (
 
 // revive:enable
 
+var mmapProtArgs = []MmapProtArgument{
+	PROT_READ,
+	PROT_WRITE,
+	PROT_EXEC,
+	PROT_SEM,
+	// PROT_NONE, // special case checked before the loop in ParseMmapProt
+	PROT_GROWSDOWN,
+	PROT_GROWSUP,
+}
+
 func (p MmapProtArgument) Value() uint64  { return p.rawValue }
 func (p MmapProtArgument) String() string { return p.stringValue }
 
@@ -1450,31 +1460,21 @@ func (p MmapProtArgument) String() string { return p.stringValue }
 // http://man7.org/linux/man-pages/man2/mmap.2.html
 // https://elixir.bootlin.com/linux/v5.5.3/source/include/uapi/asm-generic/mman-common.h#L10
 func ParseMmapProt(rawValue uint64) MmapProtArgument {
-	var f []string
 	if rawValue == PROT_NONE.Value() {
-		f = append(f, PROT_NONE.String())
-	} else {
-		if OptionAreContainedInArgument(rawValue, PROT_READ) {
-			f = append(f, PROT_READ.String())
-		}
-		if OptionAreContainedInArgument(rawValue, PROT_WRITE) {
-			f = append(f, PROT_WRITE.String())
-		}
-		if OptionAreContainedInArgument(rawValue, PROT_EXEC) {
-			f = append(f, PROT_EXEC.String())
-		}
-		if OptionAreContainedInArgument(rawValue, PROT_SEM) {
-			f = append(f, PROT_SEM.String())
-		}
-		if OptionAreContainedInArgument(rawValue, PROT_GROWSDOWN) {
-			f = append(f, PROT_GROWSDOWN.String())
-		}
-		if OptionAreContainedInArgument(rawValue, PROT_GROWSUP) {
-			f = append(f, PROT_GROWSUP.String())
+		return PROT_NONE
+	}
+
+	var sb strings.Builder
+	for _, a := range mmapProtArgs {
+		if OptionAreContainedInArgument(rawValue, a) {
+			if sb.Len() > 0 {
+				sb.WriteByte('|')
+			}
+			sb.WriteString(a.String())
 		}
 	}
 
-	return MmapProtArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}
+	return MmapProtArgument{stringValue: sb.String(), rawValue: rawValue}
 }
 
 // ParseUint32IP parses the IP address encoded as a uint32
