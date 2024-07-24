@@ -40,6 +40,12 @@ func Test_optionsAreContainedInArgument(t *testing.T) {
 			expectedContained: true,
 		},
 		{
+			testName:          "just not present",
+			rawArgument:       PTRACE_TRACEME.Value(),
+			options:           []uint64{PTRACE_TRACEME.Value()},
+			expectedContained: true,
+		},
+		{
 			testName:          "present1",
 			rawArgument:       PTRACE_TRACEME.Value() | PTRACE_GETSIGMASK.Value(),
 			options:           []uint64{PTRACE_TRACEME.Value(), PTRACE_GETSIGMASK.Value()},
@@ -74,6 +80,53 @@ func Test_optionsAreContainedInArgument(t *testing.T) {
 	for _, ts := range attachTests {
 		t.Run(ts.testName, func(test *testing.T) {
 			isContained := optionsAreContainedInArgument(ts.rawArgument, ts.options...)
+			assert.Equal(test, ts.expectedContained, isContained)
+		})
+	}
+}
+
+func Test_optionIsContainedInArgument(t *testing.T) {
+	attachTests := []struct {
+		testName          string
+		rawArgument       uint64
+		option            uint64
+		expectedContained bool
+	}{
+		{
+			testName:          "no options present",
+			rawArgument:       0x0,
+			option:            CLONE_CHILD_CLEARTID.Value(),
+			expectedContained: false,
+		},
+		{
+			testName:          "present in self",
+			rawArgument:       PTRACE_TRACEME.Value(),
+			option:            PTRACE_TRACEME.Value(),
+			expectedContained: true,
+		},
+		{
+			testName:          "just not present",
+			rawArgument:       PTRACE_PEEKTEXT.Value(),
+			option:            PTRACE_TRACEME.Value(),
+			expectedContained: true,
+		},
+		{
+			testName:          "present",
+			rawArgument:       PTRACE_TRACEME.Value() | PTRACE_GETSIGMASK.Value(),
+			option:            PTRACE_GETSIGMASK.Value(),
+			expectedContained: true,
+		},
+		{
+			testName:          "not present",
+			rawArgument:       CAP_CHOWN.Value(),
+			option:            CAP_DAC_OVERRIDE.Value(),
+			expectedContained: false,
+		},
+	}
+
+	for _, ts := range attachTests {
+		t.Run(ts.testName, func(test *testing.T) {
+			isContained := optionIsContainedInArgument(ts.rawArgument, ts.option)
 			assert.Equal(test, ts.expectedContained, isContained)
 		})
 	}
