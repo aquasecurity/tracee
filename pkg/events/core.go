@@ -112,6 +112,7 @@ const (
 	ExecuteFinished
 	SecurityBprmCredsForExec
 	SecurityTaskSetrlimit
+	SecuritySettime64
 	MaxCommonID
 )
 
@@ -13084,6 +13085,23 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "resource"},
 			{Type: "u64", Name: "new_rlim_cur"},
 			{Type: "u64", Name: "new_rlim_max"},
+		},
+	},
+	SecuritySettime64: {
+		id:      SecuritySettime64,
+		id32Bit: Sys32Undefined,
+		name:    "security_settime64",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SecuritySettime64, required: true},
+			},
+		},
+		sets: []string{"lsm"},
+		params: []trace.ArgMeta{
+			{Type: "u64", Name: "tv_sec"},
+			{Type: "u64", Name: "tv_nsec"},
+			{Type: "int", Name: "tz_minuteswest"},
+			{Type: "int", Name: "tz_dsttime"},
 		},
 	},
 	//

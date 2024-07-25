@@ -5132,6 +5132,33 @@ int BPF_KPROBE(trace_security_task_setrlimit)
     return events_perf_submit(&p, 0);
 }
 
+SEC("kprobe/security_settime64")
+int BPF_KPROBE(trace_security_settime64)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, SECURITY_SETTIME64))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    const struct timespec64 *ts = (const struct timespec64 *) PT_REGS_PARM1(ctx);
+    const struct timezone *tz = (const struct timezone *) PT_REGS_PARM2(ctx);
+
+    u64 tv_sec = BPF_CORE_READ(ts, tv_sec);
+    u64 tv_nsec = BPF_CORE_READ(ts, tv_nsec);
+
+    int tz_minuteswest = BPF_CORE_READ(tz, tz_minuteswest);
+    int tz_dsttime = BPF_CORE_READ(tz, tz_dsttime);
+
+    save_to_submit_buf(&p.event->args_buf, &tv_sec, sizeof(u64), 0);
+    save_to_submit_buf(&p.event->args_buf, &tv_nsec, sizeof(u64), 1);
+    save_to_submit_buf(&p.event->args_buf, &tz_minuteswest, sizeof(int), 2);
+    save_to_submit_buf(&p.event->args_buf, &tz_dsttime, sizeof(int), 3);
+
+    return events_perf_submit(&p, 0);
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)

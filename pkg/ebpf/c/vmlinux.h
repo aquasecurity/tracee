@@ -615,6 +615,11 @@ struct timespec64 {
     long int tv_nsec;
 };
 
+struct timezone {
+    int tz_minuteswest;
+    int tz_dsttime;
+};
+
 typedef long long __kernel_time64_t;
 
 struct __kernel_timespec {
