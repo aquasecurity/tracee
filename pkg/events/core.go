@@ -12985,6 +12985,7 @@ var CoreEvents = map[ID]Definition{
 			probes: []Probe{
 				{handle: probes.ExecBinprm, required: false},
 				{handle: probes.ExecBinprmRet, required: false},
+				{handle: probes.SyscallEnter__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"prog_array", "trace_execute_failed1", []uint32{TailProcessExecuteFailed1}},
