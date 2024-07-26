@@ -337,104 +337,110 @@ statfunc int save_sockaddr_to_buf(args_buffer_t *buf, struct socket *sock, u8 in
     return 0;
 }
 
+statfunc int get_type_size(u8 type, void *arg)
+{
+    // Ordered by frequency of occurrence in the kernel
+    switch (type) {
+        case POINTER_T:
+            return sizeof(void *);
+        case UINT_T:
+            return sizeof(unsigned int);
+        case INT_T:
+            return sizeof(int);
+        case LONG_T:
+            return sizeof(long);
+        case ULONG_T:
+            return sizeof(unsigned long);
+        case SIZE_T_T:
+            return sizeof(size_t);
+        case OFF_T_T:
+            return sizeof(off_t);
+        case DEV_T_T:
+            return sizeof(dev_t);
+        case MODE_T_T:
+            return sizeof(mode_t);
+        case U8_T:
+            return sizeof(u8);
+        case U16_T:
+            return sizeof(u16);
+        case SOCKADDR_T: {
+            short family = 0;
+            if (!arg)
+                return sizeof(short);
+
+            bpf_probe_read(&family, sizeof(short), arg);
+            switch (family) {
+                case AF_UNIX:
+                    return bpf_core_type_size(struct sockaddr_un);
+                case AF_INET:
+                    return bpf_core_type_size(struct sockaddr_in);
+                case AF_INET6:
+                    return bpf_core_type_size(struct sockaddr_in6);
+                default:
+                    return sizeof(short);
+            }
+        }
+        case INT_ARR_2_T:
+            return sizeof(int[2]);
+        case TIMESPEC_T:
+            return bpf_core_type_size(struct __kernel_timespec);
+        default:
+            return 0;
+    }
+}
+
 #define DEC_ARG(n, enc_arg) ((enc_arg >> (8 * n)) & 0xFF)
+
+// Below types have value lower than 64, so can be used as bitmasks
+#define BITMASK_INDIRECT_VALUE_TYPES                                                               \
+    ((u64) 1 << INT_ARR_2_T | (u64) 1 << TIMESPEC_T | (u64) 1 << SOCKADDR_T)
 
 statfunc int save_args_to_submit_buf(event_data_t *event, args_t *args)
 {
     unsigned int i;
     unsigned int rc = 0;
     unsigned int arg_num = 0;
-    short family = 0;
+    short zero = 0;
 
     if (event->config.param_types == 0)
         return 0;
 
 #pragma unroll
     for (i = 0; i < 6; i++) {
-        int size = 0;
         u8 type = DEC_ARG(i, event->config.param_types);
         u8 index = i;
-        switch (type) {
-            case NONE_T:
-                break;
-            case INT_T:
-                size = sizeof(int);
-                break;
-            case UINT_T:
-                size = sizeof(unsigned int);
-                break;
-            case OFF_T_T:
-                size = sizeof(off_t);
-                break;
-            case DEV_T_T:
-                size = sizeof(dev_t);
-                break;
-            case MODE_T_T:
-                size = sizeof(mode_t);
-                break;
-            case LONG_T:
-                size = sizeof(long);
-                break;
-            case ULONG_T:
-                size = sizeof(unsigned long);
-                break;
-            case SIZE_T_T:
-                size = sizeof(size_t);
-                break;
-            case POINTER_T:
-                size = sizeof(void *);
-                break;
-            case U8_T:
-                size = sizeof(u8);
-                break;
-            case U16_T:
-                size = sizeof(u16);
-                break;
-            case STR_T:
-                rc = save_str_to_buf(&(event->args_buf), (void *) args->args[i], index);
-                break;
-            case SOCKADDR_T:
-                if (args->args[i]) {
-                    bpf_probe_read(&family, sizeof(short), (void *) args->args[i]);
-                    switch (family) {
-                        case AF_UNIX:
-                            size = bpf_core_type_size(struct sockaddr_un);
-                            break;
-                        case AF_INET:
-                            size = bpf_core_type_size(struct sockaddr_in);
-                            break;
-                        case AF_INET6:
-                            size = bpf_core_type_size(struct sockaddr_in6);
-                            break;
-                        default:
-                            size = sizeof(short);
-                    }
-                    rc = save_to_submit_buf(
-                        &(event->args_buf), (void *) (args->args[i]), size, index);
-                } else {
-                    rc = save_to_submit_buf(&(event->args_buf), &family, sizeof(short), index);
-                }
-                break;
-            case INT_ARR_2_T:
-                size = sizeof(int[2]);
-                rc = save_to_submit_buf(&(event->args_buf), (void *) (args->args[i]), size, index);
-                break;
-            case TIMESPEC_T:
-                size = bpf_core_type_size(struct __kernel_timespec);
-                rc = save_to_submit_buf(&(event->args_buf), (void *) (args->args[i]), size, index);
-                break;
+
+        if (type == NONE_T)
+            continue;
+
+        if (type == STR_T) {
+            rc = save_str_to_buf(&(event->args_buf), (void *) args->args[i], index);
+            goto check_rc;
         }
-        switch (type) {
-            case NONE_T:
-            case STR_T:
-            case SOCKADDR_T:
-            case INT_ARR_2_T:
-            case TIMESPEC_T:
-                break;
-            default:
-                rc = save_to_submit_buf(&(event->args_buf), (void *) &(args->args[i]), size, index);
-                break;
+
+        int size = get_type_size(type, (void *) args->args[i]);
+        if (!size)
+            continue;
+
+        void *arg;
+
+        // If the type is not an indirect value type, use the pointer to the argument
+        if (!(BITMASK_INDIRECT_VALUE_TYPES & ((u64) 1 << type))) {
+            arg = (void *) &args->args[i];
+            goto save;
         }
+
+        if (type == SOCKADDR_T && !args->args[i]) {
+            arg = (void *) &zero;
+            goto save;
+        }
+
+        // type is an indirect value type, use the argument itself
+        arg = (void *) args->args[i];
+    save:
+        rc = save_to_submit_buf(&(event->args_buf), arg, size, index);
+
+    check_rc:
         if (rc > 0) {
             arg_num++;
             rc = 0;
