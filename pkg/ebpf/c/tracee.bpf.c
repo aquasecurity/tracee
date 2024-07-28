@@ -1405,6 +1405,7 @@ int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&p.event->args_buf, &stdin_type, sizeof(unsigned short), 12);
     save_str_to_buf(&p.event->args_buf, stdin_path, 13);
     save_to_submit_buf(&p.event->args_buf, &invoked_from_kernel, sizeof(int), 14);
+    save_str_to_buf(&p.event->args_buf, (void *) p.task_info->context.comm, 15);
     if (p.config->options & OPT_EXEC_ENV) {
         unsigned long env_start, env_end;
         env_start = get_env_start_from_mm(mm);
@@ -1412,7 +1413,7 @@ int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
         int envc = get_envc_from_bprm(bprm);
 
         save_args_str_arr_to_buf(
-            &p.event->args_buf, (void *) env_start, (void *) env_end, envc, 15);
+            &p.event->args_buf, (void *) env_start, (void *) env_end, envc, 16);
     }
 
     events_perf_submit(&p, 0);
