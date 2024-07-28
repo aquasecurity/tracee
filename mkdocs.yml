@@ -109,6 +109,7 @@ nav:
                             - security_socket_bind: docs/events/builtin/extra/security_socket_bind.md
                             - security_socket_connect: docs/events/builtin/extra/security_socket_connect.md
                             - security_socket_setsockopt: docs/events/builtin/extra/security_socket_setsockopt.md
+                            - security_settime64: docs/docs/events/builtin/extra/security_settime64.md
                             - symbols_collision: docs/events/builtin/extra/symbols_collision.md
                             - symbols_loaded: docs/events/builtin/extra/symbols_loaded.md
                             - vfs_read: docs/events/builtin/extra/vfs_read.md
