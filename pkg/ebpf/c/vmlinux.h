@@ -479,7 +479,17 @@ struct alloc_context {
     enum zone_type high_zoneidx;
 };
 
+typedef enum
+{
+    SS_FREE = 0,     /* not allocated		*/
+    SS_UNCONNECTED,  /* unconnected to any socket	*/
+    SS_CONNECTING,   /* in process of connecting	*/
+    SS_CONNECTED,    /* connected to socket		*/
+    SS_DISCONNECTING /* in process of disconnecting	*/
+} socket_state;
+
 struct socket {
+    socket_state state;
     short type;
     struct file *file;
     struct sock *sk;
