@@ -487,11 +487,6 @@ statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
     if (f == NULL)
         return -1;
 
-    // this is a socket - submit the SOCKET_DUP event
-
-    save_to_submit_buf(&(p->event->args_buf), &oldfd, sizeof(u32), 0);
-    save_to_submit_buf(&(p->event->args_buf), &newfd, sizeof(u32), 1);
-
     // get the address
     struct socket *socket_from_file = (struct socket *) BPF_CORE_READ(f, private_data);
     if (socket_from_file == NULL)
@@ -499,8 +494,11 @@ statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
 
     struct sock *sk = get_socket_sock(socket_from_file);
     u16 family = get_sock_family(sk);
-    if ((family != AF_INET) && (family != AF_INET6) && (family != AF_UNIX))
+    if ((family != AF_INET) && (family != AF_INET6))
         return 0;
+
+    save_to_submit_buf(&(p->event->args_buf), &oldfd, sizeof(u32), 0);
+    save_to_submit_buf(&(p->event->args_buf), &newfd, sizeof(u32), 1);
 
     if (family == AF_INET) {
         net_conn_v4_t net_details = {};
@@ -520,49 +518,48 @@ statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
 
         save_to_submit_buf(
             &(p->event->args_buf), &remote, bpf_core_type_size(struct sockaddr_in6), 2);
-    } else if (family == AF_UNIX) {
-        struct unix_sock *unix_sk = (struct unix_sock *) sk;
-        struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
-
-        save_to_submit_buf(
-            &(p->event->args_buf), &sockaddr, bpf_core_type_size(struct sockaddr_un), 2);
     }
 
     return events_perf_submit(p, 0);
 }
 
-SEC("raw_tracepoint/sys_dup")
-int sys_dup_exit_tail(void *ctx)
+statfunc int do_socket_dup(struct pt_regs *ctx, struct pt_regs *task_regs, int ret_val)
 {
     program_data_t p = {};
-    if (!init_tailcall_program_data(&p, ctx))
-        return 0;
-
-    syscall_data_t *sys = &p.task_info->syscall_data;
-
-    if (sys->ret < 0) {
-        // dup failed
-        return 0;
-    }
-
-    if (!reset_event(p.event, SOCKET_DUP))
+    if (!init_program_data(&p, ctx, SOCKET_DUP))
         return 0;
 
     if (!evaluate_scope_filters(&p))
         return 0;
 
-    if (sys->id == SYSCALL_DUP) {
-        // args.args[0]: oldfd
-        // retval: newfd
-        send_socket_dup(&p, sys->args.args[0], sys->ret);
-    } else if (sys->id == SYSCALL_DUP2 || sys->id == SYSCALL_DUP3) {
-        // args.args[0]: oldfd
-        // args.args[1]: newfd
-        // retval: retval
-        send_socket_dup(&p, sys->args.args[0], sys->args.args[1]);
+    int syscall_id = p.event->context.syscall;
+    int old_fd = get_syscall_arg1(p.event->task, task_regs, false);
+
+    if (syscall_id == SYSCALL_DUP) {
+        int new_fd = ret_val;
+        if (new_fd < 0)
+            return 1;
+        send_socket_dup(&p, old_fd, new_fd);
+    } else if (likely(syscall_id == SYSCALL_DUP2 || syscall_id == SYSCALL_DUP3)) {
+        send_socket_dup(&p, old_fd, get_syscall_arg2(p.event->task, task_regs, false));
     }
 
     return 0;
+}
+
+SEC("kretprobe/trace_dup_ret")
+int BPF_KPROBE(trace_dup_ret)
+{
+    struct pt_regs *task_regs = get_current_task_pt_regs();
+    return do_socket_dup(
+        ctx, task_regs, PT_REGS_RC(ctx)); // use the return value received via the kretprobe context
+}
+
+SEC("kprobe/trace_dup_2_3")
+int BPF_KPROBE(trace_dup_2_3, unsigned int oldfd, unsigned int newfd)
+{
+    struct pt_regs *task_regs = get_current_task_pt_regs();
+    return do_socket_dup(ctx, task_regs, 0);
 }
 
 // trace/events/sched.h: TP_PROTO(struct task_struct *parent, struct task_struct *child)
