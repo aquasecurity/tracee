@@ -53,6 +53,10 @@ func (r Runner) Run(ctx context.Context) error {
 		},
 	)
 
+	// Need to force nil to allow the garbage
+	// collector to free the BPF object
+	r.TraceeConfig.BPFObjBytes = nil
+
 	// Initialize tracee
 
 	err = t.Init(ctx)
