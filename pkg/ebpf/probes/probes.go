@@ -150,6 +150,18 @@ const (
 	ExecuteAtFinishedCompatARM
 	SecurityTaskSetrlimit
 	SecuritySettime64
+	SocketDupBasedDupX86
+	SockeDupBasedDup2X86
+	SockeDupBasedDup3X86
+	SocketDupBasedDupCompatX86
+	SockeDupBasedDup2CompatX86
+	SockeDupBasedDup3CompatX86
+	SocketDupBasedDupARM
+	SocketDupBasedDup2ARM
+	SocketDupBasedDup3ARM
+	SocketDupBasedDupCompatARM
+	SocketDupBasedDup2CompatARM
+	SocketDupBasedDup3CompatARM
 )
 
 // Test probe handles
