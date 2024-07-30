@@ -24,8 +24,8 @@
         return save_args(&args, id);                                                               \
     }
 
-#define TRACE_RET_FUNC(name, id, ret)                                                              \
-    int trace_ret_##name(void *ctx)                                                                \
+#define TRACE_RET_FUNC(name, id)                                                                   \
+    int trace_ret_##name(struct pt_regs *ctx)                                                      \
     {                                                                                              \
         args_t args = {};                                                                          \
         if (load_args(&args, id) != 0)                                                             \
@@ -33,18 +33,15 @@
         del_args(id);                                                                              \
                                                                                                    \
         program_data_t p = {};                                                                     \
-        if (!init_program_data(&p, ctx))                                                           \
+        if (!init_program_data(&p, ctx, id))                                                       \
             return 0;                                                                              \
                                                                                                    \
-        if (!should_trace(&p))                                                                     \
-            return 0;                                                                              \
-                                                                                                   \
-        if (!should_submit(id, p.event))                                                           \
+        if (!evaluate_scope_filters(&p))                                                           \
             return 0;                                                                              \
                                                                                                    \
         save_args_to_submit_buf(p.event, &args);                                                   \
                                                                                                    \
-        return events_perf_submit(&p, id, ret);                                                    \
+        return events_perf_submit(&p, PT_REGS_RC(ctx));                                            \
     }
 
 #endif
