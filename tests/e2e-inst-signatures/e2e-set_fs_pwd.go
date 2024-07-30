@@ -14,6 +14,8 @@ import (
 type e2eSetFsPwd struct {
 	cb          detect.SignatureHandler
 	hasReadUser bool
+	seen64Bit   bool
+	seen32Bit   bool
 }
 
 func (sig *e2eSetFsPwd) Init(ctx detect.SignatureContext) error {
@@ -31,6 +33,9 @@ func (sig *e2eSetFsPwd) Init(ctx detect.SignatureContext) error {
 	} else {
 		sig.hasReadUser = true
 	}
+
+	sig.seen64Bit = false
+	sig.seen32Bit = false
 
 	return nil
 }
@@ -72,17 +77,23 @@ func (sig *e2eSetFsPwd) OnEvent(event protocol.Event) error {
 
 		// check expected values from test for detection
 
-		if (sig.hasReadUser && !strings.HasSuffix(unresolvedPath, "/test_link")) || !strings.HasSuffix(resolvedPath, "/test_dir") {
+		if strings.HasSuffix(resolvedPath, "/test_dir_64") && (!sig.hasReadUser || strings.HasSuffix(unresolvedPath, "/test_link")) {
+			sig.seen64Bit = true
+		} else if strings.HasSuffix(resolvedPath, "/test_dir_32") && (!sig.hasReadUser || strings.HasSuffix(unresolvedPath, "/test_link")) {
+			sig.seen32Bit = true
+		} else {
 			return nil
 		}
 
-		m, _ := sig.GetMetadata()
+		if sig.seen64Bit && sig.seen32Bit {
+			m, _ := sig.GetMetadata()
 
-		sig.cb(&detect.Finding{
-			SigMetadata: m,
-			Event:       event,
-			Data:        map[string]interface{}{},
-		})
+			sig.cb(&detect.Finding{
+				SigMetadata: m,
+				Event:       event,
+				Data:        map[string]interface{}{},
+			})
+		}
 	}
 
 	return nil

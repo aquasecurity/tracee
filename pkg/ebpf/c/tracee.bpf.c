@@ -5093,11 +5093,30 @@ int BPF_KPROBE(trace_set_fs_pwd)
     if (!evaluate_scope_filters(&p))
         return 0;
 
-    syscall_data_t *sys = &p.task_info->syscall_data;
-
     void *unresolved_path = NULL;
-    if (sys->id == SYSCALL_CHDIR)
-        unresolved_path = (void *) sys->args.args[0];
+
+    // Get syscall ID that triggered this kprobe
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    int syscall = p.event->context.syscall;
+    if (is_compat(task)) {
+        int *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &syscall);
+        if (id_64 != NULL)
+            syscall = *id_64;
+    }
+
+    // The kprobe was triggered from the chdir syscall, get the path argument
+    if (syscall == SYSCALL_CHDIR) {
+        struct pt_regs *regs = get_current_task_pt_regs();
+
+        if (is_compat(task)) {
+#if defined(bpf_target_x86)
+            unresolved_path = (void *) BPF_CORE_READ(regs, bx);
+#elif defined(bpf_target_arm64)
+            unresolved_path = (void *) BPF_CORE_READ(regs, regs[0]);
+#endif
+        } else
+            unresolved_path = (void *) PT_REGS_PARM1_CORE_SYSCALL(regs);
+    }
 
     void *resolved_path = get_path_str((struct path *) PT_REGS_PARM2(ctx));
 

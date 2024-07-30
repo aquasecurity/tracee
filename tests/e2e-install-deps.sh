@@ -280,6 +280,26 @@ install_libzstd_os_packages() {
     esac
 }
 
+install_gcc_arm32_target() {
+    case $ID in
+    "ubuntu")
+        wait_for_apt_locks
+        dpkg --add-architecture armhf
+        apt-get update
+        apt-get install -y gcc-arm-linux-gnueabi libc6:armhf
+        ln -s /lib/ld-linux-armhf.so.3 /lib/ld-linux.so.3
+    ;;
+    "almalinux")
+        yum install -y epel-release
+        yum install -y gcc-arm-linux-gnu
+    ;;
+    *)
+        echo "Unsupported OS: $ID"
+        exit 1
+    ;;
+    esac
+}
+
 # Main logic.
 
 # Note: I left commented out the commands that would (re)install clang-14. This
@@ -347,3 +367,8 @@ fi
 
 # for static builds libelf might require libzstd
 install_libzstd_os_packages
+
+# the set_fs_pwd test requires a compiler for arm 32 bit
+if [[ $ARCH == aarch64 ]]; then
+    install_gcc_arm32_target
+fi
