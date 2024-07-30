@@ -2682,13 +2682,14 @@ int BPF_KPROBE(trace_security_socket_accept)
 
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
     struct socket *new_sock = (struct socket *) PT_REGS_PARM2(ctx);
-    syscall_data_t *sys = &p.task_info->syscall_data;
+
+    struct pt_regs *task_regs = get_current_task_pt_regs();
 
     if (event_is_selected(SOCKET_ACCEPT, p.event->context.policies_version)) {
         args_t args = {};
         args.args[0] = (unsigned long) sock;
         args.args[1] = (unsigned long) new_sock;
-        args.args[2] = sys->args.args[0]; // sockfd
+        args.args[2] = get_syscall_arg1(p.event->task, task_regs, false); // sockfd
         save_args(&args, SOCKET_ACCEPT);
     }
 
@@ -2699,14 +2700,17 @@ int BPF_KPROBE(trace_security_socket_accept)
     if (!p.task_info->syscall_traced)
         return 0;
 
-    switch (sys->id) {
+    int sockfd;
+    switch (p.event->context.syscall) {
         case SYSCALL_ACCEPT:
         case SYSCALL_ACCEPT4:
-            save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+            sockfd = get_syscall_arg1(p.event->task, task_regs, false);
+            save_to_submit_buf(&p.event->args_buf, (void *) &sockfd, sizeof(int), 0);
             break;
 #if defined(bpf_target_x86) // armhf makes use of SYSCALL_ACCEPT/4
         case SYSCALL_SOCKETCALL:
-            save_to_submit_buf(&p.event->args_buf, (void *) sys->args.args[1], sizeof(u32), 0);
+            sockfd = get_syscall_arg2(p.event->task, task_regs, false);
+            save_to_submit_buf(&p.event->args_buf, (void *) &sockfd, sizeof(int), 0);
             break;
 #endif
         default:

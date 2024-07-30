@@ -11646,10 +11646,6 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SecuritySocketAccept, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept), uint32(Accept4)}},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "net", "net_sock"},
