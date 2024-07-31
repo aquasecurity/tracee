@@ -1392,6 +1392,10 @@ func (t *Tracee) initBPF() error {
 		return errfmt.WrapError(err)
 	}
 
+	// Need to force nil to allow the garbage
+	// collector to free the BPF object
+	t.config.BPFObjBytes = nil
+
 	// Populate eBPF maps with initial data
 
 	err = t.populateBPFMaps()
