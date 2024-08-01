@@ -5160,6 +5160,35 @@ int BPF_KPROBE(trace_security_settime64)
     return events_perf_submit(&p, 0);
 }
 
+SEC("kprobe/inet_sendmsg")
+int BPF_KPROBE(trace_inet_sendmsg)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, INET_SENDMSG))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+
+    struct msghdr *msg = (struct msghdr *) PT_REGS_PARM2(ctx);
+    int msg_namelen = BPF_CORE_READ(msg, msg_namelen);
+    struct sockaddr *sockaddr = BPF_CORE_READ(msg, msg_name);
+
+    size_t size = (size_t) PT_REGS_PARM3(ctx);
+    if (msg_namelen == 0) {
+        return 0;
+    }
+
+    bpf_printk("actual size=%d, sizeof(un)=%d, mask=%d", msg_namelen, sizeof(struct sockaddr_un), msg_namelen&(sizeof(struct sockaddr_un)-1));
+
+    save_to_submit_buf(&p.event->args_buf, sockaddr, 16, 0); // msg_namelen&
+    save_to_submit_buf(&p.event->args_buf, &size, sizeof(size_t), 1);
+
+
+    return events_perf_submit(&p, 0);
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)

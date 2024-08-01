@@ -150,6 +150,7 @@ const (
 	ExecuteAtFinishedCompatARM
 	SecurityTaskSetrlimit
 	SecuritySettime64
+	InetSendmsg
 )
 
 // Test probe handles

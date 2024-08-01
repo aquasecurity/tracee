@@ -497,6 +497,16 @@ struct in6_addr {
     } in6_u;
 };
 
+struct msghdr {
+    void *msg_name;
+    int	msg_namelen;
+};
+
+struct proto {
+    int			(*sendmsg)(struct sock *sk, struct msghdr *msg,
+					   size_t len);
+};
+
 struct sock_common {
     union {
         struct {
@@ -515,6 +525,7 @@ struct sock_common {
     int skc_bound_dev_if;
     struct in6_addr skc_v6_daddr;
     struct in6_addr skc_v6_rcv_saddr;
+    struct proto *skc_prot;
 };
 
 struct kobject {
@@ -532,6 +543,7 @@ struct sock {
     u16 sk_type;
     u16 sk_protocol;
     struct socket *sk_socket;
+    
 };
 
 typedef u32 __kernel_dev_t;
@@ -583,10 +595,6 @@ struct sockaddr_in6 {
     __be32 sin6_flowinfo;
     struct in6_addr sin6_addr;
     __u32 sin6_scope_id;
-};
-
-struct msghdr {
-    void *msg_name;
 };
 
 typedef s64 ktime_t;

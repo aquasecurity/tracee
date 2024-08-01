@@ -113,6 +113,7 @@ const (
 	SecurityBprmCredsForExec
 	SecurityTaskSetrlimit
 	SecuritySettime64
+	InetSendmsg
 	MaxCommonID
 )
 
@@ -13104,6 +13105,21 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u64", Name: "tv_nsec"},
 			{Type: "int", Name: "tz_minuteswest"},
 			{Type: "int", Name: "tz_dsttime"},
+		},
+	},
+	InetSendmsg: {
+		id:      InetSendmsg,
+		id32Bit: Sys32Undefined,
+		name:    "inet_sendmsg",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.InetSendmsg, required: true},
+			},
+		},
+		sets: []string{"net", "net_snd_rcv"},
+		params: []trace.ArgMeta{
+			{Type: "struct sockaddr*", Name: "dest_addr"},
+			{Type: "size_t", Name: "size"},
 		},
 	},
 	//
