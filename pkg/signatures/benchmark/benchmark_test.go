@@ -93,6 +93,9 @@ func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 
 				e, err := engine.NewEngine(config, inputs, output)
 				require.NoError(b, err, "constructing engine")
+
+				err = e.Init()
+				require.NoError(b, err, "initializing engine")
 				b.StartTimer()
 
 				// Start signatures engine and wait until all events are processed
@@ -139,6 +142,9 @@ func BenchmarkEngineWithMultipleSignatures(b *testing.B) {
 				}
 				e, err := engine.NewEngine(config, inputs, output)
 				require.NoError(b, err, "constructing engine")
+
+				err = e.Init()
+				require.NoError(b, err, "initializing engine")
 				b.StartTimer()
 
 				// Start signatures engine and wait until all events are processed
@@ -198,6 +204,9 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 
 					e, err := engine.NewEngine(config, inputs, output)
 					require.NoError(b, err, "constructing engine")
+
+					err = e.Init()
+					require.NoError(b, err, "initializing engine")
 					b.StartTimer()
 
 					// Start signatures engine and wait until all events are processed
