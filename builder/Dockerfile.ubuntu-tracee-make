@@ -105,5 +105,5 @@ RUN GOROOT=/usr/local/go GOPATH=$HOME/go \
     cp $HOME/go/bin/errcheck /usr/bin/
 
 USER tracee
-ENV HOME /home/tracee
+ENV HOME=/home/tracee
 WORKDIR /tracee
