@@ -17,13 +17,13 @@ ARG OPA_VERSION=v0.63.0
 # After solved we can rollback to the commented installation lines below.
 #
 # Stage 1: Set the base image to get the OPA binary
-FROM openpolicyagent/opa:0.66.0-dev-static as opa-extractor
+FROM openpolicyagent/opa:0.66.0-dev-static AS opa-extractor
 
 #
 # tracee-base
 #
 
-FROM alpine:3.19 as tracee-base
+FROM alpine:3.19 AS tracee-base
 LABEL AS=tracee-base
 USER root
 
@@ -49,7 +49,7 @@ COPY --from=opa-extractor /opa /usr/bin/opa
 # tracee-make-base
 #
 
-FROM tracee-base as tracee-make-base
+FROM tracee-base AS tracee-make-base
 LABEL AS=tracee-make-base
 USER root
 
@@ -122,11 +122,11 @@ RUN cd /tmp && \
 # tracee-make
 #
 
-FROM tracee-make-base as tracee-make
+FROM tracee-make-base AS tracee-make
 LABEL AS=tracee-make
 ARG BTFHUB
 USER root
-ENV HOME /tracee
+ENV HOME=/tracee
 WORKDIR /tracee
 
 COPY . /tracee
@@ -145,10 +145,10 @@ RUN source /etc/profile && \
 # tracee-core (tracee-base as base)
 #
 
-FROM tracee-base as tracee-core
+FROM tracee-base AS tracee-core
 LABEL AS=tracee-core
 USER root
-ENV HOME /tracee
+ENV HOME=/tracee
 WORKDIR /tracee
 
 COPY --from=tracee-make /tracee/dist/tracee /tracee
@@ -167,5 +167,5 @@ ENTRYPOINT ["/tracee/entrypoint.sh"]
 
 FROM $FLAVOR
 USER root
-ENV HOME /tracee
+ENV HOME=/tracee
 WORKDIR /tracee
