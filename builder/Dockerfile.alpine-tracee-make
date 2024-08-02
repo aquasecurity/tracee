@@ -120,5 +120,5 @@ RUN export uid=$uid gid=$gid && \
     ln -s /home/tracee/.bashrc /home/tracee/.profile
 
 USER tracee
-ENV HOME /home/tracee
+ENV HOME=/home/tracee
 WORKDIR /tracee
