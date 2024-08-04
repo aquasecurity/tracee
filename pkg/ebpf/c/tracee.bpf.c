@@ -2815,22 +2815,18 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
     int level = (int) PT_REGS_PARM2(ctx);
     int optname = (int) PT_REGS_PARM3(ctx);
 
-    // Load the arguments given to the setsockopt syscall (which eventually invokes this function)
-    syscall_data_t *sys = &p.task_info->syscall_data;
-    if (sys == NULL) {
-        return -1;
-    }
-
-    if (!p.task_info->syscall_traced)
-        return 0;
-
-    switch (sys->id) {
+    struct pt_regs *task_regs = get_current_task_pt_regs();
+    int sockfd;
+    u32 sockfd_addr;
+    switch (p.event->context.syscall) {
         case SYSCALL_SETSOCKOPT:
-            save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+            sockfd = get_syscall_arg1(p.event->task, task_regs, false);
+            save_to_submit_buf(&p.event->args_buf, (void *) &sockfd, sizeof(u32), 0);
             break;
 #if defined(bpf_target_x86) // armhf makes use of SYSCALL_SETSOCKOPT
         case SYSCALL_SOCKETCALL:
-            save_to_submit_buf(&p.event->args_buf, (void *) sys->args.args[1], sizeof(u32), 0);
+            sockfd_addr = get_syscall_arg2(p.event->task, task_regs, false);
+            save_to_submit_buf(&p.event->args_buf, (void *) sockfd_addr, sizeof(u32), 0);
             break;
 #endif
         default:
