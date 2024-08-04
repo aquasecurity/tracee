@@ -13054,19 +13054,9 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SetFsPwd, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{
-					"sys_enter_init_tail",
-					"sys_enter_init",
-					[]uint32{
-						uint32(Chdir),
-					},
-				},
 			},
 		},
-		sets: []string{"syscalls"},
+		sets: []string{},
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "unresolved_path"},
 			{Type: "const char*", Name: "resolved_path"},
