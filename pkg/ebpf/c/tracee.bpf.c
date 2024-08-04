@@ -5170,14 +5170,23 @@ int BPF_KPROBE(trace_inet_sendmsg)
     if (!evaluate_scope_filters(&p))
         return 0;
 
-
     struct msghdr *msg = (struct msghdr *) PT_REGS_PARM2(ctx);
     int msg_namelen = BPF_CORE_READ(msg, msg_namelen);
     struct sockaddr *sockaddr = BPF_CORE_READ(msg, msg_name);
 
     size_t size = (size_t) PT_REGS_PARM3(ctx);
-    if (msg_namelen == 0) {
-        return 0;
+    // if (msg_namelen == 0) {
+    //     return 0;
+    // }
+
+    unsigned short family = BPF_CORE_READ(sockaddr, sa_family);
+    bpf_printk("family %u", family);
+    if (family == AF_INET) {
+        // next 16 bits is the port (be)
+        struct sockaddr_in *in = (struct sockaddr_in *) sockaddr;
+        __be16 port = BPF_CORE_READ(in, sin_port);
+        u16 p = bpf_ntohs(port);
+        bpf_printk("port is: %u", p);
     }
 
     bpf_printk("actual size=%d, sizeof(un)=%d, mask=%d", msg_namelen, sizeof(struct sockaddr_un), msg_namelen&(sizeof(struct sockaddr_un)-1));
