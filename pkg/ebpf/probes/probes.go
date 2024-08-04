@@ -150,6 +150,10 @@ const (
 	ExecuteAtFinishedCompatARM
 	SecurityTaskSetrlimit
 	SecuritySettime64
+	ProcessVmWritevX86
+	ProcessVmWritevCompatX86
+	ProcessVmWritevARM
+	ProcessVmWritevCompatARM
 )
 
 // Test probe handles
