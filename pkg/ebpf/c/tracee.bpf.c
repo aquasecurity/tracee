@@ -5160,6 +5160,38 @@ int BPF_KPROBE(trace_security_settime64)
     return events_perf_submit(&p, 0);
 }
 
+SEC("kretprobe/process_vm_writev")
+int BPF_KPROBE(trace_process_vm_writev)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, PROCESS_VM_WRITEV_NO_SYS_ENTER))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    // use this helper to avoid the unwrapping of struct pt_regs
+    struct pt_regs *task_regs = get_current_task_pt_regs();
+    pid_t pid = (pid_t) get_syscall_arg1(p.event->task, task_regs, false);
+    const struct iovec *lvec =
+        (const struct iovec *) get_syscall_arg2(p.event->task, task_regs, false);
+    unsigned long liovcnt = get_syscall_arg3(p.event->task, task_regs, false);
+    const struct iovec *rvec =
+        (const struct iovec *) get_syscall_arg4(p.event->task, task_regs, false);
+    unsigned long riovcnt = get_syscall_arg5(p.event->task, task_regs, false);
+    unsigned long flags = get_syscall_arg6(p.event->task, task_regs, false);
+
+    save_to_submit_buf(&p.event->args_buf, &pid, sizeof(pid_t), 0);
+    save_to_submit_buf(&p.event->args_buf, &lvec, sizeof(struct iovec *), 1);
+    save_to_submit_buf(&p.event->args_buf, &liovcnt, sizeof(unsigned long), 2);
+    save_to_submit_buf(&p.event->args_buf, &rvec, sizeof(struct iovec *), 3);
+    save_to_submit_buf(&p.event->args_buf, &riovcnt, sizeof(unsigned long), 4);
+    save_to_submit_buf(&p.event->args_buf, &flags, sizeof(unsigned long), 5);
+
+    int ret = PT_REGS_RC(ctx);
+    return events_perf_submit(&p, ret);
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)
