@@ -11519,18 +11519,6 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SecurityFileOpen, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{
-					"sys_enter_init_tail",
-					"sys_enter_init",
-					[]uint32{
-						uint32(Open), uint32(Openat), uint32(Openat2),
-						uint32(OpenByHandleAt), uint32(Execve),
-						uint32(Execveat),
-					},
-				},
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops"},
