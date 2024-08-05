@@ -113,6 +113,7 @@ const (
 	SecurityBprmCredsForExec
 	SecurityTaskSetrlimit
 	SecuritySettime64
+	PtraceSyscallNoSysenter
 	MaxCommonID
 )
 
@@ -2672,32 +2673,6 @@ var CoreEvents = map[ID]Definition{
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Times)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Times)}},
 				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Times)}},
-			},
-		},
-	},
-	Ptrace: {
-		id:      Ptrace,
-		id32Bit: Sys32ptrace,
-		name:    "ptrace",
-		version: NewVersion(1, 0, 0),
-		syscall: true,
-		sets:    []string{"default", "syscalls", "proc"},
-		params: []trace.ArgMeta{
-			{Type: "long", Name: "request"},
-			{Type: "pid_t", Name: "pid"},
-			{Type: "void*", Name: "addr"},
-			{Type: "void*", Name: "data"},
-		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ptrace)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ptrace)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ptrace)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ptrace)}},
 			},
 		},
 	},
@@ -13104,6 +13079,28 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u64", Name: "tv_nsec"},
 			{Type: "int", Name: "tz_minuteswest"},
 			{Type: "int", Name: "tz_dsttime"},
+		},
+	},
+	PtraceSyscallNoSysenter: {
+		id:      PtraceSyscallNoSysenter,
+		id32Bit: Sys32ptrace,
+		name:    "ptrace",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"default", "syscalls", "proc"},
+		params: []trace.ArgMeta{
+			{Type: "long", Name: "request"},
+			{Type: "pid_t", Name: "pid"},
+			{Type: "void*", Name: "addr"},
+			{Type: "void*", Name: "data"},
+		},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.PtraceX86, required: false},
+				{handle: probes.PtraceCompatX86, required: false},
+				{handle: probes.PtraceARM, required: false},
+				{handle: probes.PtraceCompatARM, required: false},
+			},
 		},
 	},
 	//

@@ -150,6 +150,10 @@ const (
 	ExecuteAtFinishedCompatARM
 	SecurityTaskSetrlimit
 	SecuritySettime64
+	PtraceX86
+	PtraceCompatX86
+	PtraceARM
+	PtraceCompatARM
 )
 
 // Test probe handles

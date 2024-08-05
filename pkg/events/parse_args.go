@@ -100,7 +100,7 @@ func ParseArgs(event *trace.Event) error {
 				parseOrEmptyString(prevProtArg, mmapProtArgument, nil)
 			}
 		}
-	case Ptrace:
+	case PtraceSyscallNoSysenter:
 		if reqArg := GetArg(event, "request"); reqArg != nil {
 			if req, isInt64 := reqArg.Value.(int64); isInt64 {
 				ptraceRequestArgument, err := parsers.ParsePtraceRequestArgument(uint64(req))
