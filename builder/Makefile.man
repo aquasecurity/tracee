@@ -79,6 +79,7 @@ man-run: \
 	.check_tree
 #
 	$(CMD_DOCKER) run --rm \
+		--user 1000:1000 \
 		-v $(shell pwd):/tracee \
 		$(MAN_CONTNAME) make man
 
