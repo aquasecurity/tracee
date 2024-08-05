@@ -5160,6 +5160,27 @@ int BPF_KPROBE(trace_security_settime64)
     return events_perf_submit(&p, 0);
 }
 
+SEC("kretprobe/arch_prctl")
+int BPF_KPROBE(trace_arch_prctl)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, ARCH_PRCTL_NO_SYSENTER))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    struct pt_regs *task_regs = get_current_task_pt_regs();
+    int option = get_syscall_arg1(p.event->task, task_regs, false);
+    unsigned long addr = get_syscall_arg2(p.event->task, task_regs, false);
+
+    save_to_submit_buf(&p.event->args_buf, &option, sizeof(int), 0);
+    save_to_submit_buf(&p.event->args_buf, &addr, sizeof(unsigned long), 1);
+
+    int ret = PT_REGS_RC(ctx);
+    return events_perf_submit(&p, ret);
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)

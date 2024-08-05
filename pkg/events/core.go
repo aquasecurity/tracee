@@ -113,6 +113,7 @@ const (
 	SecurityBprmCredsForExec
 	SecurityTaskSetrlimit
 	SecuritySettime64
+	ArchPrctlNoSysEnter
 	MaxCommonID
 )
 
@@ -4016,30 +4017,6 @@ var CoreEvents = map[ID]Definition{
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Prctl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Prctl)}},
 				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Prctl)}},
-			},
-		},
-	},
-	ArchPrctl: {
-		id:      ArchPrctl,
-		id32Bit: Sys32arch_prctl,
-		name:    "arch_prctl",
-		version: NewVersion(1, 0, 0),
-		syscall: true,
-		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
-			{Type: "int", Name: "option"},
-			{Type: "unsigned long", Name: "addr"},
-		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ArchPrctl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ArchPrctl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ArchPrctl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ArchPrctl)}},
 			},
 		},
 	},
@@ -13104,6 +13081,24 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u64", Name: "tv_nsec"},
 			{Type: "int", Name: "tz_minuteswest"},
 			{Type: "int", Name: "tz_dsttime"},
+		},
+	},
+	ArchPrctlNoSysEnter: {
+		id:      ArchPrctl,
+		id32Bit: Sys32arch_prctl,
+		name:    "arch_prctl",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "proc"},
+		params: []trace.ArgMeta{
+			{Type: "int", Name: "option"},
+			{Type: "unsigned long", Name: "addr"},
+		},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.ArchPrctlX86, required: false},
+				{handle: probes.ArchPrctlCompatX86, required: false},
+			},
 		},
 	},
 	//
