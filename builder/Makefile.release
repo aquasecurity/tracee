@@ -23,6 +23,7 @@ CMD_DOCKER ?= docker
 CMD_GIT ?= git
 CMD_GITHUB ?= gh
 CMD_MKDIR ?= mkdir
+CMD_CP ?= cp
 CMD_MV ?= mv
 CMD_RM ?= rm
 CMD_TAR ?= tar
@@ -136,6 +137,7 @@ RELEASE_FILES += $(OUTPUT_DIR)/tracee
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-static
 RELEASE_FILES += $(OUTPUT_DIR)/signatures
 #RELEASE_FILES += $(OUTPUT_DIR)/tracee.bpf.o
+RELEASE_FILES += $(OUTPUT_DIR)/docs/man/ # docs path is hardcoded in tracee
 
 OUT_ARCHIVE := $(OUTPUT_DIR)/tracee-$(ARCH).$(SNAPSHOT_VERSION).tar.gz
 OUT_CHECKSUMS := $(OUTPUT_DIR)/checksum-$(ARCH).$(SNAPSHOT_VERSION).txt
@@ -148,6 +150,7 @@ release: \
 	build-tracee-btfhub \
 	build-tracee-binary-static \
 	build-tracee-binary-shared \
+	copy-man \
 	archive \
 	| .check_tree \
 	.check_$(CMD_DOCKER) \
@@ -223,6 +226,12 @@ build-tracee-binary-static: ubuntu-prepare
 build-tracee-binary-shared: ubuntu-prepare
 # shared libs
 	BTFHUB=0 STATIC=0 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
+
+.PHONY: copy-man
+copy-man: \
+	| $(OUTPUT_DIR)
+# man
+	$(CMD_CP) -r --parents docs/man $(OUTPUT_DIR)
 
 .PHONY: archive
 archive:

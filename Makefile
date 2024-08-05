@@ -953,29 +953,40 @@ protoc:
 # man pages
 #
 
-MARKDOWN_DIR ?= ./docs/docs/flags
-MAN_DIR ?= ./docs/man
+MARKDOWN_DIR ?= docs/docs/flags
+MAN_DIR ?= docs/man
+OUTPUT_MAN_DIR := $(OUTPUT_DIR)/$(MAN_DIR)
 MARKDOW_FILES := $(shell find $(MARKDOWN_DIR) \
 					-type f \
 					-name '*.md' \
 				)
 MAN_FILES := $(patsubst $(MARKDOWN_DIR)/%.md,$(MAN_DIR)/%,$(MARKDOW_FILES))
 
+$(OUTPUT_MAN_DIR): \
+	| .check_$(CMD_MKDIR)
+#
+	$(CMD_MKDIR) -p $@
+
 $(MAN_DIR)/%: $(MARKDOWN_DIR)/%.md \
 	| .check_$(CMD_PANDOC) \
+	$(OUTPUT_MAN_DIR)
 #
-	@echo Generating $@
-	@$(CMD_PANDOC) \
+	@echo Generating $@ && \
+	$(CMD_PANDOC) \
 		--verbose \
 		--standalone \
 		--to man \
 		$< \
-		-o $@
+		-o $@ && \
+	echo Copying $@ to $(OUTPUT_MAN_DIR) && \
+	cp $@ $(OUTPUT_MAN_DIR)
 
 .PHONY: clean-man
 clean-man:
-	@echo Cleaning $(MAN_DIR)
-	@rm -f $(MAN_DIR)/*
+	@echo Cleaning $(MAN_DIR) && \
+	rm -f $(MAN_DIR)/* && \
+	echo Cleaning $(OUTPUT_MAN_DIR) && \
+	rm -rf $(OUTPUT_MAN_DIR)
 
 .PHONY: man
 man: clean-man $(MAN_FILES)
