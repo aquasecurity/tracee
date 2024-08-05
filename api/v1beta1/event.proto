@@ -547,7 +547,7 @@ enum EventId {
     module_load = 1082;
     module_free = 1083;
     execute_finished = 1084;
-    security_bprm_creds_for_exec = 1085;
+    process_execute_failed_internal = 1085;
 
     // Events originated from user-space
     net_packet_ipv4 = 2000;

@@ -147,8 +147,7 @@ const (
 	TailSchedProcessExecEventSubmit
 	TailVfsRead
 	TailVfsReadv
-	TailProcessExecuteFailed1
-	TailProcessExecuteFailed2
+	TailProcessExecuteFailed
 	TailHiddenKernelModuleProc
 	TailHiddenKernelModuleKset
 	TailHiddenKernelModuleModTree

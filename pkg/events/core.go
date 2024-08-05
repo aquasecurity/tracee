@@ -110,7 +110,7 @@ const (
 	ModuleLoad
 	ModuleFree
 	ExecuteFinished
-	SecurityBprmCredsForExec
+	ProcessExecuteFailedInternal
 	SecurityTaskSetrlimit
 	SecuritySettime64
 	MaxCommonID
@@ -12877,25 +12877,10 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.ExecuteAtFinishedCompatARM, required: false},
 			},
 		},
-	},
-	SecurityBprmCredsForExec: {
-		id:       SecurityBprmCredsForExec,
-		id32Bit:  Sys32Undefined,
-		name:     "security_bprm_creds_for_exec",
-		version:  NewVersion(1, 0, 0),
-		sets:     []string{"proc"},
-		internal: true,
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityBprmCredsForExec, required: false}, // TODO: Change to required once fallbacks are supported
-			},
-			tailCalls: []TailCall{
-				{"prog_array", "trace_execute_failed1", []uint32{TailProcessExecuteFailed1}},
-				{"prog_array", "trace_execute_failed2", []uint32{TailProcessExecuteFailed2}},
-			},
-		},
 		params: []trace.ArgMeta{
-			{Type: "const char*", Name: "path"},
+			{Type: "int", Name: "dirfd"},
+			{Type: "int", Name: "flags"},
+			{Type: "const char*", Name: "pathname"},
 			{Type: "const char*", Name: "binary.path"},
 			{Type: "dev_t", Name: "binary.device_id"},
 			{Type: "unsigned long", Name: "binary.inode_number"},
@@ -12905,8 +12890,42 @@ var CoreEvents = map[ID]Definition{
 			{Type: "umode_t", Name: "stdin_type"},
 			{Type: "char*", Name: "stdin_path"},
 			{Type: "int", Name: "kernel_invoked"},
-			{Type: "const char*const*", Name: "binary.arguments"},
-			{Type: "const char*const*", Name: "environment"},
+			{Type: "const char*const*", Name: "argv"},
+			{Type: "const char*const*", Name: "envp"},
+		},
+	},
+	ProcessExecuteFailedInternal: {
+		id:       ProcessExecuteFailedInternal,
+		id32Bit:  Sys32Undefined,
+		name:     "process_execute_failed_internal",
+		version:  NewVersion(1, 0, 0),
+		sets:     []string{"proc"},
+		internal: true,
+		dependencies: Dependencies{
+			ids: []ID{ExecuteFinished},
+			probes: []Probe{
+				{handle: probes.ExecBinprm, required: false},
+				{handle: probes.SecurityBprmCredsForExec, required: false}, // TODO: Change to required once fallbacks are supported
+			},
+			tailCalls: []TailCall{
+				{"prog_array", "process_execute_failed_tail", []uint32{TailProcessExecuteFailed}},
+			},
+		},
+		params: []trace.ArgMeta{
+			{Type: "int", Name: "dirfd"},
+			{Type: "int", Name: "flags"},
+			{Type: "const char*", Name: "pathname"},
+			{Type: "const char*", Name: "binary.path"},
+			{Type: "dev_t", Name: "binary.device_id"},
+			{Type: "unsigned long", Name: "binary.inode_number"},
+			{Type: "unsigned long", Name: "binary.ctime"},
+			{Type: "umode_t", Name: "binary.inode_mode"},
+			{Type: "const char*", Name: "interpreter_path"},
+			{Type: "umode_t", Name: "stdin_type"},
+			{Type: "char*", Name: "stdin_path"},
+			{Type: "int", Name: "kernel_invoked"},
+			{Type: "const char*const*", Name: "argv"},
+			{Type: "const char*const*", Name: "envp"},
 		},
 	},
 	ProcessExecuteFailed: {
@@ -12916,18 +12935,12 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		sets:    []string{"proc"},
 		dependencies: Dependencies{
-			ids: []ID{ExecuteFinished, SecurityBprmCredsForExec}, // For kernel version >= 5.8
-			probes: []Probe{
-				{handle: probes.ExecBinprm, required: false},
-				{handle: probes.ExecBinprmRet, required: false},
-			},
-			tailCalls: []TailCall{
-				{"prog_array", "trace_execute_failed1", []uint32{TailProcessExecuteFailed1}},
-				{"prog_array", "trace_execute_failed2", []uint32{TailProcessExecuteFailed2}},
-			},
+			ids: []ID{ProcessExecuteFailedInternal},
 		},
 		params: []trace.ArgMeta{
-			{Type: "const char*", Name: "path"},
+			{Type: "int", Name: "dirfd"},
+			{Type: "int", Name: "flags"},
+			{Type: "const char*", Name: "pathname"},
 			{Type: "const char*", Name: "binary.path"},
 			{Type: "dev_t", Name: "binary.device_id"},
 			{Type: "unsigned long", Name: "binary.inode_number"},
@@ -12937,8 +12950,8 @@ var CoreEvents = map[ID]Definition{
 			{Type: "umode_t", Name: "stdin_type"},
 			{Type: "char*", Name: "stdin_path"},
 			{Type: "int", Name: "kernel_invoked"},
-			{Type: "const char*const*", Name: "binary.arguments"},
-			{Type: "const char*const*", Name: "environment"},
+			{Type: "const char*const*", Name: "argv"},
+			{Type: "const char*const*", Name: "envp"},
 		},
 	},
 	FtraceHook: {
