@@ -80,7 +80,7 @@ func (sig *e2eProcessExecuteFailed) OnEvent(event protocol.Event) error {
 			return err
 		}
 	case "process_execute_failed":
-		filePath, err := helpers.GetTraceeStringArgumentByName(eventObj, "path")
+		filePath, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {
 			return err
 		}
