@@ -10,7 +10,7 @@
 // PROTOTYPES
 
 statfunc int get_task_flags(struct task_struct *task);
-statfunc int get_task_syscall_id(struct task_struct *task);
+statfunc int get_current_task_syscall_id(void);
 statfunc u32 get_task_mnt_ns_id(struct task_struct *task);
 statfunc u32 get_task_pid_ns_for_children_id(struct task_struct *task);
 statfunc u32 get_task_pid_ns_id(struct task_struct *task);
@@ -39,13 +39,13 @@ statfunc int get_task_flags(struct task_struct *task)
     return BPF_CORE_READ(task, flags);
 }
 
-statfunc int get_task_syscall_id(struct task_struct *task)
+statfunc int get_current_task_syscall_id(void)
 {
     // There is no originated syscall in kernel thread context
-    if (get_task_flags(task) & PF_KTHREAD) {
+    if (get_task_flags((struct task_struct *) bpf_get_current_task()) & PF_KTHREAD) {
         return NO_SYSCALL;
     }
-    struct pt_regs *regs = get_task_pt_regs(task);
+    struct pt_regs *regs = get_current_task_pt_regs();
     return get_syscall_id_from_regs(regs);
 }
 
