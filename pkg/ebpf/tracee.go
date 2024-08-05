@@ -781,7 +781,7 @@ func (t *Tracee) initDerivationTable() error {
 				DeriveFunction: executeFailedGen.ProcessExecuteFailed(),
 			},
 		},
-		events.SecurityBprmCredsForExec: {
+		events.ProcessExecuteFailedInternal: {
 			events.ProcessExecuteFailed: {
 				Enabled:        shouldSubmit(events.ProcessExecuteFailed),
 				DeriveFunction: executeFailedGen.ProcessExecuteFailed(),
