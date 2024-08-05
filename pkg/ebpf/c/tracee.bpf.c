@@ -4950,7 +4950,8 @@ statfunc int submit_process_execute_failed(struct pt_regs *ctx, program_data_t *
     return -1;
 }
 
-statfunc int execute_failed_tail1(struct pt_regs *ctx, u32 tail_call_id)
+SEC("kprobe/execute_failed_tail1")
+int execute_failed_tail1(struct pt_regs *ctx)
 {
     program_data_t p = {};
     if (!init_tailcall_program_data(&p, ctx))
@@ -4968,67 +4969,42 @@ statfunc int execute_failed_tail1(struct pt_regs *ctx, u32 tail_call_id)
     int kernel_invoked = (get_task_parent_flags(task) & PF_KTHREAD) ? 1 : 0;
     save_to_submit_buf(&p.event->args_buf, &kernel_invoked, sizeof(int), 9);
 
-    bpf_tail_call(ctx, &prog_array, tail_call_id);
+    bpf_tail_call(ctx, &prog_array, TAIL_PROCESS_EXECUTE_FAILED2);
     return -1;
 }
 
-statfunc int execute_failed_tail2(struct pt_regs *ctx)
+SEC("kprobe/execute_failed_tail2")
+int execute_failed_tail2(struct pt_regs *ctx)
 {
     program_data_t p = {};
     if (!init_tailcall_program_data(&p, ctx))
         return -1;
 
-    syscall_data_t *sys = &p.task_info->syscall_data;
-    save_str_arr_to_buf(
-        &p.event->args_buf, (const char *const *) sys->args.args[1], 10); // userspace argv
+    struct pt_regs *task_regs = get_task_pt_regs((struct task_struct *) bpf_get_current_task());
+    u64 argv = PT_REGS_PARM2_CORE_SYSCALL(task_regs);
+    u64 envp = PT_REGS_PARM3_CORE_SYSCALL(task_regs);
+    save_str_arr_to_buf(&p.event->args_buf, (const char *const *) argv, 10); // userspace argv
 
     if (p.config->options & OPT_EXEC_ENV) {
-        save_str_arr_to_buf(
-            &p.event->args_buf, (const char *const *) sys->args.args[2], 11); // userspace envp
+        save_str_arr_to_buf(&p.event->args_buf, (const char *const *) envp, 11); // userspace envp
     }
 
-    int ret = PT_REGS_RC(ctx); // needs to be int
-    return events_perf_submit(&p, ret);
+    return events_perf_submit(&p, 0);
 }
 
 bool use_security_bprm_creds_for_exec = false;
 
 SEC("kprobe/exec_binprm")
-TRACE_ENT_FUNC(exec_binprm, EXEC_BINPRM);
-
-SEC("kretprobe/exec_binprm")
-int BPF_KPROBE(trace_ret_exec_binprm)
+int BPF_KPROBE(trace_exec_binprm)
 {
     if (use_security_bprm_creds_for_exec) {
         return 0;
     }
-    args_t saved_args;
-    if (load_args(&saved_args, EXEC_BINPRM) != 0) {
-        // missed entry or not traced
-        return 0;
-    }
-    del_args(EXEC_BINPRM);
-
-    int ret_val = PT_REGS_RC(ctx);
-    if (ret_val == 0)
-        return 0; // not interested of successful execution - for that we have sched_process_exec
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, PROCESS_EXECUTION_FAILED))
+    if (!init_program_data(&p, ctx, PROCESS_EXECUTE_FAILED_INTERNAL))
         return 0;
     return submit_process_execute_failed(ctx, &p);
-}
-
-SEC("kretprobe/trace_execute_failed1")
-int BPF_KPROBE(trace_execute_failed1)
-{
-    return execute_failed_tail1(ctx, TAIL_PROCESS_EXECUTE_FAILED2);
-}
-
-SEC("kretprobe/trace_execute_failed2")
-int BPF_KPROBE(trace_execute_failed2)
-{
-    return execute_failed_tail2(ctx);
 }
 
 SEC("kprobe/security_bprm_creds_for_exec")
@@ -5036,7 +5012,7 @@ int BPF_KPROBE(trace_security_bprm_creds_for_exec)
 {
     use_security_bprm_creds_for_exec = true;
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, SECURITY_BPRM_CREDS_FOR_EXEC))
+    if (!init_program_data(&p, ctx, PROCESS_EXECUTE_FAILED_INTERNAL))
         return 0;
     return submit_process_execute_failed(ctx, &p);
 }
@@ -5050,6 +5026,34 @@ int BPF_KPROBE(trace_execute_finished)
 
     if (!evaluate_scope_filters(&p))
         return 0;
+
+    // We can enrich the event with user provided arguments. If we have kernelspace arguments,
+    // the userspace arguments will be discarded.
+    struct pt_regs *task_regs = get_task_pt_regs((struct task_struct *) bpf_get_current_task());
+    u64 argv, envp;
+    void *path;
+
+    if (p.event->context.syscall == SYSCALL_EXECVEAT) { // TODO: what about compat?
+        int dirfd = PT_REGS_PARM1_CORE_SYSCALL(task_regs);
+        path = (void *) PT_REGS_PARM2_CORE_SYSCALL(task_regs);
+        argv = PT_REGS_PARM3_CORE_SYSCALL(task_regs);
+        envp = PT_REGS_PARM4_CORE_SYSCALL(task_regs);
+        int flags = PT_REGS_PARM5_CORE_SYSCALL(task_regs);
+
+        // send args unique to execevat
+        save_to_submit_buf(&p.event->args_buf, &dirfd, sizeof(int), 0);
+        save_to_submit_buf(&p.event->args_buf, &flags, sizeof(int), 4);
+    } else {
+        path = (void *) PT_REGS_PARM1_CORE_SYSCALL(task_regs);
+        argv = PT_REGS_PARM2_CORE_SYSCALL(task_regs);
+        envp = PT_REGS_PARM3_CORE_SYSCALL(task_regs);
+    }
+
+    save_str_to_buf(&p.event->args_buf, path, 1);
+    save_str_arr_to_buf(&p.event->args_buf, (const char *const *) argv, 2);
+    if (p.config->options & OPT_EXEC_ENV) {
+        save_str_arr_to_buf(&p.event->args_buf, (const char *const *) envp, 3);
+    }
 
     long exec_ret = PT_REGS_RC(ctx);
     return events_perf_submit(&p, exec_ret);

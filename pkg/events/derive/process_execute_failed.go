@@ -2,7 +2,6 @@ package derive
 
 import (
 	"fmt"
-
 	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -64,7 +63,7 @@ func (gen *ExecFailedGenerator) deriveEvent(event *trace.Event) (
 	*trace.Event, error,
 ) {
 	switch events.ID(event.EventID) {
-	case events.SecurityBprmCredsForExec:
+	case events.ProcessExecuteFailedInternal:
 		return gen.handleExecBaseEvent(event)
 	case events.ExecuteFinished:
 		return gen.handleExecFinished(event)
@@ -73,40 +72,34 @@ func (gen *ExecFailedGenerator) deriveEvent(event *trace.Event) (
 	}
 }
 
-// handleExecFinished will derive the event if all the event parts were received.
-// Else it will cache the finished exec info for future use.
+// handleExecFinished will add info on top of base event unless events came out of order. Sends an event in any case.
+// Should be simplified once events reach from kernel-space to user-space are ordered!
 func (gen *ExecFailedGenerator) handleExecFinished(event *trace.Event) (*trace.Event, error) {
+	defer gen.execEndInfo.Remove(event.HostProcessID)
 	execInfo := execEndInfo{
 		returnCode: event.ReturnValue,
 		timestamp:  event.Timestamp,
 	}
+	if !isFailedExec(execInfo.returnCode) {
+
+		return nil, nil
+	}
+
+	e := event
 	securityExecEvent, ok := gen.baseEvents.Get(event.HostProcessID)
 	if ok {
-		gen.execEndInfo.Remove(event.HostProcessID)
-		if !isFailedExec(execInfo.returnCode) {
-			return nil, nil
-		}
-		return gen.generateEvent(securityExecEvent, execInfo)
+		e = securityExecEvent // There is a base event to use, use it!
 	}
-	gen.execEndInfo.Add(event.HostProcessID, execInfo)
-	return nil, nil
+	return gen.generateEvent(e, execInfo)
 }
 
 // handleExecBaseEvent will derive the event if the event parts were received, else will cache
 // the base event for future use
 func (gen *ExecFailedGenerator) handleExecBaseEvent(event *trace.Event) (*trace.Event, error) {
-	execInfo, ok := gen.execEndInfo.Get(event.HostProcessID)
 	// We don't have the execution end info - cache current event and wait for it to be received
 	// This is the expected flow, as the execution finished event come chronology after
-	if !ok {
-		gen.baseEvents.Add(event.HostProcessID, event)
-		return nil, nil
-	}
-	gen.execEndInfo.Remove(event.HostProcessID)
-	if !isFailedExec(execInfo.returnCode) {
-		return nil, nil
-	}
-	return gen.generateEvent(event, execInfo)
+	gen.baseEvents.Add(event.HostProcessID, event)
+	return nil, nil
 }
 
 // generateEvent create the ProcessExecuteFailed event from its parts
