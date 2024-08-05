@@ -5133,6 +5133,31 @@ int BPF_KPROBE(trace_security_task_setrlimit)
     return events_perf_submit(&p, 0);
 }
 
+SEC("kprobe/ptrace")
+int BPF_KPROBE(trace_ptrace)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, PTRACE_NO_SYS_ENTER))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    // use this helper to avoid the unwrapping of struct pt_regs
+    struct pt_regs *task_context = get_task_pt_regs((struct task_struct *) bpf_get_current_task());
+    long request = PT_REGS_PARM1_CORE_SYSCALL(task_context);
+    pid_t pid = PT_REGS_PARM2_CORE_SYSCALL(task_context);
+    void *addr = (void *) PT_REGS_PARM3_CORE_SYSCALL(task_context);
+    void *data = (void *) PT_REGS_PARM4_CORE_SYSCALL(task_context);
+
+    save_to_submit_buf(&p.event->args_buf, &request, sizeof(long), 0);
+    save_to_submit_buf(&p.event->args_buf, &pid, sizeof(pid_t), 1);
+    save_to_submit_buf(&p.event->args_buf, &addr, sizeof(void *), 2);
+    save_to_submit_buf(&p.event->args_buf, &data, sizeof(void *), 3);
+
+    return events_perf_submit(&p, 0);
+}
+
 SEC("kprobe/security_settime64")
 int BPF_KPROBE(trace_security_settime64)
 {
