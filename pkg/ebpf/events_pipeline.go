@@ -615,6 +615,10 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 				}
 			}
 
+			// Time normalization before publish the event
+			event.Timestamp = t.timeNormalizer.NormalizeTime(event.Timestamp)
+			event.ThreadStartTime = t.timeNormalizer.NormalizeTime(event.ThreadStartTime)
+
 			// Send the event to the streams.
 			select {
 			case <-ctx.Done():
