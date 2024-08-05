@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestOptionsContainedInArgument(t *testing.T) {
+func Test_optionsAreContainedInArgument(t *testing.T) {
 	attachTests := []struct {
 		testName          string
 		rawArgument       uint64
-		options           []SystemFunctionArgument
+		options           []uint64
 		expectedContained bool
 		expectedValue     uint64
 		expectedString    string
@@ -18,50 +18,115 @@ func TestOptionsContainedInArgument(t *testing.T) {
 		{
 			testName:          "no options present",
 			rawArgument:       0x0,
-			options:           []SystemFunctionArgument{CLONE_CHILD_CLEARTID},
+			options:           []uint64{CLONE_CHILD_CLEARTID.Value()},
 			expectedContained: false,
 		},
 		{
 			testName:          "present in self",
 			rawArgument:       PTRACE_TRACEME.Value(),
-			options:           []SystemFunctionArgument{PTRACE_TRACEME},
+			options:           []uint64{PTRACE_TRACEME.Value()},
 			expectedContained: true,
 		},
 		{
 			testName:          "present in self multiple",
 			rawArgument:       PTRACE_TRACEME.Value(),
-			options:           []SystemFunctionArgument{PTRACE_TRACEME, PTRACE_TRACEME},
+			options:           []uint64{PTRACE_TRACEME.Value(), PTRACE_TRACEME.Value()},
 			expectedContained: true,
 		},
 		{
 			testName:          "just not present",
 			rawArgument:       PTRACE_PEEKTEXT.Value(),
-			options:           []SystemFunctionArgument{PTRACE_TRACEME},
+			options:           []uint64{PTRACE_TRACEME.Value()},
+			expectedContained: true,
+		},
+		{
+			testName:          "just not present",
+			rawArgument:       PTRACE_TRACEME.Value(),
+			options:           []uint64{PTRACE_TRACEME.Value()},
 			expectedContained: true,
 		},
 		{
 			testName:          "present1",
 			rawArgument:       PTRACE_TRACEME.Value() | PTRACE_GETSIGMASK.Value(),
-			options:           []SystemFunctionArgument{PTRACE_TRACEME, PTRACE_GETSIGMASK},
+			options:           []uint64{PTRACE_TRACEME.Value(), PTRACE_GETSIGMASK.Value()},
 			expectedContained: true,
 		},
 		{
 			testName:          "present2",
 			rawArgument:       BPF_MAP_CREATE.Value(),
-			options:           []SystemFunctionArgument{BPF_MAP_CREATE},
+			options:           []uint64{BPF_MAP_CREATE.Value()},
 			expectedContained: true,
 		},
 		{
 			testName:          "present3",
 			rawArgument:       CAP_CHOWN.Value(),
-			options:           []SystemFunctionArgument{CAP_CHOWN},
+			options:           []uint64{CAP_CHOWN.Value()},
 			expectedContained: true,
+		},
+		{
+			testName:          "not present1",
+			rawArgument:       CAP_CHOWN.Value(),
+			options:           []uint64{CAP_DAC_OVERRIDE.Value()},
+			expectedContained: false,
+		},
+		{
+			testName:          "not present2",
+			rawArgument:       CAP_CHOWN.Value() | CAP_DAC_READ_SEARCH.Value(),
+			options:           []uint64{CAP_DAC_OVERRIDE.Value(), CAP_DAC_READ_SEARCH.Value()},
+			expectedContained: false,
 		},
 	}
 
 	for _, ts := range attachTests {
 		t.Run(ts.testName, func(test *testing.T) {
-			isContained := OptionAreContainedInArgument(ts.rawArgument, ts.options...)
+			isContained := optionsAreContainedInArgument(ts.rawArgument, ts.options...)
+			assert.Equal(test, ts.expectedContained, isContained)
+		})
+	}
+}
+
+func Test_optionIsContainedInArgument(t *testing.T) {
+	attachTests := []struct {
+		testName          string
+		rawArgument       uint64
+		option            uint64
+		expectedContained bool
+	}{
+		{
+			testName:          "no options present",
+			rawArgument:       0x0,
+			option:            CLONE_CHILD_CLEARTID.Value(),
+			expectedContained: false,
+		},
+		{
+			testName:          "present in self",
+			rawArgument:       PTRACE_TRACEME.Value(),
+			option:            PTRACE_TRACEME.Value(),
+			expectedContained: true,
+		},
+		{
+			testName:          "just not present",
+			rawArgument:       PTRACE_PEEKTEXT.Value(),
+			option:            PTRACE_TRACEME.Value(),
+			expectedContained: true,
+		},
+		{
+			testName:          "present",
+			rawArgument:       PTRACE_TRACEME.Value() | PTRACE_GETSIGMASK.Value(),
+			option:            PTRACE_GETSIGMASK.Value(),
+			expectedContained: true,
+		},
+		{
+			testName:          "not present",
+			rawArgument:       CAP_CHOWN.Value(),
+			option:            CAP_DAC_OVERRIDE.Value(),
+			expectedContained: false,
+		},
+	}
+
+	for _, ts := range attachTests {
+		t.Run(ts.testName, func(test *testing.T) {
+			isContained := optionIsContainedInArgument(ts.rawArgument, ts.option)
 			assert.Equal(test, ts.expectedContained, isContained)
 		})
 	}
