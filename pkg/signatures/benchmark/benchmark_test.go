@@ -3,6 +3,7 @@ package benchmark
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"testing"
 	"time"
 
@@ -100,6 +101,10 @@ func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 
 				// Start signatures engine and wait until all events are processed
 				e.Start(waitForEventsProcessed(inputs.Tracee))
+
+				// Set engine to nil to help with garbage collection
+				e = nil
+				runtime.GC()
 			}
 		})
 	}
@@ -149,6 +154,10 @@ func BenchmarkEngineWithMultipleSignatures(b *testing.B) {
 
 				// Start signatures engine and wait until all events are processed
 				e.Start(waitForEventsProcessed(inputs.Tracee))
+
+				// Set engine to nil to help with garbage collection
+				e = nil
+				runtime.GC()
 			}
 		})
 	}
@@ -211,6 +220,10 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 
 					// Start signatures engine and wait until all events are processed
 					e.Start(waitForEventsProcessed(inputs.Tracee))
+
+					// Set engine to nil to help with garbage collection
+					e = nil
+					runtime.GC()
 				}
 			})
 		}
