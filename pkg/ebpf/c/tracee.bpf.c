@@ -3420,18 +3420,16 @@ int BPF_KPROBE(trace_mmap_alert)
     if (!evaluate_scope_filters(&p))
         return 0;
 
-    // Load the arguments given to the mmap syscall (which eventually invokes this function)
-    syscall_data_t *sys = &p.task_info->syscall_data;
-    if (!p.task_info->syscall_traced || sys->id != SYSCALL_MMAP)
+    if (p.event->context.syscall != SYSCALL_MMAP)
         return 0;
 
-    int prot = sys->args.args[2];
-
+    struct pt_regs *task_regs = get_task_pt_regs((struct task_struct *) bpf_get_current_task());
+    int prot = PT_REGS_PARM3_CORE_SYSCALL(task_regs);
     if ((prot & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC)) {
         u32 alert = ALERT_MMAP_W_X;
-        int fd = sys->args.args[4];
-        void *addr = (void *) sys->args.args[0];
-        size_t len = sys->args.args[1];
+        int fd = PT_REGS_PARM5_CORE_SYSCALL(task_regs);
+        void *addr = (void *) PT_REGS_PARM1_CORE_SYSCALL(task_regs);
+        size_t len = PT_REGS_PARM2_CORE_SYSCALL(task_regs);
         int prev_prot = 0;
         file_info_t file_info = {.pathname_p = NULL};
         if (fd >= 0) {
@@ -3566,18 +3564,17 @@ int BPF_KPROBE(trace_security_file_mprotect)
     if (!init_program_data(&p, ctx, SECURITY_FILE_MPROTECT))
         return 0;
 
-    // Load the arguments given to the mprotect syscall (which eventually invokes this function)
-    syscall_data_t *sys = &p.task_info->syscall_data;
-    if (!p.task_info->syscall_traced ||
-        (sys->id != SYSCALL_MPROTECT && sys->id != SYSCALL_PKEY_MPROTECT))
+    if (p.event->context.syscall != SYSCALL_MPROTECT &&
+        p.event->context.syscall != SYSCALL_PKEY_MPROTECT)
         return 0;
 
+    struct pt_regs *task_regs = get_task_pt_regs((struct task_struct *) bpf_get_current_task());
     struct vm_area_struct *vma = (struct vm_area_struct *) PT_REGS_PARM1(ctx);
     unsigned long reqprot = PT_REGS_PARM2(ctx);
     unsigned long prev_prot = get_vma_flags(vma);
     struct file *file = (struct file *) BPF_CORE_READ(vma, vm_file);
-    void *addr = (void *) sys->args.args[0];
-    size_t len = sys->args.args[1];
+    void *addr = (void *) PT_REGS_PARM1_CORE_SYSCALL(task_regs);
+    size_t len = PT_REGS_PARM2_CORE_SYSCALL(task_regs);
 
     if (evaluate_scope_filters(&p)) {
         file_info = get_file_info(file);
@@ -3589,8 +3586,8 @@ int BPF_KPROBE(trace_security_file_mprotect)
         save_to_submit_buf(&p.event->args_buf, &addr, sizeof(void *), 4);
         save_to_submit_buf(&p.event->args_buf, &len, sizeof(size_t), 5);
 
-        if (sys->id == SYSCALL_PKEY_MPROTECT) {
-            int pkey = sys->args.args[3];
+        if (p.event->context.syscall == SYSCALL_PKEY_MPROTECT) {
+            int pkey = PT_REGS_PARM4_CORE_SYSCALL(task_regs);
             save_to_submit_buf(&p.event->args_buf, &pkey, sizeof(int), 6);
         }
 
