@@ -359,3 +359,44 @@ func TestParseFsNotifyObjType(t *testing.T) {
 		})
 	}
 }
+
+func TestParseMmapProt(t *testing.T) {
+	testCases := []struct {
+		name          string
+		parseValue    uint64
+		expectedSting string
+	}{
+		{
+			name:          "Single value",
+			parseValue:    PROT_NONE.Value(),
+			expectedSting: "PROT_NONE",
+		},
+		{
+			name:          "Single value",
+			parseValue:    PROT_READ.Value(),
+			expectedSting: "PROT_READ",
+		},
+		{
+			name:          "Multiple values",
+			parseValue:    PROT_READ.Value() | PROT_WRITE.Value() | PROT_EXEC.Value(),
+			expectedSting: "PROT_READ|PROT_WRITE|PROT_EXEC",
+		},
+		{
+			name:          "Multiple values with unknown",
+			parseValue:    PROT_READ.Value() | PROT_WRITE.Value() | PROT_EXEC.Value() | 10000000,
+			expectedSting: "PROT_READ|PROT_WRITE|PROT_EXEC",
+		},
+		{
+			name:          "Non existing value",
+			parseValue:    10000000,
+			expectedSting: "",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			flags := ParseMmapProt(testCase.parseValue)
+			assert.Equal(t, testCase.expectedSting, flags.String())
+		})
+	}
+}
