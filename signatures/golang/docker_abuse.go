@@ -15,6 +15,22 @@ type DockerAbuse struct {
 	dockerSock string
 }
 
+var dockerAbuseMetadata = detect.SignatureMetadata{
+	ID:          "TRC-1019",
+	Version:     "1",
+	Name:        "Docker socket abuse detected",
+	EventName:   "docker_abuse",
+	Description: "An attempt to abuse the Docker UNIX socket inside a container was detected. docker.sock is the UNIX socket that Docker uses as the entry point to the Docker API. Adversaries may attempt to abuse this socket to compromise the system.",
+	Properties: map[string]interface{}{
+		"Severity":             2,
+		"Category":             "privilege-escalation",
+		"Technique":            "Exploitation for Privilege Escalation",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--b21c3b2d-02e6-45b1-980b-e69051040839",
+		"external_id":          "T1068",
+	},
+}
+
 func (sig *DockerAbuse) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.dockerSock = "docker.sock"
@@ -22,21 +38,7 @@ func (sig *DockerAbuse) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *DockerAbuse) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-1019",
-		Version:     "1",
-		Name:        "Docker socket abuse detected",
-		EventName:   "docker_abuse",
-		Description: "An attempt to abuse the Docker UNIX socket inside a container was detected. docker.sock is the UNIX socket that Docker uses as the entry point to the Docker API. Adversaries may attempt to abuse this socket to compromise the system.",
-		Properties: map[string]interface{}{
-			"Severity":             2,
-			"Category":             "privilege-escalation",
-			"Technique":            "Exploitation for Privilege Escalation",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--b21c3b2d-02e6-45b1-980b-e69051040839",
-			"external_id":          "T1068",
-		},
-	}, nil
+	return dockerAbuseMetadata, nil
 }
 
 func (sig *DockerAbuse) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

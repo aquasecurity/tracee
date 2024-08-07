@@ -15,6 +15,22 @@ type CorePatternModification struct {
 	corePattern string
 }
 
+var corePatternModificationMetadata = detect.SignatureMetadata{
+	ID:          "TRC-1011",
+	Version:     "1",
+	Name:        "Core dumps configuration file modification detected",
+	EventName:   "core_pattern_modification",
+	Description: "Modification of the core dump configuration file (core_pattern) detected. Core dumps are usually written to disk when a program crashes. Certain modifications enable container escaping through the kernel core_pattern feature.",
+	Properties: map[string]interface{}{
+		"Severity":             3,
+		"Category":             "privilege-escalation",
+		"Technique":            "Escape to Host",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--4a5b7ade-8bb5-4853-84ed-23f262002665",
+		"external_id":          "T1611",
+	},
+}
+
 func (sig *CorePatternModification) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.corePattern = "/proc/sys/kernel/core_pattern"
@@ -22,21 +38,7 @@ func (sig *CorePatternModification) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *CorePatternModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-1011",
-		Version:     "1",
-		Name:        "Core dumps configuration file modification detected",
-		EventName:   "core_pattern_modification",
-		Description: "Modification of the core dump configuration file (core_pattern) detected. Core dumps are usually written to disk when a program crashes. Certain modifications enable container escaping through the kernel core_pattern feature.",
-		Properties: map[string]interface{}{
-			"Severity":             3,
-			"Category":             "privilege-escalation",
-			"Technique":            "Escape to Host",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--4a5b7ade-8bb5-4853-84ed-23f262002665",
-			"external_id":          "T1611",
-		},
-	}, nil
+	return corePatternModificationMetadata, nil
 }
 
 func (sig *CorePatternModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

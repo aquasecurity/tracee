@@ -16,6 +16,22 @@ type SudoersModification struct {
 	sudoersDirs  []string
 }
 
+var sudoersModificationMetadata = detect.SignatureMetadata{
+	ID:          "TRC-1028",
+	Version:     "1",
+	Name:        "Sudoers file modification detected",
+	EventName:   "sudoers_modification",
+	Description: "The sudoers file was modified. The sudoers file is a configuration file which controls the permissions and options of the sudo feature. Adversaries may alter the sudoers file to elevate privileges, execute commands as other users or spawn processes with higher privileges.",
+	Properties: map[string]interface{}{
+		"Severity":             2,
+		"Category":             "privilege-escalation",
+		"Technique":            "Sudo and Sudo Caching",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--1365fe3b-0f50-455d-b4da-266ce31c23b0",
+		"external_id":          "T1548.003",
+	},
+}
+
 func (sig *SudoersModification) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.sudoersFiles = []string{"/etc/sudoers", "/private/etc/sudoers"}
@@ -24,21 +40,7 @@ func (sig *SudoersModification) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *SudoersModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-1028",
-		Version:     "1",
-		Name:        "Sudoers file modification detected",
-		EventName:   "sudoers_modification",
-		Description: "The sudoers file was modified. The sudoers file is a configuration file which controls the permissions and options of the sudo feature. Adversaries may alter the sudoers file to elevate privileges, execute commands as other users or spawn processes with higher privileges.",
-		Properties: map[string]interface{}{
-			"Severity":             2,
-			"Category":             "privilege-escalation",
-			"Technique":            "Sudo and Sudo Caching",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--1365fe3b-0f50-455d-b4da-266ce31c23b0",
-			"external_id":          "T1548.003",
-		},
-	}, nil
+	return sudoersModificationMetadata, nil
 }
 
 func (sig *SudoersModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

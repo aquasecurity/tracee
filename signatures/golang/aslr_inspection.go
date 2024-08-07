@@ -14,6 +14,22 @@ type AslrInspection struct {
 	aslrPath string
 }
 
+var aslrInspectionMetadata = detect.SignatureMetadata{
+	ID:          "TRC-109",
+	Version:     "1",
+	Name:        "ASLR inspection detected",
+	EventName:   "aslr_inspection",
+	Description: "The ASLR (address space layout randomization) configuration was inspected. ASLR is used by Linux to prevent memory vulnerabilities. An adversary may want to inspect and change the ASLR configuration in order to avoid detection.",
+	Properties: map[string]interface{}{
+		"Severity":             0,
+		"Category":             "privilege-escalation",
+		"Technique":            "Exploitation for Privilege Escalation",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--b21c3b2d-02e6-45b1-980b-e69051040839",
+		"external_id":          "T1068",
+	},
+}
+
 func (sig *AslrInspection) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.aslrPath = "/proc/sys/kernel/randomize_va_space"
@@ -21,21 +37,7 @@ func (sig *AslrInspection) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *AslrInspection) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-109",
-		Version:     "1",
-		Name:        "ASLR inspection detected",
-		EventName:   "aslr_inspection",
-		Description: "The ASLR (address space layout randomization) configuration was inspected. ASLR is used by Linux to prevent memory vulnerabilities. An adversary may want to inspect and change the ASLR configuration in order to avoid detection.",
-		Properties: map[string]interface{}{
-			"Severity":             0,
-			"Category":             "privilege-escalation",
-			"Technique":            "Exploitation for Privilege Escalation",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--b21c3b2d-02e6-45b1-980b-e69051040839",
-			"external_id":          "T1068",
-		},
-	}, nil
+	return aslrInspectionMetadata, nil
 }
 
 func (sig *AslrInspection) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

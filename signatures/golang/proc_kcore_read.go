@@ -15,6 +15,22 @@ type ProcKcoreRead struct {
 	kcorePath string
 }
 
+var procKcoreReadMetadata = detect.SignatureMetadata{
+	ID:          "TRC-1021",
+	Version:     "1",
+	Name:        "Kcore memory file read",
+	EventName:   "proc_kcore_read",
+	Description: "An attempt to read /proc/kcore file was detected. KCore provides a full dump of the physical memory of the system in the core file format. Adversaries may read this file to get all of the host memory and use this information for container escape.",
+	Properties: map[string]interface{}{
+		"Severity":             2,
+		"Category":             "privilege-escalation",
+		"Technique":            "Escape to Host",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--4a5b7ade-8bb5-4853-84ed-23f262002665",
+		"external_id":          "T1611",
+	},
+}
+
 func (sig *ProcKcoreRead) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.kcorePath = "/proc/kcore"
@@ -22,21 +38,7 @@ func (sig *ProcKcoreRead) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *ProcKcoreRead) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-1021",
-		Version:     "1",
-		Name:        "Kcore memory file read",
-		EventName:   "proc_kcore_read",
-		Description: "An attempt to read /proc/kcore file was detected. KCore provides a full dump of the physical memory of the system in the core file format. Adversaries may read this file to get all of the host memory and use this information for container escape.",
-		Properties: map[string]interface{}{
-			"Severity":             2,
-			"Category":             "privilege-escalation",
-			"Technique":            "Escape to Host",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--4a5b7ade-8bb5-4853-84ed-23f262002665",
-			"external_id":          "T1611",
-		},
-	}, nil
+	return procKcoreReadMetadata, nil
 }
 
 func (sig *ProcKcoreRead) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

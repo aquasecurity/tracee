@@ -14,6 +14,22 @@ type SchedDebugRecon struct {
 	schedDebugPaths []string
 }
 
+var schedDebugReconMetadata = detect.SignatureMetadata{
+	ID:          "TRC-1029",
+	Version:     "1",
+	Name:        "sched_debug CPU file was read",
+	EventName:   "sched_debug_recon",
+	Description: "The sched_debug file was read. This file contains information about your CPU and processes. Adversaries may read this file in order to gather that information for their use.",
+	Properties: map[string]interface{}{
+		"Severity":             1,
+		"Category":             "discovery",
+		"Technique":            "Container and Resource Discovery",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--0470e792-32f8-46b0-a351-652bc35e9336",
+		"external_id":          "T1613",
+	},
+}
+
 func (sig *SchedDebugRecon) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.schedDebugPaths = []string{"/proc/sched_debug", "/sys/kernel/debug/sched/debug"}
@@ -21,21 +37,7 @@ func (sig *SchedDebugRecon) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *SchedDebugRecon) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-1029",
-		Version:     "1",
-		Name:        "sched_debug CPU file was read",
-		EventName:   "sched_debug_recon",
-		Description: "The sched_debug file was read. This file contains information about your CPU and processes. Adversaries may read this file in order to gather that information for their use.",
-		Properties: map[string]interface{}{
-			"Severity":             1,
-			"Category":             "discovery",
-			"Technique":            "Container and Resource Discovery",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--0470e792-32f8-46b0-a351-652bc35e9336",
-			"external_id":          "T1613",
-		},
-	}, nil
+	return schedDebugReconMetadata, nil
 }
 
 func (sig *SchedDebugRecon) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

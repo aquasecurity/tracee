@@ -15,6 +15,22 @@ type CgroupNotifyOnReleaseModification struct {
 	notifyFileName string
 }
 
+var cgroupNotifyOnReleaseModificationMetadata = detect.SignatureMetadata{
+	ID:          "TRC-106",
+	Version:     "1",
+	Name:        "Cgroups notify_on_release file modification",
+	EventName:   "cgroup_notify_on_release",
+	Description: "An attempt to modify Cgroup notify_on_release file was detected. Cgroups are a Linux kernel feature which limits the resource usage of a set of processes. Adversaries may use this feature for container escaping.",
+	Properties: map[string]interface{}{
+		"Severity":             3,
+		"Category":             "privilege-escalation",
+		"Technique":            "Escape to Host",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--4a5b7ade-8bb5-4853-84ed-23f262002665",
+		"external_id":          "T1611",
+	},
+}
+
 func (sig *CgroupNotifyOnReleaseModification) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.notifyFileName = "notify_on_release"
@@ -22,21 +38,7 @@ func (sig *CgroupNotifyOnReleaseModification) Init(ctx detect.SignatureContext) 
 }
 
 func (sig *CgroupNotifyOnReleaseModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-106",
-		Version:     "1",
-		Name:        "Cgroups notify_on_release file modification",
-		EventName:   "cgroup_notify_on_release",
-		Description: "An attempt to modify Cgroup notify_on_release file was detected. Cgroups are a Linux kernel feature which limits the resource usage of a set of processes. Adversaries may use this feature for container escaping.",
-		Properties: map[string]interface{}{
-			"Severity":             3,
-			"Category":             "privilege-escalation",
-			"Technique":            "Escape to Host",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--4a5b7ade-8bb5-4853-84ed-23f262002665",
-			"external_id":          "T1611",
-		},
-	}, nil
+	return cgroupNotifyOnReleaseModificationMetadata, nil
 }
 
 func (sig *CgroupNotifyOnReleaseModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

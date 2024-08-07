@@ -16,6 +16,22 @@ type DefaultLoaderModification struct {
 	compiledRegex        *regexp.Regexp
 }
 
+var defaultLoaderModificationMetadata = detect.SignatureMetadata{
+	ID:          "TRC-1012",
+	Version:     "1",
+	Name:        "Default dynamic loader modification detected",
+	EventName:   "default_loader_mod",
+	Description: "The default dynamic loader has been modified. The dynamic loader is an executable file loaded to process memory and run before the executable to load dynamic libraries to the process. An attacker might use this technique to hijack the execution context of each new process and bypass defenses.",
+	Properties: map[string]interface{}{
+		"Severity":             3,
+		"Category":             "defense-evasion",
+		"Technique":            "Hijack Execution Flow",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--aedfca76-3b30-4866-b2aa-0f1d7fd1e4b6",
+		"external_id":          "T1574",
+	},
+}
+
 func (sig *DefaultLoaderModification) Init(ctx detect.SignatureContext) error {
 	var err error
 	sig.cb = ctx.Callback
@@ -25,21 +41,7 @@ func (sig *DefaultLoaderModification) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *DefaultLoaderModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-1012",
-		Version:     "1",
-		Name:        "Default dynamic loader modification detected",
-		EventName:   "default_loader_mod",
-		Description: "The default dynamic loader has been modified. The dynamic loader is an executable file loaded to process memory and run before the executable to load dynamic libraries to the process. An attacker might use this technique to hijack the execution context of each new process and bypass defenses.",
-		Properties: map[string]interface{}{
-			"Severity":             3,
-			"Category":             "defense-evasion",
-			"Technique":            "Hijack Execution Flow",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--aedfca76-3b30-4866-b2aa-0f1d7fd1e4b6",
-			"external_id":          "T1574",
-		},
-	}, nil
+	return defaultLoaderModificationMetadata, nil
 }
 
 func (sig *DefaultLoaderModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

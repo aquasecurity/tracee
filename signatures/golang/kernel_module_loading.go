@@ -13,27 +13,29 @@ type KernelModuleLoading struct {
 	cb detect.SignatureHandler
 }
 
+var kernelModuleLoadingMetadata = detect.SignatureMetadata{
+	ID:          "TRC-1017",
+	Version:     "1",
+	Name:        "Kernel module loading detected",
+	EventName:   "kernel_module_loading",
+	Description: "Loading of a kernel module was detected. Kernel modules are binaries meant to run in the kernel. Adversaries may try and load kernel modules to extend their capabilities and avoid detection by running in the kernel and not user space.",
+	Properties: map[string]interface{}{
+		"Severity":             2,
+		"Category":             "persistence",
+		"Technique":            "Kernel Modules and Extensions",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--a1b52199-c8c5-438a-9ded-656f1d0888c6",
+		"external_id":          "T1547.006",
+	},
+}
+
 func (sig *KernelModuleLoading) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *KernelModuleLoading) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-1017",
-		Version:     "1",
-		Name:        "Kernel module loading detected",
-		EventName:   "kernel_module_loading",
-		Description: "Loading of a kernel module was detected. Kernel modules are binaries meant to run in the kernel. Adversaries may try and load kernel modules to extend their capabilities and avoid detection by running in the kernel and not user space.",
-		Properties: map[string]interface{}{
-			"Severity":             2,
-			"Category":             "persistence",
-			"Technique":            "Kernel Modules and Extensions",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--a1b52199-c8c5-438a-9ded-656f1d0888c6",
-			"external_id":          "T1547.006",
-		},
-	}, nil
+	return kernelModuleLoadingMetadata, nil
 }
 
 func (sig *KernelModuleLoading) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

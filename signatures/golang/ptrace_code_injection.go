@@ -15,6 +15,22 @@ type PtraceCodeInjection struct {
 	ptracePokeData string
 }
 
+var ptraceCodeInjectionMetadata = detect.SignatureMetadata{
+	ID:          "TRC-103",
+	Version:     "1",
+	Name:        "Code injection detected using ptrace",
+	EventName:   "ptrace_code_injection",
+	Description: "Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.",
+	Properties: map[string]interface{}{
+		"Severity":             3,
+		"Category":             "defense-evasion",
+		"Technique":            "Ptrace System Calls",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--ea016b56-ae0e-47fe-967a-cc0ad51af67f",
+		"external_id":          "T1055.008",
+	},
+}
+
 func (sig *PtraceCodeInjection) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.ptracePokeText = "PTRACE_POKETEXT"
@@ -23,21 +39,7 @@ func (sig *PtraceCodeInjection) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *PtraceCodeInjection) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-103",
-		Version:     "1",
-		Name:        "Code injection detected using ptrace",
-		EventName:   "ptrace_code_injection",
-		Description: "Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.",
-		Properties: map[string]interface{}{
-			"Severity":             3,
-			"Category":             "defense-evasion",
-			"Technique":            "Ptrace System Calls",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--ea016b56-ae0e-47fe-967a-cc0ad51af67f",
-			"external_id":          "T1055.008",
-		},
-	}, nil
+	return ptraceCodeInjectionMetadata, nil
 }
 
 func (sig *PtraceCodeInjection) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

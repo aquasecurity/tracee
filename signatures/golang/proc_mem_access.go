@@ -16,6 +16,22 @@ type ProcMemAccess struct {
 	compiledRegex      *regexp.Regexp
 }
 
+var procMemAccessMetadata = detect.SignatureMetadata{
+	ID:          "TRC-1023",
+	Version:     "1",
+	Name:        "Process memory access detected",
+	EventName:   "proc_mem_access",
+	Description: "Process memory access detected. Adversaries may access other processes memory to steal credentials and secrets.",
+	Properties: map[string]interface{}{
+		"Severity":             3,
+		"Category":             "credential-access",
+		"Technique":            "Proc Filesystem",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--3120b9fa-23b8-4500-ae73-09494f607b7d",
+		"external_id":          "T1003.007",
+	},
+}
+
 func (sig *ProcMemAccess) Init(ctx detect.SignatureContext) error {
 	var err error
 	sig.cb = ctx.Callback
@@ -25,21 +41,7 @@ func (sig *ProcMemAccess) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *ProcMemAccess) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-1023",
-		Version:     "1",
-		Name:        "Process memory access detected",
-		EventName:   "proc_mem_access",
-		Description: "Process memory access detected. Adversaries may access other processes memory to steal credentials and secrets.",
-		Properties: map[string]interface{}{
-			"Severity":             3,
-			"Category":             "credential-access",
-			"Technique":            "Proc Filesystem",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--3120b9fa-23b8-4500-ae73-09494f607b7d",
-			"external_id":          "T1003.007",
-		},
-	}, nil
+	return procMemAccessMetadata, nil
 }
 
 func (sig *ProcMemAccess) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
