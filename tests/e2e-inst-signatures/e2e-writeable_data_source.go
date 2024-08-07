@@ -13,6 +13,15 @@ type e2eWritableDatasourceSig struct {
 	writable detect.DataSource
 }
 
+var e2eWritableDatasourceSigMetadata = detect.SignatureMetadata{
+	ID:          "WRITABLE_DATA_SOURCE",
+	EventName:   "WRITABLE_DATA_SOURCE",
+	Version:     "0.1.0",
+	Name:        "Writable Data Source Test",
+	Description: "Instrumentation events E2E Tests: Writable Data Source Test",
+	Tags:        []string{"e2e", "instrumentation"},
+}
+
 func (sig *e2eWritableDatasourceSig) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	writable, ok := ctx.GetDataSource("e2e_inst", "demo")
@@ -27,14 +36,7 @@ func (sig *e2eWritableDatasourceSig) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *e2eWritableDatasourceSig) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "WRITABLE_DATA_SOURCE",
-		EventName:   "WRITABLE_DATA_SOURCE",
-		Version:     "0.1.0",
-		Name:        "Writable Data Source Test",
-		Description: "Instrumentation events E2E Tests: Writable Data Source Test",
-		Tags:        []string{"e2e", "instrumentation"},
-	}, nil
+	return e2eWritableDatasourceSigMetadata, nil
 }
 
 func (sig *e2eWritableDatasourceSig) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

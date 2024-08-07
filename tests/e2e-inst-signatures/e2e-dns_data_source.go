@@ -13,6 +13,15 @@ type e2eDnsDataSource struct {
 	dnsData detect.DataSource
 }
 
+var e2eDnsDataSourceMetadata = detect.SignatureMetadata{
+	ID:          "DNS_DATA_SOURCE",
+	EventName:   "DNS_DATA_SOURCE",
+	Version:     "0.1.0",
+	Name:        "DNS Data Source Test",
+	Description: "Instrumentation events E2E Tests: DNS Data Source Test",
+	Tags:        []string{"e2e", "instrumentation"},
+}
+
 func (sig *e2eDnsDataSource) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	dnsData, ok := ctx.GetDataSource("tracee", "dns")
@@ -27,14 +36,7 @@ func (sig *e2eDnsDataSource) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *e2eDnsDataSource) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "DNS_DATA_SOURCE",
-		EventName:   "DNS_DATA_SOURCE",
-		Version:     "0.1.0",
-		Name:        "DNS Data Source Test",
-		Description: "Instrumentation events E2E Tests: DNS Data Source Test",
-		Tags:        []string{"e2e", "instrumentation"},
-	}, nil
+	return e2eDnsDataSourceMetadata, nil
 }
 
 func (sig *e2eDnsDataSource) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

@@ -21,20 +21,22 @@ type e2eHTTP struct {
 	cb detect.SignatureHandler
 }
 
+var e2eHTTPMetadata = detect.SignatureMetadata{
+	ID:          "HTTP",
+	EventName:   "HTTP",
+	Version:     "0.1.0",
+	Name:        "Network HTTP Test",
+	Description: "Network E2E Tests: HTTP",
+	Tags:        []string{"e2e", "network"},
+}
+
 func (sig *e2eHTTP) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *e2eHTTP) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "HTTP",
-		EventName:   "HTTP",
-		Version:     "0.1.0",
-		Name:        "Network HTTP Test",
-		Description: "Network E2E Tests: HTTP",
-		Tags:        []string{"e2e", "network"},
-	}, nil
+	return e2eHTTPMetadata, nil
 }
 
 func (sig *e2eHTTP) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

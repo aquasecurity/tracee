@@ -13,20 +13,22 @@ type e2eBpfAttach struct {
 	cb detect.SignatureHandler
 }
 
+var e2eBpfAttachMetadata = detect.SignatureMetadata{
+	ID:          "BPF_ATTACH",
+	EventName:   "BPF_ATTACH",
+	Version:     "0.1.0",
+	Name:        "Bpf Attach Test",
+	Description: "Instrumentation events E2E Tests: Bpf Attach",
+	Tags:        []string{"e2e", "instrumentation"},
+}
+
 func (sig *e2eBpfAttach) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *e2eBpfAttach) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "BPF_ATTACH",
-		EventName:   "BPF_ATTACH",
-		Version:     "0.1.0",
-		Name:        "Bpf Attach Test",
-		Description: "Instrumentation events E2E Tests: Bpf Attach",
-		Tags:        []string{"e2e", "instrumentation"},
-	}, nil
+	return e2eBpfAttachMetadata, nil
 }
 
 func (sig *e2eBpfAttach) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
