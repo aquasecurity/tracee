@@ -15,6 +15,22 @@ type CgroupReleaseAgentModification struct {
 	releaseAgentName string
 }
 
+var cgroupReleaseAgentModificationMetadata = detect.SignatureMetadata{
+	ID:          "TRC-1010",
+	Version:     "1",
+	Name:        "Cgroups release agent file modification",
+	EventName:   "cgroup_release_agent",
+	Description: "An attempt to modify Cgroup release agent file was detected. Cgroups are a Linux kernel feature which limits the resource usage of a set of processes. Adversaries may use this feature for container escaping.",
+	Properties: map[string]interface{}{
+		"Severity":             3,
+		"Category":             "privilege-escalation",
+		"Technique":            "Escape to Host",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--4a5b7ade-8bb5-4853-84ed-23f262002665",
+		"external_id":          "T1611",
+	},
+}
+
 func (sig *CgroupReleaseAgentModification) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.releaseAgentName = "release_agent"
@@ -22,21 +38,7 @@ func (sig *CgroupReleaseAgentModification) Init(ctx detect.SignatureContext) err
 }
 
 func (sig *CgroupReleaseAgentModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-1010",
-		Version:     "1",
-		Name:        "Cgroups release agent file modification",
-		EventName:   "cgroup_release_agent",
-		Description: "An attempt to modify Cgroup release agent file was detected. Cgroups are a Linux kernel feature which limits the resource usage of a set of processes. Adversaries may use this feature for container escaping.",
-		Properties: map[string]interface{}{
-			"Severity":             3,
-			"Category":             "privilege-escalation",
-			"Technique":            "Escape to Host",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--4a5b7ade-8bb5-4853-84ed-23f262002665",
-			"external_id":          "T1611",
-		},
-	}, nil
+	return cgroupReleaseAgentModificationMetadata, nil
 }
 
 func (sig *CgroupReleaseAgentModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

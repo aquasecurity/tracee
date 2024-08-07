@@ -13,27 +13,29 @@ type DroppedExecutable struct {
 	cb detect.SignatureHandler
 }
 
+var droppedExecutableMetadata = detect.SignatureMetadata{
+	ID:          "TRC-1022",
+	Version:     "1",
+	Name:        "New executable dropped",
+	EventName:   "dropped_executable",
+	Description: "An Executable file was dropped in the system during runtime. Container images are usually built with all binaries needed inside. A dropped binary may indicate that an adversary infiltrated your container.",
+	Properties: map[string]interface{}{
+		"Severity":             2,
+		"Category":             "defense-evasion",
+		"Technique":            "Masquerading",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--42e8de7b-37b2-4258-905a-6897815e58e0",
+		"external_id":          "T1036",
+	},
+}
+
 func (sig *DroppedExecutable) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *DroppedExecutable) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-1022",
-		Version:     "1",
-		Name:        "New executable dropped",
-		EventName:   "dropped_executable",
-		Description: "An Executable file was dropped in the system during runtime. Container images are usually built with all binaries needed inside. A dropped binary may indicate that an adversary infiltrated your container.",
-		Properties: map[string]interface{}{
-			"Severity":             2,
-			"Category":             "defense-evasion",
-			"Technique":            "Masquerading",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--42e8de7b-37b2-4258-905a-6897815e58e0",
-			"external_id":          "T1036",
-		},
-	}, nil
+	return droppedExecutableMetadata, nil
 }
 
 func (sig *DroppedExecutable) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

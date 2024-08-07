@@ -16,6 +16,22 @@ type KubernetesCertificateTheftAttempt struct {
 	k8sCertificatesDir string
 }
 
+var kubernetesCertificateTheftAttemptMetadata = detect.SignatureMetadata{
+	ID:          "TRC-1018",
+	Version:     "1",
+	Name:        "K8s TLS certificate theft detected",
+	EventName:   "k8s_cert_theft",
+	Description: "Theft of Kubernetes TLS certificates was detected. TLS certificates are used to establish trust between systems. The Kubernetes certificate is used to to enable secure communication between Kubernetes components, such as kubelet scheduler controller and API Server. An adversary may steal a Kubernetes certificate on a compromised system to impersonate Kubernetes components within the cluster.",
+	Properties: map[string]interface{}{
+		"Severity":             3,
+		"Category":             "credential-access",
+		"Technique":            "Steal Application Access Token",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--890c9858-598c-401d-a4d5-c67ebcdd703a",
+		"external_id":          "T1528",
+	},
+}
+
 func (sig *KubernetesCertificateTheftAttempt) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.legitProcs = []string{"kube-apiserver", "kubelet", "kube-controller", "etcd"}
@@ -24,21 +40,7 @@ func (sig *KubernetesCertificateTheftAttempt) Init(ctx detect.SignatureContext) 
 }
 
 func (sig *KubernetesCertificateTheftAttempt) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-1018",
-		Version:     "1",
-		Name:        "K8s TLS certificate theft detected",
-		EventName:   "k8s_cert_theft",
-		Description: "Theft of Kubernetes TLS certificates was detected. TLS certificates are used to establish trust between systems. The Kubernetes certificate is used to to enable secure communication between Kubernetes components, such as kubelet scheduler controller and API Server. An adversary may steal a Kubernetes certificate on a compromised system to impersonate Kubernetes components within the cluster.",
-		Properties: map[string]interface{}{
-			"Severity":             3,
-			"Category":             "credential-access",
-			"Technique":            "Steal Application Access Token",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--890c9858-598c-401d-a4d5-c67ebcdd703a",
-			"external_id":          "T1528",
-		},
-	}, nil
+	return kubernetesCertificateTheftAttemptMetadata, nil
 }
 
 func (sig *KubernetesCertificateTheftAttempt) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

@@ -18,6 +18,22 @@ type RcdModification struct {
 	rcdCommand string
 }
 
+var rcdModificationMetadata = detect.SignatureMetadata{
+	ID:          "TRC-1026",
+	Version:     "1",
+	Name:        "Rcd modification detected",
+	EventName:   "rcd_modification",
+	Description: "The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.",
+	Properties: map[string]interface{}{
+		"Severity":             2,
+		"Category":             "persistence",
+		"Technique":            "RC Scripts",
+		"Kubernetes_Technique": "",
+		"id":                   "attack-pattern--dca670cf-eeec-438f-8185-fd959d9ef211",
+		"external_id":          "T1037.004",
+	},
+}
+
 func (sig *RcdModification) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.rcdFiles = []string{"/etc/rc.local", "/etc/init.d/rc.local"}
@@ -27,21 +43,7 @@ func (sig *RcdModification) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *RcdModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TRC-1026",
-		Version:     "1",
-		Name:        "Rcd modification detected",
-		EventName:   "rcd_modification",
-		Description: "The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.",
-		Properties: map[string]interface{}{
-			"Severity":             2,
-			"Category":             "persistence",
-			"Technique":            "RC Scripts",
-			"Kubernetes_Technique": "",
-			"id":                   "attack-pattern--dca670cf-eeec-438f-8185-fd959d9ef211",
-			"external_id":          "T1037.004",
-		},
-	}, nil
+	return rcdModificationMetadata, nil
 }
 
 func (sig *RcdModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
