@@ -13,20 +13,22 @@ type e2eTCP struct {
 	cb detect.SignatureHandler
 }
 
+var e2eTCPMetadata = detect.SignatureMetadata{
+	ID:          "TCP",
+	EventName:   "TCP",
+	Version:     "0.1.0",
+	Name:        "Network TCP Test",
+	Description: "Network E2E Tests: TCP",
+	Tags:        []string{"e2e", "network"},
+}
+
 func (sig *e2eTCP) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *e2eTCP) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "TCP",
-		EventName:   "TCP",
-		Version:     "0.1.0",
-		Name:        "Network TCP Test",
-		Description: "Network E2E Tests: TCP",
-		Tags:        []string{"e2e", "network"},
-	}, nil
+	return e2eTCPMetadata, nil
 }
 
 func (sig *e2eTCP) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

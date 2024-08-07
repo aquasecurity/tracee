@@ -13,20 +13,22 @@ type e2eUDP struct {
 	cb detect.SignatureHandler
 }
 
+var e2eUDPMetadata = detect.SignatureMetadata{
+	ID:          "UDP",
+	EventName:   "UDP",
+	Version:     "0.1.0",
+	Name:        "Network UDP Test",
+	Description: "Network E2E Tests: UDP",
+	Tags:        []string{"e2e", "network"},
+}
+
 func (sig *e2eUDP) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *e2eUDP) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "UDP",
-		EventName:   "UDP",
-		Version:     "0.1.0",
-		Name:        "Network UDP Test",
-		Description: "Network E2E Tests: UDP",
-		Tags:        []string{"e2e", "network"},
-	}, nil
+	return e2eUDPMetadata, nil
 }
 
 func (sig *e2eUDP) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

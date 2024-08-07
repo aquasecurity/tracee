@@ -12,20 +12,22 @@ type e2eSignatureDerivation struct {
 	cb detect.SignatureHandler
 }
 
+var e2eSignatureDerivationMetadata = detect.SignatureMetadata{
+	ID:          "SIGNATURE_DERIVATION",
+	EventName:   "SIGNATURE_DERIVATION",
+	Version:     "0.1.0",
+	Name:        "Signature Derivation Test",
+	Description: "Instrumentation events E2E Tests: Signature Derivation",
+	Tags:        []string{"e2e", "instrumentation"},
+}
+
 func (sig *e2eSignatureDerivation) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *e2eSignatureDerivation) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "SIGNATURE_DERIVATION",
-		EventName:   "SIGNATURE_DERIVATION",
-		Version:     "0.1.0",
-		Name:        "Signature Derivation Test",
-		Description: "Instrumentation events E2E Tests: Signature Derivation",
-		Tags:        []string{"e2e", "instrumentation"},
-	}, nil
+	return e2eSignatureDerivationMetadata, nil
 }
 
 func (sig *e2eSignatureDerivation) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

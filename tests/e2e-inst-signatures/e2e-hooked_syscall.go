@@ -13,20 +13,22 @@ type e2eHookedSyscall struct {
 	cb detect.SignatureHandler
 }
 
+var e2eHookedSyscallMetadata = detect.SignatureMetadata{
+	ID:          "HOOKED_SYSCALL",
+	EventName:   "HOOKED_SYSCALL",
+	Version:     "0.1.0",
+	Name:        "Hooked Syscall Test",
+	Description: "Instrumentation events E2E Tests: Hooked Syscall",
+	Tags:        []string{"e2e", "instrumentation"},
+}
+
 func (sig *e2eHookedSyscall) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *e2eHookedSyscall) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "HOOKED_SYSCALL",
-		EventName:   "HOOKED_SYSCALL",
-		Version:     "0.1.0",
-		Name:        "Hooked Syscall Test",
-		Description: "Instrumentation events E2E Tests: Hooked Syscall",
-		Tags:        []string{"e2e", "instrumentation"},
-	}, nil
+	return e2eHookedSyscallMetadata, nil
 }
 
 func (sig *e2eHookedSyscall) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

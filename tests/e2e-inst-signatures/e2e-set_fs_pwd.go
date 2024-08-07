@@ -16,6 +16,15 @@ type e2eSetFsPwd struct {
 	hasReadUser bool
 }
 
+var e2eSetFsPwdMetadata = detect.SignatureMetadata{
+	ID:          "SET_FS_PWD",
+	EventName:   "SET_FS_PWD",
+	Version:     "0.1.0",
+	Name:        "set_fs_pwd Test",
+	Description: "Instrumentation events E2E Tests: set_fs_pwd",
+	Tags:        []string{"e2e", "instrumentation"},
+}
+
 func (sig *e2eSetFsPwd) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 
@@ -36,14 +45,7 @@ func (sig *e2eSetFsPwd) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *e2eSetFsPwd) GetMetadata() (detect.SignatureMetadata, error) {
-	return detect.SignatureMetadata{
-		ID:          "SET_FS_PWD",
-		EventName:   "SET_FS_PWD",
-		Version:     "0.1.0",
-		Name:        "set_fs_pwd Test",
-		Description: "Instrumentation events E2E Tests: set_fs_pwd",
-		Tags:        []string{"e2e", "instrumentation"},
-	}, nil
+	return e2eSetFsPwdMetadata, nil
 }
 
 func (sig *e2eSetFsPwd) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
