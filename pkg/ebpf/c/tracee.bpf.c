@@ -5093,11 +5093,11 @@ int BPF_KPROBE(trace_set_fs_pwd)
     if (!evaluate_scope_filters(&p))
         return 0;
 
-    syscall_data_t *sys = &p.task_info->syscall_data;
+    struct pt_regs *task_regs = get_task_pt_regs((struct task_struct *) bpf_get_current_task());
 
     void *unresolved_path = NULL;
-    if (sys->id == SYSCALL_CHDIR)
-        unresolved_path = (void *) sys->args.args[0];
+    if (p.event->context.syscall == SYSCALL_CHDIR)
+        unresolved_path = (void *) PT_REGS_PARM1_CORE_SYSCALL(task_regs);
 
     void *resolved_path = get_path_str((struct path *) PT_REGS_PARM2(ctx));
 
