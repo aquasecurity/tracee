@@ -13,7 +13,7 @@ statfunc bool is_x86_compat(struct task_struct *);
 statfunc bool is_arm64_compat(struct task_struct *);
 statfunc bool is_compat(struct task_struct *);
 statfunc int get_syscall_id_from_regs(struct pt_regs *);
-statfunc struct pt_regs *get_task_pt_regs(struct task_struct *);
+statfunc struct pt_regs *get_current_task_pt_regs(void);
 statfunc bool has_syscall_fd_arg(uint);
 statfunc uint get_syscall_fd_num_from_arg(uint syscall_id, args_t *);
 
@@ -58,8 +58,20 @@ statfunc int get_syscall_id_from_regs(struct pt_regs *regs)
     return id;
 }
 
-statfunc struct pt_regs *get_task_pt_regs(struct task_struct *task)
+statfunc struct pt_regs *get_current_task_pt_regs(void)
 {
+    struct task_struct *task;
+
+    // Use the bpf_task_pt_regs helper if possible
+    if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_current_task_btf) &&
+        bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_task_pt_regs)) {
+        task = bpf_get_current_task_btf();
+        return (struct pt_regs *) bpf_task_pt_regs(task);
+    }
+
+    // Helper not available, extract registers manually
+    task = (struct task_struct *) bpf_get_current_task();
+
 // THREAD_SIZE here is statistically defined and assumed to work for 4k page sizes.
 #if defined(bpf_target_x86)
     void *__ptr = BPF_CORE_READ(task, stack) + THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
