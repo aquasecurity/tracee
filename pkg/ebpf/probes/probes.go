@@ -126,7 +126,6 @@ const (
 	InotifyFindInodeRet
 	BpfCheck
 	ExecBinprm
-	ExecBinprmRet
 	SecurityPathNotify
 	SecurityBprmCredsForExec
 	SetFsPwd
