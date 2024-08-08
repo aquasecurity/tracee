@@ -140,7 +140,7 @@ statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
     p->event->context.eventid = event_id;
     p->event->context.ts = get_current_time_in_ns();
     p->event->context.processor_id = (u16) bpf_get_smp_processor_id();
-    p->event->context.syscall = get_task_syscall_id(p->event->task);
+    p->event->context.syscall = get_current_task_syscall_id();
 
     u32 host_pid = p->event->context.task.host_pid;
     p->proc_info = bpf_map_lookup_elem(&proc_info_map, &host_pid);
