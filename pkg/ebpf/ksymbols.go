@@ -36,7 +36,7 @@ func (t *Tracee) UpdateKallsyms() error {
 
 	var allReqSymbols []string
 
-	for evtID := range t.eventsState {
+	for _, evtID := range t.policyManager.EventsSelected() {
 		for _, symDep := range evtDefSymDeps(evtID) {
 			allReqSymbols = append(allReqSymbols, symDep.GetSymbolName())
 		}

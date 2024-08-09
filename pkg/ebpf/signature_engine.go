@@ -29,8 +29,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 	// Share event states (by reference)
 	t.config.EngineConfig.ShouldDispatchEvent = func(eventIdInt32 int32) bool {
-		_, ok := t.eventsState[events.ID(eventIdInt32)]
-		return ok
+		return t.policyManager.IsEventSelected(events.ID(eventIdInt32))
 	}
 
 	sigEngine, err := engine.NewEngine(t.config.EngineConfig, source, engineOutput)
@@ -62,7 +61,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		id := events.ID(event.EventID)
 
 		// if the event is marked as submit, we pass it to the engine
-		if t.eventsState[id].Submit > 0 {
+		if t.policyManager.IsEventToSubmit(id) {
 			err := t.parseArguments(event)
 			if err != nil {
 				t.handleError(err)

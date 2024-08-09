@@ -14,6 +14,9 @@ type eventFlags struct {
 	// It is computed on policies updates.
 	policiesEmit uint64
 
+	// signature indicates if the event is a signature event.
+	signature bool
+
 	// enabled indicates if the event is enabled.
 	// It is *NOT* computed on policies updates, so its value remains the same
 	// until changed via the API.
@@ -38,6 +41,12 @@ func eventFlagsWithEmit(emit uint64) eventFlagsOption {
 	}
 }
 
+func eventFlagsWithSignature(signature bool) eventFlagsOption {
+	return func(es *eventFlags) {
+		es.signature = signature
+	}
+}
+
 func eventFlagsWithEnabled(enabled bool) eventFlagsOption {
 	return func(es *eventFlags) {
 		es.enabled = enabled
@@ -49,6 +58,7 @@ func newEventFlags(options ...eventFlagsOption) *eventFlags {
 	ef := &eventFlags{
 		policiesSubmit: 0,
 		policiesEmit:   0,
+		signature:      false,
 		enabled:        false,
 	}
 
