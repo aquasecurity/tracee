@@ -153,6 +153,8 @@ typedef struct args {
     unsigned long args[6];
 } args_t;
 
+// NOTE: If any fields are added to argument_type_e, the array type_size_table
+// (and related defines) must be updated accordingly.
 enum argument_type_e
 {
     NONE_T = 0UL,
