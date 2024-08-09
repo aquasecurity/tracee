@@ -1,6 +1,7 @@
 package events
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/aquasecurity/tracee/types/trace"
@@ -295,5 +296,22 @@ func BenchmarkParseArgs_Uintptr(b *testing.B) {
 		if err != nil {
 			b.Errorf("Error parsing args: %v", err)
 		}
+	}
+}
+
+func Benchmark_parseSyscall(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		wg := sync.WaitGroup{}
+		wg.Add(10)
+
+		for i := 0; i < 10; i++ {
+			syscallArg := &trace.Argument{ArgMeta: trace.ArgMeta{Name: "syscall"}, Value: int32(0)}
+			go func() {
+				defer wg.Done()
+				parseSyscall(syscallArg, 0)
+			}()
+		}
+
+		wg.Wait()
 	}
 }
