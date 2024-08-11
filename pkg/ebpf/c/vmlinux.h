@@ -684,7 +684,9 @@ enum bpf_func_id
     BPF_FUNC_sk_storage_get = 107,
     BPF_FUNC_ktime_get_boot_ns = 125,
     BPF_FUNC_copy_from_user = 148,
+    BPF_FUNC_get_current_task_btf = 158,
     BPF_FUNC_for_each_map_elem = 164,
+    BPF_FUNC_task_pt_regs = 175,
 };
 
 #define MODULE_NAME_LEN (64 - sizeof(unsigned long))
