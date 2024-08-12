@@ -42,11 +42,22 @@ statfunc int get_task_flags(struct task_struct *task)
 statfunc int get_current_task_syscall_id(void)
 {
     // There is no originated syscall in kernel thread context
-    if (get_task_flags((struct task_struct *) bpf_get_current_task()) & PF_KTHREAD) {
+    struct task_struct *curr = (struct task_struct *) bpf_get_current_task();
+    if (get_task_flags(curr) & PF_KTHREAD) {
         return NO_SYSCALL;
     }
+
     struct pt_regs *regs = get_current_task_pt_regs();
-    return get_syscall_id_from_regs(regs);
+    int id = get_syscall_id_from_regs(regs);
+    if (is_compat(curr)) {
+        // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
+        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
+        if (id_64 == 0)
+            return 0;
+
+        id = *id_64;
+    }
+    return id;
 }
 
 statfunc u32 get_task_mnt_ns_id(struct task_struct *task)
