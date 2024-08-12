@@ -31,8 +31,6 @@ concurrency:
   group: ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 env:
-  DOCKERHUB_TOKEN: ${{ secrets.TEST_SECRET }}
-  DOCKERHUB_USER: ${{ secrets.TEST_SECRET }}
   TESTS: >
     TRC-102
     TRC-103
@@ -77,6 +75,32 @@ env:
     WRITABLE_DATA_SOURCE
     SET_FS_PWD
 jobs:
+  check-docker:
+    name: Check Docker
+    runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_TOKEN: ${{ secrets.TEST_SECRET }}
+      DOCKERHUB_USER: ${{ secrets.TEST_SECRET }}
+      DOCKERHUB: ${{ secrets.TEST_SECRET }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          submodules: true
+      - name: Check Docker
+        run: |
+          echo "DOCKERHUB_USER: ${DOCKERHUB_USER}"
+          echo "TESTS: ${TESTS}"
+          echo "DOCKERHUB: ${DOCKERHUB}"
+      - name: Login to docker.io registry
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
   #
   # DOC VERIFICATION
   #
