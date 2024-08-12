@@ -31,6 +31,8 @@ concurrency:
   group: ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 env:
+  DOCKERHUB_TOKEN: ${{ secrets.TEST_SECRET }}
+  DOCKERHUB_USER: ${{ secrets.TEST_SECRET }}
   TESTS: >
     TRC-102
     TRC-103
@@ -340,11 +342,20 @@ jobs:
         GOPATH: "/tmp/go"
         GOCACHE: "/tmp/go-cache"
         GOROOT: "/usr/local/go"
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
     steps:
       - name: "Checkout"
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
+      - name: Login to docker.io registry
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
       - name: "Prepare Image (Fix AMIs)"
         run: ./tests/e2e-install-deps.sh
       - name: "Environment Variables"
