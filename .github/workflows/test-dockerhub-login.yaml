@@ -1,0 +1,28 @@
+name: DockerHub Login on PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  dockerhub-login:
+    name: DockerHub Login
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          submodules: true
+
+      # Step 2: Log in to DockerHub
+      - name: Login to docker.io registry
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Print success message
+        run: echo "DockerHub login successful!"
