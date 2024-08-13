@@ -11347,14 +11347,6 @@ var CoreEvents = map[ID]Definition{
 			probes: []Probe{
 				{handle: probes.SecurityMmapAddr, required: true},
 				{handle: probes.SecurityFileMProtect, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{
-					"sys_enter_init_tail",
-					"sys_enter_init",
-					[]uint32{uint32(Mmap), uint32(Mprotect), uint32(PkeyMprotect)},
-				},
 			},
 		},
 		sets: []string{},
