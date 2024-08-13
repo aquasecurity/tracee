@@ -6,5 +6,5 @@ exit_err() {
     exit 1
 }
 
-docker pull ubuntu > /dev/null
-docker run --rm ubuntu /usr/bin/ls > /dev/null
+docker image pull ubuntu:jammy-20240627.1 > /dev/null
+docker container run --rm ubuntu:jammy-20240627.1 /usr/bin/ls > /dev/null
