@@ -83,13 +83,13 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 # install staticcheck
 
 RUN GOROOT=/usr/local/go GOPATH=$HOME/go \
-    go install honnef.co/go/tools/cmd/staticcheck@latest && \
+    go install honnef.co/go/tools/cmd/staticcheck@2023.1.7 && \
     cp $HOME/go/bin/staticcheck /usr/bin/
 
 # install goimports-reviser
 
 RUN GOROOT=/usr/local/go GOPATH=$HOME/go \
-    go install github.com/incu6us/goimports-reviser/v3@latest && \
+    go install github.com/incu6us/goimports-reviser/v3@v3.6.5 && \
     cp $HOME/go/bin/goimports-reviser /usr/bin/
 
 # install revive
@@ -101,7 +101,7 @@ RUN GOROOT=/usr/local/go GOPATH=$HOME/go \
 # install errcheck
 
 RUN GOROOT=/usr/local/go GOPATH=$HOME/go \
-    go install github.com/kisielk/errcheck@latest && \
+    go install github.com/kisielk/errcheck@v1.7.0 && \
     cp $HOME/go/bin/errcheck /usr/bin/
 
 USER tracee

@@ -77,7 +77,7 @@ RUN apk --no-cache add man-pages man-pages-posix bash-completion vim && \
 # install staticcheck
 
 RUN GOROOT=/usr/lib/go GOPATH=$HOME/go \
-    go install honnef.co/go/tools/cmd/staticcheck@latest && \
+    go install honnef.co/go/tools/cmd/staticcheck@2023.1.7 && \
     cp $HOME/go/bin/staticcheck /usr/bin/
 
 # install goimports-reviser
