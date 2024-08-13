@@ -2605,30 +2605,25 @@ int BPF_KPROBE(trace_security_socket_connect)
             return 0;
     }
 
-    // Load args given to the syscall that invoked this function.
-    syscall_data_t *sys = &p.task_info->syscall_data;
-    if (!p.task_info->syscall_traced)
-        return 0;
-
     // Reduce line cols by having a few temp pointers.
     int (*stsb)(args_buffer_t *, void *, u32, u8) = save_to_submit_buf;
     void *args_buf = &p.event->args_buf;
-    void *to = (void *) &sys->args.args[0];
 
-    if (is_x86_compat(p.event->task)) // only i386 binaries uses socketcall
-        to = (void *) sys->args.args[1];
-
-    // Save the socket fd, depending on the syscall.
-    switch (sys->id) {
+    struct pt_regs *task_regs = get_current_task_pt_regs();
+    int sockfd;
+    void *arr_addr;
+    switch (p.event->context.syscall) {
         case SYSCALL_CONNECT:
-        case SYSCALL_SOCKETCALL:
+            sockfd = get_syscall_arg1(p.event->task, task_regs, false);
+            stsb(args_buf, &sockfd, sizeof(int), 0);
             break;
-        default:
-            return 0;
+        case SYSCALL_SOCKETCALL:
+            arr_addr = (void *) get_syscall_arg2(p.event->task, task_regs, false);
+            bpf_probe_read_user(
+                &sockfd, sizeof(int), arr_addr); // fd is the first entry in the array
+            stsb(args_buf, &sockfd, sizeof(int), 0);
+            break;
     }
-
-    // Save the socket fd argument to the event.
-    stsb(args_buf, to, sizeof(u32), 0);
 
     // Save the socket type argument to the event.
     stsb(args_buf, &type, sizeof(u32), 1);
