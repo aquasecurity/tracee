@@ -278,26 +278,26 @@ jobs:
         id: set-matrix
         run: |
           declare -A job_names=(
-              ["GKE 5.4"]="07803dec079f9dab8 x86_64"
-              ["GKE 5.10"]="03ca8e4a64be4e6e2 x86_64"
-              ["GKE 5.15 x86_64"]="0e71c360809862bd7 x86_64"
-              ["GKE 5.15 aarch64"]="0b66222a60f8f97be aarch64"
-              ["AMZN2 5.10 x86_64"]="0b9c1568cd5551408 x86_64"
-              ["AMZN2 5.10 aarch64"]="071a53e3ad06e6a7e aarch64"
-              ["RHEL8 4.18 x86_64"]="0763bdb83bba5e638 x86_64"
-              ["Focal 5.4 x86_64"]="0d9d35323406a6cad x86_64"
-              ["Focal 5.13 x86_64"]="0c86a42b0f61bd86e x86_64"
-              ["Focal 5.13 aarch64"]="07de8512322c4a33a aarch64"
-              ["Jammy 5.15 x86_64"]="02f0ed24d636fa1a7 x86_64"
-              ["Jammy 5.15 aarch64"]="0b6d16ce9f5576b40 aarch64"
-              ["Jammy 5.19 x86_64"]="02ce72d6cd652cbbd x86_64"
-              ["Jammy 5.19 aarch64"]="07271263d87a0e883 aarch64"
-              ["Lunar 6.2 x86_64"]="0344a20747442e3c7 x86_64"
-              ["Lunar 6.2 aarch64"]="0c0d64eea6367efd8 aarch64"
-              ["Mantic 6.5 x86_64"]="0564e75d9605addaf x86_64"
-              ["Mantic 6.5 aarch64"]="028acebc5083c4840 aarch64"
-              ["Mantic 6.6 x86_64"]="040d4dc2758203717 x86_64"
-              ["Mantic 6.6 aarch64"]="03f75150a60f7edf7 aarch64"
+              ["GKE 5.4"]="0013845506cbdf2ca x86_64"
+              ["GKE 5.10"]="049b1b3a4a5fdf9fd x86_64"
+              ["GKE 5.15 x86_64"]="01f6d4f80f256ffe4 x86_64"
+              ["GKE 5.15 aarch64"]="079f308677600eebf aarch64"
+              ["AMZN2 5.10 x86_64"]="05d03d50b6008ede7 x86_64"
+              ["AMZN2 5.10 aarch64"]="05e46d0a87c96bf69 aarch64"
+              ["RHEL8 4.18 x86_64"]="08c6b52c312ffee85 x86_64"
+              ["Focal 5.4 x86_64"]="0c75089aa342ffa26 x86_64"
+              ["Focal 5.13 x86_64"]="094d5310a281c8679 x86_64"
+              ["Focal 5.13 aarch64"]="08f88e2a2bd1b72a7 aarch64"
+              ["Jammy 5.15 x86_64"]="0d01de8f7b26afe02 x86_64"
+              ["Jammy 5.15 aarch64"]="08e91aa07134e6a36 aarch64"
+              ["Jammy 5.19 x86_64"]="02691308713b4cec2 x86_64"
+              ["Jammy 5.19 aarch64"]="046579f8e52acb104 aarch64"
+              ["Lunar 6.2 x86_64"]="034e03e1bdb7c205f x86_64"
+              ["Lunar 6.2 aarch64"]="04b03463ee4e32182 aarch64"
+              ["Mantic 6.5 x86_64"]="0a44ad46e5c42e499 x86_64"
+              ["Mantic 6.5 aarch64"]="0387f77c4820c98db aarch64"
+              ["Mantic 6.6 x86_64"]="05b5ac8f6c43b3ca5 x86_64"
+              ["Mantic 6.6 aarch64"]="05c9d6cd9343f0a43 aarch64"
               # expand as needed
           )
           for num in 01; do
@@ -343,8 +343,8 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
-      - name: "Prepare Image (Fix AMIs)"
-        run: ./tests/e2e-install-deps.sh
+      # - name: "Prepare Image (Fix AMIs)"
+      #   run: ./tests/e2e-install-deps.sh
       - name: "Environment Variables"
         run: |
           if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
