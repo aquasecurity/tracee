@@ -2176,22 +2176,19 @@ int BPF_KPROBE(trace_security_file_open)
     // Load the arguments given to the open syscall (which eventually invokes this function)
     char empty_string[1] = "";
     void *syscall_pathname = &empty_string;
-    syscall_data_t *sys = NULL;
-    bool syscall_traced = p.task_info->syscall_traced;
-    if (syscall_traced) {
-        sys = &p.task_info->syscall_data;
-        switch (sys->id) {
-            case SYSCALL_EXECVE:
-            case SYSCALL_OPEN:
-                syscall_pathname = (void *) sys->args.args[0];
-                break;
+    struct pt_regs *task_regs = get_current_task_pt_regs();
 
-            case SYSCALL_EXECVEAT:
-            case SYSCALL_OPENAT:
-            case SYSCALL_OPENAT2:
-                syscall_pathname = (void *) sys->args.args[1];
-                break;
-        }
+    switch (p.event->context.syscall) {
+        case SYSCALL_EXECVE:
+        case SYSCALL_OPEN:
+            syscall_pathname = (void *) get_syscall_arg1(p.event->task, task_regs, false);
+            break;
+
+        case SYSCALL_EXECVEAT:
+        case SYSCALL_OPENAT:
+        case SYSCALL_OPENAT2:
+            syscall_pathname = (void *) get_syscall_arg2(p.event->task, task_regs, false);
+            break;
     }
 
     save_str_to_buf(&p.event->args_buf, file_path, 0);
