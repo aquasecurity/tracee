@@ -71,7 +71,7 @@ runs:
       shell: bash
     - name: Install staticchecker
       run: |
-        GOROOT=/usr/local/go GOPATH=$HOME/go go install honnef.co/go/tools/cmd/staticcheck@latest
+        GOROOT=/usr/local/go GOPATH=$HOME/go go install honnef.co/go/tools/cmd/staticcheck@2023.1.7
         sudo cp $HOME/go/bin/staticcheck /usr/bin/
       shell: bash
     - name: Install revive
@@ -81,12 +81,12 @@ runs:
       shell: bash
     - name: Install goimports-reviser
       run: |
-        GOROOT=/usr/local/go GOPATH=$HOME/go go install github.com/incu6us/goimports-reviser/v3@latest
+        GOROOT=/usr/local/go GOPATH=$HOME/go go install github.com/incu6us/goimports-reviser/v3@v3.6.5
         sudo cp $HOME/go/bin/goimports-reviser /usr/bin/
       shell: bash
     - name: Install errcheck
       run: |
-        GOROOT=/usr/local/go GOPATH=$HOME/go go install github.com/kisielk/errcheck@latest
+        GOROOT=/usr/local/go GOPATH=$HOME/go go install github.com/kisielk/errcheck@v1.7.0
         sudo cp $HOME/go/bin/errcheck /usr/bin/
       shell: bash
     - name: Install docker

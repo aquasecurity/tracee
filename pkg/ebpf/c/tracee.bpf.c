@@ -2173,22 +2173,19 @@ int BPF_KPROBE(trace_security_file_open)
     // Load the arguments given to the open syscall (which eventually invokes this function)
     char empty_string[1] = "";
     void *syscall_pathname = &empty_string;
-    syscall_data_t *sys = NULL;
-    bool syscall_traced = p.task_info->syscall_traced;
-    if (syscall_traced) {
-        sys = &p.task_info->syscall_data;
-        switch (sys->id) {
-            case SYSCALL_EXECVE:
-            case SYSCALL_OPEN:
-                syscall_pathname = (void *) sys->args.args[0];
-                break;
+    struct pt_regs *task_regs = get_current_task_pt_regs();
 
-            case SYSCALL_EXECVEAT:
-            case SYSCALL_OPENAT:
-            case SYSCALL_OPENAT2:
-                syscall_pathname = (void *) sys->args.args[1];
-                break;
-        }
+    switch (p.event->context.syscall) {
+        case SYSCALL_EXECVE:
+        case SYSCALL_OPEN:
+            syscall_pathname = (void *) get_syscall_arg1(p.event->task, task_regs, false);
+            break;
+
+        case SYSCALL_EXECVEAT:
+        case SYSCALL_OPENAT:
+        case SYSCALL_OPENAT2:
+            syscall_pathname = (void *) get_syscall_arg2(p.event->task, task_regs, false);
+            break;
     }
 
     save_str_to_buf(&p.event->args_buf, file_path, 0);
@@ -2605,30 +2602,25 @@ int BPF_KPROBE(trace_security_socket_connect)
             return 0;
     }
 
-    // Load args given to the syscall that invoked this function.
-    syscall_data_t *sys = &p.task_info->syscall_data;
-    if (!p.task_info->syscall_traced)
-        return 0;
-
     // Reduce line cols by having a few temp pointers.
     int (*stsb)(args_buffer_t *, void *, u32, u8) = save_to_submit_buf;
     void *args_buf = &p.event->args_buf;
-    void *to = (void *) &sys->args.args[0];
 
-    if (is_x86_compat(p.event->task)) // only i386 binaries uses socketcall
-        to = (void *) sys->args.args[1];
-
-    // Save the socket fd, depending on the syscall.
-    switch (sys->id) {
+    struct pt_regs *task_regs = get_current_task_pt_regs();
+    int sockfd;
+    void *arr_addr;
+    switch (p.event->context.syscall) {
         case SYSCALL_CONNECT:
-        case SYSCALL_SOCKETCALL:
+            sockfd = get_syscall_arg1(p.event->task, task_regs, false);
+            stsb(args_buf, &sockfd, sizeof(int), 0);
             break;
-        default:
-            return 0;
+        case SYSCALL_SOCKETCALL:
+            arr_addr = (void *) get_syscall_arg2(p.event->task, task_regs, false);
+            bpf_probe_read_user(
+                &sockfd, sizeof(int), arr_addr); // fd is the first entry in the array
+            stsb(args_buf, &sockfd, sizeof(int), 0);
+            break;
     }
-
-    // Save the socket fd argument to the event.
-    stsb(args_buf, to, sizeof(u32), 0);
 
     // Save the socket type argument to the event.
     stsb(args_buf, &type, sizeof(u32), 1);
@@ -2679,13 +2671,14 @@ int BPF_KPROBE(trace_security_socket_accept)
 
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
     struct socket *new_sock = (struct socket *) PT_REGS_PARM2(ctx);
-    syscall_data_t *sys = &p.task_info->syscall_data;
+
+    struct pt_regs *task_regs = get_current_task_pt_regs();
 
     if (event_is_selected(SOCKET_ACCEPT, p.event->context.policies_version)) {
         args_t args = {};
         args.args[0] = (unsigned long) sock;
         args.args[1] = (unsigned long) new_sock;
-        args.args[2] = sys->args.args[0]; // sockfd
+        args.args[2] = get_syscall_arg1(p.event->task, task_regs, false); // sockfd
         save_args(&args, SOCKET_ACCEPT);
     }
 
@@ -2696,14 +2689,17 @@ int BPF_KPROBE(trace_security_socket_accept)
     if (!p.task_info->syscall_traced)
         return 0;
 
-    switch (sys->id) {
+    int sockfd;
+    switch (p.event->context.syscall) {
         case SYSCALL_ACCEPT:
         case SYSCALL_ACCEPT4:
-            save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+            sockfd = get_syscall_arg1(p.event->task, task_regs, false);
+            save_to_submit_buf(&p.event->args_buf, (void *) &sockfd, sizeof(int), 0);
             break;
 #if defined(bpf_target_x86) // armhf makes use of SYSCALL_ACCEPT/4
         case SYSCALL_SOCKETCALL:
-            save_to_submit_buf(&p.event->args_buf, (void *) sys->args.args[1], sizeof(u32), 0);
+            sockfd = get_syscall_arg2(p.event->task, task_regs, false);
+            save_to_submit_buf(&p.event->args_buf, (void *) &sockfd, sizeof(int), 0);
             break;
 #endif
         default:
@@ -2738,18 +2734,18 @@ int BPF_KPROBE(trace_security_socket_bind)
         return 0;
     }
 
-    // Load the arguments given to the bind syscall (which eventually invokes this function)
-    syscall_data_t *sys = &p.task_info->syscall_data;
-    if (!p.task_info->syscall_traced)
-        return 0;
-
-    switch (sys->id) {
+    struct pt_regs *task_regs = get_current_task_pt_regs();
+    int sockfd;
+    u32 sockfd_addr;
+    switch (p.event->context.syscall) {
         case SYSCALL_BIND:
-            save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+            sockfd = get_syscall_arg1(p.event->task, task_regs, false);
+            save_to_submit_buf(&p.event->args_buf, (void *) &sockfd, sizeof(u32), 0);
             break;
 #if defined(bpf_target_x86) // armhf makes use of SYSCALL_BIND
         case SYSCALL_SOCKETCALL:
-            save_to_submit_buf(&p.event->args_buf, (void *) sys->args.args[1], sizeof(u32), 0);
+            sockfd_addr = get_syscall_arg2(p.event->task, task_regs, false);
+            save_to_submit_buf(&p.event->args_buf, (void *) sockfd_addr, sizeof(u32), 0);
             break;
 #endif
         default:
@@ -2812,22 +2808,18 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
     int level = (int) PT_REGS_PARM2(ctx);
     int optname = (int) PT_REGS_PARM3(ctx);
 
-    // Load the arguments given to the setsockopt syscall (which eventually invokes this function)
-    syscall_data_t *sys = &p.task_info->syscall_data;
-    if (sys == NULL) {
-        return -1;
-    }
-
-    if (!p.task_info->syscall_traced)
-        return 0;
-
-    switch (sys->id) {
+    struct pt_regs *task_regs = get_current_task_pt_regs();
+    int sockfd;
+    u32 sockfd_addr;
+    switch (p.event->context.syscall) {
         case SYSCALL_SETSOCKOPT:
-            save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+            sockfd = get_syscall_arg1(p.event->task, task_regs, false);
+            save_to_submit_buf(&p.event->args_buf, (void *) &sockfd, sizeof(u32), 0);
             break;
 #if defined(bpf_target_x86) // armhf makes use of SYSCALL_SETSOCKOPT
         case SYSCALL_SOCKETCALL:
-            save_to_submit_buf(&p.event->args_buf, (void *) sys->args.args[1], sizeof(u32), 0);
+            sockfd_addr = get_syscall_arg2(p.event->task, task_regs, false);
+            save_to_submit_buf(&p.event->args_buf, (void *) sockfd_addr, sizeof(u32), 0);
             break;
 #endif
         default:
@@ -3417,18 +3409,16 @@ int BPF_KPROBE(trace_mmap_alert)
     if (!evaluate_scope_filters(&p))
         return 0;
 
-    // Load the arguments given to the mmap syscall (which eventually invokes this function)
-    syscall_data_t *sys = &p.task_info->syscall_data;
-    if (!p.task_info->syscall_traced || sys->id != SYSCALL_MMAP)
+    if (p.event->context.syscall != SYSCALL_MMAP)
         return 0;
 
-    int prot = sys->args.args[2];
-
+    struct pt_regs *task_regs = get_current_task_pt_regs();
+    int prot = get_syscall_arg3(p.event->task, task_regs, false);
     if ((prot & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC)) {
         u32 alert = ALERT_MMAP_W_X;
-        int fd = sys->args.args[4];
-        void *addr = (void *) sys->args.args[0];
-        size_t len = sys->args.args[1];
+        void *addr = (void *) get_syscall_arg1(p.event->task, task_regs, false);
+        size_t len = get_syscall_arg2(p.event->task, task_regs, false);
+        int fd = get_syscall_arg5(p.event->task, task_regs, false);
         int prev_prot = 0;
         file_info_t file_info = {.pathname_p = NULL};
         if (fd >= 0) {
@@ -3563,18 +3553,18 @@ int BPF_KPROBE(trace_security_file_mprotect)
     if (!init_program_data(&p, ctx, SECURITY_FILE_MPROTECT))
         return 0;
 
-    // Load the arguments given to the mprotect syscall (which eventually invokes this function)
-    syscall_data_t *sys = &p.task_info->syscall_data;
-    if (!p.task_info->syscall_traced ||
-        (sys->id != SYSCALL_MPROTECT && sys->id != SYSCALL_PKEY_MPROTECT))
+    if (p.event->context.syscall != SYSCALL_MPROTECT &&
+        p.event->context.syscall != SYSCALL_PKEY_MPROTECT)
         return 0;
 
     struct vm_area_struct *vma = (struct vm_area_struct *) PT_REGS_PARM1(ctx);
     unsigned long reqprot = PT_REGS_PARM2(ctx);
     unsigned long prev_prot = get_vma_flags(vma);
     struct file *file = (struct file *) BPF_CORE_READ(vma, vm_file);
-    void *addr = (void *) sys->args.args[0];
-    size_t len = sys->args.args[1];
+
+    struct pt_regs *task_regs = get_current_task_pt_regs();
+    void *addr = (void *) get_syscall_arg1(p.event->task, task_regs, false);
+    size_t len = get_syscall_arg2(p.event->task, task_regs, false);
 
     if (evaluate_scope_filters(&p)) {
         file_info = get_file_info(file);
@@ -3586,8 +3576,8 @@ int BPF_KPROBE(trace_security_file_mprotect)
         save_to_submit_buf(&p.event->args_buf, &addr, sizeof(void *), 4);
         save_to_submit_buf(&p.event->args_buf, &len, sizeof(size_t), 5);
 
-        if (sys->id == SYSCALL_PKEY_MPROTECT) {
-            int pkey = sys->args.args[3];
+        if (p.event->context.syscall == SYSCALL_PKEY_MPROTECT) {
+            int pkey = get_syscall_arg4(p.event->task, task_regs, false);
             save_to_submit_buf(&p.event->args_buf, &pkey, sizeof(int), 6);
         }
 
@@ -5090,11 +5080,14 @@ int BPF_KPROBE(trace_set_fs_pwd)
     if (!evaluate_scope_filters(&p))
         return 0;
 
-    syscall_data_t *sys = &p.task_info->syscall_data;
+    if (get_task_parent_flags(p.event->task) & PF_KTHREAD)
+        return 0;
 
     void *unresolved_path = NULL;
-    if (sys->id == SYSCALL_CHDIR)
-        unresolved_path = (void *) sys->args.args[0];
+    if (p.event->context.syscall == SYSCALL_CHDIR) {
+        struct pt_regs *task_regs = get_current_task_pt_regs();
+        unresolved_path = (void *) get_syscall_arg1(p.event->task, task_regs, false);
+    }
 
     void *resolved_path = get_path_str((struct path *) PT_REGS_PARM2(ctx));
 

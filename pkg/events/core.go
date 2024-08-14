@@ -11347,14 +11347,6 @@ var CoreEvents = map[ID]Definition{
 			probes: []Probe{
 				{handle: probes.SecurityMmapAddr, required: true},
 				{handle: probes.SecurityFileMProtect, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{
-					"sys_enter_init_tail",
-					"sys_enter_init",
-					[]uint32{uint32(Mmap), uint32(Mprotect), uint32(PkeyMprotect)},
-				},
 			},
 		},
 		sets: []string{},
@@ -11519,18 +11511,6 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SecurityFileOpen, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{
-					"sys_enter_init_tail",
-					"sys_enter_init",
-					[]uint32{
-						uint32(Open), uint32(Openat), uint32(Openat2),
-						uint32(OpenByHandleAt), uint32(Execve),
-						uint32(Execveat),
-					},
-				},
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops"},
@@ -11608,10 +11588,6 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SecuritySocketConnect, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Connect)}},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "net", "net_sock"},
@@ -11646,10 +11622,6 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SecuritySocketAccept, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept), uint32(Accept4)}},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "net", "net_sock"},
@@ -11667,10 +11639,6 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SecuritySocketBind, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bind)}},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "net", "net_sock"},
@@ -11688,10 +11656,6 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SecuritySocketSetsockopt, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsockopt)}},
 			},
 		},
 		sets: []string{"lsm_hooks", "net", "net_sock"},
@@ -13059,19 +13023,9 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SetFsPwd, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{
-					"sys_enter_init_tail",
-					"sys_enter_init",
-					[]uint32{
-						uint32(Chdir),
-					},
-				},
 			},
 		},
-		sets: []string{"syscalls"},
+		sets: []string{},
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "unresolved_path"},
 			{Type: "const char*", Name: "resolved_path"},
