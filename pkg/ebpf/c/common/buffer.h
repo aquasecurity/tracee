@@ -339,102 +339,116 @@ statfunc int save_sockaddr_to_buf(args_buffer_t *buf, struct socket *sock, u8 in
 
 #define DEC_ARG(n, enc_arg) ((enc_arg >> (8 * n)) & 0xFF)
 
+#define BITMASK_INDIRECT_VALUE_TYPES                                                               \
+    ((u64) 1 << STR_T | (u64) 1 << SOCKADDR_T | (u64) 1 << INT_ARR_2_T | (u64) 1 << TIMESPEC_T)
+
+#define BITMASK_COMMON_TYPES                                                                       \
+    ((u64) 1 << INT_T | (u64) 1 << UINT_T | (u64) 1 << LONG_T | (u64) 1 << ULONG_T |               \
+     (u64) 1 << OFF_T_T | (u64) 1 << MODE_T_T | (u64) 1 << DEV_T_T | (u64) 1 << SIZE_T_T |         \
+     (u64) 1 << POINTER_T | (u64) 1 << STR_ARR_T | (u64) 1 << BYTES_T | (u64) 1 << U16_T |         \
+     (u64) 1 << CRED_T | (u64) 1 << UINT64_ARR_T | (u64) 1 << U8_T)
+
+#define ARG_TYPE_MAX_ARRAY (u8) TIMESPEC_T // last element defined in argument_type_e
+
+// Ensure that only values that can be held by an u8 are assigned to sizes.
+// If the size is greater than 255, assign 0 (making it evident) and handle it as a special case.
+static u8 type_size_table[ARG_TYPE_MAX_ARRAY + 1] = {
+    [NONE_T] = 0,
+    [INT_T] = sizeof(int),
+    [UINT_T] = sizeof(unsigned int),
+    [LONG_T] = sizeof(long),
+    [ULONG_T] = sizeof(unsigned long),
+    [OFF_T_T] = sizeof(off_t),
+    [MODE_T_T] = sizeof(mode_t),
+    [DEV_T_T] = sizeof(dev_t),
+    [SIZE_T_T] = sizeof(size_t),
+    [POINTER_T] = sizeof(void *),
+    [STR_T] = 0,
+    [STR_ARR_T] = 0,
+    [SOCKADDR_T] = sizeof(short),
+    [BYTES_T] = 0,
+    [U16_T] = sizeof(u16),
+    [CRED_T] = sizeof(struct cred),
+    [INT_ARR_2_T] = sizeof(int[2]),
+    [UINT64_ARR_T] = 0,
+    [U8_T] = sizeof(u8),
+    [TIMESPEC_T] = 0,
+};
+
 statfunc int save_args_to_submit_buf(event_data_t *event, args_t *args)
 {
-    unsigned int i;
-    unsigned int rc = 0;
-    unsigned int arg_num = 0;
-    short family = 0;
+    u8 i;
+    u8 type;
+    u64 type_mask;
+    u32 rc = 0;
+    u32 arg_num = 0;
+    u32 size;
+    void *arg;
+    short family;
 
-    if (event->config.param_types == 0)
+    if (unlikely(event->config.param_types == 0))
         return 0;
 
 #pragma unroll
     for (i = 0; i < 6; i++) {
-        int size = 0;
-        u8 type = DEC_ARG(i, event->config.param_types);
-        u8 index = i;
+        type = DEC_ARG(i, event->config.param_types);
+
+        // bounds check for the verifier
+        if (unlikely(type >= ARG_TYPE_MAX_ARRAY))
+            continue; // skip types not defined in the type_size_table
+        size = type_size_table[type];
+
+        if (type == NONE_T)
+            continue;
+        type_mask = (u64) 1 << type; // type value must be < 64
+
+        if (BITMASK_INDIRECT_VALUE_TYPES & type_mask)
+            arg = (void *) args->args[i];
+        else
+            arg = (void *) &args->args[i];
+
+        // handle common types
+        if (BITMASK_COMMON_TYPES & type_mask)
+            goto save_arg;
+
+        // handle special types
         switch (type) {
-            case NONE_T:
-                break;
-            case INT_T:
-                size = sizeof(int);
-                break;
-            case UINT_T:
-                size = sizeof(unsigned int);
-                break;
-            case OFF_T_T:
-                size = sizeof(off_t);
-                break;
-            case DEV_T_T:
-                size = sizeof(dev_t);
-                break;
-            case MODE_T_T:
-                size = sizeof(mode_t);
-                break;
-            case LONG_T:
-                size = sizeof(long);
-                break;
-            case ULONG_T:
-                size = sizeof(unsigned long);
-                break;
-            case SIZE_T_T:
-                size = sizeof(size_t);
-                break;
-            case POINTER_T:
-                size = sizeof(void *);
-                break;
-            case U8_T:
-                size = sizeof(u8);
-                break;
-            case U16_T:
-                size = sizeof(u16);
-                break;
             case STR_T:
-                rc = save_str_to_buf(&(event->args_buf), (void *) args->args[i], index);
-                break;
-            case SOCKADDR_T:
-                if (args->args[i]) {
-                    bpf_probe_read(&family, sizeof(short), (void *) args->args[i]);
-                    switch (family) {
-                        case AF_UNIX:
-                            size = bpf_core_type_size(struct sockaddr_un);
-                            break;
-                        case AF_INET:
-                            size = bpf_core_type_size(struct sockaddr_in);
-                            break;
-                        case AF_INET6:
-                            size = bpf_core_type_size(struct sockaddr_in6);
-                            break;
-                        default:
-                            size = sizeof(short);
-                    }
-                    rc = save_to_submit_buf(
-                        &(event->args_buf), (void *) (args->args[i]), size, index);
-                } else {
-                    rc = save_to_submit_buf(&(event->args_buf), &family, sizeof(short), index);
+                rc = save_str_to_buf(&(event->args_buf), arg, i);
+                goto check_rc;
+            case SOCKADDR_T: {
+                // default size from the type_size_table
+                if (!arg) {
+                    family = 0;
+                    arg = (void *) &family;
+                    goto save_arg;
                 }
-                break;
-            case INT_ARR_2_T:
-                size = sizeof(int[2]);
-                rc = save_to_submit_buf(&(event->args_buf), (void *) (args->args[i]), size, index);
-                break;
+
+                bpf_probe_read(&family, sizeof(short), arg);
+                switch (family) {
+                    case AF_UNIX:
+                        size = bpf_core_type_size(struct sockaddr_un);
+                        break;
+                    case AF_INET:
+                        size = bpf_core_type_size(struct sockaddr_in);
+                        break;
+                    case AF_INET6:
+                        size = bpf_core_type_size(struct sockaddr_in6);
+                        break;
+                }
+                goto save_arg;
+            }
             case TIMESPEC_T:
                 size = bpf_core_type_size(struct __kernel_timespec);
-                rc = save_to_submit_buf(&(event->args_buf), (void *) (args->args[i]), size, index);
-                break;
-        }
-        switch (type) {
-            case NONE_T:
-            case STR_T:
-            case SOCKADDR_T:
-            case INT_ARR_2_T:
-            case TIMESPEC_T:
-                break;
+                goto save_arg;
             default:
-                rc = save_to_submit_buf(&(event->args_buf), (void *) &(args->args[i]), size, index);
-                break;
+                goto save_arg;
         }
+
+    save_arg:
+        rc = save_to_submit_buf(&(event->args_buf), arg, size, i);
+
+    check_rc:
         if (rc > 0) {
             arg_num++;
             rc = 0;
