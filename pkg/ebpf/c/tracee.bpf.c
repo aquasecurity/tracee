@@ -2739,7 +2739,7 @@ int BPF_KPROBE(trace_security_socket_bind)
 
     struct pt_regs *task_regs = get_current_task_pt_regs();
     int sockfd;
-    u32 sockfd_addr;
+    u64 sockfd_addr;
     switch (p.event->context.syscall) {
         case SYSCALL_BIND:
             sockfd = get_syscall_arg1(p.event->task, task_regs, false);
@@ -2813,7 +2813,7 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
 
     struct pt_regs *task_regs = get_current_task_pt_regs();
     int sockfd;
-    u32 sockfd_addr;
+    u64 sockfd_addr;
     switch (p.event->context.syscall) {
         case SYSCALL_SETSOCKOPT:
             sockfd = get_syscall_arg1(p.event->task, task_regs, false);
