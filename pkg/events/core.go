@@ -12467,6 +12467,10 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "name"},
 			{Type: "const char*", Name: "version"},
 			{Type: "const char*", Name: "src_version"},
+			{Type: "const char*", Name: "pathname"},
+			{Type: "dev_t", Name: "dev"},
+			{Type: "unsigned long", Name: "inode"},
+			{Type: "u64", Name: "ctime"},
 		},
 	},
 	ModuleFree: {

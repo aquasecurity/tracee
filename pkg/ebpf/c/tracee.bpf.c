@@ -4314,6 +4314,22 @@ int tracepoint__module__module_load(struct bpf_raw_tracepoint_args *ctx)
     if (!evaluate_scope_filters(&p))
         return 0;
 
+    if (p.event->context.syscall == SYSCALL_FINIT_MODULE) {
+        struct pt_regs *task_regs = get_current_task_pt_regs();
+        int fd = get_syscall_arg1(p.event->task, task_regs, false);
+        struct file *file = get_struct_file_from_fd(fd);
+        void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
+        dev_t dev = get_dev_from_file(file);
+        unsigned long inode = get_inode_nr_from_file(file);
+        u64 ctime = get_ctime_nanosec_from_file(file);
+
+        // add file related info
+        save_str_to_buf(&p.event->args_buf, file_path, 3);
+        save_to_submit_buf(&p.event->args_buf, &dev, sizeof(dev_t), 4);
+        save_to_submit_buf(&p.event->args_buf, &inode, sizeof(unsigned long), 5);
+        save_to_submit_buf(&p.event->args_buf, &ctime, sizeof(u64), 6);
+    }
+
     const char *version = BPF_CORE_READ(mod, version);
     const char *srcversion = BPF_CORE_READ(mod, srcversion);
     save_str_to_buf(&p.event->args_buf, &mod->name, 0);
