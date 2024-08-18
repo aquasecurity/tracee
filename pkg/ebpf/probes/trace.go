@@ -23,6 +23,8 @@ const (
 	KretProbe            // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kp
 	Tracepoint           // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-tracep
 	RawTracepoint        // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#7-raw-tracep
+	SyscallEnter
+	SyscallExit
 	InvalidProbeType
 )
 
@@ -36,6 +38,10 @@ func (t ProbeType) String() string {
 		return "tracepoint"
 	case RawTracepoint:
 		return "raw_tracepoint"
+	case SyscallEnter:
+		return "syscall_enter"
+	case SyscallExit:
+		return "syscall_exit"
 	}
 
 	return "invalid"
@@ -43,7 +49,7 @@ func (t ProbeType) String() string {
 
 // When attaching a traceProbe, by handle, to its eBPF program:
 //
-//   Handle == traceProbe (types: rawTracepoint, kprobe, kretprobe)
+//   Handle == traceProbe (types: rawTracepoint, kprobe, kretprobe, syscallEnter, syscallExit)
 //
 //     Attach(EventHandle)
 //     Detach(EventHandle)
@@ -101,10 +107,11 @@ func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 	// KProbe and KretProbe
 
 	switch p.probeType {
-	case KProbe, KretProbe:
+	case KProbe, KretProbe, SyscallEnter, SyscallExit:
 		var err error
 		var link *bpf.BPFLink
 		var attachFunc func(uint64) (*bpf.BPFLink, error)
+		var syms []environment.KernelSymbol
 		// https://github.com/aquasecurity/tracee/issues/3653#issuecomment-1832642225
 		//
 		// After commit b022f0c7e404 ('tracing/kprobes: Return EADDRNOTAVAIL
@@ -128,7 +135,49 @@ func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 			return errfmt.Errorf("trace probes needs kernel symbols table argument")
 		}
 
-		syms, err := ksyms.GetSymbolByName(p.eventName)
+		if p.probeType == SyscallEnter || p.probeType == SyscallExit {
+			syms, err = ksyms.GetSymbolByName(SyscallPrefix + p.eventName)
+			if err != nil {
+				goto rollback
+			}
+			if p.probeType == SyscallEnter {
+				link, err = prog.AttachKprobe(syms[0].Name)
+			}
+			if p.probeType == SyscallExit {
+				link, err = prog.AttachKretprobe(syms[0].Name)
+			}
+			if err != nil {
+				goto rollback
+			}
+			p.bpfLink = append(p.bpfLink, link)
+
+			// Try to attach compat syscall. Don't return error if we failed to attach.
+			symsCompat, _ := ksyms.GetSymbolByName(SyscallPrefixCompat + p.eventName)
+			if len(symsCompat) > 0 {
+				if p.probeType == SyscallEnter {
+					link, _ = prog.AttachKprobe(symsCompat[0].Name)
+				}
+				if p.probeType == SyscallExit {
+					link, _ = prog.AttachKretprobe(symsCompat[0].Name)
+				}
+				p.bpfLink = append(p.bpfLink, link)
+			}
+			// In x86, there are 2 possible compat prefixes - we handle it here
+			symsCompat, _ = ksyms.GetSymbolByName(SyscallPrefixCompat2 + p.eventName)
+			if len(symsCompat) > 0 {
+				if p.probeType == SyscallEnter {
+					link, _ = prog.AttachKprobe(symsCompat[0].Name)
+				}
+				if p.probeType == SyscallExit {
+					link, _ = prog.AttachKretprobe(symsCompat[0].Name)
+				}
+				p.bpfLink = append(p.bpfLink, link)
+			}
+
+			goto success
+		}
+
+		syms, err = ksyms.GetSymbolByName(p.eventName)
 		if err != nil {
 			goto rollback
 		}
