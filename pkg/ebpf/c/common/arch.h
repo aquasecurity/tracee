@@ -127,6 +127,7 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     #define SYSCALL_FCHDIR                 81
     #define SYSCALL_FCHMOD                 91
     #define SYSCALL_FCHOWN                 93
+    #define SYSCALL_PTRACE                 101
     #define SYSCALL_FSTATFS                138
     #define SYSCALL_READAHEAD              187
     #define SYSCALL_FSETXATTR              190
@@ -247,6 +248,7 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     #define SYSCALL_UTIMENSAT              88
     #define SYSCALL_EXIT                   93
     #define SYSCALL_EXIT_GROUP             94
+    #define SYSCALL_PTRACE                 117
     #define SYSCALL_RT_SIGRETURN           139
     #define SYSCALL_SOCKET                 198
     #define SYSCALL_BIND                   200
