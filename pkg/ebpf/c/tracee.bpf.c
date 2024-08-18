@@ -358,6 +358,9 @@ int trace_sys_exit(struct bpf_raw_tracepoint_args *ctx)
     return 0;
 }
 
+// macros for syscall kprobes
+TRACE_SYSCALL(ptrace, SYSCALL_PTRACE)
+
 SEC("raw_tracepoint/sys_execve")
 int syscall__execve_enter(void *ctx)
 {
