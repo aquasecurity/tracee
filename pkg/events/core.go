@@ -4026,14 +4026,8 @@ var CoreEvents = map[ID]Definition{
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ArchPrctl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ArchPrctl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ArchPrctl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ArchPrctl)}},
+				{handle: probes.ArchPrctl, required: true},
+				{handle: probes.ArchPrctlRet, required: true},
 			},
 		},
 	},
