@@ -154,6 +154,8 @@ const (
 	PtraceRet
 	ProcessVmWritev
 	ProcessVmWritevRet
+	ArchPrctl
+	ArchPrctlRet
 )
 
 // Test probe handles

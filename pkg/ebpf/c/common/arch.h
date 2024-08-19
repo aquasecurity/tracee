@@ -129,6 +129,7 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     #define SYSCALL_FCHOWN                 93
     #define SYSCALL_PTRACE                 101
     #define SYSCALL_FSTATFS                138
+    #define SYSCALL_ARCH_PRCTL             158
     #define SYSCALL_READAHEAD              187
     #define SYSCALL_FSETXATTR              190
     #define SYSCALL_FGETXATTR              193
@@ -309,6 +310,7 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     #define SYSCALL_NEWFSTATAT             UNDEFINED_SYSCALL
     #define SYSCALL_EPOLL_WAIT             UNDEFINED_SYSCALL
     #define SYSCALL_SIGNALFD               UNDEFINED_SYSCALL
+    #define SYSCALL_ARCH_PRCTL             UNDEFINED_SYSCALL
 #endif
 
 statfunc bool has_syscall_fd_arg(uint syscall_id)
