@@ -152,6 +152,8 @@ const (
 	SecuritySettime64
 	Ptrace
 	PtraceRet
+	ProcessVmWritev
+	ProcessVmWritevRet
 )
 
 // Test probe handles

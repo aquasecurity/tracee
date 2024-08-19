@@ -172,6 +172,7 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     #define SYSCALL_SYNCFS                 306
     #define SYSCALL_SENDMMSG               307
     #define SYSCALL_SETNS                  308
+    #define SYSCALL_PROCESS_VM_WRITEV      311
     #define SYSCALL_FINIT_MODULE           313
     #define SYSCALL_EXECVEAT               322
     #define SYSCALL_PREADV2                327
@@ -277,6 +278,7 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     #define SYSCALL_SYNCFS                 267
     #define SYSCALL_SETNS                  268
     #define SYSCALL_SENDMMSG               269
+    #define SYSCALL_PROCESS_VM_WRITEV      271
     #define SYSCALL_FINIT_MODULE           273
     #define SYSCALL_EXECVEAT               281
     #define SYSCALL_PREADV2                286

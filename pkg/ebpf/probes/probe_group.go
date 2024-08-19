@@ -226,6 +226,8 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, err
 		SecuritySettime64:          NewTraceProbe(KProbe, "security_settime64", "trace_security_settime64"),
 		Ptrace:                     NewTraceProbe(SyscallEnter, "ptrace", "trace_ptrace"),
 		PtraceRet:                  NewTraceProbe(SyscallExit, "ptrace", "trace_ret_ptrace"),
+		ProcessVmWritev:            NewTraceProbe(SyscallEnter, "process_vm_writev", "trace_process_vm_writev"),
+		ProcessVmWritevRet:         NewTraceProbe(SyscallExit, "process_vm_writev", "trace_ret_process_vm_writev"),
 
 		TestUnavailableHook: NewTraceProbe(KProbe, "non_existing_func", "empty_kprobe"),
 		ExecTest:            NewTraceProbe(RawTracepoint, "raw_syscalls:sched_process_exec", "tracepoint__exec_test"),
