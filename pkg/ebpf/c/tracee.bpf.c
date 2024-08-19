@@ -360,6 +360,7 @@ int trace_sys_exit(struct bpf_raw_tracepoint_args *ctx)
 
 // macros for syscall kprobes
 TRACE_SYSCALL(ptrace, SYSCALL_PTRACE)
+TRACE_SYSCALL(process_vm_writev, SYSCALL_PROCESS_VM_WRITEV)
 
 SEC("raw_tracepoint/sys_execve")
 int syscall__execve_enter(void *ctx)
