@@ -196,92 +196,85 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     #define SYSCALL_SOCKETCALL             473
 
 #elif defined(bpf_target_arm64)
-    #define SYSCALL_READ                   63
-    #define SYSCALL_WRITE                  64
-    #define SYSCALL_OPEN                   UNDEFINED_SYSCALL
-    #define SYSCALL_CLOSE                  57
-    #define SYSCALL_FSTAT                  80
-    #define SYSCALL_LSEEK                  62
-    #define SYSCALL_MMAP                   222
-    #define SYSCALL_MPROTECT               226
-    #define SYSCALL_RT_SIGRETURN           139
-    #define SYSCALL_IOCTL                  29
-    #define SYSCALL_PREAD64                67
-    #define SYSCALL_PWRITE64               68
-    #define SYSCALL_READV                  65
-    #define SYSCALL_WRITEV                 66
-    #define SYSCALL_DUP                    23
-    #define SYSCALL_DUP2                   UNDEFINED_SYSCALL
-    #define SYSCALL_SOCKET                 198
-    #define SYSCALL_CONNECT                203
-    #define SYSCALL_ACCEPT                 202
-    #define SYSCALL_SENDTO                 206
-    #define SYSCALL_RECVFROM               207
-    #define SYSCALL_SENDMSG                211
-    #define SYSCALL_RECVMSG                212
-    #define SYSCALL_SHUTDOWN               210
-    #define SYSCALL_BIND                   200
-    #define SYSCALL_LISTEN                 201
-    #define SYSCALL_GETSOCKNAME            204
-    #define SYSCALL_GETPEERNAME            205
-    #define SYSCALL_SETSOCKOPT             208
-    #define SYSCALL_GETSOCKOPT             209
-    #define SYSCALL_EXECVE                 221
-    #define SYSCALL_EXIT                   93
-    #define SYSCALL_FCNTL                  25
-    #define SYSCALL_FLOCK                  32
-    #define SYSCALL_FSYNC                  82
-    #define SYSCALL_FDATASYNC              83
-    #define SYSCALL_FTRUNCATE              46
-    #define SYSCALL_GETDENTS               UNDEFINED_SYSCALL
-    #define SYSCALL_CHDIR                  49
-    #define SYSCALL_FCHDIR                 50
-    #define SYSCALL_FCHMOD                 52
-    #define SYSCALL_FCHOWN                 55
-    #define SYSCALL_FSTATFS                44
-    #define SYSCALL_READAHEAD              213
     #define SYSCALL_FSETXATTR              7
     #define SYSCALL_FGETXATTR              10
     #define SYSCALL_FLISTXATTR             13
     #define SYSCALL_FREMOVEXATTR           16
-    #define SYSCALL_GETDENTS64             61
-    #define SYSCALL_FADVISE64              223
-    #define SYSCALL_EXIT_GROUP             94
-    #define SYSCALL_EPOLL_WAIT             UNDEFINED_SYSCALL
     #define SYSCALL_EPOLL_CTL              21
+    #define SYSCALL_EPOLL_PWAIT            22
+    #define SYSCALL_DUP                    23
+    #define SYSCALL_DUP3                   24
+    #define SYSCALL_FCNTL                  25
     #define SYSCALL_INOTIFY_ADD_WATCH      27
     #define SYSCALL_INOTIFY_RM_WATCH       28
-    #define SYSCALL_OPENAT                 56
-    #define SYSCALL_MKDIRAT                34
+    #define SYSCALL_IOCTL                  29
+    #define SYSCALL_FLOCK                  32
     #define SYSCALL_MKNODAT                33
-    #define SYSCALL_FCHOWNAT               54
-    #define SYSCALL_FUTIMESAT              UNDEFINED_SYSCALL
-    #define SYSCALL_NEWFSTATAT             UNDEFINED_SYSCALL
+    #define SYSCALL_MKDIRAT                34
     #define SYSCALL_UNLINKAT               35
     #define SYSCALL_SYMLINKAT              36
-    #define SYSCALL_READLINKAT             78
-    #define SYSCALL_FCHMODAT               53
-    #define SYSCALL_FACCESSAT              48
-    #define SYSCALL_SYNC_FILE_RANGE        84
-    #define SYSCALL_VMSPLICE               75
-    #define SYSCALL_UTIMENSAT              88
-    #define SYSCALL_EPOLL_PWAIT            22
-    #define SYSCALL_SIGNALFD               UNDEFINED_SYSCALL
+    #define SYSCALL_FSTATFS                44
+    #define SYSCALL_FTRUNCATE              46
     #define SYSCALL_FALLOCATE              47
-    #define SYSCALL_TIMERFD_SETTIME        86
-    #define SYSCALL_TIMERFD_GETTIME        87
-    #define SYSCALL_ACCEPT4                242
-    #define SYSCALL_SIGNALFD4              74
-    #define SYSCALL_DUP3                   24
+    #define SYSCALL_FACCESSAT              48
+    #define SYSCALL_CHDIR                  49
+    #define SYSCALL_FCHDIR                 50
+    #define SYSCALL_FCHMOD                 52
+    #define SYSCALL_FCHMODAT               53
+    #define SYSCALL_FCHOWNAT               54
+    #define SYSCALL_FCHOWN                 55
+    #define SYSCALL_OPENAT                 56
+    #define SYSCALL_CLOSE                  57
+    #define SYSCALL_GETDENTS64             61
+    #define SYSCALL_LSEEK                  62
+    #define SYSCALL_READ                   63
+    #define SYSCALL_WRITE                  64
+    #define SYSCALL_READV                  65
+    #define SYSCALL_WRITEV                 66
+    #define SYSCALL_PREAD64                67
+    #define SYSCALL_PWRITE64               68
     #define SYSCALL_PREADV                 69
     #define SYSCALL_PWRITEV                70
+    #define SYSCALL_SIGNALFD4              74
+    #define SYSCALL_VMSPLICE               75
+    #define SYSCALL_READLINKAT             78
+    #define SYSCALL_FSTAT                  80
+    #define SYSCALL_FSYNC                  82
+    #define SYSCALL_FDATASYNC              83
+    #define SYSCALL_SYNC_FILE_RANGE        84
+    #define SYSCALL_TIMERFD_SETTIME        86
+    #define SYSCALL_TIMERFD_GETTIME        87
+    #define SYSCALL_UTIMENSAT              88
+    #define SYSCALL_EXIT                   93
+    #define SYSCALL_EXIT_GROUP             94
+    #define SYSCALL_RT_SIGRETURN           139
+    #define SYSCALL_SOCKET                 198
+    #define SYSCALL_BIND                   200
+    #define SYSCALL_LISTEN                 201
+    #define SYSCALL_ACCEPT                 202
+    #define SYSCALL_CONNECT                203
+    #define SYSCALL_GETSOCKNAME            204
+    #define SYSCALL_GETPEERNAME            205
+    #define SYSCALL_SENDTO                 206
+    #define SYSCALL_RECVFROM               207
+    #define SYSCALL_SETSOCKOPT             208
+    #define SYSCALL_GETSOCKOPT             209
+    #define SYSCALL_SHUTDOWN               210
+    #define SYSCALL_SENDMSG                211
+    #define SYSCALL_RECVMSG                212
+    #define SYSCALL_READAHEAD              213
+    #define SYSCALL_EXECVE                 221
+    #define SYSCALL_MMAP                   222
+    #define SYSCALL_FADVISE64              223
+    #define SYSCALL_MPROTECT               226
     #define SYSCALL_PERF_EVENT_OPEN        241
+    #define SYSCALL_ACCEPT4                242
     #define SYSCALL_RECVMMSG               243
     #define SYSCALL_NAME_TO_HANDLE_AT      264
     #define SYSCALL_OPEN_BY_HANDLE_AT      265
     #define SYSCALL_SYNCFS                 267
-    #define SYSCALL_SENDMMSG               269
     #define SYSCALL_SETNS                  268
+    #define SYSCALL_SENDMMSG               269
     #define SYSCALL_FINIT_MODULE           273
     #define SYSCALL_EXECVEAT               281
     #define SYSCALL_PREADV2                286
@@ -305,6 +298,13 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     #define SYSCALL_LANDLOCK_RESTRICT_SELF 446
     #define SYSCALL_PROCESS_MRELEASE       448
     #define SYSCALL_SOCKETCALL             UNDEFINED_SYSCALL
+    #define SYSCALL_OPEN                   UNDEFINED_SYSCALL
+    #define SYSCALL_DUP2                   UNDEFINED_SYSCALL
+    #define SYSCALL_GETDENTS               UNDEFINED_SYSCALL
+    #define SYSCALL_FUTIMESAT              UNDEFINED_SYSCALL
+    #define SYSCALL_NEWFSTATAT             UNDEFINED_SYSCALL
+    #define SYSCALL_EPOLL_WAIT             UNDEFINED_SYSCALL
+    #define SYSCALL_SIGNALFD               UNDEFINED_SYSCALL
 #endif
 
 statfunc bool has_syscall_fd_arg(uint syscall_id)
