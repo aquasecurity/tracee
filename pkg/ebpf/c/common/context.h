@@ -191,6 +191,7 @@ statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
     p->event->config.submit_for_policies = ~0ULL;
 
     if (event_id != NO_EVENT_SUBMIT) {
+        p->event->config.submit_for_policies = 0;
         event_config_t *event_config = get_event_config(event_id, p->event->context.policies_version);
         if (event_config != NULL) {
             p->event->config.param_types = event_config->param_types;

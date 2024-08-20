@@ -186,27 +186,32 @@ get_syscall_args(struct task_struct *task, struct pt_regs *sys_regs, syscall_dat
                                                                                                    \
         get_syscall_args(task, ctx, sys);                                                          \
                                                                                                    \
+        bpf_tail_call(ctx, &generic_sys_enter_tails, _id);                                         \
+                                                                                                   \
         return 0;                                                                                  \
     }
 
-#define TRACE_SYS_RET_FUNC(name, id)                                                               \
+#define TRACE_SYS_RET_FUNC(name, _id)                                                              \
     int trace_ret_##name(struct pt_regs *ctx)                                                      \
     {                                                                                              \
         program_data_t p = {};                                                                     \
-        if (!init_program_data(&p, ctx, id))                                                       \
+        if (!init_program_data(&p, ctx, _id))                                                      \
             return 0;                                                                              \
                                                                                                    \
         p.task_info->syscall_traced = false;                                                       \
                                                                                                    \
         if (!evaluate_scope_filters(&p))                                                           \
-            return 0;                                                                              \
+            goto out;                                                                              \
                                                                                                    \
         syscall_data_t *sys = &p.task_info->syscall_data;                                          \
+        sys->ret = PT_REGS_RC(ctx);                                                                \
                                                                                                    \
         save_args_to_submit_buf(p.event, &sys->args);                                              \
         p.event->context.ts = sys->ts;                                                             \
-        events_perf_submit(&p, PT_REGS_RC(ctx));                                                   \
+        events_perf_submit(&p, sys->ret);                                                          \
                                                                                                    \
+    out:                                                                                           \
+        bpf_tail_call(ctx, &generic_sys_exit_tails, _id);                                          \
         return 0;                                                                                  \
     }
 
