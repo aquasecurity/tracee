@@ -156,6 +156,12 @@ const (
 	ProcessVmWritevRet
 	ArchPrctl
 	ArchPrctlRet
+	Dup
+	DupRet
+	Dup2
+	Dup2Ret
+	Dup3
+	Dup3Ret
 )
 
 // Test probe handles

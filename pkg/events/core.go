@@ -1006,14 +1006,8 @@ var CoreEvents = map[ID]Definition{
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Dup)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Dup)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Dup)}},
+				{handle: probes.Dup, required: true},
+				{handle: probes.DupRet, required: true},
 			},
 		},
 	},
@@ -1030,14 +1024,8 @@ var CoreEvents = map[ID]Definition{
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup2)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Dup2)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Dup2)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Dup2)}},
+				{handle: probes.Dup2, required: true},
+				{handle: probes.Dup2Ret, required: true},
 			},
 		},
 	},
@@ -7325,14 +7313,8 @@ var CoreEvents = map[ID]Definition{
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup3)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Dup3)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Dup3)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Dup3)}},
+				{handle: probes.Dup3, required: true},
+				{handle: probes.Dup3Ret, required: true},
 			},
 		},
 	},
@@ -11884,13 +11866,15 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
 			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+				{handle: probes.Dup, required: true},
+				{handle: probes.DupRet, required: true},
+				{handle: probes.Dup2, required: false},
+				{handle: probes.Dup2Ret, required: false},
+				{handle: probes.Dup3, required: true},
+				{handle: probes.Dup3Ret, required: true},
 			},
 			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},
-				{"sys_exit_tails", "sys_dup_exit_tail", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},
+				{"generic_sys_exit_tails", "sys_dup_exit_tail", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},
 			},
 		},
 		sets: []string{},
