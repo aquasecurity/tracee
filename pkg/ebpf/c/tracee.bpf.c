@@ -362,6 +362,9 @@ int trace_sys_exit(struct bpf_raw_tracepoint_args *ctx)
 TRACE_SYSCALL(ptrace, SYSCALL_PTRACE)
 TRACE_SYSCALL(process_vm_writev, SYSCALL_PROCESS_VM_WRITEV)
 TRACE_SYSCALL(arch_prctl, SYSCALL_ARCH_PRCTL)
+TRACE_SYSCALL(dup, SYSCALL_DUP)
+TRACE_SYSCALL(dup2, SYSCALL_DUP2)
+TRACE_SYSCALL(dup3, SYSCALL_DUP3)
 
 SEC("raw_tracepoint/sys_execve")
 int syscall__execve_enter(void *ctx)
@@ -536,7 +539,7 @@ statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
     return events_perf_submit(p, 0);
 }
 
-SEC("raw_tracepoint/sys_dup")
+SEC("kprobe/sys_dup")
 int sys_dup_exit_tail(void *ctx)
 {
     program_data_t p = {};

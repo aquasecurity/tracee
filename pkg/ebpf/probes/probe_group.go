@@ -230,6 +230,12 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, err
 		ProcessVmWritevRet:         NewTraceProbe(SyscallExit, "process_vm_writev", "trace_ret_process_vm_writev"),
 		ArchPrctl:                  NewTraceProbe(SyscallEnter, "arch_prctl", "trace_arch_prctl"),
 		ArchPrctlRet:               NewTraceProbe(SyscallExit, "arch_prctl", "trace_ret_arch_prctl"),
+		Dup:                        NewTraceProbe(SyscallEnter, "dup", "trace_dup"),
+		DupRet:                     NewTraceProbe(SyscallExit, "dup", "trace_ret_dup"),
+		Dup2:                       NewTraceProbe(SyscallEnter, "dup2", "trace_dup2"),
+		Dup2Ret:                    NewTraceProbe(SyscallExit, "dup2", "trace_ret_dup2"),
+		Dup3:                       NewTraceProbe(SyscallEnter, "dup3", "trace_dup3"),
+		Dup3Ret:                    NewTraceProbe(SyscallExit, "dup3", "trace_ret_dup3"),
 
 		TestUnavailableHook: NewTraceProbe(KProbe, "non_existing_func", "empty_kprobe"),
 		ExecTest:            NewTraceProbe(RawTracepoint, "raw_syscalls:sched_process_exec", "tracepoint__exec_test"),
