@@ -206,6 +206,26 @@ struct sys_exit_tails {
 
 typedef struct sys_exit_tails sys_exit_tails_t;
 
+// store syscall specific programs for tail calls from the syscall handler
+struct generic_sys_enter_tails {
+    __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
+    __uint(max_entries, MAX_EVENT_ID);
+    __type(key, u32);
+    __type(value, u32);
+} generic_sys_enter_tails SEC(".maps");
+
+typedef struct generic_sys_enter_tails generic_sys_enter_tails_t;
+
+// store syscall specific programs for tail calls from the syscall handler
+struct generic_sys_exit_tails {
+    __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
+    __uint(max_entries, MAX_EVENT_ID);
+    __type(key, u32);
+    __type(value, u32);
+} generic_sys_exit_tails SEC(".maps");
+
+typedef struct generic_sys_exit_tails generic_sys_exit_tails_t;
+
 // store program for submitting syscalls from sys_enter
 struct sys_enter_submit_tail {
     __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
