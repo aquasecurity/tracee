@@ -78,7 +78,6 @@ type ProcessTree struct {
 	procfsChan     chan int                     // channel of pids to read from procfs
 	procfsOnce     *sync.Once                   // busy loop debug message throttling
 	ctx            context.Context              // context for the process tree
-	mutex          *sync.RWMutex                // mutex for the process tree
 	procfsQuery    bool
 	timeNormalizer traceetime.TimeNormalizer
 }
@@ -141,7 +140,6 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig, timeNormalizer t
 		processes:      processes,
 		threads:        threads,
 		ctx:            ctx,
-		mutex:          &sync.RWMutex{},
 		procfsQuery:    config.ProcfsQuerying,
 		timeNormalizer: timeNormalizer,
 	}
@@ -160,17 +158,12 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig, timeNormalizer t
 
 // GetProcessByHash returns a process by its hash.
 func (pt *ProcessTree) GetProcessByHash(hash uint32) (*Process, bool) {
-	pt.mutex.RLock()
-	defer pt.mutex.RUnlock()
 	process, ok := pt.processes.Get(hash)
 	return process, ok
 }
 
 // GetOrCreateProcessByHash returns a process by its hash, or creates a new one if it doesn't exist.
 func (pt *ProcessTree) GetOrCreateProcessByHash(hash uint32) *Process {
-	pt.mutex.RLock()
-	defer pt.mutex.RUnlock()
-
 	process, ok := pt.processes.Get(hash)
 	if !ok {
 		// Each process must have a thread with thread ID matching its process ID.
@@ -199,17 +192,12 @@ func (pt *ProcessTree) GetOrCreateProcessByHash(hash uint32) *Process {
 
 // GetThreadByHash returns a thread by its hash.
 func (pt *ProcessTree) GetThreadByHash(hash uint32) (*Thread, bool) {
-	pt.mutex.RLock()
-	defer pt.mutex.RUnlock()
 	thread, ok := pt.threads.Get(hash)
 	return thread, ok
 }
 
 // GetOrCreateThreadByHash returns a thread by its hash, or creates a new one if it doesn't exist.
 func (pt *ProcessTree) GetOrCreateThreadByHash(hash uint32) *Thread {
-	pt.mutex.RLock()
-	defer pt.mutex.RUnlock()
-
 	thread, ok := pt.threads.Get(hash)
 	if !ok {
 		// Create a new thread
