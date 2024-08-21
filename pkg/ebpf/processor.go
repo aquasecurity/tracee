@@ -128,6 +128,17 @@ func (t *Tracee) registerEventProcessors() {
 	// NOTE: Make sure to convert time related args (of your event) in here.
 	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
 	t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
+
+	//
+	// Uprobe based events processors
+	//
+
+	// Remove task context
+	t.RegisterEventProcessor(events.HiddenKernelModule, t.removeIrrelevantContext)
+	t.RegisterEventProcessor(events.HookedSyscall, t.removeIrrelevantContext)
+	t.RegisterEventProcessor(events.HookedSeqOps, t.removeIrrelevantContext)
+	t.RegisterEventProcessor(events.PrintNetSeqOps, t.removeIrrelevantContext)
+	t.RegisterEventProcessor(events.PrintMemDump, t.removeIrrelevantContext)
 }
 
 func initKernelReadFileTypes() {
