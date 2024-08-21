@@ -4984,13 +4984,21 @@ statfunc int execute_failed_tail2(struct pt_regs *ctx)
     if (!init_tailcall_program_data(&p, ctx))
         return -1;
 
-    syscall_data_t *sys = &p.task_info->syscall_data;
-    save_str_arr_to_buf(
-        &p.event->args_buf, (const char *const *) sys->args.args[1], 10); // userspace argv
+    long long argv, envp;
+    struct pt_regs *regs = get_current_task_pt_regs();
+
+    if (p.event->context.syscall == SYSCALL_EXECVE) {
+        argv = get_syscall_arg2(p.event->task, regs, false);
+        envp = get_syscall_arg3(p.event->task, regs, false);
+    } else {
+        argv = get_syscall_arg3(p.event->task, regs, false);
+        envp = get_syscall_arg4(p.event->task, regs, false);
+    }
+
+    save_str_arr_to_buf(&p.event->args_buf, (const char *const *) argv, 10); // userspace argv
 
     if (p.config->options & OPT_EXEC_ENV) {
-        save_str_arr_to_buf(
-            &p.event->args_buf, (const char *const *) sys->args.args[2], 11); // userspace envp
+        save_str_arr_to_buf(&p.event->args_buf, (const char *const *) envp, 11); // userspace envp
     }
 
     int ret = PT_REGS_RC(ctx); // needs to be int
