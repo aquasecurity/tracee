@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -442,6 +443,49 @@ func (t *Tracee) processSharedObjectLoaded(event *trace.Event) error {
 		)
 
 		return t.addHashArg(event, &fileKey)
+	}
+
+	return nil
+}
+
+//
+// Context related functions
+//
+
+func (t *Tracee) removeContext(event *trace.Event) error {
+	event.ThreadStartTime = 0
+	event.ProcessorID = 0
+	event.ProcessID = 0
+	event.CgroupID = 0
+	event.ThreadID = 0
+	event.ParentProcessID = 0
+	event.HostProcessID = 0
+	event.HostThreadID = 0
+	event.HostParentProcessID = 0
+	event.UserID = 0
+	event.MountNS = 0
+	event.PIDNS = 0
+	event.ProcessName = ""
+	event.Executable = trace.File{}
+	event.HostName = ""
+	event.ContainerID = ""
+	event.Container = trace.Container{}
+	event.Kubernetes = trace.Kubernetes{}
+	event.Syscall = ""
+	event.StackAddresses = []uint64{}
+	event.ContextFlags = trace.ContextFlags{}
+	event.ThreadEntityId = 0
+	event.ProcessEntityId = 0
+	event.ParentEntityId = 0
+
+	return nil
+}
+
+func (t *Tracee) removeIrrelevantContext(event *trace.Event) error {
+	// Uprobe events are created in the context of tracee's process,
+	// but that context is meaningless. Remove it.
+	if event.ProcessID == os.Getpid() {
+		return t.removeContext(event)
 	}
 
 	return nil
