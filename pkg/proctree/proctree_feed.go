@@ -228,7 +228,7 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 
 	execTimestamp := traceetime.NsSinceEpochToTime(feed.TimeStamp)
 	basename := filepath.Base(feed.CmdPath)
-	comm := basename[:min(len(basename), COMM_LEN)]
+	comm := string([]byte(basename[:min(len(basename), COMM_LEN)]))
 	process.GetInfo().SetNameAt(
 		comm,
 		execTimestamp,
