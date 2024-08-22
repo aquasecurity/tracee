@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
@@ -20,6 +21,8 @@ Example:
       both         | process tree is built from both events and signals.
   --proctree process-cache=8192   | will cache up to 8192 processes in the tree (LRU cache).
   --proctree thread-cache=4096    | will cache up to 4096 threads in the tree (LRU cache).
+  --proctree process-cache-ttl=60 | will set the process cache element TTL to 60 seconds.
+  --proctree thread-cache-ttl=60  | will set the thread cache element TTL to 60 seconds.
   --proctree disable-procfs-query | Will disable procfs queries during runtime
 
 Use comma OR use the flag multiple times to choose multiple options:
@@ -35,6 +38,8 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 		Source:               proctree.SourceNone, // disabled by default
 		ProcessCacheSize:     proctree.DefaultProcessCacheSize,
 		ThreadCacheSize:      proctree.DefaultThreadCacheSize,
+		ProcessCacheTTL:      proctree.DefaultProcessCacheTTL,
+		ThreadCacheTTL:       proctree.DefaultThreadCacheTTL,
 		ProcfsInitialization: true,
 		ProcfsQuerying:       true,
 	}
@@ -91,6 +96,24 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 					config.ThreadCacheSize = size
 				}
 				cacheSet = true
+				continue
+			}
+			if strings.HasPrefix(value, "process-cache-ttl=") {
+				num := strings.TrimPrefix(value, "process-cache-ttl=")
+				ttl, err := strconv.Atoi(num)
+				if err != nil {
+					return config, err
+				}
+				config.ProcessCacheTTL = time.Duration(ttl) * time.Second
+				continue
+			}
+			if strings.HasPrefix(value, "thread-cache-ttl=") {
+				num := strings.TrimPrefix(value, "thread-cache-ttl=")
+				ttl, err := strconv.Atoi(num)
+				if err != nil {
+					return config, err
+				}
+				config.ThreadCacheTTL = time.Duration(ttl) * time.Second
 				continue
 			}
 			if strings.HasPrefix(value, "disable-procfs-query") {

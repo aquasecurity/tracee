@@ -35,6 +35,8 @@ Example:
       both         | process tree is built from both events and signals.
   --proctree process-cache=8192   | will cache up to 8192 processes in the tree (LRU cache).
   --proctree thread-cache=4096    | will cache up to 4096 threads in the tree (LRU cache).
+  --proctree process-cache-ttl=60 | will set the process cache element TTL to 60 seconds.
+  --proctree thread-cache-ttl=60  | will set the thread cache element TTL to 60 seconds.
   --proctree disable-procfs-query | Will disable procfs quering during runtime
 
 Use comma OR use the flag multiple times to choose multiple options:

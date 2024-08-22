@@ -97,12 +97,17 @@ proctree:
     cache:
         process: 8192
         thread: 4096
+    cache-ttl:
+        process: 5
+        thread: 10
 `,
 			key: "proctree",
 			expectedFlags: []string{
 				"source=events",
 				"process-cache=8192",
 				"thread-cache=4096",
+				"process-cache-ttl=5",
+				"thread-cache-ttl=10",
 			},
 		},
 		{
@@ -589,6 +594,20 @@ func TestProcTreeConfigFlags(t *testing.T) {
 			expected: []string{
 				"process-cache=8192",
 				"thread-cache=4096",
+			},
+		},
+		{
+			name: "process cache ttl set",
+			config: ProcTreeConfig{
+				Source: "",
+				CacheTTL: ProcTreeCacheTTLConfig{
+					Process: 5,
+					Thread:  10,
+				},
+			},
+			expected: []string{
+				"process-cache-ttl=5",
+				"thread-cache-ttl=10",
 			},
 		},
 		{

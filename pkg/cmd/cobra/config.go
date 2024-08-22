@@ -173,11 +173,17 @@ func (c *RegoConfig) flags() []string {
 //
 
 type ProcTreeConfig struct {
-	Source string              `mapstructure:"source"`
-	Cache  ProcTreeCacheConfig `mapstructure:"cache"`
+	Source   string                 `mapstructure:"source"`
+	Cache    ProcTreeCacheConfig    `mapstructure:"cache"`
+	CacheTTL ProcTreeCacheTTLConfig `mapstructure:"cache-ttl"`
 }
 
 type ProcTreeCacheConfig struct {
+	Process int `mapstructure:"process"`
+	Thread  int `mapstructure:"thread"`
+}
+
+type ProcTreeCacheTTLConfig struct {
 	Process int `mapstructure:"process"`
 	Thread  int `mapstructure:"thread"`
 }
@@ -197,6 +203,12 @@ func (c *ProcTreeConfig) flags() []string {
 	}
 	if c.Cache.Thread != 0 {
 		flags = append(flags, fmt.Sprintf("thread-cache=%d", c.Cache.Thread))
+	}
+	if c.CacheTTL.Process != 0 {
+		flags = append(flags, fmt.Sprintf("process-cache-ttl=%d", c.CacheTTL.Process))
+	}
+	if c.CacheTTL.Thread != 0 {
+		flags = append(flags, fmt.Sprintf("thread-cache-ttl=%d", c.CacheTTL.Thread))
 	}
 
 	return flags
