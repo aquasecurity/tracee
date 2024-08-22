@@ -5,9 +5,8 @@ import (
 	"sync"
 	"time"
 
-	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	traceetime "github.com/aquasecurity/tracee/pkg/time"
 )
@@ -38,6 +37,8 @@ import (
 const (
 	DefaultProcessCacheSize = 32768
 	DefaultThreadCacheSize  = 32768
+	DefaultProcessCacheTTL  = time.Second * 120
+	DefaultThreadCacheTTL   = time.Second * 120
 )
 
 type SourceType int
@@ -67,17 +68,19 @@ type ProcTreeConfig struct {
 	Source               SourceType
 	ProcessCacheSize     int
 	ThreadCacheSize      int
+	ProcessCacheTTL      time.Duration
+	ThreadCacheTTL       time.Duration
 	ProcfsInitialization bool // Determine whether to scan procfs data for process tree initialization
 	ProcfsQuerying       bool // Determine whether to query procfs for missing information during runtime
 }
 
 // ProcessTree is a tree of processes and threads.
 type ProcessTree struct {
-	processes      *lru.Cache[uint32, *Process] // hash -> process
-	threads        *lru.Cache[uint32, *Thread]  // hash -> threads
-	procfsChan     chan int                     // channel of pids to read from procfs
-	procfsOnce     *sync.Once                   // busy loop debug message throttling
-	ctx            context.Context              // context for the process tree
+	processes      *expirable.LRU[uint32, *Process] // hash -> process
+	threads        *expirable.LRU[uint32, *Thread]  // hash -> threads
+	procfsChan     chan int                         // channel of pids to read from procfs
+	procfsOnce     *sync.Once                       // busy loop debug message throttling
+	ctx            context.Context                  // context for the process tree
 	procfsQuery    bool
 	timeNormalizer traceetime.TimeNormalizer
 }
@@ -88,22 +91,22 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig, timeNormalizer t
 	thrEvicted := 0
 
 	// Create caches for processes.
-	processes, err := lru.NewWithEvict[uint32, *Process](
+	processes := expirable.NewLRU[uint32, *Process](
 		config.ProcessCacheSize,
-		func(uint32, *Process) { procEvited++ },
+		func(k uint32, v *Process) {
+			procEvited++
+		},
+		config.ProcessCacheTTL,
 	)
-	if err != nil {
-		return nil, errfmt.WrapError(err)
-	}
 
 	// Create caches for threads.
-	threads, err := lru.NewWithEvict[uint32, *Thread](
+	threads := expirable.NewLRU[uint32, *Thread](
 		config.ThreadCacheSize,
-		func(uint32, *Thread) { thrEvicted++ },
+		func(k uint32, v *Thread) {
+			thrEvicted++
+		},
+		config.ThreadCacheTTL,
 	)
-	if err != nil {
-		return nil, errfmt.WrapError(err)
-	}
 
 	// Report cache stats if debug is enabled.
 	go func() {
@@ -159,6 +162,10 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig, timeNormalizer t
 // GetProcessByHash returns a process by its hash.
 func (pt *ProcessTree) GetProcessByHash(hash uint32) (*Process, bool) {
 	process, ok := pt.processes.Get(hash)
+	if !ok {
+		return nil, false
+	}
+
 	return process, ok
 }
 
