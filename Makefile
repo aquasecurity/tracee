@@ -380,18 +380,24 @@ $(LIBBPF_OBJ): \
 		install install_uapi_headers
 
 .ONESHELL:
-$(GOENV_MK): $(LIBBPF_OBJ)
+.eval_goenv: $(LIBBPF_OBJ)
+#
 	@{
+ifeq ($(STATIC), 1)
+		$(eval GO_TAGS_EBPF := $(GO_TAGS_EBPF),netgo)
+		$(eval CGO_EXT_LDFLAGS_EBPF := $(CGO_EXT_LDFLAGS_EBPF) -static)
+		$(eval PKG_CONFIG_FLAG := --static)
+endif
 		$(eval GO_ENV_EBPF = )
 		$(eval GO_ENV_EBPF += GOOS=linux)
 		$(eval GO_ENV_EBPF += CC=$(CMD_CLANG))
 		$(eval GO_ENV_EBPF += GOARCH=$(GO_ARCH))
 		$(eval GO_ENV_EBPF += CGO_CFLAGS=$(CUSTOM_CGO_CFLAGS))
-
 		$(eval CUSTOM_CGO_LDFLAGS := "$(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(CMD_PKGCONFIG) $(PKG_CONFIG_FLAG) --libs $(LIB_BPF))")
 		$(eval GO_ENV_EBPF := $(GO_ENV_EBPF) CGO_LDFLAGS=$(CUSTOM_CGO_LDFLAGS))
 		export GO_ENV_EBPF=$(GO_ENV_EBPF)
-		echo 'GO_ENV_EBPF := $(GO_ENV_EBPF)' > $@
+		echo 'GO_ENV_EBPF := $(GO_ENV_EBPF)' > $(GOENV_MK)
+		$(CMD_TOUCH) $@
 	}
 
 $(LIBBPF_SRC): \
@@ -447,12 +453,6 @@ CUSTOM_CGO_CFLAGS = "-I$(abspath $(OUTPUT_DIR)/libbpf) -I$(LIBBPF_INCLUDE_UAPI)"
 PKG_CONFIG_PATH = $(LIBBPF_OBJDIR)
 PKG_CONFIG_FLAG =
 
-ifeq ($(STATIC), 1)
-    GO_TAGS_EBPF := $(GO_TAGS_EBPF),netgo
-    CGO_EXT_LDFLAGS_EBPF += -static
-    PKG_CONFIG_FLAG = --static
-endif
-
 TRACEE_PROTOS = ./api/v1beta1/*.proto
 
 #
@@ -488,8 +488,8 @@ tracee: $(OUTPUT_DIR)/tracee
 $(OUTPUT_DIR)/tracee: \
 	$(OUTPUT_DIR)/tracee.bpf.o \
 	$(TRACEE_SRC) \
-	$(GOENV_MK) \
-	| .checkver_$(CMD_GO) \
+	| .eval_goenv \
+	.checkver_$(CMD_GO) \
 	.checklib_$(LIB_BPF) \
 	btfhub \
 	signatures
@@ -521,8 +521,8 @@ tracee-ebpf: $(OUTPUT_DIR)/tracee-ebpf
 $(OUTPUT_DIR)/tracee-ebpf: \
 	$(OUTPUT_DIR)/tracee.bpf.o \
 	$(TRACEE_SRC) \
-	$(GOENV_MK) \
-	| .checkver_$(CMD_GO) \
+	| .eval_goenv \
+	.checkver_$(CMD_GO) \
 	.checklib_$(LIB_BPF) \
 	btfhub
 #
@@ -555,8 +555,8 @@ tracee-rules: $(OUTPUT_DIR)/tracee-rules
 
 $(OUTPUT_DIR)/tracee-rules: \
 	$(TRACEE_RULES_SRC) \
-	$(GOENV_MK) \
-	| .checkver_$(CMD_GO) \
+	| .eval_goenv \
+	.checkver_$(CMD_GO) \
 	$(OUTPUT_DIR) \
 	signatures
 #
@@ -599,8 +599,8 @@ signatures: $(OUTPUT_DIR)/signatures
 $(OUTPUT_DIR)/signatures: \
 	$(GOSIGNATURES_SRC) \
 	$(REGO_SIGNATURES_SRC) \
-	$(GOENV_MK) \
-	| .checkver_$(CMD_GO) \
+	| .eval_goenv \
+	.checkver_$(CMD_GO) \
 	.check_$(CMD_INSTALL) \
 	$(OUTPUT_DIR)
 #
@@ -661,8 +661,8 @@ tracee-gptdocs: $(OUTPUT_DIR)/tracee-gptdocs
 
 $(OUTPUT_DIR)/tracee-gptdocs: \
 	$(TRACEE_GPTDOCS_SRC) \
-	$(GOENV_MK) \
-	| .checkver_$(CMD_GO) \
+	| .eval_goenv \
+	.checkver_$(CMD_GO) \
 	.checklib_$(LIB_BPF) \
 	$(OUTPUT_DIR)
 #
@@ -700,7 +700,8 @@ e2e-net-signatures: $(OUTPUT_DIR)/e2e-net-signatures
 
 $(OUTPUT_DIR)/e2e-net-signatures: \
 	$(E2E_NET_SRC) \
-	| .checkver_$(CMD_GO) \
+	| .eval_goenv \
+	.checkver_$(CMD_GO) \
 	.check_$(CMD_INSTALL) \
 	$(OUTPUT_DIR)
 #
@@ -731,7 +732,8 @@ e2e-inst-signatures: $(OUTPUT_DIR)/e2e-inst-signatures
 
 $(OUTPUT_DIR)/e2e-inst-signatures: \
 	$(E2E_INST_SRC) \
-	| .checkver_$(CMD_GO) \
+	| .eval_goenv \
+	.checkver_$(CMD_GO) \
 	.check_$(CMD_INSTALL) \
 	$(OUTPUT_DIR)
 #
@@ -754,7 +756,8 @@ clean-e2e-inst-signatures:
 test-unit: \
 	tracee-ebpf \
 	test-types \
-	| .checkver_$(CMD_GO)
+	| .eval_goenv \
+	.checkver_$(CMD_GO)
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
@@ -787,8 +790,8 @@ test-types: \
 
 .PHONY: $(OUTPUT_DIR)/syscaller
 $(OUTPUT_DIR)/syscaller: \
-	$(GOENV_MK) \
-	| .check_$(CMD_GO) \
+	| .eval_goenv \
+	.check_$(CMD_GO) \
 #
 	$(GO_ENV_EBPF) \
 	$(CMD_GO) build -o $(OUTPUT_DIR)/syscaller ./tests/integration/syscaller/cmd
@@ -797,7 +800,8 @@ $(OUTPUT_DIR)/syscaller: \
 test-integration: \
 	$(OUTPUT_DIR)/syscaller \
 	tracee \
-	| .checkver_$(CMD_GO)
+	| .eval_goenv \
+	.checkver_$(CMD_GO)
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
@@ -821,7 +825,8 @@ test-signatures: \
 
 .PHONY: test-upstream-libbpfgo
 test-upstream-libbpfgo: \
-	| .checkver_$(CMD_GO)
+	| .eval_goenv \
+	.checkver_$(CMD_GO)
 #
 	./tests/libbpfgo.sh $(GO_ENV_EBPF)
 
@@ -832,7 +837,8 @@ test-upstream-libbpfgo: \
 .PHONY: test-performance
 test-performance: \
 	tracee \
-	| .checkver_$(CMD_GO)
+	| .eval_goenv \
+	.checkver_$(CMD_GO)
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
@@ -877,7 +883,8 @@ check-code:: \
 .PHONY: check-vet
 check-vet: \
 	tracee-ebpf \
-	| .checkver_$(CMD_GO)
+	| .eval_goenv \
+	.checkver_$(CMD_GO)
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) vet \
@@ -887,7 +894,8 @@ check-vet: \
 .PHONY: check-staticcheck
 check-staticcheck: \
 	tracee-ebpf \
-	| .checkver_$(CMD_GO) \
+	| .eval_goenv \
+	.checkver_$(CMD_GO) \
 	.check_$(CMD_STATICCHECK)
 #
 	@$(GO_ENV_EBPF) \
@@ -1018,12 +1026,14 @@ man: clean-man $(MAN_FILES)
 #
 
 .PHONY: clean
+.ONESHELL:
 clean:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)
 	$(CMD_RM) -f $(GOENV_MK)
 	$(CMD_RM) -f .*.md5
 	$(CMD_RM) -f .check*
+	$(CMD_RM) -f .eval_*
 	$(CMD_RM) -f .*-pkgs*
 
 # tracee-operator
