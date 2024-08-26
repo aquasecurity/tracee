@@ -3,6 +3,11 @@
 # dependencies, like source files, changed)
 .check*
 
+# .eval_* files are placeholders as .check* above, but focused on
+# the evaluation of the target, not failing the build if the target
+# is not found
+.eval_*
+
 # needed for the makefile btfhub building logic
 *.md5
 
