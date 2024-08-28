@@ -14,7 +14,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     runs-on: 
-      - graas_ami-0f4881c8d69684001_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}
       - EXECUTION_TYPE=LONG
     permissions:
       contents: write
@@ -58,7 +58,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     runs-on:
-      - graas_ami-03217ce7c37572c4d_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}
+      - graas_ami-07740487fa433aa54_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}
       - EXECUTION_TYPE=LONG
     permissions:
       contents: write
