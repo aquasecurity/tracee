@@ -2,6 +2,7 @@
 # Creates the official tracee containers.
 #
 
+ARG TARGETARCH
 ARG BTFHUB=0
 ARG FLAVOR=tracee-ebpf-core
 
@@ -38,8 +39,7 @@ RUN apk --no-cache update && \
 # install OPA
 
 # ARG OPA_VERSION
-# RUN altarch=$(uname -m | sed 's:x86_64:amd64:g' | sed 's:aarch64:arm64:g') && \
-# curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/${OPA_VERSION}/opa_linux_${altarch}_static && \
+# RUN curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/${OPA_VERSION}/opa_linux_${TARGETARCH}_static && \
 # chmod 755 /usr/bin/opa
 
 # Stage 2: Copy the OPA binary from the OPA extractor
@@ -102,9 +102,8 @@ RUN apk --no-cache update && \
 
 # install GO
 ARG GO_VERSION
-RUN altarch=$(uname -m | sed 's:x86_64:amd64:g' | sed 's:aarch64:arm64:g') && \
-    curl -L -o go${GO_VERSION}.linux-${altarch}.tar.gz https://go.dev/dl/go${GO_VERSION}.linux-${altarch}.tar.gz && \
-    tar -C /usr/local -xzf go${GO_VERSION}.linux-${altarch}.tar.gz && \
+RUN curl -L -o go${GO_VERSION}.linux-${TARGETARCH}.tar.gz https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz && \
+    tar -C /usr/local -xzf go${GO_VERSION}.linux-${TARGETARCH}.tar.gz && \
     echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile && \
     echo 'export GOROOT=/usr/local/go' >> /etc/profile && \
     echo 'export GOPATH=$HOME/go' >> /etc/profile && \
