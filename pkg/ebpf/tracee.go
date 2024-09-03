@@ -375,25 +375,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	t.validateKallsymsDependencies() // disable events w/ missing ksyms dependencies
 
-	// Initialize event derivation logic
-
-	err = t.initDerivationTable()
-	if err != nil {
-		return errfmt.Errorf("error initializing event derivation map: %v", err)
-	}
-
-	// Initialize events parameter types map
-
-	t.eventsParamTypes = make(map[events.ID][]bufferdecoder.ArgType)
-	for _, eventDefinition := range events.Core.GetDefinitions() {
-		id := eventDefinition.GetID()
-		params := eventDefinition.GetParams()
-		for _, param := range params {
-			t.eventsParamTypes[id] = append(t.eventsParamTypes[id], bufferdecoder.GetParamType(param.Type))
-		}
-	}
-
-	// Initialize time normalizer
+	// Initialize time
 
 	// Checking the kernel symbol needs to happen after obtaining the capability;
 	// otherwise, we get a warning.
@@ -417,12 +399,36 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
+	// init time functionalities
+	err = traceetime.Init(int32(usedClockID))
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	// elapsed time in nanoseconds since system start
-	t.startTime = uint64(traceetime.GetStartTimeNS(int32(usedClockID)))
+	t.startTime = uint64(traceetime.GetStartTimeNS())
 	// time in nanoseconds when the system was booted
-	t.bootTime = uint64(traceetime.GetBootTimeNS(int32(usedClockID)))
+	t.bootTime = uint64(traceetime.GetBootTimeNS())
 
 	t.timeNormalizer = traceetime.CreateTimeNormalizerByConfig(t.config.Output.RelativeTime, t.startTime, t.bootTime)
+
+	// Initialize event derivation logic
+
+	err = t.initDerivationTable()
+	if err != nil {
+		return errfmt.Errorf("error initializing event derivation map: %v", err)
+	}
+
+	// Initialize events parameter types map
+
+	t.eventsParamTypes = make(map[events.ID][]bufferdecoder.ArgType)
+	for _, eventDefinition := range events.Core.GetDefinitions() {
+		id := eventDefinition.GetID()
+		params := eventDefinition.GetParams()
+		for _, param := range params {
+			t.eventsParamTypes[id] = append(t.eventsParamTypes[id], bufferdecoder.GetParamType(param.Type))
+		}
+	}
 
 	// Initialize Process Tree (if enabled)
 

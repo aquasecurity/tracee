@@ -18,10 +18,9 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
-var configHZOnce, clockTickOnce, bootTimeOnce sync.Once
+var configHZOnce, clockTickOnce sync.Once
 var configHZ int
 var userHZ int64
-var bootTime int64 // To normalize times, this should be constant
 
 // GetSystemHZ returns an approximation of CONFIG_HZ (the kernel timer interrupt).
 func GetSystemHZ() int {
@@ -77,42 +76,77 @@ func getBootTimeInJiffies() int64 {
 // Boot time functions
 //
 
+var initTimeOnce sync.Once    // Set reference times times once
+var startTime, bootTime int64 // To normalize times, these should be constant
+
 // Common clock IDs
 const (
 	CLOCK_MONOTONIC = unix.CLOCK_MONOTONIC // Time since a boot (not including time spent in suspend)
 	CLOCK_BOOTTIME  = unix.CLOCK_BOOTTIME  // Time since a boot (including time spent in suspend)
 )
 
-// GetStartTimeNS returns the elapsed time since system start in nanoseconds.
-// Possible to retrieve from two differents clocks: CLOCK_MONOTONIC or CLOCK_BOOTTIME.
-func GetStartTimeNS(clockID int32) int64 {
-	var ts unix.Timespec
+// Init sets the reference points for (approximate) system and process start time.
+// Run this function ASAP. Not running this function first will cause wrong behaviour
+// in other functions of the package.
+//
+// Reference points can be set from two differents clocks: CLOCK_MONOTONIC or CLOCK_BOOTTIME.
+// Tracee bpf code tries to use boottime clock if available, otherwise uses monotonic clock.
+// ClockGettime get time elapsed since start (boot) so tracee can calculate event timestamps.
+func Init(clockID int32) error {
+	var err error
+	initTimeOnce.Do(func() {
+		startTimeMonotonic, errIn := getClockTimeNS(clockID)
+		if errIn != nil {
+			err = errIn
+			return
+		}
+		startTimeEpoch := time.Now().UnixNano()
 
-	// Tracee bpf code try to use boottime clock if available, otherwise uses monotonic clock.
-	// ClockGettime get time elapsed since start (boot) so tracee can calculate event timestamps
-	// relative to it.
-	err := unix.ClockGettime(clockID, &ts)
-	if err != nil {
-		logger.Debugw("error getting time", "err", err)
-		return 0
-	}
-	return ts.Nano()
+		// process start time since boot
+		startTime = startTimeMonotonic
+
+		/*
+				Note how the epoch read is just after the monotonic read, allowing us
+				to approximate the boot time
+				                                               Epoch
+			                                                   Read
+				---|-----------...-----|-----------...-------|-|--------------------->
+				   Epoch               Boot                  Monotonic
+			       Start                                     Read
+		*/
+		// process start time since boot - process start time since epoch = (approx) boot time since epoch
+		bootTime = startTimeEpoch - startTimeMonotonic
+	})
+
+	return err
 }
 
-// GetBootTimeNS returns the boot time of the system in nanoseconds.
-func GetBootTimeNS(clockID int32) int64 {
-	bootTimeOnce.Do(
-		func() {
-			startTime := GetStartTimeNS(clockID)
-			bootTime = time.Now().UnixNano() - startTime
-		})
+// GetStartTimeNS sets the constant start time and returns it.
+
+// relative to it.
+func GetStartTimeNS() int64 {
+	return startTime
+}
+
+// GetBootTimeNS returns the boot time of the system in nanoseconds since epoch.
+func GetBootTimeNS() int64 {
 	return bootTime
 }
 
-func GetBootTime(clockID int32) time.Time {
-	startTime := GetStartTimeNS(clockID)
-	uptime := time.Duration(startTime) * time.Nanosecond
-	return time.Now().Add(-uptime)
+func GetBootTime() time.Time {
+	bootNS := GetBootTimeNS()
+	return time.Unix(0, bootNS)
+}
+
+func getClockTimeNS(clockID int32) (int64, error) {
+	var ts unix.Timespec
+
+	err := unix.ClockGettime(clockID, &ts)
+	if err != nil {
+		logger.Debugw("error getting time", "err", err)
+		return 0, err
+	}
+	return ts.Nano(), nil
 }
 
 //
@@ -134,10 +168,20 @@ func ClockTicksToNsSinceBootTime(ticks int64) uint64 {
 	return uint64(ticks * 1000000000 / GetUserHZ())
 }
 
+// BootToEpochNS converts time since boot to the epoch time
+func BootToEpochNS(ns uint64) uint64 {
+	return uint64(GetBootTimeNS()) + ns
+}
+
+// EpochToBootTimeNS converts time since epoch to relative time from boot
+func EpochToBootTimeNS(ns uint64) uint64 {
+	return ns - uint64(GetBootTimeNS())
+}
+
 // NsSinceBootTimeToTime converts nanoseconds timestamp (since boot) to a time.Time object.
-func NsSinceBootTimeToTime(clockID int32, ns uint64) time.Time {
+func NsSinceBootTimeToTime(ns uint64) time.Time {
 	duration := time.Duration(int64(ns))
-	bootTime := GetBootTime(clockID)
+	bootTime := GetBootTime()
 	return bootTime.Add(duration)
 }
 
