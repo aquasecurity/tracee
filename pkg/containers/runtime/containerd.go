@@ -6,6 +6,7 @@ import (
 
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/containers"
+	"github.com/containerd/containerd/images"
 	"github.com/containerd/containerd/namespaces"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -17,12 +18,15 @@ import (
 
 type containerdEnricher struct {
 	containers containers.Store
-	images     cri.ImageServiceClient
+	images     images.Store
+	images_cri cri.ImageServiceClient
 	namespaces namespaces.Store
 }
 
 func ContainerdEnricher(socket string) (ContainerEnricher, error) {
 	enricher := containerdEnricher{}
+
+	// avoid duplicate unix:// prefix
 	unixSocket := "unix://" + strings.TrimPrefix(socket, "unix://")
 
 	client, err := containerd.New(socket)
@@ -38,9 +42,10 @@ func ContainerdEnricher(socket string) (ContainerEnricher, error) {
 		return nil, errfmt.WrapError(err)
 	}
 
-	enricher.images = cri.NewImageServiceClient(conn)
+	enricher.images_cri = cri.NewImageServiceClient(conn)
 	enricher.containers = client.ContainerService()
 	enricher.namespaces = client.NamespaceService()
+	enricher.images = client.ImageService()
 
 	return &enricher, nil
 }
@@ -54,6 +59,7 @@ func (e *containerdEnricher) Get(ctx context.Context, containerId string) (Conta
 		return metadata, errfmt.Errorf("failed to fetch namespaces %s", err.Error())
 	}
 	for _, namespace := range nsList {
+		// always query with namespace applied
 		nsCtx := namespaces.WithNamespace(ctx, namespace)
 
 		// if containers is not in current namespace, search the next one
@@ -62,27 +68,24 @@ func (e *containerdEnricher) Get(ctx context.Context, containerId string) (Conta
 			continue
 		}
 
-		imageName := container.Image
-		imageDigest := container.Image
 		image := container.Image
-		// container may not have image name as id, if so fetch from the sha256 id
-		if strings.HasPrefix(image, "sha256:") {
-			imageInfo, err := e.images.ImageStatus(ctx, &cri.ImageStatusRequest{
-				Image: &cri.ImageSpec{
-					Image: strings.TrimPrefix(image, "sha256:"),
-				},
-			})
-			if err != nil {
+		var imageName, imageDigest string
+
+		i, d, err := e.getImageInfoStore(nsCtx, image)
+		if err != nil {
+			// try using cri directly
+			i, d, err2 := e.getImageInfoCri(nsCtx, image)
+			if err2 != nil {
+				logger.Debugw("failed to extract image digest from containerd service and cri", "err", err, "err_cri", err2)
 				imageName = image
 				imageDigest = image
 			} else {
-				if len(imageInfo.Image.RepoTags) > 0 {
-					imageName = imageInfo.Image.RepoTags[0]
-				}
-				if len(imageInfo.Image.RepoDigests) > 0 {
-					imageDigest = imageInfo.Image.RepoTags[0]
-				}
+				imageName = i
+				imageDigest = d
 			}
+		} else {
+			imageName = i
+			imageDigest = d
 		}
 
 		// if in k8s we can extract pod info from labels
@@ -110,4 +113,52 @@ func (e *containerdEnricher) Get(ctx context.Context, containerId string) (Conta
 
 func (e *containerdEnricher) isSandbox(labels map[string]string) bool {
 	return labels[ContainerTypeContainerdLabel] == "sandbox"
+}
+
+func (e *containerdEnricher) getImageInfoStore(ctx context.Context, image string) (string, string, error) {
+	r, err := e.images.Get(ctx, image)
+	if err != nil {
+		return "", "", err
+	}
+
+	i := r.Name
+	d := r.Target.Digest.String()
+	return i, d, nil
+}
+
+func (e *containerdEnricher) getImageInfoCri(ctx context.Context, image string) (string, string, error) {
+	var imageName, imageDigest string
+	var imageInfo *cri.ImageStatusResponse
+	var err error
+
+	if strings.HasPrefix(image, "sha256:") {
+		// container may not have image name as id, if so fetch from the sha256 id
+		imageInfo, err = e.images_cri.ImageStatus(ctx, &cri.ImageStatusRequest{
+			Image: &cri.ImageSpec{
+				Image: strings.TrimPrefix(image, "sha256:"),
+			},
+		})
+	} else {
+		// else query directly
+		imageInfo, err = e.images_cri.ImageStatus(ctx, &cri.ImageStatusRequest{
+			Image: &cri.ImageSpec{
+				UserSpecifiedImage: image,
+			},
+		})
+	}
+	if err != nil {
+		return "", "", err
+	} else if imageInfo.Image == nil {
+		// image was nil - no image found
+		return "", "", errfmt.Errorf("no image info found in containerd cri (query: %s)", image)
+	}
+
+	// image found - extract name and digest
+	if len(imageInfo.Image.RepoTags) > 0 {
+		imageName = imageInfo.Image.RepoTags[0]
+	}
+	if len(imageInfo.Image.RepoDigests) > 0 {
+		imageDigest = imageInfo.Image.RepoDigests[0]
+	}
+	return imageName, imageDigest, nil
 }
