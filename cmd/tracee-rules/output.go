@@ -59,7 +59,12 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 		for res := range out {
 			switch res.Event.Payload.(type) {
 			case trace.Event:
-				if err := tOutput.Execute(w, res); err != nil {
+				f := &detect.Finding{
+					Event:       res.Event,
+					SigMetadata: res.SigMetadata,
+					Data:        res.GetData(),
+				}
+				if err := tOutput.Execute(w, f); err != nil {
 					logger.Errorw("Writing to output: " + err.Error())
 				}
 			default:
