@@ -174,7 +174,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 							// only one cgroup_mkdir should make it here
 							// report enrich success or error once
 							i := enrichInfo[cgroupId]
-							if i.err == nil {
+							if i.err == nil || i.result.ContainerId == "" {
 								logger.Debugw("done enriching in enrich queue", "cgroup_id", cgroupId)
 							} else {
 								logger.Errorw("failed enriching in enrich queue", "error", i.err, "cgroup_id", cgroupId)
