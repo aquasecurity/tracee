@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.33+insiders-4.53.12">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.34+insiders-4.53.12">
     
     
       
@@ -50,7 +50,7 @@
       
     
     
-    <script>__md_scope=new URL("../../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -115,7 +115,7 @@
     </div>
     
     
-      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
     
     
     
@@ -18036,7 +18036,7 @@ Relevant from kernel version 5.8 onwards, as the function was added in that kern
 For a failed execution, an event will be generated using the information from the <code>security_bprm_creds_for_exec</code> hook.
 Relevant from kernel version 5.8 onwards, matching the <code>security_bprm_creds_for_exec</code> hook.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="go">./tracee -e process_execution_failed</span>
+<div class="highlight"><pre><span></span><code><span class="go">./tracee -e process_execute_failed</span>
 </code></pre></div>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
 <p>The <code>exec_binprm</code> symbol is not available in some systems, potentially resulting in the failure to load the event in kernels older than 5.8.
@@ -18060,7 +18060,7 @@ For kernels older than 5.8, the event only encompasses failed executions occurri
             </div>
           
           
-  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
 
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
@@ -18089,7 +18089,7 @@ For kernels older than 5.8, the event only encompasses failed executions occurri
     <script id="__config" type="application/json">{"base": "../../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../../../assets/javascripts/workers/search.1e90e0fb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../../../assets/javascripts/bundle.ef312ba9.min.js"></script>
+      <script src="../../../../../assets/javascripts/bundle.a59f24f2.min.js"></script>
       
     
   </body>
