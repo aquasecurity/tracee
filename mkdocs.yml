@@ -8,14 +8,6 @@ edit_uri: ""
 
 nav:
     - Home: index.md
-    - Tutorials:
-          - Overview: tutorials/overview.md
-          - Cosign - verify Tracee signature: tutorials/verify-tracee-signature.md
-          - Access Tracee Metrics in Grafana and Prometheus: tutorials/deploy-grafana-dashboard.md
-          - Using Tracee Container Image with Vagrant on Mac: tutorials/tracee-vagrant.md
-          - Working with Tracee's Policies on Kubernetes: tutorials/k8s-policies.md
-          - Accessing Tracee Logs through Promtail and Loki: tutorials/promtail.md
-          - Additional Resources: tutorials/additional-resources.md
     - Docs:
           - Overview: docs/overview.md
           - Installation:
@@ -29,6 +21,7 @@ nav:
                 - Configure Tracee:
                       - Overview: docs/install/config/index.md
                       - CLI: docs/install/config/cli.md
+                      - Custom Configure: docs/install/config/custom_config.md
                       - Kubernetes: docs/install/config/kubernetes.md
           - Events:
                 - Overview: docs/events/index.md
@@ -607,6 +600,14 @@ nav:
                 - cache: docs/flags/cache.1.md
                 - capabilities: docs/flags/capabilities.1.md
                 - log: docs/flags/log.1.md
+    - Tutorials:
+          - Overview: tutorials/overview.md
+          - Cosign - verify Tracee signature: tutorials/verify-tracee-signature.md
+          - Access Tracee Metrics in Grafana and Prometheus: tutorials/deploy-grafana-dashboard.md
+          - Using Tracee Container Image with Vagrant on Mac: tutorials/tracee-vagrant.md
+          - Working with Tracee's Policies on Kubernetes: tutorials/k8s-policies.md
+          - Accessing Tracee Logs through Promtail and Loki: tutorials/promtail.md
+          - Additional Resources: tutorials/additional-resources.md 
     - Contributing:
           - Overview: contributing/overview.md
           - Documentation: contributing/documentation.md
