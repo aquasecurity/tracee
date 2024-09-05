@@ -555,7 +555,7 @@ var EventTranslationTable = [events.MaxBuiltinID]pb.EventId{
 	events.ModuleLoad:                   pb.EventId_module_load,
 	events.ModuleFree:                   pb.EventId_module_free,
 	events.ExecuteFinished:              pb.EventId_execute_finished,
-	events.ProcessExecuteFailedInternal: pb.EventId_security_bprm_creds_for_exec,
+	events.ProcessExecuteFailedInternal: pb.EventId_process_execute_failed_internal,
 
 	// Events from user-space translation section
 	events.NetPacketIPv4:         pb.EventId_net_packet_ipv4,
