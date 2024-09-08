@@ -15,4 +15,4 @@ __OR__
 ```console
 sudo ./dist/tracee --config /path/to/tracee-config.json
 ```
-__NOTE:__ you can find an exemple config file in [tracee/examples/config/](/examples/config/)
+__NOTE:__ you can find an example config file in [here](/examples/config/)
