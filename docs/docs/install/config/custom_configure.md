@@ -352,18 +352,18 @@ Below are the configurable flags and their options for Tracee. You can set these
 - **`--grpc-listen-addr`**: Specifies the address for the gRPC server.
   Example usage:
   ```bash
-  tracee --grpc-listen-addr tcp:0.0.0.0:50051
+  tracee --grpc-listen-addr tcp:50051
   ```
 
   YAML:
   ```yaml
-  grpc-listen-addr: tcp:0.0.0.0:50051
+  grpc-listen-addr: tcp:50051
   ```
 
   JSON:
   ```json
   {
-    "grpc-listen-addr": "tcp:0.0.0.0:50051"
+    "grpc-listen-addr": "tcp:50051"
   }
   ```
 
@@ -382,8 +382,10 @@ Below are the configurable flags and their options for Tracee. You can set these
   YAML:
   ```yaml
   capabilities:
-    - add: CAP_SYS_ADMIN
-    - drop: CAP_NET_RAW
+    - add: 
+        - CAP_SYS_ADMIN
+    - drop: 
+        - CAP_NET_RAW
   ```
 
   JSON:
@@ -425,8 +427,8 @@ Below are the configurable flags and their options for Tracee. You can set these
 
 - **`--log` (`-l`)**: Controls the verbosity level of Tracee's logging system. Multiple logging options can be defined to filter specific log levels. The default log level is `info`.
 
-  Supported options: `debug`, `info`, `warn`, `error`
-
+  Supported level options: `debug`, `info`, `warn`, `error`, `panic`
+  __NOTE__: there is a lot about log so pleas visit the page about it [here](/docs/docs/outputs/logging.md)
   Example usage:
   ```bash
   tracee --log debug,info
@@ -435,14 +437,13 @@ Below are the configurable flags and their options for Tracee. You can set these
   YAML:
   ```yaml
   log:
-    - debug
-    - info
+    - level: debug
   ```
 
   JSON:
   ```json
   {
-    "log": ["debug", "info"]
+    "log": ["debug"]
   }
   ```
 
