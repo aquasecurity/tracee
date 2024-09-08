@@ -3,6 +3,15 @@ cache:
     type: none
     # size: 1024
 
+capture:
+  #- write
+  #- exec
+  #- network
+
+policy:
+  - /path/to/policy.yaml
+  #- /path/to/policy-directory
+
 proctree:
     source: none
     # cache:
@@ -20,6 +29,12 @@ capabilities:
     # drop:
     #     - cap_chown
 
+metrics-endpoint: true
+
+grpc-listen-addr: tcp:50051
+
+dnscache: enable
+
 cri:
     # - runtime:
     #     name: containerd
@@ -28,9 +43,18 @@ cri:
     #     name: docker
     #     socket: /var/run/docker.sock
 
+events:
+  #- open
+  #- execve
+
+no-containers: true
+
 healthz: false
+
 install-path: /tmp/tracee
+
 listen-addr: :3366
+
 log:
     level: info
     # file: "/path/to/log/file.log"
@@ -67,7 +91,22 @@ log:
     #     regex:
     #         - ^excludedPattern
 
+scope:  
+  #- uid=1000
+  #- global
+  #- pid=1000
+  #- mntns=4026531840
+  #- pidns=4026531836    
+  #- uts=ab356bc4dd554
+  #- comm=uname
+  #- container
+  #- not-container
+  #- tree=1000
+  #- executable=/usr/bin/dig
+  #- follow
+
 metrics: false
+
 output:
     json:
         files:
@@ -130,9 +169,13 @@ output:
     #     sort-events: false
 
 perf-buffer-size: 1024
+
 pprof: false
+
 pyroscope: false
+
 rego:
     # partial-eval: true
     # aio: true
+
 signatures-dir: ""
