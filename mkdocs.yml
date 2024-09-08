@@ -20,8 +20,8 @@ nav:
                 - Healthz: docs/install/healthz.md
                 - Configure Tracee:
                       - Overview: docs/install/config/index.md
+                      - Custom Configure: docs/install/config/custom_configure.md
                       - CLI: docs/install/config/cli.md
-                      - Custom Configure: docs/install/config/custom_config.md
                       - Kubernetes: docs/install/config/kubernetes.md
           - Events:
                 - Overview: docs/events/index.md
