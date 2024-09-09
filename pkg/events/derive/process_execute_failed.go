@@ -12,9 +12,8 @@ import (
 
 // ExecFailedGenerator is the object which implement the ProcessExecuteFailed event derivation
 type ExecFailedGenerator struct {
-	execEndInfo *lru.Cache[int, execEndInfo]
-	baseEvents  *lru.Cache[int, *trace.Event]
-	deriveBase  deriveBase
+	baseEvents *lru.Cache[int, *trace.Event]
+	deriveBase deriveBase
 }
 
 // InitProcessExecuteFailedGenerator initialize a new generator for the ProcessExecuteFailed event.
@@ -23,18 +22,13 @@ func InitProcessExecuteFailedGenerator() (*ExecFailedGenerator, error) {
 	// For now, we assume that the current value is sufficient
 	const executionEventsCacheSize = 16
 
-	executeProcsCache, err := lru.New[int, execEndInfo](executionEventsCacheSize)
-	if err != nil {
-		return nil, err
-	}
 	executeParamsCache, err := lru.New[int, *trace.Event](executionEventsCacheSize)
 	if err != nil {
 		return nil, err
 	}
 	return &ExecFailedGenerator{
-		execEndInfo: executeProcsCache,
-		baseEvents:  executeParamsCache,
-		deriveBase:  makeDeriveBase(events.ProcessExecuteFailed),
+		baseEvents: executeParamsCache,
+		deriveBase: makeDeriveBase(events.ProcessExecuteFailed),
 	}, nil
 }
 
@@ -78,7 +72,7 @@ func (gen *ExecFailedGenerator) deriveEvent(event *trace.Event) (
 // handleExecFinished will add info on top of base event unless events came out of order. Sends an event in any case.
 // Should be simplified once events reach from kernel-space to user-space are ordered!
 func (gen *ExecFailedGenerator) handleExecFinished(event *trace.Event) (*trace.Event, error) {
-	defer gen.execEndInfo.Remove(event.HostProcessID)
+	defer gen.baseEvents.Remove(event.HostProcessID)
 	execInfo := execEndInfo{
 		returnCode: event.ReturnValue,
 		timestamp:  event.Timestamp,
