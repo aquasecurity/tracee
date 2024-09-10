@@ -75,7 +75,7 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 
 	return t.processTree.FeedFromFork(
 		proctree.ForkFeed{
-			TimeStamp:       uint64(t.timeNormalizer.NormalizeTime(int(childStartTime))), // event timestamp is the same
+			TimeStamp:       childStartTime, // event timestamp is the same
 			ChildHash:       childHash,
 			ParentHash:      parentHash,
 			LeaderHash:      leaderHash,
@@ -83,17 +83,17 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 			ParentNsTid:     parentNsTid,
 			ParentPid:       parentPid,
 			ParentNsPid:     parentNsPid,
-			ParentStartTime: uint64(t.timeNormalizer.NormalizeTime(int(parentStartTime))),
+			ParentStartTime: parentStartTime,
 			LeaderTid:       leaderTid,
 			LeaderNsTid:     leaderNsTid,
 			LeaderPid:       leaderPid,
 			LeaderNsPid:     leaderNsPid,
-			LeaderStartTime: uint64(t.timeNormalizer.NormalizeTime(int(leaderStartTime))),
+			LeaderStartTime: leaderStartTime,
 			ChildTid:        childTid,
 			ChildNsTid:      childNsTid,
 			ChildPid:        childPid,
 			ChildNsPid:      childNsPid,
-			ChildStartTime:  uint64(t.timeNormalizer.NormalizeTime(int(childStartTime))),
+			ChildStartTime:  childStartTime,
 		},
 	)
 }
@@ -153,7 +153,7 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 
 	return t.processTree.FeedFromExec(
 		proctree.ExecFeed{
-			TimeStamp:         uint64(t.timeNormalizer.NormalizeTime(int(timestamp))),
+			TimeStamp:         timestamp,
 			TaskHash:          taskHash,
 			ParentHash:        0, // regular pipeline does not have parent hash
 			LeaderHash:        0, // regular pipeline does not have leader hash
@@ -204,7 +204,7 @@ func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
 
 	return t.processTree.FeedFromExit(
 		proctree.ExitFeed{
-			TimeStamp:  uint64(t.timeNormalizer.NormalizeTime(int(timestamp))), // time of exit is already a timestamp
+			TimeStamp:  timestamp, // time of exit is already a timestamp
 			TaskHash:   taskHash,
 			ParentHash: 0, // regular pipeline does not have parent hash
 			LeaderHash: 0, // regular pipeline does not have leader hash
@@ -237,7 +237,7 @@ func (t *Tracee) procTreeAddBinInfo(event *trace.Event) error {
 	}
 
 	// Event timestamp is changed to relative (or not) at the end of all processors only.
-	eventTimestamp := traceetime.NsSinceEpochToTime(uint64(t.timeNormalizer.NormalizeTime(event.Timestamp)))
+	eventTimestamp := traceetime.NsSinceEpochToTime(uint64(event.Timestamp))
 
 	executable := currentProcess.GetExecutable()
 

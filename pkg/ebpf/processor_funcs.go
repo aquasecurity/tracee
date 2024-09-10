@@ -19,6 +19,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/filehash"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -161,7 +162,11 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				}
 				destinationFilePath := filepath.Join(
 					destinationDirPath,
-					fmt.Sprintf("exec.%d.%s", event.Timestamp, filepath.Base(filePath)),
+					fmt.Sprintf(
+						"exec.%d.%s",
+						event.Timestamp,
+						filepath.Base(filePath),
+					),
 				)
 				// don't capture same file twice unless it was modified
 				lastCtime, ok := t.capturedFiles[capturedFileID]
@@ -346,33 +351,21 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 // Timing related functions
 //
 
-// normalizeEventCtxTimes normalizes the event context timings to be relative to tracee start time
-// or current time in nanoseconds.
-func (t *Tracee) normalizeEventCtxTimes(event *trace.Event) error {
-	eventId := events.ID(event.EventID)
-	if eventId > events.MaxCommonID && eventId < events.MaxUserSpace {
-		// derived events are normalized from their base event, skip the processing
-		return nil
-	}
-	event.Timestamp = t.timeNormalizer.NormalizeTime(event.Timestamp)
-	event.ThreadStartTime = t.timeNormalizer.NormalizeTime(event.ThreadStartTime)
-
-	return nil
-}
-
 // normalizeTimeArg returns a processor function for some argument name
-// which normalizes said event arg time to be relative to tracee start time or current time.
-func (t *Tracee) normalizeTimeArg(argName string) func(event *trace.Event) error {
+// which normalizes said event arg time from boot monotonic to epoch
+func (t *Tracee) normalizeTimeArg(argNames ...string) func(event *trace.Event) error {
 	return func(event *trace.Event) error {
-		arg := events.GetArg(event, argName)
-		if arg == nil {
-			return errfmt.Errorf("couldn't find argument %s of event %s", argName, event.EventName)
+		for _, argName := range argNames {
+			arg := events.GetArg(event, argName)
+			if arg == nil {
+				return errfmt.Errorf("couldn't find argument %s of event %s", argName, event.EventName)
+			}
+			argTime, ok := arg.Value.(uint64)
+			if !ok {
+				return errfmt.Errorf("argument %s of event %s is not of type uint64", argName, event.EventName)
+			}
+			arg.Value = time.BootToEpochNS(argTime)
 		}
-		argTime, ok := arg.Value.(uint64)
-		if !ok {
-			return errfmt.Errorf("argument %s of event %s is not of type uint64", argName, event.EventName)
-		}
-		arg.Value = t.timeNormalizer.NormalizeTime(int(argTime))
 		return nil
 	}
 }
