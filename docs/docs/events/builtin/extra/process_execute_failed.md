@@ -56,7 +56,7 @@ Relevant from kernel version 5.8 onwards, matching the `security_bprm_creds_for_
 ## Example Use Case
 
 ```console
-./tracee -e process_execution_failed
+./tracee -e process_execute_failed
 ```
 
 ## Issues

@@ -1521,7 +1521,7 @@ int syscall__accept4(void *ctx)
 
     struct socket *old_sock = (struct socket *) saved_args.args[0];
     struct socket *new_sock = (struct socket *) saved_args.args[1];
-    u32 sockfd = (u32) saved_args.args[2];
+    u64 sockfd = (u32) saved_args.args[2];
 
     if (new_sock == NULL) {
         return -1;
@@ -4940,31 +4940,32 @@ statfunc int submit_process_execute_failed(struct pt_regs *ctx, program_data_t *
     struct file *file = get_file_ptr_from_bprm(bprm);
 
     const char *path = get_binprm_filename(bprm);
-    save_str_to_buf(&p->event->args_buf, (void *) path, 0);
+    save_str_to_buf(&p->event->args_buf, (void *) path, 2);
 
     void *binary_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
-    save_str_to_buf(&p->event->args_buf, binary_path, 1);
+    save_str_to_buf(&p->event->args_buf, binary_path, 3);
 
     dev_t binary_device_id = get_dev_from_file(file);
-    save_to_submit_buf(&p->event->args_buf, &binary_device_id, sizeof(dev_t), 2);
+    save_to_submit_buf(&p->event->args_buf, &binary_device_id, sizeof(dev_t), 4);
 
     unsigned long binary_inode_number = get_inode_nr_from_file(file);
-    save_to_submit_buf(&p->event->args_buf, &binary_inode_number, sizeof(unsigned long), 3);
+    save_to_submit_buf(&p->event->args_buf, &binary_inode_number, sizeof(unsigned long), 5);
 
     u64 binary_ctime = get_ctime_nanosec_from_file(file);
-    save_to_submit_buf(&p->event->args_buf, &binary_ctime, sizeof(u64), 4);
+    save_to_submit_buf(&p->event->args_buf, &binary_ctime, sizeof(u64), 6);
 
     umode_t binary_inode_mode = get_inode_mode_from_file(file);
-    save_to_submit_buf(&p->event->args_buf, &binary_inode_mode, sizeof(umode_t), 5);
+    save_to_submit_buf(&p->event->args_buf, &binary_inode_mode, sizeof(umode_t), 7);
 
     const char *interpreter_path = get_binprm_interp(bprm);
-    save_str_to_buf(&p->event->args_buf, (void *) interpreter_path, 6);
+    save_str_to_buf(&p->event->args_buf, (void *) interpreter_path, 8);
 
-    bpf_tail_call(ctx, &prog_array, TAIL_PROCESS_EXECUTE_FAILED1);
+    bpf_tail_call(ctx, &prog_array, TAIL_PROCESS_EXECUTE_FAILED);
     return -1;
 }
 
-statfunc int execute_failed_tail1(struct pt_regs *ctx, u32 tail_call_id)
+SEC("kprobe/process_execute_failed_tail")
+int process_execute_failed_tail(struct pt_regs *ctx)
 {
     program_data_t p = {};
     if (!init_tailcall_program_data(&p, ctx))
@@ -4974,83 +4975,30 @@ statfunc int execute_failed_tail1(struct pt_regs *ctx, u32 tail_call_id)
     struct file *stdin_file = get_struct_file_from_fd(0);
 
     unsigned short stdin_type = get_inode_mode_from_file(stdin_file) & S_IFMT;
-    save_to_submit_buf(&p.event->args_buf, &stdin_type, sizeof(unsigned short), 7);
+    save_to_submit_buf(&p.event->args_buf, &stdin_type, sizeof(unsigned short), 9);
 
     void *stdin_path = get_path_str(__builtin_preserve_access_index(&stdin_file->f_path));
-    save_str_to_buf(&p.event->args_buf, stdin_path, 8);
+    save_str_to_buf(&p.event->args_buf, stdin_path, 10);
 
     int kernel_invoked = (get_task_parent_flags(task) & PF_KTHREAD) ? 1 : 0;
-    save_to_submit_buf(&p.event->args_buf, &kernel_invoked, sizeof(int), 9);
+    save_to_submit_buf(&p.event->args_buf, &kernel_invoked, sizeof(int), 11);
 
-    bpf_tail_call(ctx, &prog_array, tail_call_id);
-    return -1;
-}
-
-statfunc int execute_failed_tail2(struct pt_regs *ctx)
-{
-    program_data_t p = {};
-    if (!init_tailcall_program_data(&p, ctx))
-        return -1;
-
-    long long argv, envp;
-    struct pt_regs *regs = get_current_task_pt_regs();
-
-    if (p.event->context.syscall == SYSCALL_EXECVE) {
-        argv = get_syscall_arg2(p.event->task, regs, false);
-        envp = get_syscall_arg3(p.event->task, regs, false);
-    } else {
-        argv = get_syscall_arg3(p.event->task, regs, false);
-        envp = get_syscall_arg4(p.event->task, regs, false);
-    }
-
-    save_str_arr_to_buf(&p.event->args_buf, (const char *const *) argv, 10); // userspace argv
-
-    if (p.config->options & OPT_EXEC_ENV) {
-        save_str_arr_to_buf(&p.event->args_buf, (const char *const *) envp, 11); // userspace envp
-    }
-
-    int ret = PT_REGS_RC(ctx); // needs to be int
-    return events_perf_submit(&p, ret);
+    return events_perf_submit(&p, 0);
 }
 
 bool use_security_bprm_creds_for_exec = false;
 
 SEC("kprobe/exec_binprm")
-TRACE_ENT_FUNC(exec_binprm, EXEC_BINPRM);
-
-SEC("kretprobe/exec_binprm")
-int BPF_KPROBE(trace_ret_exec_binprm)
+int BPF_KPROBE(trace_exec_binprm)
 {
     if (use_security_bprm_creds_for_exec) {
         return 0;
     }
-    args_t saved_args;
-    if (load_args(&saved_args, EXEC_BINPRM) != 0) {
-        // missed entry or not traced
-        return 0;
-    }
-    del_args(EXEC_BINPRM);
-
-    int ret_val = PT_REGS_RC(ctx);
-    if (ret_val == 0)
-        return 0; // not interested of successful execution - for that we have sched_process_exec
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, PROCESS_EXECUTION_FAILED))
+    if (!init_program_data(&p, ctx, PROCESS_EXECUTE_FAILED_INTERNAL))
         return 0;
     return submit_process_execute_failed(ctx, &p);
-}
-
-SEC("kretprobe/trace_execute_failed1")
-int BPF_KPROBE(trace_execute_failed1)
-{
-    return execute_failed_tail1(ctx, TAIL_PROCESS_EXECUTE_FAILED2);
-}
-
-SEC("kretprobe/trace_execute_failed2")
-int BPF_KPROBE(trace_execute_failed2)
-{
-    return execute_failed_tail2(ctx);
 }
 
 SEC("kprobe/security_bprm_creds_for_exec")
@@ -5058,7 +5006,7 @@ int BPF_KPROBE(trace_security_bprm_creds_for_exec)
 {
     use_security_bprm_creds_for_exec = true;
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, SECURITY_BPRM_CREDS_FOR_EXEC))
+    if (!init_program_data(&p, ctx, PROCESS_EXECUTE_FAILED_INTERNAL))
         return 0;
     return submit_process_execute_failed(ctx, &p);
 }
@@ -5072,6 +5020,34 @@ int BPF_KPROBE(trace_execute_finished)
 
     if (!evaluate_scope_filters(&p))
         return 0;
+
+    // We can enrich the event with user provided arguments. If we have kernelspace arguments,
+    // the userspace arguments will be discarded.
+    struct pt_regs *task_regs = get_current_task_pt_regs();
+    u64 argv, envp;
+    void *path;
+
+    if (p.event->context.syscall == SYSCALL_EXECVEAT) {
+        int dirfd = get_syscall_arg1(p.event->task, task_regs, false);
+        path = (void *) get_syscall_arg2(p.event->task, task_regs, false);
+        argv = get_syscall_arg3(p.event->task, task_regs, false);
+        envp = get_syscall_arg4(p.event->task, task_regs, false);
+        int flags = get_syscall_arg5(p.event->task, task_regs, false);
+
+        // send args unique to execevat
+        save_to_submit_buf(&p.event->args_buf, &dirfd, sizeof(int), 0);
+        save_to_submit_buf(&p.event->args_buf, &flags, sizeof(int), 1);
+    } else {
+        path = (void *) get_syscall_arg1(p.event->task, task_regs, false);
+        argv = get_syscall_arg2(p.event->task, task_regs, false);
+        envp = get_syscall_arg3(p.event->task, task_regs, false);
+    }
+
+    save_str_to_buf(&p.event->args_buf, path, 2);
+    save_str_arr_to_buf(&p.event->args_buf, (const char *const *) argv, 12);
+    if (p.config->options & OPT_EXEC_ENV) {
+        save_str_arr_to_buf(&p.event->args_buf, (const char *const *) envp, 13);
+    }
 
     long exec_ret = PT_REGS_RC(ctx);
     return events_perf_submit(&p, exec_ret);

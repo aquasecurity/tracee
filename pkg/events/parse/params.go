@@ -23,3 +23,13 @@ func ArgVal[T any](args []trace.Argument, argName string) (T, error) {
 	}
 	return *new(T), errfmt.Errorf("argument %s not found", argName)
 }
+
+// ArgIndex find the index of an argument by name
+func ArgIndex(args []trace.Argument, argName string) int {
+	for index, arg := range args {
+		if arg.Name == argName {
+			return index
+		}
+	}
+	return -1
+}
