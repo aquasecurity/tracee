@@ -8,8 +8,8 @@ you can view a file with all available options that can be found [here](https://
 
 
 Below are the configurable options for Tracee. You can set these directly when running Tracee or through a configuration YAML file
-
-__NOTE__: you have the option to configure tracee with a JSON file or Commend Line flags.
+  - __NOTE__: [you can find an example config file at the end ](#example)
+  - __NOTE__: you have the option to configure tracee with a JSON file or Commend Line flags.
 
 ----
 
@@ -194,3 +194,12 @@ __NOTE__: you have the option to configure tracee with a JSON file or Commend Li
   cache:
     - mem-cache-size=512
   ```
+
+
+### Example 
+```yaml
+    policy:
+      - /path/to/policy
+    output:
+      - json 
+```

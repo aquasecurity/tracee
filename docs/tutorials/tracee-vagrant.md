@@ -39,4 +39,4 @@ docker run --name tracee -it --rm \
   aquasec/tracee:latest
 ```
 
-To learn how to install Tracee in a production environment, [check out the Kubernetes guide](./kubernetes-quickstart).
+To learn how to install Tracee in a production environment, [check out the Kubernetes guide](./k8s-policies.md).
