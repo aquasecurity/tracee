@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"sync"
 	"testing"
-
-	traceetime "github.com/aquasecurity/tracee/pkg/time"
 )
 
 func BenchmarkProcessTree(b *testing.B) {
@@ -21,8 +19,7 @@ func BenchmarkProcessTree(b *testing.B) {
 		ProcfsQuerying:       false,
 	}
 
-	timeNormalizer := traceetime.NewAbsoluteTimeNormalizer(0)
-	pt, err := NewProcessTree(ctx, config, timeNormalizer)
+	pt, err := NewProcessTree(ctx, config)
 	if err != nil {
 		b.Fatalf("failed to create ProcessTree: %v", err)
 	}

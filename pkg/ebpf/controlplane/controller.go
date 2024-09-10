@@ -11,7 +11,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
-	traceetime "github.com/aquasecurity/tracee/pkg/time"
 )
 
 // TODO: With the introduction of signal events, the control plane can now have a generic argument
@@ -29,7 +28,6 @@ type Controller struct {
 	cgroupManager  *containers.Containers
 	processTree    *proctree.ProcessTree
 	enrichDisabled bool
-	timeNormalizer traceetime.TimeNormalizer
 }
 
 // NewController creates a new controller.
@@ -38,7 +36,6 @@ func NewController(
 	cgroupManager *containers.Containers,
 	enrichDisabled bool,
 	procTree *proctree.ProcessTree,
-	timeNormalizer traceetime.TimeNormalizer,
 ) (*Controller, error) {
 	var err error
 
@@ -49,7 +46,6 @@ func NewController(
 		cgroupManager:  cgroupManager,
 		processTree:    procTree,
 		enrichDisabled: enrichDisabled,
-		timeNormalizer: timeNormalizer,
 	}
 
 	p.signalBuffer, err = bpfModule.InitPerfBuf("signals", p.signalChan, p.lostSignalChan, 1024)
