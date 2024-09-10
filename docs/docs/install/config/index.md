@@ -129,7 +129,6 @@ output:
         none: false
         stack-addresses: true
         exec-env: false
-        relative-time: true
         exec-hash: dev-inode
         parse-arguments: true
         sort-events: false

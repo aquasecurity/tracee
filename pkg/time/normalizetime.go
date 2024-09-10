@@ -8,30 +8,8 @@ type TimeNormalizer interface {
 
 // CreateTimeNormalizerByConfig create a TimeNormalizer according to given configuration using
 // runtime functions.
-func CreateTimeNormalizerByConfig(relative bool, startTime uint64, bootTime uint64) TimeNormalizer {
-	if relative {
-		return NewRelativeTimeNormalizer(int(startTime))
-	}
+func CreateTimeNormalizerByConfig(bootTime uint64) TimeNormalizer {
 	return NewAbsoluteTimeNormalizer(int(bootTime))
-}
-
-// RelativeTimeNormalizer normalize the time to be relative to Tracee start time
-type RelativeTimeNormalizer struct {
-	startTime int
-}
-
-func NewRelativeTimeNormalizer(startTime int) *RelativeTimeNormalizer {
-	return &RelativeTimeNormalizer{
-		startTime: startTime,
-	}
-}
-
-func (rn *RelativeTimeNormalizer) NormalizeTime(timeNs int) int {
-	return timeNs - rn.startTime
-}
-
-func (rn *RelativeTimeNormalizer) GetOriginalTime(timeNs int) int {
-	return timeNs + rn.startTime
 }
 
 // AbsoluteTimeNormalizer normalize the time to be absolute time since epoch

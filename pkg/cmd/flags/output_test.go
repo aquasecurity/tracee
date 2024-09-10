@@ -283,18 +283,6 @@ func TestPrepareOutput(t *testing.T) {
 			},
 		},
 		{
-			testName:    "option relative-time",
-			outputSlice: []string{"json", "option:relative-time"},
-			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "json", OutPath: "stdout", RelativeTS: true},
-				},
-				TraceeConfig: &config.OutputConfig{
-					RelativeTime: true,
-				},
-			},
-		},
-		{
 			testName:    "option exec-hash",
 			outputSlice: []string{"option:exec-hash"},
 			expectedOutput: PrepareOutputResult{
@@ -374,7 +362,6 @@ func TestPrepareOutput(t *testing.T) {
 				"json",
 				"option:stack-addresses",
 				"option:exec-env",
-				"option:relative-time",
 				"option:exec-hash=dev-inode",
 				"option:parse-arguments",
 				"option:parse-arguments-fds",
@@ -382,12 +369,11 @@ func TestPrepareOutput(t *testing.T) {
 			},
 			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "json", OutPath: "stdout", RelativeTS: true},
+					{Kind: "json", OutPath: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					StackAddresses:    true,
 					ExecEnv:           true,
-					RelativeTime:      true,
 					CalcHashes:        config.CalcHashesDevInode,
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
@@ -437,7 +423,6 @@ func assertPrinterConfigs(t *testing.T, expected []config.PrinterConfig, actual 
 
 		assert.Equal(t, expectedPrinter.Kind, p.Kind)
 		assert.Equal(t, expectedPrinter.OutPath, p.OutPath)
-		assert.Equal(t, expectedPrinter.RelativeTS, p.RelativeTS)
 		assert.Equal(t, expectedPrinter.ContainerMode, p.ContainerMode)
 	}
 }

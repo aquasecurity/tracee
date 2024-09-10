@@ -35,7 +35,6 @@ run_tracee() {
         --capabilities drop=$CAPABILITIES_DROP \
         --output=json \
         --output=option:parse-arguments \
-        --output=option:relative-time \
         --events signatures,container_create,container_remove
     fi
 

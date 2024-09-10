@@ -557,7 +557,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// time in nanoseconds when the system was booted
 	t.bootTime = uint64(traceetime.GetBootTimeNS())
 
-	t.timeNormalizer = traceetime.CreateTimeNormalizerByConfig(t.config.Output.RelativeTime, t.startTime, t.bootTime)
+	t.timeNormalizer = traceetime.CreateTimeNormalizerByConfig(t.bootTime)
 
 	// Initialize event derivation logic
 
