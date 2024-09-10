@@ -395,9 +395,6 @@ func (c *OutputConfig) flags() []string {
 	if c.Options.ExecEnv {
 		flags = append(flags, "option:exec-env")
 	}
-	if c.Options.RelativeTime {
-		flags = append(flags, "option:relative-time")
-	}
 	if c.Options.ExecHash != "" {
 		flags = append(flags, fmt.Sprintf("option:exec-hash=%s", c.Options.ExecHash))
 	}
@@ -478,7 +475,6 @@ type OutputOptsConfig struct {
 	None              bool   `mapstructure:"none"`
 	StackAddresses    bool   `mapstructure:"stack-addresses"`
 	ExecEnv           bool   `mapstructure:"exec-env"`
-	RelativeTime      bool   `mapstructure:"relative-time"`
 	ExecHash          string `mapstructure:"exec-hash"`
 	ParseArguments    bool   `mapstructure:"parse-arguments"`
 	ParseArgumentsFDs bool   `mapstructure:"parse-arguments-fds"`

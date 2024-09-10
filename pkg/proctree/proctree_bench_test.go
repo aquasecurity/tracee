@@ -21,7 +21,7 @@ func BenchmarkProcessTree(b *testing.B) {
 		ProcfsQuerying:       false,
 	}
 
-	timeNormalizer := traceetime.NewRelativeTimeNormalizer(0)
+	timeNormalizer := traceetime.NewAbsoluteTimeNormalizer(0)
 	pt, err := NewProcessTree(ctx, config, timeNormalizer)
 	if err != nil {
 		b.Fatalf("failed to create ProcessTree: %v", err)

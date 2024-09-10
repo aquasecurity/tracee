@@ -78,15 +78,6 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			},
 		},
 		{
-			testName:    "option relative-time",
-			outputSlice: []string{"json", "option:relative-time"},
-			expectedOutput: PrepareOutputResult{
-				TraceeConfig: &config.OutputConfig{
-					RelativeTime: true,
-				},
-			},
-		},
-		{
 			testName:    "option exec-hash=inode",
 			outputSlice: []string{"option:exec-hash=inode"},
 			expectedOutput: PrepareOutputResult{
@@ -131,7 +122,6 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 				"json",
 				"option:stack-addresses",
 				"option:exec-env",
-				"option:relative-time",
 				"option:exec-hash=none",
 				"option:parse-arguments",
 				"option:parse-arguments-fds",
@@ -141,7 +131,6 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 				TraceeConfig: &config.OutputConfig{
 					StackAddresses:    true,
 					ExecEnv:           true,
-					RelativeTime:      true,
 					CalcHashes:        config.CalcHashesNone,
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,

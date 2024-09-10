@@ -36,7 +36,6 @@ data:
             parse-arguments: {{ .Values.config.output.options.parseArguments }}
             stack-addresses: {{ .Values.config.output.options.stackAddresses }}
             exec-env: {{ .Values.config.output.options.execEnv }}
-            relative-time: {{ .Values.config.output.options.relativeTime }}
             exec-hash: {{ .Values.config.output.options.execHash }}
             sort-events: {{ .Values.config.output.options.sortEvents }}
         {{- with .Values.config.output.webhook }}
