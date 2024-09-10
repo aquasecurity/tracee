@@ -1127,7 +1127,7 @@ var SyscallSymbolNames = map[ID][]KernelRestrictions{
 	209: {{Name: "io_submit"}},
 	210: {{Name: "io_cancel"}},
 	211: {{Name: SyscallNotImplemented + "get_thread_area"}},
-	212: {{Name: "lookup_dcookie"}},
+	212: {{Below: "6.7", Name: "lookup_dcookie"}},
 	213: {{Name: "epoll_create"}},
 	214: {{Name: SyscallNotImplemented + "epoll_ctl_old"}},
 	215: {{Name: SyscallNotImplemented + "epoll_wait_old"}},
