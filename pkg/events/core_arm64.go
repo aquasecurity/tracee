@@ -992,7 +992,7 @@ var SyscallSymbolNames = map[ID][]KernelRestrictions{
 	15:  {{Name: "lremovexattr"}},
 	16:  {{Name: "fremovexattr"}},
 	17:  {{Name: "getcwd"}},
-	18:  {{Name: "lookup_dcookie"}},
+	18:  {{Below: "6.7", Name: "lookup_dcookie"}},
 	19:  {{Name: "eventfd2"}},
 	20:  {{Name: "epoll_create1"}},
 	21:  {{Name: "epoll_ctl"}},
