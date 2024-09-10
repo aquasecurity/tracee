@@ -129,8 +129,6 @@ type Tracee struct {
 	// This does not mean they are required for tracee to function.
 	// TODO: remove this in favor of dependency manager nodes
 	requiredKsyms []string
-	// Time for normalization
-	timeNormalizer traceetime.TimeNormalizer
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -557,8 +555,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// time in nanoseconds when the system was booted
 	t.bootTime = uint64(traceetime.GetBootTimeNS())
 
-	t.timeNormalizer = traceetime.CreateTimeNormalizerByConfig(t.bootTime)
-
 	// Initialize event derivation logic
 
 	err = t.initDerivationTable()
@@ -587,7 +583,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 			proctreeConfig.ProcfsInitialization = false
 			proctreeConfig.ProcfsQuerying = false
 		}
-		t.processTree, err = proctree.NewProcessTree(ctx, proctreeConfig, t.timeNormalizer)
+		t.processTree, err = proctree.NewProcessTree(ctx, proctreeConfig)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -1418,7 +1414,6 @@ func (t *Tracee) initBPF() error {
 		t.containers,
 		t.config.NoContainersEnrich,
 		t.processTree,
-		t.timeNormalizer,
 	)
 	if err != nil {
 		return errfmt.WrapError(err)

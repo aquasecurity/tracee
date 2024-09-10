@@ -4,8 +4,6 @@ import (
 	"context"
 	"sync"
 	"testing"
-
-	traceetime "github.com/aquasecurity/tracee/pkg/time"
 )
 
 func TestProcessTreeConcurrency(t *testing.T) {
@@ -22,8 +20,7 @@ func TestProcessTreeConcurrency(t *testing.T) {
 		ProcfsQuerying:       false,
 	}
 
-	timeNormalizer := traceetime.NewAbsoluteTimeNormalizer(0)
-	pt, err := NewProcessTree(ctx, config, timeNormalizer)
+	pt, err := NewProcessTree(ctx, config)
 	if err != nil {
 		t.Fatalf("failed to create ProcessTree: %v", err)
 	}
