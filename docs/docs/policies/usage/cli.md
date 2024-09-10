@@ -91,7 +91,6 @@ output:
         none: false
         stack-addresses: false
         exec-env: true
-        relative-time: true
         exec-hash: dev-inode
         parse-arguments: true
         parse-arguments-fds: true

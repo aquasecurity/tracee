@@ -101,7 +101,6 @@ config:
       parseArguments: true
       stackAddresses: false
       execEnv: false
-      relativeTime: true
       execHash: dev-inode
       sortEvents: false
     # uncomment config.output.webhook to enable a single webhook
