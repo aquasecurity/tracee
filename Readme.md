@@ -15,7 +15,7 @@ Tracee is a runtime security and observability tool that helps you understand ho
 It is using [eBPF technology](https://ebpf.io/what-is-ebpf/) to tap into your system and expose that information as events that you can consume.  
 Events range from factual system activity events to sophisticated security events that detect suspicious behavioral patterns.
 
-To learn more about Tracee, check out the [documentation](https://aquasecurity.github.io/tracee/).
+To learn more about Tracee, check out the [documentation](https://aquasecurity.github.io/tracee/latest/docs/overview/).
 
 ## Quickstart
 
