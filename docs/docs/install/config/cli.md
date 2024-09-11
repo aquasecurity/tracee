@@ -9,4 +9,3 @@ To use the `--config` flag, you need to provide the path to the configuration fi
 ```console
 tracee --config /path/to/tracee-config.yaml
 ```
-__NOTE:__ you can find an example config file in [here](https://github.com/aquasecurity/tracee/blob/main/examples/config/global_config_cli.yaml)

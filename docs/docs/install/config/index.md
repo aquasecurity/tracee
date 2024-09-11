@@ -1,17 +1,16 @@
 # Configuring Tracee
 
 Tracee has many different options and settings that control how Tracee operates. 
-This section presents available configuration options. To learn about how to apply configuration to Tracee, please refer to the [CLI](./cli.md) or [Kubernetes](./kubernetes.md) specific guides.
 
+To learn about all available configuration options please see [this document](https://github.com/aquasecurity/tracee/blob/main/examples/config/global_config.yaml).
 
-you can view a file with all available options that can be found [here](https://github.com/aquasecurity/tracee/blob/main/examples/config/global_config.yaml). Most of the options are documented in different sections in the documentation.
+This section includes detailed description of the common configurable options.
 
+To learn about how to apply configuration to Tracee, please refer to the [CLI](./cli.md) or [Kubernetes](./kubernetes.md) specific guides, depending on how you deploy Tracee.
 
-Below are the configurable options for Tracee. You can set these directly when running Tracee or through a configuration YAML file
-  - __NOTE__: [you can find an example config file at the end ](#example)
-  - __NOTE__: you have the option to configure tracee with a JSON file or Commend Line flags.
+  - __NOTE__: The YAML examples can be translated to JSON as well
 
-----
+## Common configurations
 
 ### Policy
 
@@ -193,14 +192,4 @@ Below are the configurable options for Tracee. You can set these directly when r
   ```yaml
   cache:
     - mem-cache-size=512
-  ```
-
-
-### Example 
-
-  ```yaml
-  policy:
-    - /path/to/policy
-  output:
-    - json 
   ```
