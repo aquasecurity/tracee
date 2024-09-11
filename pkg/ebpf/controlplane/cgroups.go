@@ -31,7 +31,7 @@ func (ctrl *Controller) processCgroupMkdir(args []trace.Argument) error {
 		return errfmt.WrapError(err)
 	}
 	if info.Container.ContainerId == "" && !info.Dead {
-		// If cgroupId is from a regular cgroup directory, and not the container base directory
+		// If cgroupId is from a regular cgroup directory, and not a container related directory
 		// (from known runtimes), it should be removed from the containers bpf map.
 		err := capabilities.GetInstance().EBPF(
 			func() error {
@@ -51,10 +51,10 @@ func (ctrl *Controller) processCgroupMkdir(args []trace.Argument) error {
 		// If cgroupId belongs to a container, and is the root (to avoid duplicate requests)
 		// enrich now (in a goroutine)
 		go func() {
-			_, err := ctrl.cgroupManager.EnrichCgroupInfo(cgroupId)
+			md, err := ctrl.cgroupManager.EnrichCgroupInfo(cgroupId)
 			if err != nil {
 				logger.Errorw("error enriching container in control plane", "error", err, "cgroup_id", cgroupId)
-			} else {
+			} else if md.ContainerId != "" {
 				logger.Debugw("enriched cgroup_id in control plane", "cgroup_id", cgroupId)
 			}
 		}()

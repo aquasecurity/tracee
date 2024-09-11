@@ -194,8 +194,11 @@ func (c *Containers) cgroupUpdate(
 
 // EnrichCgroupInfo checks for a given cgroupId if it is relevant to some running
 // container. It then calls the runtime info service to gather additional data from the
-// container's runtime. It returns the retrieved metadata and a relevant error. It should
-// not be called twice for the same cgroupId unless attempting a retry.
+// container's runtime. Should not be called twice for the same cgroupId unless attempting a retry.
+//
+// Returns the retrieved metadata and a relevant error.
+// If the given cgroup does not belong to a container, no error will be returned, but the
+// returned metadata's containerId will be empty. This should be checked separately.
 func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetadata, error) {
 	c.cgroupsMutex.Lock()
 	defer c.cgroupsMutex.Unlock()
@@ -212,7 +215,9 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 	runtime := info.Runtime
 
 	if containerId == "" {
-		return metadata, errfmt.Errorf("cgroup %d: no containerId (path %s)", cgroupId, info.Path)
+		// not a container, nothing to do
+		metadata.ContainerId = ""
+		return metadata, nil
 	}
 
 	isMikubeOrKind := k8s.IsMinkube() || k8s.IsKind()
