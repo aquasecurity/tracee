@@ -7,12 +7,6 @@ The `--config` flag allows you to specify global configuration options for Trace
 To use the `--config` flag, you need to provide the path to the configuration file. For example, if you have a YAML configuration file located at /path/to/tracee-config.yaml, you can load it with the following command:
 
 ```console
-sudo ./dist/tracee --config /path/to/tracee-config.yaml
-```
-
-__OR__
-
-```console
-sudo ./dist/tracee --config /path/to/tracee-config.json
+tracee --config /path/to/tracee-config.yaml
 ```
 __NOTE:__ you can find an example config file in [here](https://github.com/aquasecurity/tracee/blob/main/examples/config/global_config_cli.yaml)

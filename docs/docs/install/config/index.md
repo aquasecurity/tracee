@@ -197,9 +197,10 @@ Below are the configurable options for Tracee. You can set these directly when r
 
 
 ### Example 
-```yaml
-    policy:
-      - /path/to/policy
-    output:
-      - json 
-```
+
+  ```yaml
+  policy:
+    - /path/to/policy
+  output:
+    - json 
+  ```
