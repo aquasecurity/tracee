@@ -1,7 +1,60 @@
 # Scopes
+```yaml
+    scope: # Select the scope for tracing events
+```
 
-Scope defines the workload a policy will be observing. 
+## DESCRIPTION
 
+**scope** allows you to select the scope for tracing events by defining filters. 
+
+## FILTER EXPRESSION
+
+Filter expressions can be defined to operate on scope options or process metadata. Only events that match all filter expressions will be traced.
+
+Multiple flags are combined with AND logic, while multiple values within a single flag are combined with OR logic when using the equals operator '='. Multiple values can be specified using ','.
+
+### NUMERICAL EXPRESSION OPERATORS
+
+The following numerical fields support the operators '=', '!=', '<', '>', '<=', '>=':
+
+- uid: Select events from specific user IDs.
+- pid: Select events from specific process IDs.
+
+The following numerical fields only support the operators '=' and '!=':
+
+- mntns: Select events from specific mount namespace IDs.
+- pidns: Select events from specific process namespace IDs.
+- tree: Select events that descend from specific process IDs.
+
+NOTE: Expressions containing '<' or '\>' tokens must be escaped!
+
+### STRING EXPRESSION OPERATORS
+
+'=', '!='
+
+Available for the following string fields:
+
+- uts: Select events based on UTS (Unix Timesharing System) names.
+- comm: Select events based on process command names.
+- container: Select events from specific container IDs.
+- executable: Select events based on the executable path.
+
+
+
+### BOOLEAN OPERATOR (PREPENDED)
+
+'!'
+
+Available for the following boolean field:
+
+- container: Select events based on whether they originate from a container or not.
+
+## SPECIAL FILTERS
+
+The following special filters can be used within the scope filter expressions:
+
+- new: Select newly created containers or process IDs.
+- follow: Select events from the processes that match the criteria and their descendants.
 The supported scopes are listed below.
 
 ### global
