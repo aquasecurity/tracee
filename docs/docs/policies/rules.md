@@ -64,27 +64,28 @@ spec:
 	    event: do_sigaction
 ```
 
-## Scope filters
+## Rules filters
 
-Further refinement of the policy's scope is achievable through the application of scope filters:
+Further refinement of the policy's scope is achievable through the application of rules filters:
 
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-scope-filter
+	name: sample-rules-filter
 	annotations:
-		description: sample scope filter
+		description: sample rules filter
 spec:
 	scope:
 	    - global
-	rules:
+
+    rules:
 	    event: sched_process_exec
 	    filters:
 		- pid=1000
 ```
 
-The scope filters supported are:
+The rules filters supported are:
 
 #### p, pid, processId
 
