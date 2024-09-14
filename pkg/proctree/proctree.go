@@ -5,8 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hashicorp/golang-lru/v2/expirable"
+	lru "github.com/hashicorp/golang-lru/v2"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	traceetime "github.com/aquasecurity/tracee/pkg/time"
 )
@@ -68,19 +69,17 @@ type ProcTreeConfig struct {
 	Source               SourceType
 	ProcessCacheSize     int
 	ThreadCacheSize      int
-	ProcessCacheTTL      time.Duration
-	ThreadCacheTTL       time.Duration
 	ProcfsInitialization bool // Determine whether to scan procfs data for process tree initialization
 	ProcfsQuerying       bool // Determine whether to query procfs for missing information during runtime
 }
 
 // ProcessTree is a tree of processes and threads.
 type ProcessTree struct {
-	processes      *expirable.LRU[uint32, *Process] // hash -> process
-	threads        *expirable.LRU[uint32, *Thread]  // hash -> threads
-	procfsChan     chan int                         // channel of pids to read from procfs
-	procfsOnce     *sync.Once                       // busy loop debug message throttling
-	ctx            context.Context                  // context for the process tree
+	processes      *lru.Cache[uint32, *Process] // hash -> process
+	threads        *lru.Cache[uint32, *Thread]  // hash -> threads
+	procfsChan     chan int                     // channel of pids to read from procfs
+	procfsOnce     *sync.Once                   // busy loop debug message throttling
+	ctx            context.Context              // context for the process tree
 	procfsQuery    bool
 	timeNormalizer traceetime.TimeNormalizer
 }
@@ -91,22 +90,26 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig, timeNormalizer t
 	thrEvicted := 0
 
 	// Create caches for processes.
-	processes := expirable.NewLRU[uint32, *Process](
+	processes, err := lru.NewWithEvict[uint32, *Process](
 		config.ProcessCacheSize,
-		func(k uint32, v *Process) {
+		func(uint32, *Process) {
 			procEvited++
 		},
-		config.ProcessCacheTTL,
 	)
+	if err != nil {
+		return nil, errfmt.WrapError(err)
+	}
 
 	// Create caches for threads.
-	threads := expirable.NewLRU[uint32, *Thread](
+	threads, err := lru.NewWithEvict[uint32, *Thread](
 		config.ThreadCacheSize,
-		func(k uint32, v *Thread) {
+		func(uint32, *Thread) {
 			thrEvicted++
 		},
-		config.ThreadCacheTTL,
 	)
+	if err != nil {
+		return nil, errfmt.WrapError(err)
+	}
 
 	// Report cache stats if debug is enabled.
 	go func() {
