@@ -394,7 +394,7 @@ statfunc int save_args_to_submit_buf(event_data_t *event, args_t *args)
         type = DEC_ARG(i, event->config.param_types);
 
         // bounds check for the verifier
-        if (unlikely(type >= ARG_TYPE_MAX_ARRAY))
+        if (unlikely(type > ARG_TYPE_MAX_ARRAY))
             continue; // skip types not defined in the type_size_table
         size = type_size_table[type];
 
