@@ -1,80 +1,39 @@
 # Rules
 
-Rules are part of the Tracee Policy, which defines which events to trace. The events that are part of a specific policy are recorded in the `rules` section of the Tracee Policy. It is possible to define multiple events within each policy. The [events](../events/index.md) section provides further information on the type of events that Tracee can track.
+Rules are part of the Tracee Policy, which defines which events to trace. The events that are part of a specific policy are recorded in the `rules` section of the Tracee Policy. It is possible to define multiple events within each policy.
 
 Below are several examples on configuring events in the Tracee Policy.
 
 ## Events
 
-Every event that is specified within the `rules` section supports three types of filters: `scope`, `data` and `return value`.
+Every event that is specified within the `rules` section supports three types of filters: `process`, `data` and `return value`.
 
 ### Type of Events
+ 
+The [events](../events/index.md) section provides further information on the type of events that Tracee can track.
 
-**[A syscall](../events/builtin/syscalls/index.md)**
+__rules support:__
 
-Example Scope Section referencing the `open` syscall:
+* [Syscall events](../events/builtin/syscalls/index.md)
 
-```bash
-spec:
-	scope:
-	    - global
-	rules:
-	    event: open
-```
+* [Network events](../events/builtin/network/index.md)
 
-The name of the syscall is going to be the name of the event.
+* [Signatures events](../events/builtin/signatures/index.md)
 
-**[Network Events](../events/builtin/network/index.md)**
+* [Extra events like "bpf_attach"](../events/builtin/extra/bpf_attach.md)
 
-Network Events can be specified from the list of `Available network events`.
 
-For example:
+## Process filters
 
-```bash
-spec:
-	scope:
-	    - global
-	rules:
-	    event: net_packet_ipv4
-```
-
-**[A behavioural Signature](../events/builtin/signatures/index.md)**
-
-To specify one of the behavioral signatures as an event, use the name of the signature from the table in the documentation as the event name:
-
-```bash
-spec:
-	scope:
-	    - global
-	rules:
-	    event: anti_debugging
-```
-
-**[Any of our extra events](../events/builtin/extra/bpf_attach.md)**
-
-Any of the extra events listed in the Tracee documentation can be listed in the Tracee Policy.
-
-For instance, to specify the [do_sigaction](../events/builtin/extra/do_sigaction.md) event, provide the name in the YAML manifest:
-
-```bash
-spec:
-	scope:
-	    - global
-	rules:
-	    event: do_sigaction
-```
-
-## Rules filters
-
-Further refinement of the policy's scope is achievable through the application of rules filters:
+Further refinement of the policy's scope is achievable through the application of process filters:
 
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-rules-filter
+	name: sample-process-filter
 	annotations:
-		description: sample rules filter
+		description: sample process filter
 spec:
 	scope:
 	    - global
@@ -85,7 +44,7 @@ spec:
 		- pid=1000
 ```
 
-The rules filters supported are:
+There are many process filters that are supported. This section includes detailed description of the common process filters options
 
 #### p, pid, processId
 
@@ -127,36 +86,12 @@ filters:
     - hostPid=1000
 ```
 
-#### hostParentProcessId
-
-```yaml
-event: sched_process_exec
-filters:
-    - hostParentProcessId=1
-```
-
 #### uid, userId
 
 ```yaml
 event: sched_process_exec
 filters:
     - uid=0
-```
-
-#### mntns, mountNamespace
-
-```yaml
-event: sched_process_exec
-filters:
-    - mntns=4026531840
-```
-
-#### pidns, pidNamespace
-
-```yaml
-event: sched_process_exec
-filters:
-    - pidns=4026531836
 ```
 
 #### comm, processName
@@ -242,7 +177,9 @@ filters:
         
 ## Data filter
 
-Events contain data that can be filtered.
+Every event contain data that can be filtered.
+ 
+For example:
 
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
