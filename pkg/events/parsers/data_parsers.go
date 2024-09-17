@@ -13,9 +13,25 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
-type SystemFunctionArgument interface {
+// Deprecated: use concrete SystemFunctionArgument type instead
+// TODO: remove this interface after all consumers are updated
+type systemFunctionArgument interface {
 	fmt.Stringer
 	Value() uint64
+}
+
+var _ = systemFunctionArgument(SystemFunctionArgument{})
+
+type SystemFunctionArgument struct {
+	rawValue    uint64
+	stringValue string
+}
+
+func (a SystemFunctionArgument) Value() uint64 {
+	return a.rawValue
+}
+func (a SystemFunctionArgument) String() string {
+	return a.stringValue
 }
 
 // optionsAreContainedInArgument checks whether the argument (rawArgument)
