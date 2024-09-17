@@ -84,8 +84,8 @@ func ParseArgs(event *trace.Event) error {
 		}
 	case Prctl:
 		if optArg := GetArg(event, "option"); optArg != nil {
-			if opt, isInt32 := optArg.Value.(int32); isInt32 {
-				parsePrctlOption(optArg, uint64(opt))
+			if option, isInt32 := optArg.Value.(int32); isInt32 {
+				parsePrctlOption(optArg, uint64(option))
 			}
 		}
 	case Socketcall:
