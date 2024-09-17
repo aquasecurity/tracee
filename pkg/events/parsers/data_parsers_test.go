@@ -235,6 +235,64 @@ func TestParseOpenFlagArgument(t *testing.T) {
 	}
 }
 
+func TestParseAccessMode(t *testing.T) {
+	tests := []struct {
+		name           string
+		rawArgument    uint64
+		expectedString string
+		expectedErr    bool
+	}{
+		{
+			name:           "Test F_OK",
+			rawArgument:    F_OK.Value(),
+			expectedString: F_OK.String(),
+		},
+		{
+			name:           "Test X_OK",
+			rawArgument:    X_OK.Value(),
+			expectedString: X_OK.String(),
+		},
+		{
+			name:           "Test W_OK",
+			rawArgument:    W_OK.Value(),
+			expectedString: W_OK.String(),
+		},
+		{
+			name:           "Test R_OK",
+			rawArgument:    R_OK.Value(),
+			expectedString: R_OK.String(),
+		},
+		{
+			name:           "Test W_OK | R_OK",
+			rawArgument:    W_OK.Value() | R_OK.Value(),
+			expectedString: W_OK.String() + "|" + R_OK.String(),
+		},
+		{
+			name:           "Test X_OK | W_OK | R_OK",
+			rawArgument:    X_OK.Value() | W_OK.Value() | R_OK.Value(),
+			expectedString: X_OK.String() + "|" + W_OK.String() + "|" + R_OK.String(),
+		},
+		{
+			name:           "Test Invalid",
+			rawArgument:    0xff000000,
+			expectedString: "",
+			expectedErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opt, err := ParseAccessMode(tt.rawArgument)
+			if tt.expectedErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedString, opt)
+		})
+	}
+}
+
 
 func TestParseSetSocketOption(t *testing.T) {
 	testCases := []struct {

@@ -248,32 +248,37 @@ func ParseOpenFlagArgument(flags uint64) (string, error) {
 	return sb.String(), nil
 }
 
-// ParseAccessMode parses the mode from the `access` system call
+var (
+	// from this file
+	F_OK = SystemFunctionArgument{rawValue: C.F_OK, stringValue: "F_OK"}
+	X_OK = SystemFunctionArgument{rawValue: C.X_OK, stringValue: "X_OK"}
+	W_OK = SystemFunctionArgument{rawValue: C.W_OK, stringValue: "W_OK"}
+	R_OK = SystemFunctionArgument{rawValue: C.R_OK, stringValue: "R_OK"}
+)
+
+var accessModeValues = []SystemFunctionArgument{
+	// F_OK, // special case checked before the loop in ParseAccessMode
+	X_OK,
+	W_OK,
+	R_OK,
+}
+
+// ParseAccessMode parses the mode from the `access` system call.
 // http://man7.org/linux/man-pages/man2/access.2.html
-func ParseAccessMode(rawValue uint64) (AccessModeArgument, error) {
-	if rawValue == 0 {
-		return AccessModeArgument{}, nil
-	}
-	var f []string
-	if rawValue == 0x0 {
-		f = append(f, F_OK.String())
-	} else {
-		if optionIsContainedInArgument(rawValue, R_OK.Value()) {
-			f = append(f, R_OK.String())
-		}
-		if optionIsContainedInArgument(rawValue, W_OK.Value()) {
-			f = append(f, W_OK.String())
-		}
-		if optionIsContainedInArgument(rawValue, X_OK.Value()) {
-			f = append(f, X_OK.String())
-		}
+func ParseAccessMode(mode uint64) (string, error) {
+	if mode == 0 {
+		return F_OK.String(), nil
 	}
 
-	if len(f) == 0 {
-		return AccessModeArgument{}, fmt.Errorf("no valid access mode values present in raw value: 0x%x", rawValue)
+	var sb strings.Builder
+
+	buildStringFromValues(&sb, accessModeValues, mode)
+
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid access mode values present in mode value: 0x%x", mode)
 	}
 
-	return AccessModeArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}, nil
+	return sb.String(), nil
 }
 
 type ExecFlagArgument struct {
