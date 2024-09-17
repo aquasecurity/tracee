@@ -264,69 +264,85 @@ func ParseAccessMode(mode uint64) (string, error) {
 	return sb.String(), nil
 }
 
-type ExecFlagArgument struct {
-	rawValue    uint64
-	stringValue string
-}
-
-// revive:disable
-
 var (
-	AT_SYMLINK_NOFOLLOW   ExecFlagArgument = ExecFlagArgument{stringValue: "AT_SYMLINK_NOFOLLOW", rawValue: 0x100}
-	AT_EACCESS            ExecFlagArgument = ExecFlagArgument{stringValue: "AT_EACCESS", rawValue: 0x200}
-	AT_REMOVEDIR          ExecFlagArgument = ExecFlagArgument{stringValue: "AT_REMOVEDIR", rawValue: 0x200}
-	AT_SYMLINK_FOLLOW     ExecFlagArgument = ExecFlagArgument{stringValue: "AT_SYMLINK_FOLLOW", rawValue: 0x400}
-	AT_NO_AUTOMOUNT       ExecFlagArgument = ExecFlagArgument{stringValue: "AT_NO_AUTOMOUNT", rawValue: 0x800}
-	AT_EMPTY_PATH         ExecFlagArgument = ExecFlagArgument{stringValue: "AT_EMPTY_PATH", rawValue: 0x1000}
-	AT_STATX_SYNC_TYPE    ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_SYNC_TYPE", rawValue: 0x6000}
-	AT_STATX_SYNC_AS_STAT ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_SYNC_AS_STAT", rawValue: 0x0000}
-	AT_STATX_FORCE_SYNC   ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_FORCE_SYNC", rawValue: 0x2000}
-	AT_STATX_DONT_SYNC    ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_DONT_SYNC", rawValue: 0x4000}
-	AT_RECURSIVE          ExecFlagArgument = ExecFlagArgument{stringValue: "AT_RECURSIVE", rawValue: 0x8000}
+	// from linux/fcntl.h
+	AT_SYMLINK_NOFOLLOW   = SystemFunctionArgument{rawValue: 0x100, stringValue: "AT_SYMLINK_NOFOLLOW"}
+	AT_EACCESS            = SystemFunctionArgument{rawValue: 0x200, stringValue: "AT_EACCESS"}
+	AT_REMOVEDIR          = SystemFunctionArgument{rawValue: 0x200, stringValue: "AT_REMOVEDIR"}
+	AT_SYMLINK_FOLLOW     = SystemFunctionArgument{rawValue: 0x400, stringValue: "AT_SYMLINK_FOLLOW"}
+	AT_NO_AUTOMOUNT       = SystemFunctionArgument{rawValue: 0x800, stringValue: "AT_NO_AUTOMOUNT"}
+	AT_EMPTY_PATH         = SystemFunctionArgument{rawValue: 0x1000, stringValue: "AT_EMPTY_PATH"}
+	AT_STATX_SYNC_TYPE    = SystemFunctionArgument{rawValue: 0x6000, stringValue: "AT_STATX_SYNC_TYPE"}
+	AT_STATX_SYNC_AS_STAT = SystemFunctionArgument{rawValue: 0x0000, stringValue: "AT_STATX_SYNC_AS_STAT"}
+	AT_STATX_FORCE_SYNC   = SystemFunctionArgument{rawValue: 0x2000, stringValue: "AT_STATX_FORCE_SYNC"}
+	AT_STATX_DONT_SYNC    = SystemFunctionArgument{rawValue: 0x4000, stringValue: "AT_STATX_DONT_SYNC"}
+	AT_RECURSIVE          = SystemFunctionArgument{rawValue: 0x8000, stringValue: "AT_RECURSIVE"}
 )
 
-// revive:enable
+var faccessatFlagsValues = []SystemFunctionArgument{
+	AT_EACCESS,
+	AT_EMPTY_PATH,
+	AT_SYMLINK_NOFOLLOW,
+}
 
-func (e ExecFlagArgument) Value() uint64  { return e.rawValue }
-func (e ExecFlagArgument) String() string { return e.stringValue }
-
-func ParseExecFlag(rawValue uint64) (ExecFlagArgument, error) {
-	if rawValue == 0 {
-		return ExecFlagArgument{}, nil
+// ParseFaccessatFlag parses the `flags` bitmask argument of the `faccessat` syscall.
+func ParseFaccessatFlag(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
 	}
 
-	var f []string
-	if optionIsContainedInArgument(rawValue, AT_EMPTY_PATH.Value()) {
-		f = append(f, AT_EMPTY_PATH.String())
+	var sb strings.Builder
+
+	buildStringFromValues(&sb, faccessatFlagsValues, flags)
+
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid faccessat flag values present in flags value: 0x%x", flags)
 	}
-	if optionIsContainedInArgument(rawValue, AT_SYMLINK_NOFOLLOW.Value()) {
-		f = append(f, AT_SYMLINK_NOFOLLOW.String())
+
+	return sb.String(), nil
+}
+
+var fchmodatFlagsValues = []SystemFunctionArgument{
+	AT_SYMLINK_NOFOLLOW,
+}
+
+func ParseFchmodatFlag(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
 	}
-	if optionIsContainedInArgument(rawValue, AT_EACCESS.Value()) {
-		f = append(f, AT_EACCESS.String())
+
+	var sb strings.Builder
+
+	buildStringFromValues(&sb, fchmodatFlagsValues, flags)
+
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid fchmodat flag values present in flags value: 0x%x", flags)
 	}
-	if optionIsContainedInArgument(rawValue, AT_REMOVEDIR.Value()) {
-		f = append(f, AT_REMOVEDIR.String())
+
+	return sb.String(), nil
+}
+
+var execveAtFlagsValues = []SystemFunctionArgument{
+	AT_SYMLINK_NOFOLLOW,
+	AT_EMPTY_PATH,
+}
+
+// ParseExecveatFlag parses the `flags` bitmask argument of the `execveat` syscall.
+// http://man7.org/linux/man-pages/man2/execveat.2.html
+func ParseExecveatFlag(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
 	}
-	if optionIsContainedInArgument(rawValue, AT_NO_AUTOMOUNT.Value()) {
-		f = append(f, AT_NO_AUTOMOUNT.String())
+
+	var sb strings.Builder
+
+	buildStringFromValues(&sb, execveAtFlagsValues, flags)
+
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid execveat flag values present in flags value: 0x%x", flags)
 	}
-	if optionIsContainedInArgument(rawValue, AT_STATX_SYNC_TYPE.Value()) {
-		f = append(f, AT_STATX_SYNC_TYPE.String())
-	}
-	if optionIsContainedInArgument(rawValue, AT_STATX_FORCE_SYNC.Value()) {
-		f = append(f, AT_STATX_FORCE_SYNC.String())
-	}
-	if optionIsContainedInArgument(rawValue, AT_STATX_DONT_SYNC.Value()) {
-		f = append(f, AT_STATX_DONT_SYNC.String())
-	}
-	if optionIsContainedInArgument(rawValue, AT_RECURSIVE.Value()) {
-		f = append(f, AT_RECURSIVE.String())
-	}
-	if len(f) == 0 {
-		return ExecFlagArgument{}, fmt.Errorf("no valid exec flag values present in raw value: 0x%x", rawValue)
-	}
-	return ExecFlagArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}, nil
+
+	return sb.String(), nil
 }
 
 type CapabilityFlagArgument uint64
@@ -3212,7 +3228,7 @@ const gupFlagsChangeVersion = "6.3.0"
 
 // ParseGUPFlagsCurrentOS parse the GUP flags received according to current machine OS version.
 // It uses optimizations to perform better than ParseGUPFlagsForOS
-func ParseGUPFlagsCurrentOS(rawValue uint64) (SystemFunctionArgument, error) {
+func ParseGUPFlagsCurrentOS(rawValue uint64) (systemFunctionArgument, error) {
 	const (
 		newVersionsParsing = iota
 		legacyParsing
@@ -3251,7 +3267,7 @@ func ParseGUPFlagsCurrentOS(rawValue uint64) (SystemFunctionArgument, error) {
 }
 
 // ParseGUPFlagsForOS parse the GUP flags received according to given OS version.
-func ParseGUPFlagsForOS(osInfo *environment.OSInfo, rawValue uint64) (SystemFunctionArgument, error) {
+func ParseGUPFlagsForOS(osInfo *environment.OSInfo, rawValue uint64) (systemFunctionArgument, error) {
 	compare, err := osInfo.CompareOSBaseKernelRelease(gupFlagsChangeVersion)
 	if err != nil {
 		return nil, fmt.Errorf(
