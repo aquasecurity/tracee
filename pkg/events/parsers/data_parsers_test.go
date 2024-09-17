@@ -293,6 +293,48 @@ func TestParseAccessMode(t *testing.T) {
 	}
 }
 
+func TestParseExecveatFlag(t *testing.T) {
+	tests := []struct {
+		name           string
+		rawArgument    uint64
+		expectedString string
+		expectedErr    bool
+	}{
+		{
+			name:           "Test AT_SYMLINK_NOFOLLOW",
+			rawArgument:    AT_SYMLINK_NOFOLLOW.Value(),
+			expectedString: AT_SYMLINK_NOFOLLOW.String(),
+		},
+		{
+			name:           "Test AT_EMPTY_PATH",
+			rawArgument:    AT_EMPTY_PATH.Value(),
+			expectedString: AT_EMPTY_PATH.String(),
+		},
+		{
+			name:           "Test AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH",
+			rawArgument:    AT_SYMLINK_NOFOLLOW.Value() | AT_EMPTY_PATH.Value(),
+			expectedString: AT_SYMLINK_NOFOLLOW.String() + "|" + AT_EMPTY_PATH.String(),
+		},
+		{
+			name:           "Test Invalid",
+			rawArgument:    0xff000000,
+			expectedString: "",
+			expectedErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opt, err := ParseExecveatFlag(tt.rawArgument)
+			if tt.expectedErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedString, opt)
+		})
+	}
+}
 
 func TestParseSetSocketOption(t *testing.T) {
 	testCases := []struct {

@@ -126,14 +126,34 @@ func parseAccessMode(arg *trace.Argument, mode uint64) {
 	arg.Value = accessModeArgument
 }
 
-func parseExecFlag(arg *trace.Argument, flags uint64) {
+func parseFaccessatFlag(arg *trace.Argument, flags uint64) {
 	arg.Type = "string"
-	execFlagArgument, err := parsers.ParseExecFlag(flags)
+	faccessatFlagArgument, err := parsers.ParseFaccessatFlag(flags)
 	if err != nil {
 		arg.Value = strconv.FormatUint(flags, 10)
 		return
 	}
-	arg.Value = execFlagArgument.String()
+	arg.Value = faccessatFlagArgument
+}
+
+func parseFchmodatFlag(arg *trace.Argument, flags uint64) {
+	arg.Type = "string"
+	fchmodatFlagArgument, err := parsers.ParseFchmodatFlag(flags)
+	if err != nil {
+		arg.Value = strconv.FormatUint(flags, 10)
+		return
+	}
+	arg.Value = fchmodatFlagArgument
+}
+
+func parseExecveatFlag(arg *trace.Argument, flags uint64) {
+	arg.Type = "string"
+	execFlagArgument, err := parsers.ParseExecveatFlag(flags)
+	if err != nil {
+		arg.Value = strconv.FormatUint(flags, 10)
+		return
+	}
+	arg.Value = execFlagArgument
 }
 
 func parseOpenFlagArgument(arg *trace.Argument, flags uint64) {
