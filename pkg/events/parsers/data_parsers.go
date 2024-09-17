@@ -345,152 +345,110 @@ func ParseExecveatFlag(flags uint64) (string, error) {
 	return sb.String(), nil
 }
 
-type CapabilityFlagArgument uint64
-
-const (
-	CAP_CHOWN CapabilityFlagArgument = iota
-	CAP_DAC_OVERRIDE
-	CAP_DAC_READ_SEARCH
-	CAP_FOWNER
-	CAP_FSETID
-	CAP_KILL
-	CAP_SETGID
-	CAP_SETUID
-	CAP_SETPCAP
-	CAP_LINUX_IMMUTABLE
-	CAP_NET_BIND_SERVICE
-	CAP_NET_BROADCAST
-	CAP_NET_ADMIN
-	CAP_NET_RAW
-	CAP_IPC_LOCK
-	CAP_IPC_OWNER
-	CAP_SYS_MODULE
-	CAP_SYS_RAWIO
-	CAP_SYS_CHROOT
-	CAP_SYS_PTRACE
-	CAP_SYS_PACCT
-	CAP_SYS_ADMIN
-	CAP_SYS_BOOT
-	CAP_SYS_NICE
-	CAP_SYS_RESOURCE
-	CAP_SYS_TIME
-	CAP_SYS_TTY_CONFIG
-	CAP_MKNOD
-	CAP_LEASE
-	CAP_AUDIT_WRITE
-	CAP_AUDIT_CONTROL
-	CAP_SETFCAP
-	CAP_MAC_OVERRIDE
-	CAP_MAC_ADMIN
-	CAP_SYSLOG
-	CAP_WAKE_ALARM
-	CAP_BLOCK_SUSPEND
-	CAP_AUDIT_READ
+var (
+	// from linux/capability.h
+	// sequential values starting from 0
+	CAP_CHOWN              = SystemFunctionArgument{rawValue: 0, stringValue: "CAP_CHOWN"}
+	CAP_DAC_OVERRIDE       = SystemFunctionArgument{rawValue: 1, stringValue: "CAP_DAC_OVERRIDE"}
+	CAP_DAC_READ_SEARCH    = SystemFunctionArgument{rawValue: 2, stringValue: "CAP_DAC_READ_SEARCH"}
+	CAP_FOWNER             = SystemFunctionArgument{rawValue: 3, stringValue: "CAP_FOWNER"}
+	CAP_FSETID             = SystemFunctionArgument{rawValue: 4, stringValue: "CAP_FSETID"}
+	CAP_KILL               = SystemFunctionArgument{rawValue: 5, stringValue: "CAP_KILL"}
+	CAP_SETGID             = SystemFunctionArgument{rawValue: 6, stringValue: "CAP_SETGID"}
+	CAP_SETUID             = SystemFunctionArgument{rawValue: 7, stringValue: "CAP_SETUID"}
+	CAP_SETPCAP            = SystemFunctionArgument{rawValue: 8, stringValue: "CAP_SETPCAP"}
+	CAP_LINUX_IMMUTABLE    = SystemFunctionArgument{rawValue: 9, stringValue: "CAP_LINUX_IMMUTABLE"}
+	CAP_NET_BIND_SERVICE   = SystemFunctionArgument{rawValue: 10, stringValue: "CAP_NET_BIND_SERVICE"}
+	CAP_NET_BROADCAST      = SystemFunctionArgument{rawValue: 11, stringValue: "CAP_NET_BROADCAST"}
+	CAP_NET_ADMIN          = SystemFunctionArgument{rawValue: 12, stringValue: "CAP_NET_ADMIN"}
+	CAP_NET_RAW            = SystemFunctionArgument{rawValue: 13, stringValue: "CAP_NET_RAW"}
+	CAP_IPC_LOCK           = SystemFunctionArgument{rawValue: 14, stringValue: "CAP_IPC_LOCK"}
+	CAP_IPC_OWNER          = SystemFunctionArgument{rawValue: 15, stringValue: "CAP_IPC_OWNER"}
+	CAP_SYS_MODULE         = SystemFunctionArgument{rawValue: 16, stringValue: "CAP_SYS_MODULE"}
+	CAP_SYS_RAWIO          = SystemFunctionArgument{rawValue: 17, stringValue: "CAP_SYS_RAWIO"}
+	CAP_SYS_CHROOT         = SystemFunctionArgument{rawValue: 18, stringValue: "CAP_SYS_CHROOT"}
+	CAP_SYS_PTRACE         = SystemFunctionArgument{rawValue: 19, stringValue: "CAP_SYS_PTRACE"}
+	CAP_SYS_PACCT          = SystemFunctionArgument{rawValue: 20, stringValue: "CAP_SYS_PACCT"}
+	CAP_SYS_ADMIN          = SystemFunctionArgument{rawValue: 21, stringValue: "CAP_SYS_ADMIN"}
+	CAP_SYS_BOOT           = SystemFunctionArgument{rawValue: 22, stringValue: "CAP_SYS_BOOT"}
+	CAP_SYS_NICE           = SystemFunctionArgument{rawValue: 23, stringValue: "CAP_SYS_NICE"}
+	CAP_SYS_RESOURCE       = SystemFunctionArgument{rawValue: 24, stringValue: "CAP_SYS_RESOURCE"}
+	CAP_SYS_TIME           = SystemFunctionArgument{rawValue: 25, stringValue: "CAP_SYS_TIME"}
+	CAP_SYS_TTY_CONFIG     = SystemFunctionArgument{rawValue: 26, stringValue: "CAP_SYS_TTY_CONFIG"}
+	CAP_MKNOD              = SystemFunctionArgument{rawValue: 27, stringValue: "CAP_MKNOD"}
+	CAP_LEASE              = SystemFunctionArgument{rawValue: 28, stringValue: "CAP_LEASE"}
+	CAP_AUDIT_WRITE        = SystemFunctionArgument{rawValue: 29, stringValue: "CAP_AUDIT_WRITE"}
+	CAP_AUDIT_CONTROL      = SystemFunctionArgument{rawValue: 30, stringValue: "CAP_AUDIT_CONTROL"}
+	CAP_SETFCAP            = SystemFunctionArgument{rawValue: 31, stringValue: "CAP_SETFCAP"}
+	CAP_MAC_OVERRIDE       = SystemFunctionArgument{rawValue: 32, stringValue: "CAP_MAC_OVERRIDE"}
+	CAP_MAC_ADMIN          = SystemFunctionArgument{rawValue: 33, stringValue: "CAP_MAC_ADMIN"}
+	CAP_SYSLOG             = SystemFunctionArgument{rawValue: 34, stringValue: "CAP_SYSLOG"}
+	CAP_WAKE_ALARM         = SystemFunctionArgument{rawValue: 35, stringValue: "CAP_WAKE_ALARM"}
+	CAP_BLOCK_SUSPEND      = SystemFunctionArgument{rawValue: 36, stringValue: "CAP_BLOCK_SUSPEND"}
+	CAP_AUDIT_READ         = SystemFunctionArgument{rawValue: 37, stringValue: "CAP_AUDIT_READ"}
+	CAP_PERFMON            = SystemFunctionArgument{rawValue: 38, stringValue: "CAP_PERFMON"}
+	CAP_BPF                = SystemFunctionArgument{rawValue: 39, stringValue: "CAP_BPF"}
+	CAP_CHECKPOINT_RESTORE = SystemFunctionArgument{rawValue: 40, stringValue: "CAP_CHECKPOINT_RESTORE"}
 )
 
-func (c CapabilityFlagArgument) Value() uint64 { return uint64(c) }
-
-var capFlagStringMap = map[CapabilityFlagArgument]string{
-	CAP_CHOWN:            "CAP_CHOWN",
-	CAP_DAC_OVERRIDE:     "CAP_DAC_OVERRIDE",
-	CAP_DAC_READ_SEARCH:  "CAP_DAC_READ_SEARCH",
-	CAP_FOWNER:           "CAP_FOWNER",
-	CAP_FSETID:           "CAP_FSETID",
-	CAP_KILL:             "CAP_KILL",
-	CAP_SETGID:           "CAP_SETGID",
-	CAP_SETUID:           "CAP_SETUID",
-	CAP_SETPCAP:          "CAP_SETPCAP",
-	CAP_LINUX_IMMUTABLE:  "CAP_LINUX_IMMUTABLE",
-	CAP_NET_BIND_SERVICE: "CAP_NET_BIND_SERVICE",
-	CAP_NET_BROADCAST:    "CAP_NET_BROADCAST",
-	CAP_NET_ADMIN:        "CAP_NET_ADMIN",
-	CAP_NET_RAW:          "CAP_NET_RAW",
-	CAP_IPC_LOCK:         "CAP_IPC_LOCK",
-	CAP_IPC_OWNER:        "CAP_IPC_OWNER",
-	CAP_SYS_MODULE:       "CAP_SYS_MODULE",
-	CAP_SYS_RAWIO:        "CAP_SYS_RAWIO",
-	CAP_SYS_CHROOT:       "CAP_SYS_CHROOT",
-	CAP_SYS_PTRACE:       "CAP_SYS_PTRACE",
-	CAP_SYS_PACCT:        "CAP_SYS_PACCT",
-	CAP_SYS_ADMIN:        "CAP_SYS_ADMIN",
-	CAP_SYS_BOOT:         "CAP_SYS_BOOT",
-	CAP_SYS_NICE:         "CAP_SYS_NICE",
-	CAP_SYS_RESOURCE:     "CAP_SYS_RESOURCE",
-	CAP_SYS_TIME:         "CAP_SYS_TIME",
-	CAP_SYS_TTY_CONFIG:   "CAP_SYS_TTY_CONFIG",
-	CAP_MKNOD:            "CAP_MKNOD",
-	CAP_LEASE:            "CAP_LEASE",
-	CAP_AUDIT_WRITE:      "CAP_AUDIT_WRITE",
-	CAP_AUDIT_CONTROL:    "CAP_AUDIT_CONTROL",
-	CAP_SETFCAP:          "CAP_SETFCAP",
-	CAP_MAC_OVERRIDE:     "CAP_MAC_OVERRIDE",
-	CAP_MAC_ADMIN:        "CAP_MAC_ADMIN",
-	CAP_SYSLOG:           "CAP_SYSLOG",
-	CAP_WAKE_ALARM:       "CAP_WAKE_ALARM",
-	CAP_BLOCK_SUSPEND:    "CAP_BLOCK_SUSPEND",
-	CAP_AUDIT_READ:       "CAP_AUDIT_READ",
+var capabilityValues = []SystemFunctionArgument{
+	CAP_CHOWN,
+	CAP_DAC_OVERRIDE,
+	CAP_DAC_READ_SEARCH,
+	CAP_FOWNER,
+	CAP_FSETID,
+	CAP_KILL,
+	CAP_SETGID,
+	CAP_SETUID,
+	CAP_SETPCAP,
+	CAP_LINUX_IMMUTABLE,
+	CAP_NET_BIND_SERVICE,
+	CAP_NET_BROADCAST,
+	CAP_NET_ADMIN,
+	CAP_NET_RAW,
+	CAP_IPC_LOCK,
+	CAP_IPC_OWNER,
+	CAP_SYS_MODULE,
+	CAP_SYS_RAWIO,
+	CAP_SYS_CHROOT,
+	CAP_SYS_PTRACE,
+	CAP_SYS_PACCT,
+	CAP_SYS_ADMIN,
+	CAP_SYS_BOOT,
+	CAP_SYS_NICE,
+	CAP_SYS_RESOURCE,
+	CAP_SYS_TIME,
+	CAP_SYS_TTY_CONFIG,
+	CAP_MKNOD,
+	CAP_LEASE,
+	CAP_AUDIT_WRITE,
+	CAP_AUDIT_CONTROL,
+	CAP_SETFCAP,
+	CAP_MAC_OVERRIDE,
+	CAP_MAC_ADMIN,
+	CAP_SYSLOG,
+	CAP_WAKE_ALARM,
+	CAP_BLOCK_SUSPEND,
+	CAP_AUDIT_READ,
+	CAP_PERFMON,
+	CAP_BPF,
+	CAP_CHECKPOINT_RESTORE,
 }
 
-func (c CapabilityFlagArgument) String() string {
-	var res string
-
-	if capName, ok := capFlagStringMap[c]; ok {
-		res = capName
-	} else {
-		res = strconv.Itoa(int(c))
-	}
-	return res
-}
-
-var capabilitiesMap = map[uint64]CapabilityFlagArgument{
-	CAP_CHOWN.Value():            CAP_CHOWN,
-	CAP_DAC_OVERRIDE.Value():     CAP_DAC_OVERRIDE,
-	CAP_DAC_READ_SEARCH.Value():  CAP_DAC_READ_SEARCH,
-	CAP_FOWNER.Value():           CAP_FOWNER,
-	CAP_FSETID.Value():           CAP_FSETID,
-	CAP_KILL.Value():             CAP_KILL,
-	CAP_SETGID.Value():           CAP_SETGID,
-	CAP_SETUID.Value():           CAP_SETUID,
-	CAP_SETPCAP.Value():          CAP_SETPCAP,
-	CAP_LINUX_IMMUTABLE.Value():  CAP_LINUX_IMMUTABLE,
-	CAP_NET_BIND_SERVICE.Value(): CAP_NET_BIND_SERVICE,
-	CAP_NET_BROADCAST.Value():    CAP_NET_BROADCAST,
-	CAP_NET_ADMIN.Value():        CAP_NET_ADMIN,
-	CAP_NET_RAW.Value():          CAP_NET_RAW,
-	CAP_IPC_LOCK.Value():         CAP_IPC_LOCK,
-	CAP_IPC_OWNER.Value():        CAP_IPC_OWNER,
-	CAP_SYS_MODULE.Value():       CAP_SYS_MODULE,
-	CAP_SYS_RAWIO.Value():        CAP_SYS_RAWIO,
-	CAP_SYS_CHROOT.Value():       CAP_SYS_CHROOT,
-	CAP_SYS_PTRACE.Value():       CAP_SYS_PTRACE,
-	CAP_SYS_PACCT.Value():        CAP_SYS_PACCT,
-	CAP_SYS_ADMIN.Value():        CAP_SYS_ADMIN,
-	CAP_SYS_BOOT.Value():         CAP_SYS_BOOT,
-	CAP_SYS_NICE.Value():         CAP_SYS_NICE,
-	CAP_SYS_RESOURCE.Value():     CAP_SYS_RESOURCE,
-	CAP_SYS_TIME.Value():         CAP_SYS_TIME,
-	CAP_SYS_TTY_CONFIG.Value():   CAP_SYS_TTY_CONFIG,
-	CAP_MKNOD.Value():            CAP_MKNOD,
-	CAP_LEASE.Value():            CAP_LEASE,
-	CAP_AUDIT_WRITE.Value():      CAP_AUDIT_WRITE,
-	CAP_AUDIT_CONTROL.Value():    CAP_AUDIT_CONTROL,
-	CAP_SETFCAP.Value():          CAP_SETFCAP,
-	CAP_MAC_OVERRIDE.Value():     CAP_MAC_OVERRIDE,
-	CAP_MAC_ADMIN.Value():        CAP_MAC_ADMIN,
-	CAP_SYSLOG.Value():           CAP_SYSLOG,
-	CAP_WAKE_ALARM.Value():       CAP_WAKE_ALARM,
-	CAP_BLOCK_SUSPEND.Value():    CAP_BLOCK_SUSPEND,
-	CAP_AUDIT_READ.Value():       CAP_AUDIT_READ,
-}
+var (
+	CAP_FIRST_CAP = CAP_CHOWN.Value()
+	CAP_LAST_CAP  = CAP_CHECKPOINT_RESTORE.Value()
+)
 
 // ParseCapability parses the `capability` bitmask argument of the
 // `cap_capable` function
-func ParseCapability(rawValue uint64) (CapabilityFlagArgument, error) {
-	v, ok := capabilitiesMap[rawValue]
-	if !ok {
-		return 0, fmt.Errorf("not a valid capability value: %d", rawValue)
+func ParseCapability(cap uint64) (string, error) {
+	if cap > CAP_LAST_CAP {
+		return "", fmt.Errorf("not a valid capability value: %d", cap)
 	}
-	return v, nil
+
+	idx := int(cap - CAP_FIRST_CAP)
+	return capabilityValues[idx].String(), nil
 }
 
 type PrctlOptionArgument uint64
