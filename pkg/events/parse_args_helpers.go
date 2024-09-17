@@ -180,7 +180,7 @@ func parseBPFCmd(arg *trace.Argument, cmd uint64) {
 		arg.Value = ""
 		return
 	}
-	arg.Value = bpfCommandArgument.String()
+	arg.Value = bpfCommandArgument
 }
 
 func parseSocketLevel(arg *trace.Argument, level uint64) {
