@@ -140,7 +140,7 @@ func parseOpenFlagArgument(arg *trace.Argument, flags uint64) {
 		arg.Value = ""
 		return
 	}
-	arg.Value = openFlagArgument.String()
+	arg.Value = openFlagArgument
 }
 
 func parseCloneFlags(arg *trace.Argument, flags uint64) {

@@ -178,6 +178,64 @@ func TestParseCloneFlags(t *testing.T) {
 	}
 }
 
+func TestParseOpenFlagArgument(t *testing.T) {
+	tests := []struct {
+		name           string
+		rawArgument    uint64
+		expectedString string
+		expectedErr    bool
+	}{
+		{
+			name:           "Test O_RDONLY",
+			rawArgument:    0,
+			expectedString: O_RDONLY.String(),
+		},
+		{
+			name:           "Test O_WRONLY",
+			rawArgument:    O_WRONLY.Value(),
+			expectedString: O_WRONLY.String(),
+		},
+		{
+			name:           "Test O_RDWR",
+			rawArgument:    O_RDWR.Value(),
+			expectedString: O_RDWR.String(),
+		},
+		{
+			name:           "Test O_CREAT",
+			rawArgument:    O_CREAT.Value(),
+			expectedString: O_RDONLY.String() + "|" + O_CREAT.String(),
+		},
+		{
+			name:           "Test O_RDWR | O_CREAT",
+			rawArgument:    O_RDWR.Value() | O_CREAT.Value(),
+			expectedString: O_RDWR.String() + "|" + O_CREAT.String(),
+		},
+		{
+			name:           "Test O_WRONLY | O_CREAT | O_EXCL",
+			rawArgument:    O_WRONLY.Value() | O_CREAT.Value() | O_EXCL.Value(),
+			expectedString: O_WRONLY.String() + "|" + O_CREAT.String() + "|" + O_EXCL.String(),
+		},
+		{
+			name:           "Test O_RDWR | O_CREAT | O_DSYNC | O_LARGEFILE",
+			rawArgument:    O_RDWR.Value() | O_CREAT.Value() | O_DSYNC.Value() | O_LARGEFILE.Value(),
+			expectedString: O_RDWR.String() + "|" + O_CREAT.String() + "|" + O_DSYNC.String() + "|" + O_LARGEFILE.String(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opt, err := ParseOpenFlagArgument(tt.rawArgument)
+			if tt.expectedErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedString, opt)
+		})
+	}
+}
+
+
 func TestParseSetSocketOption(t *testing.T) {
 	testCases := []struct {
 		name          string
