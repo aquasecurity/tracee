@@ -145,6 +145,7 @@ func ParseArgs(event *trace.Event) error {
 				parseOpenFlagArgument(flagsArg, uint64(flags))
 			}
 		}
+	// TODO: mode arg parsing for Open and Openat
 	case Mknod, Mknodat, SecurityInodeMknod, Chmod, Fchmod, Fchmodat, ChmodCommon:
 		if modeArg := GetArg(event, "mode"); modeArg != nil {
 			if mode, isUint16 := modeArg.Value.(uint16); isUint16 {
