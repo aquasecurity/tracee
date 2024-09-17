@@ -46,9 +46,6 @@ func (pt *ProcessTree) FeedFromProcFSAsync(givenPid int) {
 		pt.procfsChan = make(chan int, 1000)
 		pt.feedFromProcFSLoop()
 	}
-	if pt.procfsOnce == nil {
-		pt.procfsOnce = new(sync.Once)
-	}
 
 	// feed the loop without blocking (if the loop is busy, given pid won't be processed)
 	select {
