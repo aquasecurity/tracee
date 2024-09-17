@@ -13,6 +13,28 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
+// Prefer using the constants from C include files when possible,
+// since unix/syscall constants are not always set to the same values.
+// For example, `O_LARGEFILE` is defined as 0x8000 (00100000) in C include,
+// but as 0x0 in unix package.
+
+/*
+#include <linux/bpf.h>
+#include <linux/capability.h>
+#include <linux/fcntl.h>
+#include <linux/net.h>
+#include <linux/sched.h>
+#include <linux/prctl.h>
+#include <linux/ptrace.h>
+#include <sys/socket.h>
+
+// defined in fcntl.h but it conflicts with linux/fcntl.h
+#define F_OK 0
+#define X_OK 1
+#define W_OK 2
+#define R_OK 4
+*/
+import "C"
 
 type systemFunctionArgument interface {
 	fmt.Stringer
