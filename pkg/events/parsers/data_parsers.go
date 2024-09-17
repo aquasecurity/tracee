@@ -150,109 +150,85 @@ func ParseCloneFlags(flags uint64) (string, error) {
 }
 
 var (
-	// These values are copied from uapi/asm-generic/fcntl.h
-	O_ACCMODE   OpenFlagArgument = OpenFlagArgument{rawValue: 00000003, stringValue: "O_ACCMODE"}
-	O_RDONLY    OpenFlagArgument = OpenFlagArgument{rawValue: 00000000, stringValue: "O_RDONLY"}
-	O_WRONLY    OpenFlagArgument = OpenFlagArgument{rawValue: 00000001, stringValue: "O_WRONLY"}
-	O_RDWR      OpenFlagArgument = OpenFlagArgument{rawValue: 00000002, stringValue: "O_RDWR"}
-	O_CREAT     OpenFlagArgument = OpenFlagArgument{rawValue: 00000100, stringValue: "O_CREAT"}
-	O_EXCL      OpenFlagArgument = OpenFlagArgument{rawValue: 00000200, stringValue: "O_EXCL"}
-	O_NOCTTY    OpenFlagArgument = OpenFlagArgument{rawValue: 00000400, stringValue: "O_NOCTTY"}
-	O_TRUNC     OpenFlagArgument = OpenFlagArgument{rawValue: 00001000, stringValue: "O_TRUNC"}
-	O_APPEND    OpenFlagArgument = OpenFlagArgument{rawValue: 00002000, stringValue: "O_APPEND"}
-	O_NONBLOCK  OpenFlagArgument = OpenFlagArgument{rawValue: 00004000, stringValue: "O_NONBLOCK"}
-	O_DSYNC     OpenFlagArgument = OpenFlagArgument{rawValue: 00010000, stringValue: "O_DSYNC"}
-	O_SYNC      OpenFlagArgument = OpenFlagArgument{rawValue: 04010000, stringValue: "O_SYNC"}
-	FASYNC      OpenFlagArgument = OpenFlagArgument{rawValue: 00020000, stringValue: "FASYNC"}
-	O_DIRECT    OpenFlagArgument = OpenFlagArgument{rawValue: 00040000, stringValue: "O_DIRECT"}
-	O_LARGEFILE OpenFlagArgument = OpenFlagArgument{rawValue: 00100000, stringValue: "O_LARGEFILE"}
-	O_DIRECTORY OpenFlagArgument = OpenFlagArgument{rawValue: 00200000, stringValue: "O_DIRECTORY"}
-	O_NOFOLLOW  OpenFlagArgument = OpenFlagArgument{rawValue: 00400000, stringValue: "O_NOFOLLOW"}
-	O_NOATIME   OpenFlagArgument = OpenFlagArgument{rawValue: 01000000, stringValue: "O_NOATIME"}
-	O_CLOEXEC   OpenFlagArgument = OpenFlagArgument{rawValue: 02000000, stringValue: "O_CLOEXEC"}
-	O_PATH      OpenFlagArgument = OpenFlagArgument{rawValue: 040000000, stringValue: "O_PATH"}
-	O_TMPFILE   OpenFlagArgument = OpenFlagArgument{rawValue: 020000000, stringValue: "O_TMPFILE"}
+	// from asm-generic/fcntl.h
+	O_ACCMODE   = SystemFunctionArgument{rawValue: 00000003, stringValue: "O_ACCMODE"}
+	O_RDONLY    = SystemFunctionArgument{rawValue: 00000000, stringValue: "O_RDONLY"}
+	O_WRONLY    = SystemFunctionArgument{rawValue: 00000001, stringValue: "O_WRONLY"}
+	O_RDWR      = SystemFunctionArgument{rawValue: 00000002, stringValue: "O_RDWR"}
+	O_CREAT     = SystemFunctionArgument{rawValue: 00000100, stringValue: "O_CREAT"}
+	O_EXCL      = SystemFunctionArgument{rawValue: 00000200, stringValue: "O_EXCL"}
+	O_NOCTTY    = SystemFunctionArgument{rawValue: 00000400, stringValue: "O_NOCTTY"}
+	O_TRUNC     = SystemFunctionArgument{rawValue: 00001000, stringValue: "O_TRUNC"}
+	O_APPEND    = SystemFunctionArgument{rawValue: 00002000, stringValue: "O_APPEND"}
+	O_NONBLOCK  = SystemFunctionArgument{rawValue: 00004000, stringValue: "O_NONBLOCK"}
+	O_DSYNC     = SystemFunctionArgument{rawValue: 00010000, stringValue: "O_DSYNC"}
+	O_SYNC      = SystemFunctionArgument{rawValue: 04010000, stringValue: "O_SYNC"}
+	FASYNC      = SystemFunctionArgument{rawValue: 00020000, stringValue: "FASYNC"}
+	O_DIRECT    = SystemFunctionArgument{rawValue: 00040000, stringValue: "O_DIRECT"}
+	O_LARGEFILE = SystemFunctionArgument{rawValue: 00100000, stringValue: "O_LARGEFILE"}
+	O_DIRECTORY = SystemFunctionArgument{rawValue: 00200000, stringValue: "O_DIRECTORY"}
+	O_NOFOLLOW  = SystemFunctionArgument{rawValue: 00400000, stringValue: "O_NOFOLLOW"}
+	O_NOATIME   = SystemFunctionArgument{rawValue: 01000000, stringValue: "O_NOATIME"}
+	O_CLOEXEC   = SystemFunctionArgument{rawValue: 02000000, stringValue: "O_CLOEXEC"}
+	O_PATH      = SystemFunctionArgument{rawValue: 040000000, stringValue: "O_PATH"}
+	O_TMPFILE   = SystemFunctionArgument{rawValue: 020000000, stringValue: "O_TMPFILE"}
 )
 
-// revive:enable
+var openFlagsValues = []SystemFunctionArgument{
+	// O_ACCMODE, // macro for access mode, so not included
 
-func (o OpenFlagArgument) Value() uint64  { return o.rawValue }
-func (o OpenFlagArgument) String() string { return o.stringValue }
+	// special cases checked before the loop in ParseOpenFlagArgument
+	// O_RDONLY,
+	// O_WRONLY,
+	// O_RDWR,
+	O_CREAT,
+	O_EXCL,
+	O_NOCTTY,
+	O_TRUNC,
+	O_APPEND,
+	O_NONBLOCK,
+	O_DSYNC,
+	O_SYNC,
+	FASYNC,
+	O_DIRECT,
+	O_LARGEFILE,
+	O_DIRECTORY,
+	O_NOFOLLOW,
+	O_NOATIME,
+	O_CLOEXEC,
+	O_PATH,
+	O_TMPFILE,
+}
 
-// ParseOpenFlagArgument parses the `flags` bitmask argument of the `open` syscall
+// ParseOpenFlagArgument parses the `flags` bitmask argument of the `open` syscall.
 // http://man7.org/linux/man-pages/man2/open.2.html
 // https://elixir.bootlin.com/linux/v5.5.3/source/include/uapi/asm-generic/fcntl.h
-func ParseOpenFlagArgument(rawValue uint64) (OpenFlagArgument, error) {
-	if rawValue == 0 {
-		return OpenFlagArgument{}, nil
+func ParseOpenFlagArgument(flags uint64) (string, error) {
+	if flags == 0 {
+		return O_RDONLY.String(), nil
 	}
-	var f []string
+
+	var sb strings.Builder
 
 	// access mode
 	switch {
-	case optionIsContainedInArgument(rawValue, O_WRONLY.Value()):
-		f = append(f, O_WRONLY.String())
-	case optionIsContainedInArgument(rawValue, O_RDWR.Value()):
-		f = append(f, O_RDWR.String())
+	case optionIsContainedInArgument(flags, O_WRONLY.Value()):
+		sb.WriteString(O_WRONLY.String())
+	case optionIsContainedInArgument(flags, O_RDWR.Value()):
+		sb.WriteString(O_RDWR.String())
 	default:
-		f = append(f, O_RDONLY.String())
+		sb.WriteString(O_RDONLY.String())
 	}
 
 	// file creation and status flags
-	if optionIsContainedInArgument(rawValue, O_CREAT.Value()) {
-		f = append(f, O_CREAT.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_EXCL.Value()) {
-		f = append(f, O_EXCL.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_NOCTTY.Value()) {
-		f = append(f, O_NOCTTY.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_TRUNC.Value()) {
-		f = append(f, O_TRUNC.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_APPEND.Value()) {
-		f = append(f, O_APPEND.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_NONBLOCK.Value()) {
-		f = append(f, O_NONBLOCK.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_SYNC.Value()) {
-		f = append(f, O_SYNC.String())
-	}
-	if optionIsContainedInArgument(rawValue, FASYNC.Value()) {
-		f = append(f, FASYNC.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_LARGEFILE.Value()) {
-		f = append(f, O_LARGEFILE.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_DIRECTORY.Value()) {
-		f = append(f, O_DIRECTORY.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_NOFOLLOW.Value()) {
-		f = append(f, O_NOFOLLOW.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_CLOEXEC.Value()) {
-		f = append(f, O_CLOEXEC.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_DIRECT.Value()) {
-		f = append(f, O_DIRECT.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_NOATIME.Value()) {
-		f = append(f, O_NOATIME.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_PATH.Value()) {
-		f = append(f, O_PATH.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_TMPFILE.Value()) {
-		f = append(f, O_TMPFILE.String())
+	for _, a := range openFlagsValues {
+		if optionIsContainedInArgument(flags, a.Value()) {
+			sb.WriteByte('|')
+			sb.WriteString(a.String())
+		}
 	}
 
-	if len(f) == 0 {
-		return OpenFlagArgument{}, fmt.Errorf("no valid open flag values present in raw value: 0x%x", rawValue)
-	}
-
-	return OpenFlagArgument{rawValue: rawValue, stringValue: strings.Join(f, "|")}, nil
+	return sb.String(), nil
 }
 
 type AccessModeArgument struct {
@@ -261,7 +237,6 @@ type AccessModeArgument struct {
 }
 
 // revive:disable
-
 var (
 	F_OK AccessModeArgument = AccessModeArgument{rawValue: 0, stringValue: "F_OK"}
 	X_OK AccessModeArgument = AccessModeArgument{rawValue: 1, stringValue: "X_OK"}
@@ -270,9 +245,7 @@ var (
 )
 
 // revive:enable
-
-func (a AccessModeArgument) Value() uint64 { return a.rawValue }
-
+func (a AccessModeArgument) Value() uint64  { return a.rawValue }
 func (a AccessModeArgument) String() string { return a.stringValue }
 
 // ParseAccessMode parses the mode from the `access` system call

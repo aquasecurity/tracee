@@ -143,7 +143,7 @@ func parseOpenFlagArgument(arg *trace.Argument, flags uint64) {
 		arg.Value = strconv.FormatUint(flags, 10)
 		return
 	}
-	arg.Value = openFlagArgument.String()
+	arg.Value = openFlagArgument
 }
 
 func parseCloneFlags(arg *trace.Argument, flags uint64) {
