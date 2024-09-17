@@ -612,145 +612,102 @@ func ParsePrctlOption(option uint64) (string, error) {
 	return "", fmt.Errorf("not a valid prctl option value: %d", option)
 }
 
-type BPFCommandArgument uint64
-
-const (
-	BPF_MAP_CREATE BPFCommandArgument = iota
-	BPF_MAP_LOOKUP_ELEM
-	BPF_MAP_UPDATE_ELEM
-	BPF_MAP_DELETE_ELEM
-	BPF_MAP_GET_NEXT_KEY
-	BPF_PROG_LOAD
-	BPF_OBJ_PIN
-	BPF_OBJ_GET
-	BPF_PROG_ATTACH
-	BPF_PROG_DETACH
-	BPF_PROG_TEST_RUN
-	BPF_PROG_GET_NEXT_ID
-	BPF_MAP_GET_NEXT_ID
-	BPF_PROG_GET_FD_BY_ID
-	BPF_MAP_GET_FD_BY_ID
-	BPF_OBJ_GET_INFO_BY_FD
-	BPF_PROG_QUERY
-	BPF_RAW_TRACEPOINT_OPEN
-	BPF_BTF_LOAD
-	BPF_BTF_GET_FD_BY_ID
-	BPF_TASK_FD_QUERY
-	BPF_MAP_LOOKUP_AND_DELETE_ELEM
-	BPF_MAP_FREEZE
-	BPF_BTF_GET_NEXT_ID
-	BPF_MAP_LOOKUP_BATCH
-	BPF_MAP_LOOKUP_AND_DELETE_BATCH
-	BPF_MAP_UPDATE_BATCH
-	BPF_MAP_DELETE_BATCH
-	BPF_LINK_CREATE
-	BPF_LINK_UPDATE
-	BPF_LINK_GET_FD_BY_ID
-	BPF_LINK_GET_NEXT_ID
-	BPF_ENABLE_STATS
-	BPF_ITER_CREATE
-	BPF_LINK_DETACH
+var (
+	// from linux/bpf.h
+	// sequential values starting from 0
+	BPF_MAP_CREATE                  = SystemFunctionArgument{rawValue: 0, stringValue: "BPF_MAP_CREATE"}
+	BPF_MAP_LOOKUP_ELEM             = SystemFunctionArgument{rawValue: 1, stringValue: "BPF_MAP_LOOKUP_ELEM"}
+	BPF_MAP_UPDATE_ELEM             = SystemFunctionArgument{rawValue: 2, stringValue: "BPF_MAP_UPDATE_ELEM"}
+	BPF_MAP_DELETE_ELEM             = SystemFunctionArgument{rawValue: 3, stringValue: "BPF_MAP_DELETE_ELEM"}
+	BPF_MAP_GET_NEXT_KEY            = SystemFunctionArgument{rawValue: 4, stringValue: "BPF_MAP_GET_NEXT_KEY"}
+	BPF_PROG_LOAD                   = SystemFunctionArgument{rawValue: 5, stringValue: "BPF_PROG_LOAD"}
+	BPF_OBJ_PIN                     = SystemFunctionArgument{rawValue: 6, stringValue: "BPF_OBJ_PIN"}
+	BPF_OBJ_GET                     = SystemFunctionArgument{rawValue: 7, stringValue: "BPF_OBJ_GET"}
+	BPF_PROG_ATTACH                 = SystemFunctionArgument{rawValue: 8, stringValue: "BPF_PROG_ATTACH"}
+	BPF_PROG_DETACH                 = SystemFunctionArgument{rawValue: 9, stringValue: "BPF_PROG_DETACH"}
+	BPF_PROG_TEST_RUN               = SystemFunctionArgument{rawValue: 10, stringValue: "BPF_PROG_TEST_RUN"}
+	BPF_PROG_GET_NEXT_ID            = SystemFunctionArgument{rawValue: 11, stringValue: "BPF_PROG_GET_NEXT_ID"}
+	BPF_MAP_GET_NEXT_ID             = SystemFunctionArgument{rawValue: 12, stringValue: "BPF_MAP_GET_NEXT_ID"}
+	BPF_PROG_GET_FD_BY_ID           = SystemFunctionArgument{rawValue: 13, stringValue: "BPF_PROG_GET_FD_BY_ID"}
+	BPF_MAP_GET_FD_BY_ID            = SystemFunctionArgument{rawValue: 14, stringValue: "BPF_MAP_GET_FD_BY_ID"}
+	BPF_OBJ_GET_INFO_BY_FD          = SystemFunctionArgument{rawValue: 15, stringValue: "BPF_OBJ_GET_INFO_BY_FD"}
+	BPF_PROG_QUERY                  = SystemFunctionArgument{rawValue: 16, stringValue: "BPF_PROG_QUERY"}
+	BPF_RAW_TRACEPOINT_OPEN         = SystemFunctionArgument{rawValue: 17, stringValue: "BPF_RAW_TRACEPOINT_OPEN"}
+	BPF_BTF_LOAD                    = SystemFunctionArgument{rawValue: 18, stringValue: "BPF_BTF_LOAD"}
+	BPF_BTF_GET_FD_BY_ID            = SystemFunctionArgument{rawValue: 19, stringValue: "BPF_BTF_GET_FD_BY_ID"}
+	BPF_TASK_FD_QUERY               = SystemFunctionArgument{rawValue: 20, stringValue: "BPF_TASK_FD_QUERY"}
+	BPF_MAP_LOOKUP_AND_DELETE_ELEM  = SystemFunctionArgument{rawValue: 21, stringValue: "BPF_MAP_LOOKUP_AND_DELETE_ELEM"}
+	BPF_MAP_FREEZE                  = SystemFunctionArgument{rawValue: 22, stringValue: "BPF_MAP_FREEZE"}
+	BPF_BTF_GET_NEXT_ID             = SystemFunctionArgument{rawValue: 23, stringValue: "BPF_BTF_GET_NEXT_ID"}
+	BPF_MAP_LOOKUP_BATCH            = SystemFunctionArgument{rawValue: 24, stringValue: "BPF_MAP_LOOKUP_BATCH"}
+	BPF_MAP_LOOKUP_AND_DELETE_BATCH = SystemFunctionArgument{rawValue: 25, stringValue: "BPF_MAP_LOOKUP_AND_DELETE_BATCH"}
+	BPF_MAP_UPDATE_BATCH            = SystemFunctionArgument{rawValue: 26, stringValue: "BPF_MAP_UPDATE_BATCH"}
+	BPF_MAP_DELETE_BATCH            = SystemFunctionArgument{rawValue: 27, stringValue: "BPF_MAP_DELETE_BATCH"}
+	BPF_LINK_CREATE                 = SystemFunctionArgument{rawValue: 28, stringValue: "BPF_LINK_CREATE"}
+	BPF_LINK_UPDATE                 = SystemFunctionArgument{rawValue: 29, stringValue: "BPF_LINK_UPDATE"}
+	BPF_LINK_GET_FD_BY_ID           = SystemFunctionArgument{rawValue: 30, stringValue: "BPF_LINK_GET_FD_BY_ID"}
+	BPF_LINK_GET_NEXT_ID            = SystemFunctionArgument{rawValue: 31, stringValue: "BPF_LINK_GET_NEXT_ID"}
+	BPF_ENABLE_STATS                = SystemFunctionArgument{rawValue: 32, stringValue: "BPF_ENABLE_STATS"}
+	BPF_ITER_CREATE                 = SystemFunctionArgument{rawValue: 33, stringValue: "BPF_ITER_CREATE"}
+	BPF_LINK_DETACH                 = SystemFunctionArgument{rawValue: 34, stringValue: "BPF_LINK_DETACH"}
+	BPF_PROG_BIND_MAP               = SystemFunctionArgument{rawValue: 35, stringValue: "BPF_PROG_BIND_MAP"}
+	BPF_TOKEN_CREATE                = SystemFunctionArgument{rawValue: 36, stringValue: "BPF_TOKEN_CREATE"}
 )
 
-func (b BPFCommandArgument) Value() uint64 { return uint64(b) }
-
-var bpfCmdStringMap = map[BPFCommandArgument]string{
-	BPF_MAP_CREATE:                  "BPF_MAP_CREATE",
-	BPF_MAP_LOOKUP_ELEM:             "BPF_MAP_LOOKUP_ELEM",
-	BPF_MAP_UPDATE_ELEM:             "BPF_MAP_UPDATE_ELEM",
-	BPF_MAP_DELETE_ELEM:             "BPF_MAP_DELETE_ELEM",
-	BPF_MAP_GET_NEXT_KEY:            "BPF_MAP_GET_NEXT_KEY",
-	BPF_PROG_LOAD:                   "BPF_PROG_LOAD",
-	BPF_OBJ_PIN:                     "BPF_OBJ_PIN",
-	BPF_OBJ_GET:                     "BPF_OBJ_GET",
-	BPF_PROG_ATTACH:                 "BPF_PROG_ATTACH",
-	BPF_PROG_DETACH:                 "BPF_PROG_DETACH",
-	BPF_PROG_TEST_RUN:               "BPF_PROG_TEST_RUN",
-	BPF_PROG_GET_NEXT_ID:            "BPF_PROG_GET_NEXT_ID",
-	BPF_MAP_GET_NEXT_ID:             "BPF_MAP_GET_NEXT_ID",
-	BPF_PROG_GET_FD_BY_ID:           "BPF_PROG_GET_FD_BY_ID",
-	BPF_MAP_GET_FD_BY_ID:            "BPF_MAP_GET_FD_BY_ID",
-	BPF_OBJ_GET_INFO_BY_FD:          "BPF_OBJ_GET_INFO_BY_FD",
-	BPF_PROG_QUERY:                  "BPF_PROG_QUERY",
-	BPF_RAW_TRACEPOINT_OPEN:         "BPF_RAW_TRACEPOINT_OPEN",
-	BPF_BTF_LOAD:                    "BPF_BTF_LOAD",
-	BPF_BTF_GET_FD_BY_ID:            "BPF_BTF_GET_FD_BY_ID",
-	BPF_TASK_FD_QUERY:               "BPF_TASK_FD_QUERY",
-	BPF_MAP_LOOKUP_AND_DELETE_ELEM:  "BPF_MAP_LOOKUP_AND_DELETE_ELEM",
-	BPF_MAP_FREEZE:                  "BPF_MAP_FREEZE",
-	BPF_BTF_GET_NEXT_ID:             "BPF_BTF_GET_NEXT_ID",
-	BPF_MAP_LOOKUP_BATCH:            "BPF_MAP_LOOKUP_BATCH",
-	BPF_MAP_LOOKUP_AND_DELETE_BATCH: "BPF_MAP_LOOKUP_AND_DELETE_BATCH",
-	BPF_MAP_UPDATE_BATCH:            "BPF_MAP_UPDATE_BATCH",
-	BPF_MAP_DELETE_BATCH:            "BPF_MAP_DELETE_BATCH",
-	BPF_LINK_CREATE:                 "BPF_LINK_CREATE",
-	BPF_LINK_UPDATE:                 "BPF_LINK_UPDATE",
-	BPF_LINK_GET_FD_BY_ID:           "BPF_LINK_GET_FD_BY_ID",
-	BPF_LINK_GET_NEXT_ID:            "BPF_LINK_GET_NEXT_ID",
-	BPF_ENABLE_STATS:                "BPF_ENABLE_STATS",
-	BPF_ITER_CREATE:                 "BPF_ITER_CREATE",
-	BPF_LINK_DETACH:                 "BPF_LINK_DETACH",
+var bpfCmdValues = []SystemFunctionArgument{
+	BPF_MAP_CREATE,
+	BPF_MAP_LOOKUP_ELEM,
+	BPF_MAP_UPDATE_ELEM,
+	BPF_MAP_DELETE_ELEM,
+	BPF_MAP_GET_NEXT_KEY,
+	BPF_PROG_LOAD,
+	BPF_OBJ_PIN,
+	BPF_OBJ_GET,
+	BPF_PROG_ATTACH,
+	BPF_PROG_DETACH,
+	BPF_PROG_TEST_RUN,
+	BPF_PROG_GET_NEXT_ID,
+	BPF_MAP_GET_NEXT_ID,
+	BPF_PROG_GET_FD_BY_ID,
+	BPF_MAP_GET_FD_BY_ID,
+	BPF_OBJ_GET_INFO_BY_FD,
+	BPF_PROG_QUERY,
+	BPF_RAW_TRACEPOINT_OPEN,
+	BPF_BTF_LOAD,
+	BPF_BTF_GET_FD_BY_ID,
+	BPF_TASK_FD_QUERY,
+	BPF_MAP_LOOKUP_AND_DELETE_ELEM,
+	BPF_MAP_FREEZE,
+	BPF_BTF_GET_NEXT_ID,
+	BPF_MAP_LOOKUP_BATCH,
+	BPF_MAP_LOOKUP_AND_DELETE_BATCH,
+	BPF_MAP_UPDATE_BATCH,
+	BPF_MAP_DELETE_BATCH,
+	BPF_LINK_CREATE,
+	BPF_LINK_UPDATE,
+	BPF_LINK_GET_FD_BY_ID,
+	BPF_LINK_GET_NEXT_ID,
+	BPF_ENABLE_STATS,
+	BPF_ITER_CREATE,
+	BPF_LINK_DETACH,
+	BPF_PROG_BIND_MAP,
+	BPF_TOKEN_CREATE,
 }
 
-// String parses the `cmd` argument of the `bpf` syscall
-// https://man7.org/linux/man-pages/man2/bpf.2.html
-func (b BPFCommandArgument) String() string {
-	var res string
-	if cmdName, ok := bpfCmdStringMap[b]; ok {
-		res = cmdName
-	} else {
-		res = strconv.Itoa(int(b))
-	}
-
-	return res
-}
-
-var bpfCmdMap = map[uint64]BPFCommandArgument{
-	BPF_MAP_CREATE.Value():                  BPF_MAP_CREATE,
-	BPF_MAP_LOOKUP_ELEM.Value():             BPF_MAP_LOOKUP_ELEM,
-	BPF_MAP_UPDATE_ELEM.Value():             BPF_MAP_UPDATE_ELEM,
-	BPF_MAP_DELETE_ELEM.Value():             BPF_MAP_DELETE_ELEM,
-	BPF_MAP_GET_NEXT_KEY.Value():            BPF_MAP_GET_NEXT_KEY,
-	BPF_PROG_LOAD.Value():                   BPF_PROG_LOAD,
-	BPF_OBJ_PIN.Value():                     BPF_OBJ_PIN,
-	BPF_OBJ_GET.Value():                     BPF_OBJ_GET,
-	BPF_PROG_ATTACH.Value():                 BPF_PROG_ATTACH,
-	BPF_PROG_DETACH.Value():                 BPF_PROG_DETACH,
-	BPF_PROG_TEST_RUN.Value():               BPF_PROG_TEST_RUN,
-	BPF_PROG_GET_NEXT_ID.Value():            BPF_PROG_GET_NEXT_ID,
-	BPF_MAP_GET_NEXT_ID.Value():             BPF_MAP_GET_NEXT_ID,
-	BPF_PROG_GET_FD_BY_ID.Value():           BPF_PROG_GET_FD_BY_ID,
-	BPF_MAP_GET_FD_BY_ID.Value():            BPF_MAP_GET_FD_BY_ID,
-	BPF_OBJ_GET_INFO_BY_FD.Value():          BPF_OBJ_GET_INFO_BY_FD,
-	BPF_PROG_QUERY.Value():                  BPF_PROG_QUERY,
-	BPF_RAW_TRACEPOINT_OPEN.Value():         BPF_RAW_TRACEPOINT_OPEN,
-	BPF_BTF_LOAD.Value():                    BPF_BTF_LOAD,
-	BPF_BTF_GET_FD_BY_ID.Value():            BPF_BTF_GET_FD_BY_ID,
-	BPF_TASK_FD_QUERY.Value():               BPF_TASK_FD_QUERY,
-	BPF_MAP_LOOKUP_AND_DELETE_ELEM.Value():  BPF_MAP_LOOKUP_AND_DELETE_ELEM,
-	BPF_MAP_FREEZE.Value():                  BPF_MAP_FREEZE,
-	BPF_BTF_GET_NEXT_ID.Value():             BPF_BTF_GET_NEXT_ID,
-	BPF_MAP_LOOKUP_BATCH.Value():            BPF_MAP_LOOKUP_BATCH,
-	BPF_MAP_LOOKUP_AND_DELETE_BATCH.Value(): BPF_MAP_LOOKUP_AND_DELETE_BATCH,
-	BPF_MAP_UPDATE_BATCH.Value():            BPF_MAP_UPDATE_BATCH,
-	BPF_MAP_DELETE_BATCH.Value():            BPF_MAP_DELETE_BATCH,
-	BPF_LINK_CREATE.Value():                 BPF_LINK_CREATE,
-	BPF_LINK_UPDATE.Value():                 BPF_LINK_UPDATE,
-	BPF_LINK_GET_FD_BY_ID.Value():           BPF_LINK_GET_FD_BY_ID,
-	BPF_LINK_GET_NEXT_ID.Value():            BPF_LINK_GET_NEXT_ID,
-	BPF_ENABLE_STATS.Value():                BPF_ENABLE_STATS,
-	BPF_ITER_CREATE.Value():                 BPF_ITER_CREATE,
-	BPF_LINK_DETACH.Value():                 BPF_LINK_DETACH,
-}
+var (
+	BPF_FIRST_BPF = BPF_MAP_CREATE.Value()
+	BPF_LAST_BPF  = BPF_TOKEN_CREATE.Value()
+)
 
 // ParseBPFCmd parses the raw value of the `cmd` argument of the `bpf` syscall
 // https://man7.org/linux/man-pages/man2/bpf.2.html
-func ParseBPFCmd(cmd uint64) (BPFCommandArgument, error) {
-	v, ok := bpfCmdMap[cmd]
-	if !ok {
-		return 0, fmt.Errorf("not a valid  BPF command argument: %d", cmd)
+func ParseBPFCmd(cmd uint64) (string, error) {
+	if cmd > BPF_LAST_BPF {
+		return "", fmt.Errorf("not a valid bpf command value: %d", cmd)
 	}
-	return v, nil
+
+	idx := int(cmd - BPF_FIRST_BPF)
+	return bpfCmdValues[idx].String(), nil
 }
 
 type PtraceRequestArgument uint64
