@@ -110,7 +110,7 @@ func parseSocketcallCall(arg *trace.Argument, call uint64) {
 		arg.Value = ""
 		return
 	}
-	arg.Value = socketcallArgument.String()
+	arg.Value = socketcallArgument
 }
 
 func parseAccessMode(arg *trace.Argument, mode uint64) {
