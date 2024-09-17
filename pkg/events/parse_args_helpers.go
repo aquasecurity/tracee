@@ -93,14 +93,14 @@ func parsePtraceRequestArgument(arg *trace.Argument, req uint64) {
 	arg.Value = ptraceRequestArgument.String()
 }
 
-func parsePrctlOption(arg *trace.Argument, opt uint64) {
+func parsePrctlOption(arg *trace.Argument, option uint64) {
 	arg.Type = "string"
-	prctlOptionArgument, err := parsers.ParsePrctlOption(opt)
+	prctlOptionArgument, err := parsers.ParsePrctlOption(option)
 	if err != nil {
 		arg.Value = ""
 		return
 	}
-	arg.Value = prctlOptionArgument.String()
+	arg.Value = prctlOptionArgument
 }
 
 func parseSocketcallCall(arg *trace.Argument, call uint64) {

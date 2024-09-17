@@ -451,194 +451,165 @@ func ParseCapability(cap uint64) (string, error) {
 	return capabilityValues[idx].String(), nil
 }
 
-type PrctlOptionArgument uint64
+var (
+	// from linux/prctl.h
+	// NOT sequential values
+	PR_SET_PDEATHSIG = SystemFunctionArgument{rawValue: 1, stringValue: "PR_SET_PDEATHSIG"}
+	PR_GET_PDEATHSIG = SystemFunctionArgument{rawValue: 2, stringValue: "PR_GET_PDEATHSIG"}
+	PR_GET_DUMPABLE  = SystemFunctionArgument{rawValue: 3, stringValue: "PR_GET_DUMPABLE"}
+	PR_SET_DUMPABLE  = SystemFunctionArgument{rawValue: 4, stringValue: "PR_SET_DUMPABLE"}
+	PR_GET_UNALIGN   = SystemFunctionArgument{rawValue: 5, stringValue: "PR_GET_UNALIGN"}
+	PR_SET_UNALIGN   = SystemFunctionArgument{rawValue: 6, stringValue: "PR_SET_UNALIGN"}
+	PR_GET_KEEPCAPS  = SystemFunctionArgument{rawValue: 7, stringValue: "PR_GET_KEEPCAPS"}
+	PR_SET_KEEPCAPS  = SystemFunctionArgument{rawValue: 8, stringValue: "PR_SET_KEEPCAPS"}
+	PR_GET_FPEMU     = SystemFunctionArgument{rawValue: 9, stringValue: "PR_GET_FPEMU"}
+	PR_SET_FPEMU     = SystemFunctionArgument{rawValue: 10, stringValue: "PR_SET_FPEMU"}
+	PR_GET_FPEXC     = SystemFunctionArgument{rawValue: 11, stringValue: "PR_GET_FPEXC"}
+	PR_SET_FPEXC     = SystemFunctionArgument{rawValue: 12, stringValue: "PR_SET_FPEXC"}
+	PR_GET_TIMING    = SystemFunctionArgument{rawValue: 13, stringValue: "PR_GET_TIMING"}
+	PR_SET_TIMING    = SystemFunctionArgument{rawValue: 14, stringValue: "PR_SET_TIMING"}
+	PR_SET_NAME      = SystemFunctionArgument{rawValue: 15, stringValue: "PR_SET_NAME"}
+	PR_GET_NAME      = SystemFunctionArgument{rawValue: 16, stringValue: "PR_GET_NAME"}
+	// gap
+	PR_GET_ENDIAN               = SystemFunctionArgument{rawValue: 19, stringValue: "PR_GET_ENDIAN"}
+	PR_SET_ENDIAN               = SystemFunctionArgument{rawValue: 20, stringValue: "PR_SET_ENDIAN"}
+	PR_GET_SECCOMP              = SystemFunctionArgument{rawValue: 21, stringValue: "PR_GET_SECCOMP"}
+	PR_SET_SECCOMP              = SystemFunctionArgument{rawValue: 22, stringValue: "PR_SET_SECCOMP"}
+	PR_CAPBSET_READ             = SystemFunctionArgument{rawValue: 23, stringValue: "PR_CAPBSET_READ"}
+	PR_CAPBSET_DROP             = SystemFunctionArgument{rawValue: 24, stringValue: "PR_CAPBSET_DROP"}
+	PR_GET_TSC                  = SystemFunctionArgument{rawValue: 25, stringValue: "PR_GET_TSC"}
+	PR_SET_TSC                  = SystemFunctionArgument{rawValue: 26, stringValue: "PR_SET_TSC"}
+	PR_GET_SECUREBITS           = SystemFunctionArgument{rawValue: 27, stringValue: "PR_GET_SECUREBITS"}
+	PR_SET_SECUREBITS           = SystemFunctionArgument{rawValue: 28, stringValue: "PR_SET_SECUREBITS"}
+	PR_SET_TIMERSLACK           = SystemFunctionArgument{rawValue: 29, stringValue: "PR_SET_TIMERSLACK"}
+	PR_GET_TIMERSLACK           = SystemFunctionArgument{rawValue: 30, stringValue: "PR_GET_TIMERSLACK"}
+	PR_TASK_PERF_EVENTS_DISABLE = SystemFunctionArgument{rawValue: 31, stringValue: "PR_TASK_PERF_EVENTS_DISABLE"}
+	PR_TASK_PERF_EVENTS_ENABLE  = SystemFunctionArgument{rawValue: 32, stringValue: "PR_TASK_PERF_EVENTS_ENABLE"}
+	PR_MCE_KILL                 = SystemFunctionArgument{rawValue: 33, stringValue: "PR_MCE_KILL"}
+	PR_MCE_KILL_GET             = SystemFunctionArgument{rawValue: 34, stringValue: "PR_MCE_KILL_GET"}
+	PR_SET_MM                   = SystemFunctionArgument{rawValue: 35, stringValue: "PR_SET_MM"}
 
-const (
-	PR_SET_PDEATHSIG PrctlOptionArgument = iota + 1
-	PR_GET_PDEATHSIG
-	PR_GET_DUMPABLE
-	PR_SET_DUMPABLE
-	PR_GET_UNALIGN
-	PR_SET_UNALIGN
-	PR_GET_KEEPCAPS
-	PR_SET_KEEPCAPS
-	PR_GET_FPEMU
-	PR_SET_FPEMU
-	PR_GET_FPEXC
-	PR_SET_FPEXC
-	PR_GET_TIMING
-	PR_SET_TIMING
-	PR_SET_NAME
-	PR_GET_NAME
-	PR_GET_ENDIAN
-	PR_SET_ENDIAN
-	PR_GET_SECCOMP
-	PR_SET_SECCOMP
-	PR_CAPBSET_READ
-	PR_CAPBSET_DROP
-	PR_GET_TSC
-	PR_SET_TSC
-	PR_GET_SECUREBITS
-	PR_SET_SECUREBITS
-	PR_SET_TIMERSLACK
-	PR_GET_TIMERSLACK
-	PR_TASK_PERF_EVENTS_DISABLE
-	PR_TASK_PERF_EVENTS_ENABLE
-	PR_MCE_KILL
-	PR_MCE_KILL_GET
-	PR_SET_MM
-	PR_SET_CHILD_SUBREAPER
-	PR_GET_CHILD_SUBREAPER
-	PR_SET_NO_NEW_PRIVS
-	PR_GET_NO_NEW_PRIVS
-	PR_GET_TID_ADDRESS
-	PR_SET_THP_DISABLE
-	PR_GET_THP_DISABLE
-	PR_MPX_ENABLE_MANAGEMENT
-	PR_MPX_DISABLE_MANAGEMENT
-	PR_SET_FP_MODE
-	PR_GET_FP_MODE
-	PR_CAP_AMBIENT
-	PR_SVE_SET_VL
-	PR_SVE_GET_VL
-	PR_GET_SPECULATION_CTRL
-	PR_SET_SPECULATION_CTRL
-	PR_PAC_RESET_KEYS
-	PR_SET_TAGGED_ADDR_CTRL
-	PR_GET_TAGGED_ADDR_CTRL
+	// unordered
+	PR_SET_PTRACER = SystemFunctionArgument{rawValue: 0x59616d61, stringValue: "PR_SET_PTRACER"}
+
+	PR_SET_CHILD_SUBREAPER    = SystemFunctionArgument{rawValue: 36, stringValue: "PR_SET_CHILD_SUBREAPER"}
+	PR_GET_CHILD_SUBREAPER    = SystemFunctionArgument{rawValue: 37, stringValue: "PR_GET_CHILD_SUBREAPER"}
+	PR_SET_NO_NEW_PRIVS       = SystemFunctionArgument{rawValue: 38, stringValue: "PR_SET_NO_NEW_PRIVS"}
+	PR_GET_NO_NEW_PRIVS       = SystemFunctionArgument{rawValue: 39, stringValue: "PR_GET_NO_NEW_PRIVS"}
+	PR_GET_TID_ADDRESS        = SystemFunctionArgument{rawValue: 40, stringValue: "PR_GET_TID_ADDRESS"}
+	PR_SET_THP_DISABLE        = SystemFunctionArgument{rawValue: 41, stringValue: "PR_SET_THP_DISABLE"}
+	PR_GET_THP_DISABLE        = SystemFunctionArgument{rawValue: 42, stringValue: "PR_GET_THP_DISABLE"}
+	PR_MPX_ENABLE_MANAGEMENT  = SystemFunctionArgument{rawValue: 43, stringValue: "PR_MPX_ENABLE_MANAGEMENT"}
+	PR_MPX_DISABLE_MANAGEMENT = SystemFunctionArgument{rawValue: 44, stringValue: "PR_MPX_DISABLE_MANAGEMENT"}
+	PR_SET_FP_MODE            = SystemFunctionArgument{rawValue: 45, stringValue: "PR_SET_FP_MODE"}
+	PR_GET_FP_MODE            = SystemFunctionArgument{rawValue: 46, stringValue: "PR_GET_FP_MODE"}
+	PR_CAP_AMBIENT            = SystemFunctionArgument{rawValue: 47, stringValue: "PR_CAP_AMBIENT"}
+	// gap
+	PR_SVE_SET_VL                = SystemFunctionArgument{rawValue: 50, stringValue: "PR_SVE_SET_VL"}
+	PR_SVE_GET_VL                = SystemFunctionArgument{rawValue: 51, stringValue: "PR_SVE_GET_VL"}
+	PR_GET_SPECULATION_CTRL      = SystemFunctionArgument{rawValue: 52, stringValue: "PR_GET_SPECULATION_CTRL"}
+	PR_SET_SPECULATION_CTRL      = SystemFunctionArgument{rawValue: 53, stringValue: "PR_SET_SPECULATION_CTRL"}
+	PR_PAC_RESET_KEYS            = SystemFunctionArgument{rawValue: 54, stringValue: "PR_PAC_RESET_KEYS"}
+	PR_SET_TAGGED_ADDR_CTRL      = SystemFunctionArgument{rawValue: 55, stringValue: "PR_SET_TAGGED_ADDR_CTRL"}
+	PR_GET_TAGGED_ADDR_CTRL      = SystemFunctionArgument{rawValue: 56, stringValue: "PR_GET_TAGGED_ADDR_CTRL"}
+	PR_SET_IO_FLUSHER            = SystemFunctionArgument{rawValue: 57, stringValue: "PR_SET_IO_FLUSHER"}
+	PR_GET_IO_FLUSHER            = SystemFunctionArgument{rawValue: 58, stringValue: "PR_GET_IO_FLUSHER"}
+	PR_SET_SYSCALL_USER_DISPATCH = SystemFunctionArgument{rawValue: 59, stringValue: "PR_SET_SYSCALL_USER_DISPATCH"}
+	PR_PAC_SET_ENABLED_KEYS      = SystemFunctionArgument{rawValue: 60, stringValue: "PR_PAC_SET_ENABLED_KEYS"}
+	PR_PAC_GET_ENABLED_KEYS      = SystemFunctionArgument{rawValue: 61, stringValue: "PR_PAC_GET_ENABLED_KEYS"}
+	PR_SCHED_CORE                = SystemFunctionArgument{rawValue: 62, stringValue: "PR_SCHED_CORE"}
+	PR_SME_SET_VL                = SystemFunctionArgument{rawValue: 63, stringValue: "PR_SME_SET_VL"}
+	PR_SME_GET_VL                = SystemFunctionArgument{rawValue: 64, stringValue: "PR_SME_GET_VL"}
+	PR_SET_MDWE                  = SystemFunctionArgument{rawValue: 65, stringValue: "PR_SET_MDWE"}
+	PR_GET_MDWE                  = SystemFunctionArgument{rawValue: 66, stringValue: "PR_GET_MDWE"}
+	PR_SET_MEMORY_MERGE          = SystemFunctionArgument{rawValue: 67, stringValue: "PR_SET_MEMORY_MERGE"}
+	PR_GET_MEMORY_MERGE          = SystemFunctionArgument{rawValue: 68, stringValue: "PR_GET_MEMORY_MERGE"}
+
+	// architecure specific (not supported)
+	// #define PR_RISCV_V_SET_CONTROL 69
+	// #define PR_RISCV_V_GET_CONTROL 70
+	// #define PR_RISCV_SET_ICACHE_FLUSH_CTX 71
+	// #define PR_PPC_GET_DEXCR 72
+	// #define PR_PPC_SET_DEXCR 73
 )
 
-func (p PrctlOptionArgument) Value() uint64 { return uint64(p) }
-
-var prctlOptionStringMap = map[PrctlOptionArgument]string{
-	PR_SET_PDEATHSIG:            "PR_SET_PDEATHSIG",
-	PR_GET_PDEATHSIG:            "PR_GET_PDEATHSIG",
-	PR_GET_DUMPABLE:             "PR_GET_DUMPABLE",
-	PR_SET_DUMPABLE:             "PR_SET_DUMPABLE",
-	PR_GET_UNALIGN:              "PR_GET_UNALIGN",
-	PR_SET_UNALIGN:              "PR_SET_UNALIGN",
-	PR_GET_KEEPCAPS:             "PR_GET_KEEPCAPS",
-	PR_SET_KEEPCAPS:             "PR_SET_KEEPCAPS",
-	PR_GET_FPEMU:                "PR_GET_FPEMU",
-	PR_SET_FPEMU:                "PR_SET_FPEMU",
-	PR_GET_FPEXC:                "PR_GET_FPEXC",
-	PR_SET_FPEXC:                "PR_SET_FPEXC",
-	PR_GET_TIMING:               "PR_GET_TIMING",
-	PR_SET_TIMING:               "PR_SET_TIMING",
-	PR_SET_NAME:                 "PR_SET_NAME",
-	PR_GET_NAME:                 "PR_GET_NAME",
-	PR_GET_ENDIAN:               "PR_GET_ENDIAN",
-	PR_SET_ENDIAN:               "PR_SET_ENDIAN",
-	PR_GET_SECCOMP:              "PR_GET_SECCOMP",
-	PR_SET_SECCOMP:              "PR_SET_SECCOMP",
-	PR_CAPBSET_READ:             "PR_CAPBSET_READ",
-	PR_CAPBSET_DROP:             "PR_CAPBSET_DROP",
-	PR_GET_TSC:                  "PR_GET_TSC",
-	PR_SET_TSC:                  "PR_SET_TSC",
-	PR_GET_SECUREBITS:           "PR_GET_SECUREBITS",
-	PR_SET_SECUREBITS:           "PR_SET_SECUREBITS",
-	PR_SET_TIMERSLACK:           "PR_SET_TIMERSLACK",
-	PR_GET_TIMERSLACK:           "PR_GET_TIMERSLACK",
-	PR_TASK_PERF_EVENTS_DISABLE: "PR_TASK_PERF_EVENTS_DISABLE",
-	PR_TASK_PERF_EVENTS_ENABLE:  "PR_TASK_PERF_EVENTS_ENABLE",
-	PR_MCE_KILL:                 "PR_MCE_KILL",
-	PR_MCE_KILL_GET:             "PR_MCE_KILL_GET",
-	PR_SET_MM:                   "PR_SET_MM",
-	PR_SET_CHILD_SUBREAPER:      "PR_SET_CHILD_SUBREAPER",
-	PR_GET_CHILD_SUBREAPER:      "PR_GET_CHILD_SUBREAPER",
-	PR_SET_NO_NEW_PRIVS:         "PR_SET_NO_NEW_PRIVS",
-	PR_GET_NO_NEW_PRIVS:         "PR_GET_NO_NEW_PRIVS",
-	PR_GET_TID_ADDRESS:          "PR_GET_TID_ADDRESS",
-	PR_SET_THP_DISABLE:          "PR_SET_THP_DISABLE",
-	PR_GET_THP_DISABLE:          "PR_GET_THP_DISABLE",
-	PR_MPX_ENABLE_MANAGEMENT:    "PR_MPX_ENABLE_MANAGEMENT",
-	PR_MPX_DISABLE_MANAGEMENT:   "PR_MPX_DISABLE_MANAGEMENT",
-	PR_SET_FP_MODE:              "PR_SET_FP_MODE",
-	PR_GET_FP_MODE:              "PR_GET_FP_MODE",
-	PR_CAP_AMBIENT:              "PR_CAP_AMBIENT",
-	PR_SVE_SET_VL:               "PR_SVE_SET_VL",
-	PR_SVE_GET_VL:               "PR_SVE_GET_VL",
-	PR_GET_SPECULATION_CTRL:     "PR_GET_SPECULATION_CTRL",
-	PR_SET_SPECULATION_CTRL:     "PR_SET_SPECULATION_CTRL",
-	PR_PAC_RESET_KEYS:           "PR_PAC_RESET_KEYS",
-	PR_SET_TAGGED_ADDR_CTRL:     "PR_SET_TAGGED_ADDR_CTRL",
-	PR_GET_TAGGED_ADDR_CTRL:     "PR_GET_TAGGED_ADDR_CTRL",
-}
-
-func (p PrctlOptionArgument) String() string {
-	var res string
-	if opName, ok := prctlOptionStringMap[p]; ok {
-		res = opName
-	} else {
-		res = strconv.Itoa(int(p))
-	}
-
-	return res
-}
-
-var prctlOptionsMap = map[uint64]PrctlOptionArgument{
-	PR_SET_PDEATHSIG.Value():            PR_SET_PDEATHSIG,
-	PR_GET_PDEATHSIG.Value():            PR_GET_PDEATHSIG,
-	PR_GET_DUMPABLE.Value():             PR_GET_DUMPABLE,
-	PR_SET_DUMPABLE.Value():             PR_SET_DUMPABLE,
-	PR_GET_UNALIGN.Value():              PR_GET_UNALIGN,
-	PR_SET_UNALIGN.Value():              PR_SET_UNALIGN,
-	PR_GET_KEEPCAPS.Value():             PR_GET_KEEPCAPS,
-	PR_SET_KEEPCAPS.Value():             PR_SET_KEEPCAPS,
-	PR_GET_FPEMU.Value():                PR_GET_FPEMU,
-	PR_SET_FPEMU.Value():                PR_SET_FPEMU,
-	PR_GET_FPEXC.Value():                PR_GET_FPEXC,
-	PR_SET_FPEXC.Value():                PR_SET_FPEXC,
-	PR_GET_TIMING.Value():               PR_GET_TIMING,
-	PR_SET_TIMING.Value():               PR_SET_TIMING,
-	PR_SET_NAME.Value():                 PR_SET_NAME,
-	PR_GET_NAME.Value():                 PR_GET_NAME,
-	PR_GET_ENDIAN.Value():               PR_GET_ENDIAN,
-	PR_SET_ENDIAN.Value():               PR_SET_ENDIAN,
-	PR_GET_SECCOMP.Value():              PR_GET_SECCOMP,
-	PR_SET_SECCOMP.Value():              PR_SET_SECCOMP,
-	PR_CAPBSET_READ.Value():             PR_CAPBSET_READ,
-	PR_CAPBSET_DROP.Value():             PR_CAPBSET_DROP,
-	PR_GET_TSC.Value():                  PR_GET_TSC,
-	PR_SET_TSC.Value():                  PR_SET_TSC,
-	PR_GET_SECUREBITS.Value():           PR_GET_SECUREBITS,
-	PR_SET_SECUREBITS.Value():           PR_SET_SECUREBITS,
-	PR_SET_TIMERSLACK.Value():           PR_SET_TIMERSLACK,
-	PR_GET_TIMERSLACK.Value():           PR_GET_TIMERSLACK,
-	PR_TASK_PERF_EVENTS_DISABLE.Value(): PR_TASK_PERF_EVENTS_DISABLE,
-	PR_TASK_PERF_EVENTS_ENABLE.Value():  PR_TASK_PERF_EVENTS_ENABLE,
-	PR_MCE_KILL.Value():                 PR_MCE_KILL,
-	PR_MCE_KILL_GET.Value():             PR_MCE_KILL_GET,
-	PR_SET_MM.Value():                   PR_SET_MM,
-	PR_SET_CHILD_SUBREAPER.Value():      PR_SET_CHILD_SUBREAPER,
-	PR_GET_CHILD_SUBREAPER.Value():      PR_GET_CHILD_SUBREAPER,
-	PR_SET_NO_NEW_PRIVS.Value():         PR_SET_NO_NEW_PRIVS,
-	PR_GET_NO_NEW_PRIVS.Value():         PR_GET_NO_NEW_PRIVS,
-	PR_GET_TID_ADDRESS.Value():          PR_GET_TID_ADDRESS,
-	PR_SET_THP_DISABLE.Value():          PR_SET_THP_DISABLE,
-	PR_GET_THP_DISABLE.Value():          PR_GET_THP_DISABLE,
-	PR_MPX_ENABLE_MANAGEMENT.Value():    PR_MPX_ENABLE_MANAGEMENT,
-	PR_MPX_DISABLE_MANAGEMENT.Value():   PR_MPX_DISABLE_MANAGEMENT,
-	PR_SET_FP_MODE.Value():              PR_SET_FP_MODE,
-	PR_GET_FP_MODE.Value():              PR_GET_FP_MODE,
-	PR_CAP_AMBIENT.Value():              PR_CAP_AMBIENT,
-	PR_SVE_SET_VL.Value():               PR_SVE_SET_VL,
-	PR_SVE_GET_VL.Value():               PR_SVE_GET_VL,
-	PR_GET_SPECULATION_CTRL.Value():     PR_GET_SPECULATION_CTRL,
-	PR_SET_SPECULATION_CTRL.Value():     PR_SET_SPECULATION_CTRL,
-	PR_PAC_RESET_KEYS.Value():           PR_PAC_RESET_KEYS,
-	PR_SET_TAGGED_ADDR_CTRL.Value():     PR_SET_TAGGED_ADDR_CTRL,
-	PR_GET_TAGGED_ADDR_CTRL.Value():     PR_GET_TAGGED_ADDR_CTRL,
+var prctlOptionValues = []SystemFunctionArgument{
+	PR_SET_PDEATHSIG,
+	PR_GET_PDEATHSIG,
+	PR_GET_DUMPABLE,
+	PR_SET_DUMPABLE,
+	PR_GET_UNALIGN,
+	PR_SET_UNALIGN,
+	PR_GET_KEEPCAPS,
+	PR_SET_KEEPCAPS,
+	PR_GET_FPEMU,
+	PR_SET_FPEMU,
+	PR_GET_FPEXC,
+	PR_SET_FPEXC,
+	PR_GET_TIMING,
+	PR_SET_TIMING,
+	PR_SET_NAME,
+	PR_GET_NAME,
+	PR_GET_ENDIAN,
+	PR_SET_ENDIAN,
+	PR_GET_SECCOMP,
+	PR_SET_SECCOMP,
+	PR_CAPBSET_READ,
+	PR_CAPBSET_DROP,
+	PR_GET_TSC,
+	PR_SET_TSC,
+	PR_GET_SECUREBITS,
+	PR_SET_SECUREBITS,
+	PR_SET_TIMERSLACK,
+	PR_GET_TIMERSLACK,
+	PR_TASK_PERF_EVENTS_DISABLE,
+	PR_TASK_PERF_EVENTS_ENABLE,
+	PR_MCE_KILL,
+	PR_MCE_KILL_GET,
+	PR_SET_MM,
+	PR_SET_CHILD_SUBREAPER,
+	PR_GET_CHILD_SUBREAPER,
+	PR_SET_NO_NEW_PRIVS,
+	PR_GET_NO_NEW_PRIVS,
+	PR_GET_TID_ADDRESS,
+	PR_SET_THP_DISABLE,
+	PR_GET_THP_DISABLE,
+	PR_MPX_ENABLE_MANAGEMENT,
+	PR_MPX_DISABLE_MANAGEMENT,
+	PR_SET_FP_MODE,
+	PR_GET_FP_MODE,
+	PR_CAP_AMBIENT,
+	PR_SVE_SET_VL,
+	PR_SVE_GET_VL,
+	PR_GET_SPECULATION_CTRL,
+	PR_SET_SPECULATION_CTRL,
+	PR_PAC_RESET_KEYS,
+	PR_SET_TAGGED_ADDR_CTRL,
+	PR_GET_TAGGED_ADDR_CTRL,
+	PR_SET_IO_FLUSHER,
+	PR_GET_IO_FLUSHER,
+	PR_SET_SYSCALL_USER_DISPATCH,
+	PR_PAC_SET_ENABLED_KEYS,
+	PR_PAC_GET_ENABLED_KEYS,
+	PR_SCHED_CORE,
+	PR_SME_SET_VL,
+	PR_SME_GET_VL,
+	PR_SET_MDWE,
+	PR_GET_MDWE,
+	PR_SET_MEMORY_MERGE,
+	PR_GET_MEMORY_MERGE,
 }
 
 // ParsePrctlOption parses the `option` argument of the `prctl` syscall
 // http://man7.org/linux/man-pages/man2/prctl.2.html
-func ParsePrctlOption(rawValue uint64) (PrctlOptionArgument, error) {
-	v, ok := prctlOptionsMap[rawValue]
-	if !ok {
-		return 0, fmt.Errorf("not a valid prctl option value: %d", rawValue)
+func ParsePrctlOption(option uint64) (string, error) {
+	for idx := range prctlOptionValues {
+		if option == prctlOptionValues[idx].Value() {
+			return prctlOptionValues[idx].String(), nil
+		}
 	}
-	return v, nil
+
+	return "", fmt.Errorf("not a valid prctl option value: %d", option)
 }
 
 type BPFCommandArgument uint64
