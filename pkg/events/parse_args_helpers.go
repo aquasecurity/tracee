@@ -123,7 +123,7 @@ func parseAccessMode(arg *trace.Argument, mode uint64) {
 		arg.Value = strconv.FormatUint(mode, 10)
 		return
 	}
-	arg.Value = accessModeArgument.String()
+	arg.Value = accessModeArgument
 }
 
 func parseExecFlag(arg *trace.Argument, flags uint64) {
