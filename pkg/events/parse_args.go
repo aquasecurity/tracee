@@ -276,6 +276,12 @@ func ParseArgsFDs(event *trace.Event, origTimestamp uint64, fdArgPathMap *bpf.BP
 		}
 	}
 
+	if dirfdArg := GetArg(event, "dirfd"); dirfdArg != nil {
+		if dirfd, isInt32 := dirfdArg.Value.(int32); isInt32 {
+			parseDirfdAt(dirfdArg, uint64(dirfd))
+		}
+	}
+
 	return nil
 }
 

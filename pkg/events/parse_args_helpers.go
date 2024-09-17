@@ -3,10 +3,20 @@ package events
 import (
 	"strconv"
 
+	"golang.org/x/sys/unix"
+
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
+
+func parseDirfdAt(arg *trace.Argument, dirfd uint64) {
+	if int32(dirfd) == unix.AT_FDCWD {
+		arg.Type = "string"
+		arg.Value = "AT_FDCWD"
+		return
+	}
+}
 
 func parseMMapProt(arg *trace.Argument, prot uint64) {
 	mmapProtArgument := parsers.ParseMmapProt(prot)
