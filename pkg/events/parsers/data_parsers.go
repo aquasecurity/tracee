@@ -913,122 +913,122 @@ func ParseSocketcallCall(call uint64) (string, error) {
 	return sysNetValues[idx].String(), nil
 }
 
-var socketDomainStringMap = map[SocketDomainArgument]string{
-	AF_UNSPEC:     "AF_UNSPEC",
-	AF_UNIX:       "AF_UNIX",
-	AF_INET:       "AF_INET",
-	AF_AX25:       "AF_AX25",
-	AF_IPX:        "AF_IPX",
-	AF_APPLETALK:  "AF_APPLETALK",
-	AF_NETROM:     "AF_NETROM",
-	AF_BRIDGE:     "AF_BRIDGE",
-	AF_ATMPVC:     "AF_ATMPVC",
-	AF_X25:        "AF_X25",
-	AF_INET6:      "AF_INET6",
-	AF_ROSE:       "AF_ROSE",
-	AF_DECnet:     "AF_DECnet",
-	AF_NETBEUI:    "AF_NETBEUI",
-	AF_SECURITY:   "AF_SECURITY",
-	AF_KEY:        "AF_KEY",
-	AF_NETLINK:    "AF_NETLINK",
-	AF_PACKET:     "AF_PACKET",
-	AF_ASH:        "AF_ASH",
-	AF_ECONET:     "AF_ECONET",
-	AF_ATMSVC:     "AF_ATMSVC",
-	AF_RDS:        "AF_RDS",
-	AF_SNA:        "AF_SNA",
-	AF_IRDA:       "AF_IRDA",
-	AF_PPPOX:      "AF_PPPOX",
-	AF_WANPIPE:    "AF_WANPIPE",
-	AF_LLC:        "AF_LLC",
-	AF_IB:         "AF_IB",
-	AF_MPLS:       "AF_MPLS",
-	AF_CAN:        "AF_CAN",
-	AF_TIPC:       "AF_TIPC",
-	AF_BLUETOOTH:  "AF_BLUETOOTH",
-	AF_IUCV:       "AF_IUCV",
-	AF_RXRPC:      "AF_RXRPC",
-	AF_ISDN:       "AF_ISDN",
-	AF_PHONET:     "AF_PHONET",
-	AF_IEEE802154: "AF_IEEE802154",
-	AF_CAIF:       "AF_CAIF",
-	AF_ALG:        "AF_ALG",
-	AF_NFC:        "AF_NFC",
-	AF_VSOCK:      "AF_VSOCK",
-	AF_KCM:        "AF_KCM",
-	AF_QIPCRTR:    "AF_QIPCRTR",
-	AF_SMC:        "AF_SMC",
-	AF_XDP:        "AF_XDP",
+var (
+	// from bits/socket.h via sys/socket.h
+	// sequential values starting from 0
+	AF_UNSPEC     = SystemFunctionArgument{rawValue: C.AF_UNSPEC, stringValue: "AF_UNSPEC"}
+	AF_UNIX       = SystemFunctionArgument{rawValue: C.AF_UNIX, stringValue: "AF_UNIX"}
+	AF_INET       = SystemFunctionArgument{rawValue: C.AF_INET, stringValue: "AF_INET"}
+	AF_AX25       = SystemFunctionArgument{rawValue: C.AF_AX25, stringValue: "AF_AX25"}
+	AF_IPX        = SystemFunctionArgument{rawValue: C.AF_IPX, stringValue: "AF_IPX"}
+	AF_APPLETALK  = SystemFunctionArgument{rawValue: C.AF_APPLETALK, stringValue: "AF_APPLETALK"}
+	AF_NETROM     = SystemFunctionArgument{rawValue: C.AF_NETROM, stringValue: "AF_NETROM"}
+	AF_BRIDGE     = SystemFunctionArgument{rawValue: C.AF_BRIDGE, stringValue: "AF_BRIDGE"}
+	AF_ATMPVC     = SystemFunctionArgument{rawValue: C.AF_ATMPVC, stringValue: "AF_ATMPVC"}
+	AF_X25        = SystemFunctionArgument{rawValue: C.AF_X25, stringValue: "AF_X25"}
+	AF_INET6      = SystemFunctionArgument{rawValue: C.AF_INET6, stringValue: "AF_INET6"}
+	AF_ROSE       = SystemFunctionArgument{rawValue: C.AF_ROSE, stringValue: "AF_ROSE"}
+	AF_DECnet     = SystemFunctionArgument{rawValue: C.AF_DECnet, stringValue: "AF_DECnet"}
+	AF_NETBEUI    = SystemFunctionArgument{rawValue: C.AF_NETBEUI, stringValue: "AF_NETBEUI"}
+	AF_SECURITY   = SystemFunctionArgument{rawValue: C.AF_SECURITY, stringValue: "AF_SECURITY"}
+	AF_KEY        = SystemFunctionArgument{rawValue: C.AF_KEY, stringValue: "AF_KEY"}
+	AF_NETLINK    = SystemFunctionArgument{rawValue: C.AF_NETLINK, stringValue: "AF_NETLINK"}
+	AF_PACKET     = SystemFunctionArgument{rawValue: C.AF_PACKET, stringValue: "AF_PACKET"}
+	AF_ASH        = SystemFunctionArgument{rawValue: C.AF_ASH, stringValue: "AF_ASH"}
+	AF_ECONET     = SystemFunctionArgument{rawValue: C.AF_ECONET, stringValue: "AF_ECONET"}
+	AF_ATMSVC     = SystemFunctionArgument{rawValue: C.AF_ATMSVC, stringValue: "AF_ATMSVC"}
+	AF_RDS        = SystemFunctionArgument{rawValue: C.AF_RDS, stringValue: "AF_RDS"}
+	AF_SNA        = SystemFunctionArgument{rawValue: C.AF_SNA, stringValue: "AF_SNA"}
+	AF_IRDA       = SystemFunctionArgument{rawValue: C.AF_IRDA, stringValue: "AF_IRDA"}
+	AF_PPPOX      = SystemFunctionArgument{rawValue: C.AF_PPPOX, stringValue: "AF_PPPOX"}
+	AF_WANPIPE    = SystemFunctionArgument{rawValue: C.AF_WANPIPE, stringValue: "AF_WANPIPE"}
+	AF_LLC        = SystemFunctionArgument{rawValue: C.AF_LLC, stringValue: "AF_LLC"}
+	AF_IB         = SystemFunctionArgument{rawValue: C.AF_IB, stringValue: "AF_IB"}
+	AF_MPLS       = SystemFunctionArgument{rawValue: C.AF_MPLS, stringValue: "AF_MPLS"}
+	AF_CAN        = SystemFunctionArgument{rawValue: C.AF_CAN, stringValue: "AF_CAN"}
+	AF_TIPC       = SystemFunctionArgument{rawValue: C.AF_TIPC, stringValue: "AF_TIPC"}
+	AF_BLUETOOTH  = SystemFunctionArgument{rawValue: C.AF_BLUETOOTH, stringValue: "AF_BLUETOOTH"}
+	AF_IUCV       = SystemFunctionArgument{rawValue: C.AF_IUCV, stringValue: "AF_IUCV"}
+	AF_RXRPC      = SystemFunctionArgument{rawValue: C.AF_RXRPC, stringValue: "AF_RXRPC"}
+	AF_ISDN       = SystemFunctionArgument{rawValue: C.AF_ISDN, stringValue: "AF_ISDN"}
+	AF_PHONET     = SystemFunctionArgument{rawValue: C.AF_PHONET, stringValue: "AF_PHONET"}
+	AF_IEEE802154 = SystemFunctionArgument{rawValue: C.AF_IEEE802154, stringValue: "AF_IEEE802154"}
+	AF_CAIF       = SystemFunctionArgument{rawValue: C.AF_CAIF, stringValue: "AF_CAIF"}
+	AF_ALG        = SystemFunctionArgument{rawValue: C.AF_ALG, stringValue: "AF_ALG"}
+	AF_NFC        = SystemFunctionArgument{rawValue: C.AF_NFC, stringValue: "AF_NFC"}
+	AF_VSOCK      = SystemFunctionArgument{rawValue: C.AF_VSOCK, stringValue: "AF_VSOCK"}
+	AF_KCM        = SystemFunctionArgument{rawValue: C.AF_KCM, stringValue: "AF_KCM"}
+	AF_QIPCRTR    = SystemFunctionArgument{rawValue: C.AF_QIPCRTR, stringValue: "AF_QIPCRTR"}
+	AF_SMC        = SystemFunctionArgument{rawValue: C.AF_SMC, stringValue: "AF_SMC"}
+	AF_XDP        = SystemFunctionArgument{rawValue: C.AF_XDP, stringValue: "AF_XDP"}
+
+	// not available in all kernels, so set directly
+	AF_MCTP = SystemFunctionArgument{rawValue: 45, stringValue: "AF_MCTP"}
+)
+
+var socketDomainValues = []SystemFunctionArgument{
+	AF_UNSPEC,
+	AF_UNIX,
+	AF_INET,
+	AF_AX25,
+	AF_IPX,
+	AF_APPLETALK,
+	AF_NETROM,
+	AF_BRIDGE,
+	AF_ATMPVC,
+	AF_X25,
+	AF_INET6,
+	AF_ROSE,
+	AF_DECnet,
+	AF_NETBEUI,
+	AF_SECURITY,
+	AF_KEY,
+	AF_NETLINK,
+	AF_PACKET,
+	AF_ASH,
+	AF_ECONET,
+	AF_ATMSVC,
+	AF_RDS,
+	AF_SNA,
+	AF_IRDA,
+	AF_PPPOX,
+	AF_WANPIPE,
+	AF_LLC,
+	AF_IB,
+	AF_MPLS,
+	AF_CAN,
+	AF_TIPC,
+	AF_BLUETOOTH,
+	AF_IUCV,
+	AF_RXRPC,
+	AF_ISDN,
+	AF_PHONET,
+	AF_IEEE802154,
+	AF_CAIF,
+	AF_ALG,
+	AF_NFC,
+	AF_VSOCK,
+	AF_KCM,
+	AF_QIPCRTR,
+	AF_SMC,
+	AF_XDP,
+	AF_MCTP,
 }
 
-func (s SocketDomainArgument) String() string {
-	var res string
-
-	if sdName, ok := socketDomainStringMap[s]; ok {
-		res = sdName
-	} else {
-		res = strconv.Itoa(int(s))
-	}
-
-	return res
-}
-
-var socketDomainMap = map[uint64]SocketDomainArgument{
-	AF_UNSPEC.Value():     AF_UNSPEC,
-	AF_UNIX.Value():       AF_UNIX,
-	AF_INET.Value():       AF_INET,
-	AF_AX25.Value():       AF_AX25,
-	AF_IPX.Value():        AF_IPX,
-	AF_APPLETALK.Value():  AF_APPLETALK,
-	AF_NETROM.Value():     AF_NETROM,
-	AF_BRIDGE.Value():     AF_BRIDGE,
-	AF_ATMPVC.Value():     AF_ATMPVC,
-	AF_X25.Value():        AF_X25,
-	AF_INET6.Value():      AF_INET6,
-	AF_ROSE.Value():       AF_ROSE,
-	AF_DECnet.Value():     AF_DECnet,
-	AF_NETBEUI.Value():    AF_NETBEUI,
-	AF_SECURITY.Value():   AF_SECURITY,
-	AF_KEY.Value():        AF_KEY,
-	AF_NETLINK.Value():    AF_NETLINK,
-	AF_PACKET.Value():     AF_PACKET,
-	AF_ASH.Value():        AF_ASH,
-	AF_ECONET.Value():     AF_ECONET,
-	AF_ATMSVC.Value():     AF_ATMSVC,
-	AF_RDS.Value():        AF_RDS,
-	AF_SNA.Value():        AF_SNA,
-	AF_IRDA.Value():       AF_IRDA,
-	AF_PPPOX.Value():      AF_PPPOX,
-	AF_WANPIPE.Value():    AF_WANPIPE,
-	AF_LLC.Value():        AF_LLC,
-	AF_IB.Value():         AF_IB,
-	AF_MPLS.Value():       AF_MPLS,
-	AF_CAN.Value():        AF_CAN,
-	AF_TIPC.Value():       AF_TIPC,
-	AF_BLUETOOTH.Value():  AF_BLUETOOTH,
-	AF_IUCV.Value():       AF_IUCV,
-	AF_RXRPC.Value():      AF_RXRPC,
-	AF_ISDN.Value():       AF_ISDN,
-	AF_PHONET.Value():     AF_PHONET,
-	AF_IEEE802154.Value(): AF_IEEE802154,
-	AF_CAIF.Value():       AF_CAIF,
-	AF_ALG.Value():        AF_ALG,
-	AF_NFC.Value():        AF_NFC,
-	AF_VSOCK.Value():      AF_VSOCK,
-	AF_KCM.Value():        AF_KCM,
-	AF_QIPCRTR.Value():    AF_QIPCRTR,
-	AF_SMC.Value():        AF_SMC,
-	AF_XDP.Value():        AF_XDP,
-}
+var (
+	AF_SOCKET_FIRST = AF_UNSPEC.Value()
+	AF_SOCKET_LAST  = AF_MCTP.Value()
+)
 
 // ParseSocketDomainArgument parses the `domain` bitmask argument of the `socket` syscall
 // http://man7.org/linux/man-pages/man2/socket.2.html
-func ParseSocketDomainArgument(rawValue uint64) (SocketDomainArgument, error) {
-	v, ok := socketDomainMap[rawValue]
-	if !ok {
-		return 0, fmt.Errorf("not a valid argument: %d", rawValue)
+func ParseSocketDomainArgument(domain uint64) (string, error) {
+	if domain > AF_SOCKET_LAST {
+		return "", fmt.Errorf("not a valid socket domain value: %d", domain)
 	}
-	return v, nil
+
+	idx := int(domain - AF_SOCKET_FIRST)
+	return socketDomainValues[idx].String(), nil
 }
 
 type SocketTypeArgument struct {
