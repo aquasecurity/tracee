@@ -132,6 +132,52 @@ func Test_optionIsContainedInArgument(t *testing.T) {
 	}
 }
 
+func TestParseCloneFlags(t *testing.T) {
+	testCases := []struct {
+		name          string
+		rawArgument   uint64
+		expectedSting string
+		expectedError bool
+	}{
+		{
+			name:          "No value",
+			rawArgument:   0,
+			expectedSting: "",
+			expectedError: false,
+		},
+		{
+			name:          "Single value",
+			rawArgument:   CLONE_CHILD_CLEARTID.Value(),
+			expectedSting: "CLONE_CHILD_CLEARTID",
+			expectedError: false,
+		},
+		{
+			name:          "Multiple values",
+			rawArgument:   CLONE_VM.Value() | CLONE_FS.Value(),
+			expectedSting: "CLONE_VM|CLONE_FS",
+			expectedError: false,
+		},
+		{
+			name:          "Non existing value",
+			rawArgument:   1,
+			expectedSting: "",
+			expectedError: true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			opt, err := ParseCloneFlags(testCase.rawArgument)
+			if testCase.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, testCase.expectedSting, opt)
+		})
+	}
+}
+
 func TestParseSetSocketOption(t *testing.T) {
 	testCases := []struct {
 		name          string
