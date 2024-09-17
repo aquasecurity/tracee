@@ -56,12 +56,22 @@ func optionIsContainedInArgument(rawArgument uint64, option uint64) bool {
 	return rawArgument&option == option
 }
 
-type CloneFlagArgument struct {
-	rawValue    uint64
-	stringValue string
+// buildStringFromValues builds a string from the values of the arguments
+// that are present in the rawArgument bitmask.
+func buildStringFromValues(sb *strings.Builder, argValues []SystemFunctionArgument, rawArgument uint64) {
+	for _, arg := range argValues {
+		if optionIsContainedInArgument(rawArgument, arg.Value()) {
+			if sb.Len() > 0 {
+				sb.WriteByte('|')
+			}
+			sb.WriteString(arg.String())
+		}
+	}
 }
 
-// revive:disable
+//
+// Parsers
+//
 
 // Use always raw values for the constants, since unix/syscall constants are not
 // always set to the same values.
@@ -69,129 +79,75 @@ type CloneFlagArgument struct {
 // but as 0x0 in unix package.
 
 var (
-	// These values are copied from uapi/linux/sched.h
-	CLONE_VM             CloneFlagArgument = CloneFlagArgument{rawValue: 0x00000100, stringValue: "CLONE_VM"}
-	CLONE_FS             CloneFlagArgument = CloneFlagArgument{rawValue: 0x00000200, stringValue: "CLONE_FS"}
-	CLONE_FILES          CloneFlagArgument = CloneFlagArgument{rawValue: 0x00000400, stringValue: "CLONE_FILES"}
-	CLONE_SIGHAND        CloneFlagArgument = CloneFlagArgument{rawValue: 0x00000800, stringValue: "CLONE_SIGHAND"}
-	CLONE_PIDFD          CloneFlagArgument = CloneFlagArgument{rawValue: 0x00001000, stringValue: "CLONE_PIDFD"}
-	CLONE_PTRACE         CloneFlagArgument = CloneFlagArgument{rawValue: 0x00002000, stringValue: "CLONE_PTRACE"}
-	CLONE_VFORK          CloneFlagArgument = CloneFlagArgument{rawValue: 0x00004000, stringValue: "CLONE_VFORK"}
-	CLONE_PARENT         CloneFlagArgument = CloneFlagArgument{rawValue: 0x00008000, stringValue: "CLONE_PARENT"}
-	CLONE_THREAD         CloneFlagArgument = CloneFlagArgument{rawValue: 0x00010000, stringValue: "CLONE_THREAD"}
-	CLONE_NEWNS          CloneFlagArgument = CloneFlagArgument{rawValue: 0x00020000, stringValue: "CLONE_NEWNS"}
-	CLONE_SYSVSEM        CloneFlagArgument = CloneFlagArgument{rawValue: 0x00040000, stringValue: "CLONE_SYSVSEM"}
-	CLONE_SETTLS         CloneFlagArgument = CloneFlagArgument{rawValue: 0x00080000, stringValue: "CLONE_SETTLS"}
-	CLONE_PARENT_SETTID  CloneFlagArgument = CloneFlagArgument{rawValue: 0x00100000, stringValue: "CLONE_PARENT_SETTID"}
-	CLONE_CHILD_CLEARTID CloneFlagArgument = CloneFlagArgument{rawValue: 0x00200000, stringValue: "CLONE_CHILD_CLEARTID"}
-	CLONE_DETACHED       CloneFlagArgument = CloneFlagArgument{rawValue: 0x00400000, stringValue: "CLONE_DETACHED"}
-	CLONE_UNTRACED       CloneFlagArgument = CloneFlagArgument{rawValue: 0x00800000, stringValue: "CLONE_UNTRACED"}
-	CLONE_CHILD_SETTID   CloneFlagArgument = CloneFlagArgument{rawValue: 0x01000000, stringValue: "CLONE_CHILD_SETTID"}
-	CLONE_NEWCGROUP      CloneFlagArgument = CloneFlagArgument{rawValue: 0x02000000, stringValue: "CLONE_NEWCGROUP"}
-	CLONE_NEWUTS         CloneFlagArgument = CloneFlagArgument{rawValue: 0x04000000, stringValue: "CLONE_NEWUTS"}
-	CLONE_NEWIPC         CloneFlagArgument = CloneFlagArgument{rawValue: 0x08000000, stringValue: "CLONE_NEWIPC"}
-	CLONE_NEWUSER        CloneFlagArgument = CloneFlagArgument{rawValue: 0x10000000, stringValue: "CLONE_NEWUSER"}
-	CLONE_NEWPID         CloneFlagArgument = CloneFlagArgument{rawValue: 0x20000000, stringValue: "CLONE_NEWPID"}
-	CLONE_NEWNET         CloneFlagArgument = CloneFlagArgument{rawValue: 0x40000000, stringValue: "CLONE_NEWNET"}
-	CLONE_IO             CloneFlagArgument = CloneFlagArgument{rawValue: 0x80000000, stringValue: "CLONE_IO"}
+	// from linux/sched.h
+	CLONE_VM             = SystemFunctionArgument{rawValue: 0x00000100, stringValue: "CLONE_VM"}
+	CLONE_FS             = SystemFunctionArgument{rawValue: 0x00000200, stringValue: "CLONE_FS"}
+	CLONE_FILES          = SystemFunctionArgument{rawValue: 0x00000400, stringValue: "CLONE_FILES"}
+	CLONE_SIGHAND        = SystemFunctionArgument{rawValue: 0x00000800, stringValue: "CLONE_SIGHAND"}
+	CLONE_PIDFD          = SystemFunctionArgument{rawValue: 0x00001000, stringValue: "CLONE_PIDFD"}
+	CLONE_PTRACE         = SystemFunctionArgument{rawValue: 0x00002000, stringValue: "CLONE_PTRACE"}
+	CLONE_VFORK          = SystemFunctionArgument{rawValue: 0x00004000, stringValue: "CLONE_VFORK"}
+	CLONE_PARENT         = SystemFunctionArgument{rawValue: 0x00008000, stringValue: "CLONE_PARENT"}
+	CLONE_THREAD         = SystemFunctionArgument{rawValue: 0x00010000, stringValue: "CLONE_THREAD"}
+	CLONE_NEWNS          = SystemFunctionArgument{rawValue: 0x00020000, stringValue: "CLONE_NEWNS"}
+	CLONE_SYSVSEM        = SystemFunctionArgument{rawValue: 0x00040000, stringValue: "CLONE_SYSVSEM"}
+	CLONE_SETTLS         = SystemFunctionArgument{rawValue: 0x00080000, stringValue: "CLONE_SETTLS"}
+	CLONE_PARENT_SETTID  = SystemFunctionArgument{rawValue: 0x00100000, stringValue: "CLONE_PARENT_SETTID"}
+	CLONE_CHILD_CLEARTID = SystemFunctionArgument{rawValue: 0x00200000, stringValue: "CLONE_CHILD_CLEARTID"}
+	CLONE_DETACHED       = SystemFunctionArgument{rawValue: 0x00400000, stringValue: "CLONE_DETACHED"}
+	CLONE_UNTRACED       = SystemFunctionArgument{rawValue: 0x00800000, stringValue: "CLONE_UNTRACED"}
+	CLONE_CHILD_SETTID   = SystemFunctionArgument{rawValue: 0x01000000, stringValue: "CLONE_CHILD_SETTID"}
+	CLONE_NEWCGROUP      = SystemFunctionArgument{rawValue: 0x02000000, stringValue: "CLONE_NEWCGROUP"}
+	CLONE_NEWUTS         = SystemFunctionArgument{rawValue: 0x04000000, stringValue: "CLONE_NEWUTS"}
+	CLONE_NEWIPC         = SystemFunctionArgument{rawValue: 0x08000000, stringValue: "CLONE_NEWIPC"}
+	CLONE_NEWUSER        = SystemFunctionArgument{rawValue: 0x10000000, stringValue: "CLONE_NEWUSER"}
+	CLONE_NEWPID         = SystemFunctionArgument{rawValue: 0x20000000, stringValue: "CLONE_NEWPID"}
+	CLONE_NEWNET         = SystemFunctionArgument{rawValue: 0x40000000, stringValue: "CLONE_NEWNET"}
+	CLONE_IO             = SystemFunctionArgument{rawValue: 0x80000000, stringValue: "CLONE_IO"}
 )
 
-// revive:enable
-
-func (c CloneFlagArgument) Value() uint64  { return c.rawValue }
-func (c CloneFlagArgument) String() string { return c.stringValue }
-
-func ParseCloneFlags(rawValue uint64) (CloneFlagArgument, error) {
-	if rawValue == 0 {
-		return CloneFlagArgument{}, nil
-	}
-
-	var f []string
-	if optionIsContainedInArgument(rawValue, CLONE_VM.Value()) {
-		f = append(f, CLONE_VM.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_FS.Value()) {
-		f = append(f, CLONE_FS.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_FILES.Value()) {
-		f = append(f, CLONE_FILES.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_SIGHAND.Value()) {
-		f = append(f, CLONE_SIGHAND.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_PIDFD.Value()) {
-		f = append(f, CLONE_PIDFD.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_PTRACE.Value()) {
-		f = append(f, CLONE_PTRACE.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_VFORK.Value()) {
-		f = append(f, CLONE_VFORK.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_PARENT.Value()) {
-		f = append(f, CLONE_PARENT.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_THREAD.Value()) {
-		f = append(f, CLONE_THREAD.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWNS.Value()) {
-		f = append(f, CLONE_NEWNS.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_SYSVSEM.Value()) {
-		f = append(f, CLONE_SYSVSEM.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_SETTLS.Value()) {
-		f = append(f, CLONE_SETTLS.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_PARENT_SETTID.Value()) {
-		f = append(f, CLONE_PARENT_SETTID.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_CHILD_CLEARTID.Value()) {
-		f = append(f, CLONE_CHILD_CLEARTID.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_DETACHED.Value()) {
-		f = append(f, CLONE_DETACHED.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_UNTRACED.Value()) {
-		f = append(f, CLONE_UNTRACED.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_CHILD_SETTID.Value()) {
-		f = append(f, CLONE_CHILD_SETTID.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWCGROUP.Value()) {
-		f = append(f, CLONE_NEWCGROUP.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWUTS.Value()) {
-		f = append(f, CLONE_NEWUTS.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWIPC.Value()) {
-		f = append(f, CLONE_NEWIPC.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWUSER.Value()) {
-		f = append(f, CLONE_NEWUSER.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWPID.Value()) {
-		f = append(f, CLONE_NEWPID.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWNET.Value()) {
-		f = append(f, CLONE_NEWNET.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_IO.Value()) {
-		f = append(f, CLONE_IO.String())
-	}
-	if len(f) == 0 {
-		return CloneFlagArgument{}, fmt.Errorf("no valid clone flag values present in raw value: 0x%x", rawValue)
-	}
-
-	return CloneFlagArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}, nil
+var cloneFlagsValues = []SystemFunctionArgument{
+	CLONE_VM,
+	CLONE_FS,
+	CLONE_FILES,
+	CLONE_SIGHAND,
+	CLONE_PIDFD,
+	CLONE_PTRACE,
+	CLONE_VFORK,
+	CLONE_PARENT,
+	CLONE_THREAD,
+	CLONE_NEWNS,
+	CLONE_SYSVSEM,
+	CLONE_SETTLS,
+	CLONE_PARENT_SETTID,
+	CLONE_CHILD_CLEARTID,
+	CLONE_DETACHED,
+	CLONE_UNTRACED,
+	CLONE_CHILD_SETTID,
+	CLONE_NEWCGROUP,
+	CLONE_NEWUTS,
+	CLONE_NEWIPC,
+	CLONE_NEWUSER,
+	CLONE_NEWPID,
+	CLONE_NEWNET,
+	CLONE_IO,
 }
 
-type OpenFlagArgument struct {
-	rawValue    uint64
-	stringValue string
-}
+// ParseCloneFlags parses the `flags` bitmask argument of the `clone` syscall.
+func ParseCloneFlags(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
+	}
 
-// revive:disable
+	var sb strings.Builder
+	buildStringFromValues(&sb, cloneFlagsValues, flags)
+
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid clone flag values present in flags value: 0x%x", flags)
+	}
+
+	return sb.String(), nil
+}
 
 var (
 	// These values are copied from uapi/asm-generic/fcntl.h

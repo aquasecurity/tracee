@@ -24,6 +24,43 @@ func BenchmarkParseMmapProt(b *testing.B) {
 	}
 }
 
+var parseCloneFlagsBenchTestArgs = []struct {
+	rawArgument uint64
+}{
+	{
+		rawArgument: CLONE_VM.Value(),
+	},
+	{
+		rawArgument: CLONE_FS.Value(),
+	},
+	{
+		rawArgument: CLONE_VM.Value() | CLONE_FS.Value(),
+	},
+	{
+		rawArgument: CLONE_VM.Value() | CLONE_FS.Value() | CLONE_FILES.Value(),
+	},
+	{
+		rawArgument: CLONE_VM.Value() | CLONE_FILES.Value() | CLONE_THREAD.Value(),
+	},
+	{
+		rawArgument: CLONE_VM.Value() | CLONE_FS.Value() | CLONE_FILES.Value() | CLONE_SIGHAND.Value(),
+	},
+	{
+		rawArgument: CLONE_VM.Value() | CLONE_FS.Value() | CLONE_FILES.Value() | CLONE_SIGHAND.Value() | CLONE_PTRACE.Value(),
+	},
+	{
+		rawArgument: CLONE_VM.Value() | CLONE_FS.Value() | CLONE_FILES.Value() | CLONE_SIGHAND.Value() | CLONE_PTRACE.Value() | CLONE_VFORK.Value(),
+	},
+}
+
+func BenchmarkParseCloneFlags(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for _, tt := range parseCloneFlagsBenchTestArgs {
+			_, _ = ParseCloneFlags(tt.rawArgument)
+		}
+	}
+}
+
 var optionsAreContainedInArgumentTestTable = []struct {
 	rawArgument uint64
 	options     []uint64
