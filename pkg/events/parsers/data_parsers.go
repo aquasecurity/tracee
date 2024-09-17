@@ -760,155 +760,70 @@ func ParsePtraceRequestArgument(request uint64) (string, error) {
 	return "", fmt.Errorf("not a valid ptrace request value: %d", request)
 }
 
-type SocketcallCallArgument uint64
-
-const (
-	SYS_SOCKET SocketcallCallArgument = iota + 1
-	SYS_BIND
-	SYS_CONNECT
-	SYS_LISTEN
-	SYS_ACCEPT
-	SYS_GETSOCKNAME
-	SYS_GETPEERNAME
-	SYS_SOCKETPAIR
-	SYS_SEND
-	SYS_RECV
-	SYS_SENDTO
-	SYS_RECVFROM
-	SYS_SHUTDOWN
-	SYS_SETSOCKOPT
-	SYS_GETSOCKOPT
-	SYS_SENDMSG
-	SYS_RECVMSG
-	SYS_ACCEPT4
-	SYS_RECVMMSG
-	SYS_SENDMMSG
+var (
+	// from linux/net.h
+	// sequential values starting from 1
+	SYS_SOCKET      = SystemFunctionArgument{rawValue: 1, stringValue: "SYS_SOCKET"}
+	SYS_BIND        = SystemFunctionArgument{rawValue: 2, stringValue: "SYS_BIND"}
+	SYS_CONNECT     = SystemFunctionArgument{rawValue: 3, stringValue: "SYS_CONNECT"}
+	SYS_LISTEN      = SystemFunctionArgument{rawValue: 4, stringValue: "SYS_LISTEN"}
+	SYS_ACCEPT      = SystemFunctionArgument{rawValue: 5, stringValue: "SYS_ACCEPT"}
+	SYS_GETSOCKNAME = SystemFunctionArgument{rawValue: 6, stringValue: "SYS_GETSOCKNAME"}
+	SYS_GETPEERNAME = SystemFunctionArgument{rawValue: 7, stringValue: "SYS_GETPEERNAME"}
+	SYS_SOCKETPAIR  = SystemFunctionArgument{rawValue: 8, stringValue: "SYS_SOCKETPAIR"}
+	SYS_SEND        = SystemFunctionArgument{rawValue: 9, stringValue: "SYS_SEND"}
+	SYS_RECV        = SystemFunctionArgument{rawValue: 10, stringValue: "SYS_RECV"}
+	SYS_SENDTO      = SystemFunctionArgument{rawValue: 11, stringValue: "SYS_SENDTO"}
+	SYS_RECVFROM    = SystemFunctionArgument{rawValue: 12, stringValue: "SYS_RECVFROM"}
+	SYS_SHUTDOWN    = SystemFunctionArgument{rawValue: 13, stringValue: "SYS_SHUTDOWN"}
+	SYS_SETSOCKOPT  = SystemFunctionArgument{rawValue: 14, stringValue: "SYS_SETSOCKOPT"}
+	SYS_GETSOCKOPT  = SystemFunctionArgument{rawValue: 15, stringValue: "SYS_GETSOCKOPT"}
+	SYS_SENDMSG     = SystemFunctionArgument{rawValue: 16, stringValue: "SYS_SENDMSG"}
+	SYS_RECVMSG     = SystemFunctionArgument{rawValue: 17, stringValue: "SYS_RECVMSG"}
+	SYS_ACCEPT4     = SystemFunctionArgument{rawValue: 18, stringValue: "SYS_ACCEPT4"}
+	SYS_RECVMMSG    = SystemFunctionArgument{rawValue: 19, stringValue: "SYS_RECVMMSG"}
+	SYS_SENDMMSG    = SystemFunctionArgument{rawValue: 20, stringValue: "SYS_SENDMMSG"}
 )
 
-func (s SocketcallCallArgument) Value() uint64 {
-	return uint64(s)
+var sysNetValues = []SystemFunctionArgument{
+	SYS_SOCKET,
+	SYS_BIND,
+	SYS_CONNECT,
+	SYS_LISTEN,
+	SYS_ACCEPT,
+	SYS_GETSOCKNAME,
+	SYS_GETPEERNAME,
+	SYS_SOCKETPAIR,
+	SYS_SEND,
+	SYS_RECV,
+	SYS_SENDTO,
+	SYS_RECVFROM,
+	SYS_SHUTDOWN,
+	SYS_SETSOCKOPT,
+	SYS_GETSOCKOPT,
+	SYS_SENDMSG,
+	SYS_RECVMSG,
+	SYS_ACCEPT4,
+	SYS_RECVMMSG,
+	SYS_SENDMMSG,
 }
 
-var socketcallCallStringMap = map[SocketcallCallArgument]string{
-	SYS_SOCKET:      "SYS_SOCKET",
-	SYS_BIND:        "SYS_BIND",
-	SYS_CONNECT:     "SYS_CONNECT",
-	SYS_LISTEN:      "SYS_LISTEN",
-	SYS_ACCEPT:      "SYS_ACCEPT",
-	SYS_GETSOCKNAME: "SYS_GETSOCKNAME",
-	SYS_GETPEERNAME: "SYS_GETPEERNAME",
-	SYS_SOCKETPAIR:  "SYS_SOCKETPAIR",
-	SYS_SEND:        "SYS_SEND",
-	SYS_RECV:        "SYS_RECV",
-	SYS_SENDTO:      "SYS_SENDTO",
-	SYS_RECVFROM:    "SYS_RECVFROM",
-	SYS_SHUTDOWN:    "SYS_SHUTDOWN",
-	SYS_SETSOCKOPT:  "SYS_SETSOCKOPT",
-	SYS_GETSOCKOPT:  "SYS_GETSOCKOPT",
-	SYS_SENDMSG:     "SYS_SENDMSG",
-	SYS_RECVMSG:     "SYS_RECVMSG",
-	SYS_ACCEPT4:     "SYS_ACCEPT4",
-	SYS_RECVMMSG:    "SYS_RECVMMSG",
-	SYS_SENDMMSG:    "SYS_SENDMMSG",
-}
-
-func (s SocketcallCallArgument) String() string {
-	var res string
-
-	if sdName, ok := socketcallCallStringMap[s]; ok {
-		res = sdName
-	} else {
-		res = strconv.Itoa(int(s))
-	}
-
-	return res
-}
-
-var socketcallCallMap = map[uint64]SocketcallCallArgument{
-	SYS_SOCKET.Value():      SYS_SOCKET,
-	SYS_BIND.Value():        SYS_BIND,
-	SYS_CONNECT.Value():     SYS_CONNECT,
-	SYS_LISTEN.Value():      SYS_LISTEN,
-	SYS_ACCEPT.Value():      SYS_ACCEPT,
-	SYS_GETSOCKNAME.Value(): SYS_GETSOCKNAME,
-	SYS_GETPEERNAME.Value(): SYS_GETPEERNAME,
-	SYS_SOCKETPAIR.Value():  SYS_SOCKETPAIR,
-	SYS_SEND.Value():        SYS_SEND,
-	SYS_RECV.Value():        SYS_RECV,
-	SYS_SENDTO.Value():      SYS_SENDTO,
-	SYS_RECVFROM.Value():    SYS_RECVFROM,
-	SYS_SHUTDOWN.Value():    SYS_SHUTDOWN,
-	SYS_SETSOCKOPT.Value():  SYS_SETSOCKOPT,
-	SYS_GETSOCKOPT.Value():  SYS_GETSOCKOPT,
-	SYS_SENDMSG.Value():     SYS_SENDMSG,
-	SYS_RECVMSG.Value():     SYS_RECVMSG,
-	SYS_ACCEPT4.Value():     SYS_ACCEPT4,
-	SYS_RECVMMSG.Value():    SYS_RECVMMSG,
-	SYS_SENDMMSG.Value():    SYS_SENDMMSG,
-}
+var (
+	SYS_NET_FIRST = SYS_SOCKET.Value()
+	SYS_NET_LAST  = SYS_SENDMMSG.Value()
+)
 
 // ParseSocketcallCall parses the `call` argument of the `socketcall` syscall
 // http://man7.org/linux/man-pages/man2/socketcall.2.html
 // https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/net.h
-func ParseSocketcallCall(rawValue uint64) (SocketcallCallArgument, error) {
-	if v, ok := socketcallCallMap[rawValue]; ok {
-		return v, nil
+func ParseSocketcallCall(call uint64) (string, error) {
+	if call > SYS_NET_LAST {
+		return "", fmt.Errorf("not a valid socketcall call value: %d", call)
 	}
 
-	return 0, fmt.Errorf("not a valid socketcall call value: %d", rawValue)
+	idx := int(call - SYS_NET_FIRST)
+	return sysNetValues[idx].String(), nil
 }
-
-type SocketDomainArgument uint64
-
-const (
-	AF_UNSPEC SocketDomainArgument = iota
-	AF_UNIX
-	AF_INET
-	AF_AX25
-	AF_IPX
-	AF_APPLETALK
-	AF_NETROM
-	AF_BRIDGE
-	AF_ATMPVC
-	AF_X25
-	AF_INET6
-	AF_ROSE
-	AF_DECnet
-	AF_NETBEUI
-	AF_SECURITY
-	AF_KEY
-	AF_NETLINK
-	AF_PACKET
-	AF_ASH
-	AF_ECONET
-	AF_ATMSVC
-	AF_RDS
-	AF_SNA
-	AF_IRDA
-	AF_PPPOX
-	AF_WANPIPE
-	AF_LLC
-	AF_IB
-	AF_MPLS
-	AF_CAN
-	AF_TIPC
-	AF_BLUETOOTH
-	AF_IUCV
-	AF_RXRPC
-	AF_ISDN
-	AF_PHONET
-	AF_IEEE802154
-	AF_CAIF
-	AF_ALG
-	AF_NFC
-	AF_VSOCK
-	AF_KCM
-	AF_QIPCRTR
-	AF_SMC
-	AF_XDP
-)
-
-func (s SocketDomainArgument) Value() uint64 { return uint64(s) }
 
 var socketDomainStringMap = map[SocketDomainArgument]string{
 	AF_UNSPEC:     "AF_UNSPEC",

@@ -113,7 +113,7 @@ func parseSocketcallCall(arg *trace.Argument, call uint64) {
 		arg.Value = strconv.FormatUint(call, 10)
 		return
 	}
-	arg.Value = socketCallArgument.String()
+	arg.Value = socketCallArgument
 }
 
 func parseAccessMode(arg *trace.Argument, mode uint64) {
