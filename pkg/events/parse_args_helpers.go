@@ -150,7 +150,7 @@ func parseCloneFlags(arg *trace.Argument, flags uint64) {
 		arg.Value = ""
 		return
 	}
-	arg.Value = cloneFlagArgument.String()
+	arg.Value = cloneFlagArgument
 }
 
 func parseBPFCmd(arg *trace.Argument, cmd uint64) {
