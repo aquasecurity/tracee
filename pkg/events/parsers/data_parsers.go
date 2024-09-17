@@ -710,141 +710,54 @@ func ParseBPFCmd(cmd uint64) (string, error) {
 	return bpfCmdValues[idx].String(), nil
 }
 
-type PtraceRequestArgument uint64
-
-// revive:disable
-
 var (
-	PTRACE_TRACEME              PtraceRequestArgument = 0
-	PTRACE_PEEKTEXT             PtraceRequestArgument = 1
-	PTRACE_PEEKDATA             PtraceRequestArgument = 2
-	PTRACE_PEEKUSER             PtraceRequestArgument = 3
-	PTRACE_POKETEXT             PtraceRequestArgument = 4
-	PTRACE_POKEDATA             PtraceRequestArgument = 5
-	PTRACE_POKEUSER             PtraceRequestArgument = 6
-	PTRACE_CONT                 PtraceRequestArgument = 7
-	PTRACE_KILL                 PtraceRequestArgument = 8
-	PTRACE_SINGLESTEP           PtraceRequestArgument = 9
-	PTRACE_GETREGS              PtraceRequestArgument = 12
-	PTRACE_SETREGS              PtraceRequestArgument = 13
-	PTRACE_GETFPREGS            PtraceRequestArgument = 14
-	PTRACE_SETFPREGS            PtraceRequestArgument = 15
-	PTRACE_ATTACH               PtraceRequestArgument = 16
-	PTRACE_DETACH               PtraceRequestArgument = 17
-	PTRACE_GETFPXREGS           PtraceRequestArgument = 18
-	PTRACE_SETFPXREGS           PtraceRequestArgument = 19
-	PTRACE_SYSCALL              PtraceRequestArgument = 24
-	PTRACE_SETOPTIONS           PtraceRequestArgument = 0x4200
-	PTRACE_GETEVENTMSG          PtraceRequestArgument = 0x4201
-	PTRACE_GETSIGINFO           PtraceRequestArgument = 0x4202
-	PTRACE_SETSIGINFO           PtraceRequestArgument = 0x4203
-	PTRACE_GETREGSET            PtraceRequestArgument = 0x4204
-	PTRACE_SETREGSET            PtraceRequestArgument = 0x4205
-	PTRACE_SEIZE                PtraceRequestArgument = 0x4206
-	PTRACE_INTERRUPT            PtraceRequestArgument = 0x4207
-	PTRACE_LISTEN               PtraceRequestArgument = 0x4208
-	PTRACE_PEEKSIGINFO          PtraceRequestArgument = 0x4209
-	PTRACE_GETSIGMASK           PtraceRequestArgument = 0x420a
-	PTRACE_SETSIGMASK           PtraceRequestArgument = 0x420b
-	PTRACE_SECCOMP_GET_FILTER   PtraceRequestArgument = 0x420c
-	PTRACE_SECCOMP_GET_METADATA PtraceRequestArgument = 0x420d
-	PTRACE_GET_SYSCALL_INFO     PtraceRequestArgument = 0x420e
+	// from linux/ptrace.h and sys/ptrace.h
+	// NOT sequential values
+	PTRACE_TRACEME    = SystemFunctionArgument{rawValue: 0, stringValue: "PTRACE_TRACEME"}
+	PTRACE_PEEKTEXT   = SystemFunctionArgument{rawValue: 1, stringValue: "PTRACE_PEEKTEXT"}
+	PTRACE_PEEKDATA   = SystemFunctionArgument{rawValue: 2, stringValue: "PTRACE_PEEKDATA"}
+	PTRACE_PEEKUSR    = SystemFunctionArgument{rawValue: 3, stringValue: "PTRACE_PEEKUSER"}
+	PTRACE_POKETEXT   = SystemFunctionArgument{rawValue: 4, stringValue: "PTRACE_POKETEXT"}
+	PTRACE_POKEDATA   = SystemFunctionArgument{rawValue: 5, stringValue: "PTRACE_POKEDATA"}
+	PTRACE_POKEUSR    = SystemFunctionArgument{rawValue: 6, stringValue: "PTRACE_POKEUSER"}
+	PTRACE_CONT       = SystemFunctionArgument{rawValue: 7, stringValue: "PTRACE_CONT"}
+	PTRACE_KILL       = SystemFunctionArgument{rawValue: 8, stringValue: "PTRACE_KILL"}
+	PTRACE_SINGLESTEP = SystemFunctionArgument{rawValue: 9, stringValue: "PTRACE_SINGLESTEP"}
+	// gap
+	PTRACE_ATTACH = SystemFunctionArgument{rawValue: 16, stringValue: "PTRACE_ATTACH"}
+	PTRACE_DETACH = SystemFunctionArgument{rawValue: 17, stringValue: "PTRACE_DETACH"}
+	// gap
+	PTRACE_SYSCALL = SystemFunctionArgument{rawValue: 24, stringValue: "PTRACE_SYSCALL"}
+	// gap
+	PTRACE_SYSEMU            = SystemFunctionArgument{rawValue: 31, stringValue: "PTRACE_SYSEMU"}
+	PTRACE_SYSEMU_SINGLESTEP = SystemFunctionArgument{rawValue: 32, stringValue: "PTRACE_SYSEMU_SINGLESTEP"}
+	// gap
+	PTRACE_SETOPTIONS             = SystemFunctionArgument{rawValue: 0x4200, stringValue: "PTRACE_SETOPTIONS"}
+	PTRACE_GETEVENTMSG            = SystemFunctionArgument{rawValue: 0x4201, stringValue: "PTRACE_GETEVENTMSG"}
+	PTRACE_GETSIGINFO             = SystemFunctionArgument{rawValue: 0x4202, stringValue: "PTRACE_GETSIGINFO"}
+	PTRACE_SETSIGINFO             = SystemFunctionArgument{rawValue: 0x4203, stringValue: "PTRACE_SETSIGINFO"}
+	PTRACE_GETREGSET              = SystemFunctionArgument{rawValue: 0x4204, stringValue: "PTRACE_GETREGSET"}
+	PTRACE_SETREGSET              = SystemFunctionArgument{rawValue: 0x4205, stringValue: "PTRACE_SETREGSET"}
+	PTRACE_SEIZE                  = SystemFunctionArgument{rawValue: 0x4206, stringValue: "PTRACE_SEIZE"}
+	PTRACE_INTERRUPT              = SystemFunctionArgument{rawValue: 0x4207, stringValue: "PTRACE_INTERRUPT"}
+	PTRACE_LISTEN                 = SystemFunctionArgument{rawValue: 0x4208, stringValue: "PTRACE_LISTEN"}
+	PTRACE_PEEKSIGINFO            = SystemFunctionArgument{rawValue: 0x4209, stringValue: "PTRACE_PEEKSIGINFO"}
+	PTRACE_GETSIGMASK             = SystemFunctionArgument{rawValue: 0x420a, stringValue: "PTRACE_GETSIGMASK"}
+	PTRACE_SETSIGMASK             = SystemFunctionArgument{rawValue: 0x420b, stringValue: "PTRACE_SETSIGMASK"}
+	PTRACE_SECCOMP_GET_FILTER     = SystemFunctionArgument{rawValue: 0x420c, stringValue: "PTRACE_SECCOMP_GET_FILTER"}
+	PTRACE_SECCOMP_GET_METADATA   = SystemFunctionArgument{rawValue: 0x420d, stringValue: "PTRACE_SECCOMP_GET_METADATA"}
+	PTRACE_GET_SYSCALL_INFO       = SystemFunctionArgument{rawValue: 0x420e, stringValue: "PTRACE_GET_SYSCALL_INFO"}
+	PTRACE_GET_RSEQ_CONFIGURATION = SystemFunctionArgument{rawValue: 0x420f, stringValue: "PTRACE_GET_RSEQ_CONFIGURATION"}
 )
 
-// revive:enable
-
-func (p PtraceRequestArgument) Value() uint64 { return uint64(p) }
-
-var ptraceRequestStringMap = map[PtraceRequestArgument]string{
-	PTRACE_TRACEME:              "PTRACE_TRACEME",
-	PTRACE_PEEKTEXT:             "PTRACE_PEEKTEXT",
-	PTRACE_PEEKDATA:             "PTRACE_PEEKDATA",
-	PTRACE_PEEKUSER:             "PTRACE_PEEKUSER",
-	PTRACE_POKETEXT:             "PTRACE_POKETEXT",
-	PTRACE_POKEDATA:             "PTRACE_POKEDATA",
-	PTRACE_POKEUSER:             "PTRACE_POKEUSER",
-	PTRACE_CONT:                 "PTRACE_CONT",
-	PTRACE_KILL:                 "PTRACE_KILL",
-	PTRACE_SINGLESTEP:           "PTRACE_SINGLESTEP",
-	PTRACE_GETREGS:              "PTRACE_GETREGS",
-	PTRACE_SETREGS:              "PTRACE_SETREGS",
-	PTRACE_GETFPREGS:            "PTRACE_GETFPREGS",
-	PTRACE_SETFPREGS:            "PTRACE_SETFPREGS",
-	PTRACE_ATTACH:               "PTRACE_ATTACH",
-	PTRACE_DETACH:               "PTRACE_DETACH",
-	PTRACE_GETFPXREGS:           "PTRACE_GETFPXREGS",
-	PTRACE_SETFPXREGS:           "PTRACE_SETFPXREGS",
-	PTRACE_SYSCALL:              "PTRACE_SYSCALL",
-	PTRACE_SETOPTIONS:           "PTRACE_SETOPTIONS",
-	PTRACE_GETEVENTMSG:          "PTRACE_GETEVENTMSG",
-	PTRACE_GETSIGINFO:           "PTRACE_GETSIGINFO",
-	PTRACE_SETSIGINFO:           "PTRACE_SETSIGINFO",
-	PTRACE_GETREGSET:            "PTRACE_GETREGSET",
-	PTRACE_SETREGSET:            "PTRACE_SETREGSET",
-	PTRACE_SEIZE:                "PTRACE_SEIZE",
-	PTRACE_INTERRUPT:            "PTRACE_INTERRUPT",
-	PTRACE_LISTEN:               "PTRACE_LISTEN",
-	PTRACE_PEEKSIGINFO:          "PTRACE_PEEKSIGINFO",
-	PTRACE_GETSIGMASK:           "PTRACE_GETSIGMASK",
-	PTRACE_SETSIGMASK:           "PTRACE_SETSIGMASK",
-	PTRACE_SECCOMP_GET_FILTER:   "PTRACE_SECCOMP_GET_FILTER",
-	PTRACE_SECCOMP_GET_METADATA: "PTRACE_SECCOMP_GET_METADATA",
-	PTRACE_GET_SYSCALL_INFO:     "PTRACE_GET_SYSCALL_INFO",
-}
-
-func (p PtraceRequestArgument) String() string {
-	var res string
-	if reqName, ok := ptraceRequestStringMap[p]; ok {
-		res = reqName
-	} else {
-		res = strconv.Itoa(int(p))
+func ParsePtraceRequestArgument(request uint64) (string, error) {
+	for idx := range ptraceRequestValues {
+		if ptraceRequestValues[idx].Value() == request {
+			return ptraceRequestValues[idx].String(), nil
+		}
 	}
 
-	return res
-}
-
-var ptraceRequestArgMap = map[uint64]PtraceRequestArgument{
-	PTRACE_TRACEME.Value():              PTRACE_TRACEME,
-	PTRACE_PEEKTEXT.Value():             PTRACE_PEEKTEXT,
-	PTRACE_PEEKDATA.Value():             PTRACE_PEEKDATA,
-	PTRACE_PEEKUSER.Value():             PTRACE_PEEKUSER,
-	PTRACE_POKETEXT.Value():             PTRACE_POKETEXT,
-	PTRACE_POKEDATA.Value():             PTRACE_POKEDATA,
-	PTRACE_POKEUSER.Value():             PTRACE_POKEUSER,
-	PTRACE_CONT.Value():                 PTRACE_CONT,
-	PTRACE_KILL.Value():                 PTRACE_KILL,
-	PTRACE_SINGLESTEP.Value():           PTRACE_SINGLESTEP,
-	PTRACE_GETREGS.Value():              PTRACE_GETREGS,
-	PTRACE_SETREGS.Value():              PTRACE_SETREGS,
-	PTRACE_GETFPREGS.Value():            PTRACE_GETFPREGS,
-	PTRACE_SETFPREGS.Value():            PTRACE_SETFPREGS,
-	PTRACE_ATTACH.Value():               PTRACE_ATTACH,
-	PTRACE_DETACH.Value():               PTRACE_DETACH,
-	PTRACE_GETFPXREGS.Value():           PTRACE_GETFPXREGS,
-	PTRACE_SETFPXREGS.Value():           PTRACE_SETFPXREGS,
-	PTRACE_SYSCALL.Value():              PTRACE_SYSCALL,
-	PTRACE_SETOPTIONS.Value():           PTRACE_SETOPTIONS,
-	PTRACE_GETEVENTMSG.Value():          PTRACE_GETEVENTMSG,
-	PTRACE_GETSIGINFO.Value():           PTRACE_GETSIGINFO,
-	PTRACE_SETSIGINFO.Value():           PTRACE_SETSIGINFO,
-	PTRACE_GETREGSET.Value():            PTRACE_GETREGSET,
-	PTRACE_SETREGSET.Value():            PTRACE_SETREGSET,
-	PTRACE_SEIZE.Value():                PTRACE_SEIZE,
-	PTRACE_INTERRUPT.Value():            PTRACE_INTERRUPT,
-	PTRACE_LISTEN.Value():               PTRACE_LISTEN,
-	PTRACE_PEEKSIGINFO.Value():          PTRACE_PEEKSIGINFO,
-	PTRACE_GETSIGMASK.Value():           PTRACE_GETSIGMASK,
-	PTRACE_SETSIGMASK.Value():           PTRACE_SETSIGMASK,
-	PTRACE_SECCOMP_GET_FILTER.Value():   PTRACE_SECCOMP_GET_FILTER,
-	PTRACE_SECCOMP_GET_METADATA.Value(): PTRACE_SECCOMP_GET_METADATA,
-	PTRACE_GET_SYSCALL_INFO.Value():     PTRACE_GET_SYSCALL_INFO,
-}
-
-func ParsePtraceRequestArgument(rawValue uint64) (PtraceRequestArgument, error) {
-	if reqName, ok := ptraceRequestArgMap[rawValue]; ok {
-		return reqName, nil
-	}
-	return 0, fmt.Errorf("not a valid ptrace request value: %d", rawValue)
+	return "", fmt.Errorf("not a valid ptrace request value: %d", request)
 }
 
 type SocketcallCallArgument uint64

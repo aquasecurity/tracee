@@ -93,7 +93,7 @@ func parsePtraceRequestArgument(arg *trace.Argument, req uint64) {
 		arg.Value = strconv.FormatUint(req, 10)
 		return
 	}
-	arg.Value = ptraceRequestArgument.String()
+	arg.Value = ptraceRequestArgument
 }
 
 func parsePrctlOption(arg *trace.Argument, option uint64) {
