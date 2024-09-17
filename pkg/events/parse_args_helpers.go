@@ -59,7 +59,7 @@ func parseCapability(arg *trace.Argument, capability uint64) {
 		arg.Value = ""
 		return
 	}
-	arg.Value = capabilityFlagArgument.String()
+	arg.Value = capabilityFlagArgument
 }
 
 func parseMemProtAlert(arg *trace.Argument, alert uint32) {
