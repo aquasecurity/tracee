@@ -19,7 +19,7 @@ func parseSocketDomainArgument(arg *trace.Argument, domain uint64) {
 		arg.Value = ""
 		return
 	}
-	arg.Value = socketDomainArgument.String()
+	arg.Value = socketDomainArgument
 }
 
 func parseSocketType(arg *trace.Argument, typ uint64) {
