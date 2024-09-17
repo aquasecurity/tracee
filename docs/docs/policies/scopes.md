@@ -1,11 +1,6 @@
 # Scopes
-```yaml
-    scope: # Select the scope for tracing events
-```
 
-## DESCRIPTION
-
-**scope** allows you to select the scope for tracing events by defining filters. 
+`scope` allows you to select the scope for tracing events by defining filters. 
 
 ## FILTER EXPRESSION
 
@@ -49,13 +44,7 @@ Available for the following boolean field:
 
 - container: Select events based on whether they originate from a container or not.
 
-## SPECIAL FILTERS
-
-The following special filters can be used within the scope filter expressions:
-
-- new: Select newly created containers or process IDs.
-- follow: Select events from the processes that match the criteria and their descendants.
-The supported scopes are listed below.
+## Supported Scopes
 
 ### global
 
