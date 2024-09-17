@@ -255,9 +255,9 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 	}
 	socketDomainArg, err := parsers.ParseSocketDomainArgument(uint64(family))
 	if err != nil {
-		socketDomainArg = parsers.AF_UNSPEC
+		socketDomainArg = parsers.AF_UNSPEC.String()
 	}
-	res["sa_family"] = socketDomainArg.String()
+	res["sa_family"] = socketDomainArg
 	switch family {
 	case 1: // AF_UNIX
 		/*
