@@ -180,7 +180,8 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 						destinationFilePath,
 					)
 					if err != nil {
-						return errfmt.WrapError(err)
+						logger.Debugw("capture exec: failed copying file", "error", err)
+						continue
 					}
 					// mark this file as captured
 					t.capturedFiles[capturedFileID] = castedSourceFileCtime
