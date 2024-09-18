@@ -6,7 +6,7 @@ It is possible to define multiple events within each policy.`rules` section incl
 - events
 - filters
 
-Below are an example show casing a policy:
+Below is an example showcasing a policy:
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
