@@ -10,7 +10,7 @@ Tracee support many kind of events to tracee you can find which events you can t
 
 - **NOTE:** It is possible to define multiple events within each policy.
 
-Below are an example show casing a policy:
+Below is an example showcasing a policy:
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
