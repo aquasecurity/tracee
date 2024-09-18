@@ -49,7 +49,11 @@ Available for the following string fields:
 - container: Select events from specific container IDs.
 - executable: Select events based on the executable path.
 
+Strings can be compared as a prefix if ending with '\*', or as a suffix if starting with '\*'.
 
+NOTE: Expressions containing '\*' token must be escaped!
+
+you can learn more about the wildcard in the [`event` section](./events.1.md)
 
 ### BOOLEAN OPERATOR (PREPENDED)
 
