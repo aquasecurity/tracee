@@ -150,7 +150,7 @@ signatures-dir: ""
 
 To learn about how to apply configuration to Tracee, please refer to the [CLI](./cli.md) or [Kubernetes](./kubernetes.md) specific guides, depending on how you deploy Tracee.
 
-  - __NOTE__: The YAML examples can be translated to JSON as well
+  - __NOTE__: The YAML examples can be translated to JSON as well.
 
 ## Common configurations
 
