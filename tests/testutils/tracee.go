@@ -16,7 +16,7 @@ import (
 const (
 	readinessPollTime           = 200 * time.Millisecond
 	httpRequestTimeout          = 1 * time.Second
-	TraceeDefaultStartupTimeout = 5 * time.Second
+	TraceeDefaultStartupTimeout = 10 * time.Second
 )
 
 var (
