@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -34,7 +35,7 @@ func (sig *SyscallTableHooking) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *SyscallTableHooking) GetMetadata() (detect.SignatureMetadata, error) {
-	return syscallTableHookingMetadata, nil
+	return helpers.CloneMetadataProperties(&syscallTableHookingMetadata), nil
 }
 
 func (sig *SyscallTableHooking) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

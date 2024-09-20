@@ -37,7 +37,7 @@ func (sig *SchedDebugRecon) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *SchedDebugRecon) GetMetadata() (detect.SignatureMetadata, error) {
-	return schedDebugReconMetadata, nil
+	return helpers.CloneMetadataProperties(&schedDebugReconMetadata), nil
 }
 
 func (sig *SchedDebugRecon) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

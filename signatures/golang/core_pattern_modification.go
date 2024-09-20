@@ -38,7 +38,7 @@ func (sig *CorePatternModification) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *CorePatternModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return corePatternModificationMetadata, nil
+	return helpers.CloneMetadataProperties(&corePatternModificationMetadata), nil
 }
 
 func (sig *CorePatternModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

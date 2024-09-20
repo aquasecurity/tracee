@@ -40,7 +40,7 @@ func (sig *KubernetesCertificateTheftAttempt) Init(ctx detect.SignatureContext) 
 }
 
 func (sig *KubernetesCertificateTheftAttempt) GetMetadata() (detect.SignatureMetadata, error) {
-	return kubernetesCertificateTheftAttemptMetadata, nil
+	return helpers.CloneMetadataProperties(&kubernetesCertificateTheftAttemptMetadata), nil
 }
 
 func (sig *KubernetesCertificateTheftAttempt) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

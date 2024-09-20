@@ -444,6 +444,8 @@ func GetProtoHTTPByName(
 // TODO: since this helper is a workaround to avoid data races,
 // perhaps a better solution would be to convert Properties into
 // a concrete structure.
-func CloneMetadataProperties(m *detect.SignatureMetadata) {
-	m.Properties = maps.Clone(m.Properties)
+func CloneMetadataProperties(m *detect.SignatureMetadata) detect.SignatureMetadata {
+	copy := *m
+	copy.Properties = maps.Clone(m.Properties)
+	return copy
 }

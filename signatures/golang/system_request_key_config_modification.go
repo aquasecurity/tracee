@@ -37,7 +37,7 @@ func (sig *SystemRequestKeyConfigModification) Init(ctx detect.SignatureContext)
 }
 
 func (sig *SystemRequestKeyConfigModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return systemRequestKeyConfigModificationMetadata, nil
+	return helpers.CloneMetadataProperties(&systemRequestKeyConfigModificationMetadata), nil
 }
 
 func (sig *SystemRequestKeyConfigModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

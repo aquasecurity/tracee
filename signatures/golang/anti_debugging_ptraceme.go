@@ -37,7 +37,7 @@ func (sig *AntiDebuggingPtraceme) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *AntiDebuggingPtraceme) GetMetadata() (detect.SignatureMetadata, error) {
-	return antiDebuggingPtracemeMetada, nil
+	return helpers.CloneMetadataProperties(&antiDebuggingPtracemeMetada), nil
 }
 
 func (sig *AntiDebuggingPtraceme) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

@@ -41,7 +41,7 @@ func (sig *ProcMemAccess) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *ProcMemAccess) GetMetadata() (detect.SignatureMetadata, error) {
-	return procMemAccessMetadata, nil
+	return helpers.CloneMetadataProperties(&procMemAccessMetadata), nil
 }
 
 func (sig *ProcMemAccess) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

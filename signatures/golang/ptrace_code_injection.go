@@ -39,7 +39,7 @@ func (sig *PtraceCodeInjection) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *PtraceCodeInjection) GetMetadata() (detect.SignatureMetadata, error) {
-	return ptraceCodeInjectionMetadata, nil
+	return helpers.CloneMetadataProperties(&ptraceCodeInjectionMetadata), nil
 }
 
 func (sig *PtraceCodeInjection) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

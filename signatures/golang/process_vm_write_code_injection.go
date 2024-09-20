@@ -36,7 +36,7 @@ func (sig *ProcessVmWriteCodeInjection) Init(ctx detect.SignatureContext) error 
 }
 
 func (sig *ProcessVmWriteCodeInjection) GetMetadata() (detect.SignatureMetadata, error) {
-	return processVmWriteCodeInjectionMetadata, nil
+	return helpers.CloneMetadataProperties(&processVmWriteCodeInjectionMetadata), nil
 }
 
 func (sig *ProcessVmWriteCodeInjection) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

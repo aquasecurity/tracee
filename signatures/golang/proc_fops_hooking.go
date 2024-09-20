@@ -35,7 +35,7 @@ func (sig *ProcFopsHooking) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *ProcFopsHooking) GetMetadata() (detect.SignatureMetadata, error) {
-	return procFopsHookingMetadata, nil
+	return helpers.CloneMetadataProperties(&procFopsHookingMetadata), nil
 }
 
 func (sig *ProcFopsHooking) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

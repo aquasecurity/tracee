@@ -40,7 +40,7 @@ func (sig *IllegitimateShell) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *IllegitimateShell) GetMetadata() (detect.SignatureMetadata, error) {
-	return illegitimateShellMetadata, nil
+	return helpers.CloneMetadataProperties(&illegitimateShellMetadata), nil
 }
 
 func (sig *IllegitimateShell) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

@@ -41,7 +41,7 @@ func (sig *ProcMemCodeInjection) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *ProcMemCodeInjection) GetMetadata() (detect.SignatureMetadata, error) {
-	return procMemCodeInjectionMetadata, nil
+	return helpers.CloneMetadataProperties(&procMemCodeInjectionMetadata), nil
 }
 
 func (sig *ProcMemCodeInjection) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

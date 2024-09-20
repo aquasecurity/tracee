@@ -38,7 +38,7 @@ func (sig *HiddenFileCreated) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *HiddenFileCreated) GetMetadata() (detect.SignatureMetadata, error) {
-	return hiddenFileCreatedMetadata, nil
+	return helpers.CloneMetadataProperties(&hiddenFileCreatedMetadata), nil
 }
 
 func (sig *HiddenFileCreated) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

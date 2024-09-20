@@ -35,7 +35,7 @@ func (sig *FilelessExecution) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *FilelessExecution) GetMetadata() (detect.SignatureMetadata, error) {
-	return filelessExecutionMetadata, nil
+	return helpers.CloneMetadataProperties(&filelessExecutionMetadata), nil
 }
 
 func (sig *FilelessExecution) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

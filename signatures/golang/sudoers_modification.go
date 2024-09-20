@@ -40,7 +40,7 @@ func (sig *SudoersModification) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *SudoersModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return sudoersModificationMetadata, nil
+	return helpers.CloneMetadataProperties(&sudoersModificationMetadata), nil
 }
 
 func (sig *SudoersModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

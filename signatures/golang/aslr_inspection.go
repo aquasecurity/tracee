@@ -37,7 +37,7 @@ func (sig *AslrInspection) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *AslrInspection) GetMetadata() (detect.SignatureMetadata, error) {
-	return aslrInspectionMetadata, nil
+	return helpers.CloneMetadataProperties(&aslrInspectionMetadata), nil
 }
 
 func (sig *AslrInspection) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

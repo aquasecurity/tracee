@@ -38,7 +38,7 @@ func (sig *DiskMount) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *DiskMount) GetMetadata() (detect.SignatureMetadata, error) {
-	return diskMountMetadata, nil
+	return helpers.CloneMetadataProperties(&diskMountMetadata), nil
 }
 
 func (sig *DiskMount) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

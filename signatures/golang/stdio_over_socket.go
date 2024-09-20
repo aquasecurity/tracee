@@ -37,7 +37,7 @@ func (sig *StdioOverSocket) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *StdioOverSocket) GetMetadata() (detect.SignatureMetadata, error) {
-	return stdioOverSocketMetadata, nil
+	return helpers.CloneMetadataProperties(&stdioOverSocketMetadata), nil
 }
 
 func (sig *StdioOverSocket) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

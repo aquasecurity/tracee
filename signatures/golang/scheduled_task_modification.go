@@ -43,7 +43,7 @@ func (sig *ScheduledTaskModification) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *ScheduledTaskModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return scheduledTaskModificationMetadata, nil
+	return helpers.CloneMetadataProperties(&scheduledTaskModificationMetadata), nil
 }
 
 func (sig *ScheduledTaskModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

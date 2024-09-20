@@ -36,7 +36,7 @@ func (sig *K8sApiConnection) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *K8sApiConnection) GetMetadata() (detect.SignatureMetadata, error) {
-	return k8sApiConnectionMetadata, nil
+	return helpers.CloneMetadataProperties(&k8sApiConnectionMetadata), nil
 }
 
 func (sig *K8sApiConnection) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

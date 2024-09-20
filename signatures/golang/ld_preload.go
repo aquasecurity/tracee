@@ -40,7 +40,7 @@ func (sig *LdPreload) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *LdPreload) GetMetadata() (detect.SignatureMetadata, error) {
-	return ldPreloadMetadata, nil
+	return helpers.CloneMetadataProperties(&ldPreloadMetadata), nil
 }
 
 func (sig *LdPreload) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

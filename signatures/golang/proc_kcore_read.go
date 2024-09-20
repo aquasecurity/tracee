@@ -38,7 +38,7 @@ func (sig *ProcKcoreRead) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *ProcKcoreRead) GetMetadata() (detect.SignatureMetadata, error) {
-	return procKcoreReadMetadata, nil
+	return helpers.CloneMetadataProperties(&procKcoreReadMetadata), nil
 }
 
 func (sig *ProcKcoreRead) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

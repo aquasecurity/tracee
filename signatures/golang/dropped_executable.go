@@ -35,7 +35,7 @@ func (sig *DroppedExecutable) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *DroppedExecutable) GetMetadata() (detect.SignatureMetadata, error) {
-	return droppedExecutableMetadata, nil
+	return helpers.CloneMetadataProperties(&droppedExecutableMetadata), nil
 }
 
 func (sig *DroppedExecutable) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

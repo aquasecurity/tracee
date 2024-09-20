@@ -38,7 +38,7 @@ func (sig *DockerAbuse) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *DockerAbuse) GetMetadata() (detect.SignatureMetadata, error) {
-	return dockerAbuseMetadata, nil
+	return helpers.CloneMetadataProperties(&dockerAbuseMetadata), nil
 }
 
 func (sig *DockerAbuse) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

@@ -38,7 +38,7 @@ func (sig *CgroupNotifyOnReleaseModification) Init(ctx detect.SignatureContext) 
 }
 
 func (sig *CgroupNotifyOnReleaseModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return cgroupNotifyOnReleaseModificationMetadata, nil
+	return helpers.CloneMetadataProperties(&cgroupNotifyOnReleaseModificationMetadata), nil
 }
 
 func (sig *CgroupNotifyOnReleaseModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

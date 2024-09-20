@@ -41,7 +41,7 @@ func (sig *DefaultLoaderModification) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *DefaultLoaderModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return defaultLoaderModificationMetadata, nil
+	return helpers.CloneMetadataProperties(&defaultLoaderModificationMetadata), nil
 }
 
 func (sig *DefaultLoaderModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

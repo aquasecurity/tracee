@@ -43,7 +43,7 @@ func (sig *RcdModification) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *RcdModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return rcdModificationMetadata, nil
+	return helpers.CloneMetadataProperties(&rcdModificationMetadata), nil
 }
 
 func (sig *RcdModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

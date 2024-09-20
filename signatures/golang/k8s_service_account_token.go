@@ -43,7 +43,7 @@ func (sig *K8SServiceAccountToken) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *K8SServiceAccountToken) GetMetadata() (detect.SignatureMetadata, error) {
-	return k8SServiceAccountTokenMetadata, nil
+	return helpers.CloneMetadataProperties(&k8SServiceAccountTokenMetadata), nil
 }
 
 func (sig *K8SServiceAccountToken) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

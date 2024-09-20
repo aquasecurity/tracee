@@ -37,7 +37,7 @@ func (sig *DynamicCodeLoading) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *DynamicCodeLoading) GetMetadata() (detect.SignatureMetadata, error) {
-	return dynamicCodeLoadingMetadata, nil
+	return helpers.CloneMetadataProperties(&dynamicCodeLoadingMetadata), nil
 }
 
 func (sig *DynamicCodeLoading) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

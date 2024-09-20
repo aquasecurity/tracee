@@ -35,7 +35,7 @@ func (sig *KernelModuleLoading) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *KernelModuleLoading) GetMetadata() (detect.SignatureMetadata, error) {
-	return kernelModuleLoadingMetadata, nil
+	return helpers.CloneMetadataProperties(&kernelModuleLoadingMetadata), nil
 }
 
 func (sig *KernelModuleLoading) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
