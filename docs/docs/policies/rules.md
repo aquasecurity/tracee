@@ -3,8 +3,8 @@
 Rules are part of the Tracee Policy, `rules` let you define which events to trace.
 
 `rules` have 2 sections: 
-- events: let you define which events you wan to trace
-- filters: enable you to refine the policy's scope
+- events: let you define which events you want to trace.
+- filters: enable you to refine the policy's scope.
 
 Tracee support many kind of events to tracee you can find which events you can trace in [Events section](/docs/docs/events/index.md)
 
