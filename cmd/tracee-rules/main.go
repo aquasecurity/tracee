@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/cmd/initialize/initialize_sigs"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"io"
 	"os"
 	"os/signal"
@@ -26,6 +28,8 @@ import (
 const (
 	signatureBufferFlag = "sig-buffer"
 )
+
+var inputs engine.EventSources
 
 func main() {
 	app := &cli.App{
@@ -116,8 +120,6 @@ func main() {
 				return nil
 			}
 
-			var inputs engine.EventSources
-
 			opts, err := parseTraceeInputOptions(c.StringSlice("input-tracee"))
 			if err == errHelp {
 				printHelp()
@@ -142,7 +144,7 @@ func main() {
 			if err != nil {
 				return err
 			}
-
+			_ = initialize_sigs.CreateEventsFromSignatures(events.StartSignatureID, sigs)
 			config := engine.Config{
 				SignatureBufferSize: c.Uint(signatureBufferFlag),
 				Signatures:          sigs,
@@ -295,13 +297,13 @@ func listEvents(w io.Writer, sigs []detect.Signature) {
 		}
 	}
 
-	var events []string
+	var e []string
 	for k := range m {
-		events = append(events, k)
+		e = append(e, k)
 	}
 
-	sort.Slice(events, func(i, j int) bool { return events[i] < events[j] })
-	fmt.Fprintln(w, strings.Join(events, ","))
+	sort.Slice(e, func(i, j int) bool { return e[i] < e[j] })
+	fmt.Fprintln(w, strings.Join(e, ","))
 }
 
 func isRoot() bool {

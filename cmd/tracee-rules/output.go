@@ -57,8 +57,17 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 
 	go func(w io.Writer, tWebhook, tOutput *template.Template) {
 		for res := range out {
-			switch res.Event.Payload.(type) {
+			switch e := res.Event.Payload.(type) {
 			case trace.Event:
+				select {
+				case _, ok := <-inputs.Tracee:
+					if !ok {
+						logger.Debugw("Tracee input channel closed")
+						return
+					}
+				default:
+					inputs.Tracee <- e.ToProtocol()
+				}
 				if err := tOutput.Execute(w, res); err != nil {
 					logger.Errorw("Writing to output: " + err.Error())
 				}

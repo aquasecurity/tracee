@@ -1,4 +1,4 @@
-package initialize
+package initialize_sigs
 
 import (
 	"testing"

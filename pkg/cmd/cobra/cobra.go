@@ -2,6 +2,7 @@ package cobra
 
 import (
 	"errors"
+	"github.com/aquasecurity/tracee/pkg/cmd/initialize/initialize_sigs"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -67,7 +68,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	sigNameToEventId := initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
+	sigNameToEventId := initialize_sigs.CreateEventsFromSignatures(events.StartSignatureID, sigs)
 
 	// Initialize a tracee config structure
 
