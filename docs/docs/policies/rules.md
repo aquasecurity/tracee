@@ -31,7 +31,7 @@ spec:
 ### Type of Events
 The value of an `event` it's the event name from the supported events.
 
-For example: `syscall` event would be the `syscall` name.
+For example: `syscall` event would be the `syscall` event name.
 
 The [events](../events/index.md) section provides further information on the type of events that Tracee can track.
 
