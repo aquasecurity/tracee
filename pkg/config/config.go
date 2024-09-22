@@ -7,7 +7,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
-	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
@@ -18,7 +17,7 @@ import (
 // NOTE: In the future, Tracee config will be changed at run time and will require
 // proper management.
 type Config struct {
-	InitialPolicies     []*policy.Policy
+	InitialPolicies     []interface{} // due to circular dependency, policy.Policy cannot be used here
 	Capture             *CaptureConfig
 	Capabilities        *CapabilitiesConfig
 	Output              *OutputConfig
@@ -166,7 +165,6 @@ func (c CalcHashesOption) String() string {
 type OutputConfig struct {
 	StackAddresses bool
 	ExecEnv        bool
-	RelativeTime   bool
 	CalcHashes     CalcHashesOption
 
 	ParseArguments    bool
@@ -187,5 +185,4 @@ type PrinterConfig struct {
 	OutPath       string
 	OutFile       io.WriteCloser
 	ContainerMode ContainerMode
-	RelativeTS    bool
 }

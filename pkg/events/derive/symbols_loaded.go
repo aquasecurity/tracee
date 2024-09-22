@@ -20,7 +20,7 @@ import (
 
 func SymbolsLoaded(
 	soLoader sharedobjs.DynamicSymbolsLoader,
-	pManager *policy.PolicyManager,
+	pManager *policy.Manager,
 ) DeriveFunction {
 	symbolsLoadedFilters := map[string]filters.Filter[*filters.StringFilter]{}
 

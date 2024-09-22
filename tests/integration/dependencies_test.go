@@ -46,7 +46,7 @@ func Test_EventsDependencies(t *testing.T) {
 			events: []events.ID{events.MissingKsymbol},
 			expectedLogs: []string{
 				"Event canceled because of missing kernel symbol dependency",
-				"Remove event from state",
+				"Remove event from rules",
 			},
 			unexpectedEvents:  []events.ID{events.MissingKsymbol},
 			unexpectedKprobes: []string{"security_bprm_check"},
@@ -56,7 +56,7 @@ func Test_EventsDependencies(t *testing.T) {
 			events: []events.ID{events.MissingKsymbol, events.ExecTest},
 			expectedLogs: []string{
 				"Event canceled because of missing kernel symbol dependency",
-				"Remove event from state",
+				"Remove event from rules",
 			},
 			unexpectedEvents: []events.ID{events.MissingKsymbol},
 			expectedEvents:   []events.ID{events.ExecTest},
@@ -67,7 +67,7 @@ func Test_EventsDependencies(t *testing.T) {
 			events: []events.ID{events.FailedAttach},
 			expectedLogs: []string{
 				"Cancelling event and its dependencies because of a missing probe",
-				"Remove event from state",
+				"Remove event from rules",
 			},
 			unexpectedEvents:  []events.ID{events.FailedAttach},
 			unexpectedKprobes: []string{"security_bprm_check"},
@@ -77,7 +77,7 @@ func Test_EventsDependencies(t *testing.T) {
 			events: []events.ID{events.FailedAttach, events.ExecTest},
 			expectedLogs: []string{
 				"Cancelling event and its dependencies because of a missing probe",
-				"Remove event from state",
+				"Remove event from rules",
 			},
 			unexpectedEvents: []events.ID{events.FailedAttach},
 			expectedEvents:   []events.ID{events.ExecTest},
@@ -123,7 +123,12 @@ func Test_EventsDependencies(t *testing.T) {
 					BypassCaps: true,
 				},
 			}
-			testConfig.InitialPolicies = testutils.BuildPoliciesFromEvents(testCaseInst.events)
+			ps := testutils.BuildPoliciesFromEvents(testCaseInst.events)
+			initialPolicies := make([]interface{}, 0, len(ps))
+			for _, p := range ps {
+				initialPolicies = append(initialPolicies, p)
+			}
+			testConfig.InitialPolicies = initialPolicies
 
 			ctx, cancel := context.WithCancel(context.Background())
 

@@ -17,11 +17,10 @@ Possible options:
 [format:]gotemplate=/path/to/template              output events formatted using a given gotemplate file
 out-file:/path/to/file                             write the output to a specified file. create/trim the file if exists (default: stdout)
 none                                               ignore stream of events output, usually used with --capture
-option:{stack-addresses,exec-env,relative-time,exec-hash,parse-arguments,sort-events}
+option:{stack-addresses,exec-env,exec-hash,parse-arguments,sort-events}
                                                    augment output according to given options (default: none)
   stack-addresses                                  include stack memory addresses for each event
   exec-env                                         when tracing execve/execveat, show the environment variables that were used for execution
-  relative-time                                    use relative timestamp instead of wall timestamp for events
   exec-hash                                        when tracing sched_process_exec, show the file hash(sha256) and ctime
   parse-arguments                                  do not show raw machine-readable values for event arguments, instead parse into human readable strings
   parse-arguments-fds                              enable parse-arguments and enrich fd with its file path translation. This can cause pipeline slowdowns.
@@ -81,9 +80,8 @@ func TraceeEbpfPrepareOutput(outputSlice []string, newBinary bool) (PrepareOutpu
 
 	if outPath == "" {
 		stdoutConfig := config.PrinterConfig{
-			Kind:       printerKind,
-			OutFile:    os.Stdout,
-			RelativeTS: traceeConfig.RelativeTime,
+			Kind:    printerKind,
+			OutFile: os.Stdout,
 		}
 
 		printerConfigs = append(printerConfigs, stdoutConfig)
@@ -94,10 +92,9 @@ func TraceeEbpfPrepareOutput(outputSlice []string, newBinary bool) (PrepareOutpu
 		}
 
 		printerConfig := config.PrinterConfig{
-			Kind:       printerKind,
-			OutPath:    outPath,
-			OutFile:    file,
-			RelativeTS: traceeConfig.RelativeTime,
+			Kind:    printerKind,
+			OutPath: outPath,
+			OutFile: file,
 		}
 
 		printerConfigs = append(printerConfigs, printerConfig)

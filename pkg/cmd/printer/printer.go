@@ -52,14 +52,12 @@ func New(cfg config.PrinterConfig) (EventPrinter, error) {
 			out:           cfg.OutFile,
 			verbose:       false,
 			containerMode: cfg.ContainerMode,
-			relativeTS:    cfg.RelativeTS,
 		}
 	case kind == "table-verbose":
 		res = &tableEventPrinter{
 			out:           cfg.OutFile,
 			verbose:       true,
 			containerMode: cfg.ContainerMode,
-			relativeTS:    cfg.RelativeTS,
 		}
 	case kind == "json":
 		res = &jsonEventPrinter{

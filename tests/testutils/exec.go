@@ -162,22 +162,28 @@ func ExecCmdBgWithSudoAndCtx(ctx context.Context, command string) (int, chan err
 	// Kill the command if the context is canceled (and signal that it was killed).
 
 	go func(pid *atomic.Int64) {
-		<-ctx.Done()
-		p := pid.Load()
-		if p > 0 {
-			// discover all child processes
-			childPIDs, err := DiscoverChildProcesses(int(p))
-			if err != nil {
-				cmdStatus <- &failedToKillProcess{command: command, err: err}
-			}
-			// kill all child processes (sudo creates childs in new process group)
-			for _, childPID := range childPIDs {
-				err := SudoKillProcess(childPID, false)
+		select {
+		case <-ctx.Done():
+			p := pid.Load()
+			if p > 0 {
+				// discover all child processes
+				childPIDs, err := DiscoverChildProcesses(int(p))
 				if err != nil {
 					cmdStatus <- &failedToKillProcess{command: command, err: err}
 				}
+				// kill all child processes (sudo creates childs in new process group)
+				for _, childPID := range childPIDs {
+					err := SudoKillProcess(childPID, false)
+					if err != nil {
+						cmdStatus <- &failedToKillProcess{command: command, err: err}
+					}
+				}
 			}
+
+		case <-cmdStatus:
+			// command finished before the context was canceled
 		}
+
 		commandEndWG.Wait()
 		close(cmdStatus) // signal command exited
 	}(&pid)

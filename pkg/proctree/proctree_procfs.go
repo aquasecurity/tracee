@@ -150,8 +150,9 @@ func dealWithProc(pt *ProcessTree, givenPid int) error {
 		}
 	}
 
-	// process hash
+	// thread start time (monotonic boot)
 	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(start)
+	// process hash
 	hash := utils.HashTaskID(uint32(pid), startTimeNs)
 
 	// update tree for the given process
@@ -167,7 +168,7 @@ func dealWithProc(pt *ProcessTree, givenPid int) error {
 		}
 	}
 
-	procfsTimeStamp := uint64(pt.timeNormalizer.NormalizeTime(int(startTimeNs)))
+	procfsTimeStamp := traceetime.BootToEpochNS(startTimeNs)
 
 	procInfo.SetFeedAt(
 		TaskInfoFeed{
@@ -225,8 +226,9 @@ func dealWithThread(pt *ProcessTree, givenPid int, givenTid int) error {
 		return errfmt.Errorf("invalid thread")
 	}
 
-	// thread hash
+	// thread start time (monotonic boot)
 	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(start)
+	// thread hash
 	hash := utils.HashTaskID(uint32(pid), startTimeNs)
 
 	// update tree for the given thread
@@ -238,7 +240,7 @@ func dealWithThread(pt *ProcessTree, givenPid int, givenTid int) error {
 		return nil
 	}
 
-	procfsTimeStamp := uint64(pt.timeNormalizer.NormalizeTime(int(startTimeNs)))
+	procfsTimeStamp := traceetime.BootToEpochNS(startTimeNs)
 
 	threadInfo.SetFeedAt(
 		TaskInfoFeed{

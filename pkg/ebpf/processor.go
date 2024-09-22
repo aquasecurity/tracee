@@ -79,6 +79,20 @@ func (t *Tracee) RegisterEventProcessor(id events.ID, proc func(evt *trace.Event
 // registerEventProcessors registers all event processors, each to a specific event id.
 func (t *Tracee) registerEventProcessors() {
 	//
+	// Event Timestamps Normalization
+	//
+
+	// Convert all time relate args to nanoseconds since epoch.
+	// NOTE: Make sure to convert time related args (of your event) in here, so that
+	// any later code has access to normalized time arguments.
+	t.RegisterEventProcessor(events.SchedProcessFork, t.normalizeTimeArg(
+		"start_time",
+		"parent_start_time",
+		"parent_process_start_time",
+		"leader_start_time",
+	))
+
+	//
 	// Process Tree Processors
 	//
 
@@ -119,15 +133,6 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
 	t.RegisterEventProcessor(events.SharedObjectLoaded, t.processSharedObjectLoaded)
-
-	//
-	// Event Timestamps Normalization Processors
-	//
-
-	// Convert all time relate args to nanoseconds since epoch.
-	// NOTE: Make sure to convert time related args (of your event) in here.
-	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
-	t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
 
 	//
 	// Uprobe based events processors
