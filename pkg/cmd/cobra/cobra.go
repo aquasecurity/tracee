@@ -2,7 +2,6 @@ package cobra
 
 import (
 	"errors"
-	"github.com/aquasecurity/tracee/pkg/cmd/initialize/initialize_sigs"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -11,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
+	"github.com/aquasecurity/tracee/pkg/cmd/initialize/initialize_sigs"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"

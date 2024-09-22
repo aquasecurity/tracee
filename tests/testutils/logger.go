@@ -2,12 +2,12 @@ package testutils
 
 import (
 	"io"
-	"slices"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"slices"
 
 	"github.com/aquasecurity/tracee/pkg/logger"
 )

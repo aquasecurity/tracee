@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"github.com/aquasecurity/tracee/pkg/cmd/initialize/initialize_sigs"
 	"os"
 
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/spf13/cobra"
 
 	"github.com/aquasecurity/tracee/pkg/cmd"
+	"github.com/aquasecurity/tracee/pkg/cmd/initialize/initialize_sigs"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"

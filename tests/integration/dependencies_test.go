@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"go.uber.org/goleak"
+	"slices"
 
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
