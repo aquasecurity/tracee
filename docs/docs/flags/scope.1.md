@@ -53,7 +53,7 @@ Strings can be compared as a prefix if ending with '\*', or as a suffix if start
 
 NOTE: Expressions containing '\*' token must be escaped!
 
-you can learn more about the wildcard in the [`event` section](./events.1.md)
+you can learn more about the wildcard in the [`event` section](./events.1.md).
 
 ### BOOLEAN OPERATOR (PREPENDED)
 
