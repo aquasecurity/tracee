@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/cmd/initialize/initialize_sigs"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,7 +14,6 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
-	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -58,6 +58,8 @@ func init() {
 		"Logger options [debug|info|warn...]",
 	)
 }
+
+var engineInput = make(chan protocol.Event)
 
 var analyze = &cobra.Command{
 	Use:     "analyze input.json",
@@ -128,7 +130,7 @@ tracee analyze --events anti_debugging events.json`,
 			"signatures", getSigsNames(sigs),
 		)
 
-		_ = initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
+		_ = initialize_sigs.CreateEventsFromSignatures(events.StartSignatureID, sigs)
 
 		engineConfig := engine.Config{
 			Signatures:          sigs,
@@ -139,7 +141,6 @@ tracee analyze --events anti_debugging events.json`,
 		defer stop()
 
 		engineOutput := make(chan *detect.Finding)
-		engineInput := make(chan protocol.Event)
 
 		source := engine.EventSources{Tracee: engineInput}
 		sigEngine, err := engine.NewEngine(engineConfig, source, engineOutput)
@@ -216,7 +217,7 @@ func process(finding *detect.Finding) {
 	if err != nil {
 		logger.Fatalw("Failed to convert finding to event", "err", err)
 	}
-
+	engineInput <- event.ToProtocol()
 	jsonEvent, err := json.Marshal(event)
 	if err != nil {
 		logger.Fatalw("Failed to json marshal event", "err", err)

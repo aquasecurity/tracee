@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	embedded "github.com/aquasecurity/tracee"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/regosig"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -50,16 +51,90 @@ func Find(target string, partialEval bool, signaturesDir []string, signatures []
 	if signatures == nil {
 		res = sigs
 	} else {
-		for _, s := range sigs {
-			for _, r := range signatures {
-				if m, err := s.GetMetadata(); err == nil &&
-					(m.ID == r || m.EventName == r) {
-					res = append(res, s)
-				}
+		res = findSigsOfSigs(sigs, signatures)
+	}
+	return res, datasources, nil
+}
+
+func findSigsOfSigs(loadedSigs []detect.Signature, chosenSigs []string) []detect.Signature {
+	processedSigs := make(map[string]struct{}, len(chosenSigs))
+	sigsOfsigs := make([]detect.Signature, 0, len(chosenSigs))
+
+	// create a map for quick lookup of signatures by EventName or ID
+	loadedSigMap := make(map[string]detect.Signature, len(loadedSigs))
+	for _, sig := range loadedSigs {
+		loadSigMeta, err := sig.GetMetadata()
+		if err != nil {
+			logger.Warnw("Failed to get signature metadata", "error", err)
+			continue
+		}
+		loadedSigMap[loadSigMeta.EventName] = sig
+		loadedSigMap[loadSigMeta.ID] = sig
+	}
+
+	// processSigsOfSig processes each signature recursively based on its selected signatures
+	var processSigsOfSig func(sig detect.Signature)
+	processSigsOfSig = func(sig detect.Signature) {
+		sigMeta, err := sig.GetMetadata()
+		if err != nil {
+			logger.Warnw("Failed to get signature metadata", "error", err)
+			return
+		}
+
+		// avoid re-processing the same signature
+		if _, alreadyProcessed := processedSigs[sigMeta.ID]; alreadyProcessed {
+			return
+		}
+		processedSigs[sigMeta.ID] = struct{}{}
+
+		// add the current signature to the result list
+		sigsOfsigs = append(sigsOfsigs, sig)
+
+		// get selected signatures from this sig and process them
+		selected := getSelectedSigsFromSig(loadedSigMap, sig)
+		for sel := range selected {
+			if selSig, ok := loadedSigMap[sel]; ok {
+				processSigsOfSig(selSig) // recursively process the found signature
+			} else {
+				logger.Warnw("Selected signature not found", "signature", sel)
 			}
 		}
 	}
-	return res, datasources, nil
+
+	// start processing the chosen signatures
+	for _, chosenName := range chosenSigs {
+		if sig, ok := loadedSigMap[chosenName]; ok {
+			processSigsOfSig(sig)
+		}
+	}
+
+	return sigsOfsigs
+}
+
+func getSelectedSigsFromSig(loadedSigMap map[string]detect.Signature, sig detect.Signature) map[string]struct{} {
+	selectedSigs := make(map[string]struct{})
+
+	selectedEvents, err := sig.GetSelectedEvents()
+	if err != nil {
+		logger.Errorw("Failed to get selected events", "error", err)
+		return selectedSigs
+	}
+
+	for _, sel := range selectedEvents {
+		// ignore non-signature events
+		if _, ok := events.Core.GetDefinitionIDByName(sel.Name); ok {
+			continue
+		}
+
+		// only add if the signature is in the loadedSigMap
+		if _, ok := loadedSigMap[sel.Name]; ok {
+			selectedSigs[sel.Name] = struct{}{}
+		} else {
+			logger.Warnw("Selected signature not found", "signature", sel.Name)
+		}
+	}
+
+	return selectedSigs
 }
 
 func findGoSigs(dir string) ([]detect.Signature, []detect.DataSource, error) {
