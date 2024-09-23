@@ -26,15 +26,6 @@ type e2eProcessTreeDataSource struct {
 	processTreeDS *helpers.ProcessTreeDS
 }
 
-var e2eProcessTreeDataSourceMetadata = detect.SignatureMetadata{
-	ID:          "PROCTREE_DATA_SOURCE",
-	EventName:   "PROCTREE_DATA_SOURCE",
-	Version:     "0.1.0",
-	Name:        "Process Tree Data Source Test",
-	Description: "Instrumentation events E2E Tests: Process Tree Data Source Test",
-	Tags:        []string{"e2e", "instrumentation"},
-}
-
 // Init is called once when the signature is loaded.
 func (sig *e2eProcessTreeDataSource) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
@@ -50,7 +41,14 @@ func (sig *e2eProcessTreeDataSource) Init(ctx detect.SignatureContext) error {
 
 // GetMetadata returns metadata about the signature.
 func (sig *e2eProcessTreeDataSource) GetMetadata() (detect.SignatureMetadata, error) {
-	return e2eProcessTreeDataSourceMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "PROCTREE_DATA_SOURCE",
+		EventName:   "PROCTREE_DATA_SOURCE",
+		Version:     "0.1.0",
+		Name:        "Process Tree Data Source Test",
+		Description: "Instrumentation events E2E Tests: Process Tree Data Source Test",
+		Tags:        []string{"e2e", "instrumentation"},
+	}, nil
 }
 
 // GetSelectedEvents returns a list of events that the signature wants to subscribe to.
