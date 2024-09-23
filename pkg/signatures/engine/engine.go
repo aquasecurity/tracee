@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/aquasecurity/tracee/pkg/events/findings"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/metrics"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -145,7 +146,12 @@ func (engine *Engine) unloadAllSignatures() {
 // matchHandler is a function that runs when a signature is matched
 func (engine *Engine) matchHandler(res *detect.Finding) {
 	_ = engine.stats.Detections.Increment()
+	e, err := findings.FindingToEvent(res)
+	if err != nil {
+		logger.Errorw("Failed to convert finding to event, will not feedback", "err", err)
+	}
 	engine.output <- res
+	engine.inputs.Tracee <- e.ToProtocol()
 }
 
 // checkCompletion is a function that runs at the end of each input source
