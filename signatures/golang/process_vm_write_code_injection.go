@@ -13,22 +13,6 @@ type ProcessVmWriteCodeInjection struct {
 	cb detect.SignatureHandler
 }
 
-var processVmWriteCodeInjectionMetadata = detect.SignatureMetadata{
-	ID:          "TRC-1025",
-	Version:     "1",
-	Name:        "Code injection detected using process_vm_writev syscall",
-	EventName:   "process_vm_write_inject",
-	Description: "Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.",
-	Properties: map[string]interface{}{
-		"Severity":             3,
-		"Category":             "defense-evasion",
-		"Technique":            "Process Injection",
-		"Kubernetes_Technique": "",
-		"id":                   "attack-pattern--43e7dc91-05b2-474c-b9ac-2ed4fe101f4d",
-		"external_id":          "T1055",
-	},
-}
-
 func (sig *ProcessVmWriteCodeInjection) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 
@@ -36,7 +20,21 @@ func (sig *ProcessVmWriteCodeInjection) Init(ctx detect.SignatureContext) error 
 }
 
 func (sig *ProcessVmWriteCodeInjection) GetMetadata() (detect.SignatureMetadata, error) {
-	return processVmWriteCodeInjectionMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "TRC-1025",
+		Version:     "1",
+		Name:        "Code injection detected using process_vm_writev syscall",
+		EventName:   "process_vm_write_inject",
+		Description: "Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.",
+		Properties: map[string]interface{}{
+			"Severity":             3,
+			"Category":             "defense-evasion",
+			"Technique":            "Process Injection",
+			"Kubernetes_Technique": "",
+			"id":                   "attack-pattern--43e7dc91-05b2-474c-b9ac-2ed4fe101f4d",
+			"external_id":          "T1055",
+		},
+	}, nil
 }
 
 func (sig *ProcessVmWriteCodeInjection) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

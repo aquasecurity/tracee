@@ -15,22 +15,6 @@ type HiddenFileCreated struct {
 	hiddenPathPattern string
 }
 
-var hiddenFileCreatedMetadata = detect.SignatureMetadata{
-	ID:          "TRC-1015",
-	Version:     "1",
-	Name:        "Hidden executable creation detected",
-	EventName:   "hidden_file_created",
-	Description: "A hidden executable (ELF file) was created on disk. This activity could be legitimate; however, it could indicate that an adversary is trying to avoid detection by hiding their programs.",
-	Properties: map[string]interface{}{
-		"Severity":             2,
-		"Category":             "defense-evasion",
-		"Technique":            "Hidden Files and Directories",
-		"Kubernetes_Technique": "",
-		"id":                   "attack-pattern--ec8fc7e2-b356-455c-8db5-2e37be158e7d",
-		"external_id":          "T1564.001",
-	},
-}
-
 func (sig *HiddenFileCreated) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.hiddenPathPattern = "/."
@@ -38,7 +22,21 @@ func (sig *HiddenFileCreated) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *HiddenFileCreated) GetMetadata() (detect.SignatureMetadata, error) {
-	return hiddenFileCreatedMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "TRC-1015",
+		Version:     "1",
+		Name:        "Hidden executable creation detected",
+		EventName:   "hidden_file_created",
+		Description: "A hidden executable (ELF file) was created on disk. This activity could be legitimate; however, it could indicate that an adversary is trying to avoid detection by hiding their programs.",
+		Properties: map[string]interface{}{
+			"Severity":             2,
+			"Category":             "defense-evasion",
+			"Technique":            "Hidden Files and Directories",
+			"Kubernetes_Technique": "",
+			"id":                   "attack-pattern--ec8fc7e2-b356-455c-8db5-2e37be158e7d",
+			"external_id":          "T1564.001",
+		},
+	}, nil
 }
 
 func (sig *HiddenFileCreated) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

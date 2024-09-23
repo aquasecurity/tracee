@@ -18,22 +18,6 @@ type ScheduledTaskModification struct {
 	cronCommands []string
 }
 
-var scheduledTaskModificationMetadata = detect.SignatureMetadata{
-	ID:          "TRC-1027",
-	Version:     "1",
-	Name:        "Scheduled tasks modification detected",
-	EventName:   "scheduled_task_mod",
-	Description: "The task scheduling functionality or files were modified. Crontab schedules task execution or enables task execution at boot time. Adversaries may add or modify scheduled tasks in order to persist a reboot, thus maintaining malicious execution on the affected host.",
-	Properties: map[string]interface{}{
-		"Severity":             2,
-		"Category":             "persistence",
-		"Technique":            "Cron",
-		"Kubernetes_Technique": "",
-		"id":                   "attack-pattern--2acf44aa-542f-4366-b4eb-55ef5747759c",
-		"external_id":          "T1053.003",
-	},
-}
-
 func (sig *ScheduledTaskModification) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.cronFiles = []string{"/etc/crontab", "/etc/anacrontab", "/etc/cron.deny", "/etc/cron.allow"}
@@ -43,7 +27,21 @@ func (sig *ScheduledTaskModification) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *ScheduledTaskModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return scheduledTaskModificationMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "TRC-1027",
+		Version:     "1",
+		Name:        "Scheduled tasks modification detected",
+		EventName:   "scheduled_task_mod",
+		Description: "The task scheduling functionality or files were modified. Crontab schedules task execution or enables task execution at boot time. Adversaries may add or modify scheduled tasks in order to persist a reboot, thus maintaining malicious execution on the affected host.",
+		Properties: map[string]interface{}{
+			"Severity":             2,
+			"Category":             "persistence",
+			"Technique":            "Cron",
+			"Kubernetes_Technique": "",
+			"id":                   "attack-pattern--2acf44aa-542f-4366-b4eb-55ef5747759c",
+			"external_id":          "T1053.003",
+		},
+	}, nil
 }
 
 func (sig *ScheduledTaskModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
