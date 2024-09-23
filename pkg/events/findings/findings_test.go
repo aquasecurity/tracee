@@ -1,4 +1,4 @@
-package ebpf
+package findings_test
 
 import (
 	"sort"
@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/findings"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -100,7 +101,7 @@ func TestFindingToEvent(t *testing.T) {
 	}
 
 	finding := createFakeEventAndFinding()
-	got, err := FindingToEvent(&finding)
+	got, err := findings.FindingToEvent(&finding)
 
 	assert.NoError(t, err)
 

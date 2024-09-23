@@ -1,4 +1,4 @@
-package ebpf
+package findings
 
 import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
