@@ -166,6 +166,24 @@ struct bufs {
 
 typedef struct bufs bufs_t;
 
+struct data_filter_bufs {
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, u32);
+    __type(value, data_filter_key_t);
+} data_filter_bufs SEC(".maps");
+
+typedef struct data_filter_bufs data_filter_bufs_t;
+
+struct data_filter_lpm_bufs {
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, DATA_FILTER_MAX_BUFFERS);
+    __type(key, u32);
+    __type(value, data_filter_lpm_key_t);
+} data_filter_lpm_bufs SEC(".maps");
+
+typedef struct data_filter_lpm_bufs data_filter_lpm_bufs_t;
+
 // store programs for tail calls
 struct prog_array {
     __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
@@ -519,6 +537,68 @@ struct uts_ns_filter_version {
 } uts_ns_filter_version SEC(".maps");
 
 typedef struct uts_ns_filter_version uts_ns_filter_version_t;
+
+// filter data events by exact
+struct data_filter_exact {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 1024);
+    __type(key, data_filter_key_t);
+    __type(value, eq_t);
+} data_filter_exact SEC(".maps");
+
+typedef struct data_filter_exact data_filter_exact_t;
+
+// map of filter data events by exact maps
+struct data_filter_exact_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, policy_key_t);
+    __array(values, data_filter_exact_t);
+} data_filter_exact_version SEC(".maps");
+
+typedef struct data_filter_exact_version data_filter_exact_version_t;
+
+// filter data events by suffix
+struct data_filter_suffix {
+    __uint(type, BPF_MAP_TYPE_LPM_TRIE);
+    __uint(max_entries, 1024);
+    __type(key, data_filter_lpm_key_t);
+    __type(value, eq_t);
+    __uint(map_flags, BPF_F_NO_PREALLOC);
+} data_filter_suffix SEC(".maps");
+
+typedef struct data_filter_suffix data_filter_suffix_t;
+
+// map of filter data events by suffix maps
+struct data_filter_suffix_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, policy_key_t);
+    __array(values, data_filter_suffix_t);
+} data_filter_suffix_version SEC(".maps");
+
+typedef struct data_filter_suffix_version data_filter_suffix_version_t;
+
+// filter data events by prefix
+struct data_filter_prefix {
+    __uint(type, BPF_MAP_TYPE_LPM_TRIE);
+    __uint(max_entries, 1024);
+    __type(key, data_filter_lpm_key_t);
+    __type(value, eq_t);
+    __uint(map_flags, BPF_F_NO_PREALLOC);
+} data_filter_prefix SEC(".maps");
+
+typedef struct data_filter_prefix data_filter_prefix_t;
+
+// map of filter data events by prefix maps
+struct data_filter_prefix_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, policy_key_t);
+    __array(values, data_filter_prefix_t);
+} data_filter_prefix_version SEC(".maps");
+
+typedef struct data_filter_prefix_version data_filter_prefix_version_t;
 
 // filter events by command name
 struct comm_filter {
