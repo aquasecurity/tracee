@@ -14,22 +14,20 @@ type e2eSecurityInodeRename struct {
 	cb detect.SignatureHandler
 }
 
-var e2eSecurityInodeRenameMetadata = detect.SignatureMetadata{
-	ID:          "SECURITY_INODE_RENAME",
-	EventName:   "SECURITY_INODE_RENAME",
-	Version:     "0.1.0",
-	Name:        "security_inode_rename Test",
-	Description: "Instrumentation events E2E Tests: security_inode_rename",
-	Tags:        []string{"e2e", "instrumentation"},
-}
-
 func (sig *e2eSecurityInodeRename) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *e2eSecurityInodeRename) GetMetadata() (detect.SignatureMetadata, error) {
-	return e2eSecurityInodeRenameMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "SECURITY_INODE_RENAME",
+		EventName:   "SECURITY_INODE_RENAME",
+		Version:     "0.1.0",
+		Name:        "security_inode_rename Test",
+		Description: "Instrumentation events E2E Tests: security_inode_rename",
+		Tags:        []string{"e2e", "instrumentation"},
+	}, nil
 }
 
 func (sig *e2eSecurityInodeRename) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

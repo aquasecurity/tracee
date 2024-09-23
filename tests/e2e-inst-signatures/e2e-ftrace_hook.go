@@ -13,22 +13,20 @@ type e2eFtraceHook struct {
 	cb detect.SignatureHandler
 }
 
-var e2eFtraceHookMetadata = detect.SignatureMetadata{
-	ID:          "FTRACE_HOOK",
-	EventName:   "FTRACE_HOOK",
-	Version:     "0.1.0",
-	Name:        "ftrace_hook Test",
-	Description: "Instrumentation events E2E Tests: ftrace_hook",
-	Tags:        []string{"e2e", "instrumentation"},
-}
-
 func (sig *e2eFtraceHook) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *e2eFtraceHook) GetMetadata() (detect.SignatureMetadata, error) {
-	return e2eFtraceHookMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "FTRACE_HOOK",
+		EventName:   "FTRACE_HOOK",
+		Version:     "0.1.0",
+		Name:        "ftrace_hook Test",
+		Description: "Instrumentation events E2E Tests: ftrace_hook",
+		Tags:        []string{"e2e", "instrumentation"},
+	}, nil
 }
 
 func (sig *e2eFtraceHook) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

@@ -14,22 +14,20 @@ type e2eFileModification struct {
 	cb detect.SignatureHandler
 }
 
-var e2eFileModificationMetadata = detect.SignatureMetadata{
-	ID:          "FILE_MODIFICATION",
-	EventName:   "FILE_MODIFICATION",
-	Version:     "0.1.0",
-	Name:        "File Modification Test",
-	Description: "Instrumentation events E2E Tests: File Modification",
-	Tags:        []string{"e2e", "instrumentation"},
-}
-
 func (sig *e2eFileModification) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *e2eFileModification) GetMetadata() (detect.SignatureMetadata, error) {
-	return e2eFileModificationMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "FILE_MODIFICATION",
+		EventName:   "FILE_MODIFICATION",
+		Version:     "0.1.0",
+		Name:        "File Modification Test",
+		Description: "Instrumentation events E2E Tests: File Modification",
+		Tags:        []string{"e2e", "instrumentation"},
+	}, nil
 }
 
 func (sig *e2eFileModification) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

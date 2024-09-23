@@ -13,22 +13,20 @@ type e2eIPv4 struct {
 	cb detect.SignatureHandler
 }
 
-var e2eIPv4Metadata = detect.SignatureMetadata{
-	ID:          "IPv4",
-	EventName:   "IPv4",
-	Version:     "0.1.0",
-	Name:        "Network IPv4 Test",
-	Description: "Network E2E Tests: IPv4",
-	Tags:        []string{"e2e", "network"},
-}
-
 func (sig *e2eIPv4) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *e2eIPv4) GetMetadata() (detect.SignatureMetadata, error) {
-	return e2eIPv4Metadata, nil
+	return detect.SignatureMetadata{
+		ID:          "IPv4",
+		EventName:   "IPv4",
+		Version:     "0.1.0",
+		Name:        "Network IPv4 Test",
+		Description: "Network E2E Tests: IPv4",
+		Tags:        []string{"e2e", "network"},
+	}, nil
 }
 
 func (sig *e2eIPv4) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
