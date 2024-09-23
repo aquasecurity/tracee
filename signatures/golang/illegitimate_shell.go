@@ -16,22 +16,6 @@ type IllegitimateShell struct {
 	webServersProcessNames []string
 }
 
-var illegitimateShellMetadata = detect.SignatureMetadata{
-	ID:          "TRC-1016",
-	Version:     "1",
-	Name:        "Web server spawned a shell",
-	EventName:   "illegitimate_shell",
-	Description: "A web-server program on your server spawned a shell program. Shell is the linux command-line program, web servers usually don't run shell programs, so this alert might indicate an adversary is exploiting a web server program to gain command execution on the server.",
-	Properties: map[string]interface{}{
-		"Severity":             2,
-		"Category":             "initial-access",
-		"Technique":            "Exploit Public-Facing Application",
-		"Kubernetes_Technique": "",
-		"id":                   "attack-pattern--3f886f2a-874f-4333-b794-aa6075009b1c",
-		"external_id":          "T1190",
-	},
-}
-
 func (sig *IllegitimateShell) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.shellNames = []string{"/ash", "/bash", "/csh", "/ksh", "/sh", "/tcsh", "/zsh", "/dash"}
@@ -40,7 +24,21 @@ func (sig *IllegitimateShell) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *IllegitimateShell) GetMetadata() (detect.SignatureMetadata, error) {
-	return illegitimateShellMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "TRC-1016",
+		Version:     "1",
+		Name:        "Web server spawned a shell",
+		EventName:   "illegitimate_shell",
+		Description: "A web-server program on your server spawned a shell program. Shell is the linux command-line program, web servers usually don't run shell programs, so this alert might indicate an adversary is exploiting a web server program to gain command execution on the server.",
+		Properties: map[string]interface{}{
+			"Severity":             2,
+			"Category":             "initial-access",
+			"Technique":            "Exploit Public-Facing Application",
+			"Kubernetes_Technique": "",
+			"id":                   "attack-pattern--3f886f2a-874f-4333-b794-aa6075009b1c",
+			"external_id":          "T1190",
+		},
+	}, nil
 }
 
 func (sig *IllegitimateShell) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

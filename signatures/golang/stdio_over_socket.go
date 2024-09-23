@@ -14,22 +14,6 @@ type StdioOverSocket struct {
 	legitPorts []string
 }
 
-var stdioOverSocketMetadata = detect.SignatureMetadata{
-	ID:          "TRC-101",
-	Version:     "2",
-	Name:        "Process standard input/output over socket detected",
-	EventName:   "stdio_over_socket",
-	Description: "A process has its standard input/output redirected to a socket. This behavior is the base of a Reverse Shell attack, which is when an interactive shell being invoked from a target machine back to the attacker's machine, giving it interactive control over the target. Adversaries may use a Reverse Shell to retain control over a compromised target while bypassing security measures like network firewalls.",
-	Properties: map[string]interface{}{
-		"Severity":             3,
-		"Category":             "execution",
-		"Technique":            "Unix Shell",
-		"Kubernetes_Technique": "",
-		"id":                   "attack-pattern--a9d4b653-6915-42af-98b2-5758c4ceee56",
-		"external_id":          "T1059.004",
-	},
-}
-
 func (sig *StdioOverSocket) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.legitPorts = []string{"", "0"}
@@ -37,7 +21,21 @@ func (sig *StdioOverSocket) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *StdioOverSocket) GetMetadata() (detect.SignatureMetadata, error) {
-	return stdioOverSocketMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "TRC-101",
+		Version:     "2",
+		Name:        "Process standard input/output over socket detected",
+		EventName:   "stdio_over_socket",
+		Description: "A process has its standard input/output redirected to a socket. This behavior is the base of a Reverse Shell attack, which is when an interactive shell being invoked from a target machine back to the attacker's machine, giving it interactive control over the target. Adversaries may use a Reverse Shell to retain control over a compromised target while bypassing security measures like network firewalls.",
+		Properties: map[string]interface{}{
+			"Severity":             3,
+			"Category":             "execution",
+			"Technique":            "Unix Shell",
+			"Kubernetes_Technique": "",
+			"id":                   "attack-pattern--a9d4b653-6915-42af-98b2-5758c4ceee56",
+			"external_id":          "T1059.004",
+		},
+	}, nil
 }
 
 func (sig *StdioOverSocket) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
