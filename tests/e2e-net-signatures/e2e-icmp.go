@@ -13,22 +13,20 @@ type e2eICMP struct {
 	cb detect.SignatureHandler
 }
 
-var e2eICMPMetadata = detect.SignatureMetadata{
-	ID:          "ICMP",
-	EventName:   "ICMP",
-	Version:     "0.1.0",
-	Name:        "Network ICMP Test",
-	Description: "Network E2E Tests: ICMP",
-	Tags:        []string{"e2e", "network"},
-}
-
 func (sig *e2eICMP) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *e2eICMP) GetMetadata() (detect.SignatureMetadata, error) {
-	return e2eICMPMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "ICMP",
+		EventName:   "ICMP",
+		Version:     "0.1.0",
+		Name:        "Network ICMP Test",
+		Description: "Network E2E Tests: ICMP",
+		Tags:        []string{"e2e", "network"},
+	}, nil
 }
 
 func (sig *e2eICMP) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

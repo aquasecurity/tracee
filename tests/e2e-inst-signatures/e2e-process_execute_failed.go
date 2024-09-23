@@ -18,15 +18,6 @@ type e2eProcessExecuteFailed struct {
 	markUnsupportedKernel sync.Once
 }
 
-var e2eProcessExecuteFailedMetadata = detect.SignatureMetadata{
-	ID:          "PROCESS_EXECUTE_FAILED",
-	EventName:   "PROCESS_EXECUTE_FAILED",
-	Version:     "0.1.0",
-	Name:        "Process Execute Failed Test",
-	Description: "Instrumentation events E2E Tests: Process Execute Failed",
-	Tags:        []string{"e2e", "instrumentation"},
-}
-
 func (sig *e2eProcessExecuteFailed) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	var err error
@@ -38,7 +29,14 @@ func (sig *e2eProcessExecuteFailed) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *e2eProcessExecuteFailed) GetMetadata() (detect.SignatureMetadata, error) {
-	return e2eProcessExecuteFailedMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "PROCESS_EXECUTE_FAILED",
+		EventName:   "PROCESS_EXECUTE_FAILED",
+		Version:     "0.1.0",
+		Name:        "Process Execute Failed Test",
+		Description: "Instrumentation events E2E Tests: Process Execute Failed",
+		Tags:        []string{"e2e", "instrumentation"},
+	}, nil
 }
 
 func (sig *e2eProcessExecuteFailed) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

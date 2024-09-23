@@ -17,22 +17,20 @@ type e2eSecurityPathNotify struct {
 	found_fanotify bool
 }
 
-var e2eSecurityPathNotifyMetadata = detect.SignatureMetadata{
-	ID:          "SECURITY_PATH_NOTIFY",
-	EventName:   "SECURITY_PATH_NOTIFY",
-	Version:     "0.1.0",
-	Name:        "Security Path Notify Test",
-	Description: "Instrumentation events E2E Tests: Security Path Notify",
-	Tags:        []string{"e2e", "instrumentation"},
-}
-
 func (sig *e2eSecurityPathNotify) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *e2eSecurityPathNotify) GetMetadata() (detect.SignatureMetadata, error) {
-	return e2eSecurityPathNotifyMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "SECURITY_PATH_NOTIFY",
+		EventName:   "SECURITY_PATH_NOTIFY",
+		Version:     "0.1.0",
+		Name:        "Security Path Notify Test",
+		Description: "Instrumentation events E2E Tests: Security Path Notify",
+		Tags:        []string{"e2e", "instrumentation"},
+	}, nil
 }
 
 func (sig *e2eSecurityPathNotify) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

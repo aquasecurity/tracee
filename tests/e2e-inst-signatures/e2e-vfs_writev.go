@@ -14,22 +14,20 @@ type e2eVfsWritev struct {
 	cb detect.SignatureHandler
 }
 
-var e2eVfsWritevMetadata = detect.SignatureMetadata{
-	ID:          "VFS_WRITEV",
-	EventName:   "VFS_WRITEV",
-	Version:     "0.1.0",
-	Name:        "Vfs Writev Test",
-	Description: "Instrumentation events E2E Tests: Vfs Writev",
-	Tags:        []string{"e2e", "instrumentation"},
-}
-
 func (sig *e2eVfsWritev) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
 func (sig *e2eVfsWritev) GetMetadata() (detect.SignatureMetadata, error) {
-	return e2eVfsWritevMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "VFS_WRITEV",
+		EventName:   "VFS_WRITEV",
+		Version:     "0.1.0",
+		Name:        "Vfs Writev Test",
+		Description: "Instrumentation events E2E Tests: Vfs Writev",
+		Tags:        []string{"e2e", "instrumentation"},
+	}, nil
 }
 
 func (sig *e2eVfsWritev) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
