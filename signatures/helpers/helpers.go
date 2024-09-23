@@ -2,10 +2,8 @@ package helpers
 
 import (
 	"fmt"
-	"maps"
 	"strings"
 
-	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -436,14 +434,4 @@ func GetProtoHTTPByName(
 	}
 
 	return trace.ProtoHTTP{}, fmt.Errorf("protocol HTTP: type error (should be trace.ProtoHTTP, is %T)", arg.Value)
-}
-
-// CloneMetadataProperties makes a shallow clone of the Metadata
-// Properties map, ensuring that there is always a new reference to it.
-//
-// TODO: since this helper is a workaround to avoid data races,
-// perhaps a better solution would be to convert Properties into
-// a concrete structure.
-func CloneMetadataProperties(m *detect.SignatureMetadata) {
-	m.Properties = maps.Clone(m.Properties)
 }
