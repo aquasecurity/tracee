@@ -238,21 +238,33 @@ func (f *StringFilter) FilterOut() bool {
 }
 
 type StringFilterEqualities struct {
-	Equal    map[string]struct{}
-	NotEqual map[string]struct{}
+	Equal          map[string]struct{}
+	NotEqual       map[string]struct{}
+	EqualPrefix    map[string]struct{}
+	NotEqualPrefix map[string]struct{}
+	EqualSuffix    map[string]struct{}
+	NotEqualSuffix map[string]struct{}
 }
 
 func (f *StringFilter) Equalities() StringFilterEqualities {
 	if !f.Enabled() {
 		return StringFilterEqualities{
-			Equal:    map[string]struct{}{},
-			NotEqual: map[string]struct{}{},
+			Equal:          map[string]struct{}{},
+			NotEqual:       map[string]struct{}{},
+			EqualPrefix:    map[string]struct{}{},
+			NotEqualPrefix: map[string]struct{}{},
+			EqualSuffix:    map[string]struct{}{},
+			NotEqualSuffix: map[string]struct{}{},
 		}
 	}
 
 	return StringFilterEqualities{
-		Equal:    maps.Clone(f.equal),
-		NotEqual: maps.Clone(f.notEqual),
+		Equal:          maps.Clone(f.equal),
+		NotEqual:       maps.Clone(f.notEqual),
+		EqualPrefix:    maps.Clone(f.prefixes.Set),
+		NotEqualPrefix: maps.Clone(f.notPrefixes.Set),
+		EqualSuffix:    maps.Clone(f.suffixes.Set),
+		NotEqualSuffix: maps.Clone(f.notSuffixes.Set),
 	}
 }
 

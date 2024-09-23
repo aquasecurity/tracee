@@ -21,14 +21,17 @@ const (
 
 // filtersEqualities stores the equalities for each filter in the policies
 type filtersEqualities struct {
-	uidEqualities      map[uint64]equality
-	pidEqualities      map[uint64]equality
-	mntNSEqualities    map[uint64]equality
-	pidNSEqualities    map[uint64]equality
-	cgroupIdEqualities map[uint64]equality
-	utsEqualities      map[string]equality
-	commEqualities     map[string]equality
-	binaryEqualities   map[filters.NSBinary]equality
+	uidEqualities         map[uint64]equality
+	pidEqualities         map[uint64]equality
+	mntNSEqualities       map[uint64]equality
+	pidNSEqualities       map[uint64]equality
+	cgroupIdEqualities    map[uint64]equality
+	utsEqualities         map[string]equality
+	commEqualities        map[string]equality
+	dataEqualitiesPrefix  map[filters.KernelData]equality
+	dataEqualitiesSuffix  map[filters.KernelData]equality
+	dataEqualitiesExactly map[filters.KernelData]equality
+	binaryEqualities      map[filters.NSBinary]equality
 }
 
 // equalityType represents the type of equality.
@@ -149,6 +152,17 @@ func (ps *policies) computeFilterEqualities(
 		commEqualities := p.CommFilter.Equalities()
 		updateEqualities(fEqs.commEqualities, commEqualities.NotEqual, notEqual, policyID)
 		updateEqualities(fEqs.commEqualities, commEqualities.Equal, equal, policyID)
+
+		// DataFilters
+		dataEqualities := p.DataFilter.Equalities()
+		updateEqualities(fEqs.dataEqualitiesExactly, dataEqualities.NotEqual, notEqual, policyID)
+		updateEqualities(fEqs.dataEqualitiesExactly, dataEqualities.Equal, equal, policyID)
+
+		updateEqualities(fEqs.dataEqualitiesPrefix, dataEqualities.NotEqualPrefix, notEqual, policyID)
+		updateEqualities(fEqs.dataEqualitiesPrefix, dataEqualities.EqualPrefix, equal, policyID)
+
+		updateEqualities(fEqs.dataEqualitiesSuffix, dataEqualities.NotEqualSuffix, notEqual, policyID)
+		updateEqualities(fEqs.dataEqualitiesSuffix, dataEqualities.EqualSuffix, equal, policyID)
 
 		// BinaryFilters
 		binaryEqualities := p.BinaryFilter.Equalities()
