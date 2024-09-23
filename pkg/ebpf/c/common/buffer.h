@@ -10,6 +10,9 @@
 // PROTOTYPES
 
 statfunc buf_t *get_buf(int);
+statfunc data_filter_key_t *get_string_data_filter_buf(int);
+statfunc data_filter_lpm_key_t *get_string_data_filter_lpm_buf(int);
+statfunc int reverse_string(char *, char *, int, int);
 statfunc int save_to_submit_buf(args_buffer_t *, void *, u32, u8);
 statfunc int save_bytes_to_buf(args_buffer_t *, void *, u32, u8);
 statfunc int save_str_to_buf(args_buffer_t *, void *, u8);
@@ -29,8 +32,51 @@ statfunc buf_t *get_buf(int idx)
     return bpf_map_lookup_elem(&bufs, &idx);
 }
 
+statfunc data_filter_key_t *get_string_data_filter_buf(int idx)
+{
+    return bpf_map_lookup_elem(&data_filter_bufs, &idx);
+}
+
+statfunc data_filter_lpm_key_t *get_string_data_filter_lpm_buf(int idx)
+{
+    return bpf_map_lookup_elem(&data_filter_lpm_bufs, &idx);
+}
+
 // biggest elem to be saved with 'save_to_submit_buf' should be defined here:
 #define MAX_ELEMENT_SIZE bpf_core_type_size(struct sockaddr_un)
+
+statfunc int reverse_string(char *dst, char *src, int src_off, int len)
+{
+    uint i;
+
+    if (!dst || !src || src_off < 0 || len <= 0) {
+        return 0;
+    }
+
+    // don't count null-termination since we will force it at the end
+    len = (len - 1) & MAX_DATA_FILTER_STR_SIZE_MASK;
+
+    // Copy with safe bounds checking
+    for (i = 0; i < len; i++) {
+        // This line is necessary to satisfy the eBPF Verifier
+        if (i >= MAX_DATA_FILTER_STR_SIZE)
+            break;
+
+        u32 idx = src_off + len - 1 - i;
+
+        // Ensure the calculated index is within bounds
+        if (idx >= ARGS_BUF_SIZE)
+            return 0;
+
+        dst[i] = src[idx];
+    }
+
+    // Force null-termination at the end
+    dst[i] = '\0';
+
+    // Characters copied with null-termination
+    return i + 1;
+}
 
 statfunc int save_to_submit_buf(args_buffer_t *buf, void *ptr, u32 size, u8 index)
 {
@@ -98,6 +144,73 @@ statfunc int save_bytes_to_buf(args_buffer_t *buf, void *ptr, u32 size, u8 index
     return 0;
 }
 
+statfunc int load_str_from_buf(args_buffer_t *buf, char *str, u8 index, enum str_filter_type_e type)
+{
+    u16 offset;
+    u32 size;
+
+    // skip if index is not in buffer
+    if (index > buf->argnum)
+        return 0;
+
+    offset = buf->args_offset[index];
+
+    if (offset == INVALID_ARG_OFFSET)
+        return 0;
+
+    // Ensure there is enough space for read index (u8)
+    if ((offset + sizeof(u8)) > ARGS_BUF_SIZE)
+        return 0;
+
+    // Skip index
+    offset += sizeof(u8);
+
+    // Ensure there is enough space for read size (u32)
+    if ((offset + sizeof(u32)) > ARGS_BUF_SIZE)
+        return 0;
+
+    // Copy the size
+    __builtin_memcpy(&size, &(buf->args[offset]), sizeof(u32));
+
+    // Skip size
+    offset += sizeof(u32);
+
+    // Adjust size and offset based on filter type
+    switch (type) {
+        case FILTER_TYPE_EXACT:
+            if (size > MAX_DATA_FILTER_STR_SIZE)
+                return 0;
+            break;
+
+        case FILTER_TYPE_PREFIX:
+            size = size > MAX_DATA_FILTER_STR_SIZE ? MAX_DATA_FILTER_STR_SIZE : size;
+            break;
+
+        case FILTER_TYPE_SUFFIX:
+            if (size > MAX_DATA_FILTER_STR_SIZE) {
+                offset += size - MAX_DATA_FILTER_STR_SIZE;
+                size = MAX_DATA_FILTER_STR_SIZE;
+            }
+            break;
+
+        default:
+            // Invalid filter type
+            return 0;
+    }
+
+    // Ensure there is enough space to read the string
+    if ((offset + size) > ARGS_BUF_SIZE)
+        return 0;
+
+    // Load string in reverse order if suffix type
+    if (type == FILTER_TYPE_SUFFIX)
+        size = reverse_string(str, buf->args, offset, size);
+    else
+        size = bpf_probe_read_kernel_str(str, size, &(buf->args[offset]));
+
+    return size;
+}
+
 statfunc int save_str_to_buf(args_buffer_t *buf, void *ptr, u8 index)
 {
     // Data saved to submit buf: [index][size][ ... string ... ]
@@ -107,6 +220,9 @@ statfunc int save_str_to_buf(args_buffer_t *buf, void *ptr, u8 index)
 
     // Save argument index
     buf->args[buf->offset] = index;
+
+    // Save offset at the specified index
+    buf->args_offset[index] = buf->offset;
 
     // Satisfy verifier for probe read
     if (buf->offset > ARGS_BUF_SIZE - (MAX_STRING_SIZE + 1 + sizeof(int)))
