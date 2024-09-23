@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
-	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
+	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -106,7 +106,7 @@ tracee analyze --events anti_debugging events.json`,
 			signatureEvents = nil
 		}
 
-		sigs, _, err := signature.Find(
+		signatures, _, err := signature.Find(
 			rego.RuntimeTarget,
 			rego.PartialEval,
 			viper.GetStringSlice("signatures-dir"),
@@ -118,20 +118,20 @@ tracee analyze --events anti_debugging events.json`,
 			logger.Fatalw("Failed to find signature event", "err", err)
 		}
 
-		if len(sigs) == 0 {
+		if len(signatures) == 0 {
 			logger.Fatalw("No signature event loaded")
 		}
 
 		logger.Infow(
 			"Signatures loaded",
-			"total", len(sigs),
-			"signatures", getSigsNames(sigs),
+			"total", len(signatures),
+			"signatures", getSigsNames(signatures),
 		)
 
-		_ = initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
+		_ = sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
 
 		engineConfig := engine.Config{
-			Signatures:          sigs,
+			Signatures:          signatures,
 			SignatureBufferSize: 1000,
 		}
 
