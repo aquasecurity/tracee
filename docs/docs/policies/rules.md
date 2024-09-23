@@ -1,72 +1,50 @@
 # Rules
 
-Rules are part of the Tracee Policy, which defines which events to trace. The events that are part of a specific policy are recorded in the `rules` section of the Tracee Policy. It is possible to define multiple events within each policy. The [events](../events/index.md) section provides further information on the type of events that Tracee can track.
+Rules are part of the Tracee Policy, `rules` let you define which events to trace.
 
-Below are several examples on configuring events in the Tracee Policy.
+`rules` have 2 sections: 
+- events: let you define which events you want to trace.
+- filters: enable you to refine the policy's scope.
 
+Tracee support many kind of events to tracee you can find which events you can trace in [Events section](/docs/docs/events/index.md).
+
+- **NOTE:** It is possible to define multiple events within each policy.
+
+Below is an example showcasing a policy:
+```yaml
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+	name: sample-scope-filter
+	annotations:
+		description: sample scope filter
+spec:
+	scope:
+	    - global
+	rules:
+	    event: openat
+	    filters:
+		- uid=1000
+```
 ## Events
 
-Every event that is specified within the `rules` section supports three types of filters: `scope`, `data` and `return value`.
-
 ### Type of Events
+The value of an `event` it's the event name from the supported events.
 
-**[A syscall](../events/builtin/syscalls/index.md)**
+For example: `syscall` event would be the `syscall` event name.
 
-Example Scope Section referencing the `open` syscall:
+The [events](../events/index.md) section provides further information on the type of events that Tracee can trace.
 
-```bash
-spec:
-	scope:
-	    - global
-	rules:
-	    event: open
-```
 
-The name of the syscall is going to be the name of the event.
+## Filters
 
-**[Network Events](../events/builtin/network/index.md)**
+Filters enable you to refine the policy's scope by specifying conditions for particular events. This allows you to narrow down the criteria to precisely target the events you're interested in, ensuring that the policy applies only under specific circumstances.
 
-Network Events can be specified from the list of `Available network events`.
+Every `event` that is specified within the `rules` section supports three types of filters: `process`, `data` and `return value`.
 
-For example:
+### Process filters
 
-```bash
-spec:
-	scope:
-	    - global
-	rules:
-	    event: net_packet_ipv4
-```
-
-**[A behavioural Signature](../events/builtin/signatures/index.md)**
-
-To specify one of the behavioral signatures as an event, use the name of the signature from the table in the documentation as the event name:
-
-```bash
-spec:
-	scope:
-	    - global
-	rules:
-	    event: anti_debugging
-```
-
-**[Any of our extra events](../events/builtin/extra/bpf_attach.md)**
-
-Any of the extra events listed in the Tracee documentation can be listed in the Tracee Policy.
-
-For instance, to specify the [do_sigaction](../events/builtin/extra/do_sigaction.md) event, provide the name in the YAML manifest:
-
-```bash
-spec:
-	scope:
-	    - global
-	rules:
-	    event: do_sigaction
-```
-
-## Scope filters
-
-Further refinement of the policy's scope is achievable through the application of scope filters:
+Further refinement of the policy's scope is achievable through the application of process filters:
 
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
@@ -239,7 +217,7 @@ filters:
 ```
 
         
-## Data filter
+### Data filter
 
 Events contain data that can be filtered.
 
@@ -271,7 +249,7 @@ tracee -e security_file_open --output json
 {"timestamp":1680182976364916505,"threadStartTime":1680179107675006774,"processorId":0,"processId":676,"cgroupId":5247,"threadId":676,"parentProcessId":1,"hostProcessId":676,"hostThreadId":676,"hostParentProcessId":1,"userId":131,"mountNamespace":4026532574,"pidNamespace":4026531836,"processName":"systemd-oomd","hostName":"josedonizetti-x","container":{},"kubernetes":{},"eventId":"730","eventName":"security_file_open","matchedPolicies":[""],"argsNum":6,"returnValue":0,"syscall":"openat","stackAddresses":null,"contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"pathname","type":"const char*","value":"/proc/meminfo"},{"name":"flags","type":"string","value":"O_RDONLY|O_LARGEFILE"},{"name":"dev","type":"dev_t","value":45},{"name":"inode","type":"unsigned long","value":4026532041},{"name":"ctime","type":"unsigned long","value":1680179108391999988},{"name":"syscall_pathname","type":"const char*","value":"/proc/meminfo"}]}
 ```
 
-## Return value filter
+### Return value filter
 
 Return values can also be filtered.
 

@@ -2,7 +2,7 @@
 title: TRACEE-SCOPE
 section: 1
 header: Tracee Scope Flag Manual
-date: 2024/06
+date: 2024/09
 ...
 
 ## NAME
@@ -52,6 +52,8 @@ Available for the following string fields:
 Strings can be compared as a prefix if ending with '\*', or as a suffix if starting with '\*'.
 
 NOTE: Expressions containing '\*' token must be escaped!
+
+you can learn more about the wildcard in the [`event` section](./events.1.md).
 
 ### BOOLEAN OPERATOR (PREPENDED)
 
