@@ -16,22 +16,6 @@ type LdPreload struct {
 	preloadPath string
 }
 
-var ldPreloadMetadata = detect.SignatureMetadata{
-	ID:          "TRC-107",
-	Version:     "1",
-	Name:        "LD_PRELOAD code injection detected",
-	EventName:   "ld_preload",
-	Description: "LD_PRELOAD usage was detected. LD_PRELOAD lets you load your library before any other library, allowing you to hook functions in a process. Adversaries may use this technique to change your applications' behavior or load their own programs.",
-	Properties: map[string]interface{}{
-		"Severity":             2,
-		"Category":             "persistence",
-		"Technique":            "Hijack Execution Flow",
-		"Kubernetes_Technique": "",
-		"id":                   "attack-pattern--aedfca76-3b30-4866-b2aa-0f1d7fd1e4b6",
-		"external_id":          "T1574",
-	},
-}
-
 func (sig *LdPreload) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.preloadEnvs = []string{"LD_PRELOAD", "LD_LIBRARY_PATH"}
@@ -40,7 +24,21 @@ func (sig *LdPreload) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *LdPreload) GetMetadata() (detect.SignatureMetadata, error) {
-	return ldPreloadMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "TRC-107",
+		Version:     "1",
+		Name:        "LD_PRELOAD code injection detected",
+		EventName:   "ld_preload",
+		Description: "LD_PRELOAD usage was detected. LD_PRELOAD lets you load your library before any other library, allowing you to hook functions in a process. Adversaries may use this technique to change your applications' behavior or load their own programs.",
+		Properties: map[string]interface{}{
+			"Severity":             2,
+			"Category":             "persistence",
+			"Technique":            "Hijack Execution Flow",
+			"Kubernetes_Technique": "",
+			"id":                   "attack-pattern--aedfca76-3b30-4866-b2aa-0f1d7fd1e4b6",
+			"external_id":          "T1574",
+		},
+	}, nil
 }
 
 func (sig *LdPreload) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
