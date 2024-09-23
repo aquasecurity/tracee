@@ -15,19 +15,6 @@ type K8sApiConnection struct {
 	apiAddressContainerId map[string]string
 }
 
-var k8sApiConnectionMetadata = detect.SignatureMetadata{
-	ID:          "TRC-1013",
-	Version:     "0.1.0",
-	Name:        "Kubernetes API server connection detected",
-	EventName:   "k8s_api_connection",
-	Description: "A connection to the kubernetes API server was detected. The K8S API server is the brain of your K8S cluster, adversaries may try and communicate with the K8S API server to gather information/credentials, or even run more containers and laterally expand their grip on your systems.",
-	Tags:        []string{"container"},
-	Properties: map[string]interface{}{
-		"Severity":     1,
-		"MITRE ATT&CK": "Discovery: Cloud Service Discovery",
-	},
-}
-
 func (sig *K8sApiConnection) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.apiAddressContainerId = make(map[string]string)
@@ -36,7 +23,18 @@ func (sig *K8sApiConnection) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *K8sApiConnection) GetMetadata() (detect.SignatureMetadata, error) {
-	return k8sApiConnectionMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "TRC-1013",
+		Version:     "0.1.0",
+		Name:        "Kubernetes API server connection detected",
+		EventName:   "k8s_api_connection",
+		Description: "A connection to the kubernetes API server was detected. The K8S API server is the brain of your K8S cluster, adversaries may try and communicate with the K8S API server to gather information/credentials, or even run more containers and laterally expand their grip on your systems.",
+		Tags:        []string{"container"},
+		Properties: map[string]interface{}{
+			"Severity":     1,
+			"MITRE ATT&CK": "Discovery: Cloud Service Discovery",
+		},
+	}, nil
 }
 
 func (sig *K8sApiConnection) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {

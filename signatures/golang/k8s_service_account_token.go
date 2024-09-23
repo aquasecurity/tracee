@@ -17,22 +17,6 @@ type K8SServiceAccountToken struct {
 	compiledRegex    *regexp.Regexp
 }
 
-var k8SServiceAccountTokenMetadata = detect.SignatureMetadata{
-	ID:          "TRC-108",
-	Version:     "1",
-	Name:        "K8s service account token file read",
-	EventName:   "k8s_service_account_token",
-	Description: "The Kubernetes service account token file was read on your container. This token is used to communicate with the Kubernetes API Server. Adversaries may try to communicate with the API Server to steal information and/or credentials, or even run more containers and laterally extend their grip on the systems.",
-	Properties: map[string]interface{}{
-		"Severity":             0,
-		"Category":             "credential-access",
-		"Technique":            "Exploitation for Credential Access",
-		"Kubernetes_Technique": "Container service account",
-		"id":                   "attack-pattern--9c306d8d-cde7-4b4c-b6e8-d0bb16caca36",
-		"external_id":          "T1212",
-	},
-}
-
 func (sig *K8SServiceAccountToken) Init(ctx detect.SignatureContext) error {
 	var err error
 	sig.cb = ctx.Callback
@@ -43,7 +27,21 @@ func (sig *K8SServiceAccountToken) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *K8SServiceAccountToken) GetMetadata() (detect.SignatureMetadata, error) {
-	return k8SServiceAccountTokenMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "TRC-108",
+		Version:     "1",
+		Name:        "K8s service account token file read",
+		EventName:   "k8s_service_account_token",
+		Description: "The Kubernetes service account token file was read on your container. This token is used to communicate with the Kubernetes API Server. Adversaries may try to communicate with the API Server to steal information and/or credentials, or even run more containers and laterally extend their grip on the systems.",
+		Properties: map[string]interface{}{
+			"Severity":             0,
+			"Category":             "credential-access",
+			"Technique":            "Exploitation for Credential Access",
+			"Kubernetes_Technique": "Container service account",
+			"id":                   "attack-pattern--9c306d8d-cde7-4b4c-b6e8-d0bb16caca36",
+			"external_id":          "T1212",
+		},
+	}, nil
 }
 
 func (sig *K8SServiceAccountToken) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
