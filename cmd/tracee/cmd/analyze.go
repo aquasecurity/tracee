@@ -14,8 +14,8 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
-	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/findings"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
@@ -214,7 +214,7 @@ func produce(ctx context.Context, inputFile *os.File, engineInput chan<- protoco
 
 func findingProcessor(engineInput chan<- protocol.Event) func(finding *detect.Finding) {
 	return func(finding *detect.Finding) {
-		event, err := tracee.FindingToEvent(finding)
+		event, err := findings.FindingToEvent(finding)
 		if err != nil {
 			logger.Fatalw("Failed to convert finding to event", "err", err)
 		}

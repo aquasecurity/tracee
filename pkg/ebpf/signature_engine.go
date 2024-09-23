@@ -6,6 +6,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/findings"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
@@ -114,7 +115,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 					continue // might happen during initialization (ctrl+c seg faults)
 				}
 
-				event, err := FindingToEvent(finding)
+				event, err := findings.FindingToEvent(finding)
 				if err != nil {
 					t.handleError(err)
 					continue
