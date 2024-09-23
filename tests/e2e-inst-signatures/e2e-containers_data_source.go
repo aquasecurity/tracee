@@ -14,15 +14,6 @@ type e2eContainersDataSource struct {
 	containersData detect.DataSource
 }
 
-var e2eContainersDataSourceMetadata = detect.SignatureMetadata{
-	ID:          "CONTAINERS_DATA_SOURCE",
-	EventName:   "CONTAINERS_DATA_SOURCE",
-	Version:     "0.1.0",
-	Name:        "Containers Data Source Test",
-	Description: "Instrumentation events E2E Tests: Containers Data Source Test",
-	Tags:        []string{"e2e", "instrumentation"},
-}
-
 func (sig *e2eContainersDataSource) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	containersData, ok := ctx.GetDataSource("tracee", "containers")
@@ -37,7 +28,14 @@ func (sig *e2eContainersDataSource) Init(ctx detect.SignatureContext) error {
 }
 
 func (sig *e2eContainersDataSource) GetMetadata() (detect.SignatureMetadata, error) {
-	return e2eContainersDataSourceMetadata, nil
+	return detect.SignatureMetadata{
+		ID:          "CONTAINERS_DATA_SOURCE",
+		EventName:   "CONTAINERS_DATA_SOURCE",
+		Version:     "0.1.0",
+		Name:        "Containers Data Source Test",
+		Description: "Instrumentation events E2E Tests: Containers Data Source Test",
+		Tags:        []string{"e2e", "instrumentation"},
+	}, nil
 }
 
 func (sig *e2eContainersDataSource) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
