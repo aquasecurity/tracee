@@ -10,6 +10,7 @@
 // PROTOTYPES
 
 statfunc buf_t *get_buf(int);
+statfunc data_filter_lpm_key_t *get_data_filter_buf(int);
 statfunc int save_to_submit_buf(args_buffer_t *, void *, u32, u8);
 statfunc int save_bytes_to_buf(args_buffer_t *, void *, u32, u8);
 statfunc int save_str_to_buf(args_buffer_t *, void *, u8);
@@ -27,6 +28,11 @@ statfunc int signal_perf_submit(void *, controlplane_signal_t *);
 statfunc buf_t *get_buf(int idx)
 {
     return bpf_map_lookup_elem(&bufs, &idx);
+}
+
+statfunc data_filter_lpm_key_t *get_data_filter_buf(int idx)
+{
+    return bpf_map_lookup_elem(&data_filter_bufs, &idx);
 }
 
 // biggest elem to be saved with 'save_to_submit_buf' should be defined here:
@@ -98,6 +104,49 @@ statfunc int save_bytes_to_buf(args_buffer_t *buf, void *ptr, u32 size, u8 index
     return 0;
 }
 
+statfunc int load_str_from_buf(args_buffer_t *buf, char *str, u8 index)
+{
+    u16 offset;
+    u32 size;
+
+    // skip if index is not in buffer
+    if (index > buf->argnum)
+        return 0;
+
+    offset = buf->args_offset[index];
+
+    if (offset != INVALID_ARG_OFFSET) {
+        // Ensure there is enough space for read index (u8)
+        if (offset + sizeof(u8) > ARGS_BUF_SIZE) {
+            return 0;
+        }
+
+        // Skip index
+        offset += sizeof(u8);
+
+        // Copy the size
+        __builtin_memcpy(&size, &(buf->args[offset]), sizeof(u32));
+
+        // Skip size
+        offset += sizeof(u32);
+
+        if (offset + sizeof(u32) > ARGS_BUF_SIZE) {
+            return 0;
+        }
+
+        // Retrieve the str
+        if (size < MAX_PATH_PREF_SIZE) {
+            bpf_probe_read_kernel(str, size, &(buf->args[offset]));
+            str[size] = '\0';
+            return size;
+        } else {
+            return 0;
+        }
+    }
+
+    return 0;
+}
+
 statfunc int save_str_to_buf(args_buffer_t *buf, void *ptr, u8 index)
 {
     // Data saved to submit buf: [index][size][ ... string ... ]
@@ -107,6 +156,9 @@ statfunc int save_str_to_buf(args_buffer_t *buf, void *ptr, u8 index)
 
     // Save argument index
     buf->args[buf->offset] = index;
+
+    // Save offset at the specified index
+    buf->args_offset[index] = buf->offset;
 
     // Satisfy verifier for probe read
     if (buf->offset > ARGS_BUF_SIZE - (MAX_STRING_SIZE + 1 + sizeof(int)))
