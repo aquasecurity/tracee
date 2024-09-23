@@ -24,8 +24,12 @@
 #define MAX_STR_ARR_ELEM      38 // TODO: turn this into global variables set w/ libbpfgo
 #define MAX_ARGS_STR_ARR_ELEM 15
 #define MAX_PATH_PREF_SIZE    64
+#define MAX_DATA_FILTER_STR_SIZE 256
+#define MAX_DATA_FILTER_STR_SIZE_MASK (MAX_DATA_FILTER_STR_SIZE-1)
 #define MAX_PATH_COMPONENTS   20
 #define MAX_BIN_CHUNKS        110
+#define MAX_ARGS              32 // Update if any eBPF program requires more arguments
+#define INVALID_ARG_OFFSET    0xFFFF
 
 #define CAPTURE_IFACE (1 << 0)
 #define TRACE_IFACE   (1 << 1)
@@ -50,6 +54,19 @@ enum buf_idx_e
     STRING_BUF_IDX,
     FILE_BUF_IDX,
     MAX_BUFFERS
+};
+
+enum buf_data_filter_idx_e
+{
+    DATA_FILTER_BUF1_IDX,
+    DATA_FILTER_MAX_BUFFERS
+};
+
+enum str_filter_type_e
+{
+    FILTER_TYPE_EXACT,
+    FILTER_TYPE_PREFIX,
+    FILTER_TYPE_SUFFIX
 };
 
 // clang-format on
