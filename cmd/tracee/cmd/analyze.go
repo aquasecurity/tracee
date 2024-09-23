@@ -14,8 +14,8 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
-	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/findings"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
@@ -77,127 +77,141 @@ tracee analyze --events anti_debugging events.json`,
 		bindViperFlag(cmd, "rego")
 		bindViperFlag(cmd, "signatures-dir")
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		logFlags := viper.GetStringSlice("log")
-
-		logCfg, err := flags.PrepareLogger(logFlags, true)
-		if err != nil {
-			logger.Fatalw("Failed to prepare logger", "error", err)
-		}
-		logger.Init(logCfg)
-
-		inputFile, err := os.Open(args[0])
-		if err != nil {
-			logger.Fatalw("Failed to get signatures-dir flag", "err", err)
-		}
-
-		// Rego command line flags
-
-		rego, err := flags.PrepareRego(viper.GetStringSlice("rego"))
-		if err != nil {
-			logger.Fatalw("Failed to parse rego flags", "err", err)
-		}
-
-		// Signature directory command line flags
-
-		signatureEvents := viper.GetStringSlice("events")
-		// if no event was passed, load all events
-		if len(signatureEvents) == 0 {
-			signatureEvents = nil
-		}
-
-		signatures, _, err := signature.Find(
-			rego.RuntimeTarget,
-			rego.PartialEval,
-			viper.GetStringSlice("signatures-dir"),
-			signatureEvents,
-			rego.AIO,
-		)
-
-		if err != nil {
-			logger.Fatalw("Failed to find signature event", "err", err)
-		}
-
-		if len(signatures) == 0 {
-			logger.Fatalw("No signature event loaded")
-		}
-
-		logger.Infow(
-			"Signatures loaded",
-			"total", len(signatures),
-			"signatures", getSigsNames(signatures),
-		)
-
-		_ = sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
-
-		engineConfig := engine.Config{
-			Signatures:          signatures,
-			SignatureBufferSize: 1000,
-		}
-
-		ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-		defer stop()
-
-		engineOutput := make(chan *detect.Finding)
-		engineInput := make(chan protocol.Event)
-
-		source := engine.EventSources{Tracee: engineInput}
-		sigEngine, err := engine.NewEngine(engineConfig, source, engineOutput)
-		if err != nil {
-			logger.Fatalw("Failed to create engine", "err", err)
-		}
-
-		err = sigEngine.Init()
-		if err != nil {
-			logger.Fatalw("failed to initialize signature engine", "err", err)
-		}
-
-		go sigEngine.Start(ctx)
-
-		// producer
-		go produce(ctx, inputFile, engineInput)
-
-		// consumer
-		for {
-			select {
-			case finding, ok := <-engineOutput:
-				if !ok {
-					return
-				}
-				process(finding)
-			case <-ctx.Done():
-				goto drain
-			}
-		}
-	drain:
-		// drain
-		for {
-			select {
-			case finding, ok := <-engineOutput:
-				if !ok {
-					return
-				}
-				process(finding)
-			default:
-				return
-			}
-		}
-	},
+	Run:                   command,
 	DisableFlagsInUseLine: true,
 }
 
-func produce(ctx context.Context, inputFile *os.File, engineInput chan protocol.Event) {
-	// ensure the engineInput channel will be closed
-	defer close(engineInput)
+func command(cmd *cobra.Command, args []string) {
+	logFlags := viper.GetStringSlice("log")
 
+	logCfg, err := flags.PrepareLogger(logFlags, true)
+	if err != nil {
+		logger.Fatalw("Failed to prepare logger", "error", err)
+	}
+	logger.Init(logCfg)
+
+	inputFile, err := os.Open(args[0])
+	if err != nil {
+		logger.Fatalw("Failed to get signatures-dir flag", "err", err)
+	}
+
+	// Rego command line flags
+
+	rego, err := flags.PrepareRego(viper.GetStringSlice("rego"))
+	if err != nil {
+		logger.Fatalw("Failed to parse rego flags", "err", err)
+	}
+
+	// Signature directory command line flags
+
+	signatureEvents := viper.GetStringSlice("events")
+	// if no event was passed, load all events
+	if len(signatureEvents) == 0 {
+		signatureEvents = nil
+	}
+
+	signatures, _, err := signature.Find(
+		rego.RuntimeTarget,
+		rego.PartialEval,
+		viper.GetStringSlice("signatures-dir"),
+		signatureEvents,
+		rego.AIO,
+	)
+
+	if err != nil {
+		logger.Fatalw("Failed to find signature event", "err", err)
+	}
+
+	if len(signatures) == 0 {
+		logger.Fatalw("No signature event loaded")
+	}
+
+	logger.Infow(
+		"Signatures loaded",
+		"total", len(signatures),
+		"signatures", getSigsNames(signatures),
+	)
+
+	_ = sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
+
+	engineConfig := engine.Config{
+		Signatures:          signatures,
+		SignatureBufferSize: 1000,
+	}
+
+	// two seperate contexts.
+	// 1. signal notifiable context that can terminate both analyze and engine work
+	// 2. signal solely to notify internally inside analyze once file input is over
+	signalCtx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	fileReadCtx, stop := context.WithCancel(signalCtx)
+
+	engineOutput := make(chan *detect.Finding)
+	engineInput := make(chan protocol.Event)
+
+	source := engine.EventSources{Tracee: engineInput}
+	sigEngine, err := engine.NewEngine(engineConfig, source, engineOutput)
+	if err != nil {
+		logger.Fatalw("Failed to create engine", "err", err)
+	}
+
+	err = sigEngine.Init()
+	if err != nil {
+		logger.Fatalw("failed to initialize signature engine", "err", err)
+	}
+
+	go sigEngine.Start(signalCtx)
+
+	// producer
+	go produce(fileReadCtx, stop, inputFile, engineInput)
+
+	// consumer
+	for {
+		select {
+		case finding, ok := <-engineOutput:
+			if !ok {
+				return
+			}
+			process(finding)
+		case <-fileReadCtx.Done():
+			// ensure the engineInput channel will be closed
+			goto drain
+		case <-signalCtx.Done():
+			// ensure the engineInput channel will be closed
+			goto drain
+		}
+	}
+drain:
+	// drain
+	defer close(engineInput)
+	for {
+		select {
+		case finding, ok := <-engineOutput:
+			if !ok {
+				return
+			}
+
+			process(finding)
+		default:
+			return
+		}
+	}
+}
+
+func produce(ctx context.Context, cancel context.CancelFunc, inputFile *os.File, engineInput chan<- protocol.Event) {
 	scanner := bufio.NewScanner(inputFile)
 	scanner.Split(bufio.ScanLines)
 	for {
 		select {
 		case <-ctx.Done():
+			// if terminated from above
 			return
 		default:
 			if !scanner.Scan() { // if EOF or error close the done channel and return
+				if err := scanner.Err(); err != nil {
+					logger.Errorw("Error while scanning input file", "error", err)
+				}
+				// terminate analysis here and proceed to draining
+				cancel()
 				return
 			}
 
@@ -212,7 +226,7 @@ func produce(ctx context.Context, inputFile *os.File, engineInput chan protocol.
 }
 
 func process(finding *detect.Finding) {
-	event, err := tracee.FindingToEvent(finding)
+	event, err := findings.FindingToEvent(finding)
 	if err != nil {
 		logger.Fatalw("Failed to convert finding to event", "err", err)
 	}
@@ -232,15 +246,15 @@ func bindViperFlag(cmd *cobra.Command, flag string) {
 	}
 }
 
-func getSigsNames(sigs []detect.Signature) []string {
-	var sigsNames []string
-	for _, sig := range sigs {
+func getSigsNames(signatures []detect.Signature) []string {
+	var sigNames []string
+	for _, sig := range signatures {
 		sigMeta, err := sig.GetMetadata()
 		if err != nil {
 			logger.Warnw("Failed to get signature metadata", "err", err)
 			continue
 		}
-		sigsNames = append(sigsNames, sigMeta.Name)
+		sigNames = append(sigNames, sigMeta.Name)
 	}
-	return sigsNames
+	return sigNames
 }
