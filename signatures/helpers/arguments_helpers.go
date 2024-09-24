@@ -44,7 +44,8 @@ func GetTraceeArgumentByName(event trace.Event, argName string, opts GetArgOps) 
 	return trace.Argument{}, fmt.Errorf("argument %s not found", argName)
 }
 
-// GetTraceeStringArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as string.
+// GetTraceeStringArgumentByName retrieves the argument from the event's "Args" field
+// that matches the specified "argName". The argument value is returned cast as a string.
 func GetTraceeStringArgumentByName(event trace.Event, argName string) (string, error) {
 	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
@@ -58,7 +59,8 @@ func GetTraceeStringArgumentByName(event trace.Event, argName string) (string, e
 	return "", fmt.Errorf("can't convert argument %v to string", argName)
 }
 
-// GetTraceeIntArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as int.
+// GetTraceeIntArgumentByName retrieves the argument from the event's "Args" field
+// that matches the specified "argName". The argument value is returned cast as a int.
 func GetTraceeIntArgumentByName(event trace.Event, argName string) (int, error) {
 	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
@@ -72,7 +74,8 @@ func GetTraceeIntArgumentByName(event trace.Event, argName string) (int, error) 
 	return 0, fmt.Errorf("can't convert argument %v to int", argName)
 }
 
-// GetTraceeSliceStringArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as []string.
+// GetTraceeSliceStringArgumentByName retrieves the argument from the event's "Args" field
+// that matches the specified "argName". The argument value is returned cast as a []string.
 func GetTraceeSliceStringArgumentByName(event trace.Event, argName string) ([]string, error) {
 	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
@@ -86,7 +89,8 @@ func GetTraceeSliceStringArgumentByName(event trace.Event, argName string) ([]st
 	return nil, fmt.Errorf("can't convert argument %v to slice of strings", argName)
 }
 
-// GetTraceeBytesSliceArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as []byte.
+// GetTraceeBytesSliceArgumentByName retrieves the argument from the event's "Args" field
+// that matches the specified "argName". The argument value is returned cast as a []byte.
 func GetTraceeBytesSliceArgumentByName(event trace.Event, argName string) ([]byte, error) {
 	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
