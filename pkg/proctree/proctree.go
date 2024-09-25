@@ -143,6 +143,7 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 	procTree := &ProcessTree{
 		processes:   processes,
 		threads:     threads,
+		procfsOnce:  new(sync.Once),
 		ctx:         ctx,
 		procfsQuery: config.ProcfsQuerying,
 	}
