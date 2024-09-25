@@ -19,8 +19,8 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	out := make(chan *trace.Event, t.config.PipelineChannelSize)
 	errc := make(chan error, 1)
 
-	engineOutput := make(chan *detect.Finding, 10000)
-	engineInput := make(chan protocol.Event, 10000)
+	engineOutput := make(chan *detect.Finding, t.config.PipelineChannelSize)
+	engineInput := make(chan protocol.Event, t.config.PipelineChannelSize)
 	engineOutputEvents := make(chan *trace.Event, t.config.PipelineChannelSize)
 	source := engine.EventSources{Tracee: engineInput}
 
