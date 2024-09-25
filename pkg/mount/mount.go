@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 
@@ -217,11 +218,11 @@ func IsFileSystemSupported(fsType string) (bool, error) {
 // - int: The inode number of the matching mountpoint.
 // - error: Any error encountered while reading the /proc/mounts file.
 func SearchMountpointFromHost(fstype string, search string) (string, int, error) {
+	const mountRootIndex = 3
 	const mountpointIndex = 4
-	const fsTypeIndex = 8
 
-	mp := ""
-	inode := 0
+	mp := ""   // matched mountpoint search var
+	inode := 0 // matched mountpoint's inode
 
 	file, err := os.Open(procMounts)
 	if err != nil {
@@ -236,15 +237,33 @@ func SearchMountpointFromHost(fstype string, search string) (string, int, error)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.Split(scanner.Text(), " ")
-		if len(line) <= fsTypeIndex {
-			continue // Skip lines that do not have enough fields
-		}
 
-		mountpoint := line[mountpointIndex]
-		currFstype := line[fsTypeIndex]
+		// fstype field is located right after "-"
+		// before - there are optional fields, which makes the location of
+		// the fstype field indeterminate
+		sepIndex := slices.Index(line, "-")
+		fsTypeIndex := sepIndex + 1
 
-		// Check if the current line matches the desired filesystem type and contains the search string.
-		if fstype == currFstype && strings.Contains(mountpoint, search) {
+		root := line[mountRootIndex]        // current search mountpoint root
+		mountpoint := line[mountpointIndex] // current search mountpoint path
+		currFstype := line[fsTypeIndex]     // current search mountpoint fs type
+
+		// First check for the following 3 conditions:
+		// 1. The fs type is the one we search for
+		// 2. The mountpoint contains the path we are searching
+		// 3. The root path in the mounted filesystem is that of the host.
+		//	  This means, that the root of the mounted filesystem is /.
+		//    For example, if we are searching for a mountpoint with cpuset we want
+		//    to be sure that it is not actually <some_other_dir>/.../.../...cpuset,
+		//    but strictly originating in the root fs.
+		// 	  EXAMPLE: EKS and TAS mount their cgroup controllers ontop of their pod
+		//             cgroup folder root:
+		//             /kubepods.slice/.../cri-containerd-abcdef123.scope -> /sys/fs/cgroup/cpuset
+		//			   /garden/fc6c9886-cd3d-4d87-5053-c102 -> /sys/fs/cgroup/cpuset
+		//    Without strictly requiring the root path the resulting search path for cgroup path results in searching:
+		//    /kubepods.slice/.../cri-containerd-abcdef123.scope/sys/fs/cgroup/cpuset/kubepods.slice/.../cri-containerd-somecontainerid123
+		//    which doesn't exist.
+		if fstype == currFstype && strings.Contains(mountpoint, search) && root == "/" {
 			// Try to get the inode number of the current mountpoint.
 			var stat syscall.Stat_t
 			if err := syscall.Stat(mountpoint, &stat); err != nil {
@@ -253,9 +272,12 @@ func SearchMountpointFromHost(fstype string, search string) (string, int, error)
 			}
 			currInode := int(stat.Ino)
 
-			// Update the result if this is the first match or if the current mountpoint is older or shorter in path length.
+			// Update the result if either apply:
+			// 1. this is the first match
+			// 2. the current mountpoint inode is lower than the currently matching mountpoint
+			// 2. the current mountpoint shares an inode but its root has a shorter path
 			if inode == 0 || currInode < inode ||
-				(currInode == inode && len(mountpoint) < len(mp)) {
+				(currInode == inode && len(mp) < len(mountpoint)) {
 				mp = mountpoint
 				inode = currInode
 			}
