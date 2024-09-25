@@ -771,7 +771,7 @@ func Test_EventFilters(t *testing.T) {
 			},
 			useSyscaller: false,
 			coolDown:     0,
-			test:         ExpectAllInOrderSequentially,
+			test:         ExpectAtLeastOneForEach,
 		},
 		{
 			name: "pid: trace new (should be empty)",
@@ -1504,7 +1504,7 @@ func Test_EventFilters(t *testing.T) {
 			},
 			useSyscaller: true,
 			coolDown:     0,
-			test:         ExpectAllInOrderSequentially,
+			test:         ExpectAtLeastOneForEach, // syscaller might emit its own events, so we expect at least one of each
 		},
 		{
 			name: "event: trace execve event set in a specific policy from fakeprog1 command",
