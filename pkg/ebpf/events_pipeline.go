@@ -614,8 +614,8 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 			// Populate the event with the names of the matched policies.
 			event.MatchedPolicies = t.policyManager.MatchedNames(event.MatchedPoliciesUser)
 
-			// Parse args here if the rule engine is not enabled (parsed there if it is).
-			if !t.config.EngineConfig.Enabled {
+			// Parse args here if the rule engine is NOT enabled (parsed there if it is).
+			if t.config.Output.ParseArguments && !t.config.EngineConfig.Enabled {
 				err := t.parseArguments(event)
 				if err != nil {
 					t.handleError(err)
@@ -727,15 +727,13 @@ func (t *Tracee) handleError(err error) {
 // cmd/tracee-rules), it happens on the "sink" stage of the pipeline (close to the
 // printers).
 func (t *Tracee) parseArguments(e *trace.Event) error {
-	if t.config.Output.ParseArguments {
-		err := events.ParseArgs(e)
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
+	err := events.ParseArgs(e)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
 
-		if t.config.Output.ParseArgumentsFDs {
-			return events.ParseArgsFDs(e, uint64(e.Timestamp), t.FDArgPathMap)
-		}
+	if t.config.Output.ParseArgumentsFDs {
+		return events.ParseArgsFDs(e, uint64(e.Timestamp), t.FDArgPathMap)
 	}
 
 	return nil

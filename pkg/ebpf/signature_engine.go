@@ -2,6 +2,7 @@ package ebpf
 
 import (
 	"context"
+	"slices"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
@@ -52,35 +53,6 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 	go t.sigEngine.Start(ctx)
 
-	// Create a function for feeding the engine with an event
-	feedFunc := func(event *trace.Event) {
-		if event == nil {
-			return // might happen during initialization (ctrl+c seg faults)
-		}
-
-		id := events.ID(event.EventID)
-
-		// if the event is marked as submit, we pass it to the engine
-		if t.policyManager.IsEventToSubmit(id) {
-			err := t.parseArguments(event)
-			if err != nil {
-				t.handleError(err)
-				return
-			}
-
-			// Get a copy of our event before sending it down the pipeline.
-			// This is needed because a later modification of the event (in
-			// particular of the matched policies) can affect engine stage.
-			eventCopy := *event
-			// pass the event to the sink stage, if the event is also marked as emit
-			// it will be sent to print by the sink stage
-			out <- event
-
-			// send the event to the rule event
-			engineInput <- eventCopy.ToProtocol()
-		}
-	}
-
 	// TODO: in the upcoming releases, the rule engine should be changed to receive trace.Event,
 	// and return a trace.Event, which should remove the necessity of converting trace.Event to protocol.Event,
 	// and converting detect.Finding into trace.Event
@@ -91,12 +63,50 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		defer close(engineInput)
 		defer close(engineOutput)
 
+		// feedEngine feeds an event to the rules engine
+		feedEngine := func(event *trace.Event) {
+			if event == nil {
+				return // might happen during initialization (ctrl+c seg faults)
+			}
+
+			id := events.ID(event.EventID)
+
+			// if the event is NOT marked as submit, it is not sent to the rules engine
+			if !t.policyManager.IsEventToSubmit(id) {
+				return
+			}
+
+			// Get a copy of event before parsing it or sending it down the pipeline.
+			// This is needed because a later modification of the event (matched policies or
+			// arguments parsing) can affect engine stage.
+			eventCopy := *event
+
+			if t.config.Output.ParseArguments {
+				// shallow clone the event arguments before parsing them (new slice is created),
+				// to keep the eventCopy with raw arguments.
+				eventCopy.Args = slices.Clone(event.Args)
+
+				err := t.parseArguments(event)
+				if err != nil {
+					t.handleError(err)
+					return
+				}
+			}
+
+			// pass the event to the sink stage, if the event is also marked as emit
+			// it will be sent to print by the sink stage
+			out <- event
+
+			// send the copied event to the rules engine
+			engineInput <- eventCopy.ToProtocol()
+		}
+
 		for {
 			select {
 			case event := <-in:
-				feedFunc(event)
+				feedEngine(event)
 			case event := <-engineOutputEvents:
-				feedFunc(event)
+				feedEngine(event)
 			case <-ctx.Done():
 				return
 			}
