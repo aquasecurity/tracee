@@ -361,9 +361,13 @@ func (t *Tracee) normalizeTimeArg(argNames ...string) func(event *trace.Event) e
 			if arg == nil {
 				return errfmt.Errorf("couldn't find argument %s of event %s", argName, event.EventName)
 			}
+			if arg.Value == nil {
+				continue
+			}
+
 			argTime, ok := arg.Value.(uint64)
 			if !ok {
-				return errfmt.Errorf("argument %s of event %s is not of type uint64", argName, event.EventName)
+				return errfmt.Errorf("argument %s of event %s is not uint64, it is %T", argName, event.EventName, arg.Value)
 			}
 			arg.Value = time.BootToEpochNS(argTime)
 		}
