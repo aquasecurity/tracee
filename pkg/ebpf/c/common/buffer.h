@@ -458,6 +458,15 @@ statfunc int save_args_to_submit_buf(event_data_t *event, args_t *args)
     return arg_num;
 }
 
+#ifdef DEBUG
+struct event_counts {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, MAX_EVENT_ID);
+    __type(key, u32);   // eventid
+    __type(value, u64); // count
+} event_counts SEC(".maps");
+#endif
+
 statfunc int events_perf_submit(program_data_t *p, long ret)
 {
     p->event->context.retval = ret;
@@ -483,6 +492,13 @@ statfunc int events_perf_submit(program_data_t *p, long ret)
                  "%[size] = %[max_size];\n"
                  :
                  : [size] "r"(size), [max_size] "i"(MAX_EVENT_SIZE));
+
+#ifdef DEBUG
+    // increment event count before event submission attempt
+    u64 *event_count = bpf_map_lookup_elem(&event_counts, &p->event->context.eventid);
+    if (event_count)
+        __sync_fetch_and_add(event_count, 1);
+#endif
 
     return bpf_perf_event_output(p->ctx, &events, BPF_F_CURRENT_CPU, p->event, size);
 }
