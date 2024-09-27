@@ -162,8 +162,10 @@ UNAME_M := $(shell uname -m)
 UNAME_R := $(shell uname -r)
 
 ifeq ($(DEBUG),1)
+	BPF_DEBUG_FLAG = -DDEBUG
 	GO_DEBUG_FLAG =
 else
+	BPF_DEBUG_FLAG =
 	GO_DEBUG_FLAG = -w
 endif
 
@@ -423,6 +425,7 @@ $(OUTPUT_DIR)/tracee.bpf.o: \
 	$(TRACEE_EBPF_OBJ_HEADERS)
 #
 	$(CMD_CLANG) \
+		$(BPF_DEBUG_FLAG) \
 		-D__TARGET_ARCH_$(LINUX_ARCH) \
 		-D__BPF_TRACING__ \
 		-DCORE \
@@ -501,6 +504,7 @@ $(OUTPUT_DIR)/tracee: \
 		-ldflags="$(GO_DEBUG_FLAG) \
 			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
 			-X github.com/aquasecurity/tracee/pkg/version.version=$(VERSION) \
+			-X github.com/aquasecurity/tracee/pkg/version.debug=$(DEBUG) \
 			" \
 		-v -o $@ \
 		./cmd/tracee
