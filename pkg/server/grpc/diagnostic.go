@@ -17,16 +17,17 @@ type DiagnosticService struct {
 func (s *DiagnosticService) GetMetrics(ctx context.Context, in *pb.GetMetricsRequest) (*pb.GetMetricsResponse, error) {
 	stats := s.tracee.Stats()
 	metrics := &pb.GetMetricsResponse{
-		EventCount:         stats.EventCount.Get(),
-		EventsFiltered:     stats.EventsFiltered.Get(),
-		NetCapCount:        stats.NetCapCount.Get(),
-		BPFLogsCount:       stats.BPFLogsCount.Get(),
-		BPFPerfEventWrites: stats.BPFPerfEventWrites.Get(), // only available in debug build
-		ErrorCount:         stats.ErrorCount.Get(),
-		LostEvCount:        stats.LostEvCount.Get(),
-		LostWrCount:        stats.LostWrCount.Get(),
-		LostNtCapCount:     stats.LostNtCapCount.Get(),
-		LostBPFLogsCount:   stats.LostBPFLogsCount.Get(),
+		EventCount:                stats.EventCount.Get(),
+		EventsFiltered:            stats.EventsFiltered.Get(),
+		NetCapCount:               stats.NetCapCount.Get(),
+		BPFLogsCount:              stats.BPFLogsCount.Get(),
+		BPFPerfEventWriteAttempts: stats.BPFPerfEventWriteAttempts.Get(), // only available in debug build
+		BPFPerfEventWriteFailures: stats.BPFPerfEventWriteFailures.Get(), // only available in debug build
+		ErrorCount:                stats.ErrorCount.Get(),
+		LostEvCount:               stats.LostEvCount.Get(),
+		LostWrCount:               stats.LostWrCount.Get(),
+		LostNtCapCount:            stats.LostNtCapCount.Get(),
+		LostBPFLogsCount:          stats.LostBPFLogsCount.Get(),
 	}
 
 	return metrics, nil
