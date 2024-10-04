@@ -10388,7 +10388,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params: []trace.ArgMeta{
-			{Type: "old_old_uid_t", Name: "uid"},
+			{Type: "old_uid_t", Name: "uid"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
