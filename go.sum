@@ -410,8 +410,8 @@ github.com/aquasecurity/tracee/api v0.0.0-20240905132323-d1eaeef6a19f h1:O4UmMQV
 github.com/aquasecurity/tracee/api v0.0.0-20240905132323-d1eaeef6a19f/go.mod h1:Gn6xVkaBkVe1pOQ0++uuHl+lMMClv0TPY8mCQ6j88aA=
 github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20240607205742-90c301111aee h1:1KJy6Z2bSpmKQVPShU7hhbXgGVOgMwvzf9rjoWMTYEg=
 github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20240607205742-90c301111aee/go.mod h1:SX08YRCsPFh8CvCvzkV8FSn1sqWAarNVEJq9RSZoF/8=
-github.com/aquasecurity/tracee/types v0.0.0-20240607205742-90c301111aee h1:PDQn0NcQnF/O8wX2zDak0TteAR89IMUTcCm1IwVmo0M=
-github.com/aquasecurity/tracee/types v0.0.0-20240607205742-90c301111aee/go.mod h1:Jwh9OOuiMHXDoGQY12N9ls5YB+j1FlRcXvFMvh1CmIU=
+github.com/aquasecurity/tracee/types v0.0.0-20241008181102-d40bc1f81863 h1:domVTTQICTuCvX+ZW5EjvdUBz8EH7FedBj5lRqwpgf4=
+github.com/aquasecurity/tracee/types v0.0.0-20241008181102-d40bc1f81863/go.mod h1:Jwh9OOuiMHXDoGQY12N9ls5YB+j1FlRcXvFMvh1CmIU=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0 h1:jfIu9sQUG6Ig+0+Ap1h4unLjW6YQJpKZVmUzxsD4E/Q=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0/go.mod h1:t2tdKJDJF9BV14lnkjHmOQgcvEKgtqs5a1N3LNdJhGE=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
