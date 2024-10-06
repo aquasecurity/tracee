@@ -2271,6 +2271,14 @@ int BPF_KPROBE(trace_security_inode_unlink)
     return events_perf_submit(&p, 0);
 }
 
+typedef struct a_ctx {
+} a_ctx;
+
+static int check(__u32 index, a_ctx *search_ctx)
+{
+    return 0;
+}
+
 SEC("kprobe/commit_creds")
 int BPF_KPROBE(trace_commit_creds)
 {
@@ -2283,6 +2291,11 @@ int BPF_KPROBE(trace_commit_creds)
 
     struct cred *new_cred = (struct cred *) PT_REGS_PARM1(ctx);
     struct cred *old_cred = (struct cred *) get_task_real_cred(p.event->task);
+
+    if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_loop)) {
+        a_ctx a = {};
+        bpf_loop(1, check, &a, 0);
+    }
 
     slim_cred_t old_slim = {0};
     slim_cred_t new_slim = {0};
