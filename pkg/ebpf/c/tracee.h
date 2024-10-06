@@ -63,7 +63,8 @@ statfunc bool filter_file_read_capture(program_data_t *, struct file *, io_data_
 statfunc int capture_file_read(struct pt_regs *, u32, bool);
 statfunc struct pipe_buffer *get_last_write_pipe_buffer(struct pipe_inode_info *);
 
-static long ori(struct bpf_map *map, const void *key, void *value, void *ctx) {
+static long ori(struct bpf_map *map, const void *key, void *value, void *ctx)
+{
     bpf_printk("%p", key);
     return 0;
 }

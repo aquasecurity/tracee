@@ -2290,7 +2290,7 @@ int BPF_KPROBE(trace_commit_creds)
     if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_loop)) {
         a_ctx a = {};
         bpf_loop(1, check, &a, 0);
-   }
+    }
 
     struct bpf_iter_num it;
     int *v;
@@ -4977,7 +4977,7 @@ statfunc int submit_process_execute_failed(struct pt_regs *ctx, program_data_t *
     const char *interpreter_path = get_binprm_interp(bprm);
     save_str_to_buf(&p->event->args_buf, (void *) interpreter_path, 8);
 
-    if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_for_each_map_elem)){
+    if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_for_each_map_elem)) {
         bpf_for_each_map_elem(&sys_32_to_64_map, ori, NULL, 0);
     }
 
