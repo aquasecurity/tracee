@@ -475,6 +475,13 @@ enum zone_type
     ZONE_DMA,
 };
 
+struct bpf_iter_num {
+	/* opaque iterator state; having __u64 here allows to preserve correct
+	 * alignment requirements in vmlinux.h, generated from BTF
+	 */
+	__u64 __opaque[1];
+} __attribute__((aligned(8)));
+
 struct alloc_context {
     enum zone_type high_zoneidx;
 };

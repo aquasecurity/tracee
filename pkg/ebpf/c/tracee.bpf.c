@@ -2274,11 +2274,6 @@ int BPF_KPROBE(trace_security_inode_unlink)
 typedef struct a_ctx {
 } a_ctx;
 
-static long check(u32 index, void *ctx)
-{
-    return 0;
-}
-
 SEC("kprobe/commit_creds")
 int BPF_KPROBE(trace_commit_creds)
 {
@@ -2292,10 +2287,19 @@ int BPF_KPROBE(trace_commit_creds)
     struct cred *new_cred = (struct cred *) PT_REGS_PARM1(ctx);
     struct cred *old_cred = (struct cred *) get_task_real_cred(p.event->task);
 
-    if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_loop)) {
-        a_ctx a = {};
-        bpf_loop(1, check, &a, 0);
+    // if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_loop)) {
+    //     a_ctx a = {};
+    //     bpf_loop(1, check, &a, 0);
+   // }
+
+    struct bpf_iter_num it;
+    int *v;
+
+    bpf_iter_num_new(&it, 2, 5);
+    while ((v = bpf_iter_num_next(&it))) {
+        bpf_printk("X = %d", *v);
     }
+    bpf_iter_num_destroy(&it);
 
     slim_cred_t old_slim = {0};
     slim_cred_t new_slim = {0};
@@ -4972,6 +4976,10 @@ statfunc int submit_process_execute_failed(struct pt_regs *ctx, program_data_t *
 
     const char *interpreter_path = get_binprm_interp(bprm);
     save_str_to_buf(&p->event->args_buf, (void *) interpreter_path, 8);
+
+    if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_for_each_map_elem)){
+        bpf_for_each_map_elem(&sys_32_to_64_map, ori, NULL, 0);
+    }
 
     bpf_tail_call(ctx, &prog_array, TAIL_PROCESS_EXECUTE_FAILED);
     return -1;
