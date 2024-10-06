@@ -2287,10 +2287,10 @@ int BPF_KPROBE(trace_commit_creds)
     struct cred *new_cred = (struct cred *) PT_REGS_PARM1(ctx);
     struct cred *old_cred = (struct cred *) get_task_real_cred(p.event->task);
 
-    // if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_loop)) {
-    //     a_ctx a = {};
-    //     bpf_loop(1, check, &a, 0);
-   // }
+    if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_loop)) {
+        a_ctx a = {};
+        bpf_loop(1, check, &a, 0);
+   }
 
     struct bpf_iter_num it;
     int *v;
