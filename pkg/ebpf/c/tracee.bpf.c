@@ -2274,7 +2274,7 @@ int BPF_KPROBE(trace_security_inode_unlink)
 typedef struct a_ctx {
 } a_ctx;
 
-statfunc long check(u32 index, void *ctx)
+static long check(u32 index, void *ctx)
 {
     return 0;
 }
