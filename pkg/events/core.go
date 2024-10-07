@@ -13065,15 +13065,7 @@ var CoreEvents = map[ID]Definition{
 		id:      CheckSyscallSource,
 		id32Bit: Sys32Undefined,
 		name:    "check_syscall_source",
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"check_syscall_source_tail", "check_syscall_source", []uint32{ /* Map will be populated at runtime according to event filter */ }},
-			},
-		},
-		sets: []string{},
+		sets:    []string{},
 		params: []trace.ArgMeta{
 			{Type: "int", Name: "syscall"},
 			{Type: "void*", Name: "ip"},
