@@ -1290,6 +1290,12 @@ int lkm_seeker_new_mod_only_tail(struct pt_regs *ctx)
 
 // clang-format off
 
+static long loop_test_cb(u32 index, int *ctx)
+{
+    bpf_printk("in loop_test_cb, index = %u", index);
+    return 0;
+}
+
 // trace/events/sched.h: TP_PROTO(struct task_struct *p, pid_t old_pid, struct linux_binprm *bprm)
 SEC("raw_tracepoint/sched_process_exec")
 int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
@@ -1368,6 +1374,12 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
         save_to_submit_buf(&p.event->args_buf, &proc_info->interpreter.id.device, sizeof(dev_t), 7); // interpreter device number
         save_to_submit_buf(&p.event->args_buf, &proc_info->interpreter.id.inode, sizeof(u64), 8);    // interpreter inode number
         save_to_submit_buf(&p.event->args_buf, &proc_info->interpreter.id.ctime, sizeof(u64), 9);    // interpreter changed time
+    }
+
+    if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_loop)) {
+        /*int loop_test_ctx = 0;
+        bpf_loop(1, &loop_test_cb, &loop_test_ctx, 0);*/
+        bpf_printk("bpf loop exists");
     }
 
     bpf_tail_call(ctx, &prog_array_tp, TAIL_SCHED_PROCESS_EXEC_EVENT_SUBMIT);

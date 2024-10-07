@@ -687,6 +687,7 @@ enum bpf_func_id
     BPF_FUNC_get_current_task_btf = 158,
     BPF_FUNC_for_each_map_elem = 164,
     BPF_FUNC_task_pt_regs = 175,
+    BPF_FUNC_loop = 181,
 };
 
 #define MODULE_NAME_LEN (64 - sizeof(unsigned long))
