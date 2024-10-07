@@ -1,26 +1,26 @@
 package ebpf
 
 import (
+	"fmt"
 	"maps"
 	"strconv"
-	"unsafe"
 
-	bpf "github.com/aquasecurity/libbpfgo"
-
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
-type eventFilterHandler func(eventFilters map[string]filters.Filter[*filters.StringFilter], bpfModule *bpf.Module) error
+type eventFilterHandler func(t *Tracee, eventFilters map[string]filters.Filter[*filters.StringFilter]) error
 
 var eventFilterHandlers = map[events.ID]eventFilterHandler{
-	events.CheckSyscallSource: populateMapsCheckSyscallSource,
+	events.CheckSyscallSource: attachCheckSyscallSourceProbes,
 }
 
-// populateEventFilterMaps populates maps with data from special event filters
-func (t *Tracee) populateEventFilterMaps() error {
+// handleEventFilters performs eBPF related actions according to special event filters.
+// For example, an event can use one of its filters to populate eBPF maps, or perhaps
+// attach eBPF programs according to the filters.
+func (t *Tracee) handleEventFilters() error {
 	// Iterate through registerd event filter handlers
 	for eventID, handler := range eventFilterHandlers {
 		// Make sure this event is selected
@@ -43,7 +43,7 @@ func (t *Tracee) populateEventFilterMaps() error {
 		}
 
 		// Call handler
-		err := handler(eventFilters, t.bpfModule)
+		err := handler(t, eventFilters)
 		if err != nil {
 			logger.Errorw("Failed to handle event filters", "event", events.Core.GetDefinitionByID(eventID).GetName(), "error", err)
 			err = t.eventsDependencies.RemoveEvent(eventID)
@@ -55,38 +55,36 @@ func (t *Tracee) populateEventFilterMaps() error {
 	return nil
 }
 
-func populateMapsCheckSyscallSource(eventFilters map[string]filters.Filter[*filters.StringFilter], bpfModule *bpf.Module) error {
+func attachCheckSyscallSourceProbes(t *Tracee, eventFilters map[string]filters.Filter[*filters.StringFilter]) error {
 	// Get syscalls to trace
 	syscallsFilter, ok := eventFilters["syscall"].(*filters.StringFilter)
 	if !ok {
 		return nil
 	}
-	syscalls := syscallsFilter.Equal()
-
-	// Get map and program for check_syscall_source tailcall
-	checkSyscallSourceTail, err := bpfModule.GetMap("check_syscall_source_tail")
-	if err != nil {
-		return errfmt.Errorf("could not get BPF map \"check_syscall_source_tail\": %v", err)
-	}
-	checkSyscallSourceProg, err := bpfModule.GetProgram("check_syscall_source")
-	if err != nil {
-		return errfmt.Errorf("could not get BPF program \"check_syscall_source\": %v", err)
-	}
-	checkSyscallSourceProgFD := checkSyscallSourceProg.FileDescriptor()
-	if checkSyscallSourceProgFD < 0 {
-		return errfmt.Errorf("could not get BPF program FD for \"check_syscall_source\": %v", err)
-	}
-
-	// Add each syscall to the tail call map
-	for _, syscall := range syscalls {
-		syscallID, err := strconv.Atoi(syscall)
+	syscalls := make([]string, 0)
+	for _, entry := range syscallsFilter.Equal() {
+		syscallID, err := strconv.Atoi(entry)
 		if err != nil {
-			return errfmt.WrapError(err)
+			return err
 		}
+		if !events.Core.IsDefined(events.ID(syscallID)) {
+			return fmt.Errorf("syscall id %d is not defined", syscallID)
+		}
+		syscalls = append(syscalls, events.Core.GetDefinitionByID(events.ID(syscallID)).GetName())
+	}
 
-		err = checkSyscallSourceTail.Update(unsafe.Pointer(&syscallID), unsafe.Pointer(&checkSyscallSourceProgFD))
-		if err != nil {
-			return errfmt.WrapError(err)
+	// Create probe group
+	probeMap := make(map[probes.Handle]probes.Probe)
+	for i, syscall := range syscalls {
+		probeMap[probes.Handle(i)] = probes.NewTraceProbe(probes.SyscallEnter, syscall, "check_syscall_source")
+	}
+	t.checkSyscallSourceProbes = probes.NewProbeGroup(t.bpfModule, probeMap)
+
+	// Attach probes
+	for i, syscall := range syscalls {
+		if err := t.checkSyscallSourceProbes.Attach(probes.Handle(i), t.kernelSymbols); err != nil {
+			// Report attachment errors but don't fail, because it may be a syscall that doesn't exist on this system
+			logger.Warnw("Failed to attach check_syscall_source kprobe", "syscall", syscall, "error", err)
 		}
 	}
 

@@ -57,10 +57,6 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
         id = *id_64;
     }
 
-    // Call syscall checker if registered for this syscall.
-    // If so, it will make sure the following tail is called.
-    bpf_tail_call(ctx, &check_syscall_source_tail, id);
-
     bpf_tail_call(ctx, &sys_enter_init_tail, id);
     return 0;
 }
@@ -5212,50 +5208,41 @@ statfunc enum vma_type get_vma_type(struct vm_area_struct *vma)
     return VMA_OTHER;
 }
 
-SEC("raw_tracepoint/check_syscall_source")
-int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
+SEC("kprobe/check_syscall_source")
+int BPF_KPROBE(check_syscall_source)
 {
-    // Get syscall ID.
-    // NOTE: this must happen first before any logic that may fail,
-    // because we must know the syscall ID for the tail call we preceded.
-    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
-    u32 id = ctx->args[1];
-    if (is_compat(task)) {
-        // Translate 32bit syscalls to 64bit syscalls
-        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
-        if (id_64 == 0)
-            return 0;
-        id = *id_64;
-    }
-
     program_data_t p = {};
     if (!init_program_data(&p, ctx, CHECK_SYSCALL_SOURCE))
-        goto out;
+        return 0;
 
     if (!evaluate_scope_filters(&p))
-        goto out;
+        return 0;
 
     // Get instruction pointer
-    struct pt_regs *regs = (struct pt_regs *) ctx->args[0];
-#if defined(bpf_target_x86)
-    u64 ip = BPF_CORE_READ(regs, ip);
-#elif defined(bpf_target_arm64)
-    u64 ip = BPF_CORE_READ(regs, pc);
-#endif
+    struct pt_regs *regs = ctx;
+    if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER))
+        regs = (struct pt_regs *) PT_REGS_PARM1(ctx);
+    u64 ip = PT_REGS_IP_CORE(regs);
 
     // Find VMA which contains the instruction pointer
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    if (unlikely(task == NULL))
+        return 0;
     struct vm_area_struct *vma = find_vma(task, ip);
-    if (vma == NULL)
-        goto out;
+    if (unlikely(vma == NULL))
+        return 0;
 
     // Get VMA type and make sure it's abnormal (stack/heap/anonymous VMA)
     enum vma_type vma_type = get_vma_type(vma);
     if (vma_type == VMA_OTHER)
-        goto out;
+        return 0;
+
+    // Get syscall ID
+    u32 syscall = get_syscall_id_from_regs(regs);
 
     // Build a key that identifies the combination of syscall,
     // source VMA and process so we don't submit it multiple times
-    syscall_source_key_t key = {.syscall = id,
+    syscall_source_key_t key = {.syscall = syscall,
                                 .tgid = get_task_ns_tgid(task),
                                 .tgid_start_time = get_task_start_time(get_leader_task(task)),
                                 .vma_addr = get_vma_start(vma)};
@@ -5264,23 +5251,19 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
     // Try updating the map with the requirement that this key does not exist yet
     if ((int) bpf_map_update_elem(&syscall_source_map, &key, &val, BPF_NOEXIST) == -17 /* EEXIST */)
         // This key already exists, no need to submit the same syscall-vma-process combination again
-        goto out;
+        return 0;
 
     bool is_stack = vma_type == VMA_STACK;
     bool is_heap = vma_type == VMA_HEAP;
     bool is_anon = vma_type == VMA_ANON;
 
-    save_to_submit_buf(&p.event->args_buf, &id, sizeof(id), 0);
+    save_to_submit_buf(&p.event->args_buf, &syscall, sizeof(syscall), 0);
     save_to_submit_buf(&p.event->args_buf, &ip, sizeof(ip), 1);
     save_to_submit_buf(&p.event->args_buf, &is_stack, sizeof(is_stack), 2);
     save_to_submit_buf(&p.event->args_buf, &is_heap, sizeof(is_heap), 3);
     save_to_submit_buf(&p.event->args_buf, &is_anon, sizeof(is_anon), 4);
 
     events_perf_submit(&p, 0);
-
-out:
-    // Call sys_enter_init_tail which we preceded
-    bpf_tail_call(ctx, &sys_enter_init_tail, id);
 
     return 0;
 }
