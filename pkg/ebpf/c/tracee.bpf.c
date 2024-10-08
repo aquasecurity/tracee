@@ -5161,6 +5161,26 @@ int BPF_KPROBE(trace_security_settime64)
     return events_perf_submit(&p, 0);
 }
 
+SEC("kprobe/chmod_common")
+int BPF_KPROBE(trace_chmod_common)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, CHMOD_COMMON))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    struct path *path = (struct path *) PT_REGS_PARM1(ctx);
+    umode_t mode = PT_REGS_PARM2(ctx);
+    void *file_path = get_path_str(path);
+
+    save_str_to_buf(&p.event->args_buf, file_path, 0);
+    save_to_submit_buf(&p.event->args_buf, &mode, sizeof(umode_t), 1);
+
+    return events_perf_submit(&p, 0);
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)

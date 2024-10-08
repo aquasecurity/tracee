@@ -113,6 +113,7 @@ const (
 	ProcessExecuteFailedInternal
 	SecurityTaskSetrlimit
 	SecuritySettime64
+	ChmodCommon
 	MaxCommonID
 )
 
@@ -13040,6 +13041,23 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u64", Name: "tv_nsec"},
 			{Type: "int", Name: "tz_minuteswest"},
 			{Type: "int", Name: "tz_dsttime"},
+		},
+	},
+	ChmodCommon: {
+		id:      ChmodCommon,
+		id32Bit: Sys32Undefined,
+		name:    "chmod_common",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{},
+		params: []trace.ArgMeta{
+			{Type: "const char*", Name: "pathname"},
+			{Type: "mode_t", Name: "mode"},
+		},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.ChmodCommon, required: true},
+			},
 		},
 	},
 	//

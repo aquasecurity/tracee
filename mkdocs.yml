@@ -110,6 +110,7 @@ nav:
                             - security_path_notify: docs/events/builtin/extra/security_path_notify.md
                             - set_fs_pwd: docs/events/builtin/extra/set_fs_pwd.md
                             - tracee_info: docs/events/builtin/extra/tracee_info.md
+                            - chmod_common: docs/events/builtin/extra/chmod_common.md
                       - Syscalls:
                             - Overview: docs/events/builtin/syscalls/index.md
                             - syscalls:
