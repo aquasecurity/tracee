@@ -106,10 +106,12 @@ func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, e
 		}
 		args[idx] = arg
 	}
+
 	// Fill missing arguments metadata
 	for i := 0; i < len(evtParams); i++ {
 		if args[i].Value == nil {
 			args[i].ArgMeta = evtParams[i]
+			args[i].Value = args[i].Zero
 		}
 	}
 	return nil
