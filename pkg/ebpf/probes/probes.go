@@ -161,6 +161,7 @@ const (
 	Dup2Ret
 	Dup3
 	Dup3Ret
+	ChmodCommon
 )
 
 // Test probe handles

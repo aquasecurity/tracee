@@ -114,6 +114,10 @@ nav:
                             - symbols_loaded: docs/events/builtin/extra/symbols_loaded.md
                             - vfs_read: docs/events/builtin/extra/vfs_read.md
                             - vfs_readv: docs/events/builtin/extra/vfs_readv.md
+                            - security_path_notify: docs/events/builtin/extra/security_path_notify.md
+                            - set_fs_pwd: docs/events/builtin/extra/set_fs_pwd.md
+                            - tracee_info: docs/events/builtin/extra/tracee_info.md
+                            - chmod_common: docs/events/builtin/extra/chmod_common.md
                       - Syscalls:
                             - Overview: docs/events/builtin/syscalls/index.md
                             - syscalls:
