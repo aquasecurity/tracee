@@ -138,6 +138,10 @@ type Argument struct {
 type ArgMeta struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
+
+	// Zero contains the zero value for Argument.Value.
+	// It is automatically initialized based on ArgMeta.Type when the Core DefinitionGroup is initialized.
+	Zero interface{} `json:"-"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
