@@ -133,13 +133,7 @@ func ParseArgs(event *trace.Event) error {
 				parseOpenFlagArgument(flagsArg, uint64(flags))
 			}
 		}
-	case Mknod, Mknodat, Chmod, Fchmod, Fchmodat, ChmodCommon:
-		if modeArg := GetArg(event, "mode"); modeArg != nil {
-			if mode, isUint32 := modeArg.Value.(uint32); isUint32 {
-				parseInodeMode(modeArg, uint64(mode))
-			}
-		}
-	case SecurityInodeMknod:
+	case Mknod, Mknodat, SecurityInodeMknod, Chmod, Fchmod, Fchmodat, ChmodCommon:
 		if modeArg := GetArg(event, "mode"); modeArg != nil {
 			if mode, isUint16 := modeArg.Value.(uint16); isUint16 {
 				parseInodeMode(modeArg, uint64(mode))

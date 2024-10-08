@@ -2500,14 +2500,14 @@ int BPF_KPROBE(trace_debugfs_create_file)
         return 0;
 
     char *name = (char *) PT_REGS_PARM1(ctx);
-    mode_t mode = (unsigned short) PT_REGS_PARM2(ctx);
+    umode_t mode = (unsigned short) PT_REGS_PARM2(ctx);
     struct dentry *dentry = (struct dentry *) PT_REGS_PARM3(ctx);
     void *dentry_path = get_dentry_path_str(dentry);
     unsigned long proc_ops_addr = (unsigned long) PT_REGS_PARM5(ctx);
 
     save_str_to_buf(&p.event->args_buf, name, 0);
     save_str_to_buf(&p.event->args_buf, dentry_path, 1);
-    save_to_submit_buf(&p.event->args_buf, &mode, sizeof(mode_t), 2);
+    save_to_submit_buf(&p.event->args_buf, &mode, sizeof(umode_t), 2);
     save_to_submit_buf(&p.event->args_buf, (void *) &proc_ops_addr, sizeof(u64), 3);
 
     return events_perf_submit(&p, 0);

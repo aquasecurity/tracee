@@ -263,7 +263,7 @@ var CoreEvents = map[ID]Definition{
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "flags"},
-			{Type: "mode_t", Name: "mode"},
+			{Type: "umode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -2242,7 +2242,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
-			{Type: "mode_t", Name: "mode"},
+			{Type: "umode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -2289,7 +2289,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
-			{Type: "mode_t", Name: "mode"},
+			{Type: "umode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -2409,7 +2409,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
-			{Type: "mode_t", Name: "mode"},
+			{Type: "umode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -2433,7 +2433,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
-			{Type: "mode_t", Name: "mode"},
+			{Type: "umode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3418,7 +3418,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
-			{Type: "mode_t", Name: "mode"},
+			{Type: "umode_t", Name: "mode"},
 			{Type: "dev_t", Name: "dev"},
 		},
 		dependencies: Dependencies{
@@ -5981,7 +5981,7 @@ var CoreEvents = map[ID]Definition{
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "int", Name: "oflag"},
-			{Type: "mode_t", Name: "mode"},
+			{Type: "umode_t", Name: "mode"},
 			{Type: "struct mq_attr*", Name: "attr"},
 		},
 		dependencies: Dependencies{
@@ -6412,7 +6412,7 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "flags"},
-			{Type: "mode_t", Name: "mode"},
+			{Type: "umode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6437,7 +6437,7 @@ var CoreEvents = map[ID]Definition{
 		params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
-			{Type: "mode_t", Name: "mode"},
+			{Type: "umode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6462,7 +6462,7 @@ var CoreEvents = map[ID]Definition{
 		params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
-			{Type: "mode_t", Name: "mode"},
+			{Type: "umode_t", Name: "mode"},
 			{Type: "dev_t", Name: "dev"},
 		},
 		dependencies: Dependencies{
@@ -6695,7 +6695,7 @@ var CoreEvents = map[ID]Definition{
 		params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
-			{Type: "mode_t", Name: "mode"},
+			{Type: "umode_t", Name: "mode"},
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -12066,7 +12066,7 @@ var CoreEvents = map[ID]Definition{
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "file_name"},
 			{Type: "const char*", Name: "path"},
-			{Type: "mode_t", Name: "mode"},
+			{Type: "umode_t", Name: "mode"},
 			{Type: "void*", Name: "proc_ops_addr"},
 		},
 	},
@@ -13052,7 +13052,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{},
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
-			{Type: "mode_t", Name: "mode"},
+			{Type: "umode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
