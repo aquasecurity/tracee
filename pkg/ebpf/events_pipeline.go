@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"slices"
 	"strconv"
 	"sync"
 	"unsafe"
@@ -536,10 +537,13 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 				// acting on the derived event.
 
 				eventCopy := *event
+				// shallow clone the event arguments (new slice is created) before deriving the copy,
+				// to ensure the original event arguments are not modified by the derivation stage.
+				argsCopy := slices.Clone(event.Args)
 				out <- event
 
 				// Note: event is being derived before any of its args are parsed.
-				derivatives, errors := t.eventDerivations.DeriveEvent(eventCopy)
+				derivatives, errors := t.eventDerivations.DeriveEvent(eventCopy, argsCopy)
 
 				for _, err := range errors {
 					t.handleError(err)

@@ -2,6 +2,7 @@ package derive
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -74,7 +75,8 @@ func Test_DeriveEvent(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			derived, errors := mockDerivationTable.DeriveEvent(tc.event)
+			argsCopy := slices.Clone(tc.event.Args)
+			derived, errors := mockDerivationTable.DeriveEvent(tc.event, argsCopy)
 			assert.Equal(t, tc.expectedDerived, derived)
 			assert.Equal(t, tc.expectedErrors, errors)
 		})
