@@ -47,6 +47,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
+	"github.com/aquasecurity/tracee/pkg/version"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -1369,6 +1370,12 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	// Start control plane
 	t.controlPlane.Start()
 	go t.controlPlane.Run(ctx)
+
+	// Measure event perf buffer write attempts (debug build only)
+
+	if version.DebugBuild() {
+		go t.countPerfEventWrites(ctx)
+	}
 
 	// Main event loop (polling events perf buffer)
 
