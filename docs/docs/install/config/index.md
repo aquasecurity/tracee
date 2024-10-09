@@ -11,18 +11,6 @@ A complete config file with all available options can be found [here](https://gi
 
 ## Common configurations
 
-### Policy
-
-- **`--policy` (`-p`)**: Specifies a policy file or directory of policies that define what to trace.
-
-  __NOTE__: You can view more in the [policy section](../../policies/index.md).
-
-  YAML:
-  ```yaml
-  policy:
-    - /path/to/policy.yaml
-  ```
-
 
 ### Output
 
@@ -143,18 +131,6 @@ A complete config file with all available options can be found [here](https://gi
   __NOTE__: Capabilities are Linux-specific permissions that control which privileged operations a program can perform.
 
 
-### Capture
-
-- **`--capture` (`-c`)**: Captures artifacts such as files or network packets that are written or executed.
-
-
-  __NOTE__: You can view more in the [Capture section](../../flags/capture.1.md).
-
-  YAML:
-  ```yaml
-  capture:
-    - write
-  ```
 
 ### Buffer and Cache
 
