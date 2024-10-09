@@ -10,13 +10,13 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const (
@@ -159,7 +159,7 @@ func (ps *policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 func (ps *policies) createNewEventsMapVersion(
 	bpfModule *bpf.Module,
 	rules map[events.ID]*eventFlags,
-	eventsFields map[events.ID][]bufferdecoder.ArgType,
+	eventsFields map[events.ID][]trace.DecodeAs,
 ) error {
 	polsVersion := ps.version()
 	innerMapName := "events_map"
@@ -188,6 +188,15 @@ func (ps *policies) createNewEventsMapVersion(
 		// encoded event's field types
 		var fieldTypes uint64
 		fields := eventsFields[id]
+
+		/*
+			each event may have at most 8 argument data types stored.
+			in the map, the arguments are stored in a 64bit sized bitmap where each 8 bits
+			represent some argument type.
+			For example consider an event with two int arguments (argType = 1) and one string
+			(argType = 10):
+			0 0 0 0 0 a 1 1 - would be the encoded argument types bitmap
+		*/
 		for n, fieldType := range fields {
 			fieldTypes = fieldTypes | (uint64(fieldType) << (8 * n))
 		}
@@ -451,7 +460,7 @@ func (ps *policies) updateBPF(
 	bpfModule *bpf.Module,
 	cts *containers.Containers,
 	rules map[events.ID]*eventFlags,
-	eventsFields map[events.ID][]bufferdecoder.ArgType,
+	eventsFields map[events.ID][]trace.DecodeAs,
 	createNewMaps bool,
 	updateProcTree bool,
 ) (*PoliciesConfig, error) {

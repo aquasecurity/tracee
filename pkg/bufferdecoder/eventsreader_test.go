@@ -64,7 +64,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, // 4294967295
 			},
-			fields:      []trace.ArgMeta{{Type: "dev_t", Name: "devT0"}},
+			fields:      []trace.ArgMeta{{Type: "unsigned int", Name: "devT0"}},
 			expectedArg: uint32(4294967295),
 		},
 		{
@@ -72,7 +72,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
 			},
-			fields:      []trace.ArgMeta{{Type: "off_t", Name: "offT0"}},
+			fields:      []trace.ArgMeta{{Type: "long", Name: "offT0"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 		{
@@ -161,7 +161,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{1,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
 			},
-			fields:      []trace.ArgMeta{{Type: "const char*", Name: "str0"}, {Type: "off_t", Name: "offT1"}},
+			fields:      []trace.ArgMeta{{Type: "const char*", Name: "str0"}, {Type: "long", Name: "offT1"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 	}
