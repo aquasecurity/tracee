@@ -10,13 +10,13 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const (
@@ -159,7 +159,7 @@ func (ps *policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 func (ps *policies) createNewEventsMapVersion(
 	bpfModule *bpf.Module,
 	rules map[events.ID]*eventFlags,
-	eventsParams map[events.ID][]bufferdecoder.ArgType,
+	eventArgumentTypes map[events.ID][]trace.DecodeAs,
 ) error {
 	polsVersion := ps.version()
 	innerMapName := "events_map"
@@ -185,13 +185,23 @@ func (ps *policies) createNewEventsMapVersion(
 		// bitmap of policies that require this event to be submitted
 		binary.LittleEndian.PutUint64(eventConfigVal[0:8], ecfg.policiesSubmit)
 
-		// encoded event's parameter types
-		var paramTypes uint64
-		params := eventsParams[id]
-		for n, paramType := range params {
-			paramTypes = paramTypes | (uint64(paramType) << (8 * n))
+		// encoded event's argument types
+		var encodedArgTypes uint64
+		// current event arg types
+		argTypes := eventArgumentTypes[id]
+
+		/*
+			each event may have at most 8 argument data types stored.
+			in the map, the arguments are stored in a 64bit sized bitmap where each 8 bits
+			represent some argument type.
+			For example consider an event with two int arguments (argType = 1) and one string
+			(argType = 10):
+			0 0 0 0 0 a 1 1 - would be the encoded argument types bitmap
+		*/
+		for n, paramType := range argTypes {
+			encodedArgTypes = encodedArgTypes | (uint64(paramType) << (8 * n))
 		}
-		binary.LittleEndian.PutUint64(eventConfigVal[8:16], paramTypes)
+		binary.LittleEndian.PutUint64(eventConfigVal[8:16], encodedArgTypes)
 
 		err := newInnerMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&eventConfigVal[0]))
 		if err != nil {
@@ -451,13 +461,13 @@ func (ps *policies) updateBPF(
 	bpfModule *bpf.Module,
 	cts *containers.Containers,
 	rules map[events.ID]*eventFlags,
-	eventsParams map[events.ID][]bufferdecoder.ArgType,
+	eventArgumentTypes map[events.ID][]trace.DecodeAs,
 	createNewMaps bool,
 	updateProcTree bool,
 ) (*PoliciesConfig, error) {
 	if createNewMaps {
 		// Create new events map version
-		if err := ps.createNewEventsMapVersion(bpfModule, rules, eventsParams); err != nil {
+		if err := ps.createNewEventsMapVersion(bpfModule, rules, eventArgumentTypes); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 	}

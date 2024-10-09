@@ -154,7 +154,8 @@ typedef struct args {
 } args_t;
 
 // NOTE: If any fields are added to argument_type_e, the array type_size_table
-// (and related defines) must be updated accordingly.
+// (and related defines) must be updated accordingly. Corresponds to the ArgType enum in
+// pkg/bufferdecoder/eventsreader.go.
 enum argument_type_e
 {
     NONE_T = 0UL,

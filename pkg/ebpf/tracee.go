@@ -66,11 +66,11 @@ type Tracee struct {
 	stats     metrics.Stats
 	sigEngine *engine.Engine
 	// Events
-	eventsSorter     *sorting.EventsChronologicalSorter
-	eventsPool       *sync.Pool
-	eventsParamTypes map[events.ID][]bufferdecoder.ArgType
-	eventProcessor   map[events.ID][]func(evt *trace.Event) error
-	eventDerivations derive.Table
+	eventsSorter       *sorting.EventsChronologicalSorter
+	eventsPool         *sync.Pool
+	eventArgumentTypes map[events.ID][]trace.DecodeAs
+	eventProcessor     map[events.ID][]func(evt *trace.Event) error
+	eventDerivations   derive.Table
 	// Artifacts
 	fileHashes     *filehash.Cache
 	capturedFiles  map[string]int64
@@ -417,12 +417,12 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize events parameter types map
 
-	t.eventsParamTypes = make(map[events.ID][]bufferdecoder.ArgType)
+	t.eventArgumentTypes = make(map[events.ID][]trace.DecodeAs)
 	for _, eventDefinition := range events.Core.GetDefinitions() {
 		id := eventDefinition.GetID()
 		params := eventDefinition.GetParams()
 		for _, param := range params {
-			t.eventsParamTypes[id] = append(t.eventsParamTypes[id], bufferdecoder.GetParamType(param.Type))
+			t.eventArgumentTypes[id] = append(t.eventArgumentTypes[id], bufferdecoder.GetDecodeType(param.Type))
 		}
 	}
 
@@ -1115,7 +1115,7 @@ func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
 	polCfg, err := t.policyManager.UpdateBPF(
 		t.bpfModule,
 		t.containers,
-		t.eventsParamTypes,
+		t.eventArgumentTypes,
 		true,
 		updateProcTree,
 	)
@@ -1277,7 +1277,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
-	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventsParamTypes, false, true)
+	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventArgumentTypes, false, true)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
