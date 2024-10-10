@@ -260,8 +260,9 @@ out:
 statfunc int save_args_str_arr_to_buf(
     args_buffer_t *buf, const char *start, const char *end, int elem_num, u8 index)
 {
-    // Data saved to submit buf: [index][len][arg_len][arg #][null delimited string array]
-    // Note: This helper saves null (0x00) delimited string array into buf
+    // Data saved to submit buf: [index][len][arg_len][arg #][array of null delimited string]
+    // Note: This helper saves null (0x00) delimited string array into buf in the format: 
+    // [[str1][\n][str2][\n][...][strn][\n])]
 
     if (start >= end)
         return 0;
