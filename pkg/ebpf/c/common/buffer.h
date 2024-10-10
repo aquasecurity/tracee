@@ -459,12 +459,17 @@ statfunc int save_args_to_submit_buf(event_data_t *event, args_t *args)
 }
 
 #ifdef DEBUG
-struct event_counts {
+typedef struct {
+    u64 attempts;
+    u64 failures;
+} event_stats_values_t;
+
+struct events_stats {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, MAX_EVENT_ID);
-    __type(key, u32);   // eventid
-    __type(value, u64); // count
-} event_counts SEC(".maps");
+    __type(key, u32); // eventid
+    __type(value, event_stats_values_t);
+} events_stats SEC(".maps");
 #endif
 
 statfunc int events_perf_submit(program_data_t *p, long ret)
@@ -493,14 +498,20 @@ statfunc int events_perf_submit(program_data_t *p, long ret)
                  :
                  : [size] "r"(size), [max_size] "i"(MAX_EVENT_SIZE));
 
+    u64 perf_ret = bpf_perf_event_output(p->ctx, &events, BPF_F_CURRENT_CPU, p->event, size);
+
 #ifdef DEBUG
-    // increment event count before event submission attempt
-    u64 *event_count = bpf_map_lookup_elem(&event_counts, &p->event->context.eventid);
-    if (event_count)
-        __sync_fetch_and_add(event_count, 1);
+    // update event stats
+    event_stats_values_t *evt_stat = bpf_map_lookup_elem(&events_stats, &p->event->context.eventid);
+    if (unlikely(evt_stat == NULL))
+        return perf_ret;
+
+    __sync_fetch_and_add(&evt_stat->attempts, 1);
+    if (perf_ret < 0)
+        __sync_fetch_and_add(&evt_stat->failures, 1);
 #endif
 
-    return bpf_perf_event_output(p->ctx, &events, BPF_F_CURRENT_CPU, p->event, size);
+    return perf_ret;
 }
 
 statfunc int signal_perf_submit(void *ctx, controlplane_signal_t *sig)
