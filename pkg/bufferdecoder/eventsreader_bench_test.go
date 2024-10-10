@@ -12,7 +12,7 @@ func BenchmarkReadStringVarFromBuff_ShortString(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		decoder := New(buffer)
-		str, _ = readStringVarFromBuff(decoder, max)
+		str, _ = readVarStringFromBuffer(decoder, max)
 	}
 	_ = str
 }
@@ -24,7 +24,7 @@ func BenchmarkReadStringVarFromBuff_MediumString(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		decoder := New(buffer)
-		str, _ = readStringVarFromBuff(decoder, max)
+		str, _ = readVarStringFromBuffer(decoder, max)
 	}
 	_ = str
 }
@@ -37,7 +37,7 @@ func BenchmarkReadStringVarFromBuff_LongString(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		decoder := New(buffer)
-		str, _ = readStringVarFromBuff(decoder, max)
+		str, _ = readVarStringFromBuffer(decoder, max)
 	}
 	_ = str
 }
@@ -50,7 +50,7 @@ func BenchmarkReadStringVarFromBuff_LongStringLowMax(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		decoder := New(buffer)
-		str, _ = readStringVarFromBuff(decoder, max)
+		str, _ = readVarStringFromBuffer(decoder, max)
 	}
 	_ = str
 }
