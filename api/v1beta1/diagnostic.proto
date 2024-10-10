@@ -12,11 +12,13 @@ message GetMetricsResponse {
 	uint64 EventsFiltered = 2;
 	uint64 NetCapCount = 3;
 	uint64 BPFLogsCount = 4;
-	uint64 ErrorCount = 5;
-	uint64 LostEvCount = 6; 
-	uint64 LostWrCount = 7; 
-	uint64 LostNtCapCount = 8; 
-	uint64 LostBPFLogsCount = 9;
+	uint64 BPFPerfEventWriteAttempts = 5;
+	uint64 BPFPerfEventWriteFailures = 6;
+	uint64 ErrorCount = 7;
+	uint64 LostEvCount = 8; 
+	uint64 LostWrCount = 9; 
+	uint64 LostNtCapCount = 10; 
+	uint64 LostBPFLogsCount = 11;
 }
 
 enum LogLevel {
