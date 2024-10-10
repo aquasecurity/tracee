@@ -469,7 +469,7 @@ func (t *Tracee) removeContext(event *trace.Event) error {
 	event.Container = trace.Container{}
 	event.Kubernetes = trace.Kubernetes{}
 	event.Syscall = ""
-	event.StackAddresses = []uint64{}
+	event.StackAddresses = nil
 	event.ContextFlags = trace.ContextFlags{}
 	event.ThreadEntityId = 0
 	event.ProcessEntityId = 0
