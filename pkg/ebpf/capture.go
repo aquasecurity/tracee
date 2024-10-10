@@ -170,7 +170,7 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 				}
 			}
 
-			dataBytes, err := bufferdecoder.ReadByteSliceFromBuff(ebpfMsgDecoder, int(meta.Size))
+			dataBytes, err := ebpfMsgDecoder.ReadBytesLen(int(meta.Size))
 			if err != nil {
 				if err := f.Close(); err != nil {
 					t.handleError(err)
