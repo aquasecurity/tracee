@@ -39,8 +39,14 @@ func (decoder *EbpfDecoder) BuffLen() int {
 	return len(decoder.buffer)
 }
 
-// ReadAmountBytes returns the total amount of bytes that decoder has read from its buffer up until now.
-func (decoder *EbpfDecoder) ReadAmountBytes() int {
+// BytesRead returns the total amount of bytes that decoder has read from its buffer up until now.
+func (decoder *EbpfDecoder) BytesRead() int {
+	return decoder.cursor
+}
+
+// MoveCursor moves the buffer cursor over n bytes. Returns the new cursor position.
+func (decoder *EbpfDecoder) MoveCursor(n int) int {
+	decoder.cursor += n
 	return decoder.cursor
 }
 
@@ -258,6 +264,18 @@ func (decoder *EbpfDecoder) DecodeBytes(msg []byte, size int) error {
 	_ = copy(msg[:], decoder.buffer[offset:offset+size])
 	decoder.cursor += size
 	return nil
+}
+
+// ReadBytesLen is a helper which allocates a known size bytes buffer and decodes
+// the bytes from the buffer into it.
+func (decoder *EbpfDecoder) ReadBytesLen(len int) ([]byte, error) {
+	var err error
+	res := make([]byte, len)
+	err = decoder.DecodeBytes(res[:], len)
+	if err != nil {
+		return nil, errfmt.Errorf("error reading byte array: %v", err)
+	}
+	return res, nil
 }
 
 // DecodeIntArray translate from the decoder buffer, starting from the decoder cursor, to msg, size * 4 bytes (in order to get int32).
