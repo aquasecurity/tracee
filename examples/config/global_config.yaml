@@ -8,9 +8,6 @@ proctree:
     # cache:
     #     process: 8192
     #     thread: 4096
-    # cache-ttl:
-    #     process: 120
-    #     thread: 120
 
 capabilities:
     bypass: false

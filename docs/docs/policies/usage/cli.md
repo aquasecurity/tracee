@@ -67,9 +67,6 @@ proctree:
     cache:
         process: 8192
         thread: 8192
-    cache-ttl:
-        process: 120
-        thread: 120
 # cri:
 #     - runtime:
 #         name: docker

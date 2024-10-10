@@ -16,9 +16,6 @@ proctree:
     cache:
         process: 8192
         thread: 4096
-    cache-ttl:
-        process: 60
-        thread: 60
 
 capabilities:
     bypass: false
