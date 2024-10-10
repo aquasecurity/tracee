@@ -124,6 +124,7 @@ enum event_id_e
     PROCESS_EXECUTE_FAILED,
     SECURITY_PATH_NOTIFY,
     SET_FS_PWD,
+    CHECK_SYSCALL_SOURCE,
     HIDDEN_KERNEL_MODULE_SEEKER,
     MODULE_LOAD,
     MODULE_FREE,
@@ -565,5 +566,13 @@ struct sys_exit_tracepoint_args {
     int __syscall_nr;
     long ret;
 };
+
+// key for the syscall source map
+typedef struct {
+    u32 syscall;
+    u32 tgid;
+    u64 tgid_start_time;
+    u64 vma_addr;
+} syscall_source_key_t;
 
 #endif
