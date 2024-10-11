@@ -1,5 +1,5 @@
-github.com/aquasecurity/tracee/types v0.0.0-20240122122429-7f84f526758d h1:6CQjy5G6Cj/VKm8RP1uZnBZxDgfyGo15HfWFnYrkGro=
-github.com/aquasecurity/tracee/types v0.0.0-20240122122429-7f84f526758d/go.mod h1:J0f9nzJWrFmFgMoK0s4Yirfh82vfKMatXytd1YdfU2I=
+github.com/aquasecurity/tracee/types v0.0.0-20241011005226-27f2cbdf6bd7 h1:6s4t+6UK7kMn2iTsPPooit4k5T22nmFcIguLRkWvmzk=
+github.com/aquasecurity/tracee/types v0.0.0-20241011005226-27f2cbdf6bd7/go.mod h1:Jwh9OOuiMHXDoGQY12N9ls5YB+j1FlRcXvFMvh1CmIU=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
