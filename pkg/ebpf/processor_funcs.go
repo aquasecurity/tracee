@@ -121,6 +121,7 @@ func processKernelReadFile(event *trace.Event) error {
 // processSchedProcessExec processes a sched_process_exec event by capturing the executed file.
 func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	// cache this pid by it's mnt ns
+	// TODO: don't do this if Tracee is not in the root PID NS?
 	if event.ProcessID == 1 {
 		t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
 	} else {
