@@ -106,6 +106,20 @@ func GetTraceeUintArgumentByName(event trace.Event, argName string) (uint, error
 	return 0, fmt.Errorf("can't convert argument %v to int (argument is of type %T)", argName, arg.Value)
 }
 
+// GetTraceeBoolArgumentByName gets the argument from `event` matching the `argName`, casted as bool.
+func GetTraceeBoolArgumentByName(event trace.Event, argName string) (bool, error) {
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return false, err
+	}
+	argBool, ok := arg.Value.(bool)
+	if ok {
+		return argBool, nil
+	}
+
+	return false, fmt.Errorf("can't convert argument %v to bool", argName)
+}
+
 // GetTraceeSliceStringArgumentByName retrieves the argument from the event's "Args" field
 // that matches the specified "argName". The argument value is returned cast as a []string.
 func GetTraceeSliceStringArgumentByName(event trace.Event, argName string) ([]string, error) {
