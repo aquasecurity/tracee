@@ -508,6 +508,16 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		},
 	}
 
+	// Perform extra initializtion steps required by specific events according to their arguments
+	err = capabilities.GetInstance().EBPF(
+		func() error {
+			return t.handleEventFilters()
+		},
+	)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	return nil
 }
 
