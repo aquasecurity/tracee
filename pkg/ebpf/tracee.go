@@ -84,8 +84,7 @@ type Tracee struct {
 	bpfModule *bpf.Module
 	probes    *probes.ProbeGroup
 	// BPF Maps
-	StackAddressesMap *bpf.BPFMap
-	FDArgPathMap      *bpf.BPFMap
+	FDArgPathMap *bpf.BPFMap
 	// Perf Buffers
 	eventsPerfMap  *bpf.PerfBuffer // perf buffer for events
 	fileWrPerfMap  *bpf.PerfBuffer // perf buffer for file writes
@@ -483,15 +482,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.Errorf("error initializing network capture: %v", err)
 	}
 
-	// Get reference to stack trace addresses map
-
-	stackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
-	if err != nil {
-		t.Close()
-		return errfmt.Errorf("error getting access to 'stack_addresses' eBPF Map %v", err)
-	}
-	t.StackAddressesMap = stackAddressesMap
-
 	// Get reference to fd arg path map
 
 	fdArgPathMap, err := t.bpfModule.GetMap("fd_arg_path_map")
@@ -516,6 +506,16 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		New: func() interface{} {
 			return &trace.Event{}
 		},
+	}
+
+	// Perform extra initializtion steps required by specific events according to their arguments
+	err = capabilities.GetInstance().EBPF(
+		func() error {
+			return t.handleEventFilters()
+		},
+	)
+	if err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	return nil
