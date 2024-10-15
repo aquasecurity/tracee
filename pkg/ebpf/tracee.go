@@ -47,6 +47,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
+	"github.com/aquasecurity/tracee/pkg/version"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -63,7 +64,7 @@ type Tracee struct {
 	running   atomic.Bool
 	done      chan struct{} // signal to safely stop end-stage processing
 	OutDir    *os.File      // use utils.XXX functions to create or write to this file
-	stats     metrics.Stats
+	stats     *metrics.Stats
 	sigEngine *engine.Engine
 	// Events States
 	eventsState map[events.ID]events.EventState
@@ -133,7 +134,7 @@ type Tracee struct {
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
-	return &t.stats
+	return t.stats
 }
 
 func (t *Tracee) Engine() *engine.Engine {
@@ -234,6 +235,7 @@ func New(cfg config.Config) (*Tracee, error) {
 	t := &Tracee{
 		config:          cfg,
 		done:            make(chan struct{}),
+		stats:           metrics.NewStats(),
 		writtenFiles:    make(map[string]string),
 		readFiles:       make(map[string]string),
 		capturedFiles:   make(map[string]int64),
@@ -1509,6 +1511,12 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	// Start control plane
 	t.controlPlane.Start()
 	go t.controlPlane.Run(ctx)
+
+	// Measure event perf buffer write attempts (METRICS build only)
+
+	if version.MetricsBuild() {
+		go t.countPerfEventSubmissions(ctx)
+	}
 
 	// Main event loop (polling events perf buffer)
 
