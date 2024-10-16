@@ -436,3 +436,41 @@ func GetProtoHTTPByName(
 
 	return trace.ProtoHTTP{}, fmt.Errorf("protocol HTTP: type error (should be trace.ProtoHTTP, is %T)", arg.Value)
 }
+
+func GetProtoHTTPRequestByName(
+	event trace.Event,
+	argName string,
+) (
+	trace.ProtoHTTPRequest, error,
+) {
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return trace.ProtoHTTPRequest{}, err
+	}
+
+	argProtoHTTPRequest, ok := arg.Value.(trace.ProtoHTTPRequest)
+	if ok {
+		return argProtoHTTPRequest, nil
+	}
+
+	return trace.ProtoHTTPRequest{}, fmt.Errorf("protocol HTTP (request): type error (should be trace.ProtoHTTPRequest, is %T)", arg.Value)
+}
+
+func GetProtoHTTPResponseByName(
+	event trace.Event,
+	argName string,
+) (
+	trace.ProtoHTTPResponse, error,
+) {
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return trace.ProtoHTTPResponse{}, err
+	}
+
+	argProtoHTTPResponse, ok := arg.Value.(trace.ProtoHTTPResponse)
+	if ok {
+		return argProtoHTTPResponse, nil
+	}
+
+	return trace.ProtoHTTPResponse{}, fmt.Errorf("protocol HTTP (response): type error (should be trace.ProtoHTTPResponse, is %T)", arg.Value)
+}
