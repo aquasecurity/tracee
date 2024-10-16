@@ -13,6 +13,8 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+var decodeStrategies map[trace.DecodeAs]func()
+
 // readArgFromBuff read the next argument from the buffer.
 // Return the index of the argument and the parsed argument.
 func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta,
@@ -32,7 +34,7 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 		return 0, arg, errfmt.Errorf("invalid arg index %d", argIdx)
 	}
 	arg.ArgMeta = params[argIdx]
-	argType := GetParamType(arg.Type)
+	argType := GetDecodeType(arg.Type)
 
 	switch argType {
 	case trace.U8_T:
@@ -161,7 +163,7 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 	return uint(argIdx), arg, nil
 }
 
-func GetParamType(paramType string) trace.DecodeAs {
+func GetDecodeType(paramType string) trace.DecodeAs {
 	switch paramType {
 	case "int":
 		return trace.INT_T
