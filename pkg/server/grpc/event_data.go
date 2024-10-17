@@ -76,7 +76,7 @@ func getEventValue(arg trace.Argument) (*pb.EventValue, error) {
 
 	eventValue, err := parseArgument(arg)
 	if err != nil {
-		return nil, errfmt.Errorf("can't convert event data: %s - %v - %T", arg.Name, arg.Value, arg.Value)
+		return nil, errfmt.Errorf("can't convert event data [%s]: %s - %v - %T", err, arg.Name, arg.Value, arg.Value)
 	}
 
 	return eventValue, nil
