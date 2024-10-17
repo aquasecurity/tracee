@@ -71,7 +71,7 @@ func (sig *antiDebugging) OnEvent(event protocol.Event) error {
 		ptraceRequestData = fmt.Sprint(requestArg)
 		sig.logger.Debugw("anti_debugging sig: failed to parse ptrace request argument: %v", err)
 	} else {
-		ptraceRequestData = requestString.String()
+		ptraceRequestData = requestString
 	}
 
 	sig.cb(&detect.Finding{
