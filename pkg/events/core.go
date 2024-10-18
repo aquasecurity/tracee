@@ -5151,7 +5151,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
 		params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "nr_events"},
-			{Type: "io_context_t*", Name: "ctx_idp"},
+			{Type: "aio_context_t*", Name: "ctx_idp"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5174,7 +5174,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
 		params: []trace.ArgMeta{
-			{Type: "io_context_t", Name: "ctx_id"},
+			{Type: "aio_context_t", Name: "ctx_id"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5197,7 +5197,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
 		params: []trace.ArgMeta{
-			{Type: "io_context_t", Name: "ctx_id"},
+			{Type: "aio_context_t", Name: "ctx_id"},
 			{Type: "long", Name: "min_nr"},
 			{Type: "long", Name: "nr"},
 			{Type: "struct io_event*", Name: "events"},
@@ -5224,7 +5224,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
 		params: []trace.ArgMeta{
-			{Type: "io_context_t", Name: "ctx_id"},
+			{Type: "aio_context_t", Name: "ctx_id"},
 			{Type: "long", Name: "nr"},
 			{Type: "struct iocb**", Name: "iocbpp"},
 		},
@@ -5249,7 +5249,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
 		params: []trace.ArgMeta{
-			{Type: "io_context_t", Name: "ctx_id"},
+			{Type: "aio_context_t", Name: "ctx_id"},
 			{Type: "struct iocb*", Name: "iocb"},
 			{Type: "struct io_event*", Name: "result"},
 		},
