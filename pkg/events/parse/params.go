@@ -53,17 +53,16 @@ func ArgZeroValueFromType(t string) interface{} {
 		"const clockid_t",
 		"timer_t",
 		"mqd_t",
-		"key_serial_t":
+		"key_serial_t",
+		"landlock_rule_type":
 		return int32(0)
 	case "u32",
 		"unsigned int",
 		"dev_t",
 		"uid_t",
 		"gid_t",
-		"size_t",
 		"mode_t",
-		"qid_t",
-		"landlock_rule_type":
+		"qid_t":
 		return uint32(0)
 	case "int[2]":
 		return [2]int32{}
@@ -78,6 +77,7 @@ func ArgZeroValueFromType(t string) interface{} {
 		"unsigned long long",
 		"const unsigned long",
 		"const unsigned long long",
+		"size_t",
 		"aio_context_t":
 		return uint64(0)
 	case "unsigned long[]":
@@ -142,7 +142,6 @@ func ArgZeroValueFromType(t string) interface{} {
 		case "cap_user_header_t",
 			"cap_user_data_t",
 			"const cap_user_data_t",
-			"io_context_t",
 			"sighandler_t":
 			return uintptr(0)
 		}
