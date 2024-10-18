@@ -61,6 +61,8 @@ env:
     ICMPv6
     DNS
     HTTP
+    HTTPRequest
+    HTTPResponse
   INSTTESTS: >
     PROCESS_EXECUTE_FAILED
     VFS_WRITE

@@ -12,6 +12,8 @@ var ExportedSignatures = []detect.Signature{
 	&e2eICMPv6{},
 	&e2eDNS{},
 	&e2eHTTP{},
+	&e2eHTTPRequest{},
+	&e2eHTTPResponse{},
 }
 
 var ExportedDataSources = []detect.DataSource{
