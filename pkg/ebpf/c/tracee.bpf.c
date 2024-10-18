@@ -2209,6 +2209,9 @@ int BPF_KPROBE(trace_security_file_open)
     save_to_submit_buf(&p.event->args_buf, &ctime, sizeof(u64), 4);
     save_str_to_buf(&p.event->args_buf, syscall_pathname, 5);
 
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
+
     return events_perf_submit(&p, 0);
 }
 
@@ -3353,6 +3356,9 @@ statfunc int do_vfs_write_magic_return(struct pt_regs *ctx, bool is_buf)
     save_to_submit_buf(&(p.event->args_buf), &file_info.id.device, sizeof(dev_t), 2);
     save_to_submit_buf(&(p.event->args_buf), &file_info.id.inode, sizeof(unsigned long), 3);
 
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
+
     // Submit magic_write event
     return events_perf_submit(&p, bytes_written);
 }
@@ -3549,6 +3555,9 @@ int BPF_KPROBE(trace_security_mmap_file)
     save_to_submit_buf(&p.event->args_buf, &ctime, sizeof(u64), 4);
     save_to_submit_buf(&p.event->args_buf, &prot, sizeof(unsigned long), 5);
     save_to_submit_buf(&p.event->args_buf, &mmap_flags, sizeof(unsigned long), 6);
+
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
 
     return events_perf_submit(&p, 0);
 }

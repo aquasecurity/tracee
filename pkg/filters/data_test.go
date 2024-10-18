@@ -26,6 +26,7 @@ func TestDataFilterClone(t *testing.T) {
 		StringFilter{},
 		sets.PrefixSet{},
 		sets.SuffixSet{},
+		MatchTypes{},
 	)
 	opt2 := cmp.FilterPath(
 		func(p cmp.Path) bool {

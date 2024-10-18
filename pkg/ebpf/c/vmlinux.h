@@ -788,6 +788,11 @@ struct iovec {
     __kernel_size_t iov_len;
 };
 
+enum
+{
+    BPF_F_NO_PREALLOC = 1,
+};
+
 enum bpf_map_type
 {
     BPF_MAP_TYPE_UNSPEC = 0,

@@ -1,6 +1,8 @@
 package policy
 
 import (
+	"strings"
+
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -21,14 +23,17 @@ const (
 
 // filtersEqualities stores the equalities for each filter in the policies
 type filtersEqualities struct {
-	uidEqualities      map[uint64]equality
-	pidEqualities      map[uint64]equality
-	mntNSEqualities    map[uint64]equality
-	pidNSEqualities    map[uint64]equality
-	cgroupIdEqualities map[uint64]equality
-	utsEqualities      map[string]equality
-	commEqualities     map[string]equality
-	binaryEqualities   map[filters.NSBinary]equality
+	uidEqualities         map[uint64]equality
+	pidEqualities         map[uint64]equality
+	mntNSEqualities       map[uint64]equality
+	pidNSEqualities       map[uint64]equality
+	cgroupIdEqualities    map[uint64]equality
+	utsEqualities         map[string]equality
+	commEqualities        map[string]equality
+	dataEqualitiesPrefix  map[filters.KernelData]equality
+	dataEqualitiesSuffix  map[filters.KernelData]equality
+	dataEqualitiesExactly map[filters.KernelData]equality
+	binaryEqualities      map[filters.NSBinary]equality
 }
 
 // equalityType represents the type of equality.
@@ -83,6 +88,74 @@ func updateEqualities[T comparable](
 		}
 		update(&eq, policyID) // update the equality
 		equalitiesMap[k] = eq // update the map
+	}
+}
+
+// updateAffixEqualities updates the equalities map with the given filter equalities
+// for the specified equality type and policy ID. It handles corner cases where paths
+// in the prefix/suffix filter are substrings of existing paths in the equalities map.
+// In cases where one prefix/suffix path overlaps with another, their equality bitmaps
+// are combined, addressing the corner case. This ensures that a single lookup retrieves
+// the longest matching path, with equality bitmaps merged from overlapping policies.
+func updateAffixEqualities[T comparable](
+	equalitiesMap map[T]equality,
+	filterEqualities map[T]struct{},
+	eqType equalityType,
+	policyID uint,
+) {
+	var update equalityUpdater
+
+	switch eqType {
+	case notEqual:
+		update = notEqualUpdate
+	case equal:
+		update = equalUpdate
+	default:
+		logger.Errorw("Invalid equality type", "type", eqType)
+		return
+	}
+
+	for newK := range filterEqualities {
+		newEq, exists := equalitiesMap[newK]
+		if !exists {
+			newEq = equality{} // initialize if not exists
+		}
+
+		newKD, isKernelData := any(newK).(filters.KernelData)
+
+		var longestMatch filters.KernelData
+		var longestMatchEq equality
+
+		if isKernelData {
+			for existingK, existingEq := range equalitiesMap {
+				existingKD, isExistingKernelData := any(existingK).(filters.KernelData)
+				// skip if event ID is different
+				if !isExistingKernelData || existingKD.ID != newKD.ID {
+					continue
+				}
+
+				// check if exists a substrings of existing paths in the equalities map
+				if strings.HasPrefix(existingKD.Path, newKD.Path) {
+					// Directly update the equality if the new path is a prefix
+					update(&existingEq, policyID)
+					equalitiesMap[existingK] = existingEq
+				} else if strings.HasPrefix(newKD.Path, existingKD.Path) {
+					// Cache the longest match
+					if len(existingKD.Path) > len(longestMatch.Path) {
+						longestMatch = existingKD
+						longestMatchEq = existingEq
+					}
+				}
+			}
+
+			// If a match was found, use the longest matching equality
+			if longestMatch.Path != "" {
+				newEq = longestMatchEq
+			}
+		}
+
+		update(&newEq, policyID)    // update the equality
+		equalitiesMap[newK] = newEq // update the map
 	}
 }
 
@@ -149,6 +222,17 @@ func (ps *policies) computeFilterEqualities(
 		commEqualities := p.CommFilter.Equalities()
 		updateEqualities(fEqs.commEqualities, commEqualities.NotEqual, notEqual, policyID)
 		updateEqualities(fEqs.commEqualities, commEqualities.Equal, equal, policyID)
+
+		// DataFilters
+		dataEqualities := p.DataFilter.Equalities()
+		updateEqualities(fEqs.dataEqualitiesExactly, dataEqualities.NotEqual, notEqual, policyID)
+		updateEqualities(fEqs.dataEqualitiesExactly, dataEqualities.Equal, equal, policyID)
+
+		updateAffixEqualities(fEqs.dataEqualitiesPrefix, dataEqualities.NotEqualPrefix, notEqual, policyID)
+		updateAffixEqualities(fEqs.dataEqualitiesPrefix, dataEqualities.EqualPrefix, equal, policyID)
+
+		updateAffixEqualities(fEqs.dataEqualitiesSuffix, dataEqualities.NotEqualSuffix, notEqual, policyID)
+		updateAffixEqualities(fEqs.dataEqualitiesSuffix, dataEqualities.EqualSuffix, equal, policyID)
 
 		// BinaryFilters
 		binaryEqualities := p.BinaryFilter.Equalities()

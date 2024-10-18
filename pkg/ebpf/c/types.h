@@ -285,6 +285,17 @@ typedef struct path_filter {
     char path[MAX_PATH_PREF_SIZE];
 } path_filter_t;
 
+typedef struct data_filter_key {
+    u32 event_id;
+    char path[MAX_PATH_PREF_SIZE];
+} data_filter_key_t;
+
+typedef struct data_filter_lpm_key {
+    u32 prefix_len;
+    u32 event_id;
+    char path[MAX_PATH_PREF_SIZE];
+} data_filter_lpm_key_t;
+
 typedef struct string_filter {
     char str[MAX_STR_FILTER_SIZE];
 } string_filter_t;
@@ -331,6 +342,17 @@ typedef struct policies_config {
     u64 bin_path_filter_out_scopes;
     // bitmask with scopes that have at least one filter enabled
     u64 enabled_scopes;
+
+    // enabled data filters bitmask per filter
+    u64 exactly_enabled_data_filters;
+    u64 prefix_enabled_data_filters;
+    u64 suffix_enabled_data_filters;
+    u64 exactly_out_data_filters;
+    u64 prefix_out_data_filters;
+    u64 suffix_out_data_filters;
+    // bitmask with data filters that have at least one filter enabled
+    u64 enabled_data_filters;
+
     // global min max
     u64 uid_max;
     u64 uid_min;
@@ -369,7 +391,8 @@ typedef struct syscall_table_entry {
 typedef struct args_buffer {
     u8 argnum;
     char args[ARGS_BUF_SIZE];
-    u32 offset;
+    u16 offset;
+    u16 args_offset[MAX_ARGS];
 } args_buffer_t;
 
 typedef struct event_data {
