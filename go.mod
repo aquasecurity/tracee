@@ -43,6 +43,8 @@ require (
 	sigs.k8s.io/controller-runtime v0.18.2
 )
 
+replace github.com/aquasecurity/tracee/signatures/helpers => ./signatures/helpers/
+
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
 	github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20231105174938-2b5cbb29f3e2 // indirect
