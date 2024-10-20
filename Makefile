@@ -167,6 +167,10 @@ else
 	GO_DEBUG_FLAG = -w
 endif
 
+ifeq ($(METRICS),1)
+	BPF_DEBUG_FLAG += -DMETRICS
+endif
+
 ifeq ($(UNAME_M),x86_64)
 	ARCH = x86_64
 	LINUX_ARCH = x86
@@ -423,6 +427,7 @@ $(OUTPUT_DIR)/tracee.bpf.o: \
 	$(TRACEE_EBPF_OBJ_HEADERS)
 #
 	$(CMD_CLANG) \
+		$(BPF_DEBUG_FLAG) \
 		-D__TARGET_ARCH_$(LINUX_ARCH) \
 		-D__BPF_TRACING__ \
 		-DCORE \
@@ -501,6 +506,7 @@ $(OUTPUT_DIR)/tracee: \
 		-ldflags="$(GO_DEBUG_FLAG) \
 			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
 			-X github.com/aquasecurity/tracee/pkg/version.version=$(VERSION) \
+			-X github.com/aquasecurity/tracee/pkg/version.metrics=$(METRICS) \
 			" \
 		-v -o $@ \
 		./cmd/tracee
