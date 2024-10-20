@@ -24,8 +24,11 @@
 #define MAX_STR_ARR_ELEM      38 // TODO: turn this into global variables set w/ libbpfgo
 #define MAX_ARGS_STR_ARR_ELEM 15
 #define MAX_PATH_PREF_SIZE    64
+#define MAX_PATH_PREF_SIZE_MASK    (MAX_PATH_PREF_SIZE-1)
 #define MAX_PATH_COMPONENTS   20
 #define MAX_BIN_CHUNKS        110
+#define MAX_ARGS              21 // Update if any eBPF program requires more arguments
+#define INVALID_ARG_OFFSET    0xFFFF
 
 #define CAPTURE_IFACE (1 << 0)
 #define TRACE_IFACE   (1 << 1)
