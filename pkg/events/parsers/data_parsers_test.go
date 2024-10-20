@@ -132,6 +132,210 @@ func Test_optionIsContainedInArgument(t *testing.T) {
 	}
 }
 
+func TestParseCloneFlags(t *testing.T) {
+	testCases := []struct {
+		name          string
+		rawArgument   uint64
+		expectedSting string
+		expectedError bool
+	}{
+		{
+			name:          "No value",
+			rawArgument:   0,
+			expectedSting: "",
+			expectedError: false,
+		},
+		{
+			name:          "Single value",
+			rawArgument:   CLONE_CHILD_CLEARTID.Value(),
+			expectedSting: "CLONE_CHILD_CLEARTID",
+			expectedError: false,
+		},
+		{
+			name:          "Multiple values",
+			rawArgument:   CLONE_VM.Value() | CLONE_FS.Value(),
+			expectedSting: "CLONE_VM|CLONE_FS",
+			expectedError: false,
+		},
+		{
+			name:          "Non existing value",
+			rawArgument:   1,
+			expectedSting: "",
+			expectedError: true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			opt, err := ParseCloneFlags(testCase.rawArgument)
+			if testCase.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, testCase.expectedSting, opt)
+		})
+	}
+}
+
+func TestParseOpenFlagArgument(t *testing.T) {
+	tests := []struct {
+		name           string
+		rawArgument    uint64
+		expectedString string
+		expectedErr    bool
+	}{
+		{
+			name:           "Test O_RDONLY",
+			rawArgument:    0,
+			expectedString: O_RDONLY.String(),
+		},
+		{
+			name:           "Test O_WRONLY",
+			rawArgument:    O_WRONLY.Value(),
+			expectedString: O_WRONLY.String(),
+		},
+		{
+			name:           "Test O_RDWR",
+			rawArgument:    O_RDWR.Value(),
+			expectedString: O_RDWR.String(),
+		},
+		{
+			name:           "Test O_CREAT",
+			rawArgument:    O_CREAT.Value(),
+			expectedString: O_RDONLY.String() + "|" + O_CREAT.String(),
+		},
+		{
+			name:           "Test O_RDWR | O_CREAT",
+			rawArgument:    O_RDWR.Value() | O_CREAT.Value(),
+			expectedString: O_RDWR.String() + "|" + O_CREAT.String(),
+		},
+		{
+			name:           "Test O_WRONLY | O_CREAT | O_EXCL",
+			rawArgument:    O_WRONLY.Value() | O_CREAT.Value() | O_EXCL.Value(),
+			expectedString: O_WRONLY.String() + "|" + O_CREAT.String() + "|" + O_EXCL.String(),
+		},
+		{
+			name:           "Test O_RDWR | O_CREAT | O_DSYNC | O_LARGEFILE",
+			rawArgument:    O_RDWR.Value() | O_CREAT.Value() | O_DSYNC.Value() | O_LARGEFILE.Value(),
+			expectedString: O_RDWR.String() + "|" + O_CREAT.String() + "|" + O_DSYNC.String() + "|" + O_LARGEFILE.String(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opt, err := ParseOpenFlagArgument(tt.rawArgument)
+			if tt.expectedErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedString, opt)
+		})
+	}
+}
+
+func TestParseAccessMode(t *testing.T) {
+	tests := []struct {
+		name           string
+		rawArgument    uint64
+		expectedString string
+		expectedErr    bool
+	}{
+		{
+			name:           "Test F_OK",
+			rawArgument:    F_OK.Value(),
+			expectedString: F_OK.String(),
+		},
+		{
+			name:           "Test X_OK",
+			rawArgument:    X_OK.Value(),
+			expectedString: X_OK.String(),
+		},
+		{
+			name:           "Test W_OK",
+			rawArgument:    W_OK.Value(),
+			expectedString: W_OK.String(),
+		},
+		{
+			name:           "Test R_OK",
+			rawArgument:    R_OK.Value(),
+			expectedString: R_OK.String(),
+		},
+		{
+			name:           "Test W_OK | R_OK",
+			rawArgument:    W_OK.Value() | R_OK.Value(),
+			expectedString: W_OK.String() + "|" + R_OK.String(),
+		},
+		{
+			name:           "Test X_OK | W_OK | R_OK",
+			rawArgument:    X_OK.Value() | W_OK.Value() | R_OK.Value(),
+			expectedString: X_OK.String() + "|" + W_OK.String() + "|" + R_OK.String(),
+		},
+		{
+			name:           "Test Invalid",
+			rawArgument:    0xff000000,
+			expectedString: "",
+			expectedErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opt, err := ParseAccessMode(tt.rawArgument)
+			if tt.expectedErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedString, opt)
+		})
+	}
+}
+
+func TestParseExecveatFlag(t *testing.T) {
+	tests := []struct {
+		name           string
+		rawArgument    uint64
+		expectedString string
+		expectedErr    bool
+	}{
+		{
+			name:           "Test AT_SYMLINK_NOFOLLOW",
+			rawArgument:    AT_SYMLINK_NOFOLLOW.Value(),
+			expectedString: AT_SYMLINK_NOFOLLOW.String(),
+		},
+		{
+			name:           "Test AT_EMPTY_PATH",
+			rawArgument:    AT_EMPTY_PATH.Value(),
+			expectedString: AT_EMPTY_PATH.String(),
+		},
+		{
+			name:           "Test AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH",
+			rawArgument:    AT_SYMLINK_NOFOLLOW.Value() | AT_EMPTY_PATH.Value(),
+			expectedString: AT_SYMLINK_NOFOLLOW.String() + "|" + AT_EMPTY_PATH.String(),
+		},
+		{
+			name:           "Test Invalid",
+			rawArgument:    0xff000000,
+			expectedString: "",
+			expectedErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opt, err := ParseExecveatFlag(tt.rawArgument)
+			if tt.expectedErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedString, opt)
+		})
+	}
+}
+
 func TestParseSetSocketOption(t *testing.T) {
 	testCases := []struct {
 		name          string

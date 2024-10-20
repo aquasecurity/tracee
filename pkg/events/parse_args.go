@@ -23,7 +23,8 @@ func ParseArgs(event *trace.Event) error {
 		}
 	}
 
-	switch ID(event.EventID) {
+	evtID := ID(event.EventID)
+	switch evtID {
 	case MemProtAlert:
 		if alertArg := GetArg(event, "alert"); alertArg != nil {
 			if alert, isUint32 := alertArg.Value.(uint32); isUint32 {
@@ -83,8 +84,8 @@ func ParseArgs(event *trace.Event) error {
 		}
 	case Prctl:
 		if optArg := GetArg(event, "option"); optArg != nil {
-			if opt, isInt32 := optArg.Value.(int32); isInt32 {
-				parsePrctlOption(optArg, uint64(opt))
+			if option, isInt32 := optArg.Value.(int32); isInt32 {
+				parsePrctlOption(optArg, uint64(option))
 			}
 		}
 	case Socketcall:
@@ -115,16 +116,27 @@ func ParseArgs(event *trace.Event) error {
 				parseSocketType(typeArg, uint64(typ))
 			}
 		}
-	case Access, Faccessat:
+	case Access:
 		if modeArg := GetArg(event, "mode"); modeArg != nil {
 			if mode, isInt32 := modeArg.Value.(int32); isInt32 {
 				parseAccessMode(modeArg, uint64(mode))
 			}
 		}
+	case Faccessat:
+		if modeArg := GetArg(event, "mode"); modeArg != nil {
+			if mode, isInt32 := modeArg.Value.(int32); isInt32 {
+				parseAccessMode(modeArg, uint64(mode))
+			}
+		}
+		if flagsArg := GetArg(event, "flags"); flagsArg != nil {
+			if flags, isInt32 := flagsArg.Value.(int32); isInt32 {
+				parseFaccessatFlag(flagsArg, uint64(flags))
+			}
+		}
 	case Execveat:
 		if flagsArg := GetArg(event, "flags"); flagsArg != nil {
 			if flags, isInt32 := flagsArg.Value.(int32); isInt32 {
-				parseExecFlag(flagsArg, uint64(flags))
+				parseExecveatFlag(flagsArg, uint64(flags))
 			}
 		}
 	case Open, Openat, SecurityFileOpen:
@@ -133,10 +145,18 @@ func ParseArgs(event *trace.Event) error {
 				parseOpenFlagArgument(flagsArg, uint64(flags))
 			}
 		}
+	// TODO: mode arg parsing for Open and Openat
 	case Mknod, Mknodat, SecurityInodeMknod, Chmod, Fchmod, Fchmodat, ChmodCommon:
 		if modeArg := GetArg(event, "mode"); modeArg != nil {
 			if mode, isUint16 := modeArg.Value.(uint16); isUint16 {
 				parseInodeMode(modeArg, uint64(mode))
+			}
+		}
+		if evtID == Fchmodat {
+			if flagsArg := GetArg(event, "flags"); flagsArg != nil {
+				if flags, isInt32 := flagsArg.Value.(int32); isInt32 {
+					parseFchmodatFlag(flagsArg, uint64(flags))
+				}
 			}
 		}
 	case Clone:
@@ -236,6 +256,12 @@ func ParseArgsFDs(event *trace.Event, origTimestamp uint64, fdArgPathMap *bpf.BP
 
 			fpath := string(bytes.Trim(bs, "\x00"))
 			fdArg.Value = fmt.Sprintf("%d=%s", fd, fpath)
+		}
+	}
+
+	if dirfdArg := GetArg(event, "dirfd"); dirfdArg != nil {
+		if dirfd, isInt32 := dirfdArg.Value.(int32); isInt32 {
+			parseDirfdAt(dirfdArg, uint64(dirfd))
 		}
 	}
 
