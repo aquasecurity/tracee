@@ -10,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
+	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -56,7 +57,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Signature directory command line flags
 
-	sigs, dataSources, err := signature.Find(
+	signatures, dataSources, err := signature.Find(
 		rego.RuntimeTarget,
 		rego.PartialEval,
 		viper.GetStringSlice("signatures-dir"),
@@ -67,7 +68,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	sigNameToEventId := initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
+	sigNameToEventId := sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
 
 	// Initialize a tracee config structure
 
@@ -334,7 +335,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	runner.TraceeConfig.EngineConfig = engine.Config{
 		Enabled:          true,
 		SigNameToEventID: sigNameToEventId,
-		Signatures:       sigs,
+		Signatures:       signatures,
 		// This used to be a flag, we have removed the flag from this binary to test
 		// if users do use it or not.
 		SignatureBufferSize: 1000,

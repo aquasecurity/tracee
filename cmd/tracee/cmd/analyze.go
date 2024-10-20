@@ -13,9 +13,9 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
-	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
-	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/findings"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
@@ -106,7 +106,7 @@ tracee analyze --events anti_debugging events.json`,
 			signatureEvents = nil
 		}
 
-		sigs, _, err := signature.Find(
+		signatures, _, err := signature.Find(
 			rego.RuntimeTarget,
 			rego.PartialEval,
 			viper.GetStringSlice("signatures-dir"),
@@ -118,20 +118,20 @@ tracee analyze --events anti_debugging events.json`,
 			logger.Fatalw("Failed to find signature event", "err", err)
 		}
 
-		if len(sigs) == 0 {
+		if len(signatures) == 0 {
 			logger.Fatalw("No signature event loaded")
 		}
 
 		logger.Infow(
 			"Signatures loaded",
-			"total", len(sigs),
-			"signatures", getSigsNames(sigs),
+			"total", len(signatures),
+			"signatures", getSigsNames(signatures),
 		)
 
-		_ = initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
+		_ = sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
 
 		engineConfig := engine.Config{
-			Signatures:          sigs,
+			Signatures:          signatures,
 			SignatureBufferSize: 1000,
 		}
 
@@ -140,6 +140,7 @@ tracee analyze --events anti_debugging events.json`,
 
 		engineOutput := make(chan *detect.Finding)
 		engineInput := make(chan protocol.Event)
+		process := findingProcessor(engineInput)
 
 		source := engine.EventSources{Tracee: engineInput}
 		sigEngine, err := engine.NewEngine(engineConfig, source, engineOutput)
@@ -186,7 +187,7 @@ tracee analyze --events anti_debugging events.json`,
 	DisableFlagsInUseLine: true,
 }
 
-func produce(ctx context.Context, inputFile *os.File, engineInput chan protocol.Event) {
+func produce(ctx context.Context, inputFile *os.File, engineInput chan<- protocol.Event) {
 	// ensure the engineInput channel will be closed
 	defer close(engineInput)
 
@@ -211,18 +212,21 @@ func produce(ctx context.Context, inputFile *os.File, engineInput chan protocol.
 	}
 }
 
-func process(finding *detect.Finding) {
-	event, err := tracee.FindingToEvent(finding)
-	if err != nil {
-		logger.Fatalw("Failed to convert finding to event", "err", err)
-	}
+func findingProcessor(engineInput chan<- protocol.Event) func(finding *detect.Finding) {
+	return func(finding *detect.Finding) {
+		event, err := findings.FindingToEvent(finding)
+		if err != nil {
+			logger.Fatalw("Failed to convert finding to event", "err", err)
+		}
 
-	jsonEvent, err := json.Marshal(event)
-	if err != nil {
-		logger.Fatalw("Failed to json marshal event", "err", err)
-	}
+		engineInput <- event.ToProtocol()
+		jsonEvent, err := json.Marshal(event)
+		if err != nil {
+			logger.Fatalw("Failed to json marshal event", "err", err)
+		}
 
-	fmt.Println(string(jsonEvent))
+		fmt.Println(string(jsonEvent))
+	}
 }
 
 func bindViperFlag(cmd *cobra.Command, flag string) {
@@ -232,15 +236,15 @@ func bindViperFlag(cmd *cobra.Command, flag string) {
 	}
 }
 
-func getSigsNames(sigs []detect.Signature) []string {
-	var sigsNames []string
-	for _, sig := range sigs {
+func getSigsNames(signatures []detect.Signature) []string {
+	var sigNames []string
+	for _, sig := range signatures {
 		sigMeta, err := sig.GetMetadata()
 		if err != nil {
 			logger.Warnw("Failed to get signature metadata", "err", err)
 			continue
 		}
-		sigsNames = append(sigsNames, sigMeta.Name)
+		sigNames = append(sigNames, sigMeta.Name)
 	}
-	return sigsNames
+	return sigNames
 }
