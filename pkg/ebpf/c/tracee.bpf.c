@@ -5088,6 +5088,9 @@ int BPF_KPROBE(trace_set_fs_pwd)
     if (!init_program_data(&p, ctx, SET_FS_PWD))
         return 0;
 
+    if (p.event->context.syscall != SYSCALL_CHDIR && p.event->context.syscall != SYSCALL_FCHDIR)
+        return 0;
+
     if (!evaluate_scope_filters(&p))
         return 0;
 
