@@ -1,29 +1,32 @@
 package proc
 
 import (
-	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
+
+	"github.com/aquasecurity/tracee/pkg/utils/tests"
 )
 
-func createMockStatusFile(b *testing.B) (string, error) {
+func createMockStatusFile() (string, error) {
 	dirPath := "/tmp/tracee-test"
-	filePath := filepath.Join(dirPath, "status")
-
-	err := os.MkdirAll(dirPath, 0755)
+	filePath, err := tests.GenerateTimestampFileName(dirPath, "status")
 	if err != nil {
-		return "", fmt.Errorf("failed to create directory %v: %v", dirPath, err)
+		return "", err
+	}
+
+	err = os.MkdirAll(dirPath, 0755)
+	if err != nil {
+		return "", err
 	}
 
 	file, err := os.Create(filePath)
 	if err != nil {
-		b.Fatalf("Failed to create mock status file: %v", err)
+		return "", err
 	}
 	defer file.Close()
 
 	content := `
-Name:   bat
+Name:   Utility Process
 Umask:  0022
 State:  R (running)
 Tgid:   216447
@@ -95,26 +98,15 @@ x86_Thread_features_locked:
 }
 
 func Benchmark_newProcStatus(b *testing.B) {
-	filePath, err := createMockStatusFile(b)
+	filePath, err := createMockStatusFile()
 	if err != nil {
 		os.Remove(filePath)
 		b.Fatalf("Failed to create mock status file: %v", err)
 	}
 	defer os.Remove(filePath)
 
-	fail := false
-	err = error(nil)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err = newProcStatus(filePath)
-		if err != nil {
-			fail = true
-			break
-		}
-	}
-
-	if fail {
-		os.Remove(filePath)
-		b.Fatalf("Failed to parse status file: %v", err)
+		_, _ = newProcStatus(filePath)
 	}
 }

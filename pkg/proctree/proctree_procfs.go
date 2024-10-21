@@ -138,6 +138,10 @@ func dealWithProc(pt *ProcessTree, givenPid int) error {
 	nsppid := status.GetNsPPid()
 	start := stat.StartTime
 
+	// hint for GC
+	status = nil
+	stat = nil
+
 	// sanity checks
 	switch givenPid {
 	case 0, 1: // PID 0 and 1 are special
@@ -186,7 +190,7 @@ func dealWithProc(pt *ProcessTree, givenPid int) error {
 	// TODO: Update executable with information from /proc/<pid>/exe
 
 	// update given process parent (if exists)
-	parent, err := getProcessByPID(pt, status.GetPPid())
+	parent, err := getProcessByPID(pt, ppid)
 	if err == nil {
 		parent.AddChild(hash)
 		process.SetParentHash(parent.GetHash())
@@ -217,6 +221,10 @@ func dealWithThread(pt *ProcessTree, givenPid int, givenTid int) error {
 	nstgid := status.GetNsTgid()
 	nsppid := status.GetNsPPid()
 	start := stat.StartTime
+
+	// hint for GC
+	status = nil
+	stat = nil
 
 	// sanity checks
 	if name == "" || pid == 0 || tgid == 0 || ppid == 0 {

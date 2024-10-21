@@ -2,17 +2,17 @@ package proc
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 )
 
 //
-// ProcStatus: /proc/[pid]/status
+// ProcStatus
+// https://elixir.bootlin.com/linux/v6.11.4/source/fs/proc/array.c#L439
 //
 
-// Most common fields from /proc/[pid]/status file:
+// Most common fields from /proc/<pid>/[task/<tid>/]status file:
 //
 // Name           string   // Name of the process
 // State          string   // State of the process
@@ -25,6 +25,10 @@ import (
 // Gid            [4]int   // Real, effective, saved set, and filesystem GIDs
 // FDSize         int      // Number of file descriptor slots currently allocated
 // Groups         []int    // Supplementary group list
+// NStgid         int      // Thread group ID in the namespace of the process
+// NSpid          int      // Process ID in the namespace of the process
+// NSpgid         int      // Process group ID in the namespace of the process
+// NSsid          int      // Session ID in the namespace of the process
 // VmPeak         int64    // Peak virtual memory size
 // VmSize         int64    // Total program size
 // VmLck          int64    // Locked memory size
@@ -41,13 +45,38 @@ import (
 //
 // ...
 
-type ProcStatus map[string]string
+// ProcStatus represents the minimal required fields of the /proc status file.
+type ProcStatus struct {
+	name   string // up to 64 chars: https://elixir.bootlin.com/linux/v6.11.4/source/fs/proc/array.c#L99
+	tgid   int
+	pid    int
+	pPid   int
+	nstgid int
+	nspid  int
+	nspgid int
+}
 
+type procStatusValueParser func(value string, s *ProcStatus)
+
+// procStatusValueParserMap maps the keys in the status file to their respective value parsers.
+// If a key is not present in the map, it is ignored on parsing.
+var procStatusValueParserMap = map[string]procStatusValueParser{ // key: status file key, value: parser function
+	"Name":   parseName,
+	"Tgid":   parseTgid,
+	"Pid":    parsePid,
+	"PPid":   parsePPid,
+	"NStgid": parseNsTgid,
+	"NSpid":  parseNsPid,
+	"NSpgid": parseNsPgid,
+}
+
+// NewThreadProcStatus reads the /proc/<pid>/task/<tid>/status file and parses it into a ProcStatus struct.
 func NewThreadProcStatus(pid, tid int) (*ProcStatus, error) {
 	filePath := fmt.Sprintf("/proc/%v/task/%v/status", pid, tid)
 	return newProcStatus(filePath)
 }
 
+// NewProcStatus reads the /proc/<pid>/status file and parses it into a ProcStatus struct.
 func NewProcStatus(pid int) (*ProcStatus, error) {
 	filePath := fmt.Sprintf("/proc/%v/status", pid)
 	return newProcStatus(filePath)
@@ -62,105 +91,104 @@ func newProcStatus(filePath string) (*ProcStatus, error) {
 		_ = file.Close()
 	}()
 
-	status := make(ProcStatus)
+	status := &ProcStatus{}
+	remainingFields := len(procStatusValueParserMap)
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		line := scanner.Text()
-		parts := strings.SplitN(line, ":", 2)
+		line := scanner.Bytes()
+		parts := bytes.SplitN(line, []byte(":"), 2)
 		if len(parts) < 2 {
 			continue
 		}
-		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
-		status[key] = value
+		key := parts[0]
+		value := bytes.TrimSpace(parts[1])
+
+		parseValue, ok := procStatusValueParserMap[string(key)]
+		if !ok {
+			// unknown key or not required, see procStatusValueParserMap and ProcStatus struct
+			continue
+		}
+
+		parseValue(string(value), status)
+		remainingFields--
+		if remainingFields == 0 {
+			break
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
 
-	return &status, nil
+	return status, nil
 }
 
-// GetName returns name of the process.
-func (ps ProcStatus) GetName() string {
-	return ps["Name"]
+// status fields parsers
+
+func parseName(value string, s *ProcStatus) {
+	s.name = parseString(value)
 }
 
-// GetState returns state of the process.
-func (ps ProcStatus) GetState() string {
-	return ps["State"]
+func parseTgid(value string, s *ProcStatus) {
+	s.tgid = parseInt(value)
 }
 
-// GetTgid returns thread group ID.
-func (ps ProcStatus) GetTgid() int {
-	return ps.getInt("Tgid")
+func parsePid(value string, s *ProcStatus) {
+	s.pid = parseInt(value)
 }
 
-// GetPid returns process ID.
-func (ps ProcStatus) GetPid() int {
-	return ps.getInt("Pid")
+func parsePPid(value string, s *ProcStatus) {
+	s.pPid = parseInt(value)
 }
 
-// GetPPid returns parent process ID.
-func (ps ProcStatus) GetPPid() int {
-	return ps.getInt("PPid")
+func parseNsTgid(value string, s *ProcStatus) {
+	s.nstgid = parseInt(value)
 }
 
-// GetNsTgid returns thread group ID in the namespace of the process.
-func (ps ProcStatus) GetNsTgid() int {
-	return ps.getInt("NStgid")
+func parseNsPid(value string, s *ProcStatus) {
+	s.nspid = parseInt(value)
+}
+
+func parseNsPgid(value string, s *ProcStatus) {
+	s.nspgid = parseInt(value)
+}
+
+//
+// Public methods
+//
+
+// GetName returns the name of the process.
+func (s *ProcStatus) GetName() string {
+	return s.name
+}
+
+// GetPid returns the process ID.
+func (s *ProcStatus) GetPid() int {
+	return s.pid
+}
+
+// GetTgid returns the thread group ID.
+func (s *ProcStatus) GetTgid() int {
+	return s.tgid
+}
+
+// GetPPid returns the parent process ID.
+func (s *ProcStatus) GetPPid() int {
+	return s.pPid
 }
 
 // GetNsPid returns process ID in the namespace of the process.
-func (ps ProcStatus) GetNsPid() int {
-	return ps.getInt("NSpid")
+func (s *ProcStatus) GetNsPid() int {
+	return s.nspid
 }
 
-// GetNsPPid returns parent process ID in the namespace of the process.
-func (ps ProcStatus) GetNsPPid() int {
-	return ps.getInt("NSpgid")
+// GetNsTgid returns thread group ID in the namespace of the process.
+func (s *ProcStatus) GetNsTgid() int {
+	return s.nstgid
 }
 
-// GetThreads returns number of threads in process.
-func (ps ProcStatus) GetThreads() int {
-	return ps.getInt("Threads")
-}
-
-// GetUid returns UID in the following order: real, effective, saved set, filesystem.
-func (ps ProcStatus) GetUid() [4]int {
-	uids := [4]int{}
-	parts := strings.Fields(ps["Uid"])
-	for i, part := range parts {
-		uids[i], _ = strconv.Atoi(part)
-	}
-	return uids
-}
-
-// GetGid returns GID in the following order: real, effective, saved set, filesystem.
-func (ps ProcStatus) GetGid() [4]int {
-	gids := [4]int{}
-	parts := strings.Fields(ps["Gid"])
-	for i, part := range parts {
-		gids[i], _ = strconv.Atoi(part)
-	}
-	return gids
-}
-
-// getInt returns integer value of the given key.
-func (ps ProcStatus) getInt(key string) int {
-	val, err := strconv.Atoi(ps[key])
-	if err != nil {
-		return 0
-	}
-	return val
-}
-
-// getInt64 returns int64 value of the given key.
-func (ps ProcStatus) getInt64(key string) int64 {
-	val, err := strconv.ParseInt(ps[key], 10, 64)
-	if err != nil {
-		return 0
-	}
-	return val
+// GetNsPPid returns process group ID in the namespace of the process.
+func (s *ProcStatus) GetNsPPid() int {
+	return s.nspgid
 }
