@@ -5240,37 +5240,41 @@ int BPF_KPROBE(trace_chmod_common)
     return events_perf_submit(&p, 0);
 }
 
-SEC("kprobe/suspicious_syscall_source")
-int BPF_KPROBE(suspicious_syscall_source)
+//
+// Syscall checkers
+//
+
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, MAX_EVENT_ID);
+    __type(key, u32);
+    __type(value, u32);
+} suspicious_syscall_source_syscalls SEC(".maps");
+
+statfunc void check_suspicious_syscall_source(void *ctx, struct pt_regs *regs, u32 syscall)
 {
     program_data_t p = {};
     if (!init_program_data(&p, ctx, SUSPICIOUS_SYSCALL_SOURCE))
-        return 0;
+        return;
 
     if (!evaluate_scope_filters(&p))
-        return 0;
+        return;
 
     // Get instruction pointer
-    struct pt_regs *regs = ctx;
-    if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER))
-        regs = (struct pt_regs *) PT_REGS_PARM1(ctx);
     u64 ip = PT_REGS_IP_CORE(regs);
 
     // Find VMA which contains the instruction pointer
     struct task_struct *task = (struct task_struct *) bpf_get_current_task();
     if (unlikely(task == NULL))
-        return 0;
+        return;
     struct vm_area_struct *vma = find_vma(ctx, task, ip);
-    if (vma == NULL)
-        return 0;
+    if (unlikely(vma == NULL))
+        return;
 
     // Get VMA type and make sure it's abnormal (stack/heap/anonymous VMA)
     enum vma_type vma_type = get_vma_type(vma);
     if (vma_type == VMA_OTHER)
-        return 0;
-
-    // Get syscall ID
-    u32 syscall = get_syscall_id_from_regs(regs);
+        return;
 
     // Build a key that identifies the combination of syscall,
     // source VMA and process so we don't submit it multiple times
@@ -5283,7 +5287,7 @@ int BPF_KPROBE(suspicious_syscall_source)
     // Try updating the map with the requirement that this key does not exist yet
     if ((int) bpf_map_update_elem(&syscall_source_map, &key, &val, BPF_NOEXIST) == -EEXIST)
         // This key already exists, no need to submit the same syscall-vma-process combination again
-        return 0;
+        return;
 
     char *vma_type_str;
 
@@ -5299,7 +5303,7 @@ int BPF_KPROBE(suspicious_syscall_source)
             break;
         // shouldn't happen
         default:
-            return 0;
+            return;
     }
 
     unsigned long vma_start = BPF_CORE_READ(vma, vm_start);
@@ -5314,6 +5318,21 @@ int BPF_KPROBE(suspicious_syscall_source)
     save_to_submit_buf(&p.event->args_buf, &vma_flags, sizeof(vma_flags), 5);
 
     events_perf_submit(&p, 0);
+}
+
+SEC("kprobe/syscall_checker")
+int BPF_KPROBE(syscall_checker)
+{
+    // Get user registers
+    struct pt_regs *regs = ctx;
+    if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER))
+        regs = (struct pt_regs *) PT_REGS_PARM1(ctx);
+    
+    // Get syscall ID
+    u32 syscall = get_syscall_id_from_regs(regs);
+
+    if (bpf_map_lookup_elem(&suspicious_syscall_source_syscalls, &syscall) != NULL)
+        check_suspicious_syscall_source(ctx, regs, syscall);
 
     return 0;
 }

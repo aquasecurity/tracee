@@ -2,9 +2,12 @@ package ebpf
 
 import (
 	"fmt"
+	"math"
 	"strconv"
+	"unsafe"
 
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -13,7 +16,7 @@ import (
 type eventParameterHandler func(t *Tracee, eventParams []map[string]filters.Filter[*filters.StringFilter]) error
 
 var eventParameterHandlers = map[events.ID]eventParameterHandler{
-	events.SuspiciousSyscallSource: attachSuspiciousSyscallSourceProbes,
+	events.SuspiciousSyscallSource: prepareSuspiciousSyscallSource,
 }
 
 // handleEventParameters performs initialization actions according to event parameters,
@@ -57,51 +60,94 @@ func (t *Tracee) handleEventParameters() error {
 	return nil
 }
 
-func attachSuspiciousSyscallSourceProbes(t *Tracee, eventParams []map[string]filters.Filter[*filters.StringFilter]) error {
-	// Get syscalls to trace
-	syscalls := make(map[string]struct{}, 0)
+type syscallInfo struct {
+	id   events.ID
+	name string
+}
+
+func getSyscallsFromParams(eventParams []map[string]filters.Filter[*filters.StringFilter], syscallArgName string) ([]syscallInfo, error) {
+	syscalls := []syscallInfo{}
+
 	for _, policyParams := range eventParams {
-		syscallsParam, ok := policyParams["syscall"].(*filters.StringFilter)
+		syscallsParam, ok := policyParams[syscallArgName].(*filters.StringFilter)
 		if !ok {
-			return nil
+			return syscalls, errfmt.Errorf("invalid argument name '%s'", syscallArgName)
 		}
+
 		for _, entry := range syscallsParam.Equal() {
-			syscallID, err := strconv.Atoi(entry)
+			syscallIDInt, err := strconv.Atoi(entry)
 			if err != nil {
-				return err
+				return syscalls, errfmt.WrapError(err)
 			}
-			if !events.Core.IsDefined(events.ID(syscallID)) {
-				return fmt.Errorf("syscall id %d is not defined", syscallID)
+			if syscallIDInt > math.MaxInt32 {
+				return syscalls, errfmt.Errorf("invalid syscall ID %d", syscallIDInt)
+			}
+			syscallID := events.ID(syscallIDInt)
+
+			if !events.Core.IsDefined(syscallID) {
+				return syscalls, errfmt.Errorf("syscall id %d is not defined", syscallID)
 			}
 
-			syscallName := events.Core.GetDefinitionByID(events.ID(syscallID)).GetName()
-			syscalls[syscallName] = struct{}{}
+			syscallName := events.Core.GetDefinitionByID(syscallID).GetName()
+
+			syscalls = append(syscalls, syscallInfo{
+				id:   syscallID,
+				name: syscallName,
+			})
 		}
 	}
 
-	// Create probe group
-	probeMap := make(map[probes.Handle]probes.Probe)
-	i := 0
-	for syscallName := range syscalls {
-		probeMap[probes.Handle(i)] = probes.NewTraceProbe(probes.SyscallEnter, syscallName, "suspicious_syscall_source")
-		i++
-	}
-	probeGroupName := "suspicious_syscall_source"
-	probeGroup := probes.NewProbeGroup(t.bpfModule, probeMap)
-	if _, exists := t.extraProbes[probeGroupName]; exists {
-		return fmt.Errorf("probe group %s already exists", probeGroupName)
-	}
-	t.extraProbes[probeGroupName] = probeGroup
+	return syscalls, nil
+}
 
-	// Attach probes
-	i = 0
-	for syscallName := range syscalls {
-		if err := probeGroup.Attach(probes.Handle(i), t.kernelSymbols); err != nil {
-			// Report attachment errors but don't fail, because it may be a syscall that doesn't exist on this system
-			logger.Warnw("Failed to attach suspicious_syscall_source kprobe", "syscall", syscallName, "error", err)
+func registerSyscallChecker(t *Tracee, eventParams []map[string]filters.Filter[*filters.StringFilter],
+	syscallArgName string, selectedSyscallsMapName string) error {
+	// Create probe group if needed
+	probeGroupName := "syscall_checkers"
+	probeGroup, ok := t.extraProbes[probeGroupName]
+	if !ok {
+		probeGroup = probes.NewProbeGroup(t.bpfModule, map[probes.Handle]probes.Probe{})
+		t.extraProbes[probeGroupName] = probeGroup
+	}
+
+	// Get list of syscalls to be checked
+	syscalls, err := getSyscallsFromParams(eventParams, syscallArgName)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Get map of syscalls to be checked
+	syscallsMap, err := t.bpfModule.GetMap(selectedSyscallsMapName)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	for _, syscall := range syscalls {
+		// Register and attach a probe for this syscall, if not registered already
+		handle := probes.Handle(syscall.id)
+		if !probeGroup.HandleExists(handle) {
+			probe := probes.NewTraceProbe(probes.SyscallEnter, syscall.name, "syscall_checker")
+			if err := probeGroup.AddProbe(handle, probe); err != nil {
+				return errfmt.WrapError(err)
+			}
+			if err := probeGroup.Attach(handle, t.kernelSymbols); err != nil {
+				// Report attachment errors but don't fail, because it may be a syscall that doesn't exist on this system
+				logger.Warnw("Failed to attach syscall checker kprobe", "syscall", syscall.name, "error", err)
+				continue
+			}
 		}
-		i++
+
+		// Update syscalls to check map with this syscall
+		id := uint32(syscall.id)
+		val := uint32(1)
+		if err := syscallsMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&val)); err != nil {
+			return errfmt.WrapError(err)
+		}
 	}
 
 	return nil
+}
+
+func prepareSuspiciousSyscallSource(t *Tracee, eventParams []map[string]filters.Filter[*filters.StringFilter]) error {
+	return registerSyscallChecker(t, eventParams, "syscall", "suspicious_syscall_source_syscalls")
 }
