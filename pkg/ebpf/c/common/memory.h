@@ -76,6 +76,11 @@ statfunc unsigned long get_vma_start(struct vm_area_struct *vma)
 
 static bool alerted_no_mm_rb = false;
 
+static long find_vma_cb(struct task_struct *task, struct vm_area_struct *vma, void *ctx)
+{
+    return 0;
+}
+
 // Given a task, find the first VMA which contains the given address.
 statfunc struct vm_area_struct *find_vma(void *ctx, struct task_struct *task, u64 addr)
 {
@@ -86,12 +91,16 @@ statfunc struct vm_area_struct *find_vma(void *ctx, struct task_struct *task, u6
      */
     struct mm_struct *mm = BPF_CORE_READ(task, mm);
     if (!bpf_core_field_exists(mm->mm_rb)) {
-        if (!alerted_no_mm_rb) {
+        /*if (!alerted_no_mm_rb) {
             tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_FIND_VMA_UNSUPPORTED, 0);
             alerted_no_mm_rb = true;
-        }
+        }*/
+        int cb_ctx;
+        task = bpf_get_current_task_btf();
+        bpf_find_vma(task, addr, find_vma_cb, &cb_ctx, 0);
         return NULL;
-    }
+    } else
+        find_vma_cb(task, NULL, ctx);
 
     // TODO: we don't support NOMMU systems yet (looking up VMAs on them requires walking the VMA
     // linked list)
