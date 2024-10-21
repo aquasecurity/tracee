@@ -29,6 +29,27 @@ func NewProbeGroup(m *bpf.Module, p map[Handle]Probe) *ProbeGroup {
 	}
 }
 
+func (p *ProbeGroup) HandleExists(handle Handle) bool {
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
+
+	_, ok := p.probes[handle]
+	return ok
+}
+
+func (p *ProbeGroup) AddProbe(handle Handle, probe Probe) error {
+	if p.HandleExists(handle) {
+		return errfmt.Errorf("probe handle (%d) already exists", handle)
+	}
+
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
+
+	p.probes[handle] = probe
+
+	return nil
+}
+
 // GetProbe returns a probe type by its handle.
 func (p *ProbeGroup) GetProbeType(handle Handle) ProbeType {
 	p.probesLock.Lock()
