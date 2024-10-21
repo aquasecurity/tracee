@@ -106,6 +106,7 @@ const (
 	ProcessExecuteFailed
 	SecurityPathNotify
 	SetFsPwd
+	CheckSyscallSource
 	HiddenKernelModuleSeeker
 	ModuleLoad
 	ModuleFree
@@ -13058,6 +13059,19 @@ var CoreEvents = map[ID]Definition{
 			probes: []Probe{
 				{handle: probes.ChmodCommon, required: true},
 			},
+		},
+	},
+	CheckSyscallSource: {
+		id:      CheckSyscallSource,
+		id32Bit: Sys32Undefined,
+		name:    "check_syscall_source",
+		sets:    []string{},
+		params: []trace.ArgMeta{
+			{Type: "int", Name: "syscall"},
+			{Type: "void*", Name: "ip"},
+			{Type: "bool", Name: "is_stack"},
+			{Type: "bool", Name: "is_heap"},
+			{Type: "bool", Name: "is_anon_vma"},
 		},
 	},
 	//
