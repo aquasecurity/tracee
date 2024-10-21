@@ -15,7 +15,7 @@ statfunc unsigned long get_env_start_from_mm(struct mm_struct *);
 statfunc unsigned long get_env_end_from_mm(struct mm_struct *);
 statfunc unsigned long get_vma_flags(struct vm_area_struct *);
 statfunc unsigned long get_vma_start(struct vm_area_struct *);
-statfunc struct vm_area_struct *find_vma(struct task_struct *task, u64 addr);
+statfunc struct vm_area_struct *find_vma(void *ctx, struct task_struct *task, u64 addr);
 statfunc bool vma_is_stack(struct vm_area_struct *vma);
 statfunc bool vma_is_heap(struct vm_area_struct *vma);
 statfunc bool vma_is_anon(struct vm_area_struct *vma);
@@ -74,8 +74,10 @@ statfunc unsigned long get_vma_start(struct vm_area_struct *vma)
  */
 #define MAX_VMA_RB_TREE_DEPTH 25
 
+static bool alerted_no_mm_rb = false;
+
 // Given a task, find the first VMA which contains the given address.
-statfunc struct vm_area_struct *find_vma(struct task_struct *task, u64 addr)
+statfunc struct vm_area_struct *find_vma(void *ctx, struct task_struct *task, u64 addr)
 {
     /**
      * TODO: from kernel version 6.1, the data structure with which VMAs
@@ -83,8 +85,13 @@ statfunc struct vm_area_struct *find_vma(struct task_struct *task, u64 addr)
      * We currently don't support finding VMAs on such systems.
      */
     struct mm_struct *mm = BPF_CORE_READ(task, mm);
-    if (!bpf_core_field_exists(mm->mm_rb))
+    if (!bpf_core_field_exists(mm->mm_rb)) {
+        if (!alerted_no_mm_rb) {
+            tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_FIND_VMA_UNSUPPORTED, 0);
+            alerted_no_mm_rb = true;
+        }
         return NULL;
+    }
 
     // TODO: we don't support NOMMU systems yet (looking up VMAs on them requires walking the VMA
     // linked list)

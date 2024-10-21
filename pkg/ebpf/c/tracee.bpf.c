@@ -5228,7 +5228,7 @@ int BPF_KPROBE(check_syscall_source)
     struct task_struct *task = (struct task_struct *) bpf_get_current_task();
     if (unlikely(task == NULL))
         return 0;
-    struct vm_area_struct *vma = find_vma(task, ip);
+    struct vm_area_struct *vma = find_vma(ctx, task, ip);
     if (unlikely(vma == NULL))
         return 0;
 

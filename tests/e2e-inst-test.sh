@@ -122,6 +122,12 @@ for TEST in $TESTS; do
         fi
         "${TESTS_DIR}"/ftrace_hook.sh
         ;;
+    CHECK_SYSCALL_SOURCE)
+        if cat /proc/kallsyms | grep -qP "trace.*vma_store"; then
+            info "skip check_syscall_source test on kernel $(uname -r) (VMAs stored in maple tree)"
+            continue
+        fi
+        ;;
     esac
 
     # Run tracee

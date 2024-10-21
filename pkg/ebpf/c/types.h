@@ -423,6 +423,9 @@ enum bpf_log_id
 
     // hidden kernel module functions
     BPF_LOG_ID_HID_KER_MOD,
+
+    // find vma not supported
+    BPF_LOG_FIND_VMA_UNSUPPORTED,
 };
 
 typedef struct bpf_log {
