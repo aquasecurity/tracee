@@ -154,7 +154,7 @@ func getClockTimeNS(clockID int32) (int64, error) {
 //
 
 // ClockTicksToNsSinceBootTime converts kernel clock ticks to nanoseconds.
-func ClockTicksToNsSinceBootTime(ticks int64) uint64 {
+func ClockTicksToNsSinceBootTime(ticks uint64) uint64 {
 	// From the man page proc(5):
 	//
 	// starttime:
@@ -165,7 +165,7 @@ func ClockTicksToNsSinceBootTime(ticks int64) uint64 {
 	// in clock ticks (divide by sysconf(_SC_CLK_TCK)).
 	//
 	// The format for this field was %lu before Linux 2.6.
-	return uint64(ticks * 1000000000 / GetUserHZ())
+	return ticks * 1000000000 / uint64(GetUserHZ())
 }
 
 // BootToEpochNS converts time since boot to the epoch time
