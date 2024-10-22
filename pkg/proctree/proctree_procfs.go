@@ -106,8 +106,15 @@ func getProcessByPID(pt *ProcessTree, givenPid int) (*Process, error) {
 		return nil, errfmt.Errorf("%v", err)
 	}
 
-	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(stat.StartTime)
-	hash := utils.HashTaskID(uint32(status.GetPid()), startTimeNs) // status pid == tid
+	statusPid := status.GetPid()
+	statStartTime := stat.GetStartTime()
+
+	// hint for GC
+	status = nil
+	stat = nil
+
+	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(statStartTime)
+	hash := utils.HashTaskID(uint32(statusPid), startTimeNs) // status pid == tid
 
 	return pt.GetOrCreateProcessByHash(hash), nil
 }
@@ -136,7 +143,7 @@ func dealWithProc(pt *ProcessTree, givenPid int) error {
 	nspid := status.GetNsPid()
 	nstgid := status.GetNsTgid()
 	nsppid := status.GetNsPPid()
-	start := stat.StartTime
+	start := stat.GetStartTime()
 
 	// hint for GC
 	status = nil
@@ -220,7 +227,7 @@ func dealWithThread(pt *ProcessTree, givenPid int, givenTid int) error {
 	nspid := status.GetNsTgid()
 	nstgid := status.GetNsTgid()
 	nsppid := status.GetNsPPid()
-	start := stat.StartTime
+	start := stat.GetStartTime()
 
 	// hint for GC
 	status = nil
