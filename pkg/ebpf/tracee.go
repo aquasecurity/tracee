@@ -125,6 +125,8 @@ type Tracee struct {
 	// This does not mean they are required for tracee to function.
 	// TODO: remove this in favor of dependency manager nodes
 	requiredKsyms []string
+	// Probes created for suspicious_syscall_source event
+	suspiciousSyscallSourceProbes *probes.ProbeGroup
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -516,6 +518,16 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		New: func() interface{} {
 			return &trace.Event{}
 		},
+	}
+
+	// Perform extra initializtion steps required by specific events according to their arguments
+	err = capabilities.GetInstance().EBPF(
+		func() error {
+			return t.handleEventParameters()
+		},
+	)
+	if err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	return nil
@@ -1484,6 +1496,12 @@ func (t *Tracee) Close() {
 		err := t.probes.DetachAll()
 		if err != nil {
 			logger.Errorw("failed to detach probes when closing tracee", "err", err)
+		}
+	}
+	if t.suspiciousSyscallSourceProbes != nil {
+		err := t.suspiciousSyscallSourceProbes.DetachAll()
+		if err != nil {
+			logger.Errorw("failed to detach suspicious_syscall_source probes when closing tracee", "err", err)
 		}
 	}
 	if t.bpfModule != nil {

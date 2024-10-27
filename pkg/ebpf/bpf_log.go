@@ -31,6 +31,9 @@ const (
 
 	// hidden kernel module functions
 	BPFLogIDHidKerMod
+
+	// find vma not supported
+	BPFLogIDFindVMAUnsupported // BPF_LOG_FIND_VMA_UNSUPPORTED
 )
 
 var stringMap = map[BPFLogType]string{
@@ -49,6 +52,9 @@ var stringMap = map[BPFLogType]string{
 
 	// hidden kernel module functions
 	BPFLogIDHidKerMod: "BPF_LOG_ID_HID_KER_MOD",
+
+	// find vma not supported
+	BPFLogIDFindVMAUnsupported: "BPF_LOG_FIND_VMA_UNSUPPORTED",
 }
 
 var errorMap = map[BPFLogType]string{
@@ -67,6 +73,9 @@ var errorMap = map[BPFLogType]string{
 
 	// hidden kernel module functions
 	BPFLogIDHidKerMod: "Failure in hidden kernel module seeker logic",
+
+	// find vma not supported
+	BPFLogIDFindVMAUnsupported: "Finding VMAs is not supported in this kernel",
 }
 
 func (b BPFLogType) String() string {

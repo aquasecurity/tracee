@@ -124,6 +124,7 @@ enum event_id_e
     PROCESS_EXECUTE_FAILED,
     SECURITY_PATH_NOTIFY,
     SET_FS_PWD,
+    SUSPICIOUS_SYSCALL_SOURCE,
     HIDDEN_KERNEL_MODULE_SEEKER,
     MODULE_LOAD,
     MODULE_FREE,
@@ -421,6 +422,9 @@ enum bpf_log_id
 
     // hidden kernel module functions
     BPF_LOG_ID_HID_KER_MOD,
+
+    // find vma not supported
+    BPF_LOG_FIND_VMA_UNSUPPORTED,
 };
 
 typedef struct bpf_log {
@@ -564,5 +568,13 @@ struct sys_exit_tracepoint_args {
     int __syscall_nr;
     long ret;
 };
+
+// key for the syscall source map
+typedef struct {
+    u32 syscall;
+    u32 tgid;
+    u64 tgid_start_time;
+    u64 vma_addr;
+} syscall_source_key_t;
 
 #endif

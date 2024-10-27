@@ -5184,6 +5184,84 @@ int BPF_KPROBE(trace_chmod_common)
     return events_perf_submit(&p, 0);
 }
 
+SEC("kprobe/suspicious_syscall_source")
+int BPF_KPROBE(suspicious_syscall_source)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, SUSPICIOUS_SYSCALL_SOURCE))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    // Get instruction pointer
+    struct pt_regs *regs = ctx;
+    if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER))
+        regs = (struct pt_regs *) PT_REGS_PARM1(ctx);
+    u64 ip = PT_REGS_IP_CORE(regs);
+
+    // Find VMA which contains the instruction pointer
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    if (unlikely(task == NULL))
+        return 0;
+    struct vm_area_struct *vma = find_vma(ctx, task, ip);
+    if (vma == NULL)
+        return 0;
+
+    // Get VMA type and make sure it's abnormal (stack/heap/anonymous VMA)
+    enum vma_type vma_type = get_vma_type(vma);
+    if (vma_type == VMA_OTHER)
+        return 0;
+
+    // Get syscall ID
+    u32 syscall = get_syscall_id_from_regs(regs);
+
+    // Build a key that identifies the combination of syscall,
+    // source VMA and process so we don't submit it multiple times
+    syscall_source_key_t key = {.syscall = syscall,
+                                .tgid = get_task_host_tgid(task),
+                                .tgid_start_time = get_task_start_time(get_leader_task(task)),
+                                .vma_addr = BPF_CORE_READ(vma, vm_start)};
+    bool val = true;
+
+    // Try updating the map with the requirement that this key does not exist yet
+    if ((int) bpf_map_update_elem(&syscall_source_map, &key, &val, BPF_NOEXIST) == -EEXIST)
+        // This key already exists, no need to submit the same syscall-vma-process combination again
+        return 0;
+
+    char *vma_type_str;
+
+    switch (vma_type) {
+        case VMA_STACK:
+            vma_type_str = "stack";
+            break;
+        case VMA_HEAP:
+            vma_type_str = "heap";
+            break;
+        case VMA_ANON:
+            vma_type_str = "anonymous";
+            break;
+        // shouldn't happen
+        default:
+            return 0;
+    }
+
+    unsigned long vma_start = BPF_CORE_READ(vma, vm_start);
+    unsigned long vma_size = BPF_CORE_READ(vma, vm_end) - vma_start;
+    unsigned long vma_flags = BPF_CORE_READ(vma, vm_flags);
+
+    save_to_submit_buf(&p.event->args_buf, &syscall, sizeof(syscall), 0);
+    save_to_submit_buf(&p.event->args_buf, &ip, sizeof(ip), 1);
+    save_str_to_buf(&p.event->args_buf, vma_type_str, 2);
+    save_to_submit_buf(&p.event->args_buf, &vma_start, sizeof(vma_start), 3);
+    save_to_submit_buf(&p.event->args_buf, &vma_size, sizeof(vma_size), 4);
+    save_to_submit_buf(&p.event->args_buf, &vma_flags, sizeof(vma_flags), 5);
+
+    events_perf_submit(&p, 0);
+
+    return 0;
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)

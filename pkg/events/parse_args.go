@@ -220,6 +220,24 @@ func ParseArgs(event *trace.Event) error {
 				parseFsNotifyObjType(objTypeArg, uint64(objType))
 			}
 		}
+	case SuspiciousSyscallSource:
+		if syscallArg := GetArg(event, "syscall"); syscallArg != nil {
+			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
+				if Core.IsDefined(ID(id)) {
+					eventDefinition := Core.GetDefinitionByID(ID(id))
+					if eventDefinition.IsSyscall() {
+						syscallArg.Value = eventDefinition.GetName()
+						syscallArg.Type = "string"
+					}
+				}
+			}
+		}
+		if vmaFlagsArg := GetArg(event, "vma_flags"); vmaFlagsArg != nil {
+			if flags, isUint64 := vmaFlagsArg.Value.(uint64); isUint64 {
+				vmaFlagsArg.Type = "string"
+				vmaFlagsArg.Value = parsers.ParseVmFlags(flags).String()
+			}
+		}
 	}
 
 	return nil
