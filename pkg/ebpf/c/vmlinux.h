@@ -399,6 +399,10 @@ typedef __kernel_loff_t loff_t;
 
 typedef unsigned short umode_t;
 
+struct bpf_iter_num {
+    __u64 __opaque[1];
+};
+
 struct kernfs_node {
     const char *name;
     u64 id;

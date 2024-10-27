@@ -1217,6 +1217,18 @@ int lkm_seeker_mod_tree_tail(struct pt_regs *ctx)
     if (!init_tailcall_program_data(&p, ctx))
         return -1;
 
+    struct module *m;
+    if (bpf_core_field_exists(m->mem)) {
+        struct bpf_iter_num it;
+        int *v;
+        bpf_iter_num_new(&it, 2, 5);
+        while ((v = bpf_iter_num_next(&it))) {
+            bpf_printk("aaa");
+        }
+        bpf_iter_num_destroy(&it);
+        bpf_printk("bbb");
+    }
+
     u32 flags = HISTORY_SCAN_FINISHED;
 
     // This method is efficient only when the kernel is compiled with
