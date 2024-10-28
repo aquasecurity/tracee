@@ -2,6 +2,7 @@ package ebpf
 
 import (
 	gocontext "context"
+	"fmt"
 	"runtime"
 	"strings"
 	"time"
@@ -189,8 +190,13 @@ func (t *Tracee) populateExpectedSyscallTableArray(tableMap *bpf.BPFMap) error {
 
 		kernelSymbol, err := t.kernelSymbols.GetSymbolByOwnerAndName("system", events.SyscallPrefix+syscallName)
 		if err != nil {
-			logger.Errorw("hooked_syscall: syscall symbol not found", "id", index)
-			return err
+			logger.Warnw(fmt.Sprintf("hooked_syscall: Unable to locate syscall symbol... permanently skipping hook check for syscall ID %d", index))
+			zero := 0
+			err = tableMap.Update(unsafe.Pointer(&index), unsafe.Pointer(&zero))
+			if err != nil {
+				return err
+			}
+			continue
 		}
 
 		var expectedAddress = kernelSymbol[0].Address
