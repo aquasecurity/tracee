@@ -1,6 +1,8 @@
 package findings
 
 import (
+	"maps"
+
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -172,7 +174,7 @@ func getMetadataFromSignatureMetadata(sigMetadata detect.SignatureMetadata) *tra
 	metadata.Description = sigMetadata.Description
 	metadata.Tags = sigMetadata.Tags
 
-	properties := sigMetadata.Properties
+	properties := maps.Clone(sigMetadata.Properties)
 	if sigMetadata.Properties == nil {
 		properties = make(map[string]interface{})
 	}
