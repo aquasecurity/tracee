@@ -40,11 +40,11 @@ The [events](../events/index.md) section provides further information on the typ
 
 Filters enable you to refine the policy's scope by specifying conditions for particular events. This allows you to narrow down the criteria to precisely target the events you're interested in, ensuring that the policy applies only under specific circumstances.
 
-Every `event` that is specified within the `rules` section supports three types of filters: `process`, `data` and `return value`.
+Every `event` that is specified within the `rules` section supports three types of filters: `scope`, `data` and `return value`.
 
-### Process filters
+### Scope filters
 
-Further refinement of the policy's scope is achievable through the application of process filters:
+Further refinement of the policy's scope is achievable through the application of scope filters:
 
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
