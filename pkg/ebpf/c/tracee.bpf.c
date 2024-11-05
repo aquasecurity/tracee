@@ -1497,12 +1497,12 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, SCHED_PROCESS_EXIT))
         return 0;
 
-    // evaluate matched_policies before removing this pid from the maps
+    // evaluate matched_rules before removing this pid from the maps
     evaluate_scope_filters(&p);
 
     bpf_map_delete_elem(&task_info_map, &p.event->context.task.host_tid);
 
-    if (!policies_matched(p.event))
+    if (!rules_matched(p.event))
         return 0;
 
     long exit_code = get_task_exit_code(p.event->task);
@@ -2733,7 +2733,7 @@ int BPF_KPROBE(trace_security_socket_accept)
 
     struct pt_regs *task_regs = get_current_task_pt_regs();
 
-    if (event_is_selected(SOCKET_ACCEPT, p.event->context.policies_version)) {
+    if (event_is_selected(SOCKET_ACCEPT)) {
         args_t args = {};
         args.args[0] = (unsigned long) sock;
         args.args[1] = (unsigned long) new_sock;
@@ -3689,7 +3689,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
             should_extract_code = true;
     }
 
-    if (should_alert && policies_matched(p.event))
+    if (should_alert && rules_matched(p.event))
         submit_mem_prot_alert_event(
             &p.event->args_buf, alert, addr, len, reqprot, prev_prot, file_info);
 
@@ -3917,7 +3917,7 @@ int BPF_KPROBE(trace_security_bpf_prog)
 
     bpf_map_delete_elem(&bpf_attach_tmp_map, &p.event->context.task.host_tid);
 
-    if (event_is_selected(BPF_ATTACH, p.event->context.policies_version))
+    if (event_is_selected(BPF_ATTACH))
         bpf_map_update_elem(&bpf_attach_map, &prog_id, &val, BPF_ANY);
 
     if (!evaluate_scope_filters(&p))
@@ -4102,8 +4102,8 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
     loff_t size = (loff_t) PT_REGS_PARM3(ctx);
     enum kernel_read_file_id type_id = (enum kernel_read_file_id) PT_REGS_PARM4(ctx);
 
-    // Send event if chosen
-    if (policies_matched(p.event)) {
+    // Send event if rules matched
+    if (rules_matched(p.event)) {
         void *file_path = get_path_str(&file->f_path);
         save_str_to_buf(&p.event->args_buf, file_path, 0);
         save_to_submit_buf(&p.event->args_buf, &size, sizeof(loff_t), 1);
@@ -4362,7 +4362,7 @@ int tracepoint__module__module_load(struct bpf_raw_tracepoint_args *ctx)
 
     struct module *mod = (struct module *) ctx->args[0];
 
-    if (event_is_selected(HIDDEN_KERNEL_MODULE_SEEKER, p.event->context.policies_version)) {
+    if (event_is_selected(HIDDEN_KERNEL_MODULE_SEEKER)) {
         u64 insert_time = get_current_time_in_ns();
         kernel_new_mod_t new_mod = {.insert_time = insert_time};
         u64 mod_addr = (u64) mod;
@@ -4410,7 +4410,7 @@ int tracepoint__module__module_free(struct bpf_raw_tracepoint_args *ctx)
 
     struct module *mod = (struct module *) ctx->args[0];
 
-    if (event_is_selected(HIDDEN_KERNEL_MODULE_SEEKER, p.event->context.policies_version)) {
+    if (event_is_selected(HIDDEN_KERNEL_MODULE_SEEKER)) {
         u64 mod_addr = (u64) mod;
         // We must delete before the actual deletion from modules list occurs, otherwise there's a
         // risk of race condition
@@ -5475,8 +5475,8 @@ statfunc u64 sizeof_net_event_context_t(void)
 statfunc void set_net_task_context(event_data_t *event, net_task_context_t *netctx)
 {
     netctx->task = event->task;
-    netctx->policies_version = event->context.policies_version;
-    netctx->matched_policies = event->context.matched_policies;
+    netctx->rules_version = event->context.rules_version;
+    netctx->matched_rules = event->context.matched_rules;
     netctx->syscall = event->context.syscall;
     __builtin_memset(&netctx->taskctx, 0, sizeof(task_context_t));
     __builtin_memcpy(&netctx->taskctx, &event->context.task, sizeof(task_context_t));
@@ -5514,25 +5514,20 @@ statfunc enum event_id_e net_packet_to_net_event(net_packet_t packet_type)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Waddress-of-packed-member"
 
-// Return if a network event should to be sumitted: if any of the policies
-// matched, submit the network event. This means that if any of the policies
+// Return if a network event should to be sumitted: if any of the rules
+// matched, submit the network event. This means that if any of the rules
 // need a network event, kernel can submit the network base event and let
-// userland deal with it (derived events will match the appropriate policies).
+// userland deal with it (derived events will match the appropriate rules).
 statfunc u64 should_submit_net_event(net_event_context_t *neteventctx,
                                      net_packet_t packet_type)
 {
     enum event_id_e evt_id = net_packet_to_net_event(packet_type);
 
-    u16 version = neteventctx->eventctx.policies_version;
-    void *inner_events_map = bpf_map_lookup_elem(&events_map_version, &version);
-    if (inner_events_map == NULL)
-        return 0;
-
-    event_config_t *evt_config = bpf_map_lookup_elem(inner_events_map, &evt_id);
+    event_config_t *evt_config = bpf_map_lookup_elem(&events_config_map, &evt_id);
     if (evt_config == NULL)
         return 0;
 
-    return evt_config->submit_for_policies & neteventctx->eventctx.matched_policies;
+    return evt_config->submit_for_rules & neteventctx->eventctx.matched_rules;
 }
 
 #pragma clang diagnostic pop // -Waddress-of-packed-member
@@ -5551,13 +5546,13 @@ statfunc bool should_submit_flow_event(net_event_context_t *neteventctx)
 
     u32 evt_id = NET_FLOW_BASE;
 
-    // Again, if any policy matched, submit the flow base event so other flow
-    // events can be derived in userland and their policies matched in userland.
-    event_config_t *evt_config = bpf_map_lookup_elem(&events_map, &evt_id);
+    // Again, if any rule matched, submit the flow base event so other flow
+    // events can be derived in userland and their rules matched in userland.
+    event_config_t *evt_config = bpf_map_lookup_elem(&events_config_map, &evt_id);
     if (evt_config == NULL)
         return 0;
 
-    u64 should = evt_config->submit_for_policies & neteventctx->eventctx.matched_policies;
+    u64 should = evt_config->submit_for_rules & neteventctx->eventctx.matched_rules;
 
     // Cache the result so next time we don't need to check again.
     if (should)
@@ -5656,7 +5651,7 @@ statfunc u32 cgroup_skb_submit(void *map, struct __sk_buff *ctx,
 // Check if a flag is set in the retval.
 #define retval_hasflag(flag) (neteventctx->eventctx.retval & flag) == flag
 
-// Keep track of a flow event if they are enabled and if any policy matched.
+// Keep track of a flow event if they are enabled and if any rule matched.
 // Submit the flow base event so userland can derive the flow events.
 statfunc u32 cgroup_skb_submit_flow(struct __sk_buff *ctx,
                                     net_event_context_t *neteventctx,
@@ -6134,8 +6129,8 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     eventctx->eventid = NET_PACKET_IP;                      // will be changed in skb program
     eventctx->stack_id = 0;                                 // no stack trace
     eventctx->processor_id = p.event->context.processor_id; // copy from current ctx
-    eventctx->policies_version = netctx->policies_version;  // pick policies_version from net ctx
-    eventctx->matched_policies = netctx->matched_policies;  // pick matched_policies from net ctx
+    eventctx->rules_version = netctx->rules_version;        // pick rules_version from net ctx
+    eventctx->matched_rules = netctx->matched_rules;        // pick matched_rules from net ctx
     eventctx->syscall = NO_SYSCALL;                         // ingress has no orig syscall
     if (type == BPF_CGROUP_INET_EGRESS)
         eventctx->syscall = netctx->syscall; // egress does have an orig syscall

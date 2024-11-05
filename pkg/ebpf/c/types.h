@@ -34,8 +34,8 @@ typedef struct event_context {
     s64 retval;
     u32 stack_id;
     u16 processor_id; // ID of the processor that processed the event
-    u16 policies_version;
-    u64 matched_policies;
+    u16 rules_version;
+    u64 matched_rules;
 } event_context_t;
 
 enum event_id_e
@@ -135,7 +135,6 @@ enum event_id_e
     SECURITY_SETTIME64,
     CHMOD_COMMON,
     MAX_EVENT_ID,
-    NO_EVENT_SUBMIT,
 
     // Test events IDs
     EXEC_TEST = 8000,
@@ -318,14 +317,14 @@ typedef struct policy_key {
 } policy_key_t;
 
 typedef struct equality {
-    // bitmap indicating which policies have a filter that uses the '=' operator (0 means '!=')
-    u64 equals_in_policies;
-    // bitmap indicating which policies have a filter that utilize the provided key
-    u64 key_used_in_policies;
+    // bitmap indicating which rules have a filter that uses the '=' operator (0 means '!=')
+    u64 equals_in_rules;
+    // bitmap indicating which rules have a filter that utilize the provided key
+    u64 key_used_in_rules;
 } eq_t;
 
-typedef struct policies_config {
-    // bitmap indicating which policies have the filter enabled
+typedef struct scope_filters_config {
+    // bitmap indicating which rules have the filter enabled
     u64 uid_filter_enabled;
     u64 pid_filter_enabled;
     u64 mnt_ns_filter_enabled;
@@ -352,23 +351,22 @@ typedef struct policies_config {
     u64 new_pid_filter_match_if_key_missing;
     u64 proc_tree_filter_match_if_key_missing;
     u64 bin_path_filter_match_if_key_missing;
-    // bitmap with policies that have at least one filter enabled
-    u64 enabled_policies;
-
+    // bitmap with rules that have at least one filter enabled
+    u64 enabled_policies; // TODO: remove this field since it is not really needed
     // global min max
     u64 uid_max;
     u64 uid_min;
     u64 pid_max;
     u64 pid_min;
-} policies_config_t;
+} scope_filters_config_t;
 
 typedef struct config_entry {
     u32 tracee_pid;
     u32 options;
     u32 cgroup_v1_hid;
-    u16 padding; // free for further use
-    u16 policies_version;
-    policies_config_t policies_config;
+    //u16 padding; // free for further use // TODO: we can remove this field after removing the below two fields
+    //u16 policies_version; // TODO: we can remove this field (also in userspace) and use a mapping between rules_version and policies_version
+    //policies_config_t policies_config; // TODO: we can remove this filed after we will have per event filter configuration
 } config_entry_t;
 
 typedef struct string_filter_config {
@@ -386,8 +384,10 @@ typedef struct data_filter_config {
 } data_filter_config_t;
 
 typedef struct event_config {
-    u64 submit_for_policies;
+    u16 rules_version;
+    u64 submit_for_rules;
     u64 field_types;
+    scope_filters_config_t scope_filters;
     data_filter_config_t data_filter;
 } event_config_t;
 
@@ -417,7 +417,6 @@ typedef struct event_data {
     args_buffer_t args_buf;
     struct task_struct *task;
     event_config_t config;
-    policies_config_t policies_config;
 } event_data_t;
 
 // A control plane signal - sent to indicate some critical event which should be processed
