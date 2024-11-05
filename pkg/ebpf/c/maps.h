@@ -660,26 +660,6 @@ struct binary_filter_version {
 
 typedef struct binary_filter_version binary_filter_version_t;
 
-// filter events by the ancestry of the traced process
-struct process_tree_map {
-    __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, 10240);
-    __type(key, u32);
-    __type(value, eq_t);
-} process_tree_map SEC(".maps");
-
-typedef struct process_tree_map process_tree_map_t;
-
-// map of process tree maps
-struct process_tree_map_version {
-    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
-    __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, u16);
-    __array(values, process_tree_map_t);
-} process_tree_map_version SEC(".maps");
-
-typedef struct process_tree_map_version process_tree_map_version_t;
-
 // map to persist event configuration data
 struct events_map {
     __uint(type, BPF_MAP_TYPE_HASH);
