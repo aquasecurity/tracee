@@ -308,14 +308,6 @@ statfunc u64 match_scope_filters(program_data_t *p)
         res &= equality_filter_matches(match_if_key_missing, filter_map, &cgroup_id_lsb) | mask;
     }
 
-    if (policies_cfg->proc_tree_filter_enabled) {
-        u64 match_if_key_missing = policies_cfg->proc_tree_filter_match_if_key_missing;
-        u64 mask = ~policies_cfg->proc_tree_filter_enabled;
-
-        filter_map = get_filter_map(&process_tree_map_version, version);
-        res &= equality_filter_matches(match_if_key_missing, filter_map, &context->host_pid) | mask;
-    }
-
     if (policies_cfg->bin_path_filter_enabled) {
         u64 match_if_key_missing = policies_cfg->bin_path_filter_match_if_key_missing;
         u64 mask = ~policies_cfg->bin_path_filter_enabled;

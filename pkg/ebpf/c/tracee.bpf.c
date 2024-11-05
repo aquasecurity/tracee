@@ -632,27 +632,6 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         c_proc_info->new_proc = true; // started after tracee (new_pid filter)
     }
 
-    // Update the process tree map (filter related) if the parent has an entry.
-
-    policies_config_t *policies_cfg = &p.event->policies_config;
-
-    if (policies_cfg->proc_tree_filter_enabled) {
-        u16 version = p.event->context.policies_version;
-        // Give the compiler a hint about the map type, otherwise libbpf will complain
-        // about missing type information. i.e.: "can't determine value size for type".
-        process_tree_map_t *inner_proc_tree_map = &process_tree_map;
-
-        inner_proc_tree_map = bpf_map_lookup_elem(&process_tree_map_version, &version);
-        if (inner_proc_tree_map != NULL) {
-            eq_t *tgid_filtered = bpf_map_lookup_elem(inner_proc_tree_map, &parent_pid);
-            if (tgid_filtered) {
-                ret = bpf_map_update_elem(inner_proc_tree_map, &child_pid, tgid_filtered, BPF_ANY);
-                if (ret < 0)
-                    tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_MAP_UPDATE_ELEM, ret);
-            }
-        }
-    }
-
     if (!evaluate_scope_filters(&p))
         return 0;
 
@@ -1525,22 +1504,6 @@ int tracepoint__sched__sched_process_free(struct bpf_raw_tracepoint_args *ctx)
         // if tgid task is freed, we know for sure that the process exited
         // so we can safely remove it from the process map
         bpf_map_delete_elem(&proc_info_map, &tgid);
-
-        u32 zero = 0;
-        config_entry_t *cfg = bpf_map_lookup_elem(&config_map, &zero);
-        if (unlikely(cfg == NULL))
-            return 0;
-
-        // remove it only from the current policies version map
-        u16 version = cfg->policies_version;
-
-        // Give the compiler a hint about the map type, otherwise libbpf will complain
-        // about missing type information. i.e.: "can't determine value size for type".
-        process_tree_map_t *inner_proc_tree_map = &process_tree_map;
-
-        inner_proc_tree_map = bpf_map_lookup_elem(&process_tree_map_version, &version);
-        if (inner_proc_tree_map != NULL)
-            bpf_map_delete_elem(inner_proc_tree_map, &tgid);
     }
 
     return 0;
