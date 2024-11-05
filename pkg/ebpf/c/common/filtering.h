@@ -316,15 +316,6 @@ statfunc u64 match_scope_filters(program_data_t *p)
         res &= binary_filter_matches(match_if_key_missing, filter_map, proc_info) | mask;
     }
 
-    //
-    // follow filter
-    //
-
-    if (policies_cfg->follow_filter_enabled) {
-        // trace this proc anyway if follow was set by a scope
-        res |= proc_info->follow_in_scopes & policies_cfg->follow_filter_enabled;
-    }
-
     // Make sure only enabled policies are set in the bitmap (other bits are invalid)
     return res & policies_cfg->enabled_policies;
 }
@@ -470,7 +461,9 @@ statfunc bool event_is_selected(u32 event_id, u16 policies_version)
 
 statfunc u64 get_scopes_to_follow(program_data_t *p)
 {
-    return match_scope_filters(p);
+    return 0;
+    //return match_scope_filters(p);
+    // TODO: fixme
 }
 
 #endif
