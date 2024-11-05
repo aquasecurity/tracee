@@ -120,7 +120,7 @@ type Tracee struct {
 	// Streams
 	streamsManager *streams.StreamsManager
 	// policyManager manages policy state
-	policyManager *policy.Manager
+	policyManager *policy.PolicyManager
 	// The dependencies of events used by Tracee
 	eventsDependencies *dependencies.Manager
 	// A reference to a environment.KernelSymbolTable that might change at runtime.
@@ -597,8 +597,8 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 // event, represented through its ID, we declare to which other events it can be
 // derived and the corresponding function to derive into that Event.
 func (t *Tracee) initDerivationTable() error {
-	shouldSubmit := func(id events.ID) func() bool {
-		return func() bool { return t.policyManager.IsEventToSubmit(id) }
+	shouldEmit := func(id events.ID) func() bool {
+		return func() bool { return t.policyManager.ShouldEmitEvent(id) }
 	}
 	symbolsCollisions := derive.SymbolsCollision(t.contSymbolsLoader, t.policyManager)
 
@@ -611,56 +611,56 @@ func (t *Tracee) initDerivationTable() error {
 	t.eventDerivations = derive.Table{
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
-				Enabled:        shouldSubmit(events.ContainerCreate),
+				Enabled:        shouldEmit(events.ContainerCreate),
 				DeriveFunction: derive.ContainerCreate(t.containers),
 			},
 		},
 		events.CgroupRmdir: {
 			events.ContainerRemove: {
-				Enabled:        shouldSubmit(events.ContainerRemove),
+				Enabled:        shouldEmit(events.ContainerRemove),
 				DeriveFunction: derive.ContainerRemove(t.containers),
 			},
 		},
 		events.SyscallTableCheck: {
 			events.HookedSyscall: {
-				Enabled:        shouldSubmit(events.SyscallTableCheck),
+				Enabled:        shouldEmit(events.SyscallTableCheck),
 				DeriveFunction: derive.DetectHookedSyscall(t.getKernelSymbols()),
 			},
 		},
 		events.PrintNetSeqOps: {
 			events.HookedSeqOps: {
-				Enabled:        shouldSubmit(events.HookedSeqOps),
+				Enabled:        shouldEmit(events.HookedSeqOps),
 				DeriveFunction: derive.HookedSeqOps(t.getKernelSymbols()),
 			},
 		},
 		events.HiddenKernelModuleSeeker: {
 			events.HiddenKernelModule: {
-				Enabled:        shouldSubmit(events.HiddenKernelModuleSeeker),
+				Enabled:        shouldEmit(events.HiddenKernelModule),
 				DeriveFunction: derive.HiddenKernelModule(),
 			},
 		},
 		events.SharedObjectLoaded: {
 			events.SymbolsLoaded: {
-				Enabled: shouldSubmit(events.SymbolsLoaded),
+				Enabled: shouldEmit(events.SymbolsLoaded),
 				DeriveFunction: derive.SymbolsLoaded(
 					t.contSymbolsLoader,
 					t.policyManager,
 				),
 			},
 			events.SymbolsCollision: {
-				Enabled:        shouldSubmit(events.SymbolsCollision),
+				Enabled:        shouldEmit(events.SymbolsCollision),
 				DeriveFunction: symbolsCollisions,
 			},
 		},
 		events.SchedProcessExec: {
 			events.SymbolsCollision: {
-				Enabled:        shouldSubmit(events.SymbolsCollision),
+				Enabled:        shouldEmit(events.SymbolsCollision),
 				DeriveFunction: symbolsCollisions,
 			},
 		},
 		events.SecuritySocketConnect: {
 			events.NetTCPConnect: {
-				Enabled: shouldSubmit(events.NetTCPConnect),
+				Enabled: shouldEmit(events.NetTCPConnect),
 				DeriveFunction: derive.NetTCPConnect(
 					t.dnsCache,
 				),
@@ -668,13 +668,13 @@ func (t *Tracee) initDerivationTable() error {
 		},
 		events.ExecuteFinished: {
 			events.ProcessExecuteFailed: {
-				Enabled:        shouldSubmit(events.ProcessExecuteFailed),
+				Enabled:        shouldEmit(events.ProcessExecuteFailed),
 				DeriveFunction: executeFailedGen.ProcessExecuteFailed(),
 			},
 		},
 		events.ProcessExecuteFailedInternal: {
 			events.ProcessExecuteFailed: {
-				Enabled:        shouldSubmit(events.ProcessExecuteFailed),
+				Enabled:        shouldEmit(events.ProcessExecuteFailed),
 				DeriveFunction: executeFailedGen.ProcessExecuteFailed(),
 			},
 		},
@@ -683,63 +683,63 @@ func (t *Tracee) initDerivationTable() error {
 		//
 		events.NetPacketIPBase: {
 			events.NetPacketIPv4: {
-				Enabled:        shouldSubmit(events.NetPacketIPv4),
+				Enabled:        shouldEmit(events.NetPacketIPv4),
 				DeriveFunction: derive.NetPacketIPv4(),
 			},
 			events.NetPacketIPv6: {
-				Enabled:        shouldSubmit(events.NetPacketIPv6),
+				Enabled:        shouldEmit(events.NetPacketIPv6),
 				DeriveFunction: derive.NetPacketIPv6(),
 			},
 		},
 		events.NetPacketTCPBase: {
 			events.NetPacketTCP: {
-				Enabled:        shouldSubmit(events.NetPacketTCP),
+				Enabled:        shouldEmit(events.NetPacketTCP),
 				DeriveFunction: derive.NetPacketTCP(),
 			},
 		},
 		events.NetPacketUDPBase: {
 			events.NetPacketUDP: {
-				Enabled:        shouldSubmit(events.NetPacketUDP),
+				Enabled:        shouldEmit(events.NetPacketUDP),
 				DeriveFunction: derive.NetPacketUDP(),
 			},
 		},
 		events.NetPacketICMPBase: {
 			events.NetPacketICMP: {
-				Enabled:        shouldSubmit(events.NetPacketICMP),
+				Enabled:        shouldEmit(events.NetPacketICMP),
 				DeriveFunction: derive.NetPacketICMP(),
 			},
 		},
 		events.NetPacketICMPv6Base: {
 			events.NetPacketICMPv6: {
-				Enabled:        shouldSubmit(events.NetPacketICMPv6),
+				Enabled:        shouldEmit(events.NetPacketICMPv6),
 				DeriveFunction: derive.NetPacketICMPv6(),
 			},
 		},
 		events.NetPacketDNSBase: {
 			events.NetPacketDNS: {
-				Enabled:        shouldSubmit(events.NetPacketDNS),
+				Enabled:        shouldEmit(events.NetPacketDNS),
 				DeriveFunction: derive.NetPacketDNS(),
 			},
 			events.NetPacketDNSRequest: {
-				Enabled:        shouldSubmit(events.NetPacketDNSRequest),
+				Enabled:        shouldEmit(events.NetPacketDNSRequest),
 				DeriveFunction: derive.NetPacketDNSRequest(),
 			},
 			events.NetPacketDNSResponse: {
-				Enabled:        shouldSubmit(events.NetPacketDNSResponse),
+				Enabled:        shouldEmit(events.NetPacketDNSResponse),
 				DeriveFunction: derive.NetPacketDNSResponse(),
 			},
 		},
 		events.NetPacketHTTPBase: {
 			events.NetPacketHTTP: {
-				Enabled:        shouldSubmit(events.NetPacketHTTP),
+				Enabled:        shouldEmit(events.NetPacketHTTP),
 				DeriveFunction: derive.NetPacketHTTP(),
 			},
 			events.NetPacketHTTPRequest: {
-				Enabled:        shouldSubmit(events.NetPacketHTTPRequest),
+				Enabled:        shouldEmit(events.NetPacketHTTPRequest),
 				DeriveFunction: derive.NetPacketHTTPRequest(),
 			},
 			events.NetPacketHTTPResponse: {
-				Enabled:        shouldSubmit(events.NetPacketHTTPResponse),
+				Enabled:        shouldEmit(events.NetPacketHTTPResponse),
 				DeriveFunction: derive.NetPacketHTTPResponse(),
 			},
 		},
@@ -748,13 +748,13 @@ func (t *Tracee) initDerivationTable() error {
 		//
 		events.NetPacketFlow: {
 			events.NetFlowTCPBegin: {
-				Enabled: shouldSubmit(events.NetFlowTCPBegin),
+				Enabled: shouldEmit(events.NetFlowTCPBegin),
 				DeriveFunction: derive.NetFlowTCPBegin(
 					t.dnsCache,
 				),
 			},
 			events.NetFlowTCPEnd: {
-				Enabled: shouldSubmit(events.NetFlowTCPEnd),
+				Enabled: shouldEmit(events.NetFlowTCPEnd),
 				DeriveFunction: derive.NetFlowTCPEnd(
 					t.dnsCache,
 				),
@@ -818,15 +818,12 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	return cOptVal
 }
 
-// newConfig returns a new Config instance based on the current Tracee state and
-// the given policies config and version.
-func (t *Tracee) newConfig(cfg *policy.PoliciesConfig) *Config {
+// newConfig returns a new Config instance based on the current Tracee state
+func (t *Tracee) newConfig() *Config {
 	return &Config{
-		TraceePid:       uint32(os.Getpid()),
-		Options:         t.getOptionsConfig(),
-		CgroupV1Hid:     uint32(t.cgroups.GetDefaultCgroupHierarchyID()),
-		PoliciesVersion: 1, // version will be removed soon
-		PoliciesConfig:  *cfg,
+		TraceePid:   uint32(os.Getpid()),
+		Options:     t.getOptionsConfig(),
+		CgroupV1Hid: uint32(t.cgroups.GetDefaultCgroupHierarchyID()),
 	}
 }
 
@@ -834,7 +831,7 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 	// Get all required symbols needed in the table
 	// 1. all event ksym dependencies
 	// 2. specific cases (hooked_seq_ops, hooked_symbols, print_mem_dump)
-	for _, id := range t.policyManager.EventsSelected() {
+	for _, id := range t.policyManager.GetSelectedEvents() {
 		if !events.Core.IsDefined(id) {
 			return errfmt.Errorf("event %d is not defined", id)
 		}
@@ -888,14 +885,8 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 		}
 	}
 	if t.policyManager.IsEventSelected(events.PrintMemDump) {
-		for it := t.policyManager.CreateAllIterator(); it.HasNext(); {
-			p := it.Next()
-			// This might break in the future if PrintMemDump will become a dependency of another event.
-			_, isSelected := p.Rules[events.PrintMemDump]
-			if !isSelected {
-				continue
-			}
-			printMemDumpFilters := p.Rules[events.PrintMemDump].DataFilter.GetFieldFilters()
+		for _, rule := range t.policyManager.GetRules(events.PrintMemDump) {
+			printMemDumpFilters := rule.Data.DataFilter.GetFieldFilters()
 			if len(printMemDumpFilters) == 0 {
 				continue
 			}
@@ -995,7 +986,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 			return nil
 		})
 
-	for _, eventId := range t.policyManager.EventsSelected() {
+	for _, eventId := range t.policyManager.GetSelectedEvents() {
 		if !validateEvent(eventId) {
 			// Cancel the event, its dependencies and its dependent events
 			err := t.eventsDependencies.RemoveEvent(eventId)
@@ -1024,7 +1015,7 @@ func (t *Tracee) setProgramsAutoload() {
 		return progHandles
 	}
 
-	for _, eventId := range t.policyManager.EventsSelected() {
+	for _, eventId := range t.policyManager.GetSelectedEvents() {
 		progHandles := evtDefProgHandlesDeps(eventId)
 		for _, progHandle := range progHandles {
 			err := t.defaultProbes.Autoload(progHandle, true)
@@ -1126,9 +1117,19 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	// Initialize config and filter maps
-	err = t.populateFilterMaps(false)
+	// Populates the eBPF filter maps with the given policies
+	err = t.policyManager.UpdateBPF(
+		t.bpfModule,
+		t.containers,
+		t.eventDecodeTypes,
+	)
 	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Create new config and update eBPF map
+	cfg := t.newConfig()
+	if err := cfg.UpdateBPF(t.bpfModule); err != nil {
 		return errfmt.WrapError(err)
 	}
 
@@ -1187,36 +1188,13 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize tail call dependencies
-	eventsToSubmit := t.policyManager.EventsToSubmit()
-	tailCalls := events.Core.GetTailCalls(eventsToSubmit)
+	selectedEvents := t.policyManager.GetSelectedEvents()
+	tailCalls := events.Core.GetTailCalls(selectedEvents)
 	for _, tailCall := range tailCalls {
 		err := t.initTailCall(tailCall)
 		if err != nil {
 			return errfmt.Errorf("failed to initialize tail call: %v", err)
 		}
-	}
-
-	return nil
-}
-
-// populateFilterMaps populates the eBPF maps with the given policies
-func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
-	polCfg, err := t.policyManager.UpdateBPF(
-		t.bpfModule,
-		t.containers,
-		t.eventDecodeTypes,
-		true,
-		updateProcTree,
-	)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Create new config with updated policies and update eBPF map
-
-	cfg := t.newConfig(polCfg)
-	if err := cfg.UpdateBPF(t.bpfModule); err != nil {
-		return errfmt.WrapError(err)
 	}
 
 	return nil
@@ -1292,7 +1270,7 @@ func (t *Tracee) attachProbes() error {
 		})
 
 	// Attach probes to their respective eBPF programs or cancel events if a required probe is missing.
-	for _, eventID := range t.policyManager.EventsSelected() {
+	for _, eventID := range t.policyManager.GetSelectedEvents() {
 		err := t.attachEvent(eventID)
 		if err != nil {
 			err := t.eventsDependencies.RemoveEvent(eventID)
@@ -1364,12 +1342,6 @@ func (t *Tracee) initBPF() error {
 		t.processTree,
 		t.dataTypeDecoder,
 	)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// returned PoliciesConfig is not used here, therefore it's discarded
-	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventDecodeTypes, false, true)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1652,7 +1624,7 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 	// The symbol is do_init_module: kprobe with the program trace_do_init_module, kretprobe with the program trace_ret_do_init_module
 	uniqueHooksMap := map[probeMapKey]struct{}{}
 
-	for _, tr := range t.policyManager.EventsSelected() {
+	for _, tr := range t.policyManager.GetSelectedEvents() {
 		definition := events.Core.GetDefinitionByID(tr)
 		if definition.NotValid() {
 			continue
@@ -1711,45 +1683,45 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 // userland process itself, and not from the kernel. These events usually serve as informational
 // events for the signatures engine/logic.
 func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
-	var matchedPolicies uint64
+	var matchedRules uint64
 
-	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64) {
-		event.PoliciesVersion = 1 // version will be removed soon
-		event.MatchedPoliciesKernel = matchedPolicies
-		event.MatchedPoliciesUser = matchedPolicies
-		event.MatchedPolicies = t.policyManager.MatchedNames(matchedPolicies)
+	setMatchedRules := func(event *trace.Event, matchedRules uint64) {
+		event.RulesVersion = 1 // version will be removed soon
+		event.MatchedRulesKernel = matchedRules
+		event.MatchedRulesUser = matchedRules
+		event.MatchedPolicies = t.policyManager.GetMatchedRulesInfo(events.ID(event.EventID), matchedRules)
 	}
 
-	policiesMatch := func(id events.ID) uint64 {
-		return t.policyManager.MatchEventInAnyPolicy(id)
+	rulesMatch := func(id events.ID) uint64 {
+		return t.policyManager.GetAllMatchedRulesBitmap(id)
 	}
 
 	// Initial namespace events
 
-	matchedPolicies = policiesMatch(events.TraceeInfo)
-	if matchedPolicies > 0 {
+	matchedRules = rulesMatch(events.TraceeInfo)
+	if matchedRules > 0 {
 		traceeDataEvent := events.TraceeInfoEvent(t.bootTime, t.startTime)
-		setMatchedPolicies(&traceeDataEvent, matchedPolicies)
+		setMatchedRules(&traceeDataEvent, matchedRules)
 		out <- &traceeDataEvent
 		_ = t.stats.EventCount.Increment()
 	}
 
-	matchedPolicies = policiesMatch(events.InitNamespaces)
-	if matchedPolicies > 0 {
+	matchedRules = rulesMatch(events.InitNamespaces)
+	if matchedRules > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
-		setMatchedPolicies(&systemInfoEvent, matchedPolicies)
+		setMatchedRules(&systemInfoEvent, matchedRules)
 		out <- &systemInfoEvent
 		_ = t.stats.EventCount.Increment()
 	}
 
 	// Initial existing containers events (1 event per container)
 
-	matchedPolicies = policiesMatch(events.ExistingContainer)
-	if matchedPolicies > 0 {
+	matchedRules = rulesMatch(events.ExistingContainer)
+	if matchedRules > 0 {
 		existingContainerEvents := events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich)
 		for i := range existingContainerEvents {
 			event := &(existingContainerEvents[i])
-			setMatchedPolicies(event, matchedPolicies)
+			setMatchedRules(event, matchedRules)
 			out <- event
 			_ = t.stats.EventCount.Increment()
 		}
@@ -1757,10 +1729,10 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	// Ftrace hook event
 
-	matchedPolicies = policiesMatch(events.FtraceHook)
-	if matchedPolicies > 0 {
+	matchedRules = rulesMatch(events.FtraceHook)
+	if matchedRules > 0 {
 		ftraceBaseEvent := events.GetFtraceBaseEvent()
-		setMatchedPolicies(ftraceBaseEvent, matchedPolicies)
+		setMatchedRules(ftraceBaseEvent, matchedRules)
 		logger.Debugw("started ftraceHook goroutine")
 
 		// TODO: Ideally, this should be inside the goroutine and be computed before each run,
@@ -1777,7 +1749,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 // netEnabled returns true if any base network event is to be traced
 func (t *Tracee) netEnabled() bool {
-	for _, id := range t.policyManager.EventsSelected() {
+	for _, id := range t.policyManager.GetSelectedEvents() {
 		if id >= events.NetPacketBase && id <= events.MaxNetID {
 			return true
 		}
@@ -1828,19 +1800,13 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 
 	var errs []error
 
-	for it := t.policyManager.CreateAllIterator(); it.HasNext(); {
-		p := it.Next()
-		// This might break in the future if PrintMemDump will become a dependency of another event.
-		_, isSelected := p.Rules[events.PrintMemDump]
-		if !isSelected {
-			continue
-		}
-		printMemDumpFilters := p.Rules[events.PrintMemDump].DataFilter.GetFieldFilters()
+	for _, rule := range t.policyManager.GetRules(events.PrintMemDump) {
+		printMemDumpFilters := rule.Data.DataFilter.GetFieldFilters()
 		if len(printMemDumpFilters) == 0 {
-			errs = append(errs, errfmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
+			errs = append(errs, errfmt.Errorf("policy %s: no address or symbols were provided to print_mem_dump event. "+
 				"please provide it via -e print_mem_dump.data.address=<hex address>"+
 				", -e print_mem_dump.data.symbol_name=<owner>:<symbol> or "+
-				"-e print_mem_dump.data.symbol_name=<symbol> if specifying a system owned symbol", p.ID))
+				"-e print_mem_dump.data.symbol_name=<symbol> if specifying a system owned symbol", rule.Policy.Name))
 
 			continue
 		}
@@ -1855,7 +1821,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 			field := lengthFilter.Equal()[0]
 			length, err = strconv.ParseUint(field, 10, 64)
 			if err != nil {
-				errs = append(errs, errfmt.Errorf("policy %d: invalid length provided to print_mem_dump event: %v", p.ID, err))
+				errs = append(errs, errfmt.Errorf("policy %s: invalid length provided to print_mem_dump event: %v", rule.Policy.Name, err))
 
 				continue
 			}
@@ -1866,7 +1832,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 			for _, field := range addressFilter.Equal() {
 				address, err := strconv.ParseUint(field, 16, 64)
 				if err != nil {
-					errs[p.ID] = errfmt.Errorf("policy %d: invalid address provided to print_mem_dump event: %v", p.ID, err)
+					errs = append(errs, errfmt.Errorf("policy %s: invalid address provided to print_mem_dump event: %v", rule.Policy.Name, err))
 
 					continue
 				}
@@ -1889,14 +1855,14 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 					owner = symbolSlice[0]
 					name = symbolSlice[1]
 				} else {
-					errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - more than one ':' provided", p.ID, field))
+					errs = append(errs, errfmt.Errorf("policy %s: invalid symbols provided to print_mem_dump event: %s - more than one ':' provided", rule.Policy.Name, field))
 
 					continue
 				}
 				symbol, err := t.getKernelSymbols().GetSymbolByOwnerAndName(owner, name)
 				if err != nil {
 					if owner != "system" {
-						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - %v", p.ID, field, err))
+						errs = append(errs, errfmt.Errorf("policy %s: invalid symbols provided to print_mem_dump event: %s - %v", rule.Policy.Name, field, err))
 
 						continue
 					}
@@ -1923,7 +1889,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 							values[i] = v
 						}
 						attemptedSymbols := fmt.Sprintf("{%s,%s,%s,%s}%s", values...)
-						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s", p.ID, attemptedSymbols))
+						errs = append(errs, errfmt.Errorf("policy %s: invalid symbols provided to print_mem_dump event: %s", rule.Policy.Name, attemptedSymbols))
 
 						continue
 					}
@@ -1958,28 +1924,18 @@ func (t *Tracee) triggerMemDumpCall(address uint64, length uint64, eventHandle u
 
 // SubscribeAll returns a stream subscribed to all policies
 func (t *Tracee) SubscribeAll() *streams.Stream {
-	return t.subscribe(policy.PolicyAll)
+	return t.subscribe(nil)
 }
 
 // Subscribe returns a stream subscribed to selected policies
-func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
-	var policyMask uint64
-
-	for _, policyName := range policyNames {
-		p, err := t.policyManager.LookupByName(policyName)
-		if err != nil {
-			return nil, err
-		}
-		utils.SetBit(&policyMask, uint(p.ID))
-	}
-
-	return t.subscribe(policyMask), nil
+func (t *Tracee) Subscribe(policyNames []string) *streams.Stream {
+	return t.subscribe(policyNames)
 }
 
-func (t *Tracee) subscribe(policyMask uint64) *streams.Stream {
+func (t *Tracee) subscribe(policyNames []string) *streams.Stream {
 	// TODO: the channel size matches the pipeline channel size,
 	// but we should make it configurable in the future.
-	return t.streamsManager.Subscribe(policyMask, t.config.PipelineChannelSize)
+	return t.streamsManager.Subscribe(policyNames, t.config.PipelineChannelSize)
 }
 
 // Unsubscribe unsubscribes stream
@@ -2055,50 +2011,6 @@ func (t *Tracee) DisableEvent(eventName string) error {
 					break
 				}
 			}
-		}
-	}
-
-	return nil
-}
-
-// EnableRule enables a rule in the specified policies
-func (t *Tracee) EnableRule(policyNames []string, ruleId string) error {
-	eventID, found := events.Core.GetDefinitionIDByName(ruleId)
-	if !found {
-		return errfmt.Errorf("error rule not found: %s", ruleId)
-	}
-
-	for _, policyName := range policyNames {
-		p, err := t.policyManager.LookupByName(policyName)
-		if err != nil {
-			return err
-		}
-
-		err = t.policyManager.EnableRule(p.ID, eventID)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// DisableRule disables a rule in the specified policies
-func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
-	eventID, found := events.Core.GetDefinitionIDByName(ruleId)
-	if !found {
-		return errfmt.Errorf("error rule not found: %s", ruleId)
-	}
-
-	for _, policyName := range policyNames {
-		p, err := t.policyManager.LookupByName(policyName)
-		if err != nil {
-			return err
-		}
-
-		err = t.policyManager.DisableRule(p.ID, eventID)
-		if err != nil {
-			return err
 		}
 	}
 

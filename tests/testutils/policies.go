@@ -24,9 +24,8 @@ func BuildPoliciesFromEvents(eventsToChoose []events.ID) []*policy.Policy {
 		policyRules = append(policyRules, rule)
 	}
 
-	policiesFiles := []PolicyFileWithID{
+	policiesFiles := []PolicyFile{
 		{
-			Id: 1,
 			PolicyFile: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
 					Name: "test-policy",
@@ -42,11 +41,11 @@ func BuildPoliciesFromEvents(eventsToChoose []events.ID) []*policy.Policy {
 	return NewPolicies(policiesFiles)
 }
 
-// NewPolicies creates a slice of policies setting the ID of each policy to the given ID.
-func NewPolicies(polsFilesID []PolicyFileWithID) []*policy.Policy {
+// NewPolicies creates a slice of policies
+func NewPolicies(polFiles []PolicyFile) []*policy.Policy {
 	var polsFiles []k8s.PolicyInterface
 
-	for _, polFile := range polsFilesID {
+	for _, polFile := range polFiles {
 		polsFiles = append(polsFiles, polFile.PolicyFile)
 	}
 
@@ -62,23 +61,21 @@ func NewPolicies(polsFilesID []PolicyFileWithID) []*policy.Policy {
 
 	for i := range policies {
 		found := false
-		for j := range polsFilesID {
-			if policies[i].Name == polsFilesID[j].PolicyFile.Metadata.Name {
-				policies[i].ID = polsFilesID[j].Id - 1
+		for j := range polFiles {
+			if policies[i].Name == polFiles[j].PolicyFile.Metadata.Name {
 				found = true
 				break
 			}
 		}
 
 		if !found {
-			panic(fmt.Errorf("policy %s not found in polsFilesID", policies[i].Name))
+			panic(fmt.Errorf("policy %s not found in polFiles", policies[i].Name))
 		}
 	}
 
 	return policies
 }
 
-type PolicyFileWithID struct {
+type PolicyFile struct {
 	PolicyFile v1beta1.PolicyFile
-	Id         int
 }

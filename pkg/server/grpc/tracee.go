@@ -601,15 +601,11 @@ type TraceeService struct {
 
 func (s *TraceeService) StreamEvents(in *pb.StreamEventsRequest, grpcStream pb.TraceeService_StreamEventsServer) error {
 	var stream *streams.Stream
-	var err error
 
 	if len(in.Policies) == 0 {
 		stream = s.tracee.SubscribeAll()
 	} else {
-		stream, err = s.tracee.Subscribe(in.Policies)
-		if err != nil {
-			return err
-		}
+		stream = s.tracee.Subscribe(in.Policies)
 	}
 	defer s.tracee.Unsubscribe(stream)
 

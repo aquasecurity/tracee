@@ -6,7 +6,6 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
 const (
@@ -18,12 +17,9 @@ const (
 // Order of fields is important, as it is used as a value for
 // the ConfigMap BPF map.
 type Config struct {
-	TraceePid       uint32
-	Options         uint32
-	CgroupV1Hid     uint32
-	_               uint16 // padding free for further use
-	PoliciesVersion uint16
-	PoliciesConfig  policy.PoliciesConfig
+	TraceePid   uint32
+	Options     uint32
+	CgroupV1Hid uint32
 }
 
 // UpdateBPF updates the ConfigMap BPF map with the current config.

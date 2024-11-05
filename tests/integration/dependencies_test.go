@@ -223,13 +223,13 @@ func Test_EventsDependencies(t *testing.T) {
 
 func createGenericEventForCmdEvents(eventId events.ID) trace.Event {
 	return trace.Event{
-		HostName:            anyHost,
-		ProcessName:         anyComm,
-		ProcessorID:         anyProcessorID,
-		ProcessID:           anyPID,
-		UserID:              anyUID,
-		EventID:             int(eventId),
-		MatchedPoliciesUser: anyPolicy,
+		HostName:         anyHost,
+		ProcessName:      anyComm,
+		ProcessorID:      anyProcessorID,
+		ProcessID:        anyPID,
+		UserID:           anyUID,
+		EventID:          int(eventId),
+		MatchedRulesUser: anyPolicy,
 	}
 }
 

@@ -159,8 +159,8 @@ func (decoder *EbpfDecoder) DecodeContext(eCtx *EventContext) error {
 	eCtx.Retval = int64(binary.LittleEndian.Uint64(decoder.buffer[offset+120 : offset+128]))
 	eCtx.StackID = binary.LittleEndian.Uint32(decoder.buffer[offset+128 : offset+132])
 	eCtx.ProcessorId = binary.LittleEndian.Uint16(decoder.buffer[offset+132 : offset+134])
-	eCtx.PoliciesVersion = binary.LittleEndian.Uint16(decoder.buffer[offset+134 : offset+136])
-	eCtx.MatchedPolicies = binary.LittleEndian.Uint64(decoder.buffer[offset+136 : offset+144])
+	eCtx.RulesVersion = binary.LittleEndian.Uint16(decoder.buffer[offset+134 : offset+136])
+	eCtx.MatchedRules = binary.LittleEndian.Uint64(decoder.buffer[offset+136 : offset+144])
 	// event_context end
 
 	decoder.cursor += eCtx.GetSizeBytes()
