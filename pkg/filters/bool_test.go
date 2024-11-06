@@ -91,21 +91,21 @@ func TestBoolFilterParse(t *testing.T) {
 	}
 }
 
-func TestBoolFilterFilterOut(t *testing.T) {
+func TestBoolFilterMatchIfKeyMissing(t *testing.T) {
 	t.Parallel()
 
 	bf1 := NewBoolFilter()
 	bf1.Parse("=true")
-	assert.False(t, bf1.FilterOut())
+	assert.False(t, bf1.MatchIfKeyMissing())
 
 	bf3 := NewBoolFilter()
 	bf3.Parse("=true")
 	bf3.Parse("=false")
-	assert.False(t, bf3.FilterOut())
+	assert.False(t, bf3.MatchIfKeyMissing())
 
 	bf2 := NewBoolFilter()
 	bf2.Parse("=false")
-	assert.True(t, bf2.FilterOut())
+	assert.True(t, bf2.MatchIfKeyMissing())
 }
 
 func TestBoolFilterClone(t *testing.T) {

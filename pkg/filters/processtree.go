@@ -80,7 +80,7 @@ func (f *ProcessTreeFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (f *ProcessTreeFilter) FilterOut() bool {
+func (f *ProcessTreeFilter) MatchIfKeyMissing() bool {
 	if len(f.equal) > 0 && len(f.notEqual) == 0 {
 		return false
 	}

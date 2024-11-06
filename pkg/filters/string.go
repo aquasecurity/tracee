@@ -230,7 +230,7 @@ func (f *StringFilter) NotEqual() []string {
 	return res
 }
 
-func (f *StringFilter) FilterOut() bool {
+func (f *StringFilter) MatchIfKeyMissing() bool {
 	if len(f.Equal()) > 0 && len(f.NotEqual()) == 0 {
 		return false
 	}

@@ -151,7 +151,7 @@ func TestStringFilterParse(t *testing.T) {
 	}
 }
 
-func TestStringFilterFilterOut(t *testing.T) {
+func TestStringFilterMatchIfKeyMissing(t *testing.T) {
 	t.Parallel()
 
 	sf1 := NewStringFilter(nil)
@@ -163,7 +163,7 @@ func TestStringFilterFilterOut(t *testing.T) {
 	err = sf1.Parse("=here")
 	require.NoError(t, err)
 
-	assert.False(t, sf1.FilterOut())
+	assert.False(t, sf1.MatchIfKeyMissing())
 
 	sf2 := NewStringFilter(nil)
 
@@ -174,7 +174,7 @@ func TestStringFilterFilterOut(t *testing.T) {
 	err = sf2.Parse("=here")
 	require.NoError(t, err)
 
-	assert.True(t, sf2.FilterOut())
+	assert.True(t, sf2.MatchIfKeyMissing())
 
 	sf3 := NewStringFilter(nil)
 
@@ -185,7 +185,7 @@ func TestStringFilterFilterOut(t *testing.T) {
 	err = sf3.Parse("!=here")
 	require.NoError(t, err)
 
-	assert.True(t, sf3.FilterOut())
+	assert.True(t, sf3.MatchIfKeyMissing())
 
 	sf4 := NewStringFilter(nil)
 
@@ -196,7 +196,7 @@ func TestStringFilterFilterOut(t *testing.T) {
 	err = sf4.Parse("!=here")
 	require.NoError(t, err)
 
-	assert.True(t, sf4.FilterOut())
+	assert.True(t, sf4.MatchIfKeyMissing())
 }
 
 func TestStringFilterClone(t *testing.T) {

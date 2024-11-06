@@ -218,8 +218,8 @@ func (ps *policies) updateUIntFilterBPF(uintEqualities map[uint64]equality, inne
 		eqVal := make([]byte, equalityValueSize)
 		valuePointer := unsafe.Pointer(&eqVal[0])
 
-		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalInPolicies)
-		binary.LittleEndian.PutUint64(eqVal[8:16], v.equalitySetInPolicies)
+		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInPolicies)
+		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInPolicies)
 
 		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
 		if !ok {
@@ -251,8 +251,8 @@ func (ps *policies) updateStringFilterBPF(strEqualities map[string]equality, inn
 		eqVal := make([]byte, equalityValueSize)
 		valuePointer := unsafe.Pointer(&eqVal[0])
 
-		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalInPolicies)
-		binary.LittleEndian.PutUint64(eqVal[8:16], v.equalitySetInPolicies)
+		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInPolicies)
+		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInPolicies)
 
 		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
 		if !ok {
@@ -278,8 +278,8 @@ func (ps *policies) updateProcTreeFilterBPF(procTreeEqualities map[uint32]equali
 		eqVal := make([]byte, equalityValueSize)
 		valuePointer := unsafe.Pointer(&eqVal[0])
 
-		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalInPolicies)
-		binary.LittleEndian.PutUint64(eqVal[8:16], v.equalitySetInPolicies)
+		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInPolicies)
+		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInPolicies)
 
 		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
 		if !ok {
@@ -383,8 +383,8 @@ func (ps *policies) updateBinaryFilterBPF(binEqualities map[filters.NSBinary]equ
 		eqVal := make([]byte, equalityValueSize)
 		valuePointer := unsafe.Pointer(&eqVal[0])
 
-		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalInPolicies)
-		binary.LittleEndian.PutUint64(eqVal[8:16], v.equalitySetInPolicies)
+		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInPolicies)
+		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInPolicies)
 
 		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
 		if !ok {
@@ -571,34 +571,34 @@ func (ps *policies) createNewPoliciesConfigMap(bpfModule *bpf.Module) error {
 // Order of fields is important, as it is used as a value for
 // the PoliciesConfigMap BPF map.
 type PoliciesConfig struct {
-	UIDFilterEnabledScopes      uint64
-	PIDFilterEnabledScopes      uint64
-	MntNsFilterEnabledScopes    uint64
-	PidNsFilterEnabledScopes    uint64
-	UtsNsFilterEnabledScopes    uint64
-	CommFilterEnabledScopes     uint64
-	CgroupIdFilterEnabledScopes uint64
-	ContFilterEnabledScopes     uint64
-	NewContFilterEnabledScopes  uint64
-	NewPidFilterEnabledScopes   uint64
-	ProcTreeFilterEnabledScopes uint64
-	BinPathFilterEnabledScopes  uint64
-	FollowFilterEnabledScopes   uint64
+	UIDFilterEnabled      uint64
+	PIDFilterEnabled      uint64
+	MntNsFilterEnabled    uint64
+	PidNsFilterEnabled    uint64
+	UtsNsFilterEnabled    uint64
+	CommFilterEnabled     uint64
+	CgroupIdFilterEnabled uint64
+	ContFilterEnabled     uint64
+	NewContFilterEnabled  uint64
+	NewPidFilterEnabled   uint64
+	ProcTreeFilterEnabled uint64
+	BinPathFilterEnabled  uint64
+	FollowFilterEnabled   uint64
 
-	UIDFilterOutScopes      uint64
-	PIDFilterOutScopes      uint64
-	MntNsFilterOutScopes    uint64
-	PidNsFilterOutScopes    uint64
-	UtsNsFilterOutScopes    uint64
-	CommFilterOutScopes     uint64
-	CgroupIdFilterOutScopes uint64
-	ContFilterOutScopes     uint64
-	NewContFilterOutScopes  uint64
-	NewPidFilterOutScopes   uint64
-	ProcTreeFilterOutScopes uint64
-	BinPathFilterOutScopes  uint64
+	UIDFilterMatchIfKeyMissing      uint64
+	PIDFilterMatchIfKeyMissing      uint64
+	MntNsFilterMatchIfKeyMissing    uint64
+	PidNsFilterMatchIfKeyMissing    uint64
+	UtsNsFilterMatchIfKeyMissing    uint64
+	CommFilterMatchIfKeyMissing     uint64
+	CgroupIdFilterMatchIfKeyMissing uint64
+	ContFilterMatchIfKeyMissing     uint64
+	NewContFilterMatchIfKeyMissing  uint64
+	NewPidFilterMatchIfKeyMissing   uint64
+	ProcTreeFilterMatchIfKeyMissing uint64
+	BinPathFilterMatchIfKeyMissing  uint64
 
-	EnabledScopes uint64
+	EnabledPolicies uint64
 
 	UidMax uint64
 	UidMin uint64
@@ -626,86 +626,86 @@ func (ps *policies) computePoliciesConfig() *PoliciesConfig {
 	for _, p := range ps.allFromMap() {
 		offset := p.ID
 
-		// filter enabled policies bitmap
+		// bitmap indicating which policies have filters enabled
 		if p.UIDFilter.Enabled() {
-			cfg.UIDFilterEnabledScopes |= 1 << offset
+			cfg.UIDFilterEnabled |= 1 << offset
 		}
 		if p.PIDFilter.Enabled() {
-			cfg.PIDFilterEnabledScopes |= 1 << offset
+			cfg.PIDFilterEnabled |= 1 << offset
 		}
 		if p.MntNSFilter.Enabled() {
-			cfg.MntNsFilterEnabledScopes |= 1 << offset
+			cfg.MntNsFilterEnabled |= 1 << offset
 		}
 		if p.PidNSFilter.Enabled() {
-			cfg.PidNsFilterEnabledScopes |= 1 << offset
+			cfg.PidNsFilterEnabled |= 1 << offset
 		}
 		if p.UTSFilter.Enabled() {
-			cfg.UtsNsFilterEnabledScopes |= 1 << offset
+			cfg.UtsNsFilterEnabled |= 1 << offset
 		}
 		if p.CommFilter.Enabled() {
-			cfg.CommFilterEnabledScopes |= 1 << offset
+			cfg.CommFilterEnabled |= 1 << offset
 		}
 		if p.ContIDFilter.Enabled() {
-			cfg.CgroupIdFilterEnabledScopes |= 1 << offset
+			cfg.CgroupIdFilterEnabled |= 1 << offset
 		}
 		if p.ContFilter.Enabled() {
-			cfg.ContFilterEnabledScopes |= 1 << offset
+			cfg.ContFilterEnabled |= 1 << offset
 		}
 		if p.NewContFilter.Enabled() {
-			cfg.NewContFilterEnabledScopes |= 1 << offset
+			cfg.NewContFilterEnabled |= 1 << offset
 		}
 		if p.NewPidFilter.Enabled() {
-			cfg.NewPidFilterEnabledScopes |= 1 << offset
+			cfg.NewPidFilterEnabled |= 1 << offset
 		}
 		if p.ProcessTreeFilter.Enabled() {
-			cfg.ProcTreeFilterEnabledScopes |= 1 << offset
+			cfg.ProcTreeFilterEnabled |= 1 << offset
 		}
 		if p.BinaryFilter.Enabled() {
-			cfg.BinPathFilterEnabledScopes |= 1 << offset
+			cfg.BinPathFilterEnabled |= 1 << offset
 		}
 		if p.Follow {
-			cfg.FollowFilterEnabledScopes |= 1 << offset
+			cfg.FollowFilterEnabled |= 1 << offset
 		}
 
-		// filter out scopes bitmap
-		if p.UIDFilter.FilterOut() {
-			cfg.UIDFilterOutScopes |= 1 << offset
+		// bitmap indicating whether to match a rule if the key is missing from its filter map
+		if p.UIDFilter.MatchIfKeyMissing() {
+			cfg.UIDFilterMatchIfKeyMissing |= 1 << offset
 		}
-		if p.PIDFilter.FilterOut() {
-			cfg.PIDFilterOutScopes |= 1 << offset
+		if p.PIDFilter.MatchIfKeyMissing() {
+			cfg.PIDFilterMatchIfKeyMissing |= 1 << offset
 		}
-		if p.MntNSFilter.FilterOut() {
-			cfg.MntNsFilterOutScopes |= 1 << offset
+		if p.MntNSFilter.MatchIfKeyMissing() {
+			cfg.MntNsFilterMatchIfKeyMissing |= 1 << offset
 		}
-		if p.PidNSFilter.FilterOut() {
-			cfg.PidNsFilterOutScopes |= 1 << offset
+		if p.PidNSFilter.MatchIfKeyMissing() {
+			cfg.PidNsFilterMatchIfKeyMissing |= 1 << offset
 		}
-		if p.UTSFilter.FilterOut() {
-			cfg.UtsNsFilterOutScopes |= 1 << offset
+		if p.UTSFilter.MatchIfKeyMissing() {
+			cfg.UtsNsFilterMatchIfKeyMissing |= 1 << offset
 		}
-		if p.CommFilter.FilterOut() {
-			cfg.CommFilterOutScopes |= 1 << offset
+		if p.CommFilter.MatchIfKeyMissing() {
+			cfg.CommFilterMatchIfKeyMissing |= 1 << offset
 		}
-		if p.ContIDFilter.FilterOut() {
-			cfg.CgroupIdFilterOutScopes |= 1 << offset
+		if p.ContIDFilter.MatchIfKeyMissing() {
+			cfg.CgroupIdFilterMatchIfKeyMissing |= 1 << offset
 		}
-		if p.ContFilter.FilterOut() {
-			cfg.ContFilterOutScopes |= 1 << offset
+		if p.ContFilter.MatchIfKeyMissing() {
+			cfg.ContFilterMatchIfKeyMissing |= 1 << offset
 		}
-		if p.NewContFilter.FilterOut() {
-			cfg.NewContFilterOutScopes |= 1 << offset
+		if p.NewContFilter.MatchIfKeyMissing() {
+			cfg.NewContFilterMatchIfKeyMissing |= 1 << offset
 		}
-		if p.NewPidFilter.FilterOut() {
-			cfg.NewPidFilterOutScopes |= 1 << offset
+		if p.NewPidFilter.MatchIfKeyMissing() {
+			cfg.NewPidFilterMatchIfKeyMissing |= 1 << offset
 		}
-		if p.ProcessTreeFilter.FilterOut() {
-			cfg.ProcTreeFilterOutScopes |= 1 << offset
+		if p.ProcessTreeFilter.MatchIfKeyMissing() {
+			cfg.ProcTreeFilterMatchIfKeyMissing |= 1 << offset
 		}
-		if p.BinaryFilter.FilterOut() {
-			cfg.BinPathFilterOutScopes |= 1 << offset
+		if p.BinaryFilter.MatchIfKeyMissing() {
+			cfg.BinPathFilterMatchIfKeyMissing |= 1 << offset
 		}
 
-		cfg.EnabledScopes |= 1 << offset
+		cfg.EnabledPolicies |= 1 << offset
 	}
 
 	cfg.UidMax = ps.uidFilterMax
