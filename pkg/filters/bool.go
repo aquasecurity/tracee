@@ -144,7 +144,7 @@ func (f *BoolFilter) Value() bool {
 	return f.trueEnabled
 }
 
-func (f *BoolFilter) FilterOut() bool {
+func (f *BoolFilter) MatchIfKeyMissing() bool {
 	return !f.Value()
 }
 

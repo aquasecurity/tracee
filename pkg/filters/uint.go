@@ -212,7 +212,7 @@ func (f *UIntFilter[T]) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (f *UIntFilter[T]) FilterOut() bool {
+func (f *UIntFilter[T]) MatchIfKeyMissing() bool {
 	if len(f.equal) > 0 && len(f.notEqual) == 0 && f.min == MinNotSetUInt && f.max == MaxNotSetUInt {
 		return false
 	}

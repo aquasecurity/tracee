@@ -10,12 +10,12 @@ import (
 // equality mirrors the C struct equality (eq_t).
 // Check it for more info.
 type equality struct {
-	equalInPolicies       uint64
-	equalitySetInPolicies uint64
+	equalsInPolicies  uint64
+	keyUsedInPolicies uint64
 }
 
 const (
-	// 8 bytes for equalInPolicies and 8 bytes for equalitySetInPolicies
+	// 8 bytes for equalsInPolicies and 8 bytes for keyUsedInPolicies
 	equalityValueSize = 16
 )
 
@@ -45,15 +45,15 @@ type equalityUpdater func(eq *equality, policyID uint)
 // notEqualUpdate updates the equality as not equal with the given policyID.
 func notEqualUpdate(eq *equality, policyID uint) {
 	// NotEqual == 0, so clear n bitmap bit
-	utils.ClearBit(&eq.equalInPolicies, policyID)
-	utils.SetBit(&eq.equalitySetInPolicies, policyID)
+	utils.ClearBit(&eq.equalsInPolicies, policyID)
+	utils.SetBit(&eq.keyUsedInPolicies, policyID)
 }
 
 // equalUpdate updates the equality as equal with the given policyID.
 func equalUpdate(eq *equality, policyID uint) {
 	// Equal == 1, so set n bitmap bit
-	utils.SetBit(&eq.equalInPolicies, policyID)
-	utils.SetBit(&eq.equalitySetInPolicies, policyID)
+	utils.SetBit(&eq.equalsInPolicies, policyID)
+	utils.SetBit(&eq.keyUsedInPolicies, policyID)
 }
 
 // updateEqualities updates the equalities map with the given filter equalities

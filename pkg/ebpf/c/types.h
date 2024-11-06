@@ -294,43 +294,42 @@ typedef struct ksym_name {
 } ksym_name_t;
 
 typedef struct equality {
-    // bitmask with scopes on which a equal '=' filter is set
-    // its bit value will depend on the filter's equality precedence order
-    u64 equal_in_scopes;
-    // bitmask with scopes on which a filter equality is set
-    u64 equality_set_in_scopes;
+    // bitmap indicating which policies have a filter that uses the '=' operator (0 means '!=')
+    u64 equals_in_policies;
+    // bitmap indicating which policies have a filter that utilize the provided key
+    u64 key_used_in_policies;
 } eq_t;
 
 typedef struct policies_config {
-    // enabled scopes bitmask per filter
-    u64 uid_filter_enabled_scopes;
-    u64 pid_filter_enabled_scopes;
-    u64 mnt_ns_filter_enabled_scopes;
-    u64 pid_ns_filter_enabled_scopes;
-    u64 uts_ns_filter_enabled_scopes;
-    u64 comm_filter_enabled_scopes;
-    u64 cgroup_id_filter_enabled_scopes;
-    u64 cont_filter_enabled_scopes;
-    u64 new_cont_filter_enabled_scopes;
-    u64 new_pid_filter_enabled_scopes;
-    u64 proc_tree_filter_enabled_scopes;
-    u64 bin_path_filter_enabled_scopes;
-    u64 follow_filter_enabled_scopes;
-    // filter_out bitmask per filter
-    u64 uid_filter_out_scopes;
-    u64 pid_filter_out_scopes;
-    u64 mnt_ns_filter_out_scopes;
-    u64 pid_ns_filter_out_scopes;
-    u64 uts_ns_filter_out_scopes;
-    u64 comm_filter_out_scopes;
-    u64 cgroup_id_filter_out_scopes;
-    u64 cont_filter_out_scopes;
-    u64 new_cont_filter_out_scopes;
-    u64 new_pid_filter_out_scopes;
-    u64 proc_tree_filter_out_scopes;
-    u64 bin_path_filter_out_scopes;
-    // bitmask with scopes that have at least one filter enabled
-    u64 enabled_scopes;
+    // bitmap indicating which policies have the filter enabled
+    u64 uid_filter_enabled;
+    u64 pid_filter_enabled;
+    u64 mnt_ns_filter_enabled;
+    u64 pid_ns_filter_enabled;
+    u64 uts_ns_filter_enabled;
+    u64 comm_filter_enabled;
+    u64 cgroup_id_filter_enabled;
+    u64 cont_filter_enabled;
+    u64 new_cont_filter_enabled;
+    u64 new_pid_filter_enabled;
+    u64 proc_tree_filter_enabled;
+    u64 bin_path_filter_enabled;
+    u64 follow_filter_enabled;
+    // bitmap indicating whether to match a rule if the key is missing from its filter map
+    u64 uid_filter_match_if_key_missing;
+    u64 pid_filter_match_if_key_missing;
+    u64 mnt_ns_filter_match_if_key_missing;
+    u64 pid_ns_filter_match_if_key_missing;
+    u64 uts_ns_filter_match_if_key_missing;
+    u64 comm_filter_match_if_key_missing;
+    u64 cgroup_id_filter_match_if_key_missing;
+    u64 cont_filter_match_if_key_missing;
+    u64 new_cont_filter_match_if_key_missing;
+    u64 new_pid_filter_match_if_key_missing;
+    u64 proc_tree_filter_match_if_key_missing;
+    u64 bin_path_filter_match_if_key_missing;
+    // bitmap with policies that have at least one filter enabled
+    u64 enabled_policies;
     // global min max
     u64 uid_max;
     u64 uid_min;

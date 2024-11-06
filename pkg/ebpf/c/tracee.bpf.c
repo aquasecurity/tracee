@@ -640,7 +640,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 
     policies_config_t *policies_cfg = &p.event->policies_config;
 
-    if (policies_cfg->proc_tree_filter_enabled_scopes) {
+    if (policies_cfg->proc_tree_filter_enabled) {
         u16 version = p.event->context.policies_version;
         // Give the compiler a hint about the map type, otherwise libbpf will complain
         // about missing type information. i.e.: "can't determine value size for type".

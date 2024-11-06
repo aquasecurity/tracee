@@ -113,32 +113,32 @@ func TestProcessTreeFilterParse(t *testing.T) {
 	}
 }
 
-func TestProcessTreeFilterFilterOut(t *testing.T) {
+func TestProcessTreeFilterMatchIfKeyMissing(t *testing.T) {
 	t.Parallel()
 
 	ptf1 := NewProcessTreeFilter()
 	ptf1.Parse("=0")
 	ptf1.Parse("=1")
 	ptf1.Parse("=2")
-	assert.False(t, ptf1.FilterOut())
+	assert.False(t, ptf1.MatchIfKeyMissing())
 
 	ptf2 := NewProcessTreeFilter()
 	ptf2.Parse("=0")
 	ptf2.Parse("!=1")
 	ptf2.Parse("=2")
-	assert.True(t, ptf2.FilterOut())
+	assert.True(t, ptf2.MatchIfKeyMissing())
 
 	ptf3 := NewProcessTreeFilter()
 	ptf3.Parse("!=0")
 	ptf3.Parse("=1")
 	ptf3.Parse("!=2")
-	assert.True(t, ptf3.FilterOut())
+	assert.True(t, ptf3.MatchIfKeyMissing())
 
 	ptf4 := NewProcessTreeFilter()
 	ptf4.Parse("!=0")
 	ptf4.Parse("!=1")
 	ptf4.Parse("!=2")
-	assert.True(t, ptf4.FilterOut())
+	assert.True(t, ptf4.MatchIfKeyMissing())
 }
 
 func TestProcessTreeFilterClone(t *testing.T) {

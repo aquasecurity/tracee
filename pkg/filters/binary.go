@@ -130,7 +130,7 @@ func (f *BinaryFilter) Enabled() bool {
 	return f.enabled
 }
 
-func (f *BinaryFilter) FilterOut() bool {
+func (f *BinaryFilter) MatchIfKeyMissing() bool {
 	if len(f.equal) > 0 && len(f.notEqual) == 0 {
 		return false
 	}
