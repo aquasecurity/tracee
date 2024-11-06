@@ -22,32 +22,6 @@ statfunc bool policies_matched(event_data_t *);
 
 // CONSTANTS
 
-#define FILTER_UID_ENABLED       (1 << 0)
-#define FILTER_UID_OUT           (1 << 1)
-#define FILTER_MNT_NS_ENABLED    (1 << 2)
-#define FILTER_MNT_NS_OUT        (1 << 3)
-#define FILTER_PID_NS_ENABLED    (1 << 4)
-#define FILTER_PID_NS_OUT        (1 << 5)
-#define FILTER_UTS_NS_ENABLED    (1 << 6)
-#define FILTER_UTS_NS_OUT        (1 << 7)
-#define FILTER_COMM_ENABLED      (1 << 8)
-#define FILTER_COMM_OUT          (1 << 9)
-#define FILTER_PID_ENABLED       (1 << 10)
-#define FILTER_PID_OUT           (1 << 11)
-#define FILTER_CONT_ENABLED      (1 << 12)
-#define FILTER_CONT_OUT          (1 << 13)
-#define FILTER_FOLLOW_ENABLED    (1 << 14)
-#define FILTER_NEW_PID_ENABLED   (1 << 15)
-#define FILTER_NEW_PID_OUT       (1 << 16)
-#define FILTER_NEW_CONT_ENABLED  (1 << 17)
-#define FILTER_NEW_CONT_OUT      (1 << 18)
-#define FILTER_PROC_TREE_ENABLED (1 << 19)
-#define FILTER_PROC_TREE_OUT     (1 << 20)
-#define FILTER_CGROUP_ID_ENABLED (1 << 21)
-#define FILTER_CGROUP_ID_OUT     (1 << 22)
-#define FILTER_BIN_PATH_ENABLED  (1 << 23)
-#define FILTER_BIN_PATH_OUT      (1 << 24)
-
 #define FILTER_MAX_NOT_SET 0
 #define FILTER_MIN_NOT_SET ULLONG_MAX
 
