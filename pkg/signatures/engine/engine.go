@@ -146,12 +146,18 @@ func (engine *Engine) unloadAllSignatures() {
 // matchHandler is a function that runs when a signature is matched
 func (engine *Engine) matchHandler(res *detect.Finding) {
 	_ = engine.stats.Detections.Increment()
+	engine.output <- res
+	if !engine.config.Enabled {
+		return
+		// next section is relevant only for engine-in-pipeline and analyze
+	}
 	e, err := findings.FindingToEvent(res)
 	if err != nil {
 		logger.Errorw("Failed to convert finding to event, will not feedback", "err", err)
+		return
 	}
-	engine.output <- res
-	engine.inputs.Tracee <- e.ToProtocol()
+	prot := e.ToProtocol()
+	engine.inputs.Tracee <- prot
 }
 
 // checkCompletion is a function that runs at the end of each input source
