@@ -141,17 +141,26 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
 SEC("raw_tracepoint/sys_enter_submit")
 int sys_enter_submit(struct bpf_raw_tracepoint_args *ctx)
 {
+    uint id = ctx->args[1];
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    if (is_compat(task)) {
+        // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
+        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
+        if (id_64 == 0)
+            return 0;
+
+        id = *id_64;
+    }
+
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
-        return 0;
 
-    syscall_data_t *sys = &p.task_info->syscall_data;
-
-    if (!reset_event(p.event, sys->id))
+    if (!init_program_data(&p, ctx, id))
         return 0;
 
     if (!evaluate_scope_filters(&p))
         goto out;
+
+    syscall_data_t *sys = &p.task_info->syscall_data;
 
     if (p.config->options & OPT_TRANSLATE_FD_FILEPATH && has_syscall_fd_arg(sys->id)) {
         // Process filepath related to fd argument
@@ -266,19 +275,28 @@ int sys_exit_init(struct bpf_raw_tracepoint_args *ctx)
 SEC("raw_tracepoint/sys_exit_submit")
 int sys_exit_submit(struct bpf_raw_tracepoint_args *ctx)
 {
+    struct pt_regs *regs = (struct pt_regs *) ctx->args[0];
+    uint id = get_syscall_id_from_regs(regs);
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    if (is_compat(task)) {
+        // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
+        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
+        if (id_64 == 0)
+            return 0;
+
+        id = *id_64;
+    }
+
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+
+    if (!init_program_data(&p, ctx, id))
         return 0;
-
-    syscall_data_t *sys = &p.task_info->syscall_data;
-
-    if (!reset_event(p.event, sys->id))
-        return 0;
-
-    long ret = ctx->args[1];
 
     if (!evaluate_scope_filters(&p))
         goto out;
+
+    long ret = ctx->args[1];
+    syscall_data_t *sys = &p.task_info->syscall_data;
 
     // exec syscalls are different since the pointers are invalid after a successful exec.
     // we use a special handler (tail called) to only handle failed execs on syscall exit.
@@ -3156,7 +3174,7 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
     del_args(event_id);
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, POLICY_SCOPES))
         return 0;
 
     if (!evaluate_scope_filters(&p))
@@ -3220,7 +3238,7 @@ statfunc int capture_file_read(struct pt_regs *ctx, u32 event_id, bool is_buf)
     del_args(event_id);
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, POLICY_SCOPES))
         return 0;
 
     if ((p.config->options & OPT_CAPTURE_FILES_READ) == 0)
@@ -5475,8 +5493,8 @@ statfunc u64 sizeof_net_event_context_t(void)
 statfunc void set_net_task_context(event_data_t *event, net_task_context_t *netctx)
 {
     netctx->task = event->task;
-    netctx->rules_version = event->context.rules_version;
-    netctx->active_rules = event->context.active_rules;
+    netctx->rules_version = event->context.rules_version; // rules_version is meaningless here since we don't know the event yet
+    netctx->active_rules = event->context.active_rules; // same here
     netctx->syscall = event->context.syscall;
     __builtin_memset(&netctx->taskctx, 0, sizeof(task_context_t));
     __builtin_memcpy(&netctx->taskctx, &event->context.task, sizeof(task_context_t));
@@ -5830,7 +5848,7 @@ int BPF_KRETPROBE(trace_ret_sock_alloc_file)
     // runs every time a socket is created (return)
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, POLICY_SCOPES))
         return 0;
 
     if (!evaluate_scope_filters(&p))
@@ -5971,7 +5989,7 @@ int BPF_KPROBE(trace_security_socket_recvmsg)
         return 0;
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, POLICY_SCOPES))
         return 0;
 
     if (!evaluate_scope_filters(&p))
@@ -5996,7 +6014,7 @@ int BPF_KPROBE(trace_security_socket_sendmsg)
         return 0;
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, POLICY_SCOPES))
         return 0;
 
     if (!evaluate_scope_filters(&p))
@@ -6060,7 +6078,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     program_data_t p = {};
     p.scratch_idx = 1;
     p.event = e;
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, POLICY_SCOPES))
         return 0;
 
     bool mightbecloned = false; // cloned sock structs come from accept()
@@ -7114,14 +7132,9 @@ int tracepoint__exec_test(struct bpf_raw_tracepoint_args *ctx)
     // Submit all test events
     int ret = 0;
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, EXEC_TEST))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
-        return 0;
-
-    if (!reset_event(p.event, EXEC_TEST))
-        return 0;
     if (evaluate_scope_filters(&p))
         ret |= events_perf_submit(&p, 0);
 

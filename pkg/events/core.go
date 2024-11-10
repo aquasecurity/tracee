@@ -116,6 +116,7 @@ const (
 	SecurityTaskSetrlimit
 	SecuritySettime64
 	ChmodCommon
+	PolicyScopes // TODO: make this an internal event
 	MaxCommonID
 )
 

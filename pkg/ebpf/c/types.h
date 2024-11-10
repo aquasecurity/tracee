@@ -134,6 +134,7 @@ enum event_id_e
     SECURITY_TASK_SETRLIMIT,
     SECURITY_SETTIME64,
     CHMOD_COMMON,
+    POLICY_SCOPES,
     MAX_EVENT_ID,
 
     // Test events IDs
