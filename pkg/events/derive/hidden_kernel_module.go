@@ -166,15 +166,17 @@ func extractFromEvent(args []trace.Argument, address uint64) []interface{} {
 	}
 
 	// Parse module srcversion if possible
-	var srcversion string
+	srcversion := ""
 	srcversionBytes, err := parse.ArgVal[[]byte](args, "srcversion")
 	if err != nil {
-		srcversion = ""
 		// Don't fail hard, submit it without a srcversion!
 		logger.Debugw("Failed extracting hidden module srcversion")
 	} else {
 		// Remove the trailing terminating characters
-		srcversion = string(srcversionBytes[:bytes.IndexByte(srcversionBytes[:], 0)])
+		index := bytes.IndexByte(srcversionBytes[:], 0)
+		if index > 0 {
+			srcversion = string(srcversionBytes[:index])
+		}
 	}
 
 	addrHex := fmt.Sprintf("0x%x", address)
