@@ -35,7 +35,7 @@ typedef struct event_context {
     u32 stack_id;
     u16 processor_id; // ID of the processor that processed the event
     u16 rules_version;
-    u64 matched_rules;
+    u64 active_rules;
 } event_context_t;
 
 enum event_id_e

@@ -157,7 +157,7 @@ typedef struct net_task_context {
     s32 syscall;
     u16 padding;
     u16 rules_version;
-    u64 matched_rules;
+    u64 active_rules;
 } net_task_context_t;
 
 struct {

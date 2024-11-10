@@ -1462,7 +1462,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, SCHED_PROCESS_EXIT))
         return 0;
 
-    // evaluate matched_rules before removing this pid from the maps
+    // evaluate active_rules before removing this pid from the maps
     evaluate_scope_filters(&p);
 
     bpf_map_delete_elem(&task_info_map, &p.event->context.task.host_tid);
@@ -5377,7 +5377,7 @@ statfunc void set_net_task_context(event_data_t *event, net_task_context_t *netc
 {
     netctx->task = event->task;
     netctx->rules_version = event->context.rules_version;
-    netctx->matched_rules = event->context.matched_rules;
+    netctx->active_rules = event->context.active_rules;
     netctx->syscall = event->context.syscall;
     __builtin_memset(&netctx->taskctx, 0, sizeof(task_context_t));
     __builtin_memcpy(&netctx->taskctx, &event->context.task, sizeof(task_context_t));
@@ -5428,7 +5428,7 @@ statfunc u64 should_submit_net_event(net_event_context_t *neteventctx,
     if (evt_config == NULL)
         return 0;
 
-    return evt_config->submit_for_rules & neteventctx->eventctx.matched_rules;
+    return evt_config->submit_for_rules & neteventctx->eventctx.active_rules;
 }
 
 #pragma clang diagnostic pop // -Waddress-of-packed-member
@@ -5453,7 +5453,7 @@ statfunc bool should_submit_flow_event(net_event_context_t *neteventctx)
     if (evt_config == NULL)
         return 0;
 
-    u64 should = evt_config->submit_for_rules & neteventctx->eventctx.matched_rules;
+    u64 should = evt_config->submit_for_rules & neteventctx->eventctx.active_rules;
 
     // Cache the result so next time we don't need to check again.
     if (should)
@@ -6031,7 +6031,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     eventctx->stack_id = 0;                                 // no stack trace
     eventctx->processor_id = p.event->context.processor_id; // copy from current ctx
     eventctx->rules_version = netctx->rules_version;        // pick rules_version from net ctx
-    eventctx->matched_rules = netctx->matched_rules;        // pick matched_rules from net ctx
+    eventctx->active_rules = netctx->active_rules;          // pick active_rules from net ctx
     eventctx->syscall = NO_SYSCALL;                         // ingress has no orig syscall
     if (type == BPF_CGROUP_INET_EGRESS)
         eventctx->syscall = netctx->syscall; // egress does have an orig syscall

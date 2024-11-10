@@ -130,7 +130,6 @@ statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
     p->event->context.ts = get_current_time_in_ns();
     p->event->context.processor_id = (u16) bpf_get_smp_processor_id();
     p->event->context.syscall = get_current_task_syscall_id();
-    p->event->context.matched_rules = 0;
 
     u32 host_pid = p->event->context.task.host_pid;
     p->proc_info = bpf_map_lookup_elem(&proc_info_map, &host_pid);
@@ -182,8 +181,8 @@ statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
     // TODO: make necessary modifications to have rules_version per event
     p->event->context.rules_version = p->event->config.rules_version;
 
-    // initialize matched_rules to the rules that actually requested this event
-    p->event->context.matched_rules = p->event->config.submit_for_rules;
+    // initialize active_rules to the rules that actually requested this event
+    p->event->context.active_rules = p->event->config.submit_for_rules;
 
     return 1;
 }
@@ -241,7 +240,7 @@ statfunc bool reset_event(event_data_t *event, u32 event_id)
         return false;
 
     event->context.rules_version = event->config.rules_version;
-    event->context.matched_rules = event->config.submit_for_rules;
+    event->context.active_rules = event->config.submit_for_rules;
 
     return true;
 }

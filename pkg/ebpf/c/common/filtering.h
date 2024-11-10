@@ -422,8 +422,8 @@ statfunc u64 match_data_filters(program_data_t *p, u8 index)
 statfunc bool evaluate_scope_filters(program_data_t *p)
 {
     u64 matched_rules = match_scope_filters(p);
-    p->event->context.matched_rules &= matched_rules;
-    return p->event->context.matched_rules != 0;
+    p->event->context.active_rules &= matched_rules;
+    return p->event->context.active_rules != 0;
 }
 
 statfunc bool evaluate_data_filters(program_data_t *p, u8 index)
@@ -435,7 +435,7 @@ statfunc bool evaluate_data_filters(program_data_t *p, u8 index)
 
 statfunc bool rules_matched(event_data_t *event)
 {
-    return event->context.matched_rules != 0;
+    return event->context.active_rules != 0;
 }
 
 statfunc bool event_is_selected(u32 event_id)
