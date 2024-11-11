@@ -74,7 +74,7 @@ func Benchmark_enforceSizeBoundary(b *testing.B) {
 	}
 }
 
-func Benchmark_setAt(b *testing.B) {
+func Benchmark_Set(b *testing.B) {
 	// Test cases where the Changelog needs to enforce the size boundary
 	testCasesAllScenarios := []struct {
 		value int
@@ -148,7 +148,7 @@ func Benchmark_setAt(b *testing.B) {
 			clv := NewChangelog[int](3)
 			b.StartTimer()
 			for _, tc := range testCasesAllScenarios {
-				clv.setAt(tc.value, tc.time)
+				clv.Set(tc.value, tc.time)
 			}
 		}
 	})
@@ -226,7 +226,7 @@ func Benchmark_setAt(b *testing.B) {
 			clv := NewChangelog[int](15)
 			b.StartTimer()
 			for _, tc := range testCasesWithinLimit {
-				clv.setAt(tc.value, tc.time)
+				clv.Set(tc.value, tc.time)
 			}
 		}
 	})
