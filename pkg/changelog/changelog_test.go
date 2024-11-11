@@ -1,350 +1,204 @@
 package changelog
 
 import (
-	"reflect"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/aquasecurity/tracee/pkg/utils"
 )
-
-func TestChangelog(t *testing.T) {
-	t.Parallel()
-
-	t.Run("GetCurrent on an empty changelog", func(t *testing.T) {
-		cl := NewChangelog[int](3)
-
-		// Test GetCurrent on an empty changelog
-		assert.Zero(t, cl.GetCurrent())
-	})
-
-	t.Run("Set and get", func(t *testing.T) {
-		cl := NewChangelog[int](3)
-		testVal := 42
-
-		cl.SetCurrent(testVal)
-		assert.Equal(t, testVal, cl.GetCurrent())
-	})
-
-	t.Run("Set and get on set time", func(t *testing.T) {
-		cl := NewChangelog[int](3)
-		testVal1 := 42
-		testVal2 := 76
-		testVal3 := 76
-
-		// Test with 3 stages of the changelog to make sure the binary search works well for
-		// different lengths (both odd and even).
-		now := time.Now()
-		cl.Set(testVal1, now)
-		assert.Equal(t, testVal1, cl.Get(now))
-
-		cl.Set(testVal2, now.Add(time.Second))
-		assert.Equal(t, testVal1, cl.Get(now))
-		assert.Equal(t, testVal2, cl.Get(now.Add(time.Second)))
-
-		cl.Set(testVal3, now.Add(2*time.Second))
-		assert.Equal(t, testVal1, cl.Get(now))
-		assert.Equal(t, testVal2, cl.Get(now.Add(time.Second)))
-		assert.Equal(t, testVal3, cl.Get(now.Add(2*time.Second)))
-	})
-
-	t.Run("Set twice on the same time", func(t *testing.T) {
-		cl := NewChangelog[int](3)
-		testVal := 42
-
-		now := time.Now()
-		cl.Set(testVal, now)
-		cl.Set(testVal, now)
-		assert.Equal(t, testVal, cl.Get(now))
-		assert.Len(t, cl.GetAll(), 1)
-		assert.Equal(t, testVal, cl.Get(now))
-	})
-
-	t.Run("Get on an empty changelog", func(t *testing.T) {
-		cl := NewChangelog[int](3)
-
-		assert.Zero(t, cl.GetCurrent())
-	})
-
-	t.Run("Test 1 second interval among changes", func(t *testing.T) {
-		cl := NewChangelog[int](3)
-
-		cl.SetCurrent(1)
-		time.Sleep(2 * time.Second)
-		cl.SetCurrent(2)
-		time.Sleep(2 * time.Second)
-		cl.SetCurrent(3)
-
-		now := time.Now()
-
-		assert.Equal(t, 1, cl.Get(now.Add(-4*time.Second)))
-		assert.Equal(t, 2, cl.Get(now.Add(-2*time.Second)))
-		assert.Equal(t, 3, cl.Get(now))
-	})
-
-	t.Run("Test 100 milliseconds interval among changes", func(t *testing.T) {
-		cl := NewChangelog[int](3)
-
-		cl.SetCurrent(1)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(2)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(3)
-
-		now := time.Now()
-
-		assert.Equal(t, 1, cl.Get(now.Add(-200*time.Millisecond)))
-		assert.Equal(t, 2, cl.Get(now.Add(-100*time.Millisecond)))
-		assert.Equal(t, 3, cl.Get(now))
-	})
-
-	t.Run("Test getting all values at once", func(t *testing.T) {
-		cl := NewChangelog[int](3)
-
-		cl.SetCurrent(1)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(2)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(3)
-
-		expected := []int{1, 2, 3}
-		assert.Equal(t, expected, cl.GetAll())
-	})
-
-	t.Run("Pass max size wit repeated values", func(t *testing.T) {
-		cl := NewChangelog[int](3)
-
-		cl.SetCurrent(1)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(2)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(2)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(3)
-
-		now := time.Now()
-		assert.Equal(t, 1, cl.Get(now.Add(-300*time.Millisecond)))
-		assert.Equal(t, 1, cl.Get(now.Add(-200*time.Millisecond))) // oldest 2 is removed, so 1 is returned
-		assert.Equal(t, 2, cl.Get(now.Add(-100*time.Millisecond)))
-		assert.Equal(t, 3, cl.Get(now))
-		assert.Len(t, cl.GetAll(), 3)
-	})
-
-	t.Run("Pass max size with unique values", func(t *testing.T) {
-		cl := NewChangelog[int](3)
-
-		cl.SetCurrent(1)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(2)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(3)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(4)
-
-		now := time.Now()
-		assert.Equal(t, 0, cl.Get(now.Add(-300*time.Millisecond)))
-		assert.Equal(t, 2, cl.Get(now.Add(-200*time.Millisecond)))
-		assert.Equal(t, 3, cl.Get(now.Add(-100*time.Millisecond)))
-		assert.Equal(t, 4, cl.Get(now.Add(time.Millisecond)))
-		assert.Len(t, cl.GetAll(), 3)
-	})
-
-	t.Run("Pass max size with new old value", func(t *testing.T) {
-		cl := NewChangelog[int](3)
-
-		cl.SetCurrent(1)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(2)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(3)
-
-		now := time.Now()
-		cl.Set(4, now.Add(-400*time.Millisecond))
-
-		// Make sure that the new value was not added
-		assert.Equal(t, 0, cl.Get(now.Add(-300*time.Millisecond)))
-
-		// Sanity check
-		assert.Equal(t, 1, cl.Get(now.Add(-200*time.Millisecond)))
-		assert.Equal(t, 2, cl.Get(now.Add(-100*time.Millisecond)))
-		assert.Equal(t, 3, cl.Get(now))
-		assert.Len(t, cl.GetAll(), 3)
-	})
-
-	t.Run("Zero sized changelog", func(t *testing.T) {
-		cl := NewChangelog[int](0)
-
-		cl.SetCurrent(1)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(2)
-		time.Sleep(100 * time.Millisecond)
-		cl.SetCurrent(3)
-
-		now := time.Now()
-		cl.Set(4, now.Add(-400*time.Millisecond))
-
-		// Make sure that the new value was not added
-
-		// Sanity check
-		assert.Equal(t, 0, cl.Get(now.Add(-300*time.Millisecond)))
-		assert.Equal(t, 0, cl.Get(now.Add(-200*time.Millisecond)))
-		assert.Equal(t, 0, cl.Get(now.Add(-100*time.Millisecond)))
-		assert.Equal(t, 0, cl.Get(now))
-		assert.Empty(t, cl.GetAll())
-	})
-
-	t.Run("Test enforceSizeBoundary", func(t *testing.T) {
-		type TestCase struct {
-			name               string
-			maxSize            int
-			initialChanges     []item[int]
-			expectedChanges    []item[int]
-			expectedTimestamps map[time.Time]struct{}
-		}
-
-		testCases := []TestCase{
-			{
-				name:    "No Action Required",
-				maxSize: 3,
-				initialChanges: []item[int]{
-					{timestamp: getTimeFromSec(42), value: 1},
-					{timestamp: getTimeFromSec(43), value: 2},
-					{timestamp: getTimeFromSec(44), value: 3},
-				},
-				expectedChanges: []item[int]{
-					{timestamp: getTimeFromSec(42), value: 1},
-					{timestamp: getTimeFromSec(43), value: 2},
-					{timestamp: getTimeFromSec(44), value: 3},
-				},
-				expectedTimestamps: map[time.Time]struct{}{
-					getTimeFromSec(42): {},
-					getTimeFromSec(43): {},
-					getTimeFromSec(44): {},
-				},
-			},
-			{
-				name:    "Basic Removal of Oldest Entries",
-				maxSize: 3,
-				initialChanges: []item[int]{
-					{timestamp: getTimeFromSec(42), value: 1},
-					{timestamp: getTimeFromSec(43), value: 2},
-					{timestamp: getTimeFromSec(44), value: 3},
-					{timestamp: getTimeFromSec(45), value: 4},
-				},
-				expectedChanges: []item[int]{
-					{timestamp: getTimeFromSec(43), value: 2},
-					{timestamp: getTimeFromSec(44), value: 3},
-					{timestamp: getTimeFromSec(45), value: 4},
-				},
-				expectedTimestamps: map[time.Time]struct{}{
-					getTimeFromSec(43): {},
-					getTimeFromSec(44): {},
-					getTimeFromSec(45): {},
-				},
-			},
-			{
-				name:    "Compacting Duplicate Values - Start",
-				maxSize: 3,
-				initialChanges: []item[int]{
-					{timestamp: getTimeFromSec(42), value: 1},
-					{timestamp: getTimeFromSec(43), value: 1},
-					{timestamp: getTimeFromSec(44), value: 2},
-					{timestamp: getTimeFromSec(45), value: 3},
-				},
-				expectedChanges: []item[int]{
-					{timestamp: getTimeFromSec(43), value: 1},
-					{timestamp: getTimeFromSec(44), value: 2},
-					{timestamp: getTimeFromSec(45), value: 3},
-				},
-				expectedTimestamps: map[time.Time]struct{}{
-					getTimeFromSec(43): {},
-					getTimeFromSec(44): {},
-					getTimeFromSec(45): {},
-				},
-			},
-			{
-				name:    "Compacting Duplicate Values - Middle",
-				maxSize: 3,
-				initialChanges: []item[int]{
-					{timestamp: getTimeFromSec(42), value: 1},
-					{timestamp: getTimeFromSec(43), value: 2},
-					{timestamp: getTimeFromSec(44), value: 2},
-					{timestamp: getTimeFromSec(45), value: 3},
-				},
-				expectedChanges: []item[int]{
-					{timestamp: getTimeFromSec(42), value: 1},
-					{timestamp: getTimeFromSec(44), value: 2},
-					{timestamp: getTimeFromSec(45), value: 3},
-				},
-				expectedTimestamps: map[time.Time]struct{}{
-					getTimeFromSec(42): {},
-					getTimeFromSec(44): {},
-					getTimeFromSec(45): {},
-				},
-			},
-			{
-				name:    "Compacting Duplicate Values - End",
-				maxSize: 3,
-				initialChanges: []item[int]{
-					{timestamp: getTimeFromSec(42), value: 1},
-					{timestamp: getTimeFromSec(43), value: 2},
-					{timestamp: getTimeFromSec(44), value: 3},
-					{timestamp: getTimeFromSec(45), value: 3},
-				},
-				expectedChanges: []item[int]{
-					{timestamp: getTimeFromSec(42), value: 1},
-					{timestamp: getTimeFromSec(43), value: 2},
-					{timestamp: getTimeFromSec(45), value: 3},
-				},
-				expectedTimestamps: map[time.Time]struct{}{
-					getTimeFromSec(42): {},
-					getTimeFromSec(43): {},
-					getTimeFromSec(45): {},
-				},
-			},
-			{
-				name:    "Combination of Compaction and Removal of Oldest Entries",
-				maxSize: 3,
-				initialChanges: []item[int]{
-					{timestamp: getTimeFromSec(42), value: 1},
-					{timestamp: getTimeFromSec(43), value: 2},
-					{timestamp: getTimeFromSec(44), value: 2},
-					{timestamp: getTimeFromSec(45), value: 2},
-					{timestamp: getTimeFromSec(46), value: 3},
-					{timestamp: getTimeFromSec(47), value: 4},
-				},
-				expectedChanges: []item[int]{
-					{timestamp: getTimeFromSec(45), value: 2},
-					{timestamp: getTimeFromSec(46), value: 3},
-					{timestamp: getTimeFromSec(47), value: 4},
-				},
-				expectedTimestamps: map[time.Time]struct{}{
-					getTimeFromSec(45): {},
-					getTimeFromSec(46): {},
-					getTimeFromSec(47): {},
-				},
-			},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				cl := NewChangelog[int](tc.maxSize)
-				for _, change := range tc.initialChanges {
-					cl.Set(change.value, change.timestamp)
-				}
-
-				cl.enforceSizeBoundary()
-
-				eq := reflect.DeepEqual(cl.timestamps, tc.expectedTimestamps)
-				assert.True(t, eq)
-
-				eq = reflect.DeepEqual(cl.changes, tc.expectedChanges)
-				assert.True(t, eq)
-			})
-		}
-	})
-}
 
 func getTimeFromSec(second int) time.Time {
 	return time.Unix(int64(second), 0)
+}
+
+func TestChangelog_GetZeroValue(t *testing.T) {
+	changelog := NewChangelog[int](1)
+	time0 := getTimeFromSec(0)
+
+	// Assert zero value before any set
+	assert.Equal(t, 0, changelog.Get(time0), "Expected zero value for testInt0")
+	assert.Equal(t, 0, changelog.GetCurrent(), "Expected zero value for testInt0")
+
+	// Set and assert value
+	changelog.Set(3001, time0)
+	assert.Equal(t, 3001, changelog.Get(time0), "Expected testInt0 to be 3001")
+	assert.Equal(t, 3001, changelog.GetCurrent(), "Expected current testInt0 to be 3001")
+
+	// Check the count of entries
+	assert.Equal(t, 1, changelog.Count(), "Expected 1 entry")
+}
+
+func TestChangelog_ShiftAndReplace(t *testing.T) {
+	changelog := NewChangelog[string](2)
+
+	// Set entries and assert initial values
+	changelog.Set("initial", getTimeFromSec(0))
+	changelog.Set("updated", getTimeFromSec(1))
+	assert.Equal(t, "initial", changelog.Get(getTimeFromSec(0)), "Expected first entry to be 'initial'")
+	assert.Equal(t, "updated", changelog.Get(getTimeFromSec(1)), "Expected second entry to be 'updated'")
+
+	// Test shifting and replacement
+	changelog.Set("final", getTimeFromSec(2))
+	assert.Equal(t, "updated", changelog.Get(getTimeFromSec(1)), "Expected oldest entry to be removed")
+	assert.Equal(t, "final", changelog.Get(getTimeFromSec(2)), "Expected newest entry to be 'final'")
+	assert.Equal(t, "final", changelog.GetCurrent(), "Expected current entry to be 'final'")
+
+	// Check the count of entries
+	assert.Equal(t, 2, changelog.Count(), "Expected 2 entries")
+}
+
+func TestChangelog_ReplaceMostRecentWithSameValue(t *testing.T) {
+	changelog := NewChangelog[string](2)
+
+	// Set entries and assert initial value
+	changelog.Set("initial", getTimeFromSec(0))
+	assert.Equal(t, "initial", changelog.Get(getTimeFromSec(0)), "Expected first entry to be 'initial'")
+	changelog.Set("initial", getTimeFromSec(1))
+	assert.Equal(t, "initial", changelog.Get(getTimeFromSec(1)), "Expected first entry to have timestamp updated")
+
+	// Test replacement of most recent entry with same value
+	changelog.Set("second", getTimeFromSec(2))
+	assert.Equal(t, "initial", changelog.Get(getTimeFromSec(1)), "Expected first entry to be 'initial'")
+	assert.Equal(t, "second", changelog.Get(getTimeFromSec(2)), "Expected second entry to have timestamp updated")
+
+	// Check the count of entries
+	assert.Equal(t, 2, changelog.Count(), "Expected 2 entries")
+}
+
+func TestChangelog_InsertWithOlderTimestamp(t *testing.T) {
+	changelog := NewChangelog[string](3)
+	now := getTimeFromSec(0)
+
+	// Insert entries with increasing timestamps
+	changelog.Set("first", now)
+	changelog.Set("second", now.Add(1*time.Second))
+	changelog.Set("third", now.Add(2*time.Second))
+
+	// Insert an entry with an older timestamp
+	changelog.Set("older", now.Add(1*time.Millisecond))
+
+	// Check the count of entries
+	assert.Equal(t, 3, changelog.Count(), "Expected 3 entries")
+
+	// Verify the order of entries
+	assert.Equal(t, "older", changelog.Get(now.Add(1*time.Millisecond)), "Expected 'older' to be the first entry")
+	assert.Equal(t, "second", changelog.Get(now.Add(1*time.Second)), "Expected 'second' to be the second entry")
+	assert.Equal(t, "third", changelog.Get(now.Add(2*time.Second)), "Expected 'third' to be the last entry")
+
+	// Insert an entry with an intermediate timestamp
+	changelog.Set("second-third", now.Add(1*time.Second+1*time.Millisecond))
+
+	// Verify the order of entries
+	assert.Equal(t, "older", changelog.Get(now.Add(1*time.Millisecond)), "Expected 'older' to be the first entry")
+	assert.Equal(t, "second-third", changelog.Get(now.Add(1*time.Second+1*time.Millisecond)), "Expected 'second-third' to be the second entry")
+	assert.Equal(t, "third", changelog.Get(now.Add(2*time.Second)), "Expected 'third' to be the last entry")
+
+	// Check the count of entries
+	assert.Equal(t, 3, changelog.Count(), "Expected 3 entries")
+}
+
+func TestChangelog_InsertSameValueWithNewTimestamp(t *testing.T) {
+	changelog := NewChangelog[string](3)
+
+	// Insert entries with increasing timestamps
+	changelog.Set("same", getTimeFromSec(0))
+
+	// Replace the last entry with the same value but a new timestamp
+	changelog.Set("same", getTimeFromSec(1))
+
+	// Verify the order of entries
+	assert.Equal(t, "same", changelog.Get(getTimeFromSec(1)), "Expected 'same' to be the second entry")
+
+	// Insert entries with sequential timestamps
+	changelog.Set("new", getTimeFromSec(2))
+	changelog.Set("other", getTimeFromSec(3))
+
+	// Replace the last entry with the same value but a new timestamp
+	changelog.Set("other", getTimeFromSec(4))
+
+	// Verify the order of entries
+	assert.Equal(t, "same", changelog.Get(getTimeFromSec(1)), "Expected 'same' to be the first entry")
+	assert.Equal(t, "new", changelog.Get(getTimeFromSec(2)), "Expected 'new' to be the second entry")
+	assert.Equal(t, "other", changelog.Get(getTimeFromSec(4)), "Expected 'other' to be the last entry")
+
+	// Check the count of entries
+	assert.Equal(t, 3, changelog.Count(), "Expected 3 entries")
+}
+
+func TestChangelog_StructType(t *testing.T) {
+	type testStruct struct {
+		A int
+		B string
+	}
+
+	changelog := NewChangelog[testStruct](3)
+	now := getTimeFromSec(0)
+
+	// Insert an entry
+	tsFirst := testStruct{A: 1, B: "first"}
+	changelog.Set(tsFirst, now)
+
+	// Verify the entry
+	assert.Equal(t, tsFirst, changelog.Get(now), fmt.Sprintf("Expected %v", tsFirst))
+
+	// Check the count of entries
+	assert.Equal(t, 1, changelog.Count(), "Expected 1 entry")
+
+	// Insert a new entry
+	tsSecond := testStruct{A: 2, B: "second"}
+	changelog.Set(tsSecond, now.Add(1*time.Second))
+
+	// Verify the entry
+	assert.Equal(t, tsSecond, changelog.Get(now.Add(1*time.Second)), fmt.Sprintf("Expected %v", tsSecond))
+
+	// Check the count of entries
+	assert.Equal(t, 2, changelog.Count(), "Expected 2 entries")
+
+	// Insert a new entry
+	tsThird := testStruct{A: 3, B: "third"}
+	changelog.Set(tsThird, now.Add(2*time.Second))
+
+	// Verify the entry
+	assert.Equal(t, tsThird, changelog.Get(now.Add(2*time.Second)), fmt.Sprintf("Expected %v", tsThird))
+
+	// Check the count of entries
+	assert.Equal(t, 3, changelog.Count(), "Expected 3 entries")
+
+	// Insert a new entry
+	tsFourth := testStruct{A: 4, B: "fourth"}
+	changelog.Set(tsFourth, now.Add(3*time.Second))
+
+	// Verify the entry
+	assert.Equal(t, tsFourth, changelog.Get(now.Add(3*time.Second)), fmt.Sprintf("Expected %v", tsFourth))
+
+	// Check the count of entries
+	assert.Equal(t, 3, changelog.Count(), "Expected 3 entries")
+
+	// Verify the order of entries
+	assert.Equal(t, tsSecond, changelog.Get(now.Add(1*time.Second)), fmt.Sprintf("Expected %v", tsSecond))
+	assert.Equal(t, tsThird, changelog.Get(now.Add(2*time.Second)), fmt.Sprintf("Expected %v", tsThird))
+	assert.Equal(t, tsFourth, changelog.Get(now.Add(3*time.Second)), fmt.Sprintf("Expected %v", tsFourth))
+	assert.Equal(t, tsFourth, changelog.GetCurrent(), fmt.Sprintf("Expected %v", tsFourth))
+}
+
+// TestChangelog_PrintSizes prints the sizes of the structs used in the Changelog type.
+// Run it as DEBUG test to see the output.
+func TestChangelog_PrintSizes(t *testing.T) {
+	changelog1 := NewChangelog[int](1)
+	utils.PrintStructSizes(os.Stdout, changelog1)
+
+	entry1 := entry[int]{}
+	utils.PrintStructSizes(os.Stdout, entry1)
+
+	//
+
+	changelog2 := NewChangelog[string](1)
+	utils.PrintStructSizes(os.Stdout, changelog2)
+
+	entry2 := entry[string]{}
+	utils.PrintStructSizes(os.Stdout, entry2)
 }
