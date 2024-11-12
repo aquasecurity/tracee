@@ -28,6 +28,23 @@ type eventFlag struct {
 	filter            string
 }
 
+func (pe PolicyEventMap) GetSelectedEvents() []string {
+	evtMap := make(map[string]struct{})
+
+	for _, events := range pe {
+		for _, event := range events.eventFlags {
+			evtMap[event.eventName] = struct{}{}
+		}
+	}
+
+	evts := make([]string, 0, len(evtMap))
+	for evt := range evtMap {
+		evts = append(evts, evt)
+	}
+
+	return evts
+}
+
 func PrepareEventMapFromFlags(eventsArr []string) (PolicyEventMap, error) {
 	// parse and store events flags
 	var evtFlags []eventFlag

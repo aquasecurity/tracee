@@ -627,6 +627,35 @@ clean-signatures:
 # other commands
 #
 
+# evt
+
+EVT_SRC_DIRS = ./cmd/evt/
+EVT_SRC = $(shell find $(EVT_SRC_DIRS) \
+			-type f \
+			-name '*.go' \
+			! -name '*_test.go' \
+			)
+
+.PHONY: evt
+evt: $(OUTPUT_DIR)/evt
+
+$(OUTPUT_DIR)/evt: \
+	$(EVT_SRC) \
+	$(OUTPUT_DIR)/tracee \
+	| .eval_goenv \
+	.checkver_$(CMD_GO) \
+#
+	$(GO_ENV_EBPF) $(CMD_GO) build \
+		-ldflags="$(GO_DEBUG_FLAG) \
+			" \
+		-v -o $@ \
+		./cmd/evt
+
+.PHONY: clean-evt
+clean-evt:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/evt
+
 # tracee-bench
 
 TRACEE_BENCH_SRC_DIRS = ./cmd/tracee-bench/

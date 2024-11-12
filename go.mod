@@ -13,6 +13,7 @@ require (
 	github.com/aquasecurity/tracee/types v0.0.0-20241008181102-d40bc1f81863
 	github.com/containerd/containerd v1.7.21
 	github.com/docker/docker v26.1.5+incompatible
+	github.com/dustin/go-humanize v1.0.1
 	github.com/golang/protobuf v1.5.4
 	github.com/google/gopacket v1.1.19
 	github.com/grafana/pyroscope-go v1.1.1

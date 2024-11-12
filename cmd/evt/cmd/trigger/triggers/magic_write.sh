@@ -1,0 +1,1 @@
+common/self-comm.sh
