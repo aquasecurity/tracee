@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
+	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/findings"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -21,14 +21,15 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-type AnalyzeConfig struct {
+type Config struct {
 	Rego            rego.Config
-	Input           *os.File
+	Source          *os.File
+	Printer         printer.EventPrinter
 	SignatureDirs   []string
 	SignatureEvents []string
 }
 
-func Analyze(cfg AnalyzeConfig) {
+func Analyze(cfg Config) {
 	signatures, _, err := signature.Find(
 		cfg.Rego.RuntimeTarget,
 		cfg.Rego.PartialEval,
@@ -87,8 +88,10 @@ func Analyze(cfg AnalyzeConfig) {
 	go sigEngine.Start(signalCtx)
 
 	// producer
-	go produce(fileReadCtx, stop, cfg.Input, engineInput)
+	go produce(fileReadCtx, stop, cfg.Source, engineInput)
 
+	cfg.Printer.Preamble()
+	defer cfg.Printer.Close()
 	// consumer
 	for {
 		select {
@@ -96,7 +99,7 @@ func Analyze(cfg AnalyzeConfig) {
 			if !ok {
 				return
 			}
-			process(finding)
+			process(finding, cfg.Printer)
 		case <-fileReadCtx.Done():
 			// ensure the engineInput channel will be closed
 			goto drain
@@ -115,7 +118,7 @@ drain:
 				return
 			}
 
-			process(finding)
+			process(finding, cfg.Printer)
 		default:
 			return
 		}
@@ -150,18 +153,13 @@ func produce(ctx context.Context, cancel context.CancelFunc, inputFile *os.File,
 	}
 }
 
-func process(finding *detect.Finding) {
+func process(finding *detect.Finding, printer printer.EventPrinter) {
 	event, err := findings.FindingToEvent(finding)
 	if err != nil {
 		logger.Fatalw("Failed to convert finding to event", "err", err)
 	}
 
-	jsonEvent, err := json.Marshal(event)
-	if err != nil {
-		logger.Fatalw("Failed to json marshal event", "err", err)
-	}
-
-	fmt.Println(string(jsonEvent))
+	printer.Print(*event)
 }
 
 func getSigsNames(signatures []detect.Signature) []string {

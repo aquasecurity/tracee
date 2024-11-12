@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/aquasecurity/tracee/pkg/analyze"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
+	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -15,6 +17,20 @@ func init() {
 	rootCmd.AddCommand(analyzeCmd)
 
 	// flags
+
+	// source
+	analyzeCmd.Flags().String(
+		"source",
+		"",
+		"Cource file to analyze (required). Currently only JSON is supported.",
+	)
+
+	// output
+	analyzeCmd.Flags().String(
+		"output",
+		"stdout:json",
+		"Output destination (file, webhook, fluentbit) and format (json, gotemplate=, table) set as <output_path>:<format>",
+	)
 
 	// events
 	analyzeCmd.Flags().StringArrayP(
@@ -47,9 +63,8 @@ func init() {
 }
 
 var analyzeCmd = &cobra.Command{
-	Use:     "analyze input.json",
+	Use:     "tracee analyze --input <json_file>",
 	Aliases: []string{},
-	Args:    cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	Short:   "Analyze past events with signature events [Experimental]",
 	Long: `Analyze allow you to explore signature events with past events.
 
@@ -57,9 +72,11 @@ Tracee can be used to collect events and store it in a file. This file can be us
 
 eg:
 tracee --events ptrace --output=json:events.json
-tracee analyze --events anti_debugging events.json`,
+tracee analyze --events anti_debugging --input events.json`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		bindViperFlag(cmd, "events")
+		bindViperFlag(cmd, "source")
+		bindViperFlag(cmd, "output")
 		bindViperFlag(cmd, "log")
 		bindViperFlag(cmd, "rego")
 		bindViperFlag(cmd, "signatures-dir")
@@ -77,9 +94,29 @@ func command(cmd *cobra.Command, args []string) {
 	}
 	logger.Init(logCfg)
 
-	inputFile, err := os.Open(args[0])
+	// Set up input
+	sourcePath := viper.GetString("source")
+	if sourcePath == "" {
+		logger.Fatalw("source path cannot be empty")
+	}
+	sourceFile, err := os.Open(sourcePath)
 	if err != nil {
 		logger.Fatalw("Failed to get signatures-dir flag", "err", err)
+	}
+
+	// Set up printer output (outpath:format)
+	outputArg := viper.GetString("output")
+	outputParts := strings.SplitN(outputArg, ":", 2)
+	if len(outputParts) != 2 {
+		logger.Fatalw("Failed to prepare output format (must be of format <output_path>:<format>)")
+	}
+	printerCfg, err := flags.PreparePrinterConfig(outputParts[1], outputParts[0])
+	if err != nil {
+		logger.Fatalw("Failed to prepare output configuration", "error", err)
+	}
+	p, err := printer.New(printerCfg)
+	if err != nil {
+		logger.Fatalw("Failed to create printer", "error", err)
 	}
 
 	// Rego command line flags
@@ -99,9 +136,10 @@ func command(cmd *cobra.Command, args []string) {
 
 	signatureDirs := viper.GetStringSlice("signatures-dir")
 
-	analyze.Analyze(analyze.AnalyzeConfig{
+	analyze.Analyze(analyze.Config{
 		Rego:            rego,
-		Input:           inputFile,
+		Source:          sourceFile,
+		Printer:         p,
 		SignatureDirs:   signatureDirs,
 		SignatureEvents: signatureEvents,
 	})

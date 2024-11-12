@@ -94,6 +94,24 @@ func PrepareOutput(outputSlice []string, newBinary bool) (PrepareOutputResult, e
 	return outConfig, nil
 }
 
+func PreparePrinterConfig(printerKind string, outputPath string) (config.PrinterConfig, error) {
+	outFile := os.Stdout
+	var err error
+
+	if outputPath != "stdout" && outputPath != "" && printerKind != "forward" && printerKind != "webhook" {
+		outFile, err = createFile(outputPath)
+		if err != nil {
+			return config.PrinterConfig{}, err
+		}
+	}
+
+	return config.PrinterConfig{
+		Kind:    printerKind,
+		OutPath: outputPath,
+		OutFile: outFile,
+	}, nil
+}
+
 // setOption sets the given option in the given config
 func setOption(cfg *config.OutputConfig, option string, newBinary bool) error {
 	switch option {
@@ -161,7 +179,7 @@ func getPrinterConfigs(printerMap map[string]string, traceeConfig *config.Output
 				return nil, err
 			}
 		}
-		printerCfg, err := makePrinterConfig(printerKind, outPath)
+		printerCfg, err := PreparePrinterConfig(printerKind, outPath)
 		if err != nil {
 			return nil, err
 		}
@@ -169,24 +187,6 @@ func getPrinterConfigs(printerMap map[string]string, traceeConfig *config.Output
 	}
 
 	return printerConfigs, nil
-}
-
-func makePrinterConfig(printerKind string, outputPath string) (config.PrinterConfig, error) {
-	outFile := os.Stdout
-	var err error
-
-	if outputPath != "stdout" && printerKind != "forward" && printerKind != "webhook" {
-		outFile, err = createFile(outputPath)
-		if err != nil {
-			return config.PrinterConfig{}, err
-		}
-	}
-
-	return config.PrinterConfig{
-		Kind:    printerKind,
-		OutPath: outputPath,
-		OutFile: outFile,
-	}, nil
 }
 
 // parseFormat parses the given format and sets it in the given printerMap
