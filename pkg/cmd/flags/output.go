@@ -161,25 +161,32 @@ func getPrinterConfigs(printerMap map[string]string, traceeConfig *config.Output
 				return nil, err
 			}
 		}
-
-		outFile := os.Stdout
-		var err error
-
-		if outPath != "stdout" && printerKind != "forward" && printerKind != "webhook" {
-			outFile, err = createFile(outPath)
-			if err != nil {
-				return nil, err
-			}
+		printerCfg, err := makePrinterConfig(printerKind, outPath)
+		if err != nil {
+			return nil, err
 		}
-
-		printerConfigs = append(printerConfigs, config.PrinterConfig{
-			Kind:    printerKind,
-			OutPath: outPath,
-			OutFile: outFile,
-		})
+		printerConfigs = append(printerConfigs, printerCfg)
 	}
 
 	return printerConfigs, nil
+}
+
+func makePrinterConfig(printerKind string, outputPath string) (config.PrinterConfig, error) {
+	outFile := os.Stdout
+	var err error
+
+	if outputPath != "stdout" && printerKind != "forward" && printerKind != "webhook" {
+		outFile, err = createFile(outputPath)
+		if err != nil {
+			return config.PrinterConfig{}, err
+		}
+	}
+
+	return config.PrinterConfig{
+		Kind:    printerKind,
+		OutPath: outputPath,
+		OutFile: outFile,
+	}, nil
 }
 
 // parseFormat parses the given format and sets it in the given printerMap
