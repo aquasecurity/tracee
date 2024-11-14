@@ -86,7 +86,7 @@ func TraceeEbpfPrepareOutput(outputSlice []string, newBinary bool) (PrepareOutpu
 
 		printerConfigs = append(printerConfigs, stdoutConfig)
 	} else {
-		file, err := createFile(outPath)
+		file, err := CreateOutputFile(outPath)
 		if err != nil {
 			return outConfig, err
 		}

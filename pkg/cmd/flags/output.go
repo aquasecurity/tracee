@@ -99,7 +99,7 @@ func PreparePrinterConfig(printerKind string, outputPath string) (config.Printer
 	var err error
 
 	if outputPath != "stdout" && outputPath != "" && printerKind != "forward" && printerKind != "webhook" {
-		outFile, err = createFile(outputPath)
+		outFile, err = CreateOutputFile(outputPath)
 		if err != nil {
 			return config.PrinterConfig{}, err
 		}
@@ -239,7 +239,7 @@ func parseOption(outputParts []string, traceeConfig *config.OutputConfig, newBin
 }
 
 // creates *os.File for the given path
-func createFile(path string) (*os.File, error) {
+func CreateOutputFile(path string) (*os.File, error) {
 	fileInfo, err := os.Stat(path)
 	if err == nil && fileInfo.IsDir() {
 		return nil, errfmt.Errorf("cannot use a path of existing directory %s", path)

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -25,6 +26,8 @@ type Config struct {
 	Rego            rego.Config
 	Source          *os.File
 	Printer         printer.EventPrinter
+	Legacy          bool // TODO: remove once tracee-rules legacy is over
+	LegacyOut       *os.File
 	SignatureDirs   []string
 	SignatureEvents []string
 }
@@ -87,6 +90,14 @@ func Analyze(cfg Config) {
 
 	go sigEngine.Start(signalCtx)
 
+	// decide process output
+	var process func(*detect.Finding)
+	if cfg.Legacy {
+		process = processLegacy(cfg.LegacyOut)
+	} else {
+		process = processWithPrinter(cfg.Printer)
+	}
+
 	// producer
 	go produce(fileReadCtx, stop, cfg.Source, engineInput)
 
@@ -99,7 +110,7 @@ func Analyze(cfg Config) {
 			if !ok {
 				return
 			}
-			process(finding, cfg.Printer)
+			process(finding)
 		case <-fileReadCtx.Done():
 			// ensure the engineInput channel will be closed
 			goto drain
@@ -118,7 +129,7 @@ drain:
 				return
 			}
 
-			process(finding, cfg.Printer)
+			process(finding)
 		default:
 			return
 		}
@@ -153,13 +164,45 @@ func produce(ctx context.Context, cancel context.CancelFunc, inputFile *os.File,
 	}
 }
 
-func process(finding *detect.Finding, printer printer.EventPrinter) {
-	event, err := findings.FindingToEvent(finding)
-	if err != nil {
-		logger.Fatalw("Failed to convert finding to event", "err", err)
-	}
+func processWithPrinter(p printer.EventPrinter) func(finding *detect.Finding) {
+	return func(finding *detect.Finding) {
+		event, err := findings.FindingToEvent(finding)
+		if err != nil {
+			logger.Fatalw("Failed to convert finding to event", "err", err)
+		}
 
-	printer.Print(*event)
+		p.Print(*event)
+	}
+}
+
+func processLegacy(outF *os.File) func(finding *detect.Finding) {
+	return func(finding *detect.Finding) {
+		evt, ok := finding.Event.Payload.(trace.Event)
+		if !ok {
+			logger.Fatalw("Failed to extract finding event payload (legacy output)")
+		}
+		out := legacyOutput{
+			Data:        finding.GetData(),
+			Event:       evt,
+			SigMetadata: finding.SigMetadata,
+		}
+
+		outBytes, err := json.Marshal(out)
+		if err != nil {
+			logger.Fatalw("Failed to convert finding to legacy output", "err", err)
+		}
+
+		_, err = fmt.Fprintln(outF, string(outBytes))
+		if err != nil {
+			logger.Errorw("failed to write legacy output to file", "err", err)
+		}
+	}
+}
+
+type legacyOutput struct {
+	Data        map[string]any
+	Event       trace.Event
+	SigMetadata detect.SignatureMetadata
 }
 
 func getSigsNames(signatures []detect.Signature) []string {

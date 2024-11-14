@@ -129,7 +129,7 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 				return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
 			}
 
-			w, err = createFile(vals[1])
+			w, err = CreateOutputFile(vals[1])
 			if err != nil {
 				return logger.LoggingConfig{}, err
 			}

@@ -10,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/analyze"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -22,13 +23,13 @@ func init() {
 	analyzeCmd.Flags().String(
 		"source",
 		"",
-		"Cource file to analyze (required). Currently only JSON is supported.",
+		"Source file to analyze (required). Currently only JSON is supported.",
 	)
 
 	// output
 	analyzeCmd.Flags().String(
 		"output",
-		"stdout:json",
+		"json:stdout",
 		"Output destination (file, webhook, fluentbit) and format (json, gotemplate=, table) set as <output_path>:<format>",
 	)
 
@@ -63,7 +64,7 @@ func init() {
 }
 
 var analyzeCmd = &cobra.Command{
-	Use:     "tracee analyze --input <json_file>",
+	Use:     "analyze [--source file]",
 	Aliases: []string{},
 	Short:   "Analyze past events with signature events [Experimental]",
 	Long: `Analyze allow you to explore signature events with past events.
@@ -72,7 +73,7 @@ Tracee can be used to collect events and store it in a file. This file can be us
 
 eg:
 tracee --events ptrace --output=json:events.json
-tracee analyze --events anti_debugging --input events.json`,
+tracee analyze --events anti_debugging --source events.json`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		bindViperFlag(cmd, "events")
 		bindViperFlag(cmd, "source")
@@ -106,17 +107,47 @@ func command(cmd *cobra.Command, args []string) {
 
 	// Set up printer output (outpath:format)
 	outputArg := viper.GetString("output")
+
+	// placeholder printer for legacy mode
+	p, err := printer.New(config.PrinterConfig{
+		OutFile: os.Stdout,
+		Kind:    "ignore",
+	})
+
+	if err != nil {
+		logger.Fatalw("Failed to initialize initial printer")
+	}
+
+	isLegacy := false
+	legacyOutFile := os.Stdout
 	outputParts := strings.SplitN(outputArg, ":", 2)
-	if len(outputParts) != 2 {
-		logger.Fatalw("Failed to prepare output format (must be of format <output_path>:<format>)")
+	if len(outputParts) > 2 || len(outputParts) == 0 {
+		logger.Fatalw("Failed to prepare output format (must be of format <format>:<optional_output_path>)")
 	}
-	printerCfg, err := flags.PreparePrinterConfig(outputParts[1], outputParts[0])
-	if err != nil {
-		logger.Fatalw("Failed to prepare output configuration", "error", err)
+
+	outFormat := outputParts[0]
+	outPath := ""
+	if len(outputParts) > 1 {
+		outPath = outputParts[1]
 	}
-	p, err := printer.New(printerCfg)
-	if err != nil {
-		logger.Fatalw("Failed to create printer", "error", err)
+
+	if outFormat == "legacy" {
+		if outPath != "stdout" && outPath != "" {
+			legacyOutFile, err = flags.CreateOutputFile(outPath)
+			if err != nil {
+				logger.Fatalw("Failed to create output file for legacy output")
+			}
+		}
+		isLegacy = true
+	} else {
+		printerCfg, err := flags.PreparePrinterConfig(outFormat, outPath)
+		if err != nil {
+			logger.Fatalw("Failed to prepare output configuration", "error", err)
+		}
+		p, err = printer.New(printerCfg)
+		if err != nil {
+			logger.Fatalw("Failed to create printer", "error", err)
+		}
 	}
 
 	// Rego command line flags
@@ -140,6 +171,8 @@ func command(cmd *cobra.Command, args []string) {
 		Rego:            rego,
 		Source:          sourceFile,
 		Printer:         p,
+		Legacy:          isLegacy,
+		LegacyOut:       legacyOutFile,
 		SignatureDirs:   signatureDirs,
 		SignatureEvents: signatureEvents,
 	})
