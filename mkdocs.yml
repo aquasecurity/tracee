@@ -604,6 +604,18 @@ nav:
                 - cache: docs/flags/cache.1.md
                 - capabilities: docs/flags/capabilities.1.md
                 - log: docs/flags/log.1.md
+    - Traceectl: 
+          - Overview: traceectl/index.md
+          - Installation:  traceectl/usage.md
+          - Commands:
+                - event:   traceectl/commands/event.md
+                - metrics:  traceectl/commands/metrics.md
+                - stream:  traceectl/commands/stream.md
+                - version:  traceectl/commands/version.md
+          - Flags:
+                - output:  traceectl/flags/output.md
+                - format:  traceectl/flags/format.md
+                - server:  traceectl/flags/server.md    
     - Tutorials:
           - Overview: tutorials/overview.md
           - Cosign - verify Tracee signature: tutorials/verify-tracee-signature.md
