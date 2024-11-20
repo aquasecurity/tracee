@@ -33,7 +33,6 @@ const (
 	CgroupIdFilterVersion       = "cgroup_id_filter_version"
 	ProcessTreeFilterMapVersion = "process_tree_map_version"
 	BinaryFilterMapVersion      = "binary_filter_version"
-	PoliciesConfigVersion       = "policies_config_version"
 
 	// inner maps
 	UIDFilterMap         = "uid_filter"
@@ -48,7 +47,6 @@ const (
 	CgroupIdFilterMap    = "cgroup_id_filter"
 	ProcessTreeFilterMap = "process_tree_map"
 	BinaryFilterMap      = "binary_filter"
-	PoliciesConfigMap    = "policies_config_map"
 
 	ProcInfoMap = "proc_info_map"
 )
@@ -96,6 +94,13 @@ func createNewInnerMapEventId(m *bpf.Module, mapName string, mapVersion uint16, 
 	}
 
 	return newInnerMap, newInnerMapName, nil
+}
+
+// filterVersionKey mirrors the C struct rule_key (filter_version_key_t).
+type filterVersionKey struct {
+	eventID  events.ID
+	rulesVer uint16
+	_        uint16 // padding free for further use
 }
 
 // createNewInnerMap creates a new map for the given map name and version.
@@ -256,6 +261,12 @@ func (ps *policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
+
+		// typedef struct filter_version_key {
+		// 	u32 event_id;
+		// 	u16 rules_version;
+		// 	u16 padding; // free for further use
+		// } filter_version_key_t;
 
 		// outerMap maps:
 		// 1. uid_filter_version           	u16, uid_filter
