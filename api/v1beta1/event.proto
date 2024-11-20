@@ -584,16 +584,17 @@ message Event {
     EventId id = 2;
     string name = 3;
     optional Policies policies = 4;
-    Context context = 5;
+    Workload workload = 5;
     repeated EventValue data = 6;
     optional Threat threat = 7;
+    optional TriggeredBy triggered_by = 8;
 }
 
 message Policies {
     repeated string matched = 1;
 }
 
-message Context {
+message Workload {
     optional Process process = 1;
     optional Container container = 2;
     optional K8s k8s = 3;
@@ -663,4 +664,10 @@ message Pod {
 
 message K8sNamespace {
     string name = 1;
+}
+
+message TriggeredBy {
+    uint32 id = 1;
+    string name = 2;
+    repeated EventValue data = 3;
 }
