@@ -15,10 +15,6 @@ const (
 	PolicyNone = uint64(0)
 )
 
-var AlwaysSubmit = events.EventState{
-	Submit: PolicyAll,
-}
-
 type policies struct {
 	bpfInnerMaps      map[string]*bpf.BPFMapLow // BPF inner maps
 	policiesArray     [PolicyMax]*Policy        // underlying policies array for fast access of empty slots

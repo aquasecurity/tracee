@@ -798,15 +798,12 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	return cOptVal
 }
 
-// newConfig returns a new Config instance based on the current Tracee state and
-// the given policies config and version.
-func (t *Tracee) newConfig(cfg *policy.PoliciesConfig) *Config {
+// newConfig returns a new Config instance based on the current Tracee state
+func (t *Tracee) newConfig() *Config {
 	return &Config{
 		TraceePid:       uint32(os.Getpid()),
 		Options:         t.getOptionsConfig(),
 		CgroupV1Hid:     uint32(t.cgroups.GetDefaultCgroupHierarchyID()),
-		PoliciesVersion: 1, // version will be removed soon
-		PoliciesConfig:  *cfg,
 	}
 }
 
@@ -1636,6 +1633,7 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	var matchedPolicies uint64
 
+	// TODO: many things to change here that depend on matched policies
 	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64) {
 		event.PoliciesVersion = 1 // version will be removed soon
 		event.MatchedPoliciesKernel = matchedPolicies
