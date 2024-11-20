@@ -23,30 +23,23 @@ message EventValue {
         SockAddr sockaddr = 12; // sockaddrT
         Credentials credentials = 13; // credT
         Timespec timespec = 14; // timespecT
-        TriggeredBy triggered_by = 15;
-        HookedSyscalls hooked_syscalls = 16;
-        HookedSeqOps hooked_seq_ops = 17;
-        IPv4 ipv4 = 18;
-        IPv6 ipv6 = 19;
-        TCP tcp = 20;
-        UDP udp = 21;
-        ICMP icmp = 22;
-        ICMPv6 icmpv6 = 23;
-        DNS dns = 24;
-        DnsQuestions dns_questions = 25;
-        DnsResponses dns_responses = 26;
-        PacketMetadata packet_metadata = 27;
-        HTTP http = 28;
-        HTTPRequest http_request = 29;
-        HTTPResponse http_response = 30;
-        google.protobuf.Struct struct = 31;
+        HookedSyscalls hooked_syscalls = 15;
+        HookedSeqOps hooked_seq_ops = 16;
+        IPv4 ipv4 = 17;
+        IPv6 ipv6 = 18;
+        TCP tcp = 19;
+        UDP udp = 20;
+        ICMP icmp = 21;
+        ICMPv6 icmpv6 = 22;
+        DNS dns = 23;
+        DnsQuestions dns_questions = 24;
+        DnsResponses dns_responses = 25;
+        PacketMetadata packet_metadata = 26;
+        HTTP http = 27;
+        HTTPRequest http_request = 28;
+        HTTPResponse http_response = 29;
+        google.protobuf.Struct struct = 30;
     }
-}
-
-message TriggeredBy {
-    uint32 id = 1;
-    string name = 2;
-    repeated EventValue data = 3;
 }
 
 message StringArray {
