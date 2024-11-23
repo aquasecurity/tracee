@@ -22,6 +22,8 @@ func (sig *Fingerprint) Init(ctx detect.SignatureContext) error {
 		return fmt.Errorf("Data source tracee/process_tree is not registered")
 	}
 
+	// TODO: Create server to supply configuration, mode, etc.
+
 	sig.processTreeDataSource = processTreeDataSource
 	return nil
 }
@@ -52,9 +54,9 @@ func (sig *Fingerprint) OnEvent(event protocol.Event) error {
 		return fmt.Errorf("Invalid event - %v", event)
 	}
 
-	processFingeprint, err := sig.processTreeFingerprint.GetOrCreateNodeForEvent(sig.processTreeDataSource, &eventObj)
-	if err != nil {
-		return err
+	processFingeprint, ok := sig.processTreeFingerprint.GetOrCreateNodeForEvent(sig.processTreeDataSource, &eventObj)
+	if !ok {
+		return nil
 	}
 
 	processFingeprint.Update(&eventObj)
