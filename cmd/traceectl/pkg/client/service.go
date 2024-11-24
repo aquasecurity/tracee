@@ -13,34 +13,22 @@ type ServiceClient struct {
 	client pb.TraceeServiceClient
 }
 
-// New github.com/aquasecurity/tracee/cmd/traceectl initializes a new gRPC client connection.
 func (tc *ServiceClient) NewServiceClient(serverInfo ServerInfo) error {
-	// Connect to the server and handle errors properly
 	conn, err := connectToServer(serverInfo)
 	if err != nil {
 		return err
 	}
-
-	// Store the connection and create the service client
 	tc.conn = conn
 	tc.client = pb.NewTraceeServiceClient(conn)
 
 	return nil
 }
-
-// Close the gRPC connection.
 func (tc *ServiceClient) CloseConnection() {
 	if err := tc.conn.Close(); err != nil {
 		log.Printf("Failed to close connection: %v", err)
 		return
 	}
 }
-
-/*
-if you want to add new options to the client, under this section is where you should add them
-*/
-
-// sends a GetVersion request to the server.
 func (tc *ServiceClient) GetVersion(ctx context.Context, req *pb.GetVersionRequest) (*pb.GetVersionResponse, error) {
 	return tc.client.GetVersion(ctx, req)
 }

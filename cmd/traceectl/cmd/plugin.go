@@ -1,6 +1,3 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -9,10 +6,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// pluginCmd represents the plugin command
 var pluginCmd = &cobra.Command{
 	Use:   "plugin",
-	Short: "plugin management for traceectl",
+	Short: "Plugin management for traceectl",
 	Long: `Plugin Management:
   	- traceectl plugin install --name <plugin_name> --repo <repository_url>
   	- traceectl plugin list
@@ -31,7 +27,7 @@ func init() {
 
 var pluginInstallCmd = &cobra.Command{
 	Use:   "install",
-	Short: "install a plugin from a remote repository",
+	Short: "Install a plugin from a remote repository",
 	Long: `Install a plugin from a remote repository:	
   	- traceectl plugin install --name <plugin_name> --repo <repository_url>
 `,
@@ -42,7 +38,7 @@ var pluginInstallCmd = &cobra.Command{
 
 var pluginListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "list installed plugins",
+	Short: "List installed plugins",
 	Long:  `List all installed plugins.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("list called")
@@ -51,7 +47,7 @@ var pluginListCmd = &cobra.Command{
 
 var pluginUninstallCmd = &cobra.Command{
 	Use:   "uninstall <plugin_name>",
-	Short: "uninstall a plugin",
+	Short: "Uninstall a plugin",
 	Long:  `Uninstalls a plugin by its name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("uninstall called")

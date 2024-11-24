@@ -1,6 +1,3 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -9,10 +6,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// policyCmd represents the policy command
 var policyCmd = &cobra.Command{
 	Use:   "policy",
-	Short: "policy management for traceectl",
+	Short: "Policy management for traceectl",
 	Long: `Policy Management:
   	- traceectl policy create <policy_file>
   	- traceectl policy describe <policy_name>
@@ -39,7 +35,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create <policy_file>",
-	Short: "create a policy",
+	Short: "Create a policy",
 	Long:  `Creates a new policy from the YAML file specified by  < policy_file > .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("create called")
@@ -47,7 +43,7 @@ var createCmd = &cobra.Command{
 }
 var describePolicyCmd = &cobra.Command{
 	Use:   "describe <policy_name>",
-	Short: "describe a policy",
+	Short: "Describe a policy",
 	Long:  `Retrieves the details of a specific policy by its name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("describe called")
@@ -56,7 +52,7 @@ var describePolicyCmd = &cobra.Command{
 
 var listPolicyCmd = &cobra.Command{
 	Use:   "list",
-	Short: "list policies",
+	Short: "List policies",
 	Long:  `Lists all available policies, providing a brief summary of each.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("list called")
@@ -74,7 +70,7 @@ var updateCmd = &cobra.Command{
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete <policy_name>",
-	Short: "delete a policy",
+	Short: "Delete a policy",
 	Long:  `Removes a policy by its name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("delete called")
@@ -83,7 +79,7 @@ var deleteCmd = &cobra.Command{
 
 var enableCmd = &cobra.Command{
 	Use:   "enable <policy_name>",
-	Short: "enable a policy",
+	Short: "Enable a policy",
 	Long:  `Enables a policy by its name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("enable called")
@@ -92,7 +88,7 @@ var enableCmd = &cobra.Command{
 
 var disableCmd = &cobra.Command{
 	Use:   "disable <policy_name>",
-	Short: "disable a policy",
+	Short: "Disable a policy",
 	Long:  `Disables a policy by its name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("disable called")

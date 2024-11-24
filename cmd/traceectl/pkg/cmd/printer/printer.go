@@ -6,31 +6,24 @@ import (
 )
 
 func StreamEvents(format *formatter.Formatter, args []string, stream pb.TraceeService_StreamEventsClient) {
-
-	//add check for the output flag
 	//TODO:support only table and json format for now
 	switch format.Format {
 	case formatter.FormatJSON:
 		jsonStreamEvents(args, stream, format)
 	case formatter.FormatTable:
 		tableStreamEvents(args, stream, format)
-	case formatter.FormatGoTpl: // gotemplate
+	case formatter.FormatGoTpl:
 		fallthrough
 	default:
 		format.CMD.PrintErrln("Error: output format not supported")
 		return
 	}
 }
-
-// tableStreamEvents prints events in a table format
 func tableStreamEvents(_ []string, stream pb.TraceeService_StreamEventsClient, tbl *formatter.Formatter) {
-	// Init table header before streaming starts
 	tbl.PrintSteamTableHeaders()
-	// Receive and process streamed responses
 	for {
 		res, err := stream.Recv()
 		if err != nil {
-			// Handle the error that occurs when the server closes the stream
 			if err.Error() == "EOF" {
 				break
 			}
@@ -40,9 +33,7 @@ func tableStreamEvents(_ []string, stream pb.TraceeService_StreamEventsClient, t
 
 	}
 }
-
-// jsonStreamEvents prints events in json format
-func jsonStreamEvents(_ []string, stream pb.TraceeService_StreamEventsClient, tbl *formatter.Formatter) { // Receive and process streamed responses
+func jsonStreamEvents(_ []string, stream pb.TraceeService_StreamEventsClient, tbl *formatter.Formatter) {
 	for {
 		res, err := stream.Recv()
 		if err != nil {
@@ -58,13 +49,12 @@ func jsonStreamEvents(_ []string, stream pb.TraceeService_StreamEventsClient, tb
 }
 
 func ListEvents(format *formatter.Formatter, args []string, response *pb.GetEventDefinitionsResponse) {
-	//this can add support for other output formats
 	switch format.Format {
 	case formatter.FormatJSON:
 		jsonListEvent(format, args, response)
 	case formatter.FormatTable:
 		tableListEvent(format, args, response)
-	case formatter.FormatGoTpl: // gotemplate
+	case formatter.FormatGoTpl:
 		fallthrough
 	default:
 		format.CMD.PrintErrln("Error: output format not supported")
@@ -80,13 +70,12 @@ func jsonListEvent(format *formatter.Formatter, _ []string, response *pb.GetEven
 	format.PrintEventListJSON(response)
 }
 func DescribeEvent(format *formatter.Formatter, args []string, response *pb.GetEventDefinitionsResponse) {
-	//this can add support for other output formats
 	switch format.Format {
 	case formatter.FormatJSON:
 		jsonDescribeEvent(format, args, response)
 	case formatter.FormatTable:
 		tableDescribeEvent(format, args, response)
-	case formatter.FormatGoTpl: // gotemplate
+	case formatter.FormatGoTpl:
 		fallthrough
 	default:
 		format.CMD.PrintErrln("Error: output format not supported")

@@ -14,20 +14,18 @@ import (
 var eventFormatFlag string
 var eventOutputFlag string
 
-// main command
 var eventCmd = &cobra.Command{
 	Use:   "event [command]",
-	Short: "event management for tracee",
+	Short: "Event management for tracee",
 	Long: `Event Management for tracee 
-	let you enable and disable events in tracee.
-	get descriptions of events and run them.
+	Let you enable and disable events in tracee.
+	Get descriptions of events and run them.
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		// Check if args are provided
 		if len(args) == 0 {
 			cmd.PrintErrln("Error: no event names provided. Please specify at least one event to enable.")
-			return // Exit if no arguments
+			return
 		}
 	},
 }
@@ -48,8 +46,6 @@ func init() {
 	describeEventCmd.Flags().StringVarP(&eventOutputFlag, "output", "o", "stdout", "Output destination ")
 }
 
-// Sub commands
-// list
 var listEventCmd = &cobra.Command{
 	Use:   "list",
 	Short: "list events",
@@ -59,8 +55,6 @@ var listEventCmd = &cobra.Command{
 		listEvents(cmd, args)
 	},
 }
-
-// describe
 var describeEventCmd = &cobra.Command{
 	Use:   "describe <event_name>",
 	Short: "describe event",
@@ -70,8 +64,6 @@ var describeEventCmd = &cobra.Command{
 		getEventDescriptions(cmd, args)
 	},
 }
-
-// enable
 var enableEventCmd = &cobra.Command{
 	Use:   "enable <event_name>",
 	Short: "enable event",
@@ -81,8 +73,6 @@ var enableEventCmd = &cobra.Command{
 		enableEvents(cmd, args[0])
 	},
 }
-
-// disable
 var disableEventCmd = &cobra.Command{
 	Use:   "disable <event_name>",
 	Short: "disable event",
@@ -92,8 +82,6 @@ var disableEventCmd = &cobra.Command{
 		disableEvents(cmd, args[0])
 	},
 }
-
-// run
 var runCmdArgs string
 var runEventCmd = &cobra.Command{
 	Use:   "run <event_name> [--args <arguments>]",
@@ -106,7 +94,6 @@ var runEventCmd = &cobra.Command{
 }
 
 func listEvents(cmd *cobra.Command, args []string) {
-	//create service client
 	var traceeClient client.ServiceClient
 	if err := traceeClient.NewServiceClient(serverInfo); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
@@ -114,24 +101,19 @@ func listEvents(cmd *cobra.Command, args []string) {
 	}
 	defer traceeClient.CloseConnection()
 	response, err := traceeClient.GetEventDefinitions(context.Background(), &pb.GetEventDefinitionsRequest{EventNames: args})
-
 	if err != nil {
 		cmd.PrintErrln("Error getting event definitions: ", err)
 		return
 
 	}
-	//display event definitions
-	//TODO:  add support for different outputs and formats
 	format, err := formatter.New(eventFormatFlag, eventOutputFlag, cmd)
 	if err != nil {
 		cmd.PrintErrln("Error creating formatter: ", err)
 		return
 	}
-	//show events
 	printer.ListEvents(format, args, response)
 }
 func getEventDescriptions(cmd *cobra.Command, args []string) {
-	//create service client
 	var traceeClient client.ServiceClient
 	if err := traceeClient.NewServiceClient(serverInfo); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
@@ -139,34 +121,24 @@ func getEventDescriptions(cmd *cobra.Command, args []string) {
 	}
 	defer traceeClient.CloseConnection()
 	response, err := traceeClient.GetEventDefinitions(context.Background(), &pb.GetEventDefinitionsRequest{EventNames: args})
-
 	if err != nil {
 		cmd.PrintErrln("Error getting event definitions: ", err)
 		return
 
 	}
-	//display event definitions
-	//TODO:  add support for different outputs and formats
 	format, err := formatter.New(eventFormatFlag, eventOutputFlag, cmd)
 	if err != nil {
 		cmd.PrintErrln("Error creating formatter: ", err)
 		return
 	}
-	//show events
 	printer.DescribeEvent(format, args, response)
-
 }
 func enableEvents(cmd *cobra.Command, eventName string) {
-	// Create Tracee gRPC client
-	var traceeClient client.ServiceClient // tracee client
-
+	var traceeClient client.ServiceClient
 	if err := traceeClient.NewServiceClient(serverInfo); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
-		return // Exit on error
+		return
 	}
-
-	// Iterate over event names and enable each one
-
 	_, err := traceeClient.EnableEvent(context.Background(), &pb.EnableEventRequest{Name: eventName})
 	if err != nil {
 		cmd.PrintErrln("Error enabling event:", err)
@@ -176,11 +148,10 @@ func enableEvents(cmd *cobra.Command, eventName string) {
 }
 
 func disableEvents(cmd *cobra.Command, eventName string) {
-	// Create Tracee gRPC client
 	var traceeClient client.ServiceClient
 	if err := traceeClient.NewServiceClient(serverInfo); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
-		return // Exit on error
+		return
 	}
 	_, err := traceeClient.DisableEvent(context.Background(), &pb.DisableEventRequest{Name: eventName})
 	if err != nil {

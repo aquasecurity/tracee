@@ -30,14 +30,11 @@ var (
 )
 
 func init() {
-
-	// commands
 	rootCmd.AddCommand(streamCmd)
 	rootCmd.AddCommand(eventCmd)
 	rootCmd.AddCommand(pluginCmd)
 	rootCmd.AddCommand(policyCmd)
 
-	//other commends
 	rootCmd.AddCommand(connectCmd)
 	rootCmd.AddCommand(metricsCmd)
 	rootCmd.AddCommand(diagnoseCmd)
@@ -46,10 +43,6 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(versionCmd)
 
-	//one global flag for server connection(connection Type: tcp or unix socket)
-	//no default for tcp, only for unix socket
-	//for tcp <IP:Port>
-	//for unix socket <socket_path>
 	rootCmd.PersistentFlags().StringVar(&serverInfo.ADDR, "server", client.SOCKET, `Server connection path or address.
 	for unix socket <socket_path> (default: /tmp/tracee.sock)
 	for tcp <IP:Port>`)
@@ -104,37 +97,31 @@ var configCmd = &cobra.Command{
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "display the version of tracee",
-	Long:  "this is the version of tracee application you connected to",
+	Short: "Display the version of tracee",
+	Long:  "This is the version of tracee application you connected to",
 	Run: func(cmd *cobra.Command, args []string) {
 		displayVersion(cmd, args)
 	},
 }
 
-// run root command
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
-// displayMetrics fetches and prints Tracee metrics
 func displayMetrics(cmd *cobra.Command, _ []string) {
 	var traceeClient client.DiagnosticClient
-	//create service client
 	if err := traceeClient.NewDiagnosticClient(serverInfo); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
 	defer traceeClient.CloseConnection()
-	//get metrics
 	response, err := traceeClient.GetMetrics(context.Background(), &pb.GetMetricsRequest{})
 	if err != nil {
 		cmd.PrintErrln("Error getting metrics: ", err)
 		return
 	}
-
-	// Display the metrics
 	cmd.Println("EventCount:", response.EventCount)
 	cmd.Println("EventsFiltered:", response.EventsFiltered)
 	cmd.Println("NetCapCount:", response.NetCapCount)
@@ -147,21 +134,18 @@ func displayMetrics(cmd *cobra.Command, _ []string) {
 }
 
 func displayVersion(cmd *cobra.Command, _ []string) {
-	//create service client
 	var traceeClient client.ServiceClient
 	if err := traceeClient.NewServiceClient(serverInfo); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
 	defer traceeClient.CloseConnection()
-	//get version
 	response, err := traceeClient.GetVersion(context.Background(), &pb.GetVersionRequest{})
 
 	if err != nil {
 		cmd.PrintErrln("Error getting version: ", err)
 		return
 	} else {
-		//display version
 		cmd.Println("Version: ", response.Version)
 	}
 }

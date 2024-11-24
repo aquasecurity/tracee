@@ -32,7 +32,6 @@ var streamCmd = &cobra.Command{
 }
 
 func init() {
-	//subcommands
 	streamCmd.AddCommand(createStreamCmd)
 	streamCmd.AddCommand(describeStreamCmd)
 	streamCmd.AddCommand(listStreamCmd)
@@ -42,9 +41,7 @@ func init() {
 	streamCmd.AddCommand(setDefaultStreamCmd)
 	streamCmd.AddCommand(pauseStreamCmd)
 	streamCmd.AddCommand(resumeStreamCmd)
-	//stream events flags
 	streamCmd.Flags().StringVarP(&streamFormatFlag, "format", "f", formatter.FormatJSON, "Output format (json|table|template)")
-	// only support stdout for now
 	streamCmd.Flags().StringVarP(&streamOutputFlag, "output", "o", "stdout", "Output destination ")
 }
 
@@ -58,7 +55,7 @@ var createStreamCmd = &cobra.Command{
 
 var describeStreamCmd = &cobra.Command{
 	Use:   "describe <stream_name>",
-	Short: "describe a stream",
+	Short: "Describe a stream",
 	Long:  `Retrieves the details of a specific stream by its name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 	},
@@ -66,7 +63,7 @@ var describeStreamCmd = &cobra.Command{
 
 var listStreamCmd = &cobra.Command{
 	Use:   "list",
-	Short: "list streams",
+	Short: "List streams",
 	Long:  `Lists all available streams, providing a brief summary of each.`,
 	Run: func(cmd *cobra.Command, args []string) {
 	},
@@ -74,7 +71,7 @@ var listStreamCmd = &cobra.Command{
 
 var updateStreamCmd = &cobra.Command{
 	Use:   "update <stream_name> [--destination <destination>] [--format <format>] [--fields <fields>] [--parse-data] [--filter <filter>]",
-	Short: "update a stream",
+	Short: "Update a stream",
 	Long:  `Updates a stream by its name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 	},
@@ -82,7 +79,7 @@ var updateStreamCmd = &cobra.Command{
 
 var deleteStreamCmd = &cobra.Command{
 	Use:   "delete <stream_name>",
-	Short: "delete a stream",
+	Short: "Delete a stream",
 	Long:  `Deletes a stream by its name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 	},
@@ -90,7 +87,7 @@ var deleteStreamCmd = &cobra.Command{
 
 var connectStreamCmd = &cobra.Command{
 	Use:   "connect <stream_name>",
-	Short: "connect a stream",
+	Short: "Connect a stream",
 	Long:  `Connects a stream by its name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 	},
@@ -98,7 +95,7 @@ var connectStreamCmd = &cobra.Command{
 
 var setDefaultStreamCmd = &cobra.Command{
 	Use:   "set-default <stream_name>",
-	Short: "set default stream",
+	Short: "Set default stream",
 	Long:  `Sets a stream as the default stream.`,
 	Run: func(cmd *cobra.Command, args []string) {
 	},
@@ -106,7 +103,7 @@ var setDefaultStreamCmd = &cobra.Command{
 
 var pauseStreamCmd = &cobra.Command{
 	Use:   "pause <stream_name>",
-	Short: "pause a stream",
+	Short: "Pause a stream",
 	Long:  `Pauses a stream by its name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 	},
@@ -114,15 +111,14 @@ var pauseStreamCmd = &cobra.Command{
 
 var resumeStreamCmd = &cobra.Command{
 	Use:   "resume <stream_name>",
-	Short: "resume a stream",
+	Short: "Resume a stream",
 	Long:  `Resumes a stream by its name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 	},
 }
 
-// stream events directly from tracee
 func stream(cmd *cobra.Command, args []string) {
-	// Create service client
+
 	var traceeClient client.ServiceClient
 	err := traceeClient.NewServiceClient(serverInfo)
 	if err != nil {
@@ -130,22 +126,17 @@ func stream(cmd *cobra.Command, args []string) {
 		return
 	}
 	defer traceeClient.CloseConnection()
-
-	// create stream from client
 	req := &pb.StreamEventsRequest{Policies: args}
 	stream, err := traceeClient.StreamEvents(cmd.Context(), req)
 	if err != nil {
 		cmd.PrintErrln("Error calling Stream: ", err)
 		return
 	}
-
-	//create formatter for output
 	format, err := formatter.New(streamFormatFlag, streamOutputFlag, cmd)
 	if err != nil {
 		cmd.PrintErrln("Error creating formatter: ", err)
 		return
 	}
-	//show events
 	printer.StreamEvents(format, args, stream)
 
 }

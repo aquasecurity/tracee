@@ -16,16 +16,12 @@ func TestEvent(t *testing.T) {
 			ExpectedPrinter: nil,
 			ExpectedError:   fmt.Errorf("requires at least 1 arg(s), only received 0"),
 		},
-
-		//event list
 		{
 			TestName:        "events list",
 			OutputSlice:     []string{"event", "list", "--format", "json"},
 			ExpectedPrinter: "",
 			ExpectedError:   nil,
 		},
-
-		//event describe
 		{
 			TestName:        "No events describe",
 			OutputSlice:     []string{"event", "describe", "--format", "json"},
@@ -38,13 +34,11 @@ func TestEvent(t *testing.T) {
 			ExpectedPrinter: "event_test1",
 			ExpectedError:   nil,
 		},
-		//event enable
 		{
 			TestName:        "No events enable",
 			OutputSlice:     []string{"event", "enable"},
 			ExpectedPrinter: nil,
-			ExpectedError:   fmt.Errorf("accepts 1 arg(s), received 0"), // Update expected output
-
+			ExpectedError:   fmt.Errorf("accepts 1 arg(s), received 0"),
 		},
 		{
 			TestName:        "enable event",
@@ -52,12 +46,11 @@ func TestEvent(t *testing.T) {
 			ExpectedPrinter: "Enabled event: event",
 			ExpectedError:   nil,
 		},
-		//event disable
 		{
 			TestName:        "No disable events",
 			OutputSlice:     []string{"event", "disable"},
 			ExpectedPrinter: nil,
-			ExpectedError:   fmt.Errorf("accepts 1 arg(s), received 0"), // Update expected output
+			ExpectedError:   fmt.Errorf("accepts 1 arg(s), received 0"),
 		},
 		{
 			TestName:        "disable event",
@@ -65,10 +58,7 @@ func TestEvent(t *testing.T) {
 			ExpectedPrinter: "Disabled event: event",
 			ExpectedError:   nil,
 		},
-		//event run
-		//TODO: add test when support run is added
 	}
-
 	for _, testCase := range eventTests {
 		t.Run(testCase.TestName, func(t *testing.T) { test.TestCommand(t, testCase, rootCmd) })
 	}
