@@ -1925,7 +1925,7 @@ send_bpf_perf_attach(program_data_t *p, struct file *bpf_prog_file, struct file 
     bpf_probe_read_kernel_str(
         &class_system, REQUIRED_SYSTEM_LENGTH, BPF_CORE_READ(tp_class, system));
     class_system[REQUIRED_SYSTEM_LENGTH - 1] = '\0';
-    if (has_prefix("syscalls", class_system, REQUIRED_SYSTEM_LENGTH)) {
+    if (strncmp("syscalls", class_system, REQUIRED_SYSTEM_LENGTH - 1) == 0) {
         is_syscall_tracepoint = true;
     }
 
@@ -3140,7 +3140,7 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
     // otherwise the capture will overwrite itself.
     int pid = 0;
     void *path_buf = get_path_str_cached(file);
-    if (path_buf != NULL && has_prefix("/dev/null", (char *) path_buf, 10)) {
+    if (path_buf != NULL && strncmp("/dev/null", (char *) path_buf, 10) == 0) {
         pid = p.event->context.task.pid;
     }
 
@@ -6329,16 +6329,16 @@ statfunc int net_l7_is_http(struct __sk_buff *skb, u32 l7_off)
     }
 
     // check if HTTP response
-    if (has_prefix("HTTP/", http_min_str, 6)) {
+    if (strncmp("HTTP/", http_min_str, 5) == 0) {
         return proto_http_resp;
     }
 
     // check if HTTP request
-    if (has_prefix("GET ", http_min_str, 5) ||
-        has_prefix("POST ", http_min_str, 6) ||
-        has_prefix("PUT ", http_min_str, 5) ||
-        has_prefix("DELETE ", http_min_str, 8) ||
-        has_prefix("HEAD ", http_min_str, 6)) {
+    if (strncmp("GET ", http_min_str, 4) == 0 ||
+        strncmp("POST ", http_min_str, 5) == 0 ||
+        strncmp("PUT ", http_min_str, 4) == 0 ||
+        strncmp("DELETE ", http_min_str, 7) == 0 ||
+        strncmp("HEAD ", http_min_str, 5) == 0) {
         return proto_http_req;
     }
 
@@ -6901,7 +6901,7 @@ int tracepoint__exec_test(struct bpf_raw_tracepoint_args *ctx)
         return -1;
     struct file *file = get_file_ptr_from_bprm(bprm);
     void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
-    if (file_path == NULL || !has_prefix("/tmp/test", file_path, 9))
+    if (file_path == NULL || strncmp("/tmp/test", file_path, 9) != 0)
         return 0;
 
     // Submit all test events

@@ -34,13 +34,31 @@ statfunc const char *get_device_name(struct device *dev)
         ({                                                                                         \
             int rc = 1;                                                                            \
             char *pre = p, *str = s;                                                               \
-            _Pragma("unroll") for (int z = 0; z < n; pre++, str++, z++)                            \
+            int z;                                                                                 \
+            _Pragma("unroll") for (z = 0; z < n; pre++, str++, z++)                                \
             {                                                                                      \
                 if (!*pre) {                                                                       \
                     rc = 1;                                                                        \
                     break;                                                                         \
                 } else if (*pre != *str) {                                                         \
                     rc = 0;                                                                        \
+                    break;                                                                         \
+                }                                                                                  \
+            }                                                                                      \
+            /* if prefix is longer than n, return 0 */                                             \
+            if (z == n && *pre)                                                                    \
+                rc = 0;                                                                            \
+            rc;                                                                                    \
+        })
+
+    #define strncmp(str1, str2, n)                                                                 \
+        ({                                                                                         \
+            int rc = 0;                                                                            \
+            char *s1 = str1, *s2 = str2;                                                           \
+            _Pragma("unroll") for (int z = 0; z < n; s1++, s2++, z++)                              \
+            {                                                                                      \
+                if (*s1 != *s2 || *s1 == '\0' || *s2 == '\0') {                                    \
+                    rc = (unsigned char) *s1 - (unsigned char) *s2;                                \
                     break;                                                                         \
                 }                                                                                  \
             }                                                                                      \
@@ -61,7 +79,22 @@ static __inline int has_prefix(char *prefix, char *str, int n)
         }
     }
 
-    // prefix is too long
+    // if prefix is longer than n, return 0
+    if (i == n && *prefix)
+        return 0;
+
+    // prefix and string are identical
+    return 1;
+}
+
+static __inline int strncmp(char *str1, char *str2, int n)
+{
+    int i;
+    #pragma unroll
+    for (i = 0; i < n; str1++, str2++, i++) {
+        if (*str1 != *str2 || *str1 == '\0' || *str2 == '\0')
+            return (unsigned char) *str1 - (unsigned char) *str2;
+    }
     return 0;
 }
 
