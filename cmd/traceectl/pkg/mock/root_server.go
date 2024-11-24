@@ -7,6 +7,5 @@ import (
 )
 
 func (s *MockServiceServer) GetVersion(ctx context.Context, req *pb.GetVersionRequest) (*pb.GetVersionResponse, error) {
-	// Return a mock version response
 	return &pb.GetVersionResponse{Version: ExpectedVersion}, nil
 }

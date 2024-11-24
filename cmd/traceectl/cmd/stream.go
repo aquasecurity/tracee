@@ -32,7 +32,6 @@ var streamCmd = &cobra.Command{
 }
 
 func init() {
-	//subcommands
 	streamCmd.AddCommand(createStreamCmd)
 	streamCmd.AddCommand(describeStreamCmd)
 	streamCmd.AddCommand(listStreamCmd)
@@ -42,9 +41,7 @@ func init() {
 	streamCmd.AddCommand(setDefaultStreamCmd)
 	streamCmd.AddCommand(pauseStreamCmd)
 	streamCmd.AddCommand(resumeStreamCmd)
-	//stream events flags
 	streamCmd.Flags().StringVarP(&streamFormatFlag, "format", "f", formatter.FormatJSON, "Output format (json|table|template)")
-	// only support stdout for now
 	streamCmd.Flags().StringVarP(&streamOutputFlag, "output", "o", "stdout", "Output destination ")
 }
 
@@ -120,9 +117,8 @@ var resumeStreamCmd = &cobra.Command{
 	},
 }
 
-// stream events directly from tracee
 func stream(cmd *cobra.Command, args []string) {
-	// Create service client
+
 	var traceeClient client.ServiceClient
 	err := traceeClient.NewServiceClient(serverInfo)
 	if err != nil {
@@ -130,22 +126,17 @@ func stream(cmd *cobra.Command, args []string) {
 		return
 	}
 	defer traceeClient.CloseConnection()
-
-	// create stream from client
 	req := &pb.StreamEventsRequest{Policies: args}
 	stream, err := traceeClient.StreamEvents(cmd.Context(), req)
 	if err != nil {
 		cmd.PrintErrln("Error calling Stream: ", err)
 		return
 	}
-
-	//create formatter for output
 	format, err := formatter.New(streamFormatFlag, streamOutputFlag, cmd)
 	if err != nil {
 		cmd.PrintErrln("Error creating formatter: ", err)
 		return
 	}
-	//show events
 	printer.StreamEvents(format, args, stream)
 
 }

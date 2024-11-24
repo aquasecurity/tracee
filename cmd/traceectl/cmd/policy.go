@@ -1,6 +1,3 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -9,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// policyCmd represents the policy command
 var policyCmd = &cobra.Command{
 	Use:   "policy",
 	Short: "policy management for traceectl",

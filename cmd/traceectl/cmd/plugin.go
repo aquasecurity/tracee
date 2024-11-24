@@ -1,6 +1,3 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -9,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// pluginCmd represents the plugin command
 var pluginCmd = &cobra.Command{
 	Use:   "plugin",
 	Short: "plugin management for traceectl",
