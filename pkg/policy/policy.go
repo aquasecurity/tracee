@@ -1,8 +1,6 @@
 package policy
 
 import (
-	"golang.org/x/exp/maps"
-
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -11,7 +9,6 @@ import (
 type Policy struct {
 	ID                int
 	Name              string
-	EventsToTrace     map[events.ID]string
 	UIDFilter         *filters.UIntFilter[uint32]
 	PIDFilter         *filters.UIntFilter[uint32]
 	NewPidFilter      *filters.BoolFilter
@@ -22,12 +19,17 @@ type Policy struct {
 	ContFilter        *filters.BoolFilter
 	NewContFilter     *filters.BoolFilter
 	ContIDFilter      *filters.StringFilter
-	RetFilter         *filters.RetFilter
-	DataFilter        *filters.DataFilter
-	ScopeFilter       *filters.ScopeFilter
 	ProcessTreeFilter *filters.ProcessTreeFilter
 	BinaryFilter      *filters.BinaryFilter
 	Follow            bool
+	Rules             map[events.ID]RuleData
+}
+
+type RuleData struct {
+	EventID     events.ID
+	ScopeFilter *filters.ScopeFilter
+	DataFilter  *filters.DataFilter
+	RetFilter   *filters.IntFilter[int64]
 }
 
 // Compile-time check to ensure that Policy implements the Cloner interface
@@ -37,7 +39,6 @@ func NewPolicy() *Policy {
 	return &Policy{
 		ID:                0,
 		Name:              "",
-		EventsToTrace:     map[events.ID]string{},
 		UIDFilter:         filters.NewUInt32Filter(),
 		PIDFilter:         filters.NewUInt32Filter(),
 		NewPidFilter:      filters.NewBoolFilter(),
@@ -48,12 +49,10 @@ func NewPolicy() *Policy {
 		ContFilter:        filters.NewBoolFilter(),
 		NewContFilter:     filters.NewBoolFilter(),
 		ContIDFilter:      filters.NewStringFilter(nil),
-		RetFilter:         filters.NewRetFilter(),
-		DataFilter:        filters.NewDataFilter(),
-		ScopeFilter:       filters.NewScopeFilter(),
 		ProcessTreeFilter: filters.NewProcessTreeFilter(),
 		BinaryFilter:      filters.NewBinaryFilter(),
 		Follow:            false,
+		Rules:             map[events.ID]RuleData{},
 	}
 }
 
@@ -73,7 +72,6 @@ func (p *Policy) Clone() *Policy {
 
 	n.ID = p.ID
 	n.Name = p.Name
-	maps.Copy(n.EventsToTrace, p.EventsToTrace)
 	n.UIDFilter = p.UIDFilter.Clone()
 	n.PIDFilter = p.PIDFilter.Clone()
 	n.NewPidFilter = p.NewPidFilter.Clone()
@@ -84,12 +82,17 @@ func (p *Policy) Clone() *Policy {
 	n.ContFilter = p.ContFilter.Clone()
 	n.NewContFilter = p.NewContFilter.Clone()
 	n.ContIDFilter = p.ContIDFilter.Clone()
-	n.RetFilter = p.RetFilter.Clone()
-	n.DataFilter = p.DataFilter.Clone()
-	n.ScopeFilter = p.ScopeFilter.Clone()
 	n.ProcessTreeFilter = p.ProcessTreeFilter.Clone()
 	n.BinaryFilter = p.BinaryFilter.Clone()
 	n.Follow = p.Follow
+	for eID, ruleData := range p.Rules {
+		n.Rules[eID] = RuleData{
+			EventID:     ruleData.EventID,
+			ScopeFilter: ruleData.ScopeFilter.Clone(),
+			DataFilter:  ruleData.DataFilter.Clone(),
+			RetFilter:   ruleData.RetFilter.Clone(),
+		}
+	}
 
 	return n
 }

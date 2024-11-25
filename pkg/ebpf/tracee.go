@@ -871,11 +871,11 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 		for it := t.policyManager.CreateAllIterator(); it.HasNext(); {
 			p := it.Next()
 			// This might break in the future if PrintMemDump will become a dependency of another event.
-			_, isChosen := p.EventsToTrace[events.PrintMemDump]
-			if !isChosen {
+			_, isSelected := p.Rules[events.PrintMemDump]
+			if !isSelected {
 				continue
 			}
-			printMemDumpFilters := p.DataFilter.GetEventFilters(events.PrintMemDump)
+			printMemDumpFilters := p.Rules[events.PrintMemDump].DataFilter.GetFieldFilters()
 			if len(printMemDumpFilters) == 0 {
 				continue
 			}
@@ -1754,11 +1754,11 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 	for it := t.policyManager.CreateAllIterator(); it.HasNext(); {
 		p := it.Next()
 		// This might break in the future if PrintMemDump will become a dependency of another event.
-		_, isChosen := p.EventsToTrace[events.PrintMemDump]
-		if !isChosen {
+		_, isSelected := p.Rules[events.PrintMemDump]
+		if !isSelected {
 			continue
 		}
-		printMemDumpFilters := p.DataFilter.GetEventFilters(events.PrintMemDump)
+		printMemDumpFilters := p.Rules[events.PrintMemDump].DataFilter.GetFieldFilters()
 		if len(printMemDumpFilters) == 0 {
 			errs = append(errs, errfmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
 				"please provide it via -e print_mem_dump.data.address=<hex address>"+

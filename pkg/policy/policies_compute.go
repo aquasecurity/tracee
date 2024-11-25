@@ -126,9 +126,20 @@ func (ps *policies) updateUserlandPolicies() {
 			continue
 		}
 
-		if p.DataFilter.Enabled() ||
-			p.RetFilter.Enabled() ||
-			p.ScopeFilter.Enabled() ||
+		hasUserlandFilters := false
+
+		// Check filters under Rules
+		for _, rule := range p.Rules {
+			if rule.DataFilter.Enabled() ||
+				rule.RetFilter.Enabled() ||
+				rule.ScopeFilter.Enabled() {
+				hasUserlandFilters = true
+				break
+			}
+		}
+
+		// Check other filters
+		if hasUserlandFilters ||
 			(p.UIDFilter.Enabled() && ps.uidFilterableInUserland) ||
 			(p.PIDFilter.Enabled() && ps.pidFilterableInUserland) {
 			// add policy to userland list and set the respective bit

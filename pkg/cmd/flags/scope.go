@@ -36,7 +36,7 @@ Special Values:
 Examples:
   Process Filters:
     --scope pid=new                                   | trace new processes
-    --scope pid=509,1709                              | trace PIDs 510 or 1709
+    --scope pid=509,1709                              | trace PIDs 509 or 1709
     --scope 'uid>-1' --scope 'pid<1000'               | trace non-root processes with PID < 1000
     --scope comm=ls                                   | trace 'ls' command
     --scope executable=/usr/bin/ls                    | trace specific executable
@@ -56,7 +56,7 @@ Examples:
 
   Process Tree:
     --scope tree=476164                               | trace process and its descendants
-    --scope tree=3212,5200 --scope tree!=3215         | trace descendants of 3213 or 5200, except 3215's
+    --scope tree=3212,5200 --scope tree!=3215         | trace descendants of 3212 or 5200, except 3215's
 `
 }
 
