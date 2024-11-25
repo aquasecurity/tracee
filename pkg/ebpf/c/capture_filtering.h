@@ -62,7 +62,7 @@ statfunc bool filter_file_path(void *ctx, void *filter_map, struct file *file)
 
         has_filter = true;
 
-        if (has_prefix(filter_p->path, (char *) &path_buf->buf, MAX_PATH_PREF_SIZE)) {
+        if (has_prefix(filter_p->path, (char *) &path_buf->buf, MAX_PATH_PREF_SIZE - 1)) {
             filter_match = true;
             break;
         }
