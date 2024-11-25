@@ -386,12 +386,12 @@ statfunc int save_args_to_submit_buf(event_data_t *event, args_t *args)
     void *arg;
     short family;
 
-    if (unlikely(event->config.param_types == 0))
+    if (unlikely(event->config.field_types == 0))
         return 0;
 
 #pragma unroll
     for (i = 0; i < 6; i++) {
-        type = DEC_ARG(i, event->config.param_types);
+        type = DEC_ARG(i, event->config.field_types);
 
         // bounds check for the verifier
         if (unlikely(type > ARG_TYPE_MAX_ARRAY))

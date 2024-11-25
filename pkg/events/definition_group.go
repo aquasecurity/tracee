@@ -124,10 +124,10 @@ func (d *DefinitionGroup) AddBatch(givenDefs map[ID]Definition) error {
 	defer d.mutex.Unlock()
 
 	for id, def := range givenDefs {
-		for i := range def.params {
+		for i := range def.fields {
 			// set zero value in the argument definition once,
 			// so it can be reused without recalculation later.
-			def.params[i].Zero = parse.ArgZeroValueFromType(def.params[i].Type)
+			def.fields[i].Zero = parse.ArgZeroValueFromType(def.fields[i].Type)
 		}
 		err := d.add(id, def)
 		if err != nil {

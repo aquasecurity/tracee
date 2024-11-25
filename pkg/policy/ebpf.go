@@ -159,7 +159,7 @@ func (ps *policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 func (ps *policies) createNewEventsMapVersion(
 	bpfModule *bpf.Module,
 	rules map[events.ID]*eventFlags,
-	eventsParams map[events.ID][]bufferdecoder.ArgType,
+	eventsFields map[events.ID][]bufferdecoder.ArgType,
 ) error {
 	polsVersion := ps.version()
 	innerMapName := "events_map"
@@ -185,13 +185,13 @@ func (ps *policies) createNewEventsMapVersion(
 		// bitmap of policies that require this event to be submitted
 		binary.LittleEndian.PutUint64(eventConfigVal[0:8], ecfg.policiesSubmit)
 
-		// encoded event's parameter types
-		var paramTypes uint64
-		params := eventsParams[id]
-		for n, paramType := range params {
-			paramTypes = paramTypes | (uint64(paramType) << (8 * n))
+		// encoded event's field types
+		var fieldTypes uint64
+		fields := eventsFields[id]
+		for n, fieldType := range fields {
+			fieldTypes = fieldTypes | (uint64(fieldType) << (8 * n))
 		}
-		binary.LittleEndian.PutUint64(eventConfigVal[8:16], paramTypes)
+		binary.LittleEndian.PutUint64(eventConfigVal[8:16], fieldTypes)
 
 		err := newInnerMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&eventConfigVal[0]))
 		if err != nil {
@@ -451,13 +451,13 @@ func (ps *policies) updateBPF(
 	bpfModule *bpf.Module,
 	cts *containers.Containers,
 	rules map[events.ID]*eventFlags,
-	eventsParams map[events.ID][]bufferdecoder.ArgType,
+	eventsFields map[events.ID][]bufferdecoder.ArgType,
 	createNewMaps bool,
 	updateProcTree bool,
 ) (*PoliciesConfig, error) {
 	if createNewMaps {
 		// Create new events map version
-		if err := ps.createNewEventsMapVersion(bpfModule, rules, eventsParams); err != nil {
+		if err := ps.createNewEventsMapVersion(bpfModule, rules, eventsFields); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 	}

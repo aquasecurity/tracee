@@ -210,7 +210,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "void*", Name: "buf"},
 			{Type: "size_t", Name: "count"},
@@ -235,7 +235,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "void*", Name: "buf"},
 			{Type: "size_t", Name: "count"},
@@ -260,7 +260,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "flags"},
 			{Type: "umode_t", Name: "mode"},
@@ -285,7 +285,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
@@ -308,7 +308,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct stat*", Name: "statbuf"},
 		},
@@ -332,7 +332,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct stat*", Name: "statbuf"},
 		},
@@ -356,7 +356,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct stat*", Name: "statbuf"},
 		},
@@ -380,7 +380,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct pollfd*", Name: "fds"},
 			{Type: "unsigned int", Name: "nfds"},
 			{Type: "int", Name: "timeout"},
@@ -405,7 +405,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "off_t", Name: "offset"},
 			{Type: "unsigned int", Name: "whence"},
@@ -430,7 +430,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "length"},
 			{Type: "int", Name: "prot"},
@@ -458,7 +458,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "len"},
 			{Type: "int", Name: "prot"},
@@ -483,7 +483,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "length"},
 		},
@@ -507,7 +507,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 		},
 		dependencies: Dependencies{
@@ -530,7 +530,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "signum"},
 			{Type: "const struct sigaction*", Name: "act"},
 			{Type: "struct sigaction*", Name: "oldact"},
@@ -556,7 +556,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "how"},
 			{Type: "sigset_t*", Name: "set"},
 			{Type: "sigset_t*", Name: "oldset"},
@@ -582,7 +582,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -603,7 +603,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_fd_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "unsigned long", Name: "request"},
 			{Type: "unsigned long", Name: "arg"},
@@ -628,7 +628,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "void*", Name: "buf"},
 			{Type: "size_t", Name: "count"},
@@ -654,7 +654,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const void*", Name: "buf"},
 			{Type: "size_t", Name: "count"},
@@ -680,7 +680,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
 			{Type: "int", Name: "iovcnt"},
@@ -705,7 +705,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
 			{Type: "int", Name: "iovcnt"},
@@ -730,7 +730,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "mode"},
 		},
@@ -754,7 +754,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_pipe"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int[2]", Name: "pipefd"},
 		},
 		dependencies: Dependencies{
@@ -777,7 +777,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "nfds"},
 			{Type: "fd_set*", Name: "readfds"},
 			{Type: "fd_set*", Name: "writefds"},
@@ -804,7 +804,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -825,7 +825,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "old_address"},
 			{Type: "size_t", Name: "old_size"},
 			{Type: "size_t", Name: "new_size"},
@@ -852,7 +852,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_sync"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "length"},
 			{Type: "int", Name: "flags"},
@@ -877,7 +877,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "length"},
 			{Type: "unsigned char*", Name: "vec"},
@@ -902,7 +902,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "length"},
 			{Type: "int", Name: "advice"},
@@ -927,7 +927,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_shm"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "key_t", Name: "key"},
 			{Type: "size_t", Name: "size"},
 			{Type: "int", Name: "shmflg"},
@@ -952,7 +952,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_shm"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "shmid"},
 			{Type: "const void*", Name: "shmaddr"},
 			{Type: "int", Name: "shmflg"},
@@ -977,7 +977,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_shm"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "shmid"},
 			{Type: "int", Name: "cmd"},
 			{Type: "struct shmid_ds*", Name: "buf"},
@@ -1002,7 +1002,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_fd_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "oldfd"},
 		},
 		dependencies: Dependencies{
@@ -1019,7 +1019,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_fd_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "oldfd"},
 			{Type: "int", Name: "newfd"},
 		},
@@ -1037,7 +1037,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -1058,7 +1058,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const struct timespec*", Name: "req"},
 			{Type: "struct timespec*", Name: "rem"},
 		},
@@ -1082,7 +1082,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "which"},
 			{Type: "struct itimerval*", Name: "curr_value"},
 		},
@@ -1106,7 +1106,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "seconds"},
 		},
 		dependencies: Dependencies{
@@ -1129,7 +1129,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "which"},
 			{Type: "struct itimerval*", Name: "new_value"},
 			{Type: "struct itimerval*", Name: "old_value"},
@@ -1154,7 +1154,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -1175,7 +1175,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "out_fd"},
 			{Type: "int", Name: "in_fd"},
 			{Type: "off_t*", Name: "offset"},
@@ -1201,7 +1201,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "domain"},
 			{Type: "int", Name: "type"},
 			{Type: "int", Name: "protocol"},
@@ -1226,7 +1226,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "addr"},
 			{Type: "int", Name: "addrlen"},
@@ -1251,7 +1251,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "addr"},
 			{Type: "int*", Name: "addrlen"},
@@ -1276,7 +1276,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_snd_rcv"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "void*", Name: "buf"},
 			{Type: "size_t", Name: "len"},
@@ -1304,7 +1304,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_snd_rcv"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "void*", Name: "buf"},
 			{Type: "size_t", Name: "len"},
@@ -1332,7 +1332,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_snd_rcv"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct msghdr*", Name: "msg"},
 			{Type: "int", Name: "flags"},
@@ -1357,7 +1357,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_snd_rcv"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct msghdr*", Name: "msg"},
 			{Type: "int", Name: "flags"},
@@ -1382,7 +1382,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "int", Name: "how"},
 		},
@@ -1406,7 +1406,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "addr"},
 			{Type: "int", Name: "addrlen"},
@@ -1431,7 +1431,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "int", Name: "backlog"},
 		},
@@ -1455,7 +1455,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "addr"},
 			{Type: "int*", Name: "addrlen"},
@@ -1480,7 +1480,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "addr"},
 			{Type: "int*", Name: "addrlen"},
@@ -1505,7 +1505,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "domain"},
 			{Type: "int", Name: "type"},
 			{Type: "int", Name: "protocol"},
@@ -1531,7 +1531,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "int", Name: "level"},
 			{Type: "int", Name: "optname"},
@@ -1558,7 +1558,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "int", Name: "level"},
 			{Type: "int", Name: "optname"},
@@ -1585,7 +1585,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "flags"},
 			{Type: "void*", Name: "stack"},
 			{Type: "int*", Name: "parent_tid"},
@@ -1612,7 +1612,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -1633,7 +1633,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -1654,7 +1654,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "const char*const*", Name: "argv"},
 			{Type: "const char*const*", Name: "envp"},
@@ -1681,7 +1681,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "status"},
 		},
 		dependencies: Dependencies{
@@ -1704,7 +1704,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "int*", Name: "wstatus"},
 			{Type: "int", Name: "options"},
@@ -1730,7 +1730,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "int", Name: "sig"},
 		},
@@ -1754,7 +1754,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct utsname*", Name: "buf"},
 		},
 		dependencies: Dependencies{
@@ -1777,7 +1777,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_sem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "key_t", Name: "key"},
 			{Type: "int", Name: "nsems"},
 			{Type: "int", Name: "semflg"},
@@ -1802,7 +1802,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_sem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "semid"},
 			{Type: "struct sembuf*", Name: "sops"},
 			{Type: "size_t", Name: "nsops"},
@@ -1827,7 +1827,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_sem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "semid"},
 			{Type: "int", Name: "semnum"},
 			{Type: "int", Name: "cmd"},
@@ -1853,7 +1853,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_shm"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const void*", Name: "shmaddr"},
 		},
 		dependencies: Dependencies{
@@ -1876,7 +1876,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "key_t", Name: "key"},
 			{Type: "int", Name: "msgflg"},
 		},
@@ -1900,7 +1900,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "msqid"},
 			{Type: "struct msgbuf*", Name: "msgp"},
 			{Type: "size_t", Name: "msgsz"},
@@ -1926,7 +1926,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "msqid"},
 			{Type: "struct msgbuf*", Name: "msgp"},
 			{Type: "size_t", Name: "msgsz"},
@@ -1953,7 +1953,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "msqid"},
 			{Type: "int", Name: "cmd"},
 			{Type: "struct msqid_ds*", Name: "buf"},
@@ -1978,7 +1978,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_fd_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "cmd"},
 			{Type: "unsigned long", Name: "arg"},
@@ -2003,7 +2003,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_fd_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "operation"},
 		},
@@ -2027,7 +2027,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_sync"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
@@ -2050,7 +2050,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_sync"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
@@ -2073,7 +2073,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "off_t", Name: "length"},
 		},
@@ -2097,7 +2097,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "off_t", Name: "length"},
 		},
@@ -2121,7 +2121,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct linux_dirent*", Name: "dirp"},
 			{Type: "unsigned int", Name: "count"},
@@ -2146,7 +2146,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "char*", Name: "buf"},
 			{Type: "size_t", Name: "size"},
 		},
@@ -2170,7 +2170,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 		},
 		dependencies: Dependencies{
@@ -2193,7 +2193,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
@@ -2216,7 +2216,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "oldpath"},
 			{Type: "const char*", Name: "newpath"},
 		},
@@ -2240,7 +2240,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "umode_t", Name: "mode"},
 		},
@@ -2264,7 +2264,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 		},
 		dependencies: Dependencies{
@@ -2287,7 +2287,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "umode_t", Name: "mode"},
 		},
@@ -2311,7 +2311,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_link_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "oldpath"},
 			{Type: "const char*", Name: "newpath"},
 		},
@@ -2335,7 +2335,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_link_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 		},
 		dependencies: Dependencies{
@@ -2358,7 +2358,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_link_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "target"},
 			{Type: "const char*", Name: "linkpath"},
 		},
@@ -2382,7 +2382,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_link_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "char*", Name: "buf"},
 			{Type: "size_t", Name: "bufsiz"},
@@ -2407,7 +2407,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "umode_t", Name: "mode"},
 		},
@@ -2431,7 +2431,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "umode_t", Name: "mode"},
 		},
@@ -2455,7 +2455,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "uid_t", Name: "owner"},
 			{Type: "gid_t", Name: "group"},
@@ -2480,7 +2480,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "uid_t", Name: "owner"},
 			{Type: "gid_t", Name: "group"},
@@ -2505,7 +2505,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "uid_t", Name: "owner"},
 			{Type: "gid_t", Name: "group"},
@@ -2530,7 +2530,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "mode_t", Name: "mask"},
 		},
 		dependencies: Dependencies{
@@ -2553,7 +2553,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_tod"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct timeval*", Name: "tv"},
 			{Type: "struct timezone*", Name: "tz"},
 		},
@@ -2577,7 +2577,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "resource"},
 			{Type: "struct rlimit*", Name: "rlim"},
 		},
@@ -2601,7 +2601,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "who"},
 			{Type: "struct rusage*", Name: "usage"},
 		},
@@ -2625,7 +2625,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct sysinfo*", Name: "info"},
 		},
 		dependencies: Dependencies{
@@ -2648,7 +2648,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct tms*", Name: "buf"},
 		},
 		dependencies: Dependencies{
@@ -2671,7 +2671,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"default", "syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "long", Name: "request"},
 			{Type: "pid_t", Name: "pid"},
 			{Type: "void*", Name: "addr"},
@@ -2691,7 +2691,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -2712,7 +2712,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "type"},
 			{Type: "char*", Name: "bufp"},
 			{Type: "int", Name: "len"},
@@ -2737,7 +2737,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -2758,7 +2758,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "uid_t", Name: "uid"},
 		},
 		dependencies: Dependencies{
@@ -2781,7 +2781,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "gid_t", Name: "gid"},
 		},
 		dependencies: Dependencies{
@@ -2804,7 +2804,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -2825,7 +2825,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -2846,7 +2846,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "pid_t", Name: "pgid"},
 		},
@@ -2870,7 +2870,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -2891,7 +2891,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -2912,7 +2912,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -2933,7 +2933,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "uid_t", Name: "ruid"},
 			{Type: "uid_t", Name: "euid"},
 		},
@@ -2957,7 +2957,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "gid_t", Name: "rgid"},
 			{Type: "gid_t", Name: "egid"},
 		},
@@ -2981,7 +2981,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "size"},
 			{Type: "gid_t*", Name: "list"},
 		},
@@ -3005,7 +3005,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "size"},
 			{Type: "gid_t*", Name: "list"},
 		},
@@ -3029,7 +3029,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "uid_t", Name: "ruid"},
 			{Type: "uid_t", Name: "euid"},
 			{Type: "uid_t", Name: "suid"},
@@ -3054,7 +3054,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "uid_t*", Name: "ruid"},
 			{Type: "uid_t*", Name: "euid"},
 			{Type: "uid_t*", Name: "suid"},
@@ -3079,7 +3079,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "gid_t", Name: "rgid"},
 			{Type: "gid_t", Name: "egid"},
 			{Type: "gid_t", Name: "sgid"},
@@ -3104,7 +3104,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "gid_t*", Name: "rgid"},
 			{Type: "gid_t*", Name: "egid"},
 			{Type: "gid_t*", Name: "sgid"},
@@ -3129,7 +3129,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 		},
 		dependencies: Dependencies{
@@ -3152,7 +3152,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "uid_t", Name: "fsuid"},
 		},
 		dependencies: Dependencies{
@@ -3175,7 +3175,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "gid_t", Name: "fsgid"},
 		},
 		dependencies: Dependencies{
@@ -3198,7 +3198,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 		},
 		dependencies: Dependencies{
@@ -3221,7 +3221,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "cap_user_header_t", Name: "hdrp"},
 			{Type: "cap_user_data_t", Name: "datap"},
 		},
@@ -3245,7 +3245,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "cap_user_header_t", Name: "hdrp"},
 			{Type: "const cap_user_data_t", Name: "datap"},
 		},
@@ -3269,7 +3269,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "sigset_t*", Name: "set"},
 			{Type: "size_t", Name: "sigsetsize"},
 		},
@@ -3293,7 +3293,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const sigset_t*", Name: "set"},
 			{Type: "siginfo_t*", Name: "info"},
 			{Type: "const struct timespec*", Name: "timeout"},
@@ -3319,7 +3319,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "tgid"},
 			{Type: "int", Name: "sig"},
 			{Type: "siginfo_t*", Name: "info"},
@@ -3344,7 +3344,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "sigset_t*", Name: "mask"},
 			{Type: "size_t", Name: "sigsetsize"},
 		},
@@ -3368,7 +3368,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const stack_t*", Name: "ss"},
 			{Type: "stack_t*", Name: "old_ss"},
 		},
@@ -3392,7 +3392,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "filename"},
 			{Type: "const struct utimbuf*", Name: "times"},
 		},
@@ -3416,7 +3416,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "umode_t", Name: "mode"},
 			{Type: "dev_t", Name: "dev"},
@@ -3441,7 +3441,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "library"},
 		},
 		dependencies: Dependencies{
@@ -3464,7 +3464,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "persona"},
 		},
 		dependencies: Dependencies{
@@ -3487,7 +3487,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_info"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "dev_t", Name: "dev"},
 			{Type: "struct ustat*", Name: "ubuf"},
 		},
@@ -3511,7 +3511,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_info"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "struct statfs*", Name: "buf"},
 		},
@@ -3535,7 +3535,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_info"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct statfs*", Name: "buf"},
 		},
@@ -3559,7 +3559,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_info"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "option"},
 		},
 		dependencies: Dependencies{
@@ -3582,7 +3582,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "which"},
 			{Type: "int", Name: "who"},
 		},
@@ -3606,7 +3606,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "which"},
 			{Type: "int", Name: "who"},
 			{Type: "int", Name: "prio"},
@@ -3631,7 +3631,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "struct sched_param*", Name: "param"},
 		},
@@ -3655,7 +3655,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "struct sched_param*", Name: "param"},
 		},
@@ -3679,7 +3679,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "int", Name: "policy"},
 			{Type: "struct sched_param*", Name: "param"},
@@ -3704,7 +3704,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 		},
 		dependencies: Dependencies{
@@ -3727,7 +3727,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "policy"},
 		},
 		dependencies: Dependencies{
@@ -3750,7 +3750,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "policy"},
 		},
 		dependencies: Dependencies{
@@ -3773,7 +3773,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "struct timespec*", Name: "tp"},
 		},
@@ -3797,7 +3797,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const void*", Name: "addr"},
 			{Type: "size_t", Name: "len"},
 		},
@@ -3821,7 +3821,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const void*", Name: "addr"},
 			{Type: "size_t", Name: "len"},
 		},
@@ -3845,7 +3845,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -3868,7 +3868,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -3889,7 +3889,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -3910,7 +3910,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "func"},
 			{Type: "void*", Name: "ptr"},
 			{Type: "unsigned long", Name: "bytecount"},
@@ -3935,7 +3935,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "new_root"},
 			{Type: "const char*", Name: "put_old"},
 		},
@@ -3959,7 +3959,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct __sysctl_args*", Name: "args"},
 		},
 		dependencies: Dependencies{
@@ -3982,7 +3982,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "option"},
 			{Type: "unsigned long", Name: "arg2"},
 			{Type: "unsigned long", Name: "arg3"},
@@ -4009,7 +4009,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "option"},
 			{Type: "unsigned long", Name: "addr"},
 		},
@@ -4027,7 +4027,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_clock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct timex*", Name: "buf"},
 		},
 		dependencies: Dependencies{
@@ -4050,7 +4050,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "resource"},
 			{Type: "const struct rlimit*", Name: "rlim"},
 		},
@@ -4074,7 +4074,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 		},
 		dependencies: Dependencies{
@@ -4097,7 +4097,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_sync"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -4118,7 +4118,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "filename"},
 		},
 		dependencies: Dependencies{
@@ -4141,7 +4141,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_tod"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const struct timeval*", Name: "tv"},
 			{Type: "const struct timezone*", Name: "tz"},
 		},
@@ -4165,7 +4165,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "source"},
 			{Type: "const char*", Name: "target"},
 			{Type: "const char*", Name: "filesystemtype"},
@@ -4192,7 +4192,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "target"},
 			{Type: "int", Name: "flags"},
 		},
@@ -4216,7 +4216,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "int", Name: "swapflags"},
 		},
@@ -4240,7 +4240,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 		},
 		dependencies: Dependencies{
@@ -4263,7 +4263,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "magic"},
 			{Type: "int", Name: "magic2"},
 			{Type: "int", Name: "cmd"},
@@ -4289,7 +4289,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "size_t", Name: "len"},
 		},
@@ -4313,7 +4313,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "size_t", Name: "len"},
 		},
@@ -4337,7 +4337,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "level"},
 		},
 		dependencies: Dependencies{
@@ -4360,7 +4360,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "from"},
 			{Type: "unsigned long", Name: "num"},
 			{Type: "int", Name: "turn_on"},
@@ -4385,7 +4385,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -4406,7 +4406,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "module_image"},
 			{Type: "unsigned long", Name: "len"},
 			{Type: "const char*", Name: "param_values"},
@@ -4431,7 +4431,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "int", Name: "flags"},
 		},
@@ -4455,7 +4455,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -4476,7 +4476,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -4497,7 +4497,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "cmd"},
 			{Type: "const char*", Name: "special"},
 			{Type: "int", Name: "id"},
@@ -4523,7 +4523,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -4544,7 +4544,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -4565,7 +4565,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -4586,7 +4586,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -4607,7 +4607,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -4628,7 +4628,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -4649,7 +4649,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -4670,7 +4670,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "off_t", Name: "offset"},
 			{Type: "size_t", Name: "count"},
@@ -4695,7 +4695,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "const char*", Name: "name"},
 			{Type: "const void*", Name: "value"},
@@ -4722,7 +4722,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "const char*", Name: "name"},
 			{Type: "const void*", Name: "value"},
@@ -4749,7 +4749,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const char*", Name: "name"},
 			{Type: "const void*", Name: "value"},
@@ -4776,7 +4776,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "const char*", Name: "name"},
 			{Type: "void*", Name: "value"},
@@ -4802,7 +4802,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "const char*", Name: "name"},
 			{Type: "void*", Name: "value"},
@@ -4828,7 +4828,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const char*", Name: "name"},
 			{Type: "void*", Name: "value"},
@@ -4854,7 +4854,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "char*", Name: "list"},
 			{Type: "size_t", Name: "size"},
@@ -4879,7 +4879,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "char*", Name: "list"},
 			{Type: "size_t", Name: "size"},
@@ -4904,7 +4904,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "char*", Name: "list"},
 			{Type: "size_t", Name: "size"},
@@ -4929,7 +4929,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "const char*", Name: "name"},
 		},
@@ -4953,7 +4953,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "const char*", Name: "name"},
 		},
@@ -4977,7 +4977,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const char*", Name: "name"},
 		},
@@ -5001,7 +5001,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "tid"},
 			{Type: "int", Name: "sig"},
 		},
@@ -5025,7 +5025,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_tod"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "time_t*", Name: "tloc"},
 		},
 		dependencies: Dependencies{
@@ -5048,7 +5048,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_futex"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int*", Name: "uaddr"},
 			{Type: "int", Name: "futex_op"},
 			{Type: "int", Name: "val"},
@@ -5076,7 +5076,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "size_t", Name: "cpusetsize"},
 			{Type: "unsigned long*", Name: "mask"},
@@ -5101,7 +5101,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "size_t", Name: "cpusetsize"},
 			{Type: "unsigned long*", Name: "mask"},
@@ -5126,7 +5126,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct user_desc*", Name: "u_info"},
 		},
 		dependencies: Dependencies{
@@ -5149,7 +5149,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "nr_events"},
 			{Type: "aio_context_t*", Name: "ctx_idp"},
 		},
@@ -5173,7 +5173,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "aio_context_t", Name: "ctx_id"},
 		},
 		dependencies: Dependencies{
@@ -5196,7 +5196,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "aio_context_t", Name: "ctx_id"},
 			{Type: "long", Name: "min_nr"},
 			{Type: "long", Name: "nr"},
@@ -5223,7 +5223,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "aio_context_t", Name: "ctx_id"},
 			{Type: "long", Name: "nr"},
 			{Type: "struct iocb**", Name: "iocbpp"},
@@ -5248,7 +5248,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "aio_context_t", Name: "ctx_id"},
 			{Type: "struct iocb*", Name: "iocb"},
 			{Type: "struct io_event*", Name: "result"},
@@ -5273,7 +5273,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct user_desc*", Name: "u_info"},
 		},
 		dependencies: Dependencies{
@@ -5296,7 +5296,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u64", Name: "cookie"},
 			{Type: "char*", Name: "buffer"},
 			{Type: "size_t", Name: "len"},
@@ -5321,7 +5321,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "size"},
 		},
 		dependencies: Dependencies{
@@ -5344,7 +5344,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -5365,7 +5365,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -5386,7 +5386,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "size"},
 			{Type: "int", Name: "prot"},
@@ -5413,7 +5413,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "struct linux_dirent64*", Name: "dirp"},
 			{Type: "unsigned int", Name: "count"},
@@ -5438,7 +5438,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int*", Name: "tidptr"},
 		},
 		dependencies: Dependencies{
@@ -5461,7 +5461,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -5482,7 +5482,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_sem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "semid"},
 			{Type: "struct sembuf*", Name: "sops"},
 			{Type: "size_t", Name: "nsops"},
@@ -5508,7 +5508,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "off_t", Name: "offset"},
 			{Type: "size_t", Name: "len"},
@@ -5534,7 +5534,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const clockid_t", Name: "clockid"},
 			{Type: "struct sigevent*", Name: "sevp"},
 			{Type: "timer_t*", Name: "timer_id"},
@@ -5559,7 +5559,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "timer_t", Name: "timer_id"},
 			{Type: "int", Name: "flags"},
 			{Type: "const struct itimerspec*", Name: "new_value"},
@@ -5585,7 +5585,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "timer_t", Name: "timer_id"},
 			{Type: "struct itimerspec*", Name: "curr_value"},
 		},
@@ -5609,7 +5609,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "timer_t", Name: "timer_id"},
 		},
 		dependencies: Dependencies{
@@ -5632,7 +5632,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "timer_t", Name: "timer_id"},
 		},
 		dependencies: Dependencies{
@@ -5655,7 +5655,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_clock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const clockid_t", Name: "clockid"},
 			{Type: "const struct timespec*", Name: "tp"},
 		},
@@ -5679,7 +5679,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_clock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const clockid_t", Name: "clockid"},
 			{Type: "struct timespec*", Name: "tp"},
 		},
@@ -5703,7 +5703,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_clock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const clockid_t", Name: "clockid"},
 			{Type: "struct timespec*", Name: "res"},
 		},
@@ -5727,7 +5727,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_clock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const clockid_t", Name: "clockid"},
 			{Type: "int", Name: "flags"},
 			{Type: "const struct timespec*", Name: "request"},
@@ -5753,7 +5753,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "status"},
 		},
 		dependencies: Dependencies{
@@ -5776,7 +5776,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "epfd"},
 			{Type: "struct epoll_event*", Name: "events"},
 			{Type: "int", Name: "maxevents"},
@@ -5802,7 +5802,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "epfd"},
 			{Type: "int", Name: "op"},
 			{Type: "int", Name: "fd"},
@@ -5828,7 +5828,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "tgid"},
 			{Type: "int", Name: "tid"},
 			{Type: "int", Name: "sig"},
@@ -5853,7 +5853,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "char*", Name: "filename"},
 			{Type: "struct timeval*", Name: "times"},
 		},
@@ -5877,7 +5877,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -5898,7 +5898,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_numa"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "unsigned long", Name: "len"},
 			{Type: "int", Name: "mode"},
@@ -5926,7 +5926,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_numa"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "mode"},
 			{Type: "const unsigned long*", Name: "nodemask"},
 			{Type: "unsigned long", Name: "maxnode"},
@@ -5951,7 +5951,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_numa"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int*", Name: "mode"},
 			{Type: "unsigned long*", Name: "nodemask"},
 			{Type: "unsigned long", Name: "maxnode"},
@@ -5978,7 +5978,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "int", Name: "oflag"},
 			{Type: "umode_t", Name: "mode"},
@@ -6004,7 +6004,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 		},
 		dependencies: Dependencies{
@@ -6027,7 +6027,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "mqd_t", Name: "mqdes"},
 			{Type: "const char*", Name: "msg_ptr"},
 			{Type: "size_t", Name: "msg_len"},
@@ -6054,7 +6054,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "mqd_t", Name: "mqdes"},
 			{Type: "char*", Name: "msg_ptr"},
 			{Type: "size_t", Name: "msg_len"},
@@ -6081,7 +6081,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "mqd_t", Name: "mqdes"},
 			{Type: "const struct sigevent*", Name: "sevp"},
 		},
@@ -6105,7 +6105,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "mqd_t", Name: "mqdes"},
 			{Type: "const struct mq_attr*", Name: "newattr"},
 			{Type: "struct mq_attr*", Name: "oldattr"},
@@ -6130,7 +6130,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "entry"},
 			{Type: "unsigned long", Name: "nr_segments"},
 			{Type: "struct kexec_segment*", Name: "segments"},
@@ -6156,7 +6156,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "idtype"},
 			{Type: "pid_t", Name: "id"},
 			{Type: "struct siginfo*", Name: "infop"},
@@ -6183,7 +6183,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_keys"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "type"},
 			{Type: "const char*", Name: "description"},
 			{Type: "const void*", Name: "payload"},
@@ -6210,7 +6210,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_keys"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "type"},
 			{Type: "const char*", Name: "description"},
 			{Type: "const char*", Name: "callout_info"},
@@ -6236,7 +6236,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_keys"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "operation"},
 			{Type: "unsigned long", Name: "arg2"},
 			{Type: "unsigned long", Name: "arg3"},
@@ -6263,7 +6263,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "which"},
 			{Type: "int", Name: "who"},
 			{Type: "int", Name: "ioprio"},
@@ -6288,7 +6288,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "which"},
 			{Type: "int", Name: "who"},
 		},
@@ -6312,7 +6312,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_monitor"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -6333,7 +6333,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_monitor"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "u32", Name: "mask"},
@@ -6358,7 +6358,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_monitor"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "wd"},
 		},
@@ -6382,7 +6382,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_numa"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "pid"},
 			{Type: "unsigned long", Name: "maxnode"},
 			{Type: "const unsigned long*", Name: "old_nodes"},
@@ -6408,7 +6408,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "flags"},
@@ -6434,7 +6434,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "umode_t", Name: "mode"},
@@ -6459,7 +6459,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "umode_t", Name: "mode"},
@@ -6485,7 +6485,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "uid_t", Name: "owner"},
@@ -6512,7 +6512,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct timeval*", Name: "times"},
@@ -6537,7 +6537,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct stat*", Name: "statbuf"},
@@ -6563,7 +6563,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_link_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "flags"},
@@ -6588,7 +6588,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "olddirfd"},
 			{Type: "const char*", Name: "oldpath"},
 			{Type: "int", Name: "newdirfd"},
@@ -6614,7 +6614,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_link_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "olddirfd"},
 			{Type: "const char*", Name: "oldpath"},
 			{Type: "int", Name: "newdirfd"},
@@ -6641,7 +6641,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_link_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "target"},
 			{Type: "int", Name: "newdirfd"},
 			{Type: "const char*", Name: "linkpath"},
@@ -6666,7 +6666,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_link_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "char*", Name: "buf"},
@@ -6692,7 +6692,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "umode_t", Name: "mode"},
@@ -6718,7 +6718,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "mode"},
@@ -6744,7 +6744,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "nfds"},
 			{Type: "fd_set*", Name: "readfds"},
 			{Type: "fd_set*", Name: "writefds"},
@@ -6772,7 +6772,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct pollfd*", Name: "fds"},
 			{Type: "unsigned int", Name: "nfds"},
 			{Type: "struct timespec*", Name: "tmo_p"},
@@ -6799,7 +6799,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -6822,7 +6822,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_futex"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct robust_list_head*", Name: "head"},
 			{Type: "size_t", Name: "len"},
 		},
@@ -6846,7 +6846,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_futex"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "pid"},
 			{Type: "struct robust_list_head**", Name: "head_ptr"},
 			{Type: "size_t*", Name: "len_ptr"},
@@ -6871,7 +6871,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_pipe"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd_in"},
 			{Type: "off_t*", Name: "off_in"},
 			{Type: "int", Name: "fd_out"},
@@ -6899,7 +6899,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_pipe"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd_in"},
 			{Type: "int", Name: "fd_out"},
 			{Type: "size_t", Name: "len"},
@@ -6925,7 +6925,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_sync"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "off_t", Name: "offset"},
 			{Type: "off_t", Name: "nbytes"},
@@ -6951,7 +6951,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_pipe"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
 			{Type: "unsigned long", Name: "nr_segs"},
@@ -6977,7 +6977,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_numa"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "pid"},
 			{Type: "unsigned long", Name: "count"},
 			{Type: "const void**", Name: "pages"},
@@ -7005,7 +7005,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct timespec*", Name: "times"},
@@ -7031,7 +7031,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "epfd"},
 			{Type: "struct epoll_event*", Name: "events"},
 			{Type: "int", Name: "maxevents"},
@@ -7059,7 +7059,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "sigset_t*", Name: "mask"},
 			{Type: "int", Name: "flags"},
@@ -7084,7 +7084,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "clockid"},
 			{Type: "int", Name: "flags"},
 		},
@@ -7108,7 +7108,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "initval"},
 			{Type: "int", Name: "flags"},
 		},
@@ -7132,7 +7132,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "mode"},
 			{Type: "off_t", Name: "offset"},
@@ -7158,7 +7158,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "flags"},
 			{Type: "const struct itimerspec*", Name: "new_value"},
@@ -7184,7 +7184,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct itimerspec*", Name: "curr_value"},
 		},
@@ -7208,7 +7208,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "addr"},
 			{Type: "int*", Name: "addrlen"},
@@ -7234,7 +7234,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const sigset_t*", Name: "mask"},
 			{Type: "size_t", Name: "sizemask"},
@@ -7260,7 +7260,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "initval"},
 			{Type: "int", Name: "flags"},
 		},
@@ -7284,7 +7284,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -7307,7 +7307,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_fd_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "oldfd"},
 			{Type: "int", Name: "newfd"},
 			{Type: "int", Name: "flags"},
@@ -7326,7 +7326,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_pipe"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int[2]", Name: "pipefd"},
 			{Type: "int", Name: "flags"},
 		},
@@ -7350,7 +7350,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_monitor"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -7373,7 +7373,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
 			{Type: "unsigned long", Name: "iovcnt"},
@@ -7400,7 +7400,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
 			{Type: "unsigned long", Name: "iovcnt"},
@@ -7427,7 +7427,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "tgid"},
 			{Type: "pid_t", Name: "tid"},
 			{Type: "int", Name: "sig"},
@@ -7453,7 +7453,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct perf_event_attr*", Name: "attr"},
 			{Type: "pid_t", Name: "pid"},
 			{Type: "int", Name: "cpu"},
@@ -7480,7 +7480,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_snd_rcv"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct mmsghdr*", Name: "msgvec"},
 			{Type: "unsigned int", Name: "vlen"},
@@ -7507,7 +7507,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_monitor"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "flags"},
 			{Type: "unsigned int", Name: "event_f_flags"},
 		},
@@ -7531,7 +7531,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_monitor"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fanotify_fd"},
 			{Type: "unsigned int", Name: "flags"},
 			{Type: "u64", Name: "mask"},
@@ -7558,7 +7558,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "int", Name: "resource"},
 			{Type: "const struct rlimit64*", Name: "new_limit"},
@@ -7584,7 +7584,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct file_handle*", Name: "handle"},
@@ -7611,7 +7611,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "mount_fd"},
 			{Type: "struct file_handle*", Name: "handle"},
 			{Type: "int", Name: "flags"},
@@ -7636,7 +7636,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_clock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const clockid_t", Name: "clk_id"},
 			{Type: "struct timex*", Name: "buf"},
 		},
@@ -7660,7 +7660,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_sync"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
@@ -7683,7 +7683,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "net", "net_snd_rcv"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct mmsghdr*", Name: "msgvec"},
 			{Type: "unsigned int", Name: "vlen"},
@@ -7709,7 +7709,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "nstype"},
 		},
@@ -7733,7 +7733,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_numa"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int*", Name: "cpu"},
 			{Type: "unsigned int*", Name: "node"},
 			{Type: "struct getcpu_cache*", Name: "tcache"},
@@ -7758,7 +7758,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "const struct iovec*", Name: "local_iov"},
 			{Type: "unsigned long", Name: "liovcnt"},
@@ -7786,7 +7786,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"default", "syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "const struct iovec*", Name: "local_iov"},
 			{Type: "unsigned long", Name: "liovcnt"},
@@ -7808,7 +7808,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid1"},
 			{Type: "pid_t", Name: "pid2"},
 			{Type: "int", Name: "type"},
@@ -7835,7 +7835,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const char*", Name: "param_values"},
 			{Type: "int", Name: "flags"},
@@ -7860,7 +7860,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "struct sched_attr*", Name: "attr"},
 			{Type: "unsigned int", Name: "flags"},
@@ -7885,7 +7885,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "struct sched_attr*", Name: "attr"},
 			{Type: "unsigned int", Name: "size"},
@@ -7911,7 +7911,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "olddirfd"},
 			{Type: "const char*", Name: "oldpath"},
 			{Type: "int", Name: "newdirfd"},
@@ -7938,7 +7938,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "operation"},
 			{Type: "unsigned int", Name: "flags"},
 			{Type: "const void*", Name: "args"},
@@ -7963,7 +7963,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "buf"},
 			{Type: "size_t", Name: "buflen"},
 			{Type: "unsigned int", Name: "flags"},
@@ -7988,7 +7988,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "unsigned int", Name: "flags"},
 		},
@@ -8012,7 +8012,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "kernel_fd"},
 			{Type: "int", Name: "initrd_fd"},
 			{Type: "unsigned long", Name: "cmdline_len"},
@@ -8039,7 +8039,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "cmd"},
 			{Type: "union bpf_attr*", Name: "attr"},
 			{Type: "unsigned int", Name: "size"},
@@ -8064,7 +8064,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "const char*const*", Name: "argv"},
@@ -8093,7 +8093,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -8116,7 +8116,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "cmd"},
 			{Type: "int", Name: "flags"},
 		},
@@ -8140,7 +8140,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const void*", Name: "addr"},
 			{Type: "size_t", Name: "len"},
 			{Type: "int", Name: "flags"},
@@ -8165,7 +8165,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd_in"},
 			{Type: "off_t*", Name: "off_in"},
 			{Type: "int", Name: "fd_out"},
@@ -8193,7 +8193,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
 			{Type: "unsigned long", Name: "iovcnt"},
@@ -8221,7 +8221,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
 			{Type: "unsigned long", Name: "iovcnt"},
@@ -8249,7 +8249,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "len"},
 			{Type: "int", Name: "prot"},
@@ -8275,7 +8275,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "flags"},
 			{Type: "unsigned long", Name: "access_rights"},
 		},
@@ -8299,7 +8299,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "pkey"},
 		},
 		dependencies: Dependencies{
@@ -8322,7 +8322,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "flags"},
@@ -8349,7 +8349,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "aio_context_t", Name: "ctx_id"},
 			{Type: "long", Name: "min_nr"},
 			{Type: "long", Name: "nr"},
@@ -8377,7 +8377,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct rseq*", Name: "rseq"},
 			{Type: "u32", Name: "rseq_len"},
 			{Type: "int", Name: "flags"},
@@ -8403,7 +8403,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "pidfd"},
 			{Type: "int", Name: "sig"},
 			{Type: "siginfo_t*", Name: "info"},
@@ -8429,7 +8429,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "entries"},
 			{Type: "struct io_uring_params*", Name: "p"},
 		},
@@ -8453,7 +8453,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "unsigned int", Name: "to_submit"},
 			{Type: "unsigned int", Name: "min_complete"},
@@ -8480,7 +8480,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "unsigned int", Name: "opcode"},
 			{Type: "void*", Name: "arg"},
@@ -8506,7 +8506,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dfd"},
 			{Type: "const char*", Name: "filename"},
 			{Type: "unsigned int", Name: "flags"},
@@ -8531,7 +8531,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "from_dfd"},
 			{Type: "const char*", Name: "from_path"},
 			{Type: "int", Name: "to_dfd"},
@@ -8558,7 +8558,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "fsname"},
 			{Type: "unsigned int", Name: "flags"},
 		},
@@ -8582,7 +8582,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int*", Name: "fs_fd"},
 			{Type: "unsigned int", Name: "cmd"},
 			{Type: "const char*", Name: "key"},
@@ -8609,7 +8609,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fsfd"},
 			{Type: "unsigned int", Name: "flags"},
 			{Type: "unsigned int", Name: "ms_flags"},
@@ -8634,7 +8634,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "unsigned int", Name: "flags"},
@@ -8659,7 +8659,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "unsigned int", Name: "flags"},
 		},
@@ -8683,7 +8683,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct clone_args*", Name: "cl_args"},
 			{Type: "size_t", Name: "size"},
 		},
@@ -8707,7 +8707,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "first"},
 			{Type: "unsigned int", Name: "last"},
 		},
@@ -8731,7 +8731,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct open_how*", Name: "how"},
@@ -8757,7 +8757,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "pidfd"},
 			{Type: "int", Name: "targetfd"},
 			{Type: "unsigned int", Name: "flags"},
@@ -8782,7 +8782,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const char*", Name: "path"},
 			{Type: "int", Name: "mode"},
@@ -8808,7 +8808,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "pidfd"},
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "length"},
@@ -8835,7 +8835,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct epoll_event*", Name: "events"},
 			{Type: "int", Name: "maxevents"},
@@ -8862,7 +8862,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dfd"},
 			{Type: "char*", Name: "path"},
 			{Type: "unsigned int", Name: "flags"},
@@ -8889,7 +8889,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "unsigned int", Name: "cmd"},
 			{Type: "qid_t", Name: "id"},
@@ -8915,7 +8915,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct landlock_ruleset_attr*", Name: "attr"},
 			{Type: "size_t", Name: "size"},
 			{Type: "u32", Name: "flags"},
@@ -8940,7 +8940,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "ruleset_fd"},
 			{Type: "landlock_rule_type", Name: "rule_type"},
 			{Type: "void*", Name: "rule_attr"},
@@ -8966,7 +8966,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "ruleset_fd"},
 			{Type: "u32", Name: "flags"},
 		},
@@ -8990,7 +8990,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -9013,7 +9013,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "pidfd"},
 			{Type: "unsigned int", Name: "flags"},
 		},
@@ -9037,7 +9037,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "int*", Name: "status"},
 			{Type: "int", Name: "options"},
@@ -9062,7 +9062,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9083,7 +9083,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9104,7 +9104,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "char*", Name: "filename"},
 			{Type: "struct __old_kernel_stat*", Name: "statbuf"},
 		},
@@ -9128,7 +9128,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "target"},
 		},
 		dependencies: Dependencies{
@@ -9151,7 +9151,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const time_t*", Name: "t"},
 		},
 		dependencies: Dependencies{
@@ -9174,7 +9174,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9195,7 +9195,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9216,7 +9216,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "inc"},
 		},
 		dependencies: Dependencies{
@@ -9239,7 +9239,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9260,7 +9260,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9281,7 +9281,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "signum"},
 			{Type: "sighandler_t", Name: "handler"},
 		},
@@ -9305,7 +9305,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9326,7 +9326,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9347,7 +9347,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9368,7 +9368,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct oldold_utsname*", Name: "name"},
 		},
 		dependencies: Dependencies{
@@ -9391,7 +9391,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sig"},
 			{Type: "const struct sigaction*", Name: "act"},
 			{Type: "struct sigaction*", Name: "oact"},
@@ -9416,7 +9416,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9437,7 +9437,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "long", Name: "newmask"},
 		},
 		dependencies: Dependencies{
@@ -9460,7 +9460,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const sigset_t*", Name: "mask"},
 		},
 		dependencies: Dependencies{
@@ -9483,7 +9483,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "sigset_t*", Name: "set"},
 		},
 		dependencies: Dependencies{
@@ -9506,7 +9506,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct stat*", Name: "statbuf"},
 		},
@@ -9530,7 +9530,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "struct old_linux_dirent*", Name: "dirp"},
 			{Type: "unsigned int", Name: "count"},
@@ -9555,7 +9555,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9576,7 +9576,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "call"},
 			{Type: "unsigned long*", Name: "args"},
 		},
@@ -9600,7 +9600,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct utsname*", Name: "buf"},
 		},
 		dependencies: Dependencies{
@@ -9623,7 +9623,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9644,7 +9644,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct vm86_struct*", Name: "info"},
 		},
 		dependencies: Dependencies{
@@ -9667,7 +9667,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "call"},
 			{Type: "int", Name: "first"},
 			{Type: "unsigned long", Name: "second"},
@@ -9695,7 +9695,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9716,7 +9716,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "how"},
 			{Type: "const sigset_t *restrict", Name: "set"},
 			{Type: "sigset_t *restrict", Name: "oldset"},
@@ -9741,7 +9741,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9762,7 +9762,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -9783,7 +9783,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "unsigned long", Name: "offset_high"},
 			{Type: "unsigned long", Name: "offset_low"},
@@ -9810,7 +9810,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "nfds"},
 			{Type: "fd_set*", Name: "readfds"},
 			{Type: "fd_set*", Name: "writefds"},
@@ -9837,7 +9837,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "fn"},
 			{Type: "struct vm86plus_struct*", Name: "v86"},
 		},
@@ -9861,7 +9861,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "resource"},
 			{Type: "struct rlimit*", Name: "rlim"},
 		},
@@ -9885,7 +9885,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "addr"},
 			{Type: "unsigned long", Name: "length"},
 			{Type: "unsigned long", Name: "prot"},
@@ -9913,7 +9913,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "off_t", Name: "length"},
 		},
@@ -9937,7 +9937,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "off_t", Name: "length"},
 		},
@@ -9961,7 +9961,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct stat64*", Name: "statbuf"},
 		},
@@ -9985,7 +9985,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct stat64*", Name: "statbuf"},
 		},
@@ -10009,7 +10009,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct stat64*", Name: "statbuf"},
 		},
@@ -10033,7 +10033,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "old_uid_t", Name: "owner"},
 			{Type: "old_gid_t", Name: "group"},
@@ -10058,7 +10058,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -10079,7 +10079,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -10100,7 +10100,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -10121,7 +10121,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -10142,7 +10142,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "old_uid_t", Name: "ruid"},
 			{Type: "old_uid_t", Name: "euid"},
 		},
@@ -10166,7 +10166,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "old_gid_t", Name: "rgid"},
 			{Type: "old_gid_t", Name: "egid"},
 		},
@@ -10190,7 +10190,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "size"},
 			{Type: "old_gid_t*", Name: "list"},
 		},
@@ -10214,7 +10214,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "size_t", Name: "size"},
 			{Type: "const gid_t*", Name: "list"},
 		},
@@ -10238,7 +10238,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "old_uid_t", Name: "user"},
 			{Type: "old_gid_t", Name: "group"},
@@ -10263,7 +10263,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "old_uid_t", Name: "ruid"},
 			{Type: "old_uid_t", Name: "euid"},
 			{Type: "old_uid_t", Name: "suid"},
@@ -10288,7 +10288,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "old_uid_t*", Name: "ruid"},
 			{Type: "old_uid_t*", Name: "euid"},
 			{Type: "old_uid_t*", Name: "suid"},
@@ -10313,7 +10313,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "old_uid_t", Name: "rgid"},
 			{Type: "old_uid_t", Name: "euid"},
 			{Type: "old_uid_t", Name: "suid"},
@@ -10338,7 +10338,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "old_gid_t*", Name: "rgid"},
 			{Type: "old_gid_t*", Name: "egid"},
 			{Type: "old_gid_t*", Name: "sgid"},
@@ -10363,7 +10363,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "old_uid_t", Name: "owner"},
 			{Type: "old_gid_t", Name: "group"},
@@ -10388,7 +10388,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "old_uid_t", Name: "uid"},
 		},
 		dependencies: Dependencies{
@@ -10411,7 +10411,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "old_gid_t", Name: "gid"},
 		},
 		dependencies: Dependencies{
@@ -10434,7 +10434,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "old_uid_t", Name: "fsuid"},
 		},
 		dependencies: Dependencies{
@@ -10457,7 +10457,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "old_gid_t", Name: "fsgid"},
 		},
 		dependencies: Dependencies{
@@ -10480,7 +10480,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "cmd"},
 			{Type: "unsigned long", Name: "arg"},
@@ -10505,7 +10505,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "out_fd"},
 			{Type: "int", Name: "in_fd"},
 			{Type: "off_t*", Name: "offset"},
@@ -10531,7 +10531,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "size_t", Name: "sz"},
 			{Type: "struct statfs64*", Name: "buf"},
@@ -10556,7 +10556,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "size_t", Name: "sz"},
 			{Type: "struct statfs64*", Name: "buf"},
@@ -10581,7 +10581,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "loff_t", Name: "offset"},
 			{Type: "loff_t", Name: "len"},
@@ -10607,7 +10607,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "clockid_t", Name: "which_clock"},
 			{Type: "struct old_timespec32*", Name: "tp"},
 		},
@@ -10631,7 +10631,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "clockid_t", Name: "which_clock"},
 			{Type: "struct old_timespec32*", Name: "tp"},
 		},
@@ -10655,7 +10655,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -10676,7 +10676,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "clockid_t", Name: "which_clock"},
 			{Type: "struct old_timespec32*", Name: "tp"},
 		},
@@ -10700,7 +10700,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "clockid_t", Name: "which_clock"},
 			{Type: "int", Name: "flags"},
 			{Type: "struct old_timespec32*", Name: "rqtp"},
@@ -10726,7 +10726,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "timer_t", Name: "timer_id"},
 			{Type: "struct old_itimerspec32*", Name: "setting"},
 		},
@@ -10750,7 +10750,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "timer_t", Name: "timer_id"},
 			{Type: "int", Name: "flags"},
 			{Type: "struct old_itimerspec32*", Name: "new"},
@@ -10776,7 +10776,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "ufd"},
 			{Type: "struct old_itimerspec32*", Name: "otmr"},
 		},
@@ -10800,7 +10800,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "ufd"},
 			{Type: "int", Name: "flags"},
 			{Type: "struct old_itimerspec32*", Name: "utmr"},
@@ -10826,7 +10826,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "dfd"},
 			{Type: "char*", Name: "filename"},
 			{Type: "struct old_timespec32*", Name: "t"},
@@ -10852,7 +10852,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "n"},
 			{Type: "fd_set*", Name: "inp"},
 			{Type: "fd_set*", Name: "outp"},
@@ -10880,7 +10880,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "struct pollfd*", Name: "ufds"},
 			{Type: "unsigned int", Name: "nfds"},
 			{Type: "struct old_timespec32*", Name: "tsp"},
@@ -10907,7 +10907,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SyscallEnter__Internal, required: true},
@@ -10928,7 +10928,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct mmsghdr*", Name: "mmsg"},
 			{Type: "unsigned int", Name: "vlen"},
@@ -10955,7 +10955,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "mqd_t", Name: "mqdes"},
 			{Type: "char*", Name: "u_msg_ptr"},
 			{Type: "unsigned int", Name: "msg_len"},
@@ -10982,7 +10982,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "mqd_t", Name: "mqdes"},
 			{Type: "char*", Name: "u_msg_ptr"},
 			{Type: "unsigned int", Name: "msg_len"},
@@ -11009,7 +11009,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "sigset_t*", Name: "uthese"},
 			{Type: "siginfo_t*", Name: "uinfo"},
 			{Type: "struct old_timespec32*", Name: "uts"},
@@ -11035,7 +11035,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u32*", Name: "uaddr"},
 			{Type: "int", Name: "op"},
 			{Type: "u32", Name: "val"},
@@ -11063,7 +11063,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "struct old_timespec32*", Name: "interval"},
 		},
@@ -11094,7 +11094,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "syscall"},
 		},
 	},
@@ -11109,7 +11109,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "syscall"},
 		},
 	},
@@ -11124,7 +11124,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			// Real Parent
 			{Type: "int", Name: "parent_tid"},
 			{Type: "int", Name: "parent_ns_tid"},
@@ -11178,7 +11178,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default", "proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "cmdpath"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "dev_t", Name: "dev"},
@@ -11210,7 +11210,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"proc", "proc_life"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "long", Name: "exit_code"},
 			// The field value represents that all threads exited at the event time.
 			// Multiple exits of threads of the same process group at the same time could result that all threads exit
@@ -11229,7 +11229,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "cpu"},
 			{Type: "int", Name: "prev_tid"},
 			{Type: "const char*", Name: "prev_comm"},
@@ -11246,7 +11246,7 @@ var CoreEvents = map[ID]Definition{
 			probes: []Probe{{handle: probes.DoExit, required: true}},
 		},
 		sets:   []string{"proc", "proc_life"},
-		params: []trace.ArgMeta{},
+		fields: []trace.ArgMeta{},
 	},
 	CapCapable: {
 		id:      CapCapable,
@@ -11259,7 +11259,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "cap"},
 		},
 	},
@@ -11275,7 +11275,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
@@ -11295,7 +11295,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
@@ -11315,7 +11315,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u32", Name: "alert"},
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "len"},
@@ -11338,7 +11338,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "slim_cred_t", Name: "old_cred"},
 			{Type: "slim_cred_t", Name: "new_cred"},
 		},
@@ -11354,7 +11354,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "u32", Name: "new_mnt"},
 			{Type: "u32", Name: "new_pid"},
@@ -11381,7 +11381,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "bytes", Name: "bytes"},
 			{Type: "dev_t", Name: "dev"},
@@ -11399,7 +11399,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "cgroup_path"},
 			{Type: "const char*", Name: "comm"},
 			{Type: "pid_t", Name: "pid"},
@@ -11416,7 +11416,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u64", Name: "cgroup_id"},
 			{Type: "const char*", Name: "cgroup_path"},
 			{Type: "u32", Name: "hierarchy_id"},
@@ -11433,7 +11433,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u64", Name: "cgroup_id"},
 			{Type: "const char*", Name: "cgroup_path"},
 			{Type: "u32", Name: "hierarchy_id"},
@@ -11460,7 +11460,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks", "proc", "proc_life"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
@@ -11479,7 +11479,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "flags"},
 			{Type: "dev_t", Name: "dev"},
@@ -11499,7 +11499,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "unsigned long", Name: "inode"},
 			{Type: "dev_t", Name: "dev"},
@@ -11517,7 +11517,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "family"},
 			{Type: "int", Name: "type"},
 			{Type: "int", Name: "protocol"},
@@ -11539,7 +11539,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "local_addr"},
 			{Type: "int", Name: "backlog"},
@@ -11556,7 +11556,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "int", Name: "type"},
 			{Type: "struct sockaddr*", Name: "remote_addr"},
@@ -11573,7 +11573,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default", "flows"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "dst"},
 			{Type: "int", Name: "dst_port"},
 			{Type: "const char **", Name: "dst_dns"},
@@ -11590,7 +11590,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "local_addr"},
 		},
@@ -11607,7 +11607,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "local_addr"},
 		},
@@ -11624,7 +11624,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks", "net", "net_sock"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "int", Name: "level"},
 			{Type: "int", Name: "optname"},
@@ -11642,7 +11642,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "fs"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "dev_name"},
 			{Type: "const char*", Name: "path"},
 			{Type: "const char*", Name: "type"},
@@ -11660,7 +11660,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "cmd"},
 		},
 	},
@@ -11675,7 +11675,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "map_id"},
 			{Type: "const char*", Name: "map_name"},
 		},
@@ -11691,7 +11691,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
@@ -11710,7 +11710,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "long", Name: "size"},
 			{Type: "int", Name: "type"},
@@ -11727,7 +11727,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "file_name"},
 			{Type: "umode_t", Name: "mode"},
 			{Type: "dev_t", Name: "dev"},
@@ -11744,7 +11744,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "linkpath"},
 			{Type: "const char*", Name: "target"},
 		},
@@ -11760,7 +11760,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "flags"},
 			{Type: "dev_t", Name: "dev"},
@@ -11782,7 +11782,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"fs", "fs_file_ops", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "unsigned int", Name: "flags"},
@@ -11811,7 +11811,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks", "proc", "proc_mem", "fs", "fs_file_ops"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "prot"},
 			{Type: "unsigned long", Name: "ctime"},
@@ -11834,7 +11834,7 @@ var CoreEvents = map[ID]Definition{
 				},
 			},
 		},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u32", Name: "cgroup"},
 			{Type: "u32", Name: "ipc"},
 			{Type: "u32", Name: "mnt"},
@@ -11854,7 +11854,7 @@ var CoreEvents = map[ID]Definition{
 		version:      NewVersion(1, 0, 0),
 		sets:         []string{},
 		dependencies: Dependencies{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u64", Name: "boot_time"},
 			{Type: "u64", Name: "start_time"},
 			{Type: "const char*", Name: "version"},
@@ -11879,7 +11879,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "oldfd"},
 			{Type: "int", Name: "newfd"},
 			{Type: "struct sockaddr*", Name: "remote_addr"},
@@ -11896,7 +11896,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "char*", Name: "hidden_process"},
 		},
 	},
@@ -11912,7 +11912,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
@@ -11935,7 +11935,7 @@ var CoreEvents = map[ID]Definition{
 				{symbol: "pipe_write", required: true},
 			},
 		},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "inode_in"},
 			{Type: "umode_t", Name: "in_file_type"},
 			{Type: "const char*", Name: "in_file_path"},
@@ -11954,7 +11954,7 @@ var CoreEvents = map[ID]Definition{
 			ids: []ID{CgroupMkdir},
 		},
 		sets: []string{"default", "containers"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "runtime"},
 			{Type: "const char*", Name: "container_id"},
 			{Type: "unsigned long", Name: "ctime"},
@@ -11976,7 +11976,7 @@ var CoreEvents = map[ID]Definition{
 			ids: []ID{CgroupRmdir},
 		},
 		sets: []string{"default", "containers"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "runtime"},
 			{Type: "const char*", Name: "container_id"},
 		},
@@ -11987,7 +11987,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "existing_container",
 		version: NewVersion(1, 0, 0),
 		sets:    []string{"containers"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "runtime"},
 			{Type: "const char*", Name: "container_id"},
 			{Type: "unsigned long", Name: "ctime"},
@@ -12011,7 +12011,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "char*", Name: "name"},
 			{Type: "void*", Name: "proc_ops_addr"},
 		},
@@ -12028,7 +12028,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "char*", Name: "symbol_name"},
 			{Type: "void*", Name: "pre_handler_addr"},
 			{Type: "void*", Name: "post_handler_addr"},
@@ -12045,7 +12045,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "const char*const*", Name: "argv"},
 			{Type: "const char*const*", Name: "envp"},
@@ -12063,7 +12063,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "file_name"},
 			{Type: "const char*", Name: "path"},
 			{Type: "umode_t", Name: "mode"},
@@ -12085,7 +12085,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "syscall_id"},
 			{Type: "unsigned long", Name: "syscall_address"},
 		},
@@ -12101,7 +12101,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "address"},
 			{Type: "const char*", Name: "name"},
 			{Type: "const char*", Name: "srcversion"},
@@ -12135,7 +12135,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "address"},
 			{Type: "bytes", Name: "name"},
 			{Type: "unsigned int", Name: "flags"},
@@ -12159,7 +12159,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "syscall"},
 			{Type: "const char*", Name: "address"},
 			{Type: "const char*", Name: "function"},
@@ -12177,7 +12177,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "const char*", Name: "path"},
 		},
@@ -12193,7 +12193,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "const char*", Name: "parent_name"},
 		},
@@ -12210,7 +12210,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "requested_major_number"},
 			{Type: "unsigned int", Name: "granted_major_number"},
 			{Type: "const char*", Name: "char_device_name"},
@@ -12233,7 +12233,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "flags"},
 			{Type: "dev_t", Name: "dev"},
@@ -12254,7 +12254,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"derived", "fs", "security_alert"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "library_path"},
 			{Type: "const char*const*", Name: "symbols"},
 			{Type: "const char *", Name: "sha256"},
@@ -12273,7 +12273,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "loaded_path"},
 			{Type: "const char*", Name: "collision_path"},
 			{Type: "const char*const*", Name: "symbols"},
@@ -12413,7 +12413,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "const char*", Name: "version"},
 			{Type: "const char*", Name: "src_version"},
@@ -12430,7 +12430,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "const char*", Name: "version"},
 			{Type: "const char*", Name: "src_version"},
@@ -12451,7 +12451,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "const char*", Name: "version"},
 			{Type: "const char*", Name: "src_version"},
@@ -12477,7 +12477,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "local_addr"},
 			{Type: "struct sockaddr*", Name: "remote_addr"}},
@@ -12493,7 +12493,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
@@ -12522,7 +12522,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "[]trace.HookedSymbolData", Name: "hooked_fops_pointers"},
 		},
 	},
@@ -12546,7 +12546,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		internal: true,
 		sets:     []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "unsigned long[]", Name: "net_seq_ops"},
 			{Type: "unsigned long", Name: trigger.ContextArgName},
 		},
@@ -12572,7 +12572,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "map[string]trace.HookedSymbolData", Name: "hooked_seq_ops"},
 		},
 	},
@@ -12587,7 +12587,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "old_name"},
 			{Type: "const char*", Name: "new_name"},
 		},
@@ -12603,7 +12603,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "old_path"},
 			{Type: "const char*", Name: "new_path"},
 		},
@@ -12619,7 +12619,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"proc"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "sig"},
 			{Type: "bool", Name: "is_sa_initialized"},
 			{Type: "unsigned long", Name: "sa_flags"},
@@ -12650,7 +12650,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "prog_type"},
 			{Type: "const char*", Name: "prog_name"},
 			{Type: "u32", Name: "prog_id"},
@@ -12673,7 +12673,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "symbol_name"},
 			{Type: "void*", Name: "symbol_address"},
 		},
@@ -12704,7 +12704,7 @@ var CoreEvents = map[ID]Definition{
 				},
 			},
 		},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "bytes", Name: "bytes"},
 			{Type: "void*", Name: "address"},
 			{Type: "u64", Name: "length"},
@@ -12726,7 +12726,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
@@ -12746,7 +12746,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
@@ -12766,7 +12766,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
@@ -12785,7 +12785,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "unsigned long", Name: "inode"},
 			{Type: "dev_t", Name: "dev"},
@@ -12799,7 +12799,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		docPath: "kprobes/file_modification.md",
 		sets:    []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "file_path"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
@@ -12829,7 +12829,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "unsigned long", Name: "inode"},
 			{Type: "dev_t", Name: "dev"},
@@ -12850,7 +12850,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "type"},
 			{Type: "const char*", Name: "name"},
 			{Type: "unsigned long[]", Name: "helpers"},
@@ -12878,7 +12878,7 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.ExecuteAtFinishedCompatARM, required: false},
 			},
 		},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "int", Name: "flags"},
 			{Type: "const char*", Name: "pathname"},
@@ -12912,7 +12912,7 @@ var CoreEvents = map[ID]Definition{
 				{"prog_array", "process_execute_failed_tail", []uint32{TailProcessExecuteFailed}},
 			},
 		},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "int", Name: "flags"},
 			{Type: "const char*", Name: "pathname"},
@@ -12938,7 +12938,7 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			ids: []ID{ProcessExecuteFailedInternal},
 		},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "int", Name: "flags"},
 			{Type: "const char*", Name: "pathname"},
@@ -12965,7 +12965,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "symbol"},
 			{Type: "const char*", Name: "trampoline"},
 			{Type: "const char*", Name: "callback"},
@@ -12986,7 +12986,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm_hooks", "fs_monitor"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "unsigned long", Name: "inode"},
 			{Type: "dev_t", Name: "dev"},
@@ -13004,7 +13004,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "unresolved_path"},
 			{Type: "const char*", Name: "resolved_path"},
 		},
@@ -13019,7 +13019,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u32", Name: "target_host_pid"},
 			{Type: "int", Name: "resource"},
 			{Type: "u64", Name: "new_rlim_cur"},
@@ -13036,7 +13036,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"lsm"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u64", Name: "tv_sec"},
 			{Type: "u64", Name: "tv_nsec"},
 			{Type: "int", Name: "tz_minuteswest"},
@@ -13050,7 +13050,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"default"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "umode_t", Name: "mode"},
 		},
@@ -13074,7 +13074,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"signal"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u64", Name: "cgroup_id"},
 			{Type: "const char*", Name: "cgroup_path"},
 			{Type: "u32", Name: "hierarchy_id"},
@@ -13091,7 +13091,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"signal"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u64", Name: "cgroup_id"},
 			{Type: "const char*", Name: "cgroup_path"},
 			{Type: "u32", Name: "hierarchy_id"},
@@ -13108,7 +13108,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"signal"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u64", Name: "timestamp"},
 			// Real Parent
 			{Type: "int", Name: "parent_tid"},
@@ -13150,7 +13150,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"signal"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u64", Name: "timestamp"},
 			{Type: "u32", Name: "task_hash"},
 			{Type: "u32", Name: "parent_hash"},
@@ -13186,7 +13186,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"signal"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "u64", Name: "timestamp"},
 			{Type: "u32", Name: "task_hash"},
 			{Type: "u32", Name: "parent_hash"},
@@ -13222,7 +13222,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets:   []string{"network_events"},
-		params: []trace.ArgMeta{},
+		fields: []trace.ArgMeta{},
 	},
 	NetPacketRaw: {
 		id:      NetPacketRaw,
@@ -13235,7 +13235,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"packets"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "bytes", Name: "data"},
 		},
 	},
@@ -13251,7 +13251,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "bytes", Name: "payload"},
 		},
 	},
@@ -13266,7 +13266,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "trace.PacketMetadata", Name: "metadata"},
@@ -13284,7 +13284,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "trace.PacketMetadata", Name: "metadata"},
@@ -13303,7 +13303,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "bytes", Name: "payload"},
 		},
 	},
@@ -13318,7 +13318,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "u16", Name: "src_port"},    // TODO: pack and remove into trace.PacketMetadata after it supports filtering
@@ -13339,7 +13339,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "bytes", Name: "payload"},
 		},
 	},
@@ -13354,7 +13354,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "u16", Name: "src_port"},    // TODO: pack and remove into trace.PacketMetadata after it supports filtering
@@ -13375,7 +13375,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		internal: true,
 		sets:     []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "bytes", Name: "payload"},
 		},
 	},
@@ -13390,7 +13390,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default", "network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "trace.PacketMetadata", Name: "metadata"},
@@ -13409,7 +13409,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "bytes", Name: "payload"},
 		},
 	},
@@ -13424,7 +13424,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default", "network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "trace.PacketMetadata", Name: "metadata"},
@@ -13443,7 +13443,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "bytes", Name: "payload"},
 		},
 	},
@@ -13458,7 +13458,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "u16", Name: "src_port"},    // TODO: pack and remove into trace.PacketMetadata after it supports filtering
@@ -13478,7 +13478,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default", "network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "trace.PktMeta", Name: "metadata"},
 			{Type: "[]trace.DnsQueryData", Name: "dns_questions"},
 		},
@@ -13494,7 +13494,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default", "network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "trace.PktMeta", Name: "metadata"},
 			{Type: "[]trace.DnsResponseData", Name: "dns_response"},
 		},
@@ -13511,7 +13511,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "bytes", Name: "payload"},
 		},
 	},
@@ -13526,7 +13526,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{Type: "u16", Name: "src_port"},    // TODO: pack and remove into trace.PacketMetadata after it supports filtering
@@ -13546,7 +13546,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default", "network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "trace.PktMeta", Name: "metadata"},
 			{Type: "trace.ProtoHTTPRequest", Name: "http_request"},
 		},
@@ -13562,7 +13562,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"default", "network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "trace.PktMeta", Name: "metadata"},
 			{Type: "trace.ProtoHTTPResponse", Name: "http_response"},
 		},
@@ -13578,7 +13578,7 @@ var CoreEvents = map[ID]Definition{
 				NetPacketBase,
 			},
 		},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "bytes", Name: "payload"},
 		},
 	},
@@ -13606,7 +13606,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "bytes", Name: "payload"},
 		},
 	},
@@ -13621,7 +13621,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events", "flows"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "conn_direction"},
 			{Type: "const char*", Name: "src"},
 			{Type: "const char*", Name: "dst"},
@@ -13642,7 +13642,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"network_events", "flows"},
-		params: []trace.ArgMeta{
+		fields: []trace.ArgMeta{
 			{Type: "const char*", Name: "conn_direction"},
 			{Type: "const char*", Name: "src"},
 			{Type: "const char*", Name: "dst"},
@@ -13667,7 +13667,7 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.EmptyKprobe, required: true},
 			},
 		},
-		params: []trace.ArgMeta{},
+		fields: []trace.ArgMeta{},
 	},
 	MissingKsymbol: {
 		id:      MissingKsymbol,
@@ -13676,7 +13676,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: false,
 		sets:    []string{"tests", "dependencies"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			kSymbols: []KSymbol{
 				{symbol: "non_existing_symbol", required: true},
@@ -13694,7 +13694,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: false,
 		sets:    []string{"tests", "dependencies"},
-		params:  []trace.ArgMeta{},
+		fields:  []trace.ArgMeta{},
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.TestUnavailableHook, required: true},

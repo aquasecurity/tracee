@@ -49,7 +49,7 @@ const (
 
 // readArgFromBuff read the next argument from the buffer.
 // Return the index of the argument and the parsed argument.
-func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta,
+func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.ArgMeta,
 ) (
 	uint, trace.Argument, error,
 ) {
@@ -62,11 +62,11 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 	if err != nil {
 		return 0, arg, errfmt.Errorf("error reading arg index: %v", err)
 	}
-	if int(argIdx) >= len(params) {
+	if int(argIdx) >= len(fields) {
 		return 0, arg, errfmt.Errorf("invalid arg index %d", argIdx)
 	}
-	arg.ArgMeta = params[argIdx]
-	argType := GetParamType(arg.Type)
+	arg.ArgMeta = fields[argIdx]
+	argType := GetFieldType(arg.Type)
 
 	switch argType {
 	case u8T:
@@ -196,8 +196,8 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 	return uint(argIdx), arg, nil
 }
 
-func GetParamType(paramType string) ArgType {
-	switch paramType {
+func GetFieldType(fieldType string) ArgType {
+	switch fieldType {
 	case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
 		return intT
 	case "unsigned int", "u32":

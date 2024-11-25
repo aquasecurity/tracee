@@ -114,15 +114,15 @@ func getFtraceHooksData() ([]byte, error) {
 	return data, err
 }
 
-func initFtraceArgs(params []trace.ArgMeta) []trace.Argument {
+func initFtraceArgs(fields []trace.ArgMeta) []trace.Argument {
 	args := []trace.Argument{ // Init empty args
-		{ArgMeta: params[symbolIndex], Value: nil},
-		{ArgMeta: params[trampIndex], Value: nil},
-		{ArgMeta: params[callbackFuncIndex], Value: nil},
-		{ArgMeta: params[callbackOffsetIndex], Value: nil},
-		{ArgMeta: params[callbackOwnerIndex], Value: nil},
-		{ArgMeta: params[flagsIndex], Value: nil},
-		{ArgMeta: params[countIndex], Value: nil},
+		{ArgMeta: fields[symbolIndex], Value: nil},
+		{ArgMeta: fields[trampIndex], Value: nil},
+		{ArgMeta: fields[callbackFuncIndex], Value: nil},
+		{ArgMeta: fields[callbackOffsetIndex], Value: nil},
+		{ArgMeta: fields[callbackOwnerIndex], Value: nil},
+		{ArgMeta: fields[flagsIndex], Value: nil},
+		{ArgMeta: fields[countIndex], Value: nil},
 	}
 
 	return args
@@ -149,8 +149,8 @@ func checkFtraceHooks(eventsCounter counter.Counter, out chan *trace.Event, base
 
 		ftraceLine = strings.ReplaceAll(ftraceLine, "\t", " ")
 
-		params := ftraceDef.GetParams()
-		args := initFtraceArgs(params)
+		fields := ftraceDef.GetFields()
+		args := initFtraceArgs(fields)
 		err = parseEventArgs(ftraceLine, args) // Fill args
 		if err != nil {
 			return err

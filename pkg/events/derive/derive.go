@@ -67,7 +67,7 @@ func (t Table) DeriveEvent(event trace.Event, origArgs []trace.Argument) ([]trac
 type deriveBase struct {
 	Name   string
 	ID     int
-	Params []trace.ArgMeta
+	Fields []trace.ArgMeta
 }
 
 // deriveArgsFunction defines the logic of deriving an Event.
@@ -108,7 +108,7 @@ func deriveSingleEvent(id events.ID, deriveArgs deriveArgsFunction) DeriveFuncti
 // deriveMultipleEvents create an deriveFunction to generate multiple derive trace.Events.
 // The events will be created using the original event information, the ID given and the arguments given.
 // The order of the arguments given will match the order in the event definition, so make sure the order match
-// the order of the params in the events.event struct of the event under events.Definitions.
+// the order of the fields in the events.event struct of the event under events.Definitions.
 // If the arguments given is nil, then no event will be derived.
 func deriveMultipleEvents(id events.ID, multiDeriveArgsFunc multiDeriveArgsFunction) DeriveFunction {
 	skeleton := makeDeriveBase(id)
@@ -133,8 +133,8 @@ func deriveMultipleEvents(id events.ID, multiDeriveArgsFunc multiDeriveArgsFunct
 // buildDerivedEvent create a new derived event from given event values, adjusted by the derived event skeleton meta-data.
 // This method enables using the context of the base event, but with the new arguments and meta-data of the derived one.
 func buildDerivedEvent(baseEvent *trace.Event, skeleton deriveBase, argsValues []interface{}) (trace.Event, error) {
-	if len(skeleton.Params) != len(argsValues) {
-		return trace.Event{}, unexpectedArgCountError(skeleton.Name, len(skeleton.Params), len(argsValues))
+	if len(skeleton.Fields) != len(argsValues) {
+		return trace.Event{}, unexpectedArgCountError(skeleton.Name, len(skeleton.Fields), len(argsValues))
 	}
 	de := *baseEvent // shallow copy
 	de.PoliciesVersion = baseEvent.PoliciesVersion
@@ -142,9 +142,9 @@ func buildDerivedEvent(baseEvent *trace.Event, skeleton deriveBase, argsValues [
 	de.EventName = skeleton.Name
 	de.ReturnValue = 0
 	de.StackAddresses = make([]uint64, 1)
-	de.Args = make([]trace.Argument, len(skeleton.Params))
+	de.Args = make([]trace.Argument, len(skeleton.Fields))
 	for i, value := range argsValues {
-		de.Args[i] = trace.Argument{ArgMeta: skeleton.Params[i], Value: value}
+		de.Args[i] = trace.Argument{ArgMeta: skeleton.Fields[i], Value: value}
 	}
 	de.ArgsNum = len(de.Args)
 	return de, nil
@@ -158,6 +158,6 @@ func makeDeriveBase(eventID events.ID) deriveBase {
 	return deriveBase{
 		Name:   def.GetName(),
 		ID:     int(eventID),
-		Params: def.GetParams(),
+		Fields: def.GetFields(),
 	}
 }

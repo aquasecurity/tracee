@@ -193,7 +193,7 @@ func (r GPTDocsRunner) GenerateSyscall(
 
 	var y []byte
 
-	y, err = yaml.Marshal(evt.GetParams())
+	y, err = yaml.Marshal(evt.GetFields())
 	if err != nil {
 		logger.Errorw("Error marshaling event", "err", err)
 	}
@@ -213,7 +213,7 @@ given syscall. The template for this markdown file is the following:
 	reqStr := fmt.Sprintf("%s"+ // head
 		"\n%s\n\n"+ // template
 		"The event, or syscall, name is \"%s\" "+
-		"and the parameter names and types are:\n"+
+		"and the field names and types are:\n"+
 		"\n%s\n",
 		headNote, templateYaml, evt.GetName(), eventArgsYaml,
 	)

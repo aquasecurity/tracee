@@ -22,12 +22,12 @@ func InitProcessExecuteFailedGenerator() (*ExecFailedGenerator, error) {
 	// For now, we assume that the current value is sufficient
 	const executionEventsCacheSize = 16
 
-	executeParamsCache, err := lru.New[int, *trace.Event](executionEventsCacheSize)
+	executeFieldsCache, err := lru.New[int, *trace.Event](executionEventsCacheSize)
 	if err != nil {
 		return nil, err
 	}
 	return &ExecFailedGenerator{
-		baseEvents: executeParamsCache,
+		baseEvents: executeFieldsCache,
 		deriveBase: makeDeriveBase(events.ProcessExecuteFailed),
 	}, nil
 }

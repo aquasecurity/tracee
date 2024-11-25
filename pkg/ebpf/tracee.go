@@ -68,7 +68,7 @@ type Tracee struct {
 	// Events
 	eventsSorter     *sorting.EventsChronologicalSorter
 	eventsPool       *sync.Pool
-	eventsParamTypes map[events.ID][]bufferdecoder.ArgType
+	eventsFieldTypes map[events.ID][]bufferdecoder.ArgType
 	eventProcessor   map[events.ID][]func(evt *trace.Event) error
 	eventDerivations derive.Table
 	// Artifacts
@@ -415,14 +415,14 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.Errorf("error initializing event derivation map: %v", err)
 	}
 
-	// Initialize events parameter types map
+	// Initialize events field types map
 
-	t.eventsParamTypes = make(map[events.ID][]bufferdecoder.ArgType)
+	t.eventsFieldTypes = make(map[events.ID][]bufferdecoder.ArgType)
 	for _, eventDefinition := range events.Core.GetDefinitions() {
 		id := eventDefinition.GetID()
-		params := eventDefinition.GetParams()
-		for _, param := range params {
-			t.eventsParamTypes[id] = append(t.eventsParamTypes[id], bufferdecoder.GetParamType(param.Type))
+		fields := eventDefinition.GetFields()
+		for _, field := range fields {
+			t.eventsFieldTypes[id] = append(t.eventsFieldTypes[id], bufferdecoder.GetFieldType(field.Type))
 		}
 	}
 
@@ -1115,7 +1115,7 @@ func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
 	polCfg, err := t.policyManager.UpdateBPF(
 		t.bpfModule,
 		t.containers,
-		t.eventsParamTypes,
+		t.eventsFieldTypes,
 		true,
 		updateProcTree,
 	)
@@ -1277,7 +1277,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
-	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventsParamTypes, false, true)
+	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventsFieldTypes, false, true)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

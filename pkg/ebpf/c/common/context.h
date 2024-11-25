@@ -194,7 +194,7 @@ statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
         p->event->config.submit_for_policies = 0;
         event_config_t *event_config = get_event_config(event_id, p->event->context.policies_version);
         if (event_config != NULL) {
-            p->event->config.param_types = event_config->param_types;
+            p->event->config.field_types = event_config->field_types;
             p->event->config.submit_for_policies = event_config->submit_for_policies;
         }
     }
@@ -251,7 +251,7 @@ statfunc bool reset_event(event_data_t *event, u32 event_id)
     if (event_config == NULL)
         return false;
 
-    event->config.param_types = event_config->param_types;
+    event->config.field_types = event_config->field_types;
     event->config.submit_for_policies = event_config->submit_for_policies;
     event->context.matched_policies = event_config->submit_for_policies;
 
