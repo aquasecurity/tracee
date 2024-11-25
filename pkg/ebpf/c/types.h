@@ -577,4 +577,9 @@ typedef struct {
     u64 vma_addr;
 } syscall_source_key_t;
 
+typedef struct {
+    u64 start;
+    u64 end;
+} address_range_t;
+
 #endif
