@@ -89,13 +89,13 @@ func (decoder *EbpfDecoder) DecodeContext(eCtx *EventContext) error {
 // DecodeArguments decodes the remaining buffer's argument values, according to the given event definition.
 // It should be called last, and after decoding the argnum with DecodeUint8.
 //
-// Argument array passed should be initialized with the size of len(evtParams).
-func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, evtParams []trace.ArgMeta, evtName string, eventId events.ID) error {
+// Argument array passed should be initialized with the size of len(evtFields).
+func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, evtFields []trace.ArgMeta, evtName string, eventId events.ID) error {
 	for i := 0; i < argnum; i++ {
 		idx, arg, err := readArgFromBuff(
 			eventId,
 			decoder,
-			evtParams,
+			evtFields,
 		)
 		if err != nil {
 			logger.Errorw("error reading argument from buffer", "error", errfmt.Errorf("failed to read argument %d of event %s: %v", i, evtName, err))
@@ -108,9 +108,9 @@ func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, e
 	}
 
 	// Fill missing arguments metadata
-	for i := 0; i < len(evtParams); i++ {
+	for i := 0; i < len(evtFields); i++ {
 		if args[i].Value == nil {
-			args[i].ArgMeta = evtParams[i]
+			args[i].ArgMeta = evtFields[i]
 			args[i].Value = args[i].Zero
 		}
 	}

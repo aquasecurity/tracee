@@ -101,12 +101,12 @@ func (af *DataFilter) Parse(filterName string, operatorAndValues string, eventsN
 		return InvalidEventName(eventName)
 	}
 	eventDefinition := events.Core.GetDefinitionByID(id)
-	eventParams := eventDefinition.GetParams()
+	eventFields := eventDefinition.GetFields()
 
 	// check if data name exists for this event
 	dataFound := false
-	for i := range eventParams {
-		if eventParams[i].Name == dataName {
+	for i := range eventFields {
+		if eventFields[i].Name == dataName {
 			dataFound = true
 			break
 		}

@@ -13,9 +13,9 @@ import (
 
 func PrintEventList(includeSigs bool, wideOutput bool) {
 	// TODO: Create String() method in types trace.ArgMeta
-	paramsToString := func(params []trace.ArgMeta) string {
+	fieldsToString := func(fields []trace.ArgMeta) string {
 		strSlice := []string{}
-		for _, p := range params {
+		for _, p := range fields {
 			strSlice = append(strSlice, p.Type+" "+p.Name)
 		}
 		return strings.Join(strSlice, ", ")
@@ -50,7 +50,7 @@ func PrintEventList(includeSigs bool, wideOutput bool) {
 		return []string{
 			evtDef.GetName(),
 			strings.Join(evtDef.GetSets(), ", "),
-			paramsToString(evtDef.GetParams()),
+			fieldsToString(evtDef.GetFields()),
 		}
 	}
 

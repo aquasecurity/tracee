@@ -348,7 +348,7 @@ typedef struct config_entry {
 
 typedef struct event_config {
     u64 submit_for_policies;
-    u64 param_types;
+    u64 field_types;
 } event_config_t;
 
 enum capture_options_e

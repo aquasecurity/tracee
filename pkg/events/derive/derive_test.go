@@ -162,7 +162,7 @@ func Test_DeriveSingleEvent(t *testing.T) {
 		},
 		{
 			Name:                "sad flow - unexpected argument count",
-			ExpectedError:       unexpectedArgCountError(eventDefinition.GetName(), len(eventDefinition.GetParams()), 3),
+			ExpectedError:       unexpectedArgCountError(eventDefinition.GetName(), len(eventDefinition.GetFields()), 3),
 			ArgsDeriveFunc:      illegalDeriveEventArgs,
 			DerivedEventsAmount: 0,
 		},
@@ -276,7 +276,7 @@ func TestDeriveMultipleEvents(t *testing.T) {
 		},
 		{
 			Name:           "Fail new event creation",
-			ExpectedErrors: []error{fmt.Errorf("error deriving event \"%s\": expected %d arguments but given %d", eventDefinition.GetName(), len(eventDefinition.GetParams()), 3)},
+			ExpectedErrors: []error{fmt.Errorf("error deriving event \"%s\": expected %d arguments but given %d", eventDefinition.GetName(), len(eventDefinition.GetFields()), 3)},
 			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
 				return [][]interface{}{{1, 2, 3}}, nil
 			},
@@ -284,7 +284,7 @@ func TestDeriveMultipleEvents(t *testing.T) {
 		},
 		{
 			Name:           "Fail new event creation and derive args",
-			ExpectedErrors: []error{fmt.Errorf(deriveArgsError), fmt.Errorf("error deriving event \"%s\": expected %d arguments but given %d", eventDefinition.GetName(), len(eventDefinition.GetParams()), 3)},
+			ExpectedErrors: []error{fmt.Errorf(deriveArgsError), fmt.Errorf("error deriving event \"%s\": expected %d arguments but given %d", eventDefinition.GetName(), len(eventDefinition.GetFields()), 3)},
 			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
 				return [][]interface{}{{1, 2, 3}}, []error{fmt.Errorf(deriveArgsError)}
 			},
@@ -313,7 +313,7 @@ func TestNewEvent(t *testing.T) {
 	skeleton := deriveBase{
 		Name: "test_derive",
 		ID:   124,
-		Params: []trace.ArgMeta{
+		Fields: []trace.ArgMeta{
 			{
 				Name: "arg1",
 				Type: "int",
@@ -363,7 +363,7 @@ func TestNewEvent(t *testing.T) {
 			assert.Equal(t, skeleton.ID, evt.EventID)
 			require.Len(t, evt.Args, len(testCase.Args))
 			for i, arg := range evt.Args {
-				assert.Equal(t, skeleton.Params[i], arg.ArgMeta)
+				assert.Equal(t, skeleton.Fields[i], arg.ArgMeta)
 				assert.Equal(t, testCase.Args[i], arg.Value)
 			}
 			temp := evt

@@ -15,7 +15,7 @@ type Definition struct {
 	syscall      bool
 	dependencies Dependencies
 	sets         []string
-	params       []trace.ArgMeta
+	fields       []trace.ArgMeta
 	properties   map[string]interface{}
 }
 
@@ -30,7 +30,7 @@ func NewDefinition(
 	syscall bool,
 	sets []string,
 	deps Dependencies,
-	params []trace.ArgMeta,
+	fields []trace.ArgMeta,
 	properties map[string]interface{},
 ) Definition {
 	return Definition{
@@ -44,7 +44,7 @@ func NewDefinition(
 		syscall:      syscall,
 		dependencies: deps,
 		sets:         sets,
-		params:       params,
+		fields:       fields,
 		properties:   properties,
 	}
 }
@@ -91,8 +91,8 @@ func (d Definition) GetSets() []string {
 	return d.sets
 }
 
-func (d Definition) GetParams() []trace.ArgMeta {
-	return d.params
+func (d Definition) GetFields() []trace.ArgMeta {
+	return d.fields
 }
 
 func (d Definition) IsSignature() bool {

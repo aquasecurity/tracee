@@ -281,7 +281,7 @@ func validateEventData(policyName, eventName, dataName string) error {
 			return nil
 		}
 	}
-	for _, p := range eventDefinition.GetParams() {
+	for _, p := range eventDefinition.GetFields() {
 		if p.Name == dataName {
 			return nil
 		}

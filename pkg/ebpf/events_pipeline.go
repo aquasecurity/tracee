@@ -182,10 +182,10 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				continue
 			}
 			eventDefinition := events.Core.GetDefinitionByID(eventId)
-			evtParams := eventDefinition.GetParams()
+			evtFields := eventDefinition.GetFields()
 			evtName := eventDefinition.GetName()
-			args := make([]trace.Argument, len(evtParams))
-			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), evtParams, evtName, eventId)
+			args := make([]trace.Argument, len(evtFields))
+			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), evtFields, evtName, eventId)
 			if err != nil {
 				t.handleError(err)
 				continue
