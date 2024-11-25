@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <sys/mman.h>
+#include <pthread.h>
 
 // exit(0);
 #if defined(__x86_64__)
@@ -23,6 +24,8 @@
 #endif
 
 char shellcode[] = SHELLCODE;
+
+void *thread_func(void *);
 
 int main(int argc, char *argv[])
 {
@@ -84,8 +87,46 @@ int main(int argc, char *argv[])
         goto fail;
     }
 
+    if (strcmp(argv[1], "thread-stack") == 0) {
+        // spawn a new thread which will run the shellcode from its stack
+        pthread_t thread;
+        if (pthread_create(&thread, NULL, thread_func, NULL) != 0) {
+            perror("pthread_create failed");
+            goto fail;
+        }
+
+        // wait for the new thread to exit
+        if (pthread_join(thread, NULL) != 0) {
+            perror("pthread_join failed");
+            goto fail;
+        }
+
+        return 0;
+    }
+
 usage:
     printf("usage: ./sys_src_tester [stack|heap|mmap]\n");
 fail:
     exit(EXIT_FAILURE);
+}
+
+void *thread_func(void *arg)
+{
+    // place the shellcode on the stack
+    char shellcode_stack[] = SHELLCODE;
+
+    // set the stack memory as executable
+    if (mprotect((void *)((unsigned long long)shellcode_stack & ~(sysconf(_SC_PAGE_SIZE) - 1)), 2 * sysconf(_SC_PAGE_SIZE), PROT_READ | PROT_WRITE | PROT_EXEC) == -1) {
+        perror("mprotect failed");
+        return NULL;
+    }
+
+    // jump to the shellcode
+#if defined(__aarch64__)
+    __builtin___clear_cache (&shellcode_stack, &shellcode_stack + sizeof(shellcode));
+#endif
+    ((void (*)(void))shellcode_stack)();
+
+    // cannot be reached
+    return NULL;
 }

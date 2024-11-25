@@ -10,10 +10,11 @@ import (
 )
 
 type e2eSuspiciousSyscallSource struct {
-	cb           detect.SignatureHandler
-	foundStack   bool
-	foundHeap    bool
-	foundAnonVma bool
+	cb               detect.SignatureHandler
+	foundMainStack   bool
+	foundHeap        bool
+	foundAnonVma     bool
+	foundThreadStack bool
 }
 
 func (sig *e2eSuspiciousSyscallSource) Init(ctx detect.SignatureContext) error {
@@ -62,17 +63,19 @@ func (sig *e2eSuspiciousSyscallSource) OnEvent(event protocol.Event) error {
 			return nil
 		}
 
-		if vmaType == "stack" {
-			sig.foundStack = true
+		if vmaType == "main stack" {
+			sig.foundMainStack = true
 		} else if vmaType == "heap" {
 			sig.foundHeap = true
 		} else if vmaType == "anonymous" {
 			sig.foundAnonVma = true
+		} else if vmaType == "thread stack" {
+			sig.foundThreadStack = true
 		} else {
 			return nil
 		}
 
-		if !sig.foundStack || !sig.foundHeap || !sig.foundAnonVma {
+		if !sig.foundMainStack || !sig.foundHeap || !sig.foundAnonVma || !sig.foundThreadStack {
 			return nil
 		}
 

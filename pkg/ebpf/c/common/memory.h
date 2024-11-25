@@ -7,10 +7,14 @@
 
 enum vma_type
 {
+    VMA_FILE_BACKED,
     VMA_STACK,
     VMA_HEAP,
+    VMA_GOLANG_HEAP,
+    VMA_THREAD_STACK,
+    VMA_VDSO,
     VMA_ANON,
-    VMA_OTHER
+    VMA_UNKNOWN,
 };
 
 // PROTOTYPES
@@ -22,11 +26,14 @@ statfunc unsigned long get_env_start_from_mm(struct mm_struct *);
 statfunc unsigned long get_env_end_from_mm(struct mm_struct *);
 statfunc unsigned long get_vma_flags(struct vm_area_struct *);
 statfunc struct vm_area_struct *find_vma(void *ctx, struct task_struct *task, u64 addr);
-statfunc bool vma_is_stack(struct vm_area_struct *vma);
-statfunc bool vma_is_heap(struct vm_area_struct *vma);
+statfunc bool vma_is_file_backed(struct vm_area_struct *vma);
+statfunc bool vma_is_initial_stack(struct vm_area_struct *vma);
+statfunc bool vma_is_initial_heap(struct vm_area_struct *vma);
 statfunc bool vma_is_anon(struct vm_area_struct *vma);
+statfunc bool vma_is_golang_heap(struct vm_area_struct *vma);
+statfunc bool vma_is_thread_stack(task_info_t *task_info, struct vm_area_struct *vma);
 statfunc bool vma_is_vdso(struct vm_area_struct *vma);
-statfunc enum vma_type get_vma_type(struct vm_area_struct *vma);
+statfunc enum vma_type get_vma_type(task_info_t *task_info, struct vm_area_struct *vma);
 
 // FUNCTIONS
 
@@ -121,7 +128,12 @@ statfunc struct vm_area_struct *find_vma(void *ctx, struct task_struct *task, u6
     return vma;
 }
 
-statfunc bool vma_is_stack(struct vm_area_struct *vma)
+statfunc bool vma_is_file_backed(struct vm_area_struct *vma)
+{
+    return BPF_CORE_READ(vma, vm_file) != NULL;
+}
+
+statfunc bool vma_is_initial_stack(struct vm_area_struct *vma)
 {
     struct mm_struct *vm_mm = BPF_CORE_READ(vma, vm_mm);
     if (vm_mm == NULL)
@@ -138,7 +150,7 @@ statfunc bool vma_is_stack(struct vm_area_struct *vma)
     return false;
 }
 
-statfunc bool vma_is_heap(struct vm_area_struct *vma)
+statfunc bool vma_is_initial_heap(struct vm_area_struct *vma)
 {
     struct mm_struct *vm_mm = BPF_CORE_READ(vma, vm_mm);
     if (vm_mm == NULL)
@@ -158,7 +170,45 @@ statfunc bool vma_is_heap(struct vm_area_struct *vma)
 
 statfunc bool vma_is_anon(struct vm_area_struct *vma)
 {
-    return BPF_CORE_READ(vma, vm_file) == NULL;
+    return !vma_is_file_backed(vma);
+}
+
+// The golang heap consists of arenas which are memory regions mapped using mmap.
+// When allocating areans, golang supplies mmap with an address hint, which is an
+// address that the kernel should place the mapping at.
+// Hints are constant and vary between architectures, see `mallocinit()` in
+// https://github.com/golang/go/blob/master/src/runtime/malloc.go
+// From observation, when allocating arenas the MAP_FIXED flag is used which forces
+// the kernel to use the specified address or fail the mapping, so it is safe to
+// rely on the address pattern to determine if it belongs to a heap arena.
+#define GOLANG_ARENA_HINT_MASK 0x80ff00000000UL
+#if defined(bpf_target_x86)
+    #define GOLANG_ARENA_HINT (0xc0UL << 32)
+#elif defined(bpf_target_arm64)
+    #define GOLANG_ARENA_HINT (0x40UL << 32)
+#else
+    #error Unsupported architecture
+#endif
+
+statfunc bool vma_is_golang_heap(struct vm_area_struct *vma)
+{
+    u64 vm_start = BPF_CORE_READ(vma, vm_start);
+
+    return (vm_start & GOLANG_ARENA_HINT_MASK) == GOLANG_ARENA_HINT;
+}
+
+statfunc bool vma_is_thread_stack(task_info_t *task_info, struct vm_area_struct *vma)
+{
+    // Get the stack area for this task
+    address_range_t *stack = &task_info->stack;
+    if (stack->start == 0 && stack->end == 0)
+        // This thread's stack isn't tracked
+        return false;
+
+    // Check if the VMA is **contained** in the thread stack range.
+    // We don't check exact address range match because a change to the permissions
+    // of part of the stack VMA will split it into multiple VMAs.
+    return BPF_CORE_READ(vma, vm_start) >= stack->start && BPF_CORE_READ(vma, vm_end) <= stack->end;
 }
 
 statfunc bool vma_is_vdso(struct vm_area_struct *vma)
@@ -174,19 +224,33 @@ statfunc bool vma_is_vdso(struct vm_area_struct *vma)
     return strncmp("[vdso]", mapping_name, 7) == 0;
 }
 
-statfunc enum vma_type get_vma_type(struct vm_area_struct *vma)
+statfunc enum vma_type get_vma_type(task_info_t *task_info, struct vm_area_struct *vma)
 {
-    if (vma_is_stack(vma))
+    // The check order is a balance between how expensive the check is and how likely it is to pass
+
+    if (vma_is_file_backed(vma))
+        return VMA_FILE_BACKED;
+
+    if (vma_is_initial_stack(vma))
         return VMA_STACK;
 
-    if (vma_is_heap(vma))
+    if (vma_is_initial_heap(vma))
         return VMA_HEAP;
 
-    if (vma_is_anon(vma) && !vma_is_vdso(vma)) {
+    if (vma_is_anon(vma)) {
+        if (vma_is_golang_heap(vma))
+            return VMA_GOLANG_HEAP;
+
+        if (vma_is_thread_stack(task_info, vma))
+            return VMA_THREAD_STACK;
+
+        if (vma_is_vdso(vma))
+            return VMA_VDSO;
+
         return VMA_ANON;
     }
 
-    return VMA_OTHER;
+    return VMA_UNKNOWN;
 }
 
 #endif
