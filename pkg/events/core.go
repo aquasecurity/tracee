@@ -13066,7 +13066,13 @@ var CoreEvents = map[ID]Definition{
 		id:      SuspiciousSyscallSource,
 		id32Bit: Sys32Undefined,
 		name:    "suspicious_syscall_source",
-		sets:    []string{},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SchedProcessFork, required: false}, // for thread stack tracking
+				{handle: probes.SchedProcessExec, required: false}, // for thread stack tracking
+			},
+		},
+		sets: []string{},
 		fields: []trace.ArgMeta{
 			{Type: "int", Name: "syscall"},
 			{Type: "void*", Name: "ip"},

@@ -256,6 +256,28 @@ typedef struct {
     uid_t val;
 } kuid_t;
 
+#if defined(__TARGET_ARCH_x86)
+
+struct thread_struct {
+    unsigned long sp;
+};
+
+struct fork_frame {
+    struct pt_regs regs;
+};
+
+#elif defined(__TARGET_ARCH_arm64)
+
+struct cpu_context {
+    unsigned long sp;
+};
+
+struct thread_struct {
+    struct cpu_context cpu_context;
+};
+
+#endif
+
 struct task_struct {
     struct thread_info thread_info;
     unsigned int flags;
@@ -278,6 +300,7 @@ struct task_struct {
     struct signal_struct *signal;
     void *stack;
     struct sighand_struct *sighand;
+    struct thread_struct thread;
 };
 
 typedef struct {

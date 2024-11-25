@@ -569,6 +569,35 @@ int sys_dup_exit_tail(void *ctx)
     return 0;
 }
 
+statfunc void update_thread_stack(void *ctx, task_info_t *task_info, struct task_struct *task)
+{
+    // Kernel threads and group leaders are not relevant, reset their stack area
+    if (get_task_flags(task) & PF_KTHREAD || BPF_CORE_READ(task, pid) == BPF_CORE_READ(task, tgid))
+        task_info->stack = (address_range_t){0};
+
+    // Get user SP of new thread
+#if defined(bpf_target_x86)
+    struct fork_frame *fork_frame = (struct fork_frame *) BPF_CORE_READ(task, thread.sp);
+    u64 thread_sp = BPF_CORE_READ(fork_frame, regs.sp);
+#elif defined(bpf_target_arm64)
+    struct pt_regs *thread_regs = (struct pt_regs *) BPF_CORE_READ(task, thread.cpu_context.sp);
+    u64 thread_sp = BPF_CORE_READ(thread_regs, sp);
+#else
+    #error Unsupported architecture
+#endif
+
+    // Find VMA which contains the SP
+    struct vm_area_struct *vma = find_vma(ctx, task, thread_sp);
+    if (unlikely(vma == NULL))
+        return;
+
+    // Add the VMA address range to the task info
+    task_info->stack = (address_range_t){
+        .start = BPF_CORE_READ(vma, vm_start),
+        .end = BPF_CORE_READ(vma, vm_end)
+    };
+}
+
 // trace/events/sched.h: TP_PROTO(struct task_struct *parent, struct task_struct *child)
 SEC("raw_tracepoint/sched_process_fork")
 int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
@@ -607,6 +636,10 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     task->context.tid = child_ns_tid;
     task->context.host_tid = child_tid;
     task->context.start_time = child_start_time;
+
+    // Track thread stack if needed
+    if (event_is_selected(SUSPICIOUS_SYSCALL_SOURCE, p.event->context.policies_version))
+        update_thread_stack(ctx, task, child);
 
     // Update the proc_info_map with the new process's info (from parent)
 
@@ -1344,6 +1377,9 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     program_data_t p = {};
     if (!init_program_data(&p, ctx, SCHED_PROCESS_EXEC))
         return 0;
+    
+    // Reset thread stack area
+    p.task_info->stack = (address_range_t){0};
 
     // Perform checks below before evaluate_scope_filters(), so tracee can filter by newly created containers
     // or processes. Assume that a new container, or pod, has started when a process of a newly
@@ -5271,10 +5307,12 @@ statfunc void check_suspicious_syscall_source(void *ctx, struct pt_regs *regs, u
     if (unlikely(vma == NULL))
         return;
 
-    // Get VMA type and make sure it's abnormal (stack/heap/anonymous VMA)
-    enum vma_type vma_type = get_vma_type(vma);
-    if (vma_type == VMA_OTHER)
+    // If the VMA is file-backed, the syscall is determined to be legitimate
+    if (vma_is_file_backed(vma))
         return;
+
+    // Get VMA type
+    enum vma_type vma_type = get_vma_type(p.task_info, vma);
 
     // Build a key that identifies the combination of syscall,
     // source VMA and process so we don't submit it multiple times
@@ -5293,17 +5331,27 @@ statfunc void check_suspicious_syscall_source(void *ctx, struct pt_regs *regs, u
 
     switch (vma_type) {
         case VMA_STACK:
-            vma_type_str = "stack";
+            vma_type_str = "main stack";
+            break;
+        case VMA_THREAD_STACK:
+            vma_type_str = "thread stack";
             break;
         case VMA_HEAP:
             vma_type_str = "heap";
             break;
+        case VMA_GOLANG_HEAP:
+            // Goroutine stacks are allocated on the golang heap
+            vma_type_str = "golang heap/stack";
+            break;
         case VMA_ANON:
             vma_type_str = "anonymous";
             break;
-        // shouldn't happen
+        case VMA_VDSO:
+            vma_type_str = "vdso";
+            break;
         default:
-            return;
+            vma_type_str = "unknown";
+            break;
     }
 
     unsigned long vma_start = BPF_CORE_READ(vma, vm_start);
@@ -5327,7 +5375,7 @@ int BPF_KPROBE(syscall_checker)
     struct pt_regs *regs = ctx;
     if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER))
         regs = (struct pt_regs *) PT_REGS_PARM1(ctx);
-    
+
     // Get syscall ID
     u32 syscall = get_syscall_id_from_regs(regs);
 
