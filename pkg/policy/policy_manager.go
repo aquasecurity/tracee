@@ -254,7 +254,7 @@ func (m *Manager) selectUserEvents() {
 
 	for _, p := range m.ps.policiesList {
 		pId := p.ID
-		for eId := range p.EventsToTrace {
+		for eId := range p.Rules {
 			ef, ok := userEvents[eId]
 			if !ok {
 				ef = newEventFlags(eventFlagsWithEnabled(true))

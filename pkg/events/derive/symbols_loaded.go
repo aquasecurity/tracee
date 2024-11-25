@@ -26,8 +26,10 @@ func SymbolsLoaded(
 
 	for it := pManager.CreateAllIterator(); it.HasNext(); {
 		p := it.Next()
-		f := p.DataFilter.GetEventFilters(events.SymbolsLoaded)
-		maps.Copy(symbolsLoadedFilters, f)
+		if rule, ok := p.Rules[events.SymbolsLoaded]; ok {
+			f := rule.DataFilter.GetFieldFilters()
+			maps.Copy(symbolsLoadedFilters, f)
+		}
 	}
 
 	loadWatchedSymbols := []string{}

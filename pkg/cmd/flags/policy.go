@@ -103,11 +103,11 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeM
 
 // CreatePolicies creates a Policies object from the scope and events maps.
 func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMap, newBinary bool) ([]*policy.Policy, error) {
-	eventsNameToID := events.Core.NamesToIDs()
+	eventNamesToID := events.Core.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
-	for event, id := range eventsNameToID {
+	for event, id := range eventNamesToID {
 		if events.Core.GetDefinitionByID(id).IsInternal() {
-			delete(eventsNameToID, event)
+			delete(eventNamesToID, event)
 		}
 	}
 
@@ -254,65 +254,123 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 			return nil, InvalidScopeOptionError(scopeFlag.full, newBinary)
 		}
 
-		eventFilter := eventFilter{
-			Equal:    []string{},
-			NotEqual: []string{},
-		}
-
 		policyEvents, ok := policyEventsMap[policyIdx]
 		if !ok {
 			return nil, InvalidFlagEmpty()
 		}
 
-		for _, evtFlag := range policyEvents.eventFlags {
-			if evtFlag.eventOptionType == "" {
-				// no event option type means that the flag contains only event names
-				if evtFlag.operator == "-" {
-					eventFilter.NotEqual = append(eventFilter.NotEqual, evtFlag.eventName)
-				} else {
-					eventFilter.Equal = append(eventFilter.Equal, evtFlag.eventName)
-				}
-				continue
+		// map sets to events
+		setsToEvents := make(map[string][]events.ID)
+		for _, eventDefinition := range events.Core.GetDefinitions() {
+			for _, set := range eventDefinition.GetSets() {
+				setsToEvents[set] = append(setsToEvents[set], eventDefinition.GetID())
 			}
-
-			// at this point, we can assume that event flag is an event option filter (args, retval, scope),
-			// so, as a sugar, we can add the event name to be filtered
-			eventFilter.Equal = append(eventFilter.Equal, evtFlag.eventName)
-
-			evtFilter := evtFlag.eventFilter
-			operatorAndValues := evtFlag.operatorAndValues
-
-			if evtFlag.eventOptionType == "retval" {
-				err := p.RetFilter.Parse(evtFilter, operatorAndValues, eventsNameToID)
-				if err != nil {
-					return nil, err
-				}
-				continue
-			}
-
-			if evtFlag.eventOptionType == "scope" {
-				err := p.ScopeFilter.Parse(evtFilter, operatorAndValues)
-				if err != nil {
-					return nil, err
-				}
-				continue
-			}
-
-			if evtFlag.eventOptionType == "data" || evtFlag.eventOptionType == "args" {
-				err := p.DataFilter.Parse(evtFilter, operatorAndValues, eventsNameToID)
-				if err != nil {
-					return nil, err
-				}
-				continue
-			}
-
-			return nil, InvalidFilterFlagFormat(evtFlag.full)
 		}
 
-		var err error
-		p.EventsToTrace, err = prepareEventsToTrace(eventFilter, eventsNameToID)
-		if err != nil {
-			return nil, err
+		excludedEvents := make([]string, 0)
+
+		for _, evtFlag := range policyEvents.eventFlags {
+			if evtFlag.eventOptionType == "" && evtFlag.operator == "-" {
+				// no event option type means that the flag contains only event names
+				// save excluded events/sets to be removed from the final events/sets
+				excludedEvents = append(excludedEvents, evtFlag.eventName)
+				continue
+			}
+
+			eventIdToName := make(map[events.ID]string)
+			// handle event prefixes with wildcards
+			if strings.HasSuffix(evtFlag.eventName, "*") {
+				found := false
+				prefix := evtFlag.eventName[:len(evtFlag.eventName)-1]
+				for event, id := range eventNamesToID {
+					if strings.HasPrefix(event, prefix) {
+						eventIdToName[id] = event
+						found = true
+					}
+				}
+				if !found {
+					return nil, InvalidEventError(evtFlag.eventName)
+				}
+			} else {
+				id, ok := eventNamesToID[evtFlag.eventName]
+				if !ok {
+					// no matching event - maybe it is actually a set?
+					if setEvents, ok := setsToEvents[evtFlag.eventName]; ok {
+						// expand set to events
+						for _, id := range setEvents {
+							eventIdToName[id] = events.Core.GetDefinitionByID(id).GetName()
+						}
+					} else {
+						return nil, InvalidEventError(evtFlag.eventName)
+					}
+				} else {
+					eventIdToName[id] = evtFlag.eventName
+				}
+			}
+
+			for eventId, _ := range eventIdToName {
+				if _, ok := p.Rules[eventId]; !ok {
+					p.Rules[eventId] = policy.RuleData{
+						EventID:     eventId,
+						ScopeFilter: filters.NewScopeFilter(),
+						DataFilter:  filters.NewDataFilter(),
+						RetFilter:   filters.NewIntFilter(),
+					}
+				}
+
+				if evtFlag.eventOptionType == "" {
+					// no event option type means that the flag contains only event names
+					continue
+				}
+
+				if evtFlag.eventOptionType == "retval" {
+					err := p.Rules[eventId].RetFilter.Parse(evtFlag.operatorAndValues)
+					if err != nil {
+						return nil, err
+					}
+					continue
+				}
+
+				if evtFlag.eventOptionType == "scope" {
+					err := p.Rules[eventId].ScopeFilter.Parse(evtFlag.eventOptionName, evtFlag.operatorAndValues)
+					if err != nil {
+						return nil, err
+					}
+					continue
+				}
+
+				if evtFlag.eventOptionType == "data" || evtFlag.eventOptionType == "args" {
+					err := p.Rules[eventId].DataFilter.Parse(eventId, evtFlag.eventOptionName, evtFlag.operatorAndValues)
+					if err != nil {
+						return nil, err
+					}
+					continue
+				}
+
+				return nil, InvalidFilterFlagFormat(evtFlag.full)
+			}
+		}
+
+		// if no events were specified, add all events from the default set
+		if len(p.Rules) == 0 {
+			for _, eventId := range setsToEvents["default"] {
+				if _, ok := p.Rules[eventId]; !ok {
+					p.Rules[eventId] = policy.RuleData{
+						EventID:     eventId,
+						ScopeFilter: filters.NewScopeFilter(),
+						DataFilter:  filters.NewDataFilter(),
+						RetFilter:   filters.NewIntFilter(),
+					}
+				}
+			}
+		}
+
+		// remove excluded events from the policy
+		for _, eventName := range excludedEvents {
+			if _, ok := eventNamesToID[eventName]; !ok {
+				return nil, InvalidEventExcludeError(eventName)
+			}
+			delete(p.Rules, eventNamesToID[eventName])
 		}
 
 		policies = append(policies, p)

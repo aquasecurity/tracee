@@ -324,7 +324,7 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		// event ID. This happens whenever the event submitted by the kernel is going to
 		// derive an event that this policy is interested in. In this case, don't do
 		// anything and let the derivation stage handle this event.
-		_, ok := p.EventsToTrace[eventID]
+		_, ok := p.Rules[eventID]
 		if !ok {
 			continue
 		}
@@ -334,19 +334,24 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		//
 
 		// 1. event scope filters
-		if !p.ScopeFilter.Filter(*event) {
+		if !p.Rules[eventID].ScopeFilter.Filter(*event) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
 		// 2. event return value filters
-		if !p.RetFilter.Filter(eventID, int64(event.ReturnValue)) {
+		if !p.Rules[eventID].RetFilter.Filter(int64(event.ReturnValue)) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
 		// 3. event data filters
-		if !p.DataFilter.Filter(eventID, event.Args) {
+		// TODO: remove PrintMemDump check once events params are introduced
+		//       i.e. print_mem_dump.params.symbol_name=system:security_file_open
+		// events.PrintMemDump bypass was added due to issue #2546
+		// because it uses usermode applied filters as parameters for the event,
+		// which occurs after filtering
+		if eventID != events.PrintMemDump && !p.Rules[eventID].DataFilter.Filter(event.Args) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}

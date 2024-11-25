@@ -1,119 +1,12 @@
 package filters
 
 import (
-	"strings"
-
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type ScopeFilter struct {
-	filters map[events.ID]*eventCtxFilter
-	enabled bool
-}
-
-// Compile-time check to ensure that ScopeFilter implements the Cloner interface
-var _ utils.Cloner[*ScopeFilter] = &ScopeFilter{}
-
-func NewScopeFilter() *ScopeFilter {
-	return &ScopeFilter{
-		filters: make(map[events.ID]*eventCtxFilter),
-		enabled: false,
-	}
-}
-
-func (filter *ScopeFilter) Enable() {
-	filter.enabled = true
-	for _, f := range filter.filters {
-		f.Enable()
-	}
-}
-
-func (filter *ScopeFilter) Disable() {
-	filter.enabled = false
-	for _, f := range filter.filters {
-		f.Disable()
-	}
-}
-
-func (filter *ScopeFilter) Enabled() bool {
-	return filter.enabled
-}
-
-func (filter *ScopeFilter) Filter(event trace.Event) bool {
-	if !filter.Enabled() {
-		return true
-	}
-
-	if filter, ok := filter.filters[events.ID(event.EventID)]; ok {
-		if !filter.Filter(event) {
-			return false
-		}
-	}
-	return true
-}
-
-func (filter *ScopeFilter) Parse(filterName string, operatorAndValues string) error {
-	parts := strings.Split(filterName, ".")
-	if len(parts) != 3 {
-		return InvalidExpression(filterName + operatorAndValues)
-	}
-	if parts[1] != "scope" {
-		return InvalidExpression(filterName + operatorAndValues)
-	}
-
-	eventName := parts[0]
-	eventField := parts[2]
-
-	eventDefID, ok := events.Core.GetDefinitionIDByName(eventName)
-	if !ok {
-		return InvalidEventName(eventName)
-	}
-
-	eventFilter := filter.filters[eventDefID]
-	if eventFilter == nil {
-		eventFilter = &eventCtxFilter{
-			enabled:                    filter.enabled,
-			timestampFilter:            NewIntFilter(),
-			processorIDFilter:          NewIntFilter(),
-			pidFilter:                  NewIntFilter(),
-			tidFilter:                  NewIntFilter(),
-			ppidFilter:                 NewIntFilter(),
-			hostPidFilter:              NewIntFilter(),
-			hostTidFilter:              NewIntFilter(),
-			hostPpidFilter:             NewIntFilter(),
-			uidFilter:                  NewIntFilter(),
-			mntNSFilter:                NewIntFilter(),
-			pidNSFilter:                NewIntFilter(),
-			processNameFilter:          NewStringFilter(nil),
-			hostNameFilter:             NewStringFilter(nil),
-			cgroupIDFilter:             NewUIntFilter(),
-			containerFilter:            NewBoolFilter(),
-			containerIDFilter:          NewStringFilter(nil),
-			containerImageFilter:       NewStringFilter(nil),
-			containerImageDigestFilter: NewStringFilter(nil),
-			containerNameFilter:        NewStringFilter(nil),
-			podNameFilter:              NewStringFilter(nil),
-			podNSFilter:                NewStringFilter(nil),
-			podUIDFilter:               NewStringFilter(nil),
-			podSandboxFilter:           NewBoolFilter(),
-			syscallFilter:              NewStringFilter(nil),
-		}
-		filter.filters[eventDefID] = eventFilter
-	}
-
-	err := eventFilter.Parse(eventField, operatorAndValues)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	filter.Enable()
-	return nil
-}
-
-type eventCtxFilter struct {
 	enabled                    bool
 	timestampFilter            *IntFilter[int64]
 	processorIDFilter          *IntFilter[int64]
@@ -141,18 +34,52 @@ type eventCtxFilter struct {
 	syscallFilter              *StringFilter
 }
 
-// Compile-time check to ensure that eventCtxFilter implements the Cloner interface
-var _ utils.Cloner[*eventCtxFilter] = &eventCtxFilter{}
+// Compile-time check to ensure that ScopeFilter implements the Cloner interface
+var _ utils.Cloner[*ScopeFilter] = &ScopeFilter{}
 
-func (f *eventCtxFilter) Enable() {
+func NewScopeFilter() *ScopeFilter {
+	return &ScopeFilter{
+		enabled:                    false,
+		timestampFilter:            NewIntFilter(),
+		processorIDFilter:          NewIntFilter(),
+		pidFilter:                  NewIntFilter(),
+		tidFilter:                  NewIntFilter(),
+		ppidFilter:                 NewIntFilter(),
+		hostPidFilter:              NewIntFilter(),
+		hostTidFilter:              NewIntFilter(),
+		hostPpidFilter:             NewIntFilter(),
+		uidFilter:                  NewIntFilter(),
+		mntNSFilter:                NewIntFilter(),
+		pidNSFilter:                NewIntFilter(),
+		processNameFilter:          NewStringFilter(nil),
+		hostNameFilter:             NewStringFilter(nil),
+		cgroupIDFilter:             NewUIntFilter(),
+		containerFilter:            NewBoolFilter(),
+		containerIDFilter:          NewStringFilter(nil),
+		containerImageFilter:       NewStringFilter(nil),
+		containerImageDigestFilter: NewStringFilter(nil),
+		containerNameFilter:        NewStringFilter(nil),
+		podNameFilter:              NewStringFilter(nil),
+		podNSFilter:                NewStringFilter(nil),
+		podUIDFilter:               NewStringFilter(nil),
+		podSandboxFilter:           NewBoolFilter(),
+		syscallFilter:              NewStringFilter(nil),
+	}
+}
+
+func (f *ScopeFilter) Enable() {
 	f.enabled = true
 }
 
-func (f *eventCtxFilter) Disable() {
+func (f *ScopeFilter) Disable() {
 	f.enabled = false
 }
 
-func (f *eventCtxFilter) Filter(evt trace.Event) bool {
+func (f *ScopeFilter) Enabled() bool {
+	return f.enabled
+}
+
+func (f *ScopeFilter) Filter(evt trace.Event) bool {
 	if !f.enabled {
 		return true
 	}
@@ -184,7 +111,7 @@ func (f *eventCtxFilter) Filter(evt trace.Event) bool {
 		f.uidFilter.Filter(int64(evt.UserID))
 }
 
-func (f *eventCtxFilter) Parse(field string, operatorAndValues string) error {
+func (f *ScopeFilter) Parse(field string, operatorAndValues string) error {
 	f.Enable()
 
 	switch field {
@@ -271,7 +198,7 @@ func (f *eventCtxFilter) Parse(field string, operatorAndValues string) error {
 	return InvalidScopeField(field)
 }
 
-func addContainer[T any](f *eventCtxFilter, filter Filter[T], operatorAndValues string) error {
+func addContainer[T any](f *ScopeFilter, filter Filter[T], operatorAndValues string) error {
 	err := filter.Parse(operatorAndValues)
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -283,12 +210,12 @@ func addContainer[T any](f *eventCtxFilter, filter Filter[T], operatorAndValues 
 	return nil
 }
 
-func (f *eventCtxFilter) Clone() *eventCtxFilter {
+func (f *ScopeFilter) Clone() *ScopeFilter {
 	if f == nil {
 		return nil
 	}
 
-	n := &eventCtxFilter{}
+	n := &ScopeFilter{}
 
 	n.enabled = f.enabled
 	n.timestampFilter = f.timestampFilter.Clone()
@@ -315,22 +242,6 @@ func (f *eventCtxFilter) Clone() *eventCtxFilter {
 	n.podUIDFilter = f.podUIDFilter.Clone()
 	n.podSandboxFilter = f.podSandboxFilter.Clone()
 	n.syscallFilter = f.syscallFilter.Clone()
-
-	return n
-}
-
-func (filter *ScopeFilter) Clone() *ScopeFilter {
-	if filter == nil {
-		return nil
-	}
-
-	n := NewScopeFilter()
-
-	for k, v := range filter.filters {
-		n.filters[k] = v.Clone()
-	}
-
-	n.enabled = filter.enabled
 
 	return n
 }

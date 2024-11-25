@@ -1881,7 +1881,7 @@ func TestCreatePolicies(t *testing.T) {
 		{
 			testName:        "invalid datafilter 2",
 			evtFlags:        []string{"open.data.bla=5"},
-			expectPolicyErr: filters.InvalidEventData("bla"),
+			expectPolicyErr: filters.InvalidEventField("bla"),
 		},
 		{
 			testName:        "invalid datafilter 3",
@@ -1892,7 +1892,7 @@ func TestCreatePolicies(t *testing.T) {
 		{
 			testName:        "invalid argsfilter 1",
 			evtFlags:        []string{"open.args.bla=5"},
-			expectPolicyErr: filters.InvalidEventData("bla"),
+			expectPolicyErr: filters.InvalidEventField("bla"),
 		},
 		{
 			testName:        "invalid scope filter 1",
