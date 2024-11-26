@@ -6,11 +6,17 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/mock"
-	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/models"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 )
+
+type TestCase struct {
+	TestName        string
+	OutputSlice     []string
+	ExpectedPrinter interface{}
+	ExpectedError   error
+}
 
 func runMockServer(t *testing.T) *grpc.Server {
 	mockServer, err := mock.StartMockServer()
@@ -20,7 +26,7 @@ func runMockServer(t *testing.T) *grpc.Server {
 	time.Sleep(100 * time.Millisecond)
 	return mockServer
 }
-func TestCommand(t *testing.T, testCase models.TestCase, rootCmd *cobra.Command) {
+func TestCommand(t *testing.T, testCase TestCase, rootCmd *cobra.Command) {
 	server := runMockServer(t)
 	defer server.Stop()
 	var buf bytes.Buffer
