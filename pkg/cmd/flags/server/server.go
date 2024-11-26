@@ -11,7 +11,7 @@ const (
 	HealthzEndpointFlag    = "healthz"
 	PProfEndpointFlag      = "pprof"
 	HTTPListenEndpointFlag = "http-listen-addr"
-	GRPCListenEndpointFlag = "grpc-listen-addr"
+	GRPCListenEndpointFlag = "grpc"
 	PyroscopeAgentFlag     = "pyroscope"
 )
 

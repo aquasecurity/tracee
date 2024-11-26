@@ -8,9 +8,16 @@ import (
 	"github.com/aquasecurity/tracee/pkg/server/grpc"
 )
 
+var defaultUNIXAddr = "unix:/tmp/tracee.sock"
+var defaultTCPAddr = "tcp:4466"
+
 func PrepareGRPCServer(listenAddr string) (*grpc.Server, error) {
 	if len(listenAddr) == 0 {
 		return nil, nil
+	} else if listenAddr == "unix" {
+		listenAddr = defaultUNIXAddr
+	} else if listenAddr == "tcp" {
+		listenAddr = defaultTCPAddr
 	}
 
 	addr := strings.SplitN(listenAddr, ":", 2)

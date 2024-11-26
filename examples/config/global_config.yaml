@@ -28,7 +28,7 @@ capabilities:
 
 metrics-endpoint: true
 
-grpc-listen-addr: tcp:50051
+grpc: tcp:50051
 
 dnscache: enable
 

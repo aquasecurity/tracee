@@ -37,11 +37,11 @@ A complete config file with all available options can be found [here](https://gi
   metrics-endpoint: true
   ```
 
-- **`--grpc-listen-addr`**: Specifies the address for the gRPC server.
+- **`--grpc`**: Specifies the address for the gRPC server.
 
   YAML:
   ```yaml
-  grpc-listen-addr: tcp:50051
+  grpc: tcp:50051
   ```
 
 

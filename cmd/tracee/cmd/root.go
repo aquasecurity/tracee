@@ -313,7 +313,7 @@ func initCmd() error {
 	rootCmd.Flags().String(
 		server.GRPCListenEndpointFlag,
 		"", // disabled by default
-		"<protocol:addr>\t\t\tListening address of the grpc server eg: tcp:4466, unix:/tmp/tracee.sock (default: disabled)",
+		"<protocol:addr>\t\t\tListening address of the grpc server eg: tcp or tcp:4466, unix or unix:/tmp/tracee.sock (default: disabled)",
 	)
 	err = viper.BindPFlag(server.GRPCListenEndpointFlag, rootCmd.Flags().Lookup(server.GRPCListenEndpointFlag))
 	if err != nil {
