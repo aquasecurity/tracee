@@ -32,15 +32,7 @@ var (
 func init() {
 	rootCmd.AddCommand(streamCmd)
 	rootCmd.AddCommand(eventCmd)
-	rootCmd.AddCommand(pluginCmd)
-	rootCmd.AddCommand(policyCmd)
-
-	rootCmd.AddCommand(connectCmd)
 	rootCmd.AddCommand(metricsCmd)
-	rootCmd.AddCommand(diagnoseCmd)
-	rootCmd.AddCommand(logsCmd)
-	rootCmd.AddCommand(statusCmd)
-	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(versionCmd)
 
 	rootCmd.PersistentFlags().StringVar(&serverInfo.ADDR, "server", client.SOCKET, `Server connection path or address.
@@ -49,49 +41,12 @@ func init() {
 
 }
 
-var connectCmd = &cobra.Command{
-	Use:   "connect [<stream_name>]",
-	Short: "Connect to the server",
-	Long:  "Connects to a stream and displays events in real time.",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-}
 var metricsCmd = &cobra.Command{
 	Use:   "metrics [--output <format>]",
 	Short: "Display Tracee metrics",
 	Long:  "Retrieves metrics about Tracee's performance and resource usage.",
 	Run: func(cmd *cobra.Command, args []string) {
 		displayMetrics(cmd, args)
-	},
-}
-var diagnoseCmd = &cobra.Command{
-	Use:   "diagnose [--component <component_name>]",
-	Short: "Collect diagnostic information to help troubleshoot issues",
-	Long:  "Collects diagnostic information to help troubleshoot issues.",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-}
-
-var logsCmd = &cobra.Command{
-	Use:   "logs [--filter <filter>]",
-	Short: "Display log messages from Tracee",
-	Long:  "Displays log messages from Tracee, optionally filtered.",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-}
-var statusCmd = &cobra.Command{
-	Use:   "status",
-	Short: "Shows the status of the Tracee Daemon and its components",
-	Long:  "Shows the status of the Tracee Daemon and its components.",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-}
-
-var configCmd = &cobra.Command{
-	Use:   "config [set|get|update] [<option>=<value>] [--file <config_file>]",
-	Short: "View or modify the Tracee Daemon configuration at runtime.",
-	Long:  `View or modify the Tracee Daemon configuration at runtime.`,
-	Run: func(cmd *cobra.Command, args []string) {
 	},
 }
 

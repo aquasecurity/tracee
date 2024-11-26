@@ -5,11 +5,10 @@ import (
 	"testing"
 
 	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/cmd/test"
-	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/models"
 )
 
 func TestEvent(t *testing.T) {
-	eventTests := []models.TestCase{
+	eventTests := []test.TestCase{
 		{
 			TestName:        "event",
 			OutputSlice:     []string{"event"},

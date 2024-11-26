@@ -35,9 +35,6 @@ func init() {
 	eventCmd.AddCommand(describeEventCmd)
 	eventCmd.AddCommand(enableEventCmd)
 	eventCmd.AddCommand(disableEventCmd)
-	eventCmd.AddCommand(runEventCmd)
-
-	runEventCmd.PersistentFlags().StringVar(&runCmdArgs, "args", "", "Arguments for the event")
 
 	listEventCmd.Flags().StringVarP(&eventFormatFlag, "format", "f", formatter.FormatTable, "Output format (json|table|template) ")
 	listEventCmd.Flags().StringVarP(&eventOutputFlag, "output", "o", "stdout", "Output destination ")
@@ -80,16 +77,6 @@ var disableEventCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		disableEvents(cmd, args[0])
-	},
-}
-var runCmdArgs string
-var runEventCmd = &cobra.Command{
-	Use:   "run <event_name> [--args <arguments>]",
-	Short: "run event",
-	Long:  `Manually triggers a user-space event.`,
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		//runEvents(cmd, args)
 	},
 }
 
