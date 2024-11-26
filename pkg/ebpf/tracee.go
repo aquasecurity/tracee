@@ -81,8 +81,9 @@ type Tracee struct {
 	pidsInMntns   bucketscache.BucketsCache // first n PIDs in each mountns
 	kernelSymbols *environment.KernelSymbolTable
 	// eBPF
-	bpfModule *bpf.Module
-	probes    *probes.ProbeGroup
+	bpfModule     *bpf.Module
+	defaultProbes *probes.ProbeGroup
+	extraProbes   map[string]*probes.ProbeGroup
 	// BPF Maps
 	StackAddressesMap *bpf.BPFMap
 	FDArgPathMap      *bpf.BPFMap
@@ -125,8 +126,6 @@ type Tracee struct {
 	// This does not mean they are required for tracee to function.
 	// TODO: remove this in favor of dependency manager nodes
 	requiredKsyms []string
-	// Probes created for suspicious_syscall_source event
-	suspiciousSyscallSourceProbes *probes.ProbeGroup
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -233,6 +232,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		policyManager:      pm,
 		eventsDependencies: depsManager,
 		requiredKsyms:      []string{},
+		extraProbes:        make(map[string]*probes.ProbeGroup),
 	}
 
 	// clear initial policies to avoid wrong references
@@ -834,7 +834,7 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 		// If kprobe/kretprobe, the event name itself is a required symbol
 		depsProbes := deps.GetProbes()
 		for _, probeDep := range depsProbes {
-			probe := t.probes.GetProbeByHandle(probeDep.GetHandle())
+			probe := t.defaultProbes.GetProbeByHandle(probeDep.GetHandle())
 			traceProbe, ok := probe.(*probes.TraceProbe)
 			if !ok {
 				continue
@@ -1157,7 +1157,7 @@ func (t *Tracee) attachEvent(id events.ID) error {
 		return err
 	}
 	for _, probe := range depsNode.GetDependencies().GetProbes() {
-		err := t.probes.Attach(probe.GetHandle(), t.cgroups, t.kernelSymbols)
+		err := t.defaultProbes.Attach(probe.GetHandle(), t.cgroups, t.kernelSymbols)
 		if err == nil {
 			continue
 		}
@@ -1190,7 +1190,7 @@ func (t *Tracee) attachProbes() error {
 				logger.Errorw("Got node from type not requested")
 				return nil
 			}
-			err := t.probes.Attach(probeNode.GetHandle(), t.cgroups, t.kernelSymbols)
+			err := t.defaultProbes.Attach(probeNode.GetHandle(), t.cgroups, t.kernelSymbols)
 			if err != nil {
 				return []dependencies.Action{dependencies.NewCancelNodeAddAction(err)}
 			}
@@ -1205,7 +1205,7 @@ func (t *Tracee) attachProbes() error {
 				logger.Errorw("Got node from type not requested")
 				return nil
 			}
-			err := t.probes.Detach(probeNode.GetHandle())
+			err := t.defaultProbes.Detach(probeNode.GetHandle())
 			if err != nil {
 				logger.Debugw("Failed to detach probe",
 					"probe", probeNode.GetHandle(),
@@ -1247,7 +1247,7 @@ func (t *Tracee) initBPFProbes() error {
 
 	// Initialize probes
 
-	t.probes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled())
+	t.defaultProbes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled())
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1492,16 +1492,16 @@ func (t *Tracee) Close() {
 			logger.Errorw("failed to stop control plane when closing tracee", "err", err)
 		}
 	}
-	if t.probes != nil {
-		err := t.probes.DetachAll()
+	if t.defaultProbes != nil {
+		err := t.defaultProbes.DetachAll()
 		if err != nil {
-			logger.Errorw("failed to detach probes when closing tracee", "err", err)
+			logger.Errorw("failed to detach default probes when closing tracee", "err", err)
 		}
 	}
-	if t.suspiciousSyscallSourceProbes != nil {
-		err := t.suspiciousSyscallSourceProbes.DetachAll()
+	for name, probeGroup := range t.extraProbes {
+		err := probeGroup.DetachAll()
 		if err != nil {
-			logger.Errorw("failed to detach suspicious_syscall_source probes when closing tracee", "err", err)
+			logger.Errorw("failed to detach probes when closing tracee", "probe group", name, "err", err)
 		}
 	}
 	if t.bpfModule != nil {
@@ -1574,7 +1574,7 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 		definition := events.Core.GetDefinitionByID(tr)
 
 		for _, depProbes := range definition.GetDependencies().GetProbes() {
-			currProbe := t.probes.GetProbeByHandle(depProbes.GetHandle())
+			currProbe := t.defaultProbes.GetProbeByHandle(depProbes.GetHandle())
 			name := ""
 			switch p := currProbe.(type) {
 			case *probes.TraceProbe:

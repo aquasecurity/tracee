@@ -86,12 +86,17 @@ func attachSuspiciousSyscallSourceProbes(t *Tracee, eventParams []map[string]fil
 		probeMap[probes.Handle(i)] = probes.NewTraceProbe(probes.SyscallEnter, syscallName, "suspicious_syscall_source")
 		i++
 	}
-	t.suspiciousSyscallSourceProbes = probes.NewProbeGroup(t.bpfModule, probeMap)
+	probeGroupName := "suspicious_syscall_source"
+	probeGroup := probes.NewProbeGroup(t.bpfModule, probeMap)
+	if _, exists := t.extraProbes[probeGroupName]; exists {
+		return fmt.Errorf("probe group %s already exists", probeGroupName)
+	}
+	t.extraProbes[probeGroupName] = probeGroup
 
 	// Attach probes
 	i = 0
 	for syscallName := range syscalls {
-		if err := t.suspiciousSyscallSourceProbes.Attach(probes.Handle(i), t.kernelSymbols); err != nil {
+		if err := probeGroup.Attach(probes.Handle(i), t.kernelSymbols); err != nil {
 			// Report attachment errors but don't fail, because it may be a syscall that doesn't exist on this system
 			logger.Warnw("Failed to attach suspicious_syscall_source kprobe", "syscall", syscallName, "error", err)
 		}
