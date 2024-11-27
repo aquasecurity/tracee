@@ -24,7 +24,7 @@ To reduce noise in cases where code with significant syscall activity is being d
 
 * `syscall`:`int`[K] - the syscall which was invoked from an unusual location. The syscall name is parsed if the `parse-arguments` option is specified. This argument is also used as a parameter to select which syscalls should be checked.
 * `ip`:`void *`[K] - the address from which the syscall was invoked (instruction pointer of the instruction following the syscall instruction).
-* `vma_type`:`char *`[K] - the type of the VMA which contains the code that triggered the syscall (one of *stack*/*heap*/*anonymous*)
+* `vma_type`:`char *`[K] - a string describing the type of the VMA which contains the code that triggered the syscall
 * `vma_start`:`void *`[K] - the start address of the VMA which contains the code that triggered the syscall
 * `vma_size`:`unsigned long`[K] - the size of the VMA which contains the code that triggered the syscall
 * `vma_flags`:`unsigned long`[K] - the flags of the VMA which contains the code that triggered the syscall. The flag names are parsed if the `parse-arguments` option is specified.

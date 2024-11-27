@@ -128,9 +128,9 @@ for TEST in $TESTS; do
             continue
         fi
         ;;
-    SUSPICIOUS_SYSCALL_SOURCE)
+    SUSPICIOUS_SYSCALL_SOURCE|STACK_PIVOT)
         if cat /proc/kallsyms | grep -qP "trace.*vma_store"; then
-            info "skip suspicious_syscall_source test on kernel $(uname -r) (VMAs stored in maple tree)"
+            info "skip $TEST test on kernel $(uname -r) (VMAs stored in maple tree)"
             continue
         fi
         ;;
@@ -151,15 +151,27 @@ for TEST in $TESTS; do
                         --output option:parse-arguments \
                         --log file:$SCRIPT_TMP_DIR/tracee-log-$$ \
                         --signatures-dir "$SIG_DIR" \
-                        --scope comm=echo,mv,ls,tracee,proctreetester,ping,ds_writer,fsnotify_tester,process_execute,tracee-ebpf,writev,set_fs_pwd.sh,sys_src_tester \
                         --dnscache enable \
                         --grpc-listen-addr unix:/tmp/tracee.sock \
                         --events "$TEST""
     
-    # Some tests might need event parameters
-    if [ "$TEST" = "SUSPICIOUS_SYSCALL_SOURCE" ]; then
-        tracee_command="$tracee_command --events suspicious_syscall_source.args.syscall=exit"
+    # Some tests might look for false positives and thus we shouldn't limit the scope for them
+    if [ "$TEST" != "STACK_PIVOT" ]; then
+        tracee_command="$tracee_command --scope comm=echo,mv,ls,tracee,proctreetester,ping,ds_writer,fsnotify_tester,process_execute,tracee-ebpf,writev,set_fs_pwd.sh,sys_src_tester"
     fi
+    
+    # Some tests might need event parameters
+    case $TEST in
+    SUSPICIOUS_SYSCALL_SOURCE)
+        tracee_command="$tracee_command --events suspicious_syscall_source.args.syscall=exit"
+        ;;
+    STACK_PIVOT)
+        # The expected event is triggered using the exit_group syscall.
+        # Also add various high-frequency sycalls so that false positives have a chance to trigger.
+        # Also add getpid, which the tester program uses in an attempt to trigger a false positive
+        tracee_command="$tracee_command --events stack_pivot.args.syscall=exit_group,getpid,write,openat,mmap,execve,fork,clone,recvmsg,gettid,epoll_wait,poll,recvfrom"
+        ;;
+    esac
 
     $tracee_command &
 
