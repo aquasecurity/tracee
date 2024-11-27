@@ -220,7 +220,7 @@ func ParseArgs(event *trace.Event) error {
 				parseFsNotifyObjType(objTypeArg, uint64(objType))
 			}
 		}
-	case SuspiciousSyscallSource:
+	case SuspiciousSyscallSource, StackPivot:
 		if syscallArg := GetArg(event, "syscall"); syscallArg != nil {
 			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
 				if Core.IsDefined(ID(id)) {

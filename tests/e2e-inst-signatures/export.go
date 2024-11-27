@@ -23,6 +23,7 @@ var ExportedSignatures = []detect.Signature{
 	&e2eSetFsPwd{},
 	&e2eFtraceHook{},
 	&e2eSuspiciousSyscallSource{},
+	&e2eStackPivot{},
 }
 
 var ExportedDataSources = []detect.DataSource{

@@ -123,7 +123,8 @@ func (af *DataFilter) Parse(filterName string, operatorAndValues string, eventsN
 		switch id {
 		case events.SysEnter,
 			events.SysExit,
-			events.SuspiciousSyscallSource:
+			events.SuspiciousSyscallSource,
+			events.StackPivot:
 			if dataName == "syscall" { // handle either syscall name or syscall id
 				_, err := strconv.Atoi(val)
 				if err != nil {
