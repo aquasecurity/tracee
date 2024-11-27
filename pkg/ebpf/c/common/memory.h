@@ -8,12 +8,12 @@
 enum vma_type
 {
     VMA_FILE_BACKED,
-    VMA_STACK,
+    VMA_ANON,
+    VMA_MAIN_STACK,
+    VMA_THREAD_STACK,
     VMA_HEAP,
     VMA_GOLANG_HEAP,
-    VMA_THREAD_STACK,
     VMA_VDSO,
-    VMA_ANON,
     VMA_UNKNOWN,
 };
 
@@ -27,8 +27,8 @@ statfunc unsigned long get_env_end_from_mm(struct mm_struct *);
 statfunc unsigned long get_vma_flags(struct vm_area_struct *);
 statfunc struct vm_area_struct *find_vma(void *ctx, struct task_struct *task, u64 addr);
 statfunc bool vma_is_file_backed(struct vm_area_struct *vma);
-statfunc bool vma_is_initial_stack(struct vm_area_struct *vma);
-statfunc bool vma_is_initial_heap(struct vm_area_struct *vma);
+statfunc bool vma_is_main_stack(struct vm_area_struct *vma);
+statfunc bool vma_is_main_heap(struct vm_area_struct *vma);
 statfunc bool vma_is_anon(struct vm_area_struct *vma);
 statfunc bool vma_is_golang_heap(struct vm_area_struct *vma);
 statfunc bool vma_is_thread_stack(task_info_t *task_info, struct vm_area_struct *vma);
@@ -133,7 +133,7 @@ statfunc bool vma_is_file_backed(struct vm_area_struct *vma)
     return BPF_CORE_READ(vma, vm_file) != NULL;
 }
 
-statfunc bool vma_is_initial_stack(struct vm_area_struct *vma)
+statfunc bool vma_is_main_stack(struct vm_area_struct *vma)
 {
     struct mm_struct *vm_mm = BPF_CORE_READ(vma, vm_mm);
     if (vm_mm == NULL)
@@ -150,7 +150,7 @@ statfunc bool vma_is_initial_stack(struct vm_area_struct *vma)
     return false;
 }
 
-statfunc bool vma_is_initial_heap(struct vm_area_struct *vma)
+statfunc bool vma_is_main_heap(struct vm_area_struct *vma)
 {
     struct mm_struct *vm_mm = BPF_CORE_READ(vma, vm_mm);
     if (vm_mm == NULL)
@@ -231,10 +231,10 @@ statfunc enum vma_type get_vma_type(task_info_t *task_info, struct vm_area_struc
     if (vma_is_file_backed(vma))
         return VMA_FILE_BACKED;
 
-    if (vma_is_initial_stack(vma))
-        return VMA_STACK;
+    if (vma_is_main_stack(vma))
+        return VMA_MAIN_STACK;
 
-    if (vma_is_initial_heap(vma))
+    if (vma_is_main_heap(vma))
         return VMA_HEAP;
 
     if (vma_is_anon(vma)) {
@@ -251,6 +251,30 @@ statfunc enum vma_type get_vma_type(task_info_t *task_info, struct vm_area_struc
     }
 
     return VMA_UNKNOWN;
+}
+
+statfunc const char *get_vma_type_str(enum vma_type vma_type)
+{
+    switch (vma_type) {
+        case VMA_FILE_BACKED:
+            return "file backed";
+        case VMA_ANON:
+            return "anonymous";
+        case VMA_MAIN_STACK:
+            return "main stack";
+        case VMA_THREAD_STACK:
+            return "thread stack";
+        case VMA_HEAP:
+            return "heap";
+        case VMA_GOLANG_HEAP:
+            // Goroutine stacks are allocated on the golang heap
+            return "golang heap/stack";
+        case VMA_VDSO:
+            return "vdso";
+        case VMA_UNKNOWN:
+        default:
+            return "unknown";
+    }
 }
 
 #endif

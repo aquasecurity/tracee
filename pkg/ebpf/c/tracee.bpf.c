@@ -575,7 +575,7 @@ statfunc void update_thread_stack(void *ctx, task_info_t *task_info, struct task
     if (get_task_flags(task) & PF_KTHREAD || BPF_CORE_READ(task, pid) == BPF_CORE_READ(task, tgid))
         task_info->stack = (address_range_t){0};
 
-    // Get user SP of new thread
+        // Get user SP of new thread
 #if defined(bpf_target_x86)
     struct fork_frame *fork_frame = (struct fork_frame *) BPF_CORE_READ(task, thread.sp);
     u64 thread_sp = BPF_CORE_READ(fork_frame, regs.sp);
@@ -592,10 +592,8 @@ statfunc void update_thread_stack(void *ctx, task_info_t *task_info, struct task
         return;
 
     // Add the VMA address range to the task info
-    task_info->stack = (address_range_t){
-        .start = BPF_CORE_READ(vma, vm_start),
-        .end = BPF_CORE_READ(vma, vm_end)
-    };
+    task_info->stack =
+        (address_range_t){.start = BPF_CORE_READ(vma, vm_start), .end = BPF_CORE_READ(vma, vm_end)};
 }
 
 // trace/events/sched.h: TP_PROTO(struct task_struct *parent, struct task_struct *child)
@@ -638,7 +636,8 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     task->context.start_time = child_start_time;
 
     // Track thread stack if needed
-    if (event_is_selected(SUSPICIOUS_SYSCALL_SOURCE, p.event->context.policies_version))
+    if (event_is_selected(SUSPICIOUS_SYSCALL_SOURCE, p.event->context.policies_version) ||
+        event_is_selected(STACK_PIVOT, p.event->context.policies_version))
         update_thread_stack(ctx, task, child);
 
     // Update the proc_info_map with the new process's info (from parent)
@@ -5287,6 +5286,13 @@ struct {
     __type(value, u32);
 } suspicious_syscall_source_syscalls SEC(".maps");
 
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, MAX_EVENT_ID);
+    __type(key, u32);
+    __type(value, u32);
+} stack_pivot_syscalls SEC(".maps");
+
 statfunc void check_suspicious_syscall_source(void *ctx, struct pt_regs *regs, u32 syscall)
 {
     program_data_t p = {};
@@ -5311,9 +5317,6 @@ statfunc void check_suspicious_syscall_source(void *ctx, struct pt_regs *regs, u
     if (vma_is_file_backed(vma))
         return;
 
-    // Get VMA type
-    enum vma_type vma_type = get_vma_type(p.task_info, vma);
-
     // Build a key that identifies the combination of syscall,
     // source VMA and process so we don't submit it multiple times
     syscall_source_key_t key = {.syscall = syscall,
@@ -5327,40 +5330,66 @@ statfunc void check_suspicious_syscall_source(void *ctx, struct pt_regs *regs, u
         // This key already exists, no need to submit the same syscall-vma-process combination again
         return;
 
-    char *vma_type_str;
-
-    switch (vma_type) {
-        case VMA_STACK:
-            vma_type_str = "main stack";
-            break;
-        case VMA_THREAD_STACK:
-            vma_type_str = "thread stack";
-            break;
-        case VMA_HEAP:
-            vma_type_str = "heap";
-            break;
-        case VMA_GOLANG_HEAP:
-            // Goroutine stacks are allocated on the golang heap
-            vma_type_str = "golang heap/stack";
-            break;
-        case VMA_ANON:
-            vma_type_str = "anonymous";
-            break;
-        case VMA_VDSO:
-            vma_type_str = "vdso";
-            break;
-        default:
-            vma_type_str = "unknown";
-            break;
-    }
-
+    const char *vma_type_str = get_vma_type_str(get_vma_type(p.task_info, vma));
     unsigned long vma_start = BPF_CORE_READ(vma, vm_start);
     unsigned long vma_size = BPF_CORE_READ(vma, vm_end) - vma_start;
     unsigned long vma_flags = BPF_CORE_READ(vma, vm_flags);
 
     save_to_submit_buf(&p.event->args_buf, &syscall, sizeof(syscall), 0);
     save_to_submit_buf(&p.event->args_buf, &ip, sizeof(ip), 1);
-    save_str_to_buf(&p.event->args_buf, vma_type_str, 2);
+    save_str_to_buf(&p.event->args_buf, (void *) vma_type_str, 2);
+    save_to_submit_buf(&p.event->args_buf, &vma_start, sizeof(vma_start), 3);
+    save_to_submit_buf(&p.event->args_buf, &vma_size, sizeof(vma_size), 4);
+    save_to_submit_buf(&p.event->args_buf, &vma_flags, sizeof(vma_flags), 5);
+
+    events_perf_submit(&p, 0);
+}
+
+statfunc void check_stack_pivot(void *ctx, struct pt_regs *regs, u32 syscall)
+{
+    program_data_t p = {};
+
+    if (!init_program_data(&p, ctx, STACK_PIVOT))
+        return;
+
+    if (!evaluate_scope_filters(&p))
+        return;
+
+    // Get stack pointer
+    u64 sp = PT_REGS_SP_CORE(regs);
+
+    // Find VMA which contains the stack pointer
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    if (unlikely(task == NULL))
+        return;
+    struct vm_area_struct *vma = find_vma(ctx, task, sp);
+    if (unlikely(vma == NULL))
+        return;
+
+    // Check if the stack pointer points to the stack region.
+    //
+    // Goroutine stacks are allocated on golang's heap, which means that an
+    // exploit performing a stack pivot on a go program will result in a false
+    // negative if the new stack location is on golang's heap.
+    //
+    // To identify thread stacks, they need to be tracked when new threads are
+    // created. This means that we cannot identify stacks of threads that were
+    // created before tracee started. To avoid false positives, we ignore events
+    // where the stack pointer's VMA might be a thread stack but it was not
+    // tracked for this thread. This may result in false negatives.
+    enum vma_type vma_type = get_vma_type(p.task_info, vma);
+    if (vma_type == VMA_MAIN_STACK || vma_type == VMA_GOLANG_HEAP || vma_type == VMA_THREAD_STACK ||
+        (vma_type == VMA_ANON && !thread_stack_tracked(p.task_info)))
+        return;
+
+    const char *vma_type_str = get_vma_type_str(vma_type);
+    unsigned long vma_start = BPF_CORE_READ(vma, vm_start);
+    unsigned long vma_size = BPF_CORE_READ(vma, vm_end) - vma_start;
+    unsigned long vma_flags = BPF_CORE_READ(vma, vm_flags);
+
+    save_to_submit_buf(&p.event->args_buf, &syscall, sizeof(syscall), 0);
+    save_to_submit_buf(&p.event->args_buf, &sp, sizeof(sp), 1);
+    save_str_to_buf(&p.event->args_buf, (void *) vma_type_str, 2);
     save_to_submit_buf(&p.event->args_buf, &vma_start, sizeof(vma_start), 3);
     save_to_submit_buf(&p.event->args_buf, &vma_size, sizeof(vma_size), 4);
     save_to_submit_buf(&p.event->args_buf, &vma_flags, sizeof(vma_flags), 5);
@@ -5381,6 +5410,9 @@ int BPF_KPROBE(syscall_checker)
 
     if (bpf_map_lookup_elem(&suspicious_syscall_source_syscalls, &syscall) != NULL)
         check_suspicious_syscall_source(ctx, regs, syscall);
+
+    if (bpf_map_lookup_elem(&stack_pivot_syscalls, &syscall) != NULL)
+        check_stack_pivot(ctx, regs, syscall);
 
     return 0;
 }

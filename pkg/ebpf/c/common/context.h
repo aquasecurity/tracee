@@ -20,6 +20,7 @@ statfunc int init_program_data(program_data_t *, void *, u32);
 statfunc int init_tailcall_program_data(program_data_t *, void *);
 statfunc bool reset_event(event_data_t *, u32);
 statfunc void reset_event_args_buf(event_data_t *);
+statfunc bool thread_stack_tracked(task_info_t *);
 
 // FUNCTIONS
 
@@ -260,6 +261,11 @@ statfunc bool reset_event(event_data_t *event, u32 event_id)
     event->context.matched_policies = event_config->submit_for_policies;
 
     return true;
+}
+
+statfunc bool thread_stack_tracked(task_info_t *task_info)
+{
+    return task_info->stack.start != 0 && task_info->stack.end != 0;
 }
 
 #endif
