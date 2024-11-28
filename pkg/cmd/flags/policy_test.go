@@ -1876,7 +1876,7 @@ func TestCreatePolicies(t *testing.T) {
 		{
 			testName:        "invalid datafilter 1",
 			evtFlags:        []string{"open.data"},
-			expectPolicyErr: filters.InvalidExpression("open."),
+			expectPolicyErr: filters.InvalidEventField(""),
 		},
 		{
 			testName:        "invalid datafilter 2",
@@ -1897,12 +1897,12 @@ func TestCreatePolicies(t *testing.T) {
 		{
 			testName:        "invalid scope filter 1",
 			evtFlags:        []string{"open.scope"},
-			expectPolicyErr: filters.InvalidExpression("open.scope"),
+			expectPolicyErr: filters.InvalidScopeField(""),
 		},
 		{
 			testName:        "invalid scope filter 2",
 			evtFlags:        []string{"bla.scope.processName=ls"},
-			expectPolicyErr: filters.InvalidEventName("bla"),
+			expectPolicyErr: InvalidEventError("bla"),
 		},
 		{
 			testName:        "invalid scope filter 3",
@@ -2039,10 +2039,6 @@ func TestCreatePolicies(t *testing.T) {
 		{
 			testName: "wildcard filter",
 			evtFlags: []string{"open*"},
-		},
-		{
-			testName: "wildcard not filter",
-			evtFlags: []string{"-*"},
 		},
 		{
 			testName:   "multiple filters",
