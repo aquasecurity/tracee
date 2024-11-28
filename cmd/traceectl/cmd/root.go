@@ -15,8 +15,8 @@ var outputFlag string
 var serverFlag string
 var (
 	serverInfo client.ServerInfo = client.ServerInfo{
-		ConnectionType: client.PROTOCOL_UNIX,
-		ADDR:           client.SOCKET,
+		ConnectionType: client.Protocol_UNIX,
+		Addr:           client.Socket,
 	}
 
 	rootCmd = &cobra.Command{
@@ -35,7 +35,7 @@ func init() {
 	rootCmd.AddCommand(metricsCmd)
 	rootCmd.AddCommand(versionCmd)
 
-	rootCmd.PersistentFlags().StringVar(&serverInfo.ADDR, "server", client.SOCKET, `Server connection path or address.
+	rootCmd.PersistentFlags().StringVar(&serverInfo.Addr, "server", client.Socket, `Server connection path or address.
 	for unix socket <socket_path> (default: /tmp/tracee.sock)
 	for tcp <IP:Port>`)
 
