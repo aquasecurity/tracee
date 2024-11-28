@@ -51,7 +51,17 @@ func streamEvents(cmd *cobra.Command, args []string) {
 	}
 	switch format.GetFormat() {
 	case formatter.FormatJson:
-		//jsonStreamEvents(args, stream, format)
+		for {
+			res, err := stream.Recv()
+			if err != nil {
+				//End of stream\close connection
+				if err.Error() == "EOF" {
+					break
+				}
+				//Error receiving streamed event
+			}
+			format.PrintJson(res.Event.String())
+		}
 	case formatter.FormatTable:
 		format.PrintTableHeaders([]string{"TIME", "EVENT NAME", "POLICIES", "PID", "DATA"})
 		for {
