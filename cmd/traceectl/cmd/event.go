@@ -36,8 +36,8 @@ func init() {
 	eventCmd.AddCommand(enableEventCmd)
 	eventCmd.AddCommand(disableEventCmd)
 
-	listEventCmd.Flags().StringVarP(&eventFormatFlag, "format", "f", formatter.FormatTable, "Output format (json|table|template) ")
-	describeEventCmd.Flags().StringVarP(&eventFormatFlag, "format", "f", formatter.FormatTable, "Output format (json|table|template) ")
+	listEventCmd.Flags().StringVarP(&eventFormatFlag, "format", "f", formatter.FormatTable, "Output format (json|table) ")
+	describeEventCmd.Flags().StringVarP(&eventFormatFlag, "format", "f", formatter.FormatTable, "Output format (json|table) ")
 }
 
 var listEventCmd = &cobra.Command{
