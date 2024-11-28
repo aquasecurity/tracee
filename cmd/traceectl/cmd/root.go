@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var formatFlag string
 var outputFlag string
 var (
 	serverInfo client.ServerInfo = client.ServerInfo{
