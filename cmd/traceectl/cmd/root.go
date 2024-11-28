@@ -6,13 +6,12 @@ import (
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/client"
+	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/cmd/flags"
 
 	"github.com/spf13/cobra"
 )
 
-var formatFlag string
 var outputFlag string
-var serverFlag string
 var (
 	serverInfo client.ServerInfo = client.ServerInfo{
 		ConnectionType: client.Protocol_UNIX,
@@ -23,6 +22,12 @@ var (
 		Use:   "traceectl [flags] [command]",
 		Short: "TraceeCtl is a CLI tool for tracee",
 		Long:  "TraceeCtl is the client for the tracee API server.",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := flags.PrepareOutput(cmd, outputFlag); err != nil {
+				return err
+			}
+			return nil
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Help()
 		},
@@ -38,7 +43,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&serverInfo.Addr, "server", client.Socket, `Server connection path or address.
 	for unix socket <socket_path> (default: /tmp/tracee.sock)
 	for tcp <IP:Port>`)
-
+	rootCmd.PersistentFlags().StringVarP(&outputFlag, "output", "o", "", "Specify the output format")
 }
 
 var metricsCmd = &cobra.Command{
