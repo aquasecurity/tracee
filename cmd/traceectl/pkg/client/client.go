@@ -17,8 +17,8 @@ const (
 )
 
 type ServerInfo struct {
-	connectionType string
-	addr           string
+	ConnectionType string
+	Addr           string
 }
 
 func connectToServer(serverInfo ServerInfo) (*grpc.ClientConn, error) {
@@ -31,13 +31,13 @@ func connectToServer(serverInfo ServerInfo) (*grpc.ClientConn, error) {
 	if err != nil {
 		return nil, err
 	}
-	switch serverInfo.connectionType {
+	switch serverInfo.ConnectionType {
 	case Protocol_UNIX:
-		address = fmt.Sprintf("unix://%s", serverInfo.addr)
+		address = fmt.Sprintf("unix://%s", serverInfo.Addr)
 	case Protocol_TCP:
-		address = fmt.Sprintf(serverInfo.addr)
+		address = fmt.Sprintf(serverInfo.Addr)
 	default:
-		return nil, fmt.Errorf("unsupported connection type: %s", serverInfo.connectionType)
+		return nil, fmt.Errorf("unsupported connection type: %s", serverInfo.ConnectionType)
 	}
 	conn, err = grpc.NewClient(address, opts...)
 	if err != nil {
@@ -48,16 +48,16 @@ func connectToServer(serverInfo ServerInfo) (*grpc.ClientConn, error) {
 }
 
 func determineConnectionType(serverInfo ServerInfo) error {
-	if strings.Contains(serverInfo.addr, ":") && isValidTCPAddress(serverInfo.addr) {
-		serverInfo.connectionType = Protocol_TCP
+	if strings.Contains(serverInfo.Addr, ":") && isValidTCPAddress(serverInfo.Addr) {
+		serverInfo.ConnectionType = Protocol_TCP
 		return nil
 	}
-	if strings.HasPrefix(serverInfo.addr, "/") {
-		serverInfo.connectionType = Protocol_UNIX
+	if strings.HasPrefix(serverInfo.Addr, "/") {
+		serverInfo.ConnectionType = Protocol_UNIX
 		return nil
 	}
 
-	return fmt.Errorf("unsupported connection type: %s", serverInfo.addr)
+	return fmt.Errorf("unsupported connection type: %s", serverInfo.Addr)
 
 }
 func isValidTCPAddress(addr string) bool {

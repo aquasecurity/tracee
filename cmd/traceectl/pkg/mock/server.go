@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	ExpectedVersion string            = "v0.22.0-15-gd09d7fca0d"
-	serverInfo      client.ServerInfo = client.ServerInfo{
-		ADDR: client.SOCKET,
+	ExpectedVersion string             = "v0.22.0-15-gd09d7fca0d"
+	serverInfo      *client.ServerInfo = &client.ServerInfo{
+		Addr:           client.Socket,
+		ConnectionType: client.Protocol_UNIX,
 	}
 )
 
@@ -26,12 +27,12 @@ type MockDiagnosticServer struct {
 }
 
 func CreateMockServer() (*grpc.Server, net.Listener, error) {
-	if _, err := os.Stat(serverInfo.ADDR); err == nil {
-		if err := os.Remove(serverInfo.ADDR); err != nil {
-			return nil, nil, fmt.Errorf("failed to cleanup gRPC listening address (%s): %v", serverInfo.ADDR, err)
+	if _, err := os.Stat(serverInfo.Addr); err == nil {
+		if err := os.Remove(serverInfo.Addr); err != nil {
+			return nil, nil, fmt.Errorf("failed to cleanup gRPC listening address (%s): %v", serverInfo.Addr, err)
 		}
 	}
-	listener, err := net.Listen("unix", serverInfo.ADDR)
+	listener, err := net.Listen("unix", serverInfo.Addr)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create Unix socket listener: %v", err)
 	}
@@ -56,7 +57,7 @@ func StartMockServer() (*grpc.Server, error) {
 }
 func StopMockServer(server *grpc.Server) {
 	server.GracefulStop()
-	if err := os.Remove(serverInfo.ADDR); err != nil {
+	if err := os.Remove(serverInfo.Addr); err != nil {
 		fmt.Printf("failed to remove Unix socket: %v\n", err)
 	}
 }
