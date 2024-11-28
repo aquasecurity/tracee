@@ -56,8 +56,10 @@ func GetHelpString(key string) string {
 		return procTreeHelp()
 	case "capture":
 		return captureHelp()
-	case "scope", "events":
-		return filterHelp()
+	case "scope":
+		return scopeHelp()
+	case "events":
+		return eventsHelp()
 	case "output":
 		return outputHelp()
 	case "capabilities":

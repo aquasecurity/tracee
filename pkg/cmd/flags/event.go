@@ -6,6 +6,44 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
+func eventsHelp() string {
+	return `The events flag (--events) selects which events to trace and applies event-specific filters.
+
+Event Selection:
+1. Individual Events:
+   --events execve,open                              | trace specific events
+   --events 'open*'                                  | trace events with prefix 'open'
+
+2. Event Sets:
+   --events fs                                       | trace all filesystem events
+   --events fs --events -open,-openat                | trace fs events except open(at)
+
+Event Filtering:
+1. Event Scope (event_name.scope.field):
+   Filters based on event metadata
+   Examples:
+   --events openat.scope.processName=ls              | match events from ls
+   --events security_file_open.scope.container       | match events from containers
+
+2. Event Data Fields (event_name.data.arg_name):
+   Operators: '=', '!='
+   String matching: prefix with '*' or suffix with '*'
+   Examples:
+   --events close.data.fd=5                          | match specific file descriptor
+   --events openat.data.pathname='/tmp*'             | match paths starting with /tmp
+   --events openat.data.pathname='*shadow'           | match paths ending with shadow
+   --events openat.data.pathname!=/tmp/1,/bin/ls     | exclude specific paths
+
+3. Return Values (event_name.retval):
+   Uses numerical comparison operators: '=', '!=', '<', '>'
+   Example:
+   --events open.retval=0                            | match successful opens
+
+Note: Use quotes to escape special characters: '*', '>', '<'
+For full field reference, see trace.Event struct in types/trace package.
+`
+}
+
 // PolicyEventMap maps policy id to its pre-parsed event flag fields
 type PolicyEventMap map[int]policyEvents
 
