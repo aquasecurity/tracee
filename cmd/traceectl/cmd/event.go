@@ -84,11 +84,11 @@ func listEvents(cmd *cobra.Command, args []string) {
 		return
 	}
 	defer traceeClient.CloseConnection()
+
 	response, err := traceeClient.GetEventDefinitions(context.Background(), &pb.GetEventDefinitionsRequest{EventNames: args})
 	if err != nil {
 		cmd.PrintErrln("Error getting event definitions: ", err)
 		return
-
 	}
 	format, err := formatter.NewFormatter(eventFormatFlag, cmd)
 	if err != nil {
@@ -117,6 +117,7 @@ func getEventDescriptions(cmd *cobra.Command, args []string) {
 		return
 	}
 	defer traceeClient.CloseConnection()
+
 	response, err := traceeClient.GetEventDefinitions(context.Background(), &pb.GetEventDefinitionsRequest{EventNames: args})
 	if err != nil {
 		cmd.PrintErrln("Error getting event definitions: ", err)

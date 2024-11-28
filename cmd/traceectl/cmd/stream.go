@@ -36,6 +36,7 @@ func streamEvents(cmd *cobra.Command, args []string) {
 		return
 	}
 	defer traceeClient.CloseConnection()
+
 	//request to stream events
 	req := &pb.StreamEventsRequest{Policies: args}
 	stream, err := traceeClient.StreamEvents(cmd.Context(), req)

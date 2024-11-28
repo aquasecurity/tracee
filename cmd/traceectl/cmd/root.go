@@ -77,6 +77,7 @@ func displayMetrics(cmd *cobra.Command, _ []string) {
 		return
 	}
 	defer traceeClient.CloseConnection()
+
 	response, err := traceeClient.GetMetrics(context.Background(), &pb.GetMetricsRequest{})
 	if err != nil {
 		cmd.PrintErrln("Error getting metrics: ", err)
@@ -100,6 +101,7 @@ func displayVersion(cmd *cobra.Command, _ []string) {
 		return
 	}
 	defer traceeClient.CloseConnection()
+
 	response, err := traceeClient.GetVersion(context.Background(), &pb.GetVersionRequest{})
 
 	if err != nil {
