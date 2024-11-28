@@ -40,3 +40,6 @@ func NewFormatter(format string, cmd *cobra.Command) (*Formatter, error) {
 		return nil, fmt.Errorf("format %s is not supported", format)
 	}
 }
+func (f *Formatter) GetFormat() string {
+	return f.format
+}
