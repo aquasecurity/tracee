@@ -11,46 +11,35 @@ import (
 )
 
 const (
-	PROTOCOL_UNIX = "unix"
-	PROTOCOL_TCP  = "tcp"
-	SOCKET        = "/tmp/tracee.sock"
+	Protocol_UNIX = "unix"
+	Protocol_TCP  = "tcp"
+	Socket        = "/tmp/tracee.sock"
 )
 
 type ServerInfo struct {
-	ConnectionType string
-	ADDR           string
+	connectionType string
+	addr           string
 }
 
 func connectToServer(serverInfo ServerInfo) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	var conn *grpc.ClientConn
 	var err error
+	var address string
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	err = determineConnectionType(serverInfo)
 	if err != nil {
 		return nil, err
 	}
-	switch serverInfo.ConnectionType {
-	case PROTOCOL_UNIX:
-		address := fmt.Sprintf("unix://%s", serverInfo.ADDR)
-		conn, err = grpc.NewClient(address, opts...)
-
-		if err != nil {
-			log.Fatalf("failed to connect to server: %v", err)
-			return nil, err
-		}
-	case PROTOCOL_TCP:
-		address := fmt.Sprintf(serverInfo.ADDR)
-		conn, err = grpc.NewClient(address, opts...)
-
-		if err != nil {
-			log.Fatalf("failed to connect to server: %v", err)
-			return nil, err
-		}
+	switch serverInfo.connectionType {
+	case Protocol_UNIX:
+		address = fmt.Sprintf("unix://%s", serverInfo.addr)
+	case Protocol_TCP:
+		address = fmt.Sprintf(serverInfo.addr)
 	default:
-		return nil, fmt.Errorf("unsupported connection type: %s", serverInfo.ConnectionType)
+		return nil, fmt.Errorf("unsupported connection type: %s", serverInfo.connectionType)
 	}
-
+	conn, err = grpc.NewClient(address, opts...)
 	if err != nil {
 		log.Fatalf("failed to connect to server: %v", err)
 		return nil, err
@@ -59,16 +48,16 @@ func connectToServer(serverInfo ServerInfo) (*grpc.ClientConn, error) {
 }
 
 func determineConnectionType(serverInfo ServerInfo) error {
-	if strings.Contains(serverInfo.ADDR, ":") && isValidTCPAddress(serverInfo.ADDR) {
-		serverInfo.ConnectionType = PROTOCOL_TCP
+	if strings.Contains(serverInfo.addr, ":") && isValidTCPAddress(serverInfo.addr) {
+		serverInfo.connectionType = Protocol_TCP
 		return nil
 	}
-	if strings.HasPrefix(serverInfo.ADDR, "/") {
-		serverInfo.ConnectionType = PROTOCOL_UNIX
+	if strings.HasPrefix(serverInfo.addr, "/") {
+		serverInfo.connectionType = Protocol_UNIX
 		return nil
 	}
 
-	return fmt.Errorf("unsupported connection type: %s", serverInfo.ADDR)
+	return fmt.Errorf("unsupported connection type: %s", serverInfo.addr)
 
 }
 func isValidTCPAddress(addr string) bool {
