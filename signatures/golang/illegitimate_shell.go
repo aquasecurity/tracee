@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -18,7 +17,7 @@ type IllegitimateShell struct {
 
 func (sig *IllegitimateShell) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
-	sig.shellNames = []string{"/ash", "/bash", "/csh", "/ksh", "/sh", "/tcsh", "/zsh", "/dash"}
+	sig.shellNames = []string{"ash", "bash", "csh", "ksh", "sh", "tcsh", "zsh", "dash"}
 	sig.webServersProcessNames = []string{"nginx", "httpd", "httpd-foregroun", "http-nio", "lighttpd", "apache", "apache2"}
 	return nil
 }
@@ -43,7 +42,7 @@ func (sig *IllegitimateShell) GetMetadata() (detect.SignatureMetadata, error) {
 
 func (sig *IllegitimateShell) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return []detect.SignatureEventSelector{
-		{Source: "tracee", Name: "security_bprm_check", Origin: "*"},
+		{Source: "tracee", Name: "sched_process_exec", Origin: "*"},
 	}, nil
 }
 
@@ -54,16 +53,15 @@ func (sig *IllegitimateShell) OnEvent(event protocol.Event) error {
 	}
 
 	switch eventObj.EventName {
-	case "security_bprm_check":
+	case "sched_process_exec":
+		prevComm, err := helpers.GetTraceeStringArgumentByName(eventObj, "prev_comm")
+		if err != nil {
+			return err
+		}
 		for _, webServersProcessName := range sig.webServersProcessNames {
-			if webServersProcessName == eventObj.ProcessName {
-				pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
-				if err != nil {
-					return err
-				}
-
+			if webServersProcessName == prevComm {
 				for _, shellName := range sig.shellNames {
-					if strings.HasSuffix(pathname, shellName) {
+					if eventObj.ProcessName == shellName {
 						metadata, err := sig.GetMetadata()
 						if err != nil {
 							return err

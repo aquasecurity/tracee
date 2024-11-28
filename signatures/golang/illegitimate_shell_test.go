@@ -23,14 +23,14 @@ func TestIllegitimateShell(t *testing.T) {
 			Name: "should trigger detection",
 			Events: []trace.Event{
 				{
-					EventName:   "security_bprm_check",
-					ProcessName: "apache2",
+					EventName:   "sched_process_exec",
+					ProcessName: "dash",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
-								Name: "pathname",
+								Name: "prev_comm",
 							},
-							Value: interface{}("/bin/dash"),
+							Value: interface{}("apache2"),
 						},
 					},
 				},
@@ -39,14 +39,14 @@ func TestIllegitimateShell(t *testing.T) {
 				"TRC-1016": {
 					Data: nil,
 					Event: trace.Event{
-						EventName:   "security_bprm_check",
-						ProcessName: "apache2",
+						EventName:   "sched_process_exec",
+						ProcessName: "dash",
 						Args: []trace.Argument{
 							{
 								ArgMeta: trace.ArgMeta{
-									Name: "pathname",
+									Name: "prev_comm",
 								},
-								Value: interface{}("/bin/dash"),
+								Value: interface{}("apache2"),
 							},
 						},
 					}.ToProtocol(),
@@ -69,17 +69,17 @@ func TestIllegitimateShell(t *testing.T) {
 			},
 		},
 		{
-			Name: "should not trigger detection - wrong path",
+			Name: "should not trigger detection - not a shell",
 			Events: []trace.Event{
 				{
-					EventName:   "security_bprm_check",
-					ProcessName: "apache2",
+					EventName:   "sched_process_exec",
+					ProcessName: "ls",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
-								Name: "pathname",
+								Name: "prev_comm",
 							},
-							Value: interface{}("/bin/ls"),
+							Value: interface{}("apache2"),
 						},
 					},
 				},
@@ -90,14 +90,14 @@ func TestIllegitimateShell(t *testing.T) {
 			Name: "should not trigger detection - wrong process name",
 			Events: []trace.Event{
 				{
-					EventName:   "security_bprm_check",
-					ProcessName: "bash",
+					EventName:   "sched_process_exec",
+					ProcessName: "dash",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
-								Name: "pathname",
+								Name: "prev_comm",
 							},
-							Value: interface{}("/bin/dash"),
+							Value: interface{}("bash"),
 						},
 					},
 				},
