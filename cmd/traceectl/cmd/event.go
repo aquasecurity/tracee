@@ -12,8 +12,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var eventFormatFlag string
-
 var eventCmd = &cobra.Command{
 	Use:   "event [command]",
 	Short: "Event management for tracee",
@@ -36,8 +34,8 @@ func init() {
 	eventCmd.AddCommand(enableEventCmd)
 	eventCmd.AddCommand(disableEventCmd)
 
-	listEventCmd.Flags().StringVarP(&eventFormatFlag, "format", "f", formatter.FormatTable, "Output format (json|table) ")
-	describeEventCmd.Flags().StringVarP(&eventFormatFlag, "format", "f", formatter.FormatTable, "Output format (json|table) ")
+	listEventCmd.Flags().StringVarP(&formatFlag, "format", "f", formatter.FormatTable, "Output format (json|table)")
+	describeEventCmd.Flags().StringVarP(&formatFlag, "format", "f", formatter.FormatTable, "Output format (json|table)")
 }
 
 var listEventCmd = &cobra.Command{
@@ -90,7 +88,7 @@ func listEvents(cmd *cobra.Command, args []string) {
 		cmd.PrintErrln("Error getting event definitions: ", err)
 		return
 	}
-	format, err := formatter.NewFormatter(eventFormatFlag, cmd)
+	format, err := formatter.NewFormatter(formatFlag, cmd)
 	if err != nil {
 		cmd.PrintErrln("Error creating formatter: ", err)
 		return
@@ -124,7 +122,7 @@ func getEventDescriptions(cmd *cobra.Command, args []string) {
 		return
 
 	}
-	format, err := formatter.NewFormatter(eventFormatFlag, cmd)
+	format, err := formatter.NewFormatter(formatFlag, cmd)
 	if err != nil {
 		cmd.PrintErrln("Error creating formatter: ", err)
 		return
