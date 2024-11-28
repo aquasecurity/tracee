@@ -3,23 +3,23 @@ package cmd
 //TODO:
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/client"
 	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/cmd/formatter"
-	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/cmd/printer"
 	"github.com/spf13/cobra"
 )
 
 var eventFormatFlag string
-var eventOutputFlag string
 
 var eventCmd = &cobra.Command{
 	Use:   "event [command]",
 	Short: "Event management for tracee",
 	Long: `Event Management for tracee 
 	Let you enable and disable events in tracee.
-	Get descriptions of events and run them.
+	Get descriptions of events.
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -37,10 +37,7 @@ func init() {
 	eventCmd.AddCommand(disableEventCmd)
 
 	listEventCmd.Flags().StringVarP(&eventFormatFlag, "format", "f", formatter.FormatTable, "Output format (json|table|template) ")
-	listEventCmd.Flags().StringVarP(&eventOutputFlag, "output", "o", "stdout", "Output destination ")
-
 	describeEventCmd.Flags().StringVarP(&eventFormatFlag, "format", "f", formatter.FormatTable, "Output format (json|table|template) ")
-	describeEventCmd.Flags().StringVarP(&eventOutputFlag, "output", "o", "stdout", "Output destination ")
 }
 
 var listEventCmd = &cobra.Command{
@@ -93,13 +90,26 @@ func listEvents(cmd *cobra.Command, args []string) {
 		return
 
 	}
-	format, err := formatter.New(eventFormatFlag, eventOutputFlag, cmd)
+	format, err := formatter.NewFormatter(eventFormatFlag, cmd)
 	if err != nil {
 		cmd.PrintErrln("Error creating formatter: ", err)
 		return
 	}
-	printer.ListEvents(format, args, response)
+	switch format.GetFormat() {
+	case formatter.FormatJson:
+		format.PrintJson(response.String())
+	case formatter.FormatTable:
+		format.PrintTableHeaders([]string{"ID", "Name", "Version", "Tags"})
+		for _, event := range response.Definitions {
+			//remove descriptions
+			format.PrintTableRow(prepareDescription(event)[:4])
+		}
+	default:
+		//Error: output format not supported
+		return
+	}
 }
+
 func getEventDescriptions(cmd *cobra.Command, args []string) {
 	var traceeClient client.ServiceClient
 	if err := traceeClient.NewServiceClient(serverInfo); err != nil {
@@ -113,12 +123,34 @@ func getEventDescriptions(cmd *cobra.Command, args []string) {
 		return
 
 	}
-	format, err := formatter.New(eventFormatFlag, eventOutputFlag, cmd)
+	format, err := formatter.NewFormatter(eventFormatFlag, cmd)
 	if err != nil {
 		cmd.PrintErrln("Error creating formatter: ", err)
 		return
 	}
-	printer.DescribeEvent(format, args, response)
+	switch format.GetFormat() {
+	case formatter.FormatJson:
+		format.PrintJson(response.String())
+	case formatter.FormatTable:
+		format.PrintTableHeaders([]string{"ID", "Name", "Version", "Tags", "Description"})
+		for _, event := range response.Definitions {
+			format.PrintTableRow(prepareDescription(event))
+		}
+	default:
+		//Error: output format not supported
+		return
+
+	}
+}
+func prepareDescription(event *pb.EventDefinition) []string {
+	return []string{
+		fmt.Sprintf("%d", event.Id),
+		event.Name,
+		fmt.Sprintf("%d.%d.%d", event.Version.Major, event.Version.Minor, event.Version.Patch),
+		strings.Join(event.Tags, ", "),
+		event.Description,
+	}
+
 }
 func enableEvents(cmd *cobra.Command, eventName string) {
 	var traceeClient client.ServiceClient
@@ -133,7 +165,6 @@ func enableEvents(cmd *cobra.Command, eventName string) {
 	}
 	cmd.Printf("Enabled event: %s\n", eventName)
 }
-
 func disableEvents(cmd *cobra.Command, eventName string) {
 	var traceeClient client.ServiceClient
 	if err := traceeClient.NewServiceClient(serverInfo); err != nil {
@@ -146,5 +177,4 @@ func disableEvents(cmd *cobra.Command, eventName string) {
 		return
 	}
 	cmd.Printf("Disabled event: %s\n", eventName)
-
 }
