@@ -160,7 +160,6 @@ func (t *Tracee) queueEvents(ctx context.Context, in <-chan *trace.Event) (chan 
 func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event, t.config.PipelineChannelSize)
 	errc := make(chan error, 1)
-	sysCompatTranslation := events.Core.IDs32ToIDs()
 	go func() {
 		defer close(out)
 		defer close(errc)
@@ -213,10 +212,16 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			flags := parseContextFlags(containerData.ID, eCtx.Flags)
 			syscall := ""
 			if eCtx.Syscall != noSyscall {
-				var err error
-				syscall, err = parseSyscallID(int(eCtx.Syscall), flags.IsCompat, sysCompatTranslation)
-				if err != nil {
-					logger.Debugw("Originated syscall parsing", "error", err)
+				// The syscall ID returned from eBPF is actually the event ID representing that syscall.
+				// For 64-bit processes, the event ID is the same as the syscall ID.
+				// For 32-bit (compat) processes, the syscall ID gets translated in eBPF to the event ID of its
+				// 64-bit counterpart, or if it's a 32-bit exclusive syscall, to the event ID corresponding to it.
+				id := events.ID(eCtx.Syscall)
+				if events.Core.IsDefined(id) {
+					syscall = events.Core.GetDefinitionByID(id).GetName()
+				} else {
+					// This should never fail, as the translation used in eBPF relies on the same event definitions
+					logger.Errorw("No syscall event with id %d", id)
 				}
 			}
 
@@ -414,29 +419,6 @@ func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
 	cflags.IsCompat = (flags & IsCompatFlag) != 0
 
 	return cflags
-}
-
-// parseSyscallID returns the syscall name from its ID, taking into account architecture
-// and 32bit/64bit modes. It also returns an error if the syscall ID is not found in the
-// events definition.
-func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[events.ID]events.ID) (string, error) {
-	id := events.ID(syscallID)
-	if !isCompat {
-		if !events.Core.IsDefined(id) {
-			return "", errfmt.Errorf("no syscall event with syscall id %d", syscallID)
-		}
-		return events.Core.GetDefinitionByID(id).GetName(), nil
-	}
-	if id, ok := compatTranslationMap[events.ID(syscallID)]; ok {
-		// should never happen (map should be initialized from events definition)
-		if !events.Core.IsDefined(id) {
-			return "", errfmt.Errorf(
-				"no syscall event with compat syscall id %d, translated to ID %d", syscallID, id,
-			)
-		}
-		return events.Core.GetDefinitionByID(id).GetName(), nil
-	}
-	return "", errfmt.Errorf("no syscall event with compat syscall id %d", syscallID)
 }
 
 // processEvents is the event processing pipeline stage. For each received event, it goes

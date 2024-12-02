@@ -52,8 +52,9 @@ statfunc int get_current_task_syscall_id(void)
     if (is_compat(curr)) {
         // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
         u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
-        if (id_64 == 0)
-            return 0;
+        if (id_64 == NULL)
+            // outdated syscall list?
+            return NO_SYSCALL;
 
         id = *id_64;
     }
