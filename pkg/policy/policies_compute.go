@@ -119,7 +119,7 @@ func (ps *policies) updateContainerFilterEnabled() {
 // updateUserlandPolicies sets the userlandPolicies list and the filterableInUserland bitmap.
 func (ps *policies) updateUserlandPolicies() {
 	userlandList := []*Policy{}
-	ps.filterableInUserland = 0
+	ps.filterableInUserland = false
 
 	for _, p := range ps.allFromArray() {
 		if p == nil {
@@ -142,9 +142,9 @@ func (ps *policies) updateUserlandPolicies() {
 		if hasUserlandFilters ||
 			(p.UIDFilter.Enabled() && ps.uidFilterableInUserland) ||
 			(p.PIDFilter.Enabled() && ps.pidFilterableInUserland) {
-			// add policy to userland list and set the respective bit
+			// add policy to userland list and set the flag
 			userlandList = append(userlandList, p)
-			utils.SetBit(&ps.filterableInUserland, uint(p.ID))
+			ps.filterableInUserland = true
 		}
 	}
 

@@ -562,11 +562,11 @@ func (m *Manager) CreateAllIterator() utils.Iterator[*Policy] {
 	return m.ps.createAllIterator()
 }
 
-func (m *Manager) FilterableInUserland(bitmap uint64) bool {
+func (m *Manager) FilterableInUserland() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	return (bitmap & m.ps.filterInUserland()) != 0
+	return m.ps.filterableInUserland
 }
 
 func (m *Manager) WithContainerFilterEnabled() uint64 {
