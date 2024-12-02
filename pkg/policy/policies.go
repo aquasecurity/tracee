@@ -28,33 +28,35 @@ type policies struct {
 
 	// computed values
 
-	userlandPolicies        []*Policy // reduced list with userland filterable policies (read in a hot path)
-	uidFilterMin            uint64
-	uidFilterMax            uint64
-	pidFilterMin            uint64
-	pidFilterMax            uint64
-	uidFilterableInUserland bool
-	pidFilterableInUserland bool
-	filterableInUserland    bool
-	containerFiltersEnabled uint64 // bitmap of policies that have at least one container filter type enabled
+	userlandPolicies            []*Policy // reduced list with userland filterable policies (read in a hot path)
+	uidFilterMin                uint64
+	uidFilterMax                uint64
+	pidFilterMin                uint64
+	pidFilterMax                uint64
+	uidFilterableInUserland     bool
+	pidFilterableInUserland     bool
+	filterableInUserland        bool
+	containerFiltersEnabled     uint64 // bitmap of policies that have at least one container filter type enabled
+	kernellandPolicyMatchStates map[int]*KernelMatchStates
 }
 
 func NewPolicies() *policies {
 	return &policies{
-		bpfInnerMaps:            map[string]*bpf.BPFMapLow{},
-		policiesArray:           [PolicyMax]*Policy{},
-		policiesMapByID:         map[int]*Policy{},
-		policiesMapByName:       map[string]*Policy{},
-		policiesList:            []*Policy{},
-		userlandPolicies:        []*Policy{},
-		uidFilterMin:            filters.MinNotSetUInt,
-		uidFilterMax:            filters.MaxNotSetUInt,
-		pidFilterMin:            filters.MinNotSetUInt,
-		pidFilterMax:            filters.MaxNotSetUInt,
-		uidFilterableInUserland: false,
-		pidFilterableInUserland: false,
-		filterableInUserland:    false,
-		containerFiltersEnabled: 0,
+		bpfInnerMaps:                map[string]*bpf.BPFMapLow{},
+		policiesArray:               [PolicyMax]*Policy{},
+		policiesMapByID:             map[int]*Policy{},
+		policiesMapByName:           map[string]*Policy{},
+		policiesList:                []*Policy{},
+		userlandPolicies:            []*Policy{},
+		uidFilterMin:                filters.MinNotSetUInt,
+		uidFilterMax:                filters.MaxNotSetUInt,
+		pidFilterMin:                filters.MinNotSetUInt,
+		pidFilterMax:                filters.MaxNotSetUInt,
+		uidFilterableInUserland:     false,
+		pidFilterableInUserland:     false,
+		filterableInUserland:        false,
+		containerFiltersEnabled:     0,
+		kernellandPolicyMatchStates: make(map[int]*KernelMatchStates),
 	}
 }
 
@@ -88,6 +90,7 @@ func set(ps *policies, id int, p *Policy) error {
 	ps.policiesMapByID[id] = p
 	ps.policiesMapByName[p.Name] = p
 	ps.policiesList = append(ps.policiesList, p)
+	ps.kernellandPolicyMatchStates[id] = &KernelMatchStates{}
 
 	ps.compute()
 

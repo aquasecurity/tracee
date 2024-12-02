@@ -73,3 +73,13 @@ func Max(x, y uint64) uint64 {
 func GenerateRandomDuration(min, max int) time.Duration {
 	return time.Duration(rand.Intn(max-min+1)+min) * time.Second
 }
+
+func ReverseString(s string) string {
+	n := len(s)
+	bytes := make([]byte, n)
+
+	for i := 0; i < n; i++ {
+		bytes[n-i-1] = s[i]
+	}
+	return string(bytes)
+}
