@@ -12,6 +12,7 @@ import (
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/streams"
@@ -721,9 +722,9 @@ func convertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 	k8s := getK8s(e)
 	idExternal := getExternalID(e)
 
-	var eventContext *pb.Context
+	var eventWorkload *pb.Workload
 	if process != nil || container != nil || k8s != nil {
-		eventContext = &pb.Context{
+		eventWorkload = &pb.Workload{
 			Process:   process,
 			Container: container,
 			K8S:       k8s,
@@ -740,16 +741,21 @@ func convertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 		threat = getThreat(e.Metadata.Description, e.Metadata.Properties)
 	}
 
+	triggerEvent, err := getTriggerBy(e.Args)
+	if err != nil {
+		return nil, err
+	}
+
 	event := &pb.Event{
 		Id:   idExternal,
 		Name: e.EventName,
 		Policies: &pb.Policies{
 			Matched: e.MatchedPolicies,
 		},
-		Context: eventContext,
-		Threat:  threat,
-
-		Data: eventData,
+		Workload:    eventWorkload,
+		Data:        eventData,
+		Threat:      threat,
+		TriggeredBy: triggerEvent,
 	}
 
 	if e.Timestamp != 0 {
@@ -930,6 +936,68 @@ func getThreat(description string, metadata map[string]interface{}) *pb.Threat {
 		Name:       name,
 		Properties: properties,
 	}
+}
+
+func getTriggerBy(args []trace.Argument) (*pb.TriggeredBy, error) {
+	var triggeredByArg *trace.Argument
+	triggerEvent := &pb.TriggeredBy{}
+
+	for i := range args {
+		if args[i].ArgMeta.Name == "triggeredBy" {
+			triggeredByArg = &args[i]
+			break
+		}
+	}
+	if triggeredByArg == nil {
+		return triggerEvent, nil
+	}
+
+	m, ok := triggeredByArg.Value.(map[string]interface{})
+	if !ok {
+		return nil, errfmt.Errorf("error getting triggering event: %v", triggeredByArg.Value)
+	}
+
+	id, ok := m["id"].(int)
+	if !ok {
+		return nil, errfmt.Errorf("error getting id of triggering event: %v", m)
+	}
+	triggerEvent.Id = uint32(id)
+
+	name, ok := m["name"].(string)
+	if !ok {
+		return nil, errfmt.Errorf("error getting name of triggering event: %v", m)
+	}
+	triggerEvent.Name = name
+
+	triggerEventArgs, ok := m["args"].([]trace.Argument)
+	if !ok {
+		return nil, errfmt.Errorf("error getting args of triggering event: %v", m)
+	}
+
+	data := make([]*pb.EventValue, 0)
+
+	for _, arg := range triggerEventArgs {
+		eventValue, err := getEventValue(arg)
+		if err != nil {
+			return nil, err
+		}
+
+		eventValue.Name = arg.ArgMeta.Name
+		data = append(data, eventValue)
+	}
+
+	if events.Core.GetDefinitionByID(events.ID(id)).IsSyscall() {
+		data = append(data, &pb.EventValue{
+			Name: "returnValue",
+			Value: &pb.EventValue_Int64{
+				Int64: int64(m["returnValue"].(int)),
+			},
+		})
+	}
+
+	triggerEvent.Data = data
+
+	return triggerEvent, nil
 }
 
 func getSeverity(metadata map[string]interface{}) pb.Severity {
