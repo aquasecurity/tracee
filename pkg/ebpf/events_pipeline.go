@@ -305,7 +305,7 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 	bitmap := event.MatchedPoliciesKernel
 
 	// Short circuit if there are no policies in userland that need filtering.
-	if !t.policyManager.FilterableInUserland(bitmap) {
+	if !t.policyManager.FilterableInUserland() {
 		event.MatchedPoliciesUser = bitmap // store untouched bitmap to be used in sink stage
 		return bitmap
 	}
