@@ -76,7 +76,7 @@ func streamEvents(cmd *cobra.Command, args []string) {
 			format.PrintTableRow(prepareEvent(res.Event))
 		}
 	default:
-		//Error: output format not supported
+		cmd.PrintErrln("output format not supported")
 		return
 	}
 }

@@ -1,6 +1,5 @@
 package cmd
 
-//TODO:
 import (
 	"context"
 	"fmt"
@@ -103,7 +102,7 @@ func listEvents(cmd *cobra.Command, args []string) {
 			format.PrintTableRow(prepareDescription(event)[:4])
 		}
 	default:
-		//Error: output format not supported
+		cmd.PrintErrln("output format not supported")
 		return
 	}
 }
@@ -136,7 +135,7 @@ func getEventDescriptions(cmd *cobra.Command, args []string) {
 			format.PrintTableRow(prepareDescription(event))
 		}
 	default:
-		//Error: output format not supported
+		cmd.PrintErrln("output format not supported")
 		return
 
 	}
