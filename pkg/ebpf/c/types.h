@@ -125,6 +125,7 @@ enum event_id_e
     SECURITY_PATH_NOTIFY,
     SET_FS_PWD,
     SUSPICIOUS_SYSCALL_SOURCE,
+    STACK_PIVOT,
     HIDDEN_KERNEL_MODULE_SEEKER,
     MODULE_LOAD,
     MODULE_FREE,
@@ -576,5 +577,10 @@ typedef struct {
     u64 tgid_start_time;
     u64 vma_addr;
 } syscall_source_key_t;
+
+typedef struct {
+    u64 start;
+    u64 end;
+} address_range_t;
 
 #endif

@@ -107,6 +107,7 @@ const (
 	SecurityPathNotify
 	SetFsPwd
 	SuspiciousSyscallSource
+	StackPivot
 	HiddenKernelModuleSeeker
 	ModuleLoad
 	ModuleFree
@@ -13065,10 +13066,38 @@ var CoreEvents = map[ID]Definition{
 		id:      SuspiciousSyscallSource,
 		id32Bit: Sys32Undefined,
 		name:    "suspicious_syscall_source",
-		sets:    []string{},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.WakeUpNewTask, required: false},    // for thread stack tracking
+				{handle: probes.SchedProcessExec, required: false}, // for thread stack tracking
+				{handle: probes.SchedProcessExit, required: false}, // for thread stack tracking
+			},
+		},
+		sets: []string{},
 		fields: []trace.ArgMeta{
 			{Type: "int", Name: "syscall"},
 			{Type: "void*", Name: "ip"},
+			{Type: "char*", Name: "vma_type"},
+			{Type: "void*", Name: "vma_start"},
+			{Type: "unsigned long", Name: "vma_size"},
+			{Type: "unsigned long", Name: "vma_flags"},
+		},
+	},
+	StackPivot: {
+		id:      StackPivot,
+		id32Bit: Sys32Undefined,
+		name:    "stack_pivot",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.WakeUpNewTask, required: false},    // for thread stack tracking
+				{handle: probes.SchedProcessExec, required: false}, // for thread stack tracking
+				{handle: probes.SchedProcessExit, required: false}, // for thread stack tracking
+			},
+		},
+		sets: []string{},
+		fields: []trace.ArgMeta{
+			{Type: "int", Name: "syscall"},
+			{Type: "void*", Name: "sp"},
 			{Type: "char*", Name: "vma_type"},
 			{Type: "void*", Name: "vma_start"},
 			{Type: "unsigned long", Name: "vma_size"},

@@ -29,6 +29,27 @@ func NewProbeGroup(m *bpf.Module, p map[Handle]Probe) *ProbeGroup {
 	}
 }
 
+func (p *ProbeGroup) HandleExists(handle Handle) bool {
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
+
+	_, ok := p.probes[handle]
+	return ok
+}
+
+func (p *ProbeGroup) AddProbe(handle Handle, probe Probe) error {
+	if p.HandleExists(handle) {
+		return errfmt.Errorf("probe handle (%d) already exists", handle)
+	}
+
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
+
+	p.probes[handle] = probe
+
+	return nil
+}
+
 // GetProbe returns a probe type by its handle.
 func (p *ProbeGroup) GetProbeType(handle Handle) ProbeType {
 	p.probesLock.Lock()
@@ -236,6 +257,7 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, err
 		Dup3:                       NewTraceProbe(SyscallEnter, "dup3", "trace_dup3"),
 		Dup3Ret:                    NewTraceProbe(SyscallExit, "dup3", "trace_ret_dup3"),
 		ChmodCommon:                NewTraceProbe(KProbe, "chmod_common", "trace_chmod_common"),
+		WakeUpNewTask:              NewTraceProbe(KProbe, "wake_up_new_task", "trace_wake_up_new_task"),
 
 		TestUnavailableHook: NewTraceProbe(KProbe, "non_existing_func", "empty_kprobe"),
 		ExecTest:            NewTraceProbe(RawTracepoint, "raw_syscalls:sched_process_exec", "tracepoint__exec_test"),

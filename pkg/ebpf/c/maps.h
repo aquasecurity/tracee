@@ -395,6 +395,16 @@ struct elf_files_map {
 
 typedef struct elf_files_map elf_files_map_t;
 
+// keep track of thread stacks
+struct thread_stacks {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 16384);
+    __type(key, pid_t);
+    __type(value, address_range_t);
+} thread_stacks SEC(".maps");
+
+typedef struct thread_stacks thread_stacks_t;
+
 //
 // versioned maps (map of maps)
 //
