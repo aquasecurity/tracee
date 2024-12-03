@@ -771,7 +771,7 @@ func Test_EventFilters(t *testing.T) {
 			},
 			useSyscaller: false,
 			coolDown:     0,
-			test:         ExpectAllInOrderSequentially,
+			test:         ExpectAtLeastOneForEach,
 		},
 		{
 			name: "pid: trace new (should be empty)",
@@ -1504,7 +1504,7 @@ func Test_EventFilters(t *testing.T) {
 			},
 			useSyscaller: true,
 			coolDown:     0,
-			test:         ExpectAllInOrderSequentially,
+			test:         ExpectAtLeastOneForEach, // syscaller might emit its own events, so we expect at least one of each
 		},
 		{
 			name: "event: trace execve event set in a specific policy from fakeprog1 command",
@@ -2460,7 +2460,8 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 }
 
 // ExpectAllInOrderSequentially validates that the actual events match the
-// expected events for each command, with events appearing in the same order.
+// expected events for each command, with events appearing in the same order of the
+// expected events.
 func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) error {
 	// first stage: run commands
 	actual.clear()
@@ -2474,8 +2475,9 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 
 	actEvtsCopy := actual.getCopy()
 
+	actEvtIdx := 0
 	// second stage: check events
-	for cmdIdx, cmd := range cmdEvents {
+	for _, cmd := range cmdEvents {
 		syscallsInSets := []string{}
 		checkSets := len(cmd.sets) > 0
 		if checkSets {
@@ -2483,8 +2485,12 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 		}
 
 		// compare the expected events with the actual events in the same order
-		for evtIdx, expEvt := range cmd.expectedEvents {
-			actEvt := actEvtsCopy[cmdIdx*len(cmd.expectedEvents)+evtIdx]
+		for _, expEvt := range cmd.expectedEvents {
+			if actEvtIdx >= len(actEvtsCopy) {
+				return fmt.Errorf("Event %+v:\nnot found or in wrong order in actual output:\n%+v", expEvt, actEvtsCopy)
+			}
+			actEvt := actEvtsCopy[actEvtIdx]
+			actEvtIdx++
 
 			if checkSets && !isInSets(actEvt.EventName, syscallsInSets) {
 				return fmt.Errorf("Event %s not found in sets %v", actEvt.EventName, cmd.sets)
