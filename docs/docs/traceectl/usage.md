@@ -18,8 +18,7 @@ To use **TraceeCtl**, you first need to compile and install the tool. Follow the
    Compile and install TraceeCtl using the following commands:
 
    ``` bash
-   make build
-   make install
+   go build
    ```
 
 ## Configuring Tracee for TraceeCtl
