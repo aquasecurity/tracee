@@ -11,20 +11,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var formatFlag string
-var outputFlag string
 var (
-	serverInfo client.ServerInfo = client.ServerInfo{
+	formatFlag string
+	outputFlag string
+	server     client.ServerInfo = client.ServerInfo{
 		ConnectionType: client.Protocol_UNIX,
 		Addr:           client.Socket,
 	}
+)
 
+var (
 	rootCmd = &cobra.Command{
 		Use:   "traceectl [flags] [command]",
 		Short: "TraceeCtl is a CLI tool for tracee",
-		Long:  "TraceeCtl is the client for the tracee API server.",
+		Long: `TraceeCtl is a CLI toll for tracee:
+This tool allows you to mange event, stream events directly from tracee, and get info about tracee.
+`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if err := flags.PrepareOutput(cmd, outputFlag); err != nil {
+			var err error
+			if err = flags.PrepareOutput(cmd, outputFlag); err != nil {
+				return err
+			}
+			if server, err = flags.PrepareServer(cmd, server); err != nil {
 				return err
 			}
 			return nil
@@ -41,7 +49,7 @@ func init() {
 	rootCmd.AddCommand(metricsCmd)
 	rootCmd.AddCommand(versionCmd)
 
-	rootCmd.PersistentFlags().StringVar(&serverInfo.Addr, "server", client.Socket, `Server connection path or address.
+	rootCmd.PersistentFlags().StringVar(&server.Addr, "server", client.Socket, `Server connection path or address.
 	for unix socket <socket_path> (default: /tmp/tracee.sock)
 	for tcp <IP:Port>`)
 	rootCmd.PersistentFlags().StringVarP(&outputFlag, "output", "o", "", "Specify the output format")
@@ -73,7 +81,7 @@ func Execute() {
 
 func displayMetrics(cmd *cobra.Command, _ []string) {
 	var traceeClient client.DiagnosticClient
-	if err := traceeClient.NewDiagnosticClient(serverInfo); err != nil {
+	if err := traceeClient.NewDiagnosticClient(server); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
@@ -97,7 +105,7 @@ func displayMetrics(cmd *cobra.Command, _ []string) {
 
 func displayVersion(cmd *cobra.Command, _ []string) {
 	var traceeClient client.ServiceClient
-	if err := traceeClient.NewServiceClient(serverInfo); err != nil {
+	if err := traceeClient.NewServiceClient(server); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}

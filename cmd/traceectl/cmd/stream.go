@@ -14,8 +14,8 @@ var streamCmd = &cobra.Command{
 	Use:   "stream [policies...]",
 	Short: "Stream events from tracee",
 	Long: `Stream Management:
-	
-	`,
+stream event directly from tracee to the output preferred
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		streamEvents(cmd, args)
 	},
@@ -28,7 +28,7 @@ func init() {
 func streamEvents(cmd *cobra.Command, args []string) {
 	//connect to tracee
 	var traceeClient client.ServiceClient
-	err := traceeClient.NewServiceClient(serverInfo)
+	err := traceeClient.NewServiceClient(server)
 	if err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
@@ -57,7 +57,7 @@ func streamEvents(cmd *cobra.Command, args []string) {
 				if err.Error() == "EOF" {
 					break
 				}
-				//Error receiving streamed event
+				cmd.PrintErrln("Error receiving streamed event")
 			}
 			format.PrintJson(res.Event.String())
 		}
@@ -70,9 +70,8 @@ func streamEvents(cmd *cobra.Command, args []string) {
 				if err.Error() == "EOF" {
 					break
 				}
-				//Error receiving streamed event
+				cmd.PrintErrln("Error receiving streamed event")
 			}
-
 			format.PrintTableRow(prepareEvent(res.Event))
 		}
 	default:

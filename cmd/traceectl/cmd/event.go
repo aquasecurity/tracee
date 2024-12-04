@@ -15,9 +15,9 @@ var eventCmd = &cobra.Command{
 	Use:   "event [command]",
 	Short: "Event management for tracee",
 	Long: `Event Management for tracee 
-	Let you enable and disable events in tracee.
-	Get descriptions of events.
-	`,
+Let you enable and disable events in tracee.
+Get descriptions of events.
+`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -76,7 +76,7 @@ var disableEventCmd = &cobra.Command{
 
 func listEvents(cmd *cobra.Command, args []string) {
 	var traceeClient client.ServiceClient
-	if err := traceeClient.NewServiceClient(serverInfo); err != nil {
+	if err := traceeClient.NewServiceClient(server); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
@@ -109,7 +109,7 @@ func listEvents(cmd *cobra.Command, args []string) {
 
 func getEventDescriptions(cmd *cobra.Command, args []string) {
 	var traceeClient client.ServiceClient
-	if err := traceeClient.NewServiceClient(serverInfo); err != nil {
+	if err := traceeClient.NewServiceClient(server); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
@@ -152,7 +152,7 @@ func prepareDescription(event *pb.EventDefinition) []string {
 }
 func enableEvents(cmd *cobra.Command, eventName string) {
 	var traceeClient client.ServiceClient
-	if err := traceeClient.NewServiceClient(serverInfo); err != nil {
+	if err := traceeClient.NewServiceClient(server); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
@@ -165,7 +165,7 @@ func enableEvents(cmd *cobra.Command, eventName string) {
 }
 func disableEvents(cmd *cobra.Command, eventName string) {
 	var traceeClient client.ServiceClient
-	if err := traceeClient.NewServiceClient(serverInfo); err != nil {
+	if err := traceeClient.NewServiceClient(server); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
