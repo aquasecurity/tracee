@@ -10,7 +10,7 @@ import (
 const (
 	Protocol_UNIX = "unix"
 	Protocol_TCP  = "tcp"
-	Socket        = "/tmp/tracee.sock"
+	Socket        = "/var/run/tracee.sock"
 )
 
 type ServerInfo struct {
