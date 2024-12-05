@@ -4,7 +4,7 @@
 
 ## Overview
 
-TraceeCtl acts as a controller for Tracee, allowing users to:
+traceectl acts as a controller for Tracee, allowing users to:
 
 - **Stream Events**: Continuously stream security events from Tracee, with options to format the output as JSON, tables, or custom templates.
 - **List Available Events**: Display the available events that Tracee can capture, providing essential insights into runtime activities.
