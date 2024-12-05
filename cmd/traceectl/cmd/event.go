@@ -12,12 +12,21 @@ import (
 )
 
 var eventCmd = &cobra.Command{
-	Use:   "event [command]",
-	Short: "Event management for tracee",
-	Long: `Event Management for tracee 
-Let you enable and disable events in tracee.
-Get descriptions of events.
-`,
+	Use:   "event [enable | disable | describe | list]",
+	Short: "Manage tracee events",
+	Long: `Manage events in tracee.
+
+	Subcommands:
+	  enable    Enable specific events.
+	  disable   Disable specific events.
+	  describe  Get descriptions of available events.
+	  list      List available events. 
+
+	Examples:
+	  tracee event enable security_file_open
+	  tracee event describe magic_write
+	  tracee event list
+	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
