@@ -1,8 +1,6 @@
 package client
 
 import (
-	"log"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -24,7 +22,6 @@ func connectToServer(server ServerInfo) (*grpc.ClientConn, error) {
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	conn, err := grpc.NewClient(server.Addr, opts...)
 	if err != nil {
-		log.Fatalf("failed to connect to server: %v", err)
 		return nil, err
 	}
 	return conn, nil

@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"log"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"google.golang.org/grpc"
@@ -25,7 +24,6 @@ func (tc *ServiceClient) NewServiceClient(serverInfo ServerInfo) error {
 }
 func (tc *ServiceClient) CloseConnection() {
 	if err := tc.conn.Close(); err != nil {
-		log.Printf("Failed to close connection: %v", err)
 		return
 	}
 }
