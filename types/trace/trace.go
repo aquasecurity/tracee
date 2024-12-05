@@ -144,7 +144,7 @@ type DecodeAs uint16
 
 // The types of this section in particular are those possibly submitted in
 // syscall events. Therefore, these should match to the type enum and table in:
-// pkg/ebpf/c/types.h and buffer.h respetively.
+// pkg/ebpf/c/types.h and buffer.h respectively.
 const (
 	NONE_T DecodeAs = iota // Default value - the argument does not originate from a decodable buffer.
 	INT_T
@@ -164,7 +164,7 @@ const (
 	TIMESPEC_T
 )
 
-// These types are in a seprate section since they are not defined as enums in the ebpf code.
+// These types are in a separate section since they are not defined as enums in the ebpf code.
 // That is because they are unused by syscalls.
 // Instead, they designate a functional submission strategy.
 // (ie. ARGS_ARR_T is submitted by the strategy defined in buffer.h:save_args_str_arr_to_buf).
@@ -176,56 +176,40 @@ const (
 	MAX_TRACEE_DECODES
 )
 const (
-	USER_DEFINED_DEOCDE_BEGIN DecodeAs = iota + 256
-	USER_DEFINED_DEOCDE_END   DecodeAs = iota + 256
+	USER_DEFINED_DECODE_BEGIN DecodeAs = iota + 256
+	USER_DEFINED_DECODE_END   DecodeAs = iota + 256
 )
 
-func (d DecodeAs) String() string {
-	// in the future register these along deocde strategies
-	switch d {
-	case NONE_T:
-		return "nil"
-	case INT_T:
-		return "int"
-	case UINT_T:
-		return "uint"
-	case LONG_T:
-		return "long"
-	case ULONG_T:
-		return "ulong"
-	case U16_T:
-		return "u16"
-	case U8_T:
-		return "u8"
-	case INT_ARR_2_T:
-		return "[2]int"
+var decodeAsStringDict = map[DecodeAs]string{
+	NONE_T:       "nil",
+	INT_T:        "int32",
+	UINT_T:       "uint32",
+	LONG_T:       "int64",
+	ULONG_T:      "uint64",
+	U16_T:        "uint16",
+	U8_T:         "uint8",
+	INT_ARR_2_T:  "[2]int",
+	UINT64_ARR_T: "[]uint64",
+	POINTER_T:    "uintptr",
+	BYTES_T:      "[]byte",
+	STR_T:        "string",
+	STR_ARR_T:    "[]string",
+	SOCK_ADDR_T:  "SockAddr",
+	CRED_T:       "trace.SlimCred",
+	TIMESPEC_T:   "time.Time",
+	ARGS_ARR_T:   "[]string",
+	BOOL_T:       "bool",
+	FLOAT_T:      "float",
+	FLOAT64_T:    "float64",
+}
 
-	case UINT64_ARR_T:
-		return "[]uint64"
-	case POINTER_T:
-		return "uintptr"
-	case BYTES_T:
-		return "[]byte"
-	case STR_T:
-		return "string"
-	case STR_ARR_T:
-		return "[]string"
-	case SOCK_ADDR_T:
-		return "SockAddr"
-	case CRED_T:
-		return "SlimCred"
-	case TIMESPEC_T:
-		return "time.Time"
-	case ARGS_ARR_T:
-		return "[]string"
-	case BOOL_T:
-		return "bool"
-	case FLOAT_T:
-		return "float"
-	case FLOAT64_T:
-		return "float64"
+func (d DecodeAs) String() string {
+	// in the future register into the dictionary along decode strategies
+	s, ok := decodeAsStringDict[d]
+	if !ok {
+		return "nil"
 	}
-	return "nil"
+	return s
 }
 
 // ArgMeta describes an argument
@@ -258,29 +242,29 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 			if err != nil {
 				return err
 			}
-			arg.Value = uint64(tmp)
+			arg.Value = uintptr(tmp)
 			return nil
 		}
 		switch arg.Type {
-		case "int":
+		case "int32":
 			tmp, err := strconv.ParseInt(num.String(), 10, 32)
 			if err != nil {
 				return err
 			}
 			arg.Value = int32(tmp)
-		case "long":
+		case "int64":
 			tmp, err := num.Int64()
 			if err != nil {
 				return err
 			}
 			arg.Value = tmp
-		case "unsigned int":
+		case "uint32":
 			tmp, err := strconv.ParseUint(num.String(), 10, 32)
 			if err != nil {
 				return err
 			}
 			arg.Value = uint32(tmp)
-		case "unsigned long":
+		case "uint64":
 			tmp, err := strconv.ParseUint(num.String(), 10, 64)
 			if err != nil {
 				return err
@@ -298,7 +282,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 				return err
 			}
 			arg.Value = tmp
-		case "u16":
+		case "uint16":
 			tmp, err := strconv.ParseUint(num.String(), 10, 16)
 			if err != nil {
 				return err
@@ -310,7 +294,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 				return err
 			}
 			arg.Value = int8(tmp)
-		case "u8":
+		case "uint8":
 			tmp, err := strconv.ParseUint(num.String(), 10, 8)
 			if err != nil {
 				return err
@@ -324,7 +308,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 	var err error
 
 	switch arg.Type {
-	case "const char*const*", "const char**":
+	case "[]string":
 		if arg.Value != nil {
 			argValue, ok := arg.Value.([]interface{})
 			if !ok {
