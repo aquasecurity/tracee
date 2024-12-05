@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"strconv"
 	"strings"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
@@ -14,7 +17,7 @@ var streamCmd = &cobra.Command{
 	Use:   "stream [policies...]",
 	Short: "Stream events from tracee",
 	Long: `Stream Management:
-stream event directly from tracee to the output preferred
+Stream events directly from tracee to the preferred output format.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		streamEvents(cmd, args)
@@ -22,11 +25,10 @@ stream event directly from tracee to the output preferred
 }
 
 func init() {
-	streamCmd.Flags().StringVarP(&formatFlag, "format", "f", formatter.FormatTable, "Output format (json|table)")
+	streamCmd.Flags().StringVarP(&formatFlag, "format", "f", formatter.FormatTable, "Specify the output format for streamed events (json|table). Defaults to table.")
 }
 
 func streamEvents(cmd *cobra.Command, args []string) {
-	//connect to tracee
 	var traceeClient client.ServiceClient
 	err := traceeClient.NewServiceClient(server)
 	if err != nil {
@@ -54,12 +56,12 @@ func streamEvents(cmd *cobra.Command, args []string) {
 			res, err := stream.Recv()
 			if err != nil {
 				//End of stream\close connection
-				if err.Error() == "EOF" {
+				if errors.Is(err, io.EOF) {
 					break
 				}
 				cmd.PrintErrln("Error receiving streamed event")
 			}
-			format.PrintJson(res.Event.String())
+			format.PrintJson(res.Event)
 		}
 	case formatter.FormatTable:
 		format.PrintTableHeaders([]string{"TIME", "EVENT NAME", "POLICIES", "PID", "DATA"})
@@ -67,7 +69,7 @@ func streamEvents(cmd *cobra.Command, args []string) {
 			res, err := stream.Recv()
 			if err != nil {
 				//End of stream\close connection
-				if err.Error() == "EOF" {
+				if errors.Is(err, io.EOF) {
 					break
 				}
 				cmd.PrintErrln("Error receiving streamed event")
@@ -84,7 +86,7 @@ func prepareEvent(event *pb.Event) []string {
 		event.Timestamp.AsTime().Format("15:04:05.000"),
 		event.Name,
 		strings.Join(event.Policies.Matched, ","),
-		fmt.Sprintf("%d", event.Context.Process.Pid.Value),
+		strconv.Itoa(int(event.Context.Process.Pid.Value)),
 		getEventData(event.Data),
 	}
 
@@ -114,13 +116,24 @@ func getEventValue(ev *pb.EventValue) string {
 	case *pb.EventValue_Bytes:
 		return fmt.Sprintf("%x", v.Bytes)
 	case *pb.EventValue_Bool:
-		return fmt.Sprintf("%t", v.Bool)
+		if v.Bool {
+			return "true"
+		}
+		return "false"
 	case *pb.EventValue_StrArray:
 		return strings.Join(v.StrArray.Value, ", ")
 	case *pb.EventValue_Int32Array:
-		return fmt.Sprintf("%v", v.Int32Array.Value)
+		var result []string
+		for _, val := range v.Int32Array.Value {
+			result = append(result, strconv.Itoa(int(val)))
+		}
+		return strings.Join(result, ", ")
 	case *pb.EventValue_UInt64Array:
-		return fmt.Sprintf("%v", v.UInt64Array.Value)
+		var result []string
+		for _, val := range v.UInt64Array.Value {
+			result = append(result, strconv.Itoa(int(val)))
+		}
+		return strings.Join(result, ", ")
 	default:
 		return "unknown"
 	}
