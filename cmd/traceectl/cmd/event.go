@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
@@ -52,7 +53,7 @@ var listEventCmd = &cobra.Command{
 	Long:  `Lists all available event definitions (built-in and plugin-defined), providing a brief summary of each.`,
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		listEvents(cmd)
+		listEvents(cmd, args)
 	},
 }
 var describeEventCmd = &cobra.Command{
@@ -84,8 +85,8 @@ var disableEventCmd = &cobra.Command{
 }
 
 func listEvents(cmd *cobra.Command, args []string) {
-	traceeClient, err := client.NewServiceClient(server) 
-	if err != nil {
+	var traceeClient client.ServiceClient
+	if err := traceeClient.NewServiceClient(server); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
@@ -103,7 +104,7 @@ func listEvents(cmd *cobra.Command, args []string) {
 	}
 	switch format.GetFormat() {
 	case formatter.FormatJson:
-		format.PrintJson(response.String())
+		format.PrintJson(response)
 	case formatter.FormatTable:
 		format.PrintTableHeaders([]string{"ID", "Name", "Version", "Tags"})
 		for _, event := range response.Definitions {
@@ -117,8 +118,8 @@ func listEvents(cmd *cobra.Command, args []string) {
 }
 
 func getEventDescriptions(cmd *cobra.Command, args []string) {
-	traceeClient, err := client.NewServiceClient(server)
-	if err != nil {
+	var traceeClient client.ServiceClient
+	if err := traceeClient.NewServiceClient(server); err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
@@ -137,7 +138,7 @@ func getEventDescriptions(cmd *cobra.Command, args []string) {
 	}
 	switch format.GetFormat() {
 	case formatter.FormatJson:
-		format.PrintJson(response.String())
+		format.PrintJson(response)
 	case formatter.FormatTable:
 		format.PrintTableHeaders([]string{"ID", "Name", "Version", "Tags", "Description"})
 		for _, event := range response.Definitions {
@@ -151,7 +152,7 @@ func getEventDescriptions(cmd *cobra.Command, args []string) {
 }
 func prepareDescription(event *pb.EventDefinition) []string {
 	return []string{
-		fmt.Sprintf("%d", event.Id),
+		strconv.Itoa(int(event.Id)),
 		event.Name,
 		fmt.Sprintf("%d.%d.%d", event.Version.Major, event.Version.Minor, event.Version.Patch),
 		strings.Join(event.Tags, ", "),
@@ -165,6 +166,8 @@ func enableEvents(cmd *cobra.Command, eventName string) {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
+	defer traceeClient.CloseConnection()
+
 	_, err := traceeClient.EnableEvent(context.Background(), &pb.EnableEventRequest{Name: eventName})
 	if err != nil {
 		cmd.PrintErrln("Error enabling event:", err)
@@ -178,6 +181,7 @@ func disableEvents(cmd *cobra.Command, eventName string) {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
+	defer traceeClient.CloseConnection()
 	_, err := traceeClient.DisableEvent(context.Background(), &pb.DisableEventRequest{Name: eventName})
 	if err != nil {
 		cmd.PrintErrln("Error disabling event:", err)
