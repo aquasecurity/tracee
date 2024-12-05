@@ -185,20 +185,19 @@ func (d DecodeAs) String() string {
 	case NONE_T:
 		return "nil"
 	case INT_T:
-		return "int"
+		return "int32"
 	case UINT_T:
-		return "uint"
+		return "uint32"
 	case LONG_T:
-		return "long"
+		return "int64"
 	case ULONG_T:
-		return "ulong"
+		return "uint64"
 	case U16_T:
-		return "u16"
+		return "uint16"
 	case U8_T:
-		return "u8"
+		return "uint8"
 	case INT_ARR_2_T:
 		return "[2]int"
-
 	case UINT64_ARR_T:
 		return "[]uint64"
 	case POINTER_T:
@@ -212,7 +211,7 @@ func (d DecodeAs) String() string {
 	case SOCK_ADDR_T:
 		return "SockAddr"
 	case CRED_T:
-		return "SlimCred"
+		return "trace.SlimCred"
 	case TIMESPEC_T:
 		return "time.Time"
 	case ARGS_ARR_T:
@@ -257,29 +256,29 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 			if err != nil {
 				return err
 			}
-			arg.Value = uint64(tmp)
+			arg.Value = uintptr(tmp)
 			return nil
 		}
 		switch arg.Type {
-		case "int":
+		case "int32":
 			tmp, err := strconv.ParseInt(num.String(), 10, 32)
 			if err != nil {
 				return err
 			}
 			arg.Value = int32(tmp)
-		case "long":
+		case "int64":
 			tmp, err := num.Int64()
 			if err != nil {
 				return err
 			}
 			arg.Value = tmp
-		case "unsigned int":
+		case "uint32":
 			tmp, err := strconv.ParseUint(num.String(), 10, 32)
 			if err != nil {
 				return err
 			}
 			arg.Value = uint32(tmp)
-		case "unsigned long":
+		case "uint64":
 			tmp, err := strconv.ParseUint(num.String(), 10, 64)
 			if err != nil {
 				return err
@@ -297,7 +296,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 				return err
 			}
 			arg.Value = tmp
-		case "u16":
+		case "uint16":
 			tmp, err := strconv.ParseUint(num.String(), 10, 16)
 			if err != nil {
 				return err
@@ -309,7 +308,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 				return err
 			}
 			arg.Value = int8(tmp)
-		case "u8":
+		case "uint8":
 			tmp, err := strconv.ParseUint(num.String(), 10, 8)
 			if err != nil {
 				return err
@@ -323,7 +322,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 	var err error
 
 	switch arg.Type {
-	case "const char*const*", "const char**":
+	case "[]string":
 		if arg.Value != nil {
 			argValue, ok := arg.Value.([]interface{})
 			if !ok {
