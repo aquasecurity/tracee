@@ -66,7 +66,7 @@ var describeEventCmd = &cobra.Command{
 }
 var enableEventCmd = &cobra.Command{
 	Use:   "enable <event_name>",
-	Short: "enable event",
+	Short: "Enable an event",
 	Long:  `Enables capturing of a specific event type.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
