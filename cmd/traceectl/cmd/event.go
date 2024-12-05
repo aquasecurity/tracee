@@ -48,11 +48,11 @@ func init() {
 
 var listEventCmd = &cobra.Command{
 	Use:   "list",
-	Short: "list events",
+	Short: "List available events",
 	Long:  `Lists all available event definitions (built-in and plugin-defined), providing a brief summary of each.`,
-	Args:  cobra.MaximumNArgs(0),
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		listEvents(cmd, args)
+		listEvents(cmd)
 	},
 }
 var describeEventCmd = &cobra.Command{
