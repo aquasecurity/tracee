@@ -75,7 +75,7 @@ var enableEventCmd = &cobra.Command{
 }
 var disableEventCmd = &cobra.Command{
 	Use:   "disable <event_name>",
-	Short: "disable event",
+	Short: "Disable an event",
 	Long:  `Disables capturing of a specific event type.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
