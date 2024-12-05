@@ -192,7 +192,7 @@ func GetDecodeType(fieldType string) trace.DecodeAs {
 		return trace.SOCK_ADDR_T
 	case "bytes":
 		return trace.BYTES_T
-	case "int[2]":
+	case "[2]int32":
 		return trace.INT_ARR_2_T
 	case "slim_cred_t":
 		return trace.CRED_T
