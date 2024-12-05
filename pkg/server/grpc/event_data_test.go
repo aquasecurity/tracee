@@ -358,7 +358,7 @@ func Test_getEventData(t *testing.T) {
 				{
 					ArgMeta: trace.ArgMeta{
 						Name: "pipefd",
-						Type: "int[2]",
+						Type: "[2]int32",
 					},
 					Value: [2]int32{3, 4},
 				},

@@ -26,35 +26,33 @@ func ArgVal[T any](args []trace.Argument, argName string) (T, error) {
 
 func ArgZeroValueFromType(t string) interface{} {
 	switch t {
-	case "char":
+	case "char", "byte":
 		return byte(0)
-	case "bytes":
+	case "[]byte":
 		return []byte{}
-	case "s8":
+	case "int8":
 		return int8(0)
-	case "u8":
+	case "uint8":
 		return uint8(0)
-	case "s16",
-		"short":
+	case "int16":
 		return int16(0)
-	case "u16":
+	case "uint16":
 		return uint16(0)
-	case "int":
+	case "int32":
 		return int32(0)
-	case "unsigned int":
+	case "uint32":
 		return uint32(0)
-	case "int[2]":
+	case "[2]int32":
 		return [2]int32{}
-	case "long":
+	case "int64":
 		return int64(0)
-	case "unsigned long":
+	case "uint64":
 		return uint64(0)
-	case "unsigned long[]":
+	case "[]uint64":
 		return []uint64{}
-	case "char*":
+	case "string":
 		return string("")
-	case "const char**",
-		"const char*const*":
+	case "[]string":
 		return []string{}
 	case "bool":
 		return false
@@ -62,7 +60,7 @@ func ArgZeroValueFromType(t string) interface{} {
 		return float32(0)
 	case "float64":
 		return float64(0)
-	case "slim_cred_t":
+	case "trace.SlimCred":
 		return trace.SlimCred{}
 	case "trace.ProtoIPv4":
 		return trace.ProtoIPv4{}
