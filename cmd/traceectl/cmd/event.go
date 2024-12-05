@@ -84,8 +84,8 @@ var disableEventCmd = &cobra.Command{
 }
 
 func listEvents(cmd *cobra.Command, args []string) {
-	var traceeClient client.ServiceClient
-	if err := traceeClient.NewServiceClient(server); err != nil {
+	traceeClient, err := client.NewServiceClient(server) 
+	if err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
