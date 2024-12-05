@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
@@ -23,9 +24,9 @@ var (
 var (
 	rootCmd = &cobra.Command{
 		Use:   "traceectl [flags] [command]",
-		Short: "TraceeCtl is a CLI tool for tracee",
-		Long: `TraceeCtl is a CLI toll for tracee:
-This tool allows you to mange event, stream events directly from tracee, and get info about tracee.
+		Short: "traceectl is a CLI tool for tracee",
+		Long: `traceectl is a CLI tool for tracee:
+This tool allows you to manage events, stream events directly from tracee, and get info about tracee.
 `,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
@@ -67,7 +68,7 @@ var metricsCmd = &cobra.Command{
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Display the version of tracee",
-	Long:  "This is the version of tracee application you connected to",
+	Long:  "This is the version of the tracee application you connected to",
 	Run: func(cmd *cobra.Command, args []string) {
 		displayVersion(cmd, args)
 	},
@@ -92,15 +93,17 @@ func displayMetrics(cmd *cobra.Command, _ []string) {
 		cmd.PrintErrln("Error getting metrics: ", err)
 		return
 	}
-	cmd.Println("EventCount:", response.EventCount)
-	cmd.Println("EventsFiltered:", response.EventsFiltered)
-	cmd.Println("NetCapCount:", response.NetCapCount)
-	cmd.Println("BPFLogsCount:", response.BPFLogsCount)
-	cmd.Println("ErrorCount:", response.ErrorCount)
-	cmd.Println("LostEvCount:", response.LostEvCount)
-	cmd.Println("LostWrCount:", response.LostWrCount)
-	cmd.Println("LostNtCapCount:", response.LostNtCapCount)
-	cmd.Println("LostBPFLogsCount:", response.LostBPFLogsCount)
+
+	fmt.Fprintf(cmd.OutOrStdout(), "EventCount: %d\n", response.EventCount)
+	fmt.Fprintf(cmd.OutOrStdout(), "EventsFiltered: %d\n", response.EventsFiltered)
+	fmt.Fprintf(cmd.OutOrStdout(), "NetCapCount: %d\n", response.NetCapCount)
+	fmt.Fprintf(cmd.OutOrStdout(), "BPFLogsCount: %d\n", response.BPFLogsCount)
+	fmt.Fprintf(cmd.OutOrStdout(), "ErrorCount: %d\n", response.ErrorCount)
+	fmt.Fprintf(cmd.OutOrStdout(), "LostEvCount: %d\n", response.LostEvCount)
+	fmt.Fprintf(cmd.OutOrStdout(), "LostWrCount: %d\n", response.LostWrCount)
+	fmt.Fprintf(cmd.OutOrStdout(), "LostNtCapCount: %d\n", response.LostNtCapCount)
+	fmt.Fprintf(cmd.OutOrStdout(), "LostBPFLogsCount: %d\n", response.LostBPFLogsCount)
+
 }
 
 func displayVersion(cmd *cobra.Command, _ []string) {
@@ -116,7 +119,6 @@ func displayVersion(cmd *cobra.Command, _ []string) {
 	if err != nil {
 		cmd.PrintErrln("Error getting version: ", err)
 		return
-	} else {
-		cmd.Println("Version: ", response.Version)
 	}
+	fmt.Fprintf(cmd.OutOrStdout(), "Version: %s\n", response.Version)
 }
