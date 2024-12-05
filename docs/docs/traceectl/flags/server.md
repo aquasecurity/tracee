@@ -1,6 +1,6 @@
 # `server` Flag
 
-The `--server` flag in **TraceeCtl** is used to specify the connection type that TraceeCtl should use to communicate with the Tracee server. This connection type can be either **Unix socket** or **TCP**.
+The `--server` flag in **traceectl** is used to specify the connection type that TraceeCtl should use to communicate with the Tracee server. This connection type can be either **Unix socket** or **TCP**.
 
 - **Unix Socket**: This type of connection is generally used for local inter-process communication. It provides a secure and efficient means to connect to Tracee when both client and server are on the same machine.
   
