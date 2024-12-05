@@ -57,7 +57,7 @@ var listEventCmd = &cobra.Command{
 }
 var describeEventCmd = &cobra.Command{
 	Use:   "describe <event_name>",
-	Short: "describe event",
+	Short: "Describe an event",
 	Long:  `Retrieves the detailed definition of a specific event, including its fields, types, and other metadata.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
