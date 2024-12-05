@@ -134,11 +134,105 @@ type Argument struct {
 	Value interface{} `json:"value"`
 }
 
+// DecodeAs is an enum that encodes the argument types that an
+// eBPF program may write to the shared buffer. In practice they designate
+// either/or a type which is specifically encoded as an argument type in eBPF
+// or a strategy of passing an argument on the submission buffer via some
+// function.
+type DecodeAs uint16
+
+// The types of this section in particular are those possibly submitted in
+// syscall events. Therefore, these should match to the type enum and table in:
+// pkg/ebpf/c/types.h and buffer.h respetively.
+const (
+	NONE_T DecodeAs = iota // Default value - the argument does not originate from a decodable buffer.
+	INT_T
+	UINT_T
+	LONG_T
+	ULONG_T
+	U16_T
+	U8_T
+	INT_ARR_2_T
+	UINT64_ARR_T
+	POINTER_T
+	BYTES_T
+	STR_T
+	STR_ARR_T
+	SOCK_ADDR_T
+	CRED_T
+	TIMESPEC_T
+)
+
+// These types are in a seprate section since they are not defined as enums in the ebpf code.
+// That is because they are unused by syscalls.
+// Instead, they designate a functional submission strategy.
+// (ie. ARGS_ARR_T is submitted by the strategy defined in buffer.h:save_args_str_arr_to_buf).
+const (
+	ARGS_ARR_T DecodeAs = iota + 128
+	BOOL_T
+	FLOAT_T
+	FLOAT64_T
+	MAX_TRACEE_DECODES
+)
+const (
+	USER_DEFINED_DEOCDE_BEGIN DecodeAs = iota + 256
+	USER_DEFINED_DEOCDE_END   DecodeAs = iota + 256
+)
+
+func (d DecodeAs) String() string {
+	// in the future register these along deocde strategies
+	switch d {
+	case NONE_T:
+		return "nil"
+	case INT_T:
+		return "int32"
+	case UINT_T:
+		return "uint32"
+	case LONG_T:
+		return "int64"
+	case ULONG_T:
+		return "uint64"
+	case U16_T:
+		return "uint16"
+	case U8_T:
+		return "uint8"
+	case INT_ARR_2_T:
+		return "[2]int"
+	case UINT64_ARR_T:
+		return "[]uint64"
+	case POINTER_T:
+		return "uintptr"
+	case BYTES_T:
+		return "[]byte"
+	case STR_T:
+		return "string"
+	case STR_ARR_T:
+		return "[]string"
+	case SOCK_ADDR_T:
+		return "SockAddr"
+	case CRED_T:
+		return "trace.SlimCred"
+	case TIMESPEC_T:
+		return "time.Time"
+	case ARGS_ARR_T:
+		return "[]string"
+	case BOOL_T:
+		return "bool"
+	case FLOAT_T:
+		return "float"
+	case FLOAT64_T:
+		return "float64"
+	}
+	return "nil"
+}
+
 // ArgMeta describes an argument
 type ArgMeta struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 
+	// DecodeAs includes designates the decoding strategy.
+	DecodeAs DecodeAs `json:"-"`
 	// Zero contains the zero value for Argument.Value.
 	// It is automatically initialized based on ArgMeta.Type when the Core DefinitionGroup is initialized.
 	Zero interface{} `json:"-"`
@@ -162,29 +256,29 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 			if err != nil {
 				return err
 			}
-			arg.Value = uint64(tmp)
+			arg.Value = uintptr(tmp)
 			return nil
 		}
 		switch arg.Type {
-		case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t", "landlock_rule_type":
+		case "int32":
 			tmp, err := strconv.ParseInt(num.String(), 10, 32)
 			if err != nil {
 				return err
 			}
 			arg.Value = int32(tmp)
-		case "long":
+		case "int64":
 			tmp, err := num.Int64()
 			if err != nil {
 				return err
 			}
 			arg.Value = tmp
-		case "unsigned int", "u32", "mode_t", "dev_t":
+		case "uint32":
 			tmp, err := strconv.ParseUint(num.String(), 10, 32)
 			if err != nil {
 				return err
 			}
 			arg.Value = uint32(tmp)
-		case "unsigned long", "u64", "off_t", "size_t":
+		case "uint64":
 			tmp, err := strconv.ParseUint(num.String(), 10, 64)
 			if err != nil {
 				return err
@@ -196,13 +290,13 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 				return err
 			}
 			arg.Value = float32(tmp)
-		case "float64", "double":
+		case "float64":
 			tmp, err := num.Float64()
 			if err != nil {
 				return err
 			}
 			arg.Value = tmp
-		case "unsigned short", "old_uid_t", "old_gid_t", "umode_t", "u16", "uint16":
+		case "uint16":
 			tmp, err := strconv.ParseUint(num.String(), 10, 16)
 			if err != nil {
 				return err
@@ -214,7 +308,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 				return err
 			}
 			arg.Value = int8(tmp)
-		case "u8", "uint8":
+		case "uint8":
 			tmp, err := strconv.ParseUint(num.String(), 10, 8)
 			if err != nil {
 				return err
@@ -228,7 +322,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 	var err error
 
 	switch arg.Type {
-	case "const char*const*", "const char**":
+	case "[]string":
 		if arg.Value != nil {
 			argValue, ok := arg.Value.([]interface{})
 			if !ok {
@@ -446,9 +540,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 			argPacketMetadataMap, ok := arg.Value.(map[string]interface{})
 			if !ok {
 				return fmt.Errorf("packet metadata: type error")
-			}
-			if err != nil {
-				return err
 			}
 			argPacketMetadata, err = jsonConvertToPacketMetadata(argPacketMetadataMap)
 			if err != nil {
@@ -935,9 +1026,6 @@ func jsonConvertToProtoDNSResourceRecordType(argMap map[string]interface{}) (Pro
 		}
 
 		txtsValue = jsonConvertToStringSlice(txtsInterfaceSlice)
-		if err != nil {
-			return ProtoDNSResourceRecord{}, err
-		}
 	}
 
 	// SOA conversion

@@ -64,7 +64,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, // 4294967295
 			},
-			fields:      []trace.ArgMeta{{Type: "dev_t", Name: "devT0"}},
+			fields:      []trace.ArgMeta{{Type: "unsigned int", Name: "devT0"}},
 			expectedArg: uint32(4294967295),
 		},
 		{
@@ -72,7 +72,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
 			},
-			fields:      []trace.ArgMeta{{Type: "off_t", Name: "offT0"}},
+			fields:      []trace.ArgMeta{{Type: "long", Name: "offT0"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 		{
@@ -161,7 +161,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{1,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
 			},
-			fields:      []trace.ArgMeta{{Type: "const char*", Name: "str0"}, {Type: "off_t", Name: "offT1"}},
+			fields:      []trace.ArgMeta{{Type: "const char*", Name: "str0"}, {Type: "long", Name: "offT1"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 	}
@@ -183,7 +183,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			if tc.name == "unknown" {
 				return
 			}
-			assert.Empty(t, decoder.BuffLen()-decoder.ReadAmountBytes(), tc.name) // passed in buffer should be emptied out
+			assert.Empty(t, decoder.BuffLen()-decoder.BytesRead(), tc.name) // passed in buffer should be emptied out
 		})
 	}
 }
@@ -258,13 +258,13 @@ func TestReadStringVarFromBuff(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			decoder := New(tt.buffer)
-			actual, err := readStringVarFromBuff(decoder, tt.max)
+			actual, err := readVarStringFromBuffer(decoder, tt.max)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expected, actual)
-				assert.Equal(t, tt.expectedCursor, decoder.ReadAmountBytes())
+				assert.Equal(t, tt.expectedCursor, decoder.BytesRead())
 			}
 		})
 	}
