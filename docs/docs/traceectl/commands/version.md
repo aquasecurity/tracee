@@ -1,6 +1,6 @@
 # Version Command
 
-The `version` command in **TraceeCtl** provides detailed information about the current version of the tool. This includes the version number, build date, and other relevant metadata.
+The `version` command in **traceectl** provides detailed information about the current version of the tool. This includes the version number, build date, and other relevant metadata.
 
 ## Usage
 
