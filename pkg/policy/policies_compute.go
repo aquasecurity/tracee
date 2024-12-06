@@ -129,7 +129,7 @@ func (ps *policies) updateUserlandPolicies() {
 		hasUserlandFilters := false
 
 		// Check filters under Rules
-		for _, rule := range p.Rules {
+		for _, rule := range p.Rules.Data {
 			if rule.DataFilter.Enabled() ||
 				rule.RetFilter.Enabled() ||
 				rule.ScopeFilter.Enabled() {

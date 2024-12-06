@@ -26,7 +26,7 @@ func SymbolsLoaded(
 
 	for it := pManager.CreateAllIterator(); it.HasNext(); {
 		p := it.Next()
-		if rule, ok := p.Rules[events.SymbolsLoaded]; ok {
+		if rule, ok := p.Rules.Data[events.SymbolsLoaded]; ok {
 			f := rule.DataFilter.GetFieldFilters()
 			maps.Copy(symbolsLoadedFilters, f)
 		}
