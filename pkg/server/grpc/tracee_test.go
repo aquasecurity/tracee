@@ -11,7 +11,7 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func Test_convertEventWithProcessContext(t *testing.T) {
+func Test_convertEventWithProcessWorkload(t *testing.T) {
 	t.Parallel()
 
 	unixTime := int(time.Now().UnixNano())
@@ -40,22 +40,22 @@ func Test_convertEventWithProcessContext(t *testing.T) {
 	protoEvent, err := convertTraceeEventToProto(traceEvent)
 	assert.NoError(t, err)
 
-	assert.Equal(t, uint32(1), protoEvent.Context.Process.Pid.Value)
-	assert.Equal(t, uint32(2), protoEvent.Context.Process.Thread.Tid.Value)
-	assert.Equal(t, uint32(3), protoEvent.Context.Process.HostPid.Value)
-	assert.Equal(t, uint32(4), protoEvent.Context.Process.Thread.HostTid.Value)
-	assert.Equal(t, uint32(5), protoEvent.Context.Process.Ancestors[0].Pid.Value)
-	assert.Equal(t, uint32(6), protoEvent.Context.Process.Ancestors[0].HostPid.Value)
-	assert.Equal(t, uint32(7), protoEvent.Context.Process.RealUser.Id.Value)
+	assert.Equal(t, uint32(1), protoEvent.Workload.Process.Pid.Value)
+	assert.Equal(t, uint32(2), protoEvent.Workload.Process.Thread.Tid.Value)
+	assert.Equal(t, uint32(3), protoEvent.Workload.Process.HostPid.Value)
+	assert.Equal(t, uint32(4), protoEvent.Workload.Process.Thread.HostTid.Value)
+	assert.Equal(t, uint32(5), protoEvent.Workload.Process.Ancestors[0].Pid.Value)
+	assert.Equal(t, uint32(6), protoEvent.Workload.Process.Ancestors[0].HostPid.Value)
+	assert.Equal(t, uint32(7), protoEvent.Workload.Process.RealUser.Id.Value)
 	assert.Equal(t, pb.EventId_execve, protoEvent.Id)
-	assert.Equal(t, uint32(9), protoEvent.Context.Process.Thread.UniqueId.Value)
-	assert.Equal(t, uint32(10), protoEvent.Context.Process.UniqueId.Value)
-	assert.Equal(t, uint32(11), protoEvent.Context.Process.Ancestors[0].UniqueId.Value)
+	assert.Equal(t, uint32(9), protoEvent.Workload.Process.Thread.UniqueId.Value)
+	assert.Equal(t, uint32(10), protoEvent.Workload.Process.UniqueId.Value)
+	assert.Equal(t, uint32(11), protoEvent.Workload.Process.Ancestors[0].UniqueId.Value)
 	assert.Equal(t, "eventTest", protoEvent.Name)
 	assert.Equal(t, []string{"policyTest"}, protoEvent.Policies.Matched)
-	assert.Equal(t, "processTest", protoEvent.Context.Process.Thread.Name)
-	assert.Equal(t, "syscall", protoEvent.Context.Process.Thread.Syscall)
-	assert.Equal(t, true, protoEvent.Context.Process.Thread.Compat)
+	assert.Equal(t, "processTest", protoEvent.Workload.Process.Thread.Name)
+	assert.Equal(t, "syscall", protoEvent.Workload.Process.Thread.Syscall)
+	assert.Equal(t, true, protoEvent.Workload.Process.Thread.Compat)
 }
 
 func Test_convertEventWithStackaddresses(t *testing.T) {
@@ -75,11 +75,11 @@ func Test_convertEventWithStackaddresses(t *testing.T) {
 	}
 
 	for i := range expected {
-		assert.Equal(t, expected[i].Address, protoEvent.Context.Process.Thread.UserStackTrace.Addresses[i].Address)
+		assert.Equal(t, expected[i].Address, protoEvent.Workload.Process.Thread.UserStackTrace.Addresses[i].Address)
 	}
 }
 
-func Test_convertEventWithContainerContext(t *testing.T) {
+func Test_convertEventWithContainerWorkload(t *testing.T) {
 	t.Parallel()
 
 	traceEvent := trace.Event{
@@ -94,13 +94,13 @@ func Test_convertEventWithContainerContext(t *testing.T) {
 	protoEvent, err := convertTraceeEventToProto(traceEvent)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "containerID", protoEvent.Context.Container.Id)
-	assert.Equal(t, "containerName", protoEvent.Context.Container.Name)
-	assert.Equal(t, "imageName", protoEvent.Context.Container.Image.Name)
-	assert.Equal(t, []string{"imageDigest"}, protoEvent.Context.Container.Image.RepoDigests)
+	assert.Equal(t, "containerID", protoEvent.Workload.Container.Id)
+	assert.Equal(t, "containerName", protoEvent.Workload.Container.Name)
+	assert.Equal(t, "imageName", protoEvent.Workload.Container.Image.Name)
+	assert.Equal(t, []string{"imageDigest"}, protoEvent.Workload.Container.Image.RepoDigests)
 }
 
-func Test_convertEventWithK8sContext(t *testing.T) {
+func Test_convertEventWithK8sWorkload(t *testing.T) {
 	t.Parallel()
 
 	traceEvent := trace.Event{
@@ -114,9 +114,9 @@ func Test_convertEventWithK8sContext(t *testing.T) {
 	protoEvent, err := convertTraceeEventToProto(traceEvent)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "podName", protoEvent.Context.K8S.Pod.Name)
-	assert.Equal(t, "podNamespace", protoEvent.Context.K8S.Namespace.Name)
-	assert.Equal(t, "podUID", protoEvent.Context.K8S.Pod.Uid)
+	assert.Equal(t, "podName", protoEvent.Workload.K8S.Pod.Name)
+	assert.Equal(t, "podNamespace", protoEvent.Workload.K8S.Namespace.Name)
+	assert.Equal(t, "podUID", protoEvent.Workload.K8S.Pod.Uid)
 }
 
 func Test_convertEventWithThreat(t *testing.T) {

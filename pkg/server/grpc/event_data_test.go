@@ -718,7 +718,6 @@ func Test_getEventData(t *testing.T) {
 
 func TestEventTrigger(t *testing.T) {
 	event := trace.Event{
-		EventID: 6001,
 		Args: []trace.Argument{
 			{
 				ArgMeta: trace.ArgMeta{
@@ -750,52 +749,31 @@ func TestEventTrigger(t *testing.T) {
 		},
 	}
 
-	eventData, err := getEventData(event)
+	expectedTriggerEvent, err := getTriggerBy(event.Args)
 	assert.NoError(t, err)
 
-	expected := []*pb.EventValue{
-		{
-			Name: "arg1",
-			Value: &pb.EventValue_Str{
-				Str: "value1",
-			},
-		},
-		{
-			Name: "triggeredBy",
-			Value: &pb.EventValue_TriggeredBy{
-				TriggeredBy: &pb.TriggeredBy{
-					Id:   101,
-					Name: "ptrace",
-					Data: []*pb.EventValue{
-						{
-							Name: "arg1",
-							Value: &pb.EventValue_Str{
-								Str: "arg value",
-							},
-						},
-						{
-							Name: "returnValue",
-							Value: &pb.EventValue_Int64{
-								Int64: 10,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	actualTriggerId, ok := event.Args[1].Value.(map[string]interface{})["id"].(int)
+	assert.True(t, ok)
+	actualTriggerName, ok := event.Args[1].Value.(map[string]interface{})["name"].(string)
+	assert.True(t, ok)
+	actualTriggerArgs, ok := event.Args[1].Value.(map[string]interface{})["args"].([]trace.Argument)
+	assert.True(t, ok)
+	actualTriggerArg0Str, ok := actualTriggerArgs[0].Value.(string)
+	assert.True(t, ok)
+	actualArg1Name := "returnValue"
+	actualArg1Value, ok := event.Args[1].Value.(map[string]interface{})["returnValue"].(int)
+	assert.True(t, ok)
 
-	assert.Equal(t, len(expected), len(eventData))
+	assert.Equal(t, expectedTriggerEvent.Id, uint32(actualTriggerId))
+	assert.Equal(t, expectedTriggerEvent.Name, actualTriggerName)
 
-	expectedTriggerEvent := expected[1].GetTriggeredBy()
-	assert.NotNil(t, expectedTriggerEvent)
+	expectedArg0Name := expectedTriggerEvent.Data[0].GetName()
+	expectedArg0StrValue := expectedTriggerEvent.Data[0].GetValue().(*pb.EventValue_Str).Str
+	assert.Equal(t, expectedArg0Name, actualTriggerArgs[0].ArgMeta.Name)
+	assert.Equal(t, expectedArg0StrValue, actualTriggerArg0Str)
 
-	actualTriggerEvent := eventData[1].GetTriggeredBy()
-	assert.NotNil(t, actualTriggerEvent)
-
-	assert.Equal(t, expectedTriggerEvent.Id, actualTriggerEvent.Id)
-	assert.Equal(t, expectedTriggerEvent.Name, actualTriggerEvent.Name)
-
-	assert.Equal(t, len(expectedTriggerEvent.Data), len(actualTriggerEvent.Data))
-	assert.Equal(t, expectedTriggerEvent.Data, actualTriggerEvent.Data)
+	expectedArg1Name := expectedTriggerEvent.Data[1].GetName()
+	expectedArg1Value := expectedTriggerEvent.Data[1].GetValue().(*pb.EventValue_Int64).Int64
+	assert.Equal(t, expectedArg1Name, actualArg1Name)
+	assert.Equal(t, expectedArg1Value, int64(actualArg1Value))
 }
