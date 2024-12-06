@@ -1700,6 +1700,421 @@ func Test_EventFilters(t *testing.T) {
 			coolDown:     0,
 			test:         ExpectAllInOrderSequentially,
 		},
+		{
+			name: "comm: event: data: trace event security_file_open set in multiple policies using multiple filter types",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "sfo-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=more",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"data.pathname=/etc/net*",
+										"data.pathname=/etc/ld.so.cache",
+										"data.pathname!=/usr/lib/*",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Id: 2,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "sfo-pol-2",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=more",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"data.pathname!=/etc/netconfig",
+										"data.pathname!=/usr/lib/*",
+										"data.pathname=*ld.so.cache",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Id: 3,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "sfo-pol-3",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=more",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"data.pathname!=/etc/ld.so.cache",
+										"data.pathname!=*libtinfo.so.6.3",
+										"data.pathname!=*libc.so.6",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					// To test certain "not equal" filters, such as exact, prefix, and suffix,
+					// it was necessary to use a fixed version of Ubuntu to ensure consistent
+					// library versions.
+					"docker run --rm ubuntu:jammy-20240911.1 more /etc/netconfig",
+					0,
+					20*time.Second,
+					// Running the commands inside a container caused duplicate
+					// security_file_open events to be generated. This is why the events are duplicated.
+					[]trace.Event{
+						expectEvent(anyHost, "more", anyProcessorID, 1, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/ld.so.cache")),
+						expectEvent(anyHost, "more", anyProcessorID, 1, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/ld.so.cache")),
+						expectEvent(anyHost, "more", anyProcessorID, 1, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-3"), orPolIDs(1, 3), expectArg("pathname", "/etc/netconfig")),
+						expectEvent(anyHost, "more", anyProcessorID, 1, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-3"), orPolIDs(1, 3), expectArg("pathname", "/etc/netconfig")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
+		},
+		{
+			name: "comm: event: data: trace event security_file_open and magic_write using multiple filter types combined",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "sfo-mw-combined-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=cat",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"data.pathname=/etc/netconfig",
+										"data.pathname!=/usr/lib/*",
+									},
+								},
+								{
+									Event: "magic_write",
+									Filters: []string{
+										"data.pathname=/tmp/netconfig",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Id: 2,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "sfo-mw-combined-pol-2",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=cat",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"data.pathname=/etc/netconfig",
+									},
+								},
+								{
+									Event: "magic_write",
+									Filters: []string{
+										"data.pathname!=/tmp/netconfig",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					// To test certain "not equal" filters, such as exact, prefix, and suffix,
+					// it was necessary to use a fixed version of Ubuntu to ensure consistent
+					// library versions.
+					"docker run --rm ubuntu:jammy-20240911.1 sh -c 'cat /etc/netconfig > /tmp/netconfig'",
+					0,
+					20*time.Second,
+					// Running the commands inside a container caused duplicate
+					// security_file_open events to be generated. This is why the events are duplicated.
+					[]trace.Event{
+						expectEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1"), orPolIDs(1), expectArg("pathname", "/etc/ld.so.cache")),
+						expectEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1"), orPolIDs(1), expectArg("pathname", "/etc/ld.so.cache")),
+						expectEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1", "sfo-mw-combined-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/netconfig")),
+						expectEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1", "sfo-mw-combined-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/netconfig")),
+						expectEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-combined-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/netconfig")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
+		},
+		{
+			name: "comm: event: data: trace event magic_write set in multiple policies using multiple filter types",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "mw-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=cp",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "magic_write",
+									Filters: []string{
+										"data.pathname=/tmp/*",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Id: 2,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "mw-pol-2",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=cp",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "magic_write",
+									Filters: []string{
+										"data.pathname=/tmp/resolv.conf",
+										"data.pathname=*passwd",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"sh -c 'cp /etc/resolv.conf /etc/shadow /etc/passwd /tmp/'",
+					0,
+					1*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "cp", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1", "mw-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/tmp/resolv.conf")),
+						expectEvent(anyHost, "cp", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/shadow")),
+						expectEvent(anyHost, "cp", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1", "mw-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/tmp/passwd")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAtLeastOneForEach,
+		},
+		{
+			name: "comm: event: data: trace event security_mmap_file using multiple filter types",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "smf-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=ldd",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_mmap_file",
+									Filters: []string{
+										"data.pathname=/usr/bin/bash",
+										"data.pathname=*ld.so.cache",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"ldd /usr/bin/bash",
+					0,
+					1*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "ldd", testutils.CPUForTests, anyPID, 0, events.SecurityMmapFile, orPolNames("smf-pol-1"), orPolIDs(1), expectArg("pathname", "/usr/bin/bash")),
+						expectEvent(anyHost, "ldd", testutils.CPUForTests, anyPID, 0, events.SecurityMmapFile, orPolNames("smf-pol-1"), orPolIDs(1), expectArg("pathname", "/etc/ld.so.cache")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAtLeastOneForEach,
+		},
+		{
+			name: "comm: event: data: trace event security_file_open and magic_write using multiple filter types",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "sfo-mw-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=cp",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"data.pathname=/tmp/*",
+									},
+								},
+								{
+									Event: "magic_write",
+									Filters: []string{
+										"data.pathname=*resolv.conf",
+										"data.pathname=*passwd",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"sh -c 'cp /etc/resolv.conf /etc/shadow /etc/passwd /tmp/'",
+					0,
+					1*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "cp", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/resolv.conf")),
+						expectEvent(anyHost, "cp", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/resolv.conf")),
+						expectEvent(anyHost, "cp", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/shadow")),
+						expectEvent(anyHost, "cp", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/passwd")),
+						expectEvent(anyHost, "cp", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/passwd")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAtLeastOneForEach,
+		},
+		{
+			name: "comm: event: data: trace event with pathname exceeding 255 characters",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "sfo-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=more",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"data.pathname=/tmp/AAAAAAAAAAAA*",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Id: 2,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "sfo-pol-2",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=more",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"data.pathname=*DEFGHIJK",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"bash -c 'touch /tmp/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"+
+						"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"+
+						"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCDEFGHIJK; more /tmp/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"+
+						"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"+
+						"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCDEFGHIJK'",
+					0,
+					1*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), orPolIDs(1, 2),
+							expectArg("pathname", "/tmp/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"+
+								"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"+
+								"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCDEFGHIJK")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
+		},
 	}
 
 	// run tests cases
