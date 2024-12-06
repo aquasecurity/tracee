@@ -81,6 +81,7 @@ C_FILES_TO_BE_CHECKED = $(shell find ./pkg/ebpf/c/ -regextype posix-extended -re
 
 CMD_GOIMPORTS_COMPANY_PREFIXES ?= "github.com/aquasecurity"
 CMD_GOIMPORTS_PROJECT ?= "github.com/aquasecurity/tracee"
+CMD_GOIMPORTS_OUTPUT_FILE ?= "/tmp/check-goimports-fmt"
 
 .PHONY: fmt-check
 fmt-check: | \
@@ -101,29 +102,25 @@ fmt-check: | \
 	rm -f /tmp/check-c-fmt
 #
 	echo "Checking golang files imports formatting..."
-	rm -f /tmp/check-goimports-fmt
-	# need to iterate due to this issue https://github.com/incu6us/goimports-reviser/issues/93
-	for file in `$(CMD_FIND) . -type f -name '*.go'`; do \
-		$(CMD_GOIMPORTS) \
-			-output stdout \
-			-list-diff \
-			-company-prefixes $(CMD_GOIMPORTS_COMPANY_PREFIXES) \
-			-project-name $(CMD_GOIMPORTS_PROJECT) \
-			$$file >> /tmp/check-goimports-fmt 2>&1; \
-	done
-	goimportsamount=$$(cat /tmp/check-goimports-fmt | wc -l)
+	rm -f $(CMD_GOIMPORTS_OUTPUT_FILE)
+	$(CMD_GOIMPORTS) \
+		-output stdout \
+		-list-diff \
+		-company-prefixes $(CMD_GOIMPORTS_COMPANY_PREFIXES) \
+		-project-name $(CMD_GOIMPORTS_PROJECT) \
+		./... 2>/dev/null > $(CMD_GOIMPORTS_OUTPUT_FILE)
+	goimportsamount=$$(grep -cve '^\s*$$' $(CMD_GOIMPORTS_OUTPUT_FILE))
 	if [[ $$goimportsamount -ne 0 ]]; then
 		errors=1
 	fi
 	if [[ $$errors -ne 0 ]]; then
-		cat /tmp/check-goimports-fmt
+		cat $(CMD_GOIMPORTS_OUTPUT_FILE)
 		echo
 		echo "Please fix formatting errors in the files above!"
 		echo "Use: $(MAKE) fmt-fix target".
 		echo
 		exit 1
 	fi
-	rm -f /tmp/check-goimports-fmt
 #
 	echo "Checking golang files formatting..."
 	$(CMD_GOFMT) -l -s -d . | tee /tmp/check-go-fmt
@@ -169,10 +166,9 @@ fmt-fix: | \
 #
 	echo "Fixing golang files imports formatting..."
 	$(CMD_GOIMPORTS) \
-		-list-diff \
 		-company-prefixes $(CMD_GOIMPORTS_COMPANY_PREFIXES) \
 		-project-name $(CMD_GOIMPORTS_PROJECT) \
-		./...
+		./... 2>/dev/null
 #
 	echo "Fixing golang files formatting..."
 	$(CMD_GOFMT) -l -s -d . > /tmp/patch.$$
