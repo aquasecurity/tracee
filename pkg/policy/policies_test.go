@@ -62,6 +62,9 @@ func TestPoliciesClone(t *testing.T) {
 		filters.BinaryFilter{},
 		sets.PrefixSet{},
 		sets.SuffixSet{},
+		filters.KernelDataFilter{},
+		RulesData{},
+		KernelDataFilterMatchStates{},
 	)
 	opt2 := cmp.FilterPath(
 		func(p cmp.Path) bool {
