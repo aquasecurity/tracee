@@ -12,7 +12,7 @@ traceectl version
 
 This command will output details such as:
 
-- **Version Number**: The current version of TraceeCtl.
+- **Version Number**: The current version of traceectl.
 - **Commit Hash**: The Git commit hash associated with the current build (if applicable).
 
 ### Example Output

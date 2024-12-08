@@ -1,6 +1,6 @@
 # Metrics Command Usage
 
-The `metrics` command in **TraceeCtl** provides information about Tracee's performance and resource usage metrics. This command is helpful for monitoring how Tracee is functioning in real-time.
+The `metrics` command in **traceectl** provides information about Tracee's performance and resource usage metrics. This command is helpful for monitoring how Tracee is functioning in real-time.
 
 ## Usage
 
@@ -20,4 +20,4 @@ traceectl metrics
 
 ## Summary
 
-The `metrics` command in TraceeCtl allows users to obtain insights into Tracee's operational metrics, including event counts and resource usage. The command supports a table output format to suit different reporting needs.
+The `metrics` command displays tracee's performance and resource usage metrics. Use this command to monitor Tracee's operational status.

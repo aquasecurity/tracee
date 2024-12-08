@@ -1,8 +1,8 @@
-# TraceeCtl Installation and Usage Guide
+# traceectl Installation and Usage Guide
 
 ## Installation
 
-To use **TraceeCtl**, you first need to compile and install the tool. Follow these steps to get started:
+To use **traceectl**, you first need to compile and install the tool. Follow these steps to get started:
 
 ### 1. **Clone the Repository**
 
@@ -15,15 +15,15 @@ To use **TraceeCtl**, you first need to compile and install the tool. Follow the
 
 ### 2. **Build and Install**
 
-   Compile and install TraceeCtl using the following commands:
+   Compile and install traceectl using the following commands:
 
    ``` bash
    go build
    ```
 
-## Configuring Tracee for TraceeCtl
+## Configuring Tracee for traceectl
 
-To use TraceeCtl effectively, you need to configure Tracee so that it can communicate with TraceeCtl over a Unix socket. This can be done by running Tracee with the correct gRPC settings:
+To use traceectl effectively, you need to configure Tracee so that it can communicate with traceectl over a Unix socket. This can be done by running Tracee with the correct gRPC settings:
 
 ### 1. **Run Tracee with gRPC Unix Socket**
 
@@ -33,7 +33,7 @@ Use the following command to start Tracee with gRPC support over a Unix socket:
 tracee --grpc-listen-addr unix:/var/run/tracee.sock
 ```
 
-This command sets up Tracee to listen for incoming connections from TraceeCtl at the specified Unix socket path (`/var/run/tracee.sock`). Ensure that this socket path is accessible and not blocked by permissions or other constraints.
+This command sets up Tracee to listen for incoming connections from traceectl at the specified Unix socket path (`/var/run/tracee.sock`). Ensure that this socket path is accessible and not blocked by permissions or other constraints.
 
 ### 2. **Output Flag Configuration**
 
@@ -46,16 +46,16 @@ tracee --output none
 #### Why Use `--output none`?
 
 - **Reduced Bandwidth Usage:** By suppressing output, you can minimize the data transferred over the Unix socket, which is especially helpful in environments with limited resources.
-- **Lower Latency:** With no data formatting or transmission overhead, the interaction between TraceeCtl and Tracee becomes faster.
+- **Lower Latency:** With no data formatting or transmission overhead, the interaction between traceectl and Tracee becomes faster.
 
-Use this mode for performance testing, silent monitoring, or when integrating TraceeCtl with other systems that handle data processing separately.
+Use this mode for performance testing, silent monitoring, or when integrating traceectl with other systems that handle data processing separately.
 
-This command sets up Tracee to listen for incoming connections from TraceeCtl at the specified Unix socket path (`/var/run/tracee.sock`).
+This command sets up Tracee to listen for incoming connections from traceectl at the specified Unix socket path (`/var/run/tracee.sock`).
 Ensure that this socket path is accessible and not blocked by permissions or other constraints.
 
 ## Usage
 
-Once TraceeCtl is installed and Tracee is running, you can use various commands to interact with Tracee. Below are the main commands provided by TraceeCtl:
+Once traceectl is installed and Tracee is running, you can use various commands to interact with Tracee. Below are the main commands provided by traceectl:
 
 - Stream Events: traceectl stream
 
@@ -65,7 +65,7 @@ Once TraceeCtl is installed and Tracee is running, you can use various commands 
 
 - Check Version: traceectl version
 
-For more info about the TraceeCtl command please refer to the appoint command documentation
+For more info about the traceectl command please refer to the appoint command documentation
 
 ## Flags
   
@@ -81,10 +81,10 @@ For more info about the TraceeCtl command please refer to the appoint command do
   traceectl stream --output file:/path/to/output.txt
   ```
 
-For more info about the TraceeCtl flags please refer to the appoint flag documentation
+For more info about the traceectl flags please refer to the appoint flag documentation
 
 ## Summary
 
-- **Install TraceeCtl** by cloning the repository, building, and installing it with `make`.
+- **Install traceectl** by cloning the repository, building, and installing it with `make`.
 - **Configure Tracee** by running it with the appropriate gRPC Unix socket settings.
-- **Use TraceeCtl** to interact with Tracee via commands like `stream`, `event`, `metrics`, and `version`.
+- **Use traceectl** to interact with Tracee via commands like `stream`, `event`, `metrics`, and `version`.

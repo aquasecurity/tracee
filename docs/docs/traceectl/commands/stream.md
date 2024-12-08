@@ -1,6 +1,6 @@
 # Stream Command Usage
 
-The `stream` command in **TraceeCtl** allows users to stream events directly from Tracee in real time. This command provides flexible output formats for better integration and readability.
+The `stream` command in **traceectl** allows users to stream events directly from Tracee in real time. This command provides flexible output formats for better integration and readability.
 
 ## Usage
 
@@ -32,4 +32,4 @@ traceectl stream [policies...] [flags]
 
 ## Summary
 
-The `stream` command in TraceeCtl is a useful tool for monitoring Tracee events in real time, with options for JSON or table output. Use this command to keep track of activities and ensure comprehensive observability for your system.
+The `stream` command provides a real-time feed of Tracee events, allowing you to monitor system activity as it happens.
