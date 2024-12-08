@@ -1,6 +1,6 @@
-# TraceeCtl - Client Service for Tracee
+# traceectl - Client Service for Tracee
 
-**traceectl** is a command-line interface (CLI) tool designed as a client service for [Tracee](https://github.com/aquasecurity/tracee), Aqua Security's open-source runtime security solution. Tracee provides real-time, powerful observability for Linux environments by monitoring system calls, events, and more. TraceeCtl is built to simplify interactions with Tracee, making it easier for users to manage, monitor, and gather security insights.
+**traceectl** is a command-line interface (CLI) tool designed as a client service for [Tracee](https://github.com/aquasecurity/tracee), Aqua Security's open-source runtime security solution. Tracee provides real-time, powerful observability for Linux environments by monitoring system calls, events, and more. traceectl is built to simplify interactions with Tracee, making it easier for users to manage, monitor, and gather security insights.
 
 ## Overview
 
@@ -12,4 +12,4 @@ traceectl acts as a controller for Tracee, allowing users to:
 
 ## Installation and Usage
 
-To get started with TraceeCtl, go over the [Installation and Usage page](./usage.md)
+To get started with traceectl, go over the [Installation and Usage page](./usage.md)
