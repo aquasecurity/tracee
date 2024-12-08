@@ -30,13 +30,13 @@ func TestPoliciesClone(t *testing.T) {
 	require.NoError(t, err)
 
 	// Initialize the rule first
-	p2.Rules[events.Read] = RuleData{
+	p2.Rules.Data[events.Read] = RuleData{
 		EventID:     events.Read,
 		DataFilter:  filters.NewDataFilter(),
 		RetFilter:   filters.NewIntFilter(),
 		ScopeFilter: filters.NewScopeFilter(),
 	}
-	err = p2.Rules[events.Read].DataFilter.Parse(events.Read, "fd", "=dataval")
+	err = p2.Rules.Data[events.Read].DataFilter.Parse(events.Read, "fd", "=dataval")
 	require.NoError(t, err)
 
 	err = ps.add(p1)
@@ -62,6 +62,9 @@ func TestPoliciesClone(t *testing.T) {
 		filters.BinaryFilter{},
 		sets.PrefixSet{},
 		sets.SuffixSet{},
+		filters.KernelDataFilter{},
+		RulesData{},
+		KernelDataFilterMatchStates{},
 	)
 	opt2 := cmp.FilterPath(
 		func(p cmp.Path) bool {

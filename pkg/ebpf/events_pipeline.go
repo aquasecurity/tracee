@@ -329,7 +329,7 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		// event ID. This happens whenever the event submitted by the kernel is going to
 		// derive an event that this policy is interested in. In this case, don't do
 		// anything and let the derivation stage handle this event.
-		_, ok := p.Rules[eventID]
+		_, ok := p.Rules.Data[eventID]
 		if !ok {
 			continue
 		}
@@ -339,13 +339,13 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		//
 
 		// 1. event scope filters
-		if !p.Rules[eventID].ScopeFilter.Filter(*event) {
+		if !p.Rules.Data[eventID].ScopeFilter.Filter(*event) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
 		// 2. event return value filters
-		if !p.Rules[eventID].RetFilter.Filter(int64(event.ReturnValue)) {
+		if !p.Rules.Data[eventID].RetFilter.Filter(int64(event.ReturnValue)) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
@@ -356,7 +356,7 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		// events.PrintMemDump bypass was added due to issue #2546
 		// because it uses usermode applied filters as parameters for the event,
 		// which occurs after filtering
-		if eventID != events.PrintMemDump && !p.Rules[eventID].DataFilter.Filter(event.Args) {
+		if eventID != events.PrintMemDump && !p.Rules.Data[eventID].DataFilter.Filter(event.Args) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}

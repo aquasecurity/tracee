@@ -2165,7 +2165,7 @@ func TestCreateSinglePolicy(t *testing.T) {
 				p.Name = "test-policy"
 				p.CommFilter = filters.NewStringFilter(nil)
 				_ = p.CommFilter.Parse("=bash")
-				p.Rules[events.Write] = policy.RuleData{
+				p.Rules.Data[events.Write] = policy.RuleData{
 					EventID:     events.Write,
 					ScopeFilter: filters.NewScopeFilter(),
 					DataFilter:  filters.NewDataFilter(),
@@ -2216,19 +2216,19 @@ func TestCreateSinglePolicy(t *testing.T) {
 				p.ContFilter = filters.NewBoolFilter()
 				_ = p.ContFilter.Parse("container")
 
-				p.Rules[events.Open] = policy.RuleData{
+				p.Rules.Data[events.Open] = policy.RuleData{
 					EventID:     events.Open,
 					ScopeFilter: filters.NewScopeFilter(),
 					DataFilter:  filters.NewDataFilter(),
 					RetFilter:   filters.NewIntFilter(),
 				}
-				p.Rules[events.Write] = policy.RuleData{
+				p.Rules.Data[events.Write] = policy.RuleData{
 					EventID:     events.Write,
 					ScopeFilter: filters.NewScopeFilter(),
 					DataFilter:  filters.NewDataFilter(),
 					RetFilter:   filters.NewIntFilter(),
 				}
-				_ = p.Rules[events.Write].RetFilter.Parse("=0")
+				_ = p.Rules.Data[events.Write].RetFilter.Parse("=0")
 				return p
 			},
 		},
@@ -2350,7 +2350,7 @@ func TestParseEventFilters(t *testing.T) {
 				eventName: "write",
 			}},
 			validate: func(t *testing.T, p *policy.Policy) {
-				assert.Contains(t, p.Rules, events.Write)
+				assert.Contains(t, p.Rules.Data, events.Write)
 			},
 		},
 		{
@@ -2363,8 +2363,8 @@ func TestParseEventFilters(t *testing.T) {
 				operatorAndValues: "=0",
 			}},
 			validate: func(t *testing.T, p *policy.Policy) {
-				assert.Contains(t, p.Rules, events.Write)
-				assert.NotNil(t, p.Rules[events.Write].RetFilter)
+				assert.Contains(t, p.Rules.Data, events.Write)
+				assert.NotNil(t, p.Rules.Data[events.Write].RetFilter)
 			},
 		},
 		{
@@ -2378,8 +2378,8 @@ func TestParseEventFilters(t *testing.T) {
 				operatorAndValues: "=/etc/passwd",
 			}},
 			validate: func(t *testing.T, p *policy.Policy) {
-				assert.Contains(t, p.Rules, events.Openat)
-				assert.NotNil(t, p.Rules[events.Openat].DataFilter)
+				assert.Contains(t, p.Rules.Data, events.Openat)
+				assert.NotNil(t, p.Rules.Data[events.Openat].DataFilter)
 			},
 		},
 		{
@@ -2391,9 +2391,9 @@ func TestParseEventFilters(t *testing.T) {
 			}},
 			validate: func(t *testing.T, p *policy.Policy) {
 				// Check that all sched_process events are included
-				assert.Contains(t, p.Rules, events.SchedProcessExec)
-				assert.Contains(t, p.Rules, events.SchedProcessFork)
-				assert.Contains(t, p.Rules, events.SchedProcessExit)
+				assert.Contains(t, p.Rules.Data, events.SchedProcessExec)
+				assert.Contains(t, p.Rules.Data, events.SchedProcessFork)
+				assert.Contains(t, p.Rules.Data, events.SchedProcessExit)
 			},
 		},
 		{
@@ -2409,13 +2409,13 @@ func TestParseEventFilters(t *testing.T) {
 				operatorAndValues: "=0",
 			}},
 			validate: func(t *testing.T, p *policy.Policy) {
-				assert.Contains(t, p.Rules, events.SchedProcessExec)
-				assert.Contains(t, p.Rules, events.SchedProcessFork)
-				assert.Contains(t, p.Rules, events.SchedProcessExit)
+				assert.Contains(t, p.Rules.Data, events.SchedProcessExec)
+				assert.Contains(t, p.Rules.Data, events.SchedProcessFork)
+				assert.Contains(t, p.Rules.Data, events.SchedProcessExit)
 				// Check that retval filter is applied only to sched_process_exec event
-				assert.NotNil(t, p.Rules[events.SchedProcessExec].RetFilter)
-				assert.NotNil(t, p.Rules[events.SchedProcessFork].RetFilter)
-				assert.NotNil(t, p.Rules[events.SchedProcessExit].RetFilter)
+				assert.NotNil(t, p.Rules.Data[events.SchedProcessExec].RetFilter)
+				assert.NotNil(t, p.Rules.Data[events.SchedProcessFork].RetFilter)
+				assert.NotNil(t, p.Rules.Data[events.SchedProcessExit].RetFilter)
 			},
 		},
 		{

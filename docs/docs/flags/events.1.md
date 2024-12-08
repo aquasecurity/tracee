@@ -2,7 +2,7 @@
 title: TRACEE-EVENTS
 section: 1
 header: Tracee Events Flag Manual
-date: 2024/06
+date: 2024/12
 ...
 
 ## NAME
@@ -54,7 +54,12 @@ Available for:
 - return value
 - scope fields
 
-Strings can be compared as a prefix if ending with '\*', or as a suffix if starting with '\*'.
+Strings can be compared as a prefix if ending with '\*', or as a suffix if starting with '\*'.  If a string starts with '\*' and ends with '\*', it functions as a contains operator.
+
+For certain event fields filtered in kernel space, the user will receive a warning if:
+
+- String filters exceed 255 characters.
+- The contains operator is used. Only exact matches, prefix, and suffix comparisons are allowed.
 
 NOTE: Expressions containing '\*' token must be escaped!
 
@@ -114,6 +119,12 @@ Available only for:
 
   ```console
   --events openat.data.pathname='*shadow'
+  ```
+
+- To trace only 'openat' events that have 'pathname' contains the substring 'pass', use the following flag:
+
+  ```console
+  --events openat.data.pathname='*pass*'
   ```
 
 - To exclude 'openat' events that have 'pathname' equal to '/tmp/1' or '/bin/ls', use the following flag:

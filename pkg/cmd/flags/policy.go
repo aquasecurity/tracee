@@ -290,8 +290,8 @@ func parseEventFilters(p *policy.Policy, eventFlags []eventFlag) error {
 		}
 
 		for eventId := range eventIdToName {
-			if _, ok := p.Rules[eventId]; !ok {
-				p.Rules[eventId] = policy.RuleData{
+			if _, ok := p.Rules.Data[eventId]; !ok {
+				p.Rules.Data[eventId] = policy.RuleData{
 					EventID:     eventId,
 					ScopeFilter: filters.NewScopeFilter(),
 					DataFilter:  filters.NewDataFilter(),
@@ -305,15 +305,15 @@ func parseEventFilters(p *policy.Policy, eventFlags []eventFlag) error {
 
 			switch evtFlag.eventOptionType {
 			case "retval":
-				if err := p.Rules[eventId].RetFilter.Parse(evtFlag.operatorAndValues); err != nil {
+				if err := p.Rules.Data[eventId].RetFilter.Parse(evtFlag.operatorAndValues); err != nil {
 					return err
 				}
 			case "scope":
-				if err := p.Rules[eventId].ScopeFilter.Parse(evtFlag.eventOptionName, evtFlag.operatorAndValues); err != nil {
+				if err := p.Rules.Data[eventId].ScopeFilter.Parse(evtFlag.eventOptionName, evtFlag.operatorAndValues); err != nil {
 					return err
 				}
 			case "data", "args":
-				if err := p.Rules[eventId].DataFilter.Parse(eventId, evtFlag.eventOptionName, evtFlag.operatorAndValues); err != nil {
+				if err := p.Rules.Data[eventId].DataFilter.Parse(eventId, evtFlag.eventOptionName, evtFlag.operatorAndValues); err != nil {
 					return err
 				}
 			default:
@@ -323,10 +323,10 @@ func parseEventFilters(p *policy.Policy, eventFlags []eventFlag) error {
 	}
 
 	// if no events were specified, add all events from the default set
-	if len(p.Rules) == 0 {
+	if len(p.Rules.Data) == 0 {
 		for _, eventId := range setsToEvents["default"] {
-			if _, ok := p.Rules[eventId]; !ok {
-				p.Rules[eventId] = policy.RuleData{
+			if _, ok := p.Rules.Data[eventId]; !ok {
+				p.Rules.Data[eventId] = policy.RuleData{
 					EventID:     eventId,
 					ScopeFilter: filters.NewScopeFilter(),
 					DataFilter:  filters.NewDataFilter(),
@@ -341,7 +341,7 @@ func parseEventFilters(p *policy.Policy, eventFlags []eventFlag) error {
 		if _, ok := eventNamesToID[eventName]; !ok {
 			return InvalidEventExcludeError(eventName)
 		}
-		delete(p.Rules, eventNamesToID[eventName])
+		delete(p.Rules.Data, eventNamesToID[eventName])
 	}
 
 	return nil

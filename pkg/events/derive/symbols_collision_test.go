@@ -483,7 +483,7 @@ func TestSymbolsCollision(t *testing.T) {
 			p := policy.NewPolicy()
 
 			// Initialize all filters for SymbolsCollision event
-			p.Rules[events.SymbolsCollision] = policy.RuleData{
+			p.Rules.Data[events.SymbolsCollision] = policy.RuleData{
 				DataFilter:  filters.NewDataFilter(),
 				RetFilter:   filters.NewIntFilter(),
 				ScopeFilter: filters.NewScopeFilter(),
@@ -491,12 +491,12 @@ func TestSymbolsCollision(t *testing.T) {
 
 			if len(testCase.blackList) > 0 {
 				operAndValsBlack := fmt.Sprintf("!=%s", strings.Join(testCase.blackList, ","))
-				err := p.Rules[events.SymbolsCollision].DataFilter.Parse(events.SymbolsCollision, "symbols", operAndValsBlack)
+				err := p.Rules.Data[events.SymbolsCollision].DataFilter.Parse(events.SymbolsCollision, "symbols", operAndValsBlack)
 				require.NoError(t, err)
 			}
 			if len(testCase.whiteList) > 0 {
 				operAndValsWhite := fmt.Sprintf("=%s", strings.Join(testCase.whiteList, ","))
-				err := p.Rules[events.SymbolsCollision].DataFilter.Parse(events.SymbolsCollision, "symbols", operAndValsWhite)
+				err := p.Rules.Data[events.SymbolsCollision].DataFilter.Parse(events.SymbolsCollision, "symbols", operAndValsWhite)
 				require.NoError(t, err)
 			}
 

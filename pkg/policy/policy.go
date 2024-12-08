@@ -22,14 +22,7 @@ type Policy struct {
 	ProcessTreeFilter *filters.ProcessTreeFilter
 	BinaryFilter      *filters.BinaryFilter
 	Follow            bool
-	Rules             map[events.ID]RuleData
-}
-
-type RuleData struct {
-	EventID     events.ID
-	ScopeFilter *filters.ScopeFilter
-	DataFilter  *filters.DataFilter
-	RetFilter   *filters.IntFilter[int64]
+	Rules             RulesData
 }
 
 // Compile-time check to ensure that Policy implements the Cloner interface
@@ -52,7 +45,7 @@ func NewPolicy() *Policy {
 		ProcessTreeFilter: filters.NewProcessTreeFilter(),
 		BinaryFilter:      filters.NewBinaryFilter(),
 		Follow:            false,
-		Rules:             map[events.ID]RuleData{},
+		Rules:             RulesData{Data: make(map[events.ID]RuleData)},
 	}
 }
 
@@ -85,14 +78,7 @@ func (p *Policy) Clone() *Policy {
 	n.ProcessTreeFilter = p.ProcessTreeFilter.Clone()
 	n.BinaryFilter = p.BinaryFilter.Clone()
 	n.Follow = p.Follow
-	for eID, ruleData := range p.Rules {
-		n.Rules[eID] = RuleData{
-			EventID:     ruleData.EventID,
-			ScopeFilter: ruleData.ScopeFilter.Clone(),
-			DataFilter:  ruleData.DataFilter.Clone(),
-			RetFilter:   ruleData.RetFilter.Clone(),
-		}
-	}
+	n.Rules = p.Rules.Clone()
 
 	return n
 }
