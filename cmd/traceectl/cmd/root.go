@@ -81,8 +81,8 @@ func Execute() {
 }
 
 func displayMetrics(cmd *cobra.Command, _ []string) {
-	var traceeClient client.DiagnosticClient
-	if err := traceeClient.NewDiagnosticClient(server); err != nil {
+	traceeClient, err := client.NewDiagnosticClient(server)
+	if err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
@@ -107,8 +107,8 @@ func displayMetrics(cmd *cobra.Command, _ []string) {
 }
 
 func displayVersion(cmd *cobra.Command, _ []string) {
-	var traceeClient client.ServiceClient
-	if err := traceeClient.NewServiceClient(server); err != nil {
+	traceeClient, err := client.NewServiceClient(server)
+	if err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}

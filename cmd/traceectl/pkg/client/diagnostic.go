@@ -12,15 +12,15 @@ type DiagnosticClient struct {
 	client pb.DiagnosticServiceClient
 }
 
-func (tc *DiagnosticClient) NewDiagnosticClient(serverInfo ServerInfo) error {
+func NewDiagnosticClient(serverInfo ServerInfo) (*DiagnosticClient, error) {
 	conn, err := connectToServer(serverInfo)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	tc.conn = conn
-	tc.client = pb.NewDiagnosticServiceClient(conn)
-
-	return nil
+	return &DiagnosticClient{
+		conn:   conn,
+		client: pb.NewDiagnosticServiceClient(conn),
+	}, nil
 }
 func (tc *DiagnosticClient) CloseConnection() {
 	if err := tc.conn.Close(); err != nil {
