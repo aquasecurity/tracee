@@ -89,28 +89,24 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
     syscall_data_t *sys = &(task_info->syscall_data);
     sys->id = ctx->args[1];
 
-    if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
-        struct pt_regs *regs = (struct pt_regs *) ctx->args[0];
+    struct pt_regs *regs = (struct pt_regs *) ctx->args[0];
 
-        if (is_x86_compat(task)) {
+    if (is_x86_compat(task)) {
 #if defined(bpf_target_x86)
-            sys->args.args[0] = BPF_CORE_READ(regs, bx);
-            sys->args.args[1] = BPF_CORE_READ(regs, cx);
-            sys->args.args[2] = BPF_CORE_READ(regs, dx);
-            sys->args.args[3] = BPF_CORE_READ(regs, si);
-            sys->args.args[4] = BPF_CORE_READ(regs, di);
-            sys->args.args[5] = BPF_CORE_READ(regs, bp);
+        sys->args.args[0] = BPF_CORE_READ(regs, bx);
+        sys->args.args[1] = BPF_CORE_READ(regs, cx);
+        sys->args.args[2] = BPF_CORE_READ(regs, dx);
+        sys->args.args[3] = BPF_CORE_READ(regs, si);
+        sys->args.args[4] = BPF_CORE_READ(regs, di);
+        sys->args.args[5] = BPF_CORE_READ(regs, bp);
 #endif // bpf_target_x86
-        } else {
-            sys->args.args[0] = PT_REGS_PARM1_CORE_SYSCALL(regs);
-            sys->args.args[1] = PT_REGS_PARM2_CORE_SYSCALL(regs);
-            sys->args.args[2] = PT_REGS_PARM3_CORE_SYSCALL(regs);
-            sys->args.args[3] = PT_REGS_PARM4_CORE_SYSCALL(regs);
-            sys->args.args[4] = PT_REGS_PARM5_CORE_SYSCALL(regs);
-            sys->args.args[5] = PT_REGS_PARM6_CORE_SYSCALL(regs);
-        }
     } else {
-        bpf_probe_read(sys->args.args, sizeof(6 * sizeof(u64)), (void *) ctx->args);
+        sys->args.args[0] = PT_REGS_PARM1_CORE_SYSCALL(regs);
+        sys->args.args[1] = PT_REGS_PARM2_CORE_SYSCALL(regs);
+        sys->args.args[2] = PT_REGS_PARM3_CORE_SYSCALL(regs);
+        sys->args.args[3] = PT_REGS_PARM4_CORE_SYSCALL(regs);
+        sys->args.args[4] = PT_REGS_PARM5_CORE_SYSCALL(regs);
+        sys->args.args[5] = PT_REGS_PARM6_CORE_SYSCALL(regs);
     }
 
     if (is_compat(task)) {
