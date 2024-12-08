@@ -85,8 +85,8 @@ var disableEventCmd = &cobra.Command{
 }
 
 func listEvents(cmd *cobra.Command, args []string) {
-	var traceeClient client.ServiceClient
-	if err := traceeClient.NewServiceClient(server); err != nil {
+	traceeClient, err := client.NewServiceClient(server)
+	if err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
@@ -118,8 +118,8 @@ func listEvents(cmd *cobra.Command, args []string) {
 }
 
 func getEventDescriptions(cmd *cobra.Command, args []string) {
-	var traceeClient client.ServiceClient
-	if err := traceeClient.NewServiceClient(server); err != nil {
+	traceeClient, err := client.NewServiceClient(server)
+	if err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
@@ -161,14 +161,14 @@ func prepareDescription(event *pb.EventDefinition) []string {
 
 }
 func enableEvents(cmd *cobra.Command, eventName string) {
-	var traceeClient client.ServiceClient
-	if err := traceeClient.NewServiceClient(server); err != nil {
+	traceeClient, err := client.NewServiceClient(server)
+	if err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
 	defer traceeClient.CloseConnection()
 
-	_, err := traceeClient.EnableEvent(context.Background(), &pb.EnableEventRequest{Name: eventName})
+	_, err = traceeClient.EnableEvent(context.Background(), &pb.EnableEventRequest{Name: eventName})
 	if err != nil {
 		cmd.PrintErrln("Error enabling event:", err)
 		return
@@ -176,13 +176,13 @@ func enableEvents(cmd *cobra.Command, eventName string) {
 	cmd.Printf("Enabled event: %s\n", eventName)
 }
 func disableEvents(cmd *cobra.Command, eventName string) {
-	var traceeClient client.ServiceClient
-	if err := traceeClient.NewServiceClient(server); err != nil {
+	traceeClient, err := client.NewServiceClient(server)
+	if err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return
 	}
 	defer traceeClient.CloseConnection()
-	_, err := traceeClient.DisableEvent(context.Background(), &pb.DisableEventRequest{Name: eventName})
+	_, err = traceeClient.DisableEvent(context.Background(), &pb.DisableEventRequest{Name: eventName})
 	if err != nil {
 		cmd.PrintErrln("Error disabling event:", err)
 		return

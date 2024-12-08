@@ -29,8 +29,7 @@ func init() {
 }
 
 func streamEvents(cmd *cobra.Command, args []string) {
-	var traceeClient client.ServiceClient
-	err := traceeClient.NewServiceClient(server)
+	traceeClient, err := client.NewServiceClient(server)
 	if err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
 		return

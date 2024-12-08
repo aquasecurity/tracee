@@ -12,15 +12,15 @@ type ServiceClient struct {
 	client pb.TraceeServiceClient
 }
 
-func (tc *ServiceClient) NewServiceClient(serverInfo ServerInfo) error {
+func NewServiceClient(serverInfo ServerInfo) (*ServiceClient, error) {
 	conn, err := connectToServer(serverInfo)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	tc.conn = conn
-	tc.client = pb.NewTraceeServiceClient(conn)
-
-	return nil
+	return &ServiceClient{
+		conn:   conn,
+		client: pb.NewTraceeServiceClient(conn),
+	}, nil
 }
 func (tc *ServiceClient) CloseConnection() {
 	if err := tc.conn.Close(); err != nil {
