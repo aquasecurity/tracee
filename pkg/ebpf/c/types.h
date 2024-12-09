@@ -286,6 +286,15 @@ typedef struct path_filter {
     char path[MAX_PATH_PREF_SIZE];
 } path_filter_t;
 
+typedef struct data_filter_key {
+    char str[MAX_DATA_FILTER_STR_SIZE];
+} data_filter_key_t;
+
+typedef struct data_filter_lpm_key {
+    u32 prefix_len;
+    char str[MAX_DATA_FILTER_STR_SIZE];
+} data_filter_lpm_key_t;
+
 typedef struct string_filter {
     char str[MAX_STR_FILTER_SIZE];
 } string_filter_t;
@@ -293,6 +302,12 @@ typedef struct string_filter {
 typedef struct ksym_name {
     char str[MAX_KSYM_NAME_SIZE];
 } ksym_name_t;
+
+typedef struct policy_key {
+    u16 version;
+    u16 __pad;
+    u32 event_id;
+} policy_key_t;
 
 typedef struct equality {
     // bitmap indicating which policies have a filter that uses the '=' operator (0 means '!=')
@@ -331,6 +346,15 @@ typedef struct policies_config {
     u64 bin_path_filter_match_if_key_missing;
     // bitmap with policies that have at least one filter enabled
     u64 enabled_policies;
+
+    // enabled data filters bitmask per filter
+    u64 data_filter_prefix_enabled;
+    u64 data_filter_suffix_enabled;
+    u64 data_filter_exact_enabled;
+    u64 data_filter_prefix_match_if_key_missing;
+    u64 data_filter_suffix_match_if_key_missing;
+    u64 data_filter_exact_match_if_key_missing;
+
     // global min max
     u64 uid_max;
     u64 uid_min;
@@ -369,7 +393,8 @@ typedef struct syscall_table_entry {
 typedef struct args_buffer {
     u8 argnum;
     char args[ARGS_BUF_SIZE];
-    u32 offset;
+    u16 offset;
+    u16 args_offset[MAX_ARGS];
 } args_buffer_t;
 
 typedef struct event_data {

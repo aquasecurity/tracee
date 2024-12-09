@@ -128,6 +128,8 @@ statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
 
     p->event->args_buf.offset = 0;
     p->event->args_buf.argnum = 0;
+    __builtin_memset(p->event->args_buf.args_offset, 0xFF, sizeof(p->event->args_buf.args_offset));
+
     p->event->task = (struct task_struct *) bpf_get_current_task();
 
     __builtin_memset(&p->event->context.task, 0, sizeof(p->event->context.task));
