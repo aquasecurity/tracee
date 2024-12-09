@@ -9,7 +9,7 @@ Our documentation aims to follow the [Diátaxis documentation framework](https:/
 3. Reference Material -- How to use Tracee
 4. Contribution Guidelines
 
-To contribute to the documentation please
+To contribute to the documentation:
 
 1. Clone the Tracee GitHub repository
 2. Make changes in the `./docs` directory in the root folder
@@ -24,11 +24,13 @@ You can test your changes to the documentation by building and running a docker 
 Prerequisites: Docker installed and running locally.
 
 Build the container image:
+
 ```bash
 make -f ./builder/Makefile.mkdocs mkdocs-build
 ```
 
 Serve the container image:
+
 ```bash
 make -f ./builder/Makefile.mkdocs mkdocs-serve
 ```
@@ -36,5 +38,3 @@ make -f ./builder/Makefile.mkdocs mkdocs-serve
 Open `localhost:8000/tracee`
 
 Now you should see the documentation.
-
-

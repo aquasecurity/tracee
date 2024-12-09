@@ -1,27 +1,25 @@
-## Style Guide for Contributors
+# Style Guide for Contributors
 
 For those willing to contribute to Tracee, this repository has code formatting
 guidelines being enforced. It is recommended that, before committing your
 changes, you run the following command:
 
-1. Check for formatting issues
+1. Check your PR
 
-!!! check-fmt Example
+```console
+make check-pr
+```
 
-    ```console
-    make check-fmt
-    ```
+This command will run:
 
-    ```text
-    Checking C and eBPF files and headers formatting...
-    Checking golang files formatting...
-    ```
-    
+1. `check-fmt` - check for formatting changes
     > This will make sure PRs won't fail due to same checks being enforced.
+2. `check-lint`
+3. `check-code`
+4. `format-pr`
 
-2. Fix Go and C source files formatting
 
-!!! fix-fmt Example
+5. Fix Go and C source files formatting
 
     ```console
     make fix-fmt
@@ -51,10 +49,7 @@ changes, you run the following command:
      M pkg/ebpf/c/vmlinux.h
     ```
 
-3. Static Check Go and C source files
-
-
-!!! check-code Example
+6. Static Check Go and C source files
 
     ```console
     make check-code
@@ -65,15 +60,15 @@ changes, you run the following command:
     make[2]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
     GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS="-I/home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf" CGO_LDFLAGS="-lelf -lz /home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf/libbpf.a" \
     go vet \
-    	-tags core,ebpf \
-    	./...
+        -tags core,ebpf \
+        ./...
     
     Checking Golang with StaticChecker...
     make[2]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
     GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS="-I/home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf" CGO_LDFLAGS="-lelf -lz /home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf/libbpf.a" \
     staticcheck -f stylish \
-    	-tags core,ebpf \
-    	./...
+        -tags core,ebpf \
+        ./...
      ✖ 0 problems (0 errors, 0 warnings, 0 ignored)
 
      Checking Golang with errcheck...
