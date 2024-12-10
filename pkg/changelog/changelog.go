@@ -6,219 +6,229 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
-type comparable interface {
-	~int | ~float64 | ~string
-}
+//
+// Entries, entry, and entryList structures are used to manage a list of changes.
+//
 
-type item[T comparable] struct {
-	timestamp time.Time // timestamp of the change
-	value     T         // value of the change
-}
+// MemberKind represents the unique identifier for each kind of entry in the Entries.
+// It is used to categorize different kinds of changes tracked by the Entries.
+//
+// NOTE: Declare your own MemberKind constants sequentially starting from 0,
+// since they are used as the indexes in the flags slice passed to NewEntries and
+// other methods. For example:
+//
+//	const MyKind1 MemberKind = 0
+//	const MyKind2 MemberKind = 1
+//
+//	var flags = []MaxEntries{
+//	    MyKind1: 3,
+//	    MyKind2: 5,
+//	}
+type MemberKind uint8
 
-// The changelog package provides a changelog data structure. It is a list of changes, each with a
-// timestamp. The changelog can be queried for the value at a given time.
+// MaxEntries represents the maximum number of entries that can be stored for a given kind of entry.
+type MaxEntries uint8
 
-// ATTENTION: You should use Changelog within a struct and provide methods to access it,
-// coordinating access through your struct mutexes. DO NOT EXPOSE the changelog object directly to
+// Entries is the main structure that manages a list of changes (entries).
+// It keeps track of specifically configured members indicated by MemberKind identifiers.
+// When instantiating an Entries struct, one must supply a relevant mapping between the desired
+// unique members and the maximum amount of changes that member can track.
+//
+// ATTENTION: You should use Entries within a struct and provide methods to access it,
+// coordinating access through your struct mutexes. DO NOT EXPOSE the Entries object directly to
 // the outside world as it is not thread-safe.
-
-type Changelog[T comparable] struct {
-	changes    []item[T]              // list of changes
-	timestamps map[time.Time]struct{} // set of timestamps (used to avoid duplicates)
-	maxSize    int                    // maximum amount of changes to keep track of
+type Entries[T comparable] struct {
+	kindList []entryList[T] // slice of entryList for each kind of entry.
 }
 
-// NewChangelog creates a new changelog.
-func NewChangelog[T comparable](maxSize int) *Changelog[T] {
-	return &Changelog[T]{
-		changes:    []item[T]{},
-		timestamps: map[time.Time]struct{}{},
-		maxSize:    maxSize,
+// entry is an internal structure representing a single change in the entryList.
+// It includes the kind of the entry, the timestamp of the change, and the value of the change.
+type entry[T comparable] struct {
+	timestamp time.Time // Timestamp of the change.
+	value     T         // Value of the change.
+	prev      *entry[T] // Pointer to the previous entry in the linked list.
+}
+
+// entryList is an internal structure that manages a list of changes (entries) for a specific kind of entry.
+type entryList[T comparable] struct {
+	maxEntries MaxEntries // Maximum number of entries.
+	size       uint8      // Current number of entries.
+	tail       *entry[T]  // Tail pointer for the linked list of entries.
+}
+
+// Public
+
+// NewEntries initializes a new `Entries` structure using the provided flags.
+func NewEntries[T comparable](flags []MaxEntries) *Entries[T] {
+	newKindList := make([]entryList[T], 0, len(flags))
+
+	for _, max := range flags {
+		if max == 0 {
+			logger.Fatalw("maxEntries must be greater than 0")
+		}
+
+		newEntryList := entryList[T]{
+			maxEntries: max,
+			tail:       nil,
+		}
+		newKindList = append(newKindList, newEntryList)
+	}
+
+	return &Entries[T]{
+		kindList: newKindList,
 	}
 }
 
-// Getters
-
-// GetCurrent: Observation on single element changelog.
+// Set adds or updates an entry in the Entries for the specified `MemberKind` ordered by timestamp.
+// If the new entry has the same value as the latest one, only the timestamp is updated.
+// If there are already the maximum number of entries for this kind, it reuses or replaces an existing entry.
 //
-// If there's one element in the changelog, after the loop, left would be set to 1 if the single
-// timestamp is before the targetTime, and 0 if it's equal or after.
-//
-// BEFORE: If the single timestamp is before the targetTime, when we return
-// clv.changes[left-1].value, returns clv.changes[0].value, which is the expected behavior.
-//
-// AFTER: If the single timestamp is equal to, or after the targetTime, the current logic would
-// return a "zero" value because of the condition if left == 0.
-//
-// We need to find the last change that occurred before or exactly at the targetTime. The binary
-// search loop finds the position where a new entry with the targetTime timestamp would be inserted
-// to maintain chronological order:
-//
-// This position is stored in "left".
-//
-// So, to get the last entry that occurred before the targetTime, we need to access the previous
-// position, which is left-1.
-//
-// GetCurrent returns the latest value of the changelog.
-func (clv *Changelog[T]) GetCurrent() T {
-	if len(clv.changes) == 0 {
-		return returnZero[T]()
+// ATTENTION: Make sure to pass a value of the correct type for the specified `MemberKind`.
+func (e *Entries[T]) Set(kind MemberKind, value T, timestamp time.Time) {
+	if int(kind) >= len(e.kindList) {
+		logger.Errorw("kind is not present in the entries", "kind", kind)
+		return
 	}
 
-	return clv.changes[len(clv.changes)-1].value
+	entryList := &e.kindList[kind]
+
+	newEntry := &entry[T]{
+		timestamp: timestamp,
+		value:     value,
+	}
+
+	// if the list is empty, set the new entry as the tail
+	if entryList.tail == nil {
+		entryList.tail = newEntry
+		entryList.size++
+		return
+	}
+
+	// traverse the list to find the correct position or match
+	current := entryList.tail
+	var previous *entry[T]
+	for current != nil {
+		// if the value matches, update the timestamp if newer
+		if current.value == value {
+			if timestamp.After(current.timestamp) {
+				current.timestamp = timestamp
+			}
+			return
+		}
+
+		// stop traversal when reaching the right position for insertion
+		if timestamp.After(current.timestamp) {
+			break
+		}
+
+		previous = current
+		current = current.prev
+	}
+
+	// insert the new entry
+
+	newEntry.prev = current
+	if previous == nil {
+		// new entry becomes the new tail
+		entryList.tail = newEntry
+	} else {
+		// insert the new entry between the previous and current entries
+		previous.prev = newEntry
+	}
+
+	entryList.size++
+	entryList.enforceMax()
 }
 
-// Get returns the value of the changelog at the given time.
-func (clv *Changelog[T]) Get(targetTime time.Time) T {
-	if len(clv.changes) == 0 {
-		return returnZero[T]()
+// Get retrieves the value of the entry for the specified `MemberKind` at or before the given timestamp.
+// If no matching entry is found, it returns the default value for the entry type.
+func (e *Entries[T]) Get(kind MemberKind, timestamp time.Time) T {
+	if e.noEntries(kind) {
+		return getZero[T]()
 	}
 
-	idx := clv.findIndex(targetTime)
-	if idx == 0 {
-		return returnZero[T]()
+	// traverse the list to find the most recent entry at or before the given timestamp
+	current := e.kindList[kind].tail
+	for current != nil {
+		if current.timestamp.Before(timestamp) || current.timestamp.Equal(timestamp) {
+			return current.value
+		}
+
+		current = current.prev
 	}
 
-	return clv.changes[idx-1].value
+	return getZero[T]()
 }
 
-// GetAll returns all the values of the changelog.
-func (clv *Changelog[T]) GetAll() []T {
-	values := make([]T, 0, len(clv.changes))
-	for _, change := range clv.changes {
-		values = append(values, change.value)
+// GetCurrent retrieves the most recent value for the specified `MemberKind`.
+// If no entry is found, it returns the default value for the entry type.
+func (e *Entries[T]) GetCurrent(kind MemberKind) T {
+	if e.noEntries(kind) {
+		return getZero[T]()
 	}
+
+	return e.kindList[kind].tail.value
+}
+
+// GetAll retrieves all values for the specified `MemberKind`, from the newest to the oldest.
+func (e *Entries[T]) GetAll(kind MemberKind) []T {
+	if e.noEntries(kind) {
+		return nil
+	}
+
+	values := make([]T, 0, e.kindList[kind].size)
+	current := e.kindList[kind].tail
+	for current != nil {
+		values = append(values, current.value)
+		current = current.prev
+	}
+
 	return values
 }
 
-// Setters
+// Count returns the number of entries recorded for the specified `MemberKind`.
+func (e *Entries[T]) Count(kind MemberKind) int {
+	if e.noEntries(kind) {
+		return 0
+	}
 
-// SetCurrent sets the latest value of the changelog.
-func (clv *Changelog[T]) SetCurrent(value T) {
-	clv.setAt(value, time.Now())
-}
-
-// Set sets the value of the changelog at the given time.
-func (clv *Changelog[T]) Set(value T, targetTime time.Time) {
-	clv.setAt(value, targetTime)
+	return int(e.kindList[kind].size)
 }
 
 // private
 
-// setAt sets the value of the changelog at the given time.
-func (clv *Changelog[T]) setAt(value T, targetTime time.Time) {
-	// If the timestamp is already set, update that value only.
-	_, ok := clv.timestamps[targetTime]
-	if ok {
-		index := clv.findIndex(targetTime) - 1
-		if index < 0 {
-			logger.Debugw("changelog internal error: illegal index for existing timestamp")
-		}
-		if !clv.changes[index].timestamp.Equal(targetTime) { // sanity check only (time exists already)
-			logger.Debugw("changelog internal error: timestamp mismatch")
-			return
-		}
-		if clv.changes[index].value != value {
-			logger.Debugw("changelog error: value mismatch for same timestamp")
-		}
-		clv.changes[index].value = value
-		return
-	}
-
-	entry := item[T]{
-		timestamp: targetTime,
-		value:     value,
-	}
-
-	idx := clv.findIndex(entry.timestamp)
-	// If the changelog has reached its maximum size and the new change would be inserted as the oldest,
-	// there is no need to add the new change. We can simply return without making any modifications.
-	if len(clv.changes) >= clv.maxSize && idx == 0 {
-		return
-	}
-	// Insert the new entry in the changelog, keeping the list sorted by timestamp.
-	clv.changes = append(clv.changes, item[T]{})
-	copy(clv.changes[idx+1:], clv.changes[idx:])
-	clv.changes[idx] = entry
-	// Mark the timestamp as set.
-	clv.timestamps[targetTime] = struct{}{}
-
-	clv.enforceSizeBoundary()
+// noEntries checks if there are no entries for the specified `MemberKind`.
+func (e *Entries[T]) noEntries(kind MemberKind) bool {
+	return int(kind) >= len(e.kindList) || e.kindList[kind].size == 0
 }
 
-// findIndex returns the index of the first item in the changelog that is after the given time.
-func (clv *Changelog[T]) findIndex(target time.Time) int {
-	left, right := 0, len(clv.changes)
-
-	for left < right {
-		middle := (left + right) / 2
-		if clv.changes[middle].timestamp.After(target) {
-			right = middle
-		} else {
-			left = middle + 1
-		}
-	}
-
-	return left
-}
-
-// enforceSizeBoundary ensures that the size of the inner array doesn't exceed the limit.
-// It applies two methods to reduce the log size to the maximum allowed:
-// 1. Unite duplicate values that are trailing one another, removing the oldest of the pair.
-// 2. Remove the oldest logs as they are likely less important.
-
-func (clv *Changelog[T]) enforceSizeBoundary() {
-	if len(clv.changes) <= clv.maxSize {
-		// Nothing to do
+// enforceMax ensures that the number of entries does not exceed the maximum limit.
+func (el *entryList[T]) enforceMax() {
+	if el.isUnderLimit() {
 		return
 	}
 
-	boundaryDiff := len(clv.changes) - clv.maxSize
-	changed := false
-
-	// Compact the slice in place
-	writeIdx := 0
-	for readIdx := 0; readIdx < len(clv.changes); readIdx++ {
-		nextIdx := readIdx + 1
-		if nextIdx < len(clv.changes) &&
-			clv.changes[nextIdx].value == clv.changes[readIdx].value &&
-			boundaryDiff > 0 {
-			// Remove the oldest (readIdx) from the duplicate pair
-			delete(clv.timestamps, clv.changes[readIdx].timestamp)
-			boundaryDiff--
-			changed = true
-			continue
-		}
-
-		// If elements have been removed or moved, update the map and the slice
-		if changed {
-			clv.changes[writeIdx] = clv.changes[readIdx]
-		}
-
-		writeIdx++
+	// traverse the list to find the second-to-last node
+	current := el.tail
+	secondToLast := int(el.maxEntries) - 1
+	for i := 0; i <= secondToLast; i++ {
+		current = current.prev
 	}
 
-	if changed {
-		clear(clv.changes[writeIdx:])
-		clv.changes = clv.changes[:writeIdx]
-	}
-
-	if len(clv.changes) <= clv.maxSize {
-		// Size is within limits after compaction
-		return
-	}
-
-	// As it still exceeds maxSize, remove the oldest entries in the remaining slice
-	boundaryDiff = len(clv.changes) - clv.maxSize
-	for i := 0; i < boundaryDiff; i++ {
-		delete(clv.timestamps, clv.changes[i].timestamp)
-	}
-	clear(clv.changes[:boundaryDiff])
-	clv.changes = clv.changes[boundaryDiff:]
+	// sever the link to the oldest node
+	current.prev = nil
+	el.size--
 }
 
-// returnZero returns the zero value of the type T.
-func returnZero[T any]() T {
+// isUnderLimit checks if the number of entries in the list is under the maximum limit.
+func (el *entryList[T]) isUnderLimit() bool {
+	return el.size <= uint8(el.maxEntries)
+}
+
+// utility
+
+// getZero returns the zero value for the type `T`.
+func getZero[T comparable]() T {
 	var zero T
 	return zero
 }
