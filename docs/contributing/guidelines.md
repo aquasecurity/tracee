@@ -1,75 +1,69 @@
 # Style Guide for Contributors
 
 For those willing to contribute to Tracee, this repository has code formatting
-guidelines being enforced. It is recommended that, before committing your
-changes, you run the following command:
+guidelines being enforced.
 
-1. Check your PR
+## Contributing to Documentation
 
-```console
-make check-pr
+Our documentation aims to follow the [Diátaxis documentation framework](https://diataxis.fr/) which includes:
+
+To contribute to the documentation:
+
+1. Clone the Tracee GitHub repository.
+2. Make changes in the `/docs` directory in the root folder.
+3. Remember to edit the index in `mkdocs.yml` if you add or move existing files or directories.
+4. Test your changes to the documentation.
+
+### Test Documentation Changes
+
+You can test your changes to the documentation by building and running a docker container.
+Prerequisites: Docker installed and running locally.
+Build the container image:
+
+```bash
+make -f ./builder/Makefile.mkdocs mkdocs-build
 ```
 
-This command will run:
+Serve the container image:
 
-1. `check-fmt` - check for formatting changes
-    > This will make sure PRs won't fail due to same checks being enforced.
-2. `check-lint`
-3. `check-code`
-4. `format-pr`
+```bash
+make -f ./builder/Makefile.mkdocs mkdocs-serve
+```
 
+Open `localhost:8000/tracee`
 
-5. Fix Go and C source files formatting
+Now you should see the documentation.
+Check that everything is like you intent.
 
-    ```console
-    make fix-fmt
-    ```
+And finally Submit a PR about the changes.
 
-    ```text
-    Fixing C and eBPF files and headers formatting...
-    Formatting ./pkg/ebpf/c/missing_definitions.h
-    Formatting ./pkg/ebpf/c/struct_flavors.h
-    Formatting ./pkg/ebpf/c/tracee.bpf.c
-    Formatting ./pkg/ebpf/c/vmlinux.h
-    
-    Fixing golang files formatting...
-    patching file pkg/ebpf/tracee.go
-    ```
+## Contributing to Code
 
-    ```console
-    git status -s
-    ```
+To contribute to the documentation:
 
-    ```text
-     M Makefile
-     M builder/Makefile.checkers
-     M pkg/ebpf/c/missing_definitions.h
-     M pkg/ebpf/c/struct_flavors.h
-     M pkg/ebpf/c/tracee.bpf.c
-     M pkg/ebpf/c/vmlinux.h
-    ```
+1. Clone the Tracee GitHub repository.
+2. Make changes to code.
+3. before committing your changes, run the following command:
+    1. Check your PR:
 
-6. Static Check Go and C source files
+        ```console
+        make check-pr
+        ```
 
-    ```console
-    make check-code
-    ```
+        This command will run:
+        1. `check-fmt` - check for formatting changes
+        2. `check-lint` - lint golang code
+        3. `check-code` - Static Check Go and C source files
+        4. `format-pr` - show PR commits
 
-    ```text
-    Checking Golang vet...
-    make[2]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
-    GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS="-I/home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf" CGO_LDFLAGS="-lelf -lz /home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf/libbpf.a" \
-    go vet \
-        -tags core,ebpf \
-        ./...
-    
-    Checking Golang with StaticChecker...
-    make[2]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
-    GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS="-I/home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf" CGO_LDFLAGS="-lelf -lz /home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf/libbpf.a" \
-    staticcheck -f stylish \
-        -tags core,ebpf \
-        ./...
-     ✖ 0 problems (0 errors, 0 warnings, 0 ignored)
+    2. Fix Go and C source files formatting
 
-     Checking Golang with errcheck...
-    ```
+        ```console
+        make fix-fmt
+        ```
+
+        After you run the fix, check your git status.
+
+        ```console
+        git status -s
+        ```

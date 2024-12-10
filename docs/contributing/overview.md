@@ -24,17 +24,15 @@ If you have a suggestion, question, or a general comment - please use Discussion
 2. Be clear and definitive when composing issues.
    - For bug reports, include detailed error messages and environment description.
    - For features, include a clear scope and acceptance criteria.
-3. Since we have different projects under the same monorepo, use labels to denote areas that the issue relates to:
-    1. `tracee`
-    2. `tracee-ebpf`
-    3. `tracee-rules`
-    4. `signatures`
-    5. If non of the labels is relevant don't add any (usually for top-level issues)
-4. We use the following labels to describe the type of issue:
+3. We use the following labels to describe the type of issue:
     1. `area/...` like: `ebpf`, `events`
     2. `kind/...` like: `bug`, `chore`
     3. `milestone/...`
-5. Self-assign or request assignment for issues you intend to work on. Don't work on an issue assigned to someone else without checking with them first and reassigning.
+    4. `priority/...`
+    5. `good-first-issue`
+    6. `backported/...`
+    7. `cherry-picked/...`
+4. Self-assign or request assignment for issues you intend to work on. Don't work on an issue assigned to someone else without checking with them first and reassigning.
 
 ## Pull Requests
 
