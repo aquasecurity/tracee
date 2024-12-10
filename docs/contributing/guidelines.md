@@ -39,11 +39,11 @@ And finally Submit a PR about the changes.
 
 ## Contributing to Code
 
-To contribute to the documentation:
+To contribute to the code:
 
 1. Clone the Tracee GitHub repository.
 2. Make changes to code.
-3. before committing your changes, run the following command:
+3. Before committing your changes, run the following command:
     1. Check your PR:
 
         ```console
@@ -51,10 +51,10 @@ To contribute to the documentation:
         ```
 
         This command will run:
-        1. `check-fmt` - check for formatting changes
-        2. `check-lint` - lint golang code
+        1. `check-fmt` - Check for formatting changes
+        2. `check-lint` - Lint golang code
         3. `check-code` - Static Check Go and C source files
-        4. `format-pr` - show PR commits
+        4. `format-pr` - Show PR commits
 
     2. Fix Go and C source files formatting
 
