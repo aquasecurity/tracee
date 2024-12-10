@@ -165,15 +165,17 @@ func handleHistoryScanFinished(scanStatus uint64) ([][]interface{}, []error) {
 // extractFromEvent extract arguments from the trace.Argument
 func extractFromEvent(args []trace.Argument, address uint64) []interface{} {
 	// Parse module name if possible
-	var name string
+	name := ""
 	nameBytes, err := parse.ArgVal[[]byte](args, "name")
 	if err != nil {
-		name = ""
 		// Don't fail hard, submit it without a name!
 		logger.Debugw("Failed extracting hidden module name")
 	} else {
 		// Remove the trailing terminating characters.
-		name = string(nameBytes[:bytes.IndexByte(nameBytes[:], 0)])
+		index := bytes.IndexByte(nameBytes[:], 0)
+		if index > 0 {
+			name = string(nameBytes[:index])
+		}
 	}
 
 	// Parse module srcversion if possible
