@@ -18,7 +18,6 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
-	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	"github.com/aquasecurity/tracee/pkg/config"
@@ -69,7 +68,7 @@ type Tracee struct {
 	// Events
 	eventsSorter     *sorting.EventsChronologicalSorter
 	eventsPool       *sync.Pool
-	eventsFieldTypes map[events.ID][]bufferdecoder.ArgType
+	eventDecodeTypes map[events.ID][]trace.DecodeAs
 	eventProcessor   map[events.ID][]func(evt *trace.Event) error
 	eventDerivations derive.Table
 	// Artifacts
@@ -421,12 +420,12 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize events field types map
 
-	t.eventsFieldTypes = make(map[events.ID][]bufferdecoder.ArgType)
+	t.eventDecodeTypes = make(map[events.ID][]trace.DecodeAs)
 	for _, eventDefinition := range events.Core.GetDefinitions() {
 		id := eventDefinition.GetID()
 		fields := eventDefinition.GetFields()
 		for _, field := range fields {
-			t.eventsFieldTypes[id] = append(t.eventsFieldTypes[id], bufferdecoder.GetFieldType(field.Type))
+			t.eventDecodeTypes[id] = append(t.eventDecodeTypes[id], field.DecodeAs)
 		}
 	}
 
@@ -1129,7 +1128,7 @@ func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
 	polCfg, err := t.policyManager.UpdateBPF(
 		t.bpfModule,
 		t.containers,
-		t.eventsFieldTypes,
+		t.eventDecodeTypes,
 		true,
 		updateProcTree,
 	)
@@ -1291,7 +1290,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
-	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventsFieldTypes, false, true)
+	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventDecodeTypes, false, true)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
