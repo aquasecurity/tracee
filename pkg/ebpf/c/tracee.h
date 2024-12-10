@@ -35,7 +35,6 @@ statfunc int init_shown_modules();
 statfunc int is_hidden(u64);
 statfunc int find_modules_from_module_kset_list(program_data_t *);
 statfunc struct latch_tree_node *__lt_from_rb(struct rb_node *, int);
-statfunc int walk_mod_tree(program_data_t *p, struct rb_node *, int);
 statfunc int find_modules_from_mod_tree(program_data_t *);
 statfunc int check_is_proc_modules_hooked(program_data_t *);
 
