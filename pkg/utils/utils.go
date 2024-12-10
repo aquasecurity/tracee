@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"fmt"
+	"io"
 	"math/rand"
+	"reflect"
 	"strings"
 	"time"
 
@@ -72,4 +75,58 @@ func Max(x, y uint64) uint64 {
 // GenerateRandomDuration returns a random duration between min and max, inclusive
 func GenerateRandomDuration(min, max int) time.Duration {
 	return time.Duration(rand.Intn(max-min+1)+min) * time.Second
+}
+
+func ReverseString(s string) string {
+	n := len(s)
+	bytes := make([]byte, n)
+
+	for i := 0; i < n; i++ {
+		bytes[n-i-1] = s[i]
+	}
+	return string(bytes)
+}
+
+// PrintStructSizes prints the size of a struct and the size of its fields
+func PrintStructSizes(w io.Writer, structure interface{}) {
+	typ := reflect.TypeOf(structure)
+
+	// if the type is a pointer to a struct, dereference it
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	if typ.Kind() != reflect.Struct {
+		fmt.Fprintf(w, "Type %s is not a struct\n", typ.Kind())
+		return
+	}
+
+	totalSize := typ.Size()
+	expectedSize := uintptr(0)
+	fieldsInfo := "["
+
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		fieldSize := field.Type.Size()
+		fieldOffset := field.Offset
+		fieldsInfo += fmt.Sprintf(
+			"%s:%s %d bytes (offset=%d), ",
+			field.Name, field.Type.String(), fieldSize, fieldOffset,
+		)
+		expectedSize += fieldSize
+	}
+
+	padding := totalSize - expectedSize
+	paddingInfo := ""
+	if padding > 0 {
+		paddingInfo = "(has padding)"
+	}
+
+	// remove trailing comma and space
+	if len(fieldsInfo) > 2 {
+		fieldsInfo = fieldsInfo[:len(fieldsInfo)-2]
+	}
+	fieldsInfo += "]"
+
+	fmt.Fprintf(w, "%s: %d bytes %s %s\n", typ.Name(), totalSize, fieldsInfo, paddingInfo)
 }
