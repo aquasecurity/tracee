@@ -152,6 +152,7 @@ const (
 	TailHiddenKernelModuleKset
 	TailHiddenKernelModuleModTree
 	TailHiddenKernelModuleNewModOnly
+	TailHiddenKernelModuleModTreeLoop
 	MaxTail
 )
 
