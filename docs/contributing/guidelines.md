@@ -46,7 +46,7 @@ To contribute to the code:
 3. Before committing your changes, run the following command:
     1. Check your PR:
 
-        ```console
+        ```bash
         make check-pr
         ```
 
@@ -58,12 +58,12 @@ To contribute to the code:
 
     2. Fix Go and C source files formatting
 
-        ```console
+        ```bash
         make fix-fmt
         ```
 
         After you run the fix, check your git status.
 
-        ```console
+        ```bash
         git status -s
         ```

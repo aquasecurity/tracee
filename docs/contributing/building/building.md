@@ -32,13 +32,13 @@
 
 3. **Clone** [tracee repository](https://github.com/aquasecurity/tracee/)
 
-    ```console
+    ```bash
     git clone [https://github.com/aquasecurity/tracee/](https://github.com/aquasecurity/tracee/)
     ```
 
 4. All makefiles have a **help** target to give you needed instructions
 
-    ```console
+    ```bash
     make help
     ```
 
@@ -85,19 +85,19 @@
 
 5. Build **all** targets at once
 
-    ```console
+    ```bash
     make all
     ```
 
 6. Build a **static binary** by setting `STATIC=1`
 
-    ```console
+    ```bash
     STATIC=1 make all
     ```
 
 7. Build a **static binary** with [BTFHUB Support](https://github.com/aquasecurity/btfhub)
 
-    ```console
+    ```bash
     BTFHUB=1 STATIC=1 make all
     ```
 
@@ -117,6 +117,6 @@
 
 8. Build a **debugable binary** with DWARF generation by setting `DEBUG=1`
 
-    ```console
+    ```bash
     DEBUG=1 make
     ```

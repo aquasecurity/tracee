@@ -63,13 +63,13 @@ By supporting both building environments we can always be sure that the project 
 
 * To create an **alpine-tracee-make** container:
 
-    ```console
+    ```bash
     make -f builder/Makefile.tracee-make alpine-prepare
     ```
 
 * To create an **ubuntu-tracee-make** container:
 
-    ```console
+    ```bash
     make -f builder/Makefile.tracee-make ubuntu-prepare
     ```
 
@@ -77,13 +77,13 @@ By supporting both building environments we can always be sure that the project 
 
 * To execute an **alpine-tracee-make** shell:
 
-    ```console
+    ```bash
     make -f builder/Makefile.tracee-make alpine-shell
     ```
 
 * To execute an **ubuntu-tracee-make** shell:
 
-    ```console
+    ```bash
     make -f builder/Makefile.tracee-make ubuntu-shell
     ```
 
@@ -95,26 +95,26 @@ Instead of executing a builder shell, you may use `alpine-make`, or
 1. Create builder environment as described:
     [Creating a builder environment](#creating-a-builder-environment)
 2. Compile tracee using `ubuntu-make`
-  
-   * Build tracee binary
+
+    * Build tracee binary:
 
         ```bash
         make -f builder/Makefile.tracee-make ubuntu-make ARG="tracee"
         ```
 
-   * Show help for make file
+    * Show help for make file:
 
         ```bash
         make -f builder/Makefile.tracee-make ubuntu-make ARG="help"
         ```
 
-   * Remove tracee binary
+    * Remove tracee binary
 
         ```bash
         make -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
         ```
 
-   * Build binaries for all
+    * Build binaries for all
 
         ```bash
         make -f builder/Makefile.tracee-make ubuntu-make ARG="all"
