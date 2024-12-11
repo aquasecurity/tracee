@@ -12133,6 +12133,7 @@ var CoreEvents = map[ID]Definition{
 				{"prog_array", "lkm_seeker_kset_tail", []uint32{TailHiddenKernelModuleKset}},
 				{"prog_array", "lkm_seeker_mod_tree_tail", []uint32{TailHiddenKernelModuleModTree}},
 				{"prog_array", "lkm_seeker_new_mod_only_tail", []uint32{TailHiddenKernelModuleNewModOnly}},
+				{"prog_array", "lkm_seeker_modtree_loop", []uint32{TailHiddenKernelModuleModTreeLoop}},
 			},
 		},
 		sets: []string{},
