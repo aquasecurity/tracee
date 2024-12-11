@@ -74,6 +74,8 @@ Tracee relies on several generated files and has strict formatting requirements.
         - `check-code`: Performs static code analysis for both Go and C code.
         - `format-pr`: Displays the commits in your PR in a standardized format.
 
+    **Note:** `check-fmt`,`check-lint`,`check-code`,`format-pr` are individual make command combined under `check-pr`
+
 4. Fixing Code Formatting: If `check-fmt` reports issues, use:
 
     ```bash
@@ -81,6 +83,28 @@ Tracee relies on several generated files and has strict formatting requirements.
     ```
 
     This automatically formats your Go and C code to meet project standards. Review the changes with `git status -s` before committing.
+
+If you don't want to depend on host's libraries versions, or your host is not an **Alpine Linux**/**Ubuntu Linux** or you are using the `alpine-make`/`ubuntu-make` container as a replacement for `make`:
+
+you can run the equivalents checks in a container:
+
+* For `check-fmt`:
+
+    ```bash
+    make -f builder/Makefile.checkers fmt-check
+    ```
+
+* For `fix-fmt`:
+
+    ```bash
+    make -f builder/Makefile.checkers fmt-fix
+    ```
+
+* For `check-code`:
+
+    ```bash
+    make -f builder/Makefile.checkers code-check
+    ```
 
 ### Performance Considerations
 
