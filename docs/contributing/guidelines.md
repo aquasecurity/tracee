@@ -69,10 +69,10 @@ Tracee relies on several generated files and has strict formatting requirements.
     ```
 
     This command performs essential checks:
-        - `check-fmt`: Verifies code formatting adheres to project standards.
-        - `check-lint`: Runs linting tools (e.g., `golangci-lint`) to catch potential issues.
-        - `check-code`: Performs static code analysis for both Go and C code.
-        - `format-pr`: Displays the commits in your PR in a standardized format.
+    - `check-fmt`: Verifies code formatting adheres to project standards.
+    - `check-lint`: Runs linting tools (e.g., `golangci-lint`) to catch potential issues.
+    - `check-code`: Performs static code analysis for both Go and C code.
+    - `format-pr`: Displays the commits in your PR in a standardized format.
 
     **Note:** `check-fmt`,`check-lint`,`check-code`,`format-pr` are individual make command combined under `check-pr`
 
@@ -88,19 +88,19 @@ If you don't want to depend on host's libraries versions, or your host is not an
 
 you can run the equivalents checks in a container:
 
-* For `check-fmt`:
+- For `check-fmt`:
 
     ```bash
     make -f builder/Makefile.checkers fmt-check
     ```
 
-* For `fix-fmt`:
+- For `fix-fmt`:
 
     ```bash
     make -f builder/Makefile.checkers fmt-fix
     ```
 
-* For `check-code`:
+- For `check-code`:
 
     ```bash
     make -f builder/Makefile.checkers code-check
