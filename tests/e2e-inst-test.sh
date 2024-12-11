@@ -122,6 +122,12 @@ for TEST in $TESTS; do
         fi
         "${TESTS_DIR}"/ftrace_hook.sh
         ;;
+    SECURITY_PATH_NOTIFY)
+        if ! grep -qw "security_path_notify" /proc/kallsyms; then
+            info "skip security_path_notify test on kernel $(uname -r) (security hook doesn't exist)"
+            continue
+        fi
+        ;;
     SUSPICIOUS_SYSCALL_SOURCE)
         if cat /proc/kallsyms | grep -qP "trace.*vma_store"; then
             info "skip suspicious_syscall_source test on kernel $(uname -r) (VMAs stored in maple tree)"
