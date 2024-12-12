@@ -24,7 +24,6 @@ func init() {
 		eventsCmd,
 		logCmd,
 		outputCmd,
-		regoCmd,
 		scopeCmd,
 	)
 }
@@ -112,15 +111,6 @@ var outputCmd = &cobra.Command{
 	Short:   "output flag help",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("output")
-	},
-}
-
-var regoCmd = &cobra.Command{
-	Use:     "rego",
-	Aliases: []string{},
-	Short:   "rego flag help",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runManForFlag("rego")
 	},
 }
 

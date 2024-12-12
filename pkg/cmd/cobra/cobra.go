@@ -43,27 +43,9 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 	logger.Init(logCfg)
 
-	// Rego command line flags
-
-	regoFlags, err := GetFlagsFromViper("rego")
-	if err != nil {
-		return runner, err
-	}
-
-	rego, err := flags.PrepareRego(regoFlags)
-	if err != nil {
-		return runner, err
-	}
-
 	// Signature directory command line flags
 
-	signatures, dataSources, err := signature.Find(
-		rego.RuntimeTarget,
-		rego.PartialEval,
-		viper.GetStringSlice("signatures-dir"),
-		nil,
-		rego.AIO,
-	)
+	signatures, dataSources, err := signature.Find(viper.GetStringSlice("signatures-dir"), nil)
 	if err != nil {
 		return runner, err
 	}

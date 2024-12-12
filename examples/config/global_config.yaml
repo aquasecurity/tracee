@@ -170,8 +170,4 @@ pprof: false
 
 pyroscope: false
 
-rego:
-    # partial-eval: true
-    # aio: true
-
 signatures-dir: ""

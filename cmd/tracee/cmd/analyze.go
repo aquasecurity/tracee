@@ -45,14 +45,7 @@ func init() {
 	analyzeCmd.Flags().StringArray(
 		"signatures-dir",
 		[]string{},
-		"Directory where to search for signatures in OPA (.rego) and Go plugin (.so) formats",
-	)
-
-	// rego
-	analyzeCmd.Flags().StringArray(
-		"rego",
-		[]string{},
-		"Control event rego settings",
+		"Directory where to search for signatures in Go plugin (.so) format",
 	)
 
 	analyzeCmd.Flags().StringArrayP(
@@ -79,7 +72,6 @@ tracee analyze --events anti_debugging --source events.json`,
 		bindViperFlag(cmd, "source")
 		bindViperFlag(cmd, "output")
 		bindViperFlag(cmd, "log")
-		bindViperFlag(cmd, "rego")
 		bindViperFlag(cmd, "signatures-dir")
 	},
 	Run:                   command,
@@ -150,13 +142,6 @@ func command(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// Rego command line flags
-
-	rego, err := flags.PrepareRego(viper.GetStringSlice("rego"))
-	if err != nil {
-		logger.Fatalw("Failed to parse rego flags", "err", err)
-	}
-
 	// Signature directory command line flags
 
 	signatureEvents := viper.GetStringSlice("events")
@@ -168,7 +153,6 @@ func command(cmd *cobra.Command, args []string) {
 	signatureDirs := viper.GetStringSlice("signatures-dir")
 
 	analyze.Analyze(analyze.Config{
-		Rego:            rego,
 		Source:          sourceFile,
 		Printer:         p,
 		Legacy:          isLegacy,

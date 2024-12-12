@@ -49,32 +49,6 @@ cache:
 			},
 		},
 		{
-			name: "Test rego configuration (cli flags)",
-			yamlContent: `
-rego:
-    - partial-eval
-    - aio
-`,
-			key: "rego",
-			expectedFlags: []string{
-				"partial-eval",
-				"aio",
-			},
-		},
-		{
-			name: "Test rego configuration (structured flags)",
-			yamlContent: `
-rego:
-    partial-eval: true
-    aio: true
-`,
-			key: "rego",
-			expectedFlags: []string{
-				"partial-eval",
-				"aio",
-			},
-		},
-		{
 			name: "Test proctree configuration (cli flags)",
 			yamlContent: `
 proctree:
@@ -441,66 +415,6 @@ func TestCacheConfigFlags(t *testing.T) {
 			expected: []string{
 				"cache-type=mem",
 				"mem-cache-size=1024",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			flags := tt.config.flags()
-			if !slicesEqualIgnoreOrder(flags, tt.expected) {
-				t.Errorf("flags() = %v, want %v", flags, tt.expected)
-			}
-		})
-	}
-}
-
-//
-// rego
-//
-
-func TestRegoConfigFlags(t *testing.T) {
-	tests := []struct {
-		name     string
-		config   RegoConfig
-		expected []string
-	}{
-		{
-			name:     "empty config",
-			config:   RegoConfig{},
-			expected: []string{},
-		},
-		{
-			name: "both partial-eval and aio",
-			config: RegoConfig{
-				PartialEval: true,
-				AIO:         true,
-			},
-			expected: []string{
-				"partial-eval",
-				"aio",
-			},
-		},
-		{
-			name: "only partial-eval",
-			config: RegoConfig{
-				PartialEval: true,
-			},
-			expected: []string{
-				"partial-eval",
-			},
-		},
-		{
-			name: "only aio",
-			config: RegoConfig{
-				AIO: true,
-			},
-			expected: []string{
-				"aio",
 			},
 		},
 	}

@@ -1,11 +1,10 @@
 # Custom Events
 
-Tracee comes with lots of events, but you can extend it with events specific to your use case. There are two ways to extend Tracee with your own events:
+Tracee comes with many built-in events, but you can extend its capabilities by creating custom events tailored to your specific needs.
 
-1. [Go](./golang.md)
-2. [Rego](./rego.md)
+Currently, custom events can be implemented using Go.  Refer to the [Go](./golang.md) documentation for detailed instructions on how to define and integrate your custom events into Tracee.
 
-Once you created your own event, you can load it using the `signatures-dir` flag. For example, if you created your event in the path `/tmp/myevents` to use it you would start tracee with:
+Once you've created your custom event, load it using the `signatures-dir` flag. For example, if your custom event is defined in the directory `/tmp/myevents`, start Tracee with the following command:
 
 ```
 tracee --signatures-dir=/tmp/myevents

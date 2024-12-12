@@ -52,7 +52,6 @@ blob-perf-buffer-size: 1024
 
 # signatures
 
-rego: []
 signatures-dir: ""
 
 # features setup
