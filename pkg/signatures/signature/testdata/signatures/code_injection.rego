@@ -1,1 +1,0 @@
-../../../../../signatures/rego/code_injection.rego

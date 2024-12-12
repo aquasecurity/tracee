@@ -563,7 +563,6 @@ nav:
                 - Custom Events:
                       - Overview: docs/events/custom/overview.md
                       - Go: docs/events/custom/golang.md
-                      - Rego: docs/events/custom/rego.md
           - Policies:
                 - Overview: docs/policies/index.md
                 - Scopes: docs/policies/scopes.md
@@ -600,7 +599,6 @@ nav:
                 - capture: docs/flags/capture.1.md
                 - config: docs/flags/config.1.md
                 - cri: docs/flags/containers.1.md
-                - rego: docs/flags/rego.1.md
                 - cache: docs/flags/cache.1.md
                 - capabilities: docs/flags/capabilities.1.md
                 - log: docs/flags/log.1.md

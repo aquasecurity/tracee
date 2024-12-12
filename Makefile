@@ -37,7 +37,6 @@ CMD_INSTALL ?= install
 CMD_LLC ?= llc
 CMD_MD5 ?= md5sum
 CMD_MKDIR ?= mkdir
-CMD_OPA ?= opa
 CMD_PKGCONFIG ?= pkg-config
 CMD_RM ?= rm
 CMD_SED ?= sed
@@ -205,7 +204,6 @@ env:
 	@echo "CMD_LLC                  $(CMD_LLC)"
 	@echo "CMD_MD5                  $(CMD_MD5)"
 	@echo "CMD_MKDIR                $(CMD_MKDIR)"
-	@echo "CMD_OPA                  $(CMD_OPA)"
 	@echo "CMD_PKGCONFIG            $(CMD_PKGCONFIG)"
 	@echo "CMD_RM                   $(CMD_RM)"
 	@echo "CMD_SED                  $(CMD_SED)"
@@ -266,9 +264,6 @@ env:
 	@echo "GOSIGNATURES_DIR         $(GOSIGNATURES_DIR)"
 	@echo "GOSIGNATURES_SRC         $(GOSIGNATURES_SRC)"
 	@echo ---------------------------------------
-	@echo "REGO_SIGNATURES_DIR      $(REGO_SIGNATURES_DIR)"
-	@echo "REGO_SIGNATURES_SRC      $(REGO_SIGNATURES_SRC)"
-	@echo ---------------------------------------
 	@echo "E2E_NET_DIR              $(E2E_NET_DIR)"
 	@echo "E2E_NET_SRC              $(E2E_NET_SRC)"
 	@echo "E2E_INST_DIR             $(E2E_INST_DIR)"
@@ -318,7 +313,6 @@ help:
 	@echo "    $$ make test-unit                # run unit tests"
 	@echo "    $$ make test-types               # run unit tests for types module"
 	@echo "    $$ make test-integration         # run integration tests"
-	@echo "    $$ make test-signatures          # opa test (tracee-rules)"
 	@echo ""
 	@echo "# flags"
 	@echo ""
@@ -591,20 +585,11 @@ GOSIGNATURES_SRC :=	$(shell find $(GOSIGNATURES_DIR) \
 			! -path '$(GOSIGNATURES_DIR)/examples/*' \
 			)
 
-REGO_SIGNATURES_DIR ?= signatures/rego
-REGO_SIGNATURES_SRC :=	$(shell find $(REGO_SIGNATURES_DIR) \
-			-type f \
-			-name '*.rego' \
-			! -name '*_test.rego' \
-			! -path '$(REGO_SIGNATURES_DIR)/examples/*' \
-			)
-
 .PHONY: signatures
 signatures: $(OUTPUT_DIR)/signatures
 
 $(OUTPUT_DIR)/signatures: \
 	$(GOSIGNATURES_SRC) \
-	$(REGO_SIGNATURES_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
 	.check_$(CMD_INSTALL) \
@@ -615,8 +600,6 @@ $(OUTPUT_DIR)/signatures: \
 		--buildmode=plugin \
 		-o $@/builtin.so \
 		$(GOSIGNATURES_SRC)
-	# disable rego signatures by default (keep golang signatures only)
-	# $(CMD_INSTALL) -m 0644 $(REGO_SIGNATURES_SRC) $@
 
 .PHONY: clean-signatures
 clean-signatures:
@@ -822,12 +805,6 @@ test-integration: \
 		-p 1 \
 		-count=1 \
 		./tests/integration/... \
-
-.PHONY: test-signatures
-test-signatures: \
-	| .check_$(CMD_OPA)
-#
-	$(CMD_OPA) test $(REGO_SIGNATURES_DIR) --verbose
 
 .PHONY: test-upstream-libbpfgo
 test-upstream-libbpfgo: \

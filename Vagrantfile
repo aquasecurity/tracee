@@ -131,7 +131,6 @@ Vagrant.configure("2") do |config|
       HOME="/home/#{vm_user}"
       LLVM_VERSION="14"
       GO_VERSION="1.22.3"
-      OPA_VERSION="v0.63.0"
       KUBECTL_VERSION="v1.29"
       VM_TYPE="#{vm_type}"
 
@@ -224,13 +223,6 @@ Vagrant.configure("2") do |config|
       apt-get install --yes docker.io
       usermod -aG docker ${USER}
 
-      #
-      # opa
-      #
-
-      echo ">>> Installing opa"
-      curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/${OPA_VERSION}/opa_linux_${ARCH}_static
-      chmod 755 /usr/bin/opa
     SHELL
 
     vm_config.vm.provision "shell", privileged: true, reboot: true, inline: <<-SHELL

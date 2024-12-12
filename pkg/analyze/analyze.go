@@ -15,7 +15,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/findings"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
-	"github.com/aquasecurity/tracee/pkg/signatures/rego"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -23,7 +22,6 @@ import (
 )
 
 type Config struct {
-	Rego            rego.Config
 	Source          *os.File
 	Printer         printer.EventPrinter
 	Legacy          bool // TODO: remove once tracee-rules legacy is over
@@ -33,13 +31,7 @@ type Config struct {
 }
 
 func Analyze(cfg Config) {
-	signatures, _, err := signature.Find(
-		cfg.Rego.RuntimeTarget,
-		cfg.Rego.PartialEval,
-		cfg.SignatureDirs,
-		cfg.SignatureEvents,
-		cfg.Rego.AIO,
-	)
+	signatures, _, err := signature.Find(cfg.SignatureDirs, cfg.SignatureEvents)
 
 	if err != nil {
 		logger.Fatalw("Failed to find signature event", "err", err)

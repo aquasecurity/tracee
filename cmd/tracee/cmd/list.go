@@ -3,7 +3,6 @@ package cmd
 import (
 	"os"
 
-	"github.com/open-policy-agent/opa/compile"
 	"github.com/spf13/cobra"
 
 	"github.com/aquasecurity/tracee/pkg/cmd"
@@ -24,7 +23,7 @@ func init() {
 	listCmd.Flags().StringArray(
 		"signatures-dir",
 		[]string{},
-		"Directories where to search for signatures in OPA (.rego) and Go plugin (.so) formats",
+		"Directories where to search for signatures in Go plugin (.so) format",
 	)
 }
 
@@ -41,13 +40,7 @@ var listCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		signatures, _, err := signature.Find(
-			compile.TargetRego,
-			false,
-			sigsDir,
-			nil,
-			false,
-		)
+		signatures, _, err := signature.Find(sigsDir, nil)
 		if err != nil {
 			logger.Fatalw("Failed to find signatures", "err", err)
 			os.Exit(1)

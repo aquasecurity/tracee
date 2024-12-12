@@ -24,8 +24,6 @@ func GetFlagsFromViper(key string) ([]string, error) {
 	switch key {
 	case "cache":
 		flagger = &CacheConfig{}
-	case "rego":
-		flagger = &RegoConfig{}
 	case "proctree":
 		flagger = &ProcTreeConfig{}
 	case "capabilities":
@@ -141,28 +139,6 @@ func (c *CacheConfig) flags() []string {
 	}
 	if c.Size != 0 {
 		flags = append(flags, fmt.Sprintf("mem-cache-size=%d", c.Size))
-	}
-
-	return flags
-}
-
-//
-// rego flag
-//
-
-type RegoConfig struct {
-	PartialEval bool `mapstructure:"partial-eval"`
-	AIO         bool `mapstructure:"aio"`
-}
-
-func (c *RegoConfig) flags() []string {
-	flags := make([]string, 0)
-
-	if c.PartialEval {
-		flags = append(flags, "partial-eval")
-	}
-	if c.AIO {
-		flags = append(flags, "aio")
 	}
 
 	return flags
