@@ -120,3 +120,9 @@
     ```bash
     DEBUG=1 make
     ```
+
+9. Build with embedded metrics (pprof) by setting `METRICS=1`
+
+    ```bash
+    METRICS=1 make
+    ```

@@ -34,7 +34,7 @@
         --scope follow
     ```
 
-Now, in your host's bash shell, execute a command. You will see all events
+Now, in your host's shell, execute a command. You will see all events
 (except scheduler ones) being printed, in "table format", to stdout.
 
 ## How to build and use the environment

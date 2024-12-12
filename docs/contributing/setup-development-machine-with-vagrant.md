@@ -34,13 +34,13 @@ cd tracee
 
 The VM can be provisioned for either a `dev` or `test` environment. The `dev` environment includes additional tools like MicroK8s, kubectl, and Helm.
 
-- **Development Environment:** Use the default setting (no action needed), or explicitly set:
+- **Development Environment:** Full development environment
 
   ```bash
   export VM_TYPE=dev
   ```
 
-- **Testing Environment:**
+- **Testing Environment:**  Smaller vagrant machine without k8s cumbersome to avoid conflicts with specific tests.
 
   ```bash
   export VM_TYPE=test
@@ -70,7 +70,7 @@ Run the following command to start the VM:
   vagrant up
   ```
 
-Vagrant will download the base box (Ubuntu 22.04), provision the VM, and install all required dependencies. This process may take some time.
+Vagrant will download the base box, provision the VM, and install all required dependencies. This process may take some time.
 
 ## Accessing the VM
 
