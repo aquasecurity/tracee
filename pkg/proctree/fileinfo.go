@@ -52,16 +52,16 @@ var (
 
 // FileInfo represents a file.
 type FileInfo struct {
-	mutableStrings *changelog.Entries[string]
-	mutableInts    *changelog.Entries[int]
+	mutableStrings *changelog.ChangelogKind[string]
+	mutableInts    *changelog.ChangelogKind[int]
 	mutex          *sync.RWMutex
 }
 
 // NewFileInfo creates a new file.
 func NewFileInfo() *FileInfo {
 	return &FileInfo{
-		mutableStrings: changelog.NewEntries[string](fileInfoMutableStringsFlags),
-		mutableInts:    changelog.NewEntries[int](fileInfoMutableIntsFlags),
+		mutableStrings: changelog.NewChangelogKind[string](fileInfoMutableStringsFlags),
+		mutableInts:    changelog.NewChangelogKind[int](fileInfoMutableIntsFlags),
 		mutex:          &sync.RWMutex{},
 	}
 }

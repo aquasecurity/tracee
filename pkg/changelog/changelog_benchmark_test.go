@@ -151,7 +151,7 @@ func Benchmark_Set(b *testing.B) {
 	b.Run("All Scenarios", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			b.StopTimer()
-			clv := NewEntries[int](entryFlagsAllScenarios)
+			clv := NewChangelogKind[int](entryFlagsAllScenarios)
 			b.StartTimer()
 			for _, tc := range testCasesAllScenarios {
 				clv.Set(testInt0, tc.value, tc.time)
@@ -162,7 +162,7 @@ func Benchmark_Set(b *testing.B) {
 	b.Run("Within Limit", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			b.StopTimer()
-			clv := NewEntries[int](entryFlagsWithinLimit)
+			clv := NewChangelogKind[int](entryFlagsWithinLimit)
 			b.StartTimer()
 			for _, tc := range testCasesWithinLimit {
 				clv.Set(testInt0, tc.value, tc.time)
@@ -173,7 +173,7 @@ func Benchmark_Set(b *testing.B) {
 
 func Benchmark_Get(b *testing.B) {
 	b.Run("All Scenarios", func(b *testing.B) {
-		clv := NewEntries[int](entryFlagsAllScenarios)
+		clv := NewChangelogKind[int](entryFlagsAllScenarios)
 		for _, tc := range testCasesAllScenarios {
 			clv.Set(testInt0, tc.value, tc.time)
 		}
@@ -187,7 +187,7 @@ func Benchmark_Get(b *testing.B) {
 	})
 
 	b.Run("Within Limit", func(b *testing.B) {
-		clv := NewEntries[int](entryFlagsWithinLimit)
+		clv := NewChangelogKind[int](entryFlagsWithinLimit)
 		for _, tc := range testCasesWithinLimit {
 			clv.Set(testInt0, tc.value, tc.time)
 		}
@@ -203,7 +203,7 @@ func Benchmark_Get(b *testing.B) {
 
 func Benchmark_GetCurrent(b *testing.B) {
 	b.Run("All Scenarios", func(b *testing.B) {
-		clv := NewEntries[int](entryFlagsAllScenarios)
+		clv := NewChangelogKind[int](entryFlagsAllScenarios)
 		for _, tc := range testCasesAllScenarios {
 			clv.Set(testInt0, tc.value, tc.time)
 		}
@@ -215,7 +215,7 @@ func Benchmark_GetCurrent(b *testing.B) {
 	})
 
 	b.Run("Within Limit", func(b *testing.B) {
-		clv := NewEntries[int](entryFlagsWithinLimit)
+		clv := NewChangelogKind[int](entryFlagsWithinLimit)
 		for _, tc := range testCasesWithinLimit {
 			clv.Set(testInt0, tc.value, tc.time)
 		}

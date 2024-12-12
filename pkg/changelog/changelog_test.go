@@ -10,185 +10,133 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
-const (
-	// int members
-	testInt0 MemberKind = iota
-	testInt1
-	testInt2
-)
-
-const (
-	// string members
-	testString MemberKind = iota
-)
-
-func getTimeFromSec(second int) time.Time {
-	return time.Unix(int64(second), 0)
-}
-
-func TestChangelogEntries_GetZeroValue(t *testing.T) {
-	flags := []MaxEntries{
-		testInt0: 1,
-	}
-	changelog := NewEntries[int](flags)
+func TestChangelog_GetZeroValue(t *testing.T) {
+	changelog := NewChangelog[int](1)
 	time0 := getTimeFromSec(0)
 
 	// Assert zero value before any set
-	assert.Equal(t, 0, changelog.Get(testInt0, time0), "Expected zero value for testInt0")
-	assert.Equal(t, 0, changelog.GetCurrent(testInt0), "Expected zero value for testInt0")
+	assert.Equal(t, 0, changelog.Get(time0), "Expected zero value for testInt0")
+	assert.Equal(t, 0, changelog.GetCurrent(), "Expected zero value for testInt0")
 
 	// Set and assert value
-	changelog.Set(testInt0, 3001, time0)
-	assert.Equal(t, 3001, changelog.Get(testInt0, time0), "Expected testInt0 to be 3001")
-	assert.Equal(t, 3001, changelog.GetCurrent(testInt0), "Expected current testInt0 to be 3001")
+	changelog.Set(3001, time0)
+	assert.Equal(t, 3001, changelog.Get(time0), "Expected testInt0 to be 3001")
+	assert.Equal(t, 3001, changelog.GetCurrent(), "Expected current testInt0 to be 3001")
 
 	// Check the count of entries
-	assert.Equal(t, 1, changelog.Count(testInt0), "Expected 1 entry")
-	assert.Equal(t, 0, changelog.Count(testInt1), "Expected 0 entries")
+	assert.Equal(t, 1, changelog.Count(), "Expected 1 entry")
 }
 
-func TestChangelogEntries_ShiftAndReplace(t *testing.T) {
-	flags := []MaxEntries{
-		testString: 2,
-	}
-	changelog := NewEntries[string](flags)
+func TestChangelog_ShiftAndReplace(t *testing.T) {
+	changelog := NewChangelog[string](2)
 
 	// Set entries and assert initial values
-	changelog.Set(testString, "initial", getTimeFromSec(0))
-	changelog.Set(testString, "updated", getTimeFromSec(1))
-	assert.Equal(t, "initial", changelog.Get(testString, getTimeFromSec(0)), "Expected first entry to be 'initial'")
-	assert.Equal(t, "updated", changelog.Get(testString, getTimeFromSec(1)), "Expected second entry to be 'updated'")
+	changelog.Set("initial", getTimeFromSec(0))
+	changelog.Set("updated", getTimeFromSec(1))
+	assert.Equal(t, "initial", changelog.Get(getTimeFromSec(0)), "Expected first entry to be 'initial'")
+	assert.Equal(t, "updated", changelog.Get(getTimeFromSec(1)), "Expected second entry to be 'updated'")
 
 	// Test shifting and replacement
-	changelog.Set(testString, "final", getTimeFromSec(2))
-	assert.Equal(t, "updated", changelog.Get(testString, getTimeFromSec(1)), "Expected oldest entry to be removed")
-	assert.Equal(t, "final", changelog.Get(testString, getTimeFromSec(2)), "Expected newest entry to be 'final'")
-	assert.Equal(t, "final", changelog.GetCurrent(testString), "Expected current entry to be 'final'")
+	changelog.Set("final", getTimeFromSec(2))
+	assert.Equal(t, "updated", changelog.Get(getTimeFromSec(1)), "Expected oldest entry to be removed")
+	assert.Equal(t, "final", changelog.Get(getTimeFromSec(2)), "Expected newest entry to be 'final'")
+	assert.Equal(t, "final", changelog.GetCurrent(), "Expected current entry to be 'final'")
 
 	// Check the count of entries
-	assert.Equal(t, 2, changelog.Count(testString), "Expected 2 entries")
+	assert.Equal(t, 2, changelog.Count(), "Expected 2 entries")
 }
 
-func TestChangelogEntries_ReplaceMostRecentWithSameValue(t *testing.T) {
-	flags := []MaxEntries{
-		testString: 2,
-	}
-	changelog := NewEntries[string](flags)
+func TestChangelog_ReplaceMostRecentWithSameValue(t *testing.T) {
+	changelog := NewChangelog[string](2)
 
 	// Set entries and assert initial value
-	changelog.Set(testString, "initial", getTimeFromSec(0))
-	assert.Equal(t, "initial", changelog.Get(testString, getTimeFromSec(0)), "Expected first entry to be 'initial'")
-	changelog.Set(testString, "initial", getTimeFromSec(1))
-	assert.Equal(t, "initial", changelog.Get(testString, getTimeFromSec(1)), "Expected first entry to have timestamp updated")
+	changelog.Set("initial", getTimeFromSec(0))
+	assert.Equal(t, "initial", changelog.Get(getTimeFromSec(0)), "Expected first entry to be 'initial'")
+	changelog.Set("initial", getTimeFromSec(1))
+	assert.Equal(t, "initial", changelog.Get(getTimeFromSec(1)), "Expected first entry to have timestamp updated")
 
 	// Test replacement of most recent entry with same value
-	changelog.Set(testString, "second", getTimeFromSec(2))
-	assert.Equal(t, "initial", changelog.Get(testString, getTimeFromSec(1)), "Expected first entry to be 'initial'")
-	assert.Equal(t, "second", changelog.Get(testString, getTimeFromSec(2)), "Expected second entry to have timestamp updated")
+	changelog.Set("second", getTimeFromSec(2))
+	assert.Equal(t, "initial", changelog.Get(getTimeFromSec(1)), "Expected first entry to be 'initial'")
+	assert.Equal(t, "second", changelog.Get(getTimeFromSec(2)), "Expected second entry to have timestamp updated")
 
 	// Check the count of entries
-	assert.Equal(t, 2, changelog.Count(testString), "Expected 2 entries")
+	assert.Equal(t, 2, changelog.Count(), "Expected 2 entries")
 }
 
-func TestChangelogEntries_InsertWithOlderTimestamp(t *testing.T) {
-	flags := []MaxEntries{
-		testString: 3,
-	}
-	changelog := NewEntries[string](flags)
+func TestChangelog_InsertWithOlderTimestamp(t *testing.T) {
+	changelog := NewChangelog[string](3)
 	now := getTimeFromSec(0)
 
 	// Insert entries with increasing timestamps
-	changelog.Set(testString, "first", now)
-	changelog.Set(testString, "second", now.Add(1*time.Second))
-	changelog.Set(testString, "third", now.Add(2*time.Second))
+	changelog.Set("first", now)
+	changelog.Set("second", now.Add(1*time.Second))
+	changelog.Set("third", now.Add(2*time.Second))
 
 	// Insert an entry with an older timestamp
-	changelog.Set(testString, "older", now.Add(1*time.Millisecond))
+	changelog.Set("older", now.Add(1*time.Millisecond))
 
 	// Check the count of entries
-	assert.Equal(t, 3, changelog.Count(testString), "Expected 3 entries")
+	assert.Equal(t, 3, changelog.Count(), "Expected 3 entries")
 
 	// Verify the order of entries
-	assert.Equal(t, "older", changelog.Get(testString, now.Add(1*time.Millisecond)), "Expected 'older' to be the first entry")
-	assert.Equal(t, "second", changelog.Get(testString, now.Add(1*time.Second)), "Expected 'second' to be the second entry")
-	assert.Equal(t, "third", changelog.Get(testString, now.Add(2*time.Second)), "Expected 'third' to be the last entry")
+	assert.Equal(t, "older", changelog.Get(now.Add(1*time.Millisecond)), "Expected 'older' to be the first entry")
+	assert.Equal(t, "second", changelog.Get(now.Add(1*time.Second)), "Expected 'second' to be the second entry")
+	assert.Equal(t, "third", changelog.Get(now.Add(2*time.Second)), "Expected 'third' to be the last entry")
 
 	// Insert an entry with an intermediate timestamp
-	changelog.Set(testString, "second-third", now.Add(1*time.Second+1*time.Millisecond))
+	changelog.Set("second-third", now.Add(1*time.Second+1*time.Millisecond))
 
 	// Verify the order of entries
-	assert.Equal(t, "older", changelog.Get(testString, now.Add(1*time.Millisecond)), "Expected 'older' to be the first entry")
-	assert.Equal(t, "second-third", changelog.Get(testString, now.Add(1*time.Second+1*time.Millisecond)), "Expected 'second-third' to be the second entry")
-	assert.Equal(t, "third", changelog.Get(testString, now.Add(2*time.Second)), "Expected 'third' to be the last entry")
+	assert.Equal(t, "older", changelog.Get(now.Add(1*time.Millisecond)), "Expected 'older' to be the first entry")
+	assert.Equal(t, "second-third", changelog.Get(now.Add(1*time.Second+1*time.Millisecond)), "Expected 'second-third' to be the second entry")
+	assert.Equal(t, "third", changelog.Get(now.Add(2*time.Second)), "Expected 'third' to be the last entry")
 
 	// Check the count of entries
-	assert.Equal(t, 3, changelog.Count(testString), "Expected 3 entries")
+	assert.Equal(t, 3, changelog.Count(), "Expected 3 entries")
 }
 
-func TestChangelogEntries_InsertSameValueWithNewTimestamp(t *testing.T) {
-	flags := []MaxEntries{
-		testString: 3,
-	}
-	changelog := NewEntries[string](flags)
+func TestChangelog_InsertSameValueWithNewTimestamp(t *testing.T) {
+	changelog := NewChangelog[string](3)
 
 	// Insert entries with increasing timestamps
-	changelog.Set(testString, "same", getTimeFromSec(0))
+	changelog.Set("same", getTimeFromSec(0))
 
 	// Replace the last entry with the same value but a new timestamp
-	changelog.Set(testString, "same", getTimeFromSec(1))
+	changelog.Set("same", getTimeFromSec(1))
 
 	// Verify the order of entries
-	assert.Equal(t, "same", changelog.Get(testString, getTimeFromSec(1)), "Expected 'same' to be the second entry")
+	assert.Equal(t, "same", changelog.Get(getTimeFromSec(1)), "Expected 'same' to be the second entry")
 
 	// Insert entries with sequential timestamps
-	changelog.Set(testString, "new", getTimeFromSec(2))
-	changelog.Set(testString, "other", getTimeFromSec(3))
+	changelog.Set("new", getTimeFromSec(2))
+	changelog.Set("other", getTimeFromSec(3))
 
 	// Replace the last entry with the same value but a new timestamp
-	changelog.Set(testString, "other", getTimeFromSec(4))
+	changelog.Set("other", getTimeFromSec(4))
 
 	// Verify the order of entries
-	assert.Equal(t, "same", changelog.Get(testString, getTimeFromSec(1)), "Expected 'same' to be the first entry")
-	assert.Equal(t, "new", changelog.Get(testString, getTimeFromSec(2)), "Expected 'new' to be the second entry")
-	assert.Equal(t, "other", changelog.Get(testString, getTimeFromSec(4)), "Expected 'other' to be the last entry")
+	assert.Equal(t, "same", changelog.Get(getTimeFromSec(1)), "Expected 'same' to be the first entry")
+	assert.Equal(t, "new", changelog.Get(getTimeFromSec(2)), "Expected 'new' to be the second entry")
+	assert.Equal(t, "other", changelog.Get(getTimeFromSec(4)), "Expected 'other' to be the last entry")
 
 	// Check the count of entries
-	assert.Equal(t, 3, changelog.Count(testString), "Expected 3 entries")
+	assert.Equal(t, 3, changelog.Count(), "Expected 3 entries")
 }
 
-// TestChangelog_PrintSizes prints the sizes of the structs used in the changelog package.
+// TestChangelog_PrintSizes prints the sizes of the structs used in the Changelog type.
 // Run it as DEBUG test to see the output.
 func TestChangelog_PrintSizes(t *testing.T) {
-	flags := []MaxEntries{
-		testInt0: 1,
-	}
-
-	changelog1 := NewEntries[int](flags)
+	changelog1 := NewChangelog[int](1)
 	utils.PrintStructSizes(os.Stdout, changelog1)
-
-	entryList1 := entryList[int]{
-		maxEntries: flags[testInt0],
-		entries:    []entry[int]{},
-	}
-	utils.PrintStructSizes(os.Stdout, entryList1)
 
 	entry1 := entry[int]{}
 	utils.PrintStructSizes(os.Stdout, entry1)
 
 	//
 
-	flags = []MaxEntries{
-		testString: 1,
-	}
-
-	changelog2 := NewEntries[string](flags)
+	changelog2 := NewChangelog[string](1)
 	utils.PrintStructSizes(os.Stdout, changelog2)
-
-	entryList2 := entryList[string]{
-		maxEntries: flags[testString],
-		entries:    []entry[string]{},
-	}
-	utils.PrintStructSizes(os.Stdout, entryList2)
 
 	entry2 := entry[string]{}
 	utils.PrintStructSizes(os.Stdout, entry2)

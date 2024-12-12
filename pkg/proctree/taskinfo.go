@@ -57,28 +57,28 @@ var (
 
 // TaskInfo represents a task.
 type TaskInfo struct {
-	tid            int                        // immutable
-	pid            int                        // immutable
-	nsTid          int                        // immutable
-	nsPid          int                        // immutable
-	startTimeNS    uint64                     // this is a duration, in ns, since boot (immutable)
-	exitTimeNS     uint64                     // this is a duration, in ns, since boot (immutable)
-	mutableStrings *changelog.Entries[string] // string mutable fields
-	mutableInts    *changelog.Entries[int]    // int mutable fields
+	tid            int                              // immutable
+	pid            int                              // immutable
+	nsTid          int                              // immutable
+	nsPid          int                              // immutable
+	startTimeNS    uint64                           // this is a duration, in ns, since boot (immutable)
+	exitTimeNS     uint64                           // this is a duration, in ns, since boot (immutable)
+	mutableStrings *changelog.ChangelogKind[string] // string mutable fields
+	mutableInts    *changelog.ChangelogKind[int]    // int mutable fields
 	mutex          *sync.RWMutex
 }
 
 // NewTaskInfo creates a new task.
 func NewTaskInfo() *TaskInfo {
 	return &TaskInfo{
-		mutableStrings: changelog.NewEntries[string](taskInfoMutableStringsFlags),
-		mutableInts:    changelog.NewEntries[int](taskInfoMutableIntsFlags),
+		mutableStrings: changelog.NewChangelogKind[string](taskInfoMutableStringsFlags),
+		mutableInts:    changelog.NewChangelogKind[int](taskInfoMutableIntsFlags),
 		mutex:          &sync.RWMutex{},
 	}
 }
 
 // NewTaskInfoFromFeed creates a new task with values from the given feed.
-func NewTaskInfoFromFeed(feed TaskInfoFeed) *TaskInfo {
+func NewTaskInfoNewFromFeed(feed TaskInfoFeed) *TaskInfo {
 	new := NewTaskInfo()
 	new.setFeed(feed)
 	return new
