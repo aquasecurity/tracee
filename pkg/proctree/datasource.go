@@ -93,8 +93,6 @@ func (ptds *DataSource) exportProcessInfo(
 	// Pick the objects related to the process from the process tree.
 	info := process.GetInfo()
 	executable := process.GetExecutable()
-	interpreter := process.GetInterpreter()
-	interp := process.GetInterp()
 
 	// Walk children hashes and discover the ones alive at the query time.
 	aliveChildren := make(map[int]uint32)
@@ -135,8 +133,6 @@ func (ptds *DataSource) exportProcessInfo(
 			ContainerId:       "",         // TODO: Add
 			Cmd:               []string{}, // TODO: Add
 			ExecutionBinary:   exportFileInfo(executable, queryTime),
-			Interpreter:       exportFileInfo(interpreter, queryTime),
-			Interp:            exportFileInfo(interp, queryTime),
 			StartTime:         info.GetStartTime(),
 			ExecTime:          time.Unix(0, 0), // TODO: Add
 			ExitTime:          info.GetExitTime(),
