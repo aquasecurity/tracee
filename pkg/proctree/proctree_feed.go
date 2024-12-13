@@ -131,10 +131,6 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 			parent.GetExecutable().GetFeed(),
 			feedTimeStamp,
 		)
-		leader.GetInterpreter().SetFeedAt(
-			parent.GetInterpreter().GetFeed(),
-			feedTimeStamp,
-		)
 	}
 
 	// In all cases (task is a process, or a thread) there is a thread entry.
