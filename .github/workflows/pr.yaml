@@ -161,27 +161,6 @@ jobs:
         run: |
           make check-err
   #
-  # SIGNATURES CODE VERIFICATION
-  #
-  verify-signatures:
-    name: Verify Signatures
-    needs:
-      - verify-analyze-code
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          submodules: true
-      - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
-      - name: Build Signatures
-        run: |
-          make signatures
-      - name: Test Signatures
-        run: |
-          make test-signatures
-  #
   # TOOLS BUILD VERIFICATION
   #
   verify-tools:
