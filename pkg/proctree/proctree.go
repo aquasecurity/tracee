@@ -35,7 +35,7 @@ import (
 //
 
 const (
-	DefaultProcessCacheSize = 32768
+	DefaultProcessCacheSize = 16384
 	DefaultThreadCacheSize  = 32768
 	DefaultProcessCacheTTL  = time.Second * 120
 	DefaultThreadCacheTTL   = time.Second * 120

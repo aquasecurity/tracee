@@ -14,7 +14,7 @@ The underlying structure is populated using the core `sched_process_fork`, `sche
 
 > Introducing this secondary event source is strategic: it reduces interference with actively traced events, leading to more accurate and granular updates in the process tree.
 
-The number of processes retained in the tree hinges on cache size. We have two separate caches at play: one for processes and another for threads. Both default to a size of 32K, supporting tracking for up to 32,768 processes and the same number of threads. It's worth noting that these are LRU caches: once full, they'll evict the least recently accessed entries to accommodate fresh ones.
+The number of processes retained in the tree hinges on cache size. We have two separate caches at play: one for processes and another for threads. The default cache size for processes is 16K, supporting tracking for up to 16,384 processes, while the thread cache is 32K, supporting tracking for up to 32,768 threads. On average, a configuration ratio of 2:1 (thread:cache) is defined, as one thread is created for every process. It's worth noting that these are LRU caches: once full, they'll evict the least recently accessed entries to accommodate fresh ones.
 
 The process tree query the procfs upon initialization and during runtime to fill missing data:
 * During initialization, it runs over all procfs to fill all existing processes and threads
@@ -34,7 +34,7 @@ Example:
       signals      | process tree is built from signals.
       both         | process tree is built from both events and signals.
   --proctree process-cache=8192   | will cache up to 8192 processes in the tree (LRU cache).
-  --proctree thread-cache=4096    | will cache up to 4096 threads in the tree (LRU cache).
+  --proctree thread-cache=16384   | will cache up to 16384 threads in the tree (LRU cache).
   --proctree process-cache-ttl=60 | will set the process cache element TTL to 60 seconds.
   --proctree thread-cache-ttl=60  | will set the thread cache element TTL to 60 seconds.
   --proctree disable-procfs-query | Will disable procfs quering during runtime
