@@ -167,8 +167,6 @@ statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
         }
     }
 
-    // TODO: think what to do about NO_EVENT_SUBMIT since we can't have it once scope filters are per event config
-    // In that case - how can we do scope filter matching for internal logic for events that are not submitted?
     event_config_t *event_config = bpf_map_lookup_elem(&events_config_map, &event_id);
     if (unlikely(event_config == NULL))
         return 0;
@@ -179,7 +177,6 @@ statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
     if (unlikely(ret != 0))
         return 0;
 
-    // TODO: make necessary modifications to have rules_version per event
     p->event->context.rules_version = p->event->config.rules_version;
 
     // initialize active_rules to the rules that actually requested this event

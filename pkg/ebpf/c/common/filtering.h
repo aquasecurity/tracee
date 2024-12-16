@@ -33,8 +33,8 @@ statfunc bool rules_matched(event_data_t *);
 statfunc void *get_event_filter_map(void *outer_map, u16 version, u32 event_id)
 {
     filter_version_key_t key = {
+        .version = version,
         .event_id = event_id,
-        .rules_version = version,
     };
 
     return bpf_map_lookup_elem(outer_map, &key);
@@ -175,12 +175,10 @@ statfunc u64 bool_filter_matches(u64 match_bitmap, bool bool_value)
     return match_bitmap ^ (bool_value ? ~0ULL : 0);
 }
 
-// TODO: think what we are going to do about tree filter and follow filter
-// possible solution for tree filter: look a few levels up the tree for the pid of the ancestor
 statfunc u64 match_scope_filters(program_data_t *p)
 {
     task_context_t *context = &p->event->context.task;
-    scope_filters_config_t *filters_cfg = &p->event->config.scope_filters_config;
+    scope_filters_config_t *filters_cfg = &p->event->config.scope_filters;
     u32 event_id = p->event->context.eventid;
     u16 version = p->event->context.rules_version;
     void *filter_map = NULL;
@@ -313,33 +311,32 @@ statfunc u64 match_scope_filters(program_data_t *p)
 }
 
 // Function to evaluate data filters based on the program data and index.
-// Returns policies bitmap.
+// Returns rules bitmap.
 //
 // Parameters:
 // - program_data_t *p: Pointer to the program data structure.
 // - u8 index: Index of the string data to be used as filter.
 statfunc u64 match_data_filters(program_data_t *p, u8 index)
 {
-    policies_config_t *policies_cfg = &p->event->policies_config;
     // Retrieve the string filter for the current event
     // TODO: Dynamically determine the filter and type based on policy configuration
     string_filter_config_t *str_filter = &p->event->config.data_filter.string;
 
     if (!(str_filter->exact_enabled || str_filter->prefix_enabled || str_filter->suffix_enabled))
-        return policies_cfg->enabled_policies;
+        return ~0ULL;
 
     u64 res = 0;
-    u64 explicit_disable_policies = 0;
-    u64 explicit_enable_policies = 0;
-    u64 default_enable_policies = 0;
-    // Determine policies that do not use any type of string filter (exact, prefix, suffix)
-    u64 mask_no_str_filter_policies =
+    u64 explicit_disable_rules = 0;
+    u64 explicit_enable_rules = 0;
+    u64 default_enable_rules = 0;
+    // Determine rules that do not use any type of string filter (exact, prefix, suffix)
+    u64 mask_no_str_filter_rules =
         ~str_filter->exact_enabled & ~str_filter->prefix_enabled & ~str_filter->suffix_enabled;
     void *filter_map = NULL;
 
     // event ID
     u32 eventid = p->event->context.eventid;
-    u16 version = p->event->context.policies_version;
+    u16 version = p->event->context.rules_version;
 
     // Exact match
     if (str_filter->exact_enabled) {
@@ -356,9 +353,9 @@ statfunc u64 match_data_filters(program_data_t *p, u8 index)
         u64 match_if_key_missing = str_filter->exact_match_if_key_missing;
         filter_map = get_event_filter_map(&data_filter_exact_version, version, eventid);
         res = equality_filter_matches(match_if_key_missing, filter_map, key);
-        explicit_enable_policies |= (res & ~match_if_key_missing);
-        explicit_disable_policies |= (~res & match_if_key_missing);
-        default_enable_policies |= (res & match_if_key_missing);
+        explicit_enable_rules |= (res & ~match_if_key_missing);
+        explicit_disable_rules |= (~res & match_if_key_missing);
+        default_enable_rules |= (res & match_if_key_missing);
     }
 
     // Prefix match
@@ -379,9 +376,9 @@ statfunc u64 match_data_filters(program_data_t *p, u8 index)
         u64 match_if_key_missing = str_filter->prefix_match_if_key_missing;
         filter_map = get_event_filter_map(&data_filter_prefix_version, version, eventid);
         res = equality_filter_matches(match_if_key_missing, filter_map, key);
-        explicit_enable_policies |= (res & ~match_if_key_missing);
-        explicit_disable_policies |= (~res & match_if_key_missing);
-        default_enable_policies |= (res & match_if_key_missing);
+        explicit_enable_rules |= (res & ~match_if_key_missing);
+        explicit_disable_rules |= (~res & match_if_key_missing);
+        default_enable_rules |= (res & match_if_key_missing);
     }
 
     // Suffix match
@@ -400,37 +397,36 @@ statfunc u64 match_data_filters(program_data_t *p, u8 index)
         u64 match_if_key_missing = str_filter->suffix_match_if_key_missing;
         filter_map = get_event_filter_map(&data_filter_suffix_version, version, eventid);
         res = equality_filter_matches(match_if_key_missing, filter_map, key);
-        explicit_enable_policies |= (res & ~match_if_key_missing);
-        explicit_disable_policies |= (~res & match_if_key_missing);
-        default_enable_policies |= (res & match_if_key_missing);
+        explicit_enable_rules |= (res & ~match_if_key_missing);
+        explicit_disable_rules |= (~res & match_if_key_missing);
+        default_enable_rules |= (res & match_if_key_missing);
     }
 
-    // Match policies based on the following conditions:
+    // Match rules based on the following conditions:
     //
-    // 1. Explicitly Enabled Policies: A policy is enabled if at least one of the three
-    // filter types explicitly enables it (explicit_enable_policies).
-    // 2. Default Enabled Policies: Policies that are enabled by default (default_enable_policies)
-    // remain enabled only if they are not explicitly disabled (explicit_disable_policies).
-    res = explicit_enable_policies | (default_enable_policies & ~explicit_disable_policies);
-    // Combine policies that use string filters with those that do not
-    res |= mask_no_str_filter_policies;
+    // 1. Explicitly Enabled Rules: A rule is enabled if at least one of the three
+    // filter types explicitly enables it (explicit_enable_rules).
+    // 2. Default Enabled Rules: Rules that are enabled by default (default_enable_rules)
+    // remain enabled only if they are not explicitly disabled (explicit_disable_rules).
+    res = explicit_enable_rules | (default_enable_rules & ~explicit_disable_rules);
+    // Combine rules that use string filters with those that do not
+    res |= mask_no_str_filter_rules;
 
-    // Make sure only enabled policies are set in the bitmap (other bits are invalid)
-    return res & policies_cfg->enabled_policies;
+    return res;
 }
 
 statfunc bool evaluate_scope_filters(program_data_t *p)
 {
-    u64 matched_rules = match_scope_filters(p);
-    p->event->context.active_rules &= matched_rules;
+    u64 matched_scope_filters = match_scope_filters(p);
+    p->event->context.active_rules &= matched_scope_filters;
     return p->event->context.active_rules != 0;
 }
 
 statfunc bool evaluate_data_filters(program_data_t *p, u8 index)
 {
     u64 matched_data_filters = match_data_filters(p, index);
-    p->event->context.matched_rules &= matched_data_filters;
-    return p->event->context.matched_rules != 0;
+    p->event->context.active_rules &= matched_data_filters;
+    return p->event->context.active_rules != 0;
 }
 
 statfunc bool rules_matched(event_data_t *event)

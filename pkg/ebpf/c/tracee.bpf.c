@@ -654,8 +654,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     task->context.start_time = child_start_time;
 
     // Track thread stack if needed
-    if (event_is_selected(SUSPICIOUS_SYSCALL_SOURCE, p.event->context.policies_version) ||
-        event_is_selected(STACK_PIVOT, p.event->context.policies_version))
+    if (event_is_selected(SUSPICIOUS_SYSCALL_SOURCE) || event_is_selected(STACK_PIVOT))
         update_thread_stack(ctx, task, child);
 
     // Update the proc_info_map with the new process's info (from parent)
