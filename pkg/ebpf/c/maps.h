@@ -420,12 +420,6 @@ typedef struct elf_files_map elf_files_map_t;
 
 #define MAX_FILTER_VERSION 64 // max amount of filter versions to track
 
-typedef struct filter_version_key {
-    u32 event_id;
-    u16 rules_version;
-    u16 padding; // free for further use
-} filter_version_key_t;
-
 // filter events by UID prototype, for specific UIDs either by == or !=
 struct uid_filter {
     __uint(type, BPF_MAP_TYPE_HASH);
@@ -540,7 +534,7 @@ typedef struct data_filter_exact data_filter_exact_t;
 struct data_filter_exact_version {
     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
     __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, policy_key_t);
+    __type(key, filter_version_key_t);
     __array(values, data_filter_exact_t);
 } data_filter_exact_version SEC(".maps");
 
@@ -561,7 +555,7 @@ typedef struct data_filter_suffix data_filter_suffix_t;
 struct data_filter_suffix_version {
     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
     __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, policy_key_t);
+    __type(key, filter_version_key_t);
     __array(values, data_filter_suffix_t);
 } data_filter_suffix_version SEC(".maps");
 
@@ -582,7 +576,7 @@ typedef struct data_filter_prefix data_filter_prefix_t;
 struct data_filter_prefix_version {
     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
     __uint(max_entries, MAX_FILTER_VERSION);
-    __type(key, policy_key_t);
+    __type(key, filter_version_key_t);
     __array(values, data_filter_prefix_t);
 } data_filter_prefix_version SEC(".maps");
 

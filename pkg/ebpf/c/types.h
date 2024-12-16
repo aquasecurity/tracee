@@ -303,11 +303,11 @@ typedef struct ksym_name {
     char str[MAX_KSYM_NAME_SIZE];
 } ksym_name_t;
 
-typedef struct policy_key {
+typedef struct filter_version_key {
     u16 version;
     u16 __pad;
     u32 event_id;
-} policy_key_t;
+} filter_version_key_t;
 
 typedef struct equality {
     // bitmap indicating which rules have a filter that uses the '=' operator (0 means '!=')
