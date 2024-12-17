@@ -334,8 +334,9 @@ func (ps *policies) createNewEventsMapVersion(
 		}
 
 		eventConfig := eventConfig{
-			// bitmap of policies that require this event to be submitted
-			submitForPolicies: ecfg.policiesSubmit,
+			// bitmap of active rulesfor this event
+			// TODO: add rules version and other stuff here
+			submitForPolicies: ecfg.rulesToSubmit,
 			fieldTypes:        fieldTypes,
 			dataFilter: dataFilterConfig{
 				string: stringFilter,
@@ -677,6 +678,7 @@ func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBina
 	return nil
 }
 
+// TODO: updateBPF should not be a method of policies but of rules (we should create rules struct like we have policies struct)
 // updateBPF updates the BPF maps with the policies filters.
 // createNewMaps indicates whether new maps should be created or not.
 // updateProcTree indicates whether the process tree map should be updated or not.

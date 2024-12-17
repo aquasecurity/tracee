@@ -38,7 +38,7 @@ func (ps *policies) createUserlandIterator() utils.Iterator[*Policy] {
 // createAllIterator returns a new iterator for all policies.
 func (ps *policies) createAllIterator() utils.Iterator[*Policy] {
 	return &policiesIterator{
-		policies: ps.policiesList,
+		policies: ps.policies,
 		index:    0,
 	}
 }

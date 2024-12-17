@@ -1288,6 +1288,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
+	// TODO: bug????? We already called t.policyManager.UpdateBPF in t.populateBPFMaps() so why calling it again here????
 	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventsFieldTypes, false, true)
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -1926,50 +1927,6 @@ func (t *Tracee) DisableEvent(eventName string) error {
 	}
 
 	t.policyManager.DisableEvent(id)
-
-	return nil
-}
-
-// EnableRule enables a rule in the specified policies
-func (t *Tracee) EnableRule(policyNames []string, ruleId string) error {
-	eventID, found := events.Core.GetDefinitionIDByName(ruleId)
-	if !found {
-		return errfmt.Errorf("error rule not found: %s", ruleId)
-	}
-
-	for _, policyName := range policyNames {
-		p, err := t.policyManager.LookupByName(policyName)
-		if err != nil {
-			return err
-		}
-
-		err = t.policyManager.EnableRule(p.ID, eventID)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// DisableRule disables a rule in the specified policies
-func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
-	eventID, found := events.Core.GetDefinitionIDByName(ruleId)
-	if !found {
-		return errfmt.Errorf("error rule not found: %s", ruleId)
-	}
-
-	for _, policyName := range policyNames {
-		p, err := t.policyManager.LookupByName(policyName)
-		if err != nil {
-			return err
-		}
-
-		err = t.policyManager.DisableRule(p.ID, eventID)
-		if err != nil {
-			return err
-		}
-	}
 
 	return nil
 }

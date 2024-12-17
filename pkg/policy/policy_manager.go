@@ -31,7 +31,11 @@ type Manager struct {
 	cfg             ManagerConfig
 	evtsDepsManager *dependencies.Manager
 	ps              *policies
+	// TODO: rules (or eventFlags) should be promoted to a struct like policies is now. eventFlags will become per event rules state
+	// TODO: add mapping from (event id, rule id) to Policy
+	// TODO: think: do we need the rules bitmap to be under eventFlags? To decouple things from bpf, it can be computed when populating the bpf map!
 	rules           map[events.ID]*eventFlags
+	rulesToPolicy   map[events.ID][]*Policy // The slice of policies should be up to 64, which is the max rule count per event
 }
 
 func NewManager(
@@ -45,8 +49,8 @@ func NewManager(
 
 	ps := NewPolicies()
 	for _, p := range initialPolicies {
-		if err := ps.set(p); err != nil {
-			logger.Errorw("failed to set initial policy", "error", err)
+		if err := ps.add(p); err != nil {
+			logger.Errorw("failed to add initial policy", "error", err)
 		}
 	}
 
@@ -97,7 +101,7 @@ func (m *Manager) subscribeDependencyHandlers() {
 }
 
 // AddDependencyEventToRules adds for management an event that is a dependency of other events.
-// The difference from chosen events is that it doesn't affect its eviction.
+// The difference from selected events is that it doesn't affect its eviction.
 func (m *Manager) addDependencyEventToRules(evtID events.ID, dependentEvts []events.ID) {
 	var newSubmit uint64
 	var reqBySig bool
@@ -105,7 +109,7 @@ func (m *Manager) addDependencyEventToRules(evtID events.ID, dependentEvts []eve
 	for _, dependentEvent := range dependentEvts {
 		currentFlags, ok := m.rules[dependentEvent]
 		if ok {
-			newSubmit |= currentFlags.policiesSubmit
+			newSubmit |= currentFlags.rulesToSubmit
 			reqBySig = reqBySig || events.Core.GetDefinitionByID(dependentEvent).IsSignature()
 		}
 	}
@@ -120,21 +124,21 @@ func (m *Manager) addDependencyEventToRules(evtID events.ID, dependentEvts []eve
 	)
 }
 
-func (m *Manager) addEventFlags(id events.ID, chosenFlags *eventFlags) {
+func (m *Manager) addEventFlags(id events.ID, selectedFlags *eventFlags) {
 	currentFlags, ok := m.rules[id]
 	if ok {
-		currentFlags.policiesSubmit |= chosenFlags.policiesSubmit
-		currentFlags.policiesEmit |= chosenFlags.policiesEmit
-		currentFlags.requiredBySignature = chosenFlags.requiredBySignature
-		currentFlags.enabled = chosenFlags.enabled
+		currentFlags.rulesToSubmit |= selectedFlags.rulesToSubmit
+		currentFlags.rulesToEmit |= selectedFlags.rulesToEmit
+		currentFlags.requiredBySignature = selectedFlags.requiredBySignature
+		currentFlags.enabled = selectedFlags.enabled
 		return
 	}
 
 	m.rules[id] = newEventFlags(
-		eventFlagsWithSubmit(chosenFlags.policiesSubmit),
-		eventFlagsWithEmit(chosenFlags.policiesEmit),
-		eventFlagsWithRequiredBySignature(chosenFlags.requiredBySignature),
-		eventFlagsWithEnabled(chosenFlags.enabled),
+		eventFlagsWithSubmit(selectedFlags.rulesToSubmit),
+		eventFlagsWithEmit(selectedFlags.rulesToEmit),
+		eventFlagsWithRequiredBySignature(selectedFlags.requiredBySignature),
+		eventFlagsWithEnabled(selectedFlags.enabled),
 	)
 }
 
@@ -149,8 +153,8 @@ func (m *Manager) addDependenciesToRulesRecursive(eventNode *dependencies.EventN
 	}
 }
 
-func (m *Manager) selectEvent(eventID events.ID, chosenState *eventFlags) {
-	m.addEventFlags(eventID, chosenState)
+func (m *Manager) selectEvent(eventID events.ID, selectedState *eventFlags) {
+	m.addEventFlags(eventID, selectedState)
 	eventNode, err := m.evtsDepsManager.SelectEvent(eventID)
 	if err != nil {
 		logger.Errorw("Event selection failed",
@@ -249,10 +253,11 @@ func (m *Manager) selectConfiguredEvents() {
 }
 
 func (m *Manager) selectUserEvents() {
-	// Events chosen by the user
+	// Events selected by the user
 	userEvents := make(map[events.ID]*eventFlags)
 
-	for _, p := range m.ps.policiesList {
+	// TODO: fix to match what we need
+	for _, p := range m.ps.policies {
 		pId := p.ID
 		for eId := range p.Rules {
 			ef, ok := userEvents[eId]
@@ -312,7 +317,7 @@ func (m *Manager) initialize() error {
 
 // IsEnabled tests if a event, or a policy per event is enabled (in the future it will also check if a policy is enabled)
 // TODO: add metrics about an event being enabled/disabled, or a policy being enabled/disabled?
-func (m *Manager) IsEnabled(matchedPolicies uint64, id events.ID) bool {
+func (m *Manager) IsEnabled(matchedRules uint64, id events.ID) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -320,25 +325,25 @@ func (m *Manager) IsEnabled(matchedPolicies uint64, id events.ID) bool {
 		return false
 	}
 
-	return m.isRuleEnabled(matchedPolicies, id)
+	return m.isRuleEnabled(matchedRules, id)
 }
 
 // IsRuleEnabled returns true if a given event policy is enabled for a given rule
-func (m *Manager) IsRuleEnabled(matchedPolicies uint64, id events.ID) bool {
+func (m *Manager) IsRuleEnabled(matchedRules uint64, id events.ID) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	return m.isRuleEnabled(matchedPolicies, id)
+	return m.isRuleEnabled(matchedRules, id)
 }
 
 // not synchronized, use IsRuleEnabled instead
-func (m *Manager) isRuleEnabled(matchedPolicies uint64, id events.ID) bool {
+func (m *Manager) isRuleEnabled(matchedRules uint64, id events.ID) bool {
 	flags, ok := m.rules[id]
 	if !ok {
 		return false
 	}
 
-	return flags.policiesEmit&matchedPolicies != 0
+	return flags.rulesToEmit&matchedRules != 0
 }
 
 // IsEventEnabled returns true if a given event policy is enabled for a given rule
@@ -357,54 +362,6 @@ func (m *Manager) isEventEnabled(id events.ID) bool {
 	}
 
 	return flags.enabled
-}
-
-// EnableRule enables a rule for a given event policy
-func (m *Manager) EnableRule(policyId int, id events.ID) error {
-	if !isIDInRange(policyId) {
-		return PoliciesOutOfRangeError(policyId)
-	}
-
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	flags, ok := m.rules[id]
-	if !ok {
-		// if you enabling/disabling a rule for an event that
-		// was not enabled/disabled yet, we assume the event should be enabled
-		flags = newEventFlags(
-			eventFlagsWithEnabled(true),
-		)
-		m.rules[id] = flags
-	}
-
-	flags.enableEmission(policyId)
-
-	return nil
-}
-
-// DisableRule disables a rule for a given event policy
-func (m *Manager) DisableRule(policyId int, id events.ID) error {
-	if !isIDInRange(policyId) {
-		return PoliciesOutOfRangeError(policyId)
-	}
-
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	flags, ok := m.rules[id]
-	if !ok {
-		// if you enabling/disabling a rule for an event that
-		// was not enabled/disabled yet, we assume the event should be enabled
-		flags = newEventFlags(
-			eventFlagsWithEnabled(true),
-		)
-		m.rules[id] = flags
-	}
-
-	flags.disableEmission(policyId)
-
-	return nil
 }
 
 // EnableEvent enables a given event
@@ -464,7 +421,7 @@ func (m *Manager) MatchEvent(id events.ID, matched uint64) uint64 {
 		return 0
 	}
 
-	return flags.policiesEmit & matched
+	return flags.rulesToEmit & matched
 }
 
 func (m *Manager) MatchEventInAnyPolicy(id events.ID) uint64 {
@@ -476,7 +433,7 @@ func (m *Manager) MatchEventInAnyPolicy(id events.ID) uint64 {
 		return 0
 	}
 
-	return (flags.policiesEmit | flags.policiesSubmit) & PolicyAll
+	return flags.rulesToEmit | flags.rulesToSubmit
 }
 
 func (m *Manager) EventsSelected() []events.ID {
@@ -505,7 +462,7 @@ func (m *Manager) EventsToSubmit() []events.ID {
 
 	eventsToSubmit := []events.ID{}
 	for evt, flags := range m.rules {
-		if flags.policiesSubmit != 0 {
+		if flags.rulesToSubmit != 0 {
 			eventsToSubmit = append(eventsToSubmit, evt)
 		}
 	}
@@ -522,7 +479,7 @@ func (m *Manager) IsEventToEmit(id events.ID) bool {
 		return false
 	}
 
-	return flags.policiesEmit != 0
+	return flags.rulesToEmit != 0
 }
 
 func (m *Manager) IsEventToSubmit(id events.ID) bool {
@@ -534,7 +491,7 @@ func (m *Manager) IsEventToSubmit(id events.ID) bool {
 		return false
 	}
 
-	return flags.policiesSubmit != 0
+	return flags.rulesToSubmit != 0
 }
 
 //
@@ -573,7 +530,8 @@ func (m *Manager) WithContainerFilterEnabled() uint64 {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	return m.ps.withContainerFilterEnabled()
+	// TODO: we should return rules bitmap where container filters are enabled
+	//return m.ps.withContainerFilterEnabled()
 }
 
 func (m *Manager) MatchedNames(matched uint64) []string {

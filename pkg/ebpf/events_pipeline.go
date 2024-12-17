@@ -454,6 +454,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 				continue
 			}
 
+			// TODO: change to rules resolution!
 			// Get a bitmap with all policies containing container filters
 			policiesWithContainerFilter := t.policyManager.WithContainerFilterEnabled()
 
