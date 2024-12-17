@@ -12,12 +12,12 @@ import (
 // equality mirrors the C struct equality (eq_t).
 // Check it for more info.
 type equality struct {
-	equalsInPolicies  uint64
-	keyUsedInPolicies uint64
+	equalsInRules  uint64
+	keyUsedInRules uint64
 }
 
 const (
-	// 8 bytes for equalsInPolicies and 8 bytes for keyUsedInPolicies
+	// 8 bytes for equalsInRules and 8 bytes for keyUsedInRules
 	equalityValueSize = 16
 )
 
@@ -44,30 +44,30 @@ const (
 	equal
 )
 
-// equalUpdater updates the equality with the given policyID.
-type equalityUpdater func(eq *equality, policyID uint)
+// equalUpdater updates the equality with the given ruleID.
+type equalityUpdater func(eq *equality, ruleID uint)
 
-// notEqualUpdate updates the equality as not equal with the given policyID.
-func notEqualUpdate(eq *equality, policyID uint) {
+// notEqualUpdate updates the equality as not equal with the given ruleID.
+func notEqualUpdate(eq *equality, ruleID uint) {
 	// NotEqual == 0, so clear n bitmap bit
-	utils.ClearBit(&eq.equalsInPolicies, policyID)
-	utils.SetBit(&eq.keyUsedInPolicies, policyID)
+	utils.ClearBit(&eq.equalsInRules, ruleID)
+	utils.SetBit(&eq.keyUsedInRules, ruleID)
 }
 
-// equalUpdate updates the equality as equal with the given policyID.
-func equalUpdate(eq *equality, policyID uint) {
+// equalUpdate updates the equality as equal with the given ruleID.
+func equalUpdate(eq *equality, ruleID uint) {
 	// Equal == 1, so set n bitmap bit
-	utils.SetBit(&eq.equalsInPolicies, policyID)
-	utils.SetBit(&eq.keyUsedInPolicies, policyID)
+	utils.SetBit(&eq.equalsInRules, ruleID)
+	utils.SetBit(&eq.keyUsedInRules, ruleID)
 }
 
 // updateEqualities updates the equalities map with the given filter equalities
-// for the given equality type and policy ID.
+// for the given equality type and rule ID.
 func updateEqualities[T comparable](
 	equalitiesMap map[T]equality,
 	filterEqualities map[T]struct{},
 	eqType equalityType,
-	policyID uint,
+	ruleID uint,
 ) {
 	var update equalityUpdater
 
@@ -86,22 +86,22 @@ func updateEqualities[T comparable](
 		if !ok {
 			eq = equality{} // initialize if not exists
 		}
-		update(&eq, policyID) // update the equality
+		update(&eq, ruleID) // update the equality
 		equalitiesMap[k] = eq // update the map
 	}
 }
 
 // updateAffixEqualities updates the equalities map with the given filter equalities
-// for the specified equality type and policy ID. It handles corner cases where paths
+// for the specified equality type and rule ID. It handles corner cases where paths
 // in the prefix/suffix filter are substrings of existing paths in the equalities map.
 // In cases where one prefix/suffix path overlaps with another, their equality bitmaps
 // are combined, addressing the corner case. This ensures that a single lookup retrieves
-// the longest matching path, with equality bitmaps merged from overlapping policies.
+// the longest matching path, with equality bitmaps merged from overlapping rules.
 func updateAffixEqualities[T comparable](
 	equalitiesMap map[T]equality,
 	filterEqualities map[T]struct{},
 	eqType equalityType,
-	policyID uint,
+	ruleID uint,
 ) {
 	var update equalityUpdater
 
@@ -137,7 +137,7 @@ func updateAffixEqualities[T comparable](
 				// check if exists a substrings of existing paths in the equalities map
 				if strings.HasPrefix(existingKD.String, newKD.String) {
 					// Directly update the equality if the new path is a prefix
-					update(&existingEq, policyID)
+					update(&existingEq, ruleID)
 					equalitiesMap[existingK] = existingEq
 				} else if strings.HasPrefix(newKD.String, existingKD.String) {
 					// Cache the longest match
@@ -154,7 +154,7 @@ func updateAffixEqualities[T comparable](
 			}
 		}
 
-		update(&newEq, policyID)    // update the equality
+		update(&newEq, ruleID)    // update the equality
 		equalitiesMap[newK] = newEq // update the map
 	}
 }
@@ -166,29 +166,29 @@ func (ps *policies) computeFilterEqualities(
 	cts *containers.Containers,
 ) error {
 	for _, p := range ps.allFromMap() {
-		policyID := uint(p.ID)
+		ruleID := uint(p.ID)
 
 		// NOTE: Equal has precedence over NotEqual, so NotEqual must be updated first
 
 		// UIDFilters
 		uidEqualities := p.UIDFilter.Equalities()
-		updateEqualities(fEqs.uidEqualities, uidEqualities.NotEqual, notEqual, policyID)
-		updateEqualities(fEqs.uidEqualities, uidEqualities.Equal, equal, policyID)
+		updateEqualities(fEqs.uidEqualities, uidEqualities.NotEqual, notEqual, ruleID)
+		updateEqualities(fEqs.uidEqualities, uidEqualities.Equal, equal, ruleID)
 
 		// PIDFilters
 		pidEqualities := p.PIDFilter.Equalities()
-		updateEqualities(fEqs.pidEqualities, pidEqualities.NotEqual, notEqual, policyID)
-		updateEqualities(fEqs.pidEqualities, pidEqualities.Equal, equal, policyID)
+		updateEqualities(fEqs.pidEqualities, pidEqualities.NotEqual, notEqual, ruleID)
+		updateEqualities(fEqs.pidEqualities, pidEqualities.Equal, equal, ruleID)
 
 		// MntNSFilters
 		mntNSEqualities := p.MntNSFilter.Equalities()
-		updateEqualities(fEqs.mntNSEqualities, mntNSEqualities.NotEqual, notEqual, policyID)
-		updateEqualities(fEqs.mntNSEqualities, mntNSEqualities.Equal, equal, policyID)
+		updateEqualities(fEqs.mntNSEqualities, mntNSEqualities.NotEqual, notEqual, ruleID)
+		updateEqualities(fEqs.mntNSEqualities, mntNSEqualities.Equal, equal, ruleID)
 
 		// PidNSFilters
 		pidNSEqualities := p.PidNSFilter.Equalities()
-		updateEqualities(fEqs.pidNSEqualities, pidNSEqualities.NotEqual, notEqual, policyID)
-		updateEqualities(fEqs.pidNSEqualities, pidNSEqualities.Equal, equal, policyID)
+		updateEqualities(fEqs.pidNSEqualities, pidNSEqualities.NotEqual, notEqual, ruleID)
+		updateEqualities(fEqs.pidNSEqualities, pidNSEqualities.Equal, equal, ruleID)
 
 		// ContIDFilters
 		contIDEqualities := p.ContIDFilter.Equalities()
@@ -199,7 +199,7 @@ func (ps *policies) computeFilterEqualities(
 			}
 
 			eq := fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])]
-			notEqualUpdate(&eq, policyID)
+			notEqualUpdate(&eq, ruleID)
 			fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])] = eq
 		}
 		for contID := range contIDEqualities.ExactEqual {
@@ -209,24 +209,24 @@ func (ps *policies) computeFilterEqualities(
 			}
 
 			eq := fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])]
-			equalUpdate(&eq, policyID)
+			equalUpdate(&eq, ruleID)
 			fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])] = eq
 		}
 
 		// UTSFilters
 		utsEqualities := p.UTSFilter.Equalities()
-		updateEqualities(fEqs.utsEqualities, utsEqualities.ExactNotEqual, notEqual, policyID)
-		updateEqualities(fEqs.utsEqualities, utsEqualities.ExactEqual, equal, policyID)
+		updateEqualities(fEqs.utsEqualities, utsEqualities.ExactNotEqual, notEqual, ruleID)
+		updateEqualities(fEqs.utsEqualities, utsEqualities.ExactEqual, equal, ruleID)
 
 		// CommFilters
 		commEqualities := p.CommFilter.Equalities()
-		updateEqualities(fEqs.commEqualities, commEqualities.ExactNotEqual, notEqual, policyID)
-		updateEqualities(fEqs.commEqualities, commEqualities.ExactEqual, equal, policyID)
+		updateEqualities(fEqs.commEqualities, commEqualities.ExactNotEqual, notEqual, ruleID)
+		updateEqualities(fEqs.commEqualities, commEqualities.ExactEqual, equal, ruleID)
 
 		// BinaryFilters
 		binaryEqualities := p.BinaryFilter.Equalities()
-		updateEqualities(fEqs.binaryEqualities, binaryEqualities.NotEqual, notEqual, policyID)
-		updateEqualities(fEqs.binaryEqualities, binaryEqualities.Equal, equal, policyID)
+		updateEqualities(fEqs.binaryEqualities, binaryEqualities.NotEqual, notEqual, ruleID)
+		updateEqualities(fEqs.binaryEqualities, binaryEqualities.Equal, equal, ruleID)
 	}
 
 	return nil
@@ -236,10 +236,10 @@ func (ps *policies) computeFilterEqualities(
 // in the policies updating the provided eqs map.
 func (ps *policies) computeProcTreeEqualities(eqs map[uint32]equality) {
 	for _, p := range ps.allFromMap() {
-		policyID := uint(p.ID)
+		ruleID := uint(p.ID)
 
 		procTreeEqualities := p.ProcessTreeFilter.Equalities()
-		updateEqualities(eqs, procTreeEqualities.NotEqual, notEqual, policyID)
-		updateEqualities(eqs, procTreeEqualities.Equal, equal, policyID)
+		updateEqualities(eqs, procTreeEqualities.NotEqual, notEqual, ruleID)
+		updateEqualities(eqs, procTreeEqualities.Equal, equal, ruleID)
 	}
 }

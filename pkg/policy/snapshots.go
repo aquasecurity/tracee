@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	maxSnapshots = PolicyMax
+	maxSnapshots = 64
 )
 
 // snapshot is a snapshot of the Policies at a given version.

@@ -16,8 +16,8 @@ func TestNewEventFlags(t *testing.T) {
 	emit := uint64(0)
 	submit := uint64(0)
 
-	assert.Equal(t, emit, ef.policiesSubmit)
-	assert.Equal(t, submit, ef.policiesEmit)
+	assert.Equal(t, emit, ef.rulesToSubmit)
+	assert.Equal(t, submit, ef.rulesToEmit)
 	assert.False(t, ef.enabled)
 
 	submit = uint64(1 << 0)
@@ -27,8 +27,8 @@ func TestNewEventFlags(t *testing.T) {
 		eventFlagsWithEmit(emit),
 		eventFlagsWithEnabled(true),
 	)
-	assert.Equal(t, submit, efWithOptions.policiesSubmit)
-	assert.Equal(t, emit, efWithOptions.policiesEmit)
+	assert.Equal(t, submit, efWithOptions.rulesToSubmit)
+	assert.Equal(t, emit, efWithOptions.rulesToEmit)
 	assert.True(t, efWithOptions.enabled)
 }
 
@@ -38,7 +38,7 @@ func TestEnableSubmission(t *testing.T) {
 
 	ef := newEventFlags()
 	ef.enableSubmission(1)
-	assert.True(t, utils.HasBit(ef.policiesSubmit, 1))
+	assert.True(t, utils.HasBit(ef.rulesToSubmit, 1))
 }
 
 // TestEnableEmission tests the enableEmission function.
@@ -47,7 +47,7 @@ func TestEnableEmission(t *testing.T) {
 
 	ef := newEventFlags()
 	ef.enableEmission(1)
-	assert.True(t, utils.HasBit(ef.policiesEmit, 1))
+	assert.True(t, utils.HasBit(ef.rulesToEmit, 1))
 
 	ef.enableEmission(-1)
 }
@@ -59,7 +59,7 @@ func TestDisableSubmission(t *testing.T) {
 	ef := newEventFlags()
 	ef.enableSubmission(42)
 	ef.disableSubmission(42)
-	assert.False(t, utils.HasBit(ef.policiesSubmit, 42))
+	assert.False(t, utils.HasBit(ef.rulesToSubmit, 42))
 }
 
 // TestDisableEmission tests the disableEmission function.
@@ -69,7 +69,7 @@ func TestDisableEmission(t *testing.T) {
 	ef := newEventFlags()
 	ef.enableEmission(42)
 	ef.disableEmission(42)
-	assert.False(t, utils.HasBit(ef.policiesEmit, 42))
+	assert.False(t, utils.HasBit(ef.rulesToEmit, 42))
 }
 
 // TestEnableEvent tests the enableEvent function.
