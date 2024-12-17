@@ -63,6 +63,11 @@ type CloneFlagArgument struct {
 
 // revive:disable
 
+// Use always raw values for the constants, since unix/syscall constants are not
+// always set to the same values.
+// For example, `O_LARGEFILE` is defined as 0x8000 (00100000) in C include,
+// but as 0x0 in unix package.
+
 var (
 	// These values are copied from uapi/linux/sched.h
 	CLONE_VM             CloneFlagArgument = CloneFlagArgument{rawValue: 0x00000100, stringValue: "CLONE_VM"}
