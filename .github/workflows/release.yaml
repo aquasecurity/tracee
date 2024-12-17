@@ -16,6 +16,7 @@ jobs:
     runs-on: 
       - graas_ami-0cdf7ad6d9627da45_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}
       - EXECUTION_TYPE=LONG
+      - INSTANCE_TYPE=LARGE
     permissions:
       contents: write
       packages: write
@@ -60,6 +61,7 @@ jobs:
     runs-on:
       - graas_ami-07740487fa433aa54_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}
       - EXECUTION_TYPE=LONG
+      - INSTANCE_TYPE=LARGE
     permissions:
       contents: write
       packages: write
