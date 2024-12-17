@@ -115,13 +115,15 @@
         >plugin.Open("/tracee/dist/signatures/builtin.so"): Dynamic loading not supported
         >```
 
-8. Build a **debugable binary** with DWARF generation by setting `DEBUG=1`
+8. Build a **debuggable binary** with DWARF generation by setting `DEBUG=1`
 
     ```bash
     DEBUG=1 make
     ```
 
-9. Build with embedded metrics (pprof) by setting `METRICS=1`
+9. Build enabling BPF metrics by setting `METRICS=1`.
+
+    BPF metrics are only available if the BPF object is built with `METRICS` debug flag defined.
 
     ```bash
     METRICS=1 make
