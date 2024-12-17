@@ -126,9 +126,7 @@ statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
     if (unlikely(p->config == NULL))
         return 0;
 
-    p->event->args_buf.offset = 0;
-    p->event->args_buf.argnum = 0;
-    __builtin_memset(p->event->args_buf.args_offset, 0xFF, sizeof(p->event->args_buf.args_offset));
+    reset_event_args_buf(p->event);
 
     p->event->task = (struct task_struct *) bpf_get_current_task();
 
@@ -241,6 +239,9 @@ statfunc void reset_event_args_buf(event_data_t *event)
 {
     event->args_buf.offset = 0;
     event->args_buf.argnum = 0;
+
+    // Mark all entries in args_offset as invalid (0xFF)
+    __builtin_memset(event->args_buf.args_offset, 0xFF, sizeof(event->args_buf.args_offset));
 }
 
 // use this function in programs that send more than one event
