@@ -46,6 +46,8 @@ To contribute to the code:
 
 Tracee relies on several generated files and has strict formatting requirements. Ensure you run the following commands before committing:
 
+**`NOTE:`** In order to not depend on host's libraries versions, We recommend that you always run make and other project dependencies on a virtual environment so the formatting will be align with tracee guidelines
+
 1. Man Pages Generation: If you've modified core code or documentation that impacts the man pages, run:
 
     ```bash
@@ -64,6 +66,8 @@ Tracee relies on several generated files and has strict formatting requirements.
 
 3. Pre-commit checks: Every time you're about to create a pull request, execute:
 
+    **`NOTE:`**  If your host machine dependencies doesn't align with tracee dependencies, This command have to run on a supported [environment](./building/environment.md)
+
     ```bash
     make check-pr
     ```
@@ -74,37 +78,27 @@ Tracee relies on several generated files and has strict formatting requirements.
     - `check-code`: Performs static code analysis for both Go and C code.
     - `format-pr`: Displays the commits in your PR in a standardized format.
 
-    **Note:** `check-fmt`,`check-lint`,`check-code`,`format-pr` are individual make command combined under `check-pr`
+    **Note:** `check-fmt`,`check-lint`,`check-code`,`format-pr` are individual make command combined under `check-pr`. You can run the following command without any vm using Makefile
+
+    - For `check-fmt`:
+
+        ```bash
+        make -f builder/Makefile.checkers fmt-check
+        ```
+
+    - For `check-code`:
+
+        ```bash
+        make -f builder/Makefile.checkers code-check
+        ```
 
 4. Fixing Code Formatting: If `check-fmt` reports issues, use:
-
-    ```bash
-    make fix-fmt
-    ```
-
-    This automatically formats your Go and C code to meet project standards. Review the changes with `git status -s` before committing.
-
-If you don't want to depend on host's libraries versions, or your host is not an **Alpine Linux**/**Ubuntu Linux** or you are using the `alpine-make`/`ubuntu-make` container as a replacement for `make`:
-
-you can run the equivalents checks in a container:
-
-- For `check-fmt`:
-
-    ```bash
-    make -f builder/Makefile.checkers fmt-check
-    ```
-
-- For `fix-fmt`:
 
     ```bash
     make -f builder/Makefile.checkers fmt-fix
     ```
 
-- For `check-code`:
-
-    ```bash
-    make -f builder/Makefile.checkers code-check
-    ```
+    This automatically formats your Go and C code to meet project standards. Review the changes with `git status -s` before committing.
 
 ### Performance Considerations
 
