@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.47+insiders-4.53.14">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49+insiders-4.53.14">
     
     
       
@@ -15653,33 +15653,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rego/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    Rego
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -16896,33 +16869,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../flags/rego.1/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    rego
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../flags/cache.1/" class="md-nav__link">
         
   
@@ -17598,12 +17544,9 @@
 
 
 <h1 id="custom-events">Custom Events<a class="headerlink" href="#custom-events" title="Permanent link">&para;</a></h1>
-<p>Tracee comes with lots of events, but you can extend it with events specific to your use case. There are two ways to extend Tracee with your own events:</p>
-<ol>
-<li><a href="../golang/">Go</a></li>
-<li><a href="../rego/">Rego</a></li>
-</ol>
-<p>Once you created your own event, you can load it using the <code>signatures-dir</code> flag. For example, if you created your event in the path <code>/tmp/myevents</code> to use it you would start tracee with:</p>
+<p>Tracee comes with many built-in events, but you can extend its capabilities by creating custom events tailored to your specific needs.</p>
+<p>Currently, custom events can be implemented using Go.  Refer to the <a href="../golang/">Go</a> documentation for detailed instructions on how to define and integrate your custom events into Tracee.</p>
+<p>Once you've created your custom event, load it using the <code>signatures-dir</code> flag. For example, if your custom event is defined in the directory <code>/tmp/myevents</code>, start Tracee with the following command:</p>
 <div class="highlight"><pre><span></span><code>tracee --signatures-dir=/tmp/myevents
 </code></pre></div>
 <div class="admonition tip">
@@ -17662,7 +17605,7 @@ or pass multiple directories for example:
     <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link", "content.code.copy"], "search": "../../../../assets/javascripts/workers/search.c7c1ca2c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.203fd0bc.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.b71cdcd1.min.js"></script>
       
     
   </body>
