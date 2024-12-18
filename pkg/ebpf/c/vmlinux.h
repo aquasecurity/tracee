@@ -658,7 +658,8 @@ struct inode {
     umode_t i_mode;
     struct super_block *i_sb;
     long unsigned int i_ino;
-    struct timespec64 __i_ctime;
+    time64_t i_ctime_sec;
+    u32 i_ctime_nsec;
     loff_t i_size;
     struct file_operations *i_fop;
 };
