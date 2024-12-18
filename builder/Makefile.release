@@ -219,7 +219,7 @@ build-tracee-binary-static: ubuntu-prepare
 # static
 	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf" && \
 		BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee" && \
-		$(CMD_MV) dist/tracee-ebpf dist/tracee-ebpf-static
+		$(CMD_MV) dist/tracee-ebpf dist/tracee-ebpf-static && \
 		$(CMD_MV) dist/tracee dist/tracee-static
 
 .PHONY: build-tracee-binary-shared
