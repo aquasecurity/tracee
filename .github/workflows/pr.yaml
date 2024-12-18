@@ -285,6 +285,10 @@ jobs:
               ["Noble 6.8 aarch64"]="0f5260685b3ec2293 aarch64"
               ["Noble 6.10 x86_64"]="0ae23eabda70efc60 x86_64"
               ["Noble 6.10 aarch64"]="01ce0f71400b5ff38 aarch64"
+              ["Noble 6.11 x86_64"]="0ce1f88aa63091921 x86_64"
+              ["Noble 6.11 aarch64"]="0123508488affb578 aarch64"
+              ["Noble 6.12 x86_64"]="0e38f3caba1b4234d x86_64"
+              ["Noble 6.12 aarch64"]="0547f429681dc1f2a aarch64"
               # expand as needed
           )
           for num in 01; do
