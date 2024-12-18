@@ -39,7 +39,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build
         run: |
-          make -f builder/Makefile.release
+          make -f builder/Makefile.release release
         shell: bash
       - name: Publish to docker.io registry
         run: |
@@ -84,7 +84,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build
         run: |
-          make -f builder/Makefile.release
+          make -f builder/Makefile.release release
         shell: bash
       - name: Publish to docker.io registry
         run: |
