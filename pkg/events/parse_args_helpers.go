@@ -46,7 +46,7 @@ func parseBPFProgType(arg *trace.Argument, progType uint64) {
 	arg.Type = "string"
 	bpfProgTypeArgument, err := parsers.ParseBPFProgType(progType)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = progType
 		return
 	}
 	arg.Value = bpfProgTypeArgument.String()
@@ -157,7 +157,7 @@ func parseBPFCmd(arg *trace.Argument, cmd uint64) {
 	arg.Type = "string"
 	bpfCommandArgument, err := parsers.ParseBPFCmd(cmd)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = cmd
 		return
 	}
 	arg.Value = bpfCommandArgument.String()
