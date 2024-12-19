@@ -354,7 +354,7 @@ func TestDecodeIntArray(t *testing.T) {
 	raw = append(raw, 1, 2, 3, 4, 5, 6, 7, 8)
 	decoder := New(raw)
 	var obtained [2]int32
-	err := decoder.DecodeIntArray(obtained[:], 2)
+	err := decoder.DecodeInt32Array(obtained[:], 2)
 	assert.Equal(t, nil, err)
 	rawcp := append(raw, 1, 2, 3, 4, 5, 6, 7, 8)
 	dataBuff := bytes.NewBuffer(rawcp)
