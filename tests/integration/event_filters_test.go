@@ -1895,7 +1895,7 @@ func Test_EventFilters(t *testing.T) {
 						},
 						Spec: k8s.PolicySpec{
 							Scope: []string{
-								"comm=cat",
+								"comm=more",
 							},
 							DefaultActions: []string{"log"},
 							Rules: []k8s.Rule{
@@ -1917,7 +1917,7 @@ func Test_EventFilters(t *testing.T) {
 						},
 						Spec: k8s.PolicySpec{
 							Scope: []string{
-								"comm=cat",
+								"comm=more",
 							},
 							DefaultActions: []string{"log"},
 							Rules: []k8s.Rule{
@@ -1935,13 +1935,13 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
-					"sh -c 'cat /etc/hostname > /tmp/hostname; cat /etc/shadow > /tmp/shadow; cat /etc/passwd > /tmp/passwd;'",
+					"sh -c 'more /etc/hostname > /tmp/hostname; more /etc/shadow > /tmp/shadow; more /etc/passwd > /tmp/passwd;'",
 					0,
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "cat", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1", "mw-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/tmp/hostname")),
-						expectEvent(anyHost, "cat", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/shadow")),
-						expectEvent(anyHost, "cat", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1", "mw-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/tmp/passwd")),
+						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1", "mw-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/tmp/hostname")),
+						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/shadow")),
+						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1", "mw-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/tmp/passwd")),
 					},
 					[]string{},
 				),
@@ -2004,7 +2004,7 @@ func Test_EventFilters(t *testing.T) {
 						},
 						Spec: k8s.PolicySpec{
 							Scope: []string{
-								"comm=cat",
+								"comm=more",
 							},
 							DefaultActions: []string{"log"},
 							Rules: []k8s.Rule{
@@ -2028,13 +2028,13 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
-					"sh -c 'cat /etc/hostname > /tmp/hostname; cat /etc/shadow > /tmp/shadow; cat /etc/passwd > /tmp/passwd;'",
+					"sh -c 'more /etc/hostname > /tmp/hostname; more /etc/shadow > /tmp/shadow; more /etc/passwd > /tmp/passwd;'",
 					0,
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "cat", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/hostname")),
-						expectEvent(anyHost, "cat", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/shadow")),
-						expectEvent(anyHost, "cat", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/passwd")),
+						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/hostname")),
+						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/shadow")),
+						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/passwd")),
 					},
 					[]string{},
 				),
