@@ -156,31 +156,30 @@ typedef struct args {
 } args_t;
 
 // NOTE: If any fields are added to argument_type_e, the array type_size_table
-// (and related defines) must be updated accordingly.
+// (and related defines) must be updated accordingly. Corresponds to the ArgType enum in
+// pkg/bufferdecoder/eventsreader.go.
 enum argument_type_e
 {
-    NONE_T = 0UL,
+    NONE_T = 0UL, // Default value - the argument does not originate from a decodable buffer.
     INT_T,
     UINT_T,
     LONG_T,
     ULONG_T,
-    OFF_T_T,
-    MODE_T_T,
-    DEV_T_T,
-    SIZE_T_T,
+    U16_T,
+    U8_T,
+    INT_ARR_2_T,
+    UINT64_ARR_T,
     POINTER_T,
+    BYTES_T,
     STR_T,
     STR_ARR_T,
     SOCKADDR_T,
-    BYTES_T,
-    U16_T,
     CRED_T,
-    INT_ARR_2_T,
-    UINT64_ARR_T,
-    U8_T,
     TIMESPEC_T,
     TYPE_MAX = 255UL
 };
+
+#define ARG_TYPE_MAX_ARRAY (u8) TIMESPEC_T // last element defined in argument_type_e
 
 enum internal_hook_e
 {
