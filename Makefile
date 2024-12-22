@@ -318,13 +318,13 @@ help:
 	@echo "    $$ make test-unit                # run unit tests"
 	@echo "    $$ make test-types               # run unit tests for types module"
 	@echo "    $$ make test-integration         # run integration tests"
-	@echo "    $$ make test-signatures          # opa test (tracee-rules)"
 	@echo ""
 	@echo "# flags"
 	@echo ""
 	@echo "    $$ STATIC=1 make ...             # build static binaries"
 	@echo "    $$ BTFHUB=1 STATIC=1 make ...    # build static binaries, embed BTF"
 	@echo "    $$ DEBUG=1 make ...              # build binaries with debug symbols"
+	@echo "    $$ METRICS=1 make ...            # build enabling BPF metrics"
 	@echo ""
 
 #

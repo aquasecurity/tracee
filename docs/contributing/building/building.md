@@ -54,10 +54,12 @@
         $ make tracee-ebpf              # build ./dist/tracee-ebpf
         $ make tracee-rules             # build ./dist/tracee-rules
         $ make tracee-bench             # build ./dist/tracee-bench
+        $ make tracee-gptdocs           # build ./dist/tracee-gptdocs
         $ make signatures               # build ./dist/signatures
         $ make e2e-net-signatures       # build ./dist/e2e-net-signatures
         $ make e2e-inst-signatures      # build ./dist/e2e-inst-signatures
         $ make tracee                   # build ./dist/tracee
+        $ make tracee-operator          # build ./dist/tracee-operator
 
     # clean
 
@@ -68,19 +70,21 @@
         $ make clean-tracee-bench       # wipe ./dist/tracee-bench
         $ make clean-signatures         # wipe ./dist/signatures
         $ make clean-tracee             # wipe ./dist/tracee
+        $ make clean-tracee-operator    # wipe ./dist/tracee-operator
 
     # test
 
         $ make test-unit                # run unit tests
         $ make test-types               # run unit tests for types module
         $ make test-integration         # run integration tests
-        $ make test-signatures          # opa test (tracee-rules)
 
     # flags
 
         $ STATIC=1 make ...             # build static binaries
         $ BTFHUB=1 STATIC=1 make ...    # build static binaries, embed BTF
         $ DEBUG=1 make ...              # build binaries with debug symbols
+        $ METRICS=1 make ...            # build enabling BPF metrics
+
     ```
 
 5. Build **all** targets at once
