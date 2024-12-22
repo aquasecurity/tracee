@@ -14,6 +14,24 @@
     make -f builder/Makefile.k8s help
     ```
 
+    ```text
+    To build the operator docker container:
+
+        $ make -f builder/Makefile.k8s build
+
+    To generate the kubernetes manifests:
+
+        $ make -f builder/Makefile.k8s manifests
+
+    To generate operator code:
+
+        $ make -f builder/Makefile.k8s generate
+
+    Or simply:
+
+        $ make -f builder/Makefile.k8s
+    ```
+
 2. **Deploy Tracee**
 
     Deploy Tracee to your chosen local cluster. The deployment method will vary depending on your needs:
