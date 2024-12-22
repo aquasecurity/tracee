@@ -4,16 +4,6 @@ import "github.com/aquasecurity/tracee/pkg/utils"
 
 // eventFlags is a struct that holds the flags of an event.
 type eventFlags struct {
-	// rulesToSubmit is a bitmap with the policies that require the event,
-	// if matched, to be submitted to the userland from the ebpf program.
-	// It is computed on policies updates.
-	rulesToSubmit uint64
-
-	// rulesToEmit is a bitmask with the policies that require the event,
-	// if matched, to be emitted in the pipeline sink stage.
-	// It is computed on policies updates.
-	rulesToEmit uint64
-
 	// requiredBySignature indicates if the event is required by a signature event.
 	requiredBySignature bool
 
@@ -61,8 +51,8 @@ func eventFlagsWithEnabled(enabled bool) eventFlagsOption {
 func newEventFlags(options ...eventFlagsOption) *eventFlags {
 	// default values
 	ef := &eventFlags{
-		rulesToSubmit:      0,
-		rulesToEmit:        0,
+		rulesToSubmit:       0,
+		rulesToEmit:         0,
 		requiredBySignature: false,
 		enabled:             false,
 	}

@@ -25,17 +25,33 @@ type ManagerConfig struct {
 	CaptureConfig  config.CaptureConfig
 }
 
-// Manager is a thread-safe struct that manages the enabled policies for each rule
+// Manager is responsible for managing all loaded policies and generating lists of rules grouped by event ID.
 type Manager struct {
-	mu              sync.RWMutex
-	cfg             ManagerConfig
+	policies        map[string]*Policy       // Map of policies by name
+	rules           map[events.ID]EventRules // Map of rules by event ID
 	evtsDepsManager *dependencies.Manager
-	ps              *policies
-	// TODO: rules (or eventFlags) should be promoted to a struct like policies is now. eventFlags will become per event rules state
-	// TODO: add mapping from (event id, rule id) to Policy
-	// TODO: think: do we need the rules bitmap to be under eventFlags? To decouple things from bpf, it can be computed when populating the bpf map!
-	rules           map[events.ID]*eventFlags
-	rulesToPolicy   map[events.ID][]*Policy // The slice of policies should be up to 64, which is the max rule count per event
+	bpfInnerMaps    map[string]*bpf.BPFMapLow
+	mu              sync.RWMutex // Read/Write Mutex to protect concurrent access
+	cfg             ManagerConfig
+	// TODO: Rules that depend on other events should add entries to the event's rules array they depend on
+}
+
+// EventData holds information about a specific event.
+type EventRules struct {
+	Rules             []*EventRule         // List of rules associated with this event
+	UserlandRules     []*EventRule         // List of rules with userland filters enabled
+	enabled           bool                 // Flag indicating whether the event is enabled
+	rulesVersion      uint32               // Version of the rules for this event (for future updates)
+	ruleIDCounter     uint8                // Counter to generate unique rule IDs within the event, limited to 64 rules
+	ruleIDToEventRule map[uint8]*EventRule // Map from RuleID to EventRule for fast lookup
+}
+
+// EventRule represents a single rule within an event's rule set.
+type EventRule struct {
+	RuleID   uint8     // Unique ID of the rule within the event (0-63) - used for bitmap position
+	RuleData *RuleData // Data associated with the rule
+	Policy   *Policy   // Reference to the policy where the rule was defined
+	Emit     bool      // Flag to indicate whether the event should be emitted or not // TODO: Consider using an enum or custom type for actions
 }
 
 func NewManager(
@@ -59,7 +75,7 @@ func NewManager(
 		cfg:             cfg,
 		evtsDepsManager: depsManager,
 		ps:              ps,
-		rules:           make(map[events.ID]*eventFlags),
+		events:          make(map[events.ID]*eventFlags),
 	}
 
 	if err := m.initialize(); err != nil {
@@ -107,7 +123,7 @@ func (m *Manager) addDependencyEventToRules(evtID events.ID, dependentEvts []eve
 	var reqBySig bool
 
 	for _, dependentEvent := range dependentEvts {
-		currentFlags, ok := m.rules[dependentEvent]
+		currentFlags, ok := m.events[dependentEvent]
 		if ok {
 			newSubmit |= currentFlags.rulesToSubmit
 			reqBySig = reqBySig || events.Core.GetDefinitionByID(dependentEvent).IsSignature()
@@ -125,7 +141,7 @@ func (m *Manager) addDependencyEventToRules(evtID events.ID, dependentEvts []eve
 }
 
 func (m *Manager) addEventFlags(id events.ID, selectedFlags *eventFlags) {
-	currentFlags, ok := m.rules[id]
+	currentFlags, ok := m.events[id]
 	if ok {
 		currentFlags.rulesToSubmit |= selectedFlags.rulesToSubmit
 		currentFlags.rulesToEmit |= selectedFlags.rulesToEmit
@@ -167,9 +183,10 @@ func (m *Manager) selectEvent(eventID events.ID, selectedState *eventFlags) {
 
 func (m *Manager) removeEventFromRules(evtID events.ID) {
 	logger.Debugw("Remove event from rules", "event", events.Core.GetDefinitionByID(evtID).GetName())
-	delete(m.rules, evtID)
+	delete(m.events, evtID)
 }
 
+// TODO: we can move the following selection functions to be part of the policies compute phase
 func (m *Manager) selectMandatoryEvents() {
 	// Initialize events state with mandatory events (TODO: review this need for sched exec)
 
@@ -280,7 +297,7 @@ func (m *Manager) updateCapsForSelectedEvents() error {
 	// Update capabilities rings with all events dependencies
 
 	caps := capabilities.GetInstance()
-	for id := range m.rules {
+	for id := range m.events {
 		if !events.Core.IsDefined(id) {
 			return errfmt.Errorf("event %d is not defined", id)
 		}
@@ -315,6 +332,8 @@ func (m *Manager) initialize() error {
 	return nil
 }
 
+// TODO: all below functions is related to API - consider moving to a new file
+
 // IsEnabled tests if a event, or a policy per event is enabled (in the future it will also check if a policy is enabled)
 // TODO: add metrics about an event being enabled/disabled, or a policy being enabled/disabled?
 func (m *Manager) IsEnabled(matchedRules uint64, id events.ID) bool {
@@ -338,7 +357,7 @@ func (m *Manager) IsRuleEnabled(matchedRules uint64, id events.ID) bool {
 
 // not synchronized, use IsRuleEnabled instead
 func (m *Manager) isRuleEnabled(matchedRules uint64, id events.ID) bool {
-	flags, ok := m.rules[id]
+	flags, ok := m.events[id]
 	if !ok {
 		return false
 	}
@@ -356,7 +375,7 @@ func (m *Manager) IsEventEnabled(id events.ID) bool {
 
 // not synchronized, use IsEventEnabled instead
 func (m *Manager) isEventEnabled(id events.ID) bool {
-	flags, ok := m.rules[id]
+	flags, ok := m.events[id]
 	if !ok {
 		return false
 	}
@@ -369,9 +388,9 @@ func (m *Manager) EnableEvent(id events.ID) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	flags, ok := m.rules[id]
+	flags, ok := m.events[id]
 	if !ok {
-		m.rules[id] = newEventFlags(
+		m.events[id] = newEventFlags(
 			eventFlagsWithEnabled(true),
 		)
 		return
@@ -385,9 +404,9 @@ func (m *Manager) DisableEvent(id events.ID) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	flags, ok := m.rules[id]
+	flags, ok := m.events[id]
 	if !ok {
-		m.rules[id] = newEventFlags(
+		m.events[id] = newEventFlags(
 			eventFlagsWithEnabled(false),
 		)
 		return
@@ -404,7 +423,7 @@ func (m *Manager) IsRequiredBySignature(id events.ID) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	flags, ok := m.rules[id]
+	flags, ok := m.events[id]
 	if !ok {
 		return false
 	}
@@ -416,7 +435,7 @@ func (m *Manager) MatchEvent(id events.ID, matched uint64) uint64 {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	flags, ok := m.rules[id]
+	flags, ok := m.events[id]
 	if !ok {
 		return 0
 	}
@@ -428,7 +447,7 @@ func (m *Manager) MatchEventInAnyPolicy(id events.ID) uint64 {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	flags, ok := m.rules[id]
+	flags, ok := m.events[id]
 	if !ok {
 		return 0
 	}
@@ -440,8 +459,8 @@ func (m *Manager) EventsSelected() []events.ID {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	eventsSelected := make([]events.ID, 0, len(m.rules))
-	for evt := range m.rules {
+	eventsSelected := make([]events.ID, 0, len(m.events))
+	for evt := range m.events {
 		eventsSelected = append(eventsSelected, evt)
 	}
 
@@ -452,7 +471,7 @@ func (m *Manager) IsEventSelected(id events.ID) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	_, ok := m.rules[id]
+	_, ok := m.events[id]
 	return ok
 }
 
@@ -461,7 +480,7 @@ func (m *Manager) EventsToSubmit() []events.ID {
 	defer m.mu.RUnlock()
 
 	eventsToSubmit := []events.ID{}
-	for evt, flags := range m.rules {
+	for evt, flags := range m.events {
 		if flags.rulesToSubmit != 0 {
 			eventsToSubmit = append(eventsToSubmit, evt)
 		}
@@ -474,7 +493,7 @@ func (m *Manager) IsEventToEmit(id events.ID) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	flags, ok := m.rules[id]
+	flags, ok := m.events[id]
 	if !ok {
 		return false
 	}
@@ -486,7 +505,7 @@ func (m *Manager) IsEventToSubmit(id events.ID) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	flags, ok := m.rules[id]
+	flags, ok := m.events[id]
 	if !ok {
 		return false
 	}
@@ -523,7 +542,7 @@ func (m *Manager) FilterableInUserland() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	return m.ps.filterableInUserland
+	return len(m.ps.userlandRules) != 0
 }
 
 func (m *Manager) WithContainerFilterEnabled() uint64 {
