@@ -801,9 +801,9 @@ func (t *Tracee) getOptionsConfig() uint32 {
 // newConfig returns a new Config instance based on the current Tracee state
 func (t *Tracee) newConfig() *Config {
 	return &Config{
-		TraceePid:       uint32(os.Getpid()),
-		Options:         t.getOptionsConfig(),
-		CgroupV1Hid:     uint32(t.cgroups.GetDefaultCgroupHierarchyID()),
+		TraceePid:   uint32(os.Getpid()),
+		Options:     t.getOptionsConfig(),
+		CgroupV1Hid: uint32(t.cgroups.GetDefaultCgroupHierarchyID()),
 	}
 }
 
@@ -1123,7 +1123,8 @@ func (t *Tracee) populateBPFMaps() error {
 
 // populateFilterMaps populates the eBPF maps with the given policies
 func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
-	polCfg, err := t.policyManager.UpdateBPF(
+	// TODO: no need to return policyConfig anymor remove it from the return value of this function
+	_, err := t.policyManager.UpdateBPF(
 		t.bpfModule,
 		t.containers,
 		t.eventsFieldTypes,
@@ -1136,7 +1137,7 @@ func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
 
 	// Create new config with updated policies and update eBPF map
 
-	cfg := t.newConfig(polCfg)
+	cfg := t.newConfig()
 	if err := cfg.UpdateBPF(t.bpfModule); err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1759,10 +1760,10 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 		}
 		printMemDumpFilters := p.Rules[events.PrintMemDump].DataFilter.GetFieldFilters()
 		if len(printMemDumpFilters) == 0 {
-			errs = append(errs, errfmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
+			errs = append(errs, errfmt.Errorf("policy %s: no address or symbols were provided to print_mem_dump event. "+
 				"please provide it via -e print_mem_dump.data.address=<hex address>"+
 				", -e print_mem_dump.data.symbol_name=<owner>:<symbol> or "+
-				"-e print_mem_dump.data.symbol_name=<symbol> if specifying a system owned symbol", p.ID))
+				"-e print_mem_dump.data.symbol_name=<symbol> if specifying a system owned symbol", p.Name))
 
 			continue
 		}
@@ -1777,7 +1778,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 			field := lengthFilter.Equal()[0]
 			length, err = strconv.ParseUint(field, 10, 64)
 			if err != nil {
-				errs = append(errs, errfmt.Errorf("policy %d: invalid length provided to print_mem_dump event: %v", p.ID, err))
+				errs = append(errs, errfmt.Errorf("policy %s: invalid length provided to print_mem_dump event: %v", p.Name, err))
 
 				continue
 			}
@@ -1788,7 +1789,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 			for _, field := range addressFilter.Equal() {
 				address, err := strconv.ParseUint(field, 16, 64)
 				if err != nil {
-					errs[p.ID] = errfmt.Errorf("policy %d: invalid address provided to print_mem_dump event: %v", p.ID, err)
+					errs = append(errs, errfmt.Errorf("policy %s: invalid address provided to print_mem_dump event: %v", p.Name, err))
 
 					continue
 				}
@@ -1811,14 +1812,14 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 					owner = symbolSlice[0]
 					name = symbolSlice[1]
 				} else {
-					errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - more than one ':' provided", p.ID, field))
+					errs = append(errs, errfmt.Errorf("policy %s: invalid symbols provided to print_mem_dump event: %s - more than one ':' provided", p.Name, field))
 
 					continue
 				}
 				symbol, err := t.kernelSymbols.GetSymbolByOwnerAndName(owner, name)
 				if err != nil {
 					if owner != "system" {
-						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - %v", p.ID, field, err))
+						errs = append(errs, errfmt.Errorf("policy %s: invalid symbols provided to print_mem_dump event: %s - %v", p.Name, field, err))
 
 						continue
 					}

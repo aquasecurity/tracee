@@ -4,27 +4,33 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
+// TODO: move all of this file and structs to be under policy_manager.go
 type policies struct {
-	bpfInnerMaps      map[string]*bpf.BPFMapLow
-	policies          map[string]*Policy
+	bpfInnerMaps map[string]*bpf.BPFMapLow
+	policies     map[string]*Policy
 
 	// computed values
+	rules         map[events.ID][]*Rule // The slice of rules should be up to 64, which is the max rule count per event
+	userlandRules map[events.ID][]*Rule // Rules that have usersland filters enabled (read in a hot path)
+}
 
-	userlandPolicies        []*Policy // reduced list with userland filterable policies (read in a hot path)
-	filterableInUserland    bool
+type Rule struct {
+	ruleData *RuleData // taken from Policy struct
+	policy   *Policy
+	submit   bool
+	emit     bool
 }
 
 func NewPolicies() *policies {
 	return &policies{
-		bpfInnerMaps:            map[string]*bpf.BPFMapLow{},
-		policies:                map[string]*Policy{},
-		userlandPolicies:        []*Policy{},
-		filterableInUserland:    false,
+		bpfInnerMaps:  map[string]*bpf.BPFMapLow{},
+		policies:      map[string]*Policy{},
+		rules:         map[events.ID][]*Rule{},
+		userlandRules: map[events.ID][]*Rule{},
 	}
 }
 
@@ -111,8 +117,8 @@ func (ps *policies) matchedNames(matched uint64) []string {
 
 // allFromMap returns a map of allFromMap policies by ID.
 // When iterating, the order is not guaranteed.
-func (ps *policies) allFromMap() map[int]*Policy {
-	return ps.policiesMapByID
+func (ps *policies) allFromMap() map[string]*Policy {
+	return ps.policies
 }
 
 // Clone returns a deep copy of Policies.
@@ -124,7 +130,7 @@ func (ps *policies) Clone() *policies {
 	nPols := NewPolicies()
 
 	// Deep copy of all policies
-	for _, p := range ps.allFromArray() {
+	for _, p := range ps.policies {
 		if p == nil {
 			continue
 		}

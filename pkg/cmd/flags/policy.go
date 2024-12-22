@@ -107,7 +107,7 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 			return nil, InvalidFlagEmpty()
 		}
 
-		pol, err := createSinglePolicy(policyIdx, policyScope, policyEvents, newBinary)
+		pol, err := createSinglePolicy(policyScope, policyEvents, newBinary)
 		if err != nil {
 			return nil, err
 		}
@@ -117,9 +117,8 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 	return policies, nil
 }
 
-func createSinglePolicy(policyIdx int, policyScope policyScopes, policyEvents policyEvents, newBinary bool) (*policy.Policy, error) {
+func createSinglePolicy(policyScope policyScopes, policyEvents policyEvents, newBinary bool) (*policy.Policy, error) {
 	p := policy.NewPolicy()
-	p.ID = policyIdx
 	p.Name = policyScope.policyName
 
 	if err := parseScopeFilters(p, policyScope.scopeFlags, newBinary); err != nil {

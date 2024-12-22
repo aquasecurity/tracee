@@ -275,11 +275,13 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, normalizedLeaderStartTime)
 			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, normalizedParentStartTime)
 
-			// If there aren't any policies that need filtering in userland, tracee **may** skip
+			// If there aren't any rules that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.
-			// Some base events (derivative and signatures) might not have set related policy bit,
+			// Some base events (derivative and signatures) might not have set related rule bit,
 			// thus the need to continue with those within the pipeline.
-			if t.matchPolicies(evt) == 0 {
+			if t.matchRules(evt) == 0 {
+				// TODO: all of this logic should be removed once we will have matchedRules
+				// With matched rules, we will set bits for derived events and signatures as well
 				_, hasDerivation := t.eventDerivations[eventId]
 				reqBySig := t.policyManager.IsRequiredBySignature(eventId)
 
@@ -300,12 +302,12 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 	return out, errc
 }
 
-// matchPolicies does the userland filtering (policy matching) for events. It iterates through all
+// matchRules does the userland filtering (rule matching) for events. It iterates through all
 // existing policies, that were set by the kernel in the event bitmap. Some of those policies might
-// not match the event after userland filters are applied. In those cases, the policy bit is cleared
-// (so the event is "filtered" for that policy). This may be called in different stages of the
+// not match the event after userland filters are applied. In those cases, the rule bit is cleared
+// (so the event is "filtered" for that rule). This may be called in different stages of the
 // pipeline (decode, derive, engine).
-func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
+func (t *Tracee) matchRules(event *trace.Event) uint64 {
 	eventID := events.ID(event.EventID)
 	bitmap := event.MatchedPoliciesKernel
 
@@ -315,22 +317,25 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		return bitmap
 	}
 
-	// range through each userland filterable policy
+	// range through each userland filterable rule
 	for it := t.policyManager.CreateUserlandIterator(); it.HasNext(); {
 		p := it.Next()
 		// Policy ID is the bit offset in the bitmap.
 		bitOffset := uint(p.ID)
 
-		if !utils.HasBit(bitmap, bitOffset) { // event does not match this policy
+		if !utils.HasBit(bitmap, bitOffset) { // event does not match this rule
 			continue
 		}
 
+		// TODO: remove this comment
 		// The event might have this policy bit set, but the policy might not have this
 		// event ID. This happens whenever the event submitted by the kernel is going to
 		// derive an event that this policy is interested in. In this case, don't do
 		// anything and let the derivation stage handle this event.
 		_, ok := p.Rules[eventID]
 		if !ok {
+			// This should never happen
+			// TODO: add an error
 			continue
 		}
 
@@ -555,7 +560,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					case events.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
-						if t.matchPolicies(event) == 0 {
+						if t.matchRules(event) == 0 {
 							_ = t.stats.EventsFiltered.Increment()
 							continue
 						}
@@ -589,7 +594,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 			}
 
 			// Is the event enabled for the policies or globally?
-			if !t.policyManager.IsEnabled(event.MatchedPoliciesUser, events.ID(event.EventID)) {
+			if !t.policyManager.IsEnabled(event.MatchedRulesUser, events.ID(event.EventID)) {
 				// TODO: create metrics from dropped events
 				t.eventsPool.Put(event)
 				continue

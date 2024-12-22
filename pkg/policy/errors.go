@@ -8,7 +8,7 @@ func PolicyNilError() error {
 	return fmt.Errorf("policy cannot be nil")
 }
 
-func PolicyAlreadyExistsError(name string, idx int) error {
+func PolicyAlreadyExistsError(name string) error {
 	return fmt.Errorf("policy [%s] already exists", name)
 }
 
