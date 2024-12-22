@@ -1094,10 +1094,10 @@ var socketcallCallMap = map[uint64]SocketcallCallArgument{
 	SYS_SENDMMSG.Value():    SYS_SENDMMSG,
 }
 
-// ParseSocketcallCall parses the `call` argument of the `socketcall` syscall
+// ParseSocketCall parses the `call` argument of the `socketcall` syscall
 // http://man7.org/linux/man-pages/man2/socketcall.2.html
 // https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/net.h
-func ParseSocketcallCall(rawValue uint64) (SocketcallCallArgument, error) {
+func ParseSocketCall(rawValue uint64) (SocketcallCallArgument, error) {
 	if v, ok := socketcallCallMap[rawValue]; ok {
 		return v, nil
 	}
