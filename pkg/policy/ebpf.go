@@ -192,6 +192,7 @@ func updateOuterMap(m *bpf.Module, mapName string, mapVersion uint16, innerMap *
 func (ps *policies) createNewDataFilterMapsVersion(
 	bpfModule *bpf.Module,
 	fEqs *filtersEqualities,
+	bpfInnerMaps map[string]*bpf.BPFMapLow,
 ) error {
 	mapsNames := map[string]struct {
 		outerMapName string
@@ -213,7 +214,7 @@ func (ps *policies) createNewDataFilterMapsVersion(
 		// 3. data_filter_exact_version         (u16, u32), data_filter_exact
 		for key := range mapEquality.equalities {
 			innerMapNameTemp := fmt.Sprintf("%s_%d_%d", innerMapName, polsVersion, uint32(key.ID))
-			if ps.bpfInnerMaps[innerMapNameTemp] != nil {
+			if bpfInnerMaps[innerMapNameTemp] != nil {
 				continue
 			}
 
@@ -226,8 +227,8 @@ func (ps *policies) createNewDataFilterMapsVersion(
 				return errfmt.WrapError(err)
 			}
 
-			// store pointer to the new inner map version
-			ps.bpfInnerMaps[newInnerMapName] = newInnerMap
+			// Store pointer to the new inner map version
+			bpfInnerMaps[newInnerMapName] = newInnerMap
 		}
 	}
 
@@ -235,7 +236,7 @@ func (ps *policies) createNewDataFilterMapsVersion(
 }
 
 // createNewFilterMapsVersion creates a new version of the filter maps.
-func (ps *policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
+func (ps *policies) createNewFilterMapsVersion(bpfModule *bpf.Module, bpfInnerMaps map[string]*bpf.BPFMapLow) error {
 	mapsNames := map[string]string{ // inner map name: outer map name
 		UIDFilterMap:         UIDFilterMapVersion,
 		PIDFilterMap:         PIDFilterMapVersion,
@@ -271,8 +272,8 @@ func (ps *policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 			return errfmt.WrapError(err)
 		}
 
-		// store pointer to the new inner map version
-		ps.bpfInnerMaps[innerMapName] = newInnerMap
+		// Store pointer to the new inner map version
+		bpfInnerMaps[innerMapName] = newInnerMap
 	}
 
 	return nil
@@ -290,6 +291,7 @@ func (ps *policies) createNewEventsMapVersion(
 	rules map[events.ID]*eventFlags,
 	eventsFields map[events.ID][]bufferdecoder.ArgType,
 	eventsFilterCfg map[events.ID]stringFilterConfig,
+	bpfInnerMaps map[string]*bpf.BPFMapLow,
 ) error {
 	polsVersion := ps.version()
 	innerMapName := "events_map"
@@ -306,8 +308,8 @@ func (ps *policies) createNewEventsMapVersion(
 		return errfmt.WrapError(err)
 	}
 
-	// store pointer to the new inner map version
-	ps.bpfInnerMaps[innerMapName] = newInnerMap
+	// Store pointer to the new inner map version
+	bpfInnerMaps[innerMapName] = newInnerMap
 
 	for id, ecfg := range rules {
 		stringFilter, exist := eventsFilterCfg[id]
@@ -341,7 +343,7 @@ func (ps *policies) createNewEventsMapVersion(
 }
 
 // updateUIntFilterBPF updates the BPF maps for the given uint equalities.
-func (ps *policies) updateUIntFilterBPF(uintEqualities map[uint64]equality, innerMapName string) error {
+func (ps *policies) updateUIntFilterBPF(uintEqualities map[uint64]equality, innerMapName string, bpfInnerMaps map[string]*bpf.BPFMapLow) error {
 	// UInt equalities
 	// 1. uid_filter        u32, eq_t
 	// 2. pid_filter        u32, eq_t
@@ -359,7 +361,7 @@ func (ps *policies) updateUIntFilterBPF(uintEqualities map[uint64]equality, inne
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInPolicies)
 		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInPolicies)
 
-		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
+		bpfMap, ok := bpfInnerMaps[innerMapName]
 		if !ok {
 			return errfmt.Errorf("bpf map not found: %s", innerMapName)
 		}
@@ -376,7 +378,7 @@ const (
 )
 
 // updateStringFilterBPF updates the BPF maps for the given string equalities.
-func (ps *policies) updateStringFilterBPF(strEqualities map[string]equality, innerMapName string) error {
+func (ps *policies) updateStringFilterBPF(strEqualities map[string]equality, innerMapName string, bpfInnerMaps map[string]*bpf.BPFMapLow) error {
 	// String equalities
 	// 1. uts_ns_filter  string_filter_t, eq_t
 	// 2. comm_filter    string_filter_t, eq_t
@@ -392,7 +394,7 @@ func (ps *policies) updateStringFilterBPF(strEqualities map[string]equality, inn
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInPolicies)
 		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInPolicies)
 
-		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
+		bpfMap, ok := bpfInnerMaps[innerMapName]
 		if !ok {
 			return errfmt.Errorf("bpf map not found: %s", innerMapName)
 		}
@@ -405,7 +407,7 @@ func (ps *policies) updateStringFilterBPF(strEqualities map[string]equality, inn
 }
 
 // updateProcTreeFilterBPF updates the BPF maps for the given process tree equalities.
-func (ps *policies) updateProcTreeFilterBPF(procTreeEqualities map[uint32]equality, innerMapName string) error {
+func (ps *policies) updateProcTreeFilterBPF(procTreeEqualities map[uint32]equality, innerMapName string, bpfInnerMaps map[string]*bpf.BPFMapLow) error {
 	// ProcessTree equality
 	// 1. process_tree_filter  u32, eq_t
 
@@ -419,7 +421,7 @@ func (ps *policies) updateProcTreeFilterBPF(procTreeEqualities map[uint32]equali
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInPolicies)
 		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInPolicies)
 
-		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
+		bpfMap, ok := bpfInnerMaps[innerMapName]
 		if !ok {
 			return errfmt.Errorf("bpf map not found: %s", innerMapName)
 		}
@@ -502,7 +504,7 @@ const (
 )
 
 // updateBinaryFilterBPF updates the BPF maps for the given binary equalities.
-func (ps *policies) updateBinaryFilterBPF(binEqualities map[filters.NSBinary]equality, innerMapName string) error {
+func (ps *policies) updateBinaryFilterBPF(binEqualities map[filters.NSBinary]equality, innerMapName string, bpfInnerMaps map[string]*bpf.BPFMapLow) error {
 	// BinaryNS equality
 	// 1. binary_filter  binary_t, eq_t
 
@@ -527,7 +529,7 @@ func (ps *policies) updateBinaryFilterBPF(binEqualities map[filters.NSBinary]equ
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInPolicies)
 		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInPolicies)
 
-		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
+		bpfMap, ok := bpfInnerMaps[innerMapName]
 		if !ok {
 			return errfmt.Errorf("bpf map not found: %s", innerMapName)
 		}
@@ -540,7 +542,7 @@ func (ps *policies) updateBinaryFilterBPF(binEqualities map[filters.NSBinary]equ
 }
 
 // updateStringDataFilterLPMBPF updates the BPF maps for the given kernel data LPM equalities.
-func (ps *policies) updateStringDataFilterLPMBPF(dataEqualities map[KernelDataFields]equality, innerMapName string) error {
+func (ps *policies) updateStringDataFilterLPMBPF(dataEqualities map[KernelDataFields]equality, innerMapName string, bpfInnerMaps map[string]*bpf.BPFMapLow) error {
 	// KernelDataFields equality
 	// 1. data_filter_prefix  data_filter_lpm_key_t, eq_t
 	// 2. data_filter_suffix  data_filter_lpm_key_t, eq_t
@@ -570,7 +572,7 @@ func (ps *policies) updateStringDataFilterLPMBPF(dataEqualities map[KernelDataFi
 
 		innerMapName := fmt.Sprintf("%s_%d_%d", innerMapName, ps.version(), uint32(k.ID))
 
-		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
+		bpfMap, ok := bpfInnerMaps[innerMapName]
 		if !ok {
 			return errfmt.Errorf("bpf map not found: %s", innerMapName)
 		}
@@ -583,7 +585,7 @@ func (ps *policies) updateStringDataFilterLPMBPF(dataEqualities map[KernelDataFi
 }
 
 // updateStringDataFilterBPF updates the BPF maps for the given kernel data equalities.
-func (ps *policies) updateStringDataFilterBPF(dataEqualities map[KernelDataFields]equality, innerMapName string) error {
+func (ps *policies) updateStringDataFilterBPF(dataEqualities map[KernelDataFields]equality, innerMapName string, bpfInnerMaps map[string]*bpf.BPFMapLow) error {
 	// KernelDataFields equality
 	// 1. data_filter_exact  data_filter_key_t, eq_t
 
@@ -608,7 +610,7 @@ func (ps *policies) updateStringDataFilterBPF(dataEqualities map[KernelDataField
 
 		innerMapName := fmt.Sprintf("%s_%d_%d", innerMapName, ps.version(), uint32(k.ID))
 
-		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
+		bpfMap, ok := bpfInnerMaps[innerMapName]
 		if !ok {
 			return errfmt.Errorf("bpf map not found: %s", innerMapName)
 		}
@@ -677,6 +679,8 @@ func (ps *policies) updateBPF(
 	createNewMaps bool,
 	updateProcTree bool,
 ) (*PoliciesConfig, error) {
+	bpfInnerMaps := make(map[string]*bpf.BPFMapLow)
+
 	fEqs := &filtersEqualities{
 		uidEqualities:        make(map[uint64]equality),
 		pidEqualities:        make(map[uint64]equality),
@@ -703,59 +707,59 @@ func (ps *policies) updateBPF(
 
 	if createNewMaps {
 		// Create new events map version
-		if err := ps.createNewEventsMapVersion(bpfModule, rules, eventsFields, fEvtCfg); err != nil {
+		if err := ps.createNewEventsMapVersion(bpfModule, rules, eventsFields, fEvtCfg, bpfInnerMaps); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 
 		// Create new filter maps version
-		if err := ps.createNewFilterMapsVersion(bpfModule); err != nil {
+		if err := ps.createNewFilterMapsVersion(bpfModule, bpfInnerMaps); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 
 		// Create new filter maps version based on version and event id
 		// TODO: Currently used only for data filters but should be extended to support other types
-		if err := ps.createNewDataFilterMapsVersion(bpfModule, fEqs); err != nil {
+		if err := ps.createNewDataFilterMapsVersion(bpfModule, fEqs, bpfInnerMaps); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 	}
 
 	// Update UInt equalities filter maps
-	if err := ps.updateUIntFilterBPF(fEqs.uidEqualities, UIDFilterMap); err != nil {
+	if err := ps.updateUIntFilterBPF(fEqs.uidEqualities, UIDFilterMap, bpfInnerMaps); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	if err := ps.updateUIntFilterBPF(fEqs.pidEqualities, PIDFilterMap); err != nil {
+	if err := ps.updateUIntFilterBPF(fEqs.pidEqualities, PIDFilterMap, bpfInnerMaps); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	if err := ps.updateUIntFilterBPF(fEqs.mntNSEqualities, MntNSFilterMap); err != nil {
+	if err := ps.updateUIntFilterBPF(fEqs.mntNSEqualities, MntNSFilterMap, bpfInnerMaps); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	if err := ps.updateUIntFilterBPF(fEqs.pidNSEqualities, PidNSFilterMap); err != nil {
+	if err := ps.updateUIntFilterBPF(fEqs.pidNSEqualities, PidNSFilterMap, bpfInnerMaps); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	if err := ps.updateUIntFilterBPF(fEqs.cgroupIdEqualities, CgroupIdFilterMap); err != nil {
+	if err := ps.updateUIntFilterBPF(fEqs.cgroupIdEqualities, CgroupIdFilterMap, bpfInnerMaps); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 
 	// Update String equalities filter maps
-	if err := ps.updateStringFilterBPF(fEqs.utsEqualities, UTSFilterMap); err != nil {
+	if err := ps.updateStringFilterBPF(fEqs.utsEqualities, UTSFilterMap, bpfInnerMaps); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	if err := ps.updateStringFilterBPF(fEqs.commEqualities, CommFilterMap); err != nil {
+	if err := ps.updateStringFilterBPF(fEqs.commEqualities, CommFilterMap, bpfInnerMaps); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 
 	// Data Filter - Prefix match
-	if err := ps.updateStringDataFilterLPMBPF(fEqs.dataEqualitiesPrefix, DataFilterPrefixMap); err != nil {
+	if err := ps.updateStringDataFilterLPMBPF(fEqs.dataEqualitiesPrefix, DataFilterPrefixMap, bpfInnerMaps); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 
 	// Data Filter - Suffix match
-	if err := ps.updateStringDataFilterLPMBPF(fEqs.dataEqualitiesSuffix, DataFilterSuffixMap); err != nil {
+	if err := ps.updateStringDataFilterLPMBPF(fEqs.dataEqualitiesSuffix, DataFilterSuffixMap, bpfInnerMaps); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 
 	// Data Filter - Exact match
-	if err := ps.updateStringDataFilterBPF(fEqs.dataEqualitiesExact, DataFilterExactMap); err != nil {
+	if err := ps.updateStringDataFilterBPF(fEqs.dataEqualitiesExact, DataFilterExactMap, bpfInnerMaps); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 
@@ -765,13 +769,13 @@ func (ps *policies) updateBPF(
 		ps.computeProcTreeEqualities(procTreeEqualities)
 
 		// Update ProcessTree equalities filter map
-		if err := ps.updateProcTreeFilterBPF(procTreeEqualities, ProcessTreeFilterMap); err != nil {
+		if err := ps.updateProcTreeFilterBPF(procTreeEqualities, ProcessTreeFilterMap, bpfInnerMaps); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 	}
 
 	// Update Binary equalities filter map
-	if err := ps.updateBinaryFilterBPF(fEqs.binaryEqualities, BinaryFilterMap); err != nil {
+	if err := ps.updateBinaryFilterBPF(fEqs.binaryEqualities, BinaryFilterMap, bpfInnerMaps); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 	// Update ProcInfo map (required for binary filters)
@@ -785,14 +789,14 @@ func (ps *policies) updateBPF(
 		// This must be done after the filter maps have been updated, as the
 		// policies config map contains the filter config computed from the
 		// policies filters.
-		if err := ps.createNewPoliciesConfigMap(bpfModule); err != nil {
+		if err := ps.createNewPoliciesConfigMap(bpfModule, bpfInnerMaps); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 	}
 
 	// Update policies config map version
 	pCfg := ps.computePoliciesConfig()
-	if err := pCfg.UpdateBPF(ps.bpfInnerMaps[PoliciesConfigMap]); err != nil {
+	if err := pCfg.UpdateBPF(bpfInnerMaps[PoliciesConfigMap]); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 
@@ -800,7 +804,7 @@ func (ps *policies) updateBPF(
 }
 
 // createNewPoliciesConfigMap creates a new version of the policies config map
-func (ps *policies) createNewPoliciesConfigMap(bpfModule *bpf.Module) error {
+func (ps *policies) createNewPoliciesConfigMap(bpfModule *bpf.Module, bpfInnerMaps map[string]*bpf.BPFMapLow) error {
 	version := ps.version()
 	newInnerMap, err := createNewInnerMap(bpfModule, PoliciesConfigMap, version)
 	if err != nil {
@@ -812,7 +816,7 @@ func (ps *policies) createNewPoliciesConfigMap(bpfModule *bpf.Module) error {
 		return errfmt.WrapError(err)
 	}
 
-	ps.bpfInnerMaps[PoliciesConfigMap] = newInnerMap
+	bpfInnerMaps[PoliciesConfigMap] = newInnerMap
 
 	return nil
 }

@@ -1,8 +1,6 @@
 package policy
 
 import (
-	bpf "github.com/aquasecurity/libbpfgo"
-
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -20,11 +18,10 @@ var AlwaysSubmit = events.EventState{
 }
 
 type policies struct {
-	bpfInnerMaps      map[string]*bpf.BPFMapLow // BPF inner maps
-	policiesArray     [PolicyMax]*Policy        // underlying policies array for fast access of empty slots
-	policiesMapByID   map[int]*Policy           // all policies map by ID
-	policiesMapByName map[string]*Policy        // all policies map by name
-	policiesList      []*Policy                 // all policies list
+	policiesArray     [PolicyMax]*Policy // underlying policies array for fast access of empty slots
+	policiesMapByID   map[int]*Policy    // all policies map by ID
+	policiesMapByName map[string]*Policy // all policies map by name
+	policiesList      []*Policy          // all policies list
 
 	// computed values
 
@@ -41,7 +38,6 @@ type policies struct {
 
 func NewPolicies() *policies {
 	return &policies{
-		bpfInnerMaps:            map[string]*bpf.BPFMapLow{},
 		policiesArray:           [PolicyMax]*Policy{},
 		policiesMapByID:         map[int]*Policy{},
 		policiesMapByName:       map[string]*Policy{},
