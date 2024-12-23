@@ -590,15 +590,9 @@ func (m *Manager) LookupByName(name string) (*Policy, error) {
 	return m.ps.lookupByName(name)
 }
 
-func (m *Manager) UpdateBPF(
-	bpfModule *bpf.Module,
-	cts *containers.Containers,
-	eventsFields map[events.ID][]bufferdecoder.ArgType,
-	createNewMaps bool,
-	updateProcTree bool,
-) (*PoliciesConfig, error) {
+func (m *Manager) UpdateBPF(bpfModule *bpf.Module, cts *containers.Containers, eventsFields map[events.ID][]bufferdecoder.ArgType) (*PoliciesConfig, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	return m.ps.updateBPF(bpfModule, cts, m.rules, eventsFields, createNewMaps, updateProcTree)
+	return m.ps.updateBPF(bpfModule, cts, m.rules, eventsFields)
 }

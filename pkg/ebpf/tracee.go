@@ -1126,13 +1126,7 @@ func (t *Tracee) populateBPFMaps() error {
 
 // populateFilterMaps populates the eBPF maps with the given policies
 func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
-	polCfg, err := t.policyManager.UpdateBPF(
-		t.bpfModule,
-		t.containers,
-		t.eventsFieldTypes,
-		true,
-		updateProcTree,
-	)
+	polCfg, err := t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventsFieldTypes)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1271,13 +1265,6 @@ func (t *Tracee) initBPF() error {
 	// collector to free the BPF object
 	t.config.BPFObjBytes = nil
 
-	// Populate eBPF maps with initial data
-
-	err = t.populateBPFMaps()
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
 	// Initialize Control Plane
 
 	t.controlPlane, err = controlplane.NewController(
@@ -1290,8 +1277,9 @@ func (t *Tracee) initBPF() error {
 		return errfmt.WrapError(err)
 	}
 
-	// returned PoliciesConfig is not used here, therefore it's discarded
-	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventsFieldTypes, false, true)
+	// Populate eBPF maps with initial data
+
+	err = t.populateBPFMaps()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

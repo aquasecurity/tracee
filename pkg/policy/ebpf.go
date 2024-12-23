@@ -676,8 +676,6 @@ func (ps *policies) updateBPF(
 	cts *containers.Containers,
 	rules map[events.ID]*eventFlags,
 	eventsFields map[events.ID][]bufferdecoder.ArgType,
-	createNewMaps bool,
-	updateProcTree bool,
 ) (*PoliciesConfig, error) {
 	bpfInnerMaps := make(map[string]*bpf.BPFMapLow)
 
@@ -705,22 +703,20 @@ func (ps *policies) updateBPF(
 		return nil, errfmt.WrapError(err)
 	}
 
-	if createNewMaps {
-		// Create new events map version
-		if err := ps.createNewEventsMapVersion(bpfModule, rules, eventsFields, fEvtCfg, bpfInnerMaps); err != nil {
-			return nil, errfmt.WrapError(err)
-		}
+	// Create new events map version
+	if err := ps.createNewEventsMapVersion(bpfModule, rules, eventsFields, fEvtCfg, bpfInnerMaps); err != nil {
+		return nil, errfmt.WrapError(err)
+	}
 
-		// Create new filter maps version
-		if err := ps.createNewFilterMapsVersion(bpfModule, bpfInnerMaps); err != nil {
-			return nil, errfmt.WrapError(err)
-		}
+	// Create new filter maps version
+	if err := ps.createNewFilterMapsVersion(bpfModule, bpfInnerMaps); err != nil {
+		return nil, errfmt.WrapError(err)
+	}
 
-		// Create new filter maps version based on version and event id
-		// TODO: Currently used only for data filters but should be extended to support other types
-		if err := ps.createNewDataFilterMapsVersion(bpfModule, fEqs, bpfInnerMaps); err != nil {
-			return nil, errfmt.WrapError(err)
-		}
+	// Create new filter maps version based on version and event id
+	// TODO: Currently used only for data filters but should be extended to support other types
+	if err := ps.createNewDataFilterMapsVersion(bpfModule, fEqs, bpfInnerMaps); err != nil {
+		return nil, errfmt.WrapError(err)
 	}
 
 	// Update UInt equalities filter maps
@@ -763,15 +759,13 @@ func (ps *policies) updateBPF(
 		return nil, errfmt.WrapError(err)
 	}
 
-	if updateProcTree {
-		// ProcessTreeFilter equalities
-		procTreeEqualities := make(map[uint32]equality)
-		ps.computeProcTreeEqualities(procTreeEqualities)
+	// ProcessTreeFilter equalities
+	procTreeEqualities := make(map[uint32]equality)
+	ps.computeProcTreeEqualities(procTreeEqualities)
 
-		// Update ProcessTree equalities filter map
-		if err := ps.updateProcTreeFilterBPF(procTreeEqualities, ProcessTreeFilterMap, bpfInnerMaps); err != nil {
-			return nil, errfmt.WrapError(err)
-		}
+	// Update ProcessTree equalities filter map
+	if err := ps.updateProcTreeFilterBPF(procTreeEqualities, ProcessTreeFilterMap, bpfInnerMaps); err != nil {
+		return nil, errfmt.WrapError(err)
 	}
 
 	// Update Binary equalities filter map
@@ -783,15 +777,13 @@ func (ps *policies) updateBPF(
 		return nil, errfmt.WrapError(err)
 	}
 
-	if createNewMaps {
-		// Create the policies config map version
-		//
-		// This must be done after the filter maps have been updated, as the
-		// policies config map contains the filter config computed from the
-		// policies filters.
-		if err := ps.createNewPoliciesConfigMap(bpfModule, bpfInnerMaps); err != nil {
-			return nil, errfmt.WrapError(err)
-		}
+	// Create the policies config map version
+	//
+	// This must be done after the filter maps have been updated, as the
+	// policies config map contains the filter config computed from the
+	// policies filters.
+	if err := ps.createNewPoliciesConfigMap(bpfModule, bpfInnerMaps); err != nil {
+		return nil, errfmt.WrapError(err)
 	}
 
 	// Update policies config map version
