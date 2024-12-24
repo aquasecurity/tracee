@@ -84,7 +84,7 @@ jobs:
   #
   verify-docs:
     name: Verify Documentation
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -128,7 +128,7 @@ jobs:
   #
   verify-analyze-code:
     name: Verify and Analyze Code
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -167,7 +167,7 @@ jobs:
     name: Verify Other Tools
     needs:
       - verify-analyze-code
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -198,7 +198,7 @@ jobs:
     name: Unit Tests
     needs:
       - verify-analyze-code
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -216,7 +216,7 @@ jobs:
     name: Integration Tests
     needs:
       - verify-analyze-code
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -234,7 +234,7 @@ jobs:
     name: Performance Tests
     needs:
       - verify-analyze-code
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -253,7 +253,7 @@ jobs:
     #needs:
     #  - verify-signatures
     #  - verify-tools
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     outputs:
       matrix01: ${{ steps.set-matrix.outputs.matrix01 }}
     steps:

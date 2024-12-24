@@ -69,23 +69,30 @@ endif
 .PHONY: help
 help:
 	@echo ""
-	@echo "CREATES TRACEE SNAPSHOTS FOR TESTING AND RELEASING"
+	@echo "CREATES TRACEE DOCKER IMAGES FOR TESTING AND RELEASING"
 	@echo ""
-	@echo "To GENERATE a release SNAPSHOT (versioned by latest git SHA):"
+	@echo "To GENERATE a snapshot release (versioned by latest git SHA):"
 	@echo ""
-	@echo "  $$ SNAPSHOT=1 make -f builder/Makefile.release"
+	@echo "  $$ make -f builder/Makefile.release snapshot"
 	@echo ""
-	@echo "  > Compiles tracee, tracee-ebpf, tracee-rules and rules"
-	@echo "  > Creates an archive of build artifacts along with license"
-	@echo "  > Takes a checksum of the archive"
+	@echo "Container image:"
 	@echo ""
-	@echo "Container images are:"
+	@echo "  - aquasec/tracee:dev (embedded eBPF CO-RE obj with BTFHUB support)"
+	@echo ""
+	@echo "To GENERATE an official release (versioned by latest git tag):"
+	@echo ""
+	@echo "  $$ make -f builder/Makefile.release release"
+	@echo ""
+	@echo "Container image:"
 	@echo ""
 	@echo "  - aquasec/tracee:latest (embedded eBPF CO-RE obj with BTFHUB support)"
 	@echo ""
+	@echo "  > Both commands build a tracee container image with shared linked objects."
+	@echo "  > The release version also includes a tarball with static binaries."
+	@echo ""
 	@echo "To PUBLISH a release:"
 	@echo ""
-	@echo "  $$ PUSH_DOCKER_REPO=aquasec/tracee make -f builder/Makefile.release"
+	@echo "  $$ DOCKER_REPO=aquasec/tracee make -f builder/Makefile.release"
 	@echo ""
 	@echo "  > Pushes artifact found by the latest git tag to docker.io/aquasec/tracee"
 	@echo ""
@@ -118,16 +125,11 @@ $(OUTPUT_DIR):
 	$(CMD_MKDIR) -p $@
 
 #
-# Create a release snapshot
+# Create official release
 #
 
-SNAPSHOT_VERSION = $(shell git describe --tags --abbrev=0)
-IMAGE_TAG = $(subst v,,$(SNAPSHOT_VERSION))
-
-ifeq ("$(SNAPSHOT)", "1")
-	SNAPSHOT_VERSION = $(shell  git rev-parse --short HEAD)
-	IMAGE_TAG = $(SNAPSHOT_VERSION)
-endif
+RELEASE_VERSION = $(shell $(CMD_GIT) describe --tags --abbrev=0)
+DOCKER_TAG = $(subst v,,$(RELEASE_VERSION))
 
 RELEASE_FILES = LICENSE
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-ebpf
@@ -139,15 +141,20 @@ RELEASE_FILES += $(OUTPUT_DIR)/signatures
 #RELEASE_FILES += $(OUTPUT_DIR)/tracee.bpf.o
 RELEASE_FILES += $(OUTPUT_DIR)/docs/man/ # docs path is hardcoded in tracee
 
-OUT_ARCHIVE := $(OUTPUT_DIR)/tracee-$(ARCH).$(SNAPSHOT_VERSION).tar.gz
-OUT_CHECKSUMS := $(OUTPUT_DIR)/checksum-$(ARCH).$(SNAPSHOT_VERSION).txt
+OUT_ARCHIVE := $(OUTPUT_DIR)/tracee-$(ARCH).$(RELEASE_VERSION).tar.gz
+OUT_CHECKSUMS := $(OUTPUT_DIR)/checksum-$(ARCH).$(RELEASE_VERSION).txt
 
-PUSH_DOCKER_REPO ?= aquasec/tracee
+DOCKER_REPO ?= aquasec/tracee
+RELEASE_GITHUB ?= 1
+
+release: override BTFHUB=1
+release: override STATIC=0
+release: override SNAPSHOT=0
 
 .PHONY: release
 release: \
 	$(OUTPUT_DIR) \
-	build-tracee-btfhub \
+	build-tracee-container \
 	build-tracee-binary-static \
 	build-tracee-binary-shared \
 	copy-man \
@@ -161,7 +168,7 @@ release: \
 #
 # release rule recipes
 #
-ifneq ("$(SNAPSHOT)", "1")
+ifeq ("$(RELEASE_GITHUB)", "1")
 #
 # official release
 #
@@ -177,11 +184,11 @@ ifneq ("$(SNAPSHOT)", "1")
 	( \
 		echo "Creating release $(SNAPSHOT_VERSION)" && \
 		echo '## Docker Image' > $(RELEASE_NOTES) && \
-		echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):$(IMAGE_TAG)`' >> $(RELEASE_NOTES) && \
+		echo '- `docker pull docker.io/$(DOCKER_REPO):$(DOCKER_TAG)`' >> $(RELEASE_NOTES) && \
 		echo '  ' >> $(RELEASE_NOTES) && \
 		echo '## Docker Images (per architecture)  ' >> $(RELEASE_NOTES) && \
-		echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):x86_64-$(IMAGE_TAG)`' >> $(RELEASE_NOTES) && \
-		echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):aarch64-$(IMAGE_TAG)`' >> $(RELEASE_NOTES) && \
+		echo '- `docker pull docker.io/$(DOCKER_REPO):x86_64-$(DOCKER_TAG)`' >> $(RELEASE_NOTES) && \
+		echo '- `docker pull docker.io/$(DOCKER_REPO):aarch64-$(DOCKER_TAG)`' >> $(RELEASE_NOTES) && \
 		$(CMD_GITHUB) release create $(SNAPSHOT_VERSION) --title $(SNAPSHOT_VERSION) --notes-file $(RELEASE_NOTES) \
 	)
 
@@ -192,7 +199,23 @@ endif
 
 
 #
-# build tracee
+# Create snapshot release
+#
+
+snapshot: override BTFHUB=0
+snapshot: override STATIC=0
+snapshot: override SNAPSHOT=1
+snapshot: override RELEASE_VERSION=
+
+.PHONY: snapshot
+snapshot: \
+	$(OUTPUT_DIR) \
+	build-tracee-container \
+	| .check_tree
+
+
+#
+# build tracee container
 #
 
 .PHONY: alpine-prepare
@@ -200,10 +223,11 @@ alpine-prepare:
 	$(MAKE) -f builder/Makefile.tracee-make alpine-prepare && \
 		$(MAKE) -f builder/Makefile.tracee-make alpine-prepare ARG="clean"
 
-.PHONY: build-tracee-btfhub
-build-tracee-btfhub: alpine-prepare
-# build official container image (CO-RE + BTFHUB)
-	BTFHUB=1 SNAPSHOT=$(SNAPSHOT) $(MAKE) -f builder/Makefile.tracee-container build-tracee
+.PHONY: build-tracee-container
+build-tracee-container: alpine-prepare
+# build official container image (CO-RE obj)
+	BTFHUB=$(BTFHUB) STATIC=$(STATIC) SNAPSHOT=$(SNAPSHOT) RELEASE_VERSION=$(RELEASE_VERSION) \
+		$(MAKE) -f builder/Makefile.tracee-container build-tracee
 
 #
 # build binaries (tracee, tracee-ebpf, tracee-rules, rules)
@@ -217,15 +241,16 @@ ubuntu-prepare:
 .PHONY: build-tracee-binary-static
 build-tracee-binary-static: ubuntu-prepare
 # static
-	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf" && \
-		BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee" && \
-		$(CMD_MV) dist/tracee-ebpf dist/tracee-ebpf-static
+	BTFHUB=0 STATIC=1 RELEASE_VERSION=$(RELEASE_VERSION) \
+		$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf tracee" && \
+		$(CMD_MV) dist/tracee-ebpf dist/tracee-ebpf-static && \
 		$(CMD_MV) dist/tracee dist/tracee-static
 
 .PHONY: build-tracee-binary-shared
 build-tracee-binary-shared: ubuntu-prepare
 # shared libs
-	BTFHUB=0 STATIC=0 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
+	BTFHUB=0 STATIC=0 RELEASE_VERSION=$(RELEASE_VERSION) \
+		$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
 
 .PHONY: copy-man
 copy-man: \

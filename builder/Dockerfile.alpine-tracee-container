@@ -108,6 +108,8 @@ RUN cd /tmp && \
 FROM tracee-make-base AS tracee-make
 LABEL AS=tracee-make
 ARG BTFHUB
+ARG STATIC
+ARG RELEASE_VERSION
 USER root
 ENV HOME=/tracee
 WORKDIR /tracee
@@ -116,8 +118,7 @@ COPY . /tracee
 
 RUN source /etc/profile && \
     make clean && \
-    BTFHUB=$BTFHUB make tracee && \
-    BTFHUB=$BTFHUB make tracee-ebpf && \
+    BTFHUB=$BTFHUB STATIC=$STATIC RELEASE_VERSION=$RELEASE_VERSION make tracee tracee-ebpf && \
     make tracee-rules && \
     make tracee-operator && \
     make signatures && \

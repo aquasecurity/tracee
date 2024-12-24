@@ -101,6 +101,10 @@ ifeq ($(BTFHUB),)
 BTFHUB=0
 endif
 
+ifeq ($(STATIC),)
+STATIC=0
+endif
+
 SNAPSHOT ?= 0
 TAG ?= latest
 
@@ -121,6 +125,8 @@ build-tracee: \
 		-f $(TRACEE_CONT_DOCKERFILE) \
 		-t $(TRACEE_CONT_NAME) \
 		--build-arg=BTFHUB=$(BTFHUB) \
+		--build-arg=STATIC=$(STATIC) \
+		--build-arg=RELEASE_VERSION=$(RELEASE_VERSION) \
 		--build-arg=FLAVOR=tracee-core \
 		--target tracee-core \
 		.
