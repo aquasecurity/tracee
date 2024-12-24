@@ -120,7 +120,7 @@ type Tracee struct {
 	// Streams
 	streamsManager *streams.StreamsManager
 	// policyManager manages policy state
-	policyManager *policy.Manager
+	policyManager *policy.PolicyManager
 	// The dependencies of events used by Tracee
 	eventsDependencies *dependencies.Manager
 	// Ksymbols needed to be kept alive in table.
@@ -865,14 +865,8 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 		}
 	}
 	if t.policyManager.IsEventSelected(events.PrintMemDump) {
-		for it := t.policyManager.CreateAllIterator(); it.HasNext(); {
-			p := it.Next()
-			// This might break in the future if PrintMemDump will become a dependency of another event.
-			_, isSelected := p.Rules[events.PrintMemDump]
-			if !isSelected {
-				continue
-			}
-			printMemDumpFilters := p.Rules[events.PrintMemDump].DataFilter.GetFieldFilters()
+		for _, rule := range t.policyManager.GetRules(events.PrintMemDump) {
+			printMemDumpFilters := rule.RuleData.DataFilter.GetFieldFilters()
 			if len(printMemDumpFilters) == 0 {
 				continue
 			}
@@ -1640,7 +1634,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		event.PoliciesVersion = 1 // version will be removed soon
 		event.MatchedPoliciesKernel = matchedPolicies
 		event.MatchedPoliciesUser = matchedPolicies
-		event.MatchedPolicies = t.policyManager.MatchedNames(matchedPolicies)
+		event.MatchedPolicies = t.policyManager.GetMatchedPolicyNames(events.ID(event.EventID), matchedPolicies)
 	}
 
 	policiesMatch := func(id events.ID) uint64 {
@@ -1751,19 +1745,13 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 
 	var errs []error
 
-	for it := t.policyManager.CreateAllIterator(); it.HasNext(); {
-		p := it.Next()
-		// This might break in the future if PrintMemDump will become a dependency of another event.
-		_, isSelected := p.Rules[events.PrintMemDump]
-		if !isSelected {
-			continue
-		}
-		printMemDumpFilters := p.Rules[events.PrintMemDump].DataFilter.GetFieldFilters()
+	for _, rule := range t.policyManager.GetRules(events.PrintMemDump) {
+		printMemDumpFilters := rule.RuleData.DataFilter.GetFieldFilters()
 		if len(printMemDumpFilters) == 0 {
 			errs = append(errs, errfmt.Errorf("policy %s: no address or symbols were provided to print_mem_dump event. "+
 				"please provide it via -e print_mem_dump.data.address=<hex address>"+
 				", -e print_mem_dump.data.symbol_name=<owner>:<symbol> or "+
-				"-e print_mem_dump.data.symbol_name=<symbol> if specifying a system owned symbol", p.Name))
+				"-e print_mem_dump.data.symbol_name=<symbol> if specifying a system owned symbol", rule.Policy.Name))
 
 			continue
 		}
@@ -1778,7 +1766,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 			field := lengthFilter.Equal()[0]
 			length, err = strconv.ParseUint(field, 10, 64)
 			if err != nil {
-				errs = append(errs, errfmt.Errorf("policy %s: invalid length provided to print_mem_dump event: %v", p.Name, err))
+				errs = append(errs, errfmt.Errorf("policy %s: invalid length provided to print_mem_dump event: %v", rule.Policy.Name, err))
 
 				continue
 			}
@@ -1789,7 +1777,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 			for _, field := range addressFilter.Equal() {
 				address, err := strconv.ParseUint(field, 16, 64)
 				if err != nil {
-					errs = append(errs, errfmt.Errorf("policy %s: invalid address provided to print_mem_dump event: %v", p.Name, err))
+					errs = append(errs, errfmt.Errorf("policy %s: invalid address provided to print_mem_dump event: %v", rule.Policy.Name, err))
 
 					continue
 				}
@@ -1812,14 +1800,14 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 					owner = symbolSlice[0]
 					name = symbolSlice[1]
 				} else {
-					errs = append(errs, errfmt.Errorf("policy %s: invalid symbols provided to print_mem_dump event: %s - more than one ':' provided", p.Name, field))
+					errs = append(errs, errfmt.Errorf("policy %s: invalid symbols provided to print_mem_dump event: %s - more than one ':' provided", rule.Policy.Name, field))
 
 					continue
 				}
 				symbol, err := t.kernelSymbols.GetSymbolByOwnerAndName(owner, name)
 				if err != nil {
 					if owner != "system" {
-						errs = append(errs, errfmt.Errorf("policy %s: invalid symbols provided to print_mem_dump event: %s - %v", p.Name, field, err))
+						errs = append(errs, errfmt.Errorf("policy %s: invalid symbols provided to print_mem_dump event: %s - %v", rule.Policy.Name, field, err))
 
 						continue
 					}
@@ -1846,7 +1834,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 							values[i] = v
 						}
 						attemptedSymbols := fmt.Sprintf("{%s,%s,%s,%s}%s", values...)
-						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s", p.ID, attemptedSymbols))
+						errs = append(errs, errfmt.Errorf("policy %s: invalid symbols provided to print_mem_dump event: %s", rule.Policy.Name, attemptedSymbols))
 
 						continue
 					}
@@ -1889,7 +1877,7 @@ func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
 	var policyMask uint64
 
 	for _, policyName := range policyNames {
-		p, err := t.policyManager.LookupByName(policyName)
+		p, err := t.policyManager.LookupPolicyByName(policyName)
 		if err != nil {
 			return nil, err
 		}

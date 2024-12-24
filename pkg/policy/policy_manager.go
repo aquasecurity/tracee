@@ -17,7 +17,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/proctree"
-	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type ManagerConfig struct {
@@ -27,7 +26,7 @@ type ManagerConfig struct {
 }
 
 // Manager is responsible for managing all loaded policies and generating lists of rules grouped by event ID.
-type Manager struct {
+type PolicyManager struct {
 	policies        map[string]*Policy       // Map of policies by name
 	rules           map[events.ID]EventRules // Map of rules by event ID
 	evtsDepsManager *dependencies.Manager
@@ -39,12 +38,13 @@ type Manager struct {
 
 // EventData holds information about a specific event.
 type EventRules struct {
-	Rules             []*EventRule         // List of rules associated with this event
-	UserlandRules     []*EventRule         // List of rules with userland filters enabled
-	enabled           bool                 // Flag indicating whether the event is enabled
-	rulesVersion      uint32               // Version of the rules for this event (for future updates)
-	ruleIDCounter     uint8                // Counter to generate unique rule IDs within the event, limited to 64 rules
-	ruleIDToEventRule map[uint8]*EventRule // Map from RuleID to EventRule for fast lookup
+	Rules                  []*EventRule         // List of rules associated with this event
+	UserlandRules          []*EventRule         // List of rules with userland filters enabled
+	enabled                bool                 // Flag indicating whether the event is enabled
+	rulesVersion           uint32               // Version of the rules for this event (for future updates)
+	ruleIDCounter          uint8                // Counter to generate unique rule IDs within the event, limited to 64 rules
+	ruleIDToEventRule      map[uint8]*EventRule // Map from RuleID to EventRule for fast lookup
+	containerFilteredRules uint64               // Bitmap to track container-filtered rules
 }
 
 // EventRule represents a single rule within an event's rule set.
@@ -59,12 +59,12 @@ func NewManager(
 	cfg ManagerConfig,
 	evtsDepsManager *dependencies.Manager,
 	initialPolicies ...*Policy,
-) (*Manager, error) {
+) (*PolicyManager, error) {
 	if evtsDepsManager == nil {
 		panic("evtDepsManager is nil")
 	}
 
-	m := &Manager{
+	pm := &PolicyManager{
 		policies:        make(map[string]*Policy),
 		rules:           make(map[events.ID]EventRules),
 		evtsDepsManager: evtsDepsManager,
@@ -73,165 +73,428 @@ func NewManager(
 	}
 
 	for _, p := range initialPolicies {
-		if err := m.addPolicy(p); err != nil {
+		if err := pm.AddPolicy(p); err != nil {
 			logger.Errorw("failed to add initial policy", "error", err)
 		}
 	}
 
-	if err := m.initialize(); err != nil {
+	if err := pm.initialize(); err != nil {
 		return nil, errfmt.Errorf("failed to initialize policy manager: %s", err)
 	}
 
-	return m, nil
+	return pm, nil
 }
 
 // version returns the version of the Policies.
-func (m *Manager) version() uint16 {
+func (pm *PolicyManager) version() uint16 {
 	return 1
 }
 
-// addPolicy adds a policy.
-func (m *Manager) addPolicy(p *Policy) error {
-	if p == nil {
+// AddPolicyOption is a functional option for the AddPolicy method.
+type AddPolicyOption func(*addPolicyOptions)
+
+// addPolicyOptions contains the options for adding a policy.
+type addPolicyOptions struct {
+	override bool
+}
+
+// WithOverride is an AddPolicyOption that allows overriding an existing policy.
+func WithOverride() AddPolicyOption {
+	return func(opts *addPolicyOptions) {
+		opts.override = true
+	}
+}
+
+// AddPolicy adds a new policy or updates an existing policy in the PolicyManager.
+func (pm *PolicyManager) AddPolicy(policy *Policy, opts ...AddPolicyOption) error {
+	if policy == nil {
 		return PolicyNilError()
 	}
-	if _, ok := m.policies[p.Name]; ok {
-		return PolicyAlreadyExistsError(p.Name)
+
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+
+	options := addPolicyOptions{
+		override: false, // Default behavior: no override
+	}
+	for _, opt := range opts {
+		opt(&options)
 	}
 
-	m.policies[p.Name] = p
+	if _, exists := pm.policies[policy.Name]; exists && !options.override {
+		return PolicyAlreadyExistsError(policy.Name)
+	}
 
-	m.computeRules()
+	// Create a temporary copy of the relevant parts of the PolicyManager's state
+	tempPolicies := make(map[string]*Policy)
+	for k, v := range pm.policies {
+		tempPolicies[k] = v
+	}
+	tempRules := make(map[events.ID]EventRules)
+	for k, v := range pm.rules {
+		tempRules[k] = deepCopyEventRules(v)
+	}
+
+	// Perform operations on the temporary copies
+	tempPolicies[policy.Name] = policy // Add or update the policy
+
+	// Update EventRules for each event affected by the policy
+	for eventID := range policy.Rules {
+		if err := updateRulesForEvent(eventID, tempRules, tempPolicies); err != nil {
+			return err
+		}
+	}
+
+	// If all operations are successful, commit the changes to the actual PolicyManager
+	pm.policies = tempPolicies
+	pm.rules = tempRules
+
+	// TODO: Notify listeners (if any) about the policy change
 
 	return nil
 }
 
-// setPolicy sets a policy.
-func (m *Manager) setPolicy(p *Policy) error {
-	if p == nil {
-		return PolicyNilError()
+// RemovePolicy removes a policy from the PolicyManager.
+func (pm *PolicyManager) RemovePolicy(policyName string) error {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+
+	policyToRemove, exists := pm.policies[policyName]
+	if !exists {
+		return PolicyNotFoundByNameError(policyName)
 	}
 
-	// TODO: we can merge set and add together to avoid code duplication
-	m.policies[p.Name] = p
+	// Create temporary copies for rollback
+	tempPolicies := make(map[string]*Policy)
+	for k, v := range pm.policies {
+		tempPolicies[k] = v
+	}
+	tempRules := make(map[events.ID]EventRules)
+	for k, v := range pm.rules {
+		tempRules[k] = deepCopyEventRules(v)
+	}
 
-	m.computeRules()
+	// Perform operations on the temporary copies
+	delete(tempPolicies, policyName) // Remove the policy
+
+	// Update EventRules for each event affected by the policy
+	for eventID := range policyToRemove.Rules {
+		if err := updateRulesForEvent(eventID, tempRules, tempPolicies); err != nil {
+			return err
+		}
+	}
+
+	// Commit the changes to the actual PolicyManager
+	pm.policies = tempPolicies
+	pm.rules = tempRules
+
+	// TODO: Notify listeners (if any) about the policy removal
 
 	return nil
 }
 
-// removePolicy removes a policy by name.
-func (m *Manager) removePolicy(name string) error {
-	p, ok := m.policies[name]
-	if !ok {
-		return PolicyNotFoundByNameError(name)
+// deepCopyEventRules creates a deep copy of an EventRules struct.
+func deepCopyEventRules(original EventRules) EventRules {
+	copied := EventRules{
+		rulesVersion:           original.rulesVersion,
+		ruleIDCounter:          original.ruleIDCounter,
+		containerFilteredRules: original.containerFilteredRules,
+		Rules:                  make([]*EventRule, len(original.Rules)),
+		UserlandRules:          make([]*EventRule, len(original.UserlandRules)),
+		ruleIDToEventRule:      make(map[uint8]*EventRule, len(original.ruleIDToEventRule)),
 	}
 
-	delete(m.policies, p.Name)
-
-	m.computeRules()
-
-	return nil
-}
-
-// compute recalculates values, updates flags, fills the reduced userland map,
-// and sets the related bitmap that is used to prevent the iteration of the entire map.
-//
-// It must be called at every runtime policies changes.
-func (m *Manager) compute() {
-	ps.updateContainerFilterEnabled()
-	ps.updateUserlandRules()
-}
-
-func (m *Manager) updateContainerFilterEnabled() {
-	ps.containerFiltersEnabled = 0
-
-	for _, p := range ps.allFromMap() {
-		if p.ContainerFilterEnabled() {
-			utils.SetBit(&ps.containerFiltersEnabled, uint(p.ID))
+	// Deep copy Rules
+	for i, rule := range original.Rules {
+		copied.Rules[i] = &EventRule{
+			RuleID:   rule.RuleID,
+			RuleData: rule.RuleData, // RuleData pointers can be shared
+			Policy:   rule.Policy,   // Policy pointers can be shared
+			Emit:     rule.Emit,
 		}
 	}
-}
 
-// updateUserlandRules sets the userlandRules list.
-func (m *Manager) updateUserlandRules() {
-	userlandList := []*Policy{}
-
-	for _, p := range ps.allFromMap() {
-		if p == nil {
-			continue
+	// Deep copy UserlandRules
+	for i, rule := range original.UserlandRules {
+		copied.UserlandRules[i] = &EventRule{
+			RuleID:   rule.RuleID,
+			RuleData: rule.RuleData, // RuleData pointers can be shared
+			Policy:   rule.Policy,   // Policy pointers can be shared
+			Emit:     rule.Emit,
 		}
+	}
 
-		hasUserlandFilters := false
-		uidFilterableInUserland := false
-		pidFilterableInUserland := false
-
-		if p.UIDFilter.Enabled() &&
-			((p.UIDFilter.Minimum() != filters.MinNotSetUInt) ||
-				(p.UIDFilter.Maximum() != filters.MaxNotSetUInt)) {
-			uidFilterableInUserland = true
-		}
-
-		if p.PIDFilter.Enabled() &&
-			((p.PIDFilter.Minimum() != filters.MinNotSetUInt) ||
-				(p.PIDFilter.Maximum() != filters.MaxNotSetUInt)) {
-			pidFilterableInUserland = true
-		}
-
-		// Check filters under Rules
-		for _, rule := range p.Rules {
-			if rule.DataFilter.Enabled() ||
-				rule.RetFilter.Enabled() ||
-				rule.ScopeFilter.Enabled() {
-				hasUserlandFilters = true
+	// Deep copy ruleIDToEventRule
+	for k, v := range original.ruleIDToEventRule {
+		// Find the corresponding rule in the copied.Rules slice
+		for _, copiedRule := range copied.Rules {
+			if copiedRule.RuleID == v.RuleID {
+				copied.ruleIDToEventRule[k] = copiedRule
 				break
 			}
 		}
+	}
 
-		// Check other filters
-		if hasUserlandFilters || uidFilterableInUserland || pidFilterableInUserland {
-			// add policy to userland list
-			userlandList = append(userlandList, p)
+	return copied
+}
+
+// updateRulesForEvent rebuilds the EventRules for the given eventID in the tempRules map.
+// It gathers applicable rules from tempPolicies, assigns RuleIDs, and increments the rules version.
+func updateRulesForEvent(eventID events.ID, tempRules map[events.ID]EventRules, tempPolicies map[string]*Policy) error {
+	// 1. Gather rules from all policies that apply to this event
+	var rules, userlandRules []*EventRule
+	ruleIDToEventRule := make(map[uint8]*EventRule)
+	ruleIDCounter := uint8(0)
+	var containerFilteredRules uint64
+
+	for _, policy := range tempPolicies {
+		ruleData, ok := policy.Rules[eventID]
+		if !ok {
+			continue // This policy doesn't have rules for this event
+		}
+
+		// Check if ruleIDCounter exceeds maximum
+		if ruleIDCounter >= 64 {
+			eventName := events.Core.GetDefinitionByID(eventID).GetName()
+			return TooManyRulesForEventError(eventName)
+		}
+
+		eventRule := &EventRule{
+			RuleID:   ruleIDCounter,
+			RuleData: &ruleData,
+			Policy:   policy,
+			Emit:     true,
+		}
+
+		rules = append(rules, eventRule)
+		ruleIDToEventRule[ruleIDCounter] = eventRule
+
+		// Update containerFilteredRules bitmap
+		if policy.ContainerFilterEnabled() {
+			containerFilteredRules |= 1 << ruleIDCounter
+		}
+
+		ruleIDCounter++
+
+		// Check if the rule is filterable in userland and add it to UserlandRules
+		if isRuleFilterableInUserland(eventRule) {
+			userlandRules = append(userlandRules, eventRule)
 		}
 	}
 
-	ps.userlandRules = userlandList
+	// 2. Update the EventRules for the event in the temporary map
+	tempRules[eventID] = EventRules{
+		Rules:                  rules,
+		UserlandRules:          userlandRules,
+		ruleIDToEventRule:      ruleIDToEventRule,
+		rulesVersion:           tempRules[eventID].rulesVersion + 1, // Increment the event's rules version
+		ruleIDCounter:          ruleIDCounter,                       // Update the ruleIDCounter
+		containerFilteredRules: containerFilteredRules,
+	}
+
+	return nil
+}
+
+// isRuleFilterableInUserland checks if a rule is filterable in userland.
+func isRuleFilterableInUserland(rule *EventRule) bool {
+	// Check filters under RuleData
+	if rule.RuleData.DataFilter.Enabled() ||
+		rule.RuleData.RetFilter.Enabled() ||
+		rule.RuleData.ScopeFilter.Enabled() {
+		return true
+	}
+
+	// Check policy-level filters (UID and PID)
+	p := rule.Policy
+	if p.UIDFilter.Enabled() &&
+		((p.UIDFilter.Minimum() != filters.MinNotSetUInt) ||
+			(p.UIDFilter.Maximum() != filters.MaxNotSetUInt)) {
+		return true
+	}
+
+	if p.PIDFilter.Enabled() &&
+		((p.PIDFilter.Minimum() != filters.MinNotSetUInt) ||
+			(p.PIDFilter.Maximum() != filters.MaxNotSetUInt)) {
+		return true
+	}
+
+	return false
 }
 
 // lookupPolicyByName returns a policy by name.
-func (m *Manager) lookupPolicyByName(name string) (*Policy, error) {
-	if p, ok := m.policies[name]; ok {
+func (pm *PolicyManager) LookupPolicyByName(name string) (*Policy, error) {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	if p, ok := pm.policies[name]; ok {
 		return p, nil
 	}
 
 	return nil, PolicyNotFoundByNameError(name)
 }
 
-// matchedPolicyNames returns a list of matched policy names based on
-// the given matched bitmap.
-func (m *Manager) matchedPolicyNames(matched uint64) []string {
-	names := []string{}
+// GetRules returns the Rules slice for a given event ID.
+//
+// Warning: This function returns a direct reference to the internal Rules slice.
+// While the implementation ensures that the returned slice will not be modified
+// directly, it may be replaced entirely by concurrent updates to the PolicyManager.
+// The caller MUST NOT modify the returned slice and should be aware that the
+// slice may become stale if the PolicyManager's state is changed concurrently.
+// It is the caller's responsibility to ensure that they are not relying on
+// the slice to remain unchanged across calls to AddPolicy, RemovePolicy, or
+// any other function that might update the PolicyManager's rules.
+func (pm *PolicyManager) GetRules(eventID events.ID) []*EventRule {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
 
-	// TODO: this will take event id and matched rules bitmap, and map to policies in userspace
-	// for _, p := range ps.allFromMap() {
-	// 	if utils.HasBit(matched, uint(p.ID)) {
-	// 		names = append(names, p.Name)
-	// 	}
-	// }
+	eventRules, ok := pm.rules[eventID]
+	if !ok {
+		return nil // Or return an empty slice: []*EventRule{}
+	}
 
-	return names
+	return eventRules.Rules
 }
 
-// allPoliciesFromMap returns a map of allFromMap policies by ID.
-// When iterating, the order is not guaranteed.
-func (m *Manager) allPoliciesFromMap() map[string]*Policy {
-	return m.policies
+// GetUserlandRules returns the UserlandRules slice for a given event ID.
+//
+// Warning: This function returns a direct reference to the internal UserlandRules slice.
+// While the implementation ensures that the returned slice will not be modified
+// directly, it may be replaced entirely by concurrent updates to the PolicyManager.
+// The caller MUST NOT modify the returned slice and should be aware that the
+// slice may become stale if the PolicyManager's state is changed concurrently.
+// It is the caller's responsibility to ensure that they are not relying on
+// the slice to remain unchanged across calls to AddPolicy, RemovePolicy, or
+// any other function that might update the PolicyManager's rules.
+func (pm *PolicyManager) GetUserlandRules(eventID events.ID) []*EventRule {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	eventRules, ok := pm.rules[eventID]
+	if !ok {
+		return nil // Or return an empty slice: []*EventRule{}
+	}
+
+	return eventRules.UserlandRules
 }
 
-func (m *Manager) subscribeDependencyHandlers() {
+// GetContainerFilteredRulesBitmap returns a bitmap where each bit represents a rule
+// for the given event ID, and the bit is set if the corresponding rule has
+// container filtering enabled.
+func (pm *PolicyManager) GetContainerFilteredRulesBitmap(eventID events.ID) uint64 {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	eventRules, ok := pm.rules[eventID]
+	if !ok {
+		return 0 // No rules for this event, return an empty bitmap
+	}
+
+	return eventRules.containerFilteredRules
+}
+
+// GetMatchedPolicyNames returns a list of policy names that have matching rules for a given event and a bitmap of matched rule IDs.
+func (pm *PolicyManager) GetMatchedPolicyNames(eventID events.ID, matchedRuleIDsBitmap uint64) []string {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	var matchedPolicyNames []string
+
+	eventRules, ok := pm.rules[eventID]
+	if !ok {
+		return matchedPolicyNames
+	}
+
+	for ruleID := uint8(0); ruleID < eventRules.ruleIDCounter; ruleID++ {
+		if (matchedRuleIDsBitmap>>ruleID)&1 == 1 { // Check if the bit corresponding to ruleID is set in the bitmap
+			rule, ok := eventRules.ruleIDToEventRule[ruleID]
+			if !ok {
+				// This should ideally not happen, as it indicates an inconsistency
+				// between the bitmap generated by BPF and the rules in EventRules.
+				continue
+			}
+
+			if rule.Emit {
+				matchedPolicyNames = append(matchedPolicyNames, rule.Policy.Name)
+			}
+		}
+	}
+
+	return matchedPolicyNames
+}
+
+// IsEnabled tests if an event, or a policy per event is enabled (in the future it will also check if a policy is enabled)
+// TODO: add metrics about an event being enabled/disabled, or a policy being enabled/disabled?
+func (pm *PolicyManager) IsEnabled(matchedRules uint64, id events.ID) bool {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	return pm.isEventEnabled(id)
+}
+
+// IsEventEnabled returns true if a given event policy is enabled for a given rule
+func (pm *PolicyManager) IsEventEnabled(id events.ID) bool {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	return pm.isEventEnabled(id)
+}
+
+// not synchronized, use IsEventEnabled instead
+func (pm *PolicyManager) isEventEnabled(eventID events.ID) bool {
+	eventRules, ok := pm.rules[eventID]
+	if !ok {
+		return false // Event not found, consider it disabled
+	}
+
+	return eventRules.enabled
+}
+
+// EnableEvent enables a specific event in the PolicyManager.
+// It assumes that the eventID is always valid.
+func (pm *PolicyManager) EnableEvent(eventID events.ID) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+
+	eventRules := pm.rules[eventID]
+	eventRules.enabled = true
+	pm.rules[eventID] = eventRules
+}
+
+// DisableEvent disables a specific event in the PolicyManager.
+// It assumes that the eventID is always valid.
+func (pm *PolicyManager) DisableEvent(eventID events.ID) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+
+	eventRules := pm.rules[eventID]
+	eventRules.enabled = false
+	pm.rules[eventID] = eventRules
+}
+
+func (pm *PolicyManager) EventsSelected() []events.ID {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	eventsSelected := make([]events.ID, 0, len(pm.rules))
+	for evt := range pm.rules {
+		eventsSelected = append(eventsSelected, evt)
+	}
+
+	return eventsSelected
+}
+
+func (pm *PolicyManager) IsEventSelected(id events.ID) bool {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	_, ok := pm.rules[id]
+	return ok
+}
+
+func (pm *PolicyManager) subscribeDependencyHandlers() {
 	// TODO: As dynamic event addition or removal becomes a thing, we should subscribe all the watchers
 	// before selecting them. There is no reason to select the event in the New function anyhow.
-	m.evtsDepsManager.SubscribeAdd(
+	pm.evtsDepsManager.SubscribeAdd(
 		dependencies.EventNodeType,
 		func(node interface{}) []dependencies.Action {
 			eventNode, ok := node.(*dependencies.EventNode)
@@ -240,11 +503,11 @@ func (m *Manager) subscribeDependencyHandlers() {
 				return nil
 			}
 
-			m.addDependencyEventToRules(eventNode.GetID(), eventNode.GetDependents())
+			pm.addDependencyEventToRules(eventNode.GetID(), eventNode.GetDependents())
 
 			return nil
 		})
-	m.evtsDepsManager.SubscribeRemove(
+	pm.evtsDepsManager.SubscribeRemove(
 		dependencies.EventNodeType,
 		func(node interface{}) []dependencies.Action {
 			eventNode, ok := node.(*dependencies.EventNode)
@@ -253,7 +516,7 @@ func (m *Manager) subscribeDependencyHandlers() {
 				return nil
 			}
 
-			m.removeEventFromRules(eventNode.GetID())
+			pm.removeEventFromRules(eventNode.GetID())
 
 			return nil
 		})
@@ -261,19 +524,19 @@ func (m *Manager) subscribeDependencyHandlers() {
 
 // AddDependencyEventToRules adds for management an event that is a dependency of other events.
 // The difference from selected events is that it doesn't affect its eviction.
-func (m *Manager) addDependencyEventToRules(evtID events.ID, dependentEvts []events.ID) {
+func (pm *PolicyManager) addDependencyEventToRules(evtID events.ID, dependentEvts []events.ID) {
 	var newSubmit uint64
 	var reqBySig bool
 
 	for _, dependentEvent := range dependentEvts {
-		currentFlags, ok := m.events[dependentEvent]
+		currentFlags, ok := pm.events[dependentEvent]
 		if ok {
 			newSubmit |= currentFlags.rulesToSubmit
 			reqBySig = reqBySig || events.Core.GetDefinitionByID(dependentEvent).IsSignature()
 		}
 	}
 
-	m.addEventFlags(
+	pm.addEventFlags(
 		evtID,
 		newEventFlags(
 			eventFlagsWithSubmit(newSubmit),
@@ -283,8 +546,8 @@ func (m *Manager) addDependencyEventToRules(evtID events.ID, dependentEvts []eve
 	)
 }
 
-func (m *Manager) addEventFlags(id events.ID, selectedFlags *eventFlags) {
-	currentFlags, ok := m.events[id]
+func (pm *PolicyManager) addEventFlags(id events.ID, selectedFlags *eventFlags) {
+	currentFlags, ok := pm.rules[id]
 	if ok {
 		currentFlags.rulesToSubmit |= selectedFlags.rulesToSubmit
 		currentFlags.rulesToEmit |= selectedFlags.rulesToEmit
@@ -293,7 +556,7 @@ func (m *Manager) addEventFlags(id events.ID, selectedFlags *eventFlags) {
 		return
 	}
 
-	m.rules[id] = newEventFlags(
+	pm.rules[id] = newEventFlags(
 		eventFlagsWithSubmit(selectedFlags.rulesToSubmit),
 		eventFlagsWithEmit(selectedFlags.rulesToEmit),
 		eventFlagsWithRequiredBySignature(selectedFlags.requiredBySignature),
@@ -301,63 +564,63 @@ func (m *Manager) addEventFlags(id events.ID, selectedFlags *eventFlags) {
 	)
 }
 
-func (m *Manager) addDependenciesToRulesRecursive(eventNode *dependencies.EventNode) {
+func (pm *PolicyManager) addDependenciesToRulesRecursive(eventNode *dependencies.EventNode) {
 	eventID := eventNode.GetID()
 	for _, dependencyEventID := range eventNode.GetDependencies().GetIDs() {
-		m.addDependencyEventToRules(dependencyEventID, []events.ID{eventID})
-		dependencyNode, err := m.evtsDepsManager.GetEvent(dependencyEventID)
+		pm.addDependencyEventToRules(dependencyEventID, []events.ID{eventID})
+		dependencyNode, err := pm.evtsDepsManager.GetEvent(dependencyEventID)
 		if err == nil {
-			m.addDependenciesToRulesRecursive(dependencyNode)
+			pm.addDependenciesToRulesRecursive(dependencyNode)
 		}
 	}
 }
 
-func (m *Manager) selectEvent(eventID events.ID, selectedState *eventFlags) {
-	m.addEventFlags(eventID, selectedState)
-	eventNode, err := m.evtsDepsManager.SelectEvent(eventID)
+func (pm *PolicyManager) selectEvent(eventID events.ID, selectedState *eventFlags) {
+	pm.addEventFlags(eventID, selectedState)
+	eventNode, err := pm.evtsDepsManager.SelectEvent(eventID)
 	if err != nil {
 		logger.Errorw("Event selection failed",
 			"event", events.Core.GetDefinitionByID(eventID).GetName())
 		return
 	}
 
-	m.addDependenciesToRulesRecursive(eventNode)
+	pm.addDependenciesToRulesRecursive(eventNode)
 }
 
-func (m *Manager) removeEventFromRules(evtID events.ID) {
+func (pm *PolicyManager) removeEventFromRules(evtID events.ID) {
 	logger.Debugw("Remove event from rules", "event", events.Core.GetDefinitionByID(evtID).GetName())
-	delete(m.events, evtID)
+	delete(pm.events, evtID)
 }
 
 // TODO: we can move the following selection functions to be part of the policies compute phase
-func (m *Manager) selectMandatoryEvents() {
+func (pm *PolicyManager) selectMandatoryEvents() {
 	// Initialize events state with mandatory events (TODO: review this need for sched exec)
 
-	m.selectEvent(events.SchedProcessFork, newEventFlags())
-	m.selectEvent(events.SchedProcessExec, newEventFlags())
-	m.selectEvent(events.SchedProcessExit, newEventFlags())
+	pm.selectEvent(events.SchedProcessFork, newEventFlags())
+	pm.selectEvent(events.SchedProcessExec, newEventFlags())
+	pm.selectEvent(events.SchedProcessExit, newEventFlags())
 
 	// Control Plane Events
 
-	m.selectEvent(events.SignalCgroupMkdir, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-	m.selectEvent(events.SignalCgroupRmdir, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
+	pm.selectEvent(events.SignalCgroupMkdir, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
+	pm.selectEvent(events.SignalCgroupRmdir, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
 }
 
-func (m *Manager) selectConfiguredEvents() {
+func (pm *PolicyManager) selectConfiguredEvents() {
 	// Control Plane Process Tree Events
 
 	pipeEvts := func() {
-		m.selectEvent(events.SchedProcessFork, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-		m.selectEvent(events.SchedProcessExec, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-		m.selectEvent(events.SchedProcessExit, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
+		pm.selectEvent(events.SchedProcessFork, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
+		pm.selectEvent(events.SchedProcessExec, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
+		pm.selectEvent(events.SchedProcessExit, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
 	}
 	signalEvts := func() {
-		m.selectEvent(events.SignalSchedProcessFork, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-		m.selectEvent(events.SignalSchedProcessExec, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-		m.selectEvent(events.SignalSchedProcessExit, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
+		pm.selectEvent(events.SignalSchedProcessFork, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
+		pm.selectEvent(events.SignalSchedProcessExec, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
+		pm.selectEvent(events.SignalSchedProcessExit, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
 	}
 
-	switch m.cfg.ProcTreeConfig.Source {
+	switch pm.cfg.ProcTreeConfig.Source {
 	case proctree.SourceBoth:
 		pipeEvts()
 		signalEvts()
@@ -369,8 +632,8 @@ func (m *Manager) selectConfiguredEvents() {
 
 	// DNS Cache events
 
-	if m.cfg.DNSCacheConfig.Enable {
-		m.selectEvent(events.NetPacketDNS, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
+	if pm.cfg.DNSCacheConfig.Enable {
+		pm.selectEvent(events.NetPacketDNS, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
 	}
 
 	// Pseudo events added by capture (if enabled by the user)
@@ -407,17 +670,17 @@ func (m *Manager) selectConfiguredEvents() {
 		return captureEvents
 	}
 
-	for id, flags := range getCaptureEventsFlags(m.cfg.CaptureConfig) {
-		m.selectEvent(id, flags)
+	for id, flags := range getCaptureEventsFlags(pm.cfg.CaptureConfig) {
+		pm.selectEvent(id, flags)
 	}
 }
 
-func (m *Manager) selectUserEvents() {
+func (pm *PolicyManager) selectUserEvents() {
 	// Events selected by the user
 	userEvents := make(map[events.ID]*eventFlags)
 
 	// TODO: fix to match what we need
-	for _, p := range m.ps.policies {
+	for _, p := range pm.ps.policies {
 		pId := p.ID
 		for eId := range p.Rules {
 			ef, ok := userEvents[eId]
@@ -432,19 +695,19 @@ func (m *Manager) selectUserEvents() {
 	}
 
 	for id, flags := range userEvents {
-		m.selectEvent(id, flags)
+		pm.selectEvent(id, flags)
 	}
 }
 
-func (m *Manager) updateCapsForSelectedEvents() error {
+func (pm *PolicyManager) updateCapsForSelectedEvents() error {
 	// Update capabilities rings with all events dependencies
 
 	caps := capabilities.GetInstance()
-	for id := range m.events {
+	for id := range pm.rules {
 		if !events.Core.IsDefined(id) {
 			return errfmt.Errorf("event %d is not defined", id)
 		}
-		depsNode, err := m.evtsDepsManager.GetEvent(id)
+		depsNode, err := pm.evtsDepsManager.GetEvent(id)
 		if err == nil {
 			deps := depsNode.GetDependencies()
 			evtCaps := deps.GetCapabilities()
@@ -462,12 +725,12 @@ func (m *Manager) updateCapsForSelectedEvents() error {
 	return nil
 }
 
-func (m *Manager) initialize() error {
-	m.subscribeDependencyHandlers()
-	m.selectMandatoryEvents()
-	m.selectConfiguredEvents()
-	m.selectUserEvents()
-	err := m.updateCapsForSelectedEvents()
+func (pm *PolicyManager) initialize() error {
+	pm.subscribeDependencyHandlers()
+	pm.selectMandatoryEvents()
+	pm.selectConfiguredEvents()
+	pm.selectUserEvents()
+	err := pm.updateCapsForSelectedEvents()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -475,98 +738,15 @@ func (m *Manager) initialize() error {
 	return nil
 }
 
-// TODO: all below functions is related to API - consider moving to a new file
-
-// IsEnabled tests if a event, or a policy per event is enabled (in the future it will also check if a policy is enabled)
-// TODO: add metrics about an event being enabled/disabled, or a policy being enabled/disabled?
-func (m *Manager) IsEnabled(matchedRules uint64, id events.ID) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	if !m.isEventEnabled(id) {
-		return false
-	}
-
-	return m.isRuleEnabled(matchedRules, id)
-}
-
-// IsRuleEnabled returns true if a given event policy is enabled for a given rule
-func (m *Manager) IsRuleEnabled(matchedRules uint64, id events.ID) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	return m.isRuleEnabled(matchedRules, id)
-}
-
-// not synchronized, use IsRuleEnabled instead
-func (m *Manager) isRuleEnabled(matchedRules uint64, id events.ID) bool {
-	flags, ok := m.events[id]
-	if !ok {
-		return false
-	}
-
-	return flags.rulesToEmit&matchedRules != 0
-}
-
-// IsEventEnabled returns true if a given event policy is enabled for a given rule
-func (m *Manager) IsEventEnabled(id events.ID) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	return m.isEventEnabled(id)
-}
-
-// not synchronized, use IsEventEnabled instead
-func (m *Manager) isEventEnabled(id events.ID) bool {
-	flags, ok := m.events[id]
-	if !ok {
-		return false
-	}
-
-	return flags.enabled
-}
-
-// EnableEvent enables a given event
-func (m *Manager) EnableEvent(id events.ID) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	flags, ok := m.events[id]
-	if !ok {
-		m.events[id] = newEventFlags(
-			eventFlagsWithEnabled(true),
-		)
-		return
-	}
-
-	flags.enableEvent()
-}
-
-// DisableEvent disables a given event
-func (m *Manager) DisableEvent(id events.ID) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	flags, ok := m.events[id]
-	if !ok {
-		m.events[id] = newEventFlags(
-			eventFlagsWithEnabled(false),
-		)
-		return
-	}
-
-	flags.disableEvent()
-}
-
 //
 // Rules
 //
 
-func (m *Manager) IsRequiredBySignature(id events.ID) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (pm *PolicyManager) IsRequiredBySignature(id events.ID) bool {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
 
-	flags, ok := m.events[id]
+	flags, ok := pm.rules[id]
 	if !ok {
 		return false
 	}
@@ -574,11 +754,11 @@ func (m *Manager) IsRequiredBySignature(id events.ID) bool {
 	return flags.requiredBySignature
 }
 
-func (m *Manager) MatchEvent(id events.ID, matched uint64) uint64 {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (pm *PolicyManager) MatchEvent(id events.ID, matched uint64) uint64 {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
 
-	flags, ok := m.events[id]
+	flags, ok := pm.rules[id]
 	if !ok {
 		return 0
 	}
@@ -586,11 +766,11 @@ func (m *Manager) MatchEvent(id events.ID, matched uint64) uint64 {
 	return flags.rulesToEmit & matched
 }
 
-func (m *Manager) MatchEventInAnyPolicy(id events.ID) uint64 {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (pm *PolicyManager) MatchEventInAnyPolicy(id events.ID) uint64 {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
 
-	flags, ok := m.events[id]
+	flags, ok := pm.rules[id]
 	if !ok {
 		return 0
 	}
@@ -598,32 +778,12 @@ func (m *Manager) MatchEventInAnyPolicy(id events.ID) uint64 {
 	return flags.rulesToEmit | flags.rulesToSubmit
 }
 
-func (m *Manager) EventsSelected() []events.ID {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	eventsSelected := make([]events.ID, 0, len(m.events))
-	for evt := range m.events {
-		eventsSelected = append(eventsSelected, evt)
-	}
-
-	return eventsSelected
-}
-
-func (m *Manager) IsEventSelected(id events.ID) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	_, ok := m.events[id]
-	return ok
-}
-
-func (m *Manager) EventsToSubmit() []events.ID {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (pm *PolicyManager) EventsToSubmit() []events.ID {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
 
 	eventsToSubmit := []events.ID{}
-	for evt, flags := range m.events {
+	for evt, flags := range pm.rules {
 		if flags.rulesToSubmit != 0 {
 			eventsToSubmit = append(eventsToSubmit, evt)
 		}
@@ -632,11 +792,11 @@ func (m *Manager) EventsToSubmit() []events.ID {
 	return eventsToSubmit
 }
 
-func (m *Manager) IsEventToEmit(id events.ID) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (pm *PolicyManager) IsEventToEmit(id events.ID) bool {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
 
-	flags, ok := m.events[id]
+	flags, ok := pm.rules[id]
 	if !ok {
 		return false
 	}
@@ -644,11 +804,11 @@ func (m *Manager) IsEventToEmit(id events.ID) bool {
 	return flags.rulesToEmit != 0
 }
 
-func (m *Manager) IsEventToSubmit(id events.ID) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (pm *PolicyManager) IsEventToSubmit(id events.ID) bool {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
 
-	flags, ok := m.events[id]
+	flags, ok := pm.rules[id]
 	if !ok {
 		return false
 	}
@@ -656,69 +816,15 @@ func (m *Manager) IsEventToSubmit(id events.ID) bool {
 	return flags.rulesToSubmit != 0
 }
 
-//
-// Policies methods made available by Manager.
-// Some are transitive (tidying), some are not.
-//
-
-func (m *Manager) CreateUserlandIterator() utils.Iterator[*Policy] {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	// The returned iterator is not thread-safe since its underlying data is not a copy.
-	// A possible solution would be to use the snapshot mechanism with timestamps instead
-	// of version numbers.
-	return m.ps.createUserlandIterator()
-}
-
-func (m *Manager) CreateAllIterator() utils.Iterator[*Policy] {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	// The returned iterator is not thread-safe since its underlying data is not a copy.
-	// A possible solution would be to use the snapshot mechanism with timestamps instead
-	// of version numbers.
-	return m.ps.createAllIterator()
-}
-
-func (m *Manager) FilterableInUserland() bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	return len(m.ps.userlandRules) != 0
-}
-
-func (m *Manager) WithContainerFilterEnabled() uint64 {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	// TODO: we should return rules bitmap where container filters are enabled
-	//return m.ps.withContainerFilterEnabled()
-}
-
-func (m *Manager) MatchedNames(matched uint64) []string {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	return m.ps.matchedNames(matched)
-}
-
-func (m *Manager) LookupByName(name string) (*Policy, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	return m.ps.lookupByName(name)
-}
-
-func (m *Manager) UpdateBPF(
+func (pm *PolicyManager) UpdateBPF(
 	bpfModule *bpf.Module,
 	cts *containers.Containers,
 	eventsFields map[events.ID][]bufferdecoder.ArgType,
 	createNewMaps bool,
 	updateProcTree bool,
 ) (*PoliciesConfig, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 
-	return m.ps.updateBPF(bpfModule, cts, m.rules, eventsFields, createNewMaps, updateProcTree)
+	return pm.ps.updateBPF(bpfModule, cts, pm.rules, eventsFields, createNewMaps, updateProcTree)
 }

@@ -15,3 +15,7 @@ func PolicyAlreadyExistsError(name string) error {
 func PolicyNotFoundByNameError(name string) error {
 	return fmt.Errorf("policy [%s] not found", name)
 }
+
+func TooManyRulesForEventError(eventName string) error {
+	return fmt.Errorf("too many rules for event %d", eventName)
+}
