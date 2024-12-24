@@ -12,7 +12,6 @@ ARG gid=1000
 #
 
 ARG GO_VERSION=1.22.0
-ARG OPA_VERSION=v0.63.0
 
 # install needed environment
 
@@ -35,11 +34,6 @@ RUN cd /tmp && \
     git clone https://github.com/aquasecurity/btfhub.git && \
     cd ./btfhub && \
     ./3rdparty/bpftool.sh
-
-# install OPA
-RUN altarch=$(uname -m | sed 's:x86_64:amd64:g' | sed 's:aarch64:arm64:g') && \
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/${OPA_VERSION}/opa_linux_${altarch}_static && \
-    chmod 755 /usr/bin/opa
 
 # extra tools for testing things
 

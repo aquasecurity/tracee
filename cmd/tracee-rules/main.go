@@ -11,7 +11,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/open-policy-agent/opa/compile"
 	"github.com/urfave/cli/v2"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
@@ -44,27 +43,14 @@ func main() {
 				return errors.New("no flags specified")
 			}
 
-			var target string
-			switch strings.ToLower(c.String("rego-runtime-target")) {
-			case "wasm":
-				return errors.New("target unsupported: wasm")
-			case "rego":
-				target = compile.TargetRego
-			default:
-				return fmt.Errorf("invalid target specified: %s", strings.ToLower(c.String("rego-runtime-target")))
-			}
-
 			var rulesDir []string
 			if c.String("rules-dir") != "" {
 				rulesDir = []string{c.String("rules-dir")}
 			}
 
 			sigs, _, err := signature.Find(
-				target,
-				c.Bool("rego-partial-eval"),
 				rulesDir,
 				c.StringSlice("rules"),
-				c.Bool("rego-aio"),
 			)
 			if err != nil {
 				return err
@@ -187,11 +173,7 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:  "rules-dir",
-				Usage: "directory where to search for rules in OPA (.rego) and Go plugin (.so) formats",
-			},
-			&cli.BoolFlag{
-				Name:  "rego-partial-eval",
-				Usage: "enable partial evaluation of rego rules",
+				Usage: "directory where to search for rules in Go plugin (.so) format",
 			},
 			&cli.BoolFlag{
 				Name:  "list",
@@ -226,15 +208,6 @@ func main() {
 				Name:  server.PyroscopeAgentFlag,
 				Usage: "enable pyroscope agent",
 				Value: false,
-			},
-			&cli.BoolFlag{
-				Name:  "rego-aio",
-				Usage: "compile rego signatures altogether as an aggregate policy. By default each signature is compiled separately.",
-			},
-			&cli.StringFlag{
-				Name:  "rego-runtime-target",
-				Usage: "select which runtime target to use for evaluation of rego rules: rego, wasm",
-				Value: "rego",
 			},
 			&cli.BoolFlag{
 				Name:  "list-events",

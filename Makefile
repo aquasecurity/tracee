@@ -37,7 +37,6 @@ CMD_INSTALL ?= install
 CMD_LLC ?= llc
 CMD_MD5 ?= md5sum
 CMD_MKDIR ?= mkdir
-CMD_OPA ?= opa
 CMD_PKGCONFIG ?= pkg-config
 CMD_RM ?= rm
 CMD_SED ?= sed
@@ -150,8 +149,9 @@ GO_VERSION_MIN = $(shell echo $(GO_VERSION) | $(CMD_CUT) -d'.' -f2)
 # version
 #
 
-LAST_GIT_TAG ?= $(shell $(CMD_GIT) describe --tags --match 'v*' 2>/dev/null)
-VERSION ?= $(if $(RELEASE_TAG),$(RELEASE_TAG),$(LAST_GIT_TAG))
+# LAST_GIT format: <branch>-<commit>
+LAST_GIT ?= $(shell $(CMD_GIT) symbolic-ref --short HEAD 2>/dev/null)-$(shell $(CMD_GIT) rev-parse --short HEAD)
+VERSION ?= $(if $(RELEASE_VERSION),$(RELEASE_VERSION),$(LAST_GIT))
 
 #
 # environment
@@ -205,7 +205,6 @@ env:
 	@echo "CMD_LLC                  $(CMD_LLC)"
 	@echo "CMD_MD5                  $(CMD_MD5)"
 	@echo "CMD_MKDIR                $(CMD_MKDIR)"
-	@echo "CMD_OPA                  $(CMD_OPA)"
 	@echo "CMD_PKGCONFIG            $(CMD_PKGCONFIG)"
 	@echo "CMD_RM                   $(CMD_RM)"
 	@echo "CMD_SED                  $(CMD_SED)"
@@ -218,7 +217,7 @@ env:
 	@echo "LIB_BPF                  $(LIB_BPF)"
 	@echo ---------------------------------------
 	@echo "VERSION                  $(VERSION)"
-	@echo "LAST_GIT_TAG             $(LAST_GIT_TAG)"
+	@echo "LAST_GIT                 $(LAST_GIT)"
 	@echo ---------------------------------------
 	@echo "UNAME_M                  $(UNAME_M)"
 	@echo "UNAME_R                  $(UNAME_R)"
@@ -265,9 +264,6 @@ env:
 	@echo ---------------------------------------
 	@echo "GOSIGNATURES_DIR         $(GOSIGNATURES_DIR)"
 	@echo "GOSIGNATURES_SRC         $(GOSIGNATURES_SRC)"
-	@echo ---------------------------------------
-	@echo "REGO_SIGNATURES_DIR      $(REGO_SIGNATURES_DIR)"
-	@echo "REGO_SIGNATURES_SRC      $(REGO_SIGNATURES_SRC)"
 	@echo ---------------------------------------
 	@echo "E2E_NET_DIR              $(E2E_NET_DIR)"
 	@echo "E2E_NET_SRC              $(E2E_NET_SRC)"
@@ -591,20 +587,11 @@ GOSIGNATURES_SRC :=	$(shell find $(GOSIGNATURES_DIR) \
 			! -path '$(GOSIGNATURES_DIR)/examples/*' \
 			)
 
-REGO_SIGNATURES_DIR ?= signatures/rego
-REGO_SIGNATURES_SRC :=	$(shell find $(REGO_SIGNATURES_DIR) \
-			-type f \
-			-name '*.rego' \
-			! -name '*_test.rego' \
-			! -path '$(REGO_SIGNATURES_DIR)/examples/*' \
-			)
-
 .PHONY: signatures
 signatures: $(OUTPUT_DIR)/signatures
 
 $(OUTPUT_DIR)/signatures: \
 	$(GOSIGNATURES_SRC) \
-	$(REGO_SIGNATURES_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
 	.check_$(CMD_INSTALL) \
@@ -615,8 +602,6 @@ $(OUTPUT_DIR)/signatures: \
 		--buildmode=plugin \
 		-o $@/builtin.so \
 		$(GOSIGNATURES_SRC)
-	# disable rego signatures by default (keep golang signatures only)
-	# $(CMD_INSTALL) -m 0644 $(REGO_SIGNATURES_SRC) $@
 
 .PHONY: clean-signatures
 clean-signatures:
@@ -822,12 +807,6 @@ test-integration: \
 		-p 1 \
 		-count=1 \
 		./tests/integration/... \
-
-.PHONY: test-signatures
-test-signatures: \
-	| .check_$(CMD_OPA)
-#
-	$(CMD_OPA) test $(REGO_SIGNATURES_DIR) --verbose
 
 .PHONY: test-upstream-libbpfgo
 test-upstream-libbpfgo: \

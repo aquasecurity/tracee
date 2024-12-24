@@ -16,6 +16,7 @@ jobs:
     runs-on: 
       - graas_ami-0cdf7ad6d9627da45_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}
       - EXECUTION_TYPE=LONG
+      - INSTANCE_TYPE=2XLARGE
     permissions:
       contents: write
       packages: write
@@ -38,7 +39,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build
         run: |
-          make -f builder/Makefile.release
+          make -f builder/Makefile.release release
         shell: bash
       - name: Publish to docker.io registry
         run: |
@@ -60,6 +61,7 @@ jobs:
     runs-on:
       - graas_ami-07740487fa433aa54_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}
       - EXECUTION_TYPE=LONG
+      - INSTANCE_TYPE=LARGE
     permissions:
       contents: write
       packages: write
@@ -82,7 +84,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build
         run: |
-          make -f builder/Makefile.release
+          make -f builder/Makefile.release release
         shell: bash
       - name: Publish to docker.io registry
         run: |

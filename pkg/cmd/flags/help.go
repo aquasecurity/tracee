@@ -19,7 +19,6 @@ func PrintAndExitIfHelp(ctx *cli.Context) {
 		"events",
 		"output",
 		"capabilities",
-		"rego",
 		"log",
 	}
 
@@ -64,8 +63,6 @@ func GetHelpString(key string) string {
 		return outputHelp()
 	case "capabilities":
 		return capabilitiesHelp()
-	case "rego":
-		return regoHelp()
 	case "log":
 		return logHelp()
 	}

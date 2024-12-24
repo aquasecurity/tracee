@@ -27,6 +27,9 @@ const (
 	PidNSFilterMapVersion       = "pid_ns_filter_version"
 	UTSFilterMapVersion         = "uts_ns_filter_version"
 	CommFilterMapVersion        = "comm_filter_version"
+	DataFilterPrefixMapVersion  = "data_filter_prefix_version"
+	DataFilterSuffixMapVersion  = "data_filter_suffix_version"
+	DataFilterExactMapVersion   = "data_filter_exact_version"
 	CgroupIdFilterVersion       = "cgroup_id_filter_version"
 	ProcessTreeFilterMapVersion = "process_tree_map_version"
 	BinaryFilterMapVersion      = "binary_filter_version"
@@ -39,6 +42,9 @@ const (
 	PidNSFilterMap       = "pid_ns_filter"
 	UTSFilterMap         = "uts_ns_filter"
 	CommFilterMap        = "comm_filter"
+	DataFilterPrefixMap  = "data_filter_prefix"
+	DataFilterSuffixMap  = "data_filter_suffix"
+	DataFilterExactMap   = "data_filter_exact"
 	CgroupIdFilterMap    = "cgroup_id_filter"
 	ProcessTreeFilterMap = "process_tree_map"
 	BinaryFilterMap      = "binary_filter"
@@ -46,6 +52,51 @@ const (
 
 	ProcInfoMap = "proc_info_map"
 )
+
+// createNewInnerMapEventId creates a new map for the given map name, version and event id.
+func createNewInnerMapEventId(m *bpf.Module, mapName string, mapVersion uint16, eventId events.ID) (*bpf.BPFMapLow, string, error) {
+	// use the map prototype to create a new map with the same properties
+	prototypeMap, err := m.GetMap(mapName)
+	if err != nil {
+		return nil, "", errfmt.WrapError(err)
+	}
+
+	info, err := bpf.GetMapInfoByFD(prototypeMap.FileDescriptor())
+	if err != nil {
+		return nil, "", errfmt.WrapError(err)
+	}
+
+	btfFD, err := bpf.GetBTFFDByID(info.BTFID)
+	if err != nil {
+		return nil, "", errfmt.WrapError(err)
+	}
+
+	opts := &bpf.BPFMapCreateOpts{
+		BTFFD:                 uint32(btfFD),
+		BTFKeyTypeID:          info.BTFKeyTypeID,
+		BTFValueTypeID:        info.BTFValueTypeID,
+		BTFVmlinuxValueTypeID: info.BTFVmlinuxValueTypeID,
+		MapFlags:              info.MapFlags,
+		MapExtra:              info.MapExtra,
+		MapIfIndex:            info.IfIndex,
+	}
+
+	newInnerMapName := fmt.Sprintf("%s_%d_%d", mapName, mapVersion, uint32(eventId))
+
+	newInnerMap, err := bpf.CreateMap(
+		prototypeMap.Type(),
+		newInnerMapName, // new map name
+		prototypeMap.KeySize(),
+		prototypeMap.ValueSize(),
+		int(prototypeMap.MaxEntries()),
+		opts,
+	)
+	if err != nil {
+		return nil, "", errfmt.WrapError(err)
+	}
+
+	return newInnerMap, newInnerMapName, nil
+}
 
 // createNewInnerMap creates a new map for the given map name and version.
 func createNewInnerMap(m *bpf.Module, mapName string, mapVersion uint16) (*bpf.BPFMapLow, error) {
@@ -89,6 +140,32 @@ func createNewInnerMap(m *bpf.Module, mapName string, mapVersion uint16) (*bpf.B
 	return newInnerMap, nil
 }
 
+// updateOuterMapWithEventId updates the outer map with the given map name, version and event id.
+func updateOuterMapWithEventId(m *bpf.Module, mapName string, mapVersion uint16, eventId events.ID, innerMap *bpf.BPFMapLow) error {
+	outerMap, err := m.GetMap(mapName)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	keyBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint16(keyBytes, mapVersion)          // version
+	binary.LittleEndian.PutUint16(keyBytes[2:], 0)               // padding
+	binary.LittleEndian.PutUint32(keyBytes[4:], uint32(eventId)) // eventid
+	keyPointer := unsafe.Pointer(&keyBytes[0])
+
+	innerMapFD := uint32(innerMap.FileDescriptor())
+	valuePointer := unsafe.Pointer(&innerMapFD)
+
+	// update version filter map
+	// - key is the map version + event id
+	// - value is the related filter map FD.
+	if err := outerMap.Update(keyPointer, valuePointer); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	return nil
+}
+
 // updateOuterMap updates the outer map with the given map name and version.
 func updateOuterMap(m *bpf.Module, mapName string, mapVersion uint16, innerMap *bpf.BPFMapLow) error {
 	outerMap, err := m.GetMap(mapName)
@@ -106,6 +183,52 @@ func updateOuterMap(m *bpf.Module, mapName string, mapVersion uint16, innerMap *
 	// - value is the related filter map FD.
 	if err := outerMap.Update(keyPointer, valuePointer); err != nil {
 		return errfmt.WrapError(err)
+	}
+
+	return nil
+}
+
+// createNewDataFilterMapsVersion creates a new data filter maps based on filter equalities.
+func (ps *policies) createNewDataFilterMapsVersion(
+	bpfModule *bpf.Module,
+	fEqs *filtersEqualities,
+) error {
+	mapsNames := map[string]struct {
+		outerMapName string
+		equalities   map[KernelDataFields]equality
+	}{
+		DataFilterPrefixMap: {DataFilterPrefixMapVersion, fEqs.dataEqualitiesPrefix},
+		DataFilterSuffixMap: {DataFilterSuffixMapVersion, fEqs.dataEqualitiesSuffix},
+		DataFilterExactMap:  {DataFilterExactMapVersion, fEqs.dataEqualitiesExact},
+	}
+
+	polsVersion := ps.version()
+	for innerMapName, mapEquality := range mapsNames {
+		outerMapName := mapEquality.outerMapName
+		// For each combination of version and event ID, a new inner map is created
+		//
+		// outerMap maps:
+		// 1. data_filter_prefix_version        (u16, u32), data_filter_prefix
+		// 2. data_filter_suffix_version        (u16, u32), data_filter_suffix
+		// 3. data_filter_exact_version         (u16, u32), data_filter_exact
+		for key := range mapEquality.equalities {
+			innerMapNameTemp := fmt.Sprintf("%s_%d_%d", innerMapName, polsVersion, uint32(key.ID))
+			if ps.bpfInnerMaps[innerMapNameTemp] != nil {
+				continue
+			}
+
+			newInnerMap, newInnerMapName, err := createNewInnerMapEventId(bpfModule, innerMapName, polsVersion, key.ID)
+			if err != nil {
+				return errfmt.WrapError(err)
+			}
+
+			if err := updateOuterMapWithEventId(bpfModule, outerMapName, polsVersion, key.ID, newInnerMap); err != nil {
+				return errfmt.WrapError(err)
+			}
+
+			// store pointer to the new inner map version
+			ps.bpfInnerMaps[newInnerMapName] = newInnerMap
+		}
 	}
 
 	return nil
@@ -135,15 +258,15 @@ func (ps *policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 		}
 
 		// outerMap maps:
-		// 1. uid_filter_version           u16, uid_filter
-		// 2. pid_filter_version           u16, pid_filter
-		// 3. mnt_ns_filter_version        u16, mnt_ns_filter
-		// 4. pid_ns_filter_version        u16, pid_ns_filter
-		// 5. cgroup_id_filter_version     u16, cgroup_id_filter
-		// 6. uts_ns_filter_version        u16, uts_ns_filter
-		// 7. comm_filter_version          u16, comm_filter
-		// 8. process_tree_filter_version  u16, process_tree_filter
-		// 9. binary_filter_version        u16, binary_filter
+		// 1. uid_filter_version           	u16, uid_filter
+		// 2. pid_filter_version           	u16, pid_filter
+		// 3. mnt_ns_filter_version        	u16, mnt_ns_filter
+		// 4. pid_ns_filter_version        	u16, pid_ns_filter
+		// 5. cgroup_id_filter_version     	u16, cgroup_id_filter
+		// 6. uts_ns_filter_version        	u16, uts_ns_filter
+		// 7. comm_filter_version          	u16, comm_filter
+		// 8. process_tree_filter_version	u16, process_tree_filter
+		// 9. binary_filter_version		    u16, binary_filter
 		if err := updateOuterMap(bpfModule, outerMapName, polsVersion, newInnerMap); err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -155,11 +278,18 @@ func (ps *policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 	return nil
 }
 
+type eventConfig struct {
+	submitForPolicies uint64
+	fieldTypes        uint64
+	dataFilter        dataFilterConfig
+}
+
 // createNewEventsMapVersion creates a new version of the events map.
 func (ps *policies) createNewEventsMapVersion(
 	bpfModule *bpf.Module,
 	rules map[events.ID]*eventFlags,
 	eventsFields map[events.ID][]bufferdecoder.ArgType,
+	eventsFilterCfg map[events.ID]stringFilterConfig,
 ) error {
 	polsVersion := ps.version()
 	innerMapName := "events_map"
@@ -180,10 +310,10 @@ func (ps *policies) createNewEventsMapVersion(
 	ps.bpfInnerMaps[innerMapName] = newInnerMap
 
 	for id, ecfg := range rules {
-		eventConfigVal := make([]byte, 16)
-
-		// bitmap of policies that require this event to be submitted
-		binary.LittleEndian.PutUint64(eventConfigVal[0:8], ecfg.policiesSubmit)
+		stringFilter, exist := eventsFilterCfg[id]
+		if !exist {
+			stringFilter = stringFilterConfig{}
+		}
 
 		// encoded event's field types
 		var fieldTypes uint64
@@ -191,9 +321,17 @@ func (ps *policies) createNewEventsMapVersion(
 		for n, fieldType := range fields {
 			fieldTypes = fieldTypes | (uint64(fieldType) << (8 * n))
 		}
-		binary.LittleEndian.PutUint64(eventConfigVal[8:16], fieldTypes)
 
-		err := newInnerMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&eventConfigVal[0]))
+		eventConfig := eventConfig{
+			// bitmap of policies that require this event to be submitted
+			submitForPolicies: ecfg.policiesSubmit,
+			fieldTypes:        fieldTypes,
+			dataFilter: dataFilterConfig{
+				string: stringFilter,
+			},
+		}
+
+		err := newInnerMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&eventConfig))
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -358,6 +496,9 @@ func (ps *policies) updateProcTreeFilterBPF(procTreeEqualities map[uint32]equali
 const (
 	maxBpfBinPathSize = 256 // maximum binary path size supported by BPF (MAX_BIN_PATH_SIZE)
 	bpfBinFilterSize  = 264 // the key size of the BPF binary filter map entry
+
+	maxBpfDataFilterStrSize = 256 // maximum str size supported by Data filter in BPF (MAX_DATA_FILTER_STR_SIZE)
+	bpfDataFilterStrSize    = 260 // path size + 4 bytes prefix len
 )
 
 // updateBinaryFilterBPF updates the BPF maps for the given binary equalities.
@@ -385,6 +526,87 @@ func (ps *policies) updateBinaryFilterBPF(binEqualities map[filters.NSBinary]equ
 
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInPolicies)
 		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInPolicies)
+
+		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
+		if !ok {
+			return errfmt.Errorf("bpf map not found: %s", innerMapName)
+		}
+		if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+
+	return nil
+}
+
+// updateStringDataFilterLPMBPF updates the BPF maps for the given kernel data LPM equalities.
+func (ps *policies) updateStringDataFilterLPMBPF(dataEqualities map[KernelDataFields]equality, innerMapName string) error {
+	// KernelDataFields equality
+	// 1. data_filter_prefix  data_filter_lpm_key_t, eq_t
+	// 2. data_filter_suffix  data_filter_lpm_key_t, eq_t
+
+	for k, v := range dataEqualities {
+		// Ensure the string length is within the maximum allowed limit,
+		// excluding the NULL terminator.
+		if len(k.String) > maxBpfDataFilterStrSize-1 {
+			return filters.InvalidValueMax(k.String, maxBpfDataFilterStrSize-1)
+		}
+		binBytes := make([]byte, bpfDataFilterStrSize)
+
+		// key is composed of: prefixlen and a string
+		// multiplication by 8 - convert prefix length from bytes to bits
+		// for LPM Trie compatibility.
+		prefixlen := len(k.String) * 8
+		binary.LittleEndian.PutUint32(binBytes, uint32(prefixlen)) // prefixlen
+		copy(binBytes[4:], k.String)                               // string
+
+		keyPointer := unsafe.Pointer(&binBytes[0])
+
+		eqVal := make([]byte, equalityValueSize)
+		valuePointer := unsafe.Pointer(&eqVal[0])
+
+		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInPolicies)
+		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInPolicies)
+
+		innerMapName := fmt.Sprintf("%s_%d_%d", innerMapName, ps.version(), uint32(k.ID))
+
+		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
+		if !ok {
+			return errfmt.Errorf("bpf map not found: %s", innerMapName)
+		}
+		if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+
+	return nil
+}
+
+// updateStringDataFilterBPF updates the BPF maps for the given kernel data equalities.
+func (ps *policies) updateStringDataFilterBPF(dataEqualities map[KernelDataFields]equality, innerMapName string) error {
+	// KernelDataFields equality
+	// 1. data_filter_exact  data_filter_key_t, eq_t
+
+	for k, v := range dataEqualities {
+		// Ensure the string length is within the maximum allowed limit,
+		// excluding the NULL terminator.
+		if len(k.String) > maxBpfDataFilterStrSize-1 {
+			return filters.InvalidValueMax(k.String, maxBpfDataFilterStrSize-1)
+		}
+		binBytes := make([]byte, maxBpfDataFilterStrSize)
+
+		// key is composed of a string
+		copy(binBytes, k.String) // string
+
+		keyPointer := unsafe.Pointer(&binBytes[0])
+
+		eqVal := make([]byte, equalityValueSize)
+		valuePointer := unsafe.Pointer(&eqVal[0])
+
+		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInPolicies)
+		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInPolicies)
+
+		innerMapName := fmt.Sprintf("%s_%d_%d", innerMapName, ps.version(), uint32(k.ID))
 
 		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
 		if !ok {
@@ -455,31 +677,44 @@ func (ps *policies) updateBPF(
 	createNewMaps bool,
 	updateProcTree bool,
 ) (*PoliciesConfig, error) {
-	if createNewMaps {
-		// Create new events map version
-		if err := ps.createNewEventsMapVersion(bpfModule, rules, eventsFields); err != nil {
-			return nil, errfmt.WrapError(err)
-		}
+	fEqs := &filtersEqualities{
+		uidEqualities:        make(map[uint64]equality),
+		pidEqualities:        make(map[uint64]equality),
+		mntNSEqualities:      make(map[uint64]equality),
+		pidNSEqualities:      make(map[uint64]equality),
+		cgroupIdEqualities:   make(map[uint64]equality),
+		utsEqualities:        make(map[string]equality),
+		commEqualities:       make(map[string]equality),
+		dataEqualitiesPrefix: make(map[KernelDataFields]equality),
+		dataEqualitiesSuffix: make(map[KernelDataFields]equality),
+		dataEqualitiesExact:  make(map[KernelDataFields]equality),
+		binaryEqualities:     make(map[filters.NSBinary]equality),
 	}
 
-	fEqs := &filtersEqualities{
-		uidEqualities:      make(map[uint64]equality),
-		pidEqualities:      make(map[uint64]equality),
-		mntNSEqualities:    make(map[uint64]equality),
-		pidNSEqualities:    make(map[uint64]equality),
-		cgroupIdEqualities: make(map[uint64]equality),
-		utsEqualities:      make(map[string]equality),
-		commEqualities:     make(map[string]equality),
-		binaryEqualities:   make(map[filters.NSBinary]equality),
-	}
+	fEvtCfg := make(map[events.ID]stringFilterConfig)
 
 	if err := ps.computeFilterEqualities(fEqs, cts); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 
+	if err := ps.computeDataFilterEqualities(fEqs, fEvtCfg); err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
 	if createNewMaps {
+		// Create new events map version
+		if err := ps.createNewEventsMapVersion(bpfModule, rules, eventsFields, fEvtCfg); err != nil {
+			return nil, errfmt.WrapError(err)
+		}
+
 		// Create new filter maps version
 		if err := ps.createNewFilterMapsVersion(bpfModule); err != nil {
+			return nil, errfmt.WrapError(err)
+		}
+
+		// Create new filter maps version based on version and event id
+		// TODO: Currently used only for data filters but should be extended to support other types
+		if err := ps.createNewDataFilterMapsVersion(bpfModule, fEqs); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 	}
@@ -506,6 +741,21 @@ func (ps *policies) updateBPF(
 		return nil, errfmt.WrapError(err)
 	}
 	if err := ps.updateStringFilterBPF(fEqs.commEqualities, CommFilterMap); err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
+	// Data Filter - Prefix match
+	if err := ps.updateStringDataFilterLPMBPF(fEqs.dataEqualitiesPrefix, DataFilterPrefixMap); err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
+	// Data Filter - Suffix match
+	if err := ps.updateStringDataFilterLPMBPF(fEqs.dataEqualitiesSuffix, DataFilterSuffixMap); err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
+	// Data Filter - Exact match
+	if err := ps.updateStringDataFilterBPF(fEqs.dataEqualitiesExact, DataFilterExactMap); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 
@@ -666,7 +916,6 @@ func (ps *policies) computePoliciesConfig() *PoliciesConfig {
 		if p.Follow {
 			cfg.FollowFilterEnabled |= 1 << offset
 		}
-
 		// bitmap indicating whether to match a rule if the key is missing from its filter map
 		if p.UIDFilter.MatchIfKeyMissing() {
 			cfg.UIDFilterMatchIfKeyMissing |= 1 << offset
@@ -704,7 +953,6 @@ func (ps *policies) computePoliciesConfig() *PoliciesConfig {
 		if p.BinaryFilter.MatchIfKeyMissing() {
 			cfg.BinPathFilterMatchIfKeyMissing |= 1 << offset
 		}
-
 		cfg.EnabledPolicies |= 1 << offset
 	}
 

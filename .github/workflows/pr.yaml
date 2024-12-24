@@ -75,6 +75,7 @@ env:
     PROCTREE_DATA_SOURCE
     DNS_DATA_SOURCE
     WRITABLE_DATA_SOURCE
+    SECURITY_PATH_NOTIFY
     SET_FS_PWD
     SUSPICIOUS_SYSCALL_SOURCE
 jobs:
@@ -159,27 +160,6 @@ jobs:
       - name: Check with errcheck
         run: |
           make check-err
-  #
-  # SIGNATURES CODE VERIFICATION
-  #
-  verify-signatures:
-    name: Verify Signatures
-    needs:
-      - verify-analyze-code
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          submodules: true
-      - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
-      - name: Build Signatures
-        run: |
-          make signatures
-      - name: Test Signatures
-        run: |
-          make test-signatures
   #
   # TOOLS BUILD VERIFICATION
   #
@@ -301,6 +281,10 @@ jobs:
               ["Mantic 6.5 aarch64"]="0387f77c4820c98db aarch64"
               ["Mantic 6.6 x86_64"]="05b5ac8f6c43b3ca5 x86_64"
               ["Mantic 6.6 aarch64"]="05c9d6cd9343f0a43 aarch64"
+              ["Noble 6.8 x86_64"]="0cc63426ae75d47c8 x86_64"
+              ["Noble 6.8 aarch64"]="0f5260685b3ec2293 aarch64"
+              ["Noble 6.10 x86_64"]="0ae23eabda70efc60 x86_64"
+              ["Noble 6.10 aarch64"]="01ce0f71400b5ff38 aarch64"
               # expand as needed
           )
           for num in 01; do

@@ -172,19 +172,9 @@ func initCmd() error {
 	rootCmd.Flags().StringArray(
 		"signatures-dir",
 		[]string{},
-		"<dir>\t\t\t\tDirectories where to search for signatures in OPA (.rego) and Go plugin (.so) formats",
+		"<dir>\t\t\t\tDirectories where to search for signatures in Go plugin (.so) format",
 	)
 	err = viper.BindPFlag("signatures-dir", rootCmd.Flags().Lookup("signatures-dir"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	rootCmd.Flags().StringArray(
-		"rego",
-		[]string{},
-		"[partial-eval|aio]\t\t\tControl event rego settings",
-	)
-	err = viper.BindPFlag("rego", rootCmd.Flags().Lookup("rego"))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

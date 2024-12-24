@@ -1,1 +1,0 @@
-package regosig_test

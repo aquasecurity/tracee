@@ -21,6 +21,5 @@
     "perf-buffer-size": 1024,
     "pprof": false,
     "pyroscope": false,
-    "rego": [],
     "signatures-dir": ""
 }

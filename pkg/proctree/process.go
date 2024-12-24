@@ -14,20 +14,11 @@ type Process struct {
 	parentHash  uint32              // hash of parent
 	info        *TaskInfo           // task info
 	executable  *FileInfo           // executable info
-	interpreter *FileInfo           // interpreter info (binary format interpreter/loader)
-	interp      *FileInfo           // interpreter (scripting language interpreter)
 	children    map[uint32]struct{} // hash of childrens
 	threads     map[uint32]struct{} // hash of threads
 	// Control fields
 	mutex *sync.RWMutex // mutex to protect the process
 }
-
-const (
-	executableChangelogSize = 5 // Binary's history is much more important to save
-	// TODO: Decide whether remove the interpreter and interp from the tree or add them back
-	interpreterChangelogSize = 0
-	interpChangelogSize      = 0
-)
 
 // NewProcess creates a new process.
 func NewProcess(hash uint32) *Process {
@@ -35,9 +26,7 @@ func NewProcess(hash uint32) *Process {
 		processHash: hash,
 		parentHash:  0,
 		info:        NewTaskInfo(),
-		executable:  NewFileInfo(executableChangelogSize),
-		interpreter: NewFileInfo(interpreterChangelogSize),
-		interp:      NewFileInfo(interpChangelogSize),
+		executable:  NewFileInfo(),
 		children:    make(map[uint32]struct{}),
 		threads:     make(map[uint32]struct{}),
 		mutex:       &sync.RWMutex{},
@@ -50,9 +39,7 @@ func NewProcessWithInfo(hash uint32, info *TaskInfo) *Process {
 		processHash: hash,
 		parentHash:  0,
 		info:        info,
-		executable:  NewFileInfo(executableChangelogSize),
-		interpreter: NewFileInfo(interpreterChangelogSize),
-		interp:      NewFileInfo(interpChangelogSize),
+		executable:  NewFileInfo(),
 		children:    make(map[uint32]struct{}),
 		threads:     make(map[uint32]struct{}),
 		mutex:       &sync.RWMutex{},
@@ -87,20 +74,6 @@ func (p *Process) GetExecutable() *FileInfo {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 	return p.executable
-}
-
-// GetInterpreter returns a instanced interpreter info.
-func (p *Process) GetInterpreter() *FileInfo {
-	p.mutex.RLock()
-	defer p.mutex.RUnlock()
-	return p.interpreter
-}
-
-// GetInterp returns a instanced interpreter.
-func (p *Process) GetInterp() *FileInfo {
-	p.mutex.RLock()
-	defer p.mutex.RUnlock()
-	return p.interp
 }
 
 // Setters

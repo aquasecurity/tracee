@@ -11,12 +11,15 @@
 // PROTOTYPES
 
 statfunc void *get_filter_map(void *, u16);
+statfunc void *get_event_filter_map(void *, u16, u32);
 statfunc u64 uint_filter_range_matches(u64, void *, u64, u64, u64);
 statfunc u64 binary_filter_matches(u64, void *, proc_info_t *);
 statfunc u64 equality_filter_matches(u64, void *, void *);
 statfunc u64 bool_filter_matches(u64, bool);
 statfunc u64 match_scope_filters(program_data_t *);
+statfunc u64 match_data_filters(program_data_t *, u8);
 statfunc bool evaluate_scope_filters(program_data_t *);
+statfunc bool evaluate_data_filters(program_data_t *, u8);
 statfunc bool event_is_selected(u32, u16);
 statfunc bool policies_matched(event_data_t *);
 
@@ -31,6 +34,17 @@ statfunc bool policies_matched(event_data_t *);
 statfunc void *get_filter_map(void *outer_map, u16 version)
 {
     return bpf_map_lookup_elem(outer_map, &version);
+}
+
+// get_event_filter_map returns the filter map for the given outer map, version and event id
+statfunc void *get_event_filter_map(void *outer_map, u16 version, u32 event_id)
+{
+    policy_key_t policy_key = {
+        .version = version,
+        .event_id = event_id,
+    };
+
+    return bpf_map_lookup_elem(outer_map, &policy_key);
 }
 
 statfunc u64
@@ -323,10 +337,118 @@ statfunc u64 match_scope_filters(program_data_t *p)
     return res & policies_cfg->enabled_policies;
 }
 
+// Function to evaluate data filters based on the program data and index.
+// Returns policies bitmap.
+//
+// Parameters:
+// - program_data_t *p: Pointer to the program data structure.
+// - u8 index: Index of the string data to be used as filter.
+statfunc u64 match_data_filters(program_data_t *p, u8 index)
+{
+    policies_config_t *policies_cfg = &p->event->policies_config;
+    // Retrieve the string filter for the current event
+    // TODO: Dynamically determine the filter and type based on policy configuration
+    string_filter_config_t *str_filter = &p->event->config.data_filter.string;
+
+    if (!(str_filter->exact_enabled || str_filter->prefix_enabled || str_filter->suffix_enabled))
+        return policies_cfg->enabled_policies;
+
+    u64 res = 0;
+    u64 explicit_disable_policies = 0;
+    u64 explicit_enable_policies = 0;
+    u64 default_enable_policies = 0;
+    void *filter_map = NULL;
+
+    // event ID
+    u32 eventid = p->event->context.eventid;
+    u16 version = p->event->context.policies_version;
+
+    // Exact match
+    if (str_filter->exact_enabled) {
+        data_filter_key_t *key = get_string_data_filter_buf(DATA_FILTER_BUF1_IDX);
+        if (key == NULL)
+            return 0;
+
+        __builtin_memset(key->str, 0, sizeof(key->str));
+
+        u32 len = load_str_from_buf(&p->event->args_buf, key->str, index, FILTER_TYPE_EXACT);
+        if (!len)
+            return 0;
+
+        u64 match_if_key_missing = str_filter->exact_match_if_key_missing;
+        filter_map = get_event_filter_map(&data_filter_exact_version, version, eventid);
+        res = equality_filter_matches(match_if_key_missing, filter_map, key);
+        explicit_enable_policies |= (res & ~match_if_key_missing);
+        explicit_disable_policies |= (~res & match_if_key_missing);
+        default_enable_policies |= (res & match_if_key_missing);
+    }
+
+    // Prefix match
+    if (str_filter->prefix_enabled) {
+        data_filter_lpm_key_t *key = get_string_data_filter_lpm_buf(DATA_FILTER_BUF1_IDX);
+        if (key == NULL)
+            return 0;
+
+        u32 len = load_str_from_buf(&p->event->args_buf, key->str, index, FILTER_TYPE_PREFIX);
+        if (!len)
+            return 0;
+
+        // LPM tries may be created with a maximum prefix length that is a multiple of 8,
+        // in the range from 8 to 2048. For more details, see:
+        // https://docs.kernel.org/bpf/map_lpm_trie.html
+        key->prefix_len = len * 8;
+
+        u64 match_if_key_missing = str_filter->prefix_match_if_key_missing;
+        filter_map = get_event_filter_map(&data_filter_prefix_version, version, eventid);
+        res = equality_filter_matches(match_if_key_missing, filter_map, key);
+        explicit_enable_policies |= (res & ~match_if_key_missing);
+        explicit_disable_policies |= (~res & match_if_key_missing);
+        default_enable_policies |= (res & match_if_key_missing);
+    }
+
+    // Suffix match
+    if (str_filter->suffix_enabled) {
+        data_filter_lpm_key_t *key = get_string_data_filter_lpm_buf(DATA_FILTER_BUF1_IDX);
+
+        if (key == NULL)
+            return 0;
+
+        u32 len = load_str_from_buf(&p->event->args_buf, key->str, index, FILTER_TYPE_SUFFIX);
+        if (!len)
+            return 0;
+
+        key->prefix_len = len * 8;
+
+        u64 match_if_key_missing = str_filter->suffix_match_if_key_missing;
+        filter_map = get_event_filter_map(&data_filter_suffix_version, version, eventid);
+        res = equality_filter_matches(match_if_key_missing, filter_map, key);
+        explicit_enable_policies |= (res & ~match_if_key_missing);
+        explicit_disable_policies |= (~res & match_if_key_missing);
+        default_enable_policies |= (res & match_if_key_missing);
+    }
+
+    // Match policies based on the following conditions:
+    //
+    // 1. Explicitly Enabled Policies: A policy is enabled if at least one of the three
+    // filter types explicitly enables it (explicit_enable_policies).
+    // 2. Default Enabled Policies: Policies that are enabled by default (default_enable_policies)
+    // remain enabled only if they are not explicitly disabled (explicit_disable_policies).
+    res = explicit_enable_policies | (default_enable_policies & ~explicit_disable_policies);
+
+    return res;
+}
+
 statfunc bool evaluate_scope_filters(program_data_t *p)
 {
     u64 matched_policies = match_scope_filters(p);
     p->event->context.matched_policies &= matched_policies;
+    return p->event->context.matched_policies != 0;
+}
+
+statfunc bool evaluate_data_filters(program_data_t *p, u8 index)
+{
+    u64 matched_data_filters = match_data_filters(p, index);
+    p->event->context.matched_policies &= matched_data_filters;
     return p->event->context.matched_policies != 0;
 }
 

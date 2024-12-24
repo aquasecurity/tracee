@@ -56,12 +56,10 @@ area/signatures:
   - pkg/signatures/**/*
   - signatures/*
   - signatures/**/*
-  - "**/*.rego"
 area/testing:
   - tests/*
   - tests/**/*
   - "**/*_test.go"
-  - "**/*_test.rego"
 # area/uprobe:
 area/UX:
   - pkg/cmd/*
