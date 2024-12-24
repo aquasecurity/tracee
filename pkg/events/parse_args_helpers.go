@@ -105,9 +105,9 @@ func parsePrctlOption(arg *trace.Argument, opt uint64) {
 	arg.Value = prctlOptionArgument.String()
 }
 
-func parseSocketCall(arg *trace.Argument, call uint64) {
+func parseSocketcallCall(arg *trace.Argument, call uint64) {
 	arg.Type = "string"
-	socketCallArgument, err := parsers.ParseSocketCall(call)
+	socketCallArgument, err := parsers.ParseSocketcallCall(call)
 	if err != nil {
 		arg.Value = fmt.Sprint(call)
 		return
@@ -215,7 +215,7 @@ func parseBpfHelpersUsage(arg *trace.Argument, helpersList []uint64) {
 	}
 
 	arg.Type = "const char**"
-	arg.Value = fmt.Sprint(usedHelpers)
+	arg.Value = usedHelpers
 }
 
 func parseBpfAttachType(arg *trace.Argument, attachType int32) {
@@ -237,10 +237,9 @@ func parseBpfAttachType(arg *trace.Argument, attachType int32) {
 	case 5:
 		attTypeName = "uretprobe"
 	default:
-		arg.Value = fmt.Sprint(attachType)
+		attTypeName = fmt.Sprint(attachType)
 		logger.Errorw("Unknown attach_type got from bpf_attach event")
-		return
 	}
 
-	arg.Value = fmt.Sprint(attTypeName)
+	arg.Value = attTypeName
 }

@@ -90,7 +90,7 @@ func ParseArgs(event *trace.Event) error {
 	case Socketcall:
 		if callArg := GetArg(event, "call"); callArg != nil {
 			if call, isInt32 := callArg.Value.(int32); isInt32 {
-				parseSocketCall(callArg, uint64(call))
+				parseSocketcallCall(callArg, uint64(call))
 			}
 		}
 	case Socket:
