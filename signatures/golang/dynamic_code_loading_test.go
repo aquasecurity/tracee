@@ -29,7 +29,7 @@ func TestDynamicCodeLoading(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "alert",
 							},
-							Value: uint32(trace.ProtAlertMprotectWXToX),
+							Value: interface{}("Protection changed from W to E!"),
 						},
 					},
 				},
@@ -44,7 +44,7 @@ func TestDynamicCodeLoading(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "alert",
 								},
-								Value: uint32(trace.ProtAlertMprotectWXToX),
+								Value: interface{}("Protection changed from W to E!"),
 							},
 						},
 					}.ToProtocol(),
@@ -76,7 +76,7 @@ func TestDynamicCodeLoading(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "alert",
 							},
-							Value: uint32(trace.ProtAlertMmapWX),
+							Value: interface{}("Protection changed to Executable!"),
 						},
 					},
 				},
