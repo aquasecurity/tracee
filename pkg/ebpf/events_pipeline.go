@@ -311,31 +311,12 @@ func (t *Tracee) matchRules(event *trace.Event) uint64 {
 	eventID := events.ID(event.EventID)
 	bitmap := event.MatchedPoliciesKernel
 
-	// Short circuit if there are no policies in userland that need filtering.
-	if !t.policyManager.FilterableInUserland() {
-		event.MatchedPoliciesUser = bitmap // store untouched bitmap to be used in sink stage
-		return bitmap
-	}
-
 	// range through each userland filterable rule
-	for it := t.policyManager.CreateUserlandIterator(); it.HasNext(); {
-		p := it.Next()
+	for _, rule := range t.policyManager.GetUserlandRules(eventID) {
 		// Policy ID is the bit offset in the bitmap.
-		bitOffset := uint(p.ID)
+		bitOffset := uint(rule.RuleID)
 
 		if !utils.HasBit(bitmap, bitOffset) { // event does not match this rule
-			continue
-		}
-
-		// TODO: remove this comment
-		// The event might have this policy bit set, but the policy might not have this
-		// event ID. This happens whenever the event submitted by the kernel is going to
-		// derive an event that this policy is interested in. In this case, don't do
-		// anything and let the derivation stage handle this event.
-		_, ok := p.Rules[eventID]
-		if !ok {
-			// This should never happen
-			// TODO: add an error
 			continue
 		}
 
@@ -344,13 +325,13 @@ func (t *Tracee) matchRules(event *trace.Event) uint64 {
 		//
 
 		// 1. event scope filters
-		if !p.Rules[eventID].ScopeFilter.Filter(*event) {
+		if !rule.RuleData.ScopeFilter.Filter(*event) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
 		// 2. event return value filters
-		if !p.Rules[eventID].RetFilter.Filter(int64(event.ReturnValue)) {
+		if !rule.RuleData.RetFilter.Filter(int64(event.ReturnValue)) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
@@ -361,7 +342,7 @@ func (t *Tracee) matchRules(event *trace.Event) uint64 {
 		// events.PrintMemDump bypass was added due to issue #2546
 		// because it uses usermode applied filters as parameters for the event,
 		// which occurs after filtering
-		if eventID != events.PrintMemDump && !p.Rules[eventID].DataFilter.Filter(event.Args) {
+		if eventID != events.PrintMemDump && !rule.RuleData.DataFilter.Filter(event.Args) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
@@ -370,7 +351,7 @@ func (t *Tracee) matchRules(event *trace.Event) uint64 {
 		// Do the userland filtering for filters with global ranges
 		//
 
-		if p.UIDFilter.Enabled() {
+		if rule.Policy.UIDFilter.Enabled() {
 			//
 			// An event with a matched policy for global min/max range might not match all
 			// policies with UID and PID filters with different min/max ranges, e.g.:
@@ -388,18 +369,18 @@ func (t *Tracee) matchRules(event *trace.Event) uint64 {
 			// example.
 			//
 			// Clear the policy bit if the event UID is not in THIS policy UID min/max range:
-			if !p.UIDFilter.InMinMaxRange(uint32(event.UserID)) {
+			if !rule.Policy.UIDFilter.InMinMaxRange(uint32(event.UserID)) {
 				utils.ClearBit(&bitmap, bitOffset)
 				continue
 			}
 		}
 
-		if p.PIDFilter.Enabled() {
+		if rule.Policy.PIDFilter.Enabled() {
 			//
 			// The same happens for the global PID min/max range. Clear the policy bit if
 			// the event PID is not in THIS policy PID min/max range.
 			//
-			if !p.PIDFilter.InMinMaxRange(uint32(event.HostProcessID)) {
+			if !rule.Policy.PIDFilter.InMinMaxRange(uint32(event.HostProcessID)) {
 				utils.ClearBit(&bitmap, bitOffset)
 				continue
 			}
@@ -459,12 +440,12 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 				continue
 			}
 
-			// TODO: change to rules resolution!
-			// Get a bitmap with all policies containing container filters
-			policiesWithContainerFilter := t.policyManager.WithContainerFilterEnabled()
+			// Get a bitmap with all rules containing container filters
+			eventId := events.ID(event.EventID)
+			rulesWithContainerFilter := t.policyManager.GetContainerFilteredRulesBitmap(eventId)
 
-			// Filter out events that don't have a container ID from all the policies that
-			// have container filters. This will guarantee that any of those policies
+			// Filter out events that don't have a container ID from all the rules that
+			// have container filters. This will guarantee that any of those rules
 			// won't get matched by this event. This situation might happen if the events
 			// from a recently created container appear BEFORE the initial cgroup_mkdir of
 			// that container root directory.  This could be solved by sorting the events
@@ -472,9 +453,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 			// enabled, so, in those cases, ignore the event IF the event is not a
 			// cgroup_mkdir or cgroup_rmdir.
 
-			if policiesWithContainerFilter > 0 && event.Container.ID == "" {
-				eventId := events.ID(event.EventID)
-
+			if rulesWithContainerFilter > 0 && event.Container.ID == "" {
 				// never skip cgroup_{mkdir,rmdir}: container_{create,remove} events need it
 				if eventId == events.CgroupMkdir || eventId == events.CgroupRmdir {
 					goto sendEvent
@@ -484,8 +463,8 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 					"eventId", eventId)
 
 				// remove event from the policies with container filters
-				utils.ClearBits(&event.MatchedPoliciesKernel, policiesWithContainerFilter)
-				utils.ClearBits(&event.MatchedPoliciesUser, policiesWithContainerFilter)
+				utils.ClearBits(&event.MatchedPoliciesKernel, rulesWithContainerFilter)
+				utils.ClearBits(&event.MatchedPoliciesUser, rulesWithContainerFilter)
 
 				if event.MatchedPoliciesKernel == 0 {
 					t.eventsPool.Put(event)
@@ -609,7 +588,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 			}
 
 			// Populate the event with the names of the matched policies.
-			event.MatchedPolicies = t.policyManager.MatchedNames(event.MatchedPoliciesUser)
+			event.MatchedPolicies = t.policyManager.GetMatchedPolicyNames(id, event.MatchedPoliciesUser)
 
 			// Parse args here if the rule engine is NOT enabled (parsed there if it is).
 			if t.config.Output.ParseArguments && !t.config.EngineConfig.Enabled {

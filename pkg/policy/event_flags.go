@@ -84,11 +84,3 @@ func (ef *eventFlags) disableSubmission(ruleId int) {
 func (ef *eventFlags) disableEmission(ruleId int) {
 	utils.ClearBit(&ef.rulesToEmit, uint(ruleId))
 }
-
-func (ef *eventFlags) enableEvent() {
-	ef.enabled = true
-}
-
-func (ef *eventFlags) disableEvent() {
-	ef.enabled = false
-}
