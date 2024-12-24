@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -30,7 +29,7 @@ func TestAntiDebuggingPtraceme(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "request",
 							},
-							Value: interface{}(int64(parsers.PTRACE_TRACEME.Value())),
+							Value: interface{}("PTRACE_TRACEME"),
 						},
 					},
 				},
@@ -45,7 +44,7 @@ func TestAntiDebuggingPtraceme(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "request",
 								},
-								Value: interface{}(int64(parsers.PTRACE_TRACEME.Value())),
+								Value: interface{}("PTRACE_TRACEME"),
 							},
 						},
 					}.ToProtocol(),
@@ -77,7 +76,7 @@ func TestAntiDebuggingPtraceme(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "request",
 							},
-							Value: interface{}(int64(parsers.PTRACE_PEEKTEXT.Value())),
+							Value: interface{}("PTRACE_PEEKTEXT"),
 						},
 					},
 				},

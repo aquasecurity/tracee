@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -36,7 +35,7 @@ func TestCorePatternModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: buildFlagArgValue(parsers.O_WRONLY),
+							Value: interface{}("O_WRONLY"),
 						},
 					},
 				},
@@ -57,7 +56,7 @@ func TestCorePatternModification(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "flags",
 								},
-								Value: buildFlagArgValue(parsers.O_WRONLY),
+								Value: interface{}("O_WRONLY"),
 							},
 						},
 					}.ToProtocol(),
@@ -95,7 +94,7 @@ func TestCorePatternModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: buildFlagArgValue(parsers.O_RDONLY),
+							Value: interface{}("O_RDONLY"),
 						},
 					},
 				},
@@ -118,7 +117,7 @@ func TestCorePatternModification(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: buildFlagArgValue(parsers.O_WRONLY),
+							Value: interface{}("O_WRONLY"),
 						},
 					},
 				},

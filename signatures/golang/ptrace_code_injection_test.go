@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -30,7 +29,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "request",
 							},
-							Value: int32(parsers.PTRACE_POKETEXT.Value()),
+							Value: interface{}("PTRACE_POKETEXT"),
 						},
 					},
 				},
@@ -45,7 +44,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "request",
 								},
-								Value: int32(parsers.PTRACE_POKETEXT.Value()),
+								Value: interface{}("PTRACE_POKETEXT"),
 							},
 						},
 					}.ToProtocol(),
@@ -77,7 +76,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "request",
 							},
-							Value: int32(parsers.PTRACE_POKEDATA.Value()),
+							Value: interface{}("PTRACE_POKEDATA"),
 						},
 					},
 				},
@@ -92,7 +91,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "request",
 								},
-								Value: int32(parsers.PTRACE_POKEDATA.Value()),
+								Value: interface{}("PTRACE_POKEDATA"),
 							},
 						},
 					}.ToProtocol(),
@@ -124,7 +123,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "request",
 							},
-							Value: int32(parsers.PTRACE_PEEKTEXT.Value()),
+							Value: interface{}("PTRACE_PEEKTEXT"),
 						},
 					},
 				},
