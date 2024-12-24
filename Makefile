@@ -320,6 +320,7 @@ help:
 	@echo "    $$ STATIC=1 make ...             # build static binaries"
 	@echo "    $$ BTFHUB=1 STATIC=1 make ...    # build static binaries, embed BTF"
 	@echo "    $$ DEBUG=1 make ...              # build binaries with debug symbols"
+	@echo "    $$ METRICS=1 make ...            # build enabling BPF metrics"
 	@echo ""
 
 #
