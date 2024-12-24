@@ -13,6 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
+	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/proctree"
@@ -30,8 +31,8 @@ type Manager struct {
 	policies        map[string]*Policy       // Map of policies by name
 	rules           map[events.ID]EventRules // Map of rules by event ID
 	evtsDepsManager *dependencies.Manager
-	bpfInnerMaps    map[string]*bpf.BPFMapLow
-	mu              sync.RWMutex // Read/Write Mutex to protect concurrent access
+	bpfInnerMaps    map[string]*bpf.BPFMapLow // TODO: we don't really need this here... Remove it
+	mu              sync.RWMutex              // Read/Write Mutex to protect concurrent access
 	cfg             ManagerConfig
 	// TODO: Rules that depend on other events should add entries to the event's rules array they depend on
 }
@@ -56,26 +57,25 @@ type EventRule struct {
 
 func NewManager(
 	cfg ManagerConfig,
-	depsManager *dependencies.Manager,
+	evtsDepsManager *dependencies.Manager,
 	initialPolicies ...*Policy,
 ) (*Manager, error) {
-	if depsManager == nil {
+	if evtsDepsManager == nil {
 		panic("evtDepsManager is nil")
 	}
 
-	ps := NewPolicies()
-	for _, p := range initialPolicies {
-		if err := ps.add(p); err != nil {
-			logger.Errorw("failed to add initial policy", "error", err)
-		}
-	}
-
 	m := &Manager{
+		policies:        make(map[string]*Policy),
+		rules:           make(map[events.ID]EventRules),
+		evtsDepsManager: evtsDepsManager,
 		mu:              sync.RWMutex{},
 		cfg:             cfg,
-		evtsDepsManager: depsManager,
-		ps:              ps,
-		events:          make(map[events.ID]*eventFlags),
+	}
+
+	for _, p := range initialPolicies {
+		if err := m.addPolicy(p); err != nil {
+			logger.Errorw("failed to add initial policy", "error", err)
+		}
 	}
 
 	if err := m.initialize(); err != nil {
@@ -83,6 +83,149 @@ func NewManager(
 	}
 
 	return m, nil
+}
+
+// version returns the version of the Policies.
+func (m *Manager) version() uint16 {
+	return 1
+}
+
+// addPolicy adds a policy.
+func (m *Manager) addPolicy(p *Policy) error {
+	if p == nil {
+		return PolicyNilError()
+	}
+	if _, ok := m.policies[p.Name]; ok {
+		return PolicyAlreadyExistsError(p.Name)
+	}
+
+	m.policies[p.Name] = p
+
+	m.computeRules()
+
+	return nil
+}
+
+// setPolicy sets a policy.
+func (m *Manager) setPolicy(p *Policy) error {
+	if p == nil {
+		return PolicyNilError()
+	}
+
+	// TODO: we can merge set and add together to avoid code duplication
+	m.policies[p.Name] = p
+
+	m.computeRules()
+
+	return nil
+}
+
+// removePolicy removes a policy by name.
+func (m *Manager) removePolicy(name string) error {
+	p, ok := m.policies[name]
+	if !ok {
+		return PolicyNotFoundByNameError(name)
+	}
+
+	delete(m.policies, p.Name)
+
+	m.computeRules()
+
+	return nil
+}
+
+// compute recalculates values, updates flags, fills the reduced userland map,
+// and sets the related bitmap that is used to prevent the iteration of the entire map.
+//
+// It must be called at every runtime policies changes.
+func (m *Manager) compute() {
+	ps.updateContainerFilterEnabled()
+	ps.updateUserlandRules()
+}
+
+func (m *Manager) updateContainerFilterEnabled() {
+	ps.containerFiltersEnabled = 0
+
+	for _, p := range ps.allFromMap() {
+		if p.ContainerFilterEnabled() {
+			utils.SetBit(&ps.containerFiltersEnabled, uint(p.ID))
+		}
+	}
+}
+
+// updateUserlandRules sets the userlandRules list.
+func (m *Manager) updateUserlandRules() {
+	userlandList := []*Policy{}
+
+	for _, p := range ps.allFromMap() {
+		if p == nil {
+			continue
+		}
+
+		hasUserlandFilters := false
+		uidFilterableInUserland := false
+		pidFilterableInUserland := false
+
+		if p.UIDFilter.Enabled() &&
+			((p.UIDFilter.Minimum() != filters.MinNotSetUInt) ||
+				(p.UIDFilter.Maximum() != filters.MaxNotSetUInt)) {
+			uidFilterableInUserland = true
+		}
+
+		if p.PIDFilter.Enabled() &&
+			((p.PIDFilter.Minimum() != filters.MinNotSetUInt) ||
+				(p.PIDFilter.Maximum() != filters.MaxNotSetUInt)) {
+			pidFilterableInUserland = true
+		}
+
+		// Check filters under Rules
+		for _, rule := range p.Rules {
+			if rule.DataFilter.Enabled() ||
+				rule.RetFilter.Enabled() ||
+				rule.ScopeFilter.Enabled() {
+				hasUserlandFilters = true
+				break
+			}
+		}
+
+		// Check other filters
+		if hasUserlandFilters || uidFilterableInUserland || pidFilterableInUserland {
+			// add policy to userland list
+			userlandList = append(userlandList, p)
+		}
+	}
+
+	ps.userlandRules = userlandList
+}
+
+// lookupPolicyByName returns a policy by name.
+func (m *Manager) lookupPolicyByName(name string) (*Policy, error) {
+	if p, ok := m.policies[name]; ok {
+		return p, nil
+	}
+
+	return nil, PolicyNotFoundByNameError(name)
+}
+
+// matchedPolicyNames returns a list of matched policy names based on
+// the given matched bitmap.
+func (m *Manager) matchedPolicyNames(matched uint64) []string {
+	names := []string{}
+
+	// TODO: this will take event id and matched rules bitmap, and map to policies in userspace
+	// for _, p := range ps.allFromMap() {
+	// 	if utils.HasBit(matched, uint(p.ID)) {
+	// 		names = append(names, p.Name)
+	// 	}
+	// }
+
+	return names
+}
+
+// allPoliciesFromMap returns a map of allFromMap policies by ID.
+// When iterating, the order is not guaranteed.
+func (m *Manager) allPoliciesFromMap() map[string]*Policy {
+	return m.policies
 }
 
 func (m *Manager) subscribeDependencyHandlers() {
