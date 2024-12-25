@@ -160,11 +160,11 @@ func (t *Tracee) getSyscallNameByKerVer(restrictions []events.KernelRestrictions
 // populateExpectedSyscallTableArray fills the expected values of the syscall table
 func (t *Tracee) populateExpectedSyscallTableArray(tableMap *bpf.BPFMap) error {
 	// Get address to the function that defines the not implemented sys call
-	niSyscallSymbol, err := t.kernelSymbols.GetSymbolByOwnerAndName("system", events.SyscallPrefix+"ni_syscall")
+	niSyscallSymbol, err := t.getKernelSymbols().GetSymbolByOwnerAndName("system", events.SyscallPrefix+"ni_syscall")
 	if err != nil {
 		e := err
 		// RHEL 8.x uses sys_ni_syscall instead of __arch_ni_syscall
-		niSyscallSymbol, err = t.kernelSymbols.GetSymbolByOwnerAndName("system", "sys_ni_syscall")
+		niSyscallSymbol, err = t.getKernelSymbols().GetSymbolByOwnerAndName("system", "sys_ni_syscall")
 		if err != nil {
 			logger.Debugw("hooked_syscall: syscall symbol not found", "name", "sys_ni_syscall")
 			return e
@@ -188,7 +188,7 @@ func (t *Tracee) populateExpectedSyscallTableArray(tableMap *bpf.BPFMap) error {
 			continue
 		}
 
-		kernelSymbol, err := t.kernelSymbols.GetSymbolByOwnerAndName("system", events.SyscallPrefix+syscallName)
+		kernelSymbol, err := t.getKernelSymbols().GetSymbolByOwnerAndName("system", events.SyscallPrefix+syscallName)
 		if err != nil {
 			logger.Warnw(fmt.Sprintf("hooked_syscall: Unable to locate syscall symbol... permanently skipping hook check for syscall ID %d", index))
 			zero := 0
