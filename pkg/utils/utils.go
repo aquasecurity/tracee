@@ -5,10 +5,7 @@ import (
 	"io"
 	"math/rand"
 	"reflect"
-	"strings"
 	"time"
-
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 // Cloner is a generic interface for objects that can clone themselves.
@@ -23,23 +20,6 @@ type Iterator[T any] interface {
 
 	// Next returns the next element in the iteration.
 	Next() T
-}
-
-func ParseSymbol(address uint64, table *environment.KernelSymbolTable) environment.KernelSymbol {
-	var hookingFunction environment.KernelSymbol
-
-	symbols, err := table.GetSymbolByAddr(address)
-	if err != nil {
-		hookingFunction = environment.KernelSymbol{}
-		hookingFunction.Owner = "hidden"
-	} else {
-		hookingFunction = symbols[0]
-	}
-
-	hookingFunction.Owner = strings.TrimPrefix(hookingFunction.Owner, "[")
-	hookingFunction.Owner = strings.TrimSuffix(hookingFunction.Owner, "]")
-
-	return hookingFunction
 }
 
 func HasBit(n uint64, offset uint) bool {

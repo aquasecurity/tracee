@@ -4,7 +4,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -43,7 +42,7 @@ func deriveHookedSeqOpsArgs(kernelSymbols *environment.KernelSymbolTable) derive
 			if addr == 0 {
 				continue
 			}
-			hookingFunction := utils.ParseSymbol(addr, kernelSymbols)
+			hookingFunction := kernelSymbols.GetPotentiallyHiddenSymbolByAddr(addr)[0]
 			seqOpsStruct := NetSeqOps[i/4]
 			seqOpsFunc := NetSeqOpsFuncs[i%4]
 			hookedSeqOps[seqOpsStruct+"_"+seqOpsFunc] =

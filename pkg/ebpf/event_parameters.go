@@ -131,7 +131,7 @@ func registerSyscallChecker(t *Tracee, eventParams []map[string]filters.Filter[*
 			if err := probeGroup.AddProbe(handle, probe); err != nil {
 				return errfmt.WrapError(err)
 			}
-			if err := probeGroup.Attach(handle, t.kernelSymbols); err != nil {
+			if err := probeGroup.Attach(handle, t.getKernelSymbols()); err != nil {
 				// Report attachment errors but don't fail, because it may be a syscall that doesn't exist on this system
 				logger.Warnw("Failed to attach syscall checker kprobe", "syscall", syscall.name, "error", err)
 				continue
