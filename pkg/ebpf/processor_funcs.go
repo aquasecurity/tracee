@@ -21,6 +21,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -233,10 +234,11 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 
 	err := capabilities.GetInstance().EBPF(
 		func() error {
-			err := t.kernelSymbols.Refresh()
+			newKernelSymbols, err := environment.NewKernelSymbolTable(true, true, t.requiredKsyms...)
 			if err != nil {
 				return errfmt.WrapError(err)
 			}
+			t.setKernelSymbols(newKernelSymbols)
 			return t.UpdateKallsyms()
 		},
 	)
@@ -281,7 +283,7 @@ func (t *Tracee) processHookedProcFops(event *trace.Event) error {
 		if addr == 0 { // address is in text segment, marked as 0
 			continue
 		}
-		hookingFunction := utils.ParseSymbol(addr, t.kernelSymbols)
+		hookingFunction := t.getKernelSymbols().GetPotentiallyHiddenSymbolByAddr(addr)[0]
 		if hookingFunction.Owner == "system" {
 			continue
 		}
@@ -326,7 +328,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	}
 
 	addressUint64 := uint64(address)
-	symbol := utils.ParseSymbol(addressUint64, t.kernelSymbols)
+	symbol := t.getKernelSymbols().GetPotentiallyHiddenSymbolByAddr(addressUint64)[0]
 	var utsName unix.Utsname
 	arch := ""
 	if err := unix.Uname(&utsName); err != nil {

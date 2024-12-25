@@ -111,7 +111,7 @@ func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 		var err error
 		var link *bpf.BPFLink
 		var attachFunc func(uint64) (*bpf.BPFLink, error)
-		var syms []environment.KernelSymbol
+		var syms []*environment.KernelSymbol
 		// https://github.com/aquasecurity/tracee/issues/3653#issuecomment-1832642225
 		//
 		// After commit b022f0c7e404 ('tracing/kprobes: Return EADDRNOTAVAIL

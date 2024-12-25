@@ -2,319 +2,283 @@ package environment
 
 import (
 	"bufio"
-	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
-	"sync"
+
+	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 const (
-	kallsymsPath = "/proc/kallsyms"
-	chanBuffer   = 112800 // TODO: check if we really need this buffer size
+	// Kernel symbols do not have an associated size, so we define a sensible size
+	// limit to prevent unrelated symbols from being returned for an address lookup
+	maxSymbolSize = 0x100000
+
+	ownerShift          = 48                           // Number of bits to shift the owner into the upper 16 bits
+	addressMask         = (1 << ownerShift) - 1        // Mask to extract the address from the addressAndOwner field
+	kernelAddressPrefix = uint64(0xffff) << ownerShift // Precomputed prefix for kernel addresses
 )
 
+// KernelSymbol is a friendly representation of a kernel symbol.
 type KernelSymbol struct {
 	Name    string
-	Type    string
 	Address uint64
 	Owner   string
 }
-type nameAndOwner struct {
-	name  string
-	owner string
-}
-type addrAndOwner struct {
-	addr  uint64
-	owner string
+
+// kernelSymbolInternal is a memory efficient representation of
+// a kernel symbol, used internally for storing all symbols.
+type kernelSymbolInternal struct {
+	name string
+	// We save only the low 48 bits of the address, as all (non-percpu) symbols are at 0xffffXXXXXXXXXXXX
+	// Owner is a 16-bit index into a slice of seen owners for the symbol table this symbol belongs to.
+	// It can only be translated to the owner name if we have the symbol table.
+	// To conserve memory, we encode both of them as a single 64-bit integer where the lower 48-bits
+	// are the address and the hight 16-bits are the owner index.
+	addressAndOwner uint64
 }
 
-// KernelSymbolTable manages kernel symbols with multiple maps for fast lookup.
+func newKernelSymbolInternal(name string, address uint64, owner uint16) *kernelSymbolInternal {
+	return &kernelSymbolInternal{
+		name:            name,
+		addressAndOwner: (uint64(owner) << ownerShift) | (address & addressMask),
+	}
+}
+
+func (ks kernelSymbolInternal) Name() string {
+	return ks.name
+}
+
+func (ks kernelSymbolInternal) Address() uint64 {
+	// Convert truncated address to the real kernel address
+	return kernelAddressPrefix | (ks.addressAndOwner & addressMask)
+}
+
+func (ks kernelSymbolInternal) owner() uint16 {
+	return uint16(ks.addressAndOwner >> ownerShift)
+}
+
+func (ks kernelSymbolInternal) Contains(address uint64) bool {
+	symbolAddr := ks.Address()
+	return symbolAddr <= address && symbolAddr+maxSymbolSize > address
+}
+
+func (ks kernelSymbolInternal) Clone() kernelSymbolInternal {
+	return kernelSymbolInternal{
+		name:            ks.name,
+		addressAndOwner: ks.addressAndOwner,
+	}
+}
+
 type KernelSymbolTable struct {
-	symbols       map[string][]*KernelSymbol
-	addrs         map[uint64][]*KernelSymbol
-	symByName     map[nameAndOwner][]*KernelSymbol
-	symByAddr     map[addrAndOwner][]*KernelSymbol
-	requiredSyms  map[string]struct{}
-	requiredAddrs map[uint64]struct{}
-	onlyRequired  bool
-	updateLock    sync.Mutex
-	updateWg      sync.WaitGroup
+	symbols *utils.SymbolTable[kernelSymbolInternal]
+
+	// Used for memory efficient representation of symbol owners
+	idxToSymbolOwner []string
+	symbolOwnerToIdx map[string]uint16
 }
 
-func symNotFoundErr(v interface{}) error {
-	return fmt.Errorf("symbol not found: %v", v)
+// Creates a new KernelSymbolTable that will be populated from a reader.
+// If lazyNameLookup is true, the mapping from name to symbol will be populated
+// only when a failed lookup occurs. This reduces memory footprint at the cost
+// of the time it takes to lookup a symbol name for the first time.
+// If requiredDataSymbolsOnly is true, only the data symbols passed in the
+// optional requiredDataSymbols argument will be added.
+func NewKernelSymbolTableFromReader(reader io.Reader, lazyNameLookup bool, requiredDataSymbolsOnly bool, requiredDataSymbols ...string) (*KernelSymbolTable, error) {
+	kst := &KernelSymbolTable{
+		symbols:          utils.NewSymbolTable[kernelSymbolInternal](lazyNameLookup),
+		idxToSymbolOwner: []string{"system"},
+		symbolOwnerToIdx: map[string]uint16{"system": 0},
+	}
+
+	if err := kst.update(reader, requiredDataSymbolsOnly, requiredDataSymbols); err != nil {
+		return nil, err
+	}
+
+	return kst, nil
 }
 
-// NewKernelSymbolTable initializes a KernelSymbolTable with optional configuration functions.
-func NewKernelSymbolTable(opts ...KSymbTableOption) (*KernelSymbolTable, error) {
-	k := &KernelSymbolTable{}
-	for _, opt := range opts {
-		if err := opt(k); err != nil {
-			return nil, err
-		}
-	}
-
-	// Set onlyRequired to true if there are required symbols or addresses
-	k.onlyRequired = k.requiredAddrs != nil || k.requiredSyms != nil
-
-	// Initialize maps if they are nil
-	if k.requiredSyms == nil {
-		k.requiredSyms = make(map[string]struct{})
-	}
-	if k.requiredAddrs == nil {
-		k.requiredAddrs = make(map[uint64]struct{})
-	}
-
-	return k, k.Refresh()
-}
-
-// KSymbTableOption defines a function signature for configuration options.
-type KSymbTableOption func(k *KernelSymbolTable) error
-
-// WithRequiredSymbols sets the required symbols for the KernelSymbolTable.
-func WithRequiredSymbols(reqSyms []string) KSymbTableOption {
-	return func(k *KernelSymbolTable) error {
-		k.requiredSyms = sliceToValidationMap(reqSyms)
-		return nil
-	}
-}
-
-// WithRequiredAddresses sets the required addresses for the KernelSymbolTable.
-func WithRequiredAddresses(reqAddrs []uint64) KSymbTableOption {
-	return func(k *KernelSymbolTable) error {
-		k.requiredAddrs = sliceToValidationMap(reqAddrs)
-		return nil
-	}
-}
-
-// TextSegmentContains returns true if the given address is in the kernel text segment.
-func (k *KernelSymbolTable) TextSegmentContains(addr uint64) (bool, error) {
-	k.updateLock.Lock()
-	defer k.updateLock.Unlock()
-
-	segStart, segEnd, err := k.getTextSegmentAddresses()
+// Creates a new KernelSymbolTable that will be populated from /proc/kallsyms.
+// If lazyNameLookup is true, the mapping from name to symbol will be populated
+// only when a failed lookup occurs. This reduces memory footprint at the cost
+// of the time it takes to lookup a symbol name for the first time.
+// If requiredDataSymbolsOnly is true, only the data symbols passed in the
+// optional requiredDataSymbols argument will be added.
+func NewKernelSymbolTable(lazyNameLookup bool, requiredDataSymbolsOnly bool, requiredDataSymbols ...string) (*KernelSymbolTable, error) {
+	file, err := os.Open("/proc/kallsyms")
 	if err != nil {
-		return false, err
-	}
-
-	return addr >= segStart && addr < segEnd, nil
-}
-
-// GetSymbolByName returns all the symbols with the given name.
-func (k *KernelSymbolTable) GetSymbolByName(name string) ([]KernelSymbol, error) {
-	k.updateLock.Lock()
-	defer k.updateLock.Unlock()
-
-	if err := k.validateOrAddRequiredSym(name); err != nil {
-		return nil, err
-	}
-
-	symbols, exist := k.symbols[name]
-	if !exist {
-		return nil, symNotFoundErr(name)
-	}
-
-	return copySliceOfPointersToSliceOfStructs(symbols), nil
-}
-
-// GetSymbolByAddr returns all the symbols with the given address.
-func (k *KernelSymbolTable) GetSymbolByAddr(addr uint64) ([]KernelSymbol, error) {
-	k.updateLock.Lock()
-	defer k.updateLock.Unlock()
-
-	if err := k.validateOrAddRequiredAddr(addr); err != nil {
-		return nil, err
-	}
-
-	symbols, exist := k.addrs[addr]
-	if !exist {
-		return nil, symNotFoundErr(addr)
-	}
-
-	return copySliceOfPointersToSliceOfStructs(symbols), nil
-}
-
-// GetSymbolByOwnerAndName returns all the symbols with the given owner and name.
-func (k *KernelSymbolTable) GetSymbolByOwnerAndName(owner, name string) ([]KernelSymbol, error) {
-	k.updateLock.Lock()
-	defer k.updateLock.Unlock()
-
-	if err := k.validateOrAddRequiredSym(name); err != nil {
-		return nil, err
-	}
-
-	symbols, exist := k.symByName[nameAndOwner{name, owner}]
-	if !exist {
-		return nil, symNotFoundErr(nameAndOwner{name, owner})
-	}
-
-	return copySliceOfPointersToSliceOfStructs(symbols), nil
-}
-
-// GetSymbolByOwnerAndAddr returns all the symbols with the given owner and address.
-func (k *KernelSymbolTable) GetSymbolByOwnerAndAddr(owner string, addr uint64) ([]KernelSymbol, error) {
-	k.updateLock.Lock()
-	defer k.updateLock.Unlock()
-
-	if err := k.validateOrAddRequiredAddr(addr); err != nil {
-		return nil, err
-	}
-
-	symbols, exist := k.symByAddr[addrAndOwner{addr, owner}]
-	if !exist {
-		return nil, symNotFoundErr(addrAndOwner{addr, owner})
-	}
-
-	return copySliceOfPointersToSliceOfStructs(symbols), nil
-}
-
-// getTextSegmentAddresses gets the start and end addresses of the kernel text segment.
-func (k *KernelSymbolTable) getTextSegmentAddresses() (uint64, uint64, error) {
-	stext, exist1 := k.symByName[nameAndOwner{"_stext", "system"}]
-	etext, exist2 := k.symByName[nameAndOwner{"_etext", "system"}]
-
-	if !exist1 || !exist2 {
-		return 0, 0, fmt.Errorf("kernel text segment symbol(s) not found")
-	}
-
-	textSegStart := stext[0].Address
-	textSegEnd := etext[0].Address
-
-	return textSegStart, textSegEnd, nil
-}
-
-// validateOrAddRequiredSym checks if the given symbol is in the required list and adds it if not.
-func (k *KernelSymbolTable) validateOrAddRequiredSym(sym string) error {
-	return k.validateOrAddRequired(func() bool {
-		_, ok := k.requiredSyms[sym]
-		return ok
-	}, func() {
-		k.requiredSyms[sym] = struct{}{}
-	})
-}
-
-// validateOrAddRequiredAddr checks if the given address is in the required list and adds it if not.
-func (k *KernelSymbolTable) validateOrAddRequiredAddr(addr uint64) error {
-	return k.validateOrAddRequired(func() bool {
-		_, ok := k.requiredAddrs[addr]
-		return ok
-	}, func() {
-		k.requiredAddrs[addr] = struct{}{}
-	})
-}
-
-// validateOrAddRequired is a common function to check and add required symbols or addresses.
-func (k *KernelSymbolTable) validateOrAddRequired(checkRequired func() bool, addRequired func()) error {
-	if !k.onlyRequired {
-		return nil
-	}
-
-	if !checkRequired() {
-		addRequired()
-		return k.refresh()
-	}
-
-	return nil
-}
-
-// Refresh is the exported method that acquires the lock and calls the internal refresh method.
-func (k *KernelSymbolTable) Refresh() error {
-	k.updateLock.Lock()
-	defer k.updateLock.Unlock()
-	return k.refresh()
-}
-
-// refresh refreshes the KernelSymbolTable, reading the symbols from /proc/kallsyms.
-func (k *KernelSymbolTable) refresh() error {
-	// Re-initialize the maps to include all new symbols.
-	k.symbols = make(map[string][]*KernelSymbol)
-	k.addrs = make(map[uint64][]*KernelSymbol)
-	k.symByName = make(map[nameAndOwner][]*KernelSymbol)
-	k.symByAddr = make(map[addrAndOwner][]*KernelSymbol)
-
-	// Open the kallsyms file.
-	file, err := os.Open(kallsymsPath)
-	if err != nil {
-		return err
+		return nil, errfmt.WrapError(err)
 	}
 	defer func() {
 		_ = file.Close()
 	}()
 
-	// Read the kallsyms file line by line and process each line.
-	scanner := bufio.NewScanner(file)
+	return NewKernelSymbolTableFromReader(file, lazyNameLookup, requiredDataSymbolsOnly, requiredDataSymbols...)
+}
+
+// Read the contents of the given buffer and update the symbol table
+func (kst *KernelSymbolTable) update(reader io.Reader, requiredDataSymbolsOnly bool, requiredDataSymbols []string) error {
+	// Build set of required data symbols for efficient lookup
+	requiredDataSymbolsSet := make(map[string]struct{})
+	for _, symbolName := range requiredDataSymbols {
+		requiredDataSymbolsSet[symbolName] = struct{}{}
+	}
+
+	symbols := []*kernelSymbolInternal{}
+
+	// Make sure we hold the required privileges by checking if we see actual addresses
+	seenRealAddress := false
+
+	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		fields := strings.Fields(scanner.Text())
 		if len(fields) < 3 {
 			continue
 		}
-		sym := parseKallsymsLine(fields)
-		if sym == nil {
+
+		symbolAddr, err := strconv.ParseUint(fields[0], 16, 64)
+		if err != nil {
+			continue
+		}
+		if symbolAddr != 0 {
+			seenRealAddress = true
+		}
+
+		// All kernel symbols are at 0xffffXXXXXXXXXXXX, except percpu symbols which we ignore
+		if !validKernelAddr(symbolAddr) {
 			continue
 		}
 
-		if k.onlyRequired {
-			_, symRequired := k.requiredSyms[sym.Name]
-			_, addrRequired := k.requiredAddrs[sym.Address]
-			if !symRequired && !addrRequired {
+		symbolType := fields[1]
+		symbolName := fields[2]
+
+		symbolOwner := "system"
+		if len(fields) > 3 {
+			symbolOwner = fields[3]
+			symbolOwner = strings.TrimPrefix(symbolOwner, "[")
+			symbolOwner = strings.TrimSuffix(symbolOwner, "]")
+		}
+
+		// This is a data symbol, requiredDataSymbolsOnly is true, and this symbol isn't required
+		if requiredDataSymbolsOnly && strings.ContainsAny(symbolType, "DdBbRr") {
+			if _, exists := requiredDataSymbolsSet[symbolName]; !exists {
 				continue
 			}
 		}
 
-		k.symbols[sym.Name] = append(k.symbols[sym.Name], sym)
-		k.addrs[sym.Address] = append(k.addrs[sym.Address], sym)
-		k.symByName[nameAndOwner{sym.Name, sym.Owner}] = append(k.symByName[nameAndOwner{sym.Name, sym.Owner}], sym)
-		k.symByAddr[addrAndOwner{sym.Address, sym.Owner}] = append(k.symByAddr[addrAndOwner{sym.Address, sym.Owner}], sym)
-	}
-	err = scanner.Err()
+		// Get index of symbol owner, or add it if it doesn't exist
+		ownerIdx := kst.getOrAddSymbolOwner(symbolOwner)
 
-	return err
+		symbols = append(symbols, newKernelSymbolInternal(symbolName, symbolAddr, ownerIdx))
+	}
+
+	// We didn't hold the required privileges
+	if len(symbols) > 0 && !seenRealAddress {
+		return errfmt.Errorf("insufficient privileges when reading from /proc/kallsyms")
+	}
+
+	// Update the symbol table
+	kst.symbols.AddSymbols(symbols)
+
+	return nil
 }
 
-// parseKallsymsLine parses a line from /proc/kallsyms and returns a KernelSymbol.
-func parseKallsymsLine(line []string) *KernelSymbol {
-	if len(line) < 3 {
-		return nil
+func (kst *KernelSymbolTable) getOrAddSymbolOwner(ownerStr string) uint16 {
+	ownerIdx, found := kst.symbolOwnerToIdx[ownerStr]
+	if !found {
+		kst.idxToSymbolOwner = append(kst.idxToSymbolOwner, ownerStr)
+		ownerIdx = uint16(len(kst.idxToSymbolOwner) - 1)
+		kst.symbolOwnerToIdx[ownerStr] = ownerIdx
 	}
 
-	symbolAddr, err := strconv.ParseUint(line[0], 16, 64)
-	if err != nil {
-		return nil
-	}
+	return ownerIdx
+}
 
-	symbolType := line[1]
-	symbolName := line[2]
-
-	symbolOwner := "system"
-	if len(line) > 3 {
-		line[3] = strings.TrimPrefix(line[3], "[")
-		line[3] = strings.TrimSuffix(line[3], "]")
-		symbolOwner = line[3]
-	}
-
+func (kst *KernelSymbolTable) symbolFromInternal(symbol *kernelSymbolInternal) *KernelSymbol {
 	return &KernelSymbol{
-		Name:    symbolName,
-		Type:    symbolType,
-		Address: symbolAddr,
-		Owner:   symbolOwner,
+		Name:    symbol.Name(),
+		Address: symbol.Address(),
+		Owner:   kst.idxToSymbolOwner[symbol.owner()],
 	}
 }
 
-// copySliceOfPointersToSliceOfStructs converts a slice of pointers to a slice of structs.
-func copySliceOfPointersToSliceOfStructs(s []*KernelSymbol) []KernelSymbol {
-	ret := make([]KernelSymbol, len(s))
-	for i, v := range s {
-		ret[i] = *v
+// GetSymbolByName returns all the symbols with the given name.
+func (kst *KernelSymbolTable) GetSymbolByName(name string) ([]*KernelSymbol, error) {
+	symbolsInternal, err := kst.symbols.LookupByName(name)
+	if err != nil {
+		return nil, errfmt.WrapError(err)
 	}
-	return ret
+
+	symbols := make([]*KernelSymbol, 0, len(symbolsInternal))
+	for _, symbolInternal := range symbolsInternal {
+		symbols = append(symbols, kst.symbolFromInternal(symbolInternal))
+	}
+
+	return symbols, nil
 }
 
-// sliceToValidationMap converts a slice to a map for validation purposes.
-func sliceToValidationMap[T comparable](items []T) map[T]struct{} {
-	res := make(map[T]struct{})
-	for _, item := range items {
-		res[item] = struct{}{}
+// GetSymbolByOwnerAndName returns all the symbols with the given owner and name.
+func (kst *KernelSymbolTable) GetSymbolByOwnerAndName(owner, name string) ([]*KernelSymbol, error) {
+	symbolsInternal, err := kst.symbols.LookupByName(name)
+	if err != nil {
+		return nil, errfmt.WrapError(err)
 	}
-	return res
+
+	symbols := make([]*KernelSymbol, 0, len(symbolsInternal))
+	for _, symbolInternal := range symbolsInternal {
+		symbol := kst.symbolFromInternal(symbolInternal)
+		// Return only symbols that have the requested owner
+		if symbol.Owner == owner {
+			symbols = append(symbols, symbol)
+		}
+	}
+
+	return symbols, nil
+}
+
+// GetSymbolByAddr returns all the symbols with the given address.
+func (kst *KernelSymbolTable) GetSymbolByAddr(addr uint64) ([]*KernelSymbol, error) {
+	symbolsInternal, err := kst.symbols.LookupByAddressExact(addr)
+	if err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
+	symbols := make([]*KernelSymbol, 0, len(symbolsInternal))
+	for _, symbolInternal := range symbolsInternal {
+		symbols = append(symbols, kst.symbolFromInternal(symbolInternal))
+	}
+
+	return symbols, nil
+}
+
+// GetPotentiallyHiddenSymbolByAddr returns all the symbols with the given address,
+// or if none are found, a fake symbol with the "hidden" owner.
+func (kst *KernelSymbolTable) GetPotentiallyHiddenSymbolByAddr(addr uint64) []*KernelSymbol {
+	symbolsInternal, err := kst.symbols.LookupByAddressExact(addr)
+	if err != nil || !validKernelAddr(addr) {
+		// No symbol found or address not in kernel range, return a fake "hidden" symbol
+		return []*KernelSymbol{{
+			Address: addr,
+			Owner:   "hidden",
+		}}
+	}
+
+	symbols := make([]*KernelSymbol, 0, len(symbolsInternal))
+	for _, symbolInternal := range symbolsInternal {
+		symbols = append(symbols, kst.symbolFromInternal(symbolInternal))
+	}
+
+	return symbols
+}
+
+func (kst *KernelSymbolTable) ForEachSymbol(callback func(*KernelSymbol)) {
+	kst.symbols.ForEachSymbol(func(symbol *kernelSymbolInternal) {
+		callback(kst.symbolFromInternal(symbol))
+	})
+}
+
+func validKernelAddr(addr uint64) bool {
+	return addr&kernelAddressPrefix == kernelAddressPrefix
 }

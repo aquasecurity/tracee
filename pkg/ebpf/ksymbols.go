@@ -45,7 +45,7 @@ func (t *Tracee) UpdateKallsyms() error {
 	// For every ksymbol required by tracee ...
 	for _, required := range allReqSymbols {
 		// ... get the symbol address from the kallsyms file ...
-		symbol, err := t.kernelSymbols.GetSymbolByOwnerAndName(globalSymbolOwner, required)
+		symbol, err := t.getKernelSymbols().GetSymbolByOwnerAndName(globalSymbolOwner, required)
 		if err != nil {
 			logger.Debugw("failed to get symbol", "symbol", required, "error", err)
 			continue
