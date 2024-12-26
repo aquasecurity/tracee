@@ -254,7 +254,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 	}
 	if num, isNum := arg.Value.(json.Number); isNum {
 		if strings.HasSuffix(arg.Type, "*") {
-			tmp, err := strconv.ParseUint(num.String(), 10, 64)
+			tmp, err := strconv.ParseUint(num.String(), 10, 32)
 			if err != nil {
 				return err
 			}
