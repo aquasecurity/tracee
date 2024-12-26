@@ -4,6 +4,8 @@ go 1.22.0
 
 toolchain go1.22.4
 
+replace github.com/aquasecurity/tracee/types => ./types
+
 require (
 	github.com/IBM/fluent-forward-go v0.2.2
 	github.com/Masterminds/sprig/v3 v3.2.3
