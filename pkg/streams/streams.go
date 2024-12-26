@@ -45,7 +45,7 @@ func (s *Stream) publish(ctx context.Context, event trace.Event) {
 // shouldIgnorePolicy checks if the stream should ignore the event
 func (s *Stream) shouldIgnorePolicy(event trace.Event) bool {
 	// TODO: we will need to remove this policy mask implementation - policies is no longer a 64 bits bitmap
-	return s.policyMask&event.MatchedPoliciesUser == 0
+	return s.policyMask&event.MatchedRulesUser == 0
 }
 
 // close closes the stream

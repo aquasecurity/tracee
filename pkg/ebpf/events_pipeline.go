@@ -260,9 +260,9 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.Kubernetes = kubernetesData
 			evt.EventID = int(eCtx.EventID)
 			evt.EventName = evtName
-			evt.PoliciesVersion = eCtx.PoliciesVersion
-			evt.MatchedPoliciesKernel = eCtx.MatchedPolicies
-			evt.MatchedPoliciesUser = 0
+			evt.RulesVersion = eCtx.RulesVersion
+			evt.MatchedRulesKernel = eCtx.MatchedRules
+			evt.MatchedRulesUser = 0
 			evt.MatchedPolicies = []string{}
 			evt.ArgsNum = int(argnum)
 			evt.ReturnValue = int(eCtx.Retval)
@@ -309,7 +309,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 // pipeline (decode, derive, engine).
 func (t *Tracee) matchRules(event *trace.Event) uint64 {
 	eventID := events.ID(event.EventID)
-	bitmap := event.MatchedPoliciesKernel
+	bitmap := event.MatchedRulesKernel
 
 	// range through each userland filterable rule
 	for _, rule := range t.policyManager.GetUserlandRules(eventID) {
@@ -387,7 +387,7 @@ func (t *Tracee) matchRules(event *trace.Event) uint64 {
 		}
 	}
 
-	event.MatchedPoliciesUser = bitmap // store filtered bitmap to be used in sink stage
+	event.MatchedRulesUser = bitmap // store filtered bitmap to be used in sink stage
 
 	return bitmap
 }
@@ -463,10 +463,10 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 					"eventId", eventId)
 
 				// remove event from the policies with container filters
-				utils.ClearBits(&event.MatchedPoliciesKernel, rulesWithContainerFilter)
-				utils.ClearBits(&event.MatchedPoliciesUser, rulesWithContainerFilter)
+				utils.ClearBits(&event.MatchedRulesKernel, rulesWithContainerFilter)
+				utils.ClearBits(&event.MatchedRulesUser, rulesWithContainerFilter)
 
-				if event.MatchedPoliciesKernel == 0 {
+				if event.MatchedRulesKernel == 0 {
 					t.eventsPool.Put(event)
 					continue
 				}
@@ -581,14 +581,14 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 
 			// Only emit events requested by the user and matched by at least one policy.
 			id := events.ID(event.EventID)
-			event.MatchedPoliciesUser = t.policyManager.MatchEvent(id, event.MatchedPoliciesUser)
-			if event.MatchedPoliciesUser == 0 {
+			event.MatchedRulesUser = t.policyManager.MatchEvent(id, event.MatchedRulesUser)
+			if event.MatchedRulesUser == 0 {
 				t.eventsPool.Put(event)
 				continue
 			}
 
 			// Populate the event with the names of the matched policies.
-			event.MatchedPolicies = t.policyManager.GetMatchedPolicyNames(id, event.MatchedPoliciesUser)
+			event.MatchedPolicies = t.policyManager.GetMatchedPolicyNames(id, event.MatchedRulesUser)
 
 			// Parse args here if the rule engine is NOT enabled (parsed there if it is).
 			if t.config.Output.ParseArguments && !t.config.EngineConfig.Enabled {

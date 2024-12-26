@@ -17,10 +17,10 @@ const (
 )
 
 var (
-	policy1Event     = trace.Event{MatchedPoliciesUser: 0b1}
-	policy2Event     = trace.Event{MatchedPoliciesUser: 0b10}
-	policy3Event     = trace.Event{MatchedPoliciesUser: 0b100}
-	policy1And2Event = trace.Event{MatchedPoliciesUser: 0b11}
+	policy1Event     = trace.Event{MatchedRulesUser: 0b1}
+	policy2Event     = trace.Event{MatchedRulesUser: 0b10}
+	policy3Event     = trace.Event{MatchedRulesUser: 0b100}
+	policy1And2Event = trace.Event{MatchedRulesUser: 0b11}
 )
 
 func TestStreamManager(t *testing.T) {

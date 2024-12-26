@@ -2404,15 +2404,15 @@ func expectEvent(
 	args ...trace.Argument,
 ) trace.Event {
 	return trace.Event{
-		ProcessorID:         processorID,
-		ProcessID:           pid,
-		UserID:              uid,
-		ProcessName:         comm,
-		HostName:            host,
-		EventID:             int(eventID),
-		MatchedPolicies:     matchPolName,
-		MatchedPoliciesUser: matchPols,
-		Args:                args,
+		ProcessorID:      processorID,
+		ProcessID:        pid,
+		UserID:           uid,
+		ProcessName:      comm,
+		HostName:         host,
+		EventID:          int(eventID),
+		MatchedPolicies:  matchPolName,
+		MatchedRulesUser: matchPols,
+		Args:             args,
 	}
 }
 
@@ -2630,7 +2630,7 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 			checkPID := expEvt.ProcessID != anyPID
 			checkUID := expEvt.UserID != anyUID
 			checkEventID := expEvt.EventID != anyEventID
-			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
+			checkPolicy := expEvt.MatchedRulesUser != anyPolicy
 			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
 
 			for _, actEvt := range actEvtsCopy {
@@ -2659,7 +2659,7 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 				if checkEventID && actEvt.EventID != expEvt.EventID {
 					continue
 				}
-				if checkPolicy && actEvt.MatchedPoliciesUser != expEvt.MatchedPoliciesUser {
+				if checkPolicy && actEvt.MatchedRulesUser != expEvt.MatchedRulesUser {
 					continue
 				}
 				if checkPolicyName {
@@ -2796,7 +2796,7 @@ func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 			checkPID := expEvt.ProcessID != anyPID
 			checkUID := expEvt.UserID != anyUID
 			checkEventID := expEvt.EventID != anyEventID
-			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
+			checkPolicy := expEvt.MatchedRulesUser != anyPolicy
 			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
 
 			if len(cmd.expectedEvents) > 0 && proc.expectedEvts == 0 {
@@ -2829,7 +2829,7 @@ func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 				if checkEventID && actEvt.EventID != expEvt.EventID {
 					continue
 				}
-				if checkPolicy && actEvt.MatchedPoliciesUser != expEvt.MatchedPoliciesUser {
+				if checkPolicy && actEvt.MatchedRulesUser != expEvt.MatchedRulesUser {
 					continue
 				}
 				if checkPolicyName {
@@ -2937,7 +2937,7 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 			checkPID := expEvt.ProcessID != anyPID
 			checkUID := expEvt.UserID != anyUID
 			checkEventID := expEvt.EventID != anyEventID
-			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
+			checkPolicy := expEvt.MatchedRulesUser != anyPolicy
 			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
 
 			for _, actEvt := range actEvtsCopy {
@@ -2966,8 +2966,8 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 				if checkEventID && !assert.ObjectsAreEqual(expEvt.EventID, actEvt.EventID) {
 					return fmt.Errorf("Event %+v:\nevent Id mismatch: expected %d, got %d", expEvt, expEvt.EventID, actEvt.EventID)
 				}
-				if checkPolicy && !assert.ObjectsAreEqual(expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser) {
-					return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %d, got %d", expEvt, expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser)
+				if checkPolicy && !assert.ObjectsAreEqual(expEvt.MatchedRulesUser, actEvt.MatchedRulesUser) {
+					return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %d, got %d", expEvt, expEvt.MatchedRulesUser, actEvt.MatchedRulesUser)
 				}
 				if checkPolicyName && !assertUnorderedStringSlicesEqual(expEvt.MatchedPolicies, actEvt.MatchedPolicies) {
 					return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %v, got %v", expEvt, expEvt.MatchedPolicies, actEvt.MatchedPolicies)
@@ -3050,7 +3050,7 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 			checkPID := expEvt.ProcessID != anyPID
 			checkUID := expEvt.UserID != anyUID
 			checkEventID := expEvt.EventID != anyEventID
-			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
+			checkPolicy := expEvt.MatchedRulesUser != anyPolicy
 			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
 
 			if checkHost && !assert.ObjectsAreEqual(expEvt.HostName, actEvt.HostName) {
@@ -3074,8 +3074,8 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 			if checkEventID && !assert.ObjectsAreEqual(expEvt.EventID, actEvt.EventID) {
 				return fmt.Errorf("Event %+v:\nevent Id mismatch: expected %d, got %d", expEvt, expEvt.EventID, actEvt.EventID)
 			}
-			if checkPolicy && !assert.ObjectsAreEqual(expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser) {
-				return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %d, got %d", expEvt, expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser)
+			if checkPolicy && !assert.ObjectsAreEqual(expEvt.MatchedRulesUser, actEvt.MatchedRulesUser) {
+				return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %d, got %d", expEvt, expEvt.MatchedRulesUser, actEvt.MatchedRulesUser)
 			}
 			if checkPolicyName && !assertUnorderedStringSlicesEqual(expEvt.MatchedPolicies, actEvt.MatchedPolicies) {
 				return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %v, got %v", expEvt, expEvt.MatchedPolicies, actEvt.MatchedPolicies)
