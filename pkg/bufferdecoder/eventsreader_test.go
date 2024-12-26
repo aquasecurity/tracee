@@ -24,7 +24,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, // -1
 			},
-			fields:      []trace.ArgMeta{{Type: "int", Name: "int0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.INT_T, Name: "int0"}},
 			expectedArg: int32(-1),
 		},
 		{
@@ -32,7 +32,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, // 4294967295
 			},
-			fields:      []trace.ArgMeta{{Type: "unsigned int", Name: "uint0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.UINT_T, Name: "uint0"}},
 			expectedArg: uint32(4294967295),
 		},
 		{
@@ -40,7 +40,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // -1
 			},
-			fields:      []trace.ArgMeta{{Type: "long", Name: "long0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.LONG_T, Name: "long0"}},
 			expectedArg: int64(-1),
 		},
 		{
@@ -48,7 +48,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
 			},
-			fields:      []trace.ArgMeta{{Type: "unsigned long", Name: "ulong0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.ULONG_T, Name: "ulong0"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 		{
@@ -56,7 +56,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xB6, 0x11, 0x0, 0x0, // 0x000011B6 == 010666 == S_IFIFO|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 			},
-			fields:      []trace.ArgMeta{{Type: "mode_t", Name: "modeT0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.UINT_T, Name: "modeT0"}},
 			expectedArg: uint32(0x11b6),
 		},
 		{
@@ -64,7 +64,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, // 4294967295
 			},
-			fields:      []trace.ArgMeta{{Type: "dev_t", Name: "devT0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.UINT_T, Name: "devT0"}},
 			expectedArg: uint32(4294967295),
 		},
 		{
@@ -72,7 +72,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
 			},
-			fields:      []trace.ArgMeta{{Type: "off_t", Name: "offT0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.ULONG_T, Name: "offT0"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 		{
@@ -80,7 +80,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
 			},
-			fields:      []trace.ArgMeta{{Type: "loff_t", Name: "loffT0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.ULONG_T, Name: "loffT0"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 		{ // This is expected to fail. TODO: change pointer parsed type to uint64
@@ -88,7 +88,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 			},
-			fields:      []trace.ArgMeta{{Type: "void*", Name: "pointer0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.POINTER_T, Name: "pointer0"}},
 			expectedArg: uintptr(0xFFFFFFFFFFFFFFFF),
 		},
 		{
@@ -97,7 +97,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				16, 0, 0, 0, // len=16
 				47, 117, 115, 114, 47, 98, 105, 110, 47, 100, 111, 99, 107, 101, 114, 0, // /usr/bin/docker
 			},
-			fields:      []trace.ArgMeta{{Type: "const char*", Name: "str0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.STR_T, Name: "str0"}},
 			expectedArg: "/usr/bin/docker",
 		},
 		{
@@ -109,7 +109,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				7, 0, 0, 0, // len=7
 				100, 111, 99, 107, 101, 114, 0, // docker
 			},
-			fields:      []trace.ArgMeta{{Type: "const char*const*", Name: "strArr0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.STR_ARR_T, Name: "strArr0"}},
 			expectedArg: []string{"/usr/bin", "docker"},
 		},
 		{
@@ -120,7 +120,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				47, 117, 115, 114, 47, 98, 105, 110, 0, // /usr/bin
 				100, 111, 99, 107, 101, 114, 0, // docker
 			},
-			fields:      []trace.ArgMeta{{Type: "const char**", Name: "argsArr0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.ARGS_ARR_T, Name: "argsArr0"}},
 			expectedArg: []string{"/usr/bin", "docker"},
 		},
 		{
@@ -131,7 +131,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				0xFF, 0xFF, 0xFF, 0xFF, // sin_addr=255.255.255.255
 				0, 0, 0, 0, 0, 0, 0, 0, // padding[8]
 			},
-			fields:      []trace.ArgMeta{{Type: "struct sockaddr*", Name: "sockAddr0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.SOCK_ADDR_T, Name: "sockAddr0"}},
 			expectedArg: map[string]string(map[string]string{"sa_family": "AF_INET", "sin_addr": "255.255.255.255", "sin_port": "65535"}),
 		},
 		{
@@ -140,7 +140,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				1, 0, // sa_family=AF_UNIX
 				47, 116, 109, 112, 47, 115, 111, 99, 107, 101, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 101, 110, 0, 0, 0, // sun_path=/tmp/socket
 			},
-			fields:      []trace.ArgMeta{{Type: "struct sockaddr*", Name: "sockAddr0"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.SOCK_ADDR_T, Name: "sockAddr0"}},
 			expectedArg: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/tmp/socket"},
 		},
 		{
@@ -153,7 +153,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0, 0, 0, 1, // len=16777216
 			},
-			fields:        []trace.ArgMeta{{Type: "const char*", Name: "str0"}},
+			fields:        []trace.ArgMeta{{DecodeAs: trace.STR_T, Name: "str0"}},
 			expectedError: errors.New("string size too big: 16777216"),
 		},
 		{
@@ -161,7 +161,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{1,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
 			},
-			fields:      []trace.ArgMeta{{Type: "const char*", Name: "str0"}, {Type: "off_t", Name: "offT1"}},
+			fields:      []trace.ArgMeta{{DecodeAs: trace.STR_T, Name: "str0"}, {DecodeAs: trace.ULONG_T, Name: "offT1"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 	}

@@ -5,7 +5,6 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/containers"
@@ -17,6 +16,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type ManagerConfig struct {
@@ -593,7 +593,7 @@ func (m *Manager) LookupByName(name string) (*Policy, error) {
 func (m *Manager) UpdateBPF(
 	bpfModule *bpf.Module,
 	cts *containers.Containers,
-	eventsFields map[events.ID][]bufferdecoder.ArgType,
+	eventsFields map[events.ID][]trace.DecodeAs,
 	createNewMaps bool,
 	updateProcTree bool,
 ) (*PoliciesConfig, error) {

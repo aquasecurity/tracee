@@ -62,7 +62,7 @@ func generateSOLoadedEvent(pid int, so sharedobjs.ObjInfo) trace.Event {
 		Args: []trace.Argument{
 			{ArgMeta: trace.ArgMeta{Type: "const char*", Name: "pathname"}, Value: so.Path},
 			{ArgMeta: trace.ArgMeta{Type: "int", Name: "flags"}, Value: 0},
-			{ArgMeta: trace.ArgMeta{Type: "dev_t", Name: "dev"}, Value: so.Id.Device},
+			{ArgMeta: trace.ArgMeta{Type: "unsigned int", Name: "dev"}, Value: so.Id.Device},
 			{ArgMeta: trace.ArgMeta{Type: "unsigned long", Name: "inode"}, Value: so.Id.Inode},
 			{ArgMeta: trace.ArgMeta{Type: "unsigned long", Name: "ctime"}, Value: so.Id.Ctime},
 		},

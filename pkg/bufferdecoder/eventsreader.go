@@ -13,40 +13,6 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-// argType is an enum that encodes the argument types that the BPF program may write to the shared buffer
-// argument types should match defined values in ebpf code
-type ArgType uint8
-
-const (
-	noneT ArgType = iota
-	intT
-	uintT
-	longT
-	ulongT
-	offT
-	modeT
-	devT
-	sizeT
-	pointerT
-	strT
-	strArrT
-	sockAddrT
-	bytesT
-	u16T
-	credT
-	intArr2T
-	uint64ArrT
-	u8T
-	timespecT
-)
-
-// These types don't match the ones defined in the ebpf code since they are not being used by syscalls arguments.
-// They have their own set of value to avoid collision in the future.
-const (
-	argsArrT ArgType = iota + 0x80
-	boolT
-)
-
 // readArgFromBuff read the next argument from the buffer.
 // Return the index of the argument and the parsed argument.
 func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.ArgMeta,
@@ -66,50 +32,53 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 		return 0, arg, errfmt.Errorf("invalid arg index %d", argIdx)
 	}
 	arg.ArgMeta = fields[argIdx]
-	argType := GetFieldType(arg.Type)
+	decodeType := arg.DecodeAs
+	if decodeType == trace.NONE_T {
+		return 0, arg, errfmt.Errorf("arg \"%s\" from event %d: did not declare a decode type, this should not happen", arg.Name, id)
+	}
 
-	switch argType {
-	case u8T:
+	switch decodeType {
+	case trace.U8_T:
 		var data uint8
 		err = ebpfMsgDecoder.DecodeUint8(&data)
 		res = data
-	case u16T:
+	case trace.U16_T:
 		var data uint16
 		err = ebpfMsgDecoder.DecodeUint16(&data)
 		res = data
-	case intT:
+	case trace.INT_T:
 		var data int32
 		err = ebpfMsgDecoder.DecodeInt32(&data)
 		res = data
-	case uintT, devT, modeT:
+	case trace.UINT_T:
 		var data uint32
 		err = ebpfMsgDecoder.DecodeUint32(&data)
 		res = data
-	case longT:
+	case trace.LONG_T:
 		var data int64
 		err = ebpfMsgDecoder.DecodeInt64(&data)
 		res = data
-	case ulongT, offT, sizeT:
+	case trace.ULONG_T:
 		var data uint64
 		err = ebpfMsgDecoder.DecodeUint64(&data)
 		res = data
-	case boolT:
+	case trace.BOOL_T:
 		var data bool
 		err = ebpfMsgDecoder.DecodeBool(&data)
 		res = data
-	case pointerT:
+	case trace.POINTER_T:
 		var data uint64
 		err = ebpfMsgDecoder.DecodeUint64(&data)
 		res = uintptr(data)
-	case sockAddrT:
+	case trace.SOCK_ADDR_T:
 		res, err = readSockaddrFromBuff(ebpfMsgDecoder)
-	case credT:
+	case trace.CRED_T:
 		var data SlimCred
 		err = ebpfMsgDecoder.DecodeSlimCred(&data)
 		res = trace.SlimCred(data) // here we cast to trace.SlimCred to ensure we send the public interface and not bufferdecoder.SlimCred
-	case strT:
+	case trace.STR_T:
 		res, err = readStringFromBuff(ebpfMsgDecoder)
-	case strArrT:
+	case trace.STR_ARR_T:
 		// TODO optimization: create slice after getting arrLen
 		var ss []string
 		var arrLen uint8
@@ -125,7 +94,7 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 			ss = append(ss, s)
 		}
 		res = ss
-	case argsArrT:
+	case trace.ARGS_ARR_T:
 		var ss []string
 		var arrLen uint32
 		var argNum uint32
@@ -150,7 +119,7 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 			ss = append(ss, "?")
 		}
 		res = ss
-	case bytesT:
+	case trace.BYTES_T:
 		var size uint32
 		err = ebpfMsgDecoder.DecodeUint32(&size)
 		if err != nil {
@@ -161,21 +130,21 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 			return uint(argIdx), arg, errfmt.Errorf("byte array size too big: %d", size)
 		}
 		res, err = ReadByteSliceFromBuff(ebpfMsgDecoder, int(size))
-	case intArr2T:
+	case trace.INT_ARR_2_T:
 		var intArray [2]int32
 		err = ebpfMsgDecoder.DecodeIntArray(intArray[:], 2)
 		if err != nil {
 			return uint(argIdx), arg, errfmt.Errorf("error reading int elements: %v", err)
 		}
 		res = intArray
-	case uint64ArrT:
+	case trace.UINT64_ARR_T:
 		ulongArray := make([]uint64, 0)
 		err := ebpfMsgDecoder.DecodeUint64Array(&ulongArray)
 		if err != nil {
 			return uint(argIdx), arg, errfmt.Errorf("error reading ulong elements: %v", err)
 		}
 		res = ulongArray
-	case timespecT:
+	case trace.TIMESPEC_T:
 		var sec int64
 		var nsec int64
 		err = ebpfMsgDecoder.DecodeInt64(&sec)
@@ -187,7 +156,7 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
-		return uint(argIdx), arg, errfmt.Errorf("error unknown arg type %v", argType)
+		return uint(argIdx), arg, errfmt.Errorf("error unknown arg type %v", decodeType)
 	}
 	if err != nil {
 		return uint(argIdx), arg, errfmt.WrapError(err)
@@ -196,53 +165,45 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 	return uint(argIdx), arg, nil
 }
 
-func GetFieldType(fieldType string) ArgType {
+func GetFieldType(fieldType string) trace.DecodeAs {
 	switch fieldType {
-	case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
-		return intT
-	case "unsigned int", "u32":
-		return uintT
+	case "int":
+		return trace.INT_T
+	case "unsigned int":
+		return trace.UINT_T
 	case "long":
-		return longT
-	case "unsigned long", "u64":
-		return ulongT
-	case "bool":
-		return boolT
-	case "off_t", "loff_t":
-		return offT
-	case "mode_t":
-		return modeT
-	case "dev_t":
-		return devT
-	case "size_t":
-		return sizeT
-	case "void*", "const void*":
-		return pointerT
-	case "char*", "const char*":
-		return strT
-	case "const char*const*": // used by execve(at) argv and env
-		return strArrT
-	case "const char**": // used by sched_process_exec argv and envp
-		return argsArrT
-	case "const struct sockaddr*", "struct sockaddr*":
-		return sockAddrT
-	case "bytes":
-		return bytesT
-	case "int[2]":
-		return intArr2T
-	case "slim_cred_t":
-		return credT
-	case "umode_t":
-		return u16T
+		return trace.LONG_T
+	case "unsigned long":
+		return trace.ULONG_T
+	case "u16":
+		return trace.U16_T
 	case "u8":
-		return u8T
+		return trace.U8_T
+	case "bool":
+		return trace.BOOL_T
+	case "void*":
+		return trace.POINTER_T
+	case "char*":
+		return trace.STR_T
+	case "const char*const*": // used by execve(at) argv and env
+		return trace.STR_ARR_T
+	case "const char**": // used by sched_process_exec argv and env
+		return trace.ARGS_ARR_T
+	case "struct sockaddr*":
+		return trace.SOCK_ADDR_T
+	case "bytes":
+		return trace.BYTES_T
+	case "int[2]":
+		return trace.INT_ARR_2_T
+	case "slim_cred_t":
+		return trace.CRED_T
 	case "unsigned long[]", "[]trace.HookedSymbolData":
-		return uint64ArrT
-	case "struct timespec*", "const struct timespec*":
-		return timespecT
+		return trace.UINT64_ARR_T
+	case "struct timespec*":
+		return trace.TIMESPEC_T
 	default:
 		// Default to pointer (printed as hex) for unsupported types
-		return pointerT
+		return trace.POINTER_T
 	}
 }
 

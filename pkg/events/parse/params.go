@@ -1,8 +1,6 @@
 package parse
 
 import (
-	"strings"
-
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -39,55 +37,24 @@ func ArgZeroValueFromType(t string) interface{} {
 	case "s16",
 		"short":
 		return int16(0)
-	case "u16",
-		"unsigned short",
-		"old_gid_t",
-		"old_uid_t",
-		"umode_t":
+	case "u16":
 		return uint16(0)
-	case "s32",
-		"int",
-		"pid_t",
-		"key_t",
-		"clockid_t",
-		"const clockid_t",
-		"timer_t",
-		"mqd_t",
-		"key_serial_t",
-		"landlock_rule_type":
+	case "int":
 		return int32(0)
-	case "u32",
-		"unsigned int",
-		"dev_t",
-		"uid_t",
-		"gid_t",
-		"mode_t",
-		"qid_t":
+	case "unsigned int":
 		return uint32(0)
 	case "int[2]":
 		return [2]int32{}
-	case "s64",
-		"long",
-		"long long",
-		"off_t",
-		"loff_t":
+	case "long":
 		return int64(0)
-	case "u64",
-		"unsigned long",
-		"unsigned long long",
-		"const unsigned long",
-		"const unsigned long long",
-		"size_t",
-		"aio_context_t":
+	case "unsigned long":
 		return uint64(0)
 	case "unsigned long[]":
 		return []uint64{}
-	case "char*",
-		"const char*",
-		"const char *":
+	case "char*":
 		return string("")
 	case "const char**",
-		"const char **":
+		"const char*const*":
 		return []string{}
 	case "bool":
 		return false
@@ -129,26 +96,12 @@ func ArgZeroValueFromType(t string) interface{} {
 		return []trace.HookedSymbolData{}
 	case "map[string]trace.HookedSymbolData":
 		return map[string]trace.HookedSymbolData{}
-	default:
-		//
+	case "void*":
 		// pointer types
-		//
-		switch {
-		case strings.HasSuffix(t, "*"),
-			strings.HasSuffix(t, " *restrict"):
-			return uintptr(0)
-		}
-		switch t {
-		case "cap_user_header_t",
-			"cap_user_data_t",
-			"const cap_user_data_t",
-			"sighandler_t":
-			return uintptr(0)
-		}
-
-		// unknown type
-		return nil
+		return uintptr(0)
 	}
+	// unknown type
+	return nil
 }
 
 // ArgIndex find the index of an argument by name
