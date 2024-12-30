@@ -208,7 +208,7 @@ func parseBpfHelpersUsage(arg *trace.Argument, helpersList []uint64) {
 			// helper number <i> is used. get its name from libbpfgo
 			bpfHelper, err := parsers.ParseBPFFunc(uint64(i))
 			if err != nil {
-				continue
+				usedHelpers = append(usedHelpers, fmt.Sprint(bpfHelper))
 			}
 			usedHelpers = append(usedHelpers, bpfHelper.String())
 		}
