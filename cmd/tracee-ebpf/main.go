@@ -10,7 +10,8 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
-	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
+
+	// "github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/cmd/urfave"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -128,31 +129,31 @@ func main() {
 				Value: "/tmp/tracee",
 				Usage: "path where tracee will install or lookup it's resources",
 			},
-			&cli.BoolFlag{
-				Name:  server.MetricsEndpointFlag,
-				Usage: "enable metrics endpoint",
-				Value: false,
-			},
-			&cli.BoolFlag{
-				Name:  server.HealthzEndpointFlag,
-				Usage: "enable healthz endpoint",
-				Value: false,
-			},
-			&cli.BoolFlag{
-				Name:  server.PProfEndpointFlag,
-				Usage: "enable pprof endpoints",
-				Value: false,
-			},
-			&cli.BoolFlag{
-				Name:  server.PyroscopeAgentFlag,
-				Usage: "enable pyroscope agent",
-				Value: false,
-			},
-			&cli.StringFlag{
-				Name:  server.HTTPListenEndpointFlag,
-				Usage: "listening address of the metrics endpoint server",
-				Value: ":3366",
-			},
+			// &cli.BoolFlag{
+			// 	Name:  server.MetricsEndpointFlag,
+			// 	Usage: "enable metrics endpoint",
+			// 	Value: false,
+			// },
+			// &cli.BoolFlag{
+			// 	Name:  server.HealthzEndpointFlag,
+			// 	Usage: "enable healthz endpoint",
+			// 	Value: false,
+			// },
+			// &cli.BoolFlag{
+			// 	Name:  server.PProfEndpointFlag,
+			// 	Usage: "enable pprof endpoints",
+			// 	Value: false,
+			// },
+			// &cli.BoolFlag{
+			// 	Name:  server.PyroscopeAgentFlag,
+			// 	Usage: "enable pyroscope agent",
+			// 	Value: false,
+			// },
+			// &cli.StringFlag{
+			// 	Name:  server.HTTPListenEndpointFlag,
+			// 	Usage: "listening address of the metrics endpoint server",
+			// 	Value: ":3366",
+			// },
 			&cli.BoolFlag{
 				Name:  "no-containers",
 				Usage: "disable container info enrichment to events. safeguard option.",

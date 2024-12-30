@@ -5,7 +5,8 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
-	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
+
+	// "github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
@@ -187,19 +188,19 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		return runner, errfmt.Errorf("failed preparing BPF object: %v", err)
 	}
 
-	httpServer, err := server.PrepareHTTPServer(
-		c.String(server.HTTPListenEndpointFlag),
-		c.Bool(server.MetricsEndpointFlag),
-		c.Bool(server.HealthzEndpointFlag),
-		c.Bool(server.PProfEndpointFlag),
-		c.Bool(server.PyroscopeAgentFlag),
-	)
+	// httpServer, err := server.PrepareHTTPServer(
+	// 	c.String(server.HTTPListenEndpointFlag),
+	// 	c.Bool(server.MetricsEndpointFlag),
+	// 	c.Bool(server.HealthzEndpointFlag),
+	// 	c.Bool(server.PProfEndpointFlag),
+	// 	c.Bool(server.PyroscopeAgentFlag),
+	// )
 
 	if err != nil {
 		return runner, err
 	}
 
-	runner.HTTPServer = httpServer
+	runner.HTTPServer = nil
 	runner.TraceeConfig = cfg
 	runner.Printer = broadcast
 	runner.InstallPath = traceeInstallPath

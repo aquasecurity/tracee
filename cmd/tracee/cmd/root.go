@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/viper"
 
 	cmdcobra "github.com/aquasecurity/tracee/pkg/cmd/cobra"
-	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -250,62 +249,13 @@ func initCmd() error {
 
 	// Server flags
 
-	rootCmd.Flags().Bool(
-		server.MetricsEndpointFlag,
-		false,
-		"\t\t\t\t\tEnable metrics endpoint",
+	rootCmd.Flags().StringArray(
+		"server",
+		[]string{""},
+		"Server configuration options (e.g., --server http.metrics=true)", //add help comments
 	)
-	err = viper.BindPFlag(server.MetricsEndpointFlag, rootCmd.Flags().Lookup(server.MetricsEndpointFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
-	rootCmd.Flags().Bool(
-		server.HealthzEndpointFlag,
-		false,
-		"\t\t\t\t\tEnable healthz endpoint",
-	)
-	err = viper.BindPFlag(server.HealthzEndpointFlag, rootCmd.Flags().Lookup(server.HealthzEndpointFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	rootCmd.Flags().Bool(
-		server.PProfEndpointFlag,
-		false,
-		"\t\t\t\t\tEnable pprof endpoints",
-	)
-	err = viper.BindPFlag(server.PProfEndpointFlag, rootCmd.Flags().Lookup(server.PProfEndpointFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	rootCmd.Flags().Bool(
-		server.PyroscopeAgentFlag,
-		false,
-		"\t\t\t\t\tEnable pyroscope agent",
-	)
-	err = viper.BindPFlag(server.PyroscopeAgentFlag, rootCmd.Flags().Lookup(server.PyroscopeAgentFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	rootCmd.Flags().String(
-		server.HTTPListenEndpointFlag,
-		":3366",
-		"<url:port>\t\t\t\tListening address of the metrics endpoint server",
-	)
-	err = viper.BindPFlag(server.HTTPListenEndpointFlag, rootCmd.Flags().Lookup(server.HTTPListenEndpointFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	rootCmd.Flags().String(
-		server.GRPCListenEndpointFlag,
-		"", // disabled by default
-		"<protocol:addr>\t\t\tListening address of the grpc server eg: tcp:4466, unix:/tmp/tracee.sock (default: disabled)",
-	)
-	err = viper.BindPFlag(server.GRPCListenEndpointFlag, rootCmd.Flags().Lookup(server.GRPCListenEndpointFlag))
+	err = viper.BindPFlag("server", rootCmd.Flags().Lookup("server"))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
