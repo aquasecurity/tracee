@@ -209,6 +209,7 @@ func parseBpfHelpersUsage(arg *trace.Argument, helpersList []uint64) {
 			bpfHelper, err := parsers.ParseBPFFunc(uint64(i))
 			if err != nil {
 				usedHelpers = append(usedHelpers, fmt.Sprint(bpfHelper))
+				continue
 			}
 			usedHelpers = append(usedHelpers, bpfHelper.String())
 		}
