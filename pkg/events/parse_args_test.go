@@ -13,6 +13,10 @@ import (
 func TestParseArgs(t *testing.T) {
 	t.Parallel()
 
+	TestParseMMapProt(t)
+	TestParseSocketDomainArgument(t)
+	TestParseBPFCmd(t)
+
 	t.Run("Parse pointer value", func(t *testing.T) {
 		t.Parallel()
 
@@ -280,6 +284,7 @@ func TestParseArgs(t *testing.T) {
 }
 func TestParseMMapProt(t *testing.T) {
 	t.Parallel()
+	// No need to add other test cases because there isn't a case where parseMMapProt fail
 	testCases := []struct {
 		eventId      int
 		name         string
@@ -287,7 +292,7 @@ func TestParseMMapProt(t *testing.T) {
 		expectedArgs []trace.Argument
 	}{{
 		eventId: int(Mmap),
-		name:    "normal flow(PROT_READ)",
+		name:    "PROT_READ",
 		args: []trace.Argument{
 			{
 				ArgMeta: trace.ArgMeta{
@@ -307,6 +312,79 @@ func TestParseMMapProt(t *testing.T) {
 			},
 		},
 	},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			event := &trace.Event{
+				EventID: testCase.eventId,
+				Args:    testCase.args,
+			}
+			err := ParseArgs(event)
+			require.NoError(t, err)
+			for _, expArg := range testCase.expectedArgs {
+				arg := GetArg(event, expArg.Name)
+				assert.Equal(t, expArg, *arg)
+			}
+		})
+	}
+}
+func TestParseSocketDomainArgument(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		eventId      int
+		name         string
+		args         []trace.Argument
+		expectedArgs []trace.Argument
+	}{
+		{
+			name:    "normal flow",
+			eventId: int(Socket),
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "domain",
+						Type: "int",
+					},
+					Value: int32(parsers.AF_INET.Value()),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "domain",
+						Type: "string",
+					},
+					Value: "AF_INET",
+				},
+			},
+		},
+		{
+			name:    "invalid domain",
+			eventId: int(Socket),
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "domain",
+						Type: "int",
+					},
+					Value: int32(12345),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "domain",
+						Type: "string",
+					},
+					Value: "12345",
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
