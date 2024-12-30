@@ -17,6 +17,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/proctree"
+	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type ManagerConfig struct {
@@ -49,10 +50,10 @@ type EventRules struct {
 
 // EventRule represents a single rule within an event's rule set.
 type EventRule struct {
-	RuleID   uint8     // Unique ID of the rule within the event (0-63) - used for bitmap position
-	RuleData *RuleData // Data associated with the rule
-	Policy   *Policy   // Reference to the policy where the rule was defined
-	Emit     bool      // Flag to indicate whether the event should be emitted or not // TODO: Consider using an enum or custom type for actions
+	ID     uint8     // Unique ID of the rule within the event (0-63) - used for bitmap position
+	Data   *RuleData // Data associated with the rule
+	Policy *Policy   // Reference to the policy where the rule was defined
+	Emit   bool      // Flag to indicate whether the event should be emitted or not // TODO: Consider using an enum or custom type for actions
 }
 
 func NewManager(
@@ -207,20 +208,20 @@ func deepCopyEventRules(original EventRules) EventRules {
 	// Deep copy Rules
 	for i, rule := range original.Rules {
 		copied.Rules[i] = &EventRule{
-			RuleID:   rule.RuleID,
-			RuleData: rule.RuleData, // RuleData pointers can be shared
-			Policy:   rule.Policy,   // Policy pointers can be shared
-			Emit:     rule.Emit,
+			ID:     rule.ID,
+			Data:   rule.Data,   // Data pointers can be shared
+			Policy: rule.Policy, // Policy pointers can be shared
+			Emit:   rule.Emit,
 		}
 	}
 
 	// Deep copy UserlandRules
 	for i, rule := range original.UserlandRules {
 		copied.UserlandRules[i] = &EventRule{
-			RuleID:   rule.RuleID,
-			RuleData: rule.RuleData, // RuleData pointers can be shared
-			Policy:   rule.Policy,   // Policy pointers can be shared
-			Emit:     rule.Emit,
+			ID:     rule.ID,
+			Data:   rule.Data,   // Data pointers can be shared
+			Policy: rule.Policy, // Policy pointers can be shared
+			Emit:   rule.Emit,
 		}
 	}
 
@@ -228,7 +229,7 @@ func deepCopyEventRules(original EventRules) EventRules {
 	for k, v := range original.ruleIDToEventRule {
 		// Find the corresponding rule in the copied.Rules slice
 		for _, copiedRule := range copied.Rules {
-			if copiedRule.RuleID == v.RuleID {
+			if copiedRule.ID == v.ID {
 				copied.ruleIDToEventRule[k] = copiedRule
 				break
 			}
@@ -260,10 +261,10 @@ func updateRulesForEvent(eventID events.ID, tempRules map[events.ID]EventRules, 
 		}
 
 		eventRule := &EventRule{
-			RuleID:   ruleIDCounter,
-			RuleData: &ruleData,
-			Policy:   policy,
-			Emit:     true,
+			ID:     ruleIDCounter,
+			Data:   &ruleData,
+			Policy: policy,
+			Emit:   true,
 		}
 
 		rules = append(rules, eventRule)
@@ -298,9 +299,9 @@ func updateRulesForEvent(eventID events.ID, tempRules map[events.ID]EventRules, 
 // isRuleFilterableInUserland checks if a rule is filterable in userland.
 func isRuleFilterableInUserland(rule *EventRule) bool {
 	// Check filters under RuleData
-	if rule.RuleData.DataFilter.Enabled() ||
-		rule.RuleData.RetFilter.Enabled() ||
-		rule.RuleData.ScopeFilter.Enabled() {
+	if rule.Data.DataFilter.Enabled() ||
+		rule.Data.RetFilter.Enabled() ||
+		rule.Data.ScopeFilter.Enabled() {
 		return true
 	}
 
@@ -392,8 +393,10 @@ func (pm *PolicyManager) GetContainerFilteredRulesBitmap(eventID events.ID) uint
 	return eventRules.containerFilteredRules
 }
 
-// GetMatchedPolicyNames returns a list of policy names that have matching rules for a given event and a bitmap of matched rule IDs.
-func (pm *PolicyManager) GetMatchedPolicyNames(eventID events.ID, matchedRuleIDsBitmap uint64) []string {
+// GetMatchedRulesInfo processes a bitmap of matched rule IDs for a given event and returns:
+// 1. A modified bitmap where the bits corresponding to matched rules with the Emit flag set are cleared.
+// 2. A list of policy names corresponding to the matched rules that have the Emit flag set.
+func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBitmap uint64) (uint64, []string) {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
@@ -401,7 +404,7 @@ func (pm *PolicyManager) GetMatchedPolicyNames(eventID events.ID, matchedRuleIDs
 
 	eventRules, ok := pm.rules[eventID]
 	if !ok {
-		return matchedPolicyNames
+		return 0, matchedPolicyNames
 	}
 
 	for ruleID := uint8(0); ruleID < eventRules.ruleIDCounter; ruleID++ {
@@ -414,12 +417,13 @@ func (pm *PolicyManager) GetMatchedPolicyNames(eventID events.ID, matchedRuleIDs
 			}
 
 			if rule.Emit {
+				utils.ClearBit(&matchedRuleIDsBitmap, uint(rule.ID))
 				matchedPolicyNames = append(matchedPolicyNames, rule.Policy.Name)
 			}
 		}
 	}
 
-	return matchedPolicyNames
+	return matchedRuleIDsBitmap, matchedPolicyNames
 }
 
 // IsEnabled tests if an event, or a policy per event is enabled (in the future it will also check if a policy is enabled)
@@ -491,6 +495,26 @@ func (pm *PolicyManager) IsEventSelected(id events.ID) bool {
 	return ok
 }
 
+// GetAllMatchedRulesBitmap returns a bitmap where all bits corresponding to
+// rules for the given event ID are set, indicating that all rules are considered
+// matched.
+func (pm *PolicyManager) GetAllMatchedRulesBitmap(eventID events.ID) uint64 {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	eventRules, ok := pm.rules[eventID]
+	if !ok {
+		return 0 // No rules for this event, return an empty bitmap
+	}
+
+	var allRulesBitmap uint64
+	for ruleID := uint8(0); ruleID < eventRules.ruleIDCounter; ruleID++ {
+		allRulesBitmap |= 1 << ruleID
+	}
+
+	return allRulesBitmap
+}
+
 func (pm *PolicyManager) subscribeDependencyHandlers() {
 	// TODO: As dynamic event addition or removal becomes a thing, we should subscribe all the watchers
 	// before selecting them. There is no reason to select the event in the New function anyhow.
@@ -529,7 +553,7 @@ func (pm *PolicyManager) addDependencyEventToRules(evtID events.ID, dependentEvt
 	var reqBySig bool
 
 	for _, dependentEvent := range dependentEvts {
-		currentFlags, ok := pm.events[dependentEvent]
+		currentFlags, ok := pm.rules[dependentEvent]
 		if ok {
 			newSubmit |= currentFlags.rulesToSubmit
 			reqBySig = reqBySig || events.Core.GetDefinitionByID(dependentEvent).IsSignature()
@@ -752,30 +776,6 @@ func (pm *PolicyManager) IsRequiredBySignature(id events.ID) bool {
 	}
 
 	return flags.requiredBySignature
-}
-
-func (pm *PolicyManager) MatchEvent(id events.ID, matched uint64) uint64 {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	flags, ok := pm.rules[id]
-	if !ok {
-		return 0
-	}
-
-	return flags.rulesToEmit & matched
-}
-
-func (pm *PolicyManager) MatchEventInAnyPolicy(id events.ID) uint64 {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	flags, ok := pm.rules[id]
-	if !ok {
-		return 0
-	}
-
-	return flags.rulesToEmit | flags.rulesToSubmit
 }
 
 func (pm *PolicyManager) EventsToSubmit() []events.ID {

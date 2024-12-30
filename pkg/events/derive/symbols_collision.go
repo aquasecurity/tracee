@@ -34,7 +34,7 @@ func SymbolsCollision(
 
 	// pick white and black lists from the filters (TODO: change this)
 	for _, rule := range pManager.GetRules(events.SymbolsCollision) {
-		f := rule.RuleData.DataFilter.GetFieldFilters()
+		f := rule.Data.DataFilter.GetFieldFilters()
 		maps.Copy(symbolsCollisionFilters, f)
 	}
 

@@ -866,7 +866,7 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 	}
 	if t.policyManager.IsEventSelected(events.PrintMemDump) {
 		for _, rule := range t.policyManager.GetRules(events.PrintMemDump) {
-			printMemDumpFilters := rule.RuleData.DataFilter.GetFieldFilters()
+			printMemDumpFilters := rule.Data.DataFilter.GetFieldFilters()
 			if len(printMemDumpFilters) == 0 {
 				continue
 			}
@@ -1627,46 +1627,44 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 // userland process itself, and not from the kernel. These events usually serve as informational
 // events for the signatures engine/logic.
 func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
-	var matchedPolicies uint64
+	var matchedRules uint64
 
-	// TODO: many things to change here that depend on matched policies
-	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64) {
+	setMatchedRules := func(event *trace.Event, matchedRules uint64) {
 		event.PoliciesVersion = 1 // version will be removed soon
-		event.MatchedRulesKernel = matchedPolicies
-		event.MatchedRulesUser = matchedPolicies
-		event.MatchedPolicies = t.policyManager.GetMatchedPolicyNames(events.ID(event.EventID), matchedPolicies)
+		event.MatchedRulesKernel = matchedRules
+		event.MatchedRulesUser, event.MatchedPolicies = t.policyManager.GetMatchedRulesInfo(events.ID(event.EventID), matchedRules)
 	}
 
-	policiesMatch := func(id events.ID) uint64 {
-		return t.policyManager.MatchEventInAnyPolicy(id)
+	rulesMatch := func(id events.ID) uint64 {
+		return t.policyManager.GetAllMatchedRulesBitmap(id)
 	}
 
 	// Initial namespace events
 
-	matchedPolicies = policiesMatch(events.TraceeInfo)
-	if matchedPolicies > 0 {
+	matchedRules = rulesMatch(events.TraceeInfo)
+	if matchedRules > 0 {
 		traceeDataEvent := events.TraceeInfoEvent(t.bootTime, t.startTime)
-		setMatchedPolicies(&traceeDataEvent, matchedPolicies)
+		setMatchedRules(&traceeDataEvent, matchedRules)
 		out <- &traceeDataEvent
 		_ = t.stats.EventCount.Increment()
 	}
 
-	matchedPolicies = policiesMatch(events.InitNamespaces)
-	if matchedPolicies > 0 {
+	matchedRules = rulesMatch(events.InitNamespaces)
+	if matchedRules > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
-		setMatchedPolicies(&systemInfoEvent, matchedPolicies)
+		setMatchedRules(&systemInfoEvent, matchedRules)
 		out <- &systemInfoEvent
 		_ = t.stats.EventCount.Increment()
 	}
 
 	// Initial existing containers events (1 event per container)
 
-	matchedPolicies = policiesMatch(events.ExistingContainer)
-	if matchedPolicies > 0 {
+	matchedRules = rulesMatch(events.ExistingContainer)
+	if matchedRules > 0 {
 		existingContainerEvents := events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich)
 		for i := range existingContainerEvents {
 			event := &(existingContainerEvents[i])
-			setMatchedPolicies(event, matchedPolicies)
+			setMatchedRules(event, matchedRules)
 			out <- event
 			_ = t.stats.EventCount.Increment()
 		}
@@ -1674,10 +1672,10 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	// Ftrace hook event
 
-	matchedPolicies = policiesMatch(events.FtraceHook)
-	if matchedPolicies > 0 {
+	matchedRules = rulesMatch(events.FtraceHook)
+	if matchedRules > 0 {
 		ftraceBaseEvent := events.GetFtraceBaseEvent()
-		setMatchedPolicies(ftraceBaseEvent, matchedPolicies)
+		setMatchedRules(ftraceBaseEvent, matchedRules)
 		logger.Debugw("started ftraceHook goroutine")
 
 		// TODO: Ideally, this should be inside the goroutine and be computed before each run,
@@ -1746,7 +1744,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 	var errs []error
 
 	for _, rule := range t.policyManager.GetRules(events.PrintMemDump) {
-		printMemDumpFilters := rule.RuleData.DataFilter.GetFieldFilters()
+		printMemDumpFilters := rule.Data.DataFilter.GetFieldFilters()
 		if len(printMemDumpFilters) == 0 {
 			errs = append(errs, errfmt.Errorf("policy %s: no address or symbols were provided to print_mem_dump event. "+
 				"please provide it via -e print_mem_dump.data.address=<hex address>"+

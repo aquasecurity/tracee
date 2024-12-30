@@ -39,7 +39,7 @@ func (t *Tracee) handleEventParameters() error {
 		// TODO: in the future, a dedicated event parameter system should be added.
 		eventParams := make([]map[string]filters.Filter[*filters.StringFilter], 0)
 		for _, rule := range t.policyManager.GetRules(eventID) {
-			policyParams := rule.RuleData.DataFilter.GetFieldFilters()
+			policyParams := rule.Data.DataFilter.GetFieldFilters()
 			if len(policyParams) == 0 {
 				continue
 			}

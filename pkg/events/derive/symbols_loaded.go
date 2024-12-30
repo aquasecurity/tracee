@@ -25,7 +25,7 @@ func SymbolsLoaded(
 	symbolsLoadedFilters := map[string]filters.Filter[*filters.StringFilter]{}
 
 	for _, rule := range pManager.GetRules(events.SymbolsLoaded) {
-		f := rule.RuleData.DataFilter.GetFieldFilters()
+		f := rule.Data.DataFilter.GetFieldFilters()
 		maps.Copy(symbolsLoadedFilters, f)
 	}
 
