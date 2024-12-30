@@ -278,3 +278,79 @@ func TestParseArgs(t *testing.T) {
 		}
 	})
 }
+
+func TestParseBPFCmd(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		eventId      int
+		name         string
+		args         []trace.Argument
+		expectedArgs []trace.Argument
+	}{
+		{
+			name:    "normal flow",
+			eventId: int(Bpf),
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "cmd",
+						Type: "int",
+					},
+					Value: int32(parsers.BPF_PROG_LOAD.Value()),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "cmd",
+						Type: "string",
+					},
+					Value: "BPF_PROG_LOAD",
+				},
+			},
+		},
+		{
+			name:    "invalid cmd",
+			eventId: int(Bpf),
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "cmd",
+						Type: "int",
+					},
+					Value: int32(12345),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "cmd",
+						Type: "string",
+					},
+					Value: "12345",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			event := &trace.Event{
+				EventID: testCase.eventId,
+				Args:    testCase.args,
+			}
+			err := ParseArgs(event)
+			require.NoError(t, err)
+			for _, expArg := range testCase.expectedArgs {
+				arg := GetArg(event, expArg.Name)
+				assert.Equal(t, expArg, *arg)
+			}
+		})
+	}
+
+}
