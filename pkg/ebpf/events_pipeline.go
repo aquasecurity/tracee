@@ -314,7 +314,7 @@ func (t *Tracee) matchRules(event *trace.Event) uint64 {
 	// range through each userland filterable rule
 	for _, rule := range t.policyManager.GetUserlandRules(eventID) {
 		// Policy ID is the bit offset in the bitmap.
-		bitOffset := uint(rule.RuleID)
+		bitOffset := uint(rule.ID)
 
 		if !utils.HasBit(bitmap, bitOffset) { // event does not match this rule
 			continue
@@ -325,13 +325,13 @@ func (t *Tracee) matchRules(event *trace.Event) uint64 {
 		//
 
 		// 1. event scope filters
-		if !rule.RuleData.ScopeFilter.Filter(*event) {
+		if !rule.Data.ScopeFilter.Filter(*event) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
 		// 2. event return value filters
-		if !rule.RuleData.RetFilter.Filter(int64(event.ReturnValue)) {
+		if !rule.Data.RetFilter.Filter(int64(event.ReturnValue)) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
@@ -342,7 +342,7 @@ func (t *Tracee) matchRules(event *trace.Event) uint64 {
 		// events.PrintMemDump bypass was added due to issue #2546
 		// because it uses usermode applied filters as parameters for the event,
 		// which occurs after filtering
-		if eventID != events.PrintMemDump && !rule.RuleData.DataFilter.Filter(event.Args) {
+		if eventID != events.PrintMemDump && !rule.Data.DataFilter.Filter(event.Args) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
@@ -581,14 +581,11 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 
 			// Only emit events requested by the user and matched by at least one policy.
 			id := events.ID(event.EventID)
-			event.MatchedRulesUser = t.policyManager.MatchEvent(id, event.MatchedRulesUser)
+			event.MatchedRulesUser, event.MatchedPolicies = t.policyManager.GetMatchedRulesInfo(id, event.MatchedRulesUser)
 			if event.MatchedRulesUser == 0 {
 				t.eventsPool.Put(event)
 				continue
 			}
-
-			// Populate the event with the names of the matched policies.
-			event.MatchedPolicies = t.policyManager.GetMatchedPolicyNames(id, event.MatchedRulesUser)
 
 			// Parse args here if the rule engine is NOT enabled (parsed there if it is).
 			if t.config.Output.ParseArguments && !t.config.EngineConfig.Enabled {
