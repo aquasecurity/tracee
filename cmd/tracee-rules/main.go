@@ -139,13 +139,13 @@ func main() {
 				return fmt.Errorf("constructing engine: %w", err)
 			}
 
-			httpServer, err := server.PrepareHTTPServer(
-				c.String(server.HTTPListenEndpointFlag),
-				c.Bool(server.MetricsEndpointFlag),
-				c.Bool(server.HealthzEndpointFlag),
-				c.Bool(server.PProfEndpointFlag),
-				c.Bool(server.PyroscopeAgentFlag),
-			)
+			// httpServer, err := server.PrepareHTTPServer(
+			// 	c.String(server.HTTPListenEndpointFlag),
+			// 	c.Bool(server.MetricsEndpointFlag),
+			// 	c.Bool(server.HealthzEndpointFlag),
+			// 	c.Bool(server.PProfEndpointFlag),
+			// 	c.Bool(server.PyroscopeAgentFlag),
+			// )
 			if err != nil {
 				return err
 			}
@@ -158,9 +158,9 @@ func main() {
 			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
 
-			if httpServer != nil {
-				go httpServer.Start(ctx)
-			}
+			// if httpServer != nil {
+			// 	go httpServer.Start(ctx)
+			// }
 
 			e.Start(ctx)
 
@@ -218,21 +218,21 @@ func main() {
 				Usage: "size of the event channel's buffer consumed by signatures",
 				Value: 1000,
 			},
-			&cli.BoolFlag{
-				Name:  server.MetricsEndpointFlag,
-				Usage: "enable metrics endpoint",
-				Value: false,
-			},
-			&cli.BoolFlag{
-				Name:  server.HealthzEndpointFlag,
-				Usage: "enable healthz endpoint",
-				Value: false,
-			},
-			&cli.StringFlag{
-				Name:  server.HTTPListenEndpointFlag,
-				Usage: "listening address of the metrics endpoint server",
-				Value: ":4466",
-			},
+			// &cli.BoolFlag{
+			// 	Name:  server.MetricsEndpointFlag,
+			// 	Usage: "enable metrics endpoint",
+			// 	Value: false,
+			// },
+			// &cli.BoolFlag{
+			// 	Name:  server.HealthzEndpointFlag,
+			// 	Usage: "enable healthz endpoint",
+			// 	Value: false,
+			// },
+			// &cli.StringFlag{
+			// 	Name:  server.HTTPListenEndpointFlag,
+			// 	Usage: "listening address of the metrics endpoint server",
+			// 	Value: ":4466",
+			// },
 			&cli.BoolFlag{
 				Name:  "allcaps",
 				Value: false,
