@@ -11,6 +11,7 @@ import (
 type Stream struct {
 	// policy mask is a bitmap of policies that this stream is interested in
 	policyMask uint64
+	// TODO: replace bitmap with policy set (map[string]bool), and another bool to indicate subscirption to "all policies" for quick check
 	// events is a channel that is used to receive events from the stream
 	events chan trace.Event
 }
