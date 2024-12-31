@@ -75,8 +75,8 @@ func combineEventBitmap(eventsMap map[events.ID]stringFilterConfig, eventID even
 
 // computeDataFilterEqualities computes the equalities for the kernel data filter
 // in the policies updating the provided eqs map.
-func (ps *policies) computeDataFilterEqualities(fEqs *filtersEqualities, eventsConfig map[events.ID]stringFilterConfig) error {
-	for _, p := range ps.allFromMap() {
+func (pm *PolicyManager) computeDataFilterEqualities(fEqs *filtersEqualities, eventsConfig map[events.ID]stringFilterConfig) error {
+	for eventID, eventRules := range pm.rules {
 		// Reinitialize variables at the start of each iteration
 		combinedEqualities := make(map[KernelDataFields]struct{})
 		combinedNotEqualities := make(map[KernelDataFields]struct{})
@@ -85,16 +85,16 @@ func (ps *policies) computeDataFilterEqualities(fEqs *filtersEqualities, eventsC
 		combinedSuffixEqualities := make(map[KernelDataFields]struct{})
 		combinedNotSuffixEqualities := make(map[KernelDataFields]struct{})
 
-		ruleID := p.ID
-		for eventID, rule := range p.Rules {
+		for _, rule := range eventRules.Rules {
+			ruleID := rule.ID
 			strCfgFilter := &stringFilterConfig{}
-			equalities, err := rule.DataFilter.Equalities()
+			equalities, err := rule.Data.DataFilter.Equalities()
 			if err != nil {
 				continue
 			}
-			ps.handleExactMatches(ruleID, eventID, strCfgFilter, equalities, combinedEqualities, combinedNotEqualities)
-			ps.handlePrefixMatches(ruleID, eventID, strCfgFilter, equalities, combinedPrefixEqualities, combinedNotPrefixEqualities)
-			ps.handleSuffixMatches(ruleID, eventID, strCfgFilter, equalities, combinedSuffixEqualities, combinedNotSuffixEqualities)
+			pm.handleExactMatches(ruleID, eventID, strCfgFilter, equalities, combinedEqualities, combinedNotEqualities)
+			pm.handlePrefixMatches(ruleID, eventID, strCfgFilter, equalities, combinedPrefixEqualities, combinedNotPrefixEqualities)
+			pm.handleSuffixMatches(ruleID, eventID, strCfgFilter, equalities, combinedSuffixEqualities, combinedNotSuffixEqualities)
 
 			// Combine the event bitmap across all policies
 			combineEventBitmap(eventsConfig, eventID, strCfgFilter)
@@ -116,7 +116,7 @@ func (ps *policies) computeDataFilterEqualities(fEqs *filtersEqualities, eventsC
 	return nil
 }
 
-func (ps *policies) handleExactMatches(ruleId int, eventID events.ID, filter *stringFilterConfig, equalities filters.StringFilterEqualities, combinedEqualities, combinedNotEqualities map[KernelDataFields]struct{}) {
+func (pm *PolicyManager) handleExactMatches(ruleId int, eventID events.ID, filter *stringFilterConfig, equalities filters.StringFilterEqualities, combinedEqualities, combinedNotEqualities map[KernelDataFields]struct{}) {
 	for k := range equalities.ExactEqual {
 		combinedEqualities[KernelDataFields{eventID, k}] = struct{}{}
 
@@ -130,7 +130,7 @@ func (ps *policies) handleExactMatches(ruleId int, eventID events.ID, filter *st
 	}
 }
 
-func (ps *policies) handlePrefixMatches(ruleId int, eventID events.ID, filter *stringFilterConfig, equalities filters.StringFilterEqualities, combinedPrefixEqualities, combinedNotPrefixEqualities map[KernelDataFields]struct{}) {
+func (pm *PolicyManager) handlePrefixMatches(ruleId int, eventID events.ID, filter *stringFilterConfig, equalities filters.StringFilterEqualities, combinedPrefixEqualities, combinedNotPrefixEqualities map[KernelDataFields]struct{}) {
 	for k := range equalities.PrefixEqual {
 		combinedPrefixEqualities[KernelDataFields{eventID, k}] = struct{}{}
 
@@ -144,7 +144,7 @@ func (ps *policies) handlePrefixMatches(ruleId int, eventID events.ID, filter *s
 	}
 }
 
-func (ps *policies) handleSuffixMatches(ruleId int, eventID events.ID, filter *stringFilterConfig, equalities filters.StringFilterEqualities, combinedSuffixEqualities, combinedNotSuffixEqualities map[KernelDataFields]struct{}) {
+func (pm *PolicyManager) handleSuffixMatches(ruleId int, eventID events.ID, filter *stringFilterConfig, equalities filters.StringFilterEqualities, combinedSuffixEqualities, combinedNotSuffixEqualities map[KernelDataFields]struct{}) {
 	for k := range equalities.SuffixEqual {
 		reversed := utils.ReverseString(k)
 		combinedSuffixEqualities[KernelDataFields{eventID, reversed}] = struct{}{}

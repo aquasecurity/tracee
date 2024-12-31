@@ -17,5 +17,9 @@ func PolicyNotFoundByNameError(name string) error {
 }
 
 func TooManyRulesForEventError(eventName string) error {
-	return fmt.Errorf("too many rules for event %d", eventName)
+	return fmt.Errorf("too many rules for event %s", eventName)
+}
+
+func SelectEventError(eventName string) error {
+	return fmt.Errorf("failed to select event %s", eventName)
 }
