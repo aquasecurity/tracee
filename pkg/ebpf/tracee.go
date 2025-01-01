@@ -362,12 +362,16 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	err = capabilities.GetInstance().Specific(
 		func() error {
-			t.kernelSymbols, err = environment.NewKernelSymbolTable(
-				environment.WithRequiredSymbols(t.requiredKsyms),
-			)
+			t.kernelSymbols = environment.NewKernelSymbolTable(true, true)
+			// t.requiredKsyms may contain non-data symbols, but it doesn't affect the validity of this call
+			t.kernelSymbols.AddRequiredDataSymbols(t.requiredKsyms)
+			err := t.kernelSymbols.Update()
+			if err != nil {
+				return err
+			}
 			// Cleanup memory in list
 			t.requiredKsyms = []string{}
-			return err
+			return nil
 		},
 		cap.SYSLOG,
 	)
@@ -913,17 +917,11 @@ func getUnavailbaleKsymbols(ksymbols []events.KSymbol, kernelSymbols *environmen
 	var unavailableSymbols []events.KSymbol
 
 	for _, ksymbol := range ksymbols {
-		sym, err := kernelSymbols.GetSymbolByName(ksymbol.GetSymbolName())
+		_, err := kernelSymbols.GetSymbolByName(ksymbol.GetSymbolName())
 		if err != nil {
 			// If the symbol is not found, it means it's unavailable.
 			unavailableSymbols = append(unavailableSymbols, ksymbol)
 			continue
-		}
-		for _, s := range sym {
-			if s.Address == 0 {
-				// Same if the symbol is found but its address is 0.
-				unavailableSymbols = append(unavailableSymbols, ksymbol)
-			}
 		}
 	}
 	return unavailableSymbols

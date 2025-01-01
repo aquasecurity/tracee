@@ -233,7 +233,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 
 	err := capabilities.GetInstance().EBPF(
 		func() error {
-			err := t.kernelSymbols.Refresh()
+			err := t.kernelSymbols.Update()
 			if err != nil {
 				return errfmt.WrapError(err)
 			}
@@ -281,7 +281,7 @@ func (t *Tracee) processHookedProcFops(event *trace.Event) error {
 		if addr == 0 { // address is in text segment, marked as 0
 			continue
 		}
-		hookingFunction := utils.ParseSymbol(addr, t.kernelSymbols)
+		hookingFunction := t.kernelSymbols.GetPotentiallyHiddenSymbolByAddr(addr)[0]
 		if hookingFunction.Owner == "system" {
 			continue
 		}
@@ -326,7 +326,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	}
 
 	addressUint64 := uint64(address)
-	symbol := utils.ParseSymbol(addressUint64, t.kernelSymbols)
+	symbol := t.kernelSymbols.GetPotentiallyHiddenSymbolByAddr(addressUint64)[0]
 	var utsName unix.Utsname
 	arch := ""
 	if err := unix.Uname(&utsName); err != nil {
