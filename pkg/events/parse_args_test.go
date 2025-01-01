@@ -13,11 +13,6 @@ import (
 func TestParseArgs(t *testing.T) {
 	t.Parallel()
 
-	TestParseMMapProt(t)
-	TestParseSocketDomainArgument(t)
-	TestParseSocketType(t)
-	TestParseBPFCmd(t)
-
 	t.Run("Parse pointer value", func(t *testing.T) {
 		t.Parallel()
 
@@ -287,20 +282,18 @@ func TestParseMMapProt(t *testing.T) {
 	t.Parallel()
 	// No need to add other test cases because there isn't a case where parseMMapProt fail
 	testCases := []struct {
-		eventId      int
 		name         string
 		args         []trace.Argument
 		expectedArgs []trace.Argument
 	}{{
-		eventId: int(Mmap),
-		name:    "PROT_READ",
+		name: "normal flow",
 		args: []trace.Argument{
 			{
 				ArgMeta: trace.ArgMeta{
 					Name: "prot",
 					Type: "int",
 				},
-				Value: int32(parsers.PROT_READ.Value()),
+				Value: parsers.PROT_READ.Value(),
 			},
 		},
 		expectedArgs: []trace.Argument{
@@ -322,11 +315,9 @@ func TestParseMMapProt(t *testing.T) {
 			t.Parallel()
 
 			event := &trace.Event{
-				EventID: testCase.eventId,
-				Args:    testCase.args,
+				Args: testCase.args,
 			}
-			err := ParseArgs(event)
-			require.NoError(t, err)
+			parseMMapProt(GetArg(event, "prot"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
 				arg := GetArg(event, expArg.Name)
 				assert.Equal(t, expArg, *arg)
@@ -337,21 +328,19 @@ func TestParseMMapProt(t *testing.T) {
 func TestParseSocketDomainArgument(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
-		eventId      int
 		name         string
 		args         []trace.Argument
 		expectedArgs []trace.Argument
 	}{
 		{
-			name:    "normal flow",
-			eventId: int(Socket),
+			name: "normal flow",
 			args: []trace.Argument{
 				{
 					ArgMeta: trace.ArgMeta{
 						Name: "domain",
 						Type: "int",
 					},
-					Value: int32(parsers.AF_INET.Value()),
+					Value: parsers.AF_INET.Value(),
 				},
 			},
 			expectedArgs: []trace.Argument{
@@ -365,15 +354,14 @@ func TestParseSocketDomainArgument(t *testing.T) {
 			},
 		},
 		{
-			name:    "invalid domain",
-			eventId: int(Socket),
+			name: "invalid domain",
 			args: []trace.Argument{
 				{
 					ArgMeta: trace.ArgMeta{
 						Name: "domain",
 						Type: "int",
 					},
-					Value: int32(12345),
+					Value: uint64(12345),
 				},
 			},
 			expectedArgs: []trace.Argument{
@@ -395,11 +383,9 @@ func TestParseSocketDomainArgument(t *testing.T) {
 			t.Parallel()
 
 			event := &trace.Event{
-				EventID: testCase.eventId,
-				Args:    testCase.args,
+				Args: testCase.args,
 			}
-			err := ParseArgs(event)
-			require.NoError(t, err)
+			parseSocketDomainArgument(GetArg(event, "domain"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
 				arg := GetArg(event, expArg.Name)
 				assert.Equal(t, expArg, *arg)
@@ -481,25 +467,91 @@ func TestParseSocketType(t *testing.T) {
 	}
 
 }
-func TestParseBPFCmd(t *testing.T) {
+
+func TestParseInodeMode(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		eventId      int
 		name         string
 		args         []trace.Argument
 		expectedArgs []trace.Argument
 	}{
 		{
-			name:    "normal flow",
-			eventId: int(Bpf),
+			name: "normal flow",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "mode",
+						Type: "int",
+					},
+					Value: parsers.S_IFSOCK.Value(),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "mode",
+						Type: "string",
+					},
+					Value: "S_IFSOCK",
+				},
+			},
+		},
+		{
+			name: "invalid mode",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "mode",
+						Type: "int",
+					},
+					Value: uint64(0),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "mode",
+						Type: "string",
+					},
+					Value: "",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			event := &trace.Event{
+				Args: testCase.args,
+			}
+			parseInodeMode(GetArg(event, "mode"), testCase.args[0].Value.(uint64))
+			for _, expArg := range testCase.expectedArgs {
+				arg := GetArg(event, expArg.Name)
+				assert.Equal(t, expArg, *arg)
+			}
+		})
+	}
+}
+
+func TestParseBPFCmd(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name         string
+		args         []trace.Argument
+		expectedArgs []trace.Argument
+	}{
+		{
+			name: "normal flow",
 			args: []trace.Argument{
 				{
 					ArgMeta: trace.ArgMeta{
 						Name: "cmd",
 						Type: "int",
 					},
-					Value: int32(parsers.BPF_PROG_LOAD.Value()),
+					Value: parsers.BPF_PROG_LOAD.Value(),
 				},
 			},
 			expectedArgs: []trace.Argument{
@@ -513,15 +565,14 @@ func TestParseBPFCmd(t *testing.T) {
 			},
 		},
 		{
-			name:    "invalid cmd",
-			eventId: int(Bpf),
+			name: "invalid cmd",
 			args: []trace.Argument{
 				{
 					ArgMeta: trace.ArgMeta{
 						Name: "cmd",
 						Type: "int",
 					},
-					Value: int32(12345),
+					Value: uint64(12345),
 				},
 			},
 			expectedArgs: []trace.Argument{
@@ -543,11 +594,9 @@ func TestParseBPFCmd(t *testing.T) {
 			t.Parallel()
 
 			event := &trace.Event{
-				EventID: testCase.eventId,
-				Args:    testCase.args,
+				Args: testCase.args,
 			}
-			err := ParseArgs(event)
-			require.NoError(t, err)
+			parseBPFCmd(GetArg(event, "cmd"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
 				arg := GetArg(event, expArg.Name)
 				assert.Equal(t, expArg, *arg)

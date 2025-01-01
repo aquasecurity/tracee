@@ -187,7 +187,7 @@ func parseGetSocketOption(arg *trace.Argument, opt uint64, evtID ID) {
 	if err == nil {
 		arg.Value = optionNameArgument.String()
 	} else {
-		arg.Value = fmt.Sprint(optionNameArgument)
+		arg.Value = fmt.Sprint(opt)
 	}
 }
 
