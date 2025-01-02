@@ -1422,3 +1422,71 @@ func TestParseSocketLevel(t *testing.T) {
 		})
 	}
 }
+func TestParseGetSocketOption(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name         string
+		args         []trace.Argument
+		expectedArgs []trace.Argument
+	}{
+		{
+			name: "normal flow",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "optname",
+						Type: "int",
+					},
+					Value: parsers.SO_LOCK_FILTER.Value(),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "optname",
+						Type: "string",
+					},
+					Value: "SO_LOCK_FILTER",
+				},
+			},
+		},
+		{
+			name: "invalid flow",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "optname",
+						Type: "int",
+					},
+					Value: uint64(12345),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "optname",
+						Type: "string",
+					},
+					Value: "12345",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			event := &trace.Event{
+				Args: testCase.args,
+			}
+			parseGetSocketOption(GetArg(event, "optname"), testCase.args[0].Value.(uint64), Getsockopt)
+			for _, expArg := range testCase.expectedArgs {
+				arg := GetArg(event, expArg.Name)
+				assert.Equal(t, expArg, *arg)
+			}
+		})
+	}
+}
