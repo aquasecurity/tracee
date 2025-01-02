@@ -1558,3 +1558,72 @@ func TestParseFsNotifyObjType(t *testing.T) {
 		})
 	}
 }
+func TestParseBpfHelpersUsage(t *testing.T) {
+	t.Parallel()
+	var emptyValue []string
+	testCases := []struct {
+		name         string
+		args         []trace.Argument
+		expectedArgs []trace.Argument
+	}{
+		{
+			name: "normal flow",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "helpersList",
+						Type: "int",
+					},
+					Value: []uint64{1, 2, 3},
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "helpersList",
+						Type: "const char**",
+					},
+					Value: []string{"unspec", "xdp_adjust_tail", "sk_cgroup_id", "sk_ancestor_cgroup_id"},
+				},
+			},
+		},
+		{
+			name: "invalid helpersList",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "helpersList",
+						Type: "int",
+					},
+					Value: []uint64{0},
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "helpersList",
+						Type: "const char**",
+					},
+					Value: emptyValue,
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			event := &trace.Event{
+				Args: testCase.args,
+			}
+			parseBpfHelpersUsage(GetArg(event, "helpersList"), testCase.args[0].Value.([]uint64))
+			for _, expArg := range testCase.expectedArgs {
+				arg := GetArg(event, expArg.Name)
+				assert.Equal(t, expArg, *arg)
+			}
+		})
+	}
+}
