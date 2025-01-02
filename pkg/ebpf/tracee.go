@@ -577,8 +577,8 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 // event, represented through its ID, we declare to which other events it can be
 // derived and the corresponding function to derive into that Event.
 func (t *Tracee) initDerivationTable() error {
-	shouldSubmit := func(id events.ID) func() bool {
-		return func() bool { return t.policyManager.IsEventToSubmit(id) }
+	shouldEmit := func(id events.ID) func() bool {
+		return func() bool { return t.policyManager.IsEventEmitted(id) }
 	}
 	symbolsCollisions := derive.SymbolsCollision(t.contSymbolsLoader, t.policyManager)
 
@@ -591,56 +591,56 @@ func (t *Tracee) initDerivationTable() error {
 	t.eventDerivations = derive.Table{
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
-				Enabled:        shouldSubmit(events.ContainerCreate),
+				Enabled:        shouldEmit(events.ContainerCreate),
 				DeriveFunction: derive.ContainerCreate(t.containers),
 			},
 		},
 		events.CgroupRmdir: {
 			events.ContainerRemove: {
-				Enabled:        shouldSubmit(events.ContainerRemove),
+				Enabled:        shouldEmit(events.ContainerRemove),
 				DeriveFunction: derive.ContainerRemove(t.containers),
 			},
 		},
 		events.SyscallTableCheck: {
 			events.HookedSyscall: {
-				Enabled:        shouldSubmit(events.SyscallTableCheck),
+				Enabled:        shouldEmit(events.HookedSyscall),
 				DeriveFunction: derive.DetectHookedSyscall(t.kernelSymbols),
 			},
 		},
 		events.PrintNetSeqOps: {
 			events.HookedSeqOps: {
-				Enabled:        shouldSubmit(events.HookedSeqOps),
+				Enabled:        shouldEmit(events.HookedSeqOps),
 				DeriveFunction: derive.HookedSeqOps(t.kernelSymbols),
 			},
 		},
 		events.HiddenKernelModuleSeeker: {
 			events.HiddenKernelModule: {
-				Enabled:        shouldSubmit(events.HiddenKernelModuleSeeker),
+				Enabled:        shouldEmit(events.HiddenKernelModule),
 				DeriveFunction: derive.HiddenKernelModule(),
 			},
 		},
 		events.SharedObjectLoaded: {
 			events.SymbolsLoaded: {
-				Enabled: shouldSubmit(events.SymbolsLoaded),
+				Enabled: shouldEmit(events.SymbolsLoaded),
 				DeriveFunction: derive.SymbolsLoaded(
 					t.contSymbolsLoader,
 					t.policyManager,
 				),
 			},
 			events.SymbolsCollision: {
-				Enabled:        shouldSubmit(events.SymbolsCollision),
+				Enabled:        shouldEmit(events.SymbolsCollision),
 				DeriveFunction: symbolsCollisions,
 			},
 		},
 		events.SchedProcessExec: {
 			events.SymbolsCollision: {
-				Enabled:        shouldSubmit(events.SymbolsCollision),
+				Enabled:        shouldEmit(events.SymbolsCollision),
 				DeriveFunction: symbolsCollisions,
 			},
 		},
 		events.SecuritySocketConnect: {
 			events.NetTCPConnect: {
-				Enabled: shouldSubmit(events.NetTCPConnect),
+				Enabled: shouldEmit(events.NetTCPConnect),
 				DeriveFunction: derive.NetTCPConnect(
 					t.dnsCache,
 				),
@@ -648,13 +648,13 @@ func (t *Tracee) initDerivationTable() error {
 		},
 		events.ExecuteFinished: {
 			events.ProcessExecuteFailed: {
-				Enabled:        shouldSubmit(events.ProcessExecuteFailed),
+				Enabled:        shouldEmit(events.ProcessExecuteFailed),
 				DeriveFunction: executeFailedGen.ProcessExecuteFailed(),
 			},
 		},
 		events.ProcessExecuteFailedInternal: {
 			events.ProcessExecuteFailed: {
-				Enabled:        shouldSubmit(events.ProcessExecuteFailed),
+				Enabled:        shouldEmit(events.ProcessExecuteFailed),
 				DeriveFunction: executeFailedGen.ProcessExecuteFailed(),
 			},
 		},
@@ -663,63 +663,63 @@ func (t *Tracee) initDerivationTable() error {
 		//
 		events.NetPacketIPBase: {
 			events.NetPacketIPv4: {
-				Enabled:        shouldSubmit(events.NetPacketIPv4),
+				Enabled:        shouldEmit(events.NetPacketIPv4),
 				DeriveFunction: derive.NetPacketIPv4(),
 			},
 			events.NetPacketIPv6: {
-				Enabled:        shouldSubmit(events.NetPacketIPv6),
+				Enabled:        shouldEmit(events.NetPacketIPv6),
 				DeriveFunction: derive.NetPacketIPv6(),
 			},
 		},
 		events.NetPacketTCPBase: {
 			events.NetPacketTCP: {
-				Enabled:        shouldSubmit(events.NetPacketTCP),
+				Enabled:        shouldEmit(events.NetPacketTCP),
 				DeriveFunction: derive.NetPacketTCP(),
 			},
 		},
 		events.NetPacketUDPBase: {
 			events.NetPacketUDP: {
-				Enabled:        shouldSubmit(events.NetPacketUDP),
+				Enabled:        shouldEmit(events.NetPacketUDP),
 				DeriveFunction: derive.NetPacketUDP(),
 			},
 		},
 		events.NetPacketICMPBase: {
 			events.NetPacketICMP: {
-				Enabled:        shouldSubmit(events.NetPacketICMP),
+				Enabled:        shouldEmit(events.NetPacketICMP),
 				DeriveFunction: derive.NetPacketICMP(),
 			},
 		},
 		events.NetPacketICMPv6Base: {
 			events.NetPacketICMPv6: {
-				Enabled:        shouldSubmit(events.NetPacketICMPv6),
+				Enabled:        shouldEmit(events.NetPacketICMPv6),
 				DeriveFunction: derive.NetPacketICMPv6(),
 			},
 		},
 		events.NetPacketDNSBase: {
 			events.NetPacketDNS: {
-				Enabled:        shouldSubmit(events.NetPacketDNS),
+				Enabled:        shouldEmit(events.NetPacketDNS),
 				DeriveFunction: derive.NetPacketDNS(),
 			},
 			events.NetPacketDNSRequest: {
-				Enabled:        shouldSubmit(events.NetPacketDNSRequest),
+				Enabled:        shouldEmit(events.NetPacketDNSRequest),
 				DeriveFunction: derive.NetPacketDNSRequest(),
 			},
 			events.NetPacketDNSResponse: {
-				Enabled:        shouldSubmit(events.NetPacketDNSResponse),
+				Enabled:        shouldEmit(events.NetPacketDNSResponse),
 				DeriveFunction: derive.NetPacketDNSResponse(),
 			},
 		},
 		events.NetPacketHTTPBase: {
 			events.NetPacketHTTP: {
-				Enabled:        shouldSubmit(events.NetPacketHTTP),
+				Enabled:        shouldEmit(events.NetPacketHTTP),
 				DeriveFunction: derive.NetPacketHTTP(),
 			},
 			events.NetPacketHTTPRequest: {
-				Enabled:        shouldSubmit(events.NetPacketHTTPRequest),
+				Enabled:        shouldEmit(events.NetPacketHTTPRequest),
 				DeriveFunction: derive.NetPacketHTTPRequest(),
 			},
 			events.NetPacketHTTPResponse: {
-				Enabled:        shouldSubmit(events.NetPacketHTTPResponse),
+				Enabled:        shouldEmit(events.NetPacketHTTPResponse),
 				DeriveFunction: derive.NetPacketHTTPResponse(),
 			},
 		},
@@ -728,13 +728,13 @@ func (t *Tracee) initDerivationTable() error {
 		//
 		events.NetPacketFlow: {
 			events.NetFlowTCPBegin: {
-				Enabled: shouldSubmit(events.NetFlowTCPBegin),
+				Enabled: shouldEmit(events.NetFlowTCPBegin),
 				DeriveFunction: derive.NetFlowTCPBegin(
 					t.dnsCache,
 				),
 			},
 			events.NetFlowTCPEnd: {
-				Enabled: shouldSubmit(events.NetFlowTCPEnd),
+				Enabled: shouldEmit(events.NetFlowTCPEnd),
 				DeriveFunction: derive.NetFlowTCPEnd(
 					t.dnsCache,
 				),
@@ -811,7 +811,7 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 	// Get all required symbols needed in the table
 	// 1. all event ksym dependencies
 	// 2. specific cases (hooked_seq_ops, hooked_symbols, print_mem_dump)
-	for _, id := range t.policyManager.EventsSelected() {
+	for _, id := range t.policyManager.GetSelectedEvents() {
 		if !events.Core.IsDefined(id) {
 			return errfmt.Errorf("event %d is not defined", id)
 		}
@@ -972,7 +972,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 			return nil
 		})
 
-	for _, eventId := range t.policyManager.EventsSelected() {
+	for _, eventId := range t.policyManager.GetSelectedEvents() {
 		if !validateEvent(eventId) {
 			// Cancel the event, its dependencies and its dependent events
 			err := t.eventsDependencies.RemoveEvent(eventId)
@@ -1103,8 +1103,8 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize tail call dependencies
-	eventsToSubmit := t.policyManager.EventsToSubmit()
-	tailCalls := events.Core.GetTailCalls(eventsToSubmit)
+	selectedEvents := t.policyManager.GetSelectedEvents()
+	tailCalls := events.Core.GetTailCalls(selectedEvents)
 	for _, tailCall := range tailCalls {
 		err := t.initTailCall(tailCall)
 		if err != nil {
@@ -1209,7 +1209,7 @@ func (t *Tracee) attachProbes() error {
 		})
 
 	// Attach probes to their respective eBPF programs or cancel events if a required probe is missing.
-	for _, eventID := range t.policyManager.EventsSelected() {
+	for _, eventID := range t.policyManager.GetSelectedEvents() {
 		err := t.attachEvent(eventID)
 		if err != nil {
 			err := t.eventsDependencies.RemoveEvent(eventID)
@@ -1567,7 +1567,7 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 	// The symbol is do_init_module: kprobe with the program trace_do_init_module, kretprobe with the program trace_ret_do_init_module
 	uniqueHooksMap := map[probeMapKey]struct{}{}
 
-	for _, tr := range t.policyManager.EventsSelected() {
+	for _, tr := range t.policyManager.GetSelectedEvents() {
 		if !events.Core.IsDefined(tr) {
 			continue
 		}
@@ -1692,7 +1692,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 // netEnabled returns true if any base network event is to be traced
 func (t *Tracee) netEnabled() bool {
-	for _, id := range t.policyManager.EventsSelected() {
+	for _, id := range t.policyManager.GetSelectedEvents() {
 		if id >= events.NetPacketBase && id <= events.MaxNetID {
 			return true
 		}

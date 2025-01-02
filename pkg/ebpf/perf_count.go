@@ -29,7 +29,7 @@ func (t *Tracee) countPerfEventSubmissions(ctx context.Context) {
 	}
 
 	evtStatZero := eventStatsValues{}
-	for _, id := range t.policyManager.EventsToSubmit() {
+	for _, id := range t.policyManager.GetSelectedEvents() {
 		key := uint32(id)
 		err := evtsCountsBPFMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&evtStatZero))
 		if err != nil {

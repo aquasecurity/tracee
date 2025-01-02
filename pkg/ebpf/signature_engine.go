@@ -73,7 +73,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 			id := events.ID(event.EventID)
 
 			// if the event is NOT marked as submit, it is not sent to the rules engine
-			if !t.policyManager.IsEventToSubmit(id) {
+			if !t.policyManager.IsEventSelected(id) {
 				return
 			}
 

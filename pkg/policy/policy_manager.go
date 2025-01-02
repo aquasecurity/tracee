@@ -20,6 +20,11 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
+const (
+	dependencyRuleID = uint8(63) // Rule ID reserved for dependency rules
+	maxRulesPerEvent = uint8(63)
+)
+
 type ManagerConfig struct {
 	DNSCacheConfig dnscache.Config
 	ProcTreeConfig proctree.ProcTreeConfig
@@ -57,6 +62,8 @@ type EventRule struct {
 	IsDependencyRule bool      // Flag to indicate that this rule is a dependency rule
 }
 
+var bootstrapPolicy *Policy // Global variable to hold the bootstrap policy
+
 func NewManager(
 	cfg ManagerConfig,
 	evtsDepsManager *dependencies.Manager,
@@ -74,17 +81,130 @@ func NewManager(
 		cfg:             cfg,
 	}
 
+	// Create and add the bootstrap policy with conditional rules
+	bootstrapPolicy = createBootstrapPolicy(cfg)
+	if err := pm.AddPolicy(bootstrapPolicy); err != nil {
+		return nil, errfmt.Errorf("failed to add bootstrap policy: %s", err)
+	}
+
 	for _, p := range initialPolicies {
 		if err := pm.AddPolicy(p); err != nil {
 			logger.Errorw("failed to add initial policy", "error", err)
 		}
 	}
 
-	if err := pm.initialize(); err != nil {
-		return nil, errfmt.Errorf("failed to initialize policy manager: %s", err)
+	// TODO: update required capabilities on policy addition/removal
+	if err := pm.updateCapsForSelectedEvents(); err != nil {
+		return nil, errfmt.Errorf("failed to set required capabilitis: %v", err)
 	}
 
 	return pm, nil
+}
+
+// createBootstrapPolicy creates the bootstrap policy with rules based on the provided configuration.
+// bootsrap policy is an internal policy to ensure essential events are always selected.
+func createBootstrapPolicy(cfg ManagerConfig) *Policy {
+	rules := make(map[events.ID]RuleData)
+
+	// Helper function to create RuleData with default filters
+	newRuleData := func(eventID events.ID) RuleData {
+		return RuleData{
+			EventID:     eventID,
+			DataFilter:  filters.NewDataFilter(),
+			RetFilter:   filters.NewIntFilter(),
+			ScopeFilter: filters.NewScopeFilter(),
+		}
+	}
+
+	// Always-selected events:
+	rules[events.SchedProcessExec] = newRuleData(events.SchedProcessExec)
+	rules[events.SchedProcessFork] = newRuleData(events.SchedProcessFork)
+	rules[events.SchedProcessExit] = newRuleData(events.SchedProcessExit)
+
+	// Control Plane Events
+	rules[events.SignalCgroupMkdir] = newRuleData(events.SignalCgroupMkdir)
+	rules[events.SignalCgroupRmdir] = newRuleData(events.SignalCgroupRmdir)
+
+	// Control Plane Process Tree Events
+	pipeEvts := func() {
+		rules[events.SchedProcessFork] = newRuleData(events.SchedProcessFork)
+		rules[events.SchedProcessExec] = newRuleData(events.SchedProcessExec)
+		rules[events.SchedProcessExit] = newRuleData(events.SchedProcessExit)
+	}
+	signalEvts := func() {
+		rules[events.SignalSchedProcessFork] = newRuleData(events.SignalSchedProcessFork)
+		rules[events.SignalSchedProcessExec] = newRuleData(events.SignalSchedProcessExec)
+		rules[events.SignalSchedProcessExit] = newRuleData(events.SignalSchedProcessExit)
+	}
+
+	switch cfg.ProcTreeConfig.Source {
+	case proctree.SourceBoth:
+		pipeEvts()
+		signalEvts()
+	case proctree.SourceSignals:
+		signalEvts()
+	case proctree.SourceEvents:
+		pipeEvts()
+	}
+
+	// DNS Cache events
+	if cfg.DNSCacheConfig.Enable {
+		rules[events.NetPacketDNS] = newRuleData(events.NetPacketDNS)
+	}
+
+	// Capture events (selected based on configuration)
+	if cfg.CaptureConfig.Exec {
+		rules[events.CaptureExec] = newRuleData(events.CaptureExec)
+	}
+	if cfg.CaptureConfig.FileWrite.Capture {
+		rules[events.CaptureFileWrite] = newRuleData(events.CaptureFileWrite)
+	}
+	if cfg.CaptureConfig.FileRead.Capture {
+		rules[events.CaptureFileRead] = newRuleData(events.CaptureFileRead)
+	}
+	if cfg.CaptureConfig.Module {
+		rules[events.CaptureModule] = newRuleData(events.CaptureModule)
+	}
+	if cfg.CaptureConfig.Mem {
+		rules[events.CaptureMem] = newRuleData(events.CaptureMem)
+	}
+	if cfg.CaptureConfig.Bpf {
+		rules[events.CaptureBpf] = newRuleData(events.CaptureBpf)
+	}
+	if pcaps.PcapsEnabled(cfg.CaptureConfig.Net) {
+		rules[events.CaptureNetPacket] = newRuleData(events.CaptureNetPacket)
+	}
+
+	return &Policy{
+		Name:  "__internal_bootstrap__",
+		Rules: rules,
+	}
+}
+
+func (pm *PolicyManager) updateCapsForSelectedEvents() error {
+	// Update capabilities rings with all events dependencies
+
+	caps := capabilities.GetInstance()
+	for id := range pm.rules {
+		if !events.Core.IsDefined(id) {
+			return errfmt.Errorf("event %d is not defined", id)
+		}
+		depsNode, err := pm.evtsDepsManager.GetEvent(id)
+		if err == nil {
+			deps := depsNode.GetDependencies()
+			evtCaps := deps.GetCapabilities()
+			err = caps.BaseRingAdd(evtCaps.GetBase()...)
+			if err != nil {
+				return errfmt.WrapError(err)
+			}
+			err = caps.BaseRingAdd(evtCaps.GetEBPF()...)
+			if err != nil {
+				return errfmt.WrapError(err)
+			}
+		}
+	}
+
+	return nil
 }
 
 // version returns the version of the Policies.
@@ -287,7 +407,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 		}
 
 		// Check if ruleIDCounter exceeds maximum (62 because 63 is reserved for dependency rules)
-		if ruleIDCounter >= 63 {
+		if ruleIDCounter >= maxRulesPerEvent {
 			eventName := events.Core.GetDefinitionByID(eventID).GetName()
 			return TooManyRulesForEventError(eventName)
 		}
@@ -296,7 +416,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 			ID:     ruleIDCounter,
 			Data:   &ruleData,
 			Policy: policy,
-			Emit:   true,
+			Emit:   policy != bootstrapPolicy,
 		}
 
 		rules = append(rules, eventRule)
@@ -312,7 +432,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 			userlandRules = append(userlandRules, eventRule)
 		}
 
-		// Add dependency rules (with ruleId 63)
+		// Add dependency rules
 		eventNode, err := pm.evtsDepsManager.GetEvent(eventID)
 		if err != nil {
 			return errfmt.WrapError(err)
@@ -340,7 +460,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 	return nil
 }
 
-// addDependencyRule adds a special dependency rule for the given event ID at RuleID 63
+// addDependencyRule adds a special dependency rule for the given event ID at RuleID dependencyRuleID
 // as the last element of the EventRules.Rules slice.
 func addDependencyRule(eventID events.ID, tempRules map[events.ID]EventRules) error {
 	eventRules, ok := tempRules[eventID]
@@ -352,13 +472,13 @@ func addDependencyRule(eventID events.ID, tempRules map[events.ID]EventRules) er
 	}
 
 	// Check if a dependency rule already exists (it should always be the last one)
-	if len(eventRules.Rules) > 0 && eventRules.Rules[len(eventRules.Rules)-1].IsDependencyRule {
+	if _, dependencyRuleExists := eventRules.ruleIDToEventRule[dependencyRuleID]; dependencyRuleExists {
 		return nil // Dependency rule already exists
 	}
 
-	// Create the EventRule for the dependency at RuleID 63
+	// Create the EventRule for the dependency at RuleID dependencyRuleID
 	eventRule := &EventRule{
-		ID:               63,
+		ID:               dependencyRuleID,
 		Data:             nil,
 		Policy:           nil,
 		Emit:             false, // Ensure that dependency events are never emitted
@@ -367,7 +487,7 @@ func addDependencyRule(eventID events.ID, tempRules map[events.ID]EventRules) er
 
 	// Add the rule to the appropriate slices
 	eventRules.Rules = append(eventRules.Rules, eventRule)
-	eventRules.ruleIDToEventRule[63] = eventRule
+	eventRules.ruleIDToEventRule[dependencyRuleID] = eventRule
 
 	// Update the EventRules in the temporary map
 	tempRules[eventID] = eventRules
@@ -492,6 +612,12 @@ func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBi
 			if !ok {
 				// This should ideally not happen, as it indicates an inconsistency
 				// between the bitmap generated by BPF and the rules in EventRules.
+				logger.Errorw("Inconsistency detected in GetMatchedRulesInfo",
+					"eventID", eventID,
+					"ruleID", ruleID,
+					"matchedRuleIDsBitmap", matchedRuleIDsBitmap,
+					"possibleCause", "Bitmap from BPF includes a ruleID not present in EventRules",
+				)
 				continue
 			}
 
@@ -506,25 +632,11 @@ func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBi
 	return matchedRuleIDsBitmap, matchedPolicyNames
 }
 
-// IsEnabled tests if an event, or a policy per event is enabled (in the future it will also check if a policy is enabled)
-// TODO: add metrics about an event being enabled/disabled, or a policy being enabled/disabled?
-func (pm *PolicyManager) IsEnabled(matchedRules uint64, id events.ID) bool {
+// IsEventEnabled checks if an event is currently enabled.
+func (pm *PolicyManager) IsEventEnabled(eventID events.ID) bool {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
-	return pm.isEventEnabled(id)
-}
-
-// IsEventEnabled returns true if a given event policy is enabled for a given rule
-func (pm *PolicyManager) IsEventEnabled(id events.ID) bool {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	return pm.isEventEnabled(id)
-}
-
-// not synchronized, use IsEventEnabled instead
-func (pm *PolicyManager) isEventEnabled(eventID events.ID) bool {
 	eventRules, ok := pm.rules[eventID]
 	if !ok {
 		return false // Event not found, consider it disabled
@@ -555,24 +667,47 @@ func (pm *PolicyManager) DisableEvent(eventID events.ID) {
 	pm.rules[eventID] = eventRules
 }
 
-func (pm *PolicyManager) EventsSelected() []events.ID {
+// GetSelectedEvents returns a slice of all the event IDs that are currently selected
+// either directly by a policy or as a dependency.
+func (pm *PolicyManager) GetSelectedEvents() []events.ID {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
-	eventsSelected := make([]events.ID, 0, len(pm.rules))
+	selectedEvents := make([]events.ID, 0, len(pm.rules))
 	for evt := range pm.rules {
-		eventsSelected = append(eventsSelected, evt)
+		selectedEvents = append(selectedEvents, evt)
 	}
 
-	return eventsSelected
+	return selectedEvents
 }
 
-func (pm *PolicyManager) IsEventSelected(id events.ID) bool {
+// IsEventSelected checks if an event is selected by any policy, either directly or as a dependency.
+func (pm *PolicyManager) IsEventSelected(eventID events.ID) bool {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
-	_, ok := pm.rules[id]
+	_, ok := pm.rules[eventID]
 	return ok
+}
+
+// IsEventEmitted checks if an event has at least one rule with the Emit flag set to true,
+// indicating that the event was explicitly selected by a policy and should be emitted.
+func (pm *PolicyManager) IsEventEmitted(eventID events.ID) bool {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	eventRules, ok := pm.rules[eventID]
+	if !ok {
+		return false // Event not found or no rules defined, not emitted
+	}
+
+	for _, rule := range eventRules.Rules {
+		if rule.Emit {
+			return true // Found at least one rule with Emit set to true
+		}
+	}
+
+	return false // No rules have Emit set to true
 }
 
 // GetAllMatchedRulesBitmap returns a bitmap where all bits corresponding to
@@ -593,326 +728,6 @@ func (pm *PolicyManager) GetAllMatchedRulesBitmap(eventID events.ID) uint64 {
 	}
 
 	return allRulesBitmap
-}
-
-// eventFlags is a struct that holds the flags of an event.
-type eventFlags struct {
-	// requiredBySignature indicates if the event is required by a signature event.
-	requiredBySignature bool
-
-	// enabled indicates if the event is enabled.
-	// It is *NOT* computed on policies updates, so its value remains the same
-	// until changed via the API.
-	enabled bool
-
-	// TODO: consider adding rules version here - this value will be taken from here when populating events config map, just like rulesToSubmit
-	rulesVersion uint8
-	// Question: should rulesVersion be under per-event config (map in bpf) - if so, where is it being populated?
-	// TODO: consider moving above requiredBySignature and enabled to be under the same place where we put rulesVersion
-}
-
-//
-// constructor
-//
-
-type eventFlagsOption func(*eventFlags)
-
-func eventFlagsWithSubmit(submit uint64) eventFlagsOption {
-	return func(es *eventFlags) {
-		es.rulesToSubmit = submit
-	}
-}
-
-func eventFlagsWithEmit(emit uint64) eventFlagsOption {
-	return func(es *eventFlags) {
-		es.rulesToEmit = emit
-	}
-}
-
-func eventFlagsWithRequiredBySignature(required bool) eventFlagsOption {
-	return func(es *eventFlags) {
-		es.requiredBySignature = required
-	}
-}
-
-func eventFlagsWithEnabled(enabled bool) eventFlagsOption {
-	return func(es *eventFlags) {
-		es.enabled = enabled
-	}
-}
-
-func newEventFlags(options ...eventFlagsOption) *eventFlags {
-	// default values
-	ef := &eventFlags{
-		rulesToSubmit:       0,
-		rulesToEmit:         0,
-		requiredBySignature: false,
-		enabled:             false,
-	}
-
-	// apply options
-	for _, option := range options {
-		option(ef)
-	}
-
-	return ef
-}
-
-// AddDependencyEventToRules adds for management an event that is a dependency of other events.
-// The difference from selected events is that it doesn't affect its eviction.
-func (pm *PolicyManager) addDependencyEventToRules(evtID events.ID, dependentEvts []events.ID) {
-	var newSubmit uint64
-	var reqBySig bool
-
-	for _, dependentEvent := range dependentEvts {
-		currentFlags, ok := pm.rules[dependentEvent]
-		if ok {
-			newSubmit |= currentFlags.rulesToSubmit
-			reqBySig = reqBySig || events.Core.GetDefinitionByID(dependentEvent).IsSignature()
-		}
-	}
-
-	pm.addEventFlags(
-		evtID,
-		newEventFlags(
-			eventFlagsWithSubmit(newSubmit),
-			eventFlagsWithRequiredBySignature(reqBySig),
-			eventFlagsWithEnabled(true),
-		),
-	)
-}
-
-func (pm *PolicyManager) addEventFlags(id events.ID, selectedFlags *eventFlags) {
-	currentFlags, ok := pm.rules[id]
-	if ok {
-		currentFlags.rulesToSubmit |= selectedFlags.rulesToSubmit
-		currentFlags.rulesToEmit |= selectedFlags.rulesToEmit
-		currentFlags.requiredBySignature = selectedFlags.requiredBySignature
-		currentFlags.enabled = selectedFlags.enabled
-		return
-	}
-
-	pm.rules[id] = newEventFlags(
-		eventFlagsWithSubmit(selectedFlags.rulesToSubmit),
-		eventFlagsWithEmit(selectedFlags.rulesToEmit),
-		eventFlagsWithRequiredBySignature(selectedFlags.requiredBySignature),
-		eventFlagsWithEnabled(selectedFlags.enabled),
-	)
-}
-
-func (pm *PolicyManager) addDependenciesToRulesRecursive(eventNode *dependencies.EventNode) {
-	eventID := eventNode.GetID()
-	for _, dependencyEventID := range eventNode.GetDependencies().GetIDs() {
-		pm.addDependencyEventToRules(dependencyEventID, []events.ID{eventID})
-		dependencyNode, err := pm.evtsDepsManager.GetEvent(dependencyEventID)
-		if err == nil {
-			pm.addDependenciesToRulesRecursive(dependencyNode)
-		}
-	}
-}
-
-func (pm *PolicyManager) selectEvent(eventID events.ID, selectedState *eventFlags) {
-	pm.addEventFlags(eventID, selectedState)
-	eventNode, err := pm.evtsDepsManager.SelectEvent(eventID)
-	if err != nil {
-		logger.Errorw("Event selection failed",
-			"event", events.Core.GetDefinitionByID(eventID).GetName())
-		return
-	}
-
-	pm.addDependenciesToRulesRecursive(eventNode)
-}
-
-func (pm *PolicyManager) removeEventFromRules(evtID events.ID) {
-	logger.Debugw("Remove event from rules", "event", events.Core.GetDefinitionByID(evtID).GetName())
-	delete(pm.events, evtID)
-}
-
-// TODO: we can move the following selection functions to be part of the policies compute phase
-func (pm *PolicyManager) selectMandatoryEvents() {
-	// Initialize events state with mandatory events (TODO: review this need for sched exec)
-
-	pm.selectEvent(events.SchedProcessFork, newEventFlags())
-	pm.selectEvent(events.SchedProcessExec, newEventFlags())
-	pm.selectEvent(events.SchedProcessExit, newEventFlags())
-
-	// Control Plane Events
-
-	pm.selectEvent(events.SignalCgroupMkdir, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-	pm.selectEvent(events.SignalCgroupRmdir, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-}
-
-func (pm *PolicyManager) selectConfiguredEvents() {
-	// Control Plane Process Tree Events
-
-	pipeEvts := func() {
-		pm.selectEvent(events.SchedProcessFork, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-		pm.selectEvent(events.SchedProcessExec, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-		pm.selectEvent(events.SchedProcessExit, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-	}
-	signalEvts := func() {
-		pm.selectEvent(events.SignalSchedProcessFork, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-		pm.selectEvent(events.SignalSchedProcessExec, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-		pm.selectEvent(events.SignalSchedProcessExit, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-	}
-
-	switch pm.cfg.ProcTreeConfig.Source {
-	case proctree.SourceBoth:
-		pipeEvts()
-		signalEvts()
-	case proctree.SourceSignals:
-		signalEvts()
-	case proctree.SourceEvents:
-		pipeEvts()
-	}
-
-	// DNS Cache events
-
-	if pm.cfg.DNSCacheConfig.Enable {
-		pm.selectEvent(events.NetPacketDNS, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
-	}
-
-	// Pseudo events added by capture (if enabled by the user)
-
-	getCaptureEventsFlags := func(cfg config.CaptureConfig) map[events.ID]*eventFlags {
-		captureEvents := make(map[events.ID]*eventFlags)
-
-		// INFO: All capture events should be placed, at least for now, to all matched policies, or else
-		// the event won't be set to matched policy in eBPF and should_submit() won't submit the capture
-		// event to userland.
-
-		if cfg.Exec {
-			captureEvents[events.CaptureExec] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
-		}
-		if cfg.FileWrite.Capture {
-			captureEvents[events.CaptureFileWrite] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
-		}
-		if cfg.FileRead.Capture {
-			captureEvents[events.CaptureFileRead] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
-		}
-		if cfg.Module {
-			captureEvents[events.CaptureModule] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
-		}
-		if cfg.Mem {
-			captureEvents[events.CaptureMem] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
-		}
-		if cfg.Bpf {
-			captureEvents[events.CaptureBpf] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
-		}
-		if pcaps.PcapsEnabled(cfg.Net) {
-			captureEvents[events.CaptureNetPacket] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
-		}
-
-		return captureEvents
-	}
-
-	for id, flags := range getCaptureEventsFlags(pm.cfg.CaptureConfig) {
-		pm.selectEvent(id, flags)
-	}
-}
-
-func (pm *PolicyManager) selectUserEvents() {
-	// Events selected by the user
-	userEvents := make(map[events.ID]*eventFlags)
-
-	// TODO: fix to match what we need
-	for _, p := range pm.policies {
-		//pId := p.ID
-		for eId := range p.Rules {
-			ef, ok := userEvents[eId]
-			if !ok {
-				ef = newEventFlags(eventFlagsWithEnabled(true))
-				userEvents[eId] = ef
-			}
-
-			//ef.enableEmission(pId)
-			//ef.enableSubmission(pId)
-		}
-	}
-
-	for id, flags := range userEvents {
-		pm.selectEvent(id, flags)
-	}
-}
-
-func (pm *PolicyManager) updateCapsForSelectedEvents() error {
-	// Update capabilities rings with all events dependencies
-
-	caps := capabilities.GetInstance()
-	for id := range pm.rules {
-		if !events.Core.IsDefined(id) {
-			return errfmt.Errorf("event %d is not defined", id)
-		}
-		depsNode, err := pm.evtsDepsManager.GetEvent(id)
-		if err == nil {
-			deps := depsNode.GetDependencies()
-			evtCaps := deps.GetCapabilities()
-			err = caps.BaseRingAdd(evtCaps.GetBase()...)
-			if err != nil {
-				return errfmt.WrapError(err)
-			}
-			err = caps.BaseRingAdd(evtCaps.GetEBPF()...)
-			if err != nil {
-				return errfmt.WrapError(err)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (pm *PolicyManager) initialize() error {
-	pm.selectMandatoryEvents()
-	pm.selectConfiguredEvents()
-	pm.selectUserEvents()
-	err := pm.updateCapsForSelectedEvents()
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	return nil
-}
-
-//
-// Rules
-//
-
-func (pm *PolicyManager) IsRequiredBySignature(id events.ID) bool {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	flags, ok := pm.rules[id]
-	if !ok {
-		return false
-	}
-
-	return flags.requiredBySignature
-}
-
-func (pm *PolicyManager) EventsToSubmit() []events.ID {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	eventsToSubmit := []events.ID{}
-	for evt, flags := range pm.rules {
-		if flags.rulesToSubmit != 0 {
-			eventsToSubmit = append(eventsToSubmit, evt)
-		}
-	}
-
-	return eventsToSubmit
-}
-
-func (pm *PolicyManager) IsEventToSubmit(id events.ID) bool {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	flags, ok := pm.rules[id]
-	if !ok {
-		return false
-	}
-
-	return flags.rulesToSubmit != 0
 }
 
 func (pm *PolicyManager) UpdateBPF(
