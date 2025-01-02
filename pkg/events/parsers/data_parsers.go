@@ -206,9 +206,9 @@ func (o OpenFlagArgument) String() string { return o.stringValue }
 // http://man7.org/linux/man-pages/man2/open.2.html
 // https://elixir.bootlin.com/linux/v5.5.3/source/include/uapi/asm-generic/fcntl.h
 func ParseOpenFlagArgument(rawValue uint64) (OpenFlagArgument, error) {
-	if rawValue == 0 {
-		return OpenFlagArgument{}, nil
-	}
+	// if rawValue == 0 {
+	// 	return OpenFlagArgument{}, nil
+	// }
 	var f []string
 
 	// access mode
