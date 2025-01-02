@@ -280,16 +280,9 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			// Some base events (derivative and signatures) might not have set related rule bit,
 			// thus the need to continue with those within the pipeline.
 			if t.matchRules(evt) == 0 {
-				// TODO: all of this logic should be removed once we will have matchedRules
-				// With matched rules, we will set bits for derived events and signatures as well
-				_, hasDerivation := t.eventDerivations[eventId]
-				reqBySig := t.policyManager.IsRequiredBySignature(eventId)
-
-				if !hasDerivation && !reqBySig {
-					_ = t.stats.EventsFiltered.Increment()
-					t.eventsPool.Put(evt)
-					continue
-				}
+				_ = t.stats.EventsFiltered.Increment()
+				t.eventsPool.Put(evt)
+				continue
 			}
 
 			select {
@@ -572,8 +565,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 				continue // might happen during initialization (ctrl+c seg faults)
 			}
 
-			// Is the event enabled for the policies or globally?
-			if !t.policyManager.IsEnabled(event.MatchedRulesUser, events.ID(event.EventID)) {
+			if !t.policyManager.IsEventEnabled(events.ID(event.EventID)) {
 				// TODO: create metrics from dropped events
 				t.eventsPool.Put(event)
 				continue

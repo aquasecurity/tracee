@@ -27,17 +27,17 @@ func TestPolicyManagerEnableEvent(t *testing.T) {
 	policyManager, err := NewManager(ManagerConfig{}, depsManager)
 	assert.NoError(t, err)
 
-	assert.False(t, policyManager.isEventEnabled(events.SecurityBPF))
-	assert.False(t, policyManager.isEventEnabled(events.SecurityFileOpen))
-	assert.False(t, policyManager.isEventEnabled(events.SecuritySocketAccept))
+	assert.False(t, policyManager.IsEventEnabled(events.SecurityBPF))
+	assert.False(t, policyManager.IsEventEnabled(events.SecurityFileOpen))
+	assert.False(t, policyManager.IsEventEnabled(events.SecuritySocketAccept))
 
 	policyManager.EnableEvent(events.SecurityBPF)
 	policyManager.EnableEvent(events.SecurityFileOpen)
 	policyManager.EnableEvent(events.SecuritySocketAccept)
 
-	assert.True(t, policyManager.isEventEnabled(events.SecurityBPF))
-	assert.True(t, policyManager.isEventEnabled(events.SecurityFileOpen))
-	assert.True(t, policyManager.isEventEnabled(events.SecuritySocketAccept))
+	assert.True(t, policyManager.IsEventEnabled(events.SecurityBPF))
+	assert.True(t, policyManager.IsEventEnabled(events.SecurityFileOpen))
+	assert.True(t, policyManager.IsEventEnabled(events.SecuritySocketAccept))
 }
 
 func TestPolicyManagerDisableEvent(t *testing.T) {
@@ -131,50 +131,6 @@ func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 			assert.False(t, policyManager.IsEventEnabled(e))
 		}
 	}
-}
-
-func TestPolicyManagerIsEnabled(t *testing.T) {
-	t.Parallel()
-
-	depsManager := dependencies.NewDependenciesManager(
-		func(id events.ID) events.Dependencies {
-			return events.Core.GetDefinitionByID(id).GetDependencies()
-		})
-
-	policyManager, err := NewManager(ManagerConfig{}, depsManager)
-	assert.NoError(t, err)
-
-	policy1Mached := uint64(0b10)
-	policy2Mached := uint64(0b100)
-	policy1And2Mached := uint64(0b110)
-
-	assert.False(t, policyManager.IsEnabled(policy1Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsEnabled(policy2Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsEnabled(policy1And2Mached, events.SecurityBPF))
-
-	policyManager.EnableRule(1, events.SecurityBPF)
-
-	assert.True(t, policyManager.IsEnabled(policy1Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsEnabled(policy2Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsEnabled(policy1And2Mached, events.SecurityBPF))
-
-	policyManager.EnableRule(2, events.SecurityBPF)
-
-	assert.True(t, policyManager.IsEnabled(policy1Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsEnabled(policy2Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsEnabled(policy1And2Mached, events.SecurityBPF))
-
-	policyManager.DisableEvent(events.SecurityBPF)
-
-	assert.False(t, policyManager.IsEnabled(policy1Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsEnabled(policy2Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsEnabled(policy1And2Mached, events.SecurityBPF))
-
-	policyManager.EnableEvent(events.SecurityBPF)
-
-	assert.True(t, policyManager.IsEnabled(policy1Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsEnabled(policy2Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsEnabled(policy1And2Mached, events.SecurityBPF))
 }
 
 func TestPoliciesClone(t *testing.T) {
