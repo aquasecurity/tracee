@@ -1627,3 +1627,71 @@ func TestParseBpfHelpersUsage(t *testing.T) {
 		})
 	}
 }
+func TestParseBpfAttachType(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name         string
+		args         []trace.Argument
+		expectedArgs []trace.Argument
+	}{
+		{
+			name: "normal flow",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "attachType",
+						Type: "int",
+					},
+					Value: int32(0),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "attachType",
+						Type: "string",
+					},
+					Value: "raw_tracepoint",
+				},
+			},
+		},
+		{
+			name: "invalid attachType",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "attachType",
+						Type: "int",
+					},
+					Value: int32(12345),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "attachType",
+						Type: "string",
+					},
+					Value: "12345",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			event := &trace.Event{
+				Args: testCase.args,
+			}
+			parseBpfAttachType(GetArg(event, "attachType"), testCase.args[0].Value.(int32))
+			for _, expArg := range testCase.expectedArgs {
+				arg := GetArg(event, expArg.Name)
+				assert.Equal(t, expArg, *arg)
+			}
+		})
+	}
+}
