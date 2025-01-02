@@ -319,7 +319,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 		}
 
 		for _, depID := range eventNode.GetDependencies().GetIDs() {
-			if err := addDependencyRule(depID, tempRules, eventRule); err != nil {
+			if err := addDependencyRule(depID, tempRules); err != nil {
 				return errfmt.Errorf("failed to add dependency rule for event %d", depID)
 			}
 		}
@@ -342,7 +342,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 
 // addDependencyRule adds a special dependency rule for the given event ID at RuleID 63
 // as the last element of the EventRules.Rules slice.
-func addDependencyRule(eventID events.ID, tempRules map[events.ID]EventRules, dependentRule *EventRule) error {
+func addDependencyRule(eventID events.ID, tempRules map[events.ID]EventRules) error {
 	eventRules, ok := tempRules[eventID]
 	if !ok {
 		eventRules = EventRules{
@@ -595,35 +595,67 @@ func (pm *PolicyManager) GetAllMatchedRulesBitmap(eventID events.ID) uint64 {
 	return allRulesBitmap
 }
 
-func (pm *PolicyManager) subscribeDependencyHandlers() {
-	// TODO: As dynamic event addition or removal becomes a thing, we should subscribe all the watchers
-	// before selecting them. There is no reason to select the event in the New function anyhow.
-	pm.evtsDepsManager.SubscribeAdd(
-		dependencies.EventNodeType,
-		func(node interface{}) []dependencies.Action {
-			eventNode, ok := node.(*dependencies.EventNode)
-			if !ok {
-				logger.Errorw("Got node from type not requested")
-				return nil
-			}
+// eventFlags is a struct that holds the flags of an event.
+type eventFlags struct {
+	// requiredBySignature indicates if the event is required by a signature event.
+	requiredBySignature bool
 
-			pm.addDependencyEventToRules(eventNode.GetID(), eventNode.GetDependents())
+	// enabled indicates if the event is enabled.
+	// It is *NOT* computed on policies updates, so its value remains the same
+	// until changed via the API.
+	enabled bool
 
-			return nil
-		})
-	pm.evtsDepsManager.SubscribeRemove(
-		dependencies.EventNodeType,
-		func(node interface{}) []dependencies.Action {
-			eventNode, ok := node.(*dependencies.EventNode)
-			if !ok {
-				logger.Errorw("Got node from type not requested")
-				return nil
-			}
+	// TODO: consider adding rules version here - this value will be taken from here when populating events config map, just like rulesToSubmit
+	rulesVersion uint8
+	// Question: should rulesVersion be under per-event config (map in bpf) - if so, where is it being populated?
+	// TODO: consider moving above requiredBySignature and enabled to be under the same place where we put rulesVersion
+}
 
-			pm.removeEventFromRules(eventNode.GetID())
+//
+// constructor
+//
 
-			return nil
-		})
+type eventFlagsOption func(*eventFlags)
+
+func eventFlagsWithSubmit(submit uint64) eventFlagsOption {
+	return func(es *eventFlags) {
+		es.rulesToSubmit = submit
+	}
+}
+
+func eventFlagsWithEmit(emit uint64) eventFlagsOption {
+	return func(es *eventFlags) {
+		es.rulesToEmit = emit
+	}
+}
+
+func eventFlagsWithRequiredBySignature(required bool) eventFlagsOption {
+	return func(es *eventFlags) {
+		es.requiredBySignature = required
+	}
+}
+
+func eventFlagsWithEnabled(enabled bool) eventFlagsOption {
+	return func(es *eventFlags) {
+		es.enabled = enabled
+	}
+}
+
+func newEventFlags(options ...eventFlagsOption) *eventFlags {
+	// default values
+	ef := &eventFlags{
+		rulesToSubmit:       0,
+		rulesToEmit:         0,
+		requiredBySignature: false,
+		enabled:             false,
+	}
+
+	// apply options
+	for _, option := range options {
+		option(ef)
+	}
+
+	return ef
 }
 
 // AddDependencyEventToRules adds for management an event that is a dependency of other events.
@@ -784,8 +816,8 @@ func (pm *PolicyManager) selectUserEvents() {
 	userEvents := make(map[events.ID]*eventFlags)
 
 	// TODO: fix to match what we need
-	for _, p := range pm.ps.policies {
-		pId := p.ID
+	for _, p := range pm.policies {
+		//pId := p.ID
 		for eId := range p.Rules {
 			ef, ok := userEvents[eId]
 			if !ok {
@@ -793,8 +825,8 @@ func (pm *PolicyManager) selectUserEvents() {
 				userEvents[eId] = ef
 			}
 
-			ef.enableEmission(pId)
-			ef.enableSubmission(pId)
+			//ef.enableEmission(pId)
+			//ef.enableSubmission(pId)
 		}
 	}
 
@@ -830,7 +862,6 @@ func (pm *PolicyManager) updateCapsForSelectedEvents() error {
 }
 
 func (pm *PolicyManager) initialize() error {
-	pm.subscribeDependencyHandlers()
 	pm.selectMandatoryEvents()
 	pm.selectConfiguredEvents()
 	pm.selectUserEvents()
