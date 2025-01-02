@@ -467,7 +467,6 @@ func TestParseSocketType(t *testing.T) {
 	}
 
 }
-
 func TestParseInodeMode(t *testing.T) {
 	t.Parallel()
 
@@ -527,6 +526,260 @@ func TestParseInodeMode(t *testing.T) {
 				Args: testCase.args,
 			}
 			parseInodeMode(GetArg(event, "mode"), testCase.args[0].Value.(uint64))
+			for _, expArg := range testCase.expectedArgs {
+				arg := GetArg(event, expArg.Name)
+				assert.Equal(t, expArg, *arg)
+			}
+		})
+	}
+}
+func TestParseBPFProgType(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name         string
+		args         []trace.Argument
+		expectedArgs []trace.Argument
+	}{
+		{
+			name: "normal flow",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "type",
+						Type: "int",
+					},
+					Value: parsers.BPFProgTypeUnspec.Value(),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "type",
+						Type: "string",
+					},
+					Value: "BPF_PROG_TYPE_UNSPEC",
+				},
+			},
+		},
+		{
+			name: "invalid type",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "type",
+						Type: "int",
+					},
+					Value: uint64(12345),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "type",
+						Type: "string",
+					},
+					Value: "12345",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			event := &trace.Event{
+				Args: testCase.args,
+			}
+			parseBPFProgType(GetArg(event, "type"), testCase.args[0].Value.(uint64))
+			for _, expArg := range testCase.expectedArgs {
+				arg := GetArg(event, expArg.Name)
+				assert.Equal(t, expArg, *arg)
+			}
+		})
+	}
+
+}
+func TestParseCapability(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name         string
+		args         []trace.Argument
+		expectedArgs []trace.Argument
+	}{
+		{
+			name: "normal flow",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "capability",
+						Type: "int",
+					},
+					Value: parsers.CAP_CHOWN.Value(),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "capability",
+						Type: "string",
+					},
+					Value: "CAP_CHOWN",
+				},
+			},
+		},
+		{
+			name: "invalid capability",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "capability",
+						Type: "int",
+					},
+					Value: uint64(12345),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "capability",
+						Type: "string",
+					},
+					Value: "12345",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			event := &trace.Event{
+				Args: testCase.args,
+			}
+			parseCapability(GetArg(event, "capability"), testCase.args[0].Value.(uint64))
+			for _, expArg := range testCase.expectedArgs {
+				arg := GetArg(event, expArg.Name)
+				assert.Equal(t, expArg, *arg)
+			}
+		})
+	}
+}
+func TestParseMemProtAlert(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name         string
+		args         []trace.Argument
+		expectedArgs []trace.Argument
+	}{
+		{
+			name: "normal flow",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "alert",
+						Type: "int",
+					},
+					Value: uint32(trace.ProtAlertMmapWX),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "alert",
+						Type: "string",
+					},
+					Value: "Mmaped region with W+E permissions!",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			event := &trace.Event{
+				Args: testCase.args,
+			}
+			parseMemProtAlert(GetArg(event, "alert"), testCase.args[0].Value.(uint32))
+			for _, expArg := range testCase.expectedArgs {
+				arg := GetArg(event, expArg.Name)
+				assert.Equal(t, expArg, *arg)
+			}
+		})
+	}
+}
+
+func TestParseSyscall(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name         string
+		args         []trace.Argument
+		expectedArgs []trace.Argument
+	}{
+		{
+			name: "normal flow",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "id",
+						Type: "int",
+					},
+					Value: int32(Ptrace),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "id",
+						Type: "string",
+					},
+					Value: "ptrace",
+				},
+			},
+		},
+		{
+			name: "invalid syscall",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "id",
+						Type: "int",
+					},
+					Value: int32(12345),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "id",
+						Type: "string",
+					},
+					Value: "12345",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			event := &trace.Event{
+				Args: testCase.args,
+			}
+			parseSyscall(GetArg(event, "id"), testCase.args[0].Value.(int32))
 			for _, expArg := range testCase.expectedArgs {
 				arg := GetArg(event, expArg.Name)
 				assert.Equal(t, expArg, *arg)

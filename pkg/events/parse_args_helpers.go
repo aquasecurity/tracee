@@ -76,12 +76,13 @@ func parseSyscall(arg *trace.Argument, id int32) {
 	// NOTE: This might cause data races in the future if the map is modified.
 	// One solution to keep better CPU time is to segregate the map into two maps:
 	// one for proper core (read-only) events and another for the dynamic events.
+	arg.Type = "string"
 	def, ok := CoreEvents[ID(id)]
 	if !ok || !def.IsSyscall() {
+		arg.Value = fmt.Sprint(id)
 		return
 	}
 
-	arg.Type = "string"
 	arg.Value = def.GetName()
 }
 
