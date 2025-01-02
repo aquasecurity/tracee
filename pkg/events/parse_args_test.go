@@ -1128,6 +1128,74 @@ func TestParseExecFlag(t *testing.T) {
 		})
 	}
 }
+func TestParseOpenFlagArgument(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name         string
+		args         []trace.Argument
+		expectedArgs []trace.Argument
+	}{
+		{
+			name: "normal flow",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "flags",
+						Type: "int",
+					},
+					Value: parsers.O_RDONLY.Value(),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "flags",
+						Type: "string",
+					},
+					Value: "O_RDONLY",
+				},
+			},
+		},
+		{
+			name: "multiple flags",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "flags",
+						Type: "int",
+					},
+					Value: parsers.O_RDWR.Value() | parsers.O_CREAT.Value(),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "flags",
+						Type: "string",
+					},
+					Value: "O_RDWR|O_CREAT",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			event := &trace.Event{
+				Args: testCase.args,
+			}
+			parseOpenFlagArgument(GetArg(event, "flags"), testCase.args[0].Value.(uint64))
+			for _, expArg := range testCase.expectedArgs {
+				arg := GetArg(event, expArg.Name)
+				assert.Equal(t, expArg, *arg)
+			}
+		})
+	}
+}
 func TestParseBPFCmd(t *testing.T) {
 	t.Parallel()
 
