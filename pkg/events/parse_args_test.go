@@ -1354,3 +1354,71 @@ func TestParseBPFCmd(t *testing.T) {
 	}
 
 }
+func TestParseSocketLevel(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name         string
+		args         []trace.Argument
+		expectedArgs []trace.Argument
+	}{
+		{
+			name: "normal flow",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "level",
+						Type: "int",
+					},
+					Value: parsers.SOL_SOCKET.Value(),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "level",
+						Type: "string",
+					},
+					Value: "SOL_SOCKET",
+				},
+			},
+		},
+		{
+			name: "invalid level",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "level",
+						Type: "int",
+					},
+					Value: uint64(12345),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "level",
+						Type: "string",
+					},
+					Value: "12345",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			event := &trace.Event{
+				Args: testCase.args,
+			}
+			parseSocketLevel(GetArg(event, "level"), testCase.args[0].Value.(uint64))
+			for _, expArg := range testCase.expectedArgs {
+				arg := GetArg(event, expArg.Name)
+				assert.Equal(t, expArg, *arg)
+			}
+		})
+	}
+}
