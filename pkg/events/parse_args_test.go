@@ -991,6 +991,74 @@ func TestParseSocketcallCall(t *testing.T) {
 		})
 	}
 }
+func TestParseAccessMode(t *testing.T) {
+	t.Parallel()
+	testcase := []struct {
+		name         string
+		args         []trace.Argument
+		expectedArgs []trace.Argument
+	}{
+		{
+			name: "normal flow",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "mode",
+						Type: "int",
+					},
+					Value: parsers.F_OK.Value(),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "mode",
+						Type: "string",
+					},
+					Value: "F_OK",
+				},
+			},
+		},
+		{
+			name: "multiple flow",
+			args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "mode",
+						Type: "int",
+					},
+					Value: parsers.X_OK.Value() | parsers.R_OK.Value() | parsers.W_OK.Value(),
+				},
+			},
+			expectedArgs: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "mode",
+						Type: "string",
+					},
+					Value: "R_OK|W_OK|X_OK",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testcase {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			event := &trace.Event{
+				Args: testCase.args,
+			}
+			parseAccessMode(GetArg(event, "mode"), testCase.args[0].Value.(uint64))
+			for _, expArg := range testCase.expectedArgs {
+				arg := GetArg(event, expArg.Name)
+				assert.Equal(t, expArg, *arg)
+			}
+		})
+	}
+}
 func TestParseBPFCmd(t *testing.T) {
 	t.Parallel()
 
