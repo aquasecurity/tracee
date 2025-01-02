@@ -465,7 +465,6 @@ func TestParseSocketType(t *testing.T) {
 			}
 		})
 	}
-
 }
 func TestParseInodeMode(t *testing.T) {
 	t.Parallel()
@@ -600,7 +599,6 @@ func TestParseBPFProgType(t *testing.T) {
 			}
 		})
 	}
-
 }
 func TestParseCapability(t *testing.T) {
 	t.Parallel()
@@ -853,7 +851,6 @@ func TestParsePtraceRequestArgument(t *testing.T) {
 			}
 		})
 	}
-
 }
 func TestParsePrctlOption(t *testing.T) {
 	t.Parallel()
@@ -1060,7 +1057,6 @@ func TestParseAccessMode(t *testing.T) {
 	}
 }
 func TestParseExecFlag(t *testing.T) {
-
 	t.Parallel()
 	testCases := []struct {
 		name         string
@@ -1352,7 +1348,6 @@ func TestParseBPFCmd(t *testing.T) {
 			}
 		})
 	}
-
 }
 func TestParseSocketLevel(t *testing.T) {
 	t.Parallel()
