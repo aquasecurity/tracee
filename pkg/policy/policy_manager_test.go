@@ -1,19 +1,14 @@
 package policy
 
 import (
-	"reflect"
 	"sync"
-	"sync/atomic"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
-	"github.com/aquasecurity/tracee/pkg/filters"
-	"github.com/aquasecurity/tracee/pkg/filters/sets"
 )
 
 func TestPolicyManagerEnableEvent(t *testing.T) {
@@ -103,27 +98,27 @@ func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 
 	wg.Add(1)
 	go func() {
-		for i := 0; i < PolicyMax; i++ {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
 			for _, e := range eventsToEnable {
 				policyManager.EnableEvent(e)
 			}
 		}
-		wg.Done()
 	}()
 
 	wg.Add(1)
 	go func() {
-		for i := 0; i < PolicyMax; i++ {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
 			for _, e := range eventsToDisable {
 				policyManager.DisableEvent(e)
 			}
 		}
-		wg.Done()
 	}()
 
 	wg.Wait()
 
-	for i := 0; i < PolicyMax; i++ {
+	for i := 0; i < 100; i++ {
 		for _, e := range eventsToEnable {
 			assert.True(t, policyManager.IsEventEnabled(e))
 		}
@@ -133,82 +128,70 @@ func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 	}
 }
 
-func TestPoliciesClone(t *testing.T) {
+func TestPolicyManagerIndependentPolicies(t *testing.T) {
 	t.Parallel()
 
-	ps := NewPolicies()
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.Dependencies {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
 
-	p1 := NewPolicy()
-	p1.Name = "p1"
-	err := p1.PIDFilter.Parse("=1")
+	pm, err := NewManager(ManagerConfig{}, depsManager)
 	require.NoError(t, err)
+
+	// Create two policies with different filters and rules.
+	p1 := NewPolicy()
+	p1.Name = "policy1"
+	err = p1.UIDFilter.Parse(">=1000")
+	require.NoError(t, err)
+	p1.Rules[events.SchedProcessFork] = RuleData{EventID: events.SchedProcessFork}
 
 	p2 := NewPolicy()
-	p2.Name = "p2"
-	err = p2.UIDFilter.Parse("=2")
+	p2.Name = "policy2"
+	err = p2.PIDFilter.Parse("=1")
+	require.NoError(t, err)
+	p2.Rules[events.SchedProcessExec] = RuleData{EventID: events.SchedProcessExec}
+
+	// Add the policies to the PolicyManager.
+	err = pm.AddPolicy(p1)
+	require.NoError(t, err)
+	err = pm.AddPolicy(p2)
 	require.NoError(t, err)
 
-	// Initialize the rule first
-	p2.Rules[events.Read] = RuleData{
-		EventID:     events.Read,
-		DataFilter:  filters.NewDataFilter(),
-		RetFilter:   filters.NewIntFilter(),
-		ScopeFilter: filters.NewScopeFilter(),
-	}
-	err = p2.Rules[events.Read].DataFilter.Parse(events.Read, "fd", "=dataval")
+	// 1. Modify p1's filters and rules *after* adding to the manager.
+	err = p1.UIDFilter.Parse("=0") // Change UID filter
+	require.NoError(t, err)
+	p1.Rules[events.SecurityFileOpen] = RuleData{EventID: events.SecurityFileOpen} // Add a new rule
+
+	// 2. Verify that p2's filters and rules are unaffected.
+	p2Fetched, err := pm.LookupPolicyByName("policy2")
+	require.NoError(t, err)
+	require.True(t, p2Fetched.PIDFilter.Enabled())                   // PID filter should be enabled
+	require.False(t, p2Fetched.UIDFilter.Enabled())                  // UID filter should be disabled
+	require.NotContains(t, p2Fetched.Rules, events.SecurityFileOpen) // p2 should not have the new rule
+
+	// 3. Modify p2's filters and rules *after* adding to the manager.
+	err = p2.CommFilter.Parse("=bash") // Add a comm filter
+	require.NoError(t, err)
+	delete(p2.Rules, events.SchedProcessExec) // Remove a rule
+
+	// 4. Verify that p1's filters and rules are unaffected.
+	p1Fetched, err := pm.LookupPolicyByName("policy1")
+	require.NoError(t, err)
+	require.True(t, p1Fetched.UIDFilter.Enabled())                   // UID filter should be enabled
+	require.False(t, p1Fetched.CommFilter.Enabled())                 // Comm filter should be disabled
+	require.NotContains(t, p1Fetched.Rules, events.SchedProcessExec) // p1 should not have lost it's rule
+
+	// 5. Remove p1 from the manager
+	err = pm.RemovePolicy("policy1")
 	require.NoError(t, err)
 
-	err = ps.add(p1)
+	// 6. Verify that p2 is still present and its rules are intact
+	_, err = pm.LookupPolicyByName("policy1")
+	require.ErrorIs(t, err, PolicyNotFoundByNameError("policy1")) // p1 should not be found
+	p2Fetched, err = pm.LookupPolicyByName("policy2")
 	require.NoError(t, err)
-	err = ps.add(p2)
-	require.NoError(t, err)
-
-	copy := ps.Clone()
-
-	opt1 := cmp.AllowUnexported(
-		policies{},
-		sync.Mutex{},
-		sync.RWMutex{},
-		atomic.Int32{},
-		filters.StringFilter{},
-		filters.UIntFilter[uint32]{},
-		filters.UIntFilter[uint64]{},
-		filters.BoolFilter{},
-		filters.IntFilter[int64]{},
-		filters.DataFilter{},
-		filters.ScopeFilter{},
-		filters.ProcessTreeFilter{},
-		filters.BinaryFilter{},
-		sets.PrefixSet{},
-		sets.SuffixSet{},
-		filters.KernelDataFilter{},
-	)
-	opt2 := cmp.FilterPath(
-		func(p cmp.Path) bool {
-			// ignore the function field
-			// https://cs.opensource.google/go/go/+/refs/tags/go1.22.0:src/reflect/deepequal.go;l=187
-			return p.Last().Type().Kind() == reflect.Func
-		},
-		cmp.Ignore(),
-	)
-	if !cmp.Equal(ps, copy, opt1, opt2) {
-		diff := cmp.Diff(ps, copy, opt1, opt2)
-		t.Errorf("Clone did not produce an identical copy\ndiff: %s", diff)
-	}
-
-	// ensure that changes to the copy do not affect the original
-	p3 := NewPolicy()
-	p3.Name = "p3"
-	err = p3.CommFilter.Parse("=comm")
-	require.NoError(t, err)
-	err = copy.add(p3)
-	require.NoError(t, err)
-
-	p1, err = copy.lookupByName("p1")
-	require.NoError(t, err)
-	p1.Name = "p1-modified"
-
-	if cmp.Equal(ps, copy, opt1, opt2) {
-		t.Errorf("Changes to copied policy affected the original: %+v", ps)
-	}
+	require.True(t, p2Fetched.PIDFilter.Enabled())                // p2's PID filter should be enabled
+	require.True(t, p2Fetched.CommFilter.Enabled())               // p2's Comm filter should be enabled
+	require.Contains(t, p2Fetched.Rules, events.SchedProcessExec) // p2 should still have its original rule
 }
