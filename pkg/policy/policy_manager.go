@@ -35,11 +35,11 @@ type ManagerConfig struct {
 type PolicyManager struct {
 	policies        map[string]*Policy       // Map of policies by name
 	rules           map[events.ID]EventRules // Map of rules by event ID
+	bootstrapPolicy *Policy                  // Holds the bootstrap policy
 	evtsDepsManager *dependencies.Manager
-	bpfInnerMaps    map[string]*bpf.BPFMapLow // TODO: we don't really need this here... Remove it
+	bpfInnerMaps    map[string]*bpf.BPFMapLow // TODO: move this to ebpf related code
 	mu              sync.RWMutex              // Read/Write Mutex to protect concurrent access
 	cfg             ManagerConfig
-	// TODO: Rules that depend on other events should add entries to the event's rules array they depend on
 }
 
 // EventData holds information about a specific event.
@@ -48,7 +48,7 @@ type EventRules struct {
 	UserlandRules          []*EventRule         // List of rules with userland filters enabled
 	enabled                bool                 // Flag indicating whether the event is enabled
 	rulesVersion           uint32               // Version of the rules for this event (for future updates)
-	ruleIDCounter          uint8                // Counter to generate unique rule IDs within the event, limited to 64 rules
+	rulesCount             uint8                // The total number of rules for this event
 	ruleIDToEventRule      map[uint8]*EventRule // Map from RuleID to EventRule for fast lookup
 	containerFilteredRules uint64               // Bitmap to track container-filtered rules
 }
@@ -61,8 +61,6 @@ type EventRule struct {
 	Emit             bool      // Flag to indicate whether the event should be emitted or not
 	IsDependencyRule bool      // Flag to indicate that this rule is a dependency rule
 }
-
-var bootstrapPolicy *Policy // Global variable to hold the bootstrap policy
 
 func NewManager(
 	cfg ManagerConfig,
@@ -82,8 +80,8 @@ func NewManager(
 	}
 
 	// Create and add the bootstrap policy with conditional rules
-	bootstrapPolicy = createBootstrapPolicy(cfg)
-	if err := pm.AddPolicy(bootstrapPolicy); err != nil {
+	pm.bootstrapPolicy = createBootstrapPolicy(cfg)
+	if err := pm.AddPolicy(pm.bootstrapPolicy); err != nil {
 		return nil, errfmt.Errorf("failed to add bootstrap policy: %s", err)
 	}
 
@@ -260,7 +258,8 @@ func (pm *PolicyManager) AddPolicy(policy *Policy, opts ...AddPolicyOption) erro
 	// Perform operations on the temporary copies
 	tempPolicies[policy.Name] = policy // Add or update the policy
 
-	// Update EventRules for each event affected by the policy
+	// Update event selection in the dependency manager
+	// This should be done for all selected events BEFORE updating EventRules (done below)
 	for eventID := range policy.Rules {
 		// Select event
 		_, err := pm.evtsDepsManager.SelectEvent(eventID)
@@ -268,7 +267,10 @@ func (pm *PolicyManager) AddPolicy(policy *Policy, opts ...AddPolicyOption) erro
 			eventName := events.Core.GetDefinitionByID(eventID).GetName()
 			return SelectEventError(eventName)
 		}
+	}
 
+	// Update EventRules for each event affected by the policy
+	for eventID := range policy.Rules {
 		if err := pm.updateRulesForEvent(eventID, tempRules, tempPolicies); err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -306,12 +308,9 @@ func (pm *PolicyManager) RemovePolicy(policyName string) error {
 	// Perform operations on the temporary copies
 	delete(tempPolicies, policyName) // Remove the policy
 
-	// Update EventRules for each event affected by the policy
+	// Update event selection in the dependency manager
+	// This should be done for all selected events BEFORE updating EventRules (done below)
 	for eventID := range policyToRemove.Rules {
-		if err := pm.updateRulesForEvent(eventID, tempRules, tempPolicies); err != nil {
-			return errfmt.WrapError(err)
-		}
-
 		// Check if the event is still selected by any remaining policy
 		isSelected := false
 		for _, p := range tempPolicies {
@@ -324,6 +323,13 @@ func (pm *PolicyManager) RemovePolicy(policyName string) error {
 		// Only unselect the event if it's not selected by any other policy
 		if !isSelected {
 			pm.evtsDepsManager.UnselectEvent(eventID)
+		}
+	}
+
+	// Update EventRules for each event affected by the policy
+	for eventID := range policyToRemove.Rules {
+		if err := pm.updateRulesForEvent(eventID, tempRules, tempPolicies); err != nil {
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -340,7 +346,7 @@ func (pm *PolicyManager) RemovePolicy(policyName string) error {
 func deepCopyEventRules(original EventRules) EventRules {
 	copied := EventRules{
 		rulesVersion:           original.rulesVersion,
-		ruleIDCounter:          original.ruleIDCounter,
+		rulesCount:             original.rulesCount,
 		containerFilteredRules: original.containerFilteredRules,
 		Rules:                  make([]*EventRule, len(original.Rules)),
 		UserlandRules:          make([]*EventRule, len(original.UserlandRules)),
@@ -386,20 +392,24 @@ func deepCopyEventRules(original EventRules) EventRules {
 // updateRulesForEvent rebuilds the EventRules for the given eventID in the tempRules map.
 // It gathers applicable rules from tempPolicies, assigns RuleIDs, and increments the rules version.
 func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[events.ID]EventRules, tempPolicies map[string]*Policy) error {
-	// Gather rules from all policies that apply to this event
-	var userlandRules []*EventRule
+	if !events.Core.IsDefined(eventID) {
+		return errfmt.Errorf("event %d is not defined", eventID)
+	}
+	if tempRules == nil || tempPolicies == nil {
+		return errfmt.Errorf("nil maps provided")
+	}
+
+	var rules, userlandRules []*EventRule
 	ruleIDToEventRule := make(map[uint8]*EventRule)
 	ruleIDCounter := uint8(0)
 	var containerFilteredRules uint64
 
-	// Create a new EventRules with ruleIDCounter initialized to 0
-	eventRules := EventRules{
-		ruleIDCounter: 0,
-		rulesVersion:  0, // Also initialize rulesVersion for a new event
+	rulesVersion := uint32(0)
+	if existingEventRules, ok := tempRules[eventID]; ok {
+		rulesVersion = existingEventRules.rulesVersion
 	}
 
-	var rules []*EventRule
-
+	// Gather rules from all policies that apply to this event
 	for _, policy := range tempPolicies {
 		ruleData, ok := policy.Rules[eventID]
 		if !ok {
@@ -416,7 +426,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 			ID:     ruleIDCounter,
 			Data:   &ruleData,
 			Policy: policy,
-			Emit:   policy != bootstrapPolicy,
+			Emit:   policy != pm.bootstrapPolicy,
 		}
 
 		rules = append(rules, eventRule)
@@ -432,19 +442,33 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 			userlandRules = append(userlandRules, eventRule)
 		}
 
-		// Add dependency rules
-		eventNode, err := pm.evtsDepsManager.GetEvent(eventID)
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-
-		for _, depID := range eventNode.GetDependencies().GetIDs() {
-			if err := addDependencyRule(depID, tempRules); err != nil {
-				return errfmt.Errorf("failed to add dependency rule for event %d", depID)
-			}
-		}
-
 		ruleIDCounter++
+	}
+
+	// Add dependency rules (with ruleId 63)
+	eventNode, err := pm.evtsDepsManager.GetEvent(eventID)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	if len(eventNode.GetDependents()) > 0 {
+		// Add a dependency rule if it doesn't exist
+		if _, depRuleExists := ruleIDToEventRule[dependencyRuleID]; !depRuleExists {
+			eventRule := &EventRule{
+				ID:               dependencyRuleID,
+				Data:             nil,
+				Policy:           nil,
+				Emit:             false, // Ensure that dependency events are never emitted
+				IsDependencyRule: true,  // Mark the rule as a dependency rule
+			}
+			rules = append(rules, eventRule)
+			ruleIDToEventRule[dependencyRuleID] = eventRule
+		}
+	}
+
+	// Recursively add dependency rules for all transitive dependencies
+	if err := pm.addTransitiveDependencyRules(eventNode, tempRules, make(map[events.ID]bool), 0); err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	// Update the EventRules for the event in the temporary map
@@ -452,45 +476,64 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 		Rules:                  rules,
 		UserlandRules:          userlandRules,
 		ruleIDToEventRule:      ruleIDToEventRule,
-		rulesVersion:           eventRules.rulesVersion + 1,
-		ruleIDCounter:          ruleIDCounter,
+		rulesVersion:           rulesVersion + 1,
+		rulesCount:             ruleIDCounter,
 		containerFilteredRules: containerFilteredRules,
 	}
 
 	return nil
 }
 
-// addDependencyRule adds a special dependency rule for the given event ID at RuleID dependencyRuleID
-// as the last element of the EventRules.Rules slice.
-func addDependencyRule(eventID events.ID, tempRules map[events.ID]EventRules) error {
-	eventRules, ok := tempRules[eventID]
-	if !ok {
-		eventRules = EventRules{
-			ruleIDCounter: 0,
-			rulesVersion:  0,
+// addTransitiveDependencyRules recursively adds dependency rules for the given event and all its transitive dependencies.
+func (pm *PolicyManager) addTransitiveDependencyRules(
+	eventNode *dependencies.EventNode,
+	tempRules map[events.ID]EventRules,
+	visited map[events.ID]bool,
+	depth int,
+) error {
+	const maxDepth = 5
+
+	if depth > maxDepth {
+		return errfmt.Errorf("max dependency depth exceeded")
+	}
+
+	eventID := eventNode.GetID()
+	if visited[eventID] {
+		return errfmt.Errorf("circular dependency detected")
+	}
+	visited[eventID] = true
+	defer delete(visited, eventID)
+
+	for _, depID := range eventNode.GetDependencies().GetIDs() {
+		eventRules, ok := tempRules[depID]
+		if !ok {
+			eventRules = EventRules{}
+		}
+
+		if _, depRuleExists := eventRules.ruleIDToEventRule[dependencyRuleID]; !depRuleExists {
+			eventRule := &EventRule{
+				ID:               dependencyRuleID,
+				Data:             nil,
+				Policy:           nil,
+				Emit:             false, // Ensure that dependency events are never emitted
+				IsDependencyRule: true,  // Mark the rule as a dependency rule
+			}
+			eventRules.Rules = append(eventRules.Rules, eventRule)
+			eventRules.ruleIDToEventRule[dependencyRuleID] = eventRule
+
+			tempRules[depID] = eventRules
+		}
+
+		depNode, err := pm.evtsDepsManager.GetEvent(depID)
+		if err != nil {
+			return err
+		}
+
+		// Recursively add dependency rules for the dependencies of the dependency
+		if err := pm.addTransitiveDependencyRules(depNode, tempRules, visited, depth+1); err != nil {
+			return err
 		}
 	}
-
-	// Check if a dependency rule already exists (it should always be the last one)
-	if _, dependencyRuleExists := eventRules.ruleIDToEventRule[dependencyRuleID]; dependencyRuleExists {
-		return nil // Dependency rule already exists
-	}
-
-	// Create the EventRule for the dependency at RuleID dependencyRuleID
-	eventRule := &EventRule{
-		ID:               dependencyRuleID,
-		Data:             nil,
-		Policy:           nil,
-		Emit:             false, // Ensure that dependency events are never emitted
-		IsDependencyRule: true,  // Mark the rule as a dependency rule
-	}
-
-	// Add the rule to the appropriate slices
-	eventRules.Rules = append(eventRules.Rules, eventRule)
-	eventRules.ruleIDToEventRule[dependencyRuleID] = eventRule
-
-	// Update the EventRules in the temporary map
-	tempRules[eventID] = eventRules
 
 	return nil
 }
@@ -606,7 +649,7 @@ func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBi
 		return 0, matchedPolicyNames
 	}
 
-	for ruleID := uint8(0); ruleID < eventRules.ruleIDCounter; ruleID++ {
+	for ruleID := uint8(0); ruleID < eventRules.rulesCount; ruleID++ {
 		if (matchedRuleIDsBitmap>>ruleID)&1 == 1 { // Check if the bit corresponding to ruleID is set in the bitmap
 			rule, ok := eventRules.ruleIDToEventRule[ruleID]
 			if !ok {
@@ -723,7 +766,7 @@ func (pm *PolicyManager) GetAllMatchedRulesBitmap(eventID events.ID) uint64 {
 	}
 
 	var allRulesBitmap uint64
-	for ruleID := uint8(0); ruleID < eventRules.ruleIDCounter; ruleID++ {
+	for ruleID := uint8(0); ruleID < eventRules.rulesCount; ruleID++ {
 		allRulesBitmap |= 1 << ruleID
 	}
 
