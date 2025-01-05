@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -32,7 +33,7 @@ type Server struct {
 
 func PrepareServer(serverSlice []string) (*Server, error) {
 	var err error
-	var server *Server
+	var server Server
 	var (
 		enableMetrics   = false
 		enableHealthz   = false
@@ -42,10 +43,13 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 	for _, endpoint := range serverSlice {
 		// split flag http.address or grpc.address for example
 		serverParts := strings.SplitN(endpoint, ".", 2)
+		if len(serverParts) < 2 {
+			return nil, fmt.Errorf("cannot process http or grpc alone")
+		}
 		switch serverParts[0] {
 		//flag http.Xxx
 		case HTTPServer:
-			httpParts := strings.SplitN(serverParts[1], "=", 1)
+			httpParts := strings.SplitN(serverParts[1], "=", 2)
 			switch httpParts[0] {
 			case ListenEndpointFlag:
 				server.HTTPServer = http.New(httpParts[1])
@@ -62,7 +66,7 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 					enablePProf = true
 				}
 			case PyroscopeAgentEndpointFlag:
-				if strings.Compare(endpoint, "true") == 0 {
+				if strings.Compare(httpParts[1], "true") == 0 {
 					enablePyroscope = true
 				}
 			}
@@ -110,7 +114,7 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 		}
 	}
 
-	if server.HTTPServer != nil || enableMetrics || enableHealthz || enablePProf || enablePyroscope {
+	if enableMetrics || enableHealthz || enablePProf || enablePyroscope {
 		if server.HTTPServer == nil {
 			server.HTTPServer = http.New("")
 		}
@@ -131,5 +135,5 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 		}
 	}
 
-	return server, nil
+	return &server, nil
 }
