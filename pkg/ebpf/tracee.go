@@ -1867,28 +1867,18 @@ func (t *Tracee) triggerMemDumpCall(address uint64, length uint64, eventHandle u
 
 // SubscribeAll returns a stream subscribed to all policies
 func (t *Tracee) SubscribeAll() *streams.Stream {
-	return t.subscribe(policy.PolicyAll)
+	return t.subscribe(nil)
 }
 
 // Subscribe returns a stream subscribed to selected policies
-func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
-	var policyMask uint64
-
-	for _, policyName := range policyNames {
-		p, err := t.policyManager.LookupPolicyByName(policyName)
-		if err != nil {
-			return nil, err
-		}
-		utils.SetBit(&policyMask, uint(p.ID))
-	}
-
-	return t.subscribe(policyMask), nil
+func (t *Tracee) Subscribe(policyNames []string) *streams.Stream {
+	return t.subscribe(policyNames)
 }
 
-func (t *Tracee) subscribe(policyMask uint64) *streams.Stream {
+func (t *Tracee) subscribe(policyNames []string) *streams.Stream {
 	// TODO: the channel size matches the pipeline channel size,
 	// but we should make it configurable in the future.
-	return t.streamsManager.Subscribe(policyMask, t.config.PipelineChannelSize)
+	return t.streamsManager.Subscribe(policyNames, t.config.PipelineChannelSize)
 }
 
 // Unsubscribe unsubscribes stream
