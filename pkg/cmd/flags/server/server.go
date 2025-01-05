@@ -65,8 +65,6 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 				if strings.Compare(endpoint, "true") == 0 {
 					enablePyroscope = true
 				}
-			default:
-				server.HTTPServer = http.New("")
 			}
 		//flag grpc.Xxx
 		case GRPCServer:
@@ -111,7 +109,11 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 			}
 		}
 	}
-	if server.HTTPServer != nil {
+
+	if server.HTTPServer != nil || enableMetrics || enableHealthz || enablePProf || enablePyroscope {
+		if server.HTTPServer == nil {
+			server.HTTPServer = http.New("")
+		}
 		if enableMetrics {
 			server.HTTPServer.EnableMetricsEndpoint()
 		}
