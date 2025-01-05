@@ -9,9 +9,7 @@ import (
 
 // Stream is a stream of events
 type Stream struct {
-	// policy mask is a bitmap of policies that this stream is interested in
-	policyMask uint64
-	// TODO: replace bitmap with policy set (map[string]bool), and another bool to indicate subscirption to "all policies" for quick check
+	policies map[string]bool // policies that this stream is interested in, empty means all
 	// events is a channel that is used to receive events from the stream
 	events chan trace.Event
 }
@@ -25,7 +23,7 @@ func (s *Stream) ReceiveEvents() <-chan trace.Event {
 // but first check if this stream is interested in this event,
 // by checking the event's policy mask against the stream's policy mask.
 func (s *Stream) publish(ctx context.Context, event trace.Event) {
-	if s.shouldIgnorePolicy(event) {
+	if !s.shouldPublish(event) {
 		return
 	}
 
@@ -43,10 +41,20 @@ func (s *Stream) publish(ctx context.Context, event trace.Event) {
 	}
 }
 
-// shouldIgnorePolicy checks if the stream should ignore the event
-func (s *Stream) shouldIgnorePolicy(event trace.Event) bool {
-	// TODO: we will need to remove this policy mask implementation - policies is no longer a 64 bits bitmap
-	return s.policyMask&event.MatchedRulesUser == 0
+// shouldPublish checks if event matches subscribed policies
+func (s *Stream) shouldPublish(event trace.Event) bool {
+	// No policies means subscribe to all
+	if len(s.policies) == 0 {
+		return true
+	}
+
+	// Check if any of the event's matched policies are in our subscription
+	for _, matchedPolicy := range event.MatchedPolicies {
+		if s.policies[matchedPolicy] {
+			return true
+		}
+	}
+	return false
 }
 
 // close closes the stream
@@ -69,13 +77,17 @@ func NewStreamsManager() *StreamsManager {
 }
 
 // Subscribe adds a stream to the manager
-func (sm *StreamsManager) Subscribe(policyMask uint64, chanSize int) *Stream {
+func (sm *StreamsManager) Subscribe(policyNames []string, chanSize int) *Stream {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 
 	stream := &Stream{
-		policyMask: policyMask,
-		events:     make(chan trace.Event, chanSize),
+		policies: make(map[string]bool),
+		events:   make(chan trace.Event, chanSize),
+	}
+
+	for _, policyName := range policyNames {
+		stream.policies[policyName] = true
 	}
 
 	sm.subscribers[stream] = struct{}{}
