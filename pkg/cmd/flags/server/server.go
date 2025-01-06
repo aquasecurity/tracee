@@ -94,10 +94,7 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 				default:
 					return nil, errfmt.Errorf("grpc supported protocols are tcp or unix. eg: tcp:4466, unix:/tmp/tracee.sock")
 				}
-				server.GRPCServer, err = grpc.New(addressParts[0], addressParts[1])
-				if err != nil {
-					return nil, err
-				}
+				server.GRPCServer = grpc.New(addressParts[0], addressParts[1])
 
 			default:
 				if _, err = os.Stat("/var/run/tracee.sock"); err == nil {
@@ -106,10 +103,7 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 						return nil, errfmt.Errorf("failed to cleanup gRPC listening address (%s): %v", "/var/run/tracee.sock", err)
 					}
 				}
-				server.GRPCServer, err = grpc.New("unix", "/var/run/tracee.sock")
-				if err != nil {
-					return nil, err
-				}
+				server.GRPCServer = grpc.New("unix", "/var/run/tracee.sock")
 			}
 		}
 	}
