@@ -20,9 +20,6 @@ type Config struct {
 	TraceePid   uint32
 	Options     uint32
 	CgroupV1Hid uint32
-	//_               uint16 // padding free for further use
-	//PoliciesVersion uint16 // TODO: (event id + RulesVersion) can be mapped to some global policies version - think if this needed
-	//PoliciesConfig  policy.PoliciesConfig
 }
 
 // UpdateBPF updates the ConfigMap BPF map with the current config.

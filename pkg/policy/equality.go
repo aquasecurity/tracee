@@ -22,6 +22,7 @@ const (
 )
 
 // filtersEqualities stores the equalities for each filter in the policies
+TODO: filter keys should include event id, just like the kernel data filters
 type filtersEqualities struct {
 	uidEqualities        map[uint64]equality
 	pidEqualities        map[uint64]equality
@@ -86,7 +87,7 @@ func updateEqualities[T comparable](
 		if !ok {
 			eq = equality{} // initialize if not exists
 		}
-		update(&eq, ruleID) // update the equality
+		update(&eq, ruleID)   // update the equality
 		equalitiesMap[k] = eq // update the map
 	}
 }
@@ -154,92 +155,83 @@ func updateAffixEqualities[T comparable](
 			}
 		}
 
-		update(&newEq, ruleID)    // update the equality
+		update(&newEq, ruleID)      // update the equality
 		equalitiesMap[newK] = newEq // update the map
 	}
 }
 
 // computeFilterEqualities computes the equalities for each filter type in the policies
 // updating the provided filtersEqualities struct.
-func (ps *policies) computeFilterEqualities(
+func (pm *PolicyManager) computeFilterEqualities(
 	fEqs *filtersEqualities,
 	cts *containers.Containers,
 ) error {
-	for _, p := range ps.allFromMap() {
-		ruleID := uint(p.ID)
+	for eventID, eventRules := range pm.rules {
+		for _, rule := range eventRules.Rules {
+			ruleID := uint(rule.ID)
 
-		// NOTE: Equal has precedence over NotEqual, so NotEqual must be updated first
+			// NOTE: Equal has precedence over NotEqual, so NotEqual must be updated first
+			// TODO: we need to compute this per event id and save into fEqs!!!!!!!!!!!!!!!
 
-		// UIDFilters
-		uidEqualities := p.UIDFilter.Equalities()
-		updateEqualities(fEqs.uidEqualities, uidEqualities.NotEqual, notEqual, ruleID)
-		updateEqualities(fEqs.uidEqualities, uidEqualities.Equal, equal, ruleID)
+			// UIDFilters
+			uidEqualities := rule.Policy.UIDFilter.Equalities()
+			updateEqualities(fEqs.uidEqualities, uidEqualities.NotEqual, notEqual, ruleID)
+			updateEqualities(fEqs.uidEqualities, uidEqualities.Equal, equal, ruleID)
 
-		// PIDFilters
-		pidEqualities := p.PIDFilter.Equalities()
-		updateEqualities(fEqs.pidEqualities, pidEqualities.NotEqual, notEqual, ruleID)
-		updateEqualities(fEqs.pidEqualities, pidEqualities.Equal, equal, ruleID)
+			// PIDFilters
+			pidEqualities := rule.Policy.PIDFilter.Equalities()
+			updateEqualities(fEqs.pidEqualities, pidEqualities.NotEqual, notEqual, ruleID)
+			updateEqualities(fEqs.pidEqualities, pidEqualities.Equal, equal, ruleID)
 
-		// MntNSFilters
-		mntNSEqualities := p.MntNSFilter.Equalities()
-		updateEqualities(fEqs.mntNSEqualities, mntNSEqualities.NotEqual, notEqual, ruleID)
-		updateEqualities(fEqs.mntNSEqualities, mntNSEqualities.Equal, equal, ruleID)
+			// MntNSFilters
+			mntNSEqualities := rule.Policy.MntNSFilter.Equalities()
+			updateEqualities(fEqs.mntNSEqualities, mntNSEqualities.NotEqual, notEqual, ruleID)
+			updateEqualities(fEqs.mntNSEqualities, mntNSEqualities.Equal, equal, ruleID)
 
-		// PidNSFilters
-		pidNSEqualities := p.PidNSFilter.Equalities()
-		updateEqualities(fEqs.pidNSEqualities, pidNSEqualities.NotEqual, notEqual, ruleID)
-		updateEqualities(fEqs.pidNSEqualities, pidNSEqualities.Equal, equal, ruleID)
+			// PidNSFilters
+			pidNSEqualities := rule.Policy.PidNSFilter.Equalities()
+			updateEqualities(fEqs.pidNSEqualities, pidNSEqualities.NotEqual, notEqual, ruleID)
+			updateEqualities(fEqs.pidNSEqualities, pidNSEqualities.Equal, equal, ruleID)
 
-		// ContIDFilters
-		contIDEqualities := p.ContIDFilter.Equalities()
-		for contID := range contIDEqualities.ExactNotEqual {
-			cgroupIDs, err := cts.FindContainerCgroupID32LSB(contID)
-			if err != nil {
-				return err
+			// ContIDFilters
+			contIDEqualities := rule.Policy.ContIDFilter.Equalities()
+			for contID := range contIDEqualities.ExactNotEqual {
+				cgroupIDs, err := cts.FindContainerCgroupID32LSB(contID)
+				if err != nil {
+					return err
+				}
+
+				eq := fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])]
+				notEqualUpdate(&eq, ruleID)
+				fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])] = eq
+			}
+			for contID := range contIDEqualities.ExactEqual {
+				cgroupIDs, err := cts.FindContainerCgroupID32LSB(contID)
+				if err != nil {
+					return err
+				}
+
+				eq := fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])]
+				equalUpdate(&eq, ruleID)
+				fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])] = eq
 			}
 
-			eq := fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])]
-			notEqualUpdate(&eq, ruleID)
-			fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])] = eq
+			// UTSFilters
+			utsEqualities := rule.Policy.UTSFilter.Equalities()
+			updateEqualities(fEqs.utsEqualities, utsEqualities.ExactNotEqual, notEqual, ruleID)
+			updateEqualities(fEqs.utsEqualities, utsEqualities.ExactEqual, equal, ruleID)
+
+			// CommFilters
+			commEqualities := rule.Policy.CommFilter.Equalities()
+			updateEqualities(fEqs.commEqualities, commEqualities.ExactNotEqual, notEqual, ruleID)
+			updateEqualities(fEqs.commEqualities, commEqualities.ExactEqual, equal, ruleID)
+
+			// BinaryFilters
+			binaryEqualities := rule.Policy.BinaryFilter.Equalities()
+			updateEqualities(fEqs.binaryEqualities, binaryEqualities.NotEqual, notEqual, ruleID)
+			updateEqualities(fEqs.binaryEqualities, binaryEqualities.Equal, equal, ruleID)
 		}
-		for contID := range contIDEqualities.ExactEqual {
-			cgroupIDs, err := cts.FindContainerCgroupID32LSB(contID)
-			if err != nil {
-				return err
-			}
-
-			eq := fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])]
-			equalUpdate(&eq, ruleID)
-			fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])] = eq
-		}
-
-		// UTSFilters
-		utsEqualities := p.UTSFilter.Equalities()
-		updateEqualities(fEqs.utsEqualities, utsEqualities.ExactNotEqual, notEqual, ruleID)
-		updateEqualities(fEqs.utsEqualities, utsEqualities.ExactEqual, equal, ruleID)
-
-		// CommFilters
-		commEqualities := p.CommFilter.Equalities()
-		updateEqualities(fEqs.commEqualities, commEqualities.ExactNotEqual, notEqual, ruleID)
-		updateEqualities(fEqs.commEqualities, commEqualities.ExactEqual, equal, ruleID)
-
-		// BinaryFilters
-		binaryEqualities := p.BinaryFilter.Equalities()
-		updateEqualities(fEqs.binaryEqualities, binaryEqualities.NotEqual, notEqual, ruleID)
-		updateEqualities(fEqs.binaryEqualities, binaryEqualities.Equal, equal, ruleID)
 	}
 
 	return nil
-}
-
-// computeProcTreeEqualities computes the equalities for the process tree filter
-// in the policies updating the provided eqs map.
-func (ps *policies) computeProcTreeEqualities(eqs map[uint32]equality) {
-	for _, p := range ps.allFromMap() {
-		ruleID := uint(p.ID)
-
-		procTreeEqualities := p.ProcessTreeFilter.Equalities()
-		updateEqualities(eqs, procTreeEqualities.NotEqual, notEqual, ruleID)
-		updateEqualities(eqs, procTreeEqualities.Equal, equal, ruleID)
-	}
 }
