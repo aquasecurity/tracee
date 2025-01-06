@@ -27,23 +27,21 @@ A complete config file with all available options can be found [here](https://gi
 
 ### Server
 
-
-- **`--metrics-endpoint`**: Enables the metrics endpoint.
-
-  __NOTE__: You can view more in the [Prometheus section](../prometheus.md).
+- __`--server`__: Sets options for the HTTP and/or gRPC servers. 
 
   YAML:
+
   ```yaml
-  metrics-endpoint: true
+  server:
+    http:
+      address: "127.0.0.1:8080"
+      metrics: true
+      healthz: true
+      pprof: true
+      pyroscope: true
+    grpc:
+      address: "unix:/var/run/tracee.sock"
   ```
-
-- **`--grpc-listen-addr`**: Specifies the address for the gRPC server.
-
-  YAML:
-  ```yaml
-  grpc-listen-addr: tcp:50051
-  ```
-
 
 ### Process Tree
 
