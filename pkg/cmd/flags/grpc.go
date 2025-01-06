@@ -33,5 +33,5 @@ func PrepareGRPCServer(listenAddr string) (*grpc.Server, error) {
 		}
 	}
 
-	return grpc.New(addr[0], addr[1])
+	return grpc.New(addr[0], addr[1]), nil
 }
