@@ -86,7 +86,7 @@ func (pm *PolicyManager) computeDataFilterEqualities(fEqs *filtersEqualities, ev
 		combinedNotSuffixEqualities := make(map[KernelDataFields]struct{})
 
 		for _, rule := range eventRules.Rules {
-			ruleID := rule.ID
+			ruleID := int(rule.ID)
 			strCfgFilter := &stringFilterConfig{}
 			equalities, err := rule.Data.DataFilter.Equalities()
 			if err != nil {

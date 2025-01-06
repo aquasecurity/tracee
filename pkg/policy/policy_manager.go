@@ -47,7 +47,7 @@ type EventRules struct {
 	Rules                  []*EventRule         // List of rules associated with this event
 	UserlandRules          []*EventRule         // List of rules with userland filters enabled
 	enabled                bool                 // Flag indicating whether the event is enabled
-	rulesVersion           uint32               // Version of the rules for this event (for future updates)
+	rulesVersion           uint16               // Version of the rules for this event (for future updates)
 	rulesCount             uint8                // The total number of rules for this event
 	ruleIDToEventRule      map[uint8]*EventRule // Map from RuleID to EventRule for fast lookup
 	containerFilteredRules uint64               // Bitmap to track container-filtered rules
@@ -404,7 +404,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 	ruleIDCounter := uint8(0)
 	var containerFilteredRules uint64
 
-	rulesVersion := uint32(0)
+	rulesVersion := uint16(0)
 	if existingEventRules, ok := tempRules[eventID]; ok {
 		rulesVersion = existingEventRules.rulesVersion
 	}
@@ -778,10 +778,9 @@ func (pm *PolicyManager) UpdateBPF(
 	cts *containers.Containers,
 	eventsFields map[events.ID][]bufferdecoder.ArgType,
 	createNewMaps bool,
-	updateProcTree bool,
-) (*PoliciesConfig, error) {
+) error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
-	return pm.updateBPF(bpfModule, cts, eventsFields, createNewMaps, updateProcTree)
+	return pm.updateBPF(bpfModule, cts, eventsFields, createNewMaps)
 }

@@ -328,9 +328,7 @@ typedef struct scope_filters_config {
     u64 cont_filter_enabled;
     u64 new_cont_filter_enabled;
     u64 new_pid_filter_enabled;
-    u64 proc_tree_filter_enabled;
     u64 bin_path_filter_enabled;
-    u64 follow_filter_enabled;
     // bitmap indicating whether to match a rule if the key is missing from its filter map
     u64 uid_filter_match_if_key_missing;
     u64 pid_filter_match_if_key_missing;
@@ -342,24 +340,13 @@ typedef struct scope_filters_config {
     u64 cont_filter_match_if_key_missing;
     u64 new_cont_filter_match_if_key_missing;
     u64 new_pid_filter_match_if_key_missing;
-    u64 proc_tree_filter_match_if_key_missing;
     u64 bin_path_filter_match_if_key_missing;
-    // bitmap with rules that have at least one filter enabled
-    u64 enabled_policies; // TODO: remove this field since it is not really needed
-    // global min max
-    u64 uid_max;
-    u64 uid_min;
-    u64 pid_max;
-    u64 pid_min;
 } scope_filters_config_t;
 
 typedef struct config_entry {
     u32 tracee_pid;
     u32 options;
     u32 cgroup_v1_hid;
-    //u16 padding; // free for further use // TODO: we can remove this field after removing the below two fields
-    //u16 policies_version; // TODO: we can remove this field (also in userspace) and use a mapping between rules_version and policies_version
-    //policies_config_t policies_config; // TODO: we can remove this filed after we will have per event filter configuration
 } config_entry_t;
 
 typedef struct string_filter_config {
@@ -378,6 +365,7 @@ typedef struct data_filter_config {
 
 typedef struct event_config {
     u16 rules_version;
+    u8 _padding[6];
     u64 submit_for_rules;
     u64 field_types;
     scope_filters_config_t scope_filters;

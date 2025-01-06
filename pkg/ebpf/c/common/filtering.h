@@ -11,7 +11,6 @@
 // PROTOTYPES
 
 statfunc void *get_event_filter_map(void *, u16, u32);
-statfunc u64 uint_filter_range_matches(u64, void *, u64, u64, u64);
 statfunc u64 binary_filter_matches(u64, void *, proc_info_t *);
 statfunc u64 equality_filter_matches(u64, void *, void *);
 statfunc u64 bool_filter_matches(u64, bool);
@@ -38,31 +37,6 @@ statfunc void *get_event_filter_map(void *outer_map, u16 version, u32 event_id)
     };
 
     return bpf_map_lookup_elem(outer_map, &key);
-}
-
-statfunc u64
-uint_filter_range_matches(u64 match_if_key_missing, void *filter_map, u64 value, u64 max, u64 min)
-{
-    // check equality_filter_matches() for more info
-
-    u64 equals_in_rules = 0;
-    u64 key_used_in_rules = 0;
-
-    if (filter_map) {
-        eq_t *equality = bpf_map_lookup_elem(filter_map, &value);
-        if (equality != NULL) {
-            equals_in_rules = equality->equals_in_rules;
-            key_used_in_rules = equality->key_used_in_rules;
-        }
-    }
-
-    if ((max != FILTER_MAX_NOT_SET) && (value >= max))
-        return equals_in_rules;
-
-    if ((min != FILTER_MIN_NOT_SET) && (value <= min))
-        return equals_in_rules;
-
-    return equals_in_rules | (match_if_key_missing & ~key_used_in_rules);
 }
 
 statfunc u64 binary_filter_matches(u64 match_if_key_missing,
@@ -228,28 +202,20 @@ statfunc u64 match_scope_filters(program_data_t *p)
     if (filters_cfg->pid_filter_enabled) {
         u64 match_if_key_missing = filters_cfg->pid_filter_match_if_key_missing;
         u64 mask = ~filters_cfg->pid_filter_enabled;
-        u64 max = filters_cfg->pid_max;
-        u64 min = filters_cfg->pid_min;
 
         filter_map = get_event_filter_map(&pid_filter_version, version, event_id);
         // the user might have given us a tid - check for it too
-        res &= uint_filter_range_matches(
-                   match_if_key_missing, filter_map, context->host_pid, max, min) |
-               uint_filter_range_matches(
-                   match_if_key_missing, filter_map, context->host_tid, max, min) |
-               mask;
+        res &= equality_filter_matches(match_if_key_missing, filter_map, &context->host_pid) |
+               equality_filter_matches(match_if_key_missing, filter_map, &context->host_tid) | mask;
     }
 
     if (filters_cfg->uid_filter_enabled) {
         context->uid = bpf_get_current_uid_gid();
         u64 match_if_key_missing = filters_cfg->uid_filter_match_if_key_missing;
         u64 mask = ~filters_cfg->uid_filter_enabled;
-        u64 max = filters_cfg->uid_max;
-        u64 min = filters_cfg->uid_min;
 
         filter_map = get_event_filter_map(&uid_filter_version, version, event_id);
-        res &= uint_filter_range_matches(match_if_key_missing, filter_map, context->uid, max, min) |
-               mask;
+        res &= equality_filter_matches(match_if_key_missing, filter_map, &context->uid) | mask;
     }
 
     if (filters_cfg->mnt_ns_filter_enabled) {
@@ -446,7 +412,7 @@ statfunc bool event_is_selected(u32 event_id)
 statfunc u64 get_scopes_to_follow(program_data_t *p)
 {
     return 0;
-    //return match_scope_filters(p);
+    // return match_scope_filters(p);
     // TODO: fixme
 }
 

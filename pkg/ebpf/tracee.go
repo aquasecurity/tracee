@@ -1042,9 +1042,20 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	// Initialize config and filter maps
-	err = t.populateFilterMaps(false)
+	// Populates the eBPF filter maps with the given policies
+	err = t.policyManager.UpdateBPF(
+		t.bpfModule,
+		t.containers,
+		t.eventsFieldTypes,
+		true,
+	)
 	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Create new config and update eBPF map
+	cfg := t.newConfig()
+	if err := cfg.UpdateBPF(t.bpfModule); err != nil {
 		return errfmt.WrapError(err)
 	}
 
@@ -1110,30 +1121,6 @@ func (t *Tracee) populateBPFMaps() error {
 		if err != nil {
 			return errfmt.Errorf("failed to initialize tail call: %v", err)
 		}
-	}
-
-	return nil
-}
-
-// populateFilterMaps populates the eBPF maps with the given policies
-func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
-	// TODO: no need to return policyConfig anymor remove it from the return value of this function
-	_, err := t.policyManager.UpdateBPF(
-		t.bpfModule,
-		t.containers,
-		t.eventsFieldTypes,
-		true,
-		updateProcTree,
-	)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Create new config with updated policies and update eBPF map
-
-	cfg := t.newConfig()
-	if err := cfg.UpdateBPF(t.bpfModule); err != nil {
-		return errfmt.WrapError(err)
 	}
 
 	return nil
@@ -1284,7 +1271,7 @@ func (t *Tracee) initBPF() error {
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
 	// TODO: bug????? We already called t.policyManager.UpdateBPF in t.populateBPFMaps() so why calling it again here????
-	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventsFieldTypes, false, true)
+	err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventsFieldTypes, false)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
