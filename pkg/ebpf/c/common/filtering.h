@@ -357,6 +357,9 @@ statfunc u64 match_data_filters(program_data_t *p, u8 index)
     u64 explicit_disable_policies = 0;
     u64 explicit_enable_policies = 0;
     u64 default_enable_policies = 0;
+    // Determine policies that do not use any type of string filter (exact, prefix, suffix)
+    u64 mask_no_str_filter_policies =
+        ~str_filter->exact_enabled & ~str_filter->prefix_enabled & ~str_filter->suffix_enabled;
     void *filter_map = NULL;
 
     // event ID
@@ -434,8 +437,11 @@ statfunc u64 match_data_filters(program_data_t *p, u8 index)
     // 2. Default Enabled Policies: Policies that are enabled by default (default_enable_policies)
     // remain enabled only if they are not explicitly disabled (explicit_disable_policies).
     res = explicit_enable_policies | (default_enable_policies & ~explicit_disable_policies);
+    // Combine policies that use string filters with those that do not
+    res |= mask_no_str_filter_policies;
 
-    return res;
+    // Make sure only enabled policies are set in the bitmap (other bits are invalid)
+    return res & policies_cfg->enabled_policies;
 }
 
 statfunc bool evaluate_scope_filters(program_data_t *p)
