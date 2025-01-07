@@ -1951,6 +1951,142 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAtLeastOneForEach,
 		},
 		{
+			name: "comm: event: data: trace event security_file_open set in multiple policies (with and without in-kernel filter)",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "sfo-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=more",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"data.syscall_pathname=/sys/class/dmi/id*",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Id: 2,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "sfo-pol-2",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=more",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"data.pathname=/etc/pam.d/*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"more /sys/class/dmi/id/bios_date",
+					0,
+					1*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1"), orPolIDs(1), expectArg("syscall_pathname", "/sys/class/dmi/id/bios_date")),
+					},
+					[]string{},
+				),
+				newCmdEvents(
+					"more /etc/pam.d/other",
+					0,
+					1*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-2"), orPolIDs(2), expectArg("pathname", "/etc/pam.d/other")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAtLeastOneForEach,
+		},
+		{
+			name: "comm: event: data: trace event security_file_open set in multiple policies (with and without in-kernel filter) mixed in same policy",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "sfo-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=more",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"data.pathname=/sys/devices/virtual/dmi/id*",
+										"data.syscall_pathname=/sys/class/dmi/id*",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Id: 2,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "sfo-pol-2",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=more",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"data.pathname=/etc/pam.d/*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"more /sys/class/dmi/id/bios_date",
+					0,
+					1*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1"), orPolIDs(1), expectArg("pathname", "/sys/devices/virtual/dmi/id/bios_date")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAtLeastOneForEach,
+		},
+		{
 			name: "comm: event: data: trace event security_mmap_file using multiple filter types",
 			policyFiles: []testutils.PolicyFileWithID{
 				{
