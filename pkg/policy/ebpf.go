@@ -91,13 +91,6 @@ func createNewInnerMapEventId(m *bpf.Module, mapName string, mapVersion uint16, 
 	return newInnerMap, newInnerMapName, nil
 }
 
-// filterVersionKey mirrors the C struct rule_key (filter_version_key_t).
-type filterVersionKey struct {
-	version uint16
-	pad     uint16
-	eventID events.ID
-}
-
 // updateOuterMapWithEventId updates the outer map with the given map name, version and event id.
 func updateOuterMapWithEventId(m *bpf.Module, mapName string, mapVersion uint16, eventId events.ID, innerMap *bpf.BPFMapLow) error {
 	outerMap, err := m.GetMap(mapName)
@@ -524,19 +517,7 @@ func (pm *PolicyManager) updateBPF(
 	eventsFields map[events.ID][]bufferdecoder.ArgType,
 	createNewMaps bool,
 ) error {
-	fEqs := &filtersEqualities{
-		uidEqualities:        make(map[uint64]equality),
-		pidEqualities:        make(map[uint64]equality),
-		mntNSEqualities:      make(map[uint64]equality),
-		pidNSEqualities:      make(map[uint64]equality),
-		cgroupIdEqualities:   make(map[uint64]equality),
-		utsEqualities:        make(map[string]equality),
-		commEqualities:       make(map[string]equality),
-		dataEqualitiesPrefix: make(map[KernelDataFields]equality),
-		dataEqualitiesSuffix: make(map[KernelDataFields]equality),
-		dataEqualitiesExact:  make(map[KernelDataFields]equality),
-		binaryEqualities:     make(map[filters.NSBinary]equality),
-	}
+	fEqs := NewFiltersEqualities()
 
 	fEvtCfg := make(map[events.ID]stringFilterConfig)
 
