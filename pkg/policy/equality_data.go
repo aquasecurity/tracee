@@ -78,7 +78,7 @@ func combineEventBitmap(eventsMap map[events.ID]stringFilterConfig, eventID even
 
 // computeDataFilterEqualities computes the equalities for the kernel data filter
 // in the policies updating the provided eqs map.
-func (pm *PolicyManager) computeDataFilterEqualities(fEqs *filtersEqualities, eventsConfig map[events.ID]stringFilterConfig) error {
+func (pm *PolicyManager) computeDataFilterEqualities(fEqs *bpfFilterMaps, eventsConfig map[events.ID]stringFilterConfig) error {
 	for eventID, eventRules := range pm.rules {
 		// Reinitialize variables at the start of each iteration
 		combinedEqualities := make(map[KernelDataFields]struct{})

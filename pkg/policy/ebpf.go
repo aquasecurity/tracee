@@ -517,11 +517,11 @@ func (pm *PolicyManager) updateBPF(
 	eventsFields map[events.ID][]bufferdecoder.ArgType,
 	createNewMaps bool,
 ) error {
-	fEqs := NewFiltersEqualities()
+	fEqs := newFilterMaps()
 
 	fEvtCfg := make(map[events.ID]stringFilterConfig)
 
-	if err := pm.computeFilterEqualities(fEqs, cts); err != nil {
+	if err := pm.computeScopeFilterMaps(fEqs, cts); err != nil {
 		return errfmt.WrapError(err)
 	}
 
