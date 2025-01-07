@@ -20,19 +20,32 @@ If you have a suggestion, question, or a general comment - please use Discussion
 
 ## Issues
 
-1. Every issue needs to be actionable and assignable. Consider the scope of the issue if assigned to one person, and break down if necessary.
-2. Be clear and definitive when composing issues.
-   - For bug reports, include detailed error messages and environment description.
-   - For features, include a clear scope and acceptance criteria.
-3. We use the following labels to describe the type of issue:
-    1. `area/...` like: `ebpf`, `events`
-    2. `kind/...` like: `bug`, `chore`
-    3. `milestone/...`
-    4. `priority/...`
-    5. `good-first-issue`
-    6. `backported/...`
-    7. `cherry-picked/...`
-4. Self-assign or request assignment for issues you intend to work on. Don't work on an issue assigned to someone else without checking with them first and reassigning.
+1. **Actionable and Assignable:** Every issue must be clear, actionable, and assignable to a specific person.  Break down large issues into smaller, more manageable tasks.
+2. **Clear and Definitive Descriptions:** Be precise in your issue descriptions:
+    - **Bug Reports:** Include the following:
+        - Detailed steps to reproduce the bug.
+        - The complete error message.
+        - Your operating system, Tracee version, and any other relevant environment details.
+    - **Feature Requests:** Define:
+        - A clear scope for the feature.
+        - Specific acceptance criteria that will be used to determine if the feature is complete.
+3. **Issue Labels:** We use these labels to categorize and track issues:
+    - `area/...` (e.g., `ebpf`, `events`): Specifies the area of Tracee affected by the issue.
+    - `kind/...` (e.g., `bug`, `chore`, `enhancement`, `documentation`): Indicates the type of issue.
+    - `milestone/...`: Specifies the target release for the issue.
+    - `priority/...`:  Indicates the urgency of the issue.
+    - `good-first-issue`:  Marks issues suitable for first-time contributors.
+    - `backported/...` (e.g., `backported/v0.1.2`): Use this label for PRs that backport changes from the `main` branch to a release branch (v0.1.2).
+    - `cherry-picked/...` (e.g., `cherry-picked/v0.1.2`): Use this label for PRs that cherry-pick commits from the `main` branch to a release branch (v0.1.2).
+4. **Issue Assignment:** Self-assign issues or request assignment. Don't work on an issue assigned to someone else without their consent.
+
+**Backporting and Cherry-Picking Workflow:**
+
+To backport or cherry-pick a change:
+
+1. Create a new PR targeting the appropriate release branch.
+2. Use the `backported/vX.X.X` or `cherry-picked/vX.X.X` label as appropriate.
+3. Remove the `candidate/vX.X.X` label from the original PR in `main` after the backport/cherry-pick is merged.
 
 ## Pull Requests
 
