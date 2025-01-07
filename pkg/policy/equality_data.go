@@ -1,8 +1,11 @@
 package policy
 
 import (
+	"strings"
+
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
@@ -157,5 +160,73 @@ func (pm *PolicyManager) handleSuffixMatches(ruleId int, eventID events.ID, filt
 
 		filter.EnableSuffix(ruleId)
 		filter.EnableSuffixMatchIfKeyMissing(ruleId)
+	}
+}
+
+// updateAffixEqualities updates the equalities map with the given filter equalities
+// for the specified equality type and rule ID. It handles corner cases where paths
+// in the prefix/suffix filter are substrings of existing paths in the equalities map.
+// In cases where one prefix/suffix path overlaps with another, their equality bitmaps
+// are combined, addressing the corner case. This ensures that a single lookup retrieves
+// the longest matching path, with equality bitmaps merged from overlapping rules.
+func updateAffixEqualities[T comparable](
+	equalitiesMap map[T]equality,
+	filterEqualities map[T]struct{},
+	eqType equalityType,
+	ruleID uint,
+) {
+	var update equalityUpdater
+
+	switch eqType {
+	case notEqual:
+		update = notEqualUpdate
+	case equal:
+		update = equalUpdate
+	default:
+		logger.Errorw("Invalid equality type", "type", eqType)
+		return
+	}
+
+	for newK := range filterEqualities {
+		newEq, exists := equalitiesMap[newK]
+		if !exists {
+			newEq = equality{} // initialize if not exists
+		}
+
+		newKD, isKernelData := any(newK).(KernelDataFields)
+
+		var longestMatch KernelDataFields
+		var longestMatchEq equality
+
+		if isKernelData {
+			for existingK, existingEq := range equalitiesMap {
+				existingKD, isExistingKernelData := any(existingK).(KernelDataFields)
+				// skip if event ID is different
+				if !isExistingKernelData || existingKD.ID != newKD.ID {
+					continue
+				}
+
+				// check if exists a substrings of existing paths in the equalities map
+				if strings.HasPrefix(existingKD.String, newKD.String) {
+					// Directly update the equality if the new path is a prefix
+					update(&existingEq, ruleID)
+					equalitiesMap[existingK] = existingEq
+				} else if strings.HasPrefix(newKD.String, existingKD.String) {
+					// Cache the longest match
+					if len(existingKD.String) > len(longestMatch.String) {
+						longestMatch = existingKD
+						longestMatchEq = existingEq
+					}
+				}
+			}
+
+			// If a match was found, use the longest matching equality
+			if len(longestMatch.String) > 0 {
+				newEq = longestMatchEq
+			}
+		}
+
+		update(&newEq, ruleID)      // update the equality
+		equalitiesMap[newK] = newEq // update the map
 	}
 }
