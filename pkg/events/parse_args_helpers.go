@@ -1,6 +1,8 @@
 package events
 
 import (
+	"strconv"
+
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -16,7 +18,7 @@ func parseSocketDomainArgument(arg *trace.Argument, domain uint64) {
 	arg.Type = "string"
 	socketDomainArgument, err := parsers.ParseSocketDomainArgument(domain)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(domain, 10)
 		return
 	}
 	arg.Value = socketDomainArgument.String()
@@ -26,7 +28,7 @@ func parseSocketType(arg *trace.Argument, typ uint64) {
 	arg.Type = "string"
 	socketTypeArgument, err := parsers.ParseSocketType(typ)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(typ, 10)
 		return
 	}
 	arg.Value = socketTypeArgument.String()
@@ -36,7 +38,7 @@ func parseInodeMode(arg *trace.Argument, mode uint64) {
 	arg.Type = "string"
 	inodeModeArgument, err := parsers.ParseInodeMode(mode)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(mode, 10)
 		return
 	}
 	arg.Value = inodeModeArgument.String()
@@ -46,7 +48,7 @@ func parseBPFProgType(arg *trace.Argument, progType uint64) {
 	arg.Type = "string"
 	bpfProgTypeArgument, err := parsers.ParseBPFProgType(progType)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(progType, 10)
 		return
 	}
 	arg.Value = bpfProgTypeArgument.String()
@@ -56,7 +58,7 @@ func parseCapability(arg *trace.Argument, capability uint64) {
 	arg.Type = "string"
 	capabilityFlagArgument, err := parsers.ParseCapability(capability)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(capability, 10)
 		return
 	}
 	arg.Value = capabilityFlagArgument.String()
@@ -74,12 +76,13 @@ func parseSyscall(arg *trace.Argument, id int32) {
 	// NOTE: This might cause data races in the future if the map is modified.
 	// One solution to keep better CPU time is to segregate the map into two maps:
 	// one for proper core (read-only) events and another for the dynamic events.
+	arg.Type = "string"
 	def, ok := CoreEvents[ID(id)]
 	if !ok || !def.IsSyscall() {
+		arg.Value = strconv.FormatInt(int64(id), 10)
 		return
 	}
 
-	arg.Type = "string"
 	arg.Value = def.GetName()
 }
 
@@ -87,7 +90,7 @@ func parsePtraceRequestArgument(arg *trace.Argument, req uint64) {
 	arg.Type = "string"
 	ptraceRequestArgument, err := parsers.ParsePtraceRequestArgument(req)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(req, 10)
 		return
 	}
 	arg.Value = ptraceRequestArgument.String()
@@ -97,7 +100,7 @@ func parsePrctlOption(arg *trace.Argument, opt uint64) {
 	arg.Type = "string"
 	prctlOptionArgument, err := parsers.ParsePrctlOption(opt)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(opt, 10)
 		return
 	}
 	arg.Value = prctlOptionArgument.String()
@@ -105,19 +108,19 @@ func parsePrctlOption(arg *trace.Argument, opt uint64) {
 
 func parseSocketcallCall(arg *trace.Argument, call uint64) {
 	arg.Type = "string"
-	socketcallArgument, err := parsers.ParseSocketcallCall(call)
+	socketCallArgument, err := parsers.ParseSocketcallCall(call)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(call, 10)
 		return
 	}
-	arg.Value = socketcallArgument.String()
+	arg.Value = socketCallArgument.String()
 }
 
 func parseAccessMode(arg *trace.Argument, mode uint64) {
 	arg.Type = "string"
 	accessModeArgument, err := parsers.ParseAccessMode(mode)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(mode, 10)
 		return
 	}
 	arg.Value = accessModeArgument.String()
@@ -127,7 +130,7 @@ func parseExecFlag(arg *trace.Argument, flags uint64) {
 	arg.Type = "string"
 	execFlagArgument, err := parsers.ParseExecFlag(flags)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(flags, 10)
 		return
 	}
 	arg.Value = execFlagArgument.String()
@@ -137,7 +140,7 @@ func parseOpenFlagArgument(arg *trace.Argument, flags uint64) {
 	arg.Type = "string"
 	openFlagArgument, err := parsers.ParseOpenFlagArgument(flags)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(flags, 10)
 		return
 	}
 	arg.Value = openFlagArgument.String()
@@ -147,7 +150,7 @@ func parseCloneFlags(arg *trace.Argument, flags uint64) {
 	arg.Type = "string"
 	cloneFlagArgument, err := parsers.ParseCloneFlags(flags)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(flags, 10)
 		return
 	}
 	arg.Value = cloneFlagArgument.String()
@@ -157,7 +160,7 @@ func parseBPFCmd(arg *trace.Argument, cmd uint64) {
 	arg.Type = "string"
 	bpfCommandArgument, err := parsers.ParseBPFCmd(cmd)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(cmd, 10)
 		return
 	}
 	arg.Value = bpfCommandArgument.String()
@@ -167,7 +170,7 @@ func parseSocketLevel(arg *trace.Argument, level uint64) {
 	arg.Type = "string"
 	socketLevelArgument, err := parsers.ParseSocketLevel(level)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(level, 10)
 		return
 	}
 	arg.Value = socketLevelArgument.String()
@@ -185,7 +188,7 @@ func parseGetSocketOption(arg *trace.Argument, opt uint64, evtID ID) {
 	if err == nil {
 		arg.Value = optionNameArgument.String()
 	} else {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(opt, 10)
 	}
 }
 
@@ -193,7 +196,7 @@ func parseFsNotifyObjType(arg *trace.Argument, objType uint64) {
 	arg.Type = "string"
 	fsNotifyObjTypeArgument, err := parsers.ParseFsNotifyObjType(objType)
 	if err != nil {
-		arg.Value = ""
+		arg.Value = strconv.FormatUint(objType, 10)
 		return
 	}
 	arg.Value = fsNotifyObjTypeArgument.String()
@@ -206,6 +209,7 @@ func parseBpfHelpersUsage(arg *trace.Argument, helpersList []uint64) {
 			// helper number <i> is used. get its name from libbpfgo
 			bpfHelper, err := parsers.ParseBPFFunc(uint64(i))
 			if err != nil {
+				usedHelpers = append(usedHelpers, strconv.FormatInt(int64(i), 10))
 				continue
 			}
 			usedHelpers = append(usedHelpers, bpfHelper.String())
@@ -235,9 +239,8 @@ func parseBpfAttachType(arg *trace.Argument, attachType int32) {
 	case 5:
 		attTypeName = "uretprobe"
 	default:
-		arg.Value = ""
+		attTypeName = strconv.FormatInt(int64(attachType), 10)
 		logger.Errorw("Unknown attach_type got from bpf_attach event")
-		return
 	}
 
 	arg.Value = attTypeName
