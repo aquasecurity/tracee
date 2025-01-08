@@ -35,8 +35,8 @@ If you have a suggestion, question, or a general comment - please use Discussion
     - `milestone/...`: Specifies the target release for the issue.
     - `priority/...`:  Indicates the urgency of the issue.
     - `good-first-issue`:  Marks issues suitable for first-time contributors.
-    - `backported/...` (e.g., `backported/v0.1.2`): Use this label for PRs that backport changes from the `main` branch to a release branch (v0.1.2).
-    - `cherry-picked/...` (e.g., `cherry-picked/v0.1.2`): Use this label for PRs that cherry-pick commits from the `main` branch to a release branch (v0.1.2).
+    - `backported/...` (e.g., `backported/v0.1.2`): Marks PRs in the `main` branch as the basis for backporting changes to a release branch (e.g., `v0.1.2`) after the porting process.
+    - `cherry-picked/...` (e.g., `cherry-picked/v0.1.2`): Marks PRs in the `main` branch as the basis for cherry-picking commits to a release branch (e.g., `v0.1.2`) after the porting process.
 4. **Issue Assignment:** Self-assign issues or request assignment. Don't work on an issue assigned to someone else without their consent.
 
 **Backporting and Cherry-Picking Workflow:**
