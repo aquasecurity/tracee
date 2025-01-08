@@ -124,7 +124,7 @@ func (pm *PolicyManager) createNewDataFilterMapsVersion(
 ) error {
 	mapsNames := map[string]struct {
 		outerMapName string
-		equalities   map[KernelDataFields]equality
+		equalities   map[KernelDataFields]ruleBitmap
 	}{
 		DataFilterPrefixMap: {DataFilterPrefixMapVersion, fMaps.dataEqualitiesPrefix},
 		DataFilterSuffixMap: {DataFilterSuffixMapVersion, fMaps.dataEqualitiesSuffix},
@@ -271,7 +271,7 @@ func (pm *PolicyManager) updateEventsConfigMap(
 }
 
 // updateUIntFilterBPF updates the BPF maps for the given uint equalities.
-func (pm *PolicyManager) updateUIntFilterBPF(uintEqualities map[uint64]equality, innerMapName string) error {
+func (pm *PolicyManager) updateUIntFilterBPF(uintEqualities map[uint64]ruleBitmap, innerMapName string) error {
 	// UInt equalities
 	// 1. uid_filter        u32, eq_t
 	// 2. pid_filter        u32, eq_t
@@ -283,7 +283,7 @@ func (pm *PolicyManager) updateUIntFilterBPF(uintEqualities map[uint64]equality,
 		u32Key := uint32(k)
 		keyPointer := unsafe.Pointer(&u32Key)
 
-		eqVal := make([]byte, equalityValueSize)
+		eqVal := make([]byte, ruleBitmapSize)
 		valuePointer := unsafe.Pointer(&eqVal[0])
 
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
@@ -306,7 +306,7 @@ const (
 )
 
 // updateStringFilterBPF updates the BPF maps for the given string equalities.
-func (pm *PolicyManager) updateStringFilterBPF(strEqualities map[string]equality, innerMapName string) error {
+func (pm *PolicyManager) updateStringFilterBPF(strEqualities map[string]ruleBitmap, innerMapName string) error {
 	// String equalities
 	// 1. uts_ns_filter  string_filter_t, eq_t
 	// 2. comm_filter    string_filter_t, eq_t
@@ -316,7 +316,7 @@ func (pm *PolicyManager) updateStringFilterBPF(strEqualities map[string]equality
 		copy(byteStr, k)
 		keyPointer := unsafe.Pointer(&byteStr[0])
 
-		eqVal := make([]byte, equalityValueSize)
+		eqVal := make([]byte, ruleBitmapSize)
 		valuePointer := unsafe.Pointer(&eqVal[0])
 
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
@@ -343,8 +343,8 @@ const (
 )
 
 // updateBinaryFilterBPF updates the BPF maps for the given binary equalities.
-func (pm *PolicyManager) updateBinaryFilterBPF(binEqualities map[filters.NSBinary]equality, innerMapName string) error {
-	// BinaryNS equality
+func (pm *PolicyManager) updateBinaryFilterBPF(binEqualities map[filters.NSBinary]ruleBitmap, innerMapName string) error {
+	// BinaryNS ruleBitmap
 	// 1. binary_filter  binary_t, eq_t
 
 	for k, v := range binEqualities {
@@ -362,7 +362,7 @@ func (pm *PolicyManager) updateBinaryFilterBPF(binEqualities map[filters.NSBinar
 		}
 		keyPointer := unsafe.Pointer(&binBytes[0])
 
-		eqVal := make([]byte, equalityValueSize)
+		eqVal := make([]byte, ruleBitmapSize)
 		valuePointer := unsafe.Pointer(&eqVal[0])
 
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
@@ -381,8 +381,8 @@ func (pm *PolicyManager) updateBinaryFilterBPF(binEqualities map[filters.NSBinar
 }
 
 // updateStringDataFilterLPMBPF updates the BPF maps for the given kernel data LPM equalities.
-func (pm *PolicyManager) updateStringDataFilterLPMBPF(dataEqualities map[KernelDataFields]equality, innerMapName string) error {
-	// KernelDataFields equality
+func (pm *PolicyManager) updateStringDataFilterLPMBPF(dataEqualities map[KernelDataFields]ruleBitmap, innerMapName string) error {
+	// KernelDataFields ruleBitmap
 	// 1. data_filter_prefix  data_filter_lpm_key_t, eq_t
 	// 2. data_filter_suffix  data_filter_lpm_key_t, eq_t
 
@@ -403,7 +403,7 @@ func (pm *PolicyManager) updateStringDataFilterLPMBPF(dataEqualities map[KernelD
 
 		keyPointer := unsafe.Pointer(&binBytes[0])
 
-		eqVal := make([]byte, equalityValueSize)
+		eqVal := make([]byte, ruleBitmapSize)
 		valuePointer := unsafe.Pointer(&eqVal[0])
 
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
@@ -424,8 +424,8 @@ func (pm *PolicyManager) updateStringDataFilterLPMBPF(dataEqualities map[KernelD
 }
 
 // updateStringDataFilterBPF updates the BPF maps for the given kernel data equalities.
-func (pm *PolicyManager) updateStringDataFilterBPF(dataEqualities map[KernelDataFields]equality, innerMapName string) error {
-	// KernelDataFields equality
+func (pm *PolicyManager) updateStringDataFilterBPF(dataEqualities map[KernelDataFields]ruleBitmap, innerMapName string) error {
+	// KernelDataFields ruleBitmap
 	// 1. data_filter_exact  data_filter_key_t, eq_t
 
 	for k, v := range dataEqualities {
@@ -441,7 +441,7 @@ func (pm *PolicyManager) updateStringDataFilterBPF(dataEqualities map[KernelData
 
 		keyPointer := unsafe.Pointer(&binBytes[0])
 
-		eqVal := make([]byte, equalityValueSize)
+		eqVal := make([]byte, ruleBitmapSize)
 		valuePointer := unsafe.Pointer(&eqVal[0])
 
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
@@ -472,7 +472,7 @@ type procInfo struct {
 // populateProcInfoMap populates the ProcInfoMap with the binaries to track.
 // TODO: Should ProcInfoMap be cleared when a Policies new version is created?
 // Or should it be versioned too?
-func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBinary]equality) error {
+func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBinary]ruleBitmap) error {
 	procInfoMap, err := bpfModule.GetMap(ProcInfoMap)
 	if err != nil {
 		return errfmt.WrapError(err)
