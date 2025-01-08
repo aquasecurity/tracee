@@ -120,15 +120,15 @@ func updateOuterMapWithEventId(m *bpf.Module, mapName string, mapVersion uint16,
 // createNewDataFilterMapsVersion creates a new data filter maps based on filter equalities.
 func (pm *PolicyManager) createNewDataFilterMapsVersion(
 	bpfModule *bpf.Module,
-	fEqs *filtersEqualities,
+	fMaps *filterMaps,
 ) error {
 	mapsNames := map[string]struct {
 		outerMapName string
 		equalities   map[KernelDataFields]equality
 	}{
-		DataFilterPrefixMap: {DataFilterPrefixMapVersion, fEqs.dataEqualitiesPrefix},
-		DataFilterSuffixMap: {DataFilterSuffixMapVersion, fEqs.dataEqualitiesSuffix},
-		DataFilterExactMap:  {DataFilterExactMapVersion, fEqs.dataEqualitiesExact},
+		DataFilterPrefixMap: {DataFilterPrefixMapVersion, fMaps.dataEqualitiesPrefix},
+		DataFilterSuffixMap: {DataFilterSuffixMapVersion, fMaps.dataEqualitiesSuffix},
+		DataFilterExactMap:  {DataFilterExactMapVersion, fMaps.dataEqualitiesExact},
 	}
 
 	for innerMapName, mapEquality := range mapsNames {
@@ -230,7 +230,7 @@ func createSubmitBitmap(n uint8) uint64 {
 func (pm *PolicyManager) updateEventsConfigMap(
 	bpfModule *bpf.Module,
 	eventsFields map[events.ID][]bufferdecoder.ArgType,
-	eventsDataFilterCfg map[events.ID]stringFilterConfig,
+	dataFilterConfigs map[events.ID]dataFilterConfig,
 ) error {
 	eventsConfigMap, err := bpfModule.GetMap(EventsConfigMap)
 	if err != nil {
@@ -238,9 +238,9 @@ func (pm *PolicyManager) updateEventsConfigMap(
 	}
 
 	for id, ecfg := range pm.rules {
-		stringFilter, exist := eventsDataFilterCfg[id]
+		filterConfig, exist := dataFilterConfigs[id]
 		if !exist {
-			stringFilter = stringFilterConfig{}
+			filterConfig = dataFilterConfig{}
 		}
 
 		// encoded event's field types
@@ -258,9 +258,7 @@ func (pm *PolicyManager) updateEventsConfigMap(
 			submitForRules: submitForRules,
 			fieldTypes:     fieldTypes,
 			scopeFilters:   pm.computeScopeFiltersConfig(id),
-			dataFilter: dataFilterConfig{
-				string: stringFilter,
-			},
+			dataFilter:     filterConfig,
 		}
 
 		err := eventsConfigMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&eventConfig))
@@ -517,19 +515,12 @@ func (pm *PolicyManager) updateBPF(
 	eventsFields map[events.ID][]bufferdecoder.ArgType,
 	createNewMaps bool,
 ) error {
-	fEqs := newFilterMaps()
-
-	fEvtCfg := make(map[events.ID]stringFilterConfig)
-
-	if err := pm.computeScopeFilterMaps(fEqs, cts); err != nil {
+	fMaps, dataFilterConfigs, err := pm.computeFilterMaps(cts)
+	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
-	if err := pm.computeDataFilterEqualities(fEqs, fEvtCfg); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	if err := pm.updateEventsConfigMap(bpfModule, eventsFields, fEvtCfg); err != nil {
+	if err := pm.updateEventsConfigMap(bpfModule, eventsFields, dataFilterConfigs); err != nil {
 		return errfmt.WrapError(err)
 	}
 
@@ -540,57 +531,57 @@ func (pm *PolicyManager) updateBPF(
 		}
 
 		// Create new filter maps version based on version and event id
-		if err := pm.createNewDataFilterMapsVersion(bpfModule, fEqs); err != nil {
+		if err := pm.createNewDataFilterMapsVersion(bpfModule, fMaps); err != nil {
 			return errfmt.WrapError(err)
 		}
 	}
 
 	// Update UInt equalities filter maps
-	if err := pm.updateUIntFilterBPF(fEqs.uidEqualities, UIDFilterMap); err != nil {
+	if err := pm.updateUIntFilterBPF(fMaps.uidEqualities, UIDFilterMap); err != nil {
 		return errfmt.WrapError(err)
 	}
-	if err := pm.updateUIntFilterBPF(fEqs.pidEqualities, PIDFilterMap); err != nil {
+	if err := pm.updateUIntFilterBPF(fMaps.pidEqualities, PIDFilterMap); err != nil {
 		return errfmt.WrapError(err)
 	}
-	if err := pm.updateUIntFilterBPF(fEqs.mntNSEqualities, MntNSFilterMap); err != nil {
+	if err := pm.updateUIntFilterBPF(fMaps.mntNSEqualities, MntNSFilterMap); err != nil {
 		return errfmt.WrapError(err)
 	}
-	if err := pm.updateUIntFilterBPF(fEqs.pidNSEqualities, PidNSFilterMap); err != nil {
+	if err := pm.updateUIntFilterBPF(fMaps.pidNSEqualities, PidNSFilterMap); err != nil {
 		return errfmt.WrapError(err)
 	}
-	if err := pm.updateUIntFilterBPF(fEqs.cgroupIdEqualities, CgroupIdFilterMap); err != nil {
+	if err := pm.updateUIntFilterBPF(fMaps.cgroupIdEqualities, CgroupIdFilterMap); err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// Update String equalities filter maps
-	if err := pm.updateStringFilterBPF(fEqs.utsEqualities, UTSFilterMap); err != nil {
+	if err := pm.updateStringFilterBPF(fMaps.utsEqualities, UTSFilterMap); err != nil {
 		return errfmt.WrapError(err)
 	}
-	if err := pm.updateStringFilterBPF(fEqs.commEqualities, CommFilterMap); err != nil {
+	if err := pm.updateStringFilterBPF(fMaps.commEqualities, CommFilterMap); err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// Data Filter - Prefix match
-	if err := pm.updateStringDataFilterLPMBPF(fEqs.dataEqualitiesPrefix, DataFilterPrefixMap); err != nil {
+	if err := pm.updateStringDataFilterLPMBPF(fMaps.dataEqualitiesPrefix, DataFilterPrefixMap); err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// Data Filter - Suffix match
-	if err := pm.updateStringDataFilterLPMBPF(fEqs.dataEqualitiesSuffix, DataFilterSuffixMap); err != nil {
+	if err := pm.updateStringDataFilterLPMBPF(fMaps.dataEqualitiesSuffix, DataFilterSuffixMap); err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// Data Filter - Exact match
-	if err := pm.updateStringDataFilterBPF(fEqs.dataEqualitiesExact, DataFilterExactMap); err != nil {
+	if err := pm.updateStringDataFilterBPF(fMaps.dataEqualitiesExact, DataFilterExactMap); err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// Update Binary equalities filter map
-	if err := pm.updateBinaryFilterBPF(fEqs.binaryEqualities, BinaryFilterMap); err != nil {
+	if err := pm.updateBinaryFilterBPF(fMaps.binaryEqualities, BinaryFilterMap); err != nil {
 		return errfmt.WrapError(err)
 	}
 	// Update ProcInfo map (required for binary filters)
-	if err := populateProcInfoMap(bpfModule, fEqs.binaryEqualities); err != nil {
+	if err := populateProcInfoMap(bpfModule, fMaps.binaryEqualities); err != nil {
 		return errfmt.WrapError(err)
 	}
 
