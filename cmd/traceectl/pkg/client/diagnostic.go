@@ -3,8 +3,9 @@ package client
 import (
 	"context"
 
-	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"google.golang.org/grpc"
+
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 )
 
 type DiagnosticClient struct {

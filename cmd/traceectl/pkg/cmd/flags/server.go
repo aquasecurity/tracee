@@ -5,8 +5,9 @@ import (
 	"net"
 	"strings"
 
-	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/client"
 	"github.com/spf13/cobra"
+
+	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/client"
 )
 
 func PrepareServer(cmd *cobra.Command, server client.ServerInfo) (client.ServerInfo, error) {

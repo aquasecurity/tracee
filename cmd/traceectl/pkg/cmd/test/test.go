@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/mock"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
+
+	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/mock"
 )
 
 type TestCase struct {

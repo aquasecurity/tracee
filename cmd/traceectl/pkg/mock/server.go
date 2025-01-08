@@ -5,10 +5,10 @@ import (
 	"net"
 	"os"
 
+	"google.golang.org/grpc"
+
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/client"
-
-	"google.golang.org/grpc"
 )
 
 var (

@@ -7,10 +7,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/client"
 	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/cmd/formatter"
-	"github.com/spf13/cobra"
 )
 
 var streamCmd = &cobra.Command{
