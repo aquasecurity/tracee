@@ -45,8 +45,9 @@ If you have a suggestion, question, or a general comment - please use Discussion
 To backport or cherry-pick a change:
 
 1. Create a new PR targeting the appropriate release branch.
-2. Use the `backported/vX.X.X` or `cherry-picked/vX.X.X` label as appropriate.
-3. Remove the `candidate/vX.X.X` label from the original PR in `main` after the backport/cherry-pick is merged.
+2. Label the new PR with `backport` or `cherry-pick`, depending on the method used.
+3. Once the new PR is merged, remove the `candidate/vX.X.X` label from the original PR in `main`.
+4. Finally, add the `backported/vX.X.X` or `cherry-picked/vX.X.X` label to the original PR in `main`, as appropriate.
 
 ## Pull Requests
 
