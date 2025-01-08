@@ -35,6 +35,8 @@ If you have a suggestion, question, or a general comment - please use Discussion
     - `milestone/...`: Specifies the target release for the issue.
     - `priority/...`:  Indicates the urgency of the issue.
     - `good-first-issue`:  Marks issues suitable for first-time contributors.
+    - `backport`: Applies to PRs targeting release branches for integrating changes from `main`. The original `main` PR gets labeled `backported/vX.X.X` after merge.
+    - `cherry-pick`: Similar to `backport`, but for specific commits. The original `main` PR gets labeled `cherry-picked/vX.X.X` after merge.
     - `candidate/...`: (e.g., `candidate/v0.1.2`)  Identifies PRs in the `main` branch as candidates for backporting or cherry-picking to a release branch (e.g., `v0.1.2`). The specific method will be determined during the porting process.
     - `backported/...` (e.g., `backported/v0.1.2`): Marks PRs in the `main` branch as the basis for backporting changes to a release branch (e.g., `v0.1.2`) after the porting process.
     - `cherry-picked/...` (e.g., `cherry-picked/v0.1.2`): Marks PRs in the `main` branch as the basis for cherry-picking commits to a release branch (e.g., `v0.1.2`) after the porting process.
