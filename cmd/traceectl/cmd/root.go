@@ -103,7 +103,6 @@ func displayMetrics(cmd *cobra.Command, _ []string) {
 	fmt.Fprintf(cmd.OutOrStdout(), "LostWrCount: %d\n", response.LostWrCount)
 	fmt.Fprintf(cmd.OutOrStdout(), "LostNtCapCount: %d\n", response.LostNtCapCount)
 	fmt.Fprintf(cmd.OutOrStdout(), "LostBPFLogsCount: %d\n", response.LostBPFLogsCount)
-
 }
 
 func displayVersion(cmd *cobra.Command, _ []string) {

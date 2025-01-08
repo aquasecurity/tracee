@@ -27,7 +27,7 @@ func NewFormatter(format string, cmd *cobra.Command) (*Formatter, error) {
 			cmd:    cmd,
 		}, nil
 	case FormatTable:
-		//add padding for table
+		// add padding for table
 		return &Formatter{
 			format: format,
 			cmd:    cmd,

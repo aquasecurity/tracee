@@ -62,7 +62,7 @@ var describeEventCmd = &cobra.Command{
 	Long:  `Retrieves the detailed definition of a specific event, including its fields, types, and other metadata.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		getEventDescriptions(cmd, args)
+		eventDescriptions(cmd, args)
 	},
 }
 var enableEventCmd = &cobra.Command{
@@ -108,7 +108,7 @@ func listEvents(cmd *cobra.Command, args []string) {
 	case formatter.FormatTable:
 		format.PrintTableHeaders([]string{"ID", "Name", "Version", "Tags"})
 		for _, event := range response.Definitions {
-			//remove descriptions
+			// remove descriptions
 			format.PrintTableRow(prepareDescription(event)[:4])
 		}
 	default:
@@ -117,7 +117,7 @@ func listEvents(cmd *cobra.Command, args []string) {
 	}
 }
 
-func getEventDescriptions(cmd *cobra.Command, args []string) {
+func eventDescriptions(cmd *cobra.Command, args []string) {
 	traceeClient, err := client.NewServiceClient(server)
 	if err != nil {
 		cmd.PrintErrln("Error creating client: ", err)
@@ -129,7 +129,6 @@ func getEventDescriptions(cmd *cobra.Command, args []string) {
 	if err != nil {
 		cmd.PrintErrln("Error getting event definitions: ", err)
 		return
-
 	}
 	format, err := formatter.NewFormatter(formatFlag, cmd)
 	if err != nil {
@@ -147,7 +146,6 @@ func getEventDescriptions(cmd *cobra.Command, args []string) {
 	default:
 		cmd.PrintErrln("output format not supported")
 		return
-
 	}
 }
 func prepareDescription(event *pb.EventDefinition) []string {
@@ -158,7 +156,6 @@ func prepareDescription(event *pb.EventDefinition) []string {
 		strings.Join(event.Tags, ", "),
 		event.Description,
 	}
-
 }
 func enableEvents(cmd *cobra.Command, eventName string) {
 	traceeClient, err := client.NewServiceClient(server)

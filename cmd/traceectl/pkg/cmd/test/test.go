@@ -47,6 +47,5 @@ func TestCommand(t *testing.T, testCase TestCase, rootCmd *cobra.Command) {
 		assert.ErrorContains(t, err, testCase.ExpectedError.Error())
 	} else {
 		assert.Contains(t, output, testCase.ExpectedPrinter)
-
 	}
 }

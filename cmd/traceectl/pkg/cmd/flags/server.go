@@ -39,7 +39,6 @@ func determineConnectionType(server client.ServerInfo) error {
 	}
 
 	return fmt.Errorf("unsupported connection type: %s", server.Addr)
-
 }
 func isValidTCPAddress(addr string) bool {
 	host, port, err := net.SplitHostPort(addr)

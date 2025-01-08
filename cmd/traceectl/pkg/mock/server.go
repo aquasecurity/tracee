@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ExpectedVersion string             = "v0.22.0-15-gd09d7fca0d"
+	ExpectedVersion                    = "v0.22.0-15-gd09d7fca0d"
 	serverInfo      *client.ServerInfo = &client.ServerInfo{
 		Addr:           client.Socket,
 		ConnectionType: client.Protocol_UNIX,

@@ -36,14 +36,14 @@ func streamEvents(cmd *cobra.Command, args []string) {
 	}
 	defer traceeClient.CloseConnection()
 
-	//request to stream events
+	// request to stream events
 	req := &pb.StreamEventsRequest{Policies: args}
 	stream, err := traceeClient.StreamEvents(cmd.Context(), req)
 	if err != nil {
 		cmd.PrintErrln("Error calling Stream: ", err)
 		return
 	}
-	//create formatter
+	// create formatter
 	format, err := formatter.NewFormatter(formatFlag, cmd)
 	if err != nil {
 		cmd.PrintErrln("Error creating formatter: ", err)
@@ -54,7 +54,7 @@ func streamEvents(cmd *cobra.Command, args []string) {
 		for {
 			res, err := stream.Recv()
 			if err != nil {
-				//End of stream\close connection
+				// End of stream\close connectio
 				if errors.Is(err, io.EOF) {
 					break
 				}
@@ -67,7 +67,7 @@ func streamEvents(cmd *cobra.Command, args []string) {
 		for {
 			res, err := stream.Recv()
 			if err != nil {
-				//End of stream\close connection
+				// End of stream\close connection
 				if errors.Is(err, io.EOF) {
 					break
 				}
@@ -88,7 +88,6 @@ func prepareEvent(event *pb.Event) []string {
 		strconv.Itoa(int(event.Context.Process.Pid.Value)),
 		getEventData(event.Data),
 	}
-
 }
 func getEventData(data []*pb.EventValue) string {
 	var result []string
