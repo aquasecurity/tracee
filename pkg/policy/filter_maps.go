@@ -10,18 +10,17 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
-// equality mirrors the C struct equality (eq_t)
+// ruleBitmap mirrors the C struct equality (eq_t)
 // it stores information about which rules a filter value applies to.
 // equalsInRules:  A bitmap representing whether a value is equal to the filter value.
 // keyUsedInRules: A bitmap representing whether a value's key is used in the rule.
-// TODO: for clarity, consider renaming to ruleBitmap (in bpf code as well)
-type equality struct {
+type ruleBitmap struct {
 	equalsInRules  uint64
 	keyUsedInRules uint64
 }
 
 const (
-	equalityValueSize = 16 // 8 bytes for equalsInRules and 8 bytes for keyUsedInRules
+	ruleBitmapSize = 16 // 8 bytes for equalsInRules and 8 bytes for keyUsedInRules
 )
 
 // filterVersionKey matches C's filter_version_key_t struct
@@ -35,19 +34,19 @@ type filterVersionKey struct {
 // Each field corresponds to a specific eBPF map used for filtering events in kernel space.
 // The computed values in these maps are used to update their eBPF counterparts.
 // The outer map key is a combination of event ID and rules version (filterVersionKey),
-// while the inner map key varies by filter type (e.g., uint64, string) and the value is an equality bitmap.
+// while the inner map key varies by filter type (e.g., uint64, string) and the value is a ruleBitmap.
 type filterMaps struct {
-	uidEqualities        map[filterVersionKey]map[uint64]equality
-	pidEqualities        map[filterVersionKey]map[uint64]equality
-	mntNSEqualities      map[filterVersionKey]map[uint64]equality
-	pidNSEqualities      map[filterVersionKey]map[uint64]equality
-	cgroupIdEqualities   map[filterVersionKey]map[uint64]equality
-	utsEqualities        map[filterVersionKey]map[string]equality
-	commEqualities       map[filterVersionKey]map[string]equality
-	dataEqualitiesPrefix map[filterVersionKey]map[string]equality
-	dataEqualitiesSuffix map[filterVersionKey]map[string]equality
-	dataEqualitiesExact  map[filterVersionKey]map[string]equality
-	binaryEqualities     map[filterVersionKey]map[filters.NSBinary]equality
+	uidEqualities        map[filterVersionKey]map[uint64]ruleBitmap
+	pidEqualities        map[filterVersionKey]map[uint64]ruleBitmap
+	mntNSEqualities      map[filterVersionKey]map[uint64]ruleBitmap
+	pidNSEqualities      map[filterVersionKey]map[uint64]ruleBitmap
+	cgroupIdEqualities   map[filterVersionKey]map[uint64]ruleBitmap
+	utsEqualities        map[filterVersionKey]map[string]ruleBitmap
+	commEqualities       map[filterVersionKey]map[string]ruleBitmap
+	dataEqualitiesPrefix map[filterVersionKey]map[string]ruleBitmap
+	dataEqualitiesSuffix map[filterVersionKey]map[string]ruleBitmap
+	dataEqualitiesExact  map[filterVersionKey]map[string]ruleBitmap
+	binaryEqualities     map[filterVersionKey]map[filters.NSBinary]ruleBitmap
 }
 
 type equalityType int
@@ -86,17 +85,17 @@ func (pm *PolicyManager) computeFilterMaps(
 	cts *containers.Containers,
 ) (maps *filterMaps, configs map[events.ID]dataFilterConfig, err error) {
 	maps = &filterMaps{
-		uidEqualities:        make(map[filterVersionKey]map[uint64]equality),
-		pidEqualities:        make(map[filterVersionKey]map[uint64]equality),
-		mntNSEqualities:      make(map[filterVersionKey]map[uint64]equality),
-		pidNSEqualities:      make(map[filterVersionKey]map[uint64]equality),
-		cgroupIdEqualities:   make(map[filterVersionKey]map[uint64]equality),
-		utsEqualities:        make(map[filterVersionKey]map[string]equality),
-		commEqualities:       make(map[filterVersionKey]map[string]equality),
-		dataEqualitiesPrefix: make(map[filterVersionKey]map[string]equality),
-		dataEqualitiesSuffix: make(map[filterVersionKey]map[string]equality),
-		dataEqualitiesExact:  make(map[filterVersionKey]map[string]equality),
-		binaryEqualities:     make(map[filterVersionKey]map[filters.NSBinary]equality),
+		uidEqualities:        make(map[filterVersionKey]map[uint64]ruleBitmap),
+		pidEqualities:        make(map[filterVersionKey]map[uint64]ruleBitmap),
+		mntNSEqualities:      make(map[filterVersionKey]map[uint64]ruleBitmap),
+		pidNSEqualities:      make(map[filterVersionKey]map[uint64]ruleBitmap),
+		cgroupIdEqualities:   make(map[filterVersionKey]map[uint64]ruleBitmap),
+		utsEqualities:        make(map[filterVersionKey]map[string]ruleBitmap),
+		commEqualities:       make(map[filterVersionKey]map[string]ruleBitmap),
+		dataEqualitiesPrefix: make(map[filterVersionKey]map[string]ruleBitmap),
+		dataEqualitiesSuffix: make(map[filterVersionKey]map[string]ruleBitmap),
+		dataEqualitiesExact:  make(map[filterVersionKey]map[string]ruleBitmap),
+		binaryEqualities:     make(map[filterVersionKey]map[filters.NSBinary]ruleBitmap),
 	}
 	configs = make(map[events.ID]dataFilterConfig)
 
@@ -212,7 +211,7 @@ func (pm *PolicyManager) processDataFilters(
 // NotEqual values must be processed first because Equal values have precedence.
 // If a value is present in both NotEqual and Equal maps, it will be treated as Equal.
 func updateRuleBitmapsForEvent[K comparable](
-	eqs map[filterVersionKey]map[K]equality,
+	eqs map[filterVersionKey]map[K]ruleBitmap,
 	vKey filterVersionKey,
 	ruleID uint8,
 	notEqualsMap map[K]struct{},
@@ -228,7 +227,7 @@ func updateRuleBitmapsForEvent[K comparable](
 
 // updateRuleBitmapForKey updates the rule bitmap for a specific key, version, rule, and equality type.
 func updateRuleBitmapForKey[K comparable](
-	eqs map[filterVersionKey]map[K]equality,
+	eqs map[filterVersionKey]map[K]ruleBitmap,
 	vKey filterVersionKey,
 	key K,
 	ruleID uint8,
@@ -243,26 +242,26 @@ func updateRuleBitmapForKey[K comparable](
 // getOrCreateRuleBitmapMap ensures that an inner map exists for a given filterVersionKey.
 // If it doesn't exist, a new map is created and stored in the outer map.
 func getOrCreateRuleBitmapMap[K comparable](
-	outerMap map[filterVersionKey]map[K]equality,
+	outerMap map[filterVersionKey]map[K]ruleBitmap,
 	vKey filterVersionKey,
-) map[K]equality {
+) map[K]ruleBitmap {
 	if innerMap, exists := outerMap[vKey]; exists {
 		return innerMap
 	}
-	innerMap := make(map[K]equality)
+	innerMap := make(map[K]ruleBitmap)
 	outerMap[vKey] = innerMap
 	return innerMap
 }
 
 // updateRuleBitmap updates the rule bitmap for a specific rule and equality type.
-func updateRuleBitmap(eq *equality, ruleID uint8, eqType equalityType) {
+func updateRuleBitmap(rb *ruleBitmap, ruleID uint8, eqType equalityType) {
 	switch eqType {
 	case equal:
-		utils.SetBit(&eq.equalsInRules, uint(ruleID))
-		utils.SetBit(&eq.keyUsedInRules, uint(ruleID))
+		utils.SetBit(&rb.equalsInRules, uint(ruleID))
+		utils.SetBit(&rb.keyUsedInRules, uint(ruleID))
 	case notEqual:
-		utils.ClearBit(&eq.equalsInRules, uint(ruleID))
-		utils.SetBit(&eq.keyUsedInRules, uint(ruleID))
+		utils.ClearBit(&rb.equalsInRules, uint(ruleID))
+		utils.SetBit(&rb.keyUsedInRules, uint(ruleID))
 	}
 }
 
@@ -319,7 +318,7 @@ func (pm *PolicyManager) processStringFilterRule(
 // updatePrefixOrSuffixMatch handles both prefix and suffix matches by updating the rule bitmap
 // for the given path and rule ID. It also updates existing entries with matching prefixes.
 func updatePrefixOrSuffixMatch(
-	innerMap map[string]equality,
+	innerMap map[string]ruleBitmap,
 	path string,
 	ruleID uint8,
 	eqType equalityType,
