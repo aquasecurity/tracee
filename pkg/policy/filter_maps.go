@@ -36,17 +36,17 @@ type filterVersionKey struct {
 // The outer map key is a combination of event ID and rules version (filterVersionKey),
 // while the inner map key varies by filter type (e.g., uint64, string) and the value is a ruleBitmap.
 type filterMaps struct {
-	uidEqualities        map[filterVersionKey]map[uint64]ruleBitmap
-	pidEqualities        map[filterVersionKey]map[uint64]ruleBitmap
-	mntNSEqualities      map[filterVersionKey]map[uint64]ruleBitmap
-	pidNSEqualities      map[filterVersionKey]map[uint64]ruleBitmap
-	cgroupIdEqualities   map[filterVersionKey]map[uint64]ruleBitmap
-	utsEqualities        map[filterVersionKey]map[string]ruleBitmap
-	commEqualities       map[filterVersionKey]map[string]ruleBitmap
-	dataEqualitiesPrefix map[filterVersionKey]map[string]ruleBitmap
-	dataEqualitiesSuffix map[filterVersionKey]map[string]ruleBitmap
-	dataEqualitiesExact  map[filterVersionKey]map[string]ruleBitmap
-	binaryEqualities     map[filterVersionKey]map[filters.NSBinary]ruleBitmap
+	uidFilters        map[filterVersionKey]map[uint64]ruleBitmap
+	pidFilters        map[filterVersionKey]map[uint64]ruleBitmap
+	mntNSFilters      map[filterVersionKey]map[uint64]ruleBitmap
+	pidNSFilters      map[filterVersionKey]map[uint64]ruleBitmap
+	cgroupIdFilters   map[filterVersionKey]map[uint64]ruleBitmap
+	utsFilters        map[filterVersionKey]map[string]ruleBitmap
+	commFilters       map[filterVersionKey]map[string]ruleBitmap
+	dataPrefixFilters map[filterVersionKey]map[string]ruleBitmap
+	dataSuffixFilters map[filterVersionKey]map[string]ruleBitmap
+	dataExactFilters  map[filterVersionKey]map[string]ruleBitmap
+	binaryFilters     map[filterVersionKey]map[filters.NSBinary]ruleBitmap
 }
 
 type equalityType int
@@ -85,17 +85,17 @@ func (pm *PolicyManager) computeFilterMaps(
 	cts *containers.Containers,
 ) (maps *filterMaps, configs map[events.ID]dataFilterConfig, err error) {
 	maps = &filterMaps{
-		uidEqualities:        make(map[filterVersionKey]map[uint64]ruleBitmap),
-		pidEqualities:        make(map[filterVersionKey]map[uint64]ruleBitmap),
-		mntNSEqualities:      make(map[filterVersionKey]map[uint64]ruleBitmap),
-		pidNSEqualities:      make(map[filterVersionKey]map[uint64]ruleBitmap),
-		cgroupIdEqualities:   make(map[filterVersionKey]map[uint64]ruleBitmap),
-		utsEqualities:        make(map[filterVersionKey]map[string]ruleBitmap),
-		commEqualities:       make(map[filterVersionKey]map[string]ruleBitmap),
-		dataEqualitiesPrefix: make(map[filterVersionKey]map[string]ruleBitmap),
-		dataEqualitiesSuffix: make(map[filterVersionKey]map[string]ruleBitmap),
-		dataEqualitiesExact:  make(map[filterVersionKey]map[string]ruleBitmap),
-		binaryEqualities:     make(map[filterVersionKey]map[filters.NSBinary]ruleBitmap),
+		uidFilters:        make(map[filterVersionKey]map[uint64]ruleBitmap),
+		pidFilters:        make(map[filterVersionKey]map[uint64]ruleBitmap),
+		mntNSFilters:      make(map[filterVersionKey]map[uint64]ruleBitmap),
+		pidNSFilters:      make(map[filterVersionKey]map[uint64]ruleBitmap),
+		cgroupIdFilters:   make(map[filterVersionKey]map[uint64]ruleBitmap),
+		utsFilters:        make(map[filterVersionKey]map[string]ruleBitmap),
+		commFilters:       make(map[filterVersionKey]map[string]ruleBitmap),
+		dataPrefixFilters: make(map[filterVersionKey]map[string]ruleBitmap),
+		dataSuffixFilters: make(map[filterVersionKey]map[string]ruleBitmap),
+		dataExactFilters:  make(map[filterVersionKey]map[string]ruleBitmap),
+		binaryFilters:     make(map[filterVersionKey]map[filters.NSBinary]ruleBitmap),
 	}
 	configs = make(map[events.ID]dataFilterConfig)
 
@@ -130,19 +130,19 @@ func (pm *PolicyManager) processRuleScopeFilters(
 
 	// UIDFilters
 	uidEqs := rule.Policy.UIDFilter.Equalities()
-	updateRuleBitmapsForEvent(filterMaps.uidEqualities, vKey, rule.ID, uidEqs.NotEqual, uidEqs.Equal)
+	updateRuleBitmapsForEvent(filterMaps.uidFilters, vKey, rule.ID, uidEqs.NotEqual, uidEqs.Equal)
 
 	// PIDFilters
 	pidEqs := rule.Policy.PIDFilter.Equalities()
-	updateRuleBitmapsForEvent(filterMaps.pidEqualities, vKey, rule.ID, pidEqs.NotEqual, pidEqs.Equal)
+	updateRuleBitmapsForEvent(filterMaps.pidFilters, vKey, rule.ID, pidEqs.NotEqual, pidEqs.Equal)
 
 	// MntNSFilters
 	mntNSEqs := rule.Policy.MntNSFilter.Equalities()
-	updateRuleBitmapsForEvent(filterMaps.mntNSEqualities, vKey, rule.ID, mntNSEqs.NotEqual, mntNSEqs.Equal)
+	updateRuleBitmapsForEvent(filterMaps.mntNSFilters, vKey, rule.ID, mntNSEqs.NotEqual, mntNSEqs.Equal)
 
 	// PidNSFilters
 	pidNSEqs := rule.Policy.PidNSFilter.Equalities()
-	updateRuleBitmapsForEvent(filterMaps.pidNSEqualities, vKey, rule.ID, pidNSEqs.NotEqual, pidNSEqs.Equal)
+	updateRuleBitmapsForEvent(filterMaps.pidNSFilters, vKey, rule.ID, pidNSEqs.NotEqual, pidNSEqs.Equal)
 
 	// ContIDFilters requires special handling for container lookup
 	contIDEqs := rule.Policy.ContIDFilter.Equalities()
@@ -151,27 +151,27 @@ func (pm *PolicyManager) processRuleScopeFilters(
 		if err != nil {
 			return err
 		}
-		updateRuleBitmapForKey(filterMaps.cgroupIdEqualities, vKey, uint64(cgroupIDs[0]), rule.ID, notEqual)
+		updateRuleBitmapForKey(filterMaps.cgroupIdFilters, vKey, uint64(cgroupIDs[0]), rule.ID, notEqual)
 	}
 	for contID := range contIDEqs.ExactEqual {
 		cgroupIDs, err := cts.FindContainerCgroupID32LSB(contID)
 		if err != nil {
 			return err
 		}
-		updateRuleBitmapForKey(filterMaps.cgroupIdEqualities, vKey, uint64(cgroupIDs[0]), rule.ID, equal)
+		updateRuleBitmapForKey(filterMaps.cgroupIdFilters, vKey, uint64(cgroupIDs[0]), rule.ID, equal)
 	}
 
 	// UTSFilters
 	utsEqs := rule.Policy.UTSFilter.Equalities()
-	updateRuleBitmapsForEvent(filterMaps.utsEqualities, vKey, rule.ID, utsEqs.ExactNotEqual, utsEqs.ExactEqual)
+	updateRuleBitmapsForEvent(filterMaps.utsFilters, vKey, rule.ID, utsEqs.ExactNotEqual, utsEqs.ExactEqual)
 
 	// CommFilters
 	commEqs := rule.Policy.CommFilter.Equalities()
-	updateRuleBitmapsForEvent(filterMaps.commEqualities, vKey, rule.ID, commEqs.ExactNotEqual, commEqs.ExactEqual)
+	updateRuleBitmapsForEvent(filterMaps.commFilters, vKey, rule.ID, commEqs.ExactNotEqual, commEqs.ExactEqual)
 
 	// BinaryFilters
 	binEqs := rule.Policy.BinaryFilter.Equalities()
-	updateRuleBitmapsForEvent(filterMaps.binaryEqualities, vKey, rule.ID, binEqs.NotEqual, binEqs.Equal)
+	updateRuleBitmapsForEvent(filterMaps.binaryFilters, vKey, rule.ID, binEqs.NotEqual, binEqs.Equal)
 
 	return nil
 }
@@ -278,7 +278,7 @@ func (pm *PolicyManager) processStringFilterRule(
 	strFilterCfg *stringFilterConfig,
 ) {
 	// Handle exact matches
-	exactBitmaps := getOrCreateRuleBitmapMap(filterMaps.dataEqualitiesExact, vKey)
+	exactBitmaps := getOrCreateRuleBitmapMap(filterMaps.dataExactFilters, vKey)
 	for k := range equalities.ExactNotEqual {
 		eb := exactBitmaps[k]
 		updateRuleBitmap(&eb, ruleID, notEqual)
@@ -294,7 +294,7 @@ func (pm *PolicyManager) processStringFilterRule(
 	}
 
 	// Handle prefix matches
-	prefixBitmaps := getOrCreateRuleBitmapMap(filterMaps.dataEqualitiesPrefix, vKey)
+	prefixBitmaps := getOrCreateRuleBitmapMap(filterMaps.dataPrefixFilters, vKey)
 	for k := range equalities.PrefixNotEqual {
 		updatePrefixOrSuffixMatch(prefixBitmaps, k, ruleID, notEqual)
 		utils.SetBit(&strFilterCfg.prefixEnabled, uint(ruleID))
@@ -306,7 +306,7 @@ func (pm *PolicyManager) processStringFilterRule(
 	}
 
 	// Handle suffix matches
-	suffixBitmaps := getOrCreateRuleBitmapMap(filterMaps.dataEqualitiesSuffix, vKey)
+	suffixBitmaps := getOrCreateRuleBitmapMap(filterMaps.dataSuffixFilters, vKey)
 	for k := range equalities.SuffixNotEqual {
 		reversed := utils.ReverseString(k)
 		updatePrefixOrSuffixMatch(suffixBitmaps, reversed, ruleID, notEqual)
