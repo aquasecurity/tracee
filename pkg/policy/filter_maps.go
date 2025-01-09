@@ -106,11 +106,11 @@ func (pm *PolicyManager) computeFilterMaps(
 		}
 
 		for _, rule := range eventRules.Rules {
-			if err = pm.processScopeFilters(maps, vKey, rule, cts); err != nil {
+			if err = pm.processRuleScopeFilters(maps, vKey, rule, cts); err != nil {
 				return nil, nil, errfmt.WrapError(err)
 			}
 
-			if err = pm.processDataFilters(maps, vKey, rule, configs, eventID); err != nil {
+			if err = pm.processRuleDataFilters(maps, vKey, rule, configs, eventID); err != nil {
 				return nil, nil, errfmt.WrapError(err)
 			}
 		}
@@ -118,7 +118,7 @@ func (pm *PolicyManager) computeFilterMaps(
 	return maps, configs, nil
 }
 
-func (pm *PolicyManager) processScopeFilters(
+func (pm *PolicyManager) processRuleScopeFilters(
 	filterMaps *filterMaps,
 	vKey filterVersionKey,
 	rule *EventRule,
@@ -173,36 +173,6 @@ func (pm *PolicyManager) processScopeFilters(
 	binEqs := rule.Policy.BinaryFilter.Equalities()
 	updateRuleBitmapsForEvent(filterMaps.binaryEqualities, vKey, rule.ID, binEqs.NotEqual, binEqs.Equal)
 
-	return nil
-}
-
-func (pm *PolicyManager) processDataFilters(
-	filterMaps *filterMaps,
-	vKey filterVersionKey,
-	rule *EventRule,
-	eventDataFilterConfigs map[events.ID]dataFilterConfig,
-	eventID events.ID,
-) error {
-	strCfgFilter := &stringFilterConfig{}
-	equalities, err := rule.Data.DataFilter.Equalities()
-	if err != nil {
-		return nil // Skip this rule
-	}
-
-	pm.processStringFilterRule(filterMaps, vKey, rule.ID, equalities, strCfgFilter)
-
-	// Create or update dataFilterConfig
-	existing, exists := eventDataFilterConfigs[eventID]
-	if !exists {
-		eventDataFilterConfigs[eventID] = dataFilterConfig{
-			string: *strCfgFilter,
-		}
-		return nil
-	}
-
-	// Merge string filters
-	mergeDataFilterConfig(&existing.string, strCfgFilter)
-	eventDataFilterConfigs[eventID] = existing
 	return nil
 }
 
@@ -265,97 +235,120 @@ func updateRuleBitmap(rb *ruleBitmap, ruleID uint8, eqType equalityType) {
 	}
 }
 
+func (pm *PolicyManager) processRuleDataFilters(
+	filterMaps *filterMaps,
+	vKey filterVersionKey,
+	rule *EventRule,
+	eventDataFilterConfigs map[events.ID]dataFilterConfig,
+	eventID events.ID,
+) error {
+	equalities, err := rule.Data.DataFilter.Equalities()
+	if err != nil {
+		return nil // Skip this rule
+	}
+
+	// Get or create config
+	config, exists := eventDataFilterConfigs[eventID]
+	if !exists {
+		config = dataFilterConfig{}
+	}
+
+	// Process string filters
+	pm.processStringFilterRule(filterMaps, vKey, rule.ID, equalities, &config.string)
+
+	// Store updated config
+	eventDataFilterConfigs[eventID] = config
+	return nil
+}
+
+// processStringFilterRule processes string equality filters (exact, prefix, and suffix matches)
+// for a given rule. It updates the filter maps with rule bitmaps and returns a string filter
+// configuration indicating which matching operations are enabled for this rule.
+//
+// For each type of string match (exact, prefix, suffix):
+// - Updates rule bitmaps in the corresponding filter map
+// - Handles both equal and not-equal cases
+// - For suffix matches, strings are reversed to allow prefix-based matching in eBPF
+// - Special handling for overlapping prefix/suffix patterns
 func (pm *PolicyManager) processStringFilterRule(
 	filterMaps *filterMaps,
 	vKey filterVersionKey,
 	ruleID uint8,
 	equalities filters.StringFilterEqualities,
-	filter *stringFilterConfig,
+	strFilterCfg *stringFilterConfig,
 ) {
 	// Handle exact matches
-	handleExactMap := getOrCreateRuleBitmapMap(filterMaps.dataEqualitiesExact, vKey)
+	exactBitmaps := getOrCreateRuleBitmapMap(filterMaps.dataEqualitiesExact, vKey)
 	for k := range equalities.ExactNotEqual {
-		eq := handleExactMap[k]
-		updateRuleBitmap(&eq, ruleID, notEqual)
-		handleExactMap[k] = eq
-		utils.SetBit(&filter.exactEnabled, uint(ruleID))
-		utils.SetBit(&filter.exactMatchIfKeyMissing, uint(ruleID))
+		eb := exactBitmaps[k]
+		updateRuleBitmap(&eb, ruleID, notEqual)
+		exactBitmaps[k] = eb
+		utils.SetBit(&strFilterCfg.exactEnabled, uint(ruleID))
+		utils.SetBit(&strFilterCfg.exactMatchIfKeyMissing, uint(ruleID))
 	}
 	for k := range equalities.ExactEqual {
-		eq := handleExactMap[k]
-		updateRuleBitmap(&eq, ruleID, equal)
-		handleExactMap[k] = eq
-		utils.SetBit(&filter.exactEnabled, uint(ruleID))
+		eb := exactBitmaps[k]
+		updateRuleBitmap(&eb, ruleID, equal)
+		exactBitmaps[k] = eb
+		utils.SetBit(&strFilterCfg.exactEnabled, uint(ruleID))
 	}
 
 	// Handle prefix matches
-	handlePrefixMap := getOrCreateRuleBitmapMap(filterMaps.dataEqualitiesPrefix, vKey)
+	prefixBitmaps := getOrCreateRuleBitmapMap(filterMaps.dataEqualitiesPrefix, vKey)
 	for k := range equalities.PrefixNotEqual {
-		updatePrefixOrSuffixMatch(handlePrefixMap, k, ruleID, notEqual)
-		utils.SetBit(&filter.prefixEnabled, uint(ruleID))
-		utils.SetBit(&filter.prefixMatchIfKeyMissing, uint(ruleID))
+		updatePrefixOrSuffixMatch(prefixBitmaps, k, ruleID, notEqual)
+		utils.SetBit(&strFilterCfg.prefixEnabled, uint(ruleID))
+		utils.SetBit(&strFilterCfg.prefixMatchIfKeyMissing, uint(ruleID))
 	}
 	for k := range equalities.PrefixEqual {
-		updatePrefixOrSuffixMatch(handlePrefixMap, k, ruleID, equal)
-		utils.SetBit(&filter.prefixEnabled, uint(ruleID))
+		updatePrefixOrSuffixMatch(prefixBitmaps, k, ruleID, equal)
+		utils.SetBit(&strFilterCfg.prefixEnabled, uint(ruleID))
 	}
 
 	// Handle suffix matches
-	handleSuffixMap := getOrCreateRuleBitmapMap(filterMaps.dataEqualitiesSuffix, vKey)
+	suffixBitmaps := getOrCreateRuleBitmapMap(filterMaps.dataEqualitiesSuffix, vKey)
 	for k := range equalities.SuffixNotEqual {
 		reversed := utils.ReverseString(k)
-		updatePrefixOrSuffixMatch(handleSuffixMap, reversed, ruleID, notEqual)
-		utils.SetBit(&filter.suffixEnabled, uint(ruleID))
-		utils.SetBit(&filter.suffixMatchIfKeyMissing, uint(ruleID))
+		updatePrefixOrSuffixMatch(suffixBitmaps, reversed, ruleID, notEqual)
+		utils.SetBit(&strFilterCfg.suffixEnabled, uint(ruleID))
+		utils.SetBit(&strFilterCfg.suffixMatchIfKeyMissing, uint(ruleID))
 	}
 	for k := range equalities.SuffixEqual {
 		reversed := utils.ReverseString(k)
-		updatePrefixOrSuffixMatch(handleSuffixMap, reversed, ruleID, equal)
-		utils.SetBit(&filter.suffixEnabled, uint(ruleID))
+		updatePrefixOrSuffixMatch(suffixBitmaps, reversed, ruleID, equal)
+		utils.SetBit(&strFilterCfg.suffixEnabled, uint(ruleID))
 	}
 }
 
 // updatePrefixOrSuffixMatch handles both prefix and suffix matches by updating the rule bitmap
-// for the given path and rule ID. It also updates existing entries with matching prefixes.
+// for the given pattern and rule ID. It also updates existing entries with matching prefixes.
 func updatePrefixOrSuffixMatch(
-	innerMap map[string]ruleBitmap,
-	path string,
+	ruleBitmaps map[string]ruleBitmap,
+	pattern string,
 	ruleID uint8,
 	eqType equalityType,
 ) {
-	newEq := innerMap[path]
+	newRuleBitmap := ruleBitmaps[pattern]
 	var longestMatch string
 	var hasMatch bool
 
 	// Iterate through existing entries to find overlapping prefixes
-	for existingPath, existingEq := range innerMap {
-		if strings.HasPrefix(existingPath, path) {
+	for existingPattern, existingRuleBitmap := range ruleBitmaps {
+		if strings.HasPrefix(existingPattern, pattern) {
 			// Update existing rule bitmap for entries with matching prefix
-			updateRuleBitmap(&existingEq, ruleID, eqType)
-			innerMap[existingPath] = existingEq
-		} else if strings.HasPrefix(path, existingPath) {
+			updateRuleBitmap(&existingRuleBitmap, ruleID, eqType)
+			ruleBitmaps[existingPattern] = existingRuleBitmap
+		} else if strings.HasPrefix(pattern, existingPattern) {
 			// Find the longest existing prefix match
-			if !hasMatch || len(existingPath) > len(longestMatch) {
-				longestMatch = existingPath
-				newEq = existingEq
+			if !hasMatch || len(existingPattern) > len(longestMatch) {
+				longestMatch = existingPattern
+				newRuleBitmap = existingRuleBitmap
 				hasMatch = true
 			}
 		}
 	}
 
-	// Update the rule bitmap for the new path
-	updateRuleBitmap(&newEq, ruleID, eqType)
-	innerMap[path] = newEq
-}
-
-func mergeDataFilterConfig(
-	existing *stringFilterConfig,
-	new *stringFilterConfig,
-) {
-	existing.prefixEnabled |= new.prefixEnabled
-	existing.suffixEnabled |= new.suffixEnabled
-	existing.exactEnabled |= new.exactEnabled
-	existing.prefixMatchIfKeyMissing |= new.prefixMatchIfKeyMissing
-	existing.suffixMatchIfKeyMissing |= new.suffixMatchIfKeyMissing
-	existing.exactMatchIfKeyMissing |= new.exactMatchIfKeyMissing
+	// Update the rule bitmap for the new pattern
+	updateRuleBitmap(&newRuleBitmap, ruleID, eqType)
+	ruleBitmaps[pattern] = newRuleBitmap
 }
