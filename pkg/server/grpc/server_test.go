@@ -28,10 +28,7 @@ func TestServer(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	grpcServer, err := New("unix", unixSock)
-	if err != nil {
-		t.Fatal(err)
-	}
+	grpcServer := New("unix", unixSock)
 
 	go grpcServer.Start(ctx, nil, nil)
 
