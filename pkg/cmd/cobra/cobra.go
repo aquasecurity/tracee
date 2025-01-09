@@ -296,13 +296,13 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	if err != nil {
 		return runner, err
 	}
-	server, err := server.PrepareServer(serverFlag)
+	serverRunner, err := server.PrepareServer(serverFlag)
 	if err != nil {
 		return runner, err
 	}
 
-	runner.HTTPServer = server.HTTPServer
-	runner.GRPCServer = server.GRPCServer
+	runner.HTTPServer = serverRunner.HTTPServer
+	runner.GRPCServer = serverRunner.GRPCServer
 	runner.TraceeConfig = cfg
 	runner.Printer = p
 	runner.InstallPath = traceeInstallPath
