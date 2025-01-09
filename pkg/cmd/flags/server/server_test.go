@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/server/grpc"
-	"github.com/aquasecurity/tracee/pkg/server/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/server/grpc"
+	"github.com/aquasecurity/tracee/pkg/server/http"
 )
 
 func TestPrepareServer(t *testing.T) {
@@ -23,6 +24,14 @@ func TestPrepareServer(t *testing.T) {
 			serverFlags: []string{"http.address=127.0.0.1:8080"},
 			expectedServer: &Server{
 				HTTPServer: http.New("127.0.0.1:8080"),
+			},
+			expectedError: nil,
+		},
+		{
+			testName:    "http server only just port",
+			serverFlags: []string{"http.address=:8080"},
+			expectedServer: &Server{
+				HTTPServer: http.New(":8080"),
 			},
 			expectedError: nil,
 		},
@@ -122,7 +131,6 @@ func TestPrepareServer(t *testing.T) {
 			} else {
 				assert.Equal(t, testcase.expectedServer, server)
 			}
-
 		})
 	}
 }
