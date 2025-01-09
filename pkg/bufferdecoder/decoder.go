@@ -13,12 +13,14 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type EbpfDecoder struct {
-	buffer []byte
-	cursor int
+	buffer  []byte
+	cursor  int
+	present map[trace.DecodeAs]map[string]func(any) (any, error)
 }
 
 var ErrBufferTooShort = errors.New("can't read context from buffer: buffer too short")
@@ -29,9 +31,57 @@ var ErrBufferTooShort = errors.New("can't read context from buffer: buffer too s
 // The protocol is specific between the Trace eBPF program and the Tracee-eBPF user space application.
 func New(rawBuffer []byte) *EbpfDecoder {
 	return &EbpfDecoder{
-		buffer: rawBuffer,
-		cursor: 0,
+		buffer:  rawBuffer,
+		cursor:  0,
+		present: newDataPresentor(),
 	}
+}
+
+func newDataPresentor() map[trace.DecodeAs]map[string]func(any) (any, error) {
+	// type default presentor
+	identity := func(a any) (any, error) {
+		return a, nil
+	}
+
+	present := map[trace.DecodeAs]map[string]func(any) (any, error){
+		trace.INT_T:  {},
+		trace.UINT_T: {},
+		trace.LONG_T: {},
+		trace.ULONG_T: {
+			"time.Time": func(a any) (any, error) {
+				argVal, ok := a.(uint64)
+				if !ok {
+					return nil, errfmt.Errorf("error presenting uint64 as time.Time, type received was %T", a)
+				}
+				return time.NsSinceEpochToTime(time.BootToEpochNS(argVal)), nil
+			},
+		},
+		trace.U16_T:        {},
+		trace.U8_T:         {},
+		trace.INT_ARR_2_T:  {},
+		trace.UINT64_ARR_T: {},
+		trace.POINTER_T:    {},
+		trace.BYTES_T:      {},
+		trace.STR_T:        {},
+		trace.STR_ARR_T:    {},
+		trace.SOCK_ADDR_T:  {},
+		trace.CRED_T:       {},
+		trace.TIMESPEC_T: {
+			// timespec is seconds+nano in float
+			"float64": identity,
+		},
+		trace.ARGS_ARR_T: {},
+		trace.BOOL_T:     {},
+		trace.FLOAT_T:    {},
+		trace.FLOAT64_T:  {},
+	}
+
+	// add an identity function per decode type for its string presentation
+	for decode := range present {
+		present[decode][decode.String()] = identity
+	}
+
+	return present
 }
 
 // BuffLen returns the total length of the buffer owned by decoder.
@@ -102,6 +152,7 @@ func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, e
 			eventId,
 			decoder,
 			evtFields,
+			decoder.present,
 		)
 		if err != nil {
 			logger.Errorw("error reading argument from buffer", "error", errfmt.Errorf("failed to read argument %d of event %s: %v", i, evtName, err))

@@ -173,7 +173,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			t.Parallel()
 
 			decoder := New(tc.input)
-			_, actual, err := readArgFromBuff(0, decoder, tc.fields)
+			_, actual, err := readArgFromBuff(0, decoder, tc.fields, newDataPresentor())
 
 			if tc.expectedError != nil {
 				assert.ErrorContains(t, err, tc.expectedError.Error())

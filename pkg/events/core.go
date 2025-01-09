@@ -1060,8 +1060,8 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "req"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "rem"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "req"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "rem"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3297,7 +3297,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "set"},
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "info"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "timeout"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
@@ -3776,7 +3776,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_sched"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "tp"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "tp"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5053,7 +5053,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "uaddr"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "futex_op"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "val"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "timeout"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "uaddr2"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "val3"},
 		},
@@ -5202,7 +5202,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "min_nr"},
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "nr"},
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "events"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "timeout"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5487,7 +5487,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "semid"},
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sops"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "nsops"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "timeout"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5658,7 +5658,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_clock"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "clockid"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "tp"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "tp"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5682,7 +5682,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_clock"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "clockid"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "tp"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "tp"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5706,7 +5706,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_clock"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "clockid"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "res"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "res"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5731,8 +5731,8 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "clockid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "request"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "remain"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "request"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "remain"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6033,7 +6033,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "msg_ptr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "msg_len"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "msg_prio"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "abs_timeout"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "abs_timeout"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6060,7 +6060,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "msg_ptr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "msg_len"},
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "msg_prio"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "abs_timeout"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "abs_timeout"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6750,7 +6750,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "readfds"},
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "writefds"},
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "exceptfds"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "timeout"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sigmask"},
 		},
 		dependencies: Dependencies{
@@ -6776,7 +6776,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "fds"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "nfds"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "tmo_p"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "tmo_p"},
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sigmask"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sigsetsize"},
 		},
@@ -7009,7 +7009,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "dirfd"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "pathname"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "times"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "times"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -7486,7 +7486,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "msgvec"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "vlen"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "timeout"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -8355,7 +8355,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "min_nr"},
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "nr"},
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "events"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "timeout"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "usig"},
 		},
 		dependencies: Dependencies{
@@ -8840,7 +8840,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "events"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "maxevents"},
-			{DecodeAs: trace.TIMESPEC_T, Type: "struct timespec*", Name: "timeout"},
+			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
 			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sigset"},
 		},
 		dependencies: Dependencies{
@@ -11131,26 +11131,26 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "parent_ns_tid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "parent_pid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "parent_ns_pid"},
-			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "parent_start_time"},
+			{DecodeAs: trace.ULONG_T, Type: "time.Time", Name: "parent_start_time"},
 			// Child
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "child_tid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "child_ns_tid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "child_pid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "child_ns_pid"},
-			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "start_time"}, // child_start_time
+			{DecodeAs: trace.ULONG_T, Type: "time.Time", Name: "start_time"}, // child_start_time
 			// Arguments set by OPT_PROCESS_FORK (when process tree source is enabled for fork events).
 			// Parent Process (Go up in hierarchy until parent is a process and not a lwp)
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "parent_process_tid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "parent_process_ns_tid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "parent_process_pid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "parent_process_ns_pid"},
-			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "parent_process_start_time"},
+			{DecodeAs: trace.ULONG_T, Type: "time.Time", Name: "parent_process_start_time"},
 			// Thread Group Leader
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "leader_tid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "leader_ns_tid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "leader_pid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "leader_ns_pid"},
-			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "leader_start_time"},
+			{DecodeAs: trace.ULONG_T, Type: "time.Time", Name: "leader_start_time"},
 		},
 	},
 	SchedProcessExec: {
@@ -11857,7 +11857,7 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "boot_time"},
-			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "start_time"},
+			{DecodeAs: trace.ULONG_T, Type: "time.Time", Name: "start_time"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "version"},
 		},
 	},

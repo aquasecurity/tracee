@@ -1,6 +1,8 @@
 package parse
 
 import (
+	"time"
+
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -60,6 +62,9 @@ func ArgZeroValueFromType(t string) interface{} {
 		return float32(0)
 	case "float64":
 		return float64(0)
+	case "time.Time":
+		// TODO: is this the right choice? Maybe abuse the any and return int(0)?
+		return time.Unix(0, 0)
 	case "trace.SlimCred":
 		return trace.SlimCred{}
 	case "trace.ProtoIPv4":
