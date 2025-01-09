@@ -36,174 +36,102 @@ const (
 	PidNSFilterMap      = "pid_ns_filter"
 	UTSFilterMap        = "uts_ns_filter"
 	CommFilterMap       = "comm_filter"
+	CgroupIdFilterMap   = "cgroup_id_filter"
+	BinaryFilterMap     = "binary_filter"
 	DataFilterPrefixMap = "data_filter_prefix"
 	DataFilterSuffixMap = "data_filter_suffix"
 	DataFilterExactMap  = "data_filter_exact"
-	CgroupIdFilterMap   = "cgroup_id_filter"
-	BinaryFilterMap     = "binary_filter"
 
 	ProcInfoMap     = "proc_info_map"
 	EventsConfigMap = "events_config_map"
 )
 
-// createNewInnerMapEventId creates a new map for the given map name, version and event id.
-func createNewInnerMapEventId(m *bpf.Module, mapName string, mapVersion uint16, eventId events.ID) (*bpf.BPFMapLow, string, error) {
-	// use the map prototype to create a new map with the same properties
-	prototypeMap, err := m.GetMap(mapName)
-	if err != nil {
-		return nil, "", errfmt.WrapError(err)
-	}
+const (
+	maxBpfStrFilterSize = 256 // should be at least as big as the bpf map value size
 
-	info, err := bpf.GetMapInfoByFD(prototypeMap.FileDescriptor())
-	if err != nil {
-		return nil, "", errfmt.WrapError(err)
-	}
+	maxBpfBinPathSize = 256 // maximum binary path size supported by BPF (MAX_BIN_PATH_SIZE)
+	bpfBinFilterSize  = 264 // the key size of the BPF binary filter map entry
 
-	btfFD, err := bpf.GetBTFFDByID(info.BTFID)
-	if err != nil {
-		return nil, "", errfmt.WrapError(err)
-	}
+	maxBpfDataFilterStrSize = 256 // maximum str size supported by Data filter in BPF (MAX_DATA_FILTER_STR_SIZE)
+	bpfDataFilterStrSize    = 260 // path size + 4 bytes prefix len
+)
 
-	opts := &bpf.BPFMapCreateOpts{
-		BTFFD:                 uint32(btfFD),
-		BTFKeyTypeID:          info.BTFKeyTypeID,
-		BTFValueTypeID:        info.BTFValueTypeID,
-		BTFVmlinuxValueTypeID: info.BTFVmlinuxValueTypeID,
-		MapFlags:              info.MapFlags,
-		MapExtra:              info.MapExtra,
-		MapIfIndex:            info.IfIndex,
-	}
-
-	newInnerMapName := fmt.Sprintf("%s_%d_%d", mapName, mapVersion, uint32(eventId))
-
-	newInnerMap, err := bpf.CreateMap(
-		prototypeMap.Type(),
-		newInnerMapName, // new map name
-		prototypeMap.KeySize(),
-		prototypeMap.ValueSize(),
-		int(prototypeMap.MaxEntries()),
-		opts,
-	)
-	if err != nil {
-		return nil, "", errfmt.WrapError(err)
-	}
-
-	return newInnerMap, newInnerMapName, nil
-}
-
-// updateOuterMapWithEventId updates the outer map with the given map name, version and event id.
-func updateOuterMapWithEventId(m *bpf.Module, mapName string, mapVersion uint16, eventId events.ID, innerMap *bpf.BPFMapLow) error {
-	outerMap, err := m.GetMap(mapName)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	keyBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint16(keyBytes, mapVersion)          // version
-	binary.LittleEndian.PutUint16(keyBytes[2:], 0)               // padding
-	binary.LittleEndian.PutUint32(keyBytes[4:], uint32(eventId)) // eventid
-	keyPointer := unsafe.Pointer(&keyBytes[0])
-
-	innerMapFD := uint32(innerMap.FileDescriptor())
-	valuePointer := unsafe.Pointer(&innerMapFD)
-
-	// update version filter map
-	// - key is the map version + event id
-	// - value is the related filter map FD.
-	if err := outerMap.Update(keyPointer, valuePointer); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	return nil
-}
-
-// createNewDataFilterMapsVersion creates a new data filter maps based on filter equalities.
-func (pm *PolicyManager) createNewDataFilterMapsVersion(
+// updateBPF updates the BPF maps with the policies filters.
+// createNewMaps indicates whether new maps should be created or not.
+func (pm *PolicyManager) updateBPF(
 	bpfModule *bpf.Module,
-	fMaps *filterMaps,
+	cts *containers.Containers,
+	eventsFields map[events.ID][]bufferdecoder.ArgType,
+	createNewMaps bool,
 ) error {
-	mapsNames := map[string]struct {
-		outerMapName string
-		equalities   map[KernelDataFields]ruleBitmap
-	}{
-		DataFilterPrefixMap: {DataFilterPrefixMapVersion, fMaps.dataEqualitiesPrefix},
-		DataFilterSuffixMap: {DataFilterSuffixMapVersion, fMaps.dataEqualitiesSuffix},
-		DataFilterExactMap:  {DataFilterExactMapVersion, fMaps.dataEqualitiesExact},
+	fMaps, dataFilterConfigs, err := pm.computeFilterMaps(cts)
+	if err != nil {
+		return errfmt.WrapError(err)
 	}
 
-	for innerMapName, mapEquality := range mapsNames {
-		outerMapName := mapEquality.outerMapName
-		// For each combination of version and event ID, a new inner map is created
-		//
-		// outerMap maps:
-		// 1. data_filter_prefix_version        (u16, u32), data_filter_prefix
-		// 2. data_filter_suffix_version        (u16, u32), data_filter_suffix
-		// 3. data_filter_exact_version         (u16, u32), data_filter_exact
-		for key := range mapEquality.equalities {
-			innerMapNameTemp := fmt.Sprintf("%s_%d_%d", innerMapName, polsVersion, uint32(key.ID))
-			if pm.bpfInnerMaps[innerMapNameTemp] != nil {
-				continue
-			}
-
-			newInnerMap, newInnerMapName, err := createNewInnerMapEventId(bpfModule, innerMapName, polsVersion, key.ID)
-			if err != nil {
-				return errfmt.WrapError(err)
-			}
-
-			if err := updateOuterMapWithEventId(bpfModule, outerMapName, polsVersion, key.ID, newInnerMap); err != nil {
-				return errfmt.WrapError(err)
-			}
-
-			// store pointer to the new inner map version
-			pm.bpfInnerMaps[newInnerMapName] = newInnerMap
-		}
+	if err := pm.updateEventsConfigMap(bpfModule, eventsFields, dataFilterConfigs); err != nil {
+		return errfmt.WrapError(err)
 	}
 
-	return nil
-}
-
-// createNewFilterMapsVersion creates a new version of the filter maps.
-func (pm *PolicyManager) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
-	mapsNames := map[string]string{ // inner map name: outer map name
-		UIDFilterMap:      UIDFilterMapVersion,
-		PIDFilterMap:      PIDFilterMapVersion,
-		MntNSFilterMap:    MntNSFilterMapVersion,
-		PidNSFilterMap:    PidNSFilterMapVersion,
-		UTSFilterMap:      UTSFilterMapVersion,
-		CommFilterMap:     CommFilterMapVersion,
-		CgroupIdFilterMap: CgroupIdFilterVersion,
-		BinaryFilterMap:   BinaryFilterMapVersion,
-	}
-
-	for innerMapName, outerMapName := range mapsNames {
-		// TODO: This only spawns new inner filter maps. Their termination must
-		// be tackled by the versioning mechanism.
-		newInnerMap, err := createNewInnerMapEventId(bpfModule, innerMapName, polsVersion)
-		if err != nil {
+	if createNewMaps {
+		// Create new filter maps version
+		if err := pm.createNewFilterMapsVersion(bpfModule, fMaps); err != nil {
 			return errfmt.WrapError(err)
 		}
 
-		// typedef struct filter_version_key {
-		// 	u16 version;
-		// 	u16 __pad;
-		// 	u32 event_id;
-		// } filter_version_key_t;
-
-		// outerMap maps:
-		// 1. uid_filter_version           	u16, uid_filter
-		// 2. pid_filter_version           	u16, pid_filter
-		// 3. mnt_ns_filter_version        	u16, mnt_ns_filter
-		// 4. pid_ns_filter_version        	u16, pid_ns_filter
-		// 5. cgroup_id_filter_version     	u16, cgroup_id_filter
-		// 6. uts_ns_filter_version        	u16, uts_ns_filter
-		// 7. comm_filter_version          	u16, comm_filter
-		// 8. binary_filter_version		    u16, binary_filter
-		if err := updateOuterMapWithEventId(bpfModule, outerMapName, polsVersion, newInnerMap); err != nil {
+		// Create new filter maps version based on version and event id
+		if err := pm.createNewDataFilterMapsVersion(bpfModule, fMaps); err != nil {
 			return errfmt.WrapError(err)
 		}
+	}
 
-		// store pointer to the new inner map version
-		pm.bpfInnerMaps[innerMapName] = newInnerMap
+	// Update UInt RuleBitmaps filter maps
+	if err := pm.updateUIntFilterBPF(fMaps.uidFilters, UIDFilterMap); err != nil {
+		return errfmt.WrapError(err)
+	}
+	if err := pm.updateUIntFilterBPF(fMaps.pidFilters, PIDFilterMap); err != nil {
+		return errfmt.WrapError(err)
+	}
+	if err := pm.updateUIntFilterBPF(fMaps.mntNSFilters, MntNSFilterMap); err != nil {
+		return errfmt.WrapError(err)
+	}
+	if err := pm.updateUIntFilterBPF(fMaps.pidNSFilters, PidNSFilterMap); err != nil {
+		return errfmt.WrapError(err)
+	}
+	if err := pm.updateUIntFilterBPF(fMaps.cgroupIdFilters, CgroupIdFilterMap); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Update String RuleBitmaps filter maps
+	if err := pm.updateStringFilterBPF(fMaps.utsFilters, UTSFilterMap); err != nil {
+		return errfmt.WrapError(err)
+	}
+	if err := pm.updateStringFilterBPF(fMaps.commFilters, CommFilterMap); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Update Binary RuleBitmaps filter map
+	if err := pm.updateBinaryFilterBPF(fMaps.binaryFilters, BinaryFilterMap); err != nil {
+		return errfmt.WrapError(err)
+	}
+	// Update ProcInfo map (required for binary filters)
+	if err := populateProcInfoMap(bpfModule, fMaps.binaryFilters); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Data Filter - Prefix match
+	if err := pm.updateStringDataFilterLPMBPF(fMaps.dataPrefixFilters, DataFilterPrefixMap); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Data Filter - Suffix match
+	if err := pm.updateStringDataFilterLPMBPF(fMaps.dataSuffixFilters, DataFilterSuffixMap); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Data Filter - Exact match
+	if err := pm.updateStringDataFilterBPF(fMaps.dataExactFilters, DataFilterExactMap); err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	return nil
@@ -216,14 +144,6 @@ type eventConfig struct {
 	fieldTypes     uint64
 	scopeFilters   scopeFiltersConfig
 	dataFilter     dataFilterConfig
-}
-
-// createSubmitBitmap creates a bitmap with n least significant bits set to 1
-func createSubmitBitmap(n uint8) uint64 {
-	if n == 0 {
-		return 0
-	}
-	return (uint64(1) << n) - 1
 }
 
 // updateEventsConfigMap updates the events config map with the given events fields and filter config.
@@ -250,8 +170,11 @@ func (pm *PolicyManager) updateEventsConfigMap(
 			fieldTypes = fieldTypes | (uint64(fieldType) << (8 * n))
 		}
 
-		// Create submit bitmap based on rules count
-		submitForRules := createSubmitBitmap(ecfg.rulesCount)
+		// Create submit bitmap based on rules count - n least significant bits set to 1
+		submitForRules := uint64(0)
+		if ecfg.rulesCount > 0 {
+			submitForRules = (uint64(1) << ecfg.rulesCount) - 1
+		}
 
 		eventConfig := eventConfig{
 			rulesVersion:   ecfg.rulesVersion,
@@ -265,324 +188,6 @@ func (pm *PolicyManager) updateEventsConfigMap(
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
-	}
-
-	return nil
-}
-
-// updateUIntFilterBPF updates the BPF maps for the given uint equalities.
-func (pm *PolicyManager) updateUIntFilterBPF(uintEqualities map[uint64]ruleBitmap, innerMapName string) error {
-	// UInt equalities
-	// 1. uid_filter        u32, eq_t
-	// 2. pid_filter        u32, eq_t
-	// 3. mnt_ns_filter     u32, eq_t
-	// 4. pid_ns_filter     u32, eq_t
-	// 5. cgroup_id_filter  u32, eq_t
-
-	for k, v := range uintEqualities {
-		u32Key := uint32(k)
-		keyPointer := unsafe.Pointer(&u32Key)
-
-		eqVal := make([]byte, ruleBitmapSize)
-		valuePointer := unsafe.Pointer(&eqVal[0])
-
-		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
-		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
-
-		bpfMap, ok := pm.bpfInnerMaps[innerMapName]
-		if !ok {
-			return errfmt.Errorf("bpf map not found: %s", innerMapName)
-		}
-		if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	return nil
-}
-
-const (
-	maxBpfStrFilterSize = 256 // should be at least as big as the bpf map value size
-)
-
-// updateStringFilterBPF updates the BPF maps for the given string equalities.
-func (pm *PolicyManager) updateStringFilterBPF(strEqualities map[string]ruleBitmap, innerMapName string) error {
-	// String equalities
-	// 1. uts_ns_filter  string_filter_t, eq_t
-	// 2. comm_filter    string_filter_t, eq_t
-
-	for k, v := range strEqualities {
-		byteStr := make([]byte, maxBpfStrFilterSize)
-		copy(byteStr, k)
-		keyPointer := unsafe.Pointer(&byteStr[0])
-
-		eqVal := make([]byte, ruleBitmapSize)
-		valuePointer := unsafe.Pointer(&eqVal[0])
-
-		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
-		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
-
-		bpfMap, ok := pm.bpfInnerMaps[innerMapName]
-		if !ok {
-			return errfmt.Errorf("bpf map not found: %s", innerMapName)
-		}
-		if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	return nil
-}
-
-const (
-	maxBpfBinPathSize = 256 // maximum binary path size supported by BPF (MAX_BIN_PATH_SIZE)
-	bpfBinFilterSize  = 264 // the key size of the BPF binary filter map entry
-
-	maxBpfDataFilterStrSize = 256 // maximum str size supported by Data filter in BPF (MAX_DATA_FILTER_STR_SIZE)
-	bpfDataFilterStrSize    = 260 // path size + 4 bytes prefix len
-)
-
-// updateBinaryFilterBPF updates the BPF maps for the given binary equalities.
-func (pm *PolicyManager) updateBinaryFilterBPF(binEqualities map[filters.NSBinary]ruleBitmap, innerMapName string) error {
-	// BinaryNS ruleBitmap
-	// 1. binary_filter  binary_t, eq_t
-
-	for k, v := range binEqualities {
-		if len(k.Path) > maxBpfBinPathSize {
-			return filters.InvalidValue(k.Path)
-		}
-		binBytes := make([]byte, bpfBinFilterSize)
-		if k.MntNS == 0 {
-			// if no mount namespace given, bpf map key is only the path
-			copy(binBytes, k.Path)
-		} else {
-			// otherwise, key is composed of the mount namespace and the path
-			binary.LittleEndian.PutUint32(binBytes, k.MntNS)
-			copy(binBytes[4:], k.Path)
-		}
-		keyPointer := unsafe.Pointer(&binBytes[0])
-
-		eqVal := make([]byte, ruleBitmapSize)
-		valuePointer := unsafe.Pointer(&eqVal[0])
-
-		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
-		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
-
-		bpfMap, ok := pm.bpfInnerMaps[innerMapName]
-		if !ok {
-			return errfmt.Errorf("bpf map not found: %s", innerMapName)
-		}
-		if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	return nil
-}
-
-// updateStringDataFilterLPMBPF updates the BPF maps for the given kernel data LPM equalities.
-func (pm *PolicyManager) updateStringDataFilterLPMBPF(dataEqualities map[KernelDataFields]ruleBitmap, innerMapName string) error {
-	// KernelDataFields ruleBitmap
-	// 1. data_filter_prefix  data_filter_lpm_key_t, eq_t
-	// 2. data_filter_suffix  data_filter_lpm_key_t, eq_t
-
-	for k, v := range dataEqualities {
-		// Ensure the string length is within the maximum allowed limit,
-		// excluding the NULL terminator.
-		if len(k.String) > maxBpfDataFilterStrSize-1 {
-			return filters.InvalidValueMax(k.String, maxBpfDataFilterStrSize-1)
-		}
-		binBytes := make([]byte, bpfDataFilterStrSize)
-
-		// key is composed of: prefixlen and a string
-		// multiplication by 8 - convert prefix length from bytes to bits
-		// for LPM Trie compatibility.
-		prefixlen := len(k.String) * 8
-		binary.LittleEndian.PutUint32(binBytes, uint32(prefixlen)) // prefixlen
-		copy(binBytes[4:], k.String)                               // string
-
-		keyPointer := unsafe.Pointer(&binBytes[0])
-
-		eqVal := make([]byte, ruleBitmapSize)
-		valuePointer := unsafe.Pointer(&eqVal[0])
-
-		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
-		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
-
-		innerMapName := fmt.Sprintf("%s_%d_%d", innerMapName, ps.version(), uint32(k.ID))
-
-		bpfMap, ok := pm.bpfInnerMaps[innerMapName]
-		if !ok {
-			return errfmt.Errorf("bpf map not found: %s", innerMapName)
-		}
-		if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	return nil
-}
-
-// updateStringDataFilterBPF updates the BPF maps for the given kernel data equalities.
-func (pm *PolicyManager) updateStringDataFilterBPF(dataEqualities map[KernelDataFields]ruleBitmap, innerMapName string) error {
-	// KernelDataFields ruleBitmap
-	// 1. data_filter_exact  data_filter_key_t, eq_t
-
-	for k, v := range dataEqualities {
-		// Ensure the string length is within the maximum allowed limit,
-		// excluding the NULL terminator.
-		if len(k.String) > maxBpfDataFilterStrSize-1 {
-			return filters.InvalidValueMax(k.String, maxBpfDataFilterStrSize-1)
-		}
-		binBytes := make([]byte, maxBpfDataFilterStrSize)
-
-		// key is composed of a string
-		copy(binBytes, k.String) // string
-
-		keyPointer := unsafe.Pointer(&binBytes[0])
-
-		eqVal := make([]byte, ruleBitmapSize)
-		valuePointer := unsafe.Pointer(&eqVal[0])
-
-		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
-		binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
-
-		innerMapName := fmt.Sprintf("%s_%d_%d", innerMapName, ps.version(), uint32(k.ID))
-
-		bpfMap, ok := pm.bpfInnerMaps[innerMapName]
-		if !ok {
-			return errfmt.Errorf("bpf map not found: %s", innerMapName)
-		}
-		if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	return nil
-}
-
-type procInfo struct {
-	newProc        bool
-	followPolicies uint64
-	mntNS          uint32
-	binaryBytes    [maxBpfBinPathSize]byte
-	binNoMnt       uint32
-}
-
-// populateProcInfoMap populates the ProcInfoMap with the binaries to track.
-// TODO: Should ProcInfoMap be cleared when a Policies new version is created?
-// Or should it be versioned too?
-func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBinary]ruleBitmap) error {
-	procInfoMap, err := bpfModule.GetMap(ProcInfoMap)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	binsProcs, err := proc.GetAllBinaryProcs()
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	for bin := range binEqualities {
-		procs := binsProcs[bin.Path]
-		for _, p := range procs {
-			binBytes := make([]byte, maxBpfBinPathSize)
-			copy(binBytes, bin.Path)
-			binBytesCopy := (*[maxBpfBinPathSize]byte)(binBytes)
-			// TODO: Default values for newProc and followPolicies are 0 are safe only in
-			// init phase. As Policies are updated at runtime, this is not true anymore.
-			procInfo := procInfo{
-				newProc:        false,
-				followPolicies: 0,
-				mntNS:          bin.MntNS,
-				binaryBytes:    *binBytesCopy,
-				binNoMnt:       0, // always 0, see bin_no_mnt in tracee.bpf.c
-			}
-			if err := procInfoMap.Update(unsafe.Pointer(&p), unsafe.Pointer(&procInfo)); err != nil {
-				return errfmt.WrapError(err)
-			}
-		}
-	}
-
-	return nil
-}
-
-// updateBPF updates the BPF maps with the policies filters.
-// createNewMaps indicates whether new maps should be created or not.
-func (pm *PolicyManager) updateBPF(
-	bpfModule *bpf.Module,
-	cts *containers.Containers,
-	eventsFields map[events.ID][]bufferdecoder.ArgType,
-	createNewMaps bool,
-) error {
-	fMaps, dataFilterConfigs, err := pm.computeFilterMaps(cts)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	if err := pm.updateEventsConfigMap(bpfModule, eventsFields, dataFilterConfigs); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	if createNewMaps {
-		// Create new filter maps version
-		if err := pm.createNewFilterMapsVersion(bpfModule); err != nil {
-			return errfmt.WrapError(err)
-		}
-
-		// Create new filter maps version based on version and event id
-		if err := pm.createNewDataFilterMapsVersion(bpfModule, fMaps); err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	// Update UInt equalities filter maps
-	if err := pm.updateUIntFilterBPF(fMaps.uidEqualities, UIDFilterMap); err != nil {
-		return errfmt.WrapError(err)
-	}
-	if err := pm.updateUIntFilterBPF(fMaps.pidEqualities, PIDFilterMap); err != nil {
-		return errfmt.WrapError(err)
-	}
-	if err := pm.updateUIntFilterBPF(fMaps.mntNSEqualities, MntNSFilterMap); err != nil {
-		return errfmt.WrapError(err)
-	}
-	if err := pm.updateUIntFilterBPF(fMaps.pidNSEqualities, PidNSFilterMap); err != nil {
-		return errfmt.WrapError(err)
-	}
-	if err := pm.updateUIntFilterBPF(fMaps.cgroupIdEqualities, CgroupIdFilterMap); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Update String equalities filter maps
-	if err := pm.updateStringFilterBPF(fMaps.utsEqualities, UTSFilterMap); err != nil {
-		return errfmt.WrapError(err)
-	}
-	if err := pm.updateStringFilterBPF(fMaps.commEqualities, CommFilterMap); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Data Filter - Prefix match
-	if err := pm.updateStringDataFilterLPMBPF(fMaps.dataEqualitiesPrefix, DataFilterPrefixMap); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Data Filter - Suffix match
-	if err := pm.updateStringDataFilterLPMBPF(fMaps.dataEqualitiesSuffix, DataFilterSuffixMap); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Data Filter - Exact match
-	if err := pm.updateStringDataFilterBPF(fMaps.dataEqualitiesExact, DataFilterExactMap); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Update Binary equalities filter map
-	if err := pm.updateBinaryFilterBPF(fMaps.binaryEqualities, BinaryFilterMap); err != nil {
-		return errfmt.WrapError(err)
-	}
-	// Update ProcInfo map (required for binary filters)
-	if err := populateProcInfoMap(bpfModule, fMaps.binaryEqualities); err != nil {
-		return errfmt.WrapError(err)
 	}
 
 	return nil
@@ -709,4 +314,429 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) scopeFilte
 	}
 
 	return cfg
+}
+
+// createNewFilterMapsVersion creates a new version of the filter maps.
+func (pm *PolicyManager) createNewFilterMapsVersion(
+	bpfModule *bpf.Module,
+	fMaps *filterMaps,
+) error {
+	mapsData := map[string]struct {
+		outerMapName string
+		ruleBitmaps  map[filterVersionKey]any
+	}{
+		UIDFilterMap:      {UIDFilterMapVersion, fMaps.uidFilters},
+		PIDFilterMap:      {PIDFilterMapVersion, fMaps.pidFilters},
+		MntNSFilterMap:    {MntNSFilterMapVersion, fMaps.mntNSFilters},
+		PidNSFilterMap:    {PidNSFilterMapVersion, fMaps.pidNSFilters},
+		UTSFilterMap:      {UTSFilterMapVersion, fMaps.utsFilters},
+		CommFilterMap:     {CommFilterMapVersion, fMaps.commFilters},
+		CgroupIdFilterMap: {CgroupIdFilterVersion, fMaps.cgroupIdFilters},
+		BinaryFilterMap:   {BinaryFilterMapVersion, fMaps.binaryFilters},
+	}
+
+	for innerMapName, mapData := range mapsData {
+		outerMapName := mapData.outerMapName
+		// For each combination of version and event ID, a new inner map is created
+		//
+		// outerMap maps:
+		// 1. uid_filter_version           	filterVersionKey, uid_filter
+		// 2. pid_filter_version           	filterVersionKey, pid_filter
+		// 3. mnt_ns_filter_version        	filterVersionKey, mnt_ns_filter
+		// 4. pid_ns_filter_version        	filterVersionKey, pid_ns_filter
+		// 5. cgroup_id_filter_version     	filterVersionKey, cgroup_id_filter
+		// 6. uts_ns_filter_version        	filterVersionKey, uts_ns_filter
+		// 7. comm_filter_version          	filterVersionKey, comm_filter
+		// 8. binary_filter_version		    filterVersionKey, binary_filter
+		for key := range mapData.ruleBitmaps {
+			innerMapNameTemp := fmt.Sprintf("%s_%d_%d", innerMapName, key.Version, key.EventID)
+			if pm.bpfInnerMaps[innerMapNameTemp] != nil {
+				continue
+			}
+
+			newInnerMap, newInnerMapName, err := createNewInnerMapEventId(bpfModule, innerMapName, key.Version, key.EventID)
+			if err != nil {
+				return errfmt.WrapError(err)
+			}
+
+			if err := updateOuterMapWithEventId(bpfModule, outerMapName, key, newInnerMap); err != nil {
+				return errfmt.WrapError(err)
+			}
+
+			// store pointer to the new inner map version
+			pm.bpfInnerMaps[newInnerMapName] = newInnerMap
+		}
+	}
+
+	return nil
+}
+
+// createNewDataFilterMapsVersion creates a new data filter maps based on filter rule bitmaps.
+func (pm *PolicyManager) createNewDataFilterMapsVersion(
+	bpfModule *bpf.Module,
+	fMaps *filterMaps,
+) error {
+	mapsData := map[string]struct {
+		outerMapName string
+		ruleBitmaps  map[filterVersionKey]map[string]ruleBitmap
+	}{
+		DataFilterPrefixMap: {DataFilterPrefixMapVersion, fMaps.dataPrefixFilters},
+		DataFilterSuffixMap: {DataFilterSuffixMapVersion, fMaps.dataSuffixFilters},
+		DataFilterExactMap:  {DataFilterExactMapVersion, fMaps.dataExactFilters},
+	}
+
+	for innerMapName, mapData := range mapsData {
+		outerMapName := mapData.outerMapName
+		// For each combination of version and event ID, a new inner map is created
+		//
+		// outerMap maps:
+		// 1. data_filter_prefix_version        filterVersionKey, data_filter_prefix
+		// 2. data_filter_suffix_version        filterVersionKey, data_filter_suffix
+		// 3. data_filter_exact_version         filterVersionKey, data_filter_exact
+		for key := range mapData.ruleBitmaps {
+			innerMapNameTemp := fmt.Sprintf("%s_%d_%d", innerMapName, key.Version, key.EventID)
+			if pm.bpfInnerMaps[innerMapNameTemp] != nil {
+				continue
+			}
+
+			newInnerMap, newInnerMapName, err := createNewInnerMapEventId(bpfModule, innerMapName, key.Version, key.EventID)
+			if err != nil {
+				return errfmt.WrapError(err)
+			}
+
+			if err := updateOuterMapWithEventId(bpfModule, outerMapName, key, newInnerMap); err != nil {
+				return errfmt.WrapError(err)
+			}
+
+			// store pointer to the new inner map version
+			pm.bpfInnerMaps[newInnerMapName] = newInnerMap
+		}
+	}
+
+	return nil
+}
+
+// updateOuterMapWithEventId updates the outer map with the given map name, version and event id.
+func updateOuterMapWithEventId(m *bpf.Module, mapName string, fvKey filterVersionKey, innerMap *bpf.BPFMapLow) error {
+	outerMap, err := m.GetMap(mapName)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	keyPointer := unsafe.Pointer(&fvKey)
+
+	innerMapFD := uint32(innerMap.FileDescriptor())
+	valuePointer := unsafe.Pointer(&innerMapFD)
+
+	// update version filter map
+	// - key is the map version + event id
+	// - value is the related filter map FD.
+	if err := outerMap.Update(keyPointer, valuePointer); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	return nil
+}
+
+// createNewInnerMapEventId creates a new map for the given map name, version and event id.
+func createNewInnerMapEventId(m *bpf.Module, mapName string, mapVersion uint16, eventId uint32) (*bpf.BPFMapLow, string, error) {
+	// use the map prototype to create a new map with the same properties
+	prototypeMap, err := m.GetMap(mapName)
+	if err != nil {
+		return nil, "", errfmt.WrapError(err)
+	}
+
+	info, err := bpf.GetMapInfoByFD(prototypeMap.FileDescriptor())
+	if err != nil {
+		return nil, "", errfmt.WrapError(err)
+	}
+
+	btfFD, err := bpf.GetBTFFDByID(info.BTFID)
+	if err != nil {
+		return nil, "", errfmt.WrapError(err)
+	}
+
+	opts := &bpf.BPFMapCreateOpts{
+		BTFFD:                 uint32(btfFD),
+		BTFKeyTypeID:          info.BTFKeyTypeID,
+		BTFValueTypeID:        info.BTFValueTypeID,
+		BTFVmlinuxValueTypeID: info.BTFVmlinuxValueTypeID,
+		MapFlags:              info.MapFlags,
+		MapExtra:              info.MapExtra,
+		MapIfIndex:            info.IfIndex,
+	}
+
+	newInnerMapName := fmt.Sprintf("%s_%d_%d", mapName, mapVersion, eventId)
+
+	newInnerMap, err := bpf.CreateMap(
+		prototypeMap.Type(),
+		newInnerMapName, // new map name
+		prototypeMap.KeySize(),
+		prototypeMap.ValueSize(),
+		int(prototypeMap.MaxEntries()),
+		opts,
+	)
+	if err != nil {
+		return nil, "", errfmt.WrapError(err)
+	}
+
+	return newInnerMap, newInnerMapName, nil
+}
+
+// updateUIntFilterBPF updates the BPF maps for the given uint RuleBitmaps.
+func (pm *PolicyManager) updateUIntFilterBPF(
+	ruleBitmaps map[filterVersionKey]map[uint64]ruleBitmap,
+	innerMapName string,
+) error {
+	// UInt RuleBitmaps
+	// 1. uid_filter        u32, eq_t
+	// 2. pid_filter        u32, eq_t
+	// 3. mnt_ns_filter     u32, eq_t
+	// 4. pid_ns_filter     u32, eq_t
+	// 5. cgroup_id_filter  u32, eq_t
+
+	for fvKey, rBitmaps := range ruleBitmaps {
+		for k, v := range rBitmaps {
+			u32Key := uint32(k)
+			keyPointer := unsafe.Pointer(&u32Key)
+
+			eqVal := make([]byte, ruleBitmapSize)
+			valuePointer := unsafe.Pointer(&eqVal[0])
+
+			binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
+			binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
+
+			innerMapName := fmt.Sprintf("%s_%d_%d", innerMapName, fvKey.Version, fvKey.EventID)
+
+			bpfMap, ok := pm.bpfInnerMaps[innerMapName]
+			if !ok {
+				return errfmt.Errorf("bpf map not found: %s", innerMapName)
+			}
+			if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
+				return errfmt.WrapError(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// updateStringFilterBPF updates the BPF maps for the given string RuleBitmaps.
+func (pm *PolicyManager) updateStringFilterBPF(
+	ruleBitmaps map[filterVersionKey]map[string]ruleBitmap,
+	innerMapName string,
+) error {
+	// String RuleBitmaps
+	// 1. uts_ns_filter  string_filter_t, eq_t
+	// 2. comm_filter    string_filter_t, eq_t
+
+	for fvKey, rBitmaps := range ruleBitmaps {
+		for k, v := range rBitmaps {
+			byteStr := make([]byte, maxBpfStrFilterSize)
+			copy(byteStr, k)
+			keyPointer := unsafe.Pointer(&byteStr[0])
+
+			eqVal := make([]byte, ruleBitmapSize)
+			valuePointer := unsafe.Pointer(&eqVal[0])
+
+			binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
+			binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
+
+			innerMapName := fmt.Sprintf("%s_%d_%d", innerMapName, fvKey.Version, fvKey.EventID)
+
+			bpfMap, ok := pm.bpfInnerMaps[innerMapName]
+			if !ok {
+				return errfmt.Errorf("bpf map not found: %s", innerMapName)
+			}
+			if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
+				return errfmt.WrapError(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// updateBinaryFilterBPF updates the BPF maps for the given binary RuleBitmaps.
+func (pm *PolicyManager) updateBinaryFilterBPF(
+	ruleBitmaps map[filterVersionKey]map[filters.NSBinary]ruleBitmap,
+	innerMapName string,
+) error {
+	// BinaryNS ruleBitmap
+	// 1. binary_filter  binary_t, eq_t
+
+	for fvKey, rBitmaps := range ruleBitmaps {
+		for k, v := range rBitmaps {
+			if len(k.Path) > maxBpfBinPathSize {
+				return filters.InvalidValue(k.Path)
+			}
+			binBytes := make([]byte, bpfBinFilterSize)
+			if k.MntNS == 0 {
+				// if no mount namespace given, bpf map key is only the path
+				copy(binBytes, k.Path)
+			} else {
+				// otherwise, key is composed of the mount namespace and the path
+				binary.LittleEndian.PutUint32(binBytes, k.MntNS)
+				copy(binBytes[4:], k.Path)
+			}
+			keyPointer := unsafe.Pointer(&binBytes[0])
+
+			eqVal := make([]byte, ruleBitmapSize)
+			valuePointer := unsafe.Pointer(&eqVal[0])
+
+			binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
+			binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
+
+			innerMapName := fmt.Sprintf("%s_%d_%d", innerMapName, fvKey.Version, fvKey.EventID)
+
+			bpfMap, ok := pm.bpfInnerMaps[innerMapName]
+			if !ok {
+				return errfmt.Errorf("bpf map not found: %s", innerMapName)
+			}
+			if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
+				return errfmt.WrapError(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// updateStringDataFilterLPMBPF updates the BPF maps for the given kernel data LPM RuleBitmaps.
+func (pm *PolicyManager) updateStringDataFilterLPMBPF(
+	ruleBitmaps map[filterVersionKey]map[string]ruleBitmap,
+	innerMapName string,
+) error {
+	// KernelDataFields ruleBitmap
+	// 1. data_filter_prefix  data_filter_lpm_key_t, eq_t
+	// 2. data_filter_suffix  data_filter_lpm_key_t, eq_t
+
+	for fvKey, rBitmaps := range ruleBitmaps {
+		for k, v := range rBitmaps {
+			// Ensure the string length is within the maximum allowed limit,
+			// excluding the NULL terminator.
+			if len(k) > maxBpfDataFilterStrSize-1 {
+				return filters.InvalidValueMax(k, maxBpfDataFilterStrSize-1)
+			}
+			binBytes := make([]byte, bpfDataFilterStrSize)
+
+			// key is composed of: prefixlen and a string
+			// multiplication by 8 - convert prefix length from bytes to bits
+			// for LPM Trie compatibility.
+			prefixlen := len(k) * 8
+			binary.LittleEndian.PutUint32(binBytes, uint32(prefixlen)) // prefixlen
+			copy(binBytes[4:], k)                                      // string
+
+			keyPointer := unsafe.Pointer(&binBytes[0])
+
+			eqVal := make([]byte, ruleBitmapSize)
+			valuePointer := unsafe.Pointer(&eqVal[0])
+
+			binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
+			binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
+
+			innerMapName := fmt.Sprintf("%s_%d_%d", innerMapName, fvKey.Version, fvKey.EventID)
+
+			bpfMap, ok := pm.bpfInnerMaps[innerMapName]
+			if !ok {
+				return errfmt.Errorf("bpf map not found: %s", innerMapName)
+			}
+			if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
+				return errfmt.WrapError(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// updateStringDataFilterBPF updates the BPF maps for the given kernel data RuleBitmaps.
+func (pm *PolicyManager) updateStringDataFilterBPF(
+	ruleBitmaps map[filterVersionKey]map[string]ruleBitmap,
+	innerMapName string,
+) error {
+	// KernelDataFields ruleBitmap
+	// 1. data_filter_exact  data_filter_key_t, eq_t
+
+	for fvKey, rBitmaps := range ruleBitmaps {
+		for k, v := range rBitmaps {
+			// Ensure the string length is within the maximum allowed limit,
+			// excluding the NULL terminator.
+			if len(k) > maxBpfDataFilterStrSize-1 {
+				return filters.InvalidValueMax(k, maxBpfDataFilterStrSize-1)
+			}
+			binBytes := make([]byte, maxBpfDataFilterStrSize)
+
+			// key is composed of a string
+			copy(binBytes, k) // string
+
+			keyPointer := unsafe.Pointer(&binBytes[0])
+
+			eqVal := make([]byte, ruleBitmapSize)
+			valuePointer := unsafe.Pointer(&eqVal[0])
+
+			binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
+			binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
+
+			innerMapName := fmt.Sprintf("%s_%d_%d", innerMapName, fvKey.Version, fvKey.EventID)
+
+			bpfMap, ok := pm.bpfInnerMaps[innerMapName]
+			if !ok {
+				return errfmt.Errorf("bpf map not found: %s", innerMapName)
+			}
+			if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
+				return errfmt.WrapError(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+type procInfo struct {
+	newProc        bool
+	followPolicies uint64
+	mntNS          uint32
+	binaryBytes    [maxBpfBinPathSize]byte
+	binNoMnt       uint32
+}
+
+// populateProcInfoMap populates the ProcInfoMap with the binaries to track.
+// TODO: Should ProcInfoMap be cleared when a Policies new version is created?
+// Or should it be versioned too?
+func populateProcInfoMap(bpfModule *bpf.Module, ruleBitmaps map[filterVersionKey]map[filters.NSBinary]ruleBitmap) error {
+	procInfoMap, err := bpfModule.GetMap(ProcInfoMap)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	binsProcs, err := proc.GetAllBinaryProcs()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	for _, rBitmaps := range ruleBitmaps {
+		for bin := range rBitmaps {
+			procs := binsProcs[bin.Path]
+			for _, p := range procs {
+				binBytes := make([]byte, maxBpfBinPathSize)
+				copy(binBytes, bin.Path)
+				binBytesCopy := (*[maxBpfBinPathSize]byte)(binBytes)
+				// TODO: Default values for newProc and followPolicies are 0 are safe only in
+				// init phase. As Policies are updated at runtime, this is not true anymore.
+				procInfo := procInfo{
+					newProc:        false,
+					followPolicies: 0,
+					mntNS:          bin.MntNS,
+					binaryBytes:    *binBytesCopy,
+					binNoMnt:       0, // always 0, see bin_no_mnt in tracee.bpf.c
+				}
+				if err := procInfoMap.Update(unsafe.Pointer(&p), unsafe.Pointer(&procInfo)); err != nil {
+					return errfmt.WrapError(err)
+				}
+			}
+		}
+	}
+
+	return nil
 }
