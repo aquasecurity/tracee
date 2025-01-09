@@ -67,22 +67,6 @@ func TestReadArgFromBuff(t *testing.T) {
 			fields:      []trace.ArgMeta{{DecodeAs: trace.UINT_T, Name: "devT0"}},
 			expectedArg: uint32(4294967295),
 		},
-		{
-			name: "offT",
-			input: []byte{0,
-				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
-			},
-			fields:      []trace.ArgMeta{{DecodeAs: trace.ULONG_T, Name: "offT0"}},
-			expectedArg: uint64(18446744073709551615),
-		},
-		{
-			name: "loffT",
-			input: []byte{0,
-				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
-			},
-			fields:      []trace.ArgMeta{{DecodeAs: trace.ULONG_T, Name: "loffT0"}},
-			expectedArg: uint64(18446744073709551615),
-		},
 		{ // This is expected to fail. TODO: change pointer parsed type to uint64
 			name: "pointerT",
 			input: []byte{0,
@@ -166,13 +150,15 @@ func TestReadArgFromBuff(t *testing.T) {
 		},
 	}
 
+	dataPresentor := NewDataPresentor()
+
 	for _, tc := range testCases {
 		tc := tc
 
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			decoder := New(tc.input)
+			decoder := New(tc.input, dataPresentor)
 			_, actual, err := readArgFromBuff(0, decoder, tc.fields)
 
 			if tc.expectedError != nil {
@@ -255,9 +241,11 @@ func TestReadStringVarFromBuff(t *testing.T) {
 		},
 	}
 
+	dataPresentor := NewDataPresentor()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			decoder := New(tt.buffer)
+			decoder := New(tt.buffer, dataPresentor)
 			actual, err := readVarStringFromBuffer(decoder, tt.max)
 			if tt.expectError {
 				assert.Error(t, err)

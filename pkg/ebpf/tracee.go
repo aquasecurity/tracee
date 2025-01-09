@@ -17,6 +17,7 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
+	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	"github.com/aquasecurity/tracee/pkg/config"
@@ -82,6 +83,7 @@ type Tracee struct {
 	bpfModule     *bpf.Module
 	defaultProbes *probes.ProbeGroup
 	extraProbes   map[string]*probes.ProbeGroup
+	dataPresentor bufferdecoder.DataPresentor
 	// BPF Maps
 	StackAddressesMap *bpf.BPFMap
 	FDArgPathMap      *bpf.BPFMap
@@ -243,6 +245,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		eventsDependencies: depsManager,
 		requiredKsyms:      []string{},
 		extraProbes:        make(map[string]*probes.ProbeGroup),
+		dataPresentor:      bufferdecoder.NewDataPresentor(),
 	}
 
 	// clear initial policies to avoid wrong references
@@ -1295,6 +1298,7 @@ func (t *Tracee) initBPF() error {
 		t.containers,
 		t.config.NoContainersEnrich,
 		t.processTree,
+		t.dataPresentor,
 	)
 	if err != nil {
 		return errfmt.WrapError(err)

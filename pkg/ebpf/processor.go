@@ -90,12 +90,12 @@ func (t *Tracee) registerEventProcessors() {
 		// Convert all time-related arguments to nanoseconds since the epoch.
 		// NOTE: Ensure that all time-related arguments for your event are
 		// converted here, so subsequent code works with normalized time values.
-		t.RegisterEventProcessor(events.SchedProcessFork, t.normalizeTimeArg(
-			"start_time",
-			"parent_start_time",
-			"parent_process_start_time",
-			"leader_start_time",
-		))
+		// t.RegisterEventProcessor(events.SchedProcessFork, t.normalizeTimeArg(
+		// 	"start_time",
+		// 	"parent_start_time",
+		// 	"parent_process_start_time",
+		// 	"leader_start_time",
+		// ))
 
 		t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkProcessor)
 		t.RegisterEventProcessor(events.SchedProcessExec, t.procTreeExecProcessor)

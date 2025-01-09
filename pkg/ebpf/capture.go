@@ -37,7 +37,7 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 			if len(dataRaw) == 0 {
 				continue
 			}
-			ebpfMsgDecoder := bufferdecoder.New(dataRaw)
+			ebpfMsgDecoder := bufferdecoder.New(dataRaw, t.dataPresentor)
 			var meta bufferdecoder.ChunkMeta
 			appendFile := false
 
@@ -69,7 +69,7 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 				continue
 			}
 			filename := ""
-			metaBuffDecoder := bufferdecoder.New(meta.Metadata[:])
+			metaBuffDecoder := bufferdecoder.New(meta.Metadata[:], t.dataPresentor)
 			var kernelModuleMeta bufferdecoder.KernelModuleMeta
 			var bpfObjectMeta bufferdecoder.BpfObjectMeta
 			if meta.BinType == bufferdecoder.SendVfsWrite || meta.BinType == bufferdecoder.SendVfsRead {

@@ -5,13 +5,15 @@ import (
 	"testing"
 )
 
+var present = NewDataPresentor()
+
 func BenchmarkReadStringVarFromBuff_ShortString(b *testing.B) {
 	buffer := []byte{'H', 'e', 'l', 'l', 'o', 0}
 	max := 10
 	var str string
 
 	for i := 0; i < b.N; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, present)
 		str, _ = readVarStringFromBuffer(decoder, max)
 	}
 	_ = str
@@ -23,7 +25,7 @@ func BenchmarkReadStringVarFromBuff_MediumString(b *testing.B) {
 	var str string
 
 	for i := 0; i < b.N; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, present)
 		str, _ = readVarStringFromBuffer(decoder, max)
 	}
 	_ = str
@@ -36,7 +38,7 @@ func BenchmarkReadStringVarFromBuff_LongString(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, present)
 		str, _ = readVarStringFromBuffer(decoder, max)
 	}
 	_ = str
@@ -49,7 +51,7 @@ func BenchmarkReadStringVarFromBuff_LongStringLowMax(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, present)
 		str, _ = readVarStringFromBuffer(decoder, max)
 	}
 	_ = str
