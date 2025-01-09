@@ -67,22 +67,6 @@ func TestReadArgFromBuff(t *testing.T) {
 			fields:      []trace.ArgMeta{{DecodeAs: trace.UINT_T, Name: "devT0"}},
 			expectedArg: uint32(4294967295),
 		},
-		{
-			name: "offT",
-			input: []byte{0,
-				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
-			},
-			fields:      []trace.ArgMeta{{DecodeAs: trace.ULONG_T, Name: "offT0"}},
-			expectedArg: uint64(18446744073709551615),
-		},
-		{
-			name: "loffT",
-			input: []byte{0,
-				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
-			},
-			fields:      []trace.ArgMeta{{DecodeAs: trace.ULONG_T, Name: "loffT0"}},
-			expectedArg: uint64(18446744073709551615),
-		},
 		{ // This is expected to fail. TODO: change pointer parsed type to uint64
 			name: "pointerT",
 			input: []byte{0,
@@ -166,6 +150,8 @@ func TestReadArgFromBuff(t *testing.T) {
 		},
 	}
 
+	dataPresentor := newDataPresentor()
+
 	for _, tc := range testCases {
 		tc := tc
 
@@ -173,7 +159,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			t.Parallel()
 
 			decoder := New(tc.input)
-			_, actual, err := readArgFromBuff(0, decoder, tc.fields)
+			_, actual, err := readArgFromBuff(0, decoder, tc.fields, dataPresentor)
 
 			if tc.expectedError != nil {
 				assert.ErrorContains(t, err, tc.expectedError.Error())

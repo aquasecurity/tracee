@@ -15,12 +15,16 @@ import (
 
 // readArgFromBuff read the next argument from the buffer.
 // Return the index of the argument and the parsed argument.
-func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.ArgMeta,
+func readArgFromBuff(
+	id events.ID,
+	ebpfMsgDecoder *EbpfDecoder,
+	fields []trace.ArgMeta,
+	decodeToPresentation map[trace.DecodeAs]map[string]func(decode any) (any, error),
 ) (
 	uint, trace.Argument, error,
 ) {
 	var err error
-	var res interface{}
+	var decodedValue interface{}
 	var argIdx uint8
 	var arg trace.Argument
 
@@ -41,43 +45,43 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 	case trace.U8_T:
 		var data uint8
 		err = ebpfMsgDecoder.DecodeUint8(&data)
-		res = data
+		decodedValue = data
 	case trace.U16_T:
 		var data uint16
 		err = ebpfMsgDecoder.DecodeUint16(&data)
-		res = data
+		decodedValue = data
 	case trace.INT_T:
 		var data int32
 		err = ebpfMsgDecoder.DecodeInt32(&data)
-		res = data
+		decodedValue = data
 	case trace.UINT_T:
 		var data uint32
 		err = ebpfMsgDecoder.DecodeUint32(&data)
-		res = data
+		decodedValue = data
 	case trace.LONG_T:
 		var data int64
 		err = ebpfMsgDecoder.DecodeInt64(&data)
-		res = data
+		decodedValue = data
 	case trace.ULONG_T:
 		var data uint64
 		err = ebpfMsgDecoder.DecodeUint64(&data)
-		res = data
+		decodedValue = data
 	case trace.BOOL_T:
 		var data bool
 		err = ebpfMsgDecoder.DecodeBool(&data)
-		res = data
+		decodedValue = data
 	case trace.POINTER_T:
 		var data uint64
 		err = ebpfMsgDecoder.DecodeUint64(&data)
-		res = uintptr(data)
+		decodedValue = uintptr(data)
 	case trace.SOCK_ADDR_T:
-		res, err = readSockaddrFromBuff(ebpfMsgDecoder)
+		decodedValue, err = readSockaddrFromBuff(ebpfMsgDecoder)
 	case trace.CRED_T:
 		var data SlimCred
 		err = ebpfMsgDecoder.DecodeSlimCred(&data)
-		res = trace.SlimCred(data) // here we cast to trace.SlimCred to ensure we send the public interface and not bufferdecoder.SlimCred
+		decodedValue = trace.SlimCred(data) // here we cast to trace.SlimCred to ensure we send the public interface and not bufferdecoder.SlimCred
 	case trace.STR_T:
-		res, err = readStringFromBuff(ebpfMsgDecoder)
+		decodedValue, err = readStringFromBuff(ebpfMsgDecoder)
 	case trace.STR_ARR_T:
 		var arrLen uint8
 		err = ebpfMsgDecoder.DecodeUint8(&arrLen)
@@ -92,7 +96,7 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 			}
 			strSlice = append(strSlice, s)
 		}
-		res = strSlice
+		decodedValue = strSlice
 	case trace.ARGS_ARR_T:
 		var strSlice []string
 		var arrLen uint32
@@ -117,7 +121,7 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 		for int(argNum) > len(strSlice) {
 			strSlice = append(strSlice, "?")
 		}
-		res = strSlice
+		decodedValue = strSlice
 	case trace.BYTES_T:
 		var size uint32
 		err = ebpfMsgDecoder.DecodeUint32(&size)
@@ -128,21 +132,21 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 		if size > 4096 && (id < events.NetPacketBase || id > events.MaxNetID) {
 			return uint(argIdx), arg, errfmt.Errorf("byte array size too big: %d", size)
 		}
-		res, err = ebpfMsgDecoder.ReadBytesLen(int(size))
+		decodedValue, err = ebpfMsgDecoder.ReadBytesLen(int(size))
 	case trace.INT_ARR_2_T:
 		var intArray [2]int32
 		err = ebpfMsgDecoder.DecodeInt32Array(intArray[:], 2)
 		if err != nil {
 			return uint(argIdx), arg, errfmt.Errorf("error reading int elements: %v", err)
 		}
-		res = intArray
+		decodedValue = intArray
 	case trace.UINT64_ARR_T:
 		ulongArray := make([]uint64, 0)
 		err := ebpfMsgDecoder.DecodeUint64Array(&ulongArray)
 		if err != nil {
 			return uint(argIdx), arg, errfmt.Errorf("error reading ulong elements: %v", err)
 		}
-		res = ulongArray
+		decodedValue = ulongArray
 	case trace.TIMESPEC_T:
 		var sec int64
 		var nsec int64
@@ -151,7 +155,7 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 			return uint(argIdx), arg, errfmt.WrapError(err)
 		}
 		err = ebpfMsgDecoder.DecodeInt64(&nsec)
-		res = float64(sec) + (float64(nsec) / float64(1000000000))
+		decodedValue = float64(sec) + (float64(nsec) / float64(1000000000))
 
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
@@ -160,7 +164,17 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 	if err != nil {
 		return uint(argIdx), arg, errfmt.WrapError(err)
 	}
-	arg.Value = res
+
+	// present the decoded type
+	presentor, ok := decodeToPresentation[decodeType][arg.Type]
+	if !ok {
+		return uint(argIdx), arg, errfmt.Errorf("failed to present decoded argument (decoding from type %s to presented type %s)", decodeType, arg.Type)
+	}
+	arg.Value, err = presentor(decodedValue)
+	if err != nil {
+		return uint(argIdx), arg, errfmt.WrapError(err)
+	}
+
 	return uint(argIdx), arg, nil
 }
 
