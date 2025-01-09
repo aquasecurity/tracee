@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -50,7 +51,7 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 			return nil, fmt.Errorf("cannot process the flag: try grpc.Xxx or http.Xxx instead")
 		}
 		switch serverParts[0] {
-		//flag http.Xxx
+		// flag http.Xxx
 		case HTTPServer:
 			httpParts := strings.SplitN(serverParts[1], "=", 2)
 			switch httpParts[0] {
@@ -79,7 +80,7 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 			default:
 				return nil, errors.New("invalid http flag, consider using one of the following commands: address, metrics, healthz, pprof, pyroscope")
 			}
-		//flag grpc.Xxx
+		// flag grpc.Xxx
 		case GRPCServer:
 			grpcParts := strings.SplitN(serverParts[1], "=", 2)
 			switch grpcParts[0] {
@@ -138,23 +139,39 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 }
 
 func isValidAddr(addr string) bool {
+	// Check if the address is a valid URL.
 	_, err := url.ParseRequestURI("http://" + addr)
 	if err != nil {
 		return false
 	}
 
-	host, port, err := net.SplitHostPort(addr)
+	// Check if the address contains a port.
+	if !strings.Contains(addr, ":") {
+		return false
+	}
+
+	// Split the address into host and port.
+	host, portStr, err := net.SplitHostPort(addr)
 	if err != nil {
 		return false
 	}
 
-	ip := net.ParseIP(host)
-	if ip == nil && host != "localhost" && host != "0.0.0.0" {
+	// If a host is specified, check if it's a valid IP address or hostname.
+	if host != "" {
+		ip := net.ParseIP(host)
+		if ip == nil {
+			_, err := net.LookupHost(host)
+			if err != nil {
+				return false
+			}
+		}
+	}
+	// Check if the port is a valid integer and within the allowed range.
+	port, err := strconv.Atoi(portStr)
+	if err != nil || port < 0 || port > 65535 {
 		return false
 	}
-
-	_, err = net.LookupPort("tcp", port)
-	if err != nil {
+	if port == 0 {
 		return false
 	}
 

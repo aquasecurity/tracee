@@ -200,12 +200,12 @@ func main() {
 				Usage: "configure output format via templates. Usage: --output-template=path/to/my.tmpl",
 			},
 			&cli.BoolFlag{
-				Name:  server.PProfEndpointFlag,
+				Name:  server.HTTPServer + "." + server.PProfEndpointFlag,
 				Usage: "enable pprof endpoints",
 				Value: false,
 			},
 			&cli.BoolFlag{
-				Name:  server.PyroscopeAgentFlag,
+				Name:  server.HTTPServer + "." + server.PyroscopeAgentEndpointFlag,
 				Usage: "enable pyroscope agent",
 				Value: false,
 			},
@@ -218,21 +218,21 @@ func main() {
 				Usage: "size of the event channel's buffer consumed by signatures",
 				Value: 1000,
 			},
-			// &cli.BoolFlag{
-			// 	Name:  server.MetricsEndpointFlag,
-			// 	Usage: "enable metrics endpoint",
-			// 	Value: false,
-			// },
-			// &cli.BoolFlag{
-			// 	Name:  server.HealthzEndpointFlag,
-			// 	Usage: "enable healthz endpoint",
-			// 	Value: false,
-			// },
-			// &cli.StringFlag{
-			// 	Name:  server.HTTPListenEndpointFlag,
-			// 	Usage: "listening address of the metrics endpoint server",
-			// 	Value: ":4466",
-			// },
+			&cli.BoolFlag{
+				Name:  server.HTTPServer + "." + server.MetricsEndpointFlag,
+				Usage: "enable metrics endpoint",
+				Value: false,
+			},
+			&cli.BoolFlag{
+				Name:  server.HTTPServer + "." + server.HealthzEndpointFlag,
+				Usage: "enable healthz endpoint",
+				Value: false,
+			},
+			&cli.StringFlag{
+				Name:  server.HTTPServer + "." + server.ListenEndpointFlag,
+				Usage: "listening address of the metrics endpoint server",
+				Value: ":4466",
+			},
 			&cli.BoolFlag{
 				Name:  "allcaps",
 				Value: false,
