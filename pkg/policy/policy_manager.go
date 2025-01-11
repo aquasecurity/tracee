@@ -777,10 +777,9 @@ func (pm *PolicyManager) UpdateBPF(
 	bpfModule *bpf.Module,
 	cts *containers.Containers,
 	eventsFields map[events.ID][]bufferdecoder.ArgType,
-	createNewMaps bool,
 ) error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
-	return pm.updateBPF(bpfModule, cts, eventsFields, createNewMaps)
+	return pm.updateBPF(bpfModule, cts, eventsFields)
 }
