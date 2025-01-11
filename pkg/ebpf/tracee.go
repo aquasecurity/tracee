@@ -1047,7 +1047,6 @@ func (t *Tracee) populateBPFMaps() error {
 		t.bpfModule,
 		t.containers,
 		t.eventsFieldTypes,
-		true,
 	)
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -1271,7 +1270,7 @@ func (t *Tracee) initBPF() error {
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
 	// TODO: bug????? We already called t.policyManager.UpdateBPF in t.populateBPFMaps() so why calling it again here????
-	err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventsFieldTypes, false)
+	err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventsFieldTypes)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
