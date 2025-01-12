@@ -95,7 +95,7 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 				evt.Kubernetes = kubernetesData
 				evt.EventID = int(ctx.EventID)
 				evt.EventName = eventDefinition.GetName()
-				evt.PoliciesVersion = ctx.RulesVersion
+				evt.RulesVersion = ctx.RulesVersion
 				evt.MatchedRulesKernel = ctx.MatchedRules
 				evt.MatchedRulesUser = 0
 				evt.MatchedPolicies = []string{}
@@ -255,7 +255,7 @@ func BenchmarkNewEventObject(b *testing.B) {
 					Kubernetes:          kubernetesData,
 					EventID:             int(ctx.EventID),
 					EventName:           eventDefinition.GetName(),
-					PoliciesVersion:     ctx.RulesVersion,
+					RulesVersion:        ctx.RulesVersion,
 					MatchedRulesKernel:  ctx.MatchedRules,
 					ArgsNum:             int(argnum),
 					ReturnValue:         int(ctx.Retval),
