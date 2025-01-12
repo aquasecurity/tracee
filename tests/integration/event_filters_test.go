@@ -1896,9 +1896,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: data: trace event security_file_open set in multiple policies (with and without in-kernel filter)",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-pol-1",
@@ -1920,7 +1919,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 2,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-pol-2",
@@ -1968,9 +1966,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: data: trace event security_file_open set in multiple policies (with and without in-kernel filter) mixed in same policy",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-pol-1",
@@ -1993,7 +1990,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 2,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-pol-2",
