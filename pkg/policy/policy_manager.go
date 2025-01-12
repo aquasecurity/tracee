@@ -75,6 +75,7 @@ func NewManager(
 		policies:        make(map[string]*Policy),
 		rules:           make(map[events.ID]EventRules),
 		evtsDepsManager: evtsDepsManager,
+		bpfInnerMaps:    make(map[string]*bpf.BPFMapLow),
 		mu:              sync.RWMutex{},
 		cfg:             cfg,
 	}
@@ -173,10 +174,12 @@ func createBootstrapPolicy(cfg ManagerConfig) *Policy {
 		rules[events.CaptureNetPacket] = newRuleData(events.CaptureNetPacket)
 	}
 
-	return &Policy{
-		Name:  "__internal_bootstrap__",
-		Rules: rules,
-	}
+	// Create policy with initialized filters
+	p := NewPolicy()
+	p.Name = "__internal_bootstrap__"
+	p.Rules = rules
+
+	return p
 }
 
 func (pm *PolicyManager) updateCapsForSelectedEvents() error {
@@ -348,6 +351,7 @@ func deepCopyEventRules(original EventRules) EventRules {
 		rulesVersion:           original.rulesVersion,
 		rulesCount:             original.rulesCount,
 		containerFilteredRules: original.containerFilteredRules,
+		enabled:                original.enabled,
 		Rules:                  make([]*EventRule, len(original.Rules)),
 		UserlandRules:          make([]*EventRule, len(original.UserlandRules)),
 		ruleIDToEventRule:      make(map[uint8]*EventRule, len(original.ruleIDToEventRule)),
@@ -405,8 +409,10 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 	var containerFilteredRules uint64
 
 	rulesVersion := uint16(0)
+	enabled := true // Default to true for new rules
 	if existingEventRules, ok := tempRules[eventID]; ok {
 		rulesVersion = existingEventRules.rulesVersion
+		enabled = existingEventRules.enabled // Preserve existing enabled state
 	}
 
 	// Gather rules from all policies that apply to this event
@@ -479,6 +485,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 		rulesVersion:           rulesVersion + 1,
 		rulesCount:             ruleIDCounter,
 		containerFilteredRules: containerFilteredRules,
+		enabled:                enabled,
 	}
 
 	return nil
@@ -507,7 +514,11 @@ func (pm *PolicyManager) addTransitiveDependencyRules(
 	for _, depID := range eventNode.GetDependencies().GetIDs() {
 		eventRules, ok := tempRules[depID]
 		if !ok {
-			eventRules = EventRules{}
+			eventRules = EventRules{
+				Rules:             make([]*EventRule, 0),
+				UserlandRules:     make([]*EventRule, 0),
+				ruleIDToEventRule: make(map[uint8]*EventRule),
+			}
 		}
 
 		if _, depRuleExists := eventRules.ruleIDToEventRule[dependencyRuleID]; !depRuleExists {

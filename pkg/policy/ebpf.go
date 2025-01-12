@@ -156,6 +156,11 @@ func (pm *PolicyManager) updateEventsConfigMap(
 		if ecfg.rulesCount > 0 {
 			submitForRules = (uint64(1) << ecfg.rulesCount) - 1
 		}
+		// Check if event has any dependents
+		if _, ok := ecfg.ruleIDToEventRule[dependencyRuleID]; ok {
+			// Set bit for dependency rule (bit 63)
+			submitForRules |= uint64(1) << dependencyRuleID
+		}
 
 		eventConfig := eventConfig{
 			rulesVersion:   ecfg.rulesVersion,
@@ -305,6 +310,11 @@ func (pm *PolicyManager) updateUIntFilterBPF(
 	outerMapName string,
 ) error {
 	for fvKey, rBitmaps := range ruleBitmaps {
+		// Skip if no rules exist for this version/event
+		if len(rBitmaps) == 0 {
+			continue
+		}
+
 		// Get or create inner map
 		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, fvKey)
 		if err != nil {
@@ -341,6 +351,11 @@ func (pm *PolicyManager) updateStringFilterBPF(
 	outerMapName string,
 ) error {
 	for fvKey, rBitmaps := range ruleBitmaps {
+		// Skip if no rules exist for this version/event
+		if len(rBitmaps) == 0 {
+			continue
+		}
+
 		// Get or create inner map
 		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, fvKey)
 		if err != nil {
@@ -379,6 +394,11 @@ func (pm *PolicyManager) updateBinaryFilterBPF(
 	outerMapName string,
 ) error {
 	for fvKey, rBitmaps := range ruleBitmaps {
+		// Skip if no rules exist for this version/event
+		if len(rBitmaps) == 0 {
+			continue
+		}
+
 		// Get or create inner map
 		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, fvKey)
 		if err != nil {
@@ -428,6 +448,11 @@ func (pm *PolicyManager) updateStringDataFilterLPMBPF(
 	outerMapName string,
 ) error {
 	for fvKey, rBitmaps := range ruleBitmaps {
+		// Skip if no rules exist for this version/event
+		if len(rBitmaps) == 0 {
+			continue
+		}
+
 		// Get or create inner map
 		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, fvKey)
 		if err != nil {
@@ -478,6 +503,11 @@ func (pm *PolicyManager) updateStringDataFilterBPF(
 	outerMapName string,
 ) error {
 	for fvKey, rBitmaps := range ruleBitmaps {
+		// Skip if no rules exist for this version/event
+		if len(rBitmaps) == 0 {
+			continue
+		}
+
 		// Get or create inner map
 		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, fvKey)
 		if err != nil {

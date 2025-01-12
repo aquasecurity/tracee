@@ -242,6 +242,10 @@ func (pm *PolicyManager) processRuleDataFilters(
 	eventDataFilterConfigs map[events.ID]dataFilterConfig,
 	eventID events.ID,
 ) error {
+	if rule.Data == nil {
+		return nil
+	}
+
 	equalities, err := rule.Data.DataFilter.Equalities()
 	if err != nil {
 		return nil // Skip this rule
