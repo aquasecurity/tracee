@@ -59,7 +59,7 @@ func newEvent(id int, f *detect.Finding, e trace.Event) *trace.Event {
 		ThreadEntityId:      e.ThreadEntityId,
 		ProcessEntityId:     e.ProcessEntityId,
 		ParentEntityId:      e.ParentEntityId,
-		PoliciesVersion:     e.PoliciesVersion,
+		RulesVersion:        e.RulesVersion,
 		MatchedRulesKernel:  e.MatchedRulesKernel,
 		MatchedRulesUser:    e.MatchedRulesUser,
 		ArgsNum:             len(arguments),

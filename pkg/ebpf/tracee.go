@@ -1617,7 +1617,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	var matchedRules uint64
 
 	setMatchedRules := func(event *trace.Event, matchedRules uint64) {
-		event.PoliciesVersion = 1 // version will be removed soon
+		event.RulesVersion = 1 // version will be removed soon
 		event.MatchedRulesKernel = matchedRules
 		event.MatchedRulesUser, event.MatchedPolicies = t.policyManager.GetMatchedRulesInfo(events.ID(event.EventID), matchedRules)
 	}
