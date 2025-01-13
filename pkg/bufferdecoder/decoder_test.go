@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -1003,5 +1004,82 @@ func BenchmarkBinaryMprotectWriteMeta(*testing.B) {
 	for i := 0; i < 100; i++ {
 		binBuf := bytes.NewBuffer(buffer)
 		binary.Read(binBuf, binary.LittleEndian, &s)
+	}
+}
+
+func BenchmarkDecodeArguments(b *testing.B) {
+	/*
+		args := []trace.Argument{
+			{
+				Name: "arg1",
+				Type: "u64",
+				Value: 1,
+			},
+			{
+				Name: "arg2",
+				Type: "u64",
+				Value: 2,
+			},
+			{
+				Name: "arg3",
+				Type: "u64",
+				Value: 3,
+			},
+			...
+		}
+		******************
+		buffer is the []byte representation of args instance
+		******************
+	*/
+
+	buffer := []byte{
+		0, 1, 0, 0, 0, 0, 0, 0, 0, // arg1
+		1, 2, 0, 0, 0, 0, 0, 0, 0, // arg2
+		2, 3, 0, 0, 0, 0, 0, 0, 0, // arg3
+		3, 4, 0, 0, 0, 0, 0, 0, 0, // arg4
+		4, 5, 0, 0, 0, 0, 0, 0, 0, // arg5
+		5, 6, 0, 0, 0, 0, 0, 0, 0, // arg6
+		6, 7, 0, 0, 0, 0, 0, 0, 0, // arg7
+		7, 8, 0, 0, 0, 0, 0, 0, 0, // arg8
+	}
+	evtFields := []trace.ArgMeta{
+		{Name: "arg1", Type: "u64", Zero: 0},
+		{Name: "arg2", Type: "u64", Zero: 0},
+		{Name: "arg3", Type: "u64", Zero: 0},
+		{Name: "arg4", Type: "u64", Zero: 0},
+		{Name: "arg5", Type: "u64", Zero: 0},
+		{Name: "arg6", Type: "u64", Zero: 0},
+		{Name: "arg7", Type: "u64", Zero: 0},
+		{Name: "arg8", Type: "u64", Zero: 0},
+	}
+
+	// decode half of the arguments leaving the rest to be populated as zero values
+	argnum := len(evtFields) / 2
+
+	evtVersion := events.NewVersion(1, 0, 0)
+	evtName := "test"
+	eventId := events.ID(0)
+	evtDef := events.NewDefinition(
+		eventId,
+		eventId+1000,
+		evtName,
+		evtVersion,
+		"",
+		"",
+		false,
+		false,
+		[]string{},
+		events.Dependencies{},
+		evtFields, // fields
+		nil,
+	)
+
+	events.Core.AddBatch(map[events.ID]events.Definition{eventId: evtDef})
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		decoder := New(buffer)
+		args := make([]trace.Argument, len(evtFields))
+		_ = decoder.DecodeArguments(args, argnum, evtFields, evtName, eventId)
 	}
 }
