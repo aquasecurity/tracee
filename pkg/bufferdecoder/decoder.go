@@ -111,7 +111,7 @@ func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, e
 	for i := 0; i < len(evtFields); i++ {
 		if args[i].Value == nil {
 			args[i].ArgMeta = evtFields[i]
-			args[i].Value = args[i].Zero
+			args[i].Value = evtFields[i].Zero
 		}
 	}
 	return nil
