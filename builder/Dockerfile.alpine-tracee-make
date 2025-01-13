@@ -4,7 +4,7 @@
 # alpine-base: install necessary packages and tools
 #
 
-FROM alpine:3.19 AS alpine-base
+FROM alpine:3.21 AS alpine-base
 LABEL AS=alpine-base
 USER root
 
