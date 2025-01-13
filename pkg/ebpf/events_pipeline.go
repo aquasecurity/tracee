@@ -176,11 +176,12 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				continue
 			}
 			eventId := events.ID(eCtx.EventID)
-			if !events.Core.IsDefined(eventId) {
+			eventDefinition := events.Core.GetDefinitionByID(eventId)
+			if eventDefinition.NotValid() {
 				t.handleError(errfmt.Errorf("failed to get configuration of event %d", eventId))
 				continue
 			}
-			eventDefinition := events.Core.GetDefinitionByID(eventId)
+
 			evtFields := eventDefinition.GetFields()
 			evtName := eventDefinition.GetName()
 			args := make([]trace.Argument, len(evtFields))
@@ -217,11 +218,12 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				// For 32-bit (compat) processes, the syscall ID gets translated in eBPF to the event ID of its
 				// 64-bit counterpart, or if it's a 32-bit exclusive syscall, to the event ID corresponding to it.
 				id := events.ID(eCtx.Syscall)
-				if events.Core.IsDefined(id) {
-					syscall = events.Core.GetDefinitionByID(id).GetName()
-				} else {
+				syscallDef := events.Core.GetDefinitionByID(id)
+				if syscallDef.NotValid() {
 					// This should never fail, as the translation used in eBPF relies on the same event definitions
 					logger.Errorw("No syscall event with id %d", id)
+				} else {
+					syscall = syscallDef.GetName()
 				}
 			}
 
