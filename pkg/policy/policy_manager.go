@@ -326,11 +326,16 @@ func (pm *PolicyManager) RemovePolicy(policyName string) error {
 		// Only unselect the event if it's not selected by any other policy
 		if !isSelected {
 			pm.evtsDepsManager.UnselectEvent(eventID)
+			delete(tempRules, eventID) // Remove unselected event from tempRules
 		}
 	}
 
 	// Update EventRules for each event affected by the policy
 	for eventID := range policyToRemove.Rules {
+		// Skip if event was unselected
+		if _, ok := tempRules[eventID]; !ok {
+			continue
+		}
 		if err := pm.updateRulesForEvent(eventID, tempRules, tempPolicies); err != nil {
 			return errfmt.WrapError(err)
 		}
