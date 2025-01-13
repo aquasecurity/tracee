@@ -31,7 +31,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/sys v0.28.0
 	google.golang.org/grpc v1.66.0
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.36.2
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.30.1
