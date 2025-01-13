@@ -2,6 +2,7 @@ package ebpf
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -34,7 +35,7 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 	errs = append(errs, err)
 	parentNsPid, err := parse.ArgVal[int32](event.Args, "parent_process_ns_pid")
 	errs = append(errs, err)
-	parentStartTime, err := parse.ArgVal[uint64](event.Args, "parent_process_start_time")
+	parentStartTime, err := parse.ArgVal[time.Time](event.Args, "parent_process_start_time")
 	errs = append(errs, err)
 
 	// Thread Group Leader (might be the same as the "child", if "child" is a process)
@@ -46,7 +47,7 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 	errs = append(errs, err)
 	leaderNsPid, err := parse.ArgVal[int32](event.Args, "leader_ns_pid")
 	errs = append(errs, err)
-	leaderStartTime, err := parse.ArgVal[uint64](event.Args, "leader_start_time")
+	leaderStartTime, err := parse.ArgVal[time.Time](event.Args, "leader_start_time")
 	errs = append(errs, err)
 
 	// Child (might be a process or a thread)
@@ -58,7 +59,7 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 	errs = append(errs, err)
 	childNsPid, err := parse.ArgVal[int32](event.Args, "child_ns_pid")
 	errs = append(errs, err)
-	childStartTime, err := parse.ArgVal[uint64](event.Args, "start_time") // child_start_time
+	childStartTime, err := parse.ArgVal[time.Time](event.Args, "start_time") // child_start_time
 	errs = append(errs, err)
 
 	// Deal with errors
@@ -68,14 +69,19 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 		}
 	}
 
+	// Get nano epoch times
+	childStartTimeNano := uint64(childStartTime.UnixNano())
+	parentStartTimeNano := uint64(parentStartTime.UnixNano())
+	leaderStartTimeNano := uint64(leaderStartTime.UnixNano())
+
 	// Calculate hashes
-	childHash := utils.HashTaskID(uint32(childTid), uint64(childStartTime))
-	parentHash := utils.HashTaskID(uint32(parentTid), uint64(parentStartTime))
-	leaderHash := utils.HashTaskID(uint32(leaderTid), uint64(leaderStartTime))
+	childHash := utils.HashTaskID(uint32(childTid), childStartTimeNano)
+	parentHash := utils.HashTaskID(uint32(parentTid), parentStartTimeNano)
+	leaderHash := utils.HashTaskID(uint32(leaderTid), leaderStartTimeNano)
 
 	return t.processTree.FeedFromFork(
 		proctree.ForkFeed{
-			TimeStamp:       childStartTime, // event timestamp is the same
+			TimeStamp:       childStartTimeNano, // event timestamp is the same
 			ChildHash:       childHash,
 			ParentHash:      parentHash,
 			LeaderHash:      leaderHash,
@@ -83,17 +89,17 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 			ParentNsTid:     parentNsTid,
 			ParentPid:       parentPid,
 			ParentNsPid:     parentNsPid,
-			ParentStartTime: parentStartTime,
+			ParentStartTime: parentStartTimeNano,
 			LeaderTid:       leaderTid,
 			LeaderNsTid:     leaderNsTid,
 			LeaderPid:       leaderPid,
 			LeaderNsPid:     leaderNsPid,
-			LeaderStartTime: leaderStartTime,
+			LeaderStartTime: leaderStartTimeNano,
 			ChildTid:        childTid,
 			ChildNsTid:      childNsTid,
 			ChildPid:        childPid,
 			ChildNsPid:      childNsPid,
-			ChildStartTime:  childStartTime,
+			ChildStartTime:  childStartTimeNano,
 		},
 	)
 }
