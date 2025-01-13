@@ -551,25 +551,32 @@ func (pm *PolicyManager) addTransitiveDependencyRules(
 
 // isRuleFilterableInUserland checks if a rule is filterable in userland.
 func isRuleFilterableInUserland(rule *EventRule) bool {
-	// Check filters under RuleData
-	if rule.Data.DataFilter.Enabled() ||
-		rule.Data.RetFilter.Enabled() ||
-		rule.Data.ScopeFilter.Enabled() {
-		return true
+	if rule == nil {
+		return false
 	}
 
-	// Check policy-level filters (UID and PID)
-	p := rule.Policy
-	if p.UIDFilter.Enabled() &&
-		((p.UIDFilter.Minimum() != filters.MinNotSetUInt) ||
-			(p.UIDFilter.Maximum() != filters.MaxNotSetUInt)) {
-		return true
+	// Check rule.Data and its filters
+	if rule.Data != nil {
+		if (rule.Data.DataFilter != nil && rule.Data.DataFilter.Enabled()) ||
+			(rule.Data.RetFilter != nil && rule.Data.RetFilter.Enabled()) ||
+			(rule.Data.ScopeFilter != nil && rule.Data.ScopeFilter.Enabled()) {
+			return true
+		}
 	}
 
-	if p.PIDFilter.Enabled() &&
-		((p.PIDFilter.Minimum() != filters.MinNotSetUInt) ||
-			(p.PIDFilter.Maximum() != filters.MaxNotSetUInt)) {
-		return true
+	// Check policy-level filters
+	if rule.Policy != nil {
+		if (rule.Policy.UIDFilter != nil && rule.Policy.UIDFilter.Enabled()) &&
+			((rule.Policy.UIDFilter.Minimum() != filters.MinNotSetUInt) ||
+				(rule.Policy.UIDFilter.Maximum() != filters.MaxNotSetUInt)) {
+			return true
+		}
+
+		if rule.Policy.PIDFilter != nil && rule.Policy.PIDFilter.Enabled() &&
+			((rule.Policy.PIDFilter.Minimum() != filters.MinNotSetUInt) ||
+				(rule.Policy.PIDFilter.Maximum() != filters.MaxNotSetUInt)) {
+			return true
+		}
 	}
 
 	return false
