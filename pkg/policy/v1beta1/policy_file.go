@@ -269,12 +269,10 @@ func validateEventData(policyName, eventName, dataName string) error {
 
 	dataName = s[0]
 
-	eventDefID, ok := events.Core.GetDefinitionIDByName(eventName)
-	if !ok {
+	eventDefinition := events.Core.GetDefinitionByName(eventName)
+	if eventDefinition.NotValid() {
 		return errfmt.Errorf("policy %s, event %s is not valid", policyName, eventName)
 	}
-
-	eventDefinition := events.Core.GetDefinitionByID(eventDefID)
 
 	for _, set := range eventDefinition.GetSets() {
 		if set == "signatures" { // no sig event validation (arguments are dynamic)

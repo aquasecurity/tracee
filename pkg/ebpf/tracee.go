@@ -1585,11 +1585,10 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 	uniqueHooksMap := map[probeMapKey]struct{}{}
 
 	for _, tr := range t.policyManager.EventsSelected() {
-		if !events.Core.IsDefined(tr) {
+		definition := events.Core.GetDefinitionByID(tr)
+		if definition.NotValid() {
 			continue
 		}
-
-		definition := events.Core.GetDefinitionByID(tr)
 
 		for _, depProbes := range definition.GetDependencies().GetProbes() {
 			currProbe := t.defaultProbes.GetProbeByHandle(depProbes.GetHandle())

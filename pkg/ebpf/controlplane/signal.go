@@ -26,10 +26,11 @@ func (sig *signal) Unmarshal(buffer []byte) error {
 		return errfmt.Errorf("failed to decode signal argnum: %v", err)
 	}
 
-	if !events.Core.IsDefined(sig.id) {
-		return errfmt.Errorf("failed to get event %d configuration", sig.id)
-	}
 	eventDefinition := events.Core.GetDefinitionByID(sig.id)
+	if eventDefinition.NotValid() {
+		return errfmt.Errorf("%d is not a valid event id", sig.id)
+	}
+
 	evtFields := eventDefinition.GetFields()
 	evtName := eventDefinition.GetName()
 	sig.args = make([]trace.Argument, len(evtFields))

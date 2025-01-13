@@ -87,15 +87,14 @@ func getSyscallsFromParams(eventParams []map[string]filters.Filter[*filters.Stri
 			}
 			syscallID := events.ID(syscallIDInt)
 
-			if !events.Core.IsDefined(syscallID) {
-				return syscalls, errfmt.Errorf("syscall id %d is not defined", syscallID)
+			syscallDef := events.Core.GetDefinitionByID(events.ID(syscallID))
+			if syscallDef.NotValid() {
+				return syscalls, errfmt.Errorf("syscall id %d is not valid", syscallID)
 			}
-
-			syscallName := events.Core.GetDefinitionByID(syscallID).GetName()
 
 			syscalls = append(syscalls, syscallInfo{
 				id:   syscallID,
-				name: syscallName,
+				name: syscallDef.GetName(),
 			})
 		}
 	}

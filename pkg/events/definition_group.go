@@ -61,10 +61,12 @@ func (d *DefinitionGroup) GetDefinitions() []Definition {
 func (d *DefinitionGroup) GetDefinitionIDByName(givenName string) (ID, bool) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
+
 	id, found := d.getDefinitionIDByName(givenName)
 	if !found {
 		logger.Debugw("definition name not found", "name", givenName)
 	}
+
 	return id, found
 }
 
@@ -80,7 +82,6 @@ func (d *DefinitionGroup) getDefinitionIDByName(givenName string) (ID, bool) {
 }
 
 // GetDefinitionByID returns a definition by its ID.
-// NOTE: should be used together with IsDefined when definition might not exist.
 func (d *DefinitionGroup) GetDefinitionByID(givenDef ID) Definition {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
@@ -88,14 +89,42 @@ func (d *DefinitionGroup) GetDefinitionByID(givenDef ID) Definition {
 	def, ok := d.definitions[givenDef]
 	if !ok {
 		logger.Debugw("definition id not found", "id", givenDef)
-		return Definition{id: Undefined}
+		return Definition{
+			id:   Undefined,
+			name: "Undefined",
+		}
 	}
 
 	return def
 }
 
+// GetDefinitionByName returns a definition by its name.
+func (d *DefinitionGroup) GetDefinitionByName(givenName string) Definition {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	def, _ := d.getDefinitionByName(givenName)
+	return def
+}
+
+// getDefinitionByName returns a definition by its name (no locking).
+func (d *DefinitionGroup) getDefinitionByName(givenName string) (Definition, bool) {
+	for _, def := range d.definitions {
+		if def.GetName() == givenName {
+			return def, true
+		}
+	}
+
+	return Definition{
+		id:   Undefined,
+		name: "Undefined",
+	}, false
+}
+
 // IsDefined returns true if the definition exists in the definition group.
-// NOTE: needed as GetDefinitionByID() is used as GetDefinitionByID().Method() multiple times.
+// This method only verifies the existence of a definition.
+// To retrieve the Definition, use GetDefinitionByID and check its validity with
+// the NotValid method.
 func (d *DefinitionGroup) IsDefined(givenDef ID) bool {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()

@@ -242,12 +242,11 @@ func ParseArgs(event *trace.Event) error {
 	case SuspiciousSyscallSource, StackPivot:
 		if syscallArg := GetArg(event, "syscall"); syscallArg != nil {
 			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
-				if Core.IsDefined(ID(id)) {
-					eventDefinition := Core.GetDefinitionByID(ID(id))
-					if eventDefinition.IsSyscall() {
-						syscallArg.Value = eventDefinition.GetName()
-						syscallArg.Type = "string"
-					}
+				eventDefinition := Core.GetDefinitionByID(ID(id))
+				// no need to check for NotValid() since it is syscall only if it's a valid event
+				if eventDefinition.IsSyscall() {
+					syscallArg.Value = eventDefinition.GetName()
+					syscallArg.Type = "string"
 				}
 			}
 		}

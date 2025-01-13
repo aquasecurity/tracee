@@ -84,6 +84,32 @@ func TestDefinitionGroup_GetDefinitionIDByName(t *testing.T) {
 	require.Equal(t, id, id2)
 }
 
+// TestGetDefinitionByName tests that GetDefinitionByName returns a definition by its name.
+func TestDefinitionGroup_GetDefinitionByName(t *testing.T) {
+	t.Parallel()
+
+	defGroup := NewDefinitionGroup()
+
+	id1 := ID(1)
+	id2 := ID(2)
+
+	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+
+	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
+
+	// found definition
+
+	def := defGroup.GetDefinitionByName("def1")
+	require.Equal(t, def.GetID(), id1)
+	require.Equal(t, def.GetName(), "def1")
+
+	// definition not found (undefined)
+
+	def = defGroup.GetDefinitionByName("def3")
+	require.Equal(t, def.GetID(), Undefined)
+}
+
 // TestDefinitionGroup_GetDefinitionByID tests that GetDefinitionByID returns a definition by its ID.
 func TestDefinitionGroup_GetDefinitionByID(t *testing.T) {
 	t.Parallel()
