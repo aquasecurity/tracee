@@ -4,22 +4,38 @@ import (
 	"fmt"
 )
 
+type policyError struct {
+	msg string
+}
+
+func (e *policyError) Error() string {
+	return e.msg
+}
+
+func (e *policyError) Is(target error) bool {
+	t, ok := target.(*policyError)
+	if !ok {
+		return false
+	}
+	return e.msg == t.msg
+}
+
 func PolicyNilError() error {
-	return fmt.Errorf("policy cannot be nil")
+	return &policyError{msg: "policy cannot be nil"}
 }
 
 func PolicyAlreadyExistsError(name string) error {
-	return fmt.Errorf("policy [%s] already exists", name)
+	return &policyError{msg: fmt.Sprintf("policy [%s] already exists", name)}
 }
 
 func PolicyNotFoundByNameError(name string) error {
-	return fmt.Errorf("policy [%s] not found", name)
+	return &policyError{msg: fmt.Sprintf("policy [%s] not found", name)}
 }
 
 func TooManyRulesForEventError(eventName string) error {
-	return fmt.Errorf("too many rules for event %s", eventName)
+	return &policyError{msg: fmt.Sprintf("too many rules for event %s", eventName)}
 }
 
 func SelectEventError(eventName string) error {
-	return fmt.Errorf("failed to select event %s", eventName)
+	return &policyError{msg: fmt.Sprintf("failed to select event %s", eventName)}
 }
