@@ -80,3 +80,27 @@ func Benchmark_procTreeExecProcessor(b *testing.B) {
 		_ = t.procTreeExecProcessor(event)
 	}
 }
+
+func Benchmark_procTreeExitProcessor(b *testing.B) {
+	t := &Tracee{}
+	t.processTree, _ = proctree.NewProcessTree(
+		context.Background(),
+		proctree.ProcTreeConfig{
+			Source:           proctree.SourceBoth,
+			ProcessCacheSize: proctree.DefaultProcessCacheSize,
+			ThreadCacheSize:  proctree.DefaultThreadCacheSize,
+		},
+	)
+
+	event := &trace.Event{
+		Args: []trace.Argument{
+			{ArgMeta: trace.ArgMeta{Name: "exit_code"}, Value: int64(1)},
+			{ArgMeta: trace.ArgMeta{Name: "process_group_exit"}, Value: true},
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = t.procTreeExitProcessor(event)
+	}
+}

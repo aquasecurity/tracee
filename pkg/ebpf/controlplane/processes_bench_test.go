@@ -81,3 +81,29 @@ func Benchmark_procTreeExecProcessor(b *testing.B) {
 		_ = ctrl.procTreeExecProcessor(args)
 	}
 }
+
+func Benchmark_procTreeExitProcessor(b *testing.B) {
+	ctrl := &Controller{}
+	ctrl.processTree, _ = proctree.NewProcessTree(
+		context.Background(),
+		proctree.ProcTreeConfig{
+			Source:           proctree.SourceBoth,
+			ProcessCacheSize: proctree.DefaultProcessCacheSize,
+			ThreadCacheSize:  proctree.DefaultThreadCacheSize,
+		},
+	)
+
+	args := []trace.Argument{
+		{ArgMeta: trace.ArgMeta{Name: "timestamp"}, Value: uint64(1)},
+		{ArgMeta: trace.ArgMeta{Name: "task_hash"}, Value: uint32(1)},
+		{ArgMeta: trace.ArgMeta{Name: "parent_hash"}, Value: uint32(1)},
+		{ArgMeta: trace.ArgMeta{Name: "leader_hash"}, Value: uint32(1)},
+		{ArgMeta: trace.ArgMeta{Name: "exit_code"}, Value: int64(1)},
+		{ArgMeta: trace.ArgMeta{Name: "process_group_exit"}, Value: true},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = ctrl.procTreeExitProcessor(args)
+	}
+}
