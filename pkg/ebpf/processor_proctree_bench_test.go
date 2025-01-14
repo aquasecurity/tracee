@@ -44,3 +44,39 @@ func Benchmark_procTreeForkProcessor(b *testing.B) {
 		_ = t.procTreeForkProcessor(event)
 	}
 }
+
+func Benchmark_procTreeExecProcessor(b *testing.B) {
+	t := &Tracee{}
+	t.processTree, _ = proctree.NewProcessTree(
+		context.Background(),
+		proctree.ProcTreeConfig{
+			Source:           proctree.SourceBoth,
+			ProcessCacheSize: proctree.DefaultProcessCacheSize,
+			ThreadCacheSize:  proctree.DefaultThreadCacheSize,
+		},
+	)
+
+	event := &trace.Event{
+		Args: []trace.Argument{
+			{ArgMeta: trace.ArgMeta{Name: "cmdpath"}, Value: "/bin/bash"},
+			{ArgMeta: trace.ArgMeta{Name: "pathname"}, Value: "/bin/bash"},
+			{ArgMeta: trace.ArgMeta{Name: "dev"}, Value: uint32(1)},
+			{ArgMeta: trace.ArgMeta{Name: "inode"}, Value: uint64(1)},
+			{ArgMeta: trace.ArgMeta{Name: "ctime"}, Value: uint64(1)},
+			{ArgMeta: trace.ArgMeta{Name: "inode_mode"}, Value: uint16(1)},
+			{ArgMeta: trace.ArgMeta{Name: "interpreter_pathname"}, Value: "/lib64/ld-linux-x86-64.so.2"},
+			{ArgMeta: trace.ArgMeta{Name: "interpreter_dev"}, Value: uint32(1)},
+			{ArgMeta: trace.ArgMeta{Name: "interpreter_inode"}, Value: uint64(1)},
+			{ArgMeta: trace.ArgMeta{Name: "interpreter_ctime"}, Value: uint64(1)},
+			{ArgMeta: trace.ArgMeta{Name: "interp"}, Value: "/lib64/ld-linux-x86-64.so.2"},
+			{ArgMeta: trace.ArgMeta{Name: "stdin_type"}, Value: uint16(1)},
+			{ArgMeta: trace.ArgMeta{Name: "stdin_path"}, Value: "/dev/null"},
+			{ArgMeta: trace.ArgMeta{Name: "invoked_from_kernel"}, Value: int32(1)},
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = t.procTreeExecProcessor(event)
+	}
+}
