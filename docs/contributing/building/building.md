@@ -25,8 +25,8 @@
     > building environment:
     >
     > 1. [.github/actions/build-dependencies/action.yaml](https://github.com/aquasecurity/tracee/blob/main/.github/actions/build-dependencies/action.yaml)
-    > 1. [packaging/Dockerfile.ubuntu-packaging](https://github.com/aquasecurity/tracee/blob/main/builder/Dockerfile.ubuntu-tracee-make)
-    > 1. [packaging/Dockerfile.alpine-packaging](https://github.com/aquasecurity/tracee/blob/main/builder/Dockerfile.alpine-tracee-make)
+    > 1. [builder/Dockerfile.ubuntu-tracee-make](https://github.com/aquasecurity/tracee/blob/main/builder/Dockerfile.ubuntu-tracee-make)
+    > 1. [builder/Dockerfile.alpine-tracee-make](https://github.com/aquasecurity/tracee/blob/main/builder/Dockerfile.alpine-tracee-make)
     >
     > Those are very good examples for you to replicate a working environment.
 
