@@ -522,6 +522,15 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					//        Let's keep an eye on that moving from experimental for these and similar cases in tracee.
 					event := &derivatives[i]
 
+					// Get matched rules for derived event based on base event matches
+					event.MatchedRulesUser = t.policyManager.GetDerivedEventMatchedRules(
+						events.ID(event.EventID),     // derived event ID
+						events.ID(eventCopy.EventID), // base event ID
+						eventCopy.MatchedRulesUser,   // base event matched rules bitmap
+					)
+					// We need to update the kernel matched rules since it is used in matchedRules function
+					event.MatchedRulesKernel = event.MatchedRulesUser
+
 					// Skip events that dont work with filtering due to missing types
 					// being handled (https://github.com/aquasecurity/tracee/issues/2486)
 					switch events.ID(derivatives[i].EventID) {

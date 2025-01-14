@@ -156,11 +156,6 @@ func (pm *PolicyManager) updateEventsConfigMap(
 		if ecfg.rulesCount > 0 {
 			submitForRules = (uint64(1) << ecfg.rulesCount) - 1
 		}
-		// Check if event has any dependents
-		if _, ok := ecfg.ruleIDToEventRule[dependencyRuleID]; ok {
-			// Set bit for dependency rule (bit 63)
-			submitForRules |= uint64(1) << dependencyRuleID
-		}
 
 		eventConfig := eventConfig{
 			rulesVersion:   ecfg.rulesVersion,
