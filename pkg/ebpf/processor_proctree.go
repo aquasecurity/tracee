@@ -154,11 +154,11 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 		return err
 	}
 
-	// Binary Interpreter (or Loader): might come empty from the kernel
-	interPathName, _ := parse.ArgVal[string](event.Args, "interpreter_pathname")
-	interDev, _ := parse.ArgVal[uint32](event.Args, "interpreter_dev")
-	interInode, _ := parse.ArgVal[uint64](event.Args, "interpreter_inode")
-	interCtime, _ := parse.ArgVal[uint64](event.Args, "interpreter_ctime")
+	// // Binary Interpreter (or Loader): might come empty from the kernel
+	// interPathName, _ := parse.ArgVal[string](event.Args, "interpreter_pathname")
+	// interDev, _ := parse.ArgVal[uint32](event.Args, "interpreter_dev")
+	// interInode, _ := parse.ArgVal[uint64](event.Args, "interpreter_inode")
+	// interCtime, _ := parse.ArgVal[uint64](event.Args, "interpreter_ctime")
 
 	// Real Interpreter
 	interp, err := parse.ArgVal[string](event.Args, "interp")
@@ -185,20 +185,20 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 
 	return t.processTree.FeedFromExec(
 		proctree.ExecFeed{
-			TimeStamp:         timestamp,
-			TaskHash:          taskHash,
-			ParentHash:        0, // regular pipeline does not have parent hash
-			LeaderHash:        0, // regular pipeline does not have leader hash
-			CmdPath:           cmdPath,
-			PathName:          pathName,
-			Dev:               dev,
-			Inode:             inode,
-			Ctime:             ctime,
-			InodeMode:         inodeMode,
-			InterpreterPath:   interPathName,
-			InterpreterDev:    interDev,
-			InterpreterInode:  interInode,
-			InterpreterCtime:  interCtime,
+			TimeStamp:  timestamp,
+			TaskHash:   taskHash,
+			ParentHash: 0, // regular pipeline does not have parent hash
+			LeaderHash: 0, // regular pipeline does not have leader hash
+			CmdPath:    cmdPath,
+			PathName:   pathName,
+			Dev:        dev,
+			Inode:      inode,
+			Ctime:      ctime,
+			InodeMode:  inodeMode,
+			// InterpreterPath:   interPathName,
+			// InterpreterDev:    interDev,
+			// InterpreterInode:  interInode,
+			// InterpreterCtime:  interCtime,
 			Interp:            interp,
 			StdinType:         stdinType,
 			StdinPath:         stdinPath,

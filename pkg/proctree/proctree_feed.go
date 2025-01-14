@@ -172,20 +172,20 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 }
 
 type ExecFeed struct {
-	TimeStamp         uint64
-	TaskHash          uint32
-	ParentHash        uint32
-	LeaderHash        uint32
-	CmdPath           string
-	PathName          string
-	Dev               uint32
-	Inode             uint64
-	Ctime             uint64
-	InodeMode         uint16
-	InterpreterPath   string
-	InterpreterDev    uint32
-	InterpreterInode  uint64
-	InterpreterCtime  uint64
+	TimeStamp  uint64
+	TaskHash   uint32
+	ParentHash uint32
+	LeaderHash uint32
+	CmdPath    string
+	PathName   string
+	Dev        uint32
+	Inode      uint64
+	Ctime      uint64
+	InodeMode  uint16
+	// InterpreterPath   string
+	// InterpreterDev    uint32
+	// InterpreterInode  uint64
+	// InterpreterCtime  uint64
 	Interp            string
 	StdinType         uint16
 	StdinPath         string

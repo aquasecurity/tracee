@@ -165,11 +165,11 @@ func (ctrl *Controller) procTreeExecProcessor(args []trace.Argument) error {
 		return err
 	}
 
-	// Binary Interpreter (or Loader): might come empty from the kernel
-	interPathName, _ := parse.ArgVal[string](args, "interpreter_pathname")
-	interDev, _ := parse.ArgVal[uint32](args, "interpreter_dev")
-	interInode, _ := parse.ArgVal[uint64](args, "interpreter_inode")
-	interCtime, _ := parse.ArgVal[uint64](args, "interpreter_ctime")
+	// // Binary Interpreter (or Loader): might come empty from the kernel
+	// interPathName, _ := parse.ArgVal[string](args, "interpreter_pathname")
+	// interDev, _ := parse.ArgVal[uint32](args, "interpreter_dev")
+	// interInode, _ := parse.ArgVal[uint64](args, "interpreter_inode")
+	// interCtime, _ := parse.ArgVal[uint64](args, "interpreter_ctime")
 
 	// Real Interpreter
 	interp, err := parse.ArgVal[string](args, "interp")
@@ -193,20 +193,20 @@ func (ctrl *Controller) procTreeExecProcessor(args []trace.Argument) error {
 
 	return ctrl.processTree.FeedFromExec(
 		proctree.ExecFeed{
-			TimeStamp:         time.BootToEpochNS(timestamp),
-			TaskHash:          taskHash,
-			ParentHash:        parentHash,
-			LeaderHash:        leaderHash,
-			CmdPath:           cmdPath,
-			PathName:          pathName,
-			Dev:               dev,
-			Inode:             inode,
-			Ctime:             ctime,
-			InodeMode:         inodeMode,
-			InterpreterPath:   interPathName,
-			InterpreterDev:    interDev,
-			InterpreterInode:  interInode,
-			InterpreterCtime:  interCtime,
+			TimeStamp:  time.BootToEpochNS(timestamp),
+			TaskHash:   taskHash,
+			ParentHash: parentHash,
+			LeaderHash: leaderHash,
+			CmdPath:    cmdPath,
+			PathName:   pathName,
+			Dev:        dev,
+			Inode:      inode,
+			Ctime:      ctime,
+			InodeMode:  inodeMode,
+			// InterpreterPath:   interPathName,
+			// InterpreterDev:    interDev,
+			// InterpreterInode:  interInode,
+			// InterpreterCtime:  interCtime,
 			Interp:            interp,
 			StdinType:         stdinType,
 			StdinPath:         stdinPath,
