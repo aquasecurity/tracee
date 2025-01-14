@@ -1,0 +1,22 @@
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "gomod"
+    directories:
+      - "/"
+      - "/api"
+      - "/types"
+      - "/signatures/helpers"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "docker"
+    directories:
+      - "/builder"
+    schedule:
+      interval: "daily"

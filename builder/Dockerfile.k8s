@@ -1,5 +1,5 @@
-FROM golang:1.22.3
+FROM golang:1.23.0
 
-RUN go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.13.0
+RUN go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.17.0
 
 WORKDIR /tracee

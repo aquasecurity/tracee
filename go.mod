@@ -8,7 +8,7 @@ require (
 	github.com/IBM/fluent-forward-go v0.2.2
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/aquasecurity/libbpfgo v0.7.0-libbpf-1.4.0.20240729111821-61d531acf4ca
-	github.com/aquasecurity/tracee/api v0.0.0-20241203172838-1f796cb64289
+	github.com/aquasecurity/tracee/api v0.0.0-20250110184558-4cdea40dcefc
 	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20241225084355-5b8f456dae7b
 	github.com/aquasecurity/tracee/types v0.0.0-20241008181102-d40bc1f81863
 	github.com/containerd/containerd v1.7.21
@@ -167,7 +167,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
-	golang.org/x/net v0.28.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

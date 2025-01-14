@@ -4,6 +4,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +kubebuilder:object:generate=false
+
 // PolicyInterface is the interface of the policy object,
 // it is used to allow tracee to support policies coming from kubernetes,
 // or directly from the filesystem.
