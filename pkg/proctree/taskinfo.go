@@ -29,20 +29,20 @@ type TaskInfoFeed struct {
 
 // TaskInfo represents a task.
 type TaskInfo struct {
-	feed  *changelog.Changelog[TaskInfoFeed]
+	feed  *changelog.Changelog[*TaskInfoFeed]
 	mutex *sync.RWMutex
 }
 
 // NewTaskInfo creates a new task.
 func NewTaskInfo() *TaskInfo {
 	return &TaskInfo{
-		feed:  changelog.NewChangelog[TaskInfoFeed](3),
+		feed:  changelog.NewChangelog[*TaskInfoFeed](3),
 		mutex: &sync.RWMutex{},
 	}
 }
 
 // NewTaskInfoFromFeed creates a new task with values from the given feed.
-func NewTaskInfoNewFromFeed(feed TaskInfoFeed) *TaskInfo {
+func NewTaskInfoNewFromFeed(feed *TaskInfoFeed) *TaskInfo {
 	new := NewTaskInfo()
 	new.setFeed(feed)
 
@@ -56,7 +56,7 @@ func NewTaskInfoNewFromFeed(feed TaskInfoFeed) *TaskInfo {
 // Multiple values at once (using a feed structure)
 
 // SetFeed sets the values of the task from the given feed at the current time.
-func (ti *TaskInfo) SetFeed(feed TaskInfoFeed) {
+func (ti *TaskInfo) SetFeed(feed *TaskInfoFeed) {
 	ti.mutex.Lock()
 	defer ti.mutex.Unlock()
 
@@ -64,7 +64,7 @@ func (ti *TaskInfo) SetFeed(feed TaskInfoFeed) {
 }
 
 // SetFeedAt sets the values of the task from the given feed at the given time.
-func (ti *TaskInfo) SetFeedAt(feed TaskInfoFeed, targetTime time.Time) {
+func (ti *TaskInfo) SetFeedAt(feed *TaskInfoFeed, targetTime time.Time) {
 	ti.mutex.Lock()
 	defer ti.mutex.Unlock()
 
@@ -135,11 +135,11 @@ func (ti *TaskInfo) SetExitTime(exitTime uint64) {
 
 // private setters
 
-func (ti *TaskInfo) setFeed(feed TaskInfoFeed) {
+func (ti *TaskInfo) setFeed(feed *TaskInfoFeed) {
 	ti.setFeedAt(feed, time.Now())
 }
 
-func (ti *TaskInfo) setFeedAt(feed TaskInfoFeed, targetTime time.Time) {
+func (ti *TaskInfo) setFeedAt(feed *TaskInfoFeed, targetTime time.Time) {
 	ti.feed.Set(feed, targetTime)
 }
 
@@ -154,7 +154,7 @@ func (ti *TaskInfo) GetFeed() TaskInfoFeed {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
-	return ti.getFeed()
+	return *ti.getFeed() // return a copy
 }
 
 // GetFeedAt returns the values of the task as a feed at the given time.
@@ -162,7 +162,7 @@ func (ti *TaskInfo) GetFeedAt(targetTime time.Time) TaskInfoFeed {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
-	return ti.getFeedAt(targetTime)
+	return *ti.getFeedAt(targetTime) // return a copy
 }
 
 // Single values
@@ -340,10 +340,20 @@ func (ti *TaskInfo) IsAliveAt(targetTime time.Time) bool {
 
 // private getters
 
-func (ti *TaskInfo) getFeed() TaskInfoFeed {
-	return ti.feed.GetCurrent()
+func (ti *TaskInfo) getFeed() *TaskInfoFeed {
+	feed := ti.feed.GetCurrent()
+	if feed == nil {
+		feed = &TaskInfoFeed{}
+	}
+
+	return feed
 }
 
-func (ti *TaskInfo) getFeedAt(targetTime time.Time) TaskInfoFeed {
-	return ti.feed.Get(targetTime)
+func (ti *TaskInfo) getFeedAt(targetTime time.Time) *TaskInfoFeed {
+	feed := ti.feed.Get(targetTime)
+	if feed == nil {
+		feed = &TaskInfoFeed{}
+	}
+
+	return feed
 }

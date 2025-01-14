@@ -24,20 +24,20 @@ type FileInfoFeed struct {
 
 // FileInfo represents a file.
 type FileInfo struct {
-	feed  *changelog.Changelog[FileInfoFeed]
+	feed  *changelog.Changelog[*FileInfoFeed]
 	mutex *sync.RWMutex
 }
 
 // NewFileInfo creates a new file.
 func NewFileInfo() *FileInfo {
 	return &FileInfo{
-		feed:  changelog.NewChangelog[FileInfoFeed](3),
+		feed:  changelog.NewChangelog[*FileInfoFeed](3),
 		mutex: &sync.RWMutex{},
 	}
 }
 
 // NewFileInfoFeed creates a new file with values from the given feed.
-func NewFileInfoFeed(feed FileInfoFeed) *FileInfo {
+func NewFileInfoFeed(feed *FileInfoFeed) *FileInfo {
 	new := NewFileInfo()
 	new.setFeed(feed)
 
@@ -51,7 +51,7 @@ func NewFileInfoFeed(feed FileInfoFeed) *FileInfo {
 // Multiple values at once (using a feed structure)
 
 // SetFeed sets the values of the file from a feed at the current time.
-func (fi *FileInfo) SetFeed(feed FileInfoFeed) {
+func (fi *FileInfo) SetFeed(feed *FileInfoFeed) {
 	fi.mutex.Lock()
 	defer fi.mutex.Unlock()
 
@@ -59,7 +59,7 @@ func (fi *FileInfo) SetFeed(feed FileInfoFeed) {
 }
 
 // SetFeedAt sets the values of the file from a feed at the given time.
-func (fi *FileInfo) SetFeedAt(feed FileInfoFeed, targetTime time.Time) {
+func (fi *FileInfo) SetFeedAt(feed *FileInfoFeed, targetTime time.Time) {
 	fi.mutex.Lock()
 	defer fi.mutex.Unlock()
 
@@ -68,7 +68,7 @@ func (fi *FileInfo) SetFeedAt(feed FileInfoFeed, targetTime time.Time) {
 
 // private setters
 
-func (fi *FileInfo) setFeed(feed FileInfoFeed) {
+func (fi *FileInfo) setFeed(feed *FileInfoFeed) {
 	fi.setFeedAt(feed, time.Now())
 }
 
@@ -76,7 +76,7 @@ func (fi *FileInfo) setFeed(feed FileInfoFeed) {
 // managing memory more responsibly.
 const MaxPathLen = 1024
 
-func (fi *FileInfo) setFeedAt(feed FileInfoFeed, targetTime time.Time) {
+func (fi *FileInfo) setFeedAt(feed *FileInfoFeed, targetTime time.Time) {
 	atFeed := fi.getFeedAt(targetTime)
 
 	if feed.Path != "" {
@@ -115,7 +115,7 @@ func (fi *FileInfo) GetFeed() FileInfoFeed {
 	fi.mutex.RLock()
 	defer fi.mutex.RUnlock()
 
-	return fi.getFeed()
+	return *fi.getFeed() // return a copy
 }
 
 // GetFeedAt returns the values of the file as a feed at the given time.
@@ -123,7 +123,7 @@ func (fi *FileInfo) GetFeedAt(targetTime time.Time) FileInfoFeed {
 	fi.mutex.RLock()
 	defer fi.mutex.RUnlock()
 
-	return fi.getFeedAt(targetTime)
+	return *fi.getFeedAt(targetTime) // return a copy
 }
 
 // Single values
@@ -210,10 +210,20 @@ func (fi *FileInfo) GetInodeModeAt(targetTime time.Time) int {
 
 // private getters
 
-func (fi *FileInfo) getFeed() FileInfoFeed {
-	return fi.feed.GetCurrent()
+func (fi *FileInfo) getFeed() *FileInfoFeed {
+	feed := fi.feed.GetCurrent()
+	if feed == nil {
+		feed = &FileInfoFeed{}
+	}
+
+	return feed
 }
 
-func (fi *FileInfo) getFeedAt(targetTime time.Time) FileInfoFeed {
-	return fi.feed.Get(targetTime)
+func (fi *FileInfo) getFeedAt(targetTime time.Time) *FileInfoFeed {
+	feed := fi.feed.Get(targetTime)
+	if feed == nil {
+		feed = &FileInfoFeed{}
+	}
+
+	return feed
 }

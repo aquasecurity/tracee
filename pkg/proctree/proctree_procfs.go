@@ -178,21 +178,28 @@ func dealWithProc(pt *ProcessTree, givenPid int) error {
 
 	procfsTimeStamp := traceetime.BootToEpochNS(startTimeNs)
 
+	// NOTE: override all the fields of the taskInfoFeed, to avoid any previous data.
+	taskInfoFeed := pt.GetTaskInfoFeedFromPool()
+
+	taskInfoFeed.Name = name     // command name (add "procfs+" to debug if needed)
+	taskInfoFeed.Tid = pid       // status: pid == tid
+	taskInfoFeed.Pid = tgid      // status: tgid == pid
+	taskInfoFeed.PPid = ppid     // status: ppid == ppid
+	taskInfoFeed.NsTid = nspid   // status: nspid == nspid
+	taskInfoFeed.NsPid = nstgid  // status: nstgid == nspid
+	taskInfoFeed.NsPPid = nsppid // status: nsppid == nsppid
+	taskInfoFeed.Uid = -1        // do not change the parent uid
+	taskInfoFeed.Gid = -1        // do not change the parent gid
+	taskInfoFeed.StartTimeNS = procfsTimeStamp
+	taskInfoFeed.ExitTimeNS = 0
+
 	procInfo.SetFeedAt(
-		TaskInfoFeed{
-			Name:        name,   // command name (add "procfs+" to debug if needed)
-			Tid:         pid,    // status: pid == tid
-			Pid:         tgid,   // status: tgid == pid
-			PPid:        ppid,   // status: ppid == ppid
-			NsTid:       nspid,  // status: nspid == nspid
-			NsPid:       nstgid, // status: nstgid == nspid
-			NsPPid:      nsppid, // status: nsppid == nsppid
-			Uid:         -1,     // do not change the parent uid
-			Gid:         -1,     // do not change the parent gid
-			StartTimeNS: procfsTimeStamp,
-		},
+		taskInfoFeed,
 		traceetime.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
 	)
+
+	// Release the feed back to the pool as soon as it is not needed anymore
+	pt.PutTaskInfoFeedInPool(taskInfoFeed)
 
 	// TODO: Update executable with information from /proc/<pid>/exe
 
@@ -254,21 +261,28 @@ func dealWithThread(pt *ProcessTree, givenPid int, givenTid int) error {
 
 	procfsTimeStamp := traceetime.BootToEpochNS(startTimeNs)
 
+	// NOTE: override all the fields of the taskInfoFeed, to avoid any previous data.
+	taskInfoFeed := pt.GetTaskInfoFeedFromPool()
+
+	taskInfoFeed.Name = name     // command name (add "procfs+" to debug if needed)
+	taskInfoFeed.Tid = pid       // status: pid == tid
+	taskInfoFeed.Pid = tgid      // status: tgid == pid
+	taskInfoFeed.PPid = ppid     // status: ppid == ppid
+	taskInfoFeed.NsTid = nspid   // status: nspid == nspid
+	taskInfoFeed.NsPid = nstgid  // status: nstgid == nspid
+	taskInfoFeed.NsPPid = nsppid // status: nsppid == nsppid
+	taskInfoFeed.Uid = -1        // do not change the parent uid
+	taskInfoFeed.Gid = -1        // do not change the parent gid
+	taskInfoFeed.StartTimeNS = procfsTimeStamp
+	taskInfoFeed.ExitTimeNS = 0
+
 	threadInfo.SetFeedAt(
-		TaskInfoFeed{
-			Name:        name,   // command name (add "procfs+" to debug if needed)
-			Tid:         pid,    // status: pid == tid
-			Pid:         tgid,   // status: tgid == pid
-			PPid:        ppid,   // status: ppid == ppid
-			NsTid:       nspid,  // status: nspid == nspid
-			NsPid:       nstgid, // status: nstgid == nspid
-			NsPPid:      nsppid, // status: nsppid == nsppid
-			Uid:         -1,     // do not change the parent uid
-			Gid:         -1,     // do not change the parent gid
-			StartTimeNS: procfsTimeStamp,
-		},
+		taskInfoFeed,
 		traceetime.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
 	)
+
+	// Release the feed back to the pool as soon as it is not needed anymore
+	pt.PutTaskInfoFeedInPool(taskInfoFeed)
 
 	// thread group leader (leader tid is the same as the thread's pid, so we can find it)
 
