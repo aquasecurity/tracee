@@ -13,8 +13,6 @@ import (
 //
 
 func (ctrl *Controller) procTreeForkProcessor(args []trace.Argument) error {
-	var errs []error
-
 	if ctrl.processTree == nil {
 		return nil // process tree is disabled
 	}
@@ -23,49 +21,74 @@ func (ctrl *Controller) procTreeForkProcessor(args []trace.Argument) error {
 
 	// Process & Event identification arguments
 	timestamp, err := parse.ArgVal[uint64](args, "timestamp")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 
 	// Parent Process (Go up in hierarchy until parent is a process and not a lwp)
 	parentTid, err := parse.ArgVal[int32](args, "parent_process_tid")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	parentNsTid, err := parse.ArgVal[int32](args, "parent_process_ns_tid")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	parentPid, err := parse.ArgVal[int32](args, "parent_process_pid")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	parentNsPid, err := parse.ArgVal[int32](args, "parent_process_ns_pid")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	parentStartTime, err := parse.ArgVal[uint64](args, "parent_process_start_time")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 
 	// Thread Group Leader (might be the same as the "child", if "child" is a process)
 	leaderTid, err := parse.ArgVal[int32](args, "leader_tid")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	leaderNsTid, err := parse.ArgVal[int32](args, "leader_ns_tid")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	leaderPid, err := parse.ArgVal[int32](args, "leader_pid")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	leaderNsPid, err := parse.ArgVal[int32](args, "leader_ns_pid")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	leaderStartTime, err := parse.ArgVal[uint64](args, "leader_start_time")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 
 	// Child (might be a process or a thread)
 	childTid, err := parse.ArgVal[int32](args, "child_tid")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	childNsTid, err := parse.ArgVal[int32](args, "child_ns_tid")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	childPid, err := parse.ArgVal[int32](args, "child_pid")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	childNsPid, err := parse.ArgVal[int32](args, "child_ns_pid")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	childStartTime, err := parse.ArgVal[uint64](args, "start_time") // child_start_time
-	errs = append(errs, err)
-
-	// Handle errors
-	for _, err := range errs {
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
 	timestamp = time.BootToEpochNS(timestamp)
