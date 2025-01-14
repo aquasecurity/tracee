@@ -216,33 +216,36 @@ func (ctrl *Controller) procTreeExecProcessor(args []trace.Argument) error {
 }
 
 func (ctrl *Controller) procTreeExitProcessor(args []trace.Argument) error {
-	var errs []error
-
 	if ctrl.processTree == nil {
 		return nil // process tree is disabled
 	}
 
 	// Process & Event identification arguments (won't exist for regular events)
 	timestamp, err := parse.ArgVal[uint64](args, "timestamp")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	taskHash, err := parse.ArgVal[uint32](args, "task_hash")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	parentHash, err := parse.ArgVal[uint32](args, "parent_hash")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	leaderHash, err := parse.ArgVal[uint32](args, "leader_hash")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 
 	// Exit logic arguments
 	exitCode, err := parse.ArgVal[int64](args, "exit_code")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	groupExit, err := parse.ArgVal[bool](args, "process_group_exit")
-	errs = append(errs, err)
-
-	// Handle errors
-	for _, err := range errs {
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
 	return ctrl.processTree.FeedFromExit(

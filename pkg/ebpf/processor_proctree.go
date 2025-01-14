@@ -209,8 +209,6 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 
 // procTreeExitProcessor handles process exit events.
 func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
-	var errs []error
-
 	if t.processTree == nil {
 		return fmt.Errorf("process tree is disabled")
 	}
@@ -218,21 +216,18 @@ func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
 		return nil // chek FeedFromExec for TODO of execve() handled by threads
 	}
 
-	timestamp := uint64(event.Timestamp)
-	taskHash := utils.HashTaskID(uint32(event.HostThreadID), uint64(event.ThreadStartTime))
-
 	// Exit logic arguments
 	exitCode, err := parse.ArgVal[int64](event.Args, "exit_code")
-	errs = append(errs, err)
-	groupExit, err := parse.ArgVal[bool](event.Args, "process_group_exit")
-	errs = append(errs, err)
-
-	// Handle errors
-	for _, err := range errs {
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
+	groupExit, err := parse.ArgVal[bool](event.Args, "process_group_exit")
+	if err != nil {
+		return err
+	}
+
+	timestamp := uint64(event.Timestamp)
+	taskHash := utils.HashTaskID(uint32(event.HostThreadID), uint64(event.ThreadStartTime))
 
 	return t.processTree.FeedFromExit(
 		proctree.ExitFeed{
