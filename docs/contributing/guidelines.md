@@ -46,7 +46,7 @@ To contribute to the code:
 
 Tracee relies on several generated files and has strict formatting requirements. Ensure you run the following commands before committing:
 
-**`NOTE:`** In order to not depend on host's libraries versions, We recommend that you always run make and other project dependencies on a virtual environment so the formatting will be align with tracee guidelines
+**`NOTE:`** In order to not depend on host's libraries versions, we recommend that you always run make and other project dependencies on a virtual environment so the formatting will be align with Tracee guidelines
 
 1. Man Pages Generation: If you've modified core code or documentation that impacts the man pages, run:
 
@@ -66,7 +66,7 @@ Tracee relies on several generated files and has strict formatting requirements.
 
 3. Pre-commit checks: Every time you're about to create a pull request, execute:
 
-    **`NOTE:`**  If your host machine dependencies doesn't align with tracee dependencies, This command have to run on a supported [environment](./building/environment.md)
+    **`NOTE:`**  If your host machine dependencies doesn't align with Tracee dependencies, This command have to run on a supported [environment](./building/environment.md)
 
     ```bash
     make check-pr
@@ -108,4 +108,4 @@ To ensure your contributions maintain optimal performance, follow the guidelines
 
 ### Kubernetes Considerations
 
-If your contribution impacts Tracee's behavior within a Kubernetes cluster, follow the guidelines in [Kubernetes Considerations](./kubernetes.md)
+If your contribution impacts Tracee's behavior within a Kubernetes cluster, follow the guidelines in [Kubernetes Considerations](./kubernetes.md).

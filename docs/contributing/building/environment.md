@@ -47,9 +47,8 @@ There are Two different environments that are maintained for building tracee:
 * **Alpine**
 * **Ubuntu**
 
-The reason for that is that **Alpine Linux** is based in the [musl](https://en.wikipedia.org/wiki/Musl) C standard library.
-
-while the **Ubuntu Linux** uses [glibc](https://en.wikipedia.org/wiki/Glibc).
+The reason for that is that `Alpine Linux` is based in the [musl](https://en.wikipedia.org/wiki/Musl) C standard library,
+while the `Ubuntu Linux` uses [glibc](https://en.wikipedia.org/wiki/Glibc).
 
 By supporting both building environments we can always be sure that the project builds (and executes) correctly in both environments.
 
@@ -102,7 +101,7 @@ Instead of executing a builder shell, you may use `alpine-make`, or
         make -f builder/Makefile.tracee-make ubuntu-make ARG="tracee"
         ```
 
-    * Show help for make file:
+    * Show available `ubuntu-make` commands:
 
         ```bash
         make -f builder/Makefile.tracee-make ubuntu-make ARG="help"
@@ -139,7 +138,7 @@ If you don't want to depend on host's libraries versions, or your host is not an
 
 2. Verify the executable is static
 
-    * Note: ldd print the shared libraries required by an executable file
+    * Note: ldd prints the shared libraries required by an executable file
 
     ```bash
     ldd dist/tracee

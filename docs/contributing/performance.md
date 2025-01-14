@@ -1,18 +1,18 @@
 # Performance Considerations
 
-1. **Profiling with Pyroscope:** Tracee integrates with Pyroscope for continuous profiling. When running Tracee locally for development or testing, use the --pyroscope command-line option. For example:
+1. **Profiling Tracee for Performance test** - Tracee integrates with Pyroscope and Pprof for continuous profiling. When running Tracee locally for development or testing, use the `--pyroscope --pprof` command-line option.
 
     ```bash
-    sudo ./dist/tracee --pyroscope
+    sudo ./dist/tracee --pyroscope --pprof
     ```
 
-    This enables profiling data to be sent to a local Pyroscope server. The Tracee repository includes a convenient way to deploy a performance dashboard for analyzing this data. Run the following for more details:
+    This enables profiling data to be sent to a local server. The Tracee repository includes a convenient way to deploy a performance dashboard for analyzing this data. Run the following for more details:
 
     ```bash
     make -f builder/Makefile.performance help
     ```
 
-2. **Performance Dashboard:** The provided performance dashboard allows visualization of host metrics, CPU flame graphs, and other performance-related data. Follow these steps to deploy locally and see instructions on using the dasboard:
+2. **Performance Dashboard:** The provided performance dashboard allows visualization of host metrics, CPU flame graphs, and other performance-related data. Follow these steps to deploy locally and see instructions on using the dashboard:
 
     ```bash
     make -f builder/Makefile.performance dashboard-start

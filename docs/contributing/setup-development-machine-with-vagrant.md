@@ -24,7 +24,7 @@ git clone https://github.com/aquasecurity/tracee.git
 
 ## Navigate to the Tracee Directory
 
-Open a terminal and navigate to the directory containing the `Vagrantfile.builder` within the cloned Tracee repository. Rename `Vagrantfile.builder` to `Vagrantfile`.
+Open a terminal and navigate to the directory containing the `Vagrantfile` within the cloned Tracee repository (`tracee/`)
 
 ```bash
 cd tracee
@@ -34,7 +34,7 @@ cd tracee
 
 The VM can be provisioned for either a `dev` or `test` environment. The `dev` environment includes additional tools like MicroK8s, kubectl, and Helm.
 
-- **Development Environment:** Full development environment
+- **Development Environment:** Full development environment (Default)
 
   ```bash
   export VM_TYPE=dev

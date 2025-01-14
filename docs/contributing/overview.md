@@ -14,7 +14,7 @@ If you have a suggestion, question, or a general comment - please use Discussion
 ## Discussions
 
 - We have the following discussion topics:
-    1. [Announcements](https://github.com/aquasecurity/tracee/discussions/categories/announcements): One way communication from the team to the community. Consider this like our mini blog
+    1. [Announcements](https://github.com/aquasecurity/tracee/discussions/categories/announcements): One way communication from the team to the community. Consider this like our mini blog.
     1. [Questions and Help](https://github.com/aquasecurity/tracee/discussions/categories/questions-and-help): For help and support. Consider this similar to StackOverflow.
     1. [Development](https://github.com/aquasecurity/tracee/discussions/categories/development): For discussing potential features, and collaborating on their design.
 
