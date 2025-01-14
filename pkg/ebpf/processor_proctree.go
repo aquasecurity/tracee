@@ -121,8 +121,6 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 
 // procTreeExecProcessor handles process exec events.
 func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
-	var errs []error
-
 	if t.processTree == nil {
 		return fmt.Errorf("process tree is disabled")
 	}
@@ -130,22 +128,31 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 		return nil // chek FeedFromExec for TODO of execve() handled by threads
 	}
 
-	timestamp := uint64(event.Timestamp)
-	taskHash := utils.HashTaskID(uint32(event.HostThreadID), uint64(event.ThreadStartTime))
-
 	// Executable
 	cmdPath, err := parse.ArgVal[string](event.Args, "cmdpath")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	pathName, err := parse.ArgVal[string](event.Args, "pathname")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	dev, err := parse.ArgVal[uint32](event.Args, "dev")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	inode, err := parse.ArgVal[uint64](event.Args, "inode")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	ctime, err := parse.ArgVal[uint64](event.Args, "ctime")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 	inodeMode, err := parse.ArgVal[uint16](event.Args, "inode_mode")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 
 	// Binary Interpreter (or Loader): might come empty from the kernel
 	interPathName, _ := parse.ArgVal[string](event.Args, "interpreter_pathname")
@@ -155,22 +162,26 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 
 	// Real Interpreter
 	interp, err := parse.ArgVal[string](event.Args, "interp")
-	errs = append(errs, err)
+	if err != nil {
+		return err
+	}
 
 	// Others
 	stdinType, err := parse.ArgVal[uint16](event.Args, "stdin_type")
-	errs = append(errs, err)
-	stdinPath, err := parse.ArgVal[string](event.Args, "stdin_path")
-	errs = append(errs, err)
-	invokedFromKernel, err := parse.ArgVal[int32](event.Args, "invoked_from_kernel")
-	errs = append(errs, err)
-
-	// Handle errors
-	for _, err := range errs {
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
+	stdinPath, err := parse.ArgVal[string](event.Args, "stdin_path")
+	if err != nil {
+		return err
+	}
+	invokedFromKernel, err := parse.ArgVal[int32](event.Args, "invoked_from_kernel")
+	if err != nil {
+		return err
+	}
+
+	timestamp := uint64(event.Timestamp)
+	taskHash := utils.HashTaskID(uint32(event.HostThreadID), uint64(event.ThreadStartTime))
 
 	return t.processTree.FeedFromExec(
 		proctree.ExecFeed{
