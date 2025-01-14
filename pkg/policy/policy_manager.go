@@ -80,6 +80,22 @@ func NewManager(
 		cfg:             cfg,
 	}
 
+	// Subscribe to event removals to clean up policy rules when events become unavailable
+	// (e.g., due to missing kernel symbol dependencies)
+	evtsDepsManager.SubscribeRemove(
+		dependencies.EventNodeType,
+		func(node interface{}) []dependencies.Action {
+			eventNode, ok := node.(*dependencies.EventNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested")
+				return nil
+			}
+
+			pm.removeEventFromRules(eventNode.GetID())
+
+			return nil
+		})
+
 	// Create and add the bootstrap policy with conditional rules
 	pm.bootstrapPolicy = createBootstrapPolicy(cfg)
 	if err := pm.AddPolicy(pm.bootstrapPolicy); err != nil {
@@ -98,6 +114,11 @@ func NewManager(
 	}
 
 	return pm, nil
+}
+
+func (pm *PolicyManager) removeEventFromRules(evtID events.ID) {
+	logger.Debugw("Remove event from rules", "event", events.Core.GetDefinitionByID(evtID).GetName())
+	delete(pm.rules, evtID)
 }
 
 // createBootstrapPolicy creates the bootstrap policy with rules based on the provided configuration.
