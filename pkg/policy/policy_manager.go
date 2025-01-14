@@ -21,8 +21,7 @@ import (
 )
 
 const (
-	dependencyRuleID = uint8(63) // Rule ID reserved for dependency rules
-	maxRulesPerEvent = uint8(63)
+	maxRulesPerEvent = uint8(64)
 )
 
 type ManagerConfig struct {
@@ -60,6 +59,7 @@ type EventRule struct {
 	Policy           *Policy   // Reference to the policy where the rule was defined
 	Emit             bool      // Flag to indicate whether the event should be emitted or not
 	IsDependencyRule bool      // Flag to indicate that this rule is a dependency rule
+	DerivedRuleID    uint8     // ID of the rule in derived event that caused this dependency rule
 }
 
 func NewManager(
@@ -408,7 +408,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 		return errfmt.Errorf("nil maps provided")
 	}
 
-	var rules, userlandRules []*EventRule
+	var rules, userlandRules, existingDepRules []*EventRule
 	ruleIDToEventRule := make(map[uint8]*EventRule)
 	ruleIDCounter := uint8(0)
 	var containerFilteredRules uint64
@@ -418,6 +418,18 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 	if existingEventRules, ok := tempRules[eventID]; ok {
 		rulesVersion = existingEventRules.rulesVersion
 		enabled = existingEventRules.enabled // Preserve existing enabled state
+
+		// Save existing dependency rules (created by rules with event that depend on this event)
+		for _, rule := range existingEventRules.Rules {
+			if rule.IsDependencyRule {
+				existingDepRules = append(existingDepRules, rule)
+			}
+		}
+	}
+
+	eventNode, err := pm.evtsDepsManager.GetEvent(eventID)
+	if err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	// Gather rules from all policies that apply to this event
@@ -427,59 +439,45 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 			continue // This policy doesn't have rules for this event
 		}
 
-		// Check if ruleIDCounter exceeds maximum (62 because 63 is reserved for dependency rules)
+		// Check if ruleIDCounter exceeds maximum
 		if ruleIDCounter >= maxRulesPerEvent {
 			eventName := events.Core.GetDefinitionByID(eventID).GetName()
 			return TooManyRulesForEventError(eventName)
 		}
 
-		eventRule := &EventRule{
+		rule := &EventRule{
 			ID:     ruleIDCounter,
 			Data:   &ruleData,
 			Policy: policy,
 			Emit:   policy != pm.bootstrapPolicy,
 		}
 
-		rules = append(rules, eventRule)
-		ruleIDToEventRule[ruleIDCounter] = eventRule
+		rules = append(rules, rule)
+		ruleIDToEventRule[ruleIDCounter] = rule
+		ruleIDCounter++
+
+		// Add dependency rules for this specific rule
+		if err := pm.addTransitiveDependencyRules(eventNode, tempRules, make(map[events.ID]bool), 0, rule); err != nil {
+			return errfmt.WrapError(err)
+		}
 
 		// Update containerFilteredRules bitmap
 		if policy.ContainerFilterEnabled() {
-			containerFilteredRules |= 1 << ruleIDCounter
+			containerFilteredRules |= 1 << rule.ID
 		}
 
 		// Update userlandFilterableRules bitmap
-		if isRuleFilterableInUserland(eventRule) {
-			userlandRules = append(userlandRules, eventRule)
+		if isRuleFilterableInUserland(rule) {
+			userlandRules = append(userlandRules, rule)
 		}
+	}
 
+	// Add remaining dependency rules to final rules list
+	for _, depRule := range existingDepRules {
+		rules = append(rules, depRule)
+		ruleIDToEventRule[ruleIDCounter] = depRule
+		depRule.ID = ruleIDCounter
 		ruleIDCounter++
-	}
-
-	// Add dependency rules (with ruleId 63)
-	eventNode, err := pm.evtsDepsManager.GetEvent(eventID)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	if len(eventNode.GetDependents()) > 0 {
-		// Add a dependency rule if it doesn't exist
-		if _, depRuleExists := ruleIDToEventRule[dependencyRuleID]; !depRuleExists {
-			eventRule := &EventRule{
-				ID:               dependencyRuleID,
-				Data:             nil,
-				Policy:           nil,
-				Emit:             false, // Ensure that dependency events are never emitted
-				IsDependencyRule: true,  // Mark the rule as a dependency rule
-			}
-			rules = append(rules, eventRule)
-			ruleIDToEventRule[dependencyRuleID] = eventRule
-		}
-	}
-
-	// Recursively add dependency rules for all transitive dependencies
-	if err := pm.addTransitiveDependencyRules(eventNode, tempRules, make(map[events.ID]bool), 0); err != nil {
-		return errfmt.WrapError(err)
 	}
 
 	// Update the EventRules for the event in the temporary map
@@ -502,6 +500,7 @@ func (pm *PolicyManager) addTransitiveDependencyRules(
 	tempRules map[events.ID]EventRules,
 	visited map[events.ID]bool,
 	depth int,
+	parentRule *EventRule,
 ) error {
 	const maxDepth = 5
 
@@ -527,17 +526,43 @@ func (pm *PolicyManager) addTransitiveDependencyRules(
 			}
 		}
 
-		if _, depRuleExists := eventRules.ruleIDToEventRule[dependencyRuleID]; !depRuleExists {
-			eventRule := &EventRule{
-				ID:               dependencyRuleID,
-				Data:             nil,
-				Policy:           nil,
-				Emit:             false, // Ensure that dependency events are never emitted
-				IsDependencyRule: true,  // Mark the rule as a dependency rule
+		// Check if dependency rule already exists
+		isDuplicate := false
+		for _, existingRule := range eventRules.Rules {
+			if existingRule.IsDependencyRule &&
+				existingRule.Policy == parentRule.Policy &&
+				existingRule.Data == parentRule.Data {
+				isDuplicate = true
+				break
 			}
-			eventRules.Rules = append(eventRules.Rules, eventRule)
-			eventRules.ruleIDToEventRule[dependencyRuleID] = eventRule
+		}
 
+		if !isDuplicate {
+			// Create dependency rule using parent's data and policy context
+			// This allows tracking which rule/policy caused this dependency
+			rule := &EventRule{
+				ID:               eventRules.rulesCount,
+				Data:             parentRule.Data,
+				Policy:           parentRule.Policy,
+				Emit:             false,
+				IsDependencyRule: true,
+				DerivedRuleID:    parentRule.ID,
+			}
+
+			eventRules.Rules = append(eventRules.Rules, rule)
+			eventRules.ruleIDToEventRule[rule.ID] = rule
+
+			// Add to userland rules if parent has userland filters
+			if isRuleFilterableInUserland(rule) {
+				eventRules.UserlandRules = append(eventRules.UserlandRules, rule)
+			}
+
+			// Update container filter bitmap if parent has container filters
+			if rule.Policy.ContainerFilterEnabled() {
+				eventRules.containerFilteredRules |= 1 << rule.ID
+			}
+
+			eventRules.rulesCount++
 			tempRules[depID] = eventRules
 		}
 
@@ -547,7 +572,7 @@ func (pm *PolicyManager) addTransitiveDependencyRules(
 		}
 
 		// Recursively add dependency rules for the dependencies of the dependency
-		if err := pm.addTransitiveDependencyRules(depNode, tempRules, visited, depth+1); err != nil {
+		if err := pm.addTransitiveDependencyRules(depNode, tempRules, visited, depth+1, parentRule); err != nil {
 			return err
 		}
 	}
@@ -701,6 +726,40 @@ func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBi
 	}
 
 	return matchedRulesRes, matchedPolicyNames
+}
+
+func (pm *PolicyManager) GetDerivedEventMatchedRules(
+	derivedEventID events.ID,
+	baseEventID events.ID,
+	baseMatchedRulesBitmap uint64,
+) uint64 {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	baseEventRules, ok := pm.rules[baseEventID]
+	if !ok {
+		return 0
+	}
+
+	var derivedMatchedRules uint64
+
+	for ruleID := uint8(0); ruleID < baseEventRules.rulesCount; ruleID++ {
+		if baseMatchedRulesBitmap&(1<<ruleID) == 0 {
+			continue
+		}
+
+		baseRule, ok := baseEventRules.ruleIDToEventRule[ruleID]
+		if !ok || !baseRule.IsDependencyRule {
+			continue
+		}
+
+		// Check if this dependency rule is for our derived event
+		if baseRule.Data.EventID == derivedEventID {
+			derivedMatchedRules |= 1 << baseRule.DerivedRuleID
+		}
+	}
+
+	return derivedMatchedRules
 }
 
 // IsEventEnabled checks if an event is currently enabled.
