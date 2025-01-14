@@ -8,22 +8,37 @@ import (
 )
 
 func ArgVal[T any](args []trace.Argument, argName string) (T, error) {
-	for _, arg := range args {
-		if arg.Name == argName {
-			val, ok := arg.Value.(T)
-			if !ok {
-				zeroVal := *new(T)
-				return zeroVal, errfmt.Errorf(
-					"argument %s is not of type %T, is of type %T",
-					argName,
-					zeroVal,
-					arg.Value,
-				)
-			}
-			return val, nil
+	var ok bool
+	var val T
+	var foundAndNotOk bool
+
+	var i int
+	for i = range len(args) {
+		if args[i].Name != argName {
+			continue
 		}
+
+		val, ok = args[i].Value.(T)
+		if !ok {
+			foundAndNotOk = true
+			break
+		}
+
+		return val, nil
 	}
-	return *new(T), errfmt.Errorf("argument %s not found", argName)
+
+	var zeroVal T
+	if foundAndNotOk {
+		return zeroVal,
+			errfmt.Errorf(
+				"argument %s is not of type %T, is of type %T",
+				argName,
+				zeroVal,
+				args[i].Value,
+			)
+	}
+
+	return zeroVal, errfmt.Errorf("argument %s not found", argName)
 }
 
 func ArgZeroValueFromType(t string) interface{} {
