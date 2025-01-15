@@ -575,6 +575,18 @@ nav:
                 - Output Formats: docs/outputs/output-formats.md
                 - Output Options: docs/outputs/output-options.md
                 - Logging: docs/outputs/logging.md
+          - TraceeCTL: 
+                - Overview: docs/traceectl/index.md
+                - Installation: docs/traceectl/usage.md
+                - Commands:
+                      - event:  docs/traceectl/commands/event.md
+                      - metrics: docs/traceectl/commands/metrics.md
+                      - stream: docs/traceectl/commands/stream.md
+                      - verion: docs/traceectl/commands/verion.md
+                - Flags:
+                      - output: docs/traceectl/flags/output.md
+                      - format: docs/traceectl/flags/format.md
+                      - server: docs/traceectl/flags/server.md
           - Advanced:
                 - Caching Events: docs/advanced/caching-events.md
                 - Ordering Events: docs/advanced/ordering-events.md
