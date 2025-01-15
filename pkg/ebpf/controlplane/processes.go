@@ -187,6 +187,10 @@ func (ctrl *Controller) procTreeExitProcessor(args []trace.Argument) error {
 		return nil // process tree is disabled
 	}
 
+	// NOTE: Currently FeedFromExit is only using TaskHash and TimeStamp from the ExitFeed.
+	// So the other fields are commented out for now.
+	//
+	// TODO: Analyze if the other fields will be needed in the future.
 	var err error
 
 	// NOTE: override all the fields of the exitFeed, to avoid any previous data.
@@ -205,24 +209,24 @@ func (ctrl *Controller) procTreeExitProcessor(args []trace.Argument) error {
 	if err != nil {
 		return err
 	}
-	exitFeed.ParentHash, err = parse.ArgVal[uint32](args, "parent_hash")
-	if err != nil {
-		return err
-	}
-	exitFeed.LeaderHash, err = parse.ArgVal[uint32](args, "leader_hash")
-	if err != nil {
-		return err
-	}
+	// exitFeed.ParentHash, err = parse.ArgVal[uint32](args, "parent_hash")
+	// if err != nil {
+	// 	return err
+	// }
+	// exitFeed.LeaderHash, err = parse.ArgVal[uint32](args, "leader_hash")
+	// if err != nil {
+	// 	return err
+	// }
 
-	// Exit logic arguments
-	exitFeed.ExitCode, err = parse.ArgVal[int64](args, "exit_code")
-	if err != nil {
-		return err
-	}
-	exitFeed.Group, err = parse.ArgVal[bool](args, "process_group_exit")
-	if err != nil {
-		return err
-	}
+	// // Exit logic arguments
+	// exitFeed.ExitCode, err = parse.ArgVal[int64](args, "exit_code")
+	// if err != nil {
+	// 	return err
+	// }
+	// exitFeed.Group, err = parse.ArgVal[bool](args, "process_group_exit")
+	// if err != nil {
+	// 	return err
+	// }
 
 	return ctrl.processTree.FeedFromExit(exitFeed)
 }

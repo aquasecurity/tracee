@@ -186,26 +186,30 @@ func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
 		return nil // chek FeedFromExec for TODO of execve() handled by threads
 	}
 
-	var err error
+	// NOTE: Currently FeedFromExit is only using TaskHash and TimeStamp from the ExitFeed.
+	// So the other fields are commented out for now.
+	//
+	// TODO: Analyze if the other fields will be needed in the future.
+	// var err error
 
 	// NOTE: override all the fields of the exitFeed, to avoid any previous data.
 	exitFeed := t.processTree.GetExitFeedFromPool()
 	defer t.processTree.PutExitFeedInPool(exitFeed)
 
-	// Exit logic arguments
-	exitFeed.ExitCode, err = parse.ArgVal[int64](event.Args, "exit_code")
-	if err != nil {
-		return err
-	}
-	exitFeed.Group, err = parse.ArgVal[bool](event.Args, "process_group_exit")
-	if err != nil {
-		return err
-	}
+	// // Exit logic arguments
+	// exitFeed.ExitCode, err = parse.ArgVal[int64](event.Args, "exit_code")
+	// if err != nil {
+	// 	return err
+	// }
+	// exitFeed.Group, err = parse.ArgVal[bool](event.Args, "process_group_exit")
+	// if err != nil {
+	// 	return err
+	// }
 
 	exitFeed.TimeStamp = uint64(event.Timestamp) // time of exit is already a timestamp
 	exitFeed.TaskHash = utils.HashTaskID(uint32(event.HostThreadID), uint64(event.ThreadStartTime))
-	exitFeed.ParentHash = 0 // regular pipeline does not have parent hash
-	exitFeed.LeaderHash = 0 // regular pipeline does not have leader hash
+	// exitFeed.ParentHash = 0 // regular pipeline does not have parent hash
+	// exitFeed.LeaderHash = 0 // regular pipeline does not have leader hash
 
 	return t.processTree.FeedFromExit(exitFeed)
 }

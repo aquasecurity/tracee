@@ -289,6 +289,11 @@ type ExitFeed struct {
 func (pt *ProcessTree) FeedFromExit(feed *ExitFeed) error {
 	// Always create a tree node because the events might be received out of order.
 
+	// NOTE: Currently FeedFromExit is only using TaskHash and TimeStamp from the ExitFeed.
+	// So the other fields are commented out for now.
+	//
+	// TODO: Analyze if the other fields will be needed in the future.
+
 	thread := pt.GetOrCreateThreadByHash(feed.TaskHash)
 	thread.GetInfo().SetExitTime(feed.TimeStamp)
 
