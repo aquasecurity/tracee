@@ -62,19 +62,19 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 					return nil, errors.New("invalid http address")
 				}
 			case MetricsEndpointFlag:
-				if strings.Compare(httpParts[1], "true") == 0 {
+				if len(httpParts) == 1 || strings.Compare(httpParts[1], "true") == 0 {
 					enableMetrics = true
 				}
 			case HealthzEndpointFlag:
-				if strings.Compare(httpParts[1], "true") == 0 {
+				if len(httpParts) == 1 || strings.Compare(httpParts[1], "true") == 0 {
 					enableHealthz = true
 				}
 			case PProfEndpointFlag:
-				if strings.Compare(httpParts[1], "true") == 0 {
+				if len(httpParts) == 1 || strings.Compare(httpParts[1], "true") == 0 {
 					enablePProf = true
 				}
 			case PyroscopeAgentEndpointFlag:
-				if strings.Compare(httpParts[1], "true") == 0 {
+				if len(httpParts) == 1 || strings.Compare(httpParts[1], "true") == 0 {
 					enablePyroscope = true
 				}
 			default:
