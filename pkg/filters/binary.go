@@ -1,6 +1,7 @@
 package filters
 
 import (
+	"math"
 	"strconv"
 	"strings"
 
@@ -32,6 +33,9 @@ func getHostMntNS() (uint32, error) {
 	ns, err = proc.GetProcNS(1, "mnt")
 	if err != nil {
 		return 0, errfmt.WrapError(err)
+	}
+	if ns < 0 || ns > math.MaxUint32 {
+		return 0, errfmt.Errorf("invalid mnt namespace %d", ns)
 	}
 
 	return uint32(ns), nil
@@ -82,6 +86,9 @@ func (f *BinaryFilter) Parse(operatorAndValues string) error {
 			} else {
 				mntNS, err := strconv.Atoi(mntAndPath[0])
 				if err != nil {
+					return InvalidValue(val)
+				}
+				if mntNS < 0 || mntNS > math.MaxUint32 {
 					return InvalidValue(val)
 				}
 				bin.MntNS = uint32(mntNS)

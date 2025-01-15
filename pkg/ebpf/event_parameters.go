@@ -2,6 +2,7 @@ package ebpf
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
@@ -70,11 +71,16 @@ func attachSuspiciousSyscallSourceProbes(t *Tracee, eventParams []map[string]fil
 			if err != nil {
 				return err
 			}
-			if !events.Core.IsDefined(events.ID(syscallID)) {
+			if syscallID < 0 || syscallID > math.MaxInt32 {
+				return fmt.Errorf("invalid syscall id: %s", entry)
+			}
+
+			id := events.ID(syscallID)
+			if !events.Core.IsDefined(id) {
 				return fmt.Errorf("syscall id %d is not defined", syscallID)
 			}
 
-			syscallName := events.Core.GetDefinitionByID(events.ID(syscallID)).GetName()
+			syscallName := events.Core.GetDefinitionByID(id).GetName()
 			syscalls[syscallName] = struct{}{}
 		}
 	}
