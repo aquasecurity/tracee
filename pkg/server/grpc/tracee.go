@@ -677,12 +677,11 @@ func getDefinitions(in *pb.GetEventDefinitionsRequest) ([]events.Definition, err
 	definitions := make([]events.Definition, 0, len(in.EventNames))
 
 	for _, name := range in.EventNames {
-		id, ok := events.Core.GetDefinitionIDByName(name)
-		if !ok {
+		definition := events.Core.GetDefinitionByName(name)
+		if definition.NotValid() {
 			return nil, fmt.Errorf("event %s not found", name)
 		}
 
-		definition := events.Core.GetDefinitionByID(id)
 		definitions = append(definitions, definition)
 	}
 

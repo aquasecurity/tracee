@@ -114,3 +114,7 @@ func (d Definition) IsNetwork() bool {
 func (d Definition) GetProperties() map[string]interface{} {
 	return d.properties
 }
+
+func (d Definition) NotValid() bool {
+	return d.id == Undefined || d.id == Unsupported
+}
