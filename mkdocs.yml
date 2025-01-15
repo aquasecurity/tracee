@@ -612,8 +612,9 @@ nav:
           - Additional Resources: tutorials/additional-resources.md 
     - Contributing:
           - Overview: contributing/overview.md
-          - Documentation: contributing/documentation.md
-          - Source Code Guidelines: contributing/guidelines.md
+          - Guidelines: contributing/guidelines.md
+          - Performence: contributing/performance.md
+          - Kubernetes: contributing/kubernetes.md
           - Setup Development Machine with Vagrant: contributing/setup-development-machine-with-vagrant.md
           - Building:
                 - Building Tracee: contributing/building/building.md

@@ -14,72 +14,43 @@
     If you want to build tracee on your local machine
     [read this](./building.md).
 
+## Quick steps
 
-## Quick steps (**impatient readers**)
+1. Build tracee environment:
 
-!!! Example
+    ```bash
+    make -f builder/Makefile.tracee-make alpine-prepare
+    make -f builder/Makefile.tracee-make alpine-shell
+    ```
 
-    * Build and execute **tracee**:
-    
-        ```console
-        make -f builder/Makefile.tracee-make alpine-prepare
-        make -f builder/Makefile.tracee-make alpine-shell
-        ```
+2. Build and execute tracee:
 
-        and inside the container:
+    ```bash
+    make clean
+    make tracee
+    sudo ./dist/tracee \
+        -o option:parse-arguments \
+        --scope comm=bash \
+        --scope follow
+    ```
 
-        ```console
-        make clean
-        make tracee
-        sudo ./dist/tracee \
-            -o option:parse-arguments \
-            --scope comm=bash \
-            --scope follow
-        ```
-    
-    Now, in your host's bash shell, execute a command. You will see all events
-    (except scheduler ones) being printed, in "table format", to stdout.
-    
-    * Build and execute **tracee**:
-    
-        ```console
-        make -f builder/Makefile.tracee-make alpine-prepare
-        make -f builder/Makefile.tracee-make alpine-shell
-        ```
-
-        and inside the container:
-
-        ```console
-        make clean
-        make all
-        sudo ./dist/tracee \
-            -o format:json \
-            -o option:parse-arguments \
-            --scope comm=bash \
-            --scope follow 
-        ```
-    
-    Now, in your host's bash shell, execute: `sudo strace /bin/ls` and observe
-    tracee warning you about a possible risk (with its Anti-Debugging signature).
-
-Now, for **more patient readers** ...
+Now, in your host's shell, execute a command. You will see all events
+(except scheduler ones) being printed, in "table format", to stdout.
 
 ## How to build and use the environment
 
 In order to have a controlled building environment for tracee, tracee provides
-a `Makefile.tracee-make` file that allows you to create and use a docker
-container environment to build & test **tracee**. 
+a `Makefile.tracee-make` file that allows you to create and use a docker container environment to build & test **tracee**.
 
-Two different environments are maintained for building tracee:
+There are Two different environments that are maintained for building tracee:
 
-* Alpine
-* Ubuntu
+* **Alpine**
+* **Ubuntu**
 
-The reason for that is that **Alpine Linux** is based in the
-[musl](https://en.wikipedia.org/wiki/Musl) C standard library, while the
-**Ubuntu Linux** uses [glibc](https://en.wikipedia.org/wiki/Glibc). By
-supporting both building environments we can always be sure that the project
-builds (and executes) correctly in both environments.
+The reason for that is that `Alpine Linux` is based in the [musl](https://en.wikipedia.org/wiki/Musl) C standard library,
+while the `Ubuntu Linux` uses [glibc](https://en.wikipedia.org/wiki/Glibc).
+
+By supporting both building environments we can always be sure that the project builds (and executes) correctly in both environments.
 
 !!! Attention
     Locally created containers, called `alpine-tracee-make` or
@@ -91,13 +62,13 @@ builds (and executes) correctly in both environments.
 
 * To create an **alpine-tracee-make** container:
 
-    ```console
+    ```bash
     make -f builder/Makefile.tracee-make alpine-prepare
     ```
 
 * To create an **ubuntu-tracee-make** container:
 
-    ```console
+    ```bash
     make -f builder/Makefile.tracee-make ubuntu-prepare
     ```
 
@@ -105,67 +76,80 @@ builds (and executes) correctly in both environments.
 
 * To execute an **alpine-tracee-make** shell:
 
-    ```console
+    ```bash
     make -f builder/Makefile.tracee-make alpine-shell
     ```
 
 * To execute an **ubuntu-tracee-make** shell:
 
-    ```console
+    ```bash
     make -f builder/Makefile.tracee-make ubuntu-shell
     ```
 
 ### Using build environment as a **make** replacement
 
-Instead of executing a builder shell, you may use `alpine-tracee-make`, or
-`ubuntu-tracee-make`, as a replacement for the `make` command:
+Instead of executing a builder shell, you may use `alpine-make`, or
+`ubuntu-make`, as a replacement for the `make` command:
 
-```console
-make -f builder/Makefile.tracee-make ubuntu-prepare
-make -f builder/Makefile.tracee-make ubuntu-make ARG="help"
-make -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
-make -f builder/Makefile.tracee-make ubuntu-make ARG="bpf"
-make -f builder/Makefile.tracee-make ubuntu-make ARG="tracee"
-make -f builder/Makefile.tracee-make ubuntu-make ARG="all"
-```
+1. Create builder environment as described:
+    [Creating a builder environment](#creating-a-builder-environment)
+2. Compile tracee using `ubuntu-make`
 
-And, after the compilation, run the commands directly in your host:
+    * Build tracee binary:
 
-```console
-sudo ./dist/tracee \
-    -o option:parse-arguments \
-    --scope comm=bash \
-    --scope follow
-```
+        ```bash
+        make -f builder/Makefile.tracee-make ubuntu-make ARG="tracee"
+        ```
 
-> **Note**: the generated binary must be compatible to your host (depending on
-> glibc version, for example).
+    * Show available `ubuntu-make` commands:
 
-If you don't want to depend on host's libraries versions, or if you are using
-the `alpine-tracee-make` container as a replacement for `make`, and your host
-is not an **Alpine Linux**, then you may set `STATIC=1` variable so you can run
-compiled binaries in your host:
+        ```bash
+        make -f builder/Makefile.tracee-make ubuntu-make ARG="help"
+        ```
 
-```console
-make -f builder/Makefile.tracee-make alpine-prepare
-make -f builder/Makefile.tracee-make alpine-make ARG="help"
-STATIC=1 make -f builder/Makefile.tracee-make alpine-make ARG="all"
-```
+    * Remove tracee binary
 
-and execute the static binary from your host:
+        ```bash
+        make -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
+        ```
 
-```console
-ldd dist/tracee
-```
+    * Build binaries for all
 
-```text
-not a dynamic executable
-```
+        ```bash
+        make -f builder/Makefile.tracee-make ubuntu-make ARG="all"
+        ```
 
-!!! Attention
-    compiling **tracee-rules** with STATIC=1 won't allow you to use golang based
-    signatures:
-    > ```text
-    > 2021/12/13 13:27:21 error opening plugin /tracee/dist/signatures/builtin.so:
-    > plugin.Open("/tracee/dist/signatures/builtin.so"): Dynamic loading not supported
-    > ```
+3. Run tracee binary
+
+    ```bash
+    sudo ./dist/tracee
+    ```
+
+> **Note**: the generated binary must be compatible to your host (depending on glibc version).
+
+If you don't want to depend on host's libraries versions, or you are using the `alpine-make` container as a replacement for `make`, then it's necessary  to set `STATIC` variable to `1` so you can run compiled binaries in your host machine:
+
+1. Compile tracee
+
+    ```bash
+    make -f builder/Makefile.tracee-make alpine-prepare
+    STATIC=1 make -f builder/Makefile.tracee-make alpine-make ARG="all"
+    ```
+
+2. Verify the executable is static
+
+    * Note: ldd prints the shared libraries required by an executable file
+
+    ```bash
+    ldd dist/tracee
+    ```
+
+    ```text
+    not a dynamic executable
+    ```
+
+3. Execute the static binary from your host
+
+    ```bash
+    sudo ./dist/tracee
+    ```
