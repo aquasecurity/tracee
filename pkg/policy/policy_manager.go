@@ -39,6 +39,7 @@ type PolicyManager struct {
 	bpfInnerMaps    map[string]*bpf.BPFMapLow // TODO: move this to ebpf related code
 	mu              sync.RWMutex              // Read/Write Mutex to protect concurrent access
 	cfg             ManagerConfig
+	fMaps           *filterMaps
 }
 
 // EventData holds information about a specific event.

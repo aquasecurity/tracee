@@ -47,6 +47,7 @@ type filterMaps struct {
 	dataSuffixFilters map[filterVersionKey]map[string]ruleBitmap
 	dataExactFilters  map[filterVersionKey]map[string]ruleBitmap
 	binaryFilters     map[filterVersionKey]map[filters.NSBinary]ruleBitmap
+	dataFilterConfigs map[events.ID]dataFilterConfig
 }
 
 type equalityType int
@@ -82,8 +83,8 @@ type stringFilterConfig struct {
 //
 // Returns error if filter processing fails for any rule.
 func (pm *PolicyManager) computeFilterMaps(
-	cts *containers.Containers,
-) (maps *filterMaps, configs map[events.ID]dataFilterConfig, err error) {
+	conts *containers.Containers,
+) (maps *filterMaps, err error) {
 	maps = &filterMaps{
 		uidFilters:        make(map[filterVersionKey]map[uint64]ruleBitmap),
 		pidFilters:        make(map[filterVersionKey]map[uint64]ruleBitmap),
@@ -96,8 +97,8 @@ func (pm *PolicyManager) computeFilterMaps(
 		dataSuffixFilters: make(map[filterVersionKey]map[string]ruleBitmap),
 		dataExactFilters:  make(map[filterVersionKey]map[string]ruleBitmap),
 		binaryFilters:     make(map[filterVersionKey]map[filters.NSBinary]ruleBitmap),
+		dataFilterConfigs: make(map[events.ID]dataFilterConfig),
 	}
-	configs = make(map[events.ID]dataFilterConfig)
 
 	for eventID, eventRules := range pm.rules {
 		vKey := filterVersionKey{
@@ -106,16 +107,16 @@ func (pm *PolicyManager) computeFilterMaps(
 		}
 
 		for _, rule := range eventRules.Rules {
-			if err = pm.processRuleScopeFilters(maps, vKey, rule, cts); err != nil {
-				return nil, nil, errfmt.WrapError(err)
+			if err = pm.processRuleScopeFilters(maps, vKey, rule, conts); err != nil {
+				return nil, errfmt.WrapError(err)
 			}
 
-			if err = pm.processRuleDataFilters(maps, vKey, rule, configs, eventID); err != nil {
-				return nil, nil, errfmt.WrapError(err)
+			if err = pm.processRuleDataFilters(maps, vKey, rule, eventID); err != nil {
+				return nil, errfmt.WrapError(err)
 			}
 		}
 	}
-	return maps, configs, nil
+	return maps, nil
 }
 
 func (pm *PolicyManager) processRuleScopeFilters(
@@ -239,7 +240,6 @@ func (pm *PolicyManager) processRuleDataFilters(
 	filterMaps *filterMaps,
 	vKey filterVersionKey,
 	rule *EventRule,
-	eventDataFilterConfigs map[events.ID]dataFilterConfig,
 	eventID events.ID,
 ) error {
 	if rule.Data == nil {
@@ -252,7 +252,7 @@ func (pm *PolicyManager) processRuleDataFilters(
 	}
 
 	// Get or create config
-	config, exists := eventDataFilterConfigs[eventID]
+	config, exists := filterMaps.dataFilterConfigs[eventID]
 	if !exists {
 		config = dataFilterConfig{}
 	}
@@ -261,7 +261,7 @@ func (pm *PolicyManager) processRuleDataFilters(
 	pm.processStringFilterRule(filterMaps, vKey, rule.ID, equalities, &config.string)
 
 	// Store updated config
-	eventDataFilterConfigs[eventID] = config
+	filterMaps.dataFilterConfigs[eventID] = config
 	return nil
 }
 

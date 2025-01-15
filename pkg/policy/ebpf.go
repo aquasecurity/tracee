@@ -61,12 +61,13 @@ func (pm *PolicyManager) updateBPF(
 	cts *containers.Containers,
 	eventsFields map[events.ID][]bufferdecoder.ArgType,
 ) error {
-	fMaps, dataFilterConfigs, err := pm.computeFilterMaps(cts)
+	fMaps, err := pm.computeFilterMaps(cts)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
+	pm.fMaps = fMaps
 
-	if err := pm.updateEventsConfigMap(bpfModule, eventsFields, dataFilterConfigs); err != nil {
+	if err := pm.updateEventsConfigMap(bpfModule, eventsFields, fMaps.dataFilterConfigs); err != nil {
 		return errfmt.WrapError(err)
 	}
 
