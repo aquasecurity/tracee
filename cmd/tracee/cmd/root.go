@@ -252,9 +252,9 @@ func initCmd() error {
 	rootCmd.Flags().StringArray(
 		"server",
 		[]string{""},
-		`--server <type>.<option>=<value>   Configure HTTP or gRPC server options.  <type> is either "http" or "grpc".  Options include:
-  											http: address, metrics, pprof, healthz, pyroscope
-  											grpc: address`)
+		`<type>.<option>=<value>		Configure HTTP or gRPC server options.  <type> is either "http" or "grpc".  Options include:
+  									http: address, metrics, pprof, healthz, pyroscope
+  									grpc: address`)
 
 	err = viper.BindPFlag("server", rootCmd.Flags().Lookup("server"))
 	if err != nil {
