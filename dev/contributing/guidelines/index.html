@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/contributing/guidelines/">
       
       
-        <link rel="prev" href="../documentation/">
+        <link rel="prev" href="../overview/">
       
       
-        <link rel="next" href="../setup-development-machine-with-vagrant/">
+        <link rel="next" href="../performance/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Source Code Guidelines - Tracee</title>
+        <title>Guidelines - Tracee</title>
       
     
     
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Source Code Guidelines
+              Guidelines
             
           </span>
         </div>
@@ -17253,16 +17253,167 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../documentation/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    
+  
+    Guidelines
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
     
   
-    Documentation
+    Guidelines
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#contributing-to-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing to Documentation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contributing to Documentation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-documentation-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Documentation Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing-to-tracee-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing to Tracee Code
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contributing to Tracee Code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#before-you-commit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before You Commit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Considerations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes Considerations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Performence
   
 
     
@@ -17280,40 +17431,16 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    
-  
-    Source Code Guidelines
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../kubernetes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    Source Code Guidelines
+    Kubernetes
   
 
     
@@ -17322,35 +17449,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#style-guide-for-contributors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Style Guide for Contributors
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -17405,10 +17503,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -17425,8 +17523,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -17549,6 +17647,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -17557,13 +17657,80 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#style-guide-for-contributors" class="md-nav__link">
+  <a href="#contributing-to-documentation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Style Guide for Contributors
+        Contributing to Documentation
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Contributing to Documentation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-documentation-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Documentation Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing-to-tracee-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing to Tracee Code
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contributing to Tracee Code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#before-you-commit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before You Commit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Considerations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes Considerations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -17584,77 +17751,86 @@
 
 
 
-  <h1>Source Code Guidelines</h1>
-
-<h2 id="style-guide-for-contributors">Style Guide for Contributors<a class="headerlink" href="#style-guide-for-contributors" title="Permanent link">&para;</a></h2>
+<h1 id="style-guide-for-contributors">Style Guide for Contributors<a class="headerlink" href="#style-guide-for-contributors" title="Permanent link">&para;</a></h1>
 <p>For those willing to contribute to Tracee, this repository has code formatting
-guidelines being enforced. It is recommended that, before committing your
-changes, you run the following command:</p>
+guidelines being enforced.</p>
+<h2 id="contributing-to-documentation">Contributing to Documentation<a class="headerlink" href="#contributing-to-documentation" title="Permanent link">&para;</a></h2>
+<p>Our documentation aims to follow the <a href="https://diataxis.fr/">Diátaxis documentation framework</a>.</p>
+<p>To contribute to the documentation:</p>
 <ol>
-<li>Check for formatting issues</li>
+<li>Clone the Tracee GitHub repository.</li>
+<li>Make changes in the <code>/docs</code> directory in the root folder.</li>
+<li>Remember to edit the index in <code>mkdocs.yml</code> if you add or move existing files or directories.</li>
+<li>Test your changes to the documentation.</li>
 </ol>
-<div class="admonition check-fmt example">
-<p class="admonition-title">Check-fmt</p>
-<div class="highlight"><pre><span></span><code><span class="go">make check-fmt</span>
+<h3 id="test-documentation-changes">Test Documentation Changes<a class="headerlink" href="#test-documentation-changes" title="Permanent link">&para;</a></h3>
+<p>You can test your changes to the documentation by building and running a docker container.
+Prerequisites: Docker installed and running locally.
+Build the container image:</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>./builder/Makefile.mkdocs<span class="w"> </span>mkdocs-build
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>Checking C and eBPF files and headers formatting...
-Checking golang files formatting...
+<p>Serve the container image:</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>./builder/Makefile.mkdocs<span class="w"> </span>mkdocs-serve
 </code></pre></div>
-<blockquote>
-<p>This will make sure PRs won't fail due to same checks being enforced.</p>
-</blockquote>
-</div>
+<p>Open <code>localhost:8000/tracee</code></p>
+<p>Now you should see the documentation.
+Check that everything is like you intent.</p>
+<p>And finally Submit a PR about the changes.</p>
+<h2 id="contributing-to-tracee-code">Contributing to Tracee Code<a class="headerlink" href="#contributing-to-tracee-code" title="Permanent link">&para;</a></h2>
+<p>We welcome contributions to Tracee's codebase! Before submitting your changes, please familiarize yourself with these guidelines.
+To contribute to the code:</p>
+<h3 id="before-you-commit">Before You Commit<a class="headerlink" href="#before-you-commit" title="Permanent link">&para;</a></h3>
+<p>Tracee relies on several generated files and has strict formatting requirements. Ensure you run the following commands before committing:</p>
+<p><strong><code>NOTE:</code></strong> In order to not depend on host's libraries versions, we recommend that you always run make and other project dependencies on a virtual environment so the formatting will be align with Tracee guidelines</p>
 <ol>
-<li>Fix Go and C source files formatting</li>
+<li>
+<p>Man Pages Generation: If you've modified core code or documentation that impacts the man pages, run:</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.man
+</code></pre></div>
+<p>This regenerates the man pages to reflect your changes.</p>
+</li>
+<li>
+<p>Protocol Buffer Compilation: If your changes involve modifications to protocol buffer (<code>.proto</code>) files,run:</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.man
+</code></pre></div>
+<p>This regenerates the corresponding Go code.</p>
+</li>
+<li>
+<p>Pre-commit checks: Every time you're about to create a pull request, execute:</p>
+<p><strong><code>NOTE:</code></strong>  If your host machine dependencies doesn't align with Tracee dependencies, This command have to run on a supported <a href="../building/environment/">environment</a></p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>check-pr
+</code></pre></div>
+<p>This command performs essential checks:
+- <code>check-fmt</code>: Verifies code formatting adheres to project standards.
+- <code>check-lint</code>: Runs linting tools (e.g., <code>golangci-lint</code>) to catch potential issues.
+- <code>check-code</code>: Performs static code analysis for both Go and C code.
+- <code>format-pr</code>: Displays the commits in your PR in a standardized format.</p>
+<p><strong>Note:</strong> <code>check-fmt</code>,<code>check-lint</code>,<code>check-code</code>,<code>format-pr</code> are individual make command combined under <code>check-pr</code>. You can run the following command without any vm using Makefile</p>
+<ul>
+<li>
+<p>For <code>check-fmt</code>:</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.checkers<span class="w"> </span>fmt-check
+</code></pre></div>
+</li>
+<li>
+<p>For <code>check-code</code>:</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.checkers<span class="w"> </span>code-check
+</code></pre></div>
+</li>
+</ul>
+</li>
+<li>
+<p>Fixing Code Formatting: If <code>check-fmt</code> reports issues, use:</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.checkers<span class="w"> </span>fmt-fix
+</code></pre></div>
+<p>This automatically formats your Go and C code to meet project standards. Review the changes with <code>git status -s</code> before committing.</p>
+</li>
 </ol>
-<div class="admonition fix-fmt example">
-<p class="admonition-title">Fix-fmt</p>
-<div class="highlight"><pre><span></span><code><span class="go">make fix-fmt</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>Fixing C and eBPF files and headers formatting...
-Formatting ./pkg/ebpf/c/missing_definitions.h
-Formatting ./pkg/ebpf/c/struct_flavors.h
-Formatting ./pkg/ebpf/c/tracee.bpf.c
-Formatting ./pkg/ebpf/c/vmlinux.h
-
-Fixing golang files formatting...
-patching file pkg/ebpf/tracee.go
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="go">git status -s</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code> M Makefile
- M builder/Makefile.checkers
- M pkg/ebpf/c/missing_definitions.h
- M pkg/ebpf/c/struct_flavors.h
- M pkg/ebpf/c/tracee.bpf.c
- M pkg/ebpf/c/vmlinux.h
-</code></pre></div>
-</div>
-<ol>
-<li>Static Check Go and C source files</li>
-</ol>
-<div class="admonition check-code example">
-<p class="admonition-title">Check-code</p>
-<div class="highlight"><pre><span></span><code><span class="go">make check-code</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>Checking Golang vet...
-make[2]: warning: jobserver unavailable: using -j1.  Add &#39;+&#39; to parent make rule.
-GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS=&quot;-I/home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf&quot; CGO_LDFLAGS=&quot;-lelf -lz /home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf/libbpf.a&quot; \
-go vet \
-    -tags core,ebpf \
-    ./...
-
-Checking Golang with StaticChecker...
-make[2]: warning: jobserver unavailable: using -j1.  Add &#39;+&#39; to parent make rule.
-GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS=&quot;-I/home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf&quot; CGO_LDFLAGS=&quot;-lelf -lz /home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf/libbpf.a&quot; \
-staticcheck -f stylish \
-    -tags core,ebpf \
-    ./...
- ✖ 0 problems (0 errors, 0 warnings, 0 ignored)
-
- Checking Golang with errcheck...
-</code></pre></div>
-</div>
+<h3 id="performance-considerations">Performance Considerations<a class="headerlink" href="#performance-considerations" title="Permanent link">&para;</a></h3>
+<p>Performance is a critical aspect of Tracee.</p>
+<p>To ensure your contributions maintain optimal performance, follow the guidelines in <a href="../performance/">Performance Considerations</a> page.</p>
+<h3 id="kubernetes-considerations">Kubernetes Considerations<a class="headerlink" href="#kubernetes-considerations" title="Permanent link">&para;</a></h3>
+<p>If your contribution impacts Tracee's behavior within a Kubernetes cluster, follow the guidelines in <a href="../kubernetes/">Kubernetes Considerations</a>.</p>
 
 
 

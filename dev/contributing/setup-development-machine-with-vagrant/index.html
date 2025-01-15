@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/contributing/setup-development-machine-with-vagrant/">
       
       
-        <link rel="prev" href="../guidelines/">
+        <link rel="prev" href="../kubernetes/">
       
       
         <link rel="next" href="../building/building/">
@@ -17256,13 +17256,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../documentation/" class="md-nav__link">
+      <a href="../guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    Documentation
+    Guidelines
   
 
     
@@ -17283,13 +17283,40 @@
   
   
     <li class="md-nav__item">
-      <a href="../guidelines/" class="md-nav__link">
+      <a href="../performance/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    Source Code Guidelines
+    Performence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kubernetes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
   
 
     
@@ -17379,10 +17406,65 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#create-development-machine" class="md-nav__link">
+  <a href="#clone-the-tracee-repository" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Create Development Machine
+        Clone the Tracee Repository
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#navigate-to-the-tracee-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Navigate to the Tracee Directory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configure-vm-type-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure VM Type (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configure-resource-allocation-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure Resource Allocation (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#start-the-vm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start the VM
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accessing-the-vm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accessing the VM
       
     </span>
   </a>
@@ -17401,10 +17483,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#switch-between-co-re-and-non-co-re-linux-distribution" class="md-nav__link">
+  <a href="#stopping-the-vm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Switch Between CO-RE and non CO-RE Linux Distribution
+        Stopping the VM
       
     </span>
   </a>
@@ -17412,38 +17494,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deploy-tracee-with-postee-on-kubernetes" class="md-nav__link">
+  <a href="#destroying-the-vm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deploy Tracee with Postee on Kubernetes
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Deploy Tracee with Postee on Kubernetes">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#access-kubernetes-dashboard" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Access Kubernetes Dashboard
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#preview-tracee-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Preview Tracee Documentation
+        Destroying the VM
       
     </span>
   </a>
@@ -17481,10 +17535,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -17501,8 +17555,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -17646,10 +17700,65 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#create-development-machine" class="md-nav__link">
+  <a href="#clone-the-tracee-repository" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Create Development Machine
+        Clone the Tracee Repository
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#navigate-to-the-tracee-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Navigate to the Tracee Directory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configure-vm-type-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure VM Type (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configure-resource-allocation-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure Resource Allocation (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#start-the-vm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start the VM
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accessing-the-vm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accessing the VM
       
     </span>
   </a>
@@ -17668,10 +17777,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#switch-between-co-re-and-non-co-re-linux-distribution" class="md-nav__link">
+  <a href="#stopping-the-vm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Switch Between CO-RE and non CO-RE Linux Distribution
+        Stopping the VM
       
     </span>
   </a>
@@ -17679,38 +17788,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deploy-tracee-with-postee-on-kubernetes" class="md-nav__link">
+  <a href="#destroying-the-vm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deploy Tracee with Postee on Kubernetes
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Deploy Tracee with Postee on Kubernetes">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#access-kubernetes-dashboard" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Access Kubernetes Dashboard
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#preview-tracee-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Preview Tracee Documentation
+        Destroying the VM
       
     </span>
   </a>
@@ -17735,232 +17816,80 @@
 
 
 <h1 id="setup-development-machine-with-vagrant">Setup Development Machine with Vagrant<a class="headerlink" href="#setup-development-machine-with-vagrant" title="Permanent link">&para;</a></h1>
-<p><a href="https://www.vagrantup.com">HashiCorp Vagrant</a> leverages a declarative configuration file, which describes
+<p>[HashiCorp Vagrant] leverages a declarative configuration file, which describes
 all software requirements, packages, operating system configuration, and users
 to provide the same development environment for everyone.</p>
-<p>The <a href="https://github.com/aquasecurity/tracee/blob/v0.22.0-156-gc97369dd3/Vagrantfile">Vagrantfile</a> describes the type of machine required to build Tracee from
-source and follow the <a href="../../">Getting Started</a> guides. This allows
-developers involved in the project to check out the code, run <code>vagrant up</code>, and
-be on their way.</p>
+<p>The <a href="/Vagrantfile">Vagrantfile</a> describes the type of machine required to build Tracee from the <a href="../../">Getting Started</a> guides.</p>
+<p>This allows developers involved in the project to check out the code, run <code>vagrant up</code>, and be on their way.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="https://www.vagrantup.com/docs/installation">Vagrant</a></li>
-<li><a href="https://www.vagrantup.com/docs/providers">Hypervisor</a> supported by Vagrant, such as <a href="https://www.virtualbox.org">VirtualBox</a> on a amd64 (Linux)
-machine or <a href="https://www.parallels.com">Parallels</a> on an arm64 M1 (Darwin) machine.</li>
+<li>[Vagrant]</li>
+<li>[Hypervisor] supported by Vagrant, such as [VirtualBox] on a amd64 (Linux)
+machine or [Parallels] on an arm64 M1 (Darwin) machine.</li>
 </ul>
-<h2 id="create-development-machine">Create Development Machine<a class="headerlink" href="#create-development-machine" title="Permanent link">&para;</a></h2>
-<p>Clone and change directory to Tracee Git repository:</p>
-<div class="highlight"><pre><span></span><code><span class="go">git clone --branch v0.22.0-156-gc97369dd3 https://github.com/aquasecurity/tracee.git</span>
-<span class="go">cd tracee</span>
+<h2 id="clone-the-tracee-repository">Clone the Tracee Repository<a class="headerlink" href="#clone-the-tracee-repository" title="Permanent link">&para;</a></h2>
+<p>Clone the Tracee repository to your local machine. This repository contains the Vagrantfile.</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/aquasecurity/tracee.git
 </code></pre></div>
-<p>Create and configure development machine according to the <code>Vagrantfile</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="go">vagrant up</span>
+<h2 id="navigate-to-the-tracee-directory">Navigate to the Tracee Directory<a class="headerlink" href="#navigate-to-the-tracee-directory" title="Permanent link">&para;</a></h2>
+<p>Open a terminal and navigate to the directory containing the <code>Vagrantfile</code> within the cloned Tracee repository (<code>tracee/</code>)</p>
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>tracee
 </code></pre></div>
-<p>If everything goes well, you can SSH into a running development machine and
-access its shell:</p>
-<div class="highlight"><pre><span></span><code><span class="go">vagrant ssh</span>
+<h2 id="configure-vm-type-optional">Configure VM Type (Optional)<a class="headerlink" href="#configure-vm-type-optional" title="Permanent link">&para;</a></h2>
+<p>The VM can be provisioned for either a <code>dev</code> or <code>test</code> environment. The <code>dev</code> environment includes additional tools like MicroK8s, kubectl, and Helm.</p>
+<ul>
+<li><strong>Development Environment:</strong> Full development environment (Default)</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">VM_TYPE</span><span class="o">=</span>dev
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>vagrant@ubuntu-jammy:/vagrant$
+<ul>
+<li><strong>Testing Environment:</strong>  Smaller vagrant machine without k8s cumbersome to avoid conflicts with specific tests.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">VM_TYPE</span><span class="o">=</span><span class="nb">test</span>
 </code></pre></div>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>Provisioning from scratch take time, but once created you can reuse the
-machine with <code>vagrant halt</code> and <code>vagrant up</code> commands. If something goes
-wrong with your machine, there's also the <code>vagrant destroy</code> to destroy it
-and start over again.</p>
-</div>
-<p>Synced folders enable Vagrant to sync a folder on the host machine to the
-development machine, allowing you to continue working on your project's files
-on your host machine, but use the resources in the development machine to
-compile or run Tracee.</p>
-<p>By default, Vagrant will share Tracee project directory (the directory with the
-<code>Vagrantfile</code>) to <code>/vagrant</code>. To get started list files:</p>
-<div class="highlight"><pre><span></span><code><span class="go">ls -l</span>
+<h2 id="configure-resource-allocation-optional">Configure Resource Allocation (Optional)<a class="headerlink" href="#configure-resource-allocation-optional" title="Permanent link">&para;</a></h2>
+<p>Customize the VM's resources by setting the following environment variables:</p>
+<ul>
+<li><code>VM_PROC</code>: Number of virtual processors. Defaults to half of the host's processors. Example:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">VM_PROC</span><span class="o">=</span><span class="m">4</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>total 648
-drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 3rdparty
--rw-r--r-- 1 vagrant vagrant  11358 Mar 18 14:45 LICENSE
--rw-r--r-- 1 vagrant vagrant  21821 Mar 27 13:40 Makefile
--rw-r--r-- 1 vagrant vagrant    133 Mar 18 14:45 NOTICE
--rw-r--r-- 1 vagrant vagrant   2643 Mar 29 18:30 RELEASING.md
--rw-r--r-- 1 vagrant vagrant   2238 Mar 22 23:43 Readme.md
--rw-r--r-- 1 vagrant vagrant   3337 Mar 22 23:43 Vagrantfile
-drwxr-xr-x 1 vagrant vagrant   4096 Mar 29 18:05 brand
-drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 builder
-drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 cmd
--rw-r--r-- 1 vagrant vagrant 415013 Mar 28 23:17 coverage.txt
-drwxr-xr-x 1 vagrant vagrant   4096 Mar 18 14:45 deploy
-drwxr-xr-x 1 vagrant vagrant   4096 Mar 29 18:15 dist
-drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 docs
--rw-r--r-- 1 vagrant vagrant    164 Mar 18 14:45 embedded-ebpf.go
--rw-r--r-- 1 vagrant vagrant    101 Mar 18 14:45 embedded.go
-drwxr-xr-x 1 vagrant vagrant   4096 Mar 27 12:08 examples
--rw-r--r-- 1 vagrant vagrant   5599 Mar 29 17:22 go.mod
--rw-r--r-- 1 vagrant vagrant  77170 Mar 29 17:22 go.sum
--rw-r--r-- 1 vagrant vagrant  40206 Mar 22 23:43 mkdocs.yml
-drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 packaging
-drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 pkg
-drwxr-xr-x 1 vagrant vagrant   4096 Mar 18 14:45 signatures
--rw-r--r-- 1 vagrant vagrant    157 Mar 22 23:43 staticcheck.conf
-drwxr-xr-x 1 vagrant vagrant   4096 Mar 24 15:44 tests
-drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 types
+<ul>
+<li><code>VM_MEM</code>: Memory in gigabytes. Defaults to 8GB. Example:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">VM_MEM</span><span class="o">=</span><span class="m">16</span>
 </code></pre></div>
-<p>As you can see the <code>/vagrant</code> directory contains source code of Tracee cloned
-from GitHub.</p>
+<h2 id="start-the-vm">Start the VM<a class="headerlink" href="#start-the-vm" title="Permanent link">&para;</a></h2>
+<p>Run the following command to start the VM:</p>
+<div class="highlight"><pre><span></span><code>vagrant<span class="w"> </span>up
+</code></pre></div>
+<p>Vagrant will download the base box, provision the VM, and install all required dependencies. This process may take some time.</p>
+<h2 id="accessing-the-vm">Accessing the VM<a class="headerlink" href="#accessing-the-vm" title="Permanent link">&para;</a></h2>
+<p>Once the VM is up and running, you can access it via SSH:</p>
+<div class="highlight"><pre><span></span><code>vagrant<span class="w"> </span>ssh
+</code></pre></div>
+<p>This will place you in the <code>/vagrant</code> directory inside the VM, which is synced with the Tracee directory on your host machine.</p>
 <h2 id="build-and-run-tracee">Build and Run Tracee<a class="headerlink" href="#build-and-run-tracee" title="Permanent link">&para;</a></h2>
-<p>To build <strong>tracee</strong> executable binary, run the
-default make target:</p>
-<div class="highlight"><pre><span></span><code><span class="go">make</span>
+<p>You can now build Tracee within the VM using the provided Makefile. Consult the Tracee documentation for specific build instructions.
+<a href="../building/building/">Building Tracee Documentation</a></p>
+<h2 id="stopping-the-vm">Stopping the VM<a class="headerlink" href="#stopping-the-vm" title="Permanent link">&para;</a></h2>
+<p>To stop the VM, use:</p>
+<div class="highlight"><pre><span></span><code>vagrant<span class="w"> </span>halt
 </code></pre></div>
-<p>Build targets are saved in the <code>/vagrant/dist</code> directory:</p>
-<div class="highlight"><pre><span></span><code><span class="go">ls -l dist/</span>
+<h2 id="destroying-the-vm">Destroying the VM<a class="headerlink" href="#destroying-the-vm" title="Permanent link">&para;</a></h2>
+<p>To completely remove the VM, use:</p>
+<div class="highlight"><pre><span></span><code>vagrant<span class="w"> </span>destroy
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>total 161096
-drwxr-xr-x 1 vagrant vagrant     4096 Mar 29 19:06 btfhub
-drwxr-xr-x 1 vagrant vagrant     4096 Mar 29 19:06 libbpf
-drwxr-xr-x 1 vagrant vagrant     4096 Mar 29 19:08 signatures
--rwxr-xr-x 1 vagrant vagrant 62619312 Mar 29 19:08 tracee
--rw-r--r-- 1 vagrant vagrant 10753624 Mar 29 19:06 tracee.bpf.o
-</code></pre></div>
-<p>You can now run Tracee and see events printed to the standard output in a tabular format:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>TIME             UID    COMM             PID     TID     RET              EVENT                     ARGS
-19:10:09:453832  0      coredns          1       8       0                security_socket_connect   sockfd: 13, remote_addr: map[sa_family:AF_INET sin_addr:0.0.0.0 sin_port:8080]
-19:10:09:454179  0      coredns          1       9       0                security_socket_accept    sockfd: 8, local_addr: map[sa_family:AF_INET6 sin6_addr::: sin6_flowinfo:0 sin6_port:8080 sin6_scopeid:0]
-19:10:09:454265  0      coredns          1       9       0                security_socket_accept    sockfd: 8, local_addr: map[sa_family:AF_INET6 sin6_addr::: sin6_flowinfo:0 sin6_port:8080 sin6_scopeid:0]
-19:10:09:454478  0      coredns          1       14      0                net_packet_http_request   metadata: {127.0.0.1 127.0.0.1 43306 8080 6 144 any}, http_request: &amp;{GET HTTP/1.1 :8080 /health map[Accept-Encoding:[gzip] User-Agent:[Go-http-client/1.1]] 0}
-19:10:09:454774  0      coredns          1       14      0                net_packet_http_response  metadata: {127.0.0.1 127.0.0.1 8080 43306 6 170 any}, http_response: &amp;{200 OK 200 HTTP/1.1 map[Content-Length:[2] Content-Type:[text/plain; charset=utf-8] Date:[Wed, 29 Mar 2023 19:10:09 GMT]] 2}
-19:10:10:452992  0      coredns          1       14      0                security_socket_connect   sockfd: 13, remote_addr: map[sa_family:AF_INET sin_addr:0.0.0.0 sin_port:8080]
-19:10:10:453850  0      coredns          1       1       0                security_socket_accept    sockfd: 8, local_addr: map[sa_family:AF_INET6 sin6_addr::: sin6_flowinfo:0 sin6_port:8080 sin6_scopeid:0]
-19:10:10:453983  0      coredns          1       1       0                security_socket_accept    sockfd: 8, local_addr: map[sa_family:AF_INET6 sin6_addr::: sin6_flowinfo:0 sin6_port:8080 sin6_scopeid:0]
-19:10:10:454612  0      coredns          1       9       0                net_packet_http_request   metadata: {127.0.0.1 127.0.0.1 43318 8080 6 144 any}, http_request: &amp;{GET HTTP/1.1 :8080 /health map[Accept-Encoding:[gzip] User-Agent:[Go-http-client/1.1]] 0}
-19:10:10:455114  0      coredns          1       9       0                net_packet_http_response  metadata: {127.0.0.1 127.0.0.1 8080 43318 6 170 any}, http_response: &amp;{200 OK 200 HTTP/1.1 map[Content-Length:[2] Content-Type:[text/plain; charset=utf-8] Date:[Wed, 29 Mar 2023 19:10:10 GMT]] 2}
-</code></pre></div>
-<h2 id="switch-between-co-re-and-non-co-re-linux-distribution">Switch Between CO-RE and non CO-RE Linux Distribution<a class="headerlink" href="#switch-between-co-re-and-non-co-re-linux-distribution" title="Permanent link">&para;</a></h2>
-<p>By default, the development machine is running Ubuntu Linux 22.04 Jammy Jellyfish.
-You can see that it has a BTF-enabled kernel by checking the existence of the
-<code>/sys/kernel/btf/vmlinux</code> file.</p>
-<div class="highlight"><pre><span></span><code><span class="no">Vagrant</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="s2">&quot;2&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="o">|</span><span class="n">config</span><span class="o">|</span>
-<span class="w">  </span><span class="c1"># config.vm.box = &quot;ubuntu/focal64&quot;     # Ubuntu 20.04 Focal Fossa (non CO-RE)</span>
-<span class="w">  </span><span class="c1"># config.vm.box = &quot;ubuntu/hirsute64&quot;   # Ubuntu 21.04 Hirsute Hippo (CO-RE)</span>
-<span class="w">  </span><span class="c1"># config.vm.box = &quot;ubuntu/impish64&quot;    # Ubuntu 21.10 Impish Indri (CO-RE)</span>
-<span class="w">  </span><span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ubuntu/jammy64&quot;</span><span class="w">       </span><span class="c1"># Ubuntu 22.04 Jammy Jellyfish (CO-RE)</span>
-<span class="o">...</span>
-</code></pre></div>
-<p>Sometimes you may want to test Tracee with a non CO-RE distribution. You can do
-that by editing the Vagrantfile and modifying the <code>config.vm.box</code> property. For
-example, you can switch to Ubuntu Linux 20.04 Focal Fossa as follows:</p>
-<div class="highlight"><pre><span></span><code><span class="no">Vagrant</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="s2">&quot;2&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="o">|</span><span class="n">config</span><span class="o">|</span>
-<span class="w">  </span><span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ubuntu/focal64&quot;</span><span class="w">       </span><span class="c1"># Ubuntu 20.04 Focal Fossa (non CO-RE)</span>
-<span class="w">  </span><span class="c1"># config.vm.box = &quot;ubuntu/hirsute64&quot;   # Ubuntu 21.04 Hirsute Hippo (CO-RE)</span>
-<span class="w">  </span><span class="c1"># config.vm.box = &quot;ubuntu/impish64&quot;    # Ubuntu 21.10 Impish Indri (CO-RE)</span>
-<span class="w">  </span><span class="c1"># config.vm.box = &quot;ubuntu/jammy64&quot;     # Ubuntu 22.04 Jammy Jellyfish (CO-RE)</span>
-<span class="o">...</span>
-</code></pre></div>
-<p>This change requires re-provisioning the development machine:</p>
-<div class="highlight"><pre><span></span><code><span class="go">vagrant destroy</span>
-<span class="go">vagrant up</span>
-</code></pre></div>
-<div class="admonition attention">
-<p class="admonition-title">Attention</p>
-<p>Ubuntu Focal distribution has introduced BTF information to their recent
-kernels, allowing eBPF CO-RE capable code to run. If you're willing to test
-non CO-RE kernels, make sure to use an older kernel that does not provide
-the <code>/sys/kernel/btf/vmlinux</code> file.</p>
-</div>
-<h2 id="deploy-tracee-with-postee-on-kubernetes">Deploy Tracee with Postee on Kubernetes<a class="headerlink" href="#deploy-tracee-with-postee-on-kubernetes" title="Permanent link">&para;</a></h2>
-<p>The development machine described by Vagrantfile pre-installs <a href="https://microk8s.io">MicroK8s</a> Kubernetes cluster, which is suitable for testing Tracee.</p>
-<div class="highlight"><pre><span></span><code><span class="go">microk8s status</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>microk8s is running
-high-availability: no
-  datastore master nodes: 127.0.0.1:19001
-  datastore standby nodes: none
-...
-</code></pre></div>
-<p>There's also the <a href="https://kubernetes.io/docs/tasks/tools/#kubectl">kubectl</a> command installed and configured to communicate with
-the cluster:</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl get nodes -o wide</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>NAME           STATUS   ROLES    AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
-ubuntu-jammy   Ready    &lt;none&gt;   40m   v1.26.1   10.0.2.15     &lt;none&gt;        Ubuntu 22.04.2 LTS   5.15.0-69-generic   containerd://1.6.8
-</code></pre></div>
-<p>Create a new namespace called <code>tracee-system</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl create ns tracee-system</span>
-</code></pre></div>
-<p>Create Postee Persistent Volumes and StatefulSet in the <code>tracee-system</code>
-namespace:</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl apply -n tracee-system \</span>
-<span class="go">  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/hostPath/postee-pv.yaml \</span>
-<span class="go">  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/postee.yaml</span>
-</code></pre></div>
-<p>Create Tracee DaemonSet in the <code>tracee-system</code>, configuring it to send 
-detections to the standard output and send them over to Postee webhook on
-http://postee-svc:8082:</p>
-<div class="highlight"><pre><span></span><code><span class="go">helm install tracee ./deploy/helm/tracee \</span>
-<span class="go">  --namespace tracee-system \</span>
-<span class="go">  --set hostPID=true \</span>
-<span class="go">  --set webhook=http://postee-svc:8082</span>
-</code></pre></div>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>To test code that hasn't been released yet do the following:</p>
-<ol>
-<li>Build the <code>tracee:latest</code> container image from the current Git revision:
-   <div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-container build-tracee</span>
-</code></pre></div></li>
-<li>Import the container image to MicroK8s registry:
-   <div class="highlight"><pre><span></span><code><span class="go">docker image save -o /tmp/tracee-latest.tar tracee:latest</span>
-<span class="go">microk8s ctr images import /tmp/tracee-latest.tar</span>
-<span class="go">rm /tmp/tracee-latest.tar</span>
-</code></pre></div></li>
-<li>Create Tracee DaemonSet using <code>tracee:latest</code> as container image:
-   <div class="highlight"><pre><span></span><code><span class="go">kubectl apply -n tracee-system -k deploy/kubernetes/tracee</span>
-</code></pre></div></li>
-</ol>
-</div>
-<p>While Tracee pod is running, run <code>strace ls</code> command and observe detection
-printed to the standard output.</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl logs -n tracee-system -f daemonset/tracee</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>INFO: probing tracee capabilities...
-INFO: starting tracee...
-{&quot;timestamp&quot;:1680119087787203746,&quot;threadStartTime&quot;:1680119087787109775,&quot;processorId&quot;:0,&quot;processId&quot;:95599,&quot;cgroupId&quot;:9789,&quot;threadId&quot;:95599,&quot;parentProcessId&quot;:95597,&quot;hostProcessId&quot;:95599,&quot;hostThreadId&quot;:95599,&quot;hostParentProcessId&quot;:95597,&quot;userId&quot;:1000,&quot;mountNamespace&quot;:4026531841,&quot;pidNamespace&quot;:4026531836,&quot;processName&quot;:&quot;strace&quot;,&quot;hostName&quot;:&quot;ubuntu-jammy&quot;,&quot;containerId&quot;:&quot;&quot;,&quot;containerImage&quot;:&quot;&quot;,&quot;containerName&quot;:&quot;&quot;,&quot;podName&quot;:&quot;&quot;,&quot;podNamespace&quot;:&quot;&quot;,&quot;podUID&quot;:&quot;&quot;,&quot;podSandbox&quot;:false,&quot;eventId&quot;:&quot;6018&quot;,&quot;eventName&quot;:&quot;Anti-Debugging detected&quot;,&quot;matchedScopes&quot;:1,&quot;argsNum&quot;:0,&quot;returnValue&quot;:0,&quot;syscall&quot;:&quot;&quot;,&quot;stackAddresses&quot;:null,&quot;contextFlags&quot;:{&quot;containerStarted&quot;:false,&quot;isCompat&quot;:false},&quot;args&quot;:[],&quot;metadata&quot;:{&quot;Version&quot;:&quot;1&quot;,&quot;Description&quot;:&quot;A process used anti-debugging techniques to block a debugger. Malware use anti-debugging to stay invisible and inhibit analysis of their behavior.&quot;,&quot;Tags&quot;:null,&quot;Properties&quot;:{&quot;Category&quot;:&quot;defense-evasion&quot;,&quot;Kubernetes_Technique&quot;:&quot;&quot;,&quot;Severity&quot;:1,&quot;Technique&quot;:&quot;Debugger Evasion&quot;,&quot;external_id&quot;:&quot;T1622&quot;,&quot;id&quot;:&quot;attack-pattern--e4dc8c01-417f-458d-9ee0-bb0617c1b391&quot;,&quot;signatureID&quot;:&quot;TRC-102&quot;,&quot;signatureName&quot;:&quot;Anti-Debugging detected&quot;}}}
-</code></pre></div>
-<p>If everything is configured properly, you can find the same detection in Postee
-logs:</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl -n tracee-system logs -f postee-0</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>2023/03/29 19:44:47 {&quot;timestamp&quot;:1680119087787203746,&quot;threadStartTime&quot;:1680119087787109775,&quot;processorId&quot;:0,&quot;processId&quot;:95599,&quot;cgroupId&quot;:9789,&quot;threadId&quot;:95599,&quot;parentProcessId&quot;:95597,&quot;hostProcessId&quot;:95599,&quot;hostThreadId&quot;:95599,&quot;hostParentProcessId&quot;:95597,&quot;userId&quot;:1000,&quot;mountNamespace&quot;:4026531841,&quot;pidNamespace&quot;:4026531836,&quot;processName&quot;:&quot;strace&quot;,&quot;hostName&quot;:&quot;ubuntu-jammy&quot;,&quot;containerId&quot;:&quot;&quot;,&quot;containerImage&quot;:&quot;&quot;,&quot;containerName&quot;:&quot;&quot;,&quot;podName&quot;:&quot;&quot;,&quot;podNamespace&quot;:&quot;&quot;,&quot;podUID&quot;:&quot;&quot;,&quot;podSandbox&quot;:false,&quot;eventId&quot;:&quot;6018&quot;,&quot;eventName&quot;:&quot;Anti-Debugging detected&quot;,&quot;matchedScopes&quot;:1,&quot;argsNum&quot;:0,&quot;returnValue&quot;:0,&quot;syscall&quot;:&quot;&quot;,&quot;stackAddresses&quot;:null,&quot;contextFlags&quot;:{&quot;containerStarted&quot;:false,&quot;isCompat&quot;:false},&quot;args&quot;:[],&quot;metadata&quot;:{&quot;Version&quot;:&quot;1&quot;,&quot;Description&quot;:&quot;A process used anti-debugging techniques to block a debugger. Malware use anti-debugging to stay invisible and inhibit analysis of their behavior.&quot;,&quot;Tags&quot;:null,&quot;Properties&quot;:{&quot;Category&quot;:&quot;defense-evasion&quot;,&quot;Kubernetes_Technique&quot;:&quot;&quot;,&quot;Severity&quot;:1,&quot;Technique&quot;:&quot;Debugger Evasion&quot;,&quot;external_id&quot;:&quot;T1622&quot;,&quot;id&quot;:&quot;attack-pattern--e4dc8c01-417f-458d-9ee0-bb0617c1b391&quot;,&quot;signatureID&quot;:&quot;TRC-102&quot;,&quot;signatureName&quot;:&quot;Anti-Debugging detected&quot;}}}
-</code></pre></div>
-<h3 id="access-kubernetes-dashboard">Access Kubernetes Dashboard<a class="headerlink" href="#access-kubernetes-dashboard" title="Permanent link">&para;</a></h3>
-<p>Use the following command to get the token required to log in to the
-<a href="https://github.com/kubernetes/dashboard">Kubernetes Dashboard</a>:</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl -n kube-system describe secret \</span>
-<span class="gp">  $</span><span class="o">(</span>kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>default-token<span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot; &quot;</span><span class="w"> </span>-f1<span class="o">)</span>
-</code></pre></div>
-<p>Forward port 10443 in the development machine to the Kubernetes Dashboard's
-pod:</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl port-forward --address 0.0.0.0 -n kube-system service/kubernetes-dashboard 10443:443</span>
-</code></pre></div>
-<p>Since port 10443 is forwarded to port 10443 on your host, you can open your
-browser to <a href="https://localhost:10443">https://localhost:10443</a> and access
-Kubernetes Dashboard.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Modern browser usually block insecure localhost TLS connections. For Google
-Chrome you may allow insecure TLS connections at
-<a href="chrome://flags/#allow-insecure-localhost">chrome://flags/#allow-insecure-localhost</a>.</p>
-</div>
-<h2 id="preview-tracee-documentation">Preview Tracee Documentation<a class="headerlink" href="#preview-tracee-documentation" title="Permanent link">&para;</a></h2>
-<p>You can run <a href="https://www.mkdocs.org">MkDocs</a> server and preview documentation on your host:</p>
-<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.mkdocs</span>
-</code></pre></div>
-<p>The development machine is running the MkDocs server listening on port 8000,
-which is forwarded to port 8000 on your host. Therefore, you can open your
-browser to <a href="http://localhost:8000">http://localhost:8000</a> and access
-documentation pages.</p>
+<p><strong>Troubleshooting:</strong></p>
+<ul>
+<li>
+<p>Shared Folder Issues: If you experience issues with the shared folder, ensure your virtualization software's Guest Additions are properly installed and that the shared folder settings in the Vagrantfile match your setup.</p>
+</li>
+<li>
+<p>Networking Issues: If you have trouble accessing forwarded ports, check your firewall settings on both the host and guest machines.</p>
+</li>
+</ul>
+<p>This setup provides a consistent and reproducible environment for developing and testing Tracee. Refer to the Tracee documentation for further details on building and using Tracee.</p>
 
 
 

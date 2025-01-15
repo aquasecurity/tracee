@@ -16,7 +16,7 @@
         <link rel="prev" href="../../tutorials/additional-resources/">
       
       
-        <link rel="next" href="../documentation/">
+        <link rel="next" href="../guidelines/">
       
       
         
@@ -17235,6 +17235,8 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
@@ -17275,23 +17277,14 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#contributing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Contributing
-      
-    </span>
-  </a>
-  
-</li>
       
         <li class="md-nav__item">
   <a href="#issues-and-discussions" class="md-nav__link">
@@ -17302,33 +17295,27 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Issues and Discussions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#discussions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Discussions:
+        Discussions
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#issues" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Issues:
+        Issues
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -17370,13 +17357,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../documentation/" class="md-nav__link">
+      <a href="../guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    Documentation
+    Guidelines
   
 
     
@@ -17397,13 +17384,40 @@
   
   
     <li class="md-nav__item">
-      <a href="../guidelines/" class="md-nav__link">
+      <a href="../performance/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    Source Code Guidelines
+    Performence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kubernetes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
   
 
     
@@ -17466,10 +17480,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -17486,8 +17500,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -17610,23 +17624,14 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#contributing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Contributing
-      
-    </span>
-  </a>
-  
-</li>
       
         <li class="md-nav__item">
   <a href="#issues-and-discussions" class="md-nav__link">
@@ -17637,33 +17642,27 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Issues and Discussions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#discussions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Discussions:
+        Discussions
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#issues" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Issues:
+        Issues
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -17706,44 +17705,63 @@
 
 
 
-  <h1>Overview</h1>
-
-<h2 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h2>
+<h1 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h1>
 <p>Thank you for taking interest in contributing to Tracee! This document covers our working practices and conventions.</p>
 <h2 id="issues-and-discussions">Issues and Discussions<a class="headerlink" href="#issues-and-discussions" title="Permanent link">&para;</a></h2>
 <p>We encourage open discussion and collaboration using both GitHub Issues and Discussions.  </p>
 <ul>
-<li><a href="https://github.com/aquasecurity/tracee/discussions">Discussions</a> are free-style conversational tool, we use them for conversations.</li>
+<li><a href="https://github.com/aquasecurity/tracee/discussions">Discussions</a> are free-style conversational tool.</li>
 <li><a href="https://github.com/aquasecurity/tracee/issues">Issues</a> are project management tool, we use them to keep track on who's working on what and plan ahead.</li>
 </ul>
 <p>If you have a suggestion, question, or a general comment - please use Discussions. If there's a clear work item (including bugs) - you can open an Issue.</p>
-<h3 id="discussions">Discussions:<a class="headerlink" href="#discussions" title="Permanent link">&para;</a></h3>
+<h2 id="discussions">Discussions<a class="headerlink" href="#discussions" title="Permanent link">&para;</a></h2>
 <ul>
-<li>We have the following discussion topics: <ol>
-<li><a href="https://github.com/aquasecurity/tracee/discussions/categories/announcements">Announcements</a>: One way communication from the team to the community. Consider this like our mini blog</li>
+<li>We have the following discussion topics:<ol>
+<li><a href="https://github.com/aquasecurity/tracee/discussions/categories/announcements">Announcements</a>: One way communication from the team to the community. Consider this like our mini blog.</li>
 <li><a href="https://github.com/aquasecurity/tracee/discussions/categories/questions-and-help">Questions and Help</a>: For help and support. Consider this similar to StackOverflow.</li>
 <li><a href="https://github.com/aquasecurity/tracee/discussions/categories/development">Development</a>: For discussing potential features, and collaborating on their design.</li>
 </ol>
 </li>
 </ul>
-<h3 id="issues">Issues:<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h3>
+<h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
 <ol>
-<li>Every issue needs to be actionable and assignable. Consider the scope of the issue if assigned to one person, and break down if necessary.</li>
-<li>Be clear and definitive when composing issues. For bug reports, include detailed error messages and environment description. For features, include a clear scope and acceptance criteria.</li>
-<li>Since we have different projects under the same monorepo, use labels to denote areas that the issue relates to:<ol>
-<li><code>tracee</code></li>
-<li><code>tracee-ebpf</code></li>
-<li><code>tracee-rules</code></li>
-<li><code>signatures</code></li>
-<li>If non of the labels is relevant don't add any (usually for top-level issues)</li>
-</ol>
+<li><strong>Actionable and Assignable:</strong> Every issue must be clear, actionable, and assignable to a specific person.  Break down large issues into smaller, more manageable tasks.</li>
+<li><strong>Clear and Definitive Descriptions:</strong> Be precise in your issue descriptions:<ul>
+<li><strong>Bug Reports:</strong> Include the following:<ul>
+<li>Detailed steps to reproduce the bug.</li>
+<li>The complete error message.</li>
+<li>Your operating system, Tracee version, and any other relevant environment details.</li>
+</ul>
 </li>
-<li>We use the following labels to describe the type of issue:<ol>
-<li><code>bug</code></li>
-<li><code>good-first-issue</code></li>
-</ol>
+<li><strong>Feature Requests:</strong> Define:<ul>
+<li>A clear scope for the feature.</li>
+<li>Specific acceptance criteria that will be used to determine if the feature is complete.</li>
+</ul>
 </li>
-<li>Self-assign or request assignment for issues you intend to work on. Don't work on an issue assigned to someone else without checking with them first and reassigning.</li>
+</ul>
+</li>
+<li><strong>Issue Labels:</strong> We use these labels to categorize and track issues:<ul>
+<li><code>area/...</code> (e.g., <code>ebpf</code>, <code>events</code>): Specifies the area of Tracee affected by the issue.</li>
+<li><code>kind/...</code> (e.g., <code>bug</code>, <code>chore</code>, <code>enhancement</code>, <code>documentation</code>): Indicates the type of issue.</li>
+<li><code>milestone/...</code>: Specifies the target release for the issue.</li>
+<li><code>priority/...</code>:  Indicates the urgency of the issue.</li>
+<li><code>good-first-issue</code>:  Marks issues suitable for first-time contributors.</li>
+<li><code>backport</code>: Applies to PRs targeting release branches for integrating changes from <code>main</code>. The original <code>main</code> PR gets labeled <code>backported/vX.X.X</code> after merge.</li>
+<li><code>cherry-pick</code>: Similar to <code>backport</code>, but for specific commits. The original <code>main</code> PR gets labeled <code>cherry-picked/vX.X.X</code> after merge.</li>
+<li><code>candidate/...</code>: (e.g., <code>candidate/v0.1.2</code>)  Identifies PRs in the <code>main</code> branch as candidates for backporting or cherry-picking to a release branch (e.g., <code>v0.1.2</code>). The specific method will be determined during the porting process.</li>
+<li><code>backported/...</code> (e.g., <code>backported/v0.1.2</code>): Marks PRs in the <code>main</code> branch as the basis for backporting changes to a release branch (e.g., <code>v0.1.2</code>) after the porting process.</li>
+<li><code>cherry-picked/...</code> (e.g., <code>cherry-picked/v0.1.2</code>): Marks PRs in the <code>main</code> branch as the basis for cherry-picking commits to a release branch (e.g., <code>v0.1.2</code>) after the porting process.</li>
+</ul>
+</li>
+<li><strong>Issue Assignment:</strong> Self-assign issues or request assignment. Don't work on an issue assigned to someone else without their consent.</li>
+</ol>
+<p><strong>Backporting and Cherry-Picking Workflow:</strong></p>
+<p>To backport or cherry-pick a change:</p>
+<ol>
+<li>Create a new PR targeting the appropriate release branch.</li>
+<li>Label the new PR with <code>backport</code> or <code>cherry-pick</code>, depending on the method used.</li>
+<li>Once the new PR is merged, remove the <code>candidate/vX.X.X</code> label from the original PR in <code>main</code>.</li>
+<li>Finally, add the <code>backported/vX.X.X</code> or <code>cherry-picked/vX.X.X</code> label to the original PR in <code>main</code>, as appropriate.</li>
 </ol>
 <h2 id="pull-requests">Pull Requests<a class="headerlink" href="#pull-requests" title="Permanent link">&para;</a></h2>
 <ol>
@@ -17761,7 +17779,7 @@
 </ol>
 <h2 id="code">Code<a class="headerlink" href="#code" title="Permanent link">&para;</a></h2>
 <ol>
-<li>Follow Golang's code review standards: https://github.com/golang/go/wiki/CodeReviewComments.</li>
+<li>Follow Golang's code review standards: <a href="https://github.com/golang/go/wiki/CodeReviewComments">https://github.com/golang/go/wiki/CodeReviewComments</a></li>
 <li>Follow <code>gofmt</code> + <code>govet</code> + <code>goimports</code> formatting.</li>
 <li>Tests should be included alongside code changes wherever applicable, except for parts that are harder to test and are not currently tested (e.g. eBPF). When modifying already tested code, your changes must be represented in the existing tests.</li>
 </ol>

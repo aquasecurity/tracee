@@ -5,15 +5,19 @@
          <lastmod>2025-01-15</lastmod>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/contributing/documentation/</loc>
-         <lastmod>2025-01-15</lastmod>
-    </url>
-    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/guidelines/</loc>
          <lastmod>2025-01-15</lastmod>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/contributing/kubernetes/</loc>
+         <lastmod>2025-01-15</lastmod>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/overview/</loc>
+         <lastmod>2025-01-15</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/contributing/performance/</loc>
          <lastmod>2025-01-15</lastmod>
     </url>
     <url>

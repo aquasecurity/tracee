@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/contributing/documentation/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/contributing/kubernetes/">
       
       
-        <link rel="prev" href="../overview/">
+        <link rel="prev" href="../performance/">
       
       
-        <link rel="next" href="../guidelines/">
+        <link rel="next" href="../setup-development-machine-with-vagrant/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Documentation - Tracee</title>
+        <title>Kubernetes - Tracee</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#contributing-to-the-documentation" class="md-skip">
+        <a href="#kubernetes-considerations-for-tracee-contributors" class="md-skip">
           Skip to content
         </a>
       
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Documentation
+              Kubernetes
             
           </span>
         </div>
@@ -17253,6 +17253,60 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../guidelines/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Guidelines
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Performence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -17271,7 +17325,7 @@
   <span class="md-ellipsis">
     
   
-    Documentation
+    Kubernetes
   
 
     
@@ -17288,7 +17342,7 @@
   <span class="md-ellipsis">
     
   
-    Documentation
+    Kubernetes
   
 
     
@@ -17314,10 +17368,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#test-documentation-changes" class="md-nav__link">
+  <a href="#kubernetes-specific-features" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Test Documentation Changes
+        Kubernetes-Specific Features
       
     </span>
   </a>
@@ -17328,33 +17382,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../guidelines/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    Source Code Guidelines
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -17409,10 +17436,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -17429,8 +17456,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -17563,10 +17590,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#test-documentation-changes" class="md-nav__link">
+  <a href="#kubernetes-specific-features" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Test Documentation Changes
+        Kubernetes-Specific Features
       
     </span>
   </a>
@@ -17590,34 +17617,71 @@
 
 
 
-<h1 id="contributing-to-the-documentation">Contributing to the documentation<a class="headerlink" href="#contributing-to-the-documentation" title="Permanent link">&para;</a></h1>
-<p>We welcome contributions to the Tracee documentation.</p>
-<p>Our documentation aims to follow the <a href="https://diataxis.fr/">Diátaxis documentation framework</a> which includes:</p>
+<h1 id="kubernetes-considerations-for-tracee-contributors">Kubernetes Considerations for Tracee Contributors<a class="headerlink" href="#kubernetes-considerations-for-tracee-contributors" title="Permanent link">&para;</a></h1>
 <ol>
-<li>A getting started section -- Installation Guidelines and simple scenarios</li>
-<li>Tutorials -- End-to-end tutorials that have real-world use cases</li>
-<li>Reference Material -- How to use Tracee</li>
-<li>Contribution Guidelines</li>
+<li>
+<p><strong>Set up a Local Kubernetes Cluster</strong></p>
+<p>We recommend using a local Kubernetes cluster for development and testing. Popular options include:</p>
+<ul>
+<li><strong>kind:</strong> Kubernetes IN Docker</li>
+<li><strong>minikube:</strong> Runs a single-node cluster in a VM</li>
+<li><strong>MicroK8s:</strong> Lightweight, snap-based Kubernetes</li>
+</ul>
+<p>Tracee's Makefile provides convenient targets for setting up MicroK8s:</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.k8s<span class="w"> </span><span class="nb">help</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>To build the operator docker container:
+
+    $ make -f builder/Makefile.k8s build
+
+To generate the kubernetes manifests:
+
+    $ make -f builder/Makefile.k8s manifests
+
+To generate operator code:
+
+    $ make -f builder/Makefile.k8s generate
+
+Or simply:
+
+    $ make -f builder/Makefile.k8s
+</code></pre></div>
+</li>
+<li>
+<p><strong>Deploy Tracee</strong></p>
+<p>Deploy Tracee to your chosen local cluster. The deployment method will vary depending on your needs:</p>
+<ul>
+<li><strong>DaemonSet:</strong> For system-wide tracing, deploy Tracee as a DaemonSet.</li>
+<li><strong>Tracee Operator:</strong>  Use the Tracee operator for simplified management.</li>
+<li><strong>Other Methods:</strong> Explore alternative methods like sidecar containers based on your use case.</li>
+</ul>
+</li>
+<li>
+<p><strong>Test Your Changes</strong></p>
+<p>Test your modifications with realistic scenarios within the Kubernetes environment.  Consider these examples:</p>
+<ul>
+<li><strong>Application Monitoring:</strong> Deploy sample applications and observe Tracee's event capture for expected behavior.</li>
+<li><strong>Network Policies:</strong>  Configure network policies to restrict pod communication and verify Tracee captures relevant network events.</li>
+<li><strong>Resource Constraints:</strong>  Apply resource limits to pods and ensure Tracee functions correctly under constrained conditions.</li>
+<li><strong>Security Policies:</strong>  Implement Pod Security Policies and/or Security Contexts to validate Tracee's compliance and event capture in secure environments.</li>
+</ul>
+</li>
+<li>
+<p><strong>Monitor Tracee's Performance</strong></p>
+<p>Utilize Kubernetes' observability tools to monitor Tracee:</p>
+<ul>
+<li><strong>Resource Usage:</strong> Track pod resource consumption (CPU, memory) using <code>kubectl top</code> or monitoring dashboards.</li>
+<li><strong>Logs:</strong> Analyze Tracee logs for errors, warnings, or unexpected behavior using <code>kubectl logs</code>.</li>
+<li><strong>Kubernetes Metrics:</strong>  If available, leverage Kubernetes metrics to gain insights into Tracee's performance.</li>
+</ul>
+</li>
+<li>
+<p><strong>Clean Up</strong></p>
+<p>After testing, remove deployed Tracee components and test resources to maintain a clean cluster environment.</p>
+</li>
 </ol>
-<p>To contribute to the documentation please</p>
-<ol>
-<li>Clone the Tracee GitHub repository</li>
-<li>Make changes in the <code>./docs</code> directory in the root folder</li>
-<li>Remember to edit the index in <code>mkdocs.yml</code> in the root folder if you add or move existing files or directories</li>
-<li>Test your changes to the documentation</li>
-<li>Submit a PR</li>
-</ol>
-<h2 id="test-documentation-changes">Test Documentation Changes<a class="headerlink" href="#test-documentation-changes" title="Permanent link">&para;</a></h2>
-<p>You can test your changes to the documentation by building and running a docker container.</p>
-<p>Prerequisites: Docker installed and running locally.</p>
-<p>Build the container image:
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>./builder/Makefile.mkdocs<span class="w"> </span>mkdocs-build
-</code></pre></div></p>
-<p>Serve the container image:
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>./builder/Makefile.mkdocs<span class="w"> </span>mkdocs-serve
-</code></pre></div></p>
-<p>Open <code>localhost:8000/tracee</code></p>
-<p>Now you should see the documentation.</p>
+<h2 id="kubernetes-specific-features">Kubernetes-Specific Features<a class="headerlink" href="#kubernetes-specific-features" title="Permanent link">&para;</a></h2>
+<p>If your contribution involves Kubernetes-specific features within Tracee (e.g., capturing Kubernetes events or metadata), ensure you test these functionalities thoroughly within the cluster environment. Pay close attention to event accuracy and any integration with Kubernetes APIs.</p>
 
 
 

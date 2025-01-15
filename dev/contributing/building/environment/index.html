@@ -17256,13 +17256,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../../documentation/" class="md-nav__link">
+      <a href="../../guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    Documentation
+    Guidelines
   
 
     
@@ -17283,13 +17283,40 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guidelines/" class="md-nav__link">
+      <a href="../../performance/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    Source Code Guidelines
+    Performence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../kubernetes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
   
 
     
@@ -17354,10 +17381,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -17374,8 +17401,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -17477,10 +17504,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-steps-impatient-readers" class="md-nav__link">
+  <a href="#quick-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick steps (impatient readers)
+        Quick steps
       
     </span>
   </a>
@@ -17615,10 +17642,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-steps-impatient-readers" class="md-nav__link">
+  <a href="#quick-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick steps (impatient readers)
+        Quick steps
       
     </span>
   </a>
@@ -17710,62 +17737,38 @@ gmake</code>) and configure such environment by using Docker.</p>
 <p>If you want to build tracee on your local machine
 <a href="../building/">read this</a>.</p>
 </div>
-<h2 id="quick-steps-impatient-readers">Quick steps (<strong>impatient readers</strong>)<a class="headerlink" href="#quick-steps-impatient-readers" title="Permanent link">&para;</a></h2>
-<div class="admonition example">
-<p class="admonition-title">Example</p>
-<ul>
+<h2 id="quick-steps">Quick steps<a class="headerlink" href="#quick-steps" title="Permanent link">&para;</a></h2>
+<ol>
 <li>
-<p>Build and execute <strong>tracee</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make alpine-prepare</span>
-<span class="go">make -f builder/Makefile.tracee-make alpine-shell</span>
-</code></pre></div>
-<p>and inside the container:</p>
-<div class="highlight"><pre><span></span><code><span class="go">make clean</span>
-<span class="go">make tracee</span>
-<span class="go">sudo ./dist/tracee \</span>
-<span class="go">    -o option:parse-arguments \</span>
-<span class="go">    --scope comm=bash \</span>
-<span class="go">    --scope follow</span>
+<p>Build tracee environment:</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.tracee-make<span class="w"> </span>alpine-prepare
+make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.tracee-make<span class="w"> </span>alpine-shell
 </code></pre></div>
 </li>
-</ul>
-<p>Now, in your host's bash shell, execute a command. You will see all events
+<li>
+<p>Build and execute tracee:</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>clean
+make<span class="w"> </span>tracee
+sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-o<span class="w"> </span>option:parse-arguments<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--scope<span class="w"> </span><span class="nv">comm</span><span class="o">=</span>bash<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--scope<span class="w"> </span>follow
+</code></pre></div>
+</li>
+</ol>
+<p>Now, in your host's shell, execute a command. You will see all events
 (except scheduler ones) being printed, in "table format", to stdout.</p>
-<ul>
-<li>
-<p>Build and execute <strong>tracee</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make alpine-prepare</span>
-<span class="go">make -f builder/Makefile.tracee-make alpine-shell</span>
-</code></pre></div>
-<p>and inside the container:</p>
-<div class="highlight"><pre><span></span><code><span class="go">make clean</span>
-<span class="go">make all</span>
-<span class="go">sudo ./dist/tracee \</span>
-<span class="go">    -o format:json \</span>
-<span class="go">    -o option:parse-arguments \</span>
-<span class="go">    --scope comm=bash \</span>
-<span class="go">    --scope follow </span>
-</code></pre></div>
-</li>
-</ul>
-<p>Now, in your host's bash shell, execute: <code>sudo strace /bin/ls</code> and observe
-tracee warning you about a possible risk (with its Anti-Debugging signature).</p>
-</div>
-<p>Now, for <strong>more patient readers</strong> ...</p>
 <h2 id="how-to-build-and-use-the-environment">How to build and use the environment<a class="headerlink" href="#how-to-build-and-use-the-environment" title="Permanent link">&para;</a></h2>
 <p>In order to have a controlled building environment for tracee, tracee provides
-a <code>Makefile.tracee-make</code> file that allows you to create and use a docker
-container environment to build &amp; test <strong>tracee</strong>. </p>
-<p>Two different environments are maintained for building tracee:</p>
+a <code>Makefile.tracee-make</code> file that allows you to create and use a docker container environment to build &amp; test <strong>tracee</strong>.</p>
+<p>There are Two different environments that are maintained for building tracee:</p>
 <ul>
-<li>Alpine</li>
-<li>Ubuntu</li>
+<li><strong>Alpine</strong></li>
+<li><strong>Ubuntu</strong></li>
 </ul>
-<p>The reason for that is that <strong>Alpine Linux</strong> is based in the
-<a href="https://en.wikipedia.org/wiki/Musl">musl</a> C standard library, while the
-<strong>Ubuntu Linux</strong> uses <a href="https://en.wikipedia.org/wiki/Glibc">glibc</a>. By
-supporting both building environments we can always be sure that the project
-builds (and executes) correctly in both environments.</p>
+<p>The reason for that is that <code>Alpine Linux</code> is based in the <a href="https://en.wikipedia.org/wiki/Musl">musl</a> C standard library,
+while the <code>Ubuntu Linux</code> uses <a href="https://en.wikipedia.org/wiki/Glibc">glibc</a>.</p>
+<p>By supporting both building environments we can always be sure that the project builds (and executes) correctly in both environments.</p>
 <div class="admonition attention">
 <p class="admonition-title">Attention</p>
 <p>Locally created containers, called <code>alpine-tracee-make</code> or
@@ -17777,12 +17780,12 @@ might not be compatible to the Linux distribution from your host OS.</p>
 <ul>
 <li>
 <p>To create an <strong>alpine-tracee-make</strong> container:</p>
-<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make alpine-prepare</span>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.tracee-make<span class="w"> </span>alpine-prepare
 </code></pre></div>
 </li>
 <li>
 <p>To create an <strong>ubuntu-tracee-make</strong> container:</p>
-<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make ubuntu-prepare</span>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.tracee-make<span class="w"> </span>ubuntu-prepare
 </code></pre></div>
 </li>
 </ul>
@@ -17790,58 +17793,79 @@ might not be compatible to the Linux distribution from your host OS.</p>
 <ul>
 <li>
 <p>To execute an <strong>alpine-tracee-make</strong> shell:</p>
-<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make alpine-shell</span>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.tracee-make<span class="w"> </span>alpine-shell
 </code></pre></div>
 </li>
 <li>
 <p>To execute an <strong>ubuntu-tracee-make</strong> shell:</p>
-<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make ubuntu-shell</span>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.tracee-make<span class="w"> </span>ubuntu-shell
 </code></pre></div>
 </li>
 </ul>
 <h3 id="using-build-environment-as-a-make-replacement">Using build environment as a <strong>make</strong> replacement<a class="headerlink" href="#using-build-environment-as-a-make-replacement" title="Permanent link">&para;</a></h3>
-<p>Instead of executing a builder shell, you may use <code>alpine-tracee-make</code>, or
-<code>ubuntu-tracee-make</code>, as a replacement for the <code>make</code> command:</p>
-<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make ubuntu-prepare</span>
-<span class="go">make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;help&quot;</span>
-<span class="go">make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;clean&quot;</span>
-<span class="go">make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;bpf&quot;</span>
-<span class="go">make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;tracee&quot;</span>
-<span class="go">make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;all&quot;</span>
+<p>Instead of executing a builder shell, you may use <code>alpine-make</code>, or
+<code>ubuntu-make</code>, as a replacement for the <code>make</code> command:</p>
+<ol>
+<li>Create builder environment as described:
+    <a href="#creating-a-builder-environment">Creating a builder environment</a></li>
+<li>
+<p>Compile tracee using <code>ubuntu-make</code></p>
+<ul>
+<li>
+<p>Build tracee binary:</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.tracee-make<span class="w"> </span>ubuntu-make<span class="w"> </span><span class="nv">ARG</span><span class="o">=</span><span class="s2">&quot;tracee&quot;</span>
 </code></pre></div>
-<p>And, after the compilation, run the commands directly in your host:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
-<span class="go">    -o option:parse-arguments \</span>
-<span class="go">    --scope comm=bash \</span>
-<span class="go">    --scope follow</span>
+</li>
+<li>
+<p>Show available <code>ubuntu-make</code> commands:</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.tracee-make<span class="w"> </span>ubuntu-make<span class="w"> </span><span class="nv">ARG</span><span class="o">=</span><span class="s2">&quot;help&quot;</span>
 </code></pre></div>
+</li>
+<li>
+<p>Remove tracee binary</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.tracee-make<span class="w"> </span>ubuntu-make<span class="w"> </span><span class="nv">ARG</span><span class="o">=</span><span class="s2">&quot;clean&quot;</span>
+</code></pre></div>
+</li>
+<li>
+<p>Build binaries for all</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.tracee-make<span class="w"> </span>ubuntu-make<span class="w"> </span><span class="nv">ARG</span><span class="o">=</span><span class="s2">&quot;all&quot;</span>
+</code></pre></div>
+</li>
+</ul>
+</li>
+<li>
+<p>Run tracee binary</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee
+</code></pre></div>
+</li>
+</ol>
 <blockquote>
-<p><strong>Note</strong>: the generated binary must be compatible to your host (depending on
-glibc version, for example).</p>
+<p><strong>Note</strong>: the generated binary must be compatible to your host (depending on glibc version).</p>
 </blockquote>
-<p>If you don't want to depend on host's libraries versions, or if you are using
-the <code>alpine-tracee-make</code> container as a replacement for <code>make</code>, and your host
-is not an <strong>Alpine Linux</strong>, then you may set <code>STATIC=1</code> variable so you can run
-compiled binaries in your host:</p>
-<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make alpine-prepare</span>
-<span class="go">make -f builder/Makefile.tracee-make alpine-make ARG=&quot;help&quot;</span>
-<span class="go">STATIC=1 make -f builder/Makefile.tracee-make alpine-make ARG=&quot;all&quot;</span>
+<p>If you don't want to depend on host's libraries versions, or you are using the <code>alpine-make</code> container as a replacement for <code>make</code>, then it's necessary  to set <code>STATIC</code> variable to <code>1</code> so you can run compiled binaries in your host machine:</p>
+<ol>
+<li>
+<p>Compile tracee</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.tracee-make<span class="w"> </span>alpine-prepare
+<span class="nv">STATIC</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.tracee-make<span class="w"> </span>alpine-make<span class="w"> </span><span class="nv">ARG</span><span class="o">=</span><span class="s2">&quot;all&quot;</span>
 </code></pre></div>
-<p>and execute the static binary from your host:</p>
-<div class="highlight"><pre><span></span><code><span class="go">ldd dist/tracee</span>
+</li>
+<li>
+<p>Verify the executable is static</p>
+<ul>
+<li>Note: ldd prints the shared libraries required by an executable file</li>
+</ul>
+<div class="highlight"><pre><span></span><code>ldd<span class="w"> </span>dist/tracee
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>not a dynamic executable
 </code></pre></div>
-<div class="admonition attention">
-<p class="admonition-title">Attention</p>
-<p>compiling <strong>tracee-rules</strong> with STATIC=1 won't allow you to use golang based
-signatures:</p>
-<blockquote>
-<div class="highlight"><pre><span></span><code>2021/12/13 13:27:21 error opening plugin /tracee/dist/signatures/builtin.so:
-plugin.Open(&quot;/tracee/dist/signatures/builtin.so&quot;): Dynamic loading not supported
+</li>
+<li>
+<p>Execute the static binary from your host</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee
 </code></pre></div>
-</blockquote>
-</div>
+</li>
+</ol>
 
 
 

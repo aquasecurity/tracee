@@ -17256,13 +17256,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../../documentation/" class="md-nav__link">
+      <a href="../../guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    Documentation
+    Guidelines
   
 
     
@@ -17283,13 +17283,40 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guidelines/" class="md-nav__link">
+      <a href="../../performance/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    Source Code Guidelines
+    Performence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../kubernetes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
   
 
     
@@ -17354,10 +17381,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -17374,8 +17401,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -17544,42 +17571,34 @@
 <li>
 <p>Building <strong>dependencies</strong></p>
 <ol>
-<li><strong>clang</strong> &amp;&amp; <strong>llvm</strong> (12, 13 or 14)</li>
-<li><strong>golang</strong> (1.22.3 toolchain)</li>
-<li><strong>libelf</strong> and <strong>libelf-dev</strong>
+<li><code>clang</code> &amp;&amp; <code>llvm</code> (14)</li>
+<li><code>golang</code> (1.22.3 toolchain)</li>
+<li><code>libelf</code> and <code>libelf-dev</code>
    (or elfutils-libelf and elfutils-libelf-devel)</li>
-<li><strong>zlib1g</strong> and <strong>zlib1g-dev</strong>
+<li><code>zlib1g</code> and <code>zlib1g-dev</code>
    (or zlib and zlib-devel)</li>
-<li><strong>libzstd-dev</strong> for static build (libelf linkage)</li>
-<li><strong>clang-format-12</strong> (specific version) for <code>fix-fmt</code></li>
+<li><code>libzstd-dev</code> for static build (libelf linkage)</li>
+<li><code>clang-format-12</code> (specific version) for <code>fix-fmt</code></li>
 </ol>
 <blockquote>
 <p>You might take a look at the following files to understand how to have a
 building environment:</p>
 <ol>
 <li><a href="https://github.com/aquasecurity/tracee/blob/main/.github/actions/build-dependencies/action.yaml">.github/actions/build-dependencies/action.yaml</a></li>
-<li><a href="https://github.com/aquasecurity/tracee/blob/main/packaging/Dockerfile.ubuntu-packaging">packaging/Dockerfile.ubuntu-packaging</a></li>
-<li><a href="https://github.com/aquasecurity/tracee/blob/main/packaging/Dockerfile.fedora-packaging">packaging/Dockerfile.fedora-packaging</a></li>
+<li><a href="https://github.com/aquasecurity/tracee/blob/main/builder/Dockerfile.ubuntu-tracee-make">builder/Dockerfile.ubuntu-tracee-make</a></li>
+<li><a href="https://github.com/aquasecurity/tracee/blob/main/builder/Dockerfile.alpine-tracee-make">builder/Dockerfile.alpine-tracee-make</a></li>
 </ol>
 <p>Those are very good examples for you to replicate a working environment.</p>
 </blockquote>
 </li>
 <li>
 <p><strong>Clone</strong> <a href="https://github.com/aquasecurity/tracee/">tracee repository</a></p>
-<div class="highlight"><pre><span></span><code><span class="go">git clone git@github.com:aquasecurity/tracee</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>Cloning into &#39;tracee&#39;...
-remote: Enumerating objects: 13251, done.
-remote: Counting objects: 100% (555/555), done.
-remote: Compressing objects: 100% (240/240), done.
-remote: Total 13251 (delta 343), reused 369 (delta 280), pack-reused 12696
-Receiving objects: 100% (13251/13251), 11.75 MiB | 8.62 MiB/s, done.
-Resolving deltas: 100% (8105/8105), done.
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span><span class="o">[</span>https://github.com/aquasecurity/tracee/<span class="o">](</span>https://github.com/aquasecurity/tracee/<span class="o">)</span>
 </code></pre></div>
 </li>
 <li>
 <p>All makefiles have a <strong>help</strong> target to give you needed instructions</p>
-<div class="highlight"><pre><span></span><code><span class="go">make help</span>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span><span class="nb">help</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code># environment
 
@@ -17596,6 +17615,7 @@ Resolving deltas: 100% (8105/8105), done.
     $ make e2e-net-signatures       # build ./dist/e2e-net-signatures
     $ make e2e-inst-signatures      # build ./dist/e2e-inst-signatures
     $ make tracee                   # build ./dist/tracee
+    $ make tracee-operator          # build ./dist/tracee-operator
 
 # clean
 
@@ -17606,6 +17626,7 @@ Resolving deltas: 100% (8105/8105), done.
     $ make clean-tracee-bench       # wipe ./dist/tracee-bench
     $ make clean-signatures         # wipe ./dist/signatures
     $ make clean-tracee             # wipe ./dist/tracee
+    $ make clean-tracee-operator    # wipe ./dist/tracee-operator
 
 # test
 
@@ -17618,54 +17639,22 @@ Resolving deltas: 100% (8105/8105), done.
     $ STATIC=1 make ...             # build static binaries
     $ BTFHUB=1 STATIC=1 make ...    # build static binaries, embed BTF
     $ DEBUG=1 make ...              # build binaries with debug symbols
+    $ METRICS=1 make ...            # build enabling BPF metrics
 </code></pre></div>
 </li>
 <li>
 <p>Build <strong>all</strong> targets at once</p>
-<div class="highlight"><pre><span></span><code><span class="go">make all</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>Submodule &#39;libbpf&#39; (https://github.com/libbpf/libbpf.git) registered for path &#39;3rdparty/libbpf&#39;
-Cloning into &#39;/home/rafaeldtinoco/tracee/3rdparty/libbpf&#39;...
-mkdir -p dist/signatures
-GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS= CGO_LDFLAGS= go build \
-    --buildmode=plugin \
-    -o dist/signatures/builtin.so \
-    signatures/golang/export.go signatures/golang/kubernetes_api_connection.go signatures/golang/stdio_over_socket.go
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>all
 </code></pre></div>
 </li>
 <li>
 <p>Build a <strong>static binary</strong> by setting <code>STATIC=1</code></p>
-<div class="highlight"><pre><span></span><code><span class="go">STATIC=1 make all</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>CC=&quot;clang&quot; \
-    CFLAGS=&quot;&quot;-fPIC&quot;&quot; \
-    LD_FLAGS=&quot;&quot; \
-    make \
-    -C ./3rdparty/libbpf/src \
-    BUILD_STATIC_ONLY=1 \
-    DESTDIR=/home/rafaeldtinoco/tracee/dist/libbpf \
-    OBJDIR=/home/rafaeldtinoco/tracee/dist/libbpf/obj \
-    INCLUDEDIR= LIBDIR= UAPIDIR= prefix= libdir= \
-    install install_uapi_headers
-...
+<div class="highlight"><pre><span></span><code><span class="nv">STATIC</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>make<span class="w"> </span>all
 </code></pre></div>
 </li>
 <li>
 <p>Build a <strong>static binary</strong> with <a href="https://github.com/aquasecurity/btfhub">BTFHUB Support</a></p>
-<div class="highlight"><pre><span></span><code><span class="go">BTFHUB=1 STATIC=1 make all</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>Cloning into &#39;/home/rafaeldtinoco/tracee/3rdparty/btfhub&#39;...
-remote: Enumerating objects: 205, done.
-remote: Counting objects: 100% (16/16), done.
-remote: Compressing objects: 100% (12/12), done.
-remote: Total 205 (delta 4), reused 10 (delta 3), pack-reused 189
-Receiving objects: 100% (205/205), 10.59 MiB | 7.56 MiB/s, done.
-Resolving deltas: 100% (73/73), done.
-Cloning into &#39;/home/rafaeldtinoco/tracee/3rdparty/btfhub-archive&#39;...
-remote: Enumerating objects: 1993, done.
-remote: Counting objects: 100% (28/28), done.
-remote: Compressing objects: 100% (23/23), done.
-Receiving objects:  15% (301/1993), 154.97 MiB | 15.72 MiB/s
+<div class="highlight"><pre><span></span><code><span class="nv">BTFHUB</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">STATIC</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>make<span class="w"> </span>all
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -17686,17 +17675,14 @@ plugin.Open(&quot;/tracee/dist/signatures/builtin.so&quot;): Dynamic loading not
 </div>
 </li>
 <li>
-<p>Build a <strong>debugable binary</strong> with DWARF generation by setting <code>DEBUG=1</code></p>
-<div class="highlight"><pre><span></span><code><span class="go">DEBUG=1 make</span>
+<p>Build a <strong>debuggable binary</strong> with DWARF debug symbols by setting <code>DEBUG=1</code></p>
+<div class="highlight"><pre><span></span><code><span class="nv">DEBUG</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>make
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS=&quot;-I/home/gg/code/tracee/dist/libbpf&quot; CGO_LDFLAGS=&quot;-lelf  -lz  /home/gg/code/tracee/dist/libbpf/libbpf.a&quot; go build \
-    -tags core,ebpf \
-    -ldflags=&quot; \
-         -extldflags \&quot;\&quot; \
-         -X main.version=\&quot;v0.8.0-107-g121efeb\&quot; \
-        &quot; \
-    -v -o dist/tracee \
-   ./cmd/tracee
+</li>
+<li>
+<p>Build enabling BPF metrics by setting <code>METRICS=1</code></p>
+<p>BPF metrics are only available if the BPF object is built with <code>METRICS</code> debug flag defined.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">METRICS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>make
 </code></pre></div>
 </li>
 </ol>
