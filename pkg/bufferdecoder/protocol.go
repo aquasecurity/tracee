@@ -43,13 +43,13 @@ type EventContext struct {
 	ParentStartTime uint64
 	// task_context end
 
-	EventID         events.ID // int32
-	Syscall         int32
-	Retval          int64
-	StackID         uint32
-	ProcessorId     uint16
-	PoliciesVersion uint16
-	MatchedPolicies uint64
+	EventID      events.ID // int32
+	Syscall      int32
+	Retval       int64
+	StackID      uint32
+	ProcessorId  uint16
+	RulesVersion uint16
+	MatchedRules uint64
 }
 
 func (EventContext) GetSizeBytes() int {
