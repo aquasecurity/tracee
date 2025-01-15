@@ -28,19 +28,19 @@ func InitHookedSyscall() error {
 }
 
 func DetectHookedSyscall(kernelSymbols *environment.KernelSymbolTable) DeriveFunction {
-	return deriveSingleEvent(events.HookedSyscall, deriveDetectHookedSyscallArgs(kernelSymbols))
+	return deriveMultipleEvents(events.HookedSyscall, deriveDetectHookedSyscallArgs(kernelSymbols))
 }
 
-func deriveDetectHookedSyscallArgs(kernelSymbols *environment.KernelSymbolTable) deriveArgsFunction {
-	return func(event trace.Event) ([]interface{}, error) {
+func deriveDetectHookedSyscallArgs(kernelSymbols *environment.KernelSymbolTable) multiDeriveArgsFunction {
+	return func(event trace.Event) ([][]interface{}, []error) {
 		syscallId, err := parse.ArgVal[int32](event.Args, "syscall_id")
 		if err != nil {
-			return nil, errfmt.Errorf("error parsing syscall_id arg: %v", err)
+			return nil, []error{errfmt.Errorf("error parsing syscall_id arg: %v", err)}
 		}
 
 		address, err := parse.ArgVal[uint64](event.Args, "syscall_address")
 		if err != nil {
-			return nil, errfmt.Errorf("error parsing syscall_address arg: %v", err)
+			return nil, []error{errfmt.Errorf("error parsing syscall_address arg: %v", err)}
 		}
 
 		alreadyReportedAddress, found := reportedHookedSyscalls.Get(syscallId)
@@ -50,18 +50,20 @@ func deriveDetectHookedSyscallArgs(kernelSymbols *environment.KernelSymbolTable)
 
 		reportedHookedSyscalls.Add(syscallId, address) // Upsert
 
-		hookedFuncName := ""
-		hookedOwner := ""
-		hookedFuncSymbol, err := kernelSymbols.GetSymbolByAddr(address)
-		if err == nil {
-			hookedFuncName = hookedFuncSymbol[0].Name
-			hookedOwner = hookedFuncSymbol[0].Owner
-		}
-
 		syscallName := convertToSyscallName(syscallId)
 		hexAddress := fmt.Sprintf("%x", address)
 
-		return []interface{}{syscallName, hexAddress, hookedFuncName, hookedOwner}, nil
+		hookedFuncSymbols, err := kernelSymbols.GetSymbolByAddr(address)
+		if err != nil {
+			return [][]interface{}{{syscallName, hexAddress, "", ""}}, nil
+		}
+
+		events := make([][]interface{}, 0)
+		for _, symbol := range hookedFuncSymbols {
+			events = append(events, []interface{}{syscallName, hexAddress, symbol.Name, symbol.Owner})
+		}
+
+		return events, nil
 	}
 }
 
