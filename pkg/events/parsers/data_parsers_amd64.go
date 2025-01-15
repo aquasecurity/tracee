@@ -8,6 +8,39 @@ import (
 )
 
 var (
+	// from asm-generic/fcntl.h
+	// NOT sequential values
+	// gap
+	O_LARGEFILE = SystemFunctionArgument{rawValue: 00100000, stringValue: "O_LARGEFILE"}
+)
+
+var openFlagsValues = []SystemFunctionArgument{
+	// O_ACCMODE, // macro for access mode, so not included
+
+	// special cases checked before the loop in ParseOpenFlagArgument
+	// O_RDONLY,
+	// O_WRONLY,
+	// O_RDWR,
+	O_CREAT,
+	O_EXCL,
+	O_NOCTTY,
+	O_TRUNC,
+	O_APPEND,
+	O_NONBLOCK,
+	O_DSYNC,
+	O_SYNC,
+	FASYNC,
+	O_DIRECT,
+	O_LARGEFILE,
+	O_DIRECTORY,
+	O_NOFOLLOW,
+	O_NOATIME,
+	O_CLOEXEC,
+	O_PATH,
+	O_TMPFILE,
+}
+
+var (
 	// from linux/ptrace.h and sys/ptrace.h
 	// NOT sequential values
 	// gap

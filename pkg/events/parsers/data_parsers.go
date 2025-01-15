@@ -73,10 +73,11 @@ func buildStringFromValues(sb *strings.Builder, argValues []SystemFunctionArgume
 // Parsers
 //
 
-// Use always raw values for the constants, since unix/syscall constants are not
-// always set to the same values.
-// For example, `O_LARGEFILE` is defined as 0x8000 (00100000) in C include,
-// but as 0x0 in unix package.
+// Always use raw values for constants instead of relying on Go's unix/syscall library constants.
+// These constants are derived from UAPI definitions but may vary based on predefined macros
+// (e.g., _LARGEFILE64_SOURCE, _FILE_OFFSET_BITS) during compilation. For instance, `O_LARGEFILE`
+// is defined as 0x8000 (00100000) in some C headers but as 0x0 in Go's unix package.
+// To avoid discrepancies, always verify the Linux kernel headers for the correct values.
 
 var (
 	// from linux/sched.h
@@ -151,21 +152,22 @@ func ParseCloneFlags(flags uint64) (string, error) {
 
 var (
 	// from asm-generic/fcntl.h
-	O_ACCMODE   = SystemFunctionArgument{rawValue: 00000003, stringValue: "O_ACCMODE"}
-	O_RDONLY    = SystemFunctionArgument{rawValue: 00000000, stringValue: "O_RDONLY"}
-	O_WRONLY    = SystemFunctionArgument{rawValue: 00000001, stringValue: "O_WRONLY"}
-	O_RDWR      = SystemFunctionArgument{rawValue: 00000002, stringValue: "O_RDWR"}
-	O_CREAT     = SystemFunctionArgument{rawValue: 00000100, stringValue: "O_CREAT"}
-	O_EXCL      = SystemFunctionArgument{rawValue: 00000200, stringValue: "O_EXCL"}
-	O_NOCTTY    = SystemFunctionArgument{rawValue: 00000400, stringValue: "O_NOCTTY"}
-	O_TRUNC     = SystemFunctionArgument{rawValue: 00001000, stringValue: "O_TRUNC"}
-	O_APPEND    = SystemFunctionArgument{rawValue: 00002000, stringValue: "O_APPEND"}
-	O_NONBLOCK  = SystemFunctionArgument{rawValue: 00004000, stringValue: "O_NONBLOCK"}
-	O_DSYNC     = SystemFunctionArgument{rawValue: 00010000, stringValue: "O_DSYNC"}
-	O_SYNC      = SystemFunctionArgument{rawValue: 04010000, stringValue: "O_SYNC"}
-	FASYNC      = SystemFunctionArgument{rawValue: 00020000, stringValue: "FASYNC"}
-	O_DIRECT    = SystemFunctionArgument{rawValue: 00040000, stringValue: "O_DIRECT"}
-	O_LARGEFILE = SystemFunctionArgument{rawValue: 00100000, stringValue: "O_LARGEFILE"}
+	// NOT sequential values
+	O_ACCMODE  = SystemFunctionArgument{rawValue: 00000003, stringValue: "O_ACCMODE"}
+	O_RDONLY   = SystemFunctionArgument{rawValue: 00000000, stringValue: "O_RDONLY"}
+	O_WRONLY   = SystemFunctionArgument{rawValue: 00000001, stringValue: "O_WRONLY"}
+	O_RDWR     = SystemFunctionArgument{rawValue: 00000002, stringValue: "O_RDWR"}
+	O_CREAT    = SystemFunctionArgument{rawValue: 00000100, stringValue: "O_CREAT"}
+	O_EXCL     = SystemFunctionArgument{rawValue: 00000200, stringValue: "O_EXCL"}
+	O_NOCTTY   = SystemFunctionArgument{rawValue: 00000400, stringValue: "O_NOCTTY"}
+	O_TRUNC    = SystemFunctionArgument{rawValue: 00001000, stringValue: "O_TRUNC"}
+	O_APPEND   = SystemFunctionArgument{rawValue: 00002000, stringValue: "O_APPEND"}
+	O_NONBLOCK = SystemFunctionArgument{rawValue: 00004000, stringValue: "O_NONBLOCK"}
+	O_DSYNC    = SystemFunctionArgument{rawValue: 00010000, stringValue: "O_DSYNC"}
+	O_SYNC     = SystemFunctionArgument{rawValue: 04010000, stringValue: "O_SYNC"}
+	FASYNC     = SystemFunctionArgument{rawValue: 00020000, stringValue: "FASYNC"}
+	O_DIRECT   = SystemFunctionArgument{rawValue: 00040000, stringValue: "O_DIRECT"}
+	// gap
 	O_DIRECTORY = SystemFunctionArgument{rawValue: 00200000, stringValue: "O_DIRECTORY"}
 	O_NOFOLLOW  = SystemFunctionArgument{rawValue: 00400000, stringValue: "O_NOFOLLOW"}
 	O_NOATIME   = SystemFunctionArgument{rawValue: 01000000, stringValue: "O_NOATIME"}
@@ -173,32 +175,6 @@ var (
 	O_PATH      = SystemFunctionArgument{rawValue: 040000000, stringValue: "O_PATH"}
 	O_TMPFILE   = SystemFunctionArgument{rawValue: 020000000, stringValue: "O_TMPFILE"}
 )
-
-var openFlagsValues = []SystemFunctionArgument{
-	// O_ACCMODE, // macro for access mode, so not included
-
-	// special cases checked before the loop in ParseOpenFlagArgument
-	// O_RDONLY,
-	// O_WRONLY,
-	// O_RDWR,
-	O_CREAT,
-	O_EXCL,
-	O_NOCTTY,
-	O_TRUNC,
-	O_APPEND,
-	O_NONBLOCK,
-	O_DSYNC,
-	O_SYNC,
-	FASYNC,
-	O_DIRECT,
-	O_LARGEFILE,
-	O_DIRECTORY,
-	O_NOFOLLOW,
-	O_NOATIME,
-	O_CLOEXEC,
-	O_PATH,
-	O_TMPFILE,
-}
 
 // ParseOpenFlagArgument parses the `flags` bitmask argument of the `open` syscall.
 // http://man7.org/linux/man-pages/man2/open.2.html
