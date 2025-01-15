@@ -49,8 +49,8 @@ func NewRunningTracee(givenCtx context.Context, cmdLine string) *RunningTracee {
 	ctx, cancel := context.WithCancel(givenCtx)
 
 	// Add healthz flag if not present (required for readiness check)
-	if !strings.Contains(cmdLine, "--healthz") {
-		cmdLine = fmt.Sprintf("--healthz %s", cmdLine)
+	if !strings.Contains(cmdLine, "--server http.healthz") {
+		cmdLine = fmt.Sprintf("--server http.healthz %s", cmdLine)
 	}
 
 	cmdLine = fmt.Sprintf("%s %s", TraceeBinary, cmdLine)
