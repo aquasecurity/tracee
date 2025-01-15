@@ -116,7 +116,7 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 
 	if enableMetrics || enableHealthz || enablePProf || enablePyroscope {
 		if server.HTTPServer == nil {
-			server.HTTPServer = http.New(":3366")
+			server.HTTPServer = http.New("localhost:3366")
 		}
 		if enableMetrics {
 			server.HTTPServer.EnableMetricsEndpoint()
