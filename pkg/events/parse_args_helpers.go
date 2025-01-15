@@ -3,10 +3,20 @@ package events
 import (
 	"strconv"
 
+	"golang.org/x/sys/unix"
+
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
+
+func parseDirfdAt(arg *trace.Argument, dirfd uint64) {
+	if int32(dirfd) == unix.AT_FDCWD {
+		arg.Type = "string"
+		arg.Value = "AT_FDCWD"
+		return
+	}
+}
 
 func parseMMapProt(arg *trace.Argument, prot uint64) {
 	mmapProtArgument := parsers.ParseMmapProt(prot)
@@ -21,7 +31,7 @@ func parseSocketDomainArgument(arg *trace.Argument, domain uint64) {
 		arg.Value = strconv.FormatUint(domain, 10)
 		return
 	}
-	arg.Value = socketDomainArgument.String()
+	arg.Value = socketDomainArgument
 }
 
 func parseSocketType(arg *trace.Argument, typ uint64) {
@@ -61,7 +71,7 @@ func parseCapability(arg *trace.Argument, capability uint64) {
 		arg.Value = strconv.FormatUint(capability, 10)
 		return
 	}
-	arg.Value = capabilityFlagArgument.String()
+	arg.Value = capabilityFlagArgument
 }
 
 func parseMemProtAlert(arg *trace.Argument, alert uint32) {
@@ -93,17 +103,17 @@ func parsePtraceRequestArgument(arg *trace.Argument, req uint64) {
 		arg.Value = strconv.FormatUint(req, 10)
 		return
 	}
-	arg.Value = ptraceRequestArgument.String()
+	arg.Value = ptraceRequestArgument
 }
 
-func parsePrctlOption(arg *trace.Argument, opt uint64) {
+func parsePrctlOption(arg *trace.Argument, option uint64) {
 	arg.Type = "string"
-	prctlOptionArgument, err := parsers.ParsePrctlOption(opt)
+	prctlOptionArgument, err := parsers.ParsePrctlOption(option)
 	if err != nil {
-		arg.Value = strconv.FormatUint(opt, 10)
+		arg.Value = strconv.FormatUint(option, 10)
 		return
 	}
-	arg.Value = prctlOptionArgument.String()
+	arg.Value = prctlOptionArgument
 }
 
 func parseSocketcallCall(arg *trace.Argument, call uint64) {
@@ -113,7 +123,7 @@ func parseSocketcallCall(arg *trace.Argument, call uint64) {
 		arg.Value = strconv.FormatUint(call, 10)
 		return
 	}
-	arg.Value = socketCallArgument.String()
+	arg.Value = socketCallArgument
 }
 
 func parseAccessMode(arg *trace.Argument, mode uint64) {
@@ -123,17 +133,37 @@ func parseAccessMode(arg *trace.Argument, mode uint64) {
 		arg.Value = strconv.FormatUint(mode, 10)
 		return
 	}
-	arg.Value = accessModeArgument.String()
+	arg.Value = accessModeArgument
 }
 
-func parseExecFlag(arg *trace.Argument, flags uint64) {
+func parseFaccessatFlag(arg *trace.Argument, flags uint64) {
 	arg.Type = "string"
-	execFlagArgument, err := parsers.ParseExecFlag(flags)
+	faccessatFlagArgument, err := parsers.ParseFaccessatFlag(flags)
 	if err != nil {
 		arg.Value = strconv.FormatUint(flags, 10)
 		return
 	}
-	arg.Value = execFlagArgument.String()
+	arg.Value = faccessatFlagArgument
+}
+
+func parseFchmodatFlag(arg *trace.Argument, flags uint64) {
+	arg.Type = "string"
+	fchmodatFlagArgument, err := parsers.ParseFchmodatFlag(flags)
+	if err != nil {
+		arg.Value = strconv.FormatUint(flags, 10)
+		return
+	}
+	arg.Value = fchmodatFlagArgument
+}
+
+func parseExecveatFlag(arg *trace.Argument, flags uint64) {
+	arg.Type = "string"
+	execFlagArgument, err := parsers.ParseExecveatFlag(flags)
+	if err != nil {
+		arg.Value = strconv.FormatUint(flags, 10)
+		return
+	}
+	arg.Value = execFlagArgument
 }
 
 func parseOpenFlagArgument(arg *trace.Argument, flags uint64) {
@@ -143,7 +173,7 @@ func parseOpenFlagArgument(arg *trace.Argument, flags uint64) {
 		arg.Value = strconv.FormatUint(flags, 10)
 		return
 	}
-	arg.Value = openFlagArgument.String()
+	arg.Value = openFlagArgument
 }
 
 func parseCloneFlags(arg *trace.Argument, flags uint64) {
@@ -153,7 +183,7 @@ func parseCloneFlags(arg *trace.Argument, flags uint64) {
 		arg.Value = strconv.FormatUint(flags, 10)
 		return
 	}
-	arg.Value = cloneFlagArgument.String()
+	arg.Value = cloneFlagArgument
 }
 
 func parseBPFCmd(arg *trace.Argument, cmd uint64) {
@@ -163,7 +193,7 @@ func parseBPFCmd(arg *trace.Argument, cmd uint64) {
 		arg.Value = strconv.FormatUint(cmd, 10)
 		return
 	}
-	arg.Value = bpfCommandArgument.String()
+	arg.Value = bpfCommandArgument
 }
 
 func parseSocketLevel(arg *trace.Argument, level uint64) {

@@ -13,9 +13,25 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
-type SystemFunctionArgument interface {
+// Deprecated: use concrete SystemFunctionArgument type instead
+// TODO: remove this interface after all consumers are updated
+type systemFunctionArgument interface {
 	fmt.Stringer
 	Value() uint64
+}
+
+var _ = systemFunctionArgument(SystemFunctionArgument{})
+
+type SystemFunctionArgument struct {
+	rawValue    uint64
+	stringValue string
+}
+
+func (a SystemFunctionArgument) Value() uint64 {
+	return a.rawValue
+}
+func (a SystemFunctionArgument) String() string {
+	return a.stringValue
 }
 
 // optionsAreContainedInArgument checks whether the argument (rawArgument)
@@ -40,1239 +56,865 @@ func optionIsContainedInArgument(rawArgument uint64, option uint64) bool {
 	return rawArgument&option == option
 }
 
-type CloneFlagArgument struct {
-	rawValue    uint64
-	stringValue string
+// buildStringFromValues builds a string from the values of the arguments
+// that are present in the rawArgument bitmask.
+func buildStringFromValues(sb *strings.Builder, argValues []SystemFunctionArgument, rawArgument uint64) {
+	for _, arg := range argValues {
+		if optionIsContainedInArgument(rawArgument, arg.Value()) {
+			if sb.Len() > 0 {
+				sb.WriteByte('|')
+			}
+			sb.WriteString(arg.String())
+		}
+	}
 }
 
-// revive:disable
+//
+// Parsers
+//
+
+// Always use raw values for constants instead of relying on Go's unix/syscall library constants.
+// These constants are derived from UAPI definitions but may vary based on predefined macros
+// (e.g., _LARGEFILE64_SOURCE, _FILE_OFFSET_BITS) during compilation. For instance, `O_LARGEFILE`
+// is defined as 0x8000 (00100000) in some C headers but as 0x0 in Go's unix package.
+// To avoid discrepancies, always verify the Linux kernel headers for the correct values.
 
 var (
-	// These values are copied from uapi/linux/sched.h
-	CLONE_VM             CloneFlagArgument = CloneFlagArgument{rawValue: 0x00000100, stringValue: "CLONE_VM"}
-	CLONE_FS             CloneFlagArgument = CloneFlagArgument{rawValue: 0x00000200, stringValue: "CLONE_FS"}
-	CLONE_FILES          CloneFlagArgument = CloneFlagArgument{rawValue: 0x00000400, stringValue: "CLONE_FILES"}
-	CLONE_SIGHAND        CloneFlagArgument = CloneFlagArgument{rawValue: 0x00000800, stringValue: "CLONE_SIGHAND"}
-	CLONE_PIDFD          CloneFlagArgument = CloneFlagArgument{rawValue: 0x00001000, stringValue: "CLONE_PIDFD"}
-	CLONE_PTRACE         CloneFlagArgument = CloneFlagArgument{rawValue: 0x00002000, stringValue: "CLONE_PTRACE"}
-	CLONE_VFORK          CloneFlagArgument = CloneFlagArgument{rawValue: 0x00004000, stringValue: "CLONE_VFORK"}
-	CLONE_PARENT         CloneFlagArgument = CloneFlagArgument{rawValue: 0x00008000, stringValue: "CLONE_PARENT"}
-	CLONE_THREAD         CloneFlagArgument = CloneFlagArgument{rawValue: 0x00010000, stringValue: "CLONE_THREAD"}
-	CLONE_NEWNS          CloneFlagArgument = CloneFlagArgument{rawValue: 0x00020000, stringValue: "CLONE_NEWNS"}
-	CLONE_SYSVSEM        CloneFlagArgument = CloneFlagArgument{rawValue: 0x00040000, stringValue: "CLONE_SYSVSEM"}
-	CLONE_SETTLS         CloneFlagArgument = CloneFlagArgument{rawValue: 0x00080000, stringValue: "CLONE_SETTLS"}
-	CLONE_PARENT_SETTID  CloneFlagArgument = CloneFlagArgument{rawValue: 0x00100000, stringValue: "CLONE_PARENT_SETTID"}
-	CLONE_CHILD_CLEARTID CloneFlagArgument = CloneFlagArgument{rawValue: 0x00200000, stringValue: "CLONE_CHILD_CLEARTID"}
-	CLONE_DETACHED       CloneFlagArgument = CloneFlagArgument{rawValue: 0x00400000, stringValue: "CLONE_DETACHED"}
-	CLONE_UNTRACED       CloneFlagArgument = CloneFlagArgument{rawValue: 0x00800000, stringValue: "CLONE_UNTRACED"}
-	CLONE_CHILD_SETTID   CloneFlagArgument = CloneFlagArgument{rawValue: 0x01000000, stringValue: "CLONE_CHILD_SETTID"}
-	CLONE_NEWCGROUP      CloneFlagArgument = CloneFlagArgument{rawValue: 0x02000000, stringValue: "CLONE_NEWCGROUP"}
-	CLONE_NEWUTS         CloneFlagArgument = CloneFlagArgument{rawValue: 0x04000000, stringValue: "CLONE_NEWUTS"}
-	CLONE_NEWIPC         CloneFlagArgument = CloneFlagArgument{rawValue: 0x08000000, stringValue: "CLONE_NEWIPC"}
-	CLONE_NEWUSER        CloneFlagArgument = CloneFlagArgument{rawValue: 0x10000000, stringValue: "CLONE_NEWUSER"}
-	CLONE_NEWPID         CloneFlagArgument = CloneFlagArgument{rawValue: 0x20000000, stringValue: "CLONE_NEWPID"}
-	CLONE_NEWNET         CloneFlagArgument = CloneFlagArgument{rawValue: 0x40000000, stringValue: "CLONE_NEWNET"}
-	CLONE_IO             CloneFlagArgument = CloneFlagArgument{rawValue: 0x80000000, stringValue: "CLONE_IO"}
+	// from linux/sched.h
+	CLONE_VM             = SystemFunctionArgument{rawValue: 0x00000100, stringValue: "CLONE_VM"}
+	CLONE_FS             = SystemFunctionArgument{rawValue: 0x00000200, stringValue: "CLONE_FS"}
+	CLONE_FILES          = SystemFunctionArgument{rawValue: 0x00000400, stringValue: "CLONE_FILES"}
+	CLONE_SIGHAND        = SystemFunctionArgument{rawValue: 0x00000800, stringValue: "CLONE_SIGHAND"}
+	CLONE_PIDFD          = SystemFunctionArgument{rawValue: 0x00001000, stringValue: "CLONE_PIDFD"}
+	CLONE_PTRACE         = SystemFunctionArgument{rawValue: 0x00002000, stringValue: "CLONE_PTRACE"}
+	CLONE_VFORK          = SystemFunctionArgument{rawValue: 0x00004000, stringValue: "CLONE_VFORK"}
+	CLONE_PARENT         = SystemFunctionArgument{rawValue: 0x00008000, stringValue: "CLONE_PARENT"}
+	CLONE_THREAD         = SystemFunctionArgument{rawValue: 0x00010000, stringValue: "CLONE_THREAD"}
+	CLONE_NEWNS          = SystemFunctionArgument{rawValue: 0x00020000, stringValue: "CLONE_NEWNS"}
+	CLONE_SYSVSEM        = SystemFunctionArgument{rawValue: 0x00040000, stringValue: "CLONE_SYSVSEM"}
+	CLONE_SETTLS         = SystemFunctionArgument{rawValue: 0x00080000, stringValue: "CLONE_SETTLS"}
+	CLONE_PARENT_SETTID  = SystemFunctionArgument{rawValue: 0x00100000, stringValue: "CLONE_PARENT_SETTID"}
+	CLONE_CHILD_CLEARTID = SystemFunctionArgument{rawValue: 0x00200000, stringValue: "CLONE_CHILD_CLEARTID"}
+	CLONE_DETACHED       = SystemFunctionArgument{rawValue: 0x00400000, stringValue: "CLONE_DETACHED"}
+	CLONE_UNTRACED       = SystemFunctionArgument{rawValue: 0x00800000, stringValue: "CLONE_UNTRACED"}
+	CLONE_CHILD_SETTID   = SystemFunctionArgument{rawValue: 0x01000000, stringValue: "CLONE_CHILD_SETTID"}
+	CLONE_NEWCGROUP      = SystemFunctionArgument{rawValue: 0x02000000, stringValue: "CLONE_NEWCGROUP"}
+	CLONE_NEWUTS         = SystemFunctionArgument{rawValue: 0x04000000, stringValue: "CLONE_NEWUTS"}
+	CLONE_NEWIPC         = SystemFunctionArgument{rawValue: 0x08000000, stringValue: "CLONE_NEWIPC"}
+	CLONE_NEWUSER        = SystemFunctionArgument{rawValue: 0x10000000, stringValue: "CLONE_NEWUSER"}
+	CLONE_NEWPID         = SystemFunctionArgument{rawValue: 0x20000000, stringValue: "CLONE_NEWPID"}
+	CLONE_NEWNET         = SystemFunctionArgument{rawValue: 0x40000000, stringValue: "CLONE_NEWNET"}
+	CLONE_IO             = SystemFunctionArgument{rawValue: 0x80000000, stringValue: "CLONE_IO"}
 )
 
-// revive:enable
-
-func (c CloneFlagArgument) Value() uint64  { return c.rawValue }
-func (c CloneFlagArgument) String() string { return c.stringValue }
-
-func ParseCloneFlags(rawValue uint64) (CloneFlagArgument, error) {
-	if rawValue == 0 {
-		return CloneFlagArgument{}, nil
-	}
-
-	var f []string
-	if optionIsContainedInArgument(rawValue, CLONE_VM.Value()) {
-		f = append(f, CLONE_VM.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_FS.Value()) {
-		f = append(f, CLONE_FS.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_FILES.Value()) {
-		f = append(f, CLONE_FILES.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_SIGHAND.Value()) {
-		f = append(f, CLONE_SIGHAND.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_PIDFD.Value()) {
-		f = append(f, CLONE_PIDFD.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_PTRACE.Value()) {
-		f = append(f, CLONE_PTRACE.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_VFORK.Value()) {
-		f = append(f, CLONE_VFORK.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_PARENT.Value()) {
-		f = append(f, CLONE_PARENT.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_THREAD.Value()) {
-		f = append(f, CLONE_THREAD.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWNS.Value()) {
-		f = append(f, CLONE_NEWNS.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_SYSVSEM.Value()) {
-		f = append(f, CLONE_SYSVSEM.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_SETTLS.Value()) {
-		f = append(f, CLONE_SETTLS.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_PARENT_SETTID.Value()) {
-		f = append(f, CLONE_PARENT_SETTID.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_CHILD_CLEARTID.Value()) {
-		f = append(f, CLONE_CHILD_CLEARTID.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_DETACHED.Value()) {
-		f = append(f, CLONE_DETACHED.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_UNTRACED.Value()) {
-		f = append(f, CLONE_UNTRACED.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_CHILD_SETTID.Value()) {
-		f = append(f, CLONE_CHILD_SETTID.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWCGROUP.Value()) {
-		f = append(f, CLONE_NEWCGROUP.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWUTS.Value()) {
-		f = append(f, CLONE_NEWUTS.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWIPC.Value()) {
-		f = append(f, CLONE_NEWIPC.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWUSER.Value()) {
-		f = append(f, CLONE_NEWUSER.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWPID.Value()) {
-		f = append(f, CLONE_NEWPID.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_NEWNET.Value()) {
-		f = append(f, CLONE_NEWNET.String())
-	}
-	if optionIsContainedInArgument(rawValue, CLONE_IO.Value()) {
-		f = append(f, CLONE_IO.String())
-	}
-	if len(f) == 0 {
-		return CloneFlagArgument{}, fmt.Errorf("no valid clone flag values present in raw value: 0x%x", rawValue)
-	}
-
-	return CloneFlagArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}, nil
+var cloneFlagsValues = []SystemFunctionArgument{
+	CLONE_VM,
+	CLONE_FS,
+	CLONE_FILES,
+	CLONE_SIGHAND,
+	CLONE_PIDFD,
+	CLONE_PTRACE,
+	CLONE_VFORK,
+	CLONE_PARENT,
+	CLONE_THREAD,
+	CLONE_NEWNS,
+	CLONE_SYSVSEM,
+	CLONE_SETTLS,
+	CLONE_PARENT_SETTID,
+	CLONE_CHILD_CLEARTID,
+	CLONE_DETACHED,
+	CLONE_UNTRACED,
+	CLONE_CHILD_SETTID,
+	CLONE_NEWCGROUP,
+	CLONE_NEWUTS,
+	CLONE_NEWIPC,
+	CLONE_NEWUSER,
+	CLONE_NEWPID,
+	CLONE_NEWNET,
+	CLONE_IO,
 }
 
-type OpenFlagArgument struct {
-	rawValue    uint64
-	stringValue string
-}
+// ParseCloneFlags parses the `flags` bitmask argument of the `clone` syscall.
+func ParseCloneFlags(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
+	}
 
-// revive:disable
+	var sb strings.Builder
+	buildStringFromValues(&sb, cloneFlagsValues, flags)
+
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid clone flag values present in flags value: 0x%x", flags)
+	}
+
+	return sb.String(), nil
+}
 
 var (
-	// These values are copied from uapi/asm-generic/fcntl.h
-	O_ACCMODE   OpenFlagArgument = OpenFlagArgument{rawValue: 00000003, stringValue: "O_ACCMODE"}
-	O_RDONLY    OpenFlagArgument = OpenFlagArgument{rawValue: 00000000, stringValue: "O_RDONLY"}
-	O_WRONLY    OpenFlagArgument = OpenFlagArgument{rawValue: 00000001, stringValue: "O_WRONLY"}
-	O_RDWR      OpenFlagArgument = OpenFlagArgument{rawValue: 00000002, stringValue: "O_RDWR"}
-	O_CREAT     OpenFlagArgument = OpenFlagArgument{rawValue: 00000100, stringValue: "O_CREAT"}
-	O_EXCL      OpenFlagArgument = OpenFlagArgument{rawValue: 00000200, stringValue: "O_EXCL"}
-	O_NOCTTY    OpenFlagArgument = OpenFlagArgument{rawValue: 00000400, stringValue: "O_NOCTTY"}
-	O_TRUNC     OpenFlagArgument = OpenFlagArgument{rawValue: 00001000, stringValue: "O_TRUNC"}
-	O_APPEND    OpenFlagArgument = OpenFlagArgument{rawValue: 00002000, stringValue: "O_APPEND"}
-	O_NONBLOCK  OpenFlagArgument = OpenFlagArgument{rawValue: 00004000, stringValue: "O_NONBLOCK"}
-	O_DSYNC     OpenFlagArgument = OpenFlagArgument{rawValue: 00010000, stringValue: "O_DSYNC"}
-	O_SYNC      OpenFlagArgument = OpenFlagArgument{rawValue: 04010000, stringValue: "O_SYNC"}
-	FASYNC      OpenFlagArgument = OpenFlagArgument{rawValue: 00020000, stringValue: "FASYNC"}
-	O_DIRECT    OpenFlagArgument = OpenFlagArgument{rawValue: 00040000, stringValue: "O_DIRECT"}
-	O_LARGEFILE OpenFlagArgument = OpenFlagArgument{rawValue: 00100000, stringValue: "O_LARGEFILE"}
-	O_DIRECTORY OpenFlagArgument = OpenFlagArgument{rawValue: 00200000, stringValue: "O_DIRECTORY"}
-	O_NOFOLLOW  OpenFlagArgument = OpenFlagArgument{rawValue: 00400000, stringValue: "O_NOFOLLOW"}
-	O_NOATIME   OpenFlagArgument = OpenFlagArgument{rawValue: 01000000, stringValue: "O_NOATIME"}
-	O_CLOEXEC   OpenFlagArgument = OpenFlagArgument{rawValue: 02000000, stringValue: "O_CLOEXEC"}
-	O_PATH      OpenFlagArgument = OpenFlagArgument{rawValue: 040000000, stringValue: "O_PATH"}
-	O_TMPFILE   OpenFlagArgument = OpenFlagArgument{rawValue: 020000000, stringValue: "O_TMPFILE"}
+	// from asm-generic/fcntl.h
+	// NOT sequential values
+	O_ACCMODE  = SystemFunctionArgument{rawValue: 00000003, stringValue: "O_ACCMODE"}
+	O_RDONLY   = SystemFunctionArgument{rawValue: 00000000, stringValue: "O_RDONLY"}
+	O_WRONLY   = SystemFunctionArgument{rawValue: 00000001, stringValue: "O_WRONLY"}
+	O_RDWR     = SystemFunctionArgument{rawValue: 00000002, stringValue: "O_RDWR"}
+	O_CREAT    = SystemFunctionArgument{rawValue: 00000100, stringValue: "O_CREAT"}
+	O_EXCL     = SystemFunctionArgument{rawValue: 00000200, stringValue: "O_EXCL"}
+	O_NOCTTY   = SystemFunctionArgument{rawValue: 00000400, stringValue: "O_NOCTTY"}
+	O_TRUNC    = SystemFunctionArgument{rawValue: 00001000, stringValue: "O_TRUNC"}
+	O_APPEND   = SystemFunctionArgument{rawValue: 00002000, stringValue: "O_APPEND"}
+	O_NONBLOCK = SystemFunctionArgument{rawValue: 00004000, stringValue: "O_NONBLOCK"}
+	O_DSYNC    = SystemFunctionArgument{rawValue: 00010000, stringValue: "O_DSYNC"}
+	O_SYNC     = SystemFunctionArgument{rawValue: 04010000, stringValue: "O_SYNC"}
+	FASYNC     = SystemFunctionArgument{rawValue: 00020000, stringValue: "FASYNC"}
+	O_DIRECT   = SystemFunctionArgument{rawValue: 00040000, stringValue: "O_DIRECT"}
+	// gap
+	O_DIRECTORY = SystemFunctionArgument{rawValue: 00200000, stringValue: "O_DIRECTORY"}
+	O_NOFOLLOW  = SystemFunctionArgument{rawValue: 00400000, stringValue: "O_NOFOLLOW"}
+	O_NOATIME   = SystemFunctionArgument{rawValue: 01000000, stringValue: "O_NOATIME"}
+	O_CLOEXEC   = SystemFunctionArgument{rawValue: 02000000, stringValue: "O_CLOEXEC"}
+	O_PATH      = SystemFunctionArgument{rawValue: 040000000, stringValue: "O_PATH"}
+	O_TMPFILE   = SystemFunctionArgument{rawValue: 020000000, stringValue: "O_TMPFILE"}
 )
 
-// revive:enable
-
-func (o OpenFlagArgument) Value() uint64  { return o.rawValue }
-func (o OpenFlagArgument) String() string { return o.stringValue }
-
-// ParseOpenFlagArgument parses the `flags` bitmask argument of the `open` syscall
+// ParseOpenFlagArgument parses the `flags` bitmask argument of the `open` syscall.
 // http://man7.org/linux/man-pages/man2/open.2.html
 // https://elixir.bootlin.com/linux/v5.5.3/source/include/uapi/asm-generic/fcntl.h
-func ParseOpenFlagArgument(rawValue uint64) (OpenFlagArgument, error) {
-	if rawValue == 0 {
-		return OpenFlagArgument{}, nil
+func ParseOpenFlagArgument(flags uint64) (string, error) {
+	if flags == 0 {
+		return O_RDONLY.String(), nil
 	}
-	var f []string
+
+	var sb strings.Builder
 
 	// access mode
 	switch {
-	case optionIsContainedInArgument(rawValue, O_WRONLY.Value()):
-		f = append(f, O_WRONLY.String())
-	case optionIsContainedInArgument(rawValue, O_RDWR.Value()):
-		f = append(f, O_RDWR.String())
+	case optionIsContainedInArgument(flags, O_WRONLY.Value()):
+		sb.WriteString(O_WRONLY.String())
+	case optionIsContainedInArgument(flags, O_RDWR.Value()):
+		sb.WriteString(O_RDWR.String())
 	default:
-		f = append(f, O_RDONLY.String())
+		sb.WriteString(O_RDONLY.String())
 	}
 
 	// file creation and status flags
-	if optionIsContainedInArgument(rawValue, O_CREAT.Value()) {
-		f = append(f, O_CREAT.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_EXCL.Value()) {
-		f = append(f, O_EXCL.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_NOCTTY.Value()) {
-		f = append(f, O_NOCTTY.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_TRUNC.Value()) {
-		f = append(f, O_TRUNC.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_APPEND.Value()) {
-		f = append(f, O_APPEND.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_NONBLOCK.Value()) {
-		f = append(f, O_NONBLOCK.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_SYNC.Value()) {
-		f = append(f, O_SYNC.String())
-	}
-	if optionIsContainedInArgument(rawValue, FASYNC.Value()) {
-		f = append(f, FASYNC.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_LARGEFILE.Value()) {
-		f = append(f, O_LARGEFILE.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_DIRECTORY.Value()) {
-		f = append(f, O_DIRECTORY.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_NOFOLLOW.Value()) {
-		f = append(f, O_NOFOLLOW.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_CLOEXEC.Value()) {
-		f = append(f, O_CLOEXEC.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_DIRECT.Value()) {
-		f = append(f, O_DIRECT.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_NOATIME.Value()) {
-		f = append(f, O_NOATIME.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_PATH.Value()) {
-		f = append(f, O_PATH.String())
-	}
-	if optionIsContainedInArgument(rawValue, O_TMPFILE.Value()) {
-		f = append(f, O_TMPFILE.String())
+	for _, a := range openFlagsValues {
+		if optionIsContainedInArgument(flags, a.Value()) {
+			sb.WriteByte('|')
+			sb.WriteString(a.String())
+		}
 	}
 
-	if len(f) == 0 {
-		return OpenFlagArgument{}, fmt.Errorf("no valid open flag values present in raw value: 0x%x", rawValue)
-	}
-
-	return OpenFlagArgument{rawValue: rawValue, stringValue: strings.Join(f, "|")}, nil
+	return sb.String(), nil
 }
-
-type AccessModeArgument struct {
-	rawValue    uint64
-	stringValue string
-}
-
-// revive:disable
 
 var (
-	F_OK AccessModeArgument = AccessModeArgument{rawValue: 0, stringValue: "F_OK"}
-	X_OK AccessModeArgument = AccessModeArgument{rawValue: 1, stringValue: "X_OK"}
-	W_OK AccessModeArgument = AccessModeArgument{rawValue: 2, stringValue: "W_OK"}
-	R_OK AccessModeArgument = AccessModeArgument{rawValue: 4, stringValue: "R_OK"}
+	// from fcntl.h
+	F_OK = SystemFunctionArgument{rawValue: 0, stringValue: "F_OK"}
+	X_OK = SystemFunctionArgument{rawValue: 1, stringValue: "X_OK"}
+	W_OK = SystemFunctionArgument{rawValue: 2, stringValue: "W_OK"}
+	R_OK = SystemFunctionArgument{rawValue: 4, stringValue: "R_OK"}
 )
 
-// revive:enable
+var accessModeValues = []SystemFunctionArgument{
+	// F_OK, // special case checked before the loop in ParseAccessMode
+	X_OK,
+	W_OK,
+	R_OK,
+}
 
-func (a AccessModeArgument) Value() uint64 { return a.rawValue }
-
-func (a AccessModeArgument) String() string { return a.stringValue }
-
-// ParseAccessMode parses the mode from the `access` system call
+// ParseAccessMode parses the mode from the `access` system call.
 // http://man7.org/linux/man-pages/man2/access.2.html
-func ParseAccessMode(rawValue uint64) (AccessModeArgument, error) {
-	if rawValue == 0 {
-		return AccessModeArgument{}, nil
-	}
-	var f []string
-	if rawValue == 0x0 {
-		f = append(f, F_OK.String())
-	} else {
-		if optionIsContainedInArgument(rawValue, R_OK.Value()) {
-			f = append(f, R_OK.String())
-		}
-		if optionIsContainedInArgument(rawValue, W_OK.Value()) {
-			f = append(f, W_OK.String())
-		}
-		if optionIsContainedInArgument(rawValue, X_OK.Value()) {
-			f = append(f, X_OK.String())
-		}
+func ParseAccessMode(mode uint64) (string, error) {
+	if mode == 0 {
+		return F_OK.String(), nil
 	}
 
-	if len(f) == 0 {
-		return AccessModeArgument{}, fmt.Errorf("no valid access mode values present in raw value: 0x%x", rawValue)
+	var sb strings.Builder
+
+	buildStringFromValues(&sb, accessModeValues, mode)
+
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid access mode values present in mode value: 0x%x", mode)
 	}
 
-	return AccessModeArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}, nil
+	return sb.String(), nil
 }
-
-type ExecFlagArgument struct {
-	rawValue    uint64
-	stringValue string
-}
-
-// revive:disable
 
 var (
-	AT_SYMLINK_NOFOLLOW   ExecFlagArgument = ExecFlagArgument{stringValue: "AT_SYMLINK_NOFOLLOW", rawValue: 0x100}
-	AT_EACCESS            ExecFlagArgument = ExecFlagArgument{stringValue: "AT_EACCESS", rawValue: 0x200}
-	AT_REMOVEDIR          ExecFlagArgument = ExecFlagArgument{stringValue: "AT_REMOVEDIR", rawValue: 0x200}
-	AT_SYMLINK_FOLLOW     ExecFlagArgument = ExecFlagArgument{stringValue: "AT_SYMLINK_FOLLOW", rawValue: 0x400}
-	AT_NO_AUTOMOUNT       ExecFlagArgument = ExecFlagArgument{stringValue: "AT_NO_AUTOMOUNT", rawValue: 0x800}
-	AT_EMPTY_PATH         ExecFlagArgument = ExecFlagArgument{stringValue: "AT_EMPTY_PATH", rawValue: 0x1000}
-	AT_STATX_SYNC_TYPE    ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_SYNC_TYPE", rawValue: 0x6000}
-	AT_STATX_SYNC_AS_STAT ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_SYNC_AS_STAT", rawValue: 0x0000}
-	AT_STATX_FORCE_SYNC   ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_FORCE_SYNC", rawValue: 0x2000}
-	AT_STATX_DONT_SYNC    ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_DONT_SYNC", rawValue: 0x4000}
-	AT_RECURSIVE          ExecFlagArgument = ExecFlagArgument{stringValue: "AT_RECURSIVE", rawValue: 0x8000}
+	// from linux/fcntl.h
+	AT_SYMLINK_NOFOLLOW   = SystemFunctionArgument{rawValue: 0x100, stringValue: "AT_SYMLINK_NOFOLLOW"}
+	AT_EACCESS            = SystemFunctionArgument{rawValue: 0x200, stringValue: "AT_EACCESS"}
+	AT_REMOVEDIR          = SystemFunctionArgument{rawValue: 0x200, stringValue: "AT_REMOVEDIR"}
+	AT_SYMLINK_FOLLOW     = SystemFunctionArgument{rawValue: 0x400, stringValue: "AT_SYMLINK_FOLLOW"}
+	AT_NO_AUTOMOUNT       = SystemFunctionArgument{rawValue: 0x800, stringValue: "AT_NO_AUTOMOUNT"}
+	AT_EMPTY_PATH         = SystemFunctionArgument{rawValue: 0x1000, stringValue: "AT_EMPTY_PATH"}
+	AT_STATX_SYNC_TYPE    = SystemFunctionArgument{rawValue: 0x6000, stringValue: "AT_STATX_SYNC_TYPE"}
+	AT_STATX_SYNC_AS_STAT = SystemFunctionArgument{rawValue: 0x0000, stringValue: "AT_STATX_SYNC_AS_STAT"}
+	AT_STATX_FORCE_SYNC   = SystemFunctionArgument{rawValue: 0x2000, stringValue: "AT_STATX_FORCE_SYNC"}
+	AT_STATX_DONT_SYNC    = SystemFunctionArgument{rawValue: 0x4000, stringValue: "AT_STATX_DONT_SYNC"}
+	AT_RECURSIVE          = SystemFunctionArgument{rawValue: 0x8000, stringValue: "AT_RECURSIVE"}
 )
 
-// revive:enable
-
-func (e ExecFlagArgument) Value() uint64  { return e.rawValue }
-func (e ExecFlagArgument) String() string { return e.stringValue }
-
-func ParseExecFlag(rawValue uint64) (ExecFlagArgument, error) {
-	if rawValue == 0 {
-		return ExecFlagArgument{}, nil
-	}
-
-	var f []string
-	if optionIsContainedInArgument(rawValue, AT_EMPTY_PATH.Value()) {
-		f = append(f, AT_EMPTY_PATH.String())
-	}
-	if optionIsContainedInArgument(rawValue, AT_SYMLINK_NOFOLLOW.Value()) {
-		f = append(f, AT_SYMLINK_NOFOLLOW.String())
-	}
-	if optionIsContainedInArgument(rawValue, AT_EACCESS.Value()) {
-		f = append(f, AT_EACCESS.String())
-	}
-	if optionIsContainedInArgument(rawValue, AT_REMOVEDIR.Value()) {
-		f = append(f, AT_REMOVEDIR.String())
-	}
-	if optionIsContainedInArgument(rawValue, AT_NO_AUTOMOUNT.Value()) {
-		f = append(f, AT_NO_AUTOMOUNT.String())
-	}
-	if optionIsContainedInArgument(rawValue, AT_STATX_SYNC_TYPE.Value()) {
-		f = append(f, AT_STATX_SYNC_TYPE.String())
-	}
-	if optionIsContainedInArgument(rawValue, AT_STATX_FORCE_SYNC.Value()) {
-		f = append(f, AT_STATX_FORCE_SYNC.String())
-	}
-	if optionIsContainedInArgument(rawValue, AT_STATX_DONT_SYNC.Value()) {
-		f = append(f, AT_STATX_DONT_SYNC.String())
-	}
-	if optionIsContainedInArgument(rawValue, AT_RECURSIVE.Value()) {
-		f = append(f, AT_RECURSIVE.String())
-	}
-	if len(f) == 0 {
-		return ExecFlagArgument{}, fmt.Errorf("no valid exec flag values present in raw value: 0x%x", rawValue)
-	}
-	return ExecFlagArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}, nil
+var faccessatFlagsValues = []SystemFunctionArgument{
+	AT_EACCESS,
+	AT_EMPTY_PATH,
+	AT_SYMLINK_NOFOLLOW,
 }
 
-type CapabilityFlagArgument uint64
+// ParseFaccessatFlag parses the `flags` bitmask argument of the `faccessat` syscall.
+func ParseFaccessatFlag(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
+	}
 
-const (
-	CAP_CHOWN CapabilityFlagArgument = iota
-	CAP_DAC_OVERRIDE
-	CAP_DAC_READ_SEARCH
-	CAP_FOWNER
-	CAP_FSETID
-	CAP_KILL
-	CAP_SETGID
-	CAP_SETUID
-	CAP_SETPCAP
-	CAP_LINUX_IMMUTABLE
-	CAP_NET_BIND_SERVICE
-	CAP_NET_BROADCAST
-	CAP_NET_ADMIN
-	CAP_NET_RAW
-	CAP_IPC_LOCK
-	CAP_IPC_OWNER
-	CAP_SYS_MODULE
-	CAP_SYS_RAWIO
-	CAP_SYS_CHROOT
-	CAP_SYS_PTRACE
-	CAP_SYS_PACCT
-	CAP_SYS_ADMIN
-	CAP_SYS_BOOT
-	CAP_SYS_NICE
-	CAP_SYS_RESOURCE
-	CAP_SYS_TIME
-	CAP_SYS_TTY_CONFIG
-	CAP_MKNOD
-	CAP_LEASE
-	CAP_AUDIT_WRITE
-	CAP_AUDIT_CONTROL
-	CAP_SETFCAP
-	CAP_MAC_OVERRIDE
-	CAP_MAC_ADMIN
-	CAP_SYSLOG
-	CAP_WAKE_ALARM
-	CAP_BLOCK_SUSPEND
-	CAP_AUDIT_READ
+	var sb strings.Builder
+
+	buildStringFromValues(&sb, faccessatFlagsValues, flags)
+
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid faccessat flag values present in flags value: 0x%x", flags)
+	}
+
+	return sb.String(), nil
+}
+
+var fchmodatFlagsValues = []SystemFunctionArgument{
+	AT_SYMLINK_NOFOLLOW,
+}
+
+func ParseFchmodatFlag(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
+	}
+
+	var sb strings.Builder
+
+	buildStringFromValues(&sb, fchmodatFlagsValues, flags)
+
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid fchmodat flag values present in flags value: 0x%x", flags)
+	}
+
+	return sb.String(), nil
+}
+
+var execveAtFlagsValues = []SystemFunctionArgument{
+	AT_SYMLINK_NOFOLLOW,
+	AT_EMPTY_PATH,
+}
+
+// ParseExecveatFlag parses the `flags` bitmask argument of the `execveat` syscall.
+// http://man7.org/linux/man-pages/man2/execveat.2.html
+func ParseExecveatFlag(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
+	}
+
+	var sb strings.Builder
+
+	buildStringFromValues(&sb, execveAtFlagsValues, flags)
+
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid execveat flag values present in flags value: 0x%x", flags)
+	}
+
+	return sb.String(), nil
+}
+
+var (
+	// from linux/capability.h
+	// sequential values starting from 0
+	CAP_CHOWN              = SystemFunctionArgument{rawValue: 0, stringValue: "CAP_CHOWN"}
+	CAP_DAC_OVERRIDE       = SystemFunctionArgument{rawValue: 1, stringValue: "CAP_DAC_OVERRIDE"}
+	CAP_DAC_READ_SEARCH    = SystemFunctionArgument{rawValue: 2, stringValue: "CAP_DAC_READ_SEARCH"}
+	CAP_FOWNER             = SystemFunctionArgument{rawValue: 3, stringValue: "CAP_FOWNER"}
+	CAP_FSETID             = SystemFunctionArgument{rawValue: 4, stringValue: "CAP_FSETID"}
+	CAP_KILL               = SystemFunctionArgument{rawValue: 5, stringValue: "CAP_KILL"}
+	CAP_SETGID             = SystemFunctionArgument{rawValue: 6, stringValue: "CAP_SETGID"}
+	CAP_SETUID             = SystemFunctionArgument{rawValue: 7, stringValue: "CAP_SETUID"}
+	CAP_SETPCAP            = SystemFunctionArgument{rawValue: 8, stringValue: "CAP_SETPCAP"}
+	CAP_LINUX_IMMUTABLE    = SystemFunctionArgument{rawValue: 9, stringValue: "CAP_LINUX_IMMUTABLE"}
+	CAP_NET_BIND_SERVICE   = SystemFunctionArgument{rawValue: 10, stringValue: "CAP_NET_BIND_SERVICE"}
+	CAP_NET_BROADCAST      = SystemFunctionArgument{rawValue: 11, stringValue: "CAP_NET_BROADCAST"}
+	CAP_NET_ADMIN          = SystemFunctionArgument{rawValue: 12, stringValue: "CAP_NET_ADMIN"}
+	CAP_NET_RAW            = SystemFunctionArgument{rawValue: 13, stringValue: "CAP_NET_RAW"}
+	CAP_IPC_LOCK           = SystemFunctionArgument{rawValue: 14, stringValue: "CAP_IPC_LOCK"}
+	CAP_IPC_OWNER          = SystemFunctionArgument{rawValue: 15, stringValue: "CAP_IPC_OWNER"}
+	CAP_SYS_MODULE         = SystemFunctionArgument{rawValue: 16, stringValue: "CAP_SYS_MODULE"}
+	CAP_SYS_RAWIO          = SystemFunctionArgument{rawValue: 17, stringValue: "CAP_SYS_RAWIO"}
+	CAP_SYS_CHROOT         = SystemFunctionArgument{rawValue: 18, stringValue: "CAP_SYS_CHROOT"}
+	CAP_SYS_PTRACE         = SystemFunctionArgument{rawValue: 19, stringValue: "CAP_SYS_PTRACE"}
+	CAP_SYS_PACCT          = SystemFunctionArgument{rawValue: 20, stringValue: "CAP_SYS_PACCT"}
+	CAP_SYS_ADMIN          = SystemFunctionArgument{rawValue: 21, stringValue: "CAP_SYS_ADMIN"}
+	CAP_SYS_BOOT           = SystemFunctionArgument{rawValue: 22, stringValue: "CAP_SYS_BOOT"}
+	CAP_SYS_NICE           = SystemFunctionArgument{rawValue: 23, stringValue: "CAP_SYS_NICE"}
+	CAP_SYS_RESOURCE       = SystemFunctionArgument{rawValue: 24, stringValue: "CAP_SYS_RESOURCE"}
+	CAP_SYS_TIME           = SystemFunctionArgument{rawValue: 25, stringValue: "CAP_SYS_TIME"}
+	CAP_SYS_TTY_CONFIG     = SystemFunctionArgument{rawValue: 26, stringValue: "CAP_SYS_TTY_CONFIG"}
+	CAP_MKNOD              = SystemFunctionArgument{rawValue: 27, stringValue: "CAP_MKNOD"}
+	CAP_LEASE              = SystemFunctionArgument{rawValue: 28, stringValue: "CAP_LEASE"}
+	CAP_AUDIT_WRITE        = SystemFunctionArgument{rawValue: 29, stringValue: "CAP_AUDIT_WRITE"}
+	CAP_AUDIT_CONTROL      = SystemFunctionArgument{rawValue: 30, stringValue: "CAP_AUDIT_CONTROL"}
+	CAP_SETFCAP            = SystemFunctionArgument{rawValue: 31, stringValue: "CAP_SETFCAP"}
+	CAP_MAC_OVERRIDE       = SystemFunctionArgument{rawValue: 32, stringValue: "CAP_MAC_OVERRIDE"}
+	CAP_MAC_ADMIN          = SystemFunctionArgument{rawValue: 33, stringValue: "CAP_MAC_ADMIN"}
+	CAP_SYSLOG             = SystemFunctionArgument{rawValue: 34, stringValue: "CAP_SYSLOG"}
+	CAP_WAKE_ALARM         = SystemFunctionArgument{rawValue: 35, stringValue: "CAP_WAKE_ALARM"}
+	CAP_BLOCK_SUSPEND      = SystemFunctionArgument{rawValue: 36, stringValue: "CAP_BLOCK_SUSPEND"}
+	CAP_AUDIT_READ         = SystemFunctionArgument{rawValue: 37, stringValue: "CAP_AUDIT_READ"}
+	CAP_PERFMON            = SystemFunctionArgument{rawValue: 38, stringValue: "CAP_PERFMON"}
+	CAP_BPF                = SystemFunctionArgument{rawValue: 39, stringValue: "CAP_BPF"}
+	CAP_CHECKPOINT_RESTORE = SystemFunctionArgument{rawValue: 40, stringValue: "CAP_CHECKPOINT_RESTORE"}
 )
 
-func (c CapabilityFlagArgument) Value() uint64 { return uint64(c) }
-
-var capFlagStringMap = map[CapabilityFlagArgument]string{
-	CAP_CHOWN:            "CAP_CHOWN",
-	CAP_DAC_OVERRIDE:     "CAP_DAC_OVERRIDE",
-	CAP_DAC_READ_SEARCH:  "CAP_DAC_READ_SEARCH",
-	CAP_FOWNER:           "CAP_FOWNER",
-	CAP_FSETID:           "CAP_FSETID",
-	CAP_KILL:             "CAP_KILL",
-	CAP_SETGID:           "CAP_SETGID",
-	CAP_SETUID:           "CAP_SETUID",
-	CAP_SETPCAP:          "CAP_SETPCAP",
-	CAP_LINUX_IMMUTABLE:  "CAP_LINUX_IMMUTABLE",
-	CAP_NET_BIND_SERVICE: "CAP_NET_BIND_SERVICE",
-	CAP_NET_BROADCAST:    "CAP_NET_BROADCAST",
-	CAP_NET_ADMIN:        "CAP_NET_ADMIN",
-	CAP_NET_RAW:          "CAP_NET_RAW",
-	CAP_IPC_LOCK:         "CAP_IPC_LOCK",
-	CAP_IPC_OWNER:        "CAP_IPC_OWNER",
-	CAP_SYS_MODULE:       "CAP_SYS_MODULE",
-	CAP_SYS_RAWIO:        "CAP_SYS_RAWIO",
-	CAP_SYS_CHROOT:       "CAP_SYS_CHROOT",
-	CAP_SYS_PTRACE:       "CAP_SYS_PTRACE",
-	CAP_SYS_PACCT:        "CAP_SYS_PACCT",
-	CAP_SYS_ADMIN:        "CAP_SYS_ADMIN",
-	CAP_SYS_BOOT:         "CAP_SYS_BOOT",
-	CAP_SYS_NICE:         "CAP_SYS_NICE",
-	CAP_SYS_RESOURCE:     "CAP_SYS_RESOURCE",
-	CAP_SYS_TIME:         "CAP_SYS_TIME",
-	CAP_SYS_TTY_CONFIG:   "CAP_SYS_TTY_CONFIG",
-	CAP_MKNOD:            "CAP_MKNOD",
-	CAP_LEASE:            "CAP_LEASE",
-	CAP_AUDIT_WRITE:      "CAP_AUDIT_WRITE",
-	CAP_AUDIT_CONTROL:    "CAP_AUDIT_CONTROL",
-	CAP_SETFCAP:          "CAP_SETFCAP",
-	CAP_MAC_OVERRIDE:     "CAP_MAC_OVERRIDE",
-	CAP_MAC_ADMIN:        "CAP_MAC_ADMIN",
-	CAP_SYSLOG:           "CAP_SYSLOG",
-	CAP_WAKE_ALARM:       "CAP_WAKE_ALARM",
-	CAP_BLOCK_SUSPEND:    "CAP_BLOCK_SUSPEND",
-	CAP_AUDIT_READ:       "CAP_AUDIT_READ",
+var capabilityValues = []SystemFunctionArgument{
+	CAP_CHOWN,
+	CAP_DAC_OVERRIDE,
+	CAP_DAC_READ_SEARCH,
+	CAP_FOWNER,
+	CAP_FSETID,
+	CAP_KILL,
+	CAP_SETGID,
+	CAP_SETUID,
+	CAP_SETPCAP,
+	CAP_LINUX_IMMUTABLE,
+	CAP_NET_BIND_SERVICE,
+	CAP_NET_BROADCAST,
+	CAP_NET_ADMIN,
+	CAP_NET_RAW,
+	CAP_IPC_LOCK,
+	CAP_IPC_OWNER,
+	CAP_SYS_MODULE,
+	CAP_SYS_RAWIO,
+	CAP_SYS_CHROOT,
+	CAP_SYS_PTRACE,
+	CAP_SYS_PACCT,
+	CAP_SYS_ADMIN,
+	CAP_SYS_BOOT,
+	CAP_SYS_NICE,
+	CAP_SYS_RESOURCE,
+	CAP_SYS_TIME,
+	CAP_SYS_TTY_CONFIG,
+	CAP_MKNOD,
+	CAP_LEASE,
+	CAP_AUDIT_WRITE,
+	CAP_AUDIT_CONTROL,
+	CAP_SETFCAP,
+	CAP_MAC_OVERRIDE,
+	CAP_MAC_ADMIN,
+	CAP_SYSLOG,
+	CAP_WAKE_ALARM,
+	CAP_BLOCK_SUSPEND,
+	CAP_AUDIT_READ,
+	CAP_PERFMON,
+	CAP_BPF,
+	CAP_CHECKPOINT_RESTORE,
 }
 
-func (c CapabilityFlagArgument) String() string {
-	var res string
-
-	if capName, ok := capFlagStringMap[c]; ok {
-		res = capName
-	} else {
-		res = strconv.Itoa(int(c))
-	}
-	return res
-}
-
-var capabilitiesMap = map[uint64]CapabilityFlagArgument{
-	CAP_CHOWN.Value():            CAP_CHOWN,
-	CAP_DAC_OVERRIDE.Value():     CAP_DAC_OVERRIDE,
-	CAP_DAC_READ_SEARCH.Value():  CAP_DAC_READ_SEARCH,
-	CAP_FOWNER.Value():           CAP_FOWNER,
-	CAP_FSETID.Value():           CAP_FSETID,
-	CAP_KILL.Value():             CAP_KILL,
-	CAP_SETGID.Value():           CAP_SETGID,
-	CAP_SETUID.Value():           CAP_SETUID,
-	CAP_SETPCAP.Value():          CAP_SETPCAP,
-	CAP_LINUX_IMMUTABLE.Value():  CAP_LINUX_IMMUTABLE,
-	CAP_NET_BIND_SERVICE.Value(): CAP_NET_BIND_SERVICE,
-	CAP_NET_BROADCAST.Value():    CAP_NET_BROADCAST,
-	CAP_NET_ADMIN.Value():        CAP_NET_ADMIN,
-	CAP_NET_RAW.Value():          CAP_NET_RAW,
-	CAP_IPC_LOCK.Value():         CAP_IPC_LOCK,
-	CAP_IPC_OWNER.Value():        CAP_IPC_OWNER,
-	CAP_SYS_MODULE.Value():       CAP_SYS_MODULE,
-	CAP_SYS_RAWIO.Value():        CAP_SYS_RAWIO,
-	CAP_SYS_CHROOT.Value():       CAP_SYS_CHROOT,
-	CAP_SYS_PTRACE.Value():       CAP_SYS_PTRACE,
-	CAP_SYS_PACCT.Value():        CAP_SYS_PACCT,
-	CAP_SYS_ADMIN.Value():        CAP_SYS_ADMIN,
-	CAP_SYS_BOOT.Value():         CAP_SYS_BOOT,
-	CAP_SYS_NICE.Value():         CAP_SYS_NICE,
-	CAP_SYS_RESOURCE.Value():     CAP_SYS_RESOURCE,
-	CAP_SYS_TIME.Value():         CAP_SYS_TIME,
-	CAP_SYS_TTY_CONFIG.Value():   CAP_SYS_TTY_CONFIG,
-	CAP_MKNOD.Value():            CAP_MKNOD,
-	CAP_LEASE.Value():            CAP_LEASE,
-	CAP_AUDIT_WRITE.Value():      CAP_AUDIT_WRITE,
-	CAP_AUDIT_CONTROL.Value():    CAP_AUDIT_CONTROL,
-	CAP_SETFCAP.Value():          CAP_SETFCAP,
-	CAP_MAC_OVERRIDE.Value():     CAP_MAC_OVERRIDE,
-	CAP_MAC_ADMIN.Value():        CAP_MAC_ADMIN,
-	CAP_SYSLOG.Value():           CAP_SYSLOG,
-	CAP_WAKE_ALARM.Value():       CAP_WAKE_ALARM,
-	CAP_BLOCK_SUSPEND.Value():    CAP_BLOCK_SUSPEND,
-	CAP_AUDIT_READ.Value():       CAP_AUDIT_READ,
-}
+var (
+	CAP_FIRST_CAP = CAP_CHOWN.Value()
+	CAP_LAST_CAP  = CAP_CHECKPOINT_RESTORE.Value()
+)
 
 // ParseCapability parses the `capability` bitmask argument of the
 // `cap_capable` function
-func ParseCapability(rawValue uint64) (CapabilityFlagArgument, error) {
-	v, ok := capabilitiesMap[rawValue]
-	if !ok {
-		return 0, fmt.Errorf("not a valid capability value: %d", rawValue)
+func ParseCapability(cap uint64) (string, error) {
+	if cap > CAP_LAST_CAP {
+		return "", fmt.Errorf("not a valid capability value: %d", cap)
 	}
-	return v, nil
+
+	idx := int(cap - CAP_FIRST_CAP)
+	return capabilityValues[idx].String(), nil
 }
 
-type PrctlOptionArgument uint64
+var (
+	// from linux/prctl.h
+	// NOT sequential values
+	PR_SET_PDEATHSIG = SystemFunctionArgument{rawValue: 1, stringValue: "PR_SET_PDEATHSIG"}
+	PR_GET_PDEATHSIG = SystemFunctionArgument{rawValue: 2, stringValue: "PR_GET_PDEATHSIG"}
+	PR_GET_DUMPABLE  = SystemFunctionArgument{rawValue: 3, stringValue: "PR_GET_DUMPABLE"}
+	PR_SET_DUMPABLE  = SystemFunctionArgument{rawValue: 4, stringValue: "PR_SET_DUMPABLE"}
+	PR_GET_UNALIGN   = SystemFunctionArgument{rawValue: 5, stringValue: "PR_GET_UNALIGN"}
+	PR_SET_UNALIGN   = SystemFunctionArgument{rawValue: 6, stringValue: "PR_SET_UNALIGN"}
+	PR_GET_KEEPCAPS  = SystemFunctionArgument{rawValue: 7, stringValue: "PR_GET_KEEPCAPS"}
+	PR_SET_KEEPCAPS  = SystemFunctionArgument{rawValue: 8, stringValue: "PR_SET_KEEPCAPS"}
+	PR_GET_FPEMU     = SystemFunctionArgument{rawValue: 9, stringValue: "PR_GET_FPEMU"}
+	PR_SET_FPEMU     = SystemFunctionArgument{rawValue: 10, stringValue: "PR_SET_FPEMU"}
+	PR_GET_FPEXC     = SystemFunctionArgument{rawValue: 11, stringValue: "PR_GET_FPEXC"}
+	PR_SET_FPEXC     = SystemFunctionArgument{rawValue: 12, stringValue: "PR_SET_FPEXC"}
+	PR_GET_TIMING    = SystemFunctionArgument{rawValue: 13, stringValue: "PR_GET_TIMING"}
+	PR_SET_TIMING    = SystemFunctionArgument{rawValue: 14, stringValue: "PR_SET_TIMING"}
+	PR_SET_NAME      = SystemFunctionArgument{rawValue: 15, stringValue: "PR_SET_NAME"}
+	PR_GET_NAME      = SystemFunctionArgument{rawValue: 16, stringValue: "PR_GET_NAME"}
+	// gap
+	PR_GET_ENDIAN               = SystemFunctionArgument{rawValue: 19, stringValue: "PR_GET_ENDIAN"}
+	PR_SET_ENDIAN               = SystemFunctionArgument{rawValue: 20, stringValue: "PR_SET_ENDIAN"}
+	PR_GET_SECCOMP              = SystemFunctionArgument{rawValue: 21, stringValue: "PR_GET_SECCOMP"}
+	PR_SET_SECCOMP              = SystemFunctionArgument{rawValue: 22, stringValue: "PR_SET_SECCOMP"}
+	PR_CAPBSET_READ             = SystemFunctionArgument{rawValue: 23, stringValue: "PR_CAPBSET_READ"}
+	PR_CAPBSET_DROP             = SystemFunctionArgument{rawValue: 24, stringValue: "PR_CAPBSET_DROP"}
+	PR_GET_TSC                  = SystemFunctionArgument{rawValue: 25, stringValue: "PR_GET_TSC"}
+	PR_SET_TSC                  = SystemFunctionArgument{rawValue: 26, stringValue: "PR_SET_TSC"}
+	PR_GET_SECUREBITS           = SystemFunctionArgument{rawValue: 27, stringValue: "PR_GET_SECUREBITS"}
+	PR_SET_SECUREBITS           = SystemFunctionArgument{rawValue: 28, stringValue: "PR_SET_SECUREBITS"}
+	PR_SET_TIMERSLACK           = SystemFunctionArgument{rawValue: 29, stringValue: "PR_SET_TIMERSLACK"}
+	PR_GET_TIMERSLACK           = SystemFunctionArgument{rawValue: 30, stringValue: "PR_GET_TIMERSLACK"}
+	PR_TASK_PERF_EVENTS_DISABLE = SystemFunctionArgument{rawValue: 31, stringValue: "PR_TASK_PERF_EVENTS_DISABLE"}
+	PR_TASK_PERF_EVENTS_ENABLE  = SystemFunctionArgument{rawValue: 32, stringValue: "PR_TASK_PERF_EVENTS_ENABLE"}
+	PR_MCE_KILL                 = SystemFunctionArgument{rawValue: 33, stringValue: "PR_MCE_KILL"}
+	PR_MCE_KILL_GET             = SystemFunctionArgument{rawValue: 34, stringValue: "PR_MCE_KILL_GET"}
+	PR_SET_MM                   = SystemFunctionArgument{rawValue: 35, stringValue: "PR_SET_MM"}
 
-const (
-	PR_SET_PDEATHSIG PrctlOptionArgument = iota + 1
-	PR_GET_PDEATHSIG
-	PR_GET_DUMPABLE
-	PR_SET_DUMPABLE
-	PR_GET_UNALIGN
-	PR_SET_UNALIGN
-	PR_GET_KEEPCAPS
-	PR_SET_KEEPCAPS
-	PR_GET_FPEMU
-	PR_SET_FPEMU
-	PR_GET_FPEXC
-	PR_SET_FPEXC
-	PR_GET_TIMING
-	PR_SET_TIMING
-	PR_SET_NAME
-	PR_GET_NAME
-	PR_GET_ENDIAN
-	PR_SET_ENDIAN
-	PR_GET_SECCOMP
-	PR_SET_SECCOMP
-	PR_CAPBSET_READ
-	PR_CAPBSET_DROP
-	PR_GET_TSC
-	PR_SET_TSC
-	PR_GET_SECUREBITS
-	PR_SET_SECUREBITS
-	PR_SET_TIMERSLACK
-	PR_GET_TIMERSLACK
-	PR_TASK_PERF_EVENTS_DISABLE
-	PR_TASK_PERF_EVENTS_ENABLE
-	PR_MCE_KILL
-	PR_MCE_KILL_GET
-	PR_SET_MM
-	PR_SET_CHILD_SUBREAPER
-	PR_GET_CHILD_SUBREAPER
-	PR_SET_NO_NEW_PRIVS
-	PR_GET_NO_NEW_PRIVS
-	PR_GET_TID_ADDRESS
-	PR_SET_THP_DISABLE
-	PR_GET_THP_DISABLE
-	PR_MPX_ENABLE_MANAGEMENT
-	PR_MPX_DISABLE_MANAGEMENT
-	PR_SET_FP_MODE
-	PR_GET_FP_MODE
-	PR_CAP_AMBIENT
-	PR_SVE_SET_VL
-	PR_SVE_GET_VL
-	PR_GET_SPECULATION_CTRL
-	PR_SET_SPECULATION_CTRL
-	PR_PAC_RESET_KEYS
-	PR_SET_TAGGED_ADDR_CTRL
-	PR_GET_TAGGED_ADDR_CTRL
+	// unordered
+	PR_SET_PTRACER = SystemFunctionArgument{rawValue: 0x59616d61, stringValue: "PR_SET_PTRACER"}
+
+	PR_SET_CHILD_SUBREAPER    = SystemFunctionArgument{rawValue: 36, stringValue: "PR_SET_CHILD_SUBREAPER"}
+	PR_GET_CHILD_SUBREAPER    = SystemFunctionArgument{rawValue: 37, stringValue: "PR_GET_CHILD_SUBREAPER"}
+	PR_SET_NO_NEW_PRIVS       = SystemFunctionArgument{rawValue: 38, stringValue: "PR_SET_NO_NEW_PRIVS"}
+	PR_GET_NO_NEW_PRIVS       = SystemFunctionArgument{rawValue: 39, stringValue: "PR_GET_NO_NEW_PRIVS"}
+	PR_GET_TID_ADDRESS        = SystemFunctionArgument{rawValue: 40, stringValue: "PR_GET_TID_ADDRESS"}
+	PR_SET_THP_DISABLE        = SystemFunctionArgument{rawValue: 41, stringValue: "PR_SET_THP_DISABLE"}
+	PR_GET_THP_DISABLE        = SystemFunctionArgument{rawValue: 42, stringValue: "PR_GET_THP_DISABLE"}
+	PR_MPX_ENABLE_MANAGEMENT  = SystemFunctionArgument{rawValue: 43, stringValue: "PR_MPX_ENABLE_MANAGEMENT"}
+	PR_MPX_DISABLE_MANAGEMENT = SystemFunctionArgument{rawValue: 44, stringValue: "PR_MPX_DISABLE_MANAGEMENT"}
+	PR_SET_FP_MODE            = SystemFunctionArgument{rawValue: 45, stringValue: "PR_SET_FP_MODE"}
+	PR_GET_FP_MODE            = SystemFunctionArgument{rawValue: 46, stringValue: "PR_GET_FP_MODE"}
+	PR_CAP_AMBIENT            = SystemFunctionArgument{rawValue: 47, stringValue: "PR_CAP_AMBIENT"}
+	// gap
+	PR_SVE_SET_VL                = SystemFunctionArgument{rawValue: 50, stringValue: "PR_SVE_SET_VL"}
+	PR_SVE_GET_VL                = SystemFunctionArgument{rawValue: 51, stringValue: "PR_SVE_GET_VL"}
+	PR_GET_SPECULATION_CTRL      = SystemFunctionArgument{rawValue: 52, stringValue: "PR_GET_SPECULATION_CTRL"}
+	PR_SET_SPECULATION_CTRL      = SystemFunctionArgument{rawValue: 53, stringValue: "PR_SET_SPECULATION_CTRL"}
+	PR_PAC_RESET_KEYS            = SystemFunctionArgument{rawValue: 54, stringValue: "PR_PAC_RESET_KEYS"}
+	PR_SET_TAGGED_ADDR_CTRL      = SystemFunctionArgument{rawValue: 55, stringValue: "PR_SET_TAGGED_ADDR_CTRL"}
+	PR_GET_TAGGED_ADDR_CTRL      = SystemFunctionArgument{rawValue: 56, stringValue: "PR_GET_TAGGED_ADDR_CTRL"}
+	PR_SET_IO_FLUSHER            = SystemFunctionArgument{rawValue: 57, stringValue: "PR_SET_IO_FLUSHER"}
+	PR_GET_IO_FLUSHER            = SystemFunctionArgument{rawValue: 58, stringValue: "PR_GET_IO_FLUSHER"}
+	PR_SET_SYSCALL_USER_DISPATCH = SystemFunctionArgument{rawValue: 59, stringValue: "PR_SET_SYSCALL_USER_DISPATCH"}
+	PR_PAC_SET_ENABLED_KEYS      = SystemFunctionArgument{rawValue: 60, stringValue: "PR_PAC_SET_ENABLED_KEYS"}
+	PR_PAC_GET_ENABLED_KEYS      = SystemFunctionArgument{rawValue: 61, stringValue: "PR_PAC_GET_ENABLED_KEYS"}
+	PR_SCHED_CORE                = SystemFunctionArgument{rawValue: 62, stringValue: "PR_SCHED_CORE"}
+	PR_SME_SET_VL                = SystemFunctionArgument{rawValue: 63, stringValue: "PR_SME_SET_VL"}
+	PR_SME_GET_VL                = SystemFunctionArgument{rawValue: 64, stringValue: "PR_SME_GET_VL"}
+	PR_SET_MDWE                  = SystemFunctionArgument{rawValue: 65, stringValue: "PR_SET_MDWE"}
+	PR_GET_MDWE                  = SystemFunctionArgument{rawValue: 66, stringValue: "PR_GET_MDWE"}
+	PR_SET_MEMORY_MERGE          = SystemFunctionArgument{rawValue: 67, stringValue: "PR_SET_MEMORY_MERGE"}
+	PR_GET_MEMORY_MERGE          = SystemFunctionArgument{rawValue: 68, stringValue: "PR_GET_MEMORY_MERGE"}
+
+	// architecure specific (not supported)
+	// #define PR_RISCV_V_SET_CONTROL 69
+	// #define PR_RISCV_V_GET_CONTROL 70
+	// #define PR_RISCV_SET_ICACHE_FLUSH_CTX 71
+	// #define PR_PPC_GET_DEXCR 72
+	// #define PR_PPC_SET_DEXCR 73
 )
 
-func (p PrctlOptionArgument) Value() uint64 { return uint64(p) }
-
-var prctlOptionStringMap = map[PrctlOptionArgument]string{
-	PR_SET_PDEATHSIG:            "PR_SET_PDEATHSIG",
-	PR_GET_PDEATHSIG:            "PR_GET_PDEATHSIG",
-	PR_GET_DUMPABLE:             "PR_GET_DUMPABLE",
-	PR_SET_DUMPABLE:             "PR_SET_DUMPABLE",
-	PR_GET_UNALIGN:              "PR_GET_UNALIGN",
-	PR_SET_UNALIGN:              "PR_SET_UNALIGN",
-	PR_GET_KEEPCAPS:             "PR_GET_KEEPCAPS",
-	PR_SET_KEEPCAPS:             "PR_SET_KEEPCAPS",
-	PR_GET_FPEMU:                "PR_GET_FPEMU",
-	PR_SET_FPEMU:                "PR_SET_FPEMU",
-	PR_GET_FPEXC:                "PR_GET_FPEXC",
-	PR_SET_FPEXC:                "PR_SET_FPEXC",
-	PR_GET_TIMING:               "PR_GET_TIMING",
-	PR_SET_TIMING:               "PR_SET_TIMING",
-	PR_SET_NAME:                 "PR_SET_NAME",
-	PR_GET_NAME:                 "PR_GET_NAME",
-	PR_GET_ENDIAN:               "PR_GET_ENDIAN",
-	PR_SET_ENDIAN:               "PR_SET_ENDIAN",
-	PR_GET_SECCOMP:              "PR_GET_SECCOMP",
-	PR_SET_SECCOMP:              "PR_SET_SECCOMP",
-	PR_CAPBSET_READ:             "PR_CAPBSET_READ",
-	PR_CAPBSET_DROP:             "PR_CAPBSET_DROP",
-	PR_GET_TSC:                  "PR_GET_TSC",
-	PR_SET_TSC:                  "PR_SET_TSC",
-	PR_GET_SECUREBITS:           "PR_GET_SECUREBITS",
-	PR_SET_SECUREBITS:           "PR_SET_SECUREBITS",
-	PR_SET_TIMERSLACK:           "PR_SET_TIMERSLACK",
-	PR_GET_TIMERSLACK:           "PR_GET_TIMERSLACK",
-	PR_TASK_PERF_EVENTS_DISABLE: "PR_TASK_PERF_EVENTS_DISABLE",
-	PR_TASK_PERF_EVENTS_ENABLE:  "PR_TASK_PERF_EVENTS_ENABLE",
-	PR_MCE_KILL:                 "PR_MCE_KILL",
-	PR_MCE_KILL_GET:             "PR_MCE_KILL_GET",
-	PR_SET_MM:                   "PR_SET_MM",
-	PR_SET_CHILD_SUBREAPER:      "PR_SET_CHILD_SUBREAPER",
-	PR_GET_CHILD_SUBREAPER:      "PR_GET_CHILD_SUBREAPER",
-	PR_SET_NO_NEW_PRIVS:         "PR_SET_NO_NEW_PRIVS",
-	PR_GET_NO_NEW_PRIVS:         "PR_GET_NO_NEW_PRIVS",
-	PR_GET_TID_ADDRESS:          "PR_GET_TID_ADDRESS",
-	PR_SET_THP_DISABLE:          "PR_SET_THP_DISABLE",
-	PR_GET_THP_DISABLE:          "PR_GET_THP_DISABLE",
-	PR_MPX_ENABLE_MANAGEMENT:    "PR_MPX_ENABLE_MANAGEMENT",
-	PR_MPX_DISABLE_MANAGEMENT:   "PR_MPX_DISABLE_MANAGEMENT",
-	PR_SET_FP_MODE:              "PR_SET_FP_MODE",
-	PR_GET_FP_MODE:              "PR_GET_FP_MODE",
-	PR_CAP_AMBIENT:              "PR_CAP_AMBIENT",
-	PR_SVE_SET_VL:               "PR_SVE_SET_VL",
-	PR_SVE_GET_VL:               "PR_SVE_GET_VL",
-	PR_GET_SPECULATION_CTRL:     "PR_GET_SPECULATION_CTRL",
-	PR_SET_SPECULATION_CTRL:     "PR_SET_SPECULATION_CTRL",
-	PR_PAC_RESET_KEYS:           "PR_PAC_RESET_KEYS",
-	PR_SET_TAGGED_ADDR_CTRL:     "PR_SET_TAGGED_ADDR_CTRL",
-	PR_GET_TAGGED_ADDR_CTRL:     "PR_GET_TAGGED_ADDR_CTRL",
-}
-
-func (p PrctlOptionArgument) String() string {
-	var res string
-	if opName, ok := prctlOptionStringMap[p]; ok {
-		res = opName
-	} else {
-		res = strconv.Itoa(int(p))
-	}
-
-	return res
-}
-
-var prctlOptionsMap = map[uint64]PrctlOptionArgument{
-	PR_SET_PDEATHSIG.Value():            PR_SET_PDEATHSIG,
-	PR_GET_PDEATHSIG.Value():            PR_GET_PDEATHSIG,
-	PR_GET_DUMPABLE.Value():             PR_GET_DUMPABLE,
-	PR_SET_DUMPABLE.Value():             PR_SET_DUMPABLE,
-	PR_GET_UNALIGN.Value():              PR_GET_UNALIGN,
-	PR_SET_UNALIGN.Value():              PR_SET_UNALIGN,
-	PR_GET_KEEPCAPS.Value():             PR_GET_KEEPCAPS,
-	PR_SET_KEEPCAPS.Value():             PR_SET_KEEPCAPS,
-	PR_GET_FPEMU.Value():                PR_GET_FPEMU,
-	PR_SET_FPEMU.Value():                PR_SET_FPEMU,
-	PR_GET_FPEXC.Value():                PR_GET_FPEXC,
-	PR_SET_FPEXC.Value():                PR_SET_FPEXC,
-	PR_GET_TIMING.Value():               PR_GET_TIMING,
-	PR_SET_TIMING.Value():               PR_SET_TIMING,
-	PR_SET_NAME.Value():                 PR_SET_NAME,
-	PR_GET_NAME.Value():                 PR_GET_NAME,
-	PR_GET_ENDIAN.Value():               PR_GET_ENDIAN,
-	PR_SET_ENDIAN.Value():               PR_SET_ENDIAN,
-	PR_GET_SECCOMP.Value():              PR_GET_SECCOMP,
-	PR_SET_SECCOMP.Value():              PR_SET_SECCOMP,
-	PR_CAPBSET_READ.Value():             PR_CAPBSET_READ,
-	PR_CAPBSET_DROP.Value():             PR_CAPBSET_DROP,
-	PR_GET_TSC.Value():                  PR_GET_TSC,
-	PR_SET_TSC.Value():                  PR_SET_TSC,
-	PR_GET_SECUREBITS.Value():           PR_GET_SECUREBITS,
-	PR_SET_SECUREBITS.Value():           PR_SET_SECUREBITS,
-	PR_SET_TIMERSLACK.Value():           PR_SET_TIMERSLACK,
-	PR_GET_TIMERSLACK.Value():           PR_GET_TIMERSLACK,
-	PR_TASK_PERF_EVENTS_DISABLE.Value(): PR_TASK_PERF_EVENTS_DISABLE,
-	PR_TASK_PERF_EVENTS_ENABLE.Value():  PR_TASK_PERF_EVENTS_ENABLE,
-	PR_MCE_KILL.Value():                 PR_MCE_KILL,
-	PR_MCE_KILL_GET.Value():             PR_MCE_KILL_GET,
-	PR_SET_MM.Value():                   PR_SET_MM,
-	PR_SET_CHILD_SUBREAPER.Value():      PR_SET_CHILD_SUBREAPER,
-	PR_GET_CHILD_SUBREAPER.Value():      PR_GET_CHILD_SUBREAPER,
-	PR_SET_NO_NEW_PRIVS.Value():         PR_SET_NO_NEW_PRIVS,
-	PR_GET_NO_NEW_PRIVS.Value():         PR_GET_NO_NEW_PRIVS,
-	PR_GET_TID_ADDRESS.Value():          PR_GET_TID_ADDRESS,
-	PR_SET_THP_DISABLE.Value():          PR_SET_THP_DISABLE,
-	PR_GET_THP_DISABLE.Value():          PR_GET_THP_DISABLE,
-	PR_MPX_ENABLE_MANAGEMENT.Value():    PR_MPX_ENABLE_MANAGEMENT,
-	PR_MPX_DISABLE_MANAGEMENT.Value():   PR_MPX_DISABLE_MANAGEMENT,
-	PR_SET_FP_MODE.Value():              PR_SET_FP_MODE,
-	PR_GET_FP_MODE.Value():              PR_GET_FP_MODE,
-	PR_CAP_AMBIENT.Value():              PR_CAP_AMBIENT,
-	PR_SVE_SET_VL.Value():               PR_SVE_SET_VL,
-	PR_SVE_GET_VL.Value():               PR_SVE_GET_VL,
-	PR_GET_SPECULATION_CTRL.Value():     PR_GET_SPECULATION_CTRL,
-	PR_SET_SPECULATION_CTRL.Value():     PR_SET_SPECULATION_CTRL,
-	PR_PAC_RESET_KEYS.Value():           PR_PAC_RESET_KEYS,
-	PR_SET_TAGGED_ADDR_CTRL.Value():     PR_SET_TAGGED_ADDR_CTRL,
-	PR_GET_TAGGED_ADDR_CTRL.Value():     PR_GET_TAGGED_ADDR_CTRL,
+var prctlOptionValues = []SystemFunctionArgument{
+	PR_SET_PDEATHSIG,
+	PR_GET_PDEATHSIG,
+	PR_GET_DUMPABLE,
+	PR_SET_DUMPABLE,
+	PR_GET_UNALIGN,
+	PR_SET_UNALIGN,
+	PR_GET_KEEPCAPS,
+	PR_SET_KEEPCAPS,
+	PR_GET_FPEMU,
+	PR_SET_FPEMU,
+	PR_GET_FPEXC,
+	PR_SET_FPEXC,
+	PR_GET_TIMING,
+	PR_SET_TIMING,
+	PR_SET_NAME,
+	PR_GET_NAME,
+	PR_GET_ENDIAN,
+	PR_SET_ENDIAN,
+	PR_GET_SECCOMP,
+	PR_SET_SECCOMP,
+	PR_CAPBSET_READ,
+	PR_CAPBSET_DROP,
+	PR_GET_TSC,
+	PR_SET_TSC,
+	PR_GET_SECUREBITS,
+	PR_SET_SECUREBITS,
+	PR_SET_TIMERSLACK,
+	PR_GET_TIMERSLACK,
+	PR_TASK_PERF_EVENTS_DISABLE,
+	PR_TASK_PERF_EVENTS_ENABLE,
+	PR_MCE_KILL,
+	PR_MCE_KILL_GET,
+	PR_SET_MM,
+	PR_SET_CHILD_SUBREAPER,
+	PR_GET_CHILD_SUBREAPER,
+	PR_SET_NO_NEW_PRIVS,
+	PR_GET_NO_NEW_PRIVS,
+	PR_GET_TID_ADDRESS,
+	PR_SET_THP_DISABLE,
+	PR_GET_THP_DISABLE,
+	PR_MPX_ENABLE_MANAGEMENT,
+	PR_MPX_DISABLE_MANAGEMENT,
+	PR_SET_FP_MODE,
+	PR_GET_FP_MODE,
+	PR_CAP_AMBIENT,
+	PR_SVE_SET_VL,
+	PR_SVE_GET_VL,
+	PR_GET_SPECULATION_CTRL,
+	PR_SET_SPECULATION_CTRL,
+	PR_PAC_RESET_KEYS,
+	PR_SET_TAGGED_ADDR_CTRL,
+	PR_GET_TAGGED_ADDR_CTRL,
+	PR_SET_IO_FLUSHER,
+	PR_GET_IO_FLUSHER,
+	PR_SET_SYSCALL_USER_DISPATCH,
+	PR_PAC_SET_ENABLED_KEYS,
+	PR_PAC_GET_ENABLED_KEYS,
+	PR_SCHED_CORE,
+	PR_SME_SET_VL,
+	PR_SME_GET_VL,
+	PR_SET_MDWE,
+	PR_GET_MDWE,
+	PR_SET_MEMORY_MERGE,
+	PR_GET_MEMORY_MERGE,
 }
 
 // ParsePrctlOption parses the `option` argument of the `prctl` syscall
 // http://man7.org/linux/man-pages/man2/prctl.2.html
-func ParsePrctlOption(rawValue uint64) (PrctlOptionArgument, error) {
-	v, ok := prctlOptionsMap[rawValue]
-	if !ok {
-		return 0, fmt.Errorf("not a valid prctl option value: %d", rawValue)
+func ParsePrctlOption(option uint64) (string, error) {
+	for idx := range prctlOptionValues {
+		if option == prctlOptionValues[idx].Value() {
+			return prctlOptionValues[idx].String(), nil
+		}
 	}
-	return v, nil
+
+	return "", fmt.Errorf("not a valid prctl option value: %d", option)
 }
 
-type BPFCommandArgument uint64
-
-const (
-	BPF_MAP_CREATE BPFCommandArgument = iota
-	BPF_MAP_LOOKUP_ELEM
-	BPF_MAP_UPDATE_ELEM
-	BPF_MAP_DELETE_ELEM
-	BPF_MAP_GET_NEXT_KEY
-	BPF_PROG_LOAD
-	BPF_OBJ_PIN
-	BPF_OBJ_GET
-	BPF_PROG_ATTACH
-	BPF_PROG_DETACH
-	BPF_PROG_TEST_RUN
-	BPF_PROG_GET_NEXT_ID
-	BPF_MAP_GET_NEXT_ID
-	BPF_PROG_GET_FD_BY_ID
-	BPF_MAP_GET_FD_BY_ID
-	BPF_OBJ_GET_INFO_BY_FD
-	BPF_PROG_QUERY
-	BPF_RAW_TRACEPOINT_OPEN
-	BPF_BTF_LOAD
-	BPF_BTF_GET_FD_BY_ID
-	BPF_TASK_FD_QUERY
-	BPF_MAP_LOOKUP_AND_DELETE_ELEM
-	BPF_MAP_FREEZE
-	BPF_BTF_GET_NEXT_ID
-	BPF_MAP_LOOKUP_BATCH
-	BPF_MAP_LOOKUP_AND_DELETE_BATCH
-	BPF_MAP_UPDATE_BATCH
-	BPF_MAP_DELETE_BATCH
-	BPF_LINK_CREATE
-	BPF_LINK_UPDATE
-	BPF_LINK_GET_FD_BY_ID
-	BPF_LINK_GET_NEXT_ID
-	BPF_ENABLE_STATS
-	BPF_ITER_CREATE
-	BPF_LINK_DETACH
+var (
+	// from linux/bpf.h
+	// sequential values starting from 0
+	BPF_MAP_CREATE                  = SystemFunctionArgument{rawValue: 0, stringValue: "BPF_MAP_CREATE"}
+	BPF_MAP_LOOKUP_ELEM             = SystemFunctionArgument{rawValue: 1, stringValue: "BPF_MAP_LOOKUP_ELEM"}
+	BPF_MAP_UPDATE_ELEM             = SystemFunctionArgument{rawValue: 2, stringValue: "BPF_MAP_UPDATE_ELEM"}
+	BPF_MAP_DELETE_ELEM             = SystemFunctionArgument{rawValue: 3, stringValue: "BPF_MAP_DELETE_ELEM"}
+	BPF_MAP_GET_NEXT_KEY            = SystemFunctionArgument{rawValue: 4, stringValue: "BPF_MAP_GET_NEXT_KEY"}
+	BPF_PROG_LOAD                   = SystemFunctionArgument{rawValue: 5, stringValue: "BPF_PROG_LOAD"}
+	BPF_OBJ_PIN                     = SystemFunctionArgument{rawValue: 6, stringValue: "BPF_OBJ_PIN"}
+	BPF_OBJ_GET                     = SystemFunctionArgument{rawValue: 7, stringValue: "BPF_OBJ_GET"}
+	BPF_PROG_ATTACH                 = SystemFunctionArgument{rawValue: 8, stringValue: "BPF_PROG_ATTACH"}
+	BPF_PROG_DETACH                 = SystemFunctionArgument{rawValue: 9, stringValue: "BPF_PROG_DETACH"}
+	BPF_PROG_TEST_RUN               = SystemFunctionArgument{rawValue: 10, stringValue: "BPF_PROG_TEST_RUN"}
+	BPF_PROG_GET_NEXT_ID            = SystemFunctionArgument{rawValue: 11, stringValue: "BPF_PROG_GET_NEXT_ID"}
+	BPF_MAP_GET_NEXT_ID             = SystemFunctionArgument{rawValue: 12, stringValue: "BPF_MAP_GET_NEXT_ID"}
+	BPF_PROG_GET_FD_BY_ID           = SystemFunctionArgument{rawValue: 13, stringValue: "BPF_PROG_GET_FD_BY_ID"}
+	BPF_MAP_GET_FD_BY_ID            = SystemFunctionArgument{rawValue: 14, stringValue: "BPF_MAP_GET_FD_BY_ID"}
+	BPF_OBJ_GET_INFO_BY_FD          = SystemFunctionArgument{rawValue: 15, stringValue: "BPF_OBJ_GET_INFO_BY_FD"}
+	BPF_PROG_QUERY                  = SystemFunctionArgument{rawValue: 16, stringValue: "BPF_PROG_QUERY"}
+	BPF_RAW_TRACEPOINT_OPEN         = SystemFunctionArgument{rawValue: 17, stringValue: "BPF_RAW_TRACEPOINT_OPEN"}
+	BPF_BTF_LOAD                    = SystemFunctionArgument{rawValue: 18, stringValue: "BPF_BTF_LOAD"}
+	BPF_BTF_GET_FD_BY_ID            = SystemFunctionArgument{rawValue: 19, stringValue: "BPF_BTF_GET_FD_BY_ID"}
+	BPF_TASK_FD_QUERY               = SystemFunctionArgument{rawValue: 20, stringValue: "BPF_TASK_FD_QUERY"}
+	BPF_MAP_LOOKUP_AND_DELETE_ELEM  = SystemFunctionArgument{rawValue: 21, stringValue: "BPF_MAP_LOOKUP_AND_DELETE_ELEM"}
+	BPF_MAP_FREEZE                  = SystemFunctionArgument{rawValue: 22, stringValue: "BPF_MAP_FREEZE"}
+	BPF_BTF_GET_NEXT_ID             = SystemFunctionArgument{rawValue: 23, stringValue: "BPF_BTF_GET_NEXT_ID"}
+	BPF_MAP_LOOKUP_BATCH            = SystemFunctionArgument{rawValue: 24, stringValue: "BPF_MAP_LOOKUP_BATCH"}
+	BPF_MAP_LOOKUP_AND_DELETE_BATCH = SystemFunctionArgument{rawValue: 25, stringValue: "BPF_MAP_LOOKUP_AND_DELETE_BATCH"}
+	BPF_MAP_UPDATE_BATCH            = SystemFunctionArgument{rawValue: 26, stringValue: "BPF_MAP_UPDATE_BATCH"}
+	BPF_MAP_DELETE_BATCH            = SystemFunctionArgument{rawValue: 27, stringValue: "BPF_MAP_DELETE_BATCH"}
+	BPF_LINK_CREATE                 = SystemFunctionArgument{rawValue: 28, stringValue: "BPF_LINK_CREATE"}
+	BPF_LINK_UPDATE                 = SystemFunctionArgument{rawValue: 29, stringValue: "BPF_LINK_UPDATE"}
+	BPF_LINK_GET_FD_BY_ID           = SystemFunctionArgument{rawValue: 30, stringValue: "BPF_LINK_GET_FD_BY_ID"}
+	BPF_LINK_GET_NEXT_ID            = SystemFunctionArgument{rawValue: 31, stringValue: "BPF_LINK_GET_NEXT_ID"}
+	BPF_ENABLE_STATS                = SystemFunctionArgument{rawValue: 32, stringValue: "BPF_ENABLE_STATS"}
+	BPF_ITER_CREATE                 = SystemFunctionArgument{rawValue: 33, stringValue: "BPF_ITER_CREATE"}
+	BPF_LINK_DETACH                 = SystemFunctionArgument{rawValue: 34, stringValue: "BPF_LINK_DETACH"}
+	BPF_PROG_BIND_MAP               = SystemFunctionArgument{rawValue: 35, stringValue: "BPF_PROG_BIND_MAP"}
+	BPF_TOKEN_CREATE                = SystemFunctionArgument{rawValue: 36, stringValue: "BPF_TOKEN_CREATE"}
 )
 
-func (b BPFCommandArgument) Value() uint64 { return uint64(b) }
-
-var bpfCmdStringMap = map[BPFCommandArgument]string{
-	BPF_MAP_CREATE:                  "BPF_MAP_CREATE",
-	BPF_MAP_LOOKUP_ELEM:             "BPF_MAP_LOOKUP_ELEM",
-	BPF_MAP_UPDATE_ELEM:             "BPF_MAP_UPDATE_ELEM",
-	BPF_MAP_DELETE_ELEM:             "BPF_MAP_DELETE_ELEM",
-	BPF_MAP_GET_NEXT_KEY:            "BPF_MAP_GET_NEXT_KEY",
-	BPF_PROG_LOAD:                   "BPF_PROG_LOAD",
-	BPF_OBJ_PIN:                     "BPF_OBJ_PIN",
-	BPF_OBJ_GET:                     "BPF_OBJ_GET",
-	BPF_PROG_ATTACH:                 "BPF_PROG_ATTACH",
-	BPF_PROG_DETACH:                 "BPF_PROG_DETACH",
-	BPF_PROG_TEST_RUN:               "BPF_PROG_TEST_RUN",
-	BPF_PROG_GET_NEXT_ID:            "BPF_PROG_GET_NEXT_ID",
-	BPF_MAP_GET_NEXT_ID:             "BPF_MAP_GET_NEXT_ID",
-	BPF_PROG_GET_FD_BY_ID:           "BPF_PROG_GET_FD_BY_ID",
-	BPF_MAP_GET_FD_BY_ID:            "BPF_MAP_GET_FD_BY_ID",
-	BPF_OBJ_GET_INFO_BY_FD:          "BPF_OBJ_GET_INFO_BY_FD",
-	BPF_PROG_QUERY:                  "BPF_PROG_QUERY",
-	BPF_RAW_TRACEPOINT_OPEN:         "BPF_RAW_TRACEPOINT_OPEN",
-	BPF_BTF_LOAD:                    "BPF_BTF_LOAD",
-	BPF_BTF_GET_FD_BY_ID:            "BPF_BTF_GET_FD_BY_ID",
-	BPF_TASK_FD_QUERY:               "BPF_TASK_FD_QUERY",
-	BPF_MAP_LOOKUP_AND_DELETE_ELEM:  "BPF_MAP_LOOKUP_AND_DELETE_ELEM",
-	BPF_MAP_FREEZE:                  "BPF_MAP_FREEZE",
-	BPF_BTF_GET_NEXT_ID:             "BPF_BTF_GET_NEXT_ID",
-	BPF_MAP_LOOKUP_BATCH:            "BPF_MAP_LOOKUP_BATCH",
-	BPF_MAP_LOOKUP_AND_DELETE_BATCH: "BPF_MAP_LOOKUP_AND_DELETE_BATCH",
-	BPF_MAP_UPDATE_BATCH:            "BPF_MAP_UPDATE_BATCH",
-	BPF_MAP_DELETE_BATCH:            "BPF_MAP_DELETE_BATCH",
-	BPF_LINK_CREATE:                 "BPF_LINK_CREATE",
-	BPF_LINK_UPDATE:                 "BPF_LINK_UPDATE",
-	BPF_LINK_GET_FD_BY_ID:           "BPF_LINK_GET_FD_BY_ID",
-	BPF_LINK_GET_NEXT_ID:            "BPF_LINK_GET_NEXT_ID",
-	BPF_ENABLE_STATS:                "BPF_ENABLE_STATS",
-	BPF_ITER_CREATE:                 "BPF_ITER_CREATE",
-	BPF_LINK_DETACH:                 "BPF_LINK_DETACH",
+var bpfCmdValues = []SystemFunctionArgument{
+	BPF_MAP_CREATE,
+	BPF_MAP_LOOKUP_ELEM,
+	BPF_MAP_UPDATE_ELEM,
+	BPF_MAP_DELETE_ELEM,
+	BPF_MAP_GET_NEXT_KEY,
+	BPF_PROG_LOAD,
+	BPF_OBJ_PIN,
+	BPF_OBJ_GET,
+	BPF_PROG_ATTACH,
+	BPF_PROG_DETACH,
+	BPF_PROG_TEST_RUN,
+	BPF_PROG_GET_NEXT_ID,
+	BPF_MAP_GET_NEXT_ID,
+	BPF_PROG_GET_FD_BY_ID,
+	BPF_MAP_GET_FD_BY_ID,
+	BPF_OBJ_GET_INFO_BY_FD,
+	BPF_PROG_QUERY,
+	BPF_RAW_TRACEPOINT_OPEN,
+	BPF_BTF_LOAD,
+	BPF_BTF_GET_FD_BY_ID,
+	BPF_TASK_FD_QUERY,
+	BPF_MAP_LOOKUP_AND_DELETE_ELEM,
+	BPF_MAP_FREEZE,
+	BPF_BTF_GET_NEXT_ID,
+	BPF_MAP_LOOKUP_BATCH,
+	BPF_MAP_LOOKUP_AND_DELETE_BATCH,
+	BPF_MAP_UPDATE_BATCH,
+	BPF_MAP_DELETE_BATCH,
+	BPF_LINK_CREATE,
+	BPF_LINK_UPDATE,
+	BPF_LINK_GET_FD_BY_ID,
+	BPF_LINK_GET_NEXT_ID,
+	BPF_ENABLE_STATS,
+	BPF_ITER_CREATE,
+	BPF_LINK_DETACH,
+	BPF_PROG_BIND_MAP,
+	BPF_TOKEN_CREATE,
 }
 
-// String parses the `cmd` argument of the `bpf` syscall
-// https://man7.org/linux/man-pages/man2/bpf.2.html
-func (b BPFCommandArgument) String() string {
-	var res string
-	if cmdName, ok := bpfCmdStringMap[b]; ok {
-		res = cmdName
-	} else {
-		res = strconv.Itoa(int(b))
-	}
-
-	return res
-}
-
-var bpfCmdMap = map[uint64]BPFCommandArgument{
-	BPF_MAP_CREATE.Value():                  BPF_MAP_CREATE,
-	BPF_MAP_LOOKUP_ELEM.Value():             BPF_MAP_LOOKUP_ELEM,
-	BPF_MAP_UPDATE_ELEM.Value():             BPF_MAP_UPDATE_ELEM,
-	BPF_MAP_DELETE_ELEM.Value():             BPF_MAP_DELETE_ELEM,
-	BPF_MAP_GET_NEXT_KEY.Value():            BPF_MAP_GET_NEXT_KEY,
-	BPF_PROG_LOAD.Value():                   BPF_PROG_LOAD,
-	BPF_OBJ_PIN.Value():                     BPF_OBJ_PIN,
-	BPF_OBJ_GET.Value():                     BPF_OBJ_GET,
-	BPF_PROG_ATTACH.Value():                 BPF_PROG_ATTACH,
-	BPF_PROG_DETACH.Value():                 BPF_PROG_DETACH,
-	BPF_PROG_TEST_RUN.Value():               BPF_PROG_TEST_RUN,
-	BPF_PROG_GET_NEXT_ID.Value():            BPF_PROG_GET_NEXT_ID,
-	BPF_MAP_GET_NEXT_ID.Value():             BPF_MAP_GET_NEXT_ID,
-	BPF_PROG_GET_FD_BY_ID.Value():           BPF_PROG_GET_FD_BY_ID,
-	BPF_MAP_GET_FD_BY_ID.Value():            BPF_MAP_GET_FD_BY_ID,
-	BPF_OBJ_GET_INFO_BY_FD.Value():          BPF_OBJ_GET_INFO_BY_FD,
-	BPF_PROG_QUERY.Value():                  BPF_PROG_QUERY,
-	BPF_RAW_TRACEPOINT_OPEN.Value():         BPF_RAW_TRACEPOINT_OPEN,
-	BPF_BTF_LOAD.Value():                    BPF_BTF_LOAD,
-	BPF_BTF_GET_FD_BY_ID.Value():            BPF_BTF_GET_FD_BY_ID,
-	BPF_TASK_FD_QUERY.Value():               BPF_TASK_FD_QUERY,
-	BPF_MAP_LOOKUP_AND_DELETE_ELEM.Value():  BPF_MAP_LOOKUP_AND_DELETE_ELEM,
-	BPF_MAP_FREEZE.Value():                  BPF_MAP_FREEZE,
-	BPF_BTF_GET_NEXT_ID.Value():             BPF_BTF_GET_NEXT_ID,
-	BPF_MAP_LOOKUP_BATCH.Value():            BPF_MAP_LOOKUP_BATCH,
-	BPF_MAP_LOOKUP_AND_DELETE_BATCH.Value(): BPF_MAP_LOOKUP_AND_DELETE_BATCH,
-	BPF_MAP_UPDATE_BATCH.Value():            BPF_MAP_UPDATE_BATCH,
-	BPF_MAP_DELETE_BATCH.Value():            BPF_MAP_DELETE_BATCH,
-	BPF_LINK_CREATE.Value():                 BPF_LINK_CREATE,
-	BPF_LINK_UPDATE.Value():                 BPF_LINK_UPDATE,
-	BPF_LINK_GET_FD_BY_ID.Value():           BPF_LINK_GET_FD_BY_ID,
-	BPF_LINK_GET_NEXT_ID.Value():            BPF_LINK_GET_NEXT_ID,
-	BPF_ENABLE_STATS.Value():                BPF_ENABLE_STATS,
-	BPF_ITER_CREATE.Value():                 BPF_ITER_CREATE,
-	BPF_LINK_DETACH.Value():                 BPF_LINK_DETACH,
-}
+var (
+	BPF_FIRST_BPF = BPF_MAP_CREATE.Value()
+	BPF_LAST_BPF  = BPF_TOKEN_CREATE.Value()
+)
 
 // ParseBPFCmd parses the raw value of the `cmd` argument of the `bpf` syscall
 // https://man7.org/linux/man-pages/man2/bpf.2.html
-func ParseBPFCmd(cmd uint64) (BPFCommandArgument, error) {
-	v, ok := bpfCmdMap[cmd]
-	if !ok {
-		return 0, fmt.Errorf("not a valid  BPF command argument: %d", cmd)
+func ParseBPFCmd(cmd uint64) (string, error) {
+	if cmd > BPF_LAST_BPF {
+		return "", fmt.Errorf("not a valid bpf command value: %d", cmd)
 	}
-	return v, nil
+
+	idx := int(cmd - BPF_FIRST_BPF)
+	return bpfCmdValues[idx].String(), nil
 }
-
-type PtraceRequestArgument uint64
-
-// revive:disable
 
 var (
-	PTRACE_TRACEME              PtraceRequestArgument = 0
-	PTRACE_PEEKTEXT             PtraceRequestArgument = 1
-	PTRACE_PEEKDATA             PtraceRequestArgument = 2
-	PTRACE_PEEKUSER             PtraceRequestArgument = 3
-	PTRACE_POKETEXT             PtraceRequestArgument = 4
-	PTRACE_POKEDATA             PtraceRequestArgument = 5
-	PTRACE_POKEUSER             PtraceRequestArgument = 6
-	PTRACE_CONT                 PtraceRequestArgument = 7
-	PTRACE_KILL                 PtraceRequestArgument = 8
-	PTRACE_SINGLESTEP           PtraceRequestArgument = 9
-	PTRACE_GETREGS              PtraceRequestArgument = 12
-	PTRACE_SETREGS              PtraceRequestArgument = 13
-	PTRACE_GETFPREGS            PtraceRequestArgument = 14
-	PTRACE_SETFPREGS            PtraceRequestArgument = 15
-	PTRACE_ATTACH               PtraceRequestArgument = 16
-	PTRACE_DETACH               PtraceRequestArgument = 17
-	PTRACE_GETFPXREGS           PtraceRequestArgument = 18
-	PTRACE_SETFPXREGS           PtraceRequestArgument = 19
-	PTRACE_SYSCALL              PtraceRequestArgument = 24
-	PTRACE_SETOPTIONS           PtraceRequestArgument = 0x4200
-	PTRACE_GETEVENTMSG          PtraceRequestArgument = 0x4201
-	PTRACE_GETSIGINFO           PtraceRequestArgument = 0x4202
-	PTRACE_SETSIGINFO           PtraceRequestArgument = 0x4203
-	PTRACE_GETREGSET            PtraceRequestArgument = 0x4204
-	PTRACE_SETREGSET            PtraceRequestArgument = 0x4205
-	PTRACE_SEIZE                PtraceRequestArgument = 0x4206
-	PTRACE_INTERRUPT            PtraceRequestArgument = 0x4207
-	PTRACE_LISTEN               PtraceRequestArgument = 0x4208
-	PTRACE_PEEKSIGINFO          PtraceRequestArgument = 0x4209
-	PTRACE_GETSIGMASK           PtraceRequestArgument = 0x420a
-	PTRACE_SETSIGMASK           PtraceRequestArgument = 0x420b
-	PTRACE_SECCOMP_GET_FILTER   PtraceRequestArgument = 0x420c
-	PTRACE_SECCOMP_GET_METADATA PtraceRequestArgument = 0x420d
-	PTRACE_GET_SYSCALL_INFO     PtraceRequestArgument = 0x420e
+	// from linux/ptrace.h and sys/ptrace.h
+	// NOT sequential values
+	PTRACE_TRACEME    = SystemFunctionArgument{rawValue: 0, stringValue: "PTRACE_TRACEME"}
+	PTRACE_PEEKTEXT   = SystemFunctionArgument{rawValue: 1, stringValue: "PTRACE_PEEKTEXT"}
+	PTRACE_PEEKDATA   = SystemFunctionArgument{rawValue: 2, stringValue: "PTRACE_PEEKDATA"}
+	PTRACE_PEEKUSR    = SystemFunctionArgument{rawValue: 3, stringValue: "PTRACE_PEEKUSER"}
+	PTRACE_POKETEXT   = SystemFunctionArgument{rawValue: 4, stringValue: "PTRACE_POKETEXT"}
+	PTRACE_POKEDATA   = SystemFunctionArgument{rawValue: 5, stringValue: "PTRACE_POKEDATA"}
+	PTRACE_POKEUSR    = SystemFunctionArgument{rawValue: 6, stringValue: "PTRACE_POKEUSER"}
+	PTRACE_CONT       = SystemFunctionArgument{rawValue: 7, stringValue: "PTRACE_CONT"}
+	PTRACE_KILL       = SystemFunctionArgument{rawValue: 8, stringValue: "PTRACE_KILL"}
+	PTRACE_SINGLESTEP = SystemFunctionArgument{rawValue: 9, stringValue: "PTRACE_SINGLESTEP"}
+	// gap
+	PTRACE_ATTACH = SystemFunctionArgument{rawValue: 16, stringValue: "PTRACE_ATTACH"}
+	PTRACE_DETACH = SystemFunctionArgument{rawValue: 17, stringValue: "PTRACE_DETACH"}
+	// gap
+	PTRACE_SYSCALL = SystemFunctionArgument{rawValue: 24, stringValue: "PTRACE_SYSCALL"}
+	// gap
+	PTRACE_SYSEMU            = SystemFunctionArgument{rawValue: 31, stringValue: "PTRACE_SYSEMU"}
+	PTRACE_SYSEMU_SINGLESTEP = SystemFunctionArgument{rawValue: 32, stringValue: "PTRACE_SYSEMU_SINGLESTEP"}
+	// gap
+	PTRACE_SETOPTIONS             = SystemFunctionArgument{rawValue: 0x4200, stringValue: "PTRACE_SETOPTIONS"}
+	PTRACE_GETEVENTMSG            = SystemFunctionArgument{rawValue: 0x4201, stringValue: "PTRACE_GETEVENTMSG"}
+	PTRACE_GETSIGINFO             = SystemFunctionArgument{rawValue: 0x4202, stringValue: "PTRACE_GETSIGINFO"}
+	PTRACE_SETSIGINFO             = SystemFunctionArgument{rawValue: 0x4203, stringValue: "PTRACE_SETSIGINFO"}
+	PTRACE_GETREGSET              = SystemFunctionArgument{rawValue: 0x4204, stringValue: "PTRACE_GETREGSET"}
+	PTRACE_SETREGSET              = SystemFunctionArgument{rawValue: 0x4205, stringValue: "PTRACE_SETREGSET"}
+	PTRACE_SEIZE                  = SystemFunctionArgument{rawValue: 0x4206, stringValue: "PTRACE_SEIZE"}
+	PTRACE_INTERRUPT              = SystemFunctionArgument{rawValue: 0x4207, stringValue: "PTRACE_INTERRUPT"}
+	PTRACE_LISTEN                 = SystemFunctionArgument{rawValue: 0x4208, stringValue: "PTRACE_LISTEN"}
+	PTRACE_PEEKSIGINFO            = SystemFunctionArgument{rawValue: 0x4209, stringValue: "PTRACE_PEEKSIGINFO"}
+	PTRACE_GETSIGMASK             = SystemFunctionArgument{rawValue: 0x420a, stringValue: "PTRACE_GETSIGMASK"}
+	PTRACE_SETSIGMASK             = SystemFunctionArgument{rawValue: 0x420b, stringValue: "PTRACE_SETSIGMASK"}
+	PTRACE_SECCOMP_GET_FILTER     = SystemFunctionArgument{rawValue: 0x420c, stringValue: "PTRACE_SECCOMP_GET_FILTER"}
+	PTRACE_SECCOMP_GET_METADATA   = SystemFunctionArgument{rawValue: 0x420d, stringValue: "PTRACE_SECCOMP_GET_METADATA"}
+	PTRACE_GET_SYSCALL_INFO       = SystemFunctionArgument{rawValue: 0x420e, stringValue: "PTRACE_GET_SYSCALL_INFO"}
+	PTRACE_GET_RSEQ_CONFIGURATION = SystemFunctionArgument{rawValue: 0x420f, stringValue: "PTRACE_GET_RSEQ_CONFIGURATION"}
 )
 
-// revive:enable
-
-func (p PtraceRequestArgument) Value() uint64 { return uint64(p) }
-
-var ptraceRequestStringMap = map[PtraceRequestArgument]string{
-	PTRACE_TRACEME:              "PTRACE_TRACEME",
-	PTRACE_PEEKTEXT:             "PTRACE_PEEKTEXT",
-	PTRACE_PEEKDATA:             "PTRACE_PEEKDATA",
-	PTRACE_PEEKUSER:             "PTRACE_PEEKUSER",
-	PTRACE_POKETEXT:             "PTRACE_POKETEXT",
-	PTRACE_POKEDATA:             "PTRACE_POKEDATA",
-	PTRACE_POKEUSER:             "PTRACE_POKEUSER",
-	PTRACE_CONT:                 "PTRACE_CONT",
-	PTRACE_KILL:                 "PTRACE_KILL",
-	PTRACE_SINGLESTEP:           "PTRACE_SINGLESTEP",
-	PTRACE_GETREGS:              "PTRACE_GETREGS",
-	PTRACE_SETREGS:              "PTRACE_SETREGS",
-	PTRACE_GETFPREGS:            "PTRACE_GETFPREGS",
-	PTRACE_SETFPREGS:            "PTRACE_SETFPREGS",
-	PTRACE_ATTACH:               "PTRACE_ATTACH",
-	PTRACE_DETACH:               "PTRACE_DETACH",
-	PTRACE_GETFPXREGS:           "PTRACE_GETFPXREGS",
-	PTRACE_SETFPXREGS:           "PTRACE_SETFPXREGS",
-	PTRACE_SYSCALL:              "PTRACE_SYSCALL",
-	PTRACE_SETOPTIONS:           "PTRACE_SETOPTIONS",
-	PTRACE_GETEVENTMSG:          "PTRACE_GETEVENTMSG",
-	PTRACE_GETSIGINFO:           "PTRACE_GETSIGINFO",
-	PTRACE_SETSIGINFO:           "PTRACE_SETSIGINFO",
-	PTRACE_GETREGSET:            "PTRACE_GETREGSET",
-	PTRACE_SETREGSET:            "PTRACE_SETREGSET",
-	PTRACE_SEIZE:                "PTRACE_SEIZE",
-	PTRACE_INTERRUPT:            "PTRACE_INTERRUPT",
-	PTRACE_LISTEN:               "PTRACE_LISTEN",
-	PTRACE_PEEKSIGINFO:          "PTRACE_PEEKSIGINFO",
-	PTRACE_GETSIGMASK:           "PTRACE_GETSIGMASK",
-	PTRACE_SETSIGMASK:           "PTRACE_SETSIGMASK",
-	PTRACE_SECCOMP_GET_FILTER:   "PTRACE_SECCOMP_GET_FILTER",
-	PTRACE_SECCOMP_GET_METADATA: "PTRACE_SECCOMP_GET_METADATA",
-	PTRACE_GET_SYSCALL_INFO:     "PTRACE_GET_SYSCALL_INFO",
-}
-
-func (p PtraceRequestArgument) String() string {
-	var res string
-	if reqName, ok := ptraceRequestStringMap[p]; ok {
-		res = reqName
-	} else {
-		res = strconv.Itoa(int(p))
+func ParsePtraceRequestArgument(request uint64) (string, error) {
+	for idx := range ptraceRequestValues {
+		if ptraceRequestValues[idx].Value() == request {
+			return ptraceRequestValues[idx].String(), nil
+		}
 	}
 
-	return res
+	return "", fmt.Errorf("not a valid ptrace request value: %d", request)
 }
 
-var ptraceRequestArgMap = map[uint64]PtraceRequestArgument{
-	PTRACE_TRACEME.Value():              PTRACE_TRACEME,
-	PTRACE_PEEKTEXT.Value():             PTRACE_PEEKTEXT,
-	PTRACE_PEEKDATA.Value():             PTRACE_PEEKDATA,
-	PTRACE_PEEKUSER.Value():             PTRACE_PEEKUSER,
-	PTRACE_POKETEXT.Value():             PTRACE_POKETEXT,
-	PTRACE_POKEDATA.Value():             PTRACE_POKEDATA,
-	PTRACE_POKEUSER.Value():             PTRACE_POKEUSER,
-	PTRACE_CONT.Value():                 PTRACE_CONT,
-	PTRACE_KILL.Value():                 PTRACE_KILL,
-	PTRACE_SINGLESTEP.Value():           PTRACE_SINGLESTEP,
-	PTRACE_GETREGS.Value():              PTRACE_GETREGS,
-	PTRACE_SETREGS.Value():              PTRACE_SETREGS,
-	PTRACE_GETFPREGS.Value():            PTRACE_GETFPREGS,
-	PTRACE_SETFPREGS.Value():            PTRACE_SETFPREGS,
-	PTRACE_ATTACH.Value():               PTRACE_ATTACH,
-	PTRACE_DETACH.Value():               PTRACE_DETACH,
-	PTRACE_GETFPXREGS.Value():           PTRACE_GETFPXREGS,
-	PTRACE_SETFPXREGS.Value():           PTRACE_SETFPXREGS,
-	PTRACE_SYSCALL.Value():              PTRACE_SYSCALL,
-	PTRACE_SETOPTIONS.Value():           PTRACE_SETOPTIONS,
-	PTRACE_GETEVENTMSG.Value():          PTRACE_GETEVENTMSG,
-	PTRACE_GETSIGINFO.Value():           PTRACE_GETSIGINFO,
-	PTRACE_SETSIGINFO.Value():           PTRACE_SETSIGINFO,
-	PTRACE_GETREGSET.Value():            PTRACE_GETREGSET,
-	PTRACE_SETREGSET.Value():            PTRACE_SETREGSET,
-	PTRACE_SEIZE.Value():                PTRACE_SEIZE,
-	PTRACE_INTERRUPT.Value():            PTRACE_INTERRUPT,
-	PTRACE_LISTEN.Value():               PTRACE_LISTEN,
-	PTRACE_PEEKSIGINFO.Value():          PTRACE_PEEKSIGINFO,
-	PTRACE_GETSIGMASK.Value():           PTRACE_GETSIGMASK,
-	PTRACE_SETSIGMASK.Value():           PTRACE_SETSIGMASK,
-	PTRACE_SECCOMP_GET_FILTER.Value():   PTRACE_SECCOMP_GET_FILTER,
-	PTRACE_SECCOMP_GET_METADATA.Value(): PTRACE_SECCOMP_GET_METADATA,
-	PTRACE_GET_SYSCALL_INFO.Value():     PTRACE_GET_SYSCALL_INFO,
-}
-
-func ParsePtraceRequestArgument(rawValue uint64) (PtraceRequestArgument, error) {
-	if reqName, ok := ptraceRequestArgMap[rawValue]; ok {
-		return reqName, nil
-	}
-	return 0, fmt.Errorf("not a valid ptrace request value: %d", rawValue)
-}
-
-type SocketcallCallArgument uint64
-
-const (
-	SYS_SOCKET SocketcallCallArgument = iota + 1
-	SYS_BIND
-	SYS_CONNECT
-	SYS_LISTEN
-	SYS_ACCEPT
-	SYS_GETSOCKNAME
-	SYS_GETPEERNAME
-	SYS_SOCKETPAIR
-	SYS_SEND
-	SYS_RECV
-	SYS_SENDTO
-	SYS_RECVFROM
-	SYS_SHUTDOWN
-	SYS_SETSOCKOPT
-	SYS_GETSOCKOPT
-	SYS_SENDMSG
-	SYS_RECVMSG
-	SYS_ACCEPT4
-	SYS_RECVMMSG
-	SYS_SENDMMSG
+var (
+	// from linux/net.h
+	// sequential values starting from 1
+	SYS_SOCKET      = SystemFunctionArgument{rawValue: 1, stringValue: "SYS_SOCKET"}
+	SYS_BIND        = SystemFunctionArgument{rawValue: 2, stringValue: "SYS_BIND"}
+	SYS_CONNECT     = SystemFunctionArgument{rawValue: 3, stringValue: "SYS_CONNECT"}
+	SYS_LISTEN      = SystemFunctionArgument{rawValue: 4, stringValue: "SYS_LISTEN"}
+	SYS_ACCEPT      = SystemFunctionArgument{rawValue: 5, stringValue: "SYS_ACCEPT"}
+	SYS_GETSOCKNAME = SystemFunctionArgument{rawValue: 6, stringValue: "SYS_GETSOCKNAME"}
+	SYS_GETPEERNAME = SystemFunctionArgument{rawValue: 7, stringValue: "SYS_GETPEERNAME"}
+	SYS_SOCKETPAIR  = SystemFunctionArgument{rawValue: 8, stringValue: "SYS_SOCKETPAIR"}
+	SYS_SEND        = SystemFunctionArgument{rawValue: 9, stringValue: "SYS_SEND"}
+	SYS_RECV        = SystemFunctionArgument{rawValue: 10, stringValue: "SYS_RECV"}
+	SYS_SENDTO      = SystemFunctionArgument{rawValue: 11, stringValue: "SYS_SENDTO"}
+	SYS_RECVFROM    = SystemFunctionArgument{rawValue: 12, stringValue: "SYS_RECVFROM"}
+	SYS_SHUTDOWN    = SystemFunctionArgument{rawValue: 13, stringValue: "SYS_SHUTDOWN"}
+	SYS_SETSOCKOPT  = SystemFunctionArgument{rawValue: 14, stringValue: "SYS_SETSOCKOPT"}
+	SYS_GETSOCKOPT  = SystemFunctionArgument{rawValue: 15, stringValue: "SYS_GETSOCKOPT"}
+	SYS_SENDMSG     = SystemFunctionArgument{rawValue: 16, stringValue: "SYS_SENDMSG"}
+	SYS_RECVMSG     = SystemFunctionArgument{rawValue: 17, stringValue: "SYS_RECVMSG"}
+	SYS_ACCEPT4     = SystemFunctionArgument{rawValue: 18, stringValue: "SYS_ACCEPT4"}
+	SYS_RECVMMSG    = SystemFunctionArgument{rawValue: 19, stringValue: "SYS_RECVMMSG"}
+	SYS_SENDMMSG    = SystemFunctionArgument{rawValue: 20, stringValue: "SYS_SENDMMSG"}
 )
 
-func (s SocketcallCallArgument) Value() uint64 {
-	return uint64(s)
+var sysNetValues = []SystemFunctionArgument{
+	SYS_SOCKET,
+	SYS_BIND,
+	SYS_CONNECT,
+	SYS_LISTEN,
+	SYS_ACCEPT,
+	SYS_GETSOCKNAME,
+	SYS_GETPEERNAME,
+	SYS_SOCKETPAIR,
+	SYS_SEND,
+	SYS_RECV,
+	SYS_SENDTO,
+	SYS_RECVFROM,
+	SYS_SHUTDOWN,
+	SYS_SETSOCKOPT,
+	SYS_GETSOCKOPT,
+	SYS_SENDMSG,
+	SYS_RECVMSG,
+	SYS_ACCEPT4,
+	SYS_RECVMMSG,
+	SYS_SENDMMSG,
 }
 
-var socketcallCallStringMap = map[SocketcallCallArgument]string{
-	SYS_SOCKET:      "SYS_SOCKET",
-	SYS_BIND:        "SYS_BIND",
-	SYS_CONNECT:     "SYS_CONNECT",
-	SYS_LISTEN:      "SYS_LISTEN",
-	SYS_ACCEPT:      "SYS_ACCEPT",
-	SYS_GETSOCKNAME: "SYS_GETSOCKNAME",
-	SYS_GETPEERNAME: "SYS_GETPEERNAME",
-	SYS_SOCKETPAIR:  "SYS_SOCKETPAIR",
-	SYS_SEND:        "SYS_SEND",
-	SYS_RECV:        "SYS_RECV",
-	SYS_SENDTO:      "SYS_SENDTO",
-	SYS_RECVFROM:    "SYS_RECVFROM",
-	SYS_SHUTDOWN:    "SYS_SHUTDOWN",
-	SYS_SETSOCKOPT:  "SYS_SETSOCKOPT",
-	SYS_GETSOCKOPT:  "SYS_GETSOCKOPT",
-	SYS_SENDMSG:     "SYS_SENDMSG",
-	SYS_RECVMSG:     "SYS_RECVMSG",
-	SYS_ACCEPT4:     "SYS_ACCEPT4",
-	SYS_RECVMMSG:    "SYS_RECVMMSG",
-	SYS_SENDMMSG:    "SYS_SENDMMSG",
-}
-
-func (s SocketcallCallArgument) String() string {
-	var res string
-
-	if sdName, ok := socketcallCallStringMap[s]; ok {
-		res = sdName
-	} else {
-		res = strconv.Itoa(int(s))
-	}
-
-	return res
-}
-
-var socketcallCallMap = map[uint64]SocketcallCallArgument{
-	SYS_SOCKET.Value():      SYS_SOCKET,
-	SYS_BIND.Value():        SYS_BIND,
-	SYS_CONNECT.Value():     SYS_CONNECT,
-	SYS_LISTEN.Value():      SYS_LISTEN,
-	SYS_ACCEPT.Value():      SYS_ACCEPT,
-	SYS_GETSOCKNAME.Value(): SYS_GETSOCKNAME,
-	SYS_GETPEERNAME.Value(): SYS_GETPEERNAME,
-	SYS_SOCKETPAIR.Value():  SYS_SOCKETPAIR,
-	SYS_SEND.Value():        SYS_SEND,
-	SYS_RECV.Value():        SYS_RECV,
-	SYS_SENDTO.Value():      SYS_SENDTO,
-	SYS_RECVFROM.Value():    SYS_RECVFROM,
-	SYS_SHUTDOWN.Value():    SYS_SHUTDOWN,
-	SYS_SETSOCKOPT.Value():  SYS_SETSOCKOPT,
-	SYS_GETSOCKOPT.Value():  SYS_GETSOCKOPT,
-	SYS_SENDMSG.Value():     SYS_SENDMSG,
-	SYS_RECVMSG.Value():     SYS_RECVMSG,
-	SYS_ACCEPT4.Value():     SYS_ACCEPT4,
-	SYS_RECVMMSG.Value():    SYS_RECVMMSG,
-	SYS_SENDMMSG.Value():    SYS_SENDMMSG,
-}
+var (
+	SYS_NET_FIRST = SYS_SOCKET.Value()
+	SYS_NET_LAST  = SYS_SENDMMSG.Value()
+)
 
 // ParseSocketcallCall parses the `call` argument of the `socketcall` syscall
 // http://man7.org/linux/man-pages/man2/socketcall.2.html
 // https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/net.h
-func ParseSocketcallCall(rawValue uint64) (SocketcallCallArgument, error) {
-	if v, ok := socketcallCallMap[rawValue]; ok {
-		return v, nil
+func ParseSocketcallCall(call uint64) (string, error) {
+	if call > SYS_NET_LAST {
+		return "", fmt.Errorf("not a valid socketcall call value: %d", call)
 	}
 
-	return 0, fmt.Errorf("not a valid socketcall call value: %d", rawValue)
+	idx := int(call - SYS_NET_FIRST)
+	return sysNetValues[idx].String(), nil
 }
 
-type SocketDomainArgument uint64
-
-const (
-	AF_UNSPEC SocketDomainArgument = iota
-	AF_UNIX
-	AF_INET
-	AF_AX25
-	AF_IPX
-	AF_APPLETALK
-	AF_NETROM
-	AF_BRIDGE
-	AF_ATMPVC
-	AF_X25
-	AF_INET6
-	AF_ROSE
-	AF_DECnet
-	AF_NETBEUI
-	AF_SECURITY
-	AF_KEY
-	AF_NETLINK
-	AF_PACKET
-	AF_ASH
-	AF_ECONET
-	AF_ATMSVC
-	AF_RDS
-	AF_SNA
-	AF_IRDA
-	AF_PPPOX
-	AF_WANPIPE
-	AF_LLC
-	AF_IB
-	AF_MPLS
-	AF_CAN
-	AF_TIPC
-	AF_BLUETOOTH
-	AF_IUCV
-	AF_RXRPC
-	AF_ISDN
-	AF_PHONET
-	AF_IEEE802154
-	AF_CAIF
-	AF_ALG
-	AF_NFC
-	AF_VSOCK
-	AF_KCM
-	AF_QIPCRTR
-	AF_SMC
-	AF_XDP
+var (
+	// from bits/socket.h via sys/socket.h
+	// sequential values starting from 0
+	AF_UNSPEC     = SystemFunctionArgument{rawValue: 0, stringValue: "AF_UNSPEC"}
+	AF_UNIX       = SystemFunctionArgument{rawValue: 1, stringValue: "AF_UNIX"}
+	AF_INET       = SystemFunctionArgument{rawValue: 2, stringValue: "AF_INET"}
+	AF_AX25       = SystemFunctionArgument{rawValue: 3, stringValue: "AF_AX25"}
+	AF_IPX        = SystemFunctionArgument{rawValue: 4, stringValue: "AF_IPX"}
+	AF_APPLETALK  = SystemFunctionArgument{rawValue: 5, stringValue: "AF_APPLETALK"}
+	AF_NETROM     = SystemFunctionArgument{rawValue: 6, stringValue: "AF_NETROM"}
+	AF_BRIDGE     = SystemFunctionArgument{rawValue: 7, stringValue: "AF_BRIDGE"}
+	AF_ATMPVC     = SystemFunctionArgument{rawValue: 8, stringValue: "AF_ATMPVC"}
+	AF_X25        = SystemFunctionArgument{rawValue: 9, stringValue: "AF_X25"}
+	AF_INET6      = SystemFunctionArgument{rawValue: 10, stringValue: "AF_INET6"}
+	AF_ROSE       = SystemFunctionArgument{rawValue: 11, stringValue: "AF_ROSE"}
+	AF_DECnet     = SystemFunctionArgument{rawValue: 12, stringValue: "AF_DECnet"}
+	AF_NETBEUI    = SystemFunctionArgument{rawValue: 13, stringValue: "AF_NETBEUI"}
+	AF_SECURITY   = SystemFunctionArgument{rawValue: 14, stringValue: "AF_SECURITY"}
+	AF_KEY        = SystemFunctionArgument{rawValue: 15, stringValue: "AF_KEY"}
+	AF_NETLINK    = SystemFunctionArgument{rawValue: 16, stringValue: "AF_NETLINK"}
+	AF_PACKET     = SystemFunctionArgument{rawValue: 17, stringValue: "AF_PACKET"}
+	AF_ASH        = SystemFunctionArgument{rawValue: 18, stringValue: "AF_ASH"}
+	AF_ECONET     = SystemFunctionArgument{rawValue: 19, stringValue: "AF_ECONET"}
+	AF_ATMSVC     = SystemFunctionArgument{rawValue: 20, stringValue: "AF_ATMSVC"}
+	AF_RDS        = SystemFunctionArgument{rawValue: 21, stringValue: "AF_RDS"}
+	AF_SNA        = SystemFunctionArgument{rawValue: 22, stringValue: "AF_SNA"}
+	AF_IRDA       = SystemFunctionArgument{rawValue: 23, stringValue: "AF_IRDA"}
+	AF_PPPOX      = SystemFunctionArgument{rawValue: 24, stringValue: "AF_PPPOX"}
+	AF_WANPIPE    = SystemFunctionArgument{rawValue: 25, stringValue: "AF_WANPIPE"}
+	AF_LLC        = SystemFunctionArgument{rawValue: 26, stringValue: "AF_LLC"}
+	AF_IB         = SystemFunctionArgument{rawValue: 27, stringValue: "AF_IB"}
+	AF_MPLS       = SystemFunctionArgument{rawValue: 28, stringValue: "AF_MPLS"}
+	AF_CAN        = SystemFunctionArgument{rawValue: 29, stringValue: "AF_CAN"}
+	AF_TIPC       = SystemFunctionArgument{rawValue: 30, stringValue: "AF_TIPC"}
+	AF_BLUETOOTH  = SystemFunctionArgument{rawValue: 31, stringValue: "AF_BLUETOOTH"}
+	AF_IUCV       = SystemFunctionArgument{rawValue: 32, stringValue: "AF_IUCV"}
+	AF_RXRPC      = SystemFunctionArgument{rawValue: 33, stringValue: "AF_RXRPC"}
+	AF_ISDN       = SystemFunctionArgument{rawValue: 34, stringValue: "AF_ISDN"}
+	AF_PHONET     = SystemFunctionArgument{rawValue: 35, stringValue: "AF_PHONET"}
+	AF_IEEE802154 = SystemFunctionArgument{rawValue: 36, stringValue: "AF_IEEE802154"}
+	AF_CAIF       = SystemFunctionArgument{rawValue: 37, stringValue: "AF_CAIF"}
+	AF_ALG        = SystemFunctionArgument{rawValue: 38, stringValue: "AF_ALG"}
+	AF_NFC        = SystemFunctionArgument{rawValue: 39, stringValue: "AF_NFC"}
+	AF_VSOCK      = SystemFunctionArgument{rawValue: 40, stringValue: "AF_VSOCK"}
+	AF_KCM        = SystemFunctionArgument{rawValue: 41, stringValue: "AF_KCM"}
+	AF_QIPCRTR    = SystemFunctionArgument{rawValue: 42, stringValue: "AF_QIPCRTR"}
+	AF_SMC        = SystemFunctionArgument{rawValue: 43, stringValue: "AF_SMC"}
+	AF_XDP        = SystemFunctionArgument{rawValue: 44, stringValue: "AF_XDP"}
+	AF_MCTP       = SystemFunctionArgument{rawValue: 45, stringValue: "AF_MCTP"}
 )
 
-func (s SocketDomainArgument) Value() uint64 { return uint64(s) }
-
-var socketDomainStringMap = map[SocketDomainArgument]string{
-	AF_UNSPEC:     "AF_UNSPEC",
-	AF_UNIX:       "AF_UNIX",
-	AF_INET:       "AF_INET",
-	AF_AX25:       "AF_AX25",
-	AF_IPX:        "AF_IPX",
-	AF_APPLETALK:  "AF_APPLETALK",
-	AF_NETROM:     "AF_NETROM",
-	AF_BRIDGE:     "AF_BRIDGE",
-	AF_ATMPVC:     "AF_ATMPVC",
-	AF_X25:        "AF_X25",
-	AF_INET6:      "AF_INET6",
-	AF_ROSE:       "AF_ROSE",
-	AF_DECnet:     "AF_DECnet",
-	AF_NETBEUI:    "AF_NETBEUI",
-	AF_SECURITY:   "AF_SECURITY",
-	AF_KEY:        "AF_KEY",
-	AF_NETLINK:    "AF_NETLINK",
-	AF_PACKET:     "AF_PACKET",
-	AF_ASH:        "AF_ASH",
-	AF_ECONET:     "AF_ECONET",
-	AF_ATMSVC:     "AF_ATMSVC",
-	AF_RDS:        "AF_RDS",
-	AF_SNA:        "AF_SNA",
-	AF_IRDA:       "AF_IRDA",
-	AF_PPPOX:      "AF_PPPOX",
-	AF_WANPIPE:    "AF_WANPIPE",
-	AF_LLC:        "AF_LLC",
-	AF_IB:         "AF_IB",
-	AF_MPLS:       "AF_MPLS",
-	AF_CAN:        "AF_CAN",
-	AF_TIPC:       "AF_TIPC",
-	AF_BLUETOOTH:  "AF_BLUETOOTH",
-	AF_IUCV:       "AF_IUCV",
-	AF_RXRPC:      "AF_RXRPC",
-	AF_ISDN:       "AF_ISDN",
-	AF_PHONET:     "AF_PHONET",
-	AF_IEEE802154: "AF_IEEE802154",
-	AF_CAIF:       "AF_CAIF",
-	AF_ALG:        "AF_ALG",
-	AF_NFC:        "AF_NFC",
-	AF_VSOCK:      "AF_VSOCK",
-	AF_KCM:        "AF_KCM",
-	AF_QIPCRTR:    "AF_QIPCRTR",
-	AF_SMC:        "AF_SMC",
-	AF_XDP:        "AF_XDP",
+var socketDomainValues = []SystemFunctionArgument{
+	AF_UNSPEC,
+	AF_UNIX,
+	AF_INET,
+	AF_AX25,
+	AF_IPX,
+	AF_APPLETALK,
+	AF_NETROM,
+	AF_BRIDGE,
+	AF_ATMPVC,
+	AF_X25,
+	AF_INET6,
+	AF_ROSE,
+	AF_DECnet,
+	AF_NETBEUI,
+	AF_SECURITY,
+	AF_KEY,
+	AF_NETLINK,
+	AF_PACKET,
+	AF_ASH,
+	AF_ECONET,
+	AF_ATMSVC,
+	AF_RDS,
+	AF_SNA,
+	AF_IRDA,
+	AF_PPPOX,
+	AF_WANPIPE,
+	AF_LLC,
+	AF_IB,
+	AF_MPLS,
+	AF_CAN,
+	AF_TIPC,
+	AF_BLUETOOTH,
+	AF_IUCV,
+	AF_RXRPC,
+	AF_ISDN,
+	AF_PHONET,
+	AF_IEEE802154,
+	AF_CAIF,
+	AF_ALG,
+	AF_NFC,
+	AF_VSOCK,
+	AF_KCM,
+	AF_QIPCRTR,
+	AF_SMC,
+	AF_XDP,
+	AF_MCTP,
 }
 
-func (s SocketDomainArgument) String() string {
-	var res string
-
-	if sdName, ok := socketDomainStringMap[s]; ok {
-		res = sdName
-	} else {
-		res = strconv.Itoa(int(s))
-	}
-
-	return res
-}
-
-var socketDomainMap = map[uint64]SocketDomainArgument{
-	AF_UNSPEC.Value():     AF_UNSPEC,
-	AF_UNIX.Value():       AF_UNIX,
-	AF_INET.Value():       AF_INET,
-	AF_AX25.Value():       AF_AX25,
-	AF_IPX.Value():        AF_IPX,
-	AF_APPLETALK.Value():  AF_APPLETALK,
-	AF_NETROM.Value():     AF_NETROM,
-	AF_BRIDGE.Value():     AF_BRIDGE,
-	AF_ATMPVC.Value():     AF_ATMPVC,
-	AF_X25.Value():        AF_X25,
-	AF_INET6.Value():      AF_INET6,
-	AF_ROSE.Value():       AF_ROSE,
-	AF_DECnet.Value():     AF_DECnet,
-	AF_NETBEUI.Value():    AF_NETBEUI,
-	AF_SECURITY.Value():   AF_SECURITY,
-	AF_KEY.Value():        AF_KEY,
-	AF_NETLINK.Value():    AF_NETLINK,
-	AF_PACKET.Value():     AF_PACKET,
-	AF_ASH.Value():        AF_ASH,
-	AF_ECONET.Value():     AF_ECONET,
-	AF_ATMSVC.Value():     AF_ATMSVC,
-	AF_RDS.Value():        AF_RDS,
-	AF_SNA.Value():        AF_SNA,
-	AF_IRDA.Value():       AF_IRDA,
-	AF_PPPOX.Value():      AF_PPPOX,
-	AF_WANPIPE.Value():    AF_WANPIPE,
-	AF_LLC.Value():        AF_LLC,
-	AF_IB.Value():         AF_IB,
-	AF_MPLS.Value():       AF_MPLS,
-	AF_CAN.Value():        AF_CAN,
-	AF_TIPC.Value():       AF_TIPC,
-	AF_BLUETOOTH.Value():  AF_BLUETOOTH,
-	AF_IUCV.Value():       AF_IUCV,
-	AF_RXRPC.Value():      AF_RXRPC,
-	AF_ISDN.Value():       AF_ISDN,
-	AF_PHONET.Value():     AF_PHONET,
-	AF_IEEE802154.Value(): AF_IEEE802154,
-	AF_CAIF.Value():       AF_CAIF,
-	AF_ALG.Value():        AF_ALG,
-	AF_NFC.Value():        AF_NFC,
-	AF_VSOCK.Value():      AF_VSOCK,
-	AF_KCM.Value():        AF_KCM,
-	AF_QIPCRTR.Value():    AF_QIPCRTR,
-	AF_SMC.Value():        AF_SMC,
-	AF_XDP.Value():        AF_XDP,
-}
+var (
+	AF_SOCKET_FIRST = AF_UNSPEC.Value()
+	AF_SOCKET_LAST  = AF_MCTP.Value()
+)
 
 // ParseSocketDomainArgument parses the `domain` bitmask argument of the `socket` syscall
 // http://man7.org/linux/man-pages/man2/socket.2.html
-func ParseSocketDomainArgument(rawValue uint64) (SocketDomainArgument, error) {
-	v, ok := socketDomainMap[rawValue]
-	if !ok {
-		return 0, fmt.Errorf("not a valid argument: %d", rawValue)
+func ParseSocketDomainArgument(domain uint64) (string, error) {
+	if domain > AF_SOCKET_LAST {
+		return "", fmt.Errorf("not a valid socket domain value: %d", domain)
 	}
-	return v, nil
+
+	idx := int(domain - AF_SOCKET_FIRST)
+	return socketDomainValues[idx].String(), nil
 }
 
 type SocketTypeArgument struct {
@@ -3274,7 +2916,7 @@ const gupFlagsChangeVersion = "6.3.0"
 
 // ParseGUPFlagsCurrentOS parse the GUP flags received according to current machine OS version.
 // It uses optimizations to perform better than ParseGUPFlagsForOS
-func ParseGUPFlagsCurrentOS(rawValue uint64) (SystemFunctionArgument, error) {
+func ParseGUPFlagsCurrentOS(rawValue uint64) (systemFunctionArgument, error) {
 	const (
 		newVersionsParsing = iota
 		legacyParsing
@@ -3313,7 +2955,7 @@ func ParseGUPFlagsCurrentOS(rawValue uint64) (SystemFunctionArgument, error) {
 }
 
 // ParseGUPFlagsForOS parse the GUP flags received according to given OS version.
-func ParseGUPFlagsForOS(osInfo *environment.OSInfo, rawValue uint64) (SystemFunctionArgument, error) {
+func ParseGUPFlagsForOS(osInfo *environment.OSInfo, rawValue uint64) (systemFunctionArgument, error) {
 	compare, err := osInfo.CompareOSBaseKernelRelease(gupFlagsChangeVersion)
 	if err != nil {
 		return nil, fmt.Errorf(

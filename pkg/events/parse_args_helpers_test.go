@@ -24,7 +24,7 @@ func TestParseArgsHelpers(t *testing.T) {
 	TestParsePrctlOption(t)
 	TestParseSocketcallCall(t)
 	TestParseAccessMode(t)
-	TestParseExecFlag(t)
+	TestParseExecveatFlag(t)
 	TestParseOpenFlagArgument(t)
 	TestParseCloneFlags(t)
 	TestParseBPFCmd(t)
@@ -755,7 +755,7 @@ func TestParseAccessMode(t *testing.T) {
 						Name: "mode",
 						Type: "string",
 					},
-					Value: "R_OK|W_OK|X_OK",
+					Value: "X_OK|W_OK|R_OK",
 				},
 			},
 		},
@@ -776,7 +776,7 @@ func TestParseAccessMode(t *testing.T) {
 		})
 	}
 }
-func TestParseExecFlag(t *testing.T) {
+func TestParseExecveatFlag(t *testing.T) {
 	testCases := []struct {
 		name         string
 		args         []trace.Argument
@@ -833,7 +833,7 @@ func TestParseExecFlag(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseExecFlag(GetArg(event, "flags"), testCase.args[0].Value.(uint64))
+			parseExecveatFlag(GetArg(event, "flags"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
 				arg := GetArg(event, expArg.Name)
 				assert.Equal(t, expArg, *arg)
