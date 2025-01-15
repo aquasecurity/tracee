@@ -54,7 +54,6 @@
         $ make tracee-ebpf              # build ./dist/tracee-ebpf
         $ make tracee-rules             # build ./dist/tracee-rules
         $ make tracee-bench             # build ./dist/tracee-bench
-        $ make tracee-gptdocs           # build ./dist/tracee-gptdocs
         $ make signatures               # build ./dist/signatures
         $ make e2e-net-signatures       # build ./dist/e2e-net-signatures
         $ make e2e-inst-signatures      # build ./dist/e2e-inst-signatures

@@ -5,7 +5,7 @@ guidelines being enforced.
 
 ## Contributing to Documentation
 
-Our documentation aims to follow the [Diátaxis documentation framework](https://diataxis.fr/) which includes:
+Our documentation aims to follow the [Diátaxis documentation framework](https://diataxis.fr/).
 
 To contribute to the documentation:
 
