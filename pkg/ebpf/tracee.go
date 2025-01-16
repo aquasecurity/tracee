@@ -129,8 +129,6 @@ type Tracee struct {
 	// This does not mean they are required for tracee to function.
 	// TODO: remove this in favor of dependency manager nodes
 	requiredKsyms []string
-	// Time for normalization
-	timeNormalizer traceetime.TimeNormalizer
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -522,25 +520,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	t.validateKallsymsDependencies() // disable events w/ missing ksyms dependencies
 
-	// Initialize event derivation logic
-
-	err = t.initDerivationTable()
-	if err != nil {
-		return errfmt.Errorf("error initializing event derivation map: %v", err)
-	}
-
-	// Initialize events parameter types map
-
-	t.eventsParamTypes = make(map[events.ID][]bufferdecoder.ArgType)
-	for _, eventDefinition := range events.Core.GetDefinitions() {
-		id := eventDefinition.GetID()
-		params := eventDefinition.GetParams()
-		for _, param := range params {
-			t.eventsParamTypes[id] = append(t.eventsParamTypes[id], bufferdecoder.GetParamType(param.Type))
-		}
-	}
-
-	// Initialize time normalizer
+	// Initialize time
 
 	// Checking the kernel symbol needs to happen after obtaining the capability;
 	// otherwise, we get a warning.
@@ -564,12 +544,34 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
-	// elapsed time in nanoseconds since system start
-	t.startTime = uint64(traceetime.GetStartTimeNS(int32(usedClockID)))
-	// time in nanoseconds when the system was booted
-	t.bootTime = uint64(traceetime.GetBootTimeNS(int32(usedClockID)))
+	// init time functionalities
+	err = traceetime.Init(int32(usedClockID))
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
 
-	t.timeNormalizer = traceetime.CreateTimeNormalizerByConfig(t.config.Output.RelativeTime, t.startTime, t.bootTime)
+	// elapsed time in nanoseconds since system start
+	t.startTime = uint64(traceetime.GetStartTimeNS())
+	// time in nanoseconds when the system was booted
+	t.bootTime = uint64(traceetime.GetBootTimeNS())
+
+	// Initialize event derivation logic
+
+	err = t.initDerivationTable()
+	if err != nil {
+		return errfmt.Errorf("error initializing event derivation map: %v", err)
+	}
+
+	// Initialize events parameter types map
+
+	t.eventsParamTypes = make(map[events.ID][]bufferdecoder.ArgType)
+	for _, eventDefinition := range events.Core.GetDefinitions() {
+		id := eventDefinition.GetID()
+		params := eventDefinition.GetParams()
+		for _, param := range params {
+			t.eventsParamTypes[id] = append(t.eventsParamTypes[id], bufferdecoder.GetParamType(param.Type))
+		}
+	}
 
 	// Initialize Process Tree (if enabled)
 
@@ -581,7 +583,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 			proctreeConfig.ProcfsInitialization = false
 			proctreeConfig.ProcfsQuerying = false
 		}
-		t.processTree, err = proctree.NewProcessTree(ctx, proctreeConfig, t.timeNormalizer)
+		t.processTree, err = proctree.NewProcessTree(ctx, proctreeConfig)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -1412,7 +1414,6 @@ func (t *Tracee) initBPF() error {
 		t.containers,
 		t.config.NoContainersEnrich,
 		t.processTree,
-		t.timeNormalizer,
 	)
 	if err != nil {
 		return errfmt.WrapError(err)

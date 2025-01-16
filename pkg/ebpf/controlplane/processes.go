@@ -3,6 +3,7 @@ package controlplane
 import (
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/proctree"
+	"github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -67,13 +68,18 @@ func (ctrl *Controller) procTreeForkProcessor(args []trace.Argument) error {
 		}
 	}
 
+	timestamp = time.BootToEpochNS(timestamp)
+	childStartTime = time.BootToEpochNS(childStartTime)
+	parentStartTime = time.BootToEpochNS(parentStartTime)
+	leaderStartTime = time.BootToEpochNS(leaderStartTime)
+
 	childHash := utils.HashTaskID(uint32(childTid), childStartTime)
 	parentHash := utils.HashTaskID(uint32(parentTid), parentStartTime)
 	leaderHash := utils.HashTaskID(uint32(leaderTid), leaderStartTime)
 
 	return ctrl.processTree.FeedFromFork(
 		proctree.ForkFeed{
-			TimeStamp:       uint64(ctrl.timeNormalizer.NormalizeTime(int(timestamp))),
+			TimeStamp:       timestamp,
 			ChildHash:       childHash,
 			ParentHash:      parentHash,
 			LeaderHash:      leaderHash,
@@ -81,17 +87,17 @@ func (ctrl *Controller) procTreeForkProcessor(args []trace.Argument) error {
 			ParentNsTid:     parentNsTid,
 			ParentPid:       parentPid,
 			ParentNsPid:     parentNsPid,
-			ParentStartTime: uint64(ctrl.timeNormalizer.NormalizeTime(int(parentStartTime))),
+			ParentStartTime: parentStartTime,
 			LeaderTid:       leaderTid,
 			LeaderNsTid:     leaderNsTid,
 			LeaderPid:       leaderPid,
 			LeaderNsPid:     leaderNsPid,
-			LeaderStartTime: uint64(ctrl.timeNormalizer.NormalizeTime(int(leaderStartTime))),
+			LeaderStartTime: leaderStartTime,
 			ChildTid:        childTid,
 			ChildNsTid:      childNsTid,
 			ChildPid:        childPid,
 			ChildNsPid:      childNsPid,
-			ChildStartTime:  uint64(ctrl.timeNormalizer.NormalizeTime(int(childStartTime))),
+			ChildStartTime:  childStartTime,
 		},
 	)
 }
@@ -154,7 +160,7 @@ func (ctrl *Controller) procTreeExecProcessor(args []trace.Argument) error {
 
 	return ctrl.processTree.FeedFromExec(
 		proctree.ExecFeed{
-			TimeStamp:         uint64(ctrl.timeNormalizer.NormalizeTime(int(timestamp))),
+			TimeStamp:         time.BootToEpochNS(timestamp),
 			TaskHash:          taskHash,
 			ParentHash:        parentHash,
 			LeaderHash:        leaderHash,
@@ -208,7 +214,7 @@ func (ctrl *Controller) procTreeExitProcessor(args []trace.Argument) error {
 
 	return ctrl.processTree.FeedFromExit(
 		proctree.ExitFeed{
-			TimeStamp:  uint64(ctrl.timeNormalizer.NormalizeTime(int(timestamp))), // time of exit is already a timestamp
+			TimeStamp:  time.BootToEpochNS(timestamp), // time of exit is already a times)p
 			TaskHash:   taskHash,
 			ParentHash: parentHash,
 			LeaderHash: leaderHash,

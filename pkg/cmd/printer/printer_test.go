@@ -50,16 +50,6 @@ func TestTraceeEbpfPrepareOutputPrinterConfig(t *testing.T) {
 			},
 			expectedError: nil,
 		},
-		{
-			testName:    "option relative timestamp",
-			outputSlice: []string{"option:relative-time"},
-			expectedPrinter: config.PrinterConfig{
-				Kind:       "table",
-				OutFile:    os.Stdout,
-				RelativeTS: true,
-			},
-			expectedError: nil,
-		},
 	}
 	for _, testcase := range testCases {
 		testcase := testcase

@@ -7,7 +7,7 @@ tracee \f[B]\-\-output\f[R] \- Control how and where output is printed
 tracee \f[B]\-\-output\f[R] <format[:file,\&...]> |
 gotemplate=template[:file,\&...]
 | forward:url | webhook:url |
-option:{stack\-addresses,exec\-env,relative\-time,exec\-hash[={inode,dev\-inode,digest\-inode}],parse\-arguments,parse\-arguments\-fds,sort\-events}
+option:{stack\-addresses,exec\-env,exec\-hash[={inode,dev\-inode,digest\-inode}],parse\-arguments,parse\-arguments\-fds,sort\-events}
 \&...
 .SS DESCRIPTION
 The \f[B]\-\-output\f[R] flag allows you to control how and where the
@@ -49,7 +49,7 @@ webhook URL.
 .PP
 Other options:
 .IP \[bu] 2
-\f[B]option:{stack\-addresses,exec\-env,relative\-time,exec\-hash,parse\-arguments,sort\-events}\f[R]:
+\f[B]option:{stack\-addresses,exec\-env,exec\-hash,parse\-arguments,sort\-events}\f[R]:
 Augment output according to the given options.
 The default is none.
 Multiple options can be specified, separated by commas.
@@ -60,9 +60,6 @@ event.
 .IP \[bu] 2
 \f[B]exec\-env\f[R]: When tracing execve/execveat, show the environment
 variables that were used for execution.
-.IP \[bu] 2
-\f[B]relative\-time\f[R]: Use relative timestamp instead of wall
-timestamp for events.
 .IP \[bu] 2
 \f[B]exec\-hash\f[R]: When tracing some file related events, show the
 file hash (sha256).

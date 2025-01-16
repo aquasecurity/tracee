@@ -13,6 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -227,8 +228,14 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 
 			// populate all the fields of the event used in this stage, and reset the rest
 
-			evt.Timestamp = int(eCtx.Ts)
-			evt.ThreadStartTime = int(eCtx.StartTime)
+			// normalize timestamp context fields for later use
+			normalizedTs := time.BootToEpochNS(eCtx.Ts)
+			normalizedThreadStartTime := time.BootToEpochNS(eCtx.StartTime)
+			normalizedLeaderStartTime := time.BootToEpochNS(eCtx.LeaderStartTime)
+			normalizedParentStartTime := time.BootToEpochNS(eCtx.ParentStartTime)
+
+			evt.Timestamp = int(normalizedTs)
+			evt.ThreadStartTime = int(normalizedThreadStartTime)
 			evt.ProcessorID = int(eCtx.ProcessorId)
 			evt.ProcessID = int(eCtx.Pid)
 			evt.ThreadID = int(eCtx.Tid)
@@ -239,8 +246,8 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.UserID = int(eCtx.Uid)
 			evt.MountNS = int(eCtx.MntID)
 			evt.PIDNS = int(eCtx.PidID)
-			evt.ProcessName = string(bytes.TrimRight(eCtx.Comm[:], "\x00"))
-			evt.HostName = string(bytes.TrimRight(eCtx.UtsName[:], "\x00"))
+			evt.ProcessName = string(bytes.TrimRight(eCtx.Comm[:], "\x00")) // set and clean potential trailing null
+			evt.HostName = string(bytes.TrimRight(eCtx.UtsName[:], "\x00")) // set and clean potential trailing null
 			evt.CgroupID = uint(eCtx.CgroupID)
 			evt.ContainerID = containerData.ID
 			evt.Container = containerData
@@ -258,9 +265,9 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.ContextFlags = flags
 			evt.Syscall = syscall
 			evt.Metadata = nil
-			evt.ThreadEntityId = utils.HashTaskID(eCtx.HostTid, eCtx.StartTime)
-			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, eCtx.LeaderStartTime)
-			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, eCtx.ParentStartTime)
+			evt.ThreadEntityId = utils.HashTaskID(eCtx.HostTid, normalizedThreadStartTime)
+			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, normalizedLeaderStartTime)
+			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, normalizedParentStartTime)
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.
@@ -727,7 +734,7 @@ func (t *Tracee) parseArguments(e *trace.Event) error {
 		}
 
 		if t.config.Output.ParseArgumentsFDs {
-			return events.ParseArgsFDs(e, uint64(t.timeNormalizer.GetOriginalTime(e.Timestamp)), t.FDArgPathMap)
+			return events.ParseArgsFDs(e, uint64(e.Timestamp), t.FDArgPathMap)
 		}
 	}
 
