@@ -578,7 +578,7 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 // derived and the corresponding function to derive into that Event.
 func (t *Tracee) initDerivationTable() error {
 	shouldEmit := func(id events.ID) func() bool {
-		return func() bool { return t.policyManager.IsEventEmitted(id) }
+		return func() bool { return t.policyManager.ShouldEmitEvent(id) }
 	}
 	symbolsCollisions := derive.SymbolsCollision(t.contSymbolsLoader, t.policyManager)
 

@@ -53,14 +53,22 @@ type EventRules struct {
 	containerFilteredRules uint64               // Bitmap to track container-filtered rules
 }
 
+type RuleSelectionType int
+
+const (
+	NotSelected RuleSelectionType = iota
+	SelectedByUser
+	SelectedByDependency
+	SelectedByBootstrap
+)
+
 // EventRule represents a single rule within an event's rule set.
 type EventRule struct {
-	ID               uint8     // Unique ID of the rule within the event (0-63) - used for bitmap position
-	Data             *RuleData // Data associated with the rule
-	Policy           *Policy   // Reference to the policy where the rule was defined
-	Emit             bool      // Flag to indicate whether the event should be emitted or not
-	IsDependencyRule bool      // Flag to indicate that this rule is a dependency rule
-	DerivedRuleID    uint8     // ID of the rule in derived event that caused this dependency rule
+	ID            uint8             // Unique ID of the rule within the event (0-63) - used for bitmap position
+	Data          *RuleData         // Data associated with the rule
+	Policy        *Policy           // Reference to the policy where the rule was defined
+	SelectionType RuleSelectionType // How the rule was selected: by user, by dependency, or by bootstrap policy
+	DerivedRuleID uint8             // For dependency rules, ID of the rule that caused the dependency
 }
 
 func NewManager(
@@ -312,6 +320,10 @@ func (pm *PolicyManager) AddPolicy(policy *Policy, opts ...AddPolicyOption) erro
 
 // RemovePolicy removes a policy from the PolicyManager.
 func (pm *PolicyManager) RemovePolicy(policyName string) error {
+	if pm.bootstrapPolicy != nil && policyName == pm.bootstrapPolicy.Name {
+		return errfmt.Errorf("cannot remove bootstrap policy")
+	}
+
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
@@ -387,22 +399,22 @@ func deepCopyEventRules(original EventRules) EventRules {
 	// Deep copy Rules
 	for i, rule := range original.Rules {
 		copied.Rules[i] = &EventRule{
-			ID:               rule.ID,
-			Data:             rule.Data,   // Data pointers can be shared
-			Policy:           rule.Policy, // Policy pointers can be shared
-			Emit:             rule.Emit,
-			IsDependencyRule: rule.IsDependencyRule,
+			ID:            rule.ID,
+			Data:          rule.Data,   // Data pointers can be shared
+			Policy:        rule.Policy, // Policy pointers can be shared
+			SelectionType: rule.SelectionType,
+			DerivedRuleID: rule.DerivedRuleID,
 		}
 	}
 
 	// Deep copy UserlandRules
 	for i, rule := range original.UserlandRules {
 		copied.UserlandRules[i] = &EventRule{
-			ID:               rule.ID,
-			Data:             rule.Data,   // Data pointers can be shared
-			Policy:           rule.Policy, // Policy pointers can be shared
-			Emit:             rule.Emit,
-			IsDependencyRule: rule.IsDependencyRule,
+			ID:            rule.ID,
+			Data:          rule.Data,   // Data pointers can be shared
+			Policy:        rule.Policy, // Policy pointers can be shared
+			SelectionType: rule.SelectionType,
+			DerivedRuleID: rule.DerivedRuleID,
 		}
 	}
 
@@ -443,7 +455,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 
 		// Save existing dependency rules (created by rules with event that depend on this event)
 		for _, rule := range existingEventRules.Rules {
-			if rule.IsDependencyRule {
+			if rule.SelectionType == SelectedByDependency {
 				existingDepRules = append(existingDepRules, rule)
 			}
 		}
@@ -468,10 +480,14 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 		}
 
 		rule := &EventRule{
-			ID:     ruleIDCounter,
-			Data:   &ruleData,
-			Policy: policy,
-			Emit:   policy != pm.bootstrapPolicy,
+			ID:            ruleIDCounter,
+			Data:          &ruleData,
+			Policy:        policy,
+			SelectionType: SelectedByUser,
+		}
+
+		if policy == pm.bootstrapPolicy {
+			rule.SelectionType = SelectedByBootstrap
 		}
 
 		rules = append(rules, rule)
@@ -549,26 +565,25 @@ func (pm *PolicyManager) addTransitiveDependencyRules(
 		}
 
 		// Check if dependency rule already exists
-		isDuplicate := false
+		dependencyRuleExists := false
 		for _, existingRule := range eventRules.Rules {
-			if existingRule.IsDependencyRule &&
+			if existingRule.SelectionType == SelectedByDependency &&
 				existingRule.Policy == parentRule.Policy &&
 				existingRule.Data == parentRule.Data {
-				isDuplicate = true
+				dependencyRuleExists = true
 				break
 			}
 		}
 
-		if !isDuplicate {
+		if !dependencyRuleExists {
 			// Create dependency rule using parent's data and policy context
 			// This allows tracking which rule/policy caused this dependency
 			rule := &EventRule{
-				ID:               eventRules.rulesCount,
-				Data:             parentRule.Data,
-				Policy:           parentRule.Policy,
-				Emit:             false,
-				IsDependencyRule: true,
-				DerivedRuleID:    parentRule.ID,
+				ID:            eventRules.rulesCount,
+				Data:          parentRule.Data,
+				Policy:        parentRule.Policy,
+				SelectionType: SelectedByDependency,
+				DerivedRuleID: parentRule.ID,
 			}
 
 			eventRules.Rules = append(eventRules.Rules, rule)
@@ -741,7 +756,7 @@ func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBi
 			continue
 		}
 
-		if rule.Emit {
+		if rule.SelectionType == SelectedByUser {
 			matchedPolicyNames = append(matchedPolicyNames, rule.Policy.Name)
 			utils.SetBit(&matchedRulesRes, uint(rule.ID))
 		}
@@ -771,7 +786,7 @@ func (pm *PolicyManager) GetDerivedEventMatchedRules(
 		}
 
 		baseRule, ok := baseEventRules.ruleIDToEventRule[ruleID]
-		if !ok || !baseRule.IsDependencyRule {
+		if !ok || baseRule.SelectionType != SelectedByDependency {
 			continue
 		}
 
@@ -842,9 +857,10 @@ func (pm *PolicyManager) IsEventSelected(eventID events.ID) bool {
 	return ok
 }
 
-// IsEventEmitted checks if an event has at least one rule with the Emit flag set to true,
-// indicating that the event was explicitly selected by a policy and should be emitted.
-func (pm *PolicyManager) IsEventEmitted(eventID events.ID) bool {
+// ShouldEmitEvent checks if an event has at least one rule that was explicitly
+// selected by a user (not a dependency or bootstrap rule), indicating that the event
+// should be emitted.
+func (pm *PolicyManager) ShouldEmitEvent(eventID events.ID) bool {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
@@ -854,12 +870,12 @@ func (pm *PolicyManager) IsEventEmitted(eventID events.ID) bool {
 	}
 
 	for _, rule := range eventRules.Rules {
-		if rule.Emit {
-			return true // Found at least one rule with Emit set to true
+		if rule.SelectionType == SelectedByUser {
+			return true // Found at least one rule explicitly selected by the user
 		}
 	}
 
-	return false // No rules have Emit set to true
+	return false // No rules were explicitly selected by the user
 }
 
 // GetAllMatchedRulesBitmap returns a bitmap where all bits corresponding to
