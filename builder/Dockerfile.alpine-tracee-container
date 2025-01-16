@@ -16,7 +16,7 @@ ARG GO_VERSION=1.22.0
 # tracee-base
 #
 
-FROM alpine:3.19 AS tracee-base
+FROM alpine:3.20 AS tracee-base
 LABEL AS=tracee-base
 USER root
 
