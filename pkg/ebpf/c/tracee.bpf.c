@@ -586,8 +586,11 @@ statfunc void update_thread_stack(void *ctx, task_info_t *task_info, struct task
     #error Unsupported architecture
 #endif
 
-    // Find VMA which contains the SP
-    struct vm_area_struct *vma = find_vma(ctx, task, thread_sp);
+    // Find VMA which contains the SP.
+    // We subtract 1 fromt the SP because it may be just past the end of the VMA (top of the stack).
+    // For example: stack VMA mapped at 0x1000 with size 0x1000,
+    // SP is set to 0x2000 (which is not part of the VMA whose address range is 0x1000-0x1fff).
+    struct vm_area_struct *vma = find_vma(ctx, task, thread_sp - 1);
     if (unlikely(vma == NULL))
         return;
 
