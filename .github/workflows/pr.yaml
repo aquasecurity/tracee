@@ -6,7 +6,8 @@ on:
   workflow_dispatch: {}
   pull_request:
     branches:
-      - main
+      - "main"
+      - "v.*"
     paths:
       - "!docs/**"
       - "!deploy/**"
