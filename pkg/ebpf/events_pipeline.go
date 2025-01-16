@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"fmt"
 	"slices"
 	"strconv"
 	"sync"
@@ -221,7 +222,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 					syscall = events.Core.GetDefinitionByID(id).GetName()
 				} else {
 					// This should never fail, as the translation used in eBPF relies on the same event definitions
-					logger.Errorw("No syscall event with id %d", id)
+					logger.Errorw(fmt.Sprintf("No syscall event with id %d", id))
 				}
 			}
 
