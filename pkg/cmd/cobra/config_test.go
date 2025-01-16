@@ -281,7 +281,6 @@ output:
     - none
     - option:stack-addresses
     - option:exec-env
-    - option:relative-time
     - option:exec-hash=dev-inode
     - option:parse-arguments
     - option:parse-arguments-fds
@@ -295,7 +294,6 @@ output:
 				"none",
 				"option:stack-addresses",
 				"option:exec-env",
-				"option:relative-time",
 				"option:exec-hash=dev-inode",
 				"option:parse-arguments",
 				"option:parse-arguments-fds",
@@ -313,7 +311,6 @@ output:
         none: false
         stack-addresses: true
         exec-env: true
-        relative-time: true
         exec-hash: dev-inode
         parse-arguments: true
         parse-arguments-fds: true
@@ -367,7 +364,6 @@ output:
 			expectedFlags: []string{
 				"option:stack-addresses",
 				"option:exec-env",
-				"option:relative-time",
 				"option:exec-hash=dev-inode",
 				"option:parse-arguments",
 				"option:parse-arguments-fds",
@@ -983,7 +979,6 @@ func TestOutputConfigFlags(t *testing.T) {
 					None:              true,
 					StackAddresses:    true,
 					ExecEnv:           true,
-					RelativeTime:      true,
 					ExecHash:          "dev-inode",
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
@@ -994,7 +989,6 @@ func TestOutputConfigFlags(t *testing.T) {
 				"none",
 				"option:stack-addresses",
 				"option:exec-env",
-				"option:relative-time",
 				"option:exec-hash=dev-inode",
 				"option:parse-arguments",
 				"option:parse-arguments-fds",

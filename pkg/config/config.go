@@ -166,7 +166,6 @@ func (c CalcHashesOption) String() string {
 type OutputConfig struct {
 	StackAddresses bool
 	ExecEnv        bool
-	RelativeTime   bool
 	CalcHashes     CalcHashesOption
 
 	ParseArguments    bool
@@ -187,5 +186,4 @@ type PrinterConfig struct {
 	OutPath       string
 	OutFile       io.WriteCloser
 	ContainerMode ContainerMode
-	RelativeTS    bool
 }

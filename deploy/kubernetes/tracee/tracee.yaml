@@ -55,7 +55,6 @@ data:
             parse-arguments: true
             stack-addresses: false
             exec-env: false
-            relative-time: true
             exec-hash: dev-inode
             sort-events: false
 ---

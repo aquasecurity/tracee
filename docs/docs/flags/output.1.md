@@ -11,7 +11,7 @@ tracee **\-\-output** - Control how and where output is printed
 
 ## SYNOPSIS
 
-tracee **\-\-output** <format[:file,...]\> | gotemplate=template[:file,...] | forward:url | webhook:url | option:{stack-addresses,exec-env,relative-time,exec-hash[={inode,dev-inode,digest-inode}],parse-arguments,parse-arguments-fds,sort-events} ...
+tracee **\-\-output** <format[:file,...]\> | gotemplate=template[:file,...] | forward:url | webhook:url | option:{stack-addresses,exec-env,exec-hash[={inode,dev-inode,digest-inode}],parse-arguments,parse-arguments-fds,sort-events} ...
 
 
 ## DESCRIPTION
@@ -40,11 +40,10 @@ Webhook options:
 
 Other options:
 
-- **option:{stack-addresses,exec-env,relative-time,exec-hash,parse-arguments,sort-events}**: Augment output according to the given options. The default is none. Multiple options can be specified, separated by commas.
+- **option:{stack-addresses,exec-env,exec-hash,parse-arguments,sort-events}**: Augment output according to the given options. The default is none. Multiple options can be specified, separated by commas.
 
   - **stack-addresses**: Include stack memory addresses for each event.
   - **exec-env**: When tracing execve/execveat, show the environment variables that were used for execution.
-  - **relative-time**: Use relative timestamp instead of wall timestamp for events.
   - **exec-hash**: When tracing some file related events, show the file hash (sha256).
     - Affected events: *sched_process_exec*, *shared_object_loaded*
     - **inode** option recalculates the file hash if the inode's creation time (ctime) differs, which can occur in different namespaces even for identical inode. This option is performant, but not recommended and should only be used if container enrichment can't be enabled for digest-inode, and if performance is preferred over correctness.
