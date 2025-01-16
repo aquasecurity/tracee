@@ -3,14 +3,12 @@ package ebpf
 import (
 	gocontext "context"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"unsafe"
 
 	"kernel.org/pub/linux/libs/security/libcap/cap"
@@ -384,17 +382,24 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	usedClockID := traceetime.CLOCK_BOOTTIME
 	err = capabilities.GetInstance().EBPF(
 		func() error {
+			// Since this code is running with sufficient capabilities, we can safely trust the result of `BPFHelperIsSupported`.
+			// If the helper is reported as supported (`supported == true`), it is assumed to be reliable for use.
+			// If `supported == false`, it indicates that the helper for getting BOOTTIME is not available.
+			// The `innerErr` provides information about errors that occurred during the check, regardless of whether `supported`
+			// is true or false.
+			// For a full explanation of the caveats and behavior, refer to:
+			// https://github.com/aquasecurity/libbpfgo/blob/eb576c71ece75930a693b8b0687c5d052a5dbd56/libbpfgo.go#L99-L119
 			supported, innerErr := bpf.BPFHelperIsSupported(bpf.BPFProgTypeKprobe, bpf.BPFFuncKtimeGetBootNs)
 
-			// only report if operation not permitted
-			if errors.Is(innerErr, syscall.EPERM) {
-				return innerErr
-			}
-
-			// If BPFFuncKtimeGetBootNs is not available, eBPF will generate events based on monotonic time.
+			// Use CLOCK_MONOTONIC only when the helper is explicitly unsupported
 			if !supported {
 				usedClockID = traceetime.CLOCK_MONOTONIC
 			}
+
+			if innerErr != nil {
+				logger.Debugw("Detect clock timing", "warn", innerErr)
+			}
+
 			return nil
 		})
 	if err != nil {
