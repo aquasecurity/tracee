@@ -6,9 +6,10 @@ import (
 	"testing"
 )
 
+// TestProcessTreeConcurrency tests the ProcessTree for concurrent access.
+// Enable data race detection with `go test -race`.
 func TestProcessTreeConcurrency(t *testing.T) {
 	t.Parallel()
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -41,13 +42,13 @@ func TestProcessTreeConcurrency(t *testing.T) {
 	}
 
 	// Run tests concurrently for different hashes
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 3000; i++ {
 		wg.Add(1)
 		go testFunc(uint32(i))
 	}
 
 	// Run tests concurrently for the same hash
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 3000; i++ {
 		wg.Add(1)
 		go testFunc(42)
 	}

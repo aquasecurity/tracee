@@ -20,18 +20,8 @@ type Thread struct {
 // log, for a thread, is needed, the thread group leader hash will be used to find the process so it
 // can be logged as a process artifact.
 
-// NewThread creates a new thread.
-func NewThread(hash uint32) *Thread {
-	return &Thread{
-		threadHash: hash,
-		parentHash: 0,
-		info:       NewTaskInfo(),
-		mutex:      &sync.RWMutex{},
-	}
-}
-
-// NewThreadWithInfo creates a new thread with an initialized task info.
-func NewThreadWithInfo(hash uint32, info *TaskInfo) *Thread {
+// NewThread creates a new thread with an initialized task info.
+func NewThread(hash uint32, info *TaskInfo) *Thread {
 	return &Thread{
 		threadHash: hash,
 		parentHash: 0,

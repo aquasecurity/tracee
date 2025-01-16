@@ -20,21 +20,8 @@ type Process struct {
 	mutex *sync.RWMutex // mutex to protect the process
 }
 
-// NewProcess creates a new process.
-func NewProcess(hash uint32) *Process {
-	return &Process{
-		processHash: hash,
-		parentHash:  0,
-		info:        NewTaskInfo(),
-		executable:  NewFileInfo(),
-		children:    make(map[uint32]struct{}),
-		threads:     make(map[uint32]struct{}),
-		mutex:       &sync.RWMutex{},
-	}
-}
-
-// NewProcessWithInfo creates a new thread with an initialized task info.
-func NewProcessWithInfo(hash uint32, info *TaskInfo) *Process {
+// NewProcess creates a new thread with an initialized task info.
+func NewProcess(hash uint32, info *TaskInfo) *Process {
 	return &Process{
 		processHash: hash,
 		parentHash:  0,
