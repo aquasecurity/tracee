@@ -2,6 +2,7 @@ package proctree
 
 import (
 	"sync"
+	"sync/atomic"
 )
 
 //
@@ -10,11 +11,11 @@ import (
 
 // Process represents a process.
 type Process struct {
-	processHash uint32              // hash of process
+	processHash uint32              // hash of process (immutable, so no need of concurrency control)
 	parentHash  uint32              // hash of parent
-	info        *TaskInfo           // task info
-	executable  *FileInfo           // executable info
-	children    map[uint32]struct{} // hash of childrens
+	info        *TaskInfo           // task info (immutable pointer)
+	executable  *FileInfo           // executable info (immutable pointer)
+	children    map[uint32]struct{} // hash of children
 	threads     map[uint32]struct{} // hash of threads
 	// Control fields
 	mutex *sync.RWMutex // mutex to protect the process
@@ -37,39 +38,29 @@ func NewProcess(hash uint32, info *TaskInfo) *Process {
 
 // GetHash returns the hash of the process.
 func (p *Process) GetHash() uint32 {
-	p.mutex.RLock()
-	defer p.mutex.RUnlock()
-	return p.processHash
+	return p.processHash // immutable
 }
 
 // GetParentHash returns the hash of the parent.
 func (p *Process) GetParentHash() uint32 {
-	p.mutex.RLock()
-	defer p.mutex.RUnlock()
-	return p.parentHash
+	return atomic.LoadUint32(&p.parentHash)
 }
 
 // GetInfo returns a instanced task info.
 func (p *Process) GetInfo() *TaskInfo {
-	p.mutex.RLock()
-	defer p.mutex.RUnlock()
-	return p.info
+	return p.info // immutable pointer
 }
 
 // GetExecutable returns a instanced executable info.
 func (p *Process) GetExecutable() *FileInfo {
-	p.mutex.RLock()
-	defer p.mutex.RUnlock()
-	return p.executable
+	return p.executable // immutable pointer
 }
 
 // Setters
 
 // SetParentHash sets the hash of the parent.
 func (p *Process) SetParentHash(parentHash uint32) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-	p.parentHash = parentHash
+	atomic.StoreUint32(&p.parentHash, parentHash)
 }
 
 //
@@ -80,26 +71,28 @@ func (p *Process) SetParentHash(parentHash uint32) {
 func (p *Process) AddChild(childHash uint32) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	p.addChild(childHash)
+
+	p.children[childHash] = struct{}{}
 }
 
 // AddThread adds a thread to the process.
 func (p *Process) AddThread(threadHash uint32) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	p.addThread(threadHash)
+
+	p.threads[threadHash] = struct{}{}
 }
 
 // GetChildren returns the children of the process.
 func (p *Process) GetChildren() []uint32 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
-	children := make([]uint32, len(p.children))
-	i := 0
+
+	children := make([]uint32, 0, len(p.children))
 	for child := range p.children {
-		children[i] = child
-		i++
+		children = append(children, child)
 	}
+
 	return children
 }
 
@@ -107,12 +100,12 @@ func (p *Process) GetChildren() []uint32 {
 func (p *Process) GetThreads() []uint32 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
-	threads := make([]uint32, len(p.threads))
-	i := 0
+
+	threads := make([]uint32, 0, len(p.threads))
 	for thread := range p.threads {
-		threads[i] = thread
-		i++
+		threads = append(threads, thread)
 	}
+
 	return threads
 }
 
@@ -120,36 +113,14 @@ func (p *Process) GetThreads() []uint32 {
 func (p *Process) DelChild(childHash uint32) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	p.delChild(childHash)
+
+	delete(p.children, childHash)
 }
 
 // DelThread deletes a thread from the process.
 func (p *Process) DelThread(threadHash uint32) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	p.delThread(threadHash)
-}
 
-// addChild adds a child to the process.
-func (p *Process) addChild(childHash uint32) {
-	if _, ok := p.children[childHash]; !ok {
-		p.children[childHash] = struct{}{}
-	}
-}
-
-// addThread adds a thread to the process.
-func (p *Process) addThread(threadHash uint32) {
-	if _, ok := p.threads[threadHash]; !ok {
-		p.threads[threadHash] = struct{}{}
-	}
-}
-
-// delChild deletes a child from the process.
-func (p *Process) delChild(childHash uint32) {
-	delete(p.children, childHash)
-}
-
-// delThread deletes a thread from the process.
-func (p *Process) delThread(threadHash uint32) {
 	delete(p.threads, threadHash)
 }
