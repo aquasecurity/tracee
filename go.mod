@@ -25,7 +25,7 @@ require (
 	github.com/sashabaranov/go-gpt3 v1.4.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.18.2
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.2
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
