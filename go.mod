@@ -7,7 +7,7 @@ toolchain go1.22.4
 require (
 	github.com/IBM/fluent-forward-go v0.2.2
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/aquasecurity/libbpfgo v0.7.0-libbpf-1.4.0.20240729111821-61d531acf4ca
+	github.com/aquasecurity/libbpfgo v0.8.0-libbpf-1.5.0.20250117141322-c0ac6035ae61
 	github.com/aquasecurity/tracee/api v0.0.0-20250117110942-a403bd985f72
 	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20241225084355-5b8f456dae7b
 	github.com/aquasecurity/tracee/types v0.0.0-20250117124739-92cb7e0f7155
