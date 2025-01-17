@@ -15,7 +15,7 @@ require (
 	github.com/docker/docker v26.1.5+incompatible
 	github.com/golang/protobuf v1.5.4
 	github.com/google/gopacket v1.1.19
-	github.com/grafana/pyroscope-go v1.1.1
+	github.com/grafana/pyroscope-go v1.2.0
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/mennanov/fmutils v0.3.0
@@ -67,7 +67,7 @@ require (
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
-	github.com/grafana/pyroscope-go/godeltaprof v0.1.7 // indirect
+	github.com/grafana/pyroscope-go/godeltaprof v0.1.8 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
