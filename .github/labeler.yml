@@ -1,82 +1,126 @@
+# Define labels for areas and kinds with match objects
+
 #
-# area
+# Area Labels
 #
-# area/grpc
 area/grpc:
-  - pkg/server/grpc/**
-  - pkg/server/grpc/**/*
-# area/api
+  - changed-files:
+      - any-glob-to-any-file:
+          - pkg/server/grpc/**
+          - pkg/server/grpc/**/*
+
 area/api:
-  - api/**
-  - api/**/*
-# area/arm64:
+  - changed-files:
+      - any-glob-to-any-file:
+        - api/**
+        - api/**/*
+
 area/build:
-  - builder/**
-  - "**/Makefile"
-  - "**/Dockerfile"
-  - go.sum
-  - go.mod
-  - staticcheck.conf
-  - .github/**
-  - .clang-format
-  - .dockerignore
+  - changed-files:
+      - any-glob-to-any-file:
+        - builder/**
+        - '**/Makefile'
+        - '**/Dockerfile'
+        - go.sum
+        - go.mod
+        - staticcheck.conf
+        - .github/**
+        - .clang-format
+        - .dockerignore
+
 area/capture:
-  - "*capture*"
-# area/co-re:
+  - changed-files:
+      - any-glob-to-any-file:
+        - '*capture*'
+
 area/ebpf:
-  - pkg/ebpf/*
-  - pkg/ebpf/**/*
+  - changed-files:
+      - any-glob-to-any-file:
+        - pkg/ebpf/*
+        - pkg/ebpf/**/*
+
 area/events:
-  - pkg/events/*
-  - pkg/events/**/*
+  - changed-files:
+      - any-glob-to-any-file:
+        - pkg/events/*
+        - pkg/events/**/*
+
 area/filtering:
-  - pkg/filters/*
-  - pkg/filters/**/*
+  - changed-files:
+      - any-glob-to-any-file:
+        - pkg/filters/*
+        - pkg/filters/**/*
+
 area/flags:
-  - pkg/cmd/flags/*
-  - pkg/cmd/flags/**/*
+  - changed-files:
+      - any-glob-to-any-file:
+        - pkg/cmd/flags/*
+        - pkg/cmd/flags/**/*
+
 area/kubernetes:
-  - deploy/*
-  - deploy/**/*
+  - changed-files:
+      - any-glob-to-any-file:
+        - deploy/*
+        - deploy/**/*
+
 area/logging:
-  - pkg/logger/*
-  - pkg/logger/**/*
-  - pkg/errfmt/*
-  - pkg/errfmt/**/*
-# area/network:
+  - changed-files:
+      - any-glob-to-any-file:
+        - pkg/logger/*
+        - pkg/logger/**/*
+        - pkg/errfmt/*
+        - pkg/errfmt/**/*
+
 area/performance:
-  - pkg/metrics/*
-  - pkg/metrics/**/*
+  - changed-files:
+      - any-glob-to-any-file:
+        - pkg/metrics/*
+        - pkg/metrics/**/*
+
 area/release:
-  - packaging/*
-  - packaging/**/*
-# area/rules:
+  - changed-files:
+      - any-glob-to-any-file:
+        - packaging/*
+        - packaging/**/*
+
 area/signatures:
-  - pkg/signatures/*
-  - pkg/signatures/**/*
-  - signatures/*
-  - signatures/**/*
+  - changed-files:
+      - any-glob-to-any-file:
+        - pkg/signatures/*
+        - pkg/signatures/**/*
+        - signatures/*
+        - signatures/**/*
+
 area/testing:
-  - tests/*
-  - tests/**/*
-  - "**/*_test.go"
-# area/uprobe:
+  - changed-files:
+      - any-glob-to-any-file:
+        - tests/*
+        - tests/**/*
+        - '**/*_test.go'
+
 area/UX:
-  - pkg/cmd/*
-  - pkg/cmd/**/*
-  - cmd/*
-  - cmd/**/*
+  - changed-files:
+      - any-glob-to-any-file:
+        - pkg/cmd/*
+        - pkg/cmd/**/*
+        - cmd/*
+        - cmd/**/*
+
 #
-# kind
+# Kind Labels
 #
+
 kind/documentation:
-  - docs/*
-  - docs/**/*
-  - "**/*.md"
-  - mkdocs.yml
-  - NOTICE
-  - LICENSE
-  - cmd/tracee-gptdocs/*
+  - changed-files:
+      - any-glob-to-any-file:
+        - docs/*
+        - docs/**/*
+        - '**/*.md'
+        - mkdocs.yml
+        - NOTICE
+        - LICENSE
+        - cmd/tracee-gptdocs/*
+
 # kind/bug:
 # kind/chore:
 # kind/feature:
