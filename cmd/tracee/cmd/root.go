@@ -228,8 +228,8 @@ func initCmd() error {
 	rootCmd.Flags().StringArrayP(
 		"proctree",
 		"t",
-		[]string{"none"},
-		"[process|thread]\t\t\tControl process tree options",
+		[]string{"source=none"},
+		"[source=[events|signals|both]...]\tControl process tree options",
 	)
 	err = viper.BindPFlag("proctree", rootCmd.Flags().Lookup("proctree"))
 	if err != nil {

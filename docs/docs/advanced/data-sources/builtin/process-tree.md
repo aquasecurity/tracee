@@ -26,7 +26,6 @@ The process tree query the procfs upon initialization and during runtime to fill
 ## Command Line Option
 
 ```bash
-$ tracee --proctree help
 Example:
   --proctree source=[none|events|signals|both]
       none         | process tree is disabled (default).
@@ -35,9 +34,8 @@ Example:
       both         | process tree is built from both events and signals.
   --proctree process-cache=8192   | will cache up to 8192 processes in the tree (LRU cache).
   --proctree thread-cache=16384   | will cache up to 16384 threads in the tree (LRU cache).
-  --proctree process-cache-ttl=60 | will set the process cache element TTL to 60 seconds.
-  --proctree thread-cache-ttl=60  | will set the thread cache element TTL to 60 seconds.
-  --proctree disable-procfs-query | Will disable procfs quering during runtime
+  --proctree disable-procfs       | will disable procfs entirely.
+  --proctree disable-procfs-query | will disable procfs quering during runtime.
 
 Use comma OR use the flag multiple times to choose multiple options:
   --proctree source=A,process-cache=B,thread-cache=C
