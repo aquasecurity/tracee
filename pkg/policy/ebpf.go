@@ -298,38 +298,39 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) scopeFilte
 	return cfg
 }
 
-// updateUIntFilterBPF updates the BPF maps for the given uint RuleBitmaps.
+// updateUIntFilterBPF updates the BPF maps for the given uint filter map.
 func (pm *PolicyManager) updateUIntFilterBPF(
 	bpfModule *bpf.Module,
-	ruleBitmaps map[filterVersionKey]map[uint64]ruleBitmap,
+	filterMap map[filterVersionKey]map[uint64]ruleBitmap,
 	innerMapName string,
 	outerMapName string,
 ) error {
-	for fvKey, rBitmaps := range ruleBitmaps {
+	for vKey, innerMap := range filterMap {
 		// Skip if no rules exist for this version/event
-		if len(rBitmaps) == 0 {
+		if len(innerMap) == 0 {
 			continue
 		}
 
 		// Get or create inner map
-		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, fvKey)
+		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, vKey)
 		if err != nil {
 			return fmt.Errorf("creating/getting inner map for version %d event %d: %w",
-				fvKey.Version, fvKey.EventID, err)
+				vKey.Version, vKey.EventID, err)
 		}
 
-		for k, v := range rBitmaps {
-			// Inner map type: u32 (key) -> eq_t (value)
-			// where eq_t is { uint64_t equals_in_rules, uint64_t key_used_in_rules }
-			u32Key := uint32(k)
-			keyPointer := unsafe.Pointer(&u32Key)
+		for key, bitmap := range innerMap {
+			// Convert the uint64 key to []byte
+			keyBytes := make([]byte, 4)
+			binary.LittleEndian.PutUint32(keyBytes, uint32(key))
+			keyPointer := unsafe.Pointer(&keyBytes[0])
 
-			eqVal := make([]byte, ruleBitmapSize)
-			valuePointer := unsafe.Pointer(&eqVal[0])
+			// Convert the ruleBitmap to []byte
+			bitmapBytes := make([]byte, ruleBitmapSize)
+			binary.LittleEndian.PutUint64(bitmapBytes[0:8], bitmap.equalsInRules)
+			binary.LittleEndian.PutUint64(bitmapBytes[8:16], bitmap.keyUsedInRules)
+			valuePointer := unsafe.Pointer(&bitmapBytes[0])
 
-			binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
-			binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
-
+			// Update the BPF map
 			if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
 				return errfmt.WrapError(err)
 			}
@@ -339,40 +340,37 @@ func (pm *PolicyManager) updateUIntFilterBPF(
 	return nil
 }
 
-// updateStringFilterBPF updates the BPF maps for the given string RuleBitmaps.
+// updateStringFilterBPF updates the BPF maps for the given string filter map.
 func (pm *PolicyManager) updateStringFilterBPF(
 	bpfModule *bpf.Module,
-	ruleBitmaps map[filterVersionKey]map[string]ruleBitmap,
+	filterMap map[filterVersionKey]map[string]ruleBitmap,
 	innerMapName string,
 	outerMapName string,
 ) error {
-	for fvKey, rBitmaps := range ruleBitmaps {
+	for vKey, innerMap := range filterMap {
 		// Skip if no rules exist for this version/event
-		if len(rBitmaps) == 0 {
+		if len(innerMap) == 0 {
 			continue
 		}
 
 		// Get or create inner map
-		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, fvKey)
+		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, vKey)
 		if err != nil {
 			return fmt.Errorf("creating/getting inner map for version %d event %d: %w",
-				fvKey.Version, fvKey.EventID, err)
+				vKey.Version, vKey.EventID, err)
 		}
 
-		for k, v := range rBitmaps {
-			// Inner map type: string_filter_t (key) -> eq_t (value)
-			// where string_filter_t is a fixed size char array
-			// and eq_t is { uint64_t equals_in_rules, uint64_t key_used_in_rules }
+		for key, bitmap := range innerMap {
 			byteStr := make([]byte, maxBpfStrFilterSize)
-			copy(byteStr, k)
+			copy(byteStr, key)
 			keyPointer := unsafe.Pointer(&byteStr[0])
 
-			eqVal := make([]byte, ruleBitmapSize)
-			valuePointer := unsafe.Pointer(&eqVal[0])
+			bitmapBytes := make([]byte, ruleBitmapSize)
+			binary.LittleEndian.PutUint64(bitmapBytes[0:8], bitmap.equalsInRules)
+			binary.LittleEndian.PutUint64(bitmapBytes[8:16], bitmap.keyUsedInRules)
+			valuePointer := unsafe.Pointer(&bitmapBytes[0])
 
-			binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
-			binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
-
+			// Update the BPF map
 			if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
 				return errfmt.WrapError(err)
 			}
@@ -382,51 +380,48 @@ func (pm *PolicyManager) updateStringFilterBPF(
 	return nil
 }
 
-// updateBinaryFilterBPF updates the BPF maps for the given binary RuleBitmaps.
+// updateBinaryFilterBPF updates the BPF maps for the given binary filter map.
 func (pm *PolicyManager) updateBinaryFilterBPF(
 	bpfModule *bpf.Module,
-	ruleBitmaps map[filterVersionKey]map[filters.NSBinary]ruleBitmap,
+	filterMap map[filterVersionKey]map[filters.NSBinary]ruleBitmap,
 	innerMapName string,
 	outerMapName string,
 ) error {
-	for fvKey, rBitmaps := range ruleBitmaps {
+	for vKey, innerMap := range filterMap {
 		// Skip if no rules exist for this version/event
-		if len(rBitmaps) == 0 {
+		if len(innerMap) == 0 {
 			continue
 		}
 
 		// Get or create inner map
-		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, fvKey)
+		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, vKey)
 		if err != nil {
 			return fmt.Errorf("creating/getting inner map for version %d event %d: %w",
-				fvKey.Version, fvKey.EventID, err)
+				vKey.Version, vKey.EventID, err)
 		}
 
-		for k, v := range rBitmaps {
-			if len(k.Path) > maxBpfBinPathSize {
-				return filters.InvalidValue(k.Path)
+		for key, bitmap := range innerMap {
+			if len(key.Path) > maxBpfBinPathSize {
+				return filters.InvalidValue(key.Path)
 			}
 
-			// Inner map type: binary_t (key) -> eq_t (value)
-			// where binary_t is { uint32_t mount_ns, char path[MAX_BIN_PATH_SIZE] }
-			// and eq_t is { uint64_t equals_in_rules, uint64_t key_used_in_rules }
 			binBytes := make([]byte, bpfBinFilterSize)
-			if k.MntNS == 0 {
+			if key.MntNS == 0 {
 				// if no mount namespace given, bpf map key is only the path
-				copy(binBytes, k.Path)
+				copy(binBytes, key.Path)
 			} else {
 				// otherwise, key is composed of the mount namespace and the path
-				binary.LittleEndian.PutUint32(binBytes, k.MntNS)
-				copy(binBytes[4:], k.Path)
+				binary.LittleEndian.PutUint32(binBytes, key.MntNS)
+				copy(binBytes[4:], key.Path)
 			}
 			keyPointer := unsafe.Pointer(&binBytes[0])
 
-			eqVal := make([]byte, ruleBitmapSize)
-			valuePointer := unsafe.Pointer(&eqVal[0])
+			bitmapBytes := make([]byte, ruleBitmapSize)
+			binary.LittleEndian.PutUint64(bitmapBytes[0:8], bitmap.equalsInRules)
+			binary.LittleEndian.PutUint64(bitmapBytes[8:16], bitmap.keyUsedInRules)
+			valuePointer := unsafe.Pointer(&bitmapBytes[0])
 
-			binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
-			binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
-
+			// Update the BPF map
 			if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
 				return errfmt.WrapError(err)
 			}
@@ -436,52 +431,47 @@ func (pm *PolicyManager) updateBinaryFilterBPF(
 	return nil
 }
 
-// updateStringDataFilterLPMBPF updates the BPF maps for the given kernel data LPM RuleBitmaps.
+// updateStringDataFilterLPMBPF updates the BPF maps for the given kernel data LPM filter map.
 func (pm *PolicyManager) updateStringDataFilterLPMBPF(
 	bpfModule *bpf.Module,
-	ruleBitmaps map[filterVersionKey]map[string]ruleBitmap,
+	filterMap map[filterVersionKey]map[string]ruleBitmap,
 	innerMapName string,
 	outerMapName string,
 ) error {
-	for fvKey, rBitmaps := range ruleBitmaps {
+	for vKey, innerMap := range filterMap {
 		// Skip if no rules exist for this version/event
-		if len(rBitmaps) == 0 {
+		if len(innerMap) == 0 {
 			continue
 		}
 
 		// Get or create inner map
-		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, fvKey)
+		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, vKey)
 		if err != nil {
 			return fmt.Errorf("creating/getting inner map for version %d event %d: %w",
-				fvKey.Version, fvKey.EventID, err)
+				vKey.Version, vKey.EventID, err)
 		}
 
-		for k, v := range rBitmaps {
+		for key, bitmap := range innerMap {
 			// Ensure the string length is within the maximum allowed limit,
 			// excluding the NULL terminator.
-			if len(k) > maxBpfDataFilterStrSize-1 {
-				return filters.InvalidValueMax(k, maxBpfDataFilterStrSize-1)
+			if len(key) > maxBpfDataFilterStrSize-1 {
+				return filters.InvalidValueMax(key, maxBpfDataFilterStrSize-1)
 			}
-
-			// Inner map type: data_filter_lpm_key_t (key) -> eq_t (value)
-			// where data_filter_lpm_key_t is { uint32_t prefixlen, char str[MAX_DATA_STR_SIZE] }
-			// and eq_t is { uint64_t equals_in_rules, uint64_t key_used_in_rules }
-			binBytes := make([]byte, bpfDataFilterStrSize)
 
 			// key is composed of: prefixlen and a string
 			// multiply by 8 to convert prefix length from bytes to bits for LPM Trie
-			prefixlen := len(k) * 8
-			binary.LittleEndian.PutUint32(binBytes, uint32(prefixlen)) // prefixlen
-			copy(binBytes[4:], k)                                      // string
+			keyBytes := make([]byte, bpfDataFilterStrSize)
+			prefixlen := len(key) * 8
+			binary.LittleEndian.PutUint32(keyBytes, uint32(prefixlen))
+			copy(keyBytes[4:], key)
+			keyPointer := unsafe.Pointer(&keyBytes[0])
 
-			keyPointer := unsafe.Pointer(&binBytes[0])
+			bitmapBytes := make([]byte, ruleBitmapSize)
+			binary.LittleEndian.PutUint64(bitmapBytes[0:8], bitmap.equalsInRules)
+			binary.LittleEndian.PutUint64(bitmapBytes[8:16], bitmap.keyUsedInRules)
+			valuePointer := unsafe.Pointer(&bitmapBytes[0])
 
-			eqVal := make([]byte, ruleBitmapSize)
-			valuePointer := unsafe.Pointer(&eqVal[0])
-
-			binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
-			binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
-
+			// Update the BPF map
 			if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
 				return errfmt.WrapError(err)
 			}
@@ -491,46 +481,43 @@ func (pm *PolicyManager) updateStringDataFilterLPMBPF(
 	return nil
 }
 
-// updateStringDataFilterBPF updates the BPF maps for the given kernel data RuleBitmaps.
+// updateStringDataFilterBPF updates the BPF maps for the given kernel data filter map.
 func (pm *PolicyManager) updateStringDataFilterBPF(
 	bpfModule *bpf.Module,
-	ruleBitmaps map[filterVersionKey]map[string]ruleBitmap,
+	filterMap map[filterVersionKey]map[string]ruleBitmap,
 	innerMapName string,
 	outerMapName string,
 ) error {
-	for fvKey, rBitmaps := range ruleBitmaps {
+	for vKey, innerMap := range filterMap {
 		// Skip if no rules exist for this version/event
-		if len(rBitmaps) == 0 {
+		if len(innerMap) == 0 {
 			continue
 		}
 
 		// Get or create inner map
-		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, fvKey)
+		bpfMap, _, err := pm.createAndUpdateInnerMap(bpfModule, innerMapName, outerMapName, vKey)
 		if err != nil {
 			return fmt.Errorf("creating/getting inner map for version %d event %d: %w",
-				fvKey.Version, fvKey.EventID, err)
+				vKey.Version, vKey.EventID, err)
 		}
 
-		for k, v := range rBitmaps {
+		for key, bitmap := range innerMap {
 			// Ensure the string length is within the maximum allowed limit,
 			// excluding the NULL terminator
-			if len(k) > maxBpfDataFilterStrSize-1 {
-				return filters.InvalidValueMax(k, maxBpfDataFilterStrSize-1)
+			if len(key) > maxBpfDataFilterStrSize-1 {
+				return filters.InvalidValueMax(key, maxBpfDataFilterStrSize-1)
 			}
 
-			// Inner map type: data_filter_key_t (key) -> eq_t (value)
-			// where data_filter_key_t is a fixed size char array
-			// and eq_t is { uint64_t equals_in_rules, uint64_t key_used_in_rules }
-			binBytes := make([]byte, maxBpfDataFilterStrSize)
-			copy(binBytes, k) // string
-			keyPointer := unsafe.Pointer(&binBytes[0])
+			keyBytes := make([]byte, maxBpfDataFilterStrSize)
+			copy(keyBytes, key) // string
+			keyPointer := unsafe.Pointer(&keyBytes[0])
 
-			eqVal := make([]byte, ruleBitmapSize)
-			valuePointer := unsafe.Pointer(&eqVal[0])
+			bitmapBytes := make([]byte, ruleBitmapSize)
+			binary.LittleEndian.PutUint64(bitmapBytes[0:8], bitmap.equalsInRules)
+			binary.LittleEndian.PutUint64(bitmapBytes[8:16], bitmap.keyUsedInRules)
+			valuePointer := unsafe.Pointer(&bitmapBytes[0])
 
-			binary.LittleEndian.PutUint64(eqVal[0:8], v.equalsInRules)
-			binary.LittleEndian.PutUint64(eqVal[8:16], v.keyUsedInRules)
-
+			// Update the BPF map
 			if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
 				return errfmt.WrapError(err)
 			}
@@ -649,7 +636,7 @@ type procInfo struct {
 // populateProcInfoMap populates the ProcInfoMap with the binaries to track.
 // TODO: Should ProcInfoMap be cleared when a Policies new version is created?
 // Or should it be versioned too?
-func populateProcInfoMap(bpfModule *bpf.Module, ruleBitmaps map[filterVersionKey]map[filters.NSBinary]ruleBitmap) error {
+func populateProcInfoMap(bpfModule *bpf.Module, filterMap map[filterVersionKey]map[filters.NSBinary]ruleBitmap) error {
 	procInfoMap, err := bpfModule.GetMap(ProcInfoMap)
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -660,8 +647,8 @@ func populateProcInfoMap(bpfModule *bpf.Module, ruleBitmaps map[filterVersionKey
 		return errfmt.WrapError(err)
 	}
 
-	for _, rBitmaps := range ruleBitmaps {
-		for bin := range rBitmaps {
+	for _, innerMap := range filterMap {
+		for bin := range innerMap {
 			procs := binsProcs[bin.Path]
 			for _, p := range procs {
 				binBytes := make([]byte, maxBpfBinPathSize)
