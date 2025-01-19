@@ -119,13 +119,28 @@ func (pm *PolicyManager) updateBPF(
 	return nil
 }
 
+// eBPF data filter only supports first 64 rules for each key.
+type stringFilterConfigBPF struct {
+	prefixEnabled           uint64
+	suffixEnabled           uint64
+	exactEnabled            uint64
+	prefixMatchIfKeyMissing uint64
+	suffixMatchIfKeyMissing uint64
+	exactMatchIfKeyMissing  uint64
+}
+
+type dataFilterConfigBPF struct {
+	string stringFilterConfigBPF
+}
+
 type eventConfig struct {
 	rulesVersion   uint16
-	padding        [6]uint8 // free for further use
+	hasOverflow    uint8
+	padding        [5]uint8 // free for further use
 	submitForRules uint64
 	fieldTypes     uint64
 	scopeFilters   scopeFiltersConfig
-	dataFilter     dataFilterConfig
+	dataFilter     dataFilterConfigBPF
 }
 
 // updateEventsConfigMap updates the events config map with the given events fields and filter config.
@@ -145,6 +160,27 @@ func (pm *PolicyManager) updateEventsConfigMap(
 			filterConfig = dataFilterConfig{}
 		}
 
+		// Extract the first bitmap from each field of stringFilterConfig
+		dataFilterCfg := dataFilterConfigBPF{}
+		if len(filterConfig.string.prefixEnabled) > 0 {
+			dataFilterCfg.string.prefixEnabled = filterConfig.string.prefixEnabled[0]
+		}
+		if len(filterConfig.string.suffixEnabled) > 0 {
+			dataFilterCfg.string.suffixEnabled = filterConfig.string.suffixEnabled[0]
+		}
+		if len(filterConfig.string.exactEnabled) > 0 {
+			dataFilterCfg.string.exactEnabled = filterConfig.string.exactEnabled[0]
+		}
+		if len(filterConfig.string.prefixMatchIfKeyMissing) > 0 {
+			dataFilterCfg.string.prefixMatchIfKeyMissing = filterConfig.string.prefixMatchIfKeyMissing[0]
+		}
+		if len(filterConfig.string.suffixMatchIfKeyMissing) > 0 {
+			dataFilterCfg.string.suffixMatchIfKeyMissing = filterConfig.string.suffixMatchIfKeyMissing[0]
+		}
+		if len(filterConfig.string.exactMatchIfKeyMissing) > 0 {
+			dataFilterCfg.string.exactMatchIfKeyMissing = filterConfig.string.exactMatchIfKeyMissing[0]
+		}
+
 		// encoded event's field types
 		var fieldTypes uint64
 		fields := eventsFields[id]
@@ -154,16 +190,25 @@ func (pm *PolicyManager) updateEventsConfigMap(
 
 		// Create submit bitmap based on rules count - n least significant bits set to 1
 		submitForRules := uint64(0)
-		if ecfg.rulesCount > 0 {
+		if ecfg.rulesCount >= 64 {
+			submitForRules = ^uint64(0) // All bits set to 1
+		} else if ecfg.rulesCount > 0 {
 			submitForRules = (uint64(1) << ecfg.rulesCount) - 1
+		}
+
+		// Set hasOverflow flag
+		var overflowFlag uint8
+		if ecfg.hasOverflow {
+			overflowFlag = 1
 		}
 
 		eventConfig := eventConfig{
 			rulesVersion:   ecfg.rulesVersion,
+			hasOverflow:    overflowFlag,
 			submitForRules: submitForRules,
 			fieldTypes:     fieldTypes,
 			scopeFilters:   pm.computeScopeFiltersConfig(id),
-			dataFilter:     filterConfig,
+			dataFilter:     dataFilterCfg,
 		}
 
 		err := eventsConfigMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&eventConfig))
@@ -218,8 +263,8 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) scopeFilte
 
 	// Loop through rules for this event
 	for _, rule := range eventRules.Rules {
-		if rule.Policy == nil {
-			continue // Skip dependency rules that have no policy
+		if rule.Policy == nil || rule.ID >= 64 {
+			continue
 		}
 
 		offset := rule.ID // Use rule ID (0-63) for bitmap position
@@ -301,7 +346,7 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) scopeFilte
 // updateUIntFilterBPF updates the BPF maps for the given uint filter map.
 func (pm *PolicyManager) updateUIntFilterBPF(
 	bpfModule *bpf.Module,
-	filterMap map[filterVersionKey]map[uint64]ruleBitmap,
+	filterMap map[filterVersionKey]map[uint64][]ruleBitmap,
 	innerMapName string,
 	outerMapName string,
 ) error {
@@ -318,7 +363,15 @@ func (pm *PolicyManager) updateUIntFilterBPF(
 				vKey.Version, vKey.EventID, err)
 		}
 
-		for key, bitmap := range innerMap {
+		for key, bitmaps := range innerMap {
+			// Check if there are bitmaps for this key
+			if len(bitmaps) == 0 {
+				continue
+			}
+
+			// Update only the first bitmap (first 64 rules)
+			bitmap := bitmaps[0]
+
 			// Convert the uint64 key to []byte
 			keyBytes := make([]byte, 4)
 			binary.LittleEndian.PutUint32(keyBytes, uint32(key))
@@ -343,7 +396,7 @@ func (pm *PolicyManager) updateUIntFilterBPF(
 // updateStringFilterBPF updates the BPF maps for the given string filter map.
 func (pm *PolicyManager) updateStringFilterBPF(
 	bpfModule *bpf.Module,
-	filterMap map[filterVersionKey]map[string]ruleBitmap,
+	filterMap map[filterVersionKey]map[string][]ruleBitmap,
 	innerMapName string,
 	outerMapName string,
 ) error {
@@ -360,7 +413,15 @@ func (pm *PolicyManager) updateStringFilterBPF(
 				vKey.Version, vKey.EventID, err)
 		}
 
-		for key, bitmap := range innerMap {
+		for key, bitmaps := range innerMap {
+			// Check if there are bitmaps for this key
+			if len(bitmaps) == 0 {
+				continue
+			}
+
+			// Update only the first bitmap (first 64 rules)
+			bitmap := bitmaps[0]
+
 			byteStr := make([]byte, maxBpfStrFilterSize)
 			copy(byteStr, key)
 			keyPointer := unsafe.Pointer(&byteStr[0])
@@ -383,7 +444,7 @@ func (pm *PolicyManager) updateStringFilterBPF(
 // updateBinaryFilterBPF updates the BPF maps for the given binary filter map.
 func (pm *PolicyManager) updateBinaryFilterBPF(
 	bpfModule *bpf.Module,
-	filterMap map[filterVersionKey]map[filters.NSBinary]ruleBitmap,
+	filterMap map[filterVersionKey]map[filters.NSBinary][]ruleBitmap,
 	innerMapName string,
 	outerMapName string,
 ) error {
@@ -400,7 +461,15 @@ func (pm *PolicyManager) updateBinaryFilterBPF(
 				vKey.Version, vKey.EventID, err)
 		}
 
-		for key, bitmap := range innerMap {
+		for key, bitmaps := range innerMap {
+			// Check if there are bitmaps for this key
+			if len(bitmaps) == 0 {
+				continue
+			}
+
+			// Update only the first bitmap (first 64 rules)
+			bitmap := bitmaps[0]
+
 			if len(key.Path) > maxBpfBinPathSize {
 				return filters.InvalidValue(key.Path)
 			}
@@ -434,7 +503,7 @@ func (pm *PolicyManager) updateBinaryFilterBPF(
 // updateStringDataFilterLPMBPF updates the BPF maps for the given kernel data LPM filter map.
 func (pm *PolicyManager) updateStringDataFilterLPMBPF(
 	bpfModule *bpf.Module,
-	filterMap map[filterVersionKey]map[string]ruleBitmap,
+	filterMap map[filterVersionKey]map[string][]ruleBitmap,
 	innerMapName string,
 	outerMapName string,
 ) error {
@@ -451,7 +520,15 @@ func (pm *PolicyManager) updateStringDataFilterLPMBPF(
 				vKey.Version, vKey.EventID, err)
 		}
 
-		for key, bitmap := range innerMap {
+		for key, bitmaps := range innerMap {
+			// Check if there are bitmaps for this key
+			if len(bitmaps) == 0 {
+				continue
+			}
+
+			// Update only the first bitmap (first 64 rules)
+			bitmap := bitmaps[0]
+
 			// Ensure the string length is within the maximum allowed limit,
 			// excluding the NULL terminator.
 			if len(key) > maxBpfDataFilterStrSize-1 {
@@ -484,7 +561,7 @@ func (pm *PolicyManager) updateStringDataFilterLPMBPF(
 // updateStringDataFilterBPF updates the BPF maps for the given kernel data filter map.
 func (pm *PolicyManager) updateStringDataFilterBPF(
 	bpfModule *bpf.Module,
-	filterMap map[filterVersionKey]map[string]ruleBitmap,
+	filterMap map[filterVersionKey]map[string][]ruleBitmap,
 	innerMapName string,
 	outerMapName string,
 ) error {
@@ -501,7 +578,15 @@ func (pm *PolicyManager) updateStringDataFilterBPF(
 				vKey.Version, vKey.EventID, err)
 		}
 
-		for key, bitmap := range innerMap {
+		for key, bitmaps := range innerMap {
+			// Check if there are bitmaps for this key
+			if len(bitmaps) == 0 {
+				continue
+			}
+
+			// Update only the first bitmap (first 64 rules)
+			bitmap := bitmaps[0]
+
 			// Ensure the string length is within the maximum allowed limit,
 			// excluding the NULL terminator
 			if len(key) > maxBpfDataFilterStrSize-1 {
@@ -636,7 +721,7 @@ type procInfo struct {
 // populateProcInfoMap populates the ProcInfoMap with the binaries to track.
 // TODO: Should ProcInfoMap be cleared when a Policies new version is created?
 // Or should it be versioned too?
-func populateProcInfoMap(bpfModule *bpf.Module, filterMap map[filterVersionKey]map[filters.NSBinary]ruleBitmap) error {
+func populateProcInfoMap(bpfModule *bpf.Module, filterMap map[filterVersionKey]map[filters.NSBinary][]ruleBitmap) error {
 	procInfoMap, err := bpfModule.GetMap(ProcInfoMap)
 	if err != nil {
 		return errfmt.WrapError(err)

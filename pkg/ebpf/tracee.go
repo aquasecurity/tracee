@@ -1611,7 +1611,8 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	setMatchedRules := func(event *trace.Event, matchedRules uint64) {
 		event.RulesVersion = 1 // version will be removed soon
 		event.MatchedRulesKernel = matchedRules
-		event.MatchedRulesUser, event.MatchedPolicies = t.policyManager.GetMatchedRulesInfo(events.ID(event.EventID), matchedRules)
+		event.MatchedRulesUser = matchedRules
+		event.MatchedPolicies = t.policyManager.GetMatchedRulesInfo(events.ID(event.EventID), matchedRules)
 	}
 
 	rulesMatch := func(id events.ID) uint64 {

@@ -32,10 +32,6 @@ func PolicyNotFoundByNameError(name string) error {
 	return &policyError{msg: fmt.Sprintf("policy [%s] not found", name)}
 }
 
-func TooManyRulesForEventError(eventName string) error {
-	return &policyError{msg: fmt.Sprintf("too many rules for event %s", eventName)}
-}
-
 func SelectEventError(eventName string) error {
 	return &policyError{msg: fmt.Sprintf("failed to select event %s", eventName)}
 }

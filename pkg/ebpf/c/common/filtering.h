@@ -385,19 +385,19 @@ statfunc bool evaluate_scope_filters(program_data_t *p)
 {
     u64 matched_scope_filters = match_scope_filters(p);
     p->event->context.active_rules &= matched_scope_filters;
-    return p->event->context.active_rules != 0;
+    return p->event->context.active_rules != 0 || p->event->config.has_overflow;
 }
 
 statfunc bool evaluate_data_filters(program_data_t *p, u8 index)
 {
     u64 matched_data_filters = match_data_filters(p, index);
     p->event->context.active_rules &= matched_data_filters;
-    return p->event->context.active_rules != 0;
+    return p->event->context.active_rules != 0 || p->event->config.has_overflow;
 }
 
 statfunc bool rules_matched(event_data_t *event)
 {
-    return event->context.active_rules != 0;
+    return event->context.active_rules != 0 || event->config.has_overflow;
 }
 
 statfunc bool event_is_selected(u32 event_id)

@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	maxRulesPerEvent = uint8(64)
+	maxFilterableRulesPerEvent = uint(64)
 )
 
 type ManagerConfig struct {
@@ -42,15 +42,16 @@ type PolicyManager struct {
 	fMaps           *filterMaps
 }
 
-// EventData holds information about a specific event.
+// EventRules holds information about a specific event.
 type EventRules struct {
-	Rules                  []*EventRule         // List of rules associated with this event
-	UserlandRules          []*EventRule         // List of rules with userland filters enabled
-	enabled                bool                 // Flag indicating whether the event is enabled. TODO: move to events manager
-	rulesVersion           uint16               // Version of the rules for this event (for future updates)
-	rulesCount             uint8                // The total number of rules for this event
-	ruleIDToEventRule      map[uint8]*EventRule // Map from RuleID to EventRule for fast lookup
-	containerFilteredRules uint64               // Bitmap to track container-filtered rules
+	Rules                  []*EventRule        // List of rules associated with this event
+	UserlandRules          []*EventRule        // List of rules with userland filters enabled
+	enabled                bool                // Flag indicating whether the event is enabled. TODO: move to events manager
+	rulesVersion           uint16              // Version of the rules for this event (for future updates)
+	rulesCount             uint                // The total number of rules for this event
+	ruleIDToEventRule      map[uint]*EventRule // Map from RuleID to EventRule for fast lookup
+	containerFilteredRules []uint64            // Bitmaps to track container-filtered rules
+	hasOverflow            bool                // Flag to indicate if there are more than 64 rules
 }
 
 type RuleSelectionType int
@@ -64,11 +65,11 @@ const (
 
 // EventRule represents a single rule within an event's rule set.
 type EventRule struct {
-	ID            uint8             // Unique ID of the rule within the event (0-63) - used for bitmap position
+	ID            uint              // Unique ID of the rule within the event (0-63) - used for bitmap position
 	Data          *RuleData         // Data associated with the rule
 	Policy        *Policy           // Reference to the policy where the rule was defined
 	SelectionType RuleSelectionType // How the rule was selected: by user, by dependency, or by bootstrap policy
-	DerivedRuleID uint8             // For dependency rules, ID of the rule that caused the dependency
+	DerivedRuleID uint              // For dependency rules, ID of the rule that caused the dependency
 }
 
 func NewManager(
@@ -393,7 +394,7 @@ func deepCopyEventRules(original EventRules) EventRules {
 		enabled:                original.enabled,
 		Rules:                  make([]*EventRule, len(original.Rules)),
 		UserlandRules:          make([]*EventRule, len(original.UserlandRules)),
-		ruleIDToEventRule:      make(map[uint8]*EventRule, len(original.ruleIDToEventRule)),
+		ruleIDToEventRule:      make(map[uint]*EventRule, len(original.ruleIDToEventRule)),
 	}
 
 	// Deep copy Rules
@@ -443,12 +444,14 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 	}
 
 	var rules, userlandRules, existingDepRules []*EventRule
-	ruleIDToEventRule := make(map[uint8]*EventRule)
-	ruleIDCounter := uint8(0)
-	var containerFilteredRules uint64
+	ruleIDToEventRule := make(map[uint]*EventRule)
+	ruleIDCounter := uint(0)
+	var containerFilteredRules []uint64
 
 	rulesVersion := uint16(0)
-	enabled := true // Default to true for new rules
+	enabled := true      // Default to true for new rules
+	hasOverflow := false // Initialize hasOverflow flag
+
 	if existingEventRules, ok := tempRules[eventID]; ok {
 		rulesVersion = existingEventRules.rulesVersion
 		enabled = existingEventRules.enabled // Preserve existing enabled state
@@ -474,9 +477,9 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 		}
 
 		// Check if ruleIDCounter exceeds maximum
-		if ruleIDCounter >= maxRulesPerEvent {
+		if ruleIDCounter >= maxFilterableRulesPerEvent {
 			eventName := events.Core.GetDefinitionByID(eventID).GetName()
-			return TooManyRulesForEventError(eventName)
+			logger.Warnw("More than 64 rules per event. Only 64 rules will be filterable", "event", eventName)
 		}
 
 		rule := &EventRule{
@@ -501,7 +504,15 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 
 		// Update containerFilteredRules bitmap
 		if policy.ContainerFilterEnabled() {
-			containerFilteredRules |= 1 << rule.ID
+			bitmapIndex := rule.ID / 64
+			bitOffset := rule.ID % 64
+
+			// Ensure containerFilteredRules has enough bitmaps
+			for len(containerFilteredRules) <= int(bitmapIndex) {
+				containerFilteredRules = append(containerFilteredRules, 0)
+			}
+
+			utils.SetBit(&containerFilteredRules[bitmapIndex], uint(bitOffset))
 		}
 
 		// Update userlandFilterableRules bitmap
@@ -518,6 +529,11 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 		ruleIDCounter++
 	}
 
+	// Update hasOverflow flag if necessary
+	if ruleIDCounter >= 64 {
+		hasOverflow = true
+	}
+
 	// Update the EventRules for the event in the temporary map
 	tempRules[eventID] = EventRules{
 		Rules:                  rules,
@@ -527,6 +543,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 		rulesCount:             ruleIDCounter,
 		containerFilteredRules: containerFilteredRules,
 		enabled:                enabled,
+		hasOverflow:            hasOverflow,
 	}
 
 	return nil
@@ -559,7 +576,7 @@ func (pm *PolicyManager) addTransitiveDependencyRules(
 			eventRules = EventRules{
 				Rules:             make([]*EventRule, 0),
 				UserlandRules:     make([]*EventRule, 0),
-				ruleIDToEventRule: make(map[uint8]*EventRule),
+				ruleIDToEventRule: make(map[uint]*EventRule),
 				enabled:           true,
 			}
 		}
@@ -596,7 +613,15 @@ func (pm *PolicyManager) addTransitiveDependencyRules(
 
 			// Update container filter bitmap if parent has container filters
 			if rule.Policy.ContainerFilterEnabled() {
-				eventRules.containerFilteredRules |= 1 << rule.ID
+				bitmapIndex := rule.ID / 64
+				bitOffset := rule.ID % 64
+
+				// Ensure containerFilteredRules has enough bitmaps
+				for len(eventRules.containerFilteredRules) <= int(bitmapIndex) {
+					eventRules.containerFilteredRules = append(eventRules.containerFilteredRules, 0)
+				}
+
+				utils.SetBit(&eventRules.containerFilteredRules[bitmapIndex], uint(bitOffset))
 			}
 
 			eventRules.rulesCount++
@@ -709,22 +734,22 @@ func (pm *PolicyManager) GetUserlandRules(eventID events.ID) []*EventRule {
 // GetContainerFilteredRulesBitmap returns a bitmap where each bit represents a rule
 // for the given event ID, and the bit is set if the corresponding rule has
 // container filtering enabled.
-func (pm *PolicyManager) GetContainerFilteredRulesBitmap(eventID events.ID) uint64 {
+func (pm *PolicyManager) GetContainerFilteredRulesBitmap(eventID events.ID) []uint64 {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
 	eventRules, ok := pm.rules[eventID]
 	if !ok {
-		return 0 // No rules for this event, return an empty bitmap
+		return []uint64{0} // No rules for this event, return an empty bitmap
 	}
 
 	return eventRules.containerFilteredRules
 }
 
-// GetMatchedRulesInfo processes a bitmap of matched rule IDs for a given event and returns:
-// 1. A modified bitmap where the bits corresponding to matched rules with the Emit flag set are cleared.
-// 2. A list of policy names corresponding to the matched rules that have the Emit flag set.
-func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBitmap uint64) (uint64, []string) {
+// GetMatchedRulesInfo processes a bitmap of matched rule IDs for a given event and returns
+// a list of policy names corresponding to the matched rules that have the Emit flag set.
+// If the event has overflow (rules with ID > 64), the function will also return all their policy names as matched.
+func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBitmap uint64) []string {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
@@ -732,14 +757,17 @@ func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBi
 
 	eventRules, ok := pm.rules[eventID]
 	if !ok {
-		return 0, matchedPolicyNames
+		return matchedPolicyNames
 	}
 
-	var matchedRulesRes uint64
+	for ruleID := uint(0); ruleID < eventRules.rulesCount; ruleID++ {
+		// For rules >= 64, only process if event has overflow
+		if ruleID >= 64 && !eventRules.hasOverflow {
+			continue
+		}
 
-	for ruleID := uint8(0); ruleID < eventRules.rulesCount; ruleID++ {
-		// Check if the bit corresponding to ruleID is set in the bitmap
-		if matchedRuleIDsBitmap&(1<<ruleID) == 0 {
+		// For rules < 64, check the bitmap. For rules >= 64 with overflow, always match
+		if ruleID < 64 && matchedRuleIDsBitmap&(1<<ruleID) == 0 {
 			continue
 		}
 
@@ -758,11 +786,10 @@ func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBi
 
 		if rule.SelectionType == SelectedByUser {
 			matchedPolicyNames = append(matchedPolicyNames, rule.Policy.Name)
-			utils.SetBit(&matchedRulesRes, uint(rule.ID))
 		}
 	}
 
-	return matchedRulesRes, matchedPolicyNames
+	return matchedPolicyNames
 }
 
 func (pm *PolicyManager) GetDerivedEventMatchedRules(
@@ -780,8 +807,14 @@ func (pm *PolicyManager) GetDerivedEventMatchedRules(
 
 	var derivedMatchedRules uint64
 
-	for ruleID := uint8(0); ruleID < baseEventRules.rulesCount; ruleID++ {
-		if baseMatchedRulesBitmap&(1<<ruleID) == 0 {
+	for ruleID := uint(0); ruleID < baseEventRules.rulesCount; ruleID++ {
+		// For rules >= 64, only process if event has overflow
+		if ruleID >= 64 && !baseEventRules.hasOverflow {
+			continue
+		}
+
+		// For rules < 64, check base bitmap. For rules >= 64 with overflow, always match
+		if ruleID < 64 && baseMatchedRulesBitmap&(1<<ruleID) == 0 {
 			continue
 		}
 
@@ -792,6 +825,10 @@ func (pm *PolicyManager) GetDerivedEventMatchedRules(
 
 		// Check if this dependency rule is for our derived event
 		if baseRule.Data.EventID == derivedEventID {
+			if baseRule.DerivedRuleID >= 64 {
+				// Derived event has overflow
+				continue
+			}
 			derivedMatchedRules |= 1 << baseRule.DerivedRuleID
 		}
 	}
@@ -857,6 +894,19 @@ func (pm *PolicyManager) IsEventSelected(eventID events.ID) bool {
 	return ok
 }
 
+// HasOverflowRules checks if the specified event has more than 64 rules
+func (pm *PolicyManager) HasOverflowRules(eventID events.ID) bool {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	eventRules, ok := pm.rules[eventID]
+	if !ok {
+		return false // Event not found, no overflow
+	}
+
+	return eventRules.hasOverflow
+}
+
 // ShouldEmitEvent checks if an event has at least one rule that was explicitly
 // selected by a user (not a dependency or bootstrap rule), indicating that the event
 // should be emitted.
@@ -891,7 +941,7 @@ func (pm *PolicyManager) GetAllMatchedRulesBitmap(eventID events.ID) uint64 {
 	}
 
 	var allRulesBitmap uint64
-	for ruleID := uint8(0); ruleID < eventRules.rulesCount; ruleID++ {
+	for ruleID := uint(0); ruleID < eventRules.rulesCount; ruleID++ {
 		allRulesBitmap |= 1 << ruleID
 	}
 

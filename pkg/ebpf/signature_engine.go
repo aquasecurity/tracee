@@ -143,7 +143,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 					continue
 				}
 
-				if t.matchRules(event) == 0 {
+				if !t.matchRules(event) {
 					_ = t.stats.EventsFiltered.Increment()
 					continue
 				}

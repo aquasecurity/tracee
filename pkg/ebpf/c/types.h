@@ -373,7 +373,8 @@ typedef struct data_filter_config {
 
 typedef struct event_config {
     u16 rules_version;
-    u8 _padding[6];
+    u8 has_overflow;
+    u8 _padding[5];
     u64 submit_for_rules;
     u64 field_types;
     scope_filters_config_t scope_filters;

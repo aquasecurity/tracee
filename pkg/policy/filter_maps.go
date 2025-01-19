@@ -36,17 +36,17 @@ type filterVersionKey struct {
 // The outer map key is a combination of event ID and rules version (filterVersionKey),
 // while the inner map key varies by filter type (e.g., uint64, string) and the value is a ruleBitmap.
 type filterMaps struct {
-	uidFilters        map[filterVersionKey]map[uint64]ruleBitmap
-	pidFilters        map[filterVersionKey]map[uint64]ruleBitmap
-	mntNSFilters      map[filterVersionKey]map[uint64]ruleBitmap
-	pidNSFilters      map[filterVersionKey]map[uint64]ruleBitmap
-	cgroupIdFilters   map[filterVersionKey]map[uint64]ruleBitmap
-	utsFilters        map[filterVersionKey]map[string]ruleBitmap
-	commFilters       map[filterVersionKey]map[string]ruleBitmap
-	dataPrefixFilters map[filterVersionKey]map[string]ruleBitmap
-	dataSuffixFilters map[filterVersionKey]map[string]ruleBitmap
-	dataExactFilters  map[filterVersionKey]map[string]ruleBitmap
-	binaryFilters     map[filterVersionKey]map[filters.NSBinary]ruleBitmap
+	uidFilters        map[filterVersionKey]map[uint64][]ruleBitmap
+	pidFilters        map[filterVersionKey]map[uint64][]ruleBitmap
+	mntNSFilters      map[filterVersionKey]map[uint64][]ruleBitmap
+	pidNSFilters      map[filterVersionKey]map[uint64][]ruleBitmap
+	cgroupIdFilters   map[filterVersionKey]map[uint64][]ruleBitmap
+	utsFilters        map[filterVersionKey]map[string][]ruleBitmap
+	commFilters       map[filterVersionKey]map[string][]ruleBitmap
+	dataPrefixFilters map[filterVersionKey]map[string][]ruleBitmap
+	dataSuffixFilters map[filterVersionKey]map[string][]ruleBitmap
+	dataExactFilters  map[filterVersionKey]map[string][]ruleBitmap
+	binaryFilters     map[filterVersionKey]map[filters.NSBinary][]ruleBitmap
 	dataFilterConfigs map[events.ID]dataFilterConfig
 }
 
@@ -64,12 +64,12 @@ type dataFilterConfig struct {
 
 // stringFilterConfig stores configuration for string matching filters.
 type stringFilterConfig struct {
-	prefixEnabled           uint64 // Bitmap of rules with prefix matching enabled
-	suffixEnabled           uint64 // Bitmap of rules with suffix matching enabled
-	exactEnabled            uint64 // Bitmap of rules with exact matching enabled
-	prefixMatchIfKeyMissing uint64 // Bitmap of rules with prefix matching enabled if the filter key is missing
-	suffixMatchIfKeyMissing uint64 // Bitmap of rules with suffix matching enabled if the filter key is missing
-	exactMatchIfKeyMissing  uint64 // Bitmap of rules with exact matching enabled if the filter key is missing
+	prefixEnabled           []uint64 // Bitmap of rules with prefix matching enabled
+	suffixEnabled           []uint64 // Bitmap of rules with suffix matching enabled
+	exactEnabled            []uint64 // Bitmap of rules with exact matching enabled
+	prefixMatchIfKeyMissing []uint64 // Bitmap of rules with prefix matching enabled if the filter key is missing
+	suffixMatchIfKeyMissing []uint64 // Bitmap of rules with suffix matching enabled if the filter key is missing
+	exactMatchIfKeyMissing  []uint64 // Bitmap of rules with exact matching enabled if the filter key is missing
 }
 
 // computeFilterMaps processes policy rules and returns two data structures:
@@ -86,17 +86,17 @@ func (pm *PolicyManager) computeFilterMaps(
 	conts *containers.Containers,
 ) (maps *filterMaps, err error) {
 	maps = &filterMaps{
-		uidFilters:        make(map[filterVersionKey]map[uint64]ruleBitmap),
-		pidFilters:        make(map[filterVersionKey]map[uint64]ruleBitmap),
-		mntNSFilters:      make(map[filterVersionKey]map[uint64]ruleBitmap),
-		pidNSFilters:      make(map[filterVersionKey]map[uint64]ruleBitmap),
-		cgroupIdFilters:   make(map[filterVersionKey]map[uint64]ruleBitmap),
-		utsFilters:        make(map[filterVersionKey]map[string]ruleBitmap),
-		commFilters:       make(map[filterVersionKey]map[string]ruleBitmap),
-		dataPrefixFilters: make(map[filterVersionKey]map[string]ruleBitmap),
-		dataSuffixFilters: make(map[filterVersionKey]map[string]ruleBitmap),
-		dataExactFilters:  make(map[filterVersionKey]map[string]ruleBitmap),
-		binaryFilters:     make(map[filterVersionKey]map[filters.NSBinary]ruleBitmap),
+		uidFilters:        make(map[filterVersionKey]map[uint64][]ruleBitmap),
+		pidFilters:        make(map[filterVersionKey]map[uint64][]ruleBitmap),
+		mntNSFilters:      make(map[filterVersionKey]map[uint64][]ruleBitmap),
+		pidNSFilters:      make(map[filterVersionKey]map[uint64][]ruleBitmap),
+		cgroupIdFilters:   make(map[filterVersionKey]map[uint64][]ruleBitmap),
+		utsFilters:        make(map[filterVersionKey]map[string][]ruleBitmap),
+		commFilters:       make(map[filterVersionKey]map[string][]ruleBitmap),
+		dataPrefixFilters: make(map[filterVersionKey]map[string][]ruleBitmap),
+		dataSuffixFilters: make(map[filterVersionKey]map[string][]ruleBitmap),
+		dataExactFilters:  make(map[filterVersionKey]map[string][]ruleBitmap),
+		binaryFilters:     make(map[filterVersionKey]map[filters.NSBinary][]ruleBitmap),
 		dataFilterConfigs: make(map[events.ID]dataFilterConfig),
 	}
 
@@ -182,9 +182,9 @@ func (pm *PolicyManager) processRuleScopeFilters(
 // NotEqual values must be processed first because Equal values have precedence.
 // If a value is present in both NotEqual and Equal maps, it will be treated as Equal.
 func updateRuleBitmapsForEvent[K comparable](
-	eqs map[filterVersionKey]map[K]ruleBitmap,
+	eqs map[filterVersionKey]map[K][]ruleBitmap,
 	vKey filterVersionKey,
-	ruleID uint8,
+	ruleID uint,
 	notEqualsMap map[K]struct{},
 	equalsMap map[K]struct{},
 ) {
@@ -198,41 +198,49 @@ func updateRuleBitmapsForEvent[K comparable](
 
 // updateRuleBitmapForKey updates the rule bitmap for a specific key, version, rule, and equality type.
 func updateRuleBitmapForKey[K comparable](
-	eqs map[filterVersionKey]map[K]ruleBitmap,
+	eqs map[filterVersionKey]map[K][]ruleBitmap,
 	vKey filterVersionKey,
 	key K,
-	ruleID uint8,
+	ruleID uint,
 	eqType equalityType,
 ) {
+	bitmapIndex := ruleID / 64
+	bitOffset := ruleID % 64
+
 	innerMap := getOrCreateRuleBitmapMap(eqs, vKey)
-	eq := innerMap[key]
-	updateRuleBitmap(&eq, ruleID, eqType)
-	innerMap[key] = eq
+
+	// Ensure that the slice of bitmaps exists for the key and has enough bitmaps
+	for len(innerMap[key]) <= int(bitmapIndex) {
+		innerMap[key] = append(innerMap[key], ruleBitmap{})
+	}
+
+	// Update the proper bitmap
+	updateRuleBitmap(&innerMap[key][bitmapIndex], bitOffset, eqType)
 }
 
 // getOrCreateRuleBitmapMap ensures that an inner map exists for a given filterVersionKey.
 // If it doesn't exist, a new map is created and stored in the outer map.
 func getOrCreateRuleBitmapMap[K comparable](
-	outerMap map[filterVersionKey]map[K]ruleBitmap,
+	outerMap map[filterVersionKey]map[K][]ruleBitmap,
 	vKey filterVersionKey,
-) map[K]ruleBitmap {
+) map[K][]ruleBitmap {
 	if innerMap, exists := outerMap[vKey]; exists {
 		return innerMap
 	}
-	innerMap := make(map[K]ruleBitmap)
+	innerMap := make(map[K][]ruleBitmap)
 	outerMap[vKey] = innerMap
 	return innerMap
 }
 
 // updateRuleBitmap updates the rule bitmap for a specific rule and equality type.
-func updateRuleBitmap(rb *ruleBitmap, ruleID uint8, eqType equalityType) {
+func updateRuleBitmap(rb *ruleBitmap, bitOffset uint, eqType equalityType) {
 	switch eqType {
 	case equal:
-		utils.SetBit(&rb.equalsInRules, uint(ruleID))
-		utils.SetBit(&rb.keyUsedInRules, uint(ruleID))
+		utils.SetBit(&rb.equalsInRules, bitOffset)
+		utils.SetBit(&rb.keyUsedInRules, bitOffset)
 	case notEqual:
-		utils.ClearBit(&rb.equalsInRules, uint(ruleID))
-		utils.SetBit(&rb.keyUsedInRules, uint(ruleID))
+		utils.ClearBit(&rb.equalsInRules, bitOffset)
+		utils.SetBit(&rb.keyUsedInRules, bitOffset)
 	}
 }
 
@@ -277,36 +285,76 @@ func (pm *PolicyManager) processRuleDataFilters(
 func (pm *PolicyManager) processStringFilterRule(
 	filterMaps *filterMaps,
 	vKey filterVersionKey,
-	ruleID uint8,
+	ruleID uint,
 	equalities filters.StringFilterEqualities,
 	strFilterCfg *stringFilterConfig,
 ) {
+	// Calculate bitmap index and bit offset
+	bitmapIndex := ruleID / 64
+	bitOffset := ruleID % 64
+
 	// Handle exact matches
 	exactBitmaps := getOrCreateRuleBitmapMap(filterMaps.dataExactFilters, vKey)
 	for k := range equalities.ExactNotEqual {
 		eb := exactBitmaps[k]
-		updateRuleBitmap(&eb, ruleID, notEqual)
+		for len(exactBitmaps) <= int(bitmapIndex) {
+			eb = append(eb, ruleBitmap{})
+		}
+		updateRuleBitmap(&eb[bitmapIndex], bitOffset, notEqual)
 		exactBitmaps[k] = eb
-		utils.SetBit(&strFilterCfg.exactEnabled, uint(ruleID))
-		utils.SetBit(&strFilterCfg.exactMatchIfKeyMissing, uint(ruleID))
+
+		// Ensure strFilterCfg.exactEnabled has enough bitmaps
+		for len(strFilterCfg.exactEnabled) <= int(bitmapIndex) {
+			strFilterCfg.exactEnabled = append(strFilterCfg.exactEnabled, 0)
+		}
+		utils.SetBit(&strFilterCfg.exactEnabled[bitmapIndex], bitOffset)
+
+		// Ensure strFilterCfg.exactMatchIfKeyMissing has enough bitmaps
+		for len(strFilterCfg.exactMatchIfKeyMissing) <= int(bitmapIndex) {
+			strFilterCfg.exactMatchIfKeyMissing = append(strFilterCfg.exactMatchIfKeyMissing, 0)
+		}
+		utils.SetBit(&strFilterCfg.exactMatchIfKeyMissing[bitmapIndex], bitOffset)
 	}
 	for k := range equalities.ExactEqual {
 		eb := exactBitmaps[k]
-		updateRuleBitmap(&eb, ruleID, equal)
+		for len(exactBitmaps) <= int(bitmapIndex) {
+			eb = append(eb, ruleBitmap{})
+		}
+		updateRuleBitmap(&eb[bitmapIndex], bitOffset, equal)
 		exactBitmaps[k] = eb
-		utils.SetBit(&strFilterCfg.exactEnabled, uint(ruleID))
+
+		// Ensure strFilterCfg.exactEnabled has enough bitmaps
+		for len(strFilterCfg.exactEnabled) <= int(bitmapIndex) {
+			strFilterCfg.exactEnabled = append(strFilterCfg.exactEnabled, 0)
+		}
+		utils.SetBit(&strFilterCfg.exactEnabled[bitmapIndex], bitOffset)
 	}
 
 	// Handle prefix matches
 	prefixBitmaps := getOrCreateRuleBitmapMap(filterMaps.dataPrefixFilters, vKey)
 	for k := range equalities.PrefixNotEqual {
 		updatePrefixOrSuffixMatch(prefixBitmaps, k, ruleID, notEqual)
-		utils.SetBit(&strFilterCfg.prefixEnabled, uint(ruleID))
-		utils.SetBit(&strFilterCfg.prefixMatchIfKeyMissing, uint(ruleID))
+
+		// Ensure strFilterCfg.prefixEnabled has enough bitmaps
+		for len(strFilterCfg.prefixEnabled) <= int(bitmapIndex) {
+			strFilterCfg.prefixEnabled = append(strFilterCfg.prefixEnabled, 0)
+		}
+		utils.SetBit(&strFilterCfg.prefixEnabled[bitmapIndex], bitOffset)
+
+		// Ensure strFilterCfg.prefixMatchIfKeyMissing has enough bitmaps
+		for len(strFilterCfg.prefixMatchIfKeyMissing) <= int(bitmapIndex) {
+			strFilterCfg.prefixMatchIfKeyMissing = append(strFilterCfg.prefixMatchIfKeyMissing, 0)
+		}
+		utils.SetBit(&strFilterCfg.prefixMatchIfKeyMissing[bitmapIndex], bitOffset)
 	}
 	for k := range equalities.PrefixEqual {
 		updatePrefixOrSuffixMatch(prefixBitmaps, k, ruleID, equal)
-		utils.SetBit(&strFilterCfg.prefixEnabled, uint(ruleID))
+
+		// Ensure strFilterCfg.prefixEnabled has enough bitmaps
+		for len(strFilterCfg.prefixEnabled) <= int(bitmapIndex) {
+			strFilterCfg.prefixEnabled = append(strFilterCfg.prefixEnabled, 0)
+		}
+		utils.SetBit(&strFilterCfg.prefixEnabled[bitmapIndex], bitOffset)
 	}
 
 	// Handle suffix matches
@@ -314,45 +362,74 @@ func (pm *PolicyManager) processStringFilterRule(
 	for k := range equalities.SuffixNotEqual {
 		reversed := utils.ReverseString(k)
 		updatePrefixOrSuffixMatch(suffixBitmaps, reversed, ruleID, notEqual)
-		utils.SetBit(&strFilterCfg.suffixEnabled, uint(ruleID))
-		utils.SetBit(&strFilterCfg.suffixMatchIfKeyMissing, uint(ruleID))
+
+		// Ensure strFilterCfg.suffixEnabled has enough bitmaps
+		for len(strFilterCfg.suffixEnabled) <= int(bitmapIndex) {
+			strFilterCfg.suffixEnabled = append(strFilterCfg.suffixEnabled, 0)
+		}
+		utils.SetBit(&strFilterCfg.suffixEnabled[bitmapIndex], bitOffset)
+
+		// Ensure strFilterCfg.suffixMatchIfKeyMissing has enough bitmaps
+		for len(strFilterCfg.suffixMatchIfKeyMissing) <= int(bitmapIndex) {
+			strFilterCfg.suffixMatchIfKeyMissing = append(strFilterCfg.suffixMatchIfKeyMissing, 0)
+		}
+		utils.SetBit(&strFilterCfg.suffixMatchIfKeyMissing[bitmapIndex], bitOffset)
 	}
 	for k := range equalities.SuffixEqual {
 		reversed := utils.ReverseString(k)
 		updatePrefixOrSuffixMatch(suffixBitmaps, reversed, ruleID, equal)
-		utils.SetBit(&strFilterCfg.suffixEnabled, uint(ruleID))
+
+		// Ensure strFilterCfg.suffixEnabled has enough bitmaps
+		for len(strFilterCfg.suffixEnabled) <= int(bitmapIndex) {
+			strFilterCfg.suffixEnabled = append(strFilterCfg.suffixEnabled, 0)
+		}
+		utils.SetBit(&strFilterCfg.suffixEnabled[bitmapIndex], bitOffset)
 	}
 }
 
 // updatePrefixOrSuffixMatch handles both prefix and suffix matches by updating the rule bitmap
 // for the given pattern and rule ID. It also updates existing entries with matching prefixes.
 func updatePrefixOrSuffixMatch(
-	ruleBitmaps map[string]ruleBitmap,
+	ruleBitmaps map[string][]ruleBitmap,
 	pattern string,
-	ruleID uint8,
+	ruleID uint,
 	eqType equalityType,
 ) {
-	newRuleBitmap := ruleBitmaps[pattern]
+	bitmapIndex := ruleID / 64
+	bitOffset := ruleID % 64
+
+	// Ensure slice exists and has enough capacity
+	for len(ruleBitmaps[pattern]) <= int(bitmapIndex) {
+		ruleBitmaps[pattern] = append(ruleBitmaps[pattern], ruleBitmap{})
+	}
+
+	newRuleBitmap := ruleBitmaps[pattern][bitmapIndex]
 	var longestMatch string
 	var hasMatch bool
 
 	// Iterate through existing entries to find overlapping prefixes
-	for existingPattern, existingRuleBitmap := range ruleBitmaps {
+	for existingPattern, existingRuleBitmaps := range ruleBitmaps {
 		if strings.HasPrefix(existingPattern, pattern) {
 			// Update existing rule bitmap for entries with matching prefix
-			updateRuleBitmap(&existingRuleBitmap, ruleID, eqType)
-			ruleBitmaps[existingPattern] = existingRuleBitmap
+			for len(existingRuleBitmaps) <= int(bitmapIndex) {
+				existingRuleBitmaps = append(existingRuleBitmaps, ruleBitmap{})
+			}
+			updateRuleBitmap(&existingRuleBitmaps[bitmapIndex], bitOffset, eqType)
+			ruleBitmaps[existingPattern] = existingRuleBitmaps
 		} else if strings.HasPrefix(pattern, existingPattern) {
 			// Find the longest existing prefix match
 			if !hasMatch || len(existingPattern) > len(longestMatch) {
 				longestMatch = existingPattern
-				newRuleBitmap = existingRuleBitmap
+				for len(existingRuleBitmaps) <= int(bitmapIndex) {
+					existingRuleBitmaps = append(existingRuleBitmaps, ruleBitmap{})
+				}
+				newRuleBitmap = existingRuleBitmaps[bitmapIndex]
 				hasMatch = true
 			}
 		}
 	}
 
 	// Update the rule bitmap for the new pattern
-	updateRuleBitmap(&newRuleBitmap, ruleID, eqType)
-	ruleBitmaps[pattern] = newRuleBitmap
+	updateRuleBitmap(&newRuleBitmap, bitOffset, eqType)
+	ruleBitmaps[pattern][bitmapIndex] = newRuleBitmap
 }

@@ -275,9 +275,8 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, normalizedLeaderStartTime)
 			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, normalizedParentStartTime)
 
-			// derived events will match since there exist a dependency rule for them
-			// TODO: verify the case where there are filters in userspace - they shouldn't clear dependency rule bit
-			if t.matchRules(evt) == 0 {
+			// TODO(unrelated): move this to process stage (why did it moved here in the first place?)
+			if !t.matchRules(evt) {
 				_ = t.stats.EventsFiltered.Increment()
 				t.eventsPool.Put(evt)
 				continue
@@ -298,12 +297,16 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 // not match the event after userland filters are applied. In those cases, the rule bit is cleared
 // (so the event is "filtered" for that rule). This may be called in different stages of the
 // pipeline (decode, derive, engine).
-func (t *Tracee) matchRules(event *trace.Event) uint64 {
+func (t *Tracee) matchRules(event *trace.Event) bool {
 	eventID := events.ID(event.EventID)
 	bitmap := event.MatchedRulesKernel
 
 	// range through each userland filterable rule
 	for _, rule := range t.policyManager.GetUserlandRules(eventID) {
+		if rule.ID > 63 {
+			continue // we currently don't support filtering for rules with ID > 63
+		}
+
 		// Rule ID is the bit offset in the bitmap.
 		bitOffset := uint(rule.ID)
 
@@ -380,7 +383,7 @@ func (t *Tracee) matchRules(event *trace.Event) uint64 {
 
 	event.MatchedRulesUser = bitmap // store filtered bitmap to be used in sink stage
 
-	return bitmap
+	return bitmap > 0 || t.policyManager.HasOverflowRules(eventID)
 }
 
 func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
@@ -433,7 +436,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 
 			// Get a bitmap with all rules containing container filters
 			eventId := events.ID(event.EventID)
-			rulesWithContainerFilter := t.policyManager.GetContainerFilteredRulesBitmap(eventId)
+			containerFilteredRules := t.policyManager.GetContainerFilteredRulesBitmap(eventId)
 
 			// Filter out events that don't have a container ID from all the rules that
 			// have container filters. This will guarantee that any of those rules
@@ -444,7 +447,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 			// enabled, so, in those cases, ignore the event IF the event is not a
 			// cgroup_mkdir or cgroup_rmdir.
 
-			if rulesWithContainerFilter > 0 && event.Container.ID == "" {
+			if len(containerFilteredRules) > 0 && containerFilteredRules[0] > 0 && event.Container.ID == "" {
 				// never skip cgroup_{mkdir,rmdir}: container_{create,remove} events need it
 				if eventId == events.CgroupMkdir || eventId == events.CgroupRmdir {
 					goto sendEvent
@@ -454,8 +457,8 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 					"eventId", eventId)
 
 				// remove event from rules with container filters
-				utils.ClearBits(&event.MatchedRulesKernel, rulesWithContainerFilter)
-				utils.ClearBits(&event.MatchedRulesUser, rulesWithContainerFilter)
+				utils.ClearBits(&event.MatchedRulesKernel, containerFilteredRules[0])
+				utils.ClearBits(&event.MatchedRulesUser, containerFilteredRules[0])
 
 				if event.MatchedRulesKernel == 0 {
 					t.eventsPool.Put(event)
@@ -493,6 +496,9 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 				if event == nil {
 					continue // might happen during initialization (ctrl+c seg faults)
 				}
+
+				// TODO (unrelated): avoid any copy if there are no derivations for the event
+				// This can be done by adding a new function in derive package to check if derived events exist
 
 				// Get a copy of our event before sending it down the pipeline. This is
 				// needed because later modification of the event (in particular of the
@@ -539,7 +545,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					case events.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
-						if t.matchRules(event) == 0 {
+						if !t.matchRules(event) {
 							_ = t.stats.EventsFiltered.Increment()
 							continue
 						}
@@ -580,8 +586,8 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 
 			// Only emit events requested by the user and matched by at least one rule.
 			id := events.ID(event.EventID)
-			event.MatchedRulesUser, event.MatchedPolicies = t.policyManager.GetMatchedRulesInfo(id, event.MatchedRulesUser)
-			if event.MatchedRulesUser == 0 {
+			event.MatchedPolicies = t.policyManager.GetMatchedRulesInfo(id, event.MatchedRulesUser)
+			if len(event.MatchedPolicies) == 0 {
 				t.eventsPool.Put(event)
 				continue
 			}
