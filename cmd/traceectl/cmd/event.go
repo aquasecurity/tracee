@@ -1,28 +1,21 @@
 package cmd
 
 import (
-	"context"
-	"fmt"
-	"strconv"
-	"strings"
+	"os"
 
 	"github.com/spf13/cobra"
 
-	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/client"
-	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/cmd/formatter"
+	cmdcobra "github.com/aquasecurity/tracee/cmd/traceectl/pkg/cmd/cobra"
+	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/cmd/flags"
+	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/cmd/printer"
 )
 
 var eventCmd = &cobra.Command{
-	Use:   "event [enable | disable | describe | list]",
+	Use:   "event [enable | disable | describe]",
 	Short: "Manage tracee events",
 	Long: `Manage events in tracee.
 
-	Subcommands:
-	  enable    Enable specific events.
-	  disable   Disable specific events.
-	  describe  Get descriptions of available events.
-	  list      List available events. 
 
 	Examples:
 	  tracee event enable security_file_open
@@ -31,159 +24,89 @@ var eventCmd = &cobra.Command{
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			cmd.PrintErrln("Error: no event names provided. Please specify at least one event to enable.")
-			return
-		}
+		cmd.Help()
 	},
 }
 
 func init() {
-	eventCmd.AddCommand(listEventCmd)
+	rootCmd.AddCommand(eventCmd)
+	//
+	// describe Event
+	//
 	eventCmd.AddCommand(describeEventCmd)
-	eventCmd.AddCommand(enableEventCmd)
-	eventCmd.AddCommand(disableEventCmd)
 
-	listEventCmd.Flags().StringVarP(&formatFlag, "format", "f", formatter.FormatTable, "Output format (json|table)")
-	describeEventCmd.Flags().StringVarP(&formatFlag, "format", "f", formatter.FormatTable, "Output format (json|table)")
+	describeEventCmd.Flags().String(flags.ServerFlag, client.DefaultSocket, "Specify the server unix socket.")
+	describeEventCmd.Flags().String(flags.FormatFlag, printer.TableFormat, "Specify the format (json or table).")
+	describeEventCmd.Flags().String(flags.OutputFlag, "stdout", "Specify the output destination.")
+
+	//
+	// Enable Event
+	//
+	eventCmd.AddCommand(enableEventCmd)
+	enableEventCmd.Flags().String(flags.ServerFlag, client.DefaultSocket, "Specify the server unix socket.")
+	enableEventCmd.Flags().String(flags.OutputFlag, "stdout", "Specify the output destination.")
+
+	//
+	// Disable Event
+	//
+	eventCmd.AddCommand(disableEventCmd)
+	disableEventCmd.Flags().String(flags.ServerFlag, client.DefaultSocket, "Specify the server unix socket.")
+	disableEventCmd.Flags().String(flags.OutputFlag, "stdout", "Specify the output destination.")
 }
 
-var listEventCmd = &cobra.Command{
-	Use:   "list",
+var describeEventCmd = &cobra.Command{
+	Use:   "describe <event name>",
 	Short: "List available events",
 	Long:  `Lists all available event definitions (built-in and plugin-defined), providing a brief summary of each.`,
-	Args:  cobra.NoArgs,
+	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		listEvents(cmd, args)
+		runner, err := cmdcobra.GetDescribeEvent(cmd)
+		if err != nil {
+			cmd.PrintErrf("error creating runner: %s\n", err)
+			os.Exit(1)
+		}
+
+		if err := runner.Run(args); err != nil {
+			cmd.PrintErrf("error running: %s\n", err)
+			os.Exit(1)
+		}
 	},
 }
-var describeEventCmd = &cobra.Command{
-	Use:   "describe <event_name>",
-	Short: "Describe an event",
-	Long:  `Retrieves the detailed definition of a specific event, including its fields, types, and other metadata.`,
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		eventDescriptions(cmd, args)
-	},
-}
+
 var enableEventCmd = &cobra.Command{
 	Use:   "enable <event_name>",
 	Short: "Enable an event",
 	Long:  `Enables capturing of a specific event type.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		enableEvents(cmd, args[0])
+		runner, err := cmdcobra.GetEnableEvent(cmd)
+		if err != nil {
+			cmd.PrintErrf("error creating runner: %s\n", err)
+			os.Exit(1)
+		}
+
+		if err := runner.Run(args); err != nil {
+			cmd.PrintErrf("error running: %s\n", err)
+			os.Exit(1)
+		}
 	},
 }
+
 var disableEventCmd = &cobra.Command{
 	Use:   "disable <event_name>",
 	Short: "Disable an event",
 	Long:  `Disables capturing of a specific event type.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		disableEvents(cmd, args[0])
+		runner, err := cmdcobra.GetDisableEvent(cmd)
+		if err != nil {
+			cmd.PrintErrf("error creating runner: %s\n", err)
+			os.Exit(1)
+		}
+
+		if err := runner.Run(args); err != nil {
+			cmd.PrintErrf("error running: %s\n", err)
+			os.Exit(1)
+		}
 	},
-}
-
-func listEvents(cmd *cobra.Command, args []string) {
-	traceeClient, err := client.NewServiceClient(server)
-	if err != nil {
-		cmd.PrintErrln("Error creating client: ", err)
-		return
-	}
-	defer traceeClient.CloseConnection()
-
-	response, err := traceeClient.GetEventDefinitions(context.Background(), &pb.GetEventDefinitionsRequest{EventNames: args})
-	if err != nil {
-		cmd.PrintErrln("Error getting event definitions: ", err)
-		return
-	}
-	format, err := formatter.NewFormatter(formatFlag, cmd)
-	if err != nil {
-		cmd.PrintErrln("Error creating formatter: ", err)
-		return
-	}
-	switch format.GetFormat() {
-	case formatter.FormatJson:
-		format.PrintJson(response)
-	case formatter.FormatTable:
-		format.PrintTableHeaders([]string{"ID", "Name", "Version", "Tags"})
-		for _, event := range response.Definitions {
-			// remove descriptions
-			format.PrintTableRow(prepareDescription(event)[:4])
-		}
-	default:
-		cmd.PrintErrln("output format not supported")
-		return
-	}
-}
-
-func eventDescriptions(cmd *cobra.Command, args []string) {
-	traceeClient, err := client.NewServiceClient(server)
-	if err != nil {
-		cmd.PrintErrln("Error creating client: ", err)
-		return
-	}
-	defer traceeClient.CloseConnection()
-
-	response, err := traceeClient.GetEventDefinitions(context.Background(), &pb.GetEventDefinitionsRequest{EventNames: args})
-	if err != nil {
-		cmd.PrintErrln("Error getting event definitions: ", err)
-		return
-	}
-	format, err := formatter.NewFormatter(formatFlag, cmd)
-	if err != nil {
-		cmd.PrintErrln("Error creating formatter: ", err)
-		return
-	}
-	switch format.GetFormat() {
-	case formatter.FormatJson:
-		format.PrintJson(response)
-	case formatter.FormatTable:
-		format.PrintTableHeaders([]string{"ID", "Name", "Version", "Tags", "Description"})
-		for _, event := range response.Definitions {
-			format.PrintTableRow(prepareDescription(event))
-		}
-	default:
-		cmd.PrintErrln("output format not supported")
-		return
-	}
-}
-func prepareDescription(event *pb.EventDefinition) []string {
-	return []string{
-		strconv.Itoa(int(event.Id)),
-		event.Name,
-		fmt.Sprintf("%d.%d.%d", event.Version.Major, event.Version.Minor, event.Version.Patch),
-		strings.Join(event.Tags, ", "),
-		event.Description,
-	}
-}
-func enableEvents(cmd *cobra.Command, eventName string) {
-	traceeClient, err := client.NewServiceClient(server)
-	if err != nil {
-		cmd.PrintErrln("Error creating client: ", err)
-		return
-	}
-	defer traceeClient.CloseConnection()
-
-	_, err = traceeClient.EnableEvent(context.Background(), &pb.EnableEventRequest{Name: eventName})
-	if err != nil {
-		cmd.PrintErrln("Error enabling event:", err)
-		return
-	}
-	cmd.Printf("Enabled event: %s\n", eventName)
-}
-func disableEvents(cmd *cobra.Command, eventName string) {
-	traceeClient, err := client.NewServiceClient(server)
-	if err != nil {
-		cmd.PrintErrln("Error creating client: ", err)
-		return
-	}
-	defer traceeClient.CloseConnection()
-	_, err = traceeClient.DisableEvent(context.Background(), &pb.DisableEventRequest{Name: eventName})
-	if err != nil {
-		cmd.PrintErrln("Error disabling event:", err)
-		return
-	}
-	cmd.Printf("Disabled event: %s\n", eventName)
 }

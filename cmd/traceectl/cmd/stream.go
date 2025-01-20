@@ -1,139 +1,54 @@
 package cmd
 
 import (
-	"errors"
-	"fmt"
-	"io"
-	"strconv"
-	"strings"
+	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
-	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/client"
-	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/cmd/formatter"
+	cmdcobra "github.com/aquasecurity/tracee/cmd/traceectl/pkg/cmd/cobra"
+	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/cmd/flags"
+	"github.com/aquasecurity/tracee/cmd/traceectl/pkg/cmd/printer"
 )
 
 var streamCmd = &cobra.Command{
-	Use:   "stream [policies...]",
+	Use:   "stream",
 	Short: "Stream events from tracee",
 	Long: `Stream Management:
 Stream events directly from tracee to the preferred output format.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		streamEvents(cmd, args)
+		runner, err := cmdcobra.GetStream(cmd)
+		if err != nil {
+			cmd.PrintErrf("error creating runner: %s\n", err)
+			os.Exit(1)
+		}
+
+		if err := runner.Run(); err != nil {
+			cmd.PrintErrf("error running: %s\n", err)
+			os.Exit(1)
+		}
 	},
 }
 
 func init() {
-	streamCmd.Flags().StringVarP(&formatFlag, "format", "f", formatter.FormatTable, "Specify the output format for streamed events (json|table). Defaults to table.")
-}
+	rootCmd.AddCommand(streamCmd)
 
-func streamEvents(cmd *cobra.Command, args []string) {
-	traceeClient, err := client.NewServiceClient(server)
-	if err != nil {
-		cmd.PrintErrln("Error creating client: ", err)
-		return
+	streamCmd.Flags().String(flags.FormatFlag, printer.TableFormat, "Specify the format for streamed events (json or table).")
+	if err := viper.BindPFlag(flags.FormatFlag, streamCmd.Flags().Lookup(flags.FormatFlag)); err != nil {
+		panic(err)
 	}
-	defer traceeClient.CloseConnection()
-
-	// request to stream events
-	req := &pb.StreamEventsRequest{Policies: args}
-	stream, err := traceeClient.StreamEvents(cmd.Context(), req)
-	if err != nil {
-		cmd.PrintErrln("Error calling Stream: ", err)
-		return
+	streamCmd.Flags().String(flags.ServerFlag, client.DefaultSocket, "Specify the server unix socket.")
+	if err := viper.BindPFlag(flags.ServerFlag, streamCmd.Flags().Lookup(flags.ServerFlag)); err != nil {
+		panic(err)
 	}
-	// create formatter
-	format, err := formatter.NewFormatter(formatFlag, cmd)
-	if err != nil {
-		cmd.PrintErrln("Error creating formatter: ", err)
-		return
+	streamCmd.Flags().String(flags.OutputFlag, flags.DefaultOutput, "Specify the output destination for streamed events.")
+	if err := viper.BindPFlag(flags.OutputFlag, streamCmd.Flags().Lookup(flags.OutputFlag)); err != nil {
+		panic(err)
 	}
-	switch format.GetFormat() {
-	case formatter.FormatJson:
-		for {
-			res, err := stream.Recv()
-			if err != nil {
-				// End of stream\close connectio
-				if errors.Is(err, io.EOF) {
-					break
-				}
-				cmd.PrintErrln("Error receiving streamed event")
-			}
-			format.PrintJson(res.Event)
-		}
-	case formatter.FormatTable:
-		format.PrintTableHeaders([]string{"TIME", "EVENT NAME", "POLICIES", "PID", "DATA"})
-		for {
-			res, err := stream.Recv()
-			if err != nil {
-				// End of stream\close connection
-				if errors.Is(err, io.EOF) {
-					break
-				}
-				cmd.PrintErrln("Error receiving streamed event")
-			}
-			format.PrintTableRow(prepareEvent(res.Event))
-		}
-	default:
-		cmd.PrintErrln("output format not supported")
-		return
-	}
-}
-func prepareEvent(event *pb.Event) []string {
-	return []string{
-		event.Timestamp.AsTime().Format("15:04:05.000"),
-		event.Name,
-		strings.Join(event.Policies.Matched, ","),
-		strconv.Itoa(int(event.Context.Process.Pid.Value)),
-		getEventData(event.Data),
-	}
-}
-func getEventData(data []*pb.EventValue) string {
-	var result []string
-	for _, ev := range data {
-		result = append(result, getEventName(ev)+getEventValue(ev))
-	}
-	return strings.Join(result, ", ")
-}
-func getEventName(ev *pb.EventValue) string {
-	return strings.ToUpper(ev.Name[0:1]) + ev.Name[1:] + ": "
-}
-func getEventValue(ev *pb.EventValue) string {
-	switch v := ev.Value.(type) {
-	case *pb.EventValue_Int32:
-		return fmt.Sprintf("%d", v.Int32)
-	case *pb.EventValue_Int64:
-		return fmt.Sprintf("%d", v.Int64)
-	case *pb.EventValue_UInt32:
-		return fmt.Sprintf("%d", v.UInt32)
-	case *pb.EventValue_UInt64:
-		return fmt.Sprintf("%d", v.UInt64)
-	case *pb.EventValue_Str:
-		return v.Str
-	case *pb.EventValue_Bytes:
-		return fmt.Sprintf("%x", v.Bytes)
-	case *pb.EventValue_Bool:
-		if v.Bool {
-			return "true"
-		}
-		return "false"
-	case *pb.EventValue_StrArray:
-		return strings.Join(v.StrArray.Value, ", ")
-	case *pb.EventValue_Int32Array:
-		var result []string
-		for _, val := range v.Int32Array.Value {
-			result = append(result, strconv.Itoa(int(val)))
-		}
-		return strings.Join(result, ", ")
-	case *pb.EventValue_UInt64Array:
-		var result []string
-		for _, val := range v.UInt64Array.Value {
-			result = append(result, strconv.Itoa(int(val)))
-		}
-		return strings.Join(result, ", ")
-	default:
-		return "unknown"
+	streamCmd.Flags().StringSlice(flags.PolicyFlag, []string{""}, "Specify the policies for streamed events.")
+	if err := viper.BindPFlag(flags.PolicyFlag, streamCmd.Flags().Lookup(flags.PolicyFlag)); err != nil {
+		panic(err)
 	}
 }

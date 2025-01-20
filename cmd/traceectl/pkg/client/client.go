@@ -3,26 +3,38 @@ package client
 import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 )
 
 const (
-	Protocol_UNIX = "unix"
-	Protocol_TCP  = "tcp"
-	Socket        = "/var/run/tracee.sock"
+	DefaultSocket = "/var/run/tracee.sock"
 )
 
-type ServerInfo struct {
-	ConnectionType string
-	Addr           string
+type Server struct {
+	Addr             string
+	conn             *grpc.ClientConn
+	diagnosticClient pb.DiagnosticServiceClient
+	serviceClient    pb.TraceeServiceClient
 }
 
-func connectToServer(server ServerInfo) (*grpc.ClientConn, error) {
+func NewClient(addr string) (*Server, error) {
+	return &Server{
+		Addr: addr,
+	}, nil
+}
+func (s *Server) Connect() error {
 	var opts []grpc.DialOption
-	var conn *grpc.ClientConn
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	conn, err := grpc.NewClient(server.Addr, opts...)
+	conn, err := grpc.NewClient("unix://"+s.Addr, opts...)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return conn, nil
+	s.conn = conn
+	s.diagnosticClient = pb.NewDiagnosticServiceClient(s.conn)
+	s.serviceClient = pb.NewTraceeServiceClient(s.conn)
+	return nil
+}
+func (s *Server) Close() error {
+	return s.conn.Close()
 }
