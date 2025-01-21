@@ -8,7 +8,7 @@ import (
 )
 
 func Benchmark_newProcStat(b *testing.B) {
-	file := tests.CreateTempFile(b, content)
+	file := tests.CreateTempFile(b, statContent)
 	defer os.Remove(file.Name())
 
 	b.ResetTimer()

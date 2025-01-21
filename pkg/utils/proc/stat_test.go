@@ -15,6 +15,13 @@ const (
 	maxProcStatLength = 8
 )
 
+// TestProcStat_PrintSizes prints the sizes of the structs used in the ProcStat type.
+// Run it as DEBUG test to see the output.
+func TestProcStat_PrintSizes(t *testing.T) {
+	procStat := ProcStat{}
+	tests.PrintStructSizes(t, os.Stdout, procStat)
+}
+
 func TestProcStatSize(t *testing.T) {
 	t.Parallel()
 
@@ -45,14 +52,14 @@ func TestProcStatSize(t *testing.T) {
 	}
 }
 
-var content = "3529367 (Isolated (((Web))) Co) S 3437358 3433422 3433422 0 -1 4194560 " +
+var statContent = "3529367 (Isolated (((Web))) Co) S 3437358 3433422 3433422 0 -1 4194560 " +
 	"50679 0 0 0 566 643 0 0 20 0 29 0 46236871 2609160192 33222 " +
 	"18446744073709551615 94165013317536 94165014109840 140730010890672 " +
 	"0 0 0 0 16846850 1082134264 0 0 0 17 29 0 0 0 0 0 94165014122560 " +
 	"94165014122664 94165887094784 140730010895394 140730010895699 " +
-	"140730010895699 140730010898399 0\n"
+	"140730010895699 140730010898399 -1\n"
 
-func TestProcStatParsing(t *testing.T) {
+func Test_newProcStat(t *testing.T) {
 	t.Parallel()
 
 	tt := []struct {
@@ -71,12 +78,12 @@ func TestProcStatParsing(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			file := tests.CreateTempFile(t, content)
+			file := tests.CreateTempFile(t, statContent)
 			defer os.Remove(file.Name())
 
 			result, err := newProcStat(file.Name())
 			if err != nil {
-				t.Fatalf("Error parsing the proc stat: %v", err)
+				t.Fatalf("Error creating new ProcStat: %v", err)
 			}
 
 			if !cmp.Equal(*result, tc.expected, cmp.AllowUnexported(ProcStat{})) {
