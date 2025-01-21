@@ -318,7 +318,7 @@ func dealWithProcFsEntry(pt *ProcessTree, givenPid int) error {
 		return err
 	}
 
-	taskPath := fmt.Sprintf("/proc/%v/task", givenPid)
+	taskPath := proc.GetTaskPath(givenPid)
 	taskDirs, err := os.ReadDir(taskPath)
 	if err != nil {
 		return err

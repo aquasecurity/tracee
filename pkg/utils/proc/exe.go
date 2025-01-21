@@ -1,7 +1,6 @@
 package proc
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 
@@ -11,8 +10,9 @@ import (
 
 // GetProcNS returns the namespace ID of a given namespace and process.
 // To do so, it requires access to the /proc file system of the host, and CAP_SYS_PTRACE capability.
-func GetProcBinary(pid uint) (string, error) {
-	binPath, err := os.Readlink(fmt.Sprintf("/proc/%d/exe", pid))
+func GetProcBinary(pid int) (string, error) {
+	exePath := GetProcExePath(pid)
+	binPath, err := os.Readlink(exePath)
 	if err != nil {
 		return "", errfmt.Errorf("could not read exe file: %v", err)
 	}
@@ -37,12 +37,12 @@ func GetAllBinaryProcs() (map[string][]uint32, error) {
 	}
 	binProcs := map[string][]uint32{}
 	for _, proc := range procs {
-		procUint, _ := strconv.ParseUint(proc, 10, 32)
-		bin, _ := GetProcBinary(uint(procUint))
+		procInt, _ := strconv.ParseInt(proc, 10, 32)
+		bin, _ := GetProcBinary(int(procInt))
 		if _, ok := binProcs[bin]; !ok {
 			binProcs[bin] = []uint32{}
 		}
-		binProcs[bin] = append(binProcs[bin], uint32(procUint))
+		binProcs[bin] = append(binProcs[bin], uint32(procInt))
 	}
 
 	return binProcs, nil

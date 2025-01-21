@@ -3,7 +3,6 @@ package proc
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"os"
 )
 
@@ -72,14 +71,14 @@ var procStatusValueParserMap = map[string]procStatusValueParser{ // key: status 
 
 // NewThreadProcStatus reads the /proc/<pid>/task/<tid>/status file and parses it into a ProcStatus struct.
 func NewThreadProcStatus(pid, tid int) (*ProcStatus, error) {
-	filePath := fmt.Sprintf("/proc/%v/task/%v/status", pid, tid)
-	return newProcStatus(filePath)
+	taskStatusPath := GetTaskStatusPath(pid, tid)
+	return newProcStatus(taskStatusPath)
 }
 
 // NewProcStatus reads the /proc/<pid>/status file and parses it into a ProcStatus struct.
 func NewProcStatus(pid int) (*ProcStatus, error) {
-	filePath := fmt.Sprintf("/proc/%v/status", pid)
-	return newProcStatus(filePath)
+	statusPath := GetStatusPath(pid)
+	return newProcStatus(statusPath)
 }
 
 func newProcStatus(filePath string) (*ProcStatus, error) {

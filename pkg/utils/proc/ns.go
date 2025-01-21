@@ -2,7 +2,6 @@ package proc
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -71,7 +70,8 @@ func GetMountNSFirstProcesses() (map[int]int, error) {
 
 // GetProcessStartTime return the start time of the process using the procfs
 func GetProcessStartTime(pid uint) (int, error) {
-	stat, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
+	statPath := GetStatPath(int(pid))
+	stat, err := os.ReadFile(statPath)
 	if err != nil {
 		return 0, errfmt.WrapError(err)
 	}
@@ -112,7 +112,8 @@ type ProcNS struct {
 // GetAllProcNS return all the namespaces of a given process.
 // To do so, it requires access to the /proc file system of the host, and CAP_SYS_PTRACE capability.
 func GetAllProcNS(pid uint) (*ProcNS, error) {
-	nsDir, err := os.Open(fmt.Sprintf("/proc/%d/ns", pid))
+	nsDirPath := GetProcNSDirPath(int(pid))
+	nsDir, err := os.Open(nsDirPath)
 	if err != nil {
 		return nil, errfmt.Errorf("could not open ns dir: %v", err)
 	}
@@ -129,7 +130,8 @@ func GetAllProcNS(pid uint) (*ProcNS, error) {
 
 	var procNS ProcNS
 	for _, entry := range entries {
-		nsLink, err := os.Readlink(fmt.Sprintf("/proc/%d/ns/%s", pid, entry))
+		entryNSPath := nsDirPath + "/" + entry // /proc/<pid>/ns/<entry>
+		nsLink, err := os.Readlink(entryNSPath)
 		if err != nil {
 			return nil, errfmt.WrapError(err)
 		}
@@ -168,7 +170,8 @@ func GetAllProcNS(pid uint) (*ProcNS, error) {
 // GetProcNS returns the namespace ID of a given namespace and process.
 // To do so, it requires access to the /proc file system of the host, and CAP_SYS_PTRACE capability.
 func GetProcNS(pid uint, nsName string) (int, error) {
-	nsLink, err := os.Readlink(fmt.Sprintf("/proc/%d/ns/%s", pid, nsName))
+	nsPath := GetProcNSPath(int(pid), nsName)
+	nsLink, err := os.Readlink(nsPath)
 	if err != nil {
 		return 0, errfmt.Errorf("could not read ns file: %v", err)
 	}

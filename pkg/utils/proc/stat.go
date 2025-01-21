@@ -85,14 +85,14 @@ var procStatValueParserArray = [StatNumFields]procStatValueParser{
 
 // NewThreadProcStat reads the /proc/<pid>/task/<tid>/stat file and parses it into a ProcStat struct.
 func NewThreadProcStat(pid, tid int) (*ProcStat, error) {
-	filepath := fmt.Sprintf("/proc/%v/task/%v/stat", pid, tid)
-	return newProcStat(filepath)
+	taskStatPath := GetTaskStatPath(pid, tid)
+	return newProcStat(taskStatPath)
 }
 
 // NewProcStat reads the /proc/<pid>/stat file and parses it into a ProcStat struct.
 func NewProcStat(pid int) (*ProcStat, error) {
-	filePath := fmt.Sprintf("/proc/%v/stat", pid)
-	return newProcStat(filePath)
+	statPath := GetStatPath(pid)
+	return newProcStat(statPath)
 }
 
 func newProcStat(filePath string) (*ProcStat, error) {
