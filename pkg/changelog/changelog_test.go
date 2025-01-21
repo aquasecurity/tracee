@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/pkg/utils/tests"
 )
 
 func getTimeFromSec(second int) time.Time {
@@ -189,16 +189,16 @@ func TestChangelog_StructType(t *testing.T) {
 // Run it as DEBUG test to see the output.
 func TestChangelog_PrintSizes(t *testing.T) {
 	changelog1 := NewChangelog[int](1)
-	utils.PrintStructSizes(os.Stdout, changelog1)
+	tests.PrintStructSizes(t, os.Stdout, changelog1)
 
 	entry1 := entry[int]{}
-	utils.PrintStructSizes(os.Stdout, entry1)
+	tests.PrintStructSizes(t, os.Stdout, entry1)
 
 	//
 
 	changelog2 := NewChangelog[string](1)
-	utils.PrintStructSizes(os.Stdout, changelog2)
+	tests.PrintStructSizes(t, os.Stdout, changelog2)
 
 	entry2 := entry[string]{}
-	utils.PrintStructSizes(os.Stdout, entry2)
+	tests.PrintStructSizes(t, os.Stdout, entry2)
 }

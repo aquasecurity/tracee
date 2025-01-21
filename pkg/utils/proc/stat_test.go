@@ -1,10 +1,13 @@
 package proc
 
 import (
+	"os"
 	"testing"
 	"unsafe"
 
 	"github.com/google/go-cmp/cmp"
+
+	"github.com/aquasecurity/tracee/pkg/utils/tests"
 )
 
 const (
@@ -15,7 +18,7 @@ const (
 func TestProcStatSize(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	tt := []struct {
 		name         string
 		input        ProcStat
 		expectedSize uintptr
@@ -29,7 +32,7 @@ func TestProcStatSize(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
+	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			actualSize := unsafe.Sizeof(tc.input)
 
@@ -42,31 +45,36 @@ func TestProcStatSize(t *testing.T) {
 	}
 }
 
+var content = "3529367 (Isolated (((Web))) Co) S 3437358 3433422 3433422 0 -1 4194560 " +
+	"50679 0 0 0 566 643 0 0 20 0 29 0 46236871 2609160192 33222 " +
+	"18446744073709551615 94165013317536 94165014109840 140730010890672 " +
+	"0 0 0 0 16846850 1082134264 0 0 0 17 29 0 0 0 0 0 94165014122560 " +
+	"94165014122664 94165887094784 140730010895394 140730010895699 " +
+	"140730010895699 140730010898399 0\n"
+
 func TestProcStatParsing(t *testing.T) {
 	t.Parallel()
 
-	filePath, err := createMockStatFile()
-	if err != nil {
-		t.Fatalf("Failed to create mock stat file: %v", err)
-	}
-
-	testCases := []struct {
+	tt := []struct {
 		name     string
 		expected ProcStat
 	}{
 		{
-			name: "Correct parsing of mock stat file",
+			name: "Correct parsing of startTime",
 			expected: ProcStat{
 				startTime: 46236871,
 			},
 		},
 	}
 
-	for _, tc := range testCases {
+	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			result, err := newProcStat(filePath)
+			file := tests.CreateTempFile(t, content)
+			defer os.Remove(file.Name())
+
+			result, err := newProcStat(file.Name())
 			if err != nil {
 				t.Fatalf("Error parsing the proc stat: %v", err)
 			}

@@ -67,7 +67,8 @@ import (
 // ExitCode            int    // the thread's exit_code in the form reported by the waitpid system call
 
 const (
-	StatNumFields = 52
+	StatNumFields                 = 52
+	StatReadFileInitialBufferSize = 256 // greater than average size calculated from 10k stat files
 )
 
 // ProcStat represents the minimal required fields of the /proc stat file.
@@ -96,7 +97,7 @@ func NewProcStat(pid int) (*ProcStat, error) {
 }
 
 func newProcStat(filePath string) (*ProcStat, error) {
-	statBytes, err := os.ReadFile(filePath)
+	statBytes, err := ReadFile(filePath, StatReadFileInitialBufferSize)
 	if err != nil {
 		return nil, err
 	}
