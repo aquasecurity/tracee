@@ -2,6 +2,7 @@ package filters
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -177,22 +178,31 @@ func (f *DataFilter) Parse(id events.ID, fieldName string, operatorAndValues str
 			events.StackPivot:
 			if fieldName == "syscall" { // handle either syscall name or syscall id
 				_, err := strconv.Atoi(val)
-				if err != nil {
-					// if val is a syscall name, then we need to convert it to a syscall id
-					syscallID, ok := events.Core.GetDefinitionIDByName(val)
-					if !ok {
-						return val, errfmt.Errorf("invalid syscall name: %s", val)
-					}
-					val = strconv.Itoa(int(syscallID))
+				if err == nil {
+					return val, nil // val might already be a syscall id
 				}
+
+				// val might be a syscall name, then we need to convert it to a syscall id
+				syscallID, ok := events.Core.GetDefinitionIDByName(val)
+				if !ok {
+					return val, errfmt.Errorf("invalid syscall name: %s", val)
+				}
+				val = strconv.Itoa(int(syscallID))
 			}
+
 		case events.HookedSyscall:
 			if fieldName == "syscall" { // handle either syscall name or syscall id
 				dataEventID, err := strconv.Atoi(val)
-				if err == nil {
-					// if val is a syscall id, then we need to convert it to a syscall name
-					val = events.Core.GetDefinitionByID(events.ID(dataEventID)).GetName()
+				// check if dataEventID is a syscall id
+				if err != nil {
+					return val, nil // val might already be a syscall name
 				}
+				if dataEventID < 0 || dataEventID > math.MaxInt32 {
+					return val, errfmt.Errorf("invalid syscall id: %s", val)
+				}
+
+				// val might be a syscall id, then we need to convert it to a syscall name
+				val = events.Core.GetDefinitionByID(events.ID(dataEventID)).GetName()
 			}
 		}
 
