@@ -260,9 +260,9 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.Kubernetes = kubernetesData
 			evt.EventID = int(eCtx.EventID)
 			evt.EventName = evtName
-			evt.PoliciesVersion = eCtx.PoliciesVersion
-			evt.MatchedPoliciesKernel = eCtx.MatchedPolicies
-			evt.MatchedPoliciesUser = 0
+			evt.RulesVersion = eCtx.RulesVersion
+			evt.MatchedRulesKernel = eCtx.MatchedRules
+			evt.MatchedRulesUser = 0
 			evt.MatchedPolicies = []string{}
 			evt.ArgsNum = int(argnum)
 			evt.ReturnValue = int(eCtx.Retval)
@@ -275,19 +275,11 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, normalizedLeaderStartTime)
 			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, normalizedParentStartTime)
 
-			// If there aren't any policies that need filtering in userland, tracee **may** skip
-			// this event, as long as there aren't any derivatives or signatures that depend on it.
-			// Some base events (derivative and signatures) might not have set related policy bit,
-			// thus the need to continue with those within the pipeline.
-			if t.matchPolicies(evt) == 0 {
-				_, hasDerivation := t.eventDerivations[eventId]
-				reqBySig := t.policyManager.IsRequiredBySignature(eventId)
-
-				if !hasDerivation && !reqBySig {
-					_ = t.stats.EventsFiltered.Increment()
-					t.eventsPool.Put(evt)
-					continue
-				}
+			// TODO(unrelated): move this to process stage (why did it moved here in the first place?)
+			if !t.matchRules(evt) {
+				_ = t.stats.EventsFiltered.Increment()
+				t.eventsPool.Put(evt)
+				continue
 			}
 
 			select {
@@ -300,37 +292,25 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 	return out, errc
 }
 
-// matchPolicies does the userland filtering (policy matching) for events. It iterates through all
-// existing policies, that were set by the kernel in the event bitmap. Some of those policies might
-// not match the event after userland filters are applied. In those cases, the policy bit is cleared
-// (so the event is "filtered" for that policy). This may be called in different stages of the
+// matchRules does the userland filtering (rule matching) for events. It iterates through all
+// existing rules, that were set by the kernel in the event bitmap. Some of those rules might
+// not match the event after userland filters are applied. In those cases, the rule bit is cleared
+// (so the event is "filtered" for that rule). This may be called in different stages of the
 // pipeline (decode, derive, engine).
-func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
+func (t *Tracee) matchRules(event *trace.Event) bool {
 	eventID := events.ID(event.EventID)
-	bitmap := event.MatchedPoliciesKernel
+	bitmap := event.MatchedRulesKernel
 
-	// Short circuit if there are no policies in userland that need filtering.
-	if !t.policyManager.FilterableInUserland() {
-		event.MatchedPoliciesUser = bitmap // store untouched bitmap to be used in sink stage
-		return bitmap
-	}
-
-	// range through each userland filterable policy
-	for it := t.policyManager.CreateUserlandIterator(); it.HasNext(); {
-		p := it.Next()
-		// Policy ID is the bit offset in the bitmap.
-		bitOffset := uint(p.ID)
-
-		if !utils.HasBit(bitmap, bitOffset) { // event does not match this policy
-			continue
+	// range through each userland filterable rule
+	for _, rule := range t.policyManager.GetUserlandRules(eventID) {
+		if rule.ID > 63 {
+			continue // we currently don't support filtering for rules with ID > 63
 		}
 
-		// The event might have this policy bit set, but the policy might not have this
-		// event ID. This happens whenever the event submitted by the kernel is going to
-		// derive an event that this policy is interested in. In this case, don't do
-		// anything and let the derivation stage handle this event.
-		_, ok := p.Rules[eventID]
-		if !ok {
+		// Rule ID is the bit offset in the bitmap.
+		bitOffset := uint(rule.ID)
+
+		if !utils.HasBit(bitmap, bitOffset) { // event does not match this rule
 			continue
 		}
 
@@ -339,13 +319,13 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		//
 
 		// 1. event scope filters
-		if !p.Rules[eventID].ScopeFilter.Filter(*event) {
+		if !rule.Data.ScopeFilter.Filter(*event) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
 		// 2. event return value filters
-		if !p.Rules[eventID].RetFilter.Filter(int64(event.ReturnValue)) {
+		if !rule.Data.RetFilter.Filter(int64(event.ReturnValue)) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
@@ -356,7 +336,7 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		// events.PrintMemDump bypass was added due to issue #2546
 		// because it uses usermode applied filters as parameters for the event,
 		// which occurs after filtering
-		if eventID != events.PrintMemDump && !p.Rules[eventID].DataFilter.Filter(event.Args) {
+		if eventID != events.PrintMemDump && !rule.Data.DataFilter.Filter(event.Args) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
@@ -365,45 +345,45 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		// Do the userland filtering for filters with global ranges
 		//
 
-		if p.UIDFilter.Enabled() {
+		if rule.Policy.UIDFilter.Enabled() {
 			//
-			// An event with a matched policy for global min/max range might not match all
-			// policies with UID and PID filters with different min/max ranges, e.g.:
+			// An event with a matched rule for global min/max range might not match all
+			// rules with UID and PID filters with different min/max ranges, e.g.:
 			//
-			//   policy 59: comm=who, pid>100 and pid<1257738
-			//   policy 30: comm=who, pid>502000 and pid<505000
+			//   rule 59: comm=who, pid>100 and pid<1257738
+			//   rule 30: comm=who, pid>502000 and pid<505000
 			//
 			// For kernel filtering, the flags from the example would compute:
 			//
 			// pid_max = 1257738
 			// pid_min = 100
 			//
-			// Userland filtering needs to refine the bitmap to match the policies: A
-			// "who" command with pid 150 is a match ONLY for the policy 59 in this
+			// Userland filtering needs to refine the bitmap to match the rules: A
+			// "who" command with pid 150 is a match ONLY for the rule 59 in this
 			// example.
 			//
-			// Clear the policy bit if the event UID is not in THIS policy UID min/max range:
-			if !p.UIDFilter.InMinMaxRange(uint32(event.UserID)) {
+			// Clear the rule bit if the event UID is not in THIS rule UID min/max range:
+			if !rule.Policy.UIDFilter.InMinMaxRange(uint32(event.UserID)) {
 				utils.ClearBit(&bitmap, bitOffset)
 				continue
 			}
 		}
 
-		if p.PIDFilter.Enabled() {
+		if rule.Policy.PIDFilter.Enabled() {
 			//
-			// The same happens for the global PID min/max range. Clear the policy bit if
-			// the event PID is not in THIS policy PID min/max range.
+			// The same happens for the global PID min/max range. Clear the rule bit if
+			// the event PID is not in THIS rule PID min/max range.
 			//
-			if !p.PIDFilter.InMinMaxRange(uint32(event.HostProcessID)) {
+			if !rule.Policy.PIDFilter.InMinMaxRange(uint32(event.HostProcessID)) {
 				utils.ClearBit(&bitmap, bitOffset)
 				continue
 			}
 		}
 	}
 
-	event.MatchedPoliciesUser = bitmap // store filtered bitmap to be used in sink stage
+	event.MatchedRulesUser = bitmap // store filtered bitmap to be used in sink stage
 
-	return bitmap
+	return bitmap > 0 || t.policyManager.HasOverflowRules(eventID)
 }
 
 func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
@@ -423,7 +403,7 @@ func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
 
 // processEvents is the event processing pipeline stage. For each received event, it goes
 // through all event processors and check if there is any internal processing needed for
-// that event type.  It also clears policy bits for out-of-order container related events
+// that event type.  It also clears rule bits for out-of-order container related events
 // (after the processing logic). This stage also starts some logic that will be used by
 // the processing logic in subsequent events.
 func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
@@ -454,11 +434,12 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 				continue
 			}
 
-			// Get a bitmap with all policies containing container filters
-			policiesWithContainerFilter := t.policyManager.WithContainerFilterEnabled()
+			// Get a bitmap with all rules containing container filters
+			eventId := events.ID(event.EventID)
+			containerFilteredRules := t.policyManager.GetContainerFilteredRulesBitmap(eventId)
 
-			// Filter out events that don't have a container ID from all the policies that
-			// have container filters. This will guarantee that any of those policies
+			// Filter out events that don't have a container ID from all the rules that
+			// have container filters. This will guarantee that any of those rules
 			// won't get matched by this event. This situation might happen if the events
 			// from a recently created container appear BEFORE the initial cgroup_mkdir of
 			// that container root directory.  This could be solved by sorting the events
@@ -466,9 +447,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 			// enabled, so, in those cases, ignore the event IF the event is not a
 			// cgroup_mkdir or cgroup_rmdir.
 
-			if policiesWithContainerFilter > 0 && event.Container.ID == "" {
-				eventId := events.ID(event.EventID)
-
+			if len(containerFilteredRules) > 0 && containerFilteredRules[0] > 0 && event.Container.ID == "" {
 				// never skip cgroup_{mkdir,rmdir}: container_{create,remove} events need it
 				if eventId == events.CgroupMkdir || eventId == events.CgroupRmdir {
 					goto sendEvent
@@ -477,11 +456,11 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 				logger.Debugw("False container positive", "event.Timestamp", event.Timestamp,
 					"eventId", eventId)
 
-				// remove event from the policies with container filters
-				utils.ClearBits(&event.MatchedPoliciesKernel, policiesWithContainerFilter)
-				utils.ClearBits(&event.MatchedPoliciesUser, policiesWithContainerFilter)
+				// remove event from rules with container filters
+				utils.ClearBits(&event.MatchedRulesKernel, containerFilteredRules[0])
+				utils.ClearBits(&event.MatchedRulesUser, containerFilteredRules[0])
 
-				if event.MatchedPoliciesKernel == 0 {
+				if event.MatchedRulesKernel == 0 {
 					t.eventsPool.Put(event)
 					continue
 				}
@@ -518,9 +497,12 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					continue // might happen during initialization (ctrl+c seg faults)
 				}
 
+				// TODO (unrelated): avoid any copy if there are no derivations for the event
+				// This can be done by adding a new function in derive package to check if derived events exist
+
 				// Get a copy of our event before sending it down the pipeline. This is
 				// needed because later modification of the event (in particular of the
-				// matched policies) can affect the derivation and later pipeline logic
+				// matched rules) can affect the derivation and later pipeline logic
 				// acting on the derived event.
 
 				eventCopy := *event
@@ -546,6 +528,15 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					//        Let's keep an eye on that moving from experimental for these and similar cases in tracee.
 					event := &derivatives[i]
 
+					// Get matched rules for derived event based on base event matches
+					event.MatchedRulesUser = t.policyManager.GetDerivedEventMatchedRules(
+						events.ID(event.EventID),     // derived event ID
+						events.ID(eventCopy.EventID), // base event ID
+						eventCopy.MatchedRulesUser,   // base event matched rules bitmap
+					)
+					// We need to update the kernel matched rules since it is used in matchedRules function
+					event.MatchedRulesKernel = event.MatchedRulesUser
+
 					// Skip events that dont work with filtering due to missing types
 					// being handled (https://github.com/aquasecurity/tracee/issues/2486)
 					switch events.ID(derivatives[i].EventID) {
@@ -554,7 +545,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					case events.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
-						if t.matchPolicies(event) == 0 {
+						if !t.matchRules(event) {
 							_ = t.stats.EventsFiltered.Increment()
 							continue
 						}
@@ -587,23 +578,19 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 				continue // might happen during initialization (ctrl+c seg faults)
 			}
 
-			// Is the event enabled for the policies or globally?
-			if !t.policyManager.IsEnabled(event.MatchedPoliciesUser, events.ID(event.EventID)) {
+			if !t.policyManager.IsEventEnabled(events.ID(event.EventID)) {
 				// TODO: create metrics from dropped events
 				t.eventsPool.Put(event)
 				continue
 			}
 
-			// Only emit events requested by the user and matched by at least one policy.
+			// Only emit events requested by the user and matched by at least one rule.
 			id := events.ID(event.EventID)
-			event.MatchedPoliciesUser = t.policyManager.MatchEvent(id, event.MatchedPoliciesUser)
-			if event.MatchedPoliciesUser == 0 {
+			event.MatchedPolicies = t.policyManager.GetMatchedRulesInfo(id, event.MatchedRulesUser)
+			if len(event.MatchedPolicies) == 0 {
 				t.eventsPool.Put(event)
 				continue
 			}
-
-			// Populate the event with the names of the matched policies.
-			event.MatchedPolicies = t.policyManager.MatchedNames(event.MatchedPoliciesUser)
 
 			// Parse args here if the rule engine is NOT enabled (parsed there if it is).
 			if t.config.Output.ParseArguments && !t.config.EngineConfig.Enabled {

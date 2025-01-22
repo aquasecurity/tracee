@@ -28,7 +28,7 @@ func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
 	logger.Debugw("Starting lkmSeekerRoutine goroutine")
 	defer logger.Debugw("Stopped lkmSeekerRoutine goroutine")
 
-	if !t.policyManager.IsEventToEmit(events.HiddenKernelModule) {
+	if !t.policyManager.IsEventSelected(events.HiddenKernelModule) {
 		return
 	}
 
