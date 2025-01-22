@@ -65,11 +65,11 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 	}
 	switch ee.EventName {
 	case "open", "openat":
-		flags, err := helpers.GetTraceeArgumentByName(ee, "flags", helpers.GetArgOps{DefaultArgs: false})
+		flags, err := helpers.GetTraceeIntArgumentByName(ee, "flags")
 		if err != nil {
 			return fmt.Errorf("%v %#v", err, ee)
 		}
-		if helpers.IsFileWrite(flags.Value.(string)) {
+		if helpers.IsFileWrite(flags) {
 			pathname, err := helpers.GetTraceeArgumentByName(ee, "pathname", helpers.GetArgOps{DefaultArgs: false})
 			if err != nil {
 				return err

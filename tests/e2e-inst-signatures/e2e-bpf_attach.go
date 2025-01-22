@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -48,14 +49,14 @@ func (sig *e2eBpfAttach) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		attachType, err := helpers.GetTraceeStringArgumentByName(eventObj, "attach_type")
+		attachType, err := helpers.GetTraceeIntArgumentByName(eventObj, "attach_type")
 		if err != nil {
 			return err
 		}
 
 		// check expected values from test for detection
 
-		if symbolName != "security_file_open" || attachType != "kprobe" {
+		if symbolName != "security_file_open" || attachType != int(parsers.BPFProgTypeKprobe) {
 			return nil
 		}
 
