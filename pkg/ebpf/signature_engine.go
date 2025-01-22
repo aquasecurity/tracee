@@ -82,28 +82,16 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 			// arguments parsing) can affect engine stage.
 			eventCopy := *event
 
-			// if t.config.Output.ParseArguments {
-			// 	// shallow clone the event arguments before parsing them (new slice is created),
-			// 	// to keep the eventCopy with raw arguments.
-			// 	eventCopy.Args = slices.Clone(event.Args)
-
-			// 	err := t.parseArguments(event)
-			// 	if err != nil {
-			// 		t.handleError(err)
-			// 		return
-			// 	}
-			// }
-
-			// This is a workaround to keep working with parsed arguments in the engine stage.
-			// Once fully migrated, this should be reverted to the commented code above
-			eventCopy.Args = slices.Clone(event.Args)
-			err := t.parseArguments(&eventCopy)
-			if err != nil {
-				t.handleError(err)
-				return
-			}
 			if t.config.Output.ParseArguments {
-				event.Args = slices.Clone(eventCopy.Args)
+				// shallow clone the event arguments before parsing them (new slice is created),
+				// to keep the eventCopy with raw arguments.
+				eventCopy.Args = slices.Clone(event.Args)
+
+				err := t.parseArguments(event)
+				if err != nil {
+					t.handleError(err)
+					return
+				}
 			}
 
 			// pass the event to the sink stage, if the event is also marked as emit
