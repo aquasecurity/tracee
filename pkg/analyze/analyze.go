@@ -192,9 +192,9 @@ func processLegacy(outF *os.File) func(finding *detect.Finding) {
 }
 
 type legacyOutput struct {
-	Data        map[string]any
-	Event       trace.Event
-	SigMetadata detect.SignatureMetadata
+	Data        map[string]any           `json:"Data,omitempty"`
+	Event       trace.Event              `json:"Context,omitempty"`
+	SigMetadata detect.SignatureMetadata `json:"SigMetadata,omitempty"`
 }
 
 func getSigsNames(signatures []detect.Signature) []string {
