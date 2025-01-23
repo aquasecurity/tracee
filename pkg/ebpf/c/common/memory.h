@@ -176,12 +176,11 @@ statfunc bool vma_is_anon(struct vm_area_struct *vma)
 // The golang heap consists of arenas which are memory regions mapped using mmap.
 // When allocating areans, golang supplies mmap with an address hint, which is an
 // address that the kernel should place the mapping at.
-// Hints are constant and vary between architectures, see `mallocinit()` in
-// https://github.com/golang/go/blob/master/src/runtime/malloc.go
+// Hints for x86_64 begin at 0xc000000000 and for ARM64 at 0x4000000000.
 // From observation, when allocating arenas the MAP_FIXED flag is used which forces
 // the kernel to use the specified address or fail the mapping, so it is safe to
 // rely on the address pattern to determine if it belongs to a heap arena.
-#define GOLANG_ARENA_HINT_MASK 0x80ff00000000UL
+#define GOLANG_ARENA_HINT_MASK 0xffffffff00000000UL
 #if defined(bpf_target_x86)
     #define GOLANG_ARENA_HINT (0xc0UL << 32)
 #elif defined(bpf_target_arm64)
@@ -189,12 +188,22 @@ statfunc bool vma_is_anon(struct vm_area_struct *vma)
 #else
     #error Unsupported architecture
 #endif
+// We define a max hint that we assume golang allocations will never exceed.
+// This translates to the address 0xff00000000.
+// This means that we assume that a golang program will never allocate more than
+// 256GB of memory on x86_64, or 768GB on ARM64.
+#define GOLANG_ARENA_HINT_MAX (0xffUL << 32)
 
 statfunc bool vma_is_golang_heap(struct vm_area_struct *vma)
 {
     u64 vm_start = BPF_CORE_READ(vma, vm_start);
 
-    return (vm_start & GOLANG_ARENA_HINT_MASK) == GOLANG_ARENA_HINT;
+    // Check if the VMA address is in the range provided by golang heap arena address hints.
+    // Of course, any program can also allocate memory at these addresses which will result
+    // in a false positive for this check, so any caller of this function must make sure
+    // that a false positive for this check is acceptable.
+    return (vm_start & GOLANG_ARENA_HINT_MASK) >= GOLANG_ARENA_HINT &&
+           (vm_start & GOLANG_ARENA_HINT_MASK) <= GOLANG_ARENA_HINT_MAX;
 }
 
 statfunc bool vma_is_thread_stack(task_info_t *task_info, struct vm_area_struct *vma)
