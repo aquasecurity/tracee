@@ -79,6 +79,9 @@ if [[ ! -x ./dist/tracee ]]; then
     error_exit "could not find tracee executable"
 fi
 
+logfile=$SCRIPT_TMP_DIR/tracee-log-$$
+outputfile=$SCRIPT_TMP_DIR/output-$$
+
 anyerror=""
 
 # Run tests, one by one
@@ -138,8 +141,8 @@ for TEST in $TESTS; do
 
     # Run tracee
 
-    rm -f $SCRIPT_TMP_DIR/build-$$
-    rm -f $SCRIPT_TMP_DIR/tracee-log-$$
+    rm -f $outputfile
+    rm -f $logfile
 
     tracee_command="./dist/tracee \
                         --install-path $TRACEE_TMP_DIR \
@@ -147,9 +150,9 @@ for TEST in $TESTS; do
                         --cache mem-cache-size=512 \
                         --proctree source=both \
                         --output option:sort-events \
-                        --output json:$SCRIPT_TMP_DIR/build-$$ \
                         --output option:parse-arguments \
-                        --log file:$SCRIPT_TMP_DIR/tracee-log-$$ \
+                        --output json:$outputfile \
+                        --log file:$logfile \
                         --signatures-dir "$SIG_DIR" \
                         --dnscache enable \
                         --grpc-listen-addr unix:/tmp/tracee.sock \
@@ -201,7 +204,7 @@ for TEST in $TESTS; do
         info
         info "$TEST: FAILED. ERRORS:"
         info
-        cat $SCRIPT_TMP_DIR/tracee-log-$$
+        cat $logfile
 
         anyerror="${anyerror}$TEST,"
         continue
@@ -232,12 +235,18 @@ for TEST in $TESTS; do
 
     # The cleanup happens at EXIT
 
-    logfile=$SCRIPT_TMP_DIR/tracee-log-$$
+    # Make sure we exit tracee before checking output and log files
+
+    pid_tracee=$(pidof tracee | cut -d' ' -f1)
+    kill -SIGINT "$pid_tracee"
+    sleep $TRACEE_SHUTDOWN_TIMEOUT
+    kill -SIGKILL "$pid_tracee" >/dev/null 2>&1
+    sleep 3
 
     # Check if the test has failed or not
 
     found=0
-    cat $SCRIPT_TMP_DIR/build-$$ | jq .eventName | grep -q "$TEST" && found=1
+    cat $outputfile | jq .eventName | grep -q "$TEST" && found=1
     errors=$(cat $logfile | wc -l 2>/dev/null)
 
     if [[ $TEST == "BPF_ATTACH" ]]; then
@@ -249,25 +258,33 @@ for TEST in $TESTS; do
         info "$TEST: SUCCESS"
     else
         anyerror="${anyerror}$TEST,"
+
         info "$TEST: FAILED, stderr from tracee:"
-        cat $SCRIPT_TMP_DIR/tracee-log-$$
+        cat $logfile
+
         info "$TEST: FAILED, events from tracee:"
-        cat $SCRIPT_TMP_DIR/build-$$
+        cat $outputfile
+
+        info "Tracee command:"
+        echo "$tracee_command" | tr -s ' '
+
+        info "Tracee process is running?"
+        traceepids=$(pgrep tracee)
+        if [[ -n $traceepids ]]; then
+            info "YES, Tracee is still running (should not be, fix me!), pids: $traceepids"
+            info "Aborting tests"
+            break
+        else
+            info "NO, Tracee is not running"
+        fi
         info
     fi
     info
 
-    rm -f $SCRIPT_TMP_DIR/build-$$
-    rm -f $SCRIPT_TMP_DIR/tracee-log-$$
+    # Cleanup
 
-    # Make sure we exit tracee to start it again
-
-    pid_tracee=$(pidof tracee | cut -d' ' -f1)
-    kill -SIGINT "$pid_tracee"
-    sleep $TRACEE_SHUTDOWN_TIMEOUT
-    kill -SIGKILL "$pid_tracee" >/dev/null 2>&1
-    sleep 3
-
+    rm -f $outputfile
+    rm -f $logfile
     # Cleanup leftovers
     rm -rf $TRACEE_TMP_DIR
 done
