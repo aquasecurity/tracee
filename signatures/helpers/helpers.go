@@ -3,15 +3,16 @@ package helpers
 import (
 	"fmt"
 	"strings"
+	"syscall"
 
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // IsFileWrite returns whether the passed file permissions string contains
 // o_wronly or o_rdwr
-func IsFileWrite(flags string) bool {
-	flagsLow := strings.ToLower(flags)
-	if strings.Contains(flagsLow, "o_wronly") || strings.Contains(flagsLow, "o_rdwr") {
+func IsFileWrite(flags int) bool {
+	accessMode := uint64(flags) & syscall.O_ACCMODE
+	if accessMode == syscall.O_WRONLY || accessMode == syscall.O_RDWR {
 		return true
 	}
 	return false
@@ -19,9 +20,9 @@ func IsFileWrite(flags string) bool {
 
 // IsFileRead returns whether the passed file permissions string contains
 // o_rdonly or o_rdwr
-func IsFileRead(flags string) bool {
-	flagsLow := strings.ToLower(flags)
-	if strings.Contains(flagsLow, "o_rdonly") || strings.Contains(flagsLow, "o_rdwr") {
+func IsFileRead(flags int) bool {
+	accessMode := uint64(flags) & syscall.O_ACCMODE
+	if accessMode == syscall.O_RDONLY || accessMode == syscall.O_RDWR {
 		return true
 	}
 	return false
