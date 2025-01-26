@@ -40,11 +40,13 @@ func (t *Tracee) handleEventParameters() error {
 		eventParams := make([]map[string]filters.Filter[*filters.StringFilter], 0)
 		for iterator := t.policyManager.CreateAllIterator(); iterator.HasNext(); {
 			policy := iterator.Next()
-			policyParams := policy.Rules[eventID].DataFilter.GetFieldFilters()
-			if len(policyParams) == 0 {
-				continue
+			if rule, ok := policy.Rules[eventID]; ok {
+				policyParams := rule.DataFilter.GetFieldFilters()
+				if len(policyParams) == 0 {
+					continue
+				}
+				eventParams = append(eventParams, policyParams)
 			}
-			eventParams = append(eventParams, policyParams)
 		}
 		if len(eventParams) == 0 {
 			// No parameters for this event
