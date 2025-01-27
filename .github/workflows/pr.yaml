@@ -297,6 +297,7 @@ jobs:
               output="["
               first=1
               for job in "${!job_names[@]}"; do
+                  timestamp=$(date +%s)
                   ami="${job_names[$job]%% *}"
                   arch="${job_names[$job]##* }"
                   if (( first )); then
@@ -304,7 +305,7 @@ jobs:
                   else
                       output+=","
                   fi
-                  output+="{\"job_name\": \"$job\", \"arch\": \"$arch\", \"ami\": \"$ami\", \"sufix\": \"$num\"}"
+                  output+="{\"job_name\": \"$job\", \"arch\": \"$arch\", \"ami\": \"$ami\", \"sufix\": \"$timestamp\"}"
               done
             output+="]"
             echo "matrix$num=$output" >> $GITHUB_OUTPUT
