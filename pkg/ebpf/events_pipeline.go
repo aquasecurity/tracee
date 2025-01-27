@@ -221,10 +221,9 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				id := events.ID(eCtx.Syscall)
 				syscallDef := events.Core.GetDefinitionByID(id)
 				if syscallDef.NotValid() {
-					// This should never fail, as the translation used in eBPF relies on the same event definitions
 					commStr := string(eCtx.Comm[:bytes.IndexByte(eCtx.Comm[:], 0)])
 					utsNameStr := string(eCtx.UtsName[:bytes.IndexByte(eCtx.UtsName[:], 0)])
-					logger.Errorw(
+					logger.Debugw(
 						fmt.Sprintf("Event %s with an invalid syscall id %d", evtName, id),
 						"Comm", commStr,
 						"UtsName", utsNameStr,

@@ -48,7 +48,8 @@
 
 #define ICMPV6_ECHO_REQUEST 128
 
-#define PF_KTHREAD 0x00200000 /* I am a kernel thread */
+#define PF_SIGNALED 0x00000400 /* Killed by a signal */
+#define PF_KTHREAD  0x00200000 /* I am a kernel thread */
 
 #define TASK_COMM_LEN 16
 

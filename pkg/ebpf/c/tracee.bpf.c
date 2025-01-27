@@ -1521,6 +1521,24 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx, SCHED_PROCESS_EXIT))
         return 0;
 
+    // The syscall number cannot be trusted in the following cases:
+    //
+    // 1. If the task was terminated due to a signal (PF_SIGNALED is set), the syscall
+    //    context may be inconsistent.
+    //
+    // 2. If the task was not signaled:
+    //    - A kernel thread (PF_KTHREAD is set) is not expected to have a valid syscall context, so
+    //      the function init_program_data has already set its syscall number as NO_SYSCALL (-1).
+    //    - If PF_KTHREAD is not set but the syscall value is negative, it may be due to
+    //      an invalid or clobbered context.
+    //
+    // In any of these cases, we explicitly mark the syscall number as NO_SYSCALL (-1) to avoid
+    // misinterpretation.
+    int task_flags = get_task_flags(p.event->task);
+    if ((task_flags & PF_SIGNALED) ||
+        (!(task_flags & PF_KTHREAD) && (p.event->context.syscall < 0)))
+        p.event->context.syscall = NO_SYSCALL;
+
     // evaluate matched_policies before removing this pid from the maps
     evaluate_scope_filters(&p);
 
