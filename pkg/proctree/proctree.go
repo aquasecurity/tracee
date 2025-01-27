@@ -35,8 +35,8 @@ import (
 //
 
 const (
-	DefaultProcessCacheSize = 16384
-	DefaultThreadCacheSize  = 32768
+	DefaultProcessCacheSize = 10928
+	DefaultThreadCacheSize  = 21856
 )
 
 type SourceType int
