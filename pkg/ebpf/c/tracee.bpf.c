@@ -2272,21 +2272,66 @@ int BPF_KPROBE(trace_security_bprm_check)
     return events_perf_submit(&p, 0);
 }
 
+statfunc bool check_file_ns(struct task_struct *task, struct file *file, void *syscall_pathname)
+{
+    struct path path = get_path_from_file(file);
+    struct mount *mount = real_mount(path.mnt);
+    u32 file_mnt_ns = BPF_CORE_READ(mount, mnt_ns, ns.inum);
+    u32 task_mnt_ns = get_task_mnt_ns_id(task);
+
+    if (file_mnt_ns == 0 || file_mnt_ns == task_mnt_ns)
+        return false;
+
+    struct pid_namespace *pid_ns = get_task_pid_ns(task);
+    struct task_struct *pid_ns_leader = BPF_CORE_READ(pid_ns, child_reaper);
+
+    char unresolved_path[7] = {0};
+    bpf_probe_read_str(unresolved_path, 7, syscall_pathname);
+    if (file_mnt_ns == get_task_mnt_ns_id(pid_ns_leader) &&
+        strncmp(unresolved_path, "/proc/", 6) == 0)
+        return false;
+
+    return true;
+}
+
+statfunc bool check_file_mount(struct file *file)
+{
+    struct path path = get_path_from_file(file);
+    struct mount *mount = real_mount(path.mnt);
+
+    if (BPF_CORE_READ(mount, mnt_ns, ns.inum) == 0)
+        return false;
+
+    struct dentry *dentry = path.dentry;
+    struct dentry *root = BPF_CORE_READ(path.mnt, mnt_root);
+    int i;
+#pragma unroll
+    for (i = 0; i < MAX_PATH_COMPONENTS; i++) {
+        struct dentry *parent = BPF_CORE_READ(dentry, d_parent);
+        if (dentry == root || dentry == parent)
+            break;
+        dentry = parent;
+    }
+
+    if (i == MAX_PATH_COMPONENTS)
+        return false;
+
+    if (dentry != root)
+        return true;
+
+    return false;
+}
+
 SEC("kprobe/security_file_open")
 int BPF_KPROBE(trace_security_file_open)
 {
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, SECURITY_FILE_OPEN))
-        return 0;
-
-    if (!evaluate_scope_filters(&p))
+    if (!init_program_data(&p, ctx, OPEN_FILE_NS))
         return 0;
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
-    dev_t s_dev = get_dev_from_file(file);
-    unsigned long inode_nr = get_inode_nr_from_file(file);
     void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
-    u64 ctime = get_ctime_nanosec_from_file(file);
+    int flags = BPF_CORE_READ(file, f_flags);
 
     // Load the arguments given to the open syscall (which eventually invokes this function)
     char empty_string[1] = "";
@@ -2306,11 +2351,57 @@ int BPF_KPROBE(trace_security_file_open)
             break;
     }
 
+    if (evaluate_scope_filters(&p) && check_file_ns(p.event->task, file, syscall_pathname)) {
+        struct path path = get_path_from_file(file);
+        struct mount *mount = real_mount(path.mnt);
+        u32 file_mnt_ns = BPF_CORE_READ(mount, mnt_ns, ns.inum);
+
+        save_str_to_buf(&p.event->args_buf, file_path, 0);
+        save_to_submit_buf(&p.event->args_buf, &flags, sizeof(flags), 1);
+        save_str_to_buf(&p.event->args_buf, syscall_pathname, 2);
+        save_to_submit_buf(&p.event->args_buf, &file_mnt_ns, sizeof(file_mnt_ns), 3);
+
+        events_perf_submit(&p, 0);
+    }
+
+    if (reset_event(p.event, OPEN_FILE_MOUNT) && evaluate_scope_filters(&p) &&
+        check_file_mount(file)) {
+        save_str_to_buf(&p.event->args_buf, file_path, 0);
+        save_to_submit_buf(&p.event->args_buf, &flags, sizeof(flags), 1);
+        save_str_to_buf(&p.event->args_buf, syscall_pathname, 2);
+
+        struct path path = get_path_from_file(file);
+        struct mount *mount = real_mount(path.mnt);
+        struct dentry *root = BPF_CORE_READ(path.mnt, mnt_root);
+
+        buf_t *string_p = get_buf(1);
+        if (string_p == NULL)
+            return 0;
+        void *root_path = get_dentry_path_str_buf(root, string_p);
+        save_str_to_buf(&p.event->args_buf, root_path, 3);
+
+        struct mount *parent_mount = BPF_CORE_READ(mount, mnt_parent);
+        struct path mp_path = {.dentry = BPF_CORE_READ(mount, mnt_mountpoint),
+                               .mnt = &parent_mount->mnt};
+        size_t buf_off = get_path_str_buf(&mp_path, string_p);
+        void *mountpoint_path = &string_p->buf[buf_off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)];
+        save_str_to_buf(&p.event->args_buf, mountpoint_path, 4);
+
+        events_perf_submit(&p, 0);
+    }
+
+    if (!reset_event(p.event, SECURITY_FILE_OPEN))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    dev_t s_dev = get_dev_from_file(file);
+    unsigned long inode_nr = get_inode_nr_from_file(file);
+    u64 ctime = get_ctime_nanosec_from_file(file);
+
     save_str_to_buf(&p.event->args_buf, file_path, 0);
-    save_to_submit_buf(&p.event->args_buf,
-                       (void *) __builtin_preserve_access_index(&file->f_flags),
-                       sizeof(int),
-                       1);
+    save_to_submit_buf(&p.event->args_buf, &flags, sizeof(int), 1);
     save_to_submit_buf(&p.event->args_buf, &s_dev, sizeof(dev_t), 2);
     save_to_submit_buf(&p.event->args_buf, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(&p.event->args_buf, &ctime, sizeof(u64), 4);

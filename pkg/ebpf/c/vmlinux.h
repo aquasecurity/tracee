@@ -385,6 +385,7 @@ struct ns_common {
 };
 
 struct pid_namespace {
+    struct task_struct *child_reaper;
     unsigned int level;
     struct ns_common ns;
 };
@@ -687,8 +688,13 @@ struct inode {
     struct file_operations *i_fop;
 };
 
+struct file_system_type {
+    const char *name;
+};
+
 struct super_block {
     dev_t s_dev;
+    struct file_system_type *s_type;
     unsigned long s_magic;
 };
 
@@ -712,12 +718,14 @@ struct mm_struct {
 
 struct vfsmount {
     struct dentry *mnt_root;
+    struct super_block *mnt_sb;
 };
 
 struct mount {
     struct mount *mnt_parent;
     struct dentry *mnt_mountpoint;
     struct vfsmount mnt;
+    struct mnt_namespace *mnt_ns;
 };
 
 struct qstr {
@@ -731,7 +739,10 @@ struct qstr {
     const unsigned char *name;
 };
 
+#define DCACHE_DISCONNECTED (1 << 5)
+
 struct dentry {
+    unsigned int d_flags;
     struct dentry *d_parent;
     struct qstr d_name;
     struct inode *d_inode;

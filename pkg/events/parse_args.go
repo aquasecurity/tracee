@@ -140,7 +140,7 @@ func ParseArgs(event *trace.Event) error {
 				parseExecveatFlag(flagsArg, uint64(flags))
 			}
 		}
-	case Open, Openat, SecurityFileOpen:
+	case Open, Openat, SecurityFileOpen, OpenFileNS, OpenFileMount:
 		if flagsArg := GetArg(event.Args, "flags"); flagsArg != nil {
 			if flags, isInt32 := flagsArg.Value.(int32); isInt32 {
 				parseOpenFlagArgument(flagsArg, uint64(flags))
