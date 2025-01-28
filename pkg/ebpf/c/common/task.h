@@ -13,6 +13,7 @@ statfunc int get_task_flags(struct task_struct *task);
 statfunc int get_current_task_syscall_id(void);
 statfunc u32 get_task_mnt_ns_id(struct task_struct *task);
 statfunc u32 get_task_pid_ns_for_children_id(struct task_struct *task);
+statfunc struct pid_namespace *get_task_pid_ns(struct task_struct *task);
 statfunc u32 get_task_pid_ns_id(struct task_struct *task);
 statfunc u32 get_task_uts_ns_id(struct task_struct *task);
 statfunc u32 get_task_ipc_ns_id(struct task_struct *task);
@@ -71,11 +72,10 @@ statfunc u32 get_task_pid_ns_for_children_id(struct task_struct *task)
     return get_pid_ns_for_children_id(BPF_CORE_READ(task, nsproxy));
 }
 
-statfunc u32 get_task_pid_ns_id(struct task_struct *task)
+statfunc struct pid_namespace *get_task_pid_ns(struct task_struct *task)
 {
     unsigned int level = 0;
     struct pid *pid = NULL;
-    struct pid_namespace *ns = NULL;
 
     if (bpf_core_type_exists(struct pid_link)) {
         struct task_struct___older_v50 *t = (void *) task;
@@ -85,7 +85,12 @@ statfunc u32 get_task_pid_ns_id(struct task_struct *task)
     }
 
     level = BPF_CORE_READ(pid, level);
-    ns = BPF_CORE_READ(pid, numbers[level].ns);
+    return BPF_CORE_READ(pid, numbers[level].ns);
+}
+
+statfunc u32 get_task_pid_ns_id(struct task_struct *task)
+{
+    struct pid_namespace *ns = get_task_pid_ns(task);
     return BPF_CORE_READ(ns, ns.inum);
 }
 

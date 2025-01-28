@@ -116,6 +116,8 @@ const (
 	SecurityTaskSetrlimit
 	SecuritySettime64
 	ChmodCommon
+	OpenFileNS
+	OpenFileMount
 	MaxCommonID
 )
 
@@ -13102,6 +13104,43 @@ var CoreEvents = map[ID]Definition{
 			{Type: "void*", Name: "vma_start"},
 			{Type: "unsigned long", Name: "vma_size"},
 			{Type: "unsigned long", Name: "vma_flags"},
+		},
+	},
+	OpenFileNS: {
+		id:      OpenFileNS,
+		id32Bit: Sys32Undefined,
+		name:    "open_file_ns",
+		version: NewVersion(1, 0, 0),
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SecurityFileOpen, required: true},
+			},
+		},
+		sets: []string{},
+		fields: []trace.ArgMeta{
+			{Type: "const char*", Name: "pathname"},
+			{Type: "int", Name: "flags"},
+			{Type: "const char*", Name: "syscall_pathname"},
+			{Type: "u32", Name: "mount_ns"},
+		},
+	},
+	OpenFileMount: {
+		id:      OpenFileMount,
+		id32Bit: Sys32Undefined,
+		name:    "open_file_mount",
+		version: NewVersion(1, 0, 0),
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SecurityFileOpen, required: true},
+			},
+		},
+		sets: []string{},
+		fields: []trace.ArgMeta{
+			{Type: "const char*", Name: "pathname"},
+			{Type: "int", Name: "flags"},
+			{Type: "const char*", Name: "syscall_pathname"},
+			{Type: "const char*", Name: "mount_src"},
+			{Type: "const char*", Name: "mount_dst"},
 		},
 	},
 	//
