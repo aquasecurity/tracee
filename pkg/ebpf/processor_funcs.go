@@ -385,7 +385,7 @@ func (t *Tracee) addHashArg(event *trace.Event, fileKey *filehash.Key) error {
 	}
 
 	hashArg := trace.Argument{
-		ArgMeta: trace.ArgMeta{Name: "sha256", Type: "const char*"},
+		ArgMeta: trace.ArgMeta{Name: "sha256", Type: "string"},
 	}
 
 	hash, err := t.fileHashes.Get(fileKey)
