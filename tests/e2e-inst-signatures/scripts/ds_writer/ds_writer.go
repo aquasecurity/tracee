@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -23,8 +26,8 @@ func chooseWord(list []string) string {
 	return list[rand.Intn(len(list))]
 }
 
-func contaminate(client v1beta1.DataSourceServiceClient) error {
-	stream, err := client.WriteStream(context.Background())
+func contaminate(ctx context.Context, client v1beta1.DataSourceServiceClient) error {
+	stream, err := client.WriteStream(ctx)
 	if err != nil {
 		return fmt.Errorf("error establishing stream: %v", err)
 	}
@@ -38,6 +41,10 @@ func contaminate(client v1beta1.DataSourceServiceClient) error {
 			Value:     structpb.NewStringValue(randomValue),
 		})
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
 			return err
 		}
 	}
@@ -70,16 +77,26 @@ func main() {
 	if err != nil {
 		printAndExit("failed to dial tracee grpc server: %v\n", err)
 	}
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			printAndExit("failed to close connection: %v\n", err)
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
 	client := v1beta1.NewDataSourceServiceClient(conn)
-	err = contaminate(client)
+	err = contaminate(ctx, client)
 	if err != nil {
 		printAndExit("error contaminating data source: %v\n", err)
 	}
-	_, err = client.Write(context.Background(), &v1beta1.WriteDataSourceRequest{
+	_, err = client.Write(ctx, &v1beta1.WriteDataSourceRequest{
 		Id:        "demo",
 		Namespace: "e2e_inst",
-		Key:       structpb.NewStringValue("bruh"),
-		Value:     structpb.NewStringValue("moment"),
+		Key:       structpb.NewStringValue(key),
+		Value:     structpb.NewStringValue(value),
 	})
 
 	if err != nil {
