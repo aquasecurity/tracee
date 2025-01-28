@@ -5320,6 +5320,13 @@ statfunc void check_suspicious_syscall_source(void *ctx, struct pt_regs *regs, u
     if (vma_is_file_backed(vma))
         return;
 
+    // In 32-bit compat mode, syscalls may be invoked by calling into a VDSO provided
+    // syscall handler (the vsyscall mechanism).
+    // Even the 64-bit VDSO may invoke syscalls, as a fallback mechanism.
+    // In such cases, we don't know where was the code that called into the VDSO.
+    if (vma_is_vdso(vma))
+        return;
+
     // Build a key that identifies the combination of syscall,
     // source VMA and process so we don't submit it multiple times
     syscall_source_key_t key = {.syscall = syscall,
@@ -5410,6 +5417,12 @@ int BPF_KPROBE(syscall_checker)
 
     // Get syscall ID
     u32 syscall = get_syscall_id_from_regs(regs);
+    if (is_compat((struct task_struct *) bpf_get_current_task())) {
+        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &syscall);
+        if (id_64 == NULL)
+            return 0;
+        syscall = *id_64;
+    }
 
     if (bpf_map_lookup_elem(&suspicious_syscall_source_syscalls, &syscall) != NULL)
         check_suspicious_syscall_source(ctx, regs, syscall);
