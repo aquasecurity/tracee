@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -49,7 +48,7 @@ func (sig *e2eSuspiciousSyscallSource) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "suspicious_syscall_source":
-		syscall, err := helpers.ArgVal[int32](eventObj.Args, "syscall")
+		syscall, err := helpers.ArgVal[string](eventObj.Args, "syscall")
 		if err != nil {
 			return err
 		}
@@ -60,7 +59,7 @@ func (sig *e2eSuspiciousSyscallSource) OnEvent(event protocol.Event) error {
 
 		// check expected values from test for detection
 
-		if syscall != int32(events.Exit) {
+		if syscall != "exit" {
 			return nil
 		}
 

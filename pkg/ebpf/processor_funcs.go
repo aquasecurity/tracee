@@ -487,3 +487,25 @@ func (t *Tracee) removeIrrelevantContext(event *trace.Event) error {
 
 	return nil
 }
+
+func (t *Tracee) convertSyscallIDToName(event *trace.Event) error {
+	syscallArg := events.GetArg(event, "syscall")
+	if syscallArg == nil {
+		return errfmt.Errorf("cannot find syscall argument")
+	}
+
+	syscallID, ok := syscallArg.Value.(int32)
+	if !ok {
+		return errfmt.Errorf("cannot convert syscall arg to ID")
+	}
+	syscallDef := events.Core.GetDefinitionByID(events.ID(syscallID))
+	// no need to check for NotValid() since it is syscall only if it's a valid event
+	if !syscallDef.IsSyscall() {
+		return errfmt.Errorf("invalid syscall ID %d", syscallID)
+	}
+
+	syscallArg.Type = "string"
+	syscallArg.Value = syscallDef.GetName()
+
+	return nil
+}

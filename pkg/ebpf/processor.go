@@ -131,6 +131,8 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
 	t.RegisterEventProcessor(events.SharedObjectLoaded, t.processSharedObjectLoaded)
+	t.RegisterEventProcessor(events.SuspiciousSyscallSource, t.convertSyscallIDToName)
+	t.RegisterEventProcessor(events.StackPivot, t.convertSyscallIDToName)
 
 	//
 	// Uprobe based events processors
