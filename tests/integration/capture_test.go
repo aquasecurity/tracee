@@ -69,7 +69,7 @@ func Test_TraceeCapture(t *testing.T) {
 		},
 		{
 			name:           "capture packet context",
-			coolDown:       0 * time.Second,
+			coolDown:       2 * time.Second,
 			directory:      "/tmp/tracee/4",
 			captureFilters: []string{"network", "pcap:single,command,container,process"},
 			test:           packetContext,
