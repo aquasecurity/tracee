@@ -94,7 +94,8 @@ func Benchmark_procTreeExitProcessor(b *testing.B) {
 
 	event := &trace.Event{
 		Args: []trace.Argument{
-			{ArgMeta: trace.ArgMeta{Name: "exit_code"}, Value: int64(1)},
+			{ArgMeta: trace.ArgMeta{Name: "exit_code"}, Value: int32(1)},
+			{ArgMeta: trace.ArgMeta{Name: "signal_code"}, Value: int32(1)},
 			{ArgMeta: trace.ArgMeta{Name: "process_group_exit"}, Value: true},
 		},
 	}

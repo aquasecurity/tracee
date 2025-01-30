@@ -87,7 +87,7 @@ func Test_getEventData(t *testing.T) {
 			args: []trace.Argument{
 				{
 					ArgMeta: trace.ArgMeta{
-						Name: "exit_code",
+						Name: "newmask",
 						Type: "long",
 					},
 					Value: int64(1000),
@@ -95,7 +95,7 @@ func Test_getEventData(t *testing.T) {
 			},
 			expected: []*pb.EventValue{
 				{
-					Name: "exit_code",
+					Name: "newmask",
 					Value: &pb.EventValue_Int64{
 						Int64: 1000,
 					},

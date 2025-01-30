@@ -98,7 +98,8 @@ func Benchmark_procTreeExitProcessor(b *testing.B) {
 		{ArgMeta: trace.ArgMeta{Name: "task_hash"}, Value: uint32(1)},
 		{ArgMeta: trace.ArgMeta{Name: "parent_hash"}, Value: uint32(1)},
 		{ArgMeta: trace.ArgMeta{Name: "leader_hash"}, Value: uint32(1)},
-		{ArgMeta: trace.ArgMeta{Name: "exit_code"}, Value: int64(1)},
+		{ArgMeta: trace.ArgMeta{Name: "exit_code"}, Value: int32(1)},
+		{ArgMeta: trace.ArgMeta{Name: "signal_code"}, Value: int32(1)},
 		{ArgMeta: trace.ArgMeta{Name: "process_group_exit"}, Value: true},
 	}
 

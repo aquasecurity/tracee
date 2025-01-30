@@ -281,7 +281,8 @@ type ExitFeed struct {
 	TaskHash   uint32
 	ParentHash uint32
 	LeaderHash uint32
-	ExitCode   int64
+	ExitCode   int32
+	SignalCode int32
 	Group      bool
 }
 

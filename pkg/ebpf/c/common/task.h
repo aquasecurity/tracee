@@ -28,7 +28,7 @@ statfunc u64 get_task_start_time(struct task_struct *task);
 statfunc u32 get_task_host_pid(struct task_struct *task);
 statfunc u32 get_task_host_tgid(struct task_struct *task);
 statfunc struct task_struct *get_parent_task(struct task_struct *task);
-statfunc u32 get_task_exit_code(struct task_struct *task);
+statfunc int get_task_exit_code(struct task_struct *task);
 statfunc int get_task_parent_flags(struct task_struct *task);
 statfunc const struct cred *get_task_real_cred(struct task_struct *task);
 
@@ -195,7 +195,7 @@ statfunc struct task_struct *get_leader_task(struct task_struct *task)
     return BPF_CORE_READ(task, group_leader);
 }
 
-statfunc u32 get_task_exit_code(struct task_struct *task)
+statfunc int get_task_exit_code(struct task_struct *task)
 {
     return BPF_CORE_READ(task, exit_code);
 }
