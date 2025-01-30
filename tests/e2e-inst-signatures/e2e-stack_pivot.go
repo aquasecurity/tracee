@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -46,7 +45,7 @@ func (sig *e2eStackPivot) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "stack_pivot":
-		syscall, err := helpers.ArgVal[int32](eventObj.Args, "syscall")
+		syscall, err := helpers.ArgVal[string](eventObj.Args, "syscall")
 		if err != nil {
 			return err
 		}
@@ -56,7 +55,7 @@ func (sig *e2eStackPivot) OnEvent(event protocol.Event) error {
 		}
 
 		// Make sure this is the exact event we're looking for
-		if eventObj.ProcessName == "stack_pivot" && syscall == int32(events.ExitGroup) && vmaType == "heap" {
+		if eventObj.ProcessName == "stack_pivot" && syscall == "exit_group" && vmaType == "heap" {
 			// Make sure there was no false positive
 			if !sig.falsePositive {
 				m, _ := sig.GetMetadata()

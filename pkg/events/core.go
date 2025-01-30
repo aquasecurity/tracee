@@ -13075,7 +13075,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{},
 		fields: []trace.ArgMeta{
-			{Type: "int", Name: "syscall"},
+			{Type: "int", Name: "syscall"}, // converted to syscall name (string) at processing stage
 			{Type: "void*", Name: "ip"},
 			{Type: "char*", Name: "vma_type"},
 			{Type: "void*", Name: "vma_start"},
@@ -13095,7 +13095,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{},
 		fields: []trace.ArgMeta{
-			{Type: "int", Name: "syscall"},
+			{Type: "int", Name: "syscall"}, // converted to syscall name (string) at processing stage
 			{Type: "void*", Name: "sp"},
 			{Type: "char*", Name: "vma_type"},
 			{Type: "void*", Name: "vma_start"},
