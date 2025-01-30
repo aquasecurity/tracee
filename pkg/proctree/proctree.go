@@ -74,7 +74,7 @@ type ProcTreeConfig struct {
 type ProcessTree struct {
 	processes   *lru.Cache[uint32, *Process] // hash -> process
 	threads     *lru.Cache[uint32, *Thread]  // hash -> threads
-	procfsChan  chan int                     // channel of pids to read from procfs
+	procfsChan  chan int32                   // channel of pids to read from procfs
 	procfsOnce  *sync.Once                   // busy loop debug message throttling
 	ctx         context.Context              // context for the process tree
 	procfsQuery bool

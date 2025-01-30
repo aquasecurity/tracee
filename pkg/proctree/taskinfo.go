@@ -1,6 +1,7 @@
 package proctree
 
 import (
+	"math"
 	"sync"
 	"time"
 
@@ -11,14 +12,14 @@ import (
 // TaskInfoFeed allows external packages to set/get multiple values of a task at once.
 type TaskInfoFeed struct {
 	Name        string // mutable (process name can be changed)
-	Tid         int    // immutable
-	Pid         int    // immutable
-	PPid        int    // mutable (process can be reparented)
-	NsTid       int    // immutable
-	NsPid       int    // immutable
-	NsPPid      int    // mutable (process can be reparented)
-	Uid         int    // mutable (process uid can be changed)
-	Gid         int    // mutable (process gid can be changed)
+	Tid         int32  // immutable
+	Pid         int32  // immutable
+	PPid        int32  // mutable (process can be reparented)
+	NsTid       int32  // immutable
+	NsPid       int32  // immutable
+	NsPPid      int32  // mutable (process can be reparented)
+	Uid         uint32 // mutable (process uid can be changed)
+	Gid         uint32 // mutable (process gid can be changed)
 	StartTimeNS uint64 // immutable (this is a duration, in ns, since boot)
 	ExitTimeNS  uint64 // immutable (this is a duration, in ns, since boot)
 }
@@ -91,10 +92,10 @@ func (ti *TaskInfo) SetFeedAt(feed *TaskInfoFeed, targetTime time.Time) {
 	if feed.NsPid >= 0 {
 		atFeed.NsPPid = feed.NsPPid
 	}
-	if feed.Uid >= 0 {
+	if feed.Uid != math.MaxUint32 {
 		atFeed.Uid = feed.Uid
 	}
-	if feed.Gid >= 0 {
+	if feed.Gid != math.MaxUint32 {
 		atFeed.Gid = feed.Gid
 	}
 	if feed.StartTimeNS != 0 {
@@ -184,7 +185,7 @@ func (ti *TaskInfo) GetNameAt(targetTime time.Time) string {
 }
 
 // GetTid returns the tid of the task.
-func (ti *TaskInfo) GetTid() int {
+func (ti *TaskInfo) GetTid() int32 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
@@ -192,7 +193,7 @@ func (ti *TaskInfo) GetTid() int {
 }
 
 // GetPid returns the pid of the task.
-func (ti *TaskInfo) GetPid() int {
+func (ti *TaskInfo) GetPid() int32 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
@@ -200,7 +201,7 @@ func (ti *TaskInfo) GetPid() int {
 }
 
 // GetNsTid returns the nsTid of the task.
-func (ti *TaskInfo) GetNsTid() int {
+func (ti *TaskInfo) GetNsTid() int32 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
@@ -208,7 +209,7 @@ func (ti *TaskInfo) GetNsTid() int {
 }
 
 // GetNsPid returns the nsPid of the task.
-func (ti *TaskInfo) GetNsPid() int {
+func (ti *TaskInfo) GetNsPid() int32 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
@@ -216,7 +217,7 @@ func (ti *TaskInfo) GetNsPid() int {
 }
 
 // GetPPid returns the ppid of the task.
-func (ti *TaskInfo) GetPPid() int {
+func (ti *TaskInfo) GetPPid() int32 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
@@ -224,7 +225,7 @@ func (ti *TaskInfo) GetPPid() int {
 }
 
 // GetPPidAt returns the ppid of the task at the given time.
-func (ti *TaskInfo) GetPPidAt(targetTime time.Time) int {
+func (ti *TaskInfo) GetPPidAt(targetTime time.Time) int32 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
@@ -232,7 +233,7 @@ func (ti *TaskInfo) GetPPidAt(targetTime time.Time) int {
 }
 
 // GetNsPPid returns the nsPPid of the task.
-func (ti *TaskInfo) GetNsPPid() int {
+func (ti *TaskInfo) GetNsPPid() int32 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
@@ -240,7 +241,7 @@ func (ti *TaskInfo) GetNsPPid() int {
 }
 
 // GetNsPPidAt returns the nsPPid of the task at the given time.
-func (ti *TaskInfo) GetNsPPidAt(targetTime time.Time) int {
+func (ti *TaskInfo) GetNsPPidAt(targetTime time.Time) int32 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
@@ -248,7 +249,7 @@ func (ti *TaskInfo) GetNsPPidAt(targetTime time.Time) int {
 }
 
 // GetUid returns the uid of the task.
-func (ti *TaskInfo) GetUid() int {
+func (ti *TaskInfo) GetUid() uint32 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
@@ -256,7 +257,7 @@ func (ti *TaskInfo) GetUid() int {
 }
 
 // GetUidAt returns the uid of the task at the given time.
-func (ti *TaskInfo) GetUidAt(targetTime time.Time) int {
+func (ti *TaskInfo) GetUidAt(targetTime time.Time) uint32 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
@@ -264,7 +265,7 @@ func (ti *TaskInfo) GetUidAt(targetTime time.Time) int {
 }
 
 // GetGid returns the gid of the task.
-func (ti *TaskInfo) GetGid() int {
+func (ti *TaskInfo) GetGid() uint32 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
@@ -272,7 +273,7 @@ func (ti *TaskInfo) GetGid() int {
 }
 
 // GetGidAt returns the gid of the task at the given time.
-func (ti *TaskInfo) GetGidAt(targetTime time.Time) int {
+func (ti *TaskInfo) GetGidAt(targetTime time.Time) uint32 {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 

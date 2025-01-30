@@ -103,13 +103,13 @@ var procStatValueParserArray = [StatMaxNumFields]procStatValueParser{
 }
 
 // NewThreadProcStat reads the /proc/<pid>/task/<tid>/stat file and parses it into a ProcStat struct.
-func NewThreadProcStat(pid, tid int) (*ProcStat, error) {
+func NewThreadProcStat(pid, tid int32) (*ProcStat, error) {
 	taskStatPath := GetTaskStatPath(pid, tid)
 	return newProcStat(taskStatPath)
 }
 
 // NewProcStat reads the /proc/<pid>/stat file and parses it into a ProcStat struct.
-func NewProcStat(pid int) (*ProcStat, error) {
+func NewProcStat(pid int32) (*ProcStat, error) {
 	statPath := GetStatPath(pid)
 	return newProcStat(statPath)
 }

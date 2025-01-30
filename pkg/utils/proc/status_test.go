@@ -1,16 +1,19 @@
 package proc
 
 import (
+	"os"
 	"testing"
 	"unsafe"
 
 	"github.com/google/go-cmp/cmp"
+
+	"github.com/aquasecurity/tracee/pkg/utils/tests"
 )
 
 const (
 	// ensure that the test will fail if the ProcStatus struct size changes
 	maxProcStatusNameLength = 64 // https://elixir.bootlin.com/linux/v6.11.4/source/fs/proc/array.c#L99
-	maxProcStatusLength     = 128
+	maxProcStatusLength     = 104
 )
 
 func TestProcStatusSize(t *testing.T) {
@@ -24,12 +27,12 @@ func TestProcStatusSize(t *testing.T) {
 		{
 			name:         "Empty string",
 			input:        ProcStatus{name: ""},
-			expectedSize: 64, // 64 bytes struct = 48 bytes (6 * int) + 16 bytes (string = 8 bytes pointer + 8 bytes length)
+			expectedSize: 40, // 40 bytes struct = [24 bytes (6 * int32)] + [16 bytes (string = 8 bytes pointer + 8 bytes length)]
 		},
 		{
 			name:         "String with 64 characters (max length)",
 			input:        ProcStatus{name: string(make([]byte, maxProcStatusNameLength))},
-			expectedSize: maxProcStatusLength, // 128 bytes struct = 48 bytes (6 * int) + 16 bytes (string = 8 bytes pointer + 8 bytes length) + 64 bytes (string content)
+			expectedSize: maxProcStatusLength, // 104 bytes struct = [24 bytes (6 * int32)] + [16 bytes (string = 8 bytes pointer + 8 bytes length)] + [64 bytes (string content)]
 		},
 	}
 
@@ -44,6 +47,13 @@ func TestProcStatusSize(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestProcStatus_PrintSizes prints the sizes of the structs used in the ProcStatus type.
+// Run it as DEBUG test to see the output.
+func TestProcStatus_PrintSizes(t *testing.T) {
+	procStatus := ProcStatus{}
+	tests.PrintStructSizes(t, os.Stdout, procStatus)
 }
 
 func TestProcStatusParsing(t *testing.T) {

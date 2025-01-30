@@ -47,12 +47,12 @@ import (
 // ProcStatus represents the minimal required fields of the /proc status file.
 type ProcStatus struct {
 	name   string // up to 64 chars: https://elixir.bootlin.com/linux/v6.11.4/source/fs/proc/array.c#L99
-	tgid   int
-	pid    int
-	pPid   int
-	nstgid int
-	nspid  int
-	nspgid int
+	tgid   int32
+	pid    int32
+	pPid   int32
+	nstgid int32
+	nspid  int32
+	nspgid int32
 }
 
 type procStatusValueParser func(value string, s *ProcStatus)
@@ -70,13 +70,13 @@ var procStatusValueParserMap = map[string]procStatusValueParser{ // key: status 
 }
 
 // NewThreadProcStatus reads the /proc/<pid>/task/<tid>/status file and parses it into a ProcStatus struct.
-func NewThreadProcStatus(pid, tid int) (*ProcStatus, error) {
+func NewThreadProcStatus(pid, tid int32) (*ProcStatus, error) {
 	taskStatusPath := GetTaskStatusPath(pid, tid)
 	return newProcStatus(taskStatusPath)
 }
 
 // NewProcStatus reads the /proc/<pid>/status file and parses it into a ProcStatus struct.
-func NewProcStatus(pid int) (*ProcStatus, error) {
+func NewProcStatus(pid int32) (*ProcStatus, error) {
 	statusPath := GetStatusPath(pid)
 	return newProcStatus(statusPath)
 }
@@ -130,27 +130,27 @@ func parseName(value string, s *ProcStatus) {
 }
 
 func parseTgid(value string, s *ProcStatus) {
-	s.tgid = parseInt(value)
+	s.tgid, _ = ParseInt32(value)
 }
 
 func parsePid(value string, s *ProcStatus) {
-	s.pid = parseInt(value)
+	s.pid, _ = ParseInt32(value)
 }
 
 func parsePPid(value string, s *ProcStatus) {
-	s.pPid = parseInt(value)
+	s.pPid, _ = ParseInt32(value)
 }
 
 func parseNsTgid(value string, s *ProcStatus) {
-	s.nstgid = parseInt(value)
+	s.nstgid, _ = ParseInt32(value)
 }
 
 func parseNsPid(value string, s *ProcStatus) {
-	s.nspid = parseInt(value)
+	s.nspid, _ = ParseInt32(value)
 }
 
 func parseNsPgid(value string, s *ProcStatus) {
-	s.nspgid = parseInt(value)
+	s.nspgid, _ = ParseInt32(value)
 }
 
 //
@@ -163,31 +163,31 @@ func (s *ProcStatus) GetName() string {
 }
 
 // GetPid returns the process ID.
-func (s *ProcStatus) GetPid() int {
+func (s *ProcStatus) GetPid() int32 {
 	return s.pid
 }
 
 // GetTgid returns the thread group ID.
-func (s *ProcStatus) GetTgid() int {
+func (s *ProcStatus) GetTgid() int32 {
 	return s.tgid
 }
 
 // GetPPid returns the parent process ID.
-func (s *ProcStatus) GetPPid() int {
+func (s *ProcStatus) GetPPid() int32 {
 	return s.pPid
 }
 
 // GetNsPid returns process ID in the namespace of the process.
-func (s *ProcStatus) GetNsPid() int {
+func (s *ProcStatus) GetNsPid() int32 {
 	return s.nspid
 }
 
 // GetNsTgid returns thread group ID in the namespace of the process.
-func (s *ProcStatus) GetNsTgid() int {
+func (s *ProcStatus) GetNsTgid() int32 {
 	return s.nstgid
 }
 
 // GetNsPPid returns process group ID in the namespace of the process.
-func (s *ProcStatus) GetNsPPid() int {
+func (s *ProcStatus) GetNsPPid() int32 {
 	return s.nspgid
 }

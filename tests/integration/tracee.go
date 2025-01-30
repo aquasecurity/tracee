@@ -244,11 +244,12 @@ func assureIsRoot(t *testing.T) {
 }
 
 func getProcNS(nsName string) string {
-	pid := syscall.Getpid()
-	nsID, err := uproc.GetProcNS(uint(pid), nsName)
+	pidInt := syscall.Getpid()
+	pid := int32(pidInt)
+	nsID, err := uproc.GetProcNS(pid, nsName)
 	if err != nil {
 		panic(err)
 	}
 
-	return strconv.Itoa(nsID)
+	return strconv.FormatUint(uint64(nsID), 10)
 }

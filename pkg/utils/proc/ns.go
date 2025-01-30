@@ -35,17 +35,18 @@ func GetMountNSFirstProcesses() (map[int]int, error) {
 	mountNSTimeMap := make(map[int]pidTimestamp)
 	// Iterate over each pid
 	for _, entry := range entries {
-		pid, err := strconv.ParseUint(entry, 10, 32)
+		pid, err := ParseInt32(entry)
 		if err != nil {
 			continue
 		}
-		procNS, err := GetAllProcNS(uint(pid))
+
+		procNS, err := GetAllProcNS(pid)
 		if err != nil {
 			logger.Debugw("Failed in fetching process mount namespace", "pid", pid, "error", err.Error())
 			continue
 		}
 
-		processStartTime, err := GetProcessStartTime(uint(pid))
+		processStartTime, err := GetProcessStartTime(pid)
 		if err != nil {
 			logger.Debugw("Failed in fetching process start time", "pid", pid, "error", err.Error())
 			continue
@@ -69,8 +70,8 @@ func GetMountNSFirstProcesses() (map[int]int, error) {
 }
 
 // GetProcessStartTime return the start time of the process using the procfs
-func GetProcessStartTime(pid uint) (int, error) {
-	statPath := GetStatPath(int(pid))
+func GetProcessStartTime(pid int32) (int, error) {
+	statPath := GetStatPath(pid)
 	stat, err := os.ReadFile(statPath)
 	if err != nil {
 		return 0, errfmt.WrapError(err)
@@ -111,8 +112,8 @@ type ProcNS struct {
 
 // GetAllProcNS return all the namespaces of a given process.
 // To do so, it requires access to the /proc file system of the host, and CAP_SYS_PTRACE capability.
-func GetAllProcNS(pid uint) (*ProcNS, error) {
-	nsDirPath := GetProcNSDirPath(int(pid))
+func GetAllProcNS(pid int32) (*ProcNS, error) {
+	nsDirPath := GetProcNSDirPath(pid)
 	nsDir, err := os.Open(nsDirPath)
 	if err != nil {
 		return nil, errfmt.Errorf("could not open ns dir: %v", err)
@@ -169,8 +170,8 @@ func GetAllProcNS(pid uint) (*ProcNS, error) {
 
 // GetProcNS returns the namespace ID of a given namespace and process.
 // To do so, it requires access to the /proc file system of the host, and CAP_SYS_PTRACE capability.
-func GetProcNS(pid uint, nsName string) (int, error) {
-	nsPath := GetProcNSPath(int(pid), nsName)
+func GetProcNS(pid int32, nsName string) (int, error) {
+	nsPath := GetProcNSPath(pid, nsName)
 	nsLink, err := os.Readlink(nsPath)
 	if err != nil {
 		return 0, errfmt.Errorf("could not read ns file: %v", err)

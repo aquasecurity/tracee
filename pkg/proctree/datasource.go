@@ -103,7 +103,7 @@ func (ptds *DataSource) exportProcessInfo(
 		}
 		childInfo := child.GetInfo()
 		if childInfo.IsAliveAt(queryTime) {
-			aliveChildren[childInfo.GetPid()] = childHash
+			aliveChildren[int(childInfo.GetPid())] = childHash // TODO: change types pkg to reduce mem footprint
 		}
 	}
 
@@ -116,7 +116,7 @@ func (ptds *DataSource) exportProcessInfo(
 		}
 		threadInfo := thread.GetInfo()
 		if threadInfo.IsAliveAt(queryTime) {
-			aliveThreads[threadInfo.GetTid()] = threadHash
+			aliveThreads[int(threadInfo.GetTid())] = threadHash // TODO: change types pkg to reduce mem footprint
 		}
 	}
 
@@ -126,10 +126,11 @@ func (ptds *DataSource) exportProcessInfo(
 	// Export the information as the expected datasource process structure.
 	return datasource.TimeRelevantInfo[datasource.ProcessInfo]{
 		Info: datasource.ProcessInfo{
-			EntityId:          process.GetHash(),
-			Pid:               infoFeed.Pid,
-			NsPid:             infoFeed.NsPid,
-			Ppid:              infoFeed.PPid,
+			EntityId: process.GetHash(),
+			// TODO: change types pkg to reduce mem footprint (Pid, NsPid, Ppid, ThreadsIds, ChildProcessesIds)
+			Pid:               int(infoFeed.Pid),
+			NsPid:             int(infoFeed.NsPid),
+			Ppid:              int(infoFeed.PPid),
 			ContainerId:       "",         // TODO: Add
 			Cmd:               []string{}, // TODO: Add
 			ExecutionBinary:   exportFileInfo(executable, queryTime),
@@ -156,12 +157,13 @@ func (ptds *DataSource) exportThreadInfo(
 	// Export the information as the expected datasource thread structure.
 	return datasource.TimeRelevantInfo[datasource.ThreadInfo]{
 		Info: datasource.ThreadInfo{
-			EntityId:  thread.GetHash(),
-			Tid:       infoFeed.Tid,
-			NsTid:     infoFeed.NsTid,
-			Pid:       infoFeed.Pid,
-			UserId:    infoFeed.Uid,
-			GroupId:   infoFeed.Gid,
+			EntityId: thread.GetHash(),
+			// TODO: change types pkg to reduce mem footprint (Tid, NsTid, Pid, UserId, GroupId)
+			Tid:       int(infoFeed.Tid),
+			NsTid:     int(infoFeed.NsTid),
+			Pid:       int(infoFeed.Pid),
+			UserId:    int(infoFeed.Uid),
+			GroupId:   int(infoFeed.Gid),
 			StartTime: info.GetStartTime(),
 			ExitTime:  info.GetExitTime(),
 			Name:      infoFeed.Name,
@@ -217,11 +219,12 @@ func exportFileInfo(fileInfo *FileInfo, queryTime time.Time) datasource.FileInfo
 
 	// Export the information as the expected datasource file structure.
 	return datasource.FileInfo{
-		Path:   fileInfoFeed.Path,
-		Hash:   "", // TODO: Add
-		Inode:  fileInfoFeed.Inode,
-		Device: fileInfoFeed.Dev,
+		Path: fileInfoFeed.Path,
+		Hash: "", // TODO: Add
+		// TODO: change types pkg to reduce mem footprint (Inode, Device, Mode)
+		Inode:  int(fileInfoFeed.Inode),
+		Device: int(fileInfoFeed.Dev),
 		Ctime:  time.Unix(0, int64(fileInfoFeed.Ctime)),
-		Mode:   fileInfoFeed.InodeMode,
+		Mode:   int(fileInfoFeed.InodeMode),
 	}
 }

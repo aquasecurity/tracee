@@ -124,9 +124,9 @@ func (pt *ProcessTree) String() string {
 		}
 		hashStr := fmt.Sprintf("%v", process.GetHash())
 		startTime := fmt.Sprintf("%v", process.GetInfo().GetStartTimeNS())
-		tid := stringify(processFeed.Tid)
-		pid := stringify(processFeed.Pid)
-		ppid := stringify(processFeed.PPid)
+		tid := stringify(int(processFeed.Tid))
+		pid := stringify(int(processFeed.Pid))
+		ppid := stringify(int(processFeed.PPid))
 		date := process.GetInfo().GetStartTime().Format("2006-01-02 15:04:05")
 
 		// add the row to the table
