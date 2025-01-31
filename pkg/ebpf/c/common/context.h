@@ -259,6 +259,7 @@ statfunc bool reset_event(event_data_t *event, u32 event_id)
     event->config.field_types = event_config->field_types;
     event->config.submit_for_policies = event_config->submit_for_policies;
     event->context.matched_policies = event_config->submit_for_policies;
+    event->config.data_filter = event_config->data_filter;
 
     return true;
 }
