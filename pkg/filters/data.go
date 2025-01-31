@@ -72,7 +72,7 @@ func NewDataFilter() *DataFilter {
 	}
 }
 
-// list of events and field names allowed to have in-kernel filter
+// list of events and field names (and index) allowed to have in-kernel filter
 var allowedKernelField = map[events.ID]string{
 	// LSM hooks
 	events.SecurityBprmCheck:           "pathname",  // 0
