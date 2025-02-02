@@ -118,3 +118,7 @@ func (d Definition) GetProperties() map[string]interface{} {
 func (d Definition) NotValid() bool {
 	return d.id == Undefined || d.id == Unsupported
 }
+
+func (d Definition) Valid() bool {
+	return !d.NotValid()
+}

@@ -39,6 +39,8 @@
 #include <common/probes.h>
 #include <common/signal.h>
 
+#include <stack_unwind/unwind.h>
+
 char LICENSE[] SEC("license") = "GPL";
 
 // trace/events/syscalls.h: TP_PROTO(struct pt_regs *regs, long id)

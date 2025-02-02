@@ -116,6 +116,7 @@ const (
 	SecurityTaskSetrlimit
 	SecuritySettime64
 	ChmodCommon
+	StackTrace // stack trace pseudo event
 	MaxCommonID
 )
 
@@ -13092,6 +13093,20 @@ var CoreEvents = map[ID]Definition{
 			{Type: "void*", Name: "vma_start"},
 			{Type: "unsigned long", Name: "vma_size"},
 			{Type: "unsigned long", Name: "vma_flags"},
+		},
+	},
+	// Stack trace pseudo event
+	// While this event is not internal (it needs to be selected by the user),
+	// it is never submitted to userspace.
+	// It's only used as a convenience method to select which events (and scopes)
+	// stack traces should be produced for and to manage its dependencies.
+	StackTrace: {
+		id:      StackTrace,
+		id32Bit: Sys32Undefined,
+		name:    "stack_trace",
+		version: NewVersion(1, 0, 0),
+		fields: []trace.ArgMeta{
+			{Type: "string", Name: "events"}, // pseudo field, only used as a parameter
 		},
 	},
 	//
