@@ -292,18 +292,6 @@ struct {
     __type(value, bool);
 } syscall_source_map SEC(".maps");
 
-// store stack traces
-#define MAX_STACK_ADDRESSES 1024 // max amount of diff stack trace addrs to buffer
-
-struct stack_addresses {
-    __uint(type, BPF_MAP_TYPE_STACK_TRACE);
-    __uint(max_entries, MAX_STACK_ADDRESSES);
-    __type(key, u32);
-    __type(value, stack_trace_t); // 1 big byte array of the stack addresses
-} stack_addresses SEC(".maps");
-
-typedef struct stack_addresses stack_addresses_t;
-
 // store fds paths by timestamp
 struct fd_arg_path_map {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);

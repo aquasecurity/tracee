@@ -39,6 +39,8 @@
 #include <common/probes.h>
 #include <common/signal.h>
 
+#include <stack_unwind/unwind.h>
+
 char LICENSE[] SEC("license") = "GPL";
 
 // trace/events/syscalls.h: TP_PROTO(struct pt_regs *regs, long id)
@@ -2249,17 +2251,18 @@ int BPF_KPROBE(trace_security_bprm_check)
     unsigned long inode_nr = get_inode_nr_from_file(file);
     void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
 
-    syscall_data_t *sys = &p.task_info->syscall_data;
+    struct pt_regs *task_regs = get_current_task_pt_regs();
+
     const char *const *argv = NULL;
     const char *const *envp = NULL;
-    switch (sys->id) {
+    switch (get_current_task_syscall_id()) {
         case SYSCALL_EXECVE:
-            argv = (const char *const *) sys->args.args[1];
-            envp = (const char *const *) sys->args.args[2];
+            argv = (const char *const *) get_syscall_arg2(p.event->task, task_regs, false);
+            envp = (const char *const *) get_syscall_arg3(p.event->task, task_regs, false);
             break;
         case SYSCALL_EXECVEAT:
-            argv = (const char *const *) sys->args.args[2];
-            envp = (const char *const *) sys->args.args[3];
+            argv = (const char *const *) get_syscall_arg3(p.event->task, task_regs, false);
+            envp = (const char *const *) get_syscall_arg4(p.event->task, task_regs, false);
             break;
         default:
             break;

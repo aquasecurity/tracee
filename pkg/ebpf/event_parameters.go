@@ -18,6 +18,7 @@ type eventParameterHandler func(t *Tracee, eventParams []map[string]filters.Filt
 var eventParameterHandlers = map[events.ID]eventParameterHandler{
 	events.SuspiciousSyscallSource: prepareSuspiciousSyscallSource,
 	events.StackPivot:              prepareStackPivot,
+	events.StackTrace:              populateMapsStackTrace,
 }
 
 // handleEventParameters performs initialization actions according to event parameters,
@@ -156,4 +157,49 @@ func prepareSuspiciousSyscallSource(t *Tracee, eventParams []map[string]filters.
 
 func prepareStackPivot(t *Tracee, eventParams []map[string]filters.Filter[*filters.StringFilter]) error {
 	return registerSyscallChecker(t, eventParams, "syscall", "stack_pivot_syscalls")
+}
+
+func populateMapsStackTrace(t *Tracee, eventParams []map[string]filters.Filter[*filters.StringFilter]) error {
+	// Get events to produce stack traces for
+	selectedEvents := map[string]struct{}{}
+	for _, policyParams := range eventParams {
+		eventNamesParam, ok := policyParams["events"].(*filters.StringFilter)
+		if !ok {
+			return errfmt.Errorf("invalid argument name 'events'")
+		}
+		for _, eventName := range eventNamesParam.Equal() {
+			selectedEvents[eventName] = struct{}{}
+		}
+	}
+
+	// If "all" was specified, add all events to selectedEvents
+	if _, found := selectedEvents["all"]; found {
+		selectedEvents = make(map[string]struct{}, events.MaxCommonID)
+		for id := range events.MaxCommonID {
+			d := events.Core.GetDefinitionByID(id)
+			if d.Valid() {
+				selectedEvents[d.GetName()] = struct{}{}
+			}
+		}
+	}
+
+	logger.Debugw("stack traces are enabled", "selected events", selectedEvents)
+
+	// Update selected events map
+	eventsMap, err := t.bpfModule.GetMap("su_enabled_evts")
+	if err != nil {
+		return errfmt.Errorf("could not get BPF map 'su_enabled_evts': %v", err)
+	}
+	for event := range selectedEvents {
+		eventID, found := events.Core.GetDefinitionIDByName(event)
+		if !found {
+			return errfmt.Errorf("invalid event %s", event)
+		}
+		val := uint32(1)
+		if err = eventsMap.Update(unsafe.Pointer(&eventID), unsafe.Pointer(&val)); err != nil {
+			return errfmt.Errorf("failed updating stack unwind events map: %v", err)
+		}
+	}
+
+	return nil
 }

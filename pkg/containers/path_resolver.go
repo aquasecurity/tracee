@@ -10,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/utils/proc"
 )
 
 // ContainerPathResolver generates an accessible absolute path from the root
@@ -45,36 +46,57 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 	pids := cPathRes.mountNSPIDsCache.GetBucket(uint32(mountNS))
 
 	for _, pid := range pids {
-		// cap.SYS_PTRACE is needed here. Instead of raising privileges, since
-		// this is called too frequently, if the needed event is being traced,
-		// the needed capabilities are added to the Base ring and are always set
-		// as effective.
-		//
-		// (Note: To change this behavior we need a privileged process/server)
-
-		procRootPath := fmt.Sprintf("/proc/%d/root", int(pid))
-
-		// fs.FS interface requires relative paths, so the '/' prefix should be trimmed.
-		entries, err := fs.ReadDir(cPathRes.fs, strings.TrimPrefix(procRootPath, "/"))
+		procRoot, err := cPathRes.getProcessFSRoot(uint(pid))
 		if err != nil {
-			// This process is either not alive or we don't have permissions to access.
 			// Try next pid in mount ns to find accessible path to mount ns files.
-			logger.Debugw(
-				"Finding mount NS path",
-				"Unreachable proc root path", procRootPath,
-				"error", err.Error(),
-			)
+			logger.Debugw("Could not access process FS", "pid", pid, "error", err)
 			continue
 		}
-		if len(entries) == 0 {
-			return "", errfmt.Errorf("empty directory")
-		}
-		if err == nil {
-			return fmt.Sprintf("%s%s", procRootPath, mountNSAbsolutePath), nil
-		}
+
+		return fmt.Sprintf("%s%s", procRoot, mountNSAbsolutePath), nil
 	}
 
-	return "", ErrContainerFSUnreachable
+	// No PIDs registered in this namespace, or couldn't access FS root of any of the PIDs found.
+	// Try finding one in procfs.
+	pid, err := proc.GetAnyProcessInNS("mnt", mountNS)
+	if err != nil {
+		// Couldn't find a process in this namespace using procfs
+		return "", ErrContainerFSUnreachable
+	}
+
+	procRoot, err := cPathRes.getProcessFSRoot(pid)
+	if err != nil {
+		logger.Debugw("Could not access process FS", "pid", pid, "error", err)
+		return "", ErrContainerFSUnreachable
+	}
+
+	// Register this process in the mount namespace
+	cPathRes.mountNSPIDsCache.AddBucketItem(uint32(mountNS), uint32(pid))
+
+	return fmt.Sprintf("%s%s", procRoot, mountNSAbsolutePath), nil
+}
+
+func (cPathRes *ContainerPathResolver) getProcessFSRoot(pid uint) (string, error) {
+	// cap.SYS_PTRACE is needed here. Instead of raising privileges, since
+	// this is called too frequently, if the needed event is being traced,
+	// the needed capabilities are added to the Base ring and are always set
+	// as effective.
+	//
+	// (Note: To change this behavior we need a privileged process/server)
+
+	procRootPath := fmt.Sprintf("/proc/%d/root", pid)
+
+	// fs.FS interface requires relative paths, so the '/' prefix should be trimmed.
+	entries, err := fs.ReadDir(cPathRes.fs, strings.TrimPrefix(procRootPath, "/"))
+	if err != nil {
+		// This process is either not alive or we don't have permissions to access.
+		return "", errfmt.Errorf("failed accessing process FS root %s: %v", procRootPath, err)
+	}
+	if len(entries) == 0 {
+		return "", errfmt.Errorf("process FS root (%s) is empty", procRootPath)
+	}
+
+	return procRootPath, nil
 }
 
 var (

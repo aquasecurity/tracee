@@ -3,15 +3,11 @@ package ebpf
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"fmt"
 	"slices"
-	"strconv"
 	"sync"
-	"unsafe"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
-	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -192,12 +188,6 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				continue
 			}
 
-			// Add stack trace if needed
-			var stackAddresses []uint64
-			if t.config.Output.StackAddresses {
-				stackAddresses = t.getStackAddresses(eCtx.StackID)
-			}
-
 			containerInfo := t.containers.GetCgroupInfo(eCtx.CgroupID).Container
 			containerData := trace.Container{
 				ID:          containerInfo.ContainerId,
@@ -275,7 +265,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.ArgsNum = int(argnum)
 			evt.ReturnValue = int(eCtx.Retval)
 			evt.Args = args
-			evt.StackAddresses = stackAddresses
+			evt.StackAddresses = nil
 			evt.ContextFlags = flags
 			evt.Syscall = syscall
 			evt.Metadata = nil
@@ -634,50 +624,6 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 	}()
 
 	return errc
-}
-
-// getStackAddresses returns the stack addresses for a given StackID
-func (t *Tracee) getStackAddresses(stackID uint32) []uint64 {
-	stackAddresses := make([]uint64, maxStackDepth)
-	stackFrameSize := (strconv.IntSize / 8)
-
-	// Lookup the StackID in the map
-	// The ID could have aged out of the Map, as it only holds a finite number of
-	// Stack IDs in it's Map
-	var stackBytes []byte
-	err := capabilities.GetInstance().EBPF(func() error {
-		bytes, e := t.StackAddressesMap.GetValue(unsafe.Pointer(&stackID))
-		if e != nil {
-			stackBytes = bytes
-		}
-		return e
-	})
-	if err != nil {
-		logger.Debugw("failed to get StackAddress", "error", err)
-		return stackAddresses[0:0]
-	}
-
-	stackCounter := 0
-	for i := 0; i < len(stackBytes); i += stackFrameSize {
-		stackAddresses[stackCounter] = 0
-		stackAddr := binary.LittleEndian.Uint64(stackBytes[i : i+stackFrameSize])
-		if stackAddr == 0 {
-			break
-		}
-		stackAddresses[stackCounter] = stackAddr
-		stackCounter++
-	}
-
-	// Attempt to remove the ID from the map so we don't fill it up
-	// But if this fails continue on
-	err = capabilities.GetInstance().EBPF(func() error {
-		return t.StackAddressesMap.DeleteKey(unsafe.Pointer(&stackID))
-	})
-	if err != nil {
-		logger.Debugw("failed to delete stack address from eBPF map", "error", err)
-	}
-
-	return stackAddresses[0:stackCounter]
 }
 
 // WaitForPipeline waits for results from all error channels.

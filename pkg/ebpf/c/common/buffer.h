@@ -601,14 +601,6 @@ statfunc int events_perf_submit(program_data_t *p, long ret)
     // keep task_info updated
     bpf_probe_read_kernel(&p->task_info->context, sizeof(task_context_t), &p->event->context.task);
 
-    // Get Stack trace
-    if (p->config->options & OPT_CAPTURE_STACK_TRACES) {
-        int stack_id = bpf_get_stackid(p->ctx, &stack_addresses, BPF_F_USER_STACK);
-        if (stack_id >= 0) {
-            p->event->context.stack_id = stack_id;
-        }
-    }
-
     u32 size = sizeof(event_context_t) + sizeof(u8) +
                p->event->args_buf.offset; // context + argnum + arg buffer size
 

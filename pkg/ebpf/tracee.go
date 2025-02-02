@@ -83,8 +83,7 @@ type Tracee struct {
 	defaultProbes *probes.ProbeGroup
 	extraProbes   map[string]*probes.ProbeGroup
 	// BPF Maps
-	StackAddressesMap *bpf.BPFMap
-	FDArgPathMap      *bpf.BPFMap
+	FDArgPathMap *bpf.BPFMap
 	// Perf Buffers
 	eventsPerfMap  *bpf.PerfBuffer // perf buffer for events
 	fileWrPerfMap  *bpf.PerfBuffer // perf buffer for file writes
@@ -502,15 +501,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		t.Close()
 		return errfmt.Errorf("error initializing network capture: %v", err)
 	}
-
-	// Get reference to stack trace addresses map
-
-	stackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
-	if err != nil {
-		t.Close()
-		return errfmt.Errorf("error getting access to 'stack_addresses' eBPF Map %v", err)
-	}
-	t.StackAddressesMap = stackAddressesMap
 
 	// Get reference to fd arg path map
 

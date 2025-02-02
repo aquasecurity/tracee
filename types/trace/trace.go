@@ -42,7 +42,7 @@ type Event struct {
 	ArgsNum               int          `json:"argsNum"`
 	ReturnValue           int          `json:"returnValue"`
 	Syscall               string       `json:"syscall"`
-	StackAddresses        []uint64     `json:"stackAddresses"`
+	StackAddresses        []uint64     `json:"stackAddresses"` // disabled, will be removed in the future
 	ContextFlags          ContextFlags `json:"contextFlags"`
 	ThreadEntityId        uint32       `json:"threadEntityId"`  // thread task unique identifier (*)
 	ProcessEntityId       uint32       `json:"processEntityId"` // process unique identifier (*)
