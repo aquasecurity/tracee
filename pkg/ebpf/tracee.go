@@ -289,7 +289,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize buckets cache
 
-	var mntNSProcs map[int]int
+	var mntNSProcs map[uint32]int32 // map[mntns]pid
 
 	if t.config.MaxPidsCache == 0 {
 		t.config.MaxPidsCache = 5 // TODO: configure this ? never set, default = 5
@@ -307,7 +307,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	)
 	if err == nil {
 		for mountNS, pid := range mntNSProcs {
-			t.pidsInMntns.AddBucketItem(uint32(mountNS), uint32(pid))
+			t.pidsInMntns.AddBucketItem(mountNS, uint32(pid))
 		}
 	} else {
 		logger.Debugw("Initializing buckets cache", "error", errfmt.WrapError(err))

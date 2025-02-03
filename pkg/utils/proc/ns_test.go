@@ -7,13 +7,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestExtractNSFromLink(t *testing.T) {
+func Test_extractNSFromLink(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
 		name          string
 		link          string
-		expectedNS    int
+		expectedNS    uint32
 		expectedError bool
 	}{
 		{
