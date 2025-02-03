@@ -16,6 +16,13 @@ const (
 	maxProcStatusLength     = 104
 )
 
+// TestProcStatus_PrintSizes prints the sizes of the structs used in the ProcStatus type.
+// Run it as DEBUG test to see the output.
+func TestProcStatus_PrintSizes(t *testing.T) {
+	procStatus := ProcStatus{}
+	tests.PrintStructSizes(t, os.Stdout, procStatus)
+}
+
 func TestProcStatusSize(t *testing.T) {
 	t.Parallel()
 
@@ -49,20 +56,72 @@ func TestProcStatusSize(t *testing.T) {
 	}
 }
 
-// TestProcStatus_PrintSizes prints the sizes of the structs used in the ProcStatus type.
-// Run it as DEBUG test to see the output.
-func TestProcStatus_PrintSizes(t *testing.T) {
-	procStatus := ProcStatus{}
-	tests.PrintStructSizes(t, os.Stdout, procStatus)
-}
+var statusContent = `
+Name:   Utility Process
+Umask:  0022
+State:  R (running)
+Tgid:   216448
+Ngid:   0
+Pid:    216447
+PPid:   3994523
+TracerPid:      0
+Uid:    1000    1000    1000    1000
+Gid:    1000    1000    1000    1000
+FDSize: 128
+Groups: 3 90 98 108 955 959 986 991 998 1000 
+NStgid: 216443
+NSpid:  216445
+NSpgid: 216444
+NSsid:  3994523
+Kthread:        0
+VmPeak:    10392 kB
+VmSize:    10356 kB
+VmLck:         0 kB
+VmPin:         0 kB
+VmHWM:      6400 kB
+VmRSS:      6400 kB
+RssAnon:            1536 kB
+RssFile:            4864 kB
+RssShmem:              0 kB
+VmData:     1384 kB
+VmStk:       136 kB
+VmExe:      2860 kB
+VmLib:      2372 kB
+VmPTE:        64 kB
+VmSwap:        0 kB
+HugetlbPages:          0 kB
+CoreDumping:    0
+THP_enabled:    1
+untag_mask:     0xffffffffffffffff
+Threads:        1
+SigQ:   0/253444
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000001000
+SigCgt: 0000000000000440
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 000001ffffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     0
+Seccomp:        0
+Seccomp_filters:        0
+Speculation_Store_Bypass:       thread vulnerable
+SpeculationIndirectBranch:      conditional enabled
+Cpus_allowed:   ffffffff
+Cpus_allowed_list:      0-31
+Mems_allowed:   00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        1
+nonvoluntary_ctxt_switches:     0
+x86_Thread_features:
+x86_Thread_features_locked:
+`
 
-func TestProcStatusParsing(t *testing.T) {
+func Test_newProcStatus(t *testing.T) {
 	t.Parallel()
-
-	filePath, err := createMockStatusFile()
-	if err != nil {
-		t.Fatalf("Failed to create mock status file: %v", err)
-	}
 
 	testCases := []struct {
 		name     string
@@ -72,12 +131,12 @@ func TestProcStatusParsing(t *testing.T) {
 			name: "Correct parsing of mock status file",
 			expected: ProcStatus{
 				name:   "Utility Process",
-				tgid:   216447,
+				tgid:   216448,
 				pid:    216447,
 				pPid:   3994523,
-				nstgid: 216447,
-				nspid:  216447,
-				nspgid: 216447,
+				nstgid: 216443,
+				nspid:  216445,
+				nspgid: 216444,
 			},
 		},
 	}
@@ -86,7 +145,10 @@ func TestProcStatusParsing(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			result, err := newProcStatus(filePath)
+			file := tests.CreateTempFile(t, statusContent)
+			defer os.Remove(file.Name())
+
+			result, err := newProcStatus(file.Name())
 			if err != nil {
 				t.Fatalf("Error parsing the proc status: %v", err)
 			}

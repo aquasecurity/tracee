@@ -2,7 +2,6 @@ package proc
 
 import (
 	"strconv"
-	"strings"
 )
 
 //
@@ -22,8 +21,4 @@ func ParseInt64(value string) (int64, error) {
 
 func ParseUint64(value string) (uint64, error) {
 	return strconv.ParseUint(value, 10, 64)
-}
-
-func parseString(value string) string {
-	return strings.Clone(value) // clone it to avoid memory leak
 }
