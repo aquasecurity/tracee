@@ -116,6 +116,7 @@ const (
 	SecurityTaskSetrlimit
 	SecuritySettime64
 	ChmodCommon
+	SecuritySbUmount
 	MaxCommonID
 )
 
@@ -13102,6 +13103,22 @@ var CoreEvents = map[ID]Definition{
 			{Type: "void*", Name: "vma_start"},
 			{Type: "unsigned long", Name: "vma_size"},
 			{Type: "unsigned long", Name: "vma_flags"},
+		},
+	},
+	SecuritySbUmount: {
+		id:      SecuritySbUmount,
+		id32Bit: Sys32Undefined,
+		name:    "security_sb_umount",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SecuritySbUmount, required: true},
+			},
+		},
+		sets: []string{"default", "lsm_hooks", "fs"},
+		fields: []trace.ArgMeta{
+			{Type: "const char*", Name: "mountpoint"},
+			{Type: "const char*", Name: "type"},
+			{Type: "int", Name: "flags"},
 		},
 	},
 	//

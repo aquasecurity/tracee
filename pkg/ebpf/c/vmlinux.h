@@ -687,9 +687,15 @@ struct inode {
     struct file_operations *i_fop;
 };
 
+struct file_system_type {
+    const char *name;
+};
+
 struct super_block {
     dev_t s_dev;
+    struct file_system_type *s_type;
     unsigned long s_magic;
+    char s_id[32];
 };
 
 struct rb_root {
@@ -712,6 +718,7 @@ struct mm_struct {
 
 struct vfsmount {
     struct dentry *mnt_root;
+    struct super_block *mnt_sb;
 };
 
 struct mount {
