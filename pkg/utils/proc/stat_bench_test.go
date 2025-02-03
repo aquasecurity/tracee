@@ -13,6 +13,6 @@ func Benchmark_newProcStat(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _ = newProcStat(file.Name())
+		_, _ = newProcStat(file.Name(), statDefaultFields)
 	}
 }

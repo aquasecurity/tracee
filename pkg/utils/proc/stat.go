@@ -102,28 +102,45 @@ var procStatValueParserArray = [StatMaxNumFields]procStatValueParser{
 	StatStartTime: parseStartTime, // StartTime
 }
 
+// statDefaultFields is the default set of fields to parse from the stat file.
+// It is used when no fields are specified.
+// Even though a subset, they must be ordered as in the StatField enum to ensure correct parsing.
+var statDefaultFields = []StatField{
+	StatStartTime,
+}
+
 // NewThreadProcStat reads the /proc/<pid>/task/<tid>/stat file and parses it into a ProcStat struct.
+// Populates all default fields.
 func NewThreadProcStat(pid, tid int32) (*ProcStat, error) {
 	taskStatPath := GetTaskStatPath(pid, tid)
-	return newProcStat(taskStatPath)
+	return newProcStat(taskStatPath, statDefaultFields)
 }
 
 // NewProcStat reads the /proc/<pid>/stat file and parses it into a ProcStat struct.
+// Populates all default fields.
 func NewProcStat(pid int32) (*ProcStat, error) {
 	statPath := GetStatPath(pid)
-	return newProcStat(statPath)
+	return newProcStat(statPath, statDefaultFields)
 }
 
-func newProcStat(filePath string) (*ProcStat, error) {
+// NewThreadProcStatFields reads the /proc/<pid>/task/<tid>/stat file and parses it into a ProcStat struct.
+// Populates only the specified fields.
+func NewThreadProcStatFields(pid, tid int32, fields []StatField) (*ProcStat, error) {
+	taskStatPath := GetTaskStatPath(pid, tid)
+	return newProcStat(taskStatPath, fields)
+}
+
+// NewProcStatFields reads the /proc/<pid>/stat file and parses it into a ProcStat struct.
+// Populates only the specified fields.
+func NewProcStatFields(pid int32, fields []StatField) (*ProcStat, error) {
+	statPath := GetStatPath(pid)
+	return newProcStat(statPath, fields)
+}
+
+func newProcStat(filePath string, fields []StatField) (*ProcStat, error) {
 	statBytes, err := ReadFile(filePath, StatReadFileInitialBufferSize)
 	if err != nil {
 		return nil, err
-	}
-
-	// Fields to parse from the stat file.
-	// Even though a subset, they must be in the correct order.
-	fields := []StatField{
-		StatStartTime,
 	}
 
 	stat := &ProcStat{}
@@ -136,7 +153,6 @@ func newProcStat(filePath string) (*ProcStat, error) {
 }
 
 // parse parses the stat file for the required fields filling the ProcStat struct.
-// fields can be a subset but must always be ordered as in the StatField enum.
 func (s *ProcStat) parse(statBytes []byte, fields []StatField) error {
 	if len(statBytes) == 0 {
 		return errfmt.Errorf("empty stat file")

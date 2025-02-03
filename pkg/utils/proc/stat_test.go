@@ -81,7 +81,7 @@ func Test_newProcStat(t *testing.T) {
 			file := tests.CreateTempFile(t, statContent)
 			defer os.Remove(file.Name())
 
-			result, err := newProcStat(file.Name())
+			result, err := newProcStat(file.Name(), statDefaultFields)
 			if err != nil {
 				t.Fatalf("Error creating new ProcStat: %v", err)
 			}

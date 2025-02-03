@@ -152,34 +152,51 @@ var procStatusValueParserArray = [StatusMaxNumFields]procStatusParser{
 	NSpgid: {fieldName: []byte("NSpgid"), parse: parseNsPgid},
 }
 
+// statusDefaultFields is the default set of fields to parse from the status file.
+// It is used when no fields are specified.
+// Even though a subset, they must be ordered as in the StatusField enum to ensure correct parsing.
+var statusDefaultFields = []StatusField{
+	Name,
+	Tgid,
+	Pid,
+	PPid,
+	NStgid,
+	NSpid,
+	NSpgid,
+}
+
 // NewThreadProcStatus reads the /proc/<pid>/task/<tid>/status file and parses it into a ProcStatus struct.
+// Populates all default fields.
 func NewThreadProcStatus(pid, tid int32) (*ProcStatus, error) {
 	taskStatusPath := GetTaskStatusPath(pid, tid)
-	return newProcStatus(taskStatusPath)
+	return newProcStatus(taskStatusPath, statusDefaultFields)
 }
 
 // NewProcStatus reads the /proc/<pid>/status file and parses it into a ProcStatus struct.
+// Populates all default fields.
 func NewProcStatus(pid int32) (*ProcStatus, error) {
 	statusPath := GetStatusPath(pid)
-	return newProcStatus(statusPath)
+	return newProcStatus(statusPath, statusDefaultFields)
 }
 
-func newProcStatus(filePath string) (*ProcStatus, error) {
+// NewThreadProcStatusFields reads the /proc/<pid>/task/<tid>/status file and parses it into a ProcStatus struct.
+// Populates only the specified fields.
+func NewThreadProcStatusFields(pid, tid int32, fields []StatusField) (*ProcStatus, error) {
+	taskStatusPath := GetTaskStatusPath(pid, tid)
+	return newProcStatus(taskStatusPath, fields)
+}
+
+// NewProcStatusFields reads the /proc/<pid>/status file and parses it into a ProcStatus struct.
+// Populates only the specified fields.
+func NewProcStatusFields(pid int32, fields []StatusField) (*ProcStatus, error) {
+	statusPath := GetStatusPath(pid)
+	return newProcStatus(statusPath, fields)
+}
+
+func newProcStatus(filePath string, fields []StatusField) (*ProcStatus, error) {
 	statusBytes, err := ReadFile(filePath, StatusReadFileInitialBufferSize)
 	if err != nil {
 		return nil, err
-	}
-
-	// Fields to parse from the status file.
-	// Even though a subset, they must be in the correct order.
-	fields := []StatusField{
-		Name,
-		Tgid,
-		Pid,
-		PPid,
-		NStgid,
-		NSpid,
-		NSpgid,
 	}
 
 	status := &ProcStatus{}
@@ -192,7 +209,6 @@ func newProcStatus(filePath string) (*ProcStatus, error) {
 }
 
 // parse parses the status file for the required fields filling the ProcStatus struct.
-// fields can be a subset but must always be ordered as in the StatusField enum.
 func (s *ProcStatus) parse(statusBytes []byte, fields []StatusField) error {
 	if len(statusBytes) == 0 {
 		return errfmt.Errorf("empty status file")

@@ -151,12 +151,17 @@ func GetMountNSFirstProcesses() (map[uint32]int32, error) { // map[mountNS]pid
 			continue
 		}
 
-		procStat, err := NewProcStat(pid)
-		processStartTime := procStat.GetStartTime()
+		procStat, err := NewProcStatFields(
+			pid,
+			[]StatField{
+				StatStartTime,
+			},
+		)
 		if err != nil {
 			logger.Debugw("Failed in fetching process start time", "pid", pid, "error", err.Error())
 			continue
 		}
+		processStartTime := procStat.GetStartTime()
 
 		currentNSProcess, ok := mountNSTimeMap[procNS.Mnt]
 		if ok {

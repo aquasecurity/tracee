@@ -97,24 +97,20 @@ func getProcessByPID(pt *ProcessTree, givenPid int32) (*Process, error) {
 	if givenPid <= 0 {
 		return nil, errfmt.Errorf("invalid PID")
 	}
-	status, err := proc.NewProcStatus(givenPid)
-	if err != nil {
-		return nil, errfmt.Errorf("%v", err)
-	}
-	stat, err := proc.NewProcStat(givenPid)
+
+	stat, err := proc.NewProcStatFields(
+		givenPid,
+		[]proc.StatField{
+			proc.StatStartTime,
+		},
+	)
 	if err != nil {
 		return nil, errfmt.Errorf("%v", err)
 	}
 
-	statusPid := status.GetPid()
 	statStartTime := stat.GetStartTime()
-
-	// hint for GC
-	status = nil
-	stat = nil
-
 	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(statStartTime)
-	hash := utils.HashTaskID(uint32(statusPid), startTimeNs) // status pid == tid
+	hash := utils.HashTaskID(uint32(givenPid), startTimeNs) // status pid == tid
 
 	return pt.GetOrCreateProcessByHash(hash), nil
 }
@@ -124,11 +120,18 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 	if givenPid <= 0 {
 		return errfmt.Errorf("invalid PID")
 	}
-	status, err := proc.NewProcStatus(givenPid)
+
+	stat, err := proc.NewProcStatFields(
+		givenPid,
+		[]proc.StatField{
+			proc.StatStartTime,
+		},
+	)
 	if err != nil {
 		return errfmt.Errorf("%v", err)
 	}
-	stat, err := proc.NewProcStat(givenPid)
+
+	status, err := proc.NewProcStatus(givenPid)
 	if err != nil {
 		return errfmt.Errorf("%v", err)
 	}
@@ -144,10 +147,6 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 	nstgid := status.GetNsTgid()
 	nsppid := status.GetNsPPid()
 	start := stat.GetStartTime()
-
-	// hint for GC
-	status = nil
-	stat = nil
 
 	// sanity checks
 	switch givenPid {
@@ -218,11 +217,19 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 	if givenPid <= 0 {
 		return errfmt.Errorf("invalid PID")
 	}
-	status, err := proc.NewThreadProcStatus(givenPid, givenTid)
+
+	stat, err := proc.NewThreadProcStatFields(
+		givenPid,
+		givenTid,
+		[]proc.StatField{
+			proc.StatStartTime,
+		},
+	)
 	if err != nil {
 		return errfmt.Errorf("%v", err)
 	}
-	stat, err := proc.NewThreadProcStat(givenPid, givenTid)
+
+	status, err := proc.NewThreadProcStatus(givenPid, givenTid)
 	if err != nil {
 		return errfmt.Errorf("%v", err)
 	}
@@ -235,10 +242,6 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 	nstgid := status.GetNsTgid()
 	nsppid := status.GetNsPPid()
 	start := stat.GetStartTime()
-
-	// hint for GC
-	status = nil
-	stat = nil
 
 	// sanity checks
 	if name == "" || pid == 0 || tgid == 0 || ppid == 0 {

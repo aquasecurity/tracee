@@ -148,7 +148,7 @@ func Test_newProcStatus(t *testing.T) {
 			file := tests.CreateTempFile(t, statusContent)
 			defer os.Remove(file.Name())
 
-			result, err := newProcStatus(file.Name())
+			result, err := newProcStatus(file.Name(), statusDefaultFields)
 			if err != nil {
 				t.Fatalf("Error parsing the proc status: %v", err)
 			}
