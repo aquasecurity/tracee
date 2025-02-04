@@ -1340,6 +1340,46 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAllInOrderSequentially,
 		},
 		{
+			name: "comm: event: trace events from nc command for net_tcp_connect event",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "net-event-1",
+						},
+						Spec: k8s.PolicySpec{
+							Scope: []string{
+								"comm=nc",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event:   "net_tcp_connect",
+									Filters: []string{},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"bash -c 'nc -zv localhost 7777 || true'",
+					0,
+					2*time.Second,
+					[]trace.Event{
+						expectEvent(
+							anyHost, "nc", testutils.CPUForTests, anyPID, 0, events.NetTCPConnect, orPolNames("net-event-1"), orPolIDs(1)),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAtLeastOneForEach,
+		},
+		{
 			name: "comm: trace only events from from ls and who commands in multiple policies",
 			policyFiles: []testutils.PolicyFileWithID{
 				{
