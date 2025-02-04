@@ -72,12 +72,18 @@ type ProcTreeConfig struct {
 
 // ProcessTree is a tree of processes and threads.
 type ProcessTree struct {
-	processes   *lru.Cache[uint32, *Process] // hash -> process
-	threads     *lru.Cache[uint32, *Thread]  // hash -> threads
-	procfsChan  chan int32                   // channel of pids to read from procfs
-	procfsOnce  *sync.Once                   // busy loop debug message throttling
-	ctx         context.Context              // context for the process tree
-	procfsQuery bool
+	processesLRU      *lru.Cache[uint32, *Process]   // hash -> process
+	threadsLRU        *lru.Cache[uint32, *Thread]    // hash -> threads
+	processesThreads  map[uint32]map[uint32]struct{} // process hash -> thread hashes
+	processesChildren map[uint32]map[uint32]struct{} // process hash -> children hashes
+	procfsChan        chan int32                     // channel of pids to read from procfs
+	procfsOnce        *sync.Once                     // busy loop debug message throttling
+	ctx               context.Context                // context for the process tree
+	procfsQuery       bool
+
+	// mutexes
+	processesThreadsMtx  sync.RWMutex
+	processesChildrenMtx sync.RWMutex
 
 	// pools
 	forkFeedPool     *sync.Pool // pool of ForkFeed instances
@@ -89,68 +95,12 @@ type ProcessTree struct {
 
 // NewProcessTree creates a new process tree.
 func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, error) {
-	procEvited := 0
-	thrEvicted := 0
-
-	// Create caches for processes.
-	processes, err := lru.NewWithEvict[uint32, *Process](
-		config.ProcessCacheSize,
-		func(uint32, *Process) {
-			procEvited++
-		},
-	)
-	if err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-
-	// Create caches for threads.
-	threads, err := lru.NewWithEvict[uint32, *Thread](
-		config.ThreadCacheSize,
-		func(uint32, *Thread) {
-			thrEvicted++
-		},
-	)
-	if err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-
-	// Report cache stats if debug is enabled.
-	go func() {
-		ticker15s := time.NewTicker(15 * time.Second)
-		ticker1m := time.NewTicker(1 * time.Minute)
-		defer ticker15s.Stop()
-		defer ticker1m.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker15s.C:
-				if procEvited != 0 || thrEvicted != 0 {
-					logger.Debugw("proctree cache stats",
-						"processes evicted", procEvited,
-						"total processes", processes.Len(),
-						"threads evicted", thrEvicted,
-						"total threads", threads.Len(),
-					)
-					procEvited = 0
-					thrEvicted = 0
-				}
-			case <-ticker1m.C:
-				logger.Debugw("proctree cache stats",
-					"total processes", processes.Len(),
-					"total threads", threads.Len(),
-				)
-			}
-		}
-	}()
-
 	procTree := &ProcessTree{
-		processes:   processes,
-		threads:     threads,
-		procfsOnce:  new(sync.Once),
-		ctx:         ctx,
-		procfsQuery: config.ProcfsQuerying,
+		processesThreads:  make(map[uint32]map[uint32]struct{}),
+		processesChildren: make(map[uint32]map[uint32]struct{}),
+		procfsOnce:        new(sync.Once),
+		ctx:               ctx,
+		procfsQuery:       config.ProcfsQuerying,
 		forkFeedPool: &sync.Pool{
 			New: func() interface{} {
 				return &ForkFeed{}
@@ -178,6 +128,65 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 		},
 	}
 
+	var err error
+	procEvited := 0
+	thrEvicted := 0
+
+	// Create caches for processes.
+	procTree.processesLRU, err = lru.NewWithEvict[uint32, *Process](
+		config.ProcessCacheSize,
+		func(key uint32, value *Process) {
+			procTree.EvictThreads(key)
+			procTree.EvictChildren(key)
+			procEvited++
+		},
+	)
+	if err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
+	// Create caches for threads.
+	procTree.threadsLRU, err = lru.NewWithEvict[uint32, *Thread](
+		config.ThreadCacheSize,
+		func(key uint32, value *Thread) {
+			thrEvicted++
+		},
+	)
+	if err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
+	// Report cache stats if debug is enabled.
+	go func() {
+		ticker15s := time.NewTicker(15 * time.Second)
+		ticker1m := time.NewTicker(1 * time.Minute)
+		defer ticker15s.Stop()
+		defer ticker1m.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker15s.C:
+				if procEvited != 0 || thrEvicted != 0 {
+					logger.Debugw("proctree cache stats",
+						"processes evicted", procEvited,
+						"total processes", procTree.processesLRU.Len(),
+						"threads evicted", thrEvicted,
+						"total threads", procTree.threadsLRU.Len(),
+					)
+					procEvited = 0
+					thrEvicted = 0
+				}
+			case <-ticker1m.C:
+				logger.Debugw("proctree cache stats",
+					"total processes", procTree.processesLRU.Len(),
+					"total threads", procTree.threadsLRU.Len(),
+				)
+			}
+		}
+	}()
+
 	if config.ProcfsInitialization {
 		// Walk procfs and feed the process tree with data.
 		procTree.FeedFromProcFSAsync(AllPIDs)
@@ -192,37 +201,123 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 
 // GetProcessByHash returns a process by its hash.
 func (pt *ProcessTree) GetProcessByHash(hash uint32) (*Process, bool) {
-	process, ok := pt.processes.Get(hash)
+	process, ok := pt.processesLRU.Get(hash)
 	return process, ok
 }
 
 // GetOrCreateProcessByHash returns a process by its hash, or creates a new one if it doesn't exist.
 func (pt *ProcessTree) GetOrCreateProcessByHash(hash uint32) *Process {
-	process, ok := pt.processes.Get(hash)
+	process, ok := pt.processesLRU.Get(hash)
 	if !ok {
 		var taskInfo *TaskInfo
 
 		// Each process must have a thread with thread ID matching its process ID.
 		// Both share the same info as both represent the same task in the kernel.
-		thread, ok := pt.threads.Get(hash)
+		thread, ok := pt.threadsLRU.Get(hash)
 		if ok {
 			taskInfo = thread.GetInfo()
 		} else {
 			taskInfo = NewTaskInfo()
 			thread = NewThread(hash, taskInfo) // create a new thread
-			pt.threads.Add(hash, thread)
+			pt.threadsLRU.Add(hash, thread)
 		}
 
 		thread.SetLeaderHash(hash)
 
 		process = NewProcess(hash, taskInfo) // create a new process
-		process.AddThread(hash)
-		pt.processes.Add(hash, process)
+		pt.AddThreadToProcess(hash, hash)    // add itself as a thread
+		pt.processesLRU.Add(hash, process)
 
 		return process
 	}
 
 	return process // return an existing process
+}
+
+// Process Threads and Children
+
+// GetThreads returns a list of thread hashes for a given process hash.
+func (pt *ProcessTree) GetThreads(processHash uint32) []uint32 {
+	pt.processesThreadsMtx.RLock()
+	defer pt.processesThreadsMtx.RUnlock()
+
+	threadsMap, ok := pt.processesThreads[processHash]
+	if !ok {
+		return nil
+	}
+
+	threads := make([]uint32, 0, len(threadsMap))
+	for thread := range threadsMap {
+		threads = append(threads, thread)
+	}
+
+	return threads
+}
+
+// GetChildren returns a list of children hashes for a given process hash.
+func (pt *ProcessTree) GetChildren(processHash uint32) []uint32 {
+	pt.processesChildrenMtx.RLock()
+	defer pt.processesChildrenMtx.RUnlock()
+
+	childrenMap, ok := pt.processesChildren[processHash]
+	if !ok {
+		return nil
+	}
+
+	children := make([]uint32, 0, len(childrenMap))
+	for child := range childrenMap {
+		children = append(children, child)
+	}
+
+	return children
+}
+
+// AddThreadToProcess adds a thread to a process.
+func (pt *ProcessTree) AddThreadToProcess(processHash uint32, threadHash uint32) {
+	if processHash == 0 || threadHash == 0 {
+		return
+	}
+
+	pt.processesThreadsMtx.Lock()
+	defer pt.processesThreadsMtx.Unlock()
+
+	if _, ok := pt.processesThreads[processHash]; !ok {
+		pt.processesThreads[processHash] = make(map[uint32]struct{})
+	}
+
+	pt.processesThreads[processHash][threadHash] = struct{}{}
+}
+
+// AddChildToProcess adds a child to a process.
+func (pt *ProcessTree) AddChildToProcess(processHash uint32, childHash uint32) {
+	if processHash == 0 || childHash == 0 {
+		return
+	}
+
+	pt.processesChildrenMtx.Lock()
+	defer pt.processesChildrenMtx.Unlock()
+
+	if _, ok := pt.processesChildren[processHash]; !ok {
+		pt.processesChildren[processHash] = make(map[uint32]struct{})
+	}
+
+	pt.processesChildren[processHash][childHash] = struct{}{}
+}
+
+// EvictThreads evicts threads from a process.
+func (pt *ProcessTree) EvictThreads(processHash uint32) {
+	pt.processesThreadsMtx.Lock()
+	defer pt.processesThreadsMtx.Unlock()
+
+	delete(pt.processesThreads, processHash)
+}
+
+// EvictChildren evicts children from a process.
+func (pt *ProcessTree) EvictChildren(processHash uint32) {
+	pt.processesChildrenMtx.Lock()
+	defer pt.processesChildrenMtx.Unlock()
+
+	delete(pt.processesChildren, processHash)
 }
 
 //
@@ -231,19 +326,19 @@ func (pt *ProcessTree) GetOrCreateProcessByHash(hash uint32) *Process {
 
 // GetThreadByHash returns a thread by its hash.
 func (pt *ProcessTree) GetThreadByHash(hash uint32) (*Thread, bool) {
-	thread, ok := pt.threads.Get(hash)
+	thread, ok := pt.threadsLRU.Get(hash)
 	return thread, ok
 }
 
 // GetOrCreateThreadByHash returns a thread by its hash, or creates a new one if it doesn't exist.
 func (pt *ProcessTree) GetOrCreateThreadByHash(hash uint32) *Thread {
-	thread, ok := pt.threads.Get(hash)
+	thread, ok := pt.threadsLRU.Get(hash)
 	if !ok {
 		var taskInfo *TaskInfo
 
 		// Create a new thread
 		// If the thread is a leader task, sync its info with the process instance info.
-		process, ok := pt.processes.Get(hash)
+		process, ok := pt.processesLRU.Get(hash)
 		if ok {
 			taskInfo = process.GetInfo()
 		} else {
@@ -251,7 +346,7 @@ func (pt *ProcessTree) GetOrCreateThreadByHash(hash uint32) *Thread {
 		}
 
 		thread = NewThread(hash, taskInfo) // create a new thread
-		pt.threads.Add(hash, thread)
+		pt.threadsLRU.Add(hash, thread)
 
 		return thread
 	}
@@ -259,7 +354,9 @@ func (pt *ProcessTree) GetOrCreateThreadByHash(hash uint32) *Thread {
 	return thread // return an existing thread
 }
 
+//
 // Pools
+//
 
 // GetForkFeedFromPool returns a ForkFeed from the pool, or creates a new one if the pool is empty.
 // ForkFeed certainly contains old data, so it must be updated before use.

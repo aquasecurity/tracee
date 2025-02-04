@@ -92,11 +92,12 @@ func (ptds *DataSource) exportProcessInfo(
 ) datasource.TimeRelevantInfo[datasource.ProcessInfo] {
 	// Pick the objects related to the process from the process tree.
 	info := process.GetInfo()
+	procHash := process.GetHash()
 	executable := process.GetExecutable()
 
 	// Walk children hashes and discover the ones alive at the query time.
 	aliveChildren := make(map[int]uint32)
-	for _, childHash := range process.GetChildren() {
+	for _, childHash := range ptds.procTree.GetChildren(procHash) {
 		child, ok := ptds.procTree.GetProcessByHash(childHash)
 		if !ok {
 			continue
@@ -109,7 +110,7 @@ func (ptds *DataSource) exportProcessInfo(
 
 	// Walk thread hashes and discover the ones alive at the query time.
 	aliveThreads := make(map[int]uint32)
-	for _, threadHash := range process.GetThreads() {
+	for _, threadHash := range ptds.procTree.GetThreads(procHash) {
 		thread, ok := ptds.procTree.GetThreadByHash(threadHash)
 		if !ok {
 			continue
@@ -126,7 +127,7 @@ func (ptds *DataSource) exportProcessInfo(
 	// Export the information as the expected datasource process structure.
 	return datasource.TimeRelevantInfo[datasource.ProcessInfo]{
 		Info: datasource.ProcessInfo{
-			EntityId: process.GetHash(),
+			EntityId: procHash,
 			// TODO: change types pkg to reduce mem footprint (Pid, NsPid, Ppid, ThreadsIds, ChildProcessesIds)
 			Pid:               int(infoFeed.Pid),
 			NsPid:             int(infoFeed.NsPid),

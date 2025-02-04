@@ -204,8 +204,9 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 	// update given process parent (if exists)
 	parent, err := getProcessByPID(pt, ppid)
 	if err == nil {
-		parent.AddChild(hash)
-		process.SetParentHash(parent.GetHash())
+		parentHash := parent.GetHash()
+		pt.AddChildToProcess(parentHash, hash)
+		process.SetParentHash(parentHash)
 	}
 
 	return nil
@@ -290,7 +291,7 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 
 	leader, err := getProcessByPID(pt, tgid)
 	if err == nil {
-		leader.AddThread(hash) // threads associated with the leader (not parent)
+		pt.AddThreadToProcess(leader.GetHash(), hash) // threads associated with the leader (not parent)
 		leaderHash := leader.GetHash()
 		thread.SetLeaderHash(leaderHash) // same
 	}

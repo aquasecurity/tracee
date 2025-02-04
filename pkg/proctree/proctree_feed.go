@@ -154,7 +154,7 @@ func (pt *ProcessTree) FeedFromFork(feed *ForkFeed) error {
 		pt.setParentFeed(parent, feed, feedTimeStamp)
 	}
 
-	parent.AddChild(feed.LeaderHash) // add the leader as a child of the parent
+	pt.AddChildToProcess(feed.ParentHash, feed.LeaderHash) // add the leader as a child of the parent
 
 	// Update the leader process (might exist, might be the same as child if child is a process)
 
@@ -195,9 +195,9 @@ func (pt *ProcessTree) FeedFromFork(feed *ForkFeed) error {
 		pt.setThreadFeed(thread, leader, feed, feedTimeStamp)
 	}
 
-	thread.SetParentHash(feed.ParentHash) // all threads have the same parent as the thread group leader
-	thread.SetLeaderHash(feed.LeaderHash) // thread group leader is a "process" and a "thread"
-	leader.AddThread(feed.ChildHash)      // add the thread to the thread group leader
+	thread.SetParentHash(feed.ParentHash)                  // all threads have the same parent as the thread group leader
+	thread.SetLeaderHash(feed.LeaderHash)                  // thread group leader is a "process" and a "thread"
+	pt.AddThreadToProcess(feed.LeaderHash, feed.ChildHash) // add the thread to the thread group leader
 
 	return nil
 }
