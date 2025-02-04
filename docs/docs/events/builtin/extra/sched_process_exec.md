@@ -34,7 +34,7 @@ security, and auditing.
 12. **interp** (`const char*`): Specifies the interpreter of the binary.
 13. **stdin_type** (`umode_t`): Mode of the standard input.
 14. **stdin_path** (`char*`): Path of the standard input.
-15. **invoked_from_kernel** (`int`): Flag to determine if the process was initiated by the kernel.
+15. **invoked_from_kernel** (`bool`): Flag to determine if the process was initiated by the kernel.
 16. **env** (`const char**`): Environment variables associated with the process.
 
 ## Hooks

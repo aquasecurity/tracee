@@ -1488,16 +1488,13 @@ int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
     void *stdin_path = get_path_str(__builtin_preserve_access_index(&stdin_file->f_path));
     const char *interp = get_binprm_interp(bprm);
 
-    int invoked_from_kernel = 0;
-    if (get_task_parent_flags(task) & PF_KTHREAD) {
-        invoked_from_kernel = 1;
-    }
+    bool invoked_from_kernel = !!(get_task_parent_flags(task) & PF_KTHREAD);
 
     save_args_str_arr_to_buf(&p.event->args_buf, (void *) arg_start, (void *) arg_end, argc, 10);
     save_str_to_buf(&p.event->args_buf, (void *) interp, 11);
     save_to_submit_buf(&p.event->args_buf, &stdin_type, sizeof(unsigned short), 12);
     save_str_to_buf(&p.event->args_buf, stdin_path, 13);
-    save_to_submit_buf(&p.event->args_buf, &invoked_from_kernel, sizeof(int), 14);
+    save_to_submit_buf(&p.event->args_buf, &invoked_from_kernel, sizeof(bool), 14);
     save_str_to_buf(&p.event->args_buf, (void *) p.task_info->context.comm, 15);
     if (p.config->options & OPT_EXEC_ENV) {
         unsigned long env_start, env_end;
@@ -7113,15 +7110,13 @@ int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
     void *stdin_path = get_path_str(__builtin_preserve_access_index(&stdin_file->f_path));
     const char *interp = get_binprm_interp(bprm);
 
-    int invoked_from_kernel = 0;
-    if (get_task_parent_flags(task) & PF_KTHREAD)
-        invoked_from_kernel = 1;
+    bool invoked_from_kernel = !!(get_task_parent_flags(task) & PF_KTHREAD);
 
     save_args_str_arr_to_buf(&signal->args_buf, (void *) arg_start, (void *) arg_end, argc, 14); // argv
     save_str_to_buf(&signal->args_buf, (void *) interp, 15);                                     // interp
     save_to_submit_buf(&signal->args_buf, &stdin_type, sizeof(unsigned short), 16);              // stdin type
     save_str_to_buf(&signal->args_buf, stdin_path, 17);                                          // stdin path
-    save_to_submit_buf(&signal->args_buf, &invoked_from_kernel, sizeof(int), 18);                // invoked from kernel ?
+    save_to_submit_buf(&signal->args_buf, &invoked_from_kernel, sizeof(bool), 18);                // invoked from kernel ?
 
     signal_perf_submit(ctx, signal);
 

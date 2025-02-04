@@ -164,7 +164,7 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 	if err != nil {
 		return err
 	}
-	execFeed.InvokedFromKernel, err = parse.ArgVal[int32](event.Args, "invoked_from_kernel")
+	execFeed.InvokedFromKernel, err = parse.ArgVal[bool](event.Args, "invoked_from_kernel")
 	if err != nil {
 		return err
 	}

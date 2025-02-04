@@ -16,6 +16,9 @@ import (
 
 type ForkFeed struct {
 	TimeStamp       uint64
+	ParentStartTime uint64
+	LeaderStartTime uint64
+	ChildStartTime  uint64
 	ChildHash       uint32
 	ParentHash      uint32
 	LeaderHash      uint32
@@ -23,17 +26,15 @@ type ForkFeed struct {
 	ParentNsTid     int32
 	ParentPid       int32
 	ParentNsPid     int32
-	ParentStartTime uint64
 	LeaderTid       int32
 	LeaderNsTid     int32
 	LeaderPid       int32
 	LeaderNsPid     int32
-	LeaderStartTime uint64
 	ChildTid        int32
 	ChildNsTid      int32
 	ChildPid        int32
 	ChildNsPid      int32
-	ChildStartTime  uint64
+	_               [4]byte // padding
 }
 
 func (pt *ProcessTree) setParentFeed(
@@ -202,24 +203,26 @@ func (pt *ProcessTree) FeedFromFork(feed *ForkFeed) error {
 }
 
 type ExecFeed struct {
-	TimeStamp  uint64
-	TaskHash   uint32
-	ParentHash uint32
-	LeaderHash uint32
-	CmdPath    string
-	PathName   string
-	Dev        uint32
-	Inode      uint64
-	Ctime      uint64
-	InodeMode  uint16
+	TimeStamp         uint64
+	Inode             uint64
+	Ctime             uint64
+	CmdPath           string
+	PathName          string
+	Interp            string
+	StdinPath         string
+	TaskHash          uint32
+	ParentHash        uint32
+	LeaderHash        uint32
+	Dev               uint32
+	InvokedFromKernel bool
+	_                 [3]byte // padding
+	InodeMode         uint16
+	StdinType         uint16
+
 	// InterpreterPath   string
 	// InterpreterDev    uint32
 	// InterpreterInode  uint64
 	// InterpreterCtime  uint64
-	Interp            string
-	StdinType         uint16
-	StdinPath         string
-	InvokedFromKernel int32
 }
 
 const COMM_LEN = 16
@@ -285,6 +288,7 @@ type ExitFeed struct {
 	ExitCode   int32
 	SignalCode int32
 	Group      bool
+	_          [3]byte // padding
 }
 
 // FeedFromExit feeds the process tree with an exit event.

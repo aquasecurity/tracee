@@ -71,7 +71,7 @@ func Benchmark_procTreeExecProcessor(b *testing.B) {
 			{ArgMeta: trace.ArgMeta{Name: "interp"}, Value: "/lib64/ld-linux-x86-64.so.2"},
 			{ArgMeta: trace.ArgMeta{Name: "stdin_type"}, Value: uint16(1)},
 			{ArgMeta: trace.ArgMeta{Name: "stdin_path"}, Value: "/dev/null"},
-			{ArgMeta: trace.ArgMeta{Name: "invoked_from_kernel"}, Value: int32(1)},
+			{ArgMeta: trace.ArgMeta{Name: "invoked_from_kernel"}, Value: bool(true)},
 		},
 	}
 

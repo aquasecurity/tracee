@@ -11195,7 +11195,7 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "interp"},
 			{Type: "umode_t", Name: "stdin_type"},
 			{Type: "char*", Name: "stdin_path"},
-			{Type: "int", Name: "invoked_from_kernel"},
+			{Type: "bool", Name: "invoked_from_kernel"},
 			{Type: "const char*", Name: "prev_comm"},
 			{Type: "const char**", Name: "env"},
 		},
@@ -13216,7 +13216,7 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "interp"},
 			{Type: "umode_t", Name: "stdin_type"},
 			{Type: "char*", Name: "stdin_path"},
-			{Type: "int", Name: "invoked_from_kernel"},
+			{Type: "bool", Name: "invoked_from_kernel"},
 		},
 	},
 	SignalSchedProcessExit: {

@@ -7,6 +7,7 @@ type Thread struct {
 	threadHash uint32    // hash of thread (immutable, so no need of concurrency control)
 	parentHash uint32    // hash of parent
 	leaderHash uint32    // hash of thread group leader
+	_          [4]byte   // padding
 	info       *TaskInfo // task info (immutable pointer)
 }
 

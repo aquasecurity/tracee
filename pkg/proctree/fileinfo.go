@@ -12,11 +12,12 @@ import (
 // FileInfoFeed allows external packages to set/get multiple values of a task at once.
 type FileInfoFeed struct {
 	// Name      string
-	Path      string // mutable (file path)
-	Dev       uint32 // mutable (device number)
-	Ctime     uint64 // mutable (creation time)
-	Inode     uint64 // mutable (inode number)
-	InodeMode uint16 // mutable (inode mode)
+	Path      string  // mutable (file path)
+	Dev       uint32  // mutable (device number)
+	InodeMode uint16  // mutable (inode mode)
+	_         [2]byte // padding
+	Ctime     uint64  // mutable (creation time)
+	Inode     uint64  // mutable (inode number)
 }
 
 //
