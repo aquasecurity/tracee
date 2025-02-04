@@ -4,11 +4,11 @@ import "sync/atomic"
 
 // Thread represents a thread.
 type Thread struct {
-	threadHash uint32    // hash of thread (immutable, so no need of concurrency control)
-	parentHash uint32    // hash of parent
-	leaderHash uint32    // hash of thread group leader
-	_          [4]byte   // padding
-	info       *TaskInfo // task info (immutable pointer)
+	threadHash uint32        // hash of thread (immutable, so no need of concurrency control)
+	parentHash atomic.Uint32 // hash of parent
+	leaderHash atomic.Uint32 // hash of thread group leader
+	_          [4]byte       // padding
+	info       *TaskInfo     // task info (immutable pointer)
 }
 
 // NOTE: The importance of having the thread group leader hash to each thread is the following: the
@@ -21,8 +21,8 @@ type Thread struct {
 func NewThread(hash uint32, info *TaskInfo) *Thread {
 	return &Thread{
 		threadHash: hash,
-		parentHash: 0,
-		leaderHash: 0,
+		parentHash: atomic.Uint32{},
+		leaderHash: atomic.Uint32{},
 		info:       info,
 	}
 }
@@ -36,12 +36,12 @@ func (t *Thread) GetHash() uint32 {
 
 // GetParentHash returns the hash of the parent.
 func (t *Thread) GetParentHash() uint32 {
-	return atomic.LoadUint32(&t.parentHash)
+	return t.parentHash.Load()
 }
 
 // GEtLeaderHash returns the hash of the thread group leader.
 func (t *Thread) GetLeaderHash() uint32 {
-	return atomic.LoadUint32(&t.leaderHash)
+	return t.leaderHash.Load()
 }
 
 // GetInfo returns a instanced task info.
@@ -53,10 +53,10 @@ func (t *Thread) GetInfo() *TaskInfo {
 
 // SetParentHash sets the hash of the parent.
 func (t *Thread) SetParentHash(parentHash uint32) {
-	atomic.StoreUint32(&t.parentHash, parentHash)
+	t.parentHash.Store(parentHash)
 }
 
 // SetLeaderHash sets the hash of the thread group leader.
 func (t *Thread) SetLeaderHash(leaderHash uint32) {
-	atomic.StoreUint32(&t.leaderHash, leaderHash)
+	t.leaderHash.Store(leaderHash)
 }

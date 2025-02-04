@@ -10,17 +10,17 @@ import (
 
 // Process represents a process.
 type Process struct {
-	processHash uint32    // hash of process (immutable, so no need of concurrency control)
-	parentHash  uint32    // hash of parent
-	info        *TaskInfo // task info (immutable pointer)
-	executable  *FileInfo // executable info (immutable pointer)
+	processHash uint32        // hash of process (immutable, so no need of concurrency control)
+	parentHash  atomic.Uint32 // hash of parent
+	info        *TaskInfo     // task info (immutable pointer)
+	executable  *FileInfo     // executable info (immutable pointer)
 }
 
 // NewProcess creates a new thread with an initialized task info.
 func NewProcess(hash uint32, info *TaskInfo) *Process {
 	return &Process{
 		processHash: hash,
-		parentHash:  0,
+		parentHash:  atomic.Uint32{},
 		info:        info,
 		executable:  NewFileInfo(),
 	}
@@ -35,7 +35,7 @@ func (p *Process) GetHash() uint32 {
 
 // GetParentHash returns the hash of the parent.
 func (p *Process) GetParentHash() uint32 {
-	return atomic.LoadUint32(&p.parentHash)
+	return p.parentHash.Load()
 }
 
 // GetInfo returns a instanced task info.
@@ -52,5 +52,5 @@ func (p *Process) GetExecutable() *FileInfo {
 
 // SetParentHash sets the hash of the parent.
 func (p *Process) SetParentHash(parentHash uint32) {
-	atomic.StoreUint32(&p.parentHash, parentHash)
+	p.parentHash.Store(parentHash)
 }
