@@ -8,6 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -58,11 +59,11 @@ func pickIpAndPort(event trace.Event, fieldName string) (string, int, error) {
 	// e.g: sockaddr: map[sa_family:AF_INET sin_addr:10.10.11.2 sin_port:1234]
 
 	// Check if socket is a TCP socket.
-	sType, err := parse.ArgVal[string](event.Args, "type")
+	sType, err := parse.ArgVal[int32](event.Args, "type")
 	if err != nil {
 		return "", 0, errfmt.WrapError(err)
 	}
-	if sType != "SOCK_STREAM" {
+	if sType != int32(parsers.SOCK_STREAM.Value()) {
 		return "", 0, nil
 	}
 
