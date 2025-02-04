@@ -1,7 +1,6 @@
 package proctree
 
 import (
-	"fmt"
 	"math"
 	"os"
 	"sync"
@@ -128,12 +127,12 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 		},
 	)
 	if err != nil {
-		return errfmt.Errorf("%v", err)
+		return errfmt.WrapError(err)
 	}
 
 	status, err := proc.NewProcStatus(givenPid)
 	if err != nil {
-		return errfmt.Errorf("%v", err)
+		return errfmt.WrapError(err)
 	}
 	if status.GetPid() != status.GetTgid() {
 		return errfmt.Errorf("invalid process") // sanity check (process, not thread)
@@ -226,12 +225,12 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 		},
 	)
 	if err != nil {
-		return errfmt.Errorf("%v", err)
+		return errfmt.WrapError(err)
 	}
 
 	status, err := proc.NewThreadProcStatus(givenPid, givenTid)
 	if err != nil {
-		return errfmt.Errorf("%v", err)
+		return errfmt.WrapError(err)
 	}
 
 	name := status.GetName()
@@ -308,16 +307,15 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 
 // dealWithProcFsEntry deals with a process from procfs.
 func dealWithProcFsEntry(pt *ProcessTree, givenPid int32) error {
-	_, err := os.Stat(fmt.Sprintf("/proc/%v", givenPid))
-	if os.IsNotExist(err) {
-		return errfmt.Errorf("could not find process %v", givenPid)
-	}
-
-	err = dealWithProc(pt, givenPid) // run for the given process
+	err := dealWithProc(pt, givenPid) // run for the given process
 	if err != nil {
+		if os.IsNotExist(err) {
+			err = nil // ignore non-existent processes
+		}
 		if debugMsgs {
 			logger.Debugw("dealWithProc", "pid", givenPid, "err", err)
 		}
+
 		return err
 	}
 
@@ -326,10 +324,12 @@ func dealWithProcFsEntry(pt *ProcessTree, givenPid int32) error {
 	if err != nil {
 		return err
 	}
+
 	for _, taskDir := range taskDirs {
 		if !taskDir.IsDir() {
 			continue
 		}
+
 		tid, err := proc.ParseInt32(taskDir.Name())
 		if err != nil {
 			continue
@@ -337,9 +337,13 @@ func dealWithProcFsEntry(pt *ProcessTree, givenPid int32) error {
 
 		err = dealWithThread(pt, givenPid, tid) // run for all threads of the given process
 		if err != nil {
+			if os.IsNotExist(err) {
+				err = nil // ignore non-existent threads
+			}
 			if debugMsgs {
 				logger.Debugw("dealWithThread", "pid", givenPid, "tid", tid, "err", err)
 			}
+
 			continue
 		}
 	}
