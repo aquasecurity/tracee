@@ -647,7 +647,7 @@ func (t *Tracee) getStackAddresses(stackID uint32) []uint64 {
 	var stackBytes []byte
 	err := capabilities.GetInstance().EBPF(func() error {
 		bytes, e := t.StackAddressesMap.GetValue(unsafe.Pointer(&stackID))
-		if e != nil {
+		if e == nil {
 			stackBytes = bytes
 		}
 		return e
