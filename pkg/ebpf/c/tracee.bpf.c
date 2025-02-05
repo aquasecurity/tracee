@@ -5365,7 +5365,11 @@ statfunc void check_suspicious_syscall_source(void *ctx, struct pt_regs *regs, u
         // This key already exists, no need to submit the same syscall-vma-process combination again
         return;
 
-    const char *vma_type_str = get_vma_type_str(get_vma_type(p.task_info, vma));
+    enum vma_type vma_type = get_vma_type(vma);
+    if (vma_type == VMA_ANON && address_in_thread_stack(p.task_info, ip))
+        vma_type = VMA_THREAD_STACK;
+
+    const char *vma_type_str = get_vma_type_str(vma_type);
     unsigned long vma_start = BPF_CORE_READ(vma, vm_start);
     unsigned long vma_size = BPF_CORE_READ(vma, vm_end) - vma_start;
     unsigned long vma_flags = BPF_CORE_READ(vma, vm_flags);
@@ -5412,9 +5416,10 @@ statfunc void check_stack_pivot(void *ctx, struct pt_regs *regs, u32 syscall)
     // created before tracee started. To avoid false positives, we ignore events
     // where the stack pointer's VMA might be a thread stack but it was not
     // tracked for this thread. This may result in false negatives.
-    enum vma_type vma_type = get_vma_type(p.task_info, vma);
+    enum vma_type vma_type = get_vma_type(vma);
     if (vma_type == VMA_MAIN_STACK || vma_type == VMA_GOLANG_HEAP || vma_type == VMA_THREAD_STACK ||
-        (vma_type == VMA_ANON && !thread_stack_tracked(p.task_info)))
+        (vma_type == VMA_ANON &&
+         (!thread_stack_tracked(p.task_info) || address_in_thread_stack(p.task_info, sp))))
         return;
 
     const char *vma_type_str = get_vma_type_str(vma_type);

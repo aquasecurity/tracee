@@ -31,9 +31,9 @@ statfunc bool vma_is_main_stack(struct vm_area_struct *vma);
 statfunc bool vma_is_main_heap(struct vm_area_struct *vma);
 statfunc bool vma_is_anon(struct vm_area_struct *vma);
 statfunc bool vma_is_golang_heap(struct vm_area_struct *vma);
-statfunc bool vma_is_thread_stack(task_info_t *task_info, struct vm_area_struct *vma);
 statfunc bool vma_is_vdso(struct vm_area_struct *vma);
-statfunc enum vma_type get_vma_type(task_info_t *task_info, struct vm_area_struct *vma);
+statfunc enum vma_type get_vma_type(struct vm_area_struct *vma);
+statfunc bool address_in_thread_stack(task_info_t *task_info, u64 address);
 
 // FUNCTIONS
 
@@ -206,20 +206,6 @@ statfunc bool vma_is_golang_heap(struct vm_area_struct *vma)
            (vm_start & GOLANG_ARENA_HINT_MASK) <= GOLANG_ARENA_HINT_MAX;
 }
 
-statfunc bool vma_is_thread_stack(task_info_t *task_info, struct vm_area_struct *vma)
-{
-    // Get the stack area for this task
-    address_range_t *stack = &task_info->stack;
-    if (stack->start == 0 && stack->end == 0)
-        // This thread's stack isn't tracked
-        return false;
-
-    // Check if the VMA is **contained** in the thread stack range.
-    // We don't check exact address range match because a change to the permissions
-    // of part of the stack VMA will split it into multiple VMAs.
-    return BPF_CORE_READ(vma, vm_start) >= stack->start && BPF_CORE_READ(vma, vm_end) <= stack->end;
-}
-
 statfunc bool vma_is_vdso(struct vm_area_struct *vma)
 {
     struct vm_special_mapping *special_mapping =
@@ -233,7 +219,7 @@ statfunc bool vma_is_vdso(struct vm_area_struct *vma)
     return strncmp("[vdso]", mapping_name, 7) == 0;
 }
 
-statfunc enum vma_type get_vma_type(task_info_t *task_info, struct vm_area_struct *vma)
+statfunc enum vma_type get_vma_type(struct vm_area_struct *vma)
 {
     // The check order is a balance between how expensive the check is and how likely it is to pass
 
@@ -249,9 +235,6 @@ statfunc enum vma_type get_vma_type(task_info_t *task_info, struct vm_area_struc
     if (vma_is_anon(vma)) {
         if (vma_is_golang_heap(vma))
             return VMA_GOLANG_HEAP;
-
-        if (vma_is_thread_stack(task_info, vma))
-            return VMA_THREAD_STACK;
 
         if (vma_is_vdso(vma))
             return VMA_VDSO;
@@ -284,6 +267,17 @@ statfunc const char *get_vma_type_str(enum vma_type vma_type)
         default:
             return "unknown";
     }
+}
+
+statfunc bool address_in_thread_stack(task_info_t *task_info, u64 address)
+{
+    // Get the stack area for this task
+    address_range_t *stack = &task_info->stack;
+    if (stack->start == 0 && stack->end == 0)
+        // This thread's stack isn't tracked
+        return false;
+
+    return address >= stack->start && address <= stack->end;
 }
 
 #endif
