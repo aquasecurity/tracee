@@ -1518,6 +1518,9 @@ int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
             &p.event->args_buf, (void *) env_start, (void *) env_end, envc, 16);
     }
 
+    if (!evaluate_data_filters(&p, 1))
+        return 0;
+
     events_perf_submit(&p, 0);
     return 0;
 }
@@ -1679,6 +1682,9 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&p.event->args_buf, (void *) &next_pid, sizeof(int), 3);
     save_str_to_buf(&p.event->args_buf, next->comm, 4);
 
+    if (!evaluate_data_filters(&p, 2))
+        return 0;
+
     return events_perf_submit(&p, 0);
 }
 
@@ -1700,6 +1706,10 @@ int BPF_KPROBE(trace_filldir64)
     char *process_name = (char *) PT_REGS_PARM2(ctx);
 
     save_str_to_buf(&p.event->args_buf, process_name, 0);
+
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
+
     return events_perf_submit(&p, 0);
 }
 
@@ -1998,6 +2008,9 @@ statfunc int send_bpf_attach(
     save_to_submit_buf(&(p->event->args_buf), &probe_addr, sizeof(u64), 5);
     save_to_submit_buf(&(p->event->args_buf), &perf_type, sizeof(int), 6);
 
+    if (!evaluate_data_filters(p, 1))
+        return 0;
+
     events_perf_submit(p, 0);
 
     // delete from map
@@ -2188,6 +2201,10 @@ int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
     save_str_to_buf(&p.event->args_buf, path, 0);
     save_str_to_buf(&p.event->args_buf, comm, 1);
     save_to_submit_buf(&p.event->args_buf, (void *) &pid, sizeof(int), 2);
+
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
+
     events_perf_submit(&p, 0);
 
     return 0;
@@ -2214,6 +2231,10 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&p.event->args_buf, &cgroup_id, sizeof(u64), 0);
     save_str_to_buf(&p.event->args_buf, path, 1);
     save_to_submit_buf(&p.event->args_buf, &hierarchy_id, sizeof(u32), 2);
+
+    if (!evaluate_data_filters(&p, 1))
+        return 0;
+
     events_perf_submit(&p, 0);
 
     return 0;
@@ -2240,6 +2261,10 @@ int tracepoint__cgroup__cgroup_rmdir(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&p.event->args_buf, &cgroup_id, sizeof(u64), 0);
     save_str_to_buf(&p.event->args_buf, path, 1);
     save_to_submit_buf(&p.event->args_buf, &hierarchy_id, sizeof(u32), 2);
+
+    if (!evaluate_data_filters(&p, 1))
+        return 0;
+
     events_perf_submit(&p, 0);
 
     return 0;
@@ -2623,6 +2648,9 @@ int BPF_KPROBE(trace_proc_create)
     save_str_to_buf(&p.event->args_buf, name, 0);
     save_to_submit_buf(&p.event->args_buf, (void *) &proc_ops_addr, sizeof(u64), 1);
 
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
+
     return events_perf_submit(&p, 0);
 }
 
@@ -2647,6 +2675,9 @@ int BPF_KPROBE(trace_debugfs_create_file)
     save_to_submit_buf(&p.event->args_buf, &mode, sizeof(umode_t), 2);
     save_to_submit_buf(&p.event->args_buf, (void *) &proc_ops_addr, sizeof(u64), 3);
 
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
+
     return events_perf_submit(&p, 0);
 }
 
@@ -2666,6 +2697,9 @@ int BPF_KPROBE(trace_debugfs_create_dir)
 
     save_str_to_buf(&p.event->args_buf, name, 0);
     save_str_to_buf(&p.event->args_buf, dentry_path, 1);
+
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
 
     return events_perf_submit(&p, 0);
 }
@@ -3193,6 +3227,9 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
     save_to_submit_buf(&p.event->args_buf, &io_data.len, sizeof(unsigned long), 3);
     save_to_submit_buf(&p.event->args_buf, &start_pos, sizeof(off_t), 4);
 
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
+
     // Submit io event
     events_perf_submit(&p, PT_REGS_RC(ctx));
 
@@ -3547,6 +3584,8 @@ int BPF_KPROBE(kernel_write_magic_return)
             save_to_submit_buf(event, &file_info.id.inode, sizeof(unsigned long), 7);              \
             save_to_submit_buf(event, &file_info.id.ctime, sizeof(u64), 8);                        \
         }                                                                                          \
+        if (!evaluate_data_filters(&p, 5))                                                         \
+            return 0;                                                                              \
         events_perf_submit(&p, 0);                                                                 \
     }
 
@@ -3950,6 +3989,9 @@ statfunc int arm_kprobe_handler(struct pt_regs *ctx)
     save_to_submit_buf(&p.event->args_buf, (void *) &pre_handler, sizeof(u64), 1);
     save_to_submit_buf(&p.event->args_buf, (void *) &post_handler, sizeof(u64), 2);
 
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
+
     return events_perf_submit(&p, 0);
 }
 
@@ -4292,6 +4334,9 @@ int BPF_KPROBE(trace_device_add)
     save_str_to_buf(&p.event->args_buf, (void *) name, 0);
     save_str_to_buf(&p.event->args_buf, (void *) parent_name, 1);
 
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
+
     return events_perf_submit(&p, 0);
 }
 
@@ -4330,6 +4375,9 @@ int BPF_KPROBE(trace_ret__register_chrdev)
     save_to_submit_buf(&p.event->args_buf, &returned_major, sizeof(unsigned int), 1);
     save_str_to_buf(&p.event->args_buf, char_device_name, 2);
     save_to_submit_buf(&p.event->args_buf, &char_device_fops, sizeof(void *), 3);
+
+    if (!evaluate_data_filters(&p, 2))
+        return 0;
 
     return events_perf_submit(&p, 0);
 }
@@ -4464,6 +4512,9 @@ int BPF_KPROBE(trace_ret_do_splice)
     save_to_submit_buf(&p.event->args_buf, &out_inode_number, sizeof(u64), 5);
     save_to_submit_buf(&p.event->args_buf, &out_pipe_last_buffer_flags, sizeof(unsigned int), 6);
 
+    if (!evaluate_data_filters(&p, 2))
+        return 0;
+
     return events_perf_submit(&p, 0);
 }
 
@@ -4546,6 +4597,9 @@ int tracepoint__module__module_free(struct bpf_raw_tracepoint_args *ctx)
     save_str_to_buf(&p.event->args_buf, (void *) version, 1);
     save_str_to_buf(&p.event->args_buf, (void *) srcversion, 2);
 
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
+
     return events_perf_submit(&p, 0);
 }
 
@@ -4590,6 +4644,10 @@ int BPF_KPROBE(trace_ret_do_init_module)
     save_str_to_buf(&p.event->args_buf, (void *) srcversion, 2);
 
     int ret_val = PT_REGS_RC(ctx);
+
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
+
     return events_perf_submit(&p, ret_val);
 }
 
@@ -4712,6 +4770,9 @@ int tracepoint__task__task_rename(struct bpf_raw_tracepoint_args *ctx)
 
     save_str_to_buf(&p.event->args_buf, (void *) old_name, 0);
     save_str_to_buf(&p.event->args_buf, (void *) new_name, 1);
+
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
 
     return events_perf_submit(&p, 0);
 }
@@ -5029,6 +5090,9 @@ statfunc int common_file_modification_ret(struct pt_regs *ctx)
     save_to_submit_buf(&p.event->args_buf, &old_ctime, sizeof(u64), 3);
     save_to_submit_buf(&p.event->args_buf, &file_info.id.ctime, sizeof(u64), 4);
 
+    if (!evaluate_data_filters(&p, 0))
+        return 0;
+
     events_perf_submit(&p, 0);
 
     return 0;
@@ -5297,6 +5361,9 @@ int BPF_KPROBE(trace_set_fs_pwd)
 
     save_str_to_buf(&p.event->args_buf, unresolved_path, 0);
     save_str_to_buf(&p.event->args_buf, resolved_path, 1);
+
+    if (!evaluate_data_filters(&p, 1))
+        return 0;
 
     return events_perf_submit(&p, 0);
 }

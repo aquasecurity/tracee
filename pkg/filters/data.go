@@ -75,7 +75,7 @@ func NewDataFilter() *DataFilter {
 // list of events and field names allowed to have in-kernel filter
 var allowedKernelField = map[events.ID]string{
 	// LSM hooks
-	events.SecurityBprmCheck:           "pathname",  // 0
+	events.SecurityBprmCheck:           "pathname",  // index: 0
 	events.SecurityFileOpen:            "pathname",  // 0
 	events.SecurityInodeUnlink:         "pathname",  // 0
 	events.SecuritySbMount:             "path",      // 1
@@ -90,19 +90,46 @@ var allowedKernelField = map[events.ID]string{
 	events.SecurityBpfProg:             "name",      // 1
 	events.SecurityPathNotify:          "pathname",  // 0
 	events.SharedObjectLoaded:          "pathname",  // 0
+
+	// Others
+	events.SchedProcessExec:   "pathname",         // 1
+	events.VfsWrite:           "pathname",         // 0
+	events.VfsWritev:          "pathname",         // 0
+	events.VfsRead:            "pathname",         // 0
+	events.VfsReadv:           "pathname",         // 0
+	events.MemProtAlert:       "pathname",         // 5
+	events.MagicWrite:         "pathname",         // 0
+	events.KernelWrite:        "pathname",         // 0
+	events.CallUsermodeHelper: "pathname",         // 0
+	events.LoadElfPhdrs:       "pathname",         // 0
+	events.DoMmap:             "pathname",         // 1
+	events.VfsUtimes:          "pathname",         // 0
+	events.DoTruncate:         "pathname",         // 0
+	events.InotifyWatch:       "pathname",         // 0
+	events.ModuleLoad:         "pathname",         // 3
+	events.ChmodCommon:        "pathname",         // 0
+	events.DeviceAdd:          "name",             // 0
+	events.DoInitModule:       "name",             // 0
+	events.ModuleFree:         "name",             // 0
+	events.ProcCreate:         "name",             // 0
+	events.RegisterChrdev:     "char_device_name", // 2
+	events.DebugfsCreateFile:  "file_name",        // 0
+	events.DebugfsCreateDir:   "name",             // 0
+	events.CgroupMkdir:        "cgroup_path",      // 1
+	events.CgroupRmdir:        "cgroup_path",      // 1
+	events.CgroupAttachTask:   "cgroup_path",      // 0
+	events.BpfAttach:          "prog_name",        // 1
+	events.KprobeAttach:       "symbol_name",      // 0
+	events.TaskRename:         "old_name",         // 0
+	events.FileModification:   "file_path",        // 0
+	events.SetFsPwd:           "resolved_path",    // 1
+	events.SchedSwitch:        "prev_comm",        // 2
+	events.HiddenInodes:       "hidden_process",   // 0
+	events.DirtyPipeSplice:    "in_file_path",     // 2
+
 	// Syscalls
 	events.Execve:   "pathname",
 	events.Execveat: "pathname",
-	// Others
-	events.ModuleLoad:         "pathname",
-	events.InotifyWatch:       "pathname",
-	events.DoTruncate:         "pathname",
-	events.MagicWrite:         "pathname",
-	events.VfsUtimes:          "pathname",
-	events.LoadElfPhdrs:       "pathname",
-	events.CallUsermodeHelper: "pathname",
-	events.ChmodCommon:        "pathname",
-	events.DoMmap:             "pathname",
 }
 
 // checkAvailabilityKernelFilter check if event ID and field name are allowed to be an kernel filter
