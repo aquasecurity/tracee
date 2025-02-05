@@ -85,7 +85,7 @@ func (pt *ProcessTree) String() string {
 	// Use tablewriter to print the tree in a table
 	newTable := func() *tablewriter.Table {
 		table := tablewriter.NewWriter(buffer)
-		table.SetHeader([]string{"Ppid", "Tid", "Pid", "StartTime", "Hash", "Date", "CMD", "Children", "Threads"})
+		table.SetHeader([]string{"Ppid", "Tid", "Pid", "StartTime", "ExitTime", "Hash", "Date", "CMD", "Children", "Threads"})
 		table.SetAutoWrapText(false)
 		table.SetRowLine(false)
 		table.SetAutoFormatHeaders(true)
@@ -112,9 +112,9 @@ func (pt *ProcessTree) String() string {
 		if !ok {
 			continue
 		}
-		if !process.GetInfo().IsAlive() { // only running processes
-			continue
-		}
+		// if !process.GetInfo().IsAlive() { // only running processes
+		// 	continue
+		// }
 
 		// create a row for the table
 		processFeed := process.GetInfo().GetFeed()
@@ -123,7 +123,8 @@ func (pt *ProcessTree) String() string {
 			execName = execName[:20] + "..."
 		}
 		hashStr := fmt.Sprintf("%v", process.GetHash())
-		startTime := fmt.Sprintf("%v", process.GetInfo().GetStartTimeNS())
+		startTimeStr := fmt.Sprintf("%v", process.GetInfo().GetStartTimeNS())
+		exitTimeStr := fmt.Sprintf("%v", process.GetInfo().GetExitTimeNS())
 		tid := stringify(int(processFeed.Tid))
 		pid := stringify(int(processFeed.Pid))
 		ppid := stringify(int(processFeed.PPid))
@@ -133,7 +134,8 @@ func (pt *ProcessTree) String() string {
 		unsortedRows = append(unsortedRows,
 			[]string{
 				ppid, tid, pid,
-				startTime, hashStr,
+				startTimeStr, exitTimeStr,
+				hashStr,
 				date, execName,
 				getListOfChildrenPids(process),
 				getListOfThreadsTids(process),
