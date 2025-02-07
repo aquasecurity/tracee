@@ -237,7 +237,7 @@ for TEST in $TESTS; do
 
     # Make sure we exit tracee before checking output and log files
 
-    pid_tracee=$(pidof tracee | cut -d' ' -f1)
+    pid_tracee=$(pgrep -x tracee | xargs)
     kill -SIGINT "$pid_tracee"
     sleep $TRACEE_SHUTDOWN_TIMEOUT
     kill -SIGKILL "$pid_tracee" >/dev/null 2>&1
