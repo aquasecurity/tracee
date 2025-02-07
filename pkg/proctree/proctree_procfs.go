@@ -149,10 +149,10 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 
 	// sanity checks
 	switch givenPid {
-	case 0, 1: // PID 0 and 1 are special
+	case 0, 1, 2: // PIDs 0, 1 and 2 are special
 	default:
 		if name == "" || pid == 0 || tgid == 0 || ppid == 0 {
-			return errfmt.Errorf("invalid process")
+			return errfmt.Errorf("invalid process - status: %v, stat: %v", status, stat)
 		}
 	}
 
@@ -167,7 +167,7 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 
 	// check if the process info was already set (proctree might miss ppid and name)
 	switch givenPid {
-	case 0, 1: // PID 0 and 1 are special
+	case 0, 1: // PIDs 0 and 1 are special
 	default:
 		if procInfo.GetName() != "" && procInfo.GetPPid() != 0 {
 			return nil
@@ -245,7 +245,7 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 
 	// sanity checks
 	if name == "" || pid == 0 || tgid == 0 || ppid == 0 {
-		return errfmt.Errorf("invalid thread")
+		return errfmt.Errorf("invalid thread - status: %v, stat: %v", status, stat)
 	}
 
 	// thread start time (monotonic boot)
