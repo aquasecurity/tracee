@@ -92,12 +92,17 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 	if err != nil {
 		return err
 	}
-	forkFeed.TimeStamp = forkFeed.ChildStartTime // event timestamp is the same
+	forkFeed.TimeStamp = uint64(event.Timestamp) // already normalized at decode stage
 
-	// Calculate hashes
+	// Compute hashes using kernel start times as-is, to be consistent with signals
 	forkFeed.ParentHash = utils.HashTaskID(uint32(forkFeed.ParentTid), uint64(forkFeed.ParentStartTime))
-	forkFeed.ChildHash = utils.HashTaskID(uint32(forkFeed.ChildTid), uint64(forkFeed.ChildStartTime))
 	forkFeed.LeaderHash = utils.HashTaskID(uint32(forkFeed.LeaderTid), uint64(forkFeed.LeaderStartTime))
+	forkFeed.ChildHash = utils.HashTaskID(uint32(forkFeed.ChildTid), uint64(forkFeed.ChildStartTime))
+
+	// Normalize times
+	forkFeed.ParentStartTime = traceetime.BootToEpochNS(forkFeed.ParentStartTime)
+	forkFeed.LeaderStartTime = traceetime.BootToEpochNS(forkFeed.LeaderStartTime)
+	forkFeed.ChildStartTime = traceetime.BootToEpochNS(forkFeed.ChildStartTime)
 
 	return t.processTree.FeedFromFork(forkFeed)
 }
@@ -206,10 +211,10 @@ func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
 	// 	return err
 	// }
 
-	exitFeed.TimeStamp = uint64(event.Timestamp) // time of exit is already a timestamp
-	exitFeed.TaskHash = utils.HashTaskID(uint32(event.HostThreadID), uint64(event.ThreadStartTime))
-	// exitFeed.ParentHash = 0 // regular pipeline does not have parent hash
-	// exitFeed.LeaderHash = 0 // regular pipeline does not have leader hash
+	exitFeed.TimeStamp = uint64(event.Timestamp) // already normalized at decode stage
+	exitFeed.TaskHash = event.ThreadEntityId     // already computed at decode stage
+	exitFeed.ParentHash = event.ParentEntityId   // already computed at decode stage
+	exitFeed.LeaderHash = event.ProcessEntityId  // already computed at decode stage
 
 	return t.processTree.FeedFromExit(exitFeed)
 }

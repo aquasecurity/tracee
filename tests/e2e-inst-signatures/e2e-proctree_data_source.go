@@ -127,34 +127,46 @@ func (sig *e2eProcessTreeDataSource) checkThread(eventObj *trace.Event) error {
 	queryTime := time.Unix(0, int64(eventObj.Timestamp))
 	threadInfo := threadTimeInfo.Info
 
-	debug := func(custom string) string {
+	debugFn := func(custom string) string {
 		return fmt.Sprintf(
-			"thread in event (tid:%d, pid: %d, ppid: %d, time: %d, hash: %d, name: %s) doesn't "+
-				"match thread in proctree (tid:%d, pid: %d, time: %d, hash: %d, "+
-				"name: %s) - %s",
-			eventObj.ThreadID, eventObj.HostProcessID, eventObj.HostParentProcessID,
-			eventObj.ThreadStartTime, eventObj.ProcessEntityId, eventObj.ProcessName,
-			threadInfo.Tid, threadInfo.Pid, threadInfo.StartTime.UnixNano(), threadInfo.EntityId,
+			"thread in event "+
+				"(tid:%d, pid:%d, nstid:%d, starttime:%d, hash:%d, name:%s) "+
+				"doesn't match thread in proctree "+
+				"(tid:%d, pid:%d, nstid:%d, starttime:%d, hash:%d, name:%s) - %s",
+			eventObj.HostThreadID,
+			eventObj.HostProcessID,
+			eventObj.ThreadID,
+			eventObj.ThreadStartTime,
+			eventObj.ProcessEntityId,
+			eventObj.ProcessName,
+			threadInfo.Tid,
+			threadInfo.Pid,
+			threadInfo.NsTid,
+			threadInfo.StartTime.UnixNano(),
+			threadInfo.EntityId,
 			threadInfo.Name,
 			custom,
 		)
 	}
 
-	// Compare TID, NS TID and PID
+	// Compare
 	if threadInfo.Tid != eventObj.HostThreadID {
-		return fmt.Errorf(debug("no match for tid"))
-	}
-	if threadInfo.NsTid != eventObj.ThreadID {
-		return fmt.Errorf(debug("no match for ns tid"))
+		return fmt.Errorf(debugFn("no match for tid"))
 	}
 	if threadInfo.Pid != eventObj.HostProcessID {
-		return fmt.Errorf(debug("no match for pid"))
+		return fmt.Errorf(debugFn("no match for pid"))
+	}
+	if threadInfo.NsTid != eventObj.ThreadID {
+		return fmt.Errorf(debugFn("no match for ns tid"))
+	}
+	if int(threadInfo.StartTime.UnixNano()) != eventObj.ThreadStartTime {
+		return fmt.Errorf(debugFn("no match for start time"))
 	}
 	if threadTimeInfo.Timestamp != queryTime {
-		return fmt.Errorf(debug("no match for info timestamp"))
+		return fmt.Errorf(debugFn("no match for info timestamp"))
 	}
 	if threadInfo.Name != eventObj.ProcessName {
-		return fmt.Errorf(debug("no match for thread name"))
+		return fmt.Errorf(debugFn("no match for thread name"))
 	}
 
 	return nil
@@ -169,29 +181,41 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
 	queryTime := time.Unix(0, int64(eventObj.Timestamp))
 	processInfo := processTimeInfo.Info
 
-	debug := func(custom string) string {
+	debugFn := func(custom string) string {
 		return fmt.Sprintf(
-			"process in event (tid: %d pid: %d, ppid: %d, time: %d, hash: %d) "+
-				"doesn't match process in proctree (pid: %d, ppid: %d, hash: %d) - %s",
-			eventObj.ThreadID, eventObj.HostProcessID, eventObj.HostParentProcessID,
-			eventObj.ThreadStartTime, eventObj.ProcessEntityId,
-			processInfo.Pid, processInfo.Ppid, processInfo.EntityId,
+			"process in event "+
+				"(pid:%d, nspid:%d, ppid:%d, starttime:%d, hash:%d) "+
+				"doesn't match process in proctree "+
+				"(pid:%d, nspid:%d, ppid:%d, starttime:%d, hash:%d) - %s",
+			eventObj.HostProcessID,
+			eventObj.ProcessID,
+			eventObj.HostParentProcessID,
+			eventObj.ThreadStartTime,
+			eventObj.ProcessEntityId,
+			processInfo.Pid,
+			processInfo.NsPid,
+			processInfo.Ppid,
+			processInfo.StartTime.UnixNano(),
+			processInfo.EntityId,
 			custom,
 		)
 	}
 
-	// Compare PID, NS PID and PPID
+	// Compare
 	if processInfo.Pid != eventObj.HostProcessID {
-		return fmt.Errorf(debug("no match for pid"))
+		return fmt.Errorf(debugFn("no match for pid"))
 	}
 	if processInfo.NsPid != eventObj.ProcessID {
-		return fmt.Errorf(debug("no match for ns pid"))
+		return fmt.Errorf(debugFn("no match for ns pid"))
 	}
 	if processInfo.Ppid != eventObj.HostParentProcessID {
-		return fmt.Errorf(debug("no match for ppid"))
+		return fmt.Errorf(debugFn("no match for ppid"))
+	}
+	if int(processInfo.StartTime.UnixNano()) != eventObj.ThreadStartTime {
+		return fmt.Errorf(debugFn("no match for start time"))
 	}
 	if processTimeInfo.Timestamp != queryTime {
-		return fmt.Errorf(debug("no match for timestamp"))
+		return fmt.Errorf(debugFn("no match for timestamp"))
 	}
 
 	// Check if the process lists itself in the list of its threads (case #1)
@@ -203,7 +227,7 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
 		}
 	}
 	if !threadExist {
-		return fmt.Errorf(debug("process not listed as thread"))
+		return fmt.Errorf(debugFn("process not listed as thread"))
 	}
 
 	// TODO

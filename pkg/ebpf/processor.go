@@ -85,21 +85,23 @@ func (t *Tracee) registerEventProcessors() {
 	// Processors registered when proctree source "events" is enabled.
 	switch t.config.ProcTree.Source {
 	case proctree.SourceEvents, proctree.SourceBoth:
+		t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkProcessor)
+		t.RegisterEventProcessor(events.SchedProcessExec, t.procTreeExecProcessor)
+		t.RegisterEventProcessor(events.SchedProcessExit, t.procTreeExitProcessor)
+
 		// Event Timestamps Normalization
 		//
-		// Convert all time relate args to nanoseconds since epoch.
-		// NOTE: Make sure to convert time related args (of your event) in here, so that
-		// any later code has access to normalized time arguments.
+		// Convert all time-related arguments to nanoseconds since the epoch.
+		// NOTE: Ensure that all time-related arguments for your event are
+		// converted here, so subsequent code works with normalized time values.
+		// Exception: ProcessTree hashes rely on non-normalized timestamps,
+		// so this conversion must occur AFTER the procTreeXXX processors.
 		t.RegisterEventProcessor(events.SchedProcessFork, t.normalizeTimeArg(
 			"start_time",
 			"parent_start_time",
 			"parent_process_start_time",
 			"leader_start_time",
 		))
-
-		t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkProcessor)
-		t.RegisterEventProcessor(events.SchedProcessExec, t.procTreeExecProcessor)
-		t.RegisterEventProcessor(events.SchedProcessExit, t.procTreeExitProcessor)
 	}
 	// Processors enriching process tree with regular pipeline events.
 	if t.config.ProcTree.Source != proctree.SourceNone {

@@ -95,14 +95,18 @@ func (ctrl *Controller) procTreeForkProcessor(args []trace.Argument) error {
 		return err
 	}
 
-	forkFeed.TimeStamp = time.BootToEpochNS(forkFeed.TimeStamp)
-	forkFeed.ChildStartTime = time.BootToEpochNS(forkFeed.ChildStartTime)
-	forkFeed.ParentStartTime = time.BootToEpochNS(forkFeed.ParentStartTime)
-	forkFeed.LeaderStartTime = time.BootToEpochNS(forkFeed.LeaderStartTime)
-
-	forkFeed.ChildHash = utils.HashTaskID(uint32(forkFeed.ChildTid), forkFeed.ChildStartTime)
+	// Compute hashes using raw kernel start times without normalization.
+	// The sched_process_fork signal is the only one that doesn't compute the hash in the kernel,
+	// so it must be handled here.
 	forkFeed.ParentHash = utils.HashTaskID(uint32(forkFeed.ParentTid), forkFeed.ParentStartTime)
 	forkFeed.LeaderHash = utils.HashTaskID(uint32(forkFeed.LeaderTid), forkFeed.LeaderStartTime)
+	forkFeed.ChildHash = utils.HashTaskID(uint32(forkFeed.ChildTid), forkFeed.ChildStartTime)
+
+	// Normalize times
+	forkFeed.TimeStamp = time.BootToEpochNS(forkFeed.TimeStamp)
+	forkFeed.ParentStartTime = time.BootToEpochNS(forkFeed.ParentStartTime)
+	forkFeed.LeaderStartTime = time.BootToEpochNS(forkFeed.LeaderStartTime)
+	forkFeed.ChildStartTime = time.BootToEpochNS(forkFeed.ChildStartTime)
 
 	return ctrl.processTree.FeedFromFork(forkFeed)
 }
@@ -118,11 +122,22 @@ func (ctrl *Controller) procTreeExecProcessor(args []trace.Argument) error {
 	execFeed := ctrl.processTree.GetExecFeedFromPool()
 	defer ctrl.processTree.PutExecFeedInPool(execFeed)
 
+	// not available from this signal
+	execFeed.StartTime = 0
+	execFeed.Pid = -1
+	execFeed.Tid = -1
+	execFeed.PPid = -1
+	execFeed.HostPid = -1
+	execFeed.HostTid = -1
+	execFeed.HostPPid = -1
+
 	// Process & Event identification arguments (won't exist for regular events)
 	execFeed.TimeStamp, err = parse.ArgVal[uint64](args, "timestamp")
 	if err != nil {
 		return err
 	}
+	execFeed.TimeStamp = time.BootToEpochNS(execFeed.TimeStamp) // normalize time
+
 	execFeed.TaskHash, _ = parse.ArgVal[uint32](args, "task_hash")
 	execFeed.ParentHash, _ = parse.ArgVal[uint32](args, "parent_hash")
 	execFeed.LeaderHash, _ = parse.ArgVal[uint32](args, "leader_hash")
@@ -202,8 +217,7 @@ func (ctrl *Controller) procTreeExitProcessor(args []trace.Argument) error {
 	if err != nil {
 		return err
 	}
-	// time of exit is already a timestamp)
-	exitFeed.TimeStamp = time.BootToEpochNS(exitFeed.TimeStamp)
+	exitFeed.TimeStamp = time.BootToEpochNS(exitFeed.TimeStamp) // normalize time
 
 	exitFeed.TaskHash, err = parse.ArgVal[uint32](args, "task_hash")
 	if err != nil {

@@ -15,7 +15,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/time"
+	traceetime "github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -242,14 +242,8 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 
 			// populate all the fields of the event used in this stage, and reset the rest
 
-			// normalize timestamp context fields for later use
-			normalizedTs := time.BootToEpochNS(eCtx.Ts)
-			normalizedThreadStartTime := time.BootToEpochNS(eCtx.StartTime)
-			normalizedLeaderStartTime := time.BootToEpochNS(eCtx.LeaderStartTime)
-			normalizedParentStartTime := time.BootToEpochNS(eCtx.ParentStartTime)
-
-			evt.Timestamp = int(normalizedTs)
-			evt.ThreadStartTime = int(normalizedThreadStartTime)
+			evt.Timestamp = int(traceetime.BootToEpochNS(eCtx.Ts))              // normalize time
+			evt.ThreadStartTime = int(traceetime.BootToEpochNS(eCtx.StartTime)) // normalize time
 			evt.ProcessorID = int(eCtx.ProcessorId)
 			evt.ProcessID = int(eCtx.Pid)
 			evt.ThreadID = int(eCtx.Tid)
@@ -279,9 +273,10 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.ContextFlags = flags
 			evt.Syscall = syscall
 			evt.Metadata = nil
-			evt.ThreadEntityId = utils.HashTaskID(eCtx.HostTid, normalizedThreadStartTime)
-			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, normalizedLeaderStartTime)
-			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, normalizedParentStartTime)
+			// compute hashes using kernel start times as-is, to be consistent with signals
+			evt.ThreadEntityId = utils.HashTaskID(eCtx.HostTid, eCtx.StartTime)
+			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, eCtx.LeaderStartTime)
+			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, eCtx.ParentStartTime)
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.
