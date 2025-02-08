@@ -178,6 +178,9 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 					procEvited = 0
 					thrEvicted = 0
 				}
+
+				// For debugging purposes, print the entire process tree.
+				// fmt.Println(procTree.String())
 			case <-ticker1m.C:
 				logger.Debugw("proctree cache stats",
 					"total processes", procTree.processesLRU.Len(),
