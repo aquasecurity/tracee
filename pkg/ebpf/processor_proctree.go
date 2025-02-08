@@ -174,10 +174,17 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 		return err
 	}
 
-	execFeed.TimeStamp = uint64(event.Timestamp)
-	execFeed.TaskHash = utils.HashTaskID(uint32(event.HostThreadID), uint64(event.ThreadStartTime))
-	execFeed.ParentHash = 0 // regular pipeline does not have parent hash
-	execFeed.LeaderHash = 0 // regular pipeline does not have leader hash
+	execFeed.TimeStamp = uint64(event.Timestamp)       // already normalized at decode stage
+	execFeed.StartTime = uint64(event.ThreadStartTime) // already normalized at decode stage
+	execFeed.TaskHash = event.ThreadEntityId           // already computed at decode stage
+	execFeed.ParentHash = event.ParentEntityId         // already computed at decode stage
+	execFeed.LeaderHash = event.ProcessEntityId        // already computed at decode stage
+	execFeed.Pid = int32(event.ProcessID)
+	execFeed.Tid = int32(event.ThreadID)
+	execFeed.PPid = int32(event.ParentProcessID)
+	execFeed.HostPid = int32(event.HostProcessID)
+	execFeed.HostTid = int32(event.HostThreadID)
+	execFeed.HostPPid = int32(event.HostParentProcessID)
 
 	return t.processTree.FeedFromExec(execFeed)
 }

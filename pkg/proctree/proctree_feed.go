@@ -204,12 +204,19 @@ func (pt *ProcessTree) FeedFromFork(feed *ForkFeed) error {
 
 type ExecFeed struct {
 	TimeStamp         uint64
+	StartTime         uint64
 	Inode             uint64
 	Ctime             uint64
 	CmdPath           string
 	PathName          string
 	Interp            string
 	StdinPath         string
+	Pid               int32
+	Tid               int32
+	PPid              int32
+	HostPid           int32
+	HostTid           int32
+	HostPPid          int32
 	TaskHash          uint32
 	ParentHash        uint32
 	LeaderHash        uint32
@@ -258,10 +265,26 @@ func (pt *ProcessTree) FeedFromExec(feed *ExecFeed) error {
 	execTimestamp := traceetime.NsSinceEpochToTime(feed.TimeStamp)
 	basename := filepath.Base(feed.CmdPath)
 	comm := string([]byte(basename[:min(len(basename), COMM_LEN)]))
-	process.GetInfo().SetNameAt(
-		comm,
-		execTimestamp,
-	)
+
+	// NOTE: override all the fields of the taskInfoFeed, to avoid any previous data.
+	taskFeed := pt.GetTaskInfoFeedFromPool()
+
+	taskFeed.StartTimeNS = feed.StartTime
+	taskFeed.ExitTimeNS = 0
+	taskFeed.Name = comm
+	taskFeed.NsTid = feed.Tid
+	taskFeed.NsPid = feed.Pid
+	taskFeed.NsPPid = feed.PPid
+	taskFeed.Tid = feed.HostTid
+	taskFeed.Pid = feed.HostPid
+	taskFeed.PPid = feed.HostPPid
+	taskFeed.Uid = math.MaxUint32
+	taskFeed.Gid = math.MaxUint32
+
+	process.GetInfo().SetFeedAt(taskFeed, execTimestamp)
+
+	// Release the feed back to the pool as soon as it is not needed anymore
+	pt.PutTaskInfoFeedInPool(taskFeed)
 
 	// NOTE: override all the fields of the fileInfoFeed, to avoid any previous data.
 	fileInfoFeed := pt.GetFileInfoFeedFromPool()
