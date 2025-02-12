@@ -5412,6 +5412,250 @@ int BPF_KPROBE(trace_chmod_common)
     return events_perf_submit(&p, 0);
 }
 
+SEC("kprobe/security_task_prctl")
+int BPF_KPROBE(trace_security_task_prctl)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, SECURITY_TASK_PRCTL))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    // Save raw args
+    int option = PT_REGS_PARM1(ctx);
+    unsigned long arg2 = PT_REGS_PARM2(ctx);
+    unsigned long arg3 = PT_REGS_PARM3(ctx);
+    unsigned long arg4 = PT_REGS_PARM4(ctx);
+    unsigned long arg5 = PT_REGS_PARM5(ctx);
+    save_to_submit_buf(&p.event->args_buf, &option, sizeof(option), 0);
+    save_to_submit_buf(&p.event->args_buf, &arg2, sizeof(arg2), 1);
+    save_to_submit_buf(&p.event->args_buf, &arg3, sizeof(arg3), 2);
+    save_to_submit_buf(&p.event->args_buf, &arg4, sizeof(arg4), 3);
+    save_to_submit_buf(&p.event->args_buf, &arg5, sizeof(arg5), 4);
+
+    // Save PR_SET_VMA arg
+    if (option == PR_SET_VMA && arg2 == PR_SET_VMA_ANON_NAME && arg5 != 0)
+        save_str_to_buf(&p.event->args_buf, (char *) arg5, 5);
+
+    // Save PR_SET_MM args
+    if (option == PR_SET_MM) {
+        // Save all old mm info regardless of operation
+        struct mm_struct *mm = get_mm_from_task(p.event->task);
+        save_to_submit_buf(&p.event->args_buf,
+                           __builtin_preserve_access_index(&mm->start_code),
+                           sizeof(mm->start_code),
+                           6);
+        save_to_submit_buf(&p.event->args_buf,
+                           __builtin_preserve_access_index(&mm->end_code),
+                           sizeof(mm->end_code),
+                           7);
+        save_to_submit_buf(&p.event->args_buf,
+                           __builtin_preserve_access_index(&mm->start_data),
+                           sizeof(mm->start_data),
+                           8);
+        save_to_submit_buf(&p.event->args_buf,
+                           __builtin_preserve_access_index(&mm->end_data),
+                           sizeof(mm->end_data),
+                           9);
+        save_to_submit_buf(&p.event->args_buf,
+                           __builtin_preserve_access_index(&mm->start_brk),
+                           sizeof(mm->start_brk),
+                           10);
+        save_to_submit_buf(
+            &p.event->args_buf, __builtin_preserve_access_index(&mm->brk), sizeof(mm->brk), 11);
+        save_to_submit_buf(&p.event->args_buf,
+                           __builtin_preserve_access_index(&mm->start_stack),
+                           sizeof(mm->start_stack),
+                           12);
+        save_to_submit_buf(&p.event->args_buf,
+                           __builtin_preserve_access_index(&mm->arg_start),
+                           sizeof(mm->arg_start),
+                           13);
+        save_to_submit_buf(&p.event->args_buf,
+                           __builtin_preserve_access_index(&mm->arg_end),
+                           sizeof(mm->arg_end),
+                           14);
+        save_to_submit_buf(&p.event->args_buf,
+                           __builtin_preserve_access_index(&mm->env_start),
+                           sizeof(mm->env_start),
+                           15);
+        save_to_submit_buf(&p.event->args_buf,
+                           __builtin_preserve_access_index(&mm->env_end),
+                           sizeof(mm->env_end),
+                           16);
+        void *saved_auxv;
+        u32 size;
+        struct mm_struct___redhat *mm_redhat = (struct mm_struct___redhat *) mm;
+        // Upstream kernel
+        if (bpf_core_field_exists(mm->saved_auxv)) {
+            saved_auxv = __builtin_preserve_access_index(&mm->saved_auxv);
+            size = bpf_core_field_size(mm->saved_auxv);
+        }
+        // Red Hat kernel
+        else if (bpf_core_field_exists(mm_redhat->mm_rh)) {
+            struct mm_struct_rh *mm_rh = BPF_CORE_READ(mm_redhat, mm_rh);
+            saved_auxv = __builtin_preserve_access_index(&mm_rh->saved_auxv);
+            size = bpf_core_field_size(mm_rh->saved_auxv);
+        }
+        // Unknown variation of mm_struct
+        else
+            return 0;
+
+        save_bytes_to_buf(&p.event->args_buf, saved_auxv, size, 17);
+
+        struct file *exe = BPF_CORE_READ(mm, exe_file);
+        void *exe_path = get_path_str(__builtin_preserve_access_index(&exe->f_path));
+        dev_t exe_dev = get_dev_from_file(exe);
+        unsigned long exe_inode = get_inode_nr_from_file(exe);
+        u64 exe_ctime = get_ctime_nanosec_from_file(exe);
+        umode_t exe_inode_mode = get_inode_mode_from_file(exe);
+
+        save_str_to_buf(&p.event->args_buf, exe_path, 18);
+        save_to_submit_buf(&p.event->args_buf, &exe_dev, sizeof(exe_dev), 19);
+        save_to_submit_buf(&p.event->args_buf, &exe_inode, sizeof(exe_inode), 20);
+        save_to_submit_buf(&p.event->args_buf, &exe_ctime, sizeof(exe_ctime), 21);
+        save_to_submit_buf(&p.event->args_buf, &exe_inode_mode, sizeof(exe_inode_mode), 22);
+
+        struct prctl_mm_map *mm_map;
+
+        // Save new mm info according to operation
+        switch (arg2) {
+            case PR_SET_MM_START_CODE:
+                save_to_submit_buf(&p.event->args_buf, &arg3, sizeof(arg3), 23);
+                break;
+            case PR_SET_MM_END_CODE:
+                save_to_submit_buf(&p.event->args_buf, &arg3, sizeof(arg3), 24);
+                break;
+            case PR_SET_MM_START_DATA:
+                save_to_submit_buf(&p.event->args_buf, &arg3, sizeof(arg3), 25);
+                break;
+            case PR_SET_MM_END_DATA:
+                save_to_submit_buf(&p.event->args_buf, &arg3, sizeof(arg3), 26);
+                break;
+            case PR_SET_MM_START_BRK:
+                save_to_submit_buf(&p.event->args_buf, &arg3, sizeof(arg3), 27);
+                break;
+            case PR_SET_MM_BRK:
+                save_to_submit_buf(&p.event->args_buf, &arg3, sizeof(arg3), 28);
+                break;
+            case PR_SET_MM_START_STACK:
+                save_to_submit_buf(&p.event->args_buf, &arg3, sizeof(arg3), 29);
+                break;
+            case PR_SET_MM_ARG_START:
+                save_to_submit_buf(&p.event->args_buf, &arg3, sizeof(arg3), 30);
+                break;
+            case PR_SET_MM_ARG_END:
+                save_to_submit_buf(&p.event->args_buf, &arg3, sizeof(arg3), 31);
+                break;
+            case PR_SET_MM_ENV_START:
+                save_to_submit_buf(&p.event->args_buf, &arg3, sizeof(arg3), 32);
+                break;
+            case PR_SET_MM_ENV_END:
+                save_to_submit_buf(&p.event->args_buf, &arg3, sizeof(arg3), 33);
+                break;
+            case PR_SET_MM_AUXV:
+                size = AT_VECTOR_SIZE * sizeof(unsigned long);
+                if (arg4 < size)
+                    size = arg4;
+                save_bytes_to_buf(&p.event->args_buf, (void *) arg3, size, 34);
+                break;
+            case PR_SET_MM_EXE_FILE:
+                exe = get_struct_file_from_fd(arg3);
+                exe_path = get_path_str(__builtin_preserve_access_index(&exe->f_path));
+                exe_dev = get_dev_from_file(exe);
+                exe_inode = get_inode_nr_from_file(exe);
+                exe_ctime = get_ctime_nanosec_from_file(exe);
+                exe_inode_mode = get_inode_mode_from_file(exe);
+
+                save_str_to_buf(&p.event->args_buf, exe_path, 35);
+                save_to_submit_buf(&p.event->args_buf, &exe_dev, sizeof(exe_dev), 36);
+                save_to_submit_buf(&p.event->args_buf, &exe_inode, sizeof(exe_inode), 37);
+                save_to_submit_buf(&p.event->args_buf, &exe_ctime, sizeof(exe_ctime), 38);
+                save_to_submit_buf(&p.event->args_buf, &exe_inode_mode, sizeof(exe_inode_mode), 39);
+
+                break;
+            case PR_SET_MM_MAP:
+                mm_map = (struct prctl_mm_map *) arg3;
+                save_to_submit_buf(&p.event->args_buf,
+                                   __builtin_preserve_access_index(&mm_map->start_code),
+                                   sizeof(mm_map->start_code),
+                                   23);
+                save_to_submit_buf(&p.event->args_buf,
+                                   __builtin_preserve_access_index(&mm_map->end_code),
+                                   sizeof(mm_map->end_code),
+                                   24);
+                save_to_submit_buf(&p.event->args_buf,
+                                   __builtin_preserve_access_index(&mm_map->start_data),
+                                   sizeof(mm_map->start_data),
+                                   25);
+                save_to_submit_buf(&p.event->args_buf,
+                                   __builtin_preserve_access_index(&mm_map->end_data),
+                                   sizeof(mm_map->end_data),
+                                   26);
+                save_to_submit_buf(&p.event->args_buf,
+                                   __builtin_preserve_access_index(&mm_map->start_brk),
+                                   sizeof(mm_map->start_brk),
+                                   27);
+                save_to_submit_buf(&p.event->args_buf,
+                                   __builtin_preserve_access_index(&mm_map->brk),
+                                   sizeof(mm_map->brk),
+                                   28);
+                save_to_submit_buf(&p.event->args_buf,
+                                   __builtin_preserve_access_index(&mm_map->start_stack),
+                                   sizeof(mm_map->start_stack),
+                                   29);
+                save_to_submit_buf(&p.event->args_buf,
+                                   __builtin_preserve_access_index(&mm_map->arg_start),
+                                   sizeof(mm_map->arg_start),
+                                   30);
+                save_to_submit_buf(&p.event->args_buf,
+                                   __builtin_preserve_access_index(&mm_map->arg_end),
+                                   sizeof(mm_map->arg_end),
+                                   31);
+                save_to_submit_buf(&p.event->args_buf,
+                                   __builtin_preserve_access_index(&mm_map->env_start),
+                                   sizeof(mm_map->env_start),
+                                   32);
+                save_to_submit_buf(&p.event->args_buf,
+                                   __builtin_preserve_access_index(&mm_map->env_end),
+                                   sizeof(mm_map->env_end),
+                                   33);
+                save_bytes_to_buf(&p.event->args_buf,
+                                  BPF_CORE_READ_USER(mm_map, auxv),
+                                  BPF_CORE_READ_USER(mm_map, auxv_size),
+                                  34);
+
+                exe = get_struct_file_from_fd(BPF_CORE_READ_USER(mm_map, exe_fd));
+                exe_path = get_path_str(__builtin_preserve_access_index(&exe->f_path));
+                exe_dev = get_dev_from_file(exe);
+                exe_inode = get_inode_nr_from_file(exe);
+                exe_ctime = get_ctime_nanosec_from_file(exe);
+                exe_inode_mode = get_inode_mode_from_file(exe);
+
+                save_str_to_buf(&p.event->args_buf, exe_path, 35);
+                save_to_submit_buf(&p.event->args_buf, &exe_dev, sizeof(exe_dev), 36);
+                save_to_submit_buf(&p.event->args_buf, &exe_inode, sizeof(exe_inode), 37);
+                save_to_submit_buf(&p.event->args_buf, &exe_ctime, sizeof(exe_ctime), 38);
+                save_to_submit_buf(&p.event->args_buf, &exe_inode_mode, sizeof(exe_inode_mode), 39);
+
+                break;
+            default:
+                // unknown/invalid operation
+                return 0;
+        }
+    }
+
+    // Save old securebits for PR_SET_SECUREBITS
+    if (option == PR_SET_SECUREBITS) {
+        struct task_struct *task = p.event->task;
+        unsigned int old_securebits = BPF_CORE_READ(task, cred, securebits);
+        save_to_submit_buf(&p.event->args_buf, &old_securebits, sizeof(old_securebits), 40);
+    }
+
+    return events_perf_submit(&p, 0);
+}
+
 //
 // Syscall checkers
 //
