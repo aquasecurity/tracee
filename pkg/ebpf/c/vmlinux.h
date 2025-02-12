@@ -293,6 +293,7 @@ struct task_struct {
     u64 start_boottime;
     u64 real_start_time;
     const struct cred *real_cred;
+    const struct cred *cred;
     char comm[16];
     struct files_struct *files;
     struct fs_struct *fs;
@@ -743,18 +744,52 @@ struct rb_root {
     struct rb_node *rb_node;
 };
 
+#if defined(__TARGET_ARCH_x86)
+    #define AT_VECTOR_SIZE_ARCH 3
+#elif defined(__TARGET_ARCH_arm64)
+    #define AT_VECTOR_SIZE_ARCH 2
+#else
+    #define AT_VECTOR_SIZE_ARCH 0
+#endif
+
+#define AT_VECTOR_SIZE_BASE 22
+#define AT_VECTOR_SIZE      (2 * (AT_VECTOR_SIZE_ARCH + AT_VECTOR_SIZE_BASE + 1))
+
 struct mm_struct {
     struct {
         struct rb_root mm_rb;
-        long unsigned int stack_vm;
-        long unsigned int start_brk;
-        long unsigned int brk;
-        long unsigned int start_stack;
-        long unsigned int arg_start;
-        long unsigned int arg_end;
-        long unsigned int env_start;
-        long unsigned int env_end;
+        unsigned long stack_vm;
+        unsigned long start_code;
+        unsigned long end_code;
+        unsigned long start_data;
+        unsigned long end_data;
+        unsigned long start_brk;
+        unsigned long brk;
+        unsigned long start_stack;
+        unsigned long arg_start;
+        unsigned long arg_end;
+        unsigned long env_start;
+        unsigned long env_end;
+        unsigned long saved_auxv[AT_VECTOR_SIZE];
+        struct file *exe_file;
     };
+};
+
+struct prctl_mm_map {
+    __u64 start_code;
+    __u64 end_code;
+    __u64 start_data;
+    __u64 end_data;
+    __u64 start_brk;
+    __u64 brk;
+    __u64 start_stack;
+    __u64 arg_start;
+    __u64 arg_end;
+    __u64 env_start;
+    __u64 env_end;
+    __u64 *auxv;
+    __u32 auxv_size;
+    __u32 exe_fd;
 };
 
 struct vfsmount {

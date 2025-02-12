@@ -120,6 +120,7 @@ const (
 	OpenFileNS
 	OpenFileMount
 	SecuritySbUmount
+	SecurityTaskPrctl
 	MaxCommonID
 )
 
@@ -13162,6 +13163,63 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "syscall_pathname"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "mount_src"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "mount_dst"}},
+		},
+	},
+	SecurityTaskPrctl: {
+		id:      SecurityTaskPrctl,
+		id32Bit: Sys32Undefined,
+		name:    "security_task_prctl",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SecurityTaskPrctl, required: true},
+			},
+		},
+		sets: []string{"lsm", "proc"},
+		fields: []DataField{
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "option"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg2"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg3"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg4"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg5"}},
+			// for PR_SET_VMA
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "vma_name"}},
+			// the following fields are for PR_SET_MM
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_start_code"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_end_code"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_start_data"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_end_data"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_start_brk"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_brk"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_start_stack"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_arg_start"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_arg_end"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_env_start"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_env_end"}},
+			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "old_auxv"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "old_pathname"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "old_dev"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "old_inode"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "old_ctime"}},
+			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "old_inode_mode"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_start_code"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_end_code"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_start_data"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_end_data"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_start_brk"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_brk"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_start_stack"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_arg_start"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_arg_end"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_env_start"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_env_end"}},
+			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "new_auxv"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "new_pathname"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "new_dev"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "new_inode"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "new_ctime"}},
+			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "new_inode_mode"}},
+			// for PR_SET_SECUREBITS
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "old_securebits"}},
 		},
 	},
 	//

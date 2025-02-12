@@ -287,4 +287,24 @@ static inline struct inet_sock *inet_sk(const struct sock *sk)
 /* File supports atomic writes */
 #define FMODE_CAN_ATOMIC_WRITE ((fmode_t) (1 << 7))
 
+#define PR_SET_SECUREBITS     28
+#define PR_SET_MM             35
+#define PR_SET_MM_START_CODE  1
+#define PR_SET_MM_END_CODE    2
+#define PR_SET_MM_START_DATA  3
+#define PR_SET_MM_END_DATA    4
+#define PR_SET_MM_START_STACK 5
+#define PR_SET_MM_START_BRK   6
+#define PR_SET_MM_BRK         7
+#define PR_SET_MM_ARG_START   8
+#define PR_SET_MM_ARG_END     9
+#define PR_SET_MM_ENV_START   10
+#define PR_SET_MM_ENV_END     11
+#define PR_SET_MM_AUXV        12
+#define PR_SET_MM_EXE_FILE    13
+#define PR_SET_MM_MAP         14
+#define PR_SET_MM_MAP_SIZE    15
+#define PR_SET_VMA            0x53564d41
+#define PR_SET_VMA_ANON_NAME  0
+
 #endif

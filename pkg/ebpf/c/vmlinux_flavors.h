@@ -105,6 +105,31 @@ struct inode___older_v611 {
     struct timespec64 __i_ctime;
 };
 
+// Red Hat mm_struct variation
+struct mm_struct_rh {
+    unsigned long saved_auxv[AT_VECTOR_SIZE];
+};
+
+struct mm_struct___redhat {
+    struct {
+        unsigned long start_code;
+        unsigned long end_code;
+        unsigned long start_data;
+        unsigned long end_data;
+        unsigned long start_brk;
+        unsigned long brk;
+        unsigned long start_stack;
+        unsigned long arg_start;
+        unsigned long arg_end;
+        unsigned long env_start;
+        unsigned long env_end;
+        struct file *exe_file;
+    };
+    union {
+        struct mm_struct_rh *mm_rh;
+    };
+};
+
 ///////////////////
 
 #pragma clang attribute pop

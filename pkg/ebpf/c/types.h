@@ -137,6 +137,7 @@ typedef struct event_context {
     X(OPEN_FILE_NS, )                                                                              \
     X(OPEN_FILE_MOUNT, )                                                                           \
     X(SECURITY_SB_UMOUNT, )                                                                        \
+    X(SECURITY_TASK_PRCTL, )                                                                       \
     // ...
 
 #define EVENT_ID_LIST_LAST                                                                         \
