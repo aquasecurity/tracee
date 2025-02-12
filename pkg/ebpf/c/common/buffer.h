@@ -609,8 +609,8 @@ statfunc int events_perf_submit(program_data_t *p, long ret)
         }
     }
 
-    u32 size = sizeof(event_context_t) + sizeof(u8) +
-               p->event->args_buf.offset; // context + argnum + arg buffer size
+    // context + argnum + arg buffer size
+    u32 size = sizeof(event_context_t) + sizeof(u8) + p->event->args_buf.offset;
 
     // inline bounds check to force compiler to use the register of size
     asm volatile("if %[size] < %[max_size] goto +1;\n"
@@ -636,8 +636,8 @@ statfunc int events_perf_submit(program_data_t *p, long ret)
 
 statfunc int signal_perf_submit(void *ctx, controlplane_signal_t *sig)
 {
-    u32 size =
-        sizeof(u32) + sizeof(u8) + sig->args_buf.offset; // signal id + argnum + arg buffer size
+    // signal id + argnum + arg buffer size
+    u32 size = sizeof(u32) + sizeof(u8) + sig->args_buf.offset;
 
     // inline bounds check to force compiler to use the register of size
     asm volatile("if %[size] < %[max_size] goto +1;\n"

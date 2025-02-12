@@ -232,10 +232,10 @@ typedef struct {
 typedef struct task_info {
     task_context_t context;
     syscall_data_t syscall_data;
-    bool syscall_traced; // indicates that syscall_data is valid
-    u8 container_state;  // the state of the container the task resides in
-    address_range_t
-        stack; // stack area, only relevant for tasks that aren't group leaders (threads)
+    bool syscall_traced;   // indicates that syscall_data is valid
+    u8 container_state;    // the state of the container the task resides in
+    address_range_t stack; // stack area, only relevant for tasks that aren't
+                           // group leaders (threads)
 } task_info_t;
 
 typedef struct file_id {

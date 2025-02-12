@@ -937,11 +937,10 @@ statfunc int find_modules_from_module_kset_list(program_data_t *p)
 
 #pragma unroll
     for (int i = 0; i < MAX_NUM_MODULES; i++) {
-        if (BPF_CORE_READ(n, name) ==
-            NULL) { // Without this the list seems infinite. Also, using pos
-                    // here seems incorrect as it starts from a weird member
+        // Without this the list seems infinite.
+        // Also, using pos here seems incorrect as it starts from a weird member.
+        if (BPF_CORE_READ(n, name) == NULL)
             return 0;
-        }
 
         struct module_kobject *mod_kobj =
             (struct module_kobject *) container_of(n, struct module_kobject, kobj);
@@ -1033,8 +1032,8 @@ int lkm_seeker_modtree_loop(struct pt_regs *ctx)
                     break;
                 }
 
-                /* We have visited the node and its left subtree.
-                Now, it's right subtree's turn */
+                // We have visited the node and its left subtree.
+                // Now, it's right subtree's turn.
                 curr = BPF_CORE_READ(curr, rb_right);
             }
         }
@@ -1220,9 +1219,9 @@ int uprobe_lkm_seeker_submitter(struct pt_regs *ctx)
     if (p.config->tracee_pid != trigger_pid)
         return 0;
 
-    u32 flags =
-        ((u32) received_flags) | HIDDEN_MODULE; // Convert to 32bit and turn on the bit that will
-                                                // cause it to be sent as an event to the user
+    // Convert to 32bit and turn on the bit that will cause it to be sent as an
+    // event to the user.
+    u32 flags = ((u32) received_flags) | HIDDEN_MODULE;
     lkm_seeker_send_to_userspace((struct module *) mod_address, &flags, &p);
 
     return 0;
@@ -1287,8 +1286,9 @@ int lkm_seeker_kset_tail(struct pt_regs *ctx)
     if (ret < 0) {
         tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_HID_KER_MOD, ret);
         u32 flags = HISTORY_SCAN_FINISHED;
-        lkm_seeker_send_to_userspace(
-            (struct module *) HISTORY_SCAN_FAILURE, &flags, &p); // Report failure of history scan
+
+        // Report failure of history scan
+        lkm_seeker_send_to_userspace((struct module *) HISTORY_SCAN_FAILURE, &flags, &p);
         return -1;
     }
 
@@ -1362,8 +1362,8 @@ int lkm_seeker_new_mod_only_tail(struct pt_regs *ctx)
         return -1;
     }
 
-    struct module *mod =
-        (struct module *) start_scan_time; // Use the module address field as the start_scan_time
+    // Use the module address field as the start_scan_time
+    struct module *mod = (struct module *) start_scan_time;
     u32 flags = NEW_MOD;
     lkm_seeker_send_to_userspace(mod, &flags, &p);
 
@@ -2737,8 +2737,8 @@ int BPF_KPROBE(trace_security_socket_connect)
             break;
         case SYSCALL_SOCKETCALL:
             arr_addr = (void *) get_syscall_arg2(p.event->task, task_regs, false);
-            bpf_probe_read_user(
-                &sockfd, sizeof(int), arr_addr); // fd is the first entry in the array
+            // fd is the first entry in the array
+            bpf_probe_read_user(&sockfd, sizeof(int), arr_addr);
             stsb(args_buf, &sockfd, sizeof(int), 0);
             break;
     }
@@ -3195,12 +3195,8 @@ statfunc bool
 filter_file_write_capture(program_data_t *p, struct file *file, io_data_t io_data, off_t start_pos)
 {
     return filter_file_path(p->ctx, &file_write_path_filter, file) ||
-           filter_file_type(p->ctx,
-                            &file_type_filter,
-                            CAPTURE_WRITE_TYPE_FILTER_IDX,
-                            file,
-                            io_data,
-                            start_pos) ||
+           filter_file_type(
+               p->ctx, &file_type_filter, CAPTURE_WRITE_TYPE_FILTER_IDX, file, io_data, start_pos) ||
            filter_file_fd(p->ctx, &file_type_filter, CAPTURE_WRITE_TYPE_FILTER_IDX, file);
 }
 
