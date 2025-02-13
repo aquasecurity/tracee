@@ -28,6 +28,7 @@ GOENV_MK = goenv.mk
 CMD_AWK ?= awk
 CMD_CAT ?= cat
 CMD_CLANG ?= clang
+CMD_CP ?= cp
 CMD_CUT ?= cut
 CMD_ERRCHECK ?= errcheck
 CMD_GIT ?= git
@@ -233,6 +234,7 @@ env:
 	@echo "STATIC                   $(STATIC)"
 	@echo ---------------------------------------
 	@echo "BPF_VCPU                 $(BPF_VCPU)"
+	@echo "TRACEE_EBPF_CFLAGS       $(TRACEE_EBPF_CFLAGS)"
 	@echo "TRACEE_EBPF_OBJ_SRC      $(TRACEE_EBPF_OBJ_SRC)"
 	@echo "TRACEE_EBPF_OBJ_HEADERS  $(TRACEE_EBPF_OBJ_HEADERS)"
 	@echo ---------------------------------------
@@ -357,12 +359,13 @@ $(OUTPUT_DIR)/btfhub:
 LIBBPF_CFLAGS = "-fPIC"
 LIBBPF_LDFLAGS =
 LIBBPF_SRC = ./3rdparty/libbpf/src
-LIBBPF_INCLUDE_UAPI = $(abspath ./3rdparty/libbpf/include/uapi)
 LIBBPF_DESTDIR = $(OUTPUT_DIR)/libbpf
 LIBBPF_OBJDIR = $(LIBBPF_DESTDIR)/obj
 LIBBPF_OBJ = $(LIBBPF_OBJDIR)/libbpf.a
 
-$(LIBBPF_OBJ): \
+$(LIBBPF_OBJ): .build_libbpf .build_libbpf_fix
+
+.build_libbpf: \
 	$(LIBBPF_SRC) \
 	$(wildcard $(LIBBPF_SRC)/*.[ch]) \
 	| .checkver_$(CMD_CLANG) $(OUTPUT_DIR)
@@ -373,11 +376,33 @@ $(LIBBPF_OBJ): \
 		$(MAKE) \
 		-C $(LIBBPF_SRC) \
 		BUILD_STATIC_ONLY=1 \
+		PREFIX=$(abspath $(OUTPUT_DIR)) \
 		DESTDIR=$(abspath $(LIBBPF_DESTDIR)) \
 		OBJDIR=$(abspath $(LIBBPF_OBJDIR)) \
-		LIBDIR=$(abspath $(LIBBPF_OBJDIR)) \
-		INCLUDEDIR= UAPIDIR= prefix= libdir= \
+		LIBDIR=/to-be-removed \
+		INCLUDEDIR=/include \
+		UAPIDIR=/include \
 		install install_uapi_headers
+	@$(CMD_TOUCH) $@
+
+
+LIBBPF_INCLUDE_UAPI = ./3rdparty/libbpf/include/uapi/linux
+
+.ONESHELL:
+.build_libbpf_fix: .build_libbpf
+# copy all uapi headers to the correct location, since libbpf does not install them fully
+# see: https://github.com/aquasecurity/tracee/pull/4186
+	@$(CMD_CP) $(LIBBPF_INCLUDE_UAPI)/*.h $(LIBBPF_DESTDIR)/include/linux/
+# fix libbpf.pc to point to our paths
+	@$(CMD_SED) -i 's|^libdir=/to-be-removed$$|libdir=$${prefix}/libbpf/obj|' $(abspath $(LIBBPF_OBJDIR)/libbpf.pc)
+	@$(CMD_SED) -i 's|^includedir=$${prefix}/include$$|includedir=$${prefix}/libbpf/include|' $(abspath $(LIBBPF_OBJDIR)/libbpf.pc)
+# remove not needed files
+	@$(CMD_RM) -rf $(LIBBPF_DESTDIR)/to-be-removed
+	@$(CMD_RM) -rf $(LIBBPF_OBJDIR)/staticobjs
+	@$(CMD_TOUCH) $@
+
+
+TRACEE_EBPF_CFLAGS = $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(CMD_PKGCONFIG) $(PKG_CONFIG_FLAG) --cflags $(LIB_BPF))
 
 .ONESHELL:
 .eval_goenv: $(LIBBPF_OBJ)
@@ -392,6 +417,7 @@ endif
 		$(eval GO_ENV_EBPF += GOOS=linux)
 		$(eval GO_ENV_EBPF += CC=$(CMD_CLANG))
 		$(eval GO_ENV_EBPF += GOARCH=$(GO_ARCH))
+		$(eval CUSTOM_CGO_CFLAGS := "$(TRACEE_EBPF_CFLAGS)")
 		$(eval GO_ENV_EBPF += CGO_CFLAGS=$(CUSTOM_CGO_CFLAGS))
 		$(eval CUSTOM_CGO_LDFLAGS := "$(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(CMD_PKGCONFIG) $(PKG_CONFIG_FLAG) --libs $(LIB_BPF))")
 		$(eval GO_ENV_EBPF := $(GO_ENV_EBPF) CGO_LDFLAGS=$(CUSTOM_CGO_LDFLAGS))
@@ -427,9 +453,8 @@ $(OUTPUT_DIR)/tracee.bpf.o: \
 		-D__TARGET_ARCH_$(LINUX_ARCH) \
 		-D__BPF_TRACING__ \
 		-DCORE \
+		$(TRACEE_EBPF_CFLAGS) \
 		-I./pkg/ebpf/c/ \
-		-I$(OUTPUT_DIR)/libbpf/ \
-		-I ./3rdparty/include \
 		-target bpf \
 		-O2 -g \
 		-mcpu=$(BPF_VCPU) \
@@ -450,7 +475,6 @@ TRACEE_SRC_DIRS = ./cmd/ ./pkg/ ./signatures/
 TRACEE_SRC = $(shell find $(TRACEE_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
 GO_TAGS_EBPF = core,ebpf
 CGO_EXT_LDFLAGS_EBPF =
-CUSTOM_CGO_CFLAGS = "-I$(abspath $(OUTPUT_DIR)/libbpf) -I$(LIBBPF_INCLUDE_UAPI)"
 PKG_CONFIG_PATH = $(LIBBPF_OBJDIR)
 PKG_CONFIG_FLAG =
 
@@ -993,14 +1017,14 @@ $(MAN_DIR)/%: $(MARKDOWN_DIR)/%.md \
 		$< \
 		-o $@ && \
 	echo Copying $@ to $(OUTPUT_MAN_DIR) && \
-	cp $@ $(OUTPUT_MAN_DIR)
+	$(CMD_CP) $@ $(OUTPUT_MAN_DIR)
 
 .PHONY: clean-man
 clean-man:
 	@echo Cleaning $(MAN_DIR) && \
-	rm -f $(MAN_DIR)/* && \
+	$(CMD_RM) -f $(MAN_DIR)/* && \
 	echo Cleaning $(OUTPUT_MAN_DIR) && \
-	rm -rf $(OUTPUT_MAN_DIR)
+	$(CMD_RM) -rf $(OUTPUT_MAN_DIR)
 
 .PHONY: man
 man: clean-man $(MAN_FILES)
@@ -1017,6 +1041,7 @@ clean:
 	$(CMD_RM) -rf $(OUTPUT_DIR)
 	$(CMD_RM) -f $(GOENV_MK)
 	$(CMD_RM) -f .*.md5
+	$(CMD_RM) -f .build_*
 	$(CMD_RM) -f .check*
 	$(CMD_RM) -f .eval_*
 	$(CMD_RM) -f .*-pkgs*

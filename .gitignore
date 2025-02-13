@@ -8,6 +8,10 @@
 # is not found
 .eval_*
 
+# .build_* files exist to avoid rebuilding the targets that they are
+# associated with.
+.build_*
+
 # needed for the makefile btfhub building logic
 *.md5
 
