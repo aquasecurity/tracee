@@ -498,8 +498,13 @@ var (
 	PR_SME_GET_VL                = SystemFunctionArgument{rawValue: 64, stringValue: "PR_SME_GET_VL"}
 	PR_SET_MDWE                  = SystemFunctionArgument{rawValue: 65, stringValue: "PR_SET_MDWE"}
 	PR_GET_MDWE                  = SystemFunctionArgument{rawValue: 66, stringValue: "PR_GET_MDWE"}
-	PR_SET_MEMORY_MERGE          = SystemFunctionArgument{rawValue: 67, stringValue: "PR_SET_MEMORY_MERGE"}
-	PR_GET_MEMORY_MERGE          = SystemFunctionArgument{rawValue: 68, stringValue: "PR_GET_MEMORY_MERGE"}
+
+	// unordered
+	PR_SET_VMA  = SystemFunctionArgument{rawValue: 0x53564d41, stringValue: "PR_SET_VMA"}
+	PR_GET_AUXV = SystemFunctionArgument{rawValue: 0x41555856, stringValue: "PR_GET_AUXV"}
+
+	PR_SET_MEMORY_MERGE = SystemFunctionArgument{rawValue: 67, stringValue: "PR_SET_MEMORY_MERGE"}
+	PR_GET_MEMORY_MERGE = SystemFunctionArgument{rawValue: 68, stringValue: "PR_GET_MEMORY_MERGE"}
 
 	// architecure specific (not supported)
 	// #define PR_RISCV_V_SET_CONTROL 69
@@ -543,6 +548,7 @@ var prctlOptionValues = []SystemFunctionArgument{
 	PR_MCE_KILL,
 	PR_MCE_KILL_GET,
 	PR_SET_MM,
+	PR_SET_PTRACER,
 	PR_SET_CHILD_SUBREAPER,
 	PR_GET_CHILD_SUBREAPER,
 	PR_SET_NO_NEW_PRIVS,
@@ -572,6 +578,8 @@ var prctlOptionValues = []SystemFunctionArgument{
 	PR_SME_GET_VL,
 	PR_SET_MDWE,
 	PR_GET_MDWE,
+	PR_SET_VMA,
+	PR_GET_AUXV,
 	PR_SET_MEMORY_MERGE,
 	PR_GET_MEMORY_MERGE,
 }
