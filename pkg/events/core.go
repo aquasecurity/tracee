@@ -74,7 +74,7 @@ const (
 	SecurityMmapFile
 	SecurityFileMprotect
 	SocketDup
-	HiddenInodes
+	ZeroedInodes
 	KernelWrite
 	ProcCreate
 	KprobeAttach
@@ -11890,10 +11890,10 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct sockaddr*", Name: "remote_addr"},
 		},
 	},
-	HiddenInodes: {
-		id:      HiddenInodes,
+	ZeroedInodes: {
+		id:      ZeroedInodes,
 		id32Bit: Sys32Undefined,
-		name:    "hidden_inodes",
+		name:    "zeroed_inodes",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -11902,7 +11902,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{},
 		fields: []trace.ArgMeta{
-			{Type: "char*", Name: "hidden_process"},
+			{Type: "char*", Name: "dirent_name"},
 		},
 	},
 	KernelWrite: {

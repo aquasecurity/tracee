@@ -20,7 +20,7 @@ spec:
     - event: security_socket_accept
     - event: hooked_proc_fops
     - event: hooked_seq_ops
-    - event: hidden_inodes
+    - event: zeroed_inodes
     - event: net_packet_dns
     - event: net_packet_http
     - event: container_create
