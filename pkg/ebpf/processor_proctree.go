@@ -92,17 +92,13 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 	if err != nil {
 		return err
 	}
-	forkFeed.TimeStamp = uint64(event.Timestamp) // already normalized at decode stage
 
-	// Compute hashes using kernel start times as-is, to be consistent with signals
+	forkFeed.TimeStamp = uint64(event.Timestamp)
+
+	// Hashes
 	forkFeed.ParentHash = utils.HashTaskID(uint32(forkFeed.ParentTid), uint64(forkFeed.ParentStartTime))
 	forkFeed.LeaderHash = utils.HashTaskID(uint32(forkFeed.LeaderTid), uint64(forkFeed.LeaderStartTime))
 	forkFeed.ChildHash = utils.HashTaskID(uint32(forkFeed.ChildTid), uint64(forkFeed.ChildStartTime))
-
-	// Normalize times
-	forkFeed.ParentStartTime = traceetime.BootToEpochNS(forkFeed.ParentStartTime)
-	forkFeed.LeaderStartTime = traceetime.BootToEpochNS(forkFeed.LeaderStartTime)
-	forkFeed.ChildStartTime = traceetime.BootToEpochNS(forkFeed.ChildStartTime)
 
 	return t.processTree.FeedFromFork(forkFeed)
 }
@@ -113,7 +109,7 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 		return fmt.Errorf("process tree is disabled")
 	}
 	if event.HostProcessID != event.HostThreadID {
-		return nil // chek FeedFromExec for TODO of execve() handled by threads
+		return nil // check FeedFromExec for TODO of execve() handled by threads
 	}
 
 	var err error
@@ -176,15 +172,16 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 
 	execFeed.TimeStamp = uint64(event.Timestamp)       // already normalized at decode stage
 	execFeed.StartTime = uint64(event.ThreadStartTime) // already normalized at decode stage
-	execFeed.TaskHash = event.ThreadEntityId           // already computed at decode stage
-	execFeed.ParentHash = event.ParentEntityId         // already computed at decode stage
-	execFeed.LeaderHash = event.ProcessEntityId        // already computed at decode stage
-	execFeed.Pid = int32(event.ProcessID)
-	execFeed.Tid = int32(event.ThreadID)
-	execFeed.PPid = int32(event.ParentProcessID)
+
+	execFeed.LeaderHash = event.ProcessEntityId // already computed at decode stage
+	execFeed.TaskHash = event.ThreadEntityId    // already computed at decode stage
+	execFeed.ParentHash = event.ParentEntityId  // already computed at decode stage
 	execFeed.HostPid = int32(event.HostProcessID)
 	execFeed.HostTid = int32(event.HostThreadID)
 	execFeed.HostPPid = int32(event.HostParentProcessID)
+	execFeed.Pid = int32(event.ProcessID)
+	execFeed.Tid = int32(event.ThreadID)
+	execFeed.PPid = int32(event.ParentProcessID)
 
 	return t.processTree.FeedFromExec(execFeed)
 }
@@ -195,7 +192,7 @@ func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
 		return fmt.Errorf("process tree is disabled")
 	}
 	if event.HostProcessID != event.HostThreadID {
-		return nil // chek FeedFromExec for TODO of execve() handled by threads
+		return nil // check FeedFromExec for TODO of execve() handled by threads
 	}
 
 	// NOTE: Currently FeedFromExit is only using TaskHash and TimeStamp from the ExitFeed.
@@ -220,8 +217,6 @@ func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
 
 	exitFeed.TimeStamp = uint64(event.Timestamp) // already normalized at decode stage
 	exitFeed.TaskHash = event.ThreadEntityId     // already computed at decode stage
-	exitFeed.ParentHash = event.ParentEntityId   // already computed at decode stage
-	exitFeed.LeaderHash = event.ProcessEntityId  // already computed at decode stage
 
 	return t.processTree.FeedFromExit(exitFeed)
 }

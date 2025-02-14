@@ -129,7 +129,7 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 	}
 
 	var err error
-	procEvited := 0
+	procEvicted := 0
 	thrEvicted := 0
 
 	// Create caches for processes.
@@ -138,7 +138,7 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 		func(key uint32, value *Process) {
 			procTree.EvictThreads(key)
 			procTree.EvictChildren(key)
-			procEvited++
+			procEvicted++
 		},
 	)
 	if err != nil {
@@ -168,14 +168,14 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 			case <-ctx.Done():
 				return
 			case <-ticker15s.C:
-				if procEvited != 0 || thrEvicted != 0 {
+				if procEvicted != 0 || thrEvicted != 0 {
 					logger.Debugw("proctree cache stats",
-						"processes evicted", procEvited,
+						"processes evicted", procEvicted,
 						"total processes", procTree.processesLRU.Len(),
 						"threads evicted", thrEvicted,
 						"total threads", procTree.threadsLRU.Len(),
 					)
-					procEvited = 0
+					procEvicted = 0
 					thrEvicted = 0
 				}
 

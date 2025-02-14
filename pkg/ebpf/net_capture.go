@@ -97,7 +97,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 
 		// sanity checks
 
-		payloadArg := events.GetArg(event, "payload")
+		payloadArg := events.GetArg(event.Args, "payload")
 		if payloadArg == nil {
 			logger.Debugw("Network capture: no payload packet")
 			return

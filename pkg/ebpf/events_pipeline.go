@@ -273,10 +273,10 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.ContextFlags = flags
 			evt.Syscall = syscall
 			evt.Metadata = nil
-			// compute hashes using kernel start times as-is, to be consistent with signals
-			evt.ThreadEntityId = utils.HashTaskID(eCtx.HostTid, eCtx.StartTime)
-			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, eCtx.LeaderStartTime)
-			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, eCtx.ParentStartTime)
+			// compute hashes using normalized times
+			evt.ThreadEntityId = utils.HashTaskID(eCtx.HostTid, uint64(evt.ThreadStartTime))
+			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, traceetime.BootToEpochNS(eCtx.LeaderStartTime))
+			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, traceetime.BootToEpochNS(eCtx.ParentStartTime))
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.

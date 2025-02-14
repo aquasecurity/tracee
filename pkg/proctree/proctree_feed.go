@@ -306,8 +306,6 @@ func (pt *ProcessTree) FeedFromExec(feed *ExecFeed) error {
 type ExitFeed struct {
 	TimeStamp  uint64
 	TaskHash   uint32
-	ParentHash uint32
-	LeaderHash uint32
 	ExitCode   int32
 	SignalCode int32
 	Group      bool

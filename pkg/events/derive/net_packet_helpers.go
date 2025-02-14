@@ -82,7 +82,7 @@ func strToLower(given string) string {
 
 // parsePayloadArg returns the packet payload from the event.
 func parsePayloadArg(event *trace.Event) ([]byte, error) {
-	payloadArg := events.GetArg(event, "payload")
+	payloadArg := events.GetArg(event.Args, "payload")
 	if payloadArg == nil {
 		return nil, noPayloadError()
 	}

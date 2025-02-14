@@ -9,6 +9,7 @@ import (
 	"github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
@@ -116,10 +117,50 @@ func (ctrl *Controller) processSignal(signal *signal) error {
 	case events.SignalCgroupRmdir:
 		return ctrl.processCgroupRmdir(signal.args)
 	case events.SignalSchedProcessFork:
+		err := events.NormalizeTimeArgs(
+			signal.args,
+			[]string{
+				"timestamp",
+				"parent_process_start_time",
+				"leader_start_time",
+				"start_time",
+			},
+		)
+		if err != nil {
+			signalName := events.Core.GetDefinitionByID(signal.id).GetName()
+			return errfmt.Errorf("error normalizing time args for signal %s: %v", signalName, err)
+		}
+
 		return ctrl.procTreeForkProcessor(signal.args)
 	case events.SignalSchedProcessExec:
+		err := events.NormalizeTimeArgs(
+			signal.args,
+			[]string{
+				"timestamp",
+				"task_start_time",
+				"parent_start_time",
+				"leader_start_time",
+			},
+		)
+		if err != nil {
+			signalName := events.Core.GetDefinitionByID(signal.id).GetName()
+			return errfmt.Errorf("error normalizing time args for signal %s: %v", signalName, err)
+		}
+
 		return ctrl.procTreeExecProcessor(signal.args)
 	case events.SignalSchedProcessExit:
+		err := events.NormalizeTimeArgs(
+			signal.args,
+			[]string{
+				"timestamp",
+				"task_start_time",
+			},
+		)
+		if err != nil {
+			signalName := events.Core.GetDefinitionByID(signal.id).GetName()
+			return errfmt.Errorf("error normalizing time args for signal %s: %v", signalName, err)
+		}
+
 		return ctrl.procTreeExitProcessor(signal.args)
 	}
 

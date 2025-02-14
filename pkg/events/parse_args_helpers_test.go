@@ -70,9 +70,9 @@ func TestParseMMapProt(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseMMapProt(GetArg(event, "prot"), testCase.args[0].Value.(uint64))
+			parseMMapProt(GetArg(event.Args, "prot"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -135,9 +135,9 @@ func TestParseSocketDomainArgument(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseSocketDomainArgument(GetArg(event, "domain"), testCase.args[0].Value.(uint64))
+			parseSocketDomainArgument(GetArg(event.Args, "domain"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -207,7 +207,7 @@ func TestParseSocketType(t *testing.T) {
 			err := ParseArgs(event)
 			require.NoError(t, err)
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -268,9 +268,9 @@ func TestParseInodeMode(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseInodeMode(GetArg(event, "mode"), testCase.args[0].Value.(uint64))
+			parseInodeMode(GetArg(event.Args, "mode"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -333,9 +333,9 @@ func TestParseBPFProgType(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseBPFProgType(GetArg(event, "type"), testCase.args[0].Value.(uint64))
+			parseBPFProgType(GetArg(event.Args, "type"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -398,9 +398,9 @@ func TestParseCapability(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseCapability(GetArg(event, "capability"), testCase.args[0].Value.(uint64))
+			parseCapability(GetArg(event.Args, "capability"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -442,9 +442,9 @@ func TestParseMemProtAlert(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseMemProtAlert(GetArg(event, "alert"), testCase.args[0].Value.(uint32))
+			parseMemProtAlert(GetArg(event.Args, "alert"), testCase.args[0].Value.(uint32))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -507,9 +507,9 @@ func TestParseSyscall(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseSyscall(GetArg(event, "id"), testCase.args[0].Value.(int32))
+			parseSyscall(GetArg(event.Args, "id"), testCase.args[0].Value.(int32))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -572,9 +572,9 @@ func TestParsePtraceRequestArgument(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parsePtraceRequestArgument(GetArg(event, "req"), testCase.args[0].Value.(uint64))
+			parsePtraceRequestArgument(GetArg(event.Args, "req"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -637,9 +637,9 @@ func TestParsePrctlOption(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parsePrctlOption(GetArg(event, "opt"), testCase.args[0].Value.(uint64))
+			parsePrctlOption(GetArg(event.Args, "opt"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -702,9 +702,9 @@ func TestParseSocketcallCall(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseSocketcallCall(GetArg(event, "call"), testCase.args[0].Value.(uint64))
+			parseSocketcallCall(GetArg(event.Args, "call"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -768,9 +768,9 @@ func TestParseAccessMode(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseAccessMode(GetArg(event, "mode"), testCase.args[0].Value.(uint64))
+			parseAccessMode(GetArg(event.Args, "mode"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -833,9 +833,9 @@ func TestParseExecveatFlag(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseExecveatFlag(GetArg(event, "flags"), testCase.args[0].Value.(uint64))
+			parseExecveatFlag(GetArg(event.Args, "flags"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -899,9 +899,9 @@ func TestParseOpenFlagArgument(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseOpenFlagArgument(GetArg(event, "flags"), testCase.args[0].Value.(uint64))
+			parseOpenFlagArgument(GetArg(event.Args, "flags"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -984,9 +984,9 @@ func TestParseCloneFlags(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseCloneFlags(GetArg(event, "flags"), testCase.args[0].Value.(uint64))
+			parseCloneFlags(GetArg(event.Args, "flags"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -1049,9 +1049,9 @@ func TestParseBPFCmd(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseBPFCmd(GetArg(event, "cmd"), testCase.args[0].Value.(uint64))
+			parseBPFCmd(GetArg(event.Args, "cmd"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -1114,9 +1114,9 @@ func TestParseSocketLevel(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseSocketLevel(GetArg(event, "level"), testCase.args[0].Value.(uint64))
+			parseSocketLevel(GetArg(event.Args, "level"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -1179,9 +1179,9 @@ func TestParseGetSocketOption(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseGetSocketOption(GetArg(event, "optname"), testCase.args[0].Value.(uint64), Getsockopt)
+			parseGetSocketOption(GetArg(event.Args, "optname"), testCase.args[0].Value.(uint64), Getsockopt)
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -1244,9 +1244,9 @@ func TestParseFsNotifyObjType(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseFsNotifyObjType(GetArg(event, "objType"), testCase.args[0].Value.(uint64))
+			parseFsNotifyObjType(GetArg(event.Args, "objType"), testCase.args[0].Value.(uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -1310,9 +1310,9 @@ func TestParseBpfHelpersUsage(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseBpfHelpersUsage(GetArg(event, "helpersList"), testCase.args[0].Value.([]uint64))
+			parseBpfHelpersUsage(GetArg(event.Args, "helpersList"), testCase.args[0].Value.([]uint64))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})
@@ -1375,9 +1375,9 @@ func TestParseBpfAttachType(t *testing.T) {
 			event := &trace.Event{
 				Args: testCase.args,
 			}
-			parseBpfAttachType(GetArg(event, "attachType"), testCase.args[0].Value.(int32))
+			parseBpfAttachType(GetArg(event.Args, "attachType"), testCase.args[0].Value.(int32))
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := GetArg(event.Args, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		})

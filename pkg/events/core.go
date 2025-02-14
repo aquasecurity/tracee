@@ -13195,10 +13195,15 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"signal"},
 		fields: []trace.ArgMeta{
+			// time
 			{Type: "u64", Name: "timestamp"},
-			{Type: "u32", Name: "task_hash"},
-			{Type: "u32", Name: "parent_hash"},
-			{Type: "u32", Name: "leader_hash"},
+			{Type: "u64", Name: "task_start_time"},
+			{Type: "u64", Name: "parent_start_time"},
+			{Type: "u64", Name: "leader_start_time"},
+			// pid
+			{Type: "int", Name: "task_pid"},
+			{Type: "int", Name: "parent_pid"},
+			{Type: "int", Name: "leader_pid"},
 			// command
 			{Type: "const char*", Name: "cmdpath"},
 			{Type: "const char*", Name: "pathname"},
@@ -13232,9 +13237,8 @@ var CoreEvents = map[ID]Definition{
 		sets: []string{"signal"},
 		fields: []trace.ArgMeta{
 			{Type: "u64", Name: "timestamp"},
-			{Type: "u32", Name: "task_hash"},
-			{Type: "u32", Name: "parent_hash"},
-			{Type: "u32", Name: "leader_hash"},
+			{Type: "u64", Name: "task_start_time"},
+			{Type: "int", Name: "task_pid"},
 			{Type: "int", Name: "exit_code"},
 			{Type: "int", Name: "signal_code"},
 			{Type: "bool", Name: "process_group_exit"},

@@ -19,7 +19,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/filehash"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -105,7 +104,7 @@ func (t *Tracee) processReadEvent(event *trace.Event) error {
 
 // processKernelReadFile processes a security read event and changes the read type value.
 func processKernelReadFile(event *trace.Event) error {
-	readTypeArg := events.GetArg(event, "type")
+	readTypeArg := events.GetArg(event.Args, "type")
 	readTypeInt, ok := readTypeArg.Value.(int32)
 	if !ok {
 		return errfmt.Errorf("missing argument %s in event %s", "type", event.EventName)
@@ -355,24 +354,14 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 //
 
 // normalizeTimeArg returns a processor function for some argument name
-// which normalizes said event arg time from boot monotonic to epoch
+// which normalizes said event arg time to nanoseconds since the epoch.
 func (t *Tracee) normalizeTimeArg(argNames ...string) func(event *trace.Event) error {
 	return func(event *trace.Event) error {
-		for _, argName := range argNames {
-			arg := events.GetArg(event, argName)
-			if arg == nil {
-				return errfmt.Errorf("couldn't find argument %s of event %s", argName, event.EventName)
-			}
-			if arg.Value == nil {
-				continue
-			}
-
-			argTime, ok := arg.Value.(uint64)
-			if !ok {
-				return errfmt.Errorf("argument %s of event %s is not uint64, it is %T", argName, event.EventName, arg.Value)
-			}
-			arg.Value = time.BootToEpochNS(argTime)
+		err := events.NormalizeTimeArgs(event.Args, argNames)
+		if err != nil {
+			return errfmt.Errorf("error normalizing time args for event %s: %v", event.EventName, err)
 		}
+
 		return nil
 	}
 }
@@ -489,7 +478,7 @@ func (t *Tracee) removeIrrelevantContext(event *trace.Event) error {
 }
 
 func (t *Tracee) convertSyscallIDToName(event *trace.Event) error {
-	syscallArg := events.GetArg(event, "syscall")
+	syscallArg := events.GetArg(event.Args, "syscall")
 	if syscallArg == nil {
 		return errfmt.Errorf("cannot find syscall argument")
 	}
