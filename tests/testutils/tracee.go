@@ -16,13 +16,13 @@ import (
 const (
 	readinessPollTime           = 200 * time.Millisecond
 	httpRequestTimeout          = 1 * time.Second
-	TraceeDefaultStartupTimeout = 10 * time.Second
+	TraceeDefaultStartupTimeout = 15 * time.Second
 )
 
 var (
 	TraceeBinary   = "../../dist/tracee"
 	TraceeHostname = "localhost"
-	TraceePort     = 3366
+	TraceePort     = 3369
 )
 
 type TraceeStatus int
@@ -51,6 +51,10 @@ func NewRunningTracee(givenCtx context.Context, cmdLine string) *RunningTracee {
 	// Add healthz flag if not present (required for readiness check)
 	if !strings.Contains(cmdLine, "--healthz") {
 		cmdLine = fmt.Sprintf("--healthz %s", cmdLine)
+	}
+
+	if !strings.Contains(cmdLine, "--http-listen-addr") {
+		cmdLine = fmt.Sprintf("--http-listen-addr=:%d %s", TraceePort, cmdLine)
 	}
 
 	cmdLine = fmt.Sprintf("%s %s", TraceeBinary, cmdLine)

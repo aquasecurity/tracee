@@ -96,8 +96,8 @@ func checkIfPprofExist() error {
 //
 // for the user running the tests.
 
-// TestMetricsExist tests if the metrics endpoint returns all metrics.
-func TestMetricsandPprofExist(t *testing.T) {
+// TestMetricsAndPprofExist tests if the metrics endpoint returns all metrics.
+func TestMetricsAndPprofExist(t *testing.T) {
 	// Make sure we don't leak any goroutines since we run Tracee many times in this test.
 	// If a test case fails, ignore the leak since it's probably caused by the aborted test.
 	defer goleak.VerifyNone(t)
@@ -107,11 +107,16 @@ func TestMetricsandPprofExist(t *testing.T) {
 	}
 
 	cmd := "--output none --events=syslog --metrics --pprof"
+	cmd = fmt.Sprintf("--http-listen-addr=:%d %s", testutils.TraceePort, cmd)
 	running := testutils.NewRunningTracee(context.Background(), cmd)
 
 	// start tracee
 	ready, runErr := running.Start(testutils.TraceeDefaultStartupTimeout)
 	require.NoError(t, runErr)
+	defer func() {
+		err := running.Stop()
+		require.Empty(t, err)
+	}()
 
 	r := <-ready // block until tracee is ready (or not)
 	switch r {
@@ -130,7 +135,4 @@ func TestMetricsandPprofExist(t *testing.T) {
 	// check if all metrics exist
 	require.NoError(t, metricsErr)
 	require.NoError(t, pprofErr)
-
-	cmdErrs := running.Stop() // stop tracee
-	require.Empty(t, cmdErrs)
 }
