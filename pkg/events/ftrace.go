@@ -60,7 +60,7 @@ func GetFtraceBaseEvent() *trace.Event {
 
 // FtraceHookEvent check for ftrace hooks periodically and reports them.
 // It wakes up every random time to check if there was a change in the hooks.
-func FtraceHookEvent(eventsCounter counter.Counter, out chan *trace.Event, baseEvent *trace.Event, selfLoadedProgs map[string]int) {
+func FtraceHookEvent(eventsCounter *counter.Counter, out chan *trace.Event, baseEvent *trace.Event, selfLoadedProgs map[string]int) {
 	if reportedFtraceHooks == nil { // Failed allocating cache - no point in running
 		return
 	}
@@ -129,7 +129,7 @@ func initFtraceArgs(fields []trace.ArgMeta) []trace.Argument {
 }
 
 // checkFtraceHooks checks for ftrace hooks
-func checkFtraceHooks(eventsCounter counter.Counter, out chan *trace.Event, baseEvent *trace.Event, ftraceDef *Definition, selfLoadedProgs map[string]int) error {
+func checkFtraceHooks(eventsCounter *counter.Counter, out chan *trace.Event, baseEvent *trace.Event, ftraceDef *Definition, selfLoadedProgs map[string]int) error {
 	ftraceHooksBytes, err := getFtraceHooksData()
 	if err != nil {
 		return err

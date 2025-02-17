@@ -340,7 +340,12 @@ func (p tableEventPrinter) Print(event trace.Event) {
 func (p tableEventPrinter) Epilogue(stats metrics.Stats) {
 	fmt.Println()
 	fmt.Fprintf(p.out, "End of events stream\n")
-	fmt.Fprintf(p.out, "Stats: %+v\n", stats)
+
+	jsonStats, err := stats.MarshalJSON()
+	if err != nil {
+		logger.Errorw("Error marshaling stats to json", "error", err)
+	}
+	fmt.Fprintf(p.out, "%s\n", string(jsonStats))
 }
 
 func (p tableEventPrinter) Close() {

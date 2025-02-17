@@ -1,6 +1,7 @@
 package counter
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -12,8 +13,8 @@ type Counter struct {
 	value uint64
 }
 
-func NewCounter(initialValue uint64) Counter {
-	return Counter{value: initialValue}
+func NewCounter(initialValue uint64) *Counter {
+	return &Counter{value: initialValue}
 }
 
 // Increment
@@ -92,6 +93,12 @@ func (c *Counter) Get() uint64 {
 	return atomic.LoadUint64(&c.value)
 }
 
+// Stringer and JSON Marshaler interfaces
+
 func (c *Counter) Format(f fmt.State, r rune) {
 	f.Write([]byte(strconv.FormatUint(c.Get(), 10)))
+}
+
+func (c *Counter) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.Get())
 }

@@ -23,7 +23,7 @@ type Context interface {
 type context struct {
 	store   map[uint64]trace.Event
 	mutex   *sync.Mutex
-	counter counter.Counter
+	counter *counter.Counter
 }
 
 // NewContext creates a new context store.

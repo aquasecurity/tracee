@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"encoding/json"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/aquasecurity/tracee/pkg/counter"
@@ -71,4 +73,10 @@ func (ec *EventCollector) Log() {
 	// Log the counts
 	keyVals = append(keyVals, "total", total.Get())
 	logger.Infow(description, keyVals...)
+}
+
+// JSON marshaler interface
+
+func (ec *EventCollector) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ec.Total())
 }
