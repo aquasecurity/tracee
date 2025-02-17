@@ -97,7 +97,7 @@ func checkIfPprofExist() error {
 // for the user running the tests.
 
 // TestMetricsExist tests if the metrics endpoint returns all metrics.
-func TestMetricsandPprofExist(t *testing.T) {
+func TestMetricsAndPprofExist(t *testing.T) {
 	// Make sure we don't leak any goroutines since we run Tracee many times in this test.
 	// If a test case fails, ignore the leak since it's probably caused by the aborted test.
 	defer goleak.VerifyNone(t)
@@ -106,7 +106,7 @@ func TestMetricsandPprofExist(t *testing.T) {
 		t.Skip("skipping: sudo command is not available for this user")
 	}
 
-	cmd := "--output none --events=syslog --metrics --pprof"
+	cmd := "--output none --events=syslog --server http.metrics --server http.pprof"
 	running := testutils.NewRunningTracee(context.Background(), cmd)
 
 	// start tracee
