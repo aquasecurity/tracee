@@ -178,23 +178,23 @@ ifeq ("$(RELEASE_GITHUB)", "1")
 # must be deleted so the next triggered action can recreate it updated.
 # note: docker TAGS created by release workflows (not here).
 	@( \
-		$(CMD_GITHUB) release view $(SNAPSHOT_VERSION) > /dev/null 2>&1 && \
-		echo "Release $(SNAPSHOT_VERSION) already exists" \
+		$(CMD_GITHUB) release view $(RELEASE_VERSION) > /dev/null 2>&1 && \
+		echo "Release $(RELEASE_VERSION) already exists" \
 	) || \
 	( \
-		echo "Creating release $(SNAPSHOT_VERSION)" && \
+		echo "Creating release $(RELEASE_VERSION)" && \
 		echo '## Docker Image' > $(RELEASE_NOTES) && \
 		echo '- `docker pull docker.io/$(DOCKER_REPO):$(DOCKER_TAG)`' >> $(RELEASE_NOTES) && \
 		echo '  ' >> $(RELEASE_NOTES) && \
 		echo '## Docker Images (per architecture)  ' >> $(RELEASE_NOTES) && \
 		echo '- `docker pull docker.io/$(DOCKER_REPO):x86_64-$(DOCKER_TAG)`' >> $(RELEASE_NOTES) && \
 		echo '- `docker pull docker.io/$(DOCKER_REPO):aarch64-$(DOCKER_TAG)`' >> $(RELEASE_NOTES) && \
-		$(CMD_GITHUB) release create $(SNAPSHOT_VERSION) --title $(SNAPSHOT_VERSION) --notes-file $(RELEASE_NOTES) \
+		$(CMD_GITHUB) release create $(RELEASE_VERSION) --title $(RELEASE_VERSION) --notes-file $(RELEASE_NOTES) \
 	)
 
 # upload artifacts to release (clobbering existing with same name)
-	@echo "Uploading artifacts to release $(SNAPSHOT_VERSION)" && \
-		$(CMD_GITHUB) release upload --clobber $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS)
+	@echo "Uploading artifacts to release $(RELEASE_VERSION)" && \
+		$(CMD_GITHUB) release upload --clobber $(RELEASE_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS)
 endif
 
 
