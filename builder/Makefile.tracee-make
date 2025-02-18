@@ -166,6 +166,8 @@ ifeq ($(BTFHUB), 1)
     DOCKER_RUN_ENV += -e BTFHUB=1
 endif
 
+DOCKER_RUN_ENV += -e RELEASE_VERSION=$(RELEASE_VERSION)
+
 DOCKER_RUN_ARGS = run --rm \
 	--pid=host --cgroupns=host --network=host --privileged \
 	-v /etc/os-release:/etc/os-release-host:ro \

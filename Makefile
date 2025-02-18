@@ -150,8 +150,9 @@ GO_VERSION_MIN = $(shell echo $(GO_VERSION) | $(CMD_CUT) -d'.' -f2)
 # version
 #
 
-LAST_GIT_TAG ?= $(shell $(CMD_GIT) describe --tags --match 'v*' 2>/dev/null)
-VERSION ?= $(if $(RELEASE_TAG),$(RELEASE_TAG),$(LAST_GIT_TAG))
+# LAST_GIT format: <branch>-<commit>
+LAST_GIT ?= $(shell $(CMD_GIT) symbolic-ref --short HEAD 2>/dev/null)-$(shell $(CMD_GIT) rev-parse --short HEAD)
+VERSION ?= $(if $(RELEASE_VERSION),$(RELEASE_VERSION),$(LAST_GIT))
 
 #
 # environment
@@ -218,7 +219,7 @@ env:
 	@echo "LIB_BPF                  $(LIB_BPF)"
 	@echo ---------------------------------------
 	@echo "VERSION                  $(VERSION)"
-	@echo "LAST_GIT_TAG             $(LAST_GIT_TAG)"
+	@echo "LAST_GIT                 $(LAST_GIT)"
 	@echo ---------------------------------------
 	@echo "UNAME_M                  $(UNAME_M)"
 	@echo "UNAME_R                  $(UNAME_R)"
