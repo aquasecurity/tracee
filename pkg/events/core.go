@@ -116,6 +116,7 @@ const (
 	SecurityTaskSetrlimit
 	SecuritySettime64
 	ChmodCommon
+	SecurityTaskPrctl
 	MaxCommonID
 )
 
@@ -13102,6 +13103,63 @@ var CoreEvents = map[ID]Definition{
 			{Type: "void*", Name: "vma_start"},
 			{Type: "unsigned long", Name: "vma_size"},
 			{Type: "unsigned long", Name: "vma_flags"},
+		},
+	},
+	SecurityTaskPrctl: {
+		id:      SecurityTaskPrctl,
+		id32Bit: Sys32Undefined,
+		name:    "security_task_prctl",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SecurityTaskPrctl, required: true},
+			},
+		},
+		sets: []string{"lsm", "proc"},
+		fields: []trace.ArgMeta{
+			{Type: "int", Name: "option"},
+			{Type: "unsigned long", Name: "arg2"},
+			{Type: "unsigned long", Name: "arg3"},
+			{Type: "unsigned long", Name: "arg4"},
+			{Type: "unsigned long", Name: "arg5"},
+			// for PR_SET_VMA
+			{Type: "char*", Name: "vma_name"},
+			// the following fields are for PR_SET_MM
+			{Type: "void*", Name: "old_start_code"},
+			{Type: "void*", Name: "old_end_code"},
+			{Type: "void*", Name: "old_start_data"},
+			{Type: "void*", Name: "old_end_data"},
+			{Type: "void*", Name: "old_start_brk"},
+			{Type: "void*", Name: "old_brk"},
+			{Type: "void*", Name: "old_start_stack"},
+			{Type: "void*", Name: "old_arg_start"},
+			{Type: "void*", Name: "old_arg_end"},
+			{Type: "void*", Name: "old_env_start"},
+			{Type: "void*", Name: "old_env_end"},
+			{Type: "bytes", Name: "old_auxv"},
+			{Type: "const char*", Name: "old_pathname"},
+			{Type: "dev_t", Name: "old_dev"},
+			{Type: "unsigned long", Name: "old_inode"},
+			{Type: "unsigned long", Name: "old_ctime"},
+			{Type: "umode_t", Name: "old_inode_mode"},
+			{Type: "void*", Name: "new_start_code"},
+			{Type: "void*", Name: "new_end_code"},
+			{Type: "void*", Name: "new_start_data"},
+			{Type: "void*", Name: "new_end_data"},
+			{Type: "void*", Name: "new_start_brk"},
+			{Type: "void*", Name: "new_brk"},
+			{Type: "void*", Name: "new_start_stack"},
+			{Type: "void*", Name: "new_arg_start"},
+			{Type: "void*", Name: "new_arg_end"},
+			{Type: "void*", Name: "new_env_start"},
+			{Type: "void*", Name: "new_env_end"},
+			{Type: "bytes", Name: "new_auxv"},
+			{Type: "const char*", Name: "new_pathname"},
+			{Type: "dev_t", Name: "new_dev"},
+			{Type: "unsigned long", Name: "new_inode"},
+			{Type: "unsigned long", Name: "new_ctime"},
+			{Type: "umode_t", Name: "new_inode_mode"},
+			// for PR_SET_SECUREBITS
+			{Type: "unsigned int", Name: "old_securebits"},
 		},
 	},
 	//
