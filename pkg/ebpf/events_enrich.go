@@ -6,7 +6,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
@@ -63,7 +62,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	)
 
 	type enrichResult struct {
-		result runtime.ContainerMetadata
+		result containers.Container
 		err    error
 	}
 
@@ -238,24 +237,24 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	return out, errc
 }
 
-func enrichEvent(evt *trace.Event, enrichData runtime.ContainerMetadata) {
+func enrichEvent(evt *trace.Event, cont containers.Container) {
 	evt.Container = trace.Container{
-		ID:          enrichData.ContainerId,
-		ImageName:   enrichData.Image,
-		ImageDigest: enrichData.ImageDigest,
-		Name:        enrichData.Name,
+		ID:          cont.ContainerId,
+		ImageName:   cont.Image,
+		ImageDigest: cont.ImageDigest,
+		Name:        cont.Name,
 	}
 	evt.Kubernetes = trace.Kubernetes{
-		PodName:      enrichData.Pod.Name,
-		PodNamespace: enrichData.Pod.Namespace,
-		PodUID:       enrichData.Pod.UID,
+		PodName:      cont.Pod.Name,
+		PodNamespace: cont.Pod.Namespace,
+		PodUID:       cont.Pod.UID,
 	}
 }
 
 // isCgroupEventInHid checks if cgroup event is relevant for deriving container event in its hierarchy id.
 // in tracee we only care about containers inside the cpuset controller, as such other hierarchy ids will lead
 // to a failed query.
-func isCgroupEventInHid(event *trace.Event, cts *containers.Containers) (bool, error) {
+func isCgroupEventInHid(event *trace.Event, cts *containers.Manager) (bool, error) {
 	if cts.GetCgroupVersion() == cgroup.CgroupVersion2 {
 		return true, nil
 	}

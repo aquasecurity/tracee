@@ -102,7 +102,7 @@ type Tracee struct {
 	lostBPFLogChannel   chan uint64 // channel for lost bpf logs
 	// Containers
 	cgroups           *cgroup.Cgroups
-	containers        *containers.Containers
+	containers        *containers.Manager
 	contPathResolver  *containers.ContainerPathResolver
 	contSymbolsLoader *sharedobjs.ContainersSymbolsLoader
 	// Control Plane

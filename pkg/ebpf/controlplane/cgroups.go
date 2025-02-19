@@ -26,11 +26,11 @@ func (ctrl *Controller) processCgroupMkdir(args []trace.Argument) error {
 	if err != nil {
 		return errfmt.Errorf("error parsing cgroup_mkdir signal args: %v", err)
 	}
-	info, err := ctrl.cgroupManager.CgroupMkdir(cgroupId, path, hId)
+	info, _, err := ctrl.cgroupManager.CgroupMkdir(cgroupId, path, hId)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	if info.Container.ContainerId == "" && !info.Dead {
+	if info.ContainerId == "" && !info.Dead {
 		// If cgroupId is from a regular cgroup directory, and not a container related directory
 		// (from known runtimes), it should be removed from the containers bpf map.
 		err := capabilities.GetInstance().EBPF(
