@@ -26,36 +26,29 @@ func DockerEnricher(socket string) (ContainerEnricher, error) {
 	return enricher, nil
 }
 
-func (e *dockerEnricher) Get(ctx context.Context, containerId string) (ContainerMetadata, error) {
-	metadata := ContainerMetadata{
-		ContainerId: containerId,
-	}
+func (e *dockerEnricher) Get(ctx context.Context, containerId string) (EnrichResult, error) {
+	res := EnrichResult{}
 	resp, err := e.client.ContainerInspect(ctx, containerId)
 	if err != nil {
-		return metadata, errfmt.WrapError(err)
+		return res, errfmt.WrapError(err)
 	}
 	container := (*resp.ContainerJSONBase)
-	metadata.Name = container.Name
 
 	// Docker prefixes a '/' token to local containers.
 	// This can cause some confusion so we remove it if relevant.
-	if strings.HasPrefix(metadata.Name, "/") {
-		metadata.Name = container.Name[1:]
-	}
+	res.ContName = strings.TrimPrefix(container.Name, "/")
 
 	// get initial image name from docker's container config
 	if resp.Config != nil {
-		metadata.Image = resp.Config.Image
+		res.Image = resp.Config.Image
 
 		// if in k8s extract pod data from the labels
 		if resp.Config.Labels != nil {
 			labels := resp.Config.Labels
-			metadata.Pod = PodMetadata{
-				Name:      labels[PodNameLabel],
-				Namespace: labels[PodNamespaceLabel],
-				UID:       labels[PodUIDLabel],
-				Sandbox:   e.isSandbox(labels),
-			}
+			res.PodName = labels[PodNameLabel]
+			res.Namespace = labels[PodNamespaceLabel]
+			res.UID = labels[PodUIDLabel]
+			res.Sandbox = e.isSandbox(labels)
 		}
 	}
 
@@ -64,21 +57,21 @@ func (e *dockerEnricher) Get(ctx context.Context, containerId string) (Container
 	image, err := e.client.ImageInspect(ctx, imageId)
 	if err != nil {
 		// if we can't fetch the image or image has no name, return the metadata with the image found in config
-		return metadata, nil
+		return res, nil
 	}
 
 	if len(image.RepoTags) == 0 {
-		return metadata, nil
+		return res, nil
 	}
 	imageName := image.RepoTags[0]
-	metadata.Image = imageName
+	res.Image = imageName
 
 	if len(image.RepoDigests) == 0 {
-		return metadata, nil
+		return res, nil
 	}
-	metadata.ImageDigest = image.RepoDigests[0]
+	res.ImageDigest = image.RepoDigests[0]
 
-	return metadata, nil
+	return res, nil
 }
 
 func (e *dockerEnricher) isSandbox(labels map[string]string) bool {

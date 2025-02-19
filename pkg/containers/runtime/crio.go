@@ -30,36 +30,32 @@ func CrioEnricher(socket string) (ContainerEnricher, error) {
 	return enricher, nil
 }
 
-func (e *crioEnricher) Get(ctx context.Context, containerId string) (ContainerMetadata, error) {
-	metadata := ContainerMetadata{
-		ContainerId: containerId,
-	}
+func (e *crioEnricher) Get(ctx context.Context, containerId string) (EnrichResult, error) {
+	res := EnrichResult{}
 	resp, err := e.client.ContainerStatus(context.Background(), &cri.ContainerStatusRequest{
 		ContainerId: containerId,
 		Verbose:     true,
 	})
 	if err != nil {
-		return metadata, errfmt.WrapError(err)
+		return res, errfmt.WrapError(err)
 	}
 
 	// if in k8s we can extract pod info from labels
 	labels := resp.Status.Labels
 	if labels != nil {
-		metadata.Pod = PodMetadata{
-			Name:      labels[PodNameLabel],
-			Namespace: labels[PodNamespaceLabel],
-			UID:       labels[PodUIDLabel],
-		}
+		res.PodName = labels[PodNameLabel]
+		res.Namespace = labels[PodNamespaceLabel]
+		res.UID = labels[PodUIDLabel]
 	}
 	annotations := resp.Status.Annotations
 	if annotations != nil {
-		metadata.Pod.Sandbox = e.isSandbox(annotations)
+		res.Sandbox = e.isSandbox(annotations)
 	}
-	metadata.Name = resp.Status.Metadata.Name
-	metadata.Image = resp.Status.Image.Image
-	metadata.ImageDigest = resp.Status.ImageRef
+	res.ContName = resp.Status.Metadata.Name
+	res.Image = resp.Status.Image.Image
+	res.ImageDigest = resp.Status.ImageRef
 
-	return metadata, nil
+	return res, nil
 }
 
 func (e *crioEnricher) isSandbox(annotations map[string]string) bool {

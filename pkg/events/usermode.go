@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	traceeversion "github.com/aquasecurity/tracee/pkg/version"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -114,17 +113,17 @@ func fetchInitNamespaces() map[string]uint32 {
 }
 
 // ExistingContainersEvents returns a list of events for each existing container
-func ExistingContainersEvents(cts *containers.Containers, enrichDisabled bool) []trace.Event {
+func ExistingContainersEvents(cts *containers.Manager, enrichDisabled bool) []trace.Event {
 	var events []trace.Event
 
 	def := Core.GetDefinitionByID(ExistingContainer)
-	existingContainers := cts.GetContainers()
-	for id, info := range existingContainers {
+	existingContainers := cts.GetLiveContainers()
+	for id, container := range existingContainers {
 		cgroupId := uint64(id)
-		cRuntime := info.Runtime.String()
-		containerId := info.Container.ContainerId
-		ctime := info.Ctime.UnixNano()
-		container := runtime.ContainerMetadata{}
+		cRuntime := container.Runtime.String()
+		containerId := container.ContainerId
+		ctime := container.CreatedAt.UnixNano()
+		container := containers.Container{}
 		if !enrichDisabled {
 			container, _ = cts.EnrichCgroupInfo(cgroupId)
 		}

@@ -4,21 +4,6 @@ import (
 	"context"
 )
 
-type ContainerMetadata struct {
-	ContainerId string
-	Name        string
-	Image       string
-	ImageDigest string
-	Pod         PodMetadata
-}
-
-type PodMetadata struct {
-	Name      string
-	Namespace string
-	UID       string
-	Sandbox   bool
-}
-
 // These labels are injected by kubelet on container creation, we can use them to gather additional data in a k8s context
 const (
 	PodNameLabel                 = "io.kubernetes.pod.name"
@@ -30,8 +15,20 @@ const (
 	ContainerTypeCrioAnnotation  = "io.kubernetes.cri-o.ContainerType"
 )
 
+type EnrichResult struct {
+	/* CONTAINER RESULTS */
+	ContName    string
+	Image       string
+	ImageDigest string
+	/* POD RESULTS */
+	PodName   string
+	Namespace string
+	UID       string
+	Sandbox   bool
+}
+
 type ContainerEnricher interface {
-	Get(ctx context.Context, containerId string) (ContainerMetadata, error)
+	Get(ctx context.Context, containerId string) (EnrichResult, error)
 }
 
 // Represents the internal ID of a container runtime

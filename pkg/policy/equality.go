@@ -163,7 +163,7 @@ func updateAffixEqualities[T comparable](
 // updating the provided filtersEqualities struct.
 func (ps *policies) computeFilterEqualities(
 	fEqs *filtersEqualities,
-	cts *containers.Containers,
+	cts *containers.Manager,
 ) error {
 	for _, p := range ps.allFromMap() {
 		policyID := uint(p.ID)

@@ -1,12 +1,9 @@
 package containers
 
 import (
-	"bufio"
 	"context"
 	"errors"
-	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -18,27 +15,44 @@ import (
 	"github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/cgroup"
-	cruntime "github.com/aquasecurity/tracee/pkg/containers/runtime"
+	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/k8s"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
-// Containers contains information about running containers in the host.
-type Containers struct {
+type Container struct {
+	ContainerId string
+	CreatedAt   time.Time
+	Runtime     runtime.RuntimeId
+	Name        string
+	Image       string
+	ImageDigest string
+	Pod         Pod
+}
+
+type Pod struct {
+	Name      string
+	Namespace string
+	UID       string
+	Sandbox   bool
+}
+
+// Manager contains information about running containers in the host.
+type Manager struct {
 	cgroups      *cgroup.Cgroups
-	cgroupsMap   map[uint32]CgroupInfo
+	cgroupsMap   map[uint32]CgroupDir
+	containerMap map[string]Container
 	deleted      []uint64
-	cgroupsMutex sync.RWMutex // protecting both cgroups and deleted fields
-	enricher     runtimeInfoService
+	lock         sync.RWMutex // protecting both cgroups and deleted fields
+	enricher     runtime.Service
 	bpfMapName   string
 }
 
-// CgroupInfo represents a cgroup dir (might describe a container cgroup dir).
-type CgroupInfo struct {
+// CgroupDir represents a cgroup dir (which may be a container cgroup dir).
+type CgroupDir struct {
 	Path          string
-	Container     cruntime.ContainerMetadata
-	Runtime       cruntime.RuntimeId
+	ContainerId   string
 	ContainerRoot bool // is the cgroup directory the root of its container
 	Ctime         time.Time
 	Dead          bool // is the cgroup deleted
@@ -50,38 +64,39 @@ type CgroupInfo struct {
 func New(
 	noContainersEnrich bool,
 	cgroups *cgroup.Cgroups,
-	sockets cruntime.Sockets,
+	sockets runtime.Sockets,
 	mapName string,
 ) (
-	*Containers,
+	*Manager,
 	error,
 ) {
-	containers := &Containers{
+	containers := &Manager{
 		cgroups:      cgroups,
-		cgroupsMap:   make(map[uint32]CgroupInfo),
-		cgroupsMutex: sync.RWMutex{},
+		cgroupsMap:   make(map[uint32]CgroupDir),
+		containerMap: make(map[string]Container),
+		lock:         sync.RWMutex{},
 		bpfMapName:   mapName,
 	}
 
 	// Attempt to register enrichers for all supported runtimes.
 
 	if !noContainersEnrich {
-		runtimeService := RuntimeInfoService(sockets)
+		runtimeService := runtime.NewService(sockets)
 
-		err := runtimeService.Register(cruntime.Containerd, cruntime.ContainerdEnricher)
+		err := runtimeService.Register(runtime.Containerd, runtime.ContainerdEnricher)
 		if err != nil {
 			logger.Debugw("Enricher", "error", err)
 		}
-		err = runtimeService.Register(cruntime.Crio, cruntime.CrioEnricher)
+		err = runtimeService.Register(runtime.Crio, runtime.CrioEnricher)
 		if err != nil {
 			logger.Debugw("Enricher", "error", err)
 		}
-		err = runtimeService.Register(cruntime.Docker, cruntime.DockerEnricher)
+		err = runtimeService.Register(runtime.Docker, runtime.DockerEnricher)
 		if err != nil {
 			logger.Debugw("Enricher", "error", err)
 		}
 		// Docker enricher also works for podman (compatible HTTP apis)
-		err = runtimeService.Register(cruntime.Podman, cruntime.DockerEnricher)
+		err = runtimeService.Register(runtime.Podman, runtime.DockerEnricher)
 		if err != nil {
 			logger.Debugw("Enricher", "error", err)
 		}
@@ -93,51 +108,27 @@ func New(
 }
 
 // Close executes cleanup logic for Containers object.
-func (c *Containers) Close() error {
+func (c *Manager) Close() error {
 	return nil
 }
 
-func (c *Containers) GetDefaultCgroupHierarchyID() int {
+func (c *Manager) GetDefaultCgroupHierarchyID() int {
 	return c.cgroups.GetDefaultCgroupHierarchyID()
 }
 
-func (c *Containers) GetCgroupVersion() cgroup.CgroupVersion {
+func (c *Manager) GetCgroupVersion() cgroup.CgroupVersion {
 	return c.cgroups.GetDefaultCgroup().GetVersion()
 }
 
 // Populate populates Containers struct by reading mounted proc and cgroups fs.
-func (c *Containers) Populate() error {
-	c.cgroupsMutex.Lock()
-	defer c.cgroupsMutex.Unlock()
+func (c *Manager) Populate() error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	return c.populate()
 }
 
-// GetContainerIdFromTaskDir gets a containerID from a given task or process
-// directory path.
-func GetContainerIdFromTaskDir(taskPath string) (string, error) {
-	containerId := ""
-	taskPath = fmt.Sprintf("%s/cgroup", taskPath)
-	cgroupFile, err := os.Open(taskPath)
-	if err != nil {
-		return containerId, errfmt.WrapError(err)
-	}
-	defer func() {
-		if err := cgroupFile.Close(); err != nil {
-			logger.Errorw("Closing file", "error", err)
-		}
-	}()
-	scanner := bufio.NewScanner(cgroupFile)
-	for scanner.Scan() {
-		containerId, _, _ := getContainerIdFromCgroup(scanner.Text())
-		if containerId != "" {
-			break
-		}
-	}
-	return containerId, nil
-}
-
 // populate walks the cgroup fs informing CgroupUpdate() about existing dirs.
-func (c *Containers) populate() error {
+func (c *Manager) populate() error {
 	fn := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			logger.Errorw("WalkDir func", "error", err)
@@ -155,7 +146,7 @@ func (c *Containers) populate() error {
 
 		inodeNumber := stat.Ino
 		statusChange := time.Unix(stat.Ctim.Sec, stat.Ctim.Nsec)
-		_, err = c.cgroupUpdate(inodeNumber, path, statusChange, false)
+		_, _, err = c.cgroupUpdate(inodeNumber, path, statusChange, false)
 
 		return errfmt.WrapError(err)
 	}
@@ -165,31 +156,34 @@ func (c *Containers) populate() error {
 
 // cgroupUpdate checks if given path belongs to a known container runtime, saving
 // container information in Containers CgroupInfo map.
-func (c *Containers) cgroupUpdate(
+func (c *Manager) cgroupUpdate(
 	cgroupId uint64, path string, ctime time.Time, dead bool,
-) (CgroupInfo, error) {
+) (CgroupDir, Container, error) {
 	// NOTE: ALL given cgroup dir paths are stored in CgroupInfo map.
 	// NOTE: not thread-safe, lock handled by external calling function
 
 	// Cgroup paths should be stored and evaluated relative to the mountpoint.
 	path = strings.TrimPrefix(path, c.cgroups.GetDefaultCgroup().GetMountPoint())
-	containerId, containerRuntime, isRoot := getContainerIdFromCgroup(path)
-	container := cruntime.ContainerMetadata{
-		ContainerId: containerId,
-	}
+	containerId, containerRuntime, isRoot := parseContainerIdFromCgroupPath(path)
 
-	info := CgroupInfo{
+	info := CgroupDir{
 		Path:          path,
-		Container:     container,
-		Runtime:       containerRuntime,
+		ContainerId:   containerId,
 		ContainerRoot: isRoot,
 		Ctime:         ctime,
 		Dead:          dead,
 	}
 
-	c.cgroupsMap[uint32(cgroupId)] = info
+	container := Container{
+		ContainerId: containerId,
+		Runtime:     containerRuntime,
+		CreatedAt:   ctime,
+	}
 
-	return info, nil
+	c.cgroupsMap[uint32(cgroupId)] = info
+	c.containerMap[containerId] = container
+
+	return info, container, nil
 }
 
 // EnrichCgroupInfo checks for a given cgroupId if it is relevant to some running
@@ -199,56 +193,69 @@ func (c *Containers) cgroupUpdate(
 // Returns the retrieved metadata and a relevant error.
 // If the given cgroup does not belong to a container, no error will be returned, but the
 // returned metadata's containerId will be empty. This should be checked separately.
-func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetadata, error) {
-	c.cgroupsMutex.Lock()
-	defer c.cgroupsMutex.Unlock()
+func (c *Manager) EnrichCgroupInfo(cgroupId uint64) (Container, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
-	var metadata cruntime.ContainerMetadata
+	var cont Container
 	info, ok := c.cgroupsMap[uint32(cgroupId)]
 
 	// if there is no cgroup anymore for some reason, return early
 	if !ok {
-		return metadata, errfmt.Errorf("cgroup %d not found, won't enrich", cgroupId)
+		return cont, errfmt.Errorf("cgroup %d not found, won't enrich", cgroupId)
 	}
 
-	containerId := info.Container.ContainerId
-	runtime := info.Runtime
+	containerId := info.ContainerId
 
 	if containerId == "" {
 		// not a container, nothing to do
-		metadata.ContainerId = ""
-		return metadata, nil
+		cont.ContainerId = ""
+		return cont, nil
 	}
+
+	container := c.containerMap[containerId]
 
 	isMikubeOrKind := k8s.IsMinkube() || k8s.IsKind()
 	if info.Dead && !isMikubeOrKind {
-		return metadata, errfmt.Errorf("container %s already deleted in path %s", containerId, info.Path)
+		return cont, errfmt.Errorf("container %s already deleted in path %s", containerId, info.Path)
 	}
 
-	if info.Container.Image != "" {
+	if container.Image != "" {
 		// If already enriched (from control plane) - short circuit and return
-		return info.Container, nil
+		return container, nil
 	}
 
 	// There might be a performance overhead with the cancel
 	// But, I think it will be negligible since this code path shouldn't be reached too frequently
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	metadata, err := c.enricher.Get(ctx, containerId, runtime)
+	enrichRes, err := c.enricher.Get(ctx, containerId, container.Runtime)
 	defer cancel()
 	// if enrichment fails, just return early
 	if err != nil {
-		return metadata, errfmt.WrapError(err)
+		return cont, errfmt.WrapError(err)
 	}
 
-	info.Container = metadata
 	// we read the dictionary again to make sure the cgroup still exists
 	// otherwise we risk reintroducing it despite not existing
 	_, ok = c.cgroupsMap[uint32(cgroupId)]
 	if ok {
+		container = Container{
+			ContainerId: containerId,
+			Name:        enrichRes.ContName,
+			Image:       enrichRes.Image,
+			ImageDigest: enrichRes.ImageDigest,
+			Pod: Pod{
+				Name:      enrichRes.PodName,
+				Namespace: enrichRes.Namespace,
+				UID:       enrichRes.UID,
+				Sandbox:   enrichRes.Sandbox,
+			},
+		}
 		c.cgroupsMap[uint32(cgroupId)] = info
+		c.containerMap[containerId] = container
 	}
 
-	return metadata, nil
+	return cont, nil
 }
 
 var (
@@ -256,10 +263,10 @@ var (
 	gardenContainerIdFromCgroupRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){4}$`)
 )
 
-// getContainerIdFromCgroup extracts container id and its runtime from path. It returns
+// parseContainerIdFromCgroupPath extracts container id and its runtime from path. It returns
 // the container id, the runtime string and a bool telling if the container is the root of
 // its cgroupfs hierarchy.
-func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId, bool) {
+func parseContainerIdFromCgroupPath(cgroupPath string) (string, runtime.RuntimeId, bool) {
 	cgroupParts := strings.Split(cgroupPath, "/")
 
 	// search from the end to get the most inner container id
@@ -269,74 +276,74 @@ func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId, bo
 			continue // container id is at least 28 characters long
 		}
 
-		runtime := cruntime.Unknown
+		contRuntime := runtime.Unknown
 		id := strings.TrimSuffix(pc, ".scope")
 
 		switch {
 		case strings.HasPrefix(id, "docker-"):
-			runtime = cruntime.Docker
+			contRuntime = runtime.Docker
 			id = strings.TrimPrefix(id, "docker-")
 		case strings.HasPrefix(id, "crio-"):
-			runtime = cruntime.Crio
+			contRuntime = runtime.Crio
 			id = strings.TrimPrefix(id, "crio-")
 		case strings.HasPrefix(id, "cri-containerd-"):
-			runtime = cruntime.Containerd
+			contRuntime = runtime.Containerd
 			id = strings.TrimPrefix(id, "cri-containerd-")
 		case strings.Contains(pc, ":cri-containerd:"):
-			runtime = cruntime.Containerd
+			contRuntime = runtime.Containerd
 			id = pc[strings.LastIndex(pc, ":cri-containerd:")+len(":cri-containerd:"):]
 		case strings.HasPrefix(id, "libpod-"):
-			runtime = cruntime.Podman
+			contRuntime = runtime.Podman
 			id = strings.TrimPrefix(id, "libpod-")
 		}
 
-		if runtime != cruntime.Unknown {
+		if contRuntime != runtime.Unknown {
 			// Return the first match, closest to the root dir path component, so that the
 			// container id of the outer container is returned. The container root is
 			// determined by being matched on the last path part.
-			return id, runtime, i == len(cgroupParts)-1
+			return id, contRuntime, i == len(cgroupParts)-1
 		}
 
 		if matched := containerIdFromCgroupRegex.MatchString(id); matched && i > 0 {
 			prevPart := cgroupParts[i-1]
 			if prevPart == "docker" {
 				// non-systemd docker with format: .../docker/01adbf...f26db7f/
-				runtime = cruntime.Docker
+				contRuntime = runtime.Docker
 			}
 			if prevPart == "actions_job" {
 				// non-systemd docker with format in GitHub Actions: .../actions_job/01adbf...f26db7f/
-				runtime = cruntime.Docker
+				contRuntime = runtime.Docker
 			}
 			if strings.HasPrefix(prevPart, "pod") {
 				// generic containerd path with format: ...kubepods/<besteffort|burstable>/podXXX/01adbf...f26db7f/
 				// NOTE: this workaround may turn out to be wrong, and other runtime distributions may use the same path pattern.
 				// The fix relies on us finding this kind of pattern only in containerd envs and being explicitly mentioned in their source code.
 				// If this ever doesn't work out, we will need to match the runtime based on the running kubelet daemon.
-				runtime = cruntime.Containerd
+				contRuntime = runtime.Containerd
 			}
 
 			// Return the first match, closest to the root dir path component, so that the
 			// container id of the outer container is returned. The container root is
 			// determined by being matched on the last path part.
-			return id, runtime, i == len(cgroupParts)-1
+			return id, contRuntime, i == len(cgroupParts)-1
 		}
 
 		// Special case: Garden. Garden doesn't have a container enricher implemented,
 		// but, still, tracee needs to identify garden containers ids in the events.
 		if matched := gardenContainerIdFromCgroupRegex.MatchString(id); matched {
-			runtime = cruntime.Garden
-			return id, runtime, i == len(cgroupParts)-1
+			contRuntime = runtime.Garden
+			return id, contRuntime, i == len(cgroupParts)-1
 		}
 	}
 
 	// cgroup dirs unrelated to containers provides empty (containerId, runtime)
-	return "", cruntime.Unknown, false
+	return "", runtime.Unknown, false
 }
 
 // CgroupRemove removes cgroupInfo of deleted cgroup dir from Containers struct. There is
 // an expiration logic of 30 seconds to avoid race conditions (if cgroup dir event arrives
 // too fast and its cgroupInfo data is still needed).
-func (c *Containers) CgroupRemove(cgroupId uint64, hierarchyID uint32) {
+func (c *Manager) CgroupRemove(cgroupId uint64, hierarchyID uint32) {
 	const expiryTime = 30 * time.Second
 	// cgroupv1: no need to check other controllers than the default
 	switch c.cgroups.GetDefaultCgroup().(type) {
@@ -348,14 +355,16 @@ func (c *Containers) CgroupRemove(cgroupId uint64, hierarchyID uint32) {
 
 	now := time.Now()
 	var deleted []uint64
-	c.cgroupsMutex.Lock()
-	defer c.cgroupsMutex.Unlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	// process previously deleted cgroupInfo data (deleted cgroup dirs)
 	for _, id := range c.deleted {
 		info := c.cgroupsMap[uint32(id)]
 		if now.After(info.expiresAt) {
+			contId := c.cgroupsMap[uint32(id)].ContainerId
 			delete(c.cgroupsMap, uint32(id))
+			delete(c.containerMap, contId)
 		} else {
 			deleted = append(deleted, id)
 		}
@@ -371,18 +380,18 @@ func (c *Containers) CgroupRemove(cgroupId uint64, hierarchyID uint32) {
 }
 
 // CgroupMkdir adds cgroupInfo of a created cgroup dir to Containers struct.
-func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string, hierarchyID uint32) (CgroupInfo, error) {
+func (c *Manager) CgroupMkdir(cgroupId uint64, subPath string, hierarchyID uint32) (CgroupDir, Container, error) {
 	// cgroupv1: no need to check other controllers than the default
 	switch c.cgroups.GetDefaultCgroup().(type) {
 	case *cgroup.CgroupV1:
 		if c.cgroups.GetDefaultCgroupHierarchyID() != int(hierarchyID) {
-			return CgroupInfo{}, nil
+			return CgroupDir{}, Container{}, nil
 		}
 	}
 
 	// Find container cgroup dir path to get directory stats
-	c.cgroupsMutex.Lock()
-	defer c.cgroupsMutex.Unlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	curTime := time.Now()
 	path, ctime, err := cgroup.GetCgroupPath(c.cgroups.GetDefaultCgroup().GetMountPoint(), cgroupId, subPath)
 	if err == nil {
@@ -397,12 +406,12 @@ func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string, hierarchyID ui
 }
 
 // FindContainerCgroupID32LSB returns the 32 LSB of the Cgroup ID for a given container ID.
-func (c *Containers) FindContainerCgroupID32LSB(containerID string) ([]uint32, error) {
+func (c *Manager) FindContainerCgroupID32LSB(containerID string) ([]uint32, error) {
 	var cgroupIDs []uint32
-	c.cgroupsMutex.RLock()
-	defer c.cgroupsMutex.RUnlock()
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	for k, v := range c.cgroupsMap {
-		if strings.HasPrefix(v.Container.ContainerId, containerID) {
+		if strings.HasPrefix(v.ContainerId, containerID) {
 			cgroupIDs = append(cgroupIDs, k)
 		}
 	}
@@ -418,23 +427,24 @@ func (c *Containers) FindContainerCgroupID32LSB(containerID string) ([]uint32, e
 }
 
 // GetCgroupInfo returns the contents of the Containers struct cgroupInfo data of a given cgroupId.
-func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
+func (c *Manager) GetCgroupInfo(cgroupId uint64) (CgroupDir, Container) {
 	if !c.CgroupExists(cgroupId) {
 		// There should be a cgroupInfo for the given cgroupId but there isn't. Tracee
 		// might be processing an event for an already created container before the
 		// CgroupMkdirEventID logic was executed, for example.
 
 		// Get the path for given cgroupId from cgroupfs and update its cgroupInfo in the
-		// Containers struct. An empty subPath will make getCgroupPath() to WALK ALL THE
+		// Containers struct. An empty subPath will make GetCgroupPath() to WALK ALL THE
 		// cgroupfs directories, until it finds the directory of given cgroupId.
-		var cgroupInfo CgroupInfo
+		var cgroupInfo CgroupDir
+		var container Container
 
-		c.cgroupsMutex.Lock()
-		defer c.cgroupsMutex.Unlock()
+		c.lock.Lock()
+		defer c.lock.Unlock()
 
 		path, ctime, err := cgroup.GetCgroupPath(c.cgroups.GetDefaultCgroup().GetMountPoint(), cgroupId, "")
 		if err == nil {
-			cgroupInfo, err = c.cgroupUpdate(cgroupId, path, ctime, false)
+			cgroupInfo, container, err = c.cgroupUpdate(cgroupId, path, ctime, false)
 			if err != nil {
 				logger.Errorw("cgroupUpdate", "error", err)
 			}
@@ -444,40 +454,42 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 		// Add cgroupInfo to Containers struct with existing data.
 		// In this case, ctime is just an estimation (current time).
 		if errors.Is(err, fs.ErrNotExist) {
-			cgroupInfo, err = c.cgroupUpdate(cgroupId, path, time.Now(), true)
+			cgroupInfo, container, err = c.cgroupUpdate(cgroupId, path, time.Now(), true)
 			if err != nil {
 				logger.Errorw("cgroupUpdate", "error", err)
 			}
 		}
 
-		return cgroupInfo
+		return cgroupInfo, container
 	}
 
-	c.cgroupsMutex.RLock()
-	defer c.cgroupsMutex.RUnlock()
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	cgroupInfo := c.cgroupsMap[uint32(cgroupId)]
+	container := c.containerMap[cgroupInfo.ContainerId]
 
-	return cgroupInfo
+	return cgroupInfo, container
 }
 
-// GetContainers provides a list of all existing containers.
-func (c *Containers) GetContainers() map[uint32]CgroupInfo {
-	conts := map[uint32]CgroupInfo{}
-	c.cgroupsMutex.RLock()
-	defer c.cgroupsMutex.RUnlock()
+// GetLiveContainers provides a list of all existing containers mapped by their cgroup id.
+func (c *Manager) GetLiveContainers() map[uint32]Container {
+	conts := map[uint32]Container{}
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	for id, v := range c.cgroupsMap {
 		if v.ContainerRoot && v.expiresAt.IsZero() {
-			conts[id] = v
+			cont := c.containerMap[v.ContainerId]
+			conts[id] = cont
 		}
 	}
 	return conts
 }
 
 // CgroupExists checks if there is a cgroupInfo data of a given cgroupId.
-func (c *Containers) CgroupExists(cgroupId uint64) bool {
-	c.cgroupsMutex.RLock()
+func (c *Manager) CgroupExists(cgroupId uint64) bool {
+	c.lock.RLock()
 	_, ok := c.cgroupsMap[uint32(cgroupId)]
-	c.cgroupsMutex.RUnlock()
+	c.lock.RUnlock()
 	return ok
 }
 
@@ -489,26 +501,26 @@ const (
 
 // PopulateBpfMap populates the map with all the existing containers so eBPF programs can
 // orchestrate new ones with the correct state.
-func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
+func (c *Manager) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
 	containersMap, err := bpfModule.GetMap(c.bpfMapName)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
-	c.cgroupsMutex.RLock()
+	c.lock.RLock()
 	for cgroupIdLsb, info := range c.cgroupsMap {
 		if info.ContainerRoot {
 			state := containerExisted
 			err = containersMap.Update(unsafe.Pointer(&cgroupIdLsb), unsafe.Pointer(&state))
 		}
 	}
-	c.cgroupsMutex.RUnlock()
+	c.lock.RUnlock()
 
 	return errfmt.WrapError(err)
 }
 
 // RemoveFromBPFMap removes a container from the map so eBPF programs can stop tracking it.
-func (c *Containers) RemoveFromBPFMap(bpfModule *libbpfgo.Module, cgroupId uint64, hierarchyID uint32) error {
+func (c *Manager) RemoveFromBPFMap(bpfModule *libbpfgo.Module, cgroupId uint64, hierarchyID uint32) error {
 	// cgroupv1: no need to check other controllers than the default
 	switch c.cgroups.GetDefaultCgroup().(type) {
 	case *cgroup.CgroupV1:
@@ -532,4 +544,37 @@ func (c *Containers) RemoveFromBPFMap(bpfModule *libbpfgo.Module, cgroupId uint6
 	}
 
 	return err
+}
+
+//
+// "Pure" Container Helpers
+//
+
+func (c *Manager) AddContainer(cont Container) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.addContainer(cont)
+}
+
+func (c *Manager) addContainer(cont Container) error {
+	c.containerMap[cont.ContainerId] = cont
+	return nil
+}
+
+func (c *Manager) RemoveContainer(cont Container) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	delete(c.containerMap, cont.ContainerId)
+	return nil
+}
+
+func (c *Manager) GetContainer(containerId string) (Container, error) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	cont, ok := c.containerMap[containerId]
+
+	if !ok {
+		return cont, errfmt.Errorf("no container with id %s", containerId)
+	}
+	return cont, nil
 }

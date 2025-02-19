@@ -198,7 +198,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				stackAddresses = t.getStackAddresses(eCtx.StackID)
 			}
 
-			containerInfo := t.containers.GetCgroupInfo(eCtx.CgroupID).Container
+			_, containerInfo := t.containers.GetCgroupInfo(eCtx.CgroupID)
 			containerData := trace.Container{
 				ID:          containerInfo.ContainerId,
 				ImageName:   containerInfo.Image,

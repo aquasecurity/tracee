@@ -671,7 +671,7 @@ func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBina
 // updateProcTree indicates whether the process tree map should be updated or not.
 func (ps *policies) updateBPF(
 	bpfModule *bpf.Module,
-	cts *containers.Containers,
+	cts *containers.Manager,
 	rules map[events.ID]*eventFlags,
 	eventsFields map[events.ID][]bufferdecoder.ArgType,
 	createNewMaps bool,
