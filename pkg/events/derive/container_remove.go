@@ -10,11 +10,11 @@ import (
 
 // ContainerRemove receives a containers.Containers object as a closure argument to track it's containers.
 // If it receives a cgroup_rmdir event, it can derive a container_remove event from it.
-func ContainerRemove(cts *containers.Containers) DeriveFunction {
+func ContainerRemove(cts *containers.Manager) DeriveFunction {
 	return deriveSingleEvent(events.ContainerRemove, deriveContainerRemoveArgs(cts))
 }
 
-func deriveContainerRemoveArgs(cts *containers.Containers) deriveArgsFunction {
+func deriveContainerRemoveArgs(cts *containers.Manager) deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		// if cgroup_id is from non default hid (v1 case), the cgroup info query will fail, so we skip
 		if check, err := isCgroupEventInHid(&event, cts); !check {
@@ -24,8 +24,8 @@ func deriveContainerRemoveArgs(cts *containers.Containers) deriveArgsFunction {
 		if err != nil {
 			return nil, errfmt.WrapError(err)
 		}
-		if info := cts.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
-			return []interface{}{info.Runtime.String(), info.Container.ContainerId}, nil
+		if _, container := cts.GetCgroupInfo(cgroupId); container.ContainerId != "" {
+			return []interface{}{container.Runtime.String(), container.ContainerId}, nil
 		}
 		return nil, nil
 	}

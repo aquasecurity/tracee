@@ -69,9 +69,8 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 		if len(entries) == 0 {
 			return "", errfmt.Errorf("empty directory")
 		}
-		if err == nil {
-			return fmt.Sprintf("%s%s", procRootPath, mountNSAbsolutePath), nil
-		}
+
+		return fmt.Sprintf("%s%s", procRootPath, mountNSAbsolutePath), nil
 	}
 
 	return "", ErrContainerFSUnreachable

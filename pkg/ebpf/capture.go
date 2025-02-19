@@ -57,7 +57,9 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 				continue
 			}
 
-			containerId := t.containers.GetCgroupInfo(meta.CgroupID).Container.ContainerId
+			cgroup, _ := t.containers.GetCgroupInfo(meta.CgroupID)
+
+			containerId := cgroup.ContainerId
 			if containerId == "" {
 				containerId = "host"
 			}

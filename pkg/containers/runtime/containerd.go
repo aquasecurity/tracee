@@ -50,13 +50,11 @@ func ContainerdEnricher(socket string) (ContainerEnricher, error) {
 	return &enricher, nil
 }
 
-func (e *containerdEnricher) Get(ctx context.Context, containerId string) (ContainerMetadata, error) {
-	metadata := ContainerMetadata{
-		ContainerId: containerId,
-	}
+func (e *containerdEnricher) Get(ctx context.Context, containerId string) (EnrichResult, error) {
+	res := EnrichResult{}
 	nsList, err := e.namespaces.List(ctx)
 	if err != nil {
-		return metadata, errfmt.Errorf("failed to fetch namespaces %s", err.Error())
+		return res, errfmt.Errorf("failed to fetch namespaces %s", err.Error())
 	}
 	for _, namespace := range nsList {
 		// always query with namespace applied
@@ -91,24 +89,21 @@ func (e *containerdEnricher) Get(ctx context.Context, containerId string) (Conta
 		// if in k8s we can extract pod info from labels
 		if container.Labels != nil {
 			labels := container.Labels
-
-			metadata.Pod = PodMetadata{
-				Name:      labels[PodNameLabel],
-				Namespace: labels[PodNamespaceLabel],
-				UID:       labels[PodUIDLabel],
-				Sandbox:   e.isSandbox(labels),
-			}
+			res.PodName = labels[PodNameLabel]
+			res.Namespace = labels[PodNamespaceLabel]
+			res.UID = labels[PodUIDLabel]
+			res.Sandbox = e.isSandbox(labels)
 
 			// containerd containers normally have no names unless set from k8s
-			metadata.Name = labels[ContainerNameLabel]
+			res.ContName = labels[ContainerNameLabel]
 		}
-		metadata.Image = imageName
-		metadata.ImageDigest = imageDigest
+		res.Image = imageName
+		res.ImageDigest = imageDigest
 
-		return metadata, nil
+		return res, nil
 	}
 
-	return metadata, errfmt.Errorf("failed to find container in any namespace")
+	return res, errfmt.Errorf("failed to find container %s in any namespace", containerId)
 }
 
 func (e *containerdEnricher) isSandbox(labels map[string]string) bool {
