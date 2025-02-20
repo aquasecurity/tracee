@@ -183,11 +183,12 @@ fmt-fix: | \
 code-check: | \
 	.check_tree
 #
-	@echo "Checking Golang vet..."
-	$(GENERAL_MAKE) check-vet
-	echo "Checking Golang with StaticChecker..."
-	$(GENERAL_MAKE) -j1 check-staticcheck
-	echo "Checking Golang with errcheck..."
+	@set -e; \
+	echo "Checking Golang vet..."; \
+	$(GENERAL_MAKE) check-vet; \
+	echo "Checking Golang with StaticChecker..."; \
+	$(GENERAL_MAKE) -j1 check-staticcheck; \
+	echo "Checking Golang with errcheck..."; \
 	$(GENERAL_MAKE) -j1 check-err
 
 #
