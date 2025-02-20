@@ -359,6 +359,8 @@ func splitCallback(callback string) (string, int64, string) {
 	return funcName, offset, owner
 }
 
+// revive:disable:confusing-results
+
 // fetchTrampAndCallback extracts the trampoline and the callback
 func fetchTrampAndCallback(ftraceParts []string, i *int) (string, string) {
 	trampoline := ""
@@ -385,6 +387,8 @@ func fetchTrampAndCallback(ftraceParts []string, i *int) (string, string) {
 
 	return trampoline, callback
 }
+
+// revive:enable:confusing-results
 
 // getCallback extracts the callback
 func getCallback(ftraceParts []string) string {

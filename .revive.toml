@@ -9,7 +9,7 @@ enableAllRules = true
 [rule.add-constant]
     Disabled = true
 [rule.argument-limit]
-    Disabled = true
+    Disabled = true # TODO: consider enabling this
 [rule.atomic]
     Disabled = false
 [rule.bare-return]
@@ -23,13 +23,13 @@ enableAllRules = true
 [rule.call-to-gc]
     Disabled = false
 [rule.confusing-naming]
-    Disabled = true
+    Disabled = true # TODO: consider enabling this
 [rule.comment-spacings]
     Disabled = false
 [rule.confusing-results]
-    Disabled = true
+    Disabled = false
 [rule.cognitive-complexity]
-    Disabled = true
+    Disabled = true # TODO: consider enabling this
 [rule.constant-logical-expr]
     Disabled = false
 [rule.context-as-argument]
@@ -37,11 +37,11 @@ enableAllRules = true
 [rule.context-keys-type]
     Disabled = false
 [rule.cyclomatic]
-    Disabled = true
+    Disabled = true # TODO: consider enabling this
 [rule.datarace]
     Disabled = false
 [rule.deep-exit]
-    Disabled = true
+    Disabled = true # TODO: consider enabling this
 [rule.defer]
     Disabled = false
 [rule.dot-imports]
@@ -69,9 +69,10 @@ enableAllRules = true
 [rule.flag-parameter]
     Disabled = true
 [rule.function-result-limit]
-    Disabled = true
+    Disabled = false
+    arguments = [3]
 [rule.function-length]
-    Disabled = true
+    Disabled = true # TODO: consider enabling this
 [rule.get-return]
     Disabled = false
 [rule.identical-branches]
@@ -84,20 +85,20 @@ enableAllRules = true
     Disabled = false
 [rule.max-control-nesting]
     arguments = [15]
-[rule.imports-blacklist]
-    Disabled = true
 [rule.import-shadowing]
     Disabled = false
 [rule.line-length-limit]
     Disabled = true # TODO: set max length to 100 max
+    arguments = [100]
 [rule.max-public-structs]
-    Disabled = true
+    Disabled = true # TODO: consider enabling this
+    arguments = [5]
 [rule.modifies-parameter]
     Disabled = false
 [rule.modifies-value-receiver]
     Disabled = false
 [rule.nested-structs]
-    Disabled = true
+    Disabled = false
 [rule.optimize-operands-order]
     Disabled = false
 [rule.package-comments]
@@ -111,11 +112,18 @@ enableAllRules = true
 [rule.receiver-naming]
     Disabled = false
 [rule.redefines-builtin-id]
-    Disabled = true
+    Disabled = true # TODO: consider enabling this
 [rule.string-of-int]
-    Disabled = true
+    Disabled = false
 [rule.struct-tag]
-    Disabled = true # TODO: interesting to check
+    Disabled = false
+    arguments = ["json,inline"]
+[rule.redundant-import-alias]
+    Disabled = false
+[rule.redundant-build-tag]
+    Disabled = false
+[rule.redundant-test-main-exit]
+    Disabled = false
 [rule.string-format]
     Disabled = true # TODO: interesting to check
 [rule.superfluous-else]
@@ -139,13 +147,13 @@ enableAllRules = true
 [rule.unhandled-error]
     Disabled = true # TODO: already being done by errcheck (change ?)
 [rule.unnecessary-stmt]
-    Disabled = true
+    Disabled = true # TODO: consider enabling this
 [rule.unreachable-code]
     Disabled = false
 [rule.unused-parameter]
-    Disabled = true
+    Disabled = true # TODO: consider enabling this
 [rule.unused-receiver]
-    Disabled = true
+    Disabled = true # TODO: consider enabling this
 [rule.use-any]
     Disabled = true # TODO: should we rename interface{} to any ?
 [rule.useless-break]

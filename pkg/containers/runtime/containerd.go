@@ -115,6 +115,8 @@ func (e *containerdEnricher) isSandbox(labels map[string]string) bool {
 	return labels[ContainerTypeContainerdLabel] == "sandbox"
 }
 
+// revive:disable:confusing-results
+
 func (e *containerdEnricher) getImageInfoStore(ctx context.Context, image string) (string, string, error) {
 	r, err := e.images.Get(ctx, image)
 	if err != nil {
@@ -125,6 +127,10 @@ func (e *containerdEnricher) getImageInfoStore(ctx context.Context, image string
 	d := r.Target.Digest.String()
 	return i, d, nil
 }
+
+// revive:enable:confusing-results
+
+// revive:disable:confusing-results
 
 func (e *containerdEnricher) getImageInfoCri(ctx context.Context, image string) (string, string, error) {
 	var imageName, imageDigest string
@@ -162,3 +168,5 @@ func (e *containerdEnricher) getImageInfoCri(ctx context.Context, image string) 
 	}
 	return imageName, imageDigest, nil
 }
+
+// revive:enable:confusing-results

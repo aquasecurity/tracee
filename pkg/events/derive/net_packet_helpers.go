@@ -111,10 +111,16 @@ func getPktMeta(srcIP, dstIP net.IP, srcPort, dstPort uint16, proto uint8, lengt
 	}
 }
 
+// revive:disable:function-result-limit
+// revive:disable:confusing-results
+
 // swapSrcDst swaps the source and destination IP addresses and ports.
 func swapSrcDst(s, d net.IP, sp, dp uint16) (net.IP, net.IP, uint16, uint16) {
 	return d, s, dp, sp
 }
+
+// revive:enable:confusing-results
+// revive:enable:function-result-limit
 
 // getPacketDirection returns the packet direction from the event.
 func getPacketDirection(event *trace.Event) trace.PacketDirection {
@@ -227,6 +233,8 @@ func getLayer3IPv6FromPacket(packet gopacket.Packet) (*layers.IPv6, error) {
 	return ipv6, nil
 }
 
+// revive:disable:confusing-results
+
 // getSrcDstFromLayer3 returns the source and destination IP addresses from the layer 3.
 func getSrcDstFromLayer3(layer3 gopacket.NetworkLayer) (net.IP, net.IP, error) {
 	switch v := layer3.(type) {
@@ -238,6 +246,10 @@ func getSrcDstFromLayer3(layer3 gopacket.NetworkLayer) (net.IP, net.IP, error) {
 	return nil, nil, errors.New("wrong layer 3 protocol type")
 }
 
+// revive:enable:confusing-results
+
+// revive:disable:confusing-results
+
 // getLayer3SrcDstFromPacket returns the source and destination IP addresses from the packet.
 func getLayer3SrcDstFromPacket(packet gopacket.Packet) (net.IP, net.IP, error) {
 	layer3, err := getLayer3FromPacket(packet)
@@ -246,6 +258,8 @@ func getLayer3SrcDstFromPacket(packet gopacket.Packet) (net.IP, net.IP, error) {
 	}
 	return getSrcDstFromLayer3(layer3)
 }
+
+// revive:enable:confusing-results
 
 // getLayer3TypeFromFlag returns the layer 3 protocol type from a given flag.
 func getLayer3TypeFromFlag(layer3TypeFlag int) (gopacket.LayerType, error) {
@@ -341,6 +355,8 @@ func getLayer4ProtoFromPacket(packet gopacket.Packet) (uint8, error) {
 	return 0, errors.New("wrong layer 4 protocol type")
 }
 
+// revive:disable:confusing-results
+
 // getLayer4SrcPortDstPortFromPacket returns the source and destination ports from the packet.
 func getLayer4SrcPortDstPortFromPacket(packet gopacket.Packet) (uint16, uint16, error) {
 	layer4, err := getLayer4FromPacket(packet)
@@ -355,6 +371,8 @@ func getLayer4SrcPortDstPortFromPacket(packet gopacket.Packet) (uint16, uint16, 
 	}
 	return 0, 0, errors.New("wrong layer 4 protocol type")
 }
+
+// revive:enable:confusing-results
 
 //
 // Special Layer (Some consider it as Layer 4, others Layer 3)
