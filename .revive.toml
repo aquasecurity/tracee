@@ -95,7 +95,7 @@ enableAllRules = true
 [rule.modifies-parameter]
     Disabled = false
 [rule.modifies-value-receiver]
-    Disabled = true
+    Disabled = false
 [rule.nested-structs]
     Disabled = true
 [rule.optimize-operands-order]
