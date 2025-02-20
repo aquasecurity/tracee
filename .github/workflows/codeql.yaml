@@ -13,7 +13,10 @@ on:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    runs-on: 'ubuntu-latest'
+    runs-on: ubuntu-latest
+    env:
+      GOOS: linux
+      GOARCH: ${{ matrix.goarch }}
     permissions:
       security-events: write
       packages: read
@@ -23,6 +26,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        goarch: [amd64]
+        language: [c-cpp, go]
         include:
           - language: c-cpp
             build-mode: autobuild
@@ -50,4 +55,4 @@ jobs:
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
       with:
-        category: "/language:${{matrix.language}}"
+        category: "/language:${{ matrix.language }}"
