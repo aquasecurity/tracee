@@ -95,7 +95,7 @@ RUN GOROOT=/usr/local/go GOPATH=$HOME/go \
 # install errcheck
 
 RUN GOROOT=/usr/local/go GOPATH=$HOME/go \
-    go install github.com/kisielk/errcheck@v1.7.0 && \
+    go install github.com/kisielk/errcheck@v1.9.0 && \
     cp $HOME/go/bin/errcheck /usr/bin/
 
 USER tracee
