@@ -71,7 +71,7 @@ runs:
       shell: bash
     - name: Install revive
       run: |
-        GOROOT=/usr/local/go GOPATH=$HOME/go go install github.com/mgechev/revive@e33fb87
+        GOROOT=/usr/local/go GOPATH=$HOME/go go install github.com/mgechev/revive@v1.7.0
         sudo cp $HOME/go/bin/revive /usr/bin/
       shell: bash
     - name: Install goimports-reviser
