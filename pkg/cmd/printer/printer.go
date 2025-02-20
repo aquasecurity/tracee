@@ -430,8 +430,13 @@ type forwardEventPrinter struct {
 	outPath string
 	url     *url.URL
 	client  *forward.Client
+
+	// revive:disable:struct-tag
+
 	// These parameters can be set up from the URL
 	tag string `default:"tracee"`
+
+	// revive:enable:struct-tag
 }
 
 func getParameterValue(parameters url.Values, key string, defaultValue string) string {
