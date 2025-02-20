@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -26,7 +27,7 @@ func InitProcessTreeDS(ds detect.DataSource) *ProcessTreeDS {
 func GetProcessTreeDataSource(ctx detect.SignatureContext) (*ProcessTreeDS, error) {
 	processTreeDataSource, ok := ctx.GetDataSource("tracee", "process_tree")
 	if !ok {
-		return nil, fmt.Errorf("data source tracee/process_tree is not registered")
+		return nil, errors.New("data source tracee/process_tree is not registered")
 	}
 
 	if processTreeDataSource.Version() > 1 {

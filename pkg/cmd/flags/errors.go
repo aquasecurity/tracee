@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -21,7 +22,7 @@ func InvalidScopeOptionError(expr string, newBinary bool) error {
 }
 
 func InvalidFlagEmpty() error {
-	return fmt.Errorf("empty flag")
+	return errors.New("empty flag")
 }
 
 func InvalidFilterFlagFormat(expression string) error {

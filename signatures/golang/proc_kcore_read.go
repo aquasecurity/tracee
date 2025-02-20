@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 
 	"github.com/aquasecurity/tracee/signatures/helpers"
@@ -48,7 +48,7 @@ func (sig *ProcKcoreRead) GetSelectedEvents() ([]detect.SignatureEventSelector, 
 func (sig *ProcKcoreRead) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("invalid event")
+		return errors.New("invalid event")
 	}
 
 	switch eventObj.EventName {

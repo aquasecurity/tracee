@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/aquasecurity/tracee/types/detect"
@@ -17,10 +18,10 @@ func (sig *e2eWritableDatasourceSig) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	writable, ok := ctx.GetDataSource("e2e_inst", "demo")
 	if !ok {
-		return fmt.Errorf("containers data source not registered")
+		return errors.New("containers data source not registered")
 	}
 	if writable.Version() > 1 {
-		return fmt.Errorf("containers data source version not supported, please update this signature")
+		return errors.New("containers data source version not supported, please update this signature")
 	}
 	sig.writable = writable
 	return nil
@@ -46,7 +47,7 @@ func (sig *e2eWritableDatasourceSig) GetSelectedEvents() ([]detect.SignatureEven
 func (sig *e2eWritableDatasourceSig) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 
 	switch eventObj.EventName {
@@ -62,7 +63,7 @@ func (sig *e2eWritableDatasourceSig) OnEvent(event protocol.Event) error {
 
 		data, ok := container["value"].(string)
 		if !ok {
-			return fmt.Errorf("failed to unwrap value from writable data")
+			return errors.New("failed to unwrap value from writable data")
 		}
 
 		if data != "moment" {

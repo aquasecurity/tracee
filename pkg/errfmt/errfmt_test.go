@@ -2,7 +2,6 @@ package errfmt
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"gotest.tools/assert"
@@ -27,13 +26,13 @@ func TestErrorf(t *testing.T) {
 			name:   "non-empty format string",
 			format: "an error occurred",
 			args:   []interface{}{},
-			want:   fmt.Errorf("errfmt.TestErrorf.func1: an error occurred"),
+			want:   errors.New("errfmt.TestErrorf.func1: an error occurred"),
 		},
 		{
 			name:   "format string with arguments",
 			format: "an error occurred, %d",
 			args:   []interface{}{42},
-			want:   fmt.Errorf("errfmt.TestErrorf.func1: an error occurred, 42"),
+			want:   errors.New("errfmt.TestErrorf.func1: an error occurred, 42"),
 		},
 	}
 
@@ -69,7 +68,7 @@ func TestWrapError(t *testing.T) {
 		{
 			name: "non-nil error",
 			err:  errors.New("an error occurred"),
-			want: fmt.Errorf("errfmt.TestWrapError.func1: an error occurred"),
+			want: errors.New("errfmt.TestWrapError.func1: an error occurred"),
 		},
 	}
 

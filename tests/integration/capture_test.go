@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -289,7 +290,7 @@ func readWritePipe(t *testing.T, captureDir string, workingDir string) error {
 	}
 	statInfo, ok := finfo.Sys().(*syscall.Stat_t)
 	if !ok {
-		return fmt.Errorf("type assertion failed: expected *syscall.Stat_t")
+		return errors.New("type assertion failed: expected *syscall.Stat_t")
 	}
 	inode := statInfo.Ino
 
@@ -410,7 +411,7 @@ func findProcessPcapFile(dir string, processName string) (string, error) {
 		}
 	}
 	if !found {
-		return "", fmt.Errorf("could not find ping pcap")
+		return "", errors.New("could not find ping pcap")
 	}
 
 	return pcap, nil

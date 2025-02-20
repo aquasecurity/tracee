@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -64,7 +65,7 @@ func (engine *Engine) Stats() *metrics.Stats {
 // Signatures are not loaded at this point, Init must be called to perform config side effects.
 func NewEngine(config Config, sources EventSources, output chan *detect.Finding) (*Engine, error) {
 	if sources.Tracee == nil || output == nil {
-		return nil, fmt.Errorf("nil input received")
+		return nil, errors.New("nil input received")
 	}
 	engine := Engine{}
 	engine.waitGroup = sync.WaitGroup{}

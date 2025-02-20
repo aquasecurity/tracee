@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/aquasecurity/tracee/signatures/helpers"
@@ -18,10 +19,10 @@ func (sig *e2eContainersDataSource) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	containersData, ok := ctx.GetDataSource("tracee", "containers")
 	if !ok {
-		return fmt.Errorf("containers data source not registered")
+		return errors.New("containers data source not registered")
 	}
 	if containersData.Version() > 1 {
-		return fmt.Errorf("containers data source version not supported, please update this signature")
+		return errors.New("containers data source version not supported, please update this signature")
 	}
 	sig.containersData = containersData
 	return nil
@@ -47,7 +48,7 @@ func (sig *e2eContainersDataSource) GetSelectedEvents() ([]detect.SignatureEvent
 func (sig *e2eContainersDataSource) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 
 	switch eventObj.EventName {
@@ -63,7 +64,7 @@ func (sig *e2eContainersDataSource) OnEvent(event protocol.Event) error {
 
 		containerId := eventObj.Container.ID
 		if containerId == "" {
-			return fmt.Errorf("received non container event")
+			return errors.New("received non container event")
 		}
 
 		container, err := sig.containersData.Get(containerId)
@@ -73,7 +74,7 @@ func (sig *e2eContainersDataSource) OnEvent(event protocol.Event) error {
 
 		containerIdData, ok := container["container_id"].(string)
 		if !ok {
-			return fmt.Errorf("failed to extract container id from container data")
+			return errors.New("failed to extract container id from container data")
 		}
 
 		if containerIdData != containerId {

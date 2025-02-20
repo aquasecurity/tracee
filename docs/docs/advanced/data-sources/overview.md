@@ -43,7 +43,7 @@ func (sig *mySig) Init(ctx detect.SignatureContext) error {
     ...
     containersData, ok := ctx.GetDataSource("tracee", "containers")
  if !ok {
-  return fmt.Errorf("containers data source not registered")
+  return errors.New("containers data source not registered")
  }
     if containersData.Version() > 1 {
   return fmt.Errorf("containers data source version not supported, please update this signature")

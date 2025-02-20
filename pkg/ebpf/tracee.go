@@ -3,6 +3,7 @@ package ebpf
 import (
 	gocontext "context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -986,7 +987,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 				return nil
 			}
 			if !validateEvent(eventNode.GetID()) {
-				return []dependencies.Action{dependencies.NewCancelNodeAddAction(fmt.Errorf("event is missing ksymbols"))}
+				return []dependencies.Action{dependencies.NewCancelNodeAddAction(errors.New("event is missing ksymbols"))}
 			}
 			return nil
 		})

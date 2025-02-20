@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"sort"
@@ -2735,7 +2736,7 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 					case string:
 						actVal, ok := actArg.Value.(string)
 						if !ok {
-							return false, fmt.Errorf("failed to cast arg's value")
+							return false, errors.New("failed to cast arg's value")
 						}
 						if strings.Contains(v, "*") {
 							v = strings.ReplaceAll(v, "*", "")
@@ -2901,7 +2902,7 @@ func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 					case string:
 						actVal, ok := actArg.Value.(string)
 						if !ok {
-							return fmt.Errorf("failed to cast arg's value")
+							return errors.New("failed to cast arg's value")
 						}
 						if strings.Contains(v, "*") {
 							v = strings.ReplaceAll(v, "*", "")
@@ -3023,7 +3024,7 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 					case string:
 						actVal, ok := actArg.Value.(string)
 						if !ok {
-							return fmt.Errorf("failed to cast arg's value")
+							return errors.New("failed to cast arg's value")
 						}
 						if strings.Contains(v, "*") {
 							v = strings.ReplaceAll(v, "*", "")
@@ -3131,7 +3132,7 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 				case string:
 					actVal, ok := actArg.Value.(string)
 					if !ok {
-						return fmt.Errorf("failed to cast arg's value")
+						return errors.New("failed to cast arg's value")
 					}
 					if strings.Contains(v, "*") {
 						v = strings.ReplaceAll(v, "*", "")

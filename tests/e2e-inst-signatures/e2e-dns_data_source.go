@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/aquasecurity/tracee/types/detect"
@@ -17,10 +18,10 @@ func (sig *e2eDnsDataSource) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	dnsData, ok := ctx.GetDataSource("tracee", "dns")
 	if !ok {
-		return fmt.Errorf("dns data source not registered")
+		return errors.New("dns data source not registered")
 	}
 	if dnsData.Version() > 1 {
-		return fmt.Errorf("dns data source version not supported, please update this signature")
+		return errors.New("dns data source version not supported, please update this signature")
 	}
 	sig.dnsData = dnsData
 	return nil
@@ -46,7 +47,7 @@ func (sig *e2eDnsDataSource) GetSelectedEvents() ([]detect.SignatureEventSelecto
 func (sig *e2eDnsDataSource) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 
 	switch eventObj.EventName {
@@ -62,18 +63,18 @@ func (sig *e2eDnsDataSource) OnEvent(event protocol.Event) error {
 
 		ipResults, ok := dns["ip_addresses"].([]string)
 		if !ok {
-			return fmt.Errorf("failed to extract ip results")
+			return errors.New("failed to extract ip results")
 		}
 		if len(ipResults) < 1 {
-			return fmt.Errorf("ip results were empty")
+			return errors.New("ip results were empty")
 		}
 
 		dnsResults, ok := dns["dns_queries"].([]string)
 		if !ok {
-			return fmt.Errorf("failed to extract dns results")
+			return errors.New("failed to extract dns results")
 		}
 		if len(dnsResults) < 1 {
-			return fmt.Errorf("dns results were empty")
+			return errors.New("dns results were empty")
 		}
 		if dnsResults[0] != "google.com" {
 			return fmt.Errorf("bad dns query: %s", dnsResults[0])

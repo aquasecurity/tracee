@@ -150,3 +150,5 @@ enableAllRules = true
     Disabled = false
 [rule.waitgroup-by-value]
     Disabled = false
+[rule.use-errors-new]
+    Disabled = false

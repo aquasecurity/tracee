@@ -107,7 +107,7 @@ func (sig *e2eProcessTreeDataSource) Init(ctx detect.SignatureContext) error {
 
     processTreeDataSource, ok := ctx.GetDataSource("tracee", "process_tree")
     if !ok {
-        return fmt.Errorf("data source tracee/process_tree is not registered")
+        return errors.New("data source tracee/process_tree is not registered")
     }
 
     sig.processTreeDS = processTreeDataSource
@@ -129,7 +129,7 @@ Before explaining each request type and how to use them, consider the following 
 func (sig *e2eProcessTreeDataSource) OnEvent(event protocol.Event) error {
     eventObj, ok := event.Payload.(trace.Event)
     if !ok {
-        return fmt.Errorf("failed to cast event's payload")
+        return errors.New("failed to cast event's payload")
     }
 
     switch eventObj.EventName {
@@ -174,22 +174,22 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
             Time:     time.Unix(0, int64(eventObj.Timestamp)),
         })
     if err != nil {
-        return fmt.Errorf(debug("could not find process"))
+        return errors.New(debug("could not find process"))
     }
     processInfo, ok := procQueryAnswer["process_info"].(datasource.ProcessInfo)
     if !ok {
-        return fmt.Errorf(debug("could not extract info"))
+        return errors.New(debug("could not extract info"))
     }
 
     // Compare PID, NS PID and PPID
     if processInfo.Pid != eventObj.HostProcessID {
-        return fmt.Errorf(debug("no match for pid"))
+        return errors.New(debug("no match for pid"))
     }
     if processInfo.NsPid != eventObj.ProcessID {
-        return fmt.Errorf(debug("no match for ns pid"))
+        return errors.New(debug("no match for ns pid"))
     }
     if processInfo.Ppid != eventObj.HostParentProcessID {
-        return fmt.Errorf(debug("no match for ppid"))
+        return errors.New(debug("no match for ppid"))
     }
 
     // Check if the process lists itself in the list of its threads
@@ -201,7 +201,7 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
         }
     }
     if !threadExist {
-        return fmt.Errorf(debug("process not listed as thread"))
+        return errors.New(debug("process not listed as thread"))
     }
 ```
 
@@ -226,22 +226,22 @@ func (sig *e2eProcessTreeDataSource) checkThread(eventObj *trace.Event) error {
         },
     )
     if err != nil {
-        return fmt.Errorf(debug("could not find thread"))
+        return errors.New(debug("could not find thread"))
     }
     threadInfo, ok := threadQueryAnswer["thread_info"].(datasource.ThreadInfo)
     if !ok {
-        return fmt.Errorf(debug("could not extract info"))
+        return errors.New(debug("could not extract info"))
     }
 
     // Compare TID, NS TID and PID
     if threadInfo.Tid != eventObj.HostThreadID {
-        return fmt.Errorf(debug("no match for tid"))
+        return errors.New(debug("no match for tid"))
     }
     if threadInfo.NsTid != eventObj.ThreadID {
-        return fmt.Errorf(debug("no match for ns tid"))
+        return errors.New(debug("no match for ns tid"))
     }
     if threadInfo.Pid != eventObj.HostProcessID {
-        return fmt.Errorf(debug("no match for pid"))
+        return errors.New(debug("no match for pid"))
     }
 
     return nil
@@ -267,11 +267,11 @@ func (sig *e2eProcessTreeDataSource) checkLineage(eventObj *trace.Event) error {
         },
     )
     if err != nil {
-        return fmt.Errorf(debug("could not find lineage"))
+        return errors.New(debug("could not find lineage"))
     }
     lineageInfo, ok := lineageQueryAnswer["process_lineage"].(datasource.ProcessLineage)
     if !ok {
-        return fmt.Errorf("failed to extract ProcessLineage from data")
+        return errors.New("failed to extract ProcessLineage from data")
     }
 
     compareMaps := func(map1, map2 map[int]uint32) bool {

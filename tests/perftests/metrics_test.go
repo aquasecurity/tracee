@@ -2,6 +2,7 @@ package perftests
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -83,7 +84,7 @@ func checkIfPprofExist() error {
 		return nil
 	}
 
-	return fmt.Errorf("pprof not enabled")
+	return errors.New("pprof not enabled")
 }
 
 //

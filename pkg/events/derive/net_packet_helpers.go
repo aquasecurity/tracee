@@ -3,7 +3,7 @@ package derive
 import (
 	"bufio"
 	"bytes"
-	"fmt"
+	"errors"
 	"net"
 	"net/http"
 	"strings"
@@ -196,7 +196,7 @@ func getLayer3FromPacket(packet gopacket.Packet) (gopacket.NetworkLayer, error) 
 	case (*layers.IPv4):
 	case (*layers.IPv6):
 	default:
-		return nil, fmt.Errorf("wrong layer 3 protocol type")
+		return nil, errors.New("wrong layer 3 protocol type")
 	}
 	return layer3, nil
 }
@@ -209,7 +209,7 @@ func getLayer3IPv4FromPacket(packet gopacket.Packet) (*layers.IPv4, error) {
 	}
 	ipv4, ok := layer3.(*layers.IPv4)
 	if !ok {
-		return nil, fmt.Errorf("wrong layer 3 protocol type")
+		return nil, errors.New("wrong layer 3 protocol type")
 	}
 	return ipv4, nil
 }
@@ -222,7 +222,7 @@ func getLayer3IPv6FromPacket(packet gopacket.Packet) (*layers.IPv6, error) {
 	}
 	ipv6, ok := layer3.(*layers.IPv6)
 	if !ok {
-		return nil, fmt.Errorf("wrong layer 3 protocol type")
+		return nil, errors.New("wrong layer 3 protocol type")
 	}
 	return ipv6, nil
 }
@@ -235,7 +235,7 @@ func getSrcDstFromLayer3(layer3 gopacket.NetworkLayer) (net.IP, net.IP, error) {
 	case (*layers.IPv6):
 		return v.SrcIP, v.DstIP, nil
 	}
-	return nil, nil, fmt.Errorf("wrong layer 3 protocol type")
+	return nil, nil, errors.New("wrong layer 3 protocol type")
 }
 
 // getLayer3SrcDstFromPacket returns the source and destination IP addresses from the packet.
@@ -255,7 +255,7 @@ func getLayer3TypeFromFlag(layer3TypeFlag int) (gopacket.LayerType, error) {
 	case familyIPv6:
 		return layers.LayerTypeIPv6, nil
 	}
-	return 0, fmt.Errorf("wrong layer 3 type")
+	return 0, errors.New("wrong layer 3 type")
 }
 
 // getLayer3TypeFlagFromEvent returns the layer 3 protocol type from a given event.
@@ -266,7 +266,7 @@ func getLayer3TypeFlagFromEvent(event *trace.Event) (int, error) {
 	case event.ReturnValue&familyIPv6 == familyIPv6:
 		return familyIPv6, nil
 	}
-	return 0, fmt.Errorf("wrong layer 3 ret value flag")
+	return 0, errors.New("wrong layer 3 ret value flag")
 }
 
 // getLengthFromPacket returns the packet length from a given packet.
@@ -281,7 +281,7 @@ func getLengthFromPacket(packet gopacket.Packet) (uint32, error) {
 	case (*layers.IPv6):
 		return uint32(v.Length), nil
 	}
-	return 0, fmt.Errorf("wrong layer 3 protocol type")
+	return 0, errors.New("wrong layer 3 protocol type")
 }
 
 //
@@ -295,7 +295,7 @@ func getLayer4FromPacket(packet gopacket.Packet) (gopacket.TransportLayer, error
 	case (*layers.TCP):
 	case (*layers.UDP):
 	default:
-		return nil, fmt.Errorf("wrong layer 4 protocol type")
+		return nil, errors.New("wrong layer 4 protocol type")
 	}
 	return layer4, nil
 }
@@ -308,7 +308,7 @@ func getLayer4TCPFromPacket(packet gopacket.Packet) (*layers.TCP, error) {
 	}
 	tcp, ok := layer4.(*layers.TCP)
 	if !ok {
-		return nil, fmt.Errorf("wrong layer 4 protocol type")
+		return nil, errors.New("wrong layer 4 protocol type")
 	}
 	return tcp, nil
 }
@@ -321,7 +321,7 @@ func getLayer4UDPFromPacket(packet gopacket.Packet) (*layers.UDP, error) {
 	}
 	udp, ok := layer4.(*layers.UDP)
 	if !ok {
-		return nil, fmt.Errorf("wrong layer 4 protocol type")
+		return nil, errors.New("wrong layer 4 protocol type")
 	}
 	return udp, nil
 }
@@ -338,7 +338,7 @@ func getLayer4ProtoFromPacket(packet gopacket.Packet) (uint8, error) {
 	case (*layers.UDP):
 		return IPPROTO_UDP, nil
 	}
-	return 0, fmt.Errorf("wrong layer 4 protocol type")
+	return 0, errors.New("wrong layer 4 protocol type")
 }
 
 // getLayer4SrcPortDstPortFromPacket returns the source and destination ports from the packet.
@@ -353,7 +353,7 @@ func getLayer4SrcPortDstPortFromPacket(packet gopacket.Packet) (uint16, uint16, 
 	case (*layers.UDP):
 		return uint16(v.SrcPort), uint16(v.DstPort), nil
 	}
-	return 0, 0, fmt.Errorf("wrong layer 4 protocol type")
+	return 0, 0, errors.New("wrong layer 4 protocol type")
 }
 
 //
@@ -365,11 +365,11 @@ func getLayerICMPFromPacket(packet gopacket.Packet) (*layers.ICMPv4, error) {
 	// ICMP might be considered Layer 3 (per OSI) or Layer 4 (per TCP/IP).
 	layer := packet.Layer(layers.LayerTypeICMPv4)
 	if layer == nil {
-		return nil, fmt.Errorf("wrong layer protocol type")
+		return nil, errors.New("wrong layer protocol type")
 	}
 	icmp, ok := layer.(*layers.ICMPv4)
 	if !ok {
-		return nil, fmt.Errorf("wrong layer protocol type")
+		return nil, errors.New("wrong layer protocol type")
 	}
 	return icmp, nil
 }
@@ -379,11 +379,11 @@ func getLayerICMPv6FromPacket(packet gopacket.Packet) (*layers.ICMPv6, error) {
 	// ICMP might be considered Layer 3 (per OSI) or Layer 4 (per TCP/IP).
 	layer := packet.Layer(layers.LayerTypeICMPv6)
 	if layer == nil {
-		return nil, fmt.Errorf("wrong layer protocol type")
+		return nil, errors.New("wrong layer protocol type")
 	}
 	icmp, ok := layer.(*layers.ICMPv6)
 	if !ok {
-		return nil, fmt.Errorf("wrong layer protocol type")
+		return nil, errors.New("wrong layer protocol type")
 	}
 	return icmp, nil
 }
@@ -401,14 +401,14 @@ func getLayer7DNSFromPacket(packet gopacket.Packet) (*layers.DNS, error) {
 	case (*layers.DNS):
 		return l7, nil
 	}
-	return nil, fmt.Errorf("wrong layer 7 protocol type")
+	return nil, errors.New("wrong layer 7 protocol type")
 }
 
 // getLayer7FromPacket returns the layer 7 protocol from the packet.
 func getLayer7FromPacket(packet gopacket.Packet) (gopacket.ApplicationLayer, error) {
 	layer7 := packet.ApplicationLayer()
 	if layer7 == nil {
-		return nil, fmt.Errorf("wrong layer 7 protocol type")
+		return nil, errors.New("wrong layer 7 protocol type")
 	}
 	return layer7, nil
 }

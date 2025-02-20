@@ -1,11 +1,12 @@
 package policy
 
 import (
+	"errors"
 	"fmt"
 )
 
 func PolicyNilError() error {
-	return fmt.Errorf("policy cannot be nil")
+	return errors.New("policy cannot be nil")
 }
 
 func PoliciesMaxExceededError() error {

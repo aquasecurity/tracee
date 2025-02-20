@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -174,7 +175,7 @@ func waitForTraceeStart(trc *tracee.Tracee) error {
 				return nil
 			}
 		case <-timeoutTicker.C:
-			return fmt.Errorf("timed out on waiting for tracee to start")
+			return errors.New("timed out on waiting for tracee to start")
 		}
 	}
 }
@@ -196,7 +197,7 @@ func waitForTraceeStop(trc *tracee.Tracee) error {
 				return nil
 			}
 		case <-timeoutTicker.C:
-			return fmt.Errorf("timed out on stopping tracee")
+			return errors.New("timed out on stopping tracee")
 		}
 	}
 }

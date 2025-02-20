@@ -1,6 +1,7 @@
 package capabilities
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -461,7 +462,7 @@ func couldNotFindCapability(c string) error {
 }
 
 func couldNotReadPerfEventParanoid() error {
-	return fmt.Errorf("could not read procfs perf_event_paranoid")
+	return errors.New("could not read procfs perf_event_paranoid")
 }
 
 func couldNotSetProc(e error) error {

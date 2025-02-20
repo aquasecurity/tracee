@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -64,7 +65,7 @@ func (sig *e2eProcessTreeDataSource) GetSelectedEvents() (
 func (sig *e2eProcessTreeDataSource) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 
 	switch eventObj.EventName {
@@ -151,22 +152,22 @@ func (sig *e2eProcessTreeDataSource) checkThread(eventObj *trace.Event) error {
 
 	// Compare
 	if threadInfo.Tid != eventObj.HostThreadID {
-		return fmt.Errorf(debugFn("no match for tid"))
+		return errors.New(debugFn("no match for tid"))
 	}
 	if threadInfo.Pid != eventObj.HostProcessID {
-		return fmt.Errorf(debugFn("no match for pid"))
+		return errors.New(debugFn("no match for pid"))
 	}
 	if threadInfo.NsTid != eventObj.ThreadID {
-		return fmt.Errorf(debugFn("no match for ns tid"))
+		return errors.New(debugFn("no match for ns tid"))
 	}
 	if int(threadInfo.StartTime.UnixNano()) != eventObj.ThreadStartTime {
-		return fmt.Errorf(debugFn("no match for start time"))
+		return errors.New(debugFn("no match for start time"))
 	}
 	if threadTimeInfo.Timestamp != queryTime {
-		return fmt.Errorf(debugFn("no match for info timestamp"))
+		return errors.New(debugFn("no match for info timestamp"))
 	}
 	if threadInfo.Name != eventObj.ProcessName {
-		return fmt.Errorf(debugFn("no match for thread name"))
+		return errors.New(debugFn("no match for thread name"))
 	}
 
 	return nil
@@ -203,19 +204,19 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
 
 	// Compare
 	if processInfo.Pid != eventObj.HostProcessID {
-		return fmt.Errorf(debugFn("no match for pid"))
+		return errors.New(debugFn("no match for pid"))
 	}
 	if processInfo.NsPid != eventObj.ProcessID {
-		return fmt.Errorf(debugFn("no match for ns pid"))
+		return errors.New(debugFn("no match for ns pid"))
 	}
 	if processInfo.Ppid != eventObj.HostParentProcessID {
-		return fmt.Errorf(debugFn("no match for ppid"))
+		return errors.New(debugFn("no match for ppid"))
 	}
 	if int(processInfo.StartTime.UnixNano()) != eventObj.ThreadStartTime {
-		return fmt.Errorf(debugFn("no match for start time"))
+		return errors.New(debugFn("no match for start time"))
 	}
 	if processTimeInfo.Timestamp != queryTime {
-		return fmt.Errorf(debugFn("no match for timestamp"))
+		return errors.New(debugFn("no match for timestamp"))
 	}
 
 	// Check if the process lists itself in the list of its threads (case #1)
@@ -227,7 +228,7 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
 		}
 	}
 	if !threadExist {
-		return fmt.Errorf(debugFn("process not listed as thread"))
+		return errors.New(debugFn("process not listed as thread"))
 	}
 
 	// TODO
@@ -243,7 +244,7 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
 	// 	return err
 	// }
 	// if processInfo.ExecutionBinary.Path != pathname {
-	// 	return fmt.Errorf(debug("no match for pathname"))
+	// 	return errors.New(debug("no match for pathname"))
 	// }
 
 	return nil
@@ -306,10 +307,10 @@ func (sig *e2eProcessTreeDataSource) checkLineage(eventObj *trace.Event) error {
 
 		// Compare
 		if !compareMaps(compareBase.Info.ThreadsIds, given.Info.ThreadsIds) {
-			return fmt.Errorf(debug("threads do not match"))
+			return errors.New(debug("threads do not match"))
 		}
 		if !compareMaps(compareBase.Info.ChildProcessesIds, given.Info.ChildProcessesIds) {
-			return fmt.Errorf(debug("children do not match"))
+			return errors.New(debug("children do not match"))
 		}
 
 		// Zero fields that can't be compared (timing, maps, etc)
@@ -328,7 +329,7 @@ func (sig *e2eProcessTreeDataSource) checkLineage(eventObj *trace.Event) error {
 			// given.Info.Pid, given.Info.Ppid, given.Info.ExecTime, given.Info.EntityId,
 			// given.Info.Cmd, given.Info.ExecutionBinary.Path,
 			// )
-			return fmt.Errorf(debug("process in lineage does not match"))
+			return errors.New(debug("process in lineage does not match"))
 		}
 
 		return nil

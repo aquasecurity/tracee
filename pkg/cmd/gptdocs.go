@@ -251,7 +251,7 @@ given syscall. The template for this markdown file is the following:
 	choicesStr := strings.Join(choices, "")
 
 	if len(choicesStr) <= 10 {
-		return fileName, fmt.Errorf("no output from OpenAI")
+		return fileName, errors.New("no output from OpenAI")
 	}
 
 	footNote := `

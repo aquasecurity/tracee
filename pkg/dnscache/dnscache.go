@@ -2,7 +2,6 @@ package dnscache
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -60,7 +59,7 @@ func (nc *DNSCache) Add(event *trace.Event) error {
 	}
 
 	if len(dns.Questions) != 1 {
-		return fmt.Errorf("wrong number of requests found")
+		return errors.New("wrong number of requests found")
 	}
 
 	// transaction lock

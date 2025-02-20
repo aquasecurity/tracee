@@ -1,6 +1,7 @@
 package filters
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -25,7 +26,7 @@ func InvalidValueMax(value string, max int) error {
 }
 
 func InvalidFilterType() error {
-	return fmt.Errorf("operator not supported for the event and data arg")
+	return errors.New("operator not supported for the event and data arg")
 }
 
 func InvalidEventName(event string) error {
@@ -41,5 +42,5 @@ func InvalidScopeField(field string) error {
 }
 
 func FailedToRetreiveHostNS() error {
-	return fmt.Errorf("failed to retrieve host mount namespace")
+	return errors.New("failed to retrieve host mount namespace")
 }

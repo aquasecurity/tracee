@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 	"sync"
 
@@ -49,7 +49,7 @@ func (sig *e2eProcessExecuteFailed) GetSelectedEvents() ([]detect.SignatureEvent
 func (sig *e2eProcessExecuteFailed) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 
 	switch eventObj.EventName {

@@ -1,6 +1,7 @@
 package environment
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -25,7 +26,7 @@ func checkEnvPath(env string) (string, error) {
 func UnameRelease() (string, error) {
 	var uname syscall.Utsname
 	if err := syscall.Uname(&uname); err != nil {
-		return "", fmt.Errorf("could not get utsname")
+		return "", errors.New("could not get utsname")
 	}
 
 	var buf [65]byte
@@ -43,7 +44,7 @@ func UnameRelease() (string, error) {
 func UnameMachine() (string, error) {
 	var uname syscall.Utsname
 	if err := syscall.Uname(&uname); err != nil {
-		return "", fmt.Errorf("could not get utsname")
+		return "", errors.New("could not get utsname")
 	}
 
 	var buf [65]byte

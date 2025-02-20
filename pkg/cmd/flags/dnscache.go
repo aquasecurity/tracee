@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -31,7 +32,7 @@ func PrepareDnsCache(cacheSlice []string) (dnscache.Config, error) {
 
 	for _, slice := range cacheSlice {
 		if strings.HasPrefix(slice, "help") {
-			return config, fmt.Errorf(dnsCacheHelp())
+			return config, errors.New(dnsCacheHelp())
 		}
 		if slice == "enable" {
 			continue

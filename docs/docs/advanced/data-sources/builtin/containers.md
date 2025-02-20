@@ -42,7 +42,7 @@ func (sig *e2eContainersDataSource) Init(ctx detect.SignatureContext) error {
     sig.cb = ctx.Callback
     containersData, ok := ctx.GetDataSource("tracee", "containers")
     if !ok {
-        return fmt.Errorf("containers data source not registered")
+        return errors.New("containers data source not registered")
     }
     sig.containersData = containersData
     return nil
@@ -59,14 +59,14 @@ Given the following example:
 func (sig *e2eContainersDataSource) OnEvent(event protocol.Event) error {
     eventObj, ok := event.Payload.(trace.Event)
     if !ok {
-        return fmt.Errorf("failed to cast event's payload")
+        return errors.New("failed to cast event's payload")
     }
 
     switch eventObj.EventName {
     case "sched_process_exec":
         containerId := eventObj.Container.ID
         if containerId == "" {
-            return fmt.Errorf("received non container event")
+            return errors.New("received non container event")
         }
 
         container, err := sig.containersData.Get(containerId)
@@ -76,7 +76,7 @@ func (sig *e2eContainersDataSource) OnEvent(event protocol.Event) error {
 
         containerImage, ok := container["container_image"].(string)
         if !ok {
-            return fmt.Errorf("failed to obtain the container image name")
+            return errors.New("failed to obtain the container image name")
         }
 
         m, _ := sig.GetMetadata()

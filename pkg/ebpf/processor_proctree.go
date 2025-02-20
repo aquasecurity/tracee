@@ -1,7 +1,7 @@
 package ebpf
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -17,7 +17,7 @@ import (
 // procTreeForkProcessor handles process fork events.
 func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 	if t.processTree == nil {
-		return fmt.Errorf("process tree is disabled")
+		return errors.New("process tree is disabled")
 	}
 
 	var err error
@@ -106,7 +106,7 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 // procTreeExecProcessor handles process exec events.
 func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 	if t.processTree == nil {
-		return fmt.Errorf("process tree is disabled")
+		return errors.New("process tree is disabled")
 	}
 	if event.HostProcessID != event.HostThreadID {
 		return nil // check FeedFromExec for TODO of execve() handled by threads
@@ -189,7 +189,7 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 // procTreeExitProcessor handles process exit events.
 func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
 	if t.processTree == nil {
-		return fmt.Errorf("process tree is disabled")
+		return errors.New("process tree is disabled")
 	}
 	if event.HostProcessID != event.HostThreadID {
 		return nil // check FeedFromExec for TODO of execve() handled by threads

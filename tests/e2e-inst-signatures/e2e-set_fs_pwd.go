@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 
 	"kernel.org/pub/linux/libs/security/libcap/cap"
@@ -66,7 +66,7 @@ func (sig *e2eSetFsPwd) GetSelectedEvents() ([]detect.SignatureEventSelector, er
 func (sig *e2eSetFsPwd) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 
 	switch eventObj.EventName {

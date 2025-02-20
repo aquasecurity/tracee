@@ -1,6 +1,7 @@
 package cgroup
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -11,7 +12,7 @@ func (c *VersionNotSupported) Error() string {
 }
 
 func NoCgroupSupport() error {
-	return fmt.Errorf("could not find cgroup support")
+	return errors.New("could not find cgroup support")
 }
 
 func CouldNotFindOrMountDefaultCgroup(ver CgroupVersion) error {

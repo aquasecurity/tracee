@@ -208,7 +208,7 @@ func (btfi *OSInfo) discoverOSDistro() error {
 	var err error
 
 	if btfi.osReleaseFilePath == "" {
-		return fmt.Errorf("should specify os-release filepath")
+		return errors.New("should specify os-release filepath")
 	}
 
 	file, err := os.Open(btfi.osReleaseFilePath)
@@ -294,5 +294,5 @@ func Lockdown() (LockdownMode, error) {
 		}
 	}
 
-	return NOVALUE, fmt.Errorf("could not get lockdown mode")
+	return NOVALUE, errors.New("could not get lockdown mode")
 }

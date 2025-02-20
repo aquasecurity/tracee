@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"strconv"
 	"strings"
 
@@ -47,7 +47,7 @@ func (sig *counter) OnEvent(event protocol.Event) error {
 	ee, ok := event.Payload.(trace.Event)
 
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 
 	if ee.ArgsNum > 0 && ee.Args[0].Name == "pathname" && strings.HasPrefix(ee.Args[0].Value.(string), "yo") {

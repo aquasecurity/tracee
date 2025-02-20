@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -44,7 +45,7 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 
 	for _, slice := range cacheSlice {
 		if strings.HasPrefix(slice, "help") {
-			return config, fmt.Errorf(procTreeHelp())
+			return config, errors.New(procTreeHelp())
 		}
 		if strings.HasPrefix(slice, "none") {
 			return config, nil
@@ -110,7 +111,7 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 	}
 
 	if cacheSet && config.Source == proctree.SourceNone {
-		return config, fmt.Errorf("proctree cache was set but no source was given")
+		return config, errors.New("proctree cache was set but no source was given")
 	}
 
 	if config.Source != proctree.SourceNone {
