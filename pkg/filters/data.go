@@ -44,6 +44,17 @@ func (kdf *KernelDataFilter) IsKernelFilterEnabled(field string) bool {
 	return false
 }
 
+// getKernelFieldName return only one field name with in-kernel filter
+// TODO: need to retrieve all possible field names (and not only one)
+func (kdf *KernelDataFilter) getKernelFieldName() string {
+	var key string
+	for k := range kdf.kernelFilters {
+		key = k
+		break
+	}
+	return key
+}
+
 type DataFilter struct {
 	filters          map[string]Filter[*StringFilter]
 	kernelDataFilter *KernelDataFilter
@@ -61,6 +72,75 @@ func NewDataFilter() *DataFilter {
 	}
 }
 
+// list of events and field names allowed to have in-kernel filter
+var allowedKernelField = map[events.ID]string{
+	// LSM hooks
+	events.SecurityBprmCheck:           "pathname",  // index: 0
+	events.SecurityFileOpen:            "pathname",  // 0
+	events.SecurityInodeUnlink:         "pathname",  // 0
+	events.SecuritySbMount:             "path",      // 1
+	events.SecurityBPFMap:              "map_name",  // 1
+	events.SecurityKernelReadFile:      "pathname",  // 0
+	events.SecurityInodeMknod:          "file_name", // 0
+	events.SecurityPostReadFile:        "pathname",  // 0
+	events.SecurityInodeSymlinkEventId: "linkpath",  // 0
+	events.SecurityMmapFile:            "pathname",  // 0
+	events.SecurityFileMprotect:        "pathname",  // 0
+	events.SecurityInodeRename:         "old_path",  // 0
+	events.SecurityBpfProg:             "name",      // 1
+	events.SecurityPathNotify:          "pathname",  // 0
+	events.SharedObjectLoaded:          "pathname",  // 0
+
+	// Others
+	events.SchedProcessExec:   "pathname",         // 1
+	events.VfsWrite:           "pathname",         // 0
+	events.VfsWritev:          "pathname",         // 0
+	events.VfsRead:            "pathname",         // 0
+	events.VfsReadv:           "pathname",         // 0
+	events.MemProtAlert:       "pathname",         // 5
+	events.MagicWrite:         "pathname",         // 0
+	events.KernelWrite:        "pathname",         // 0
+	events.CallUsermodeHelper: "pathname",         // 0
+	events.LoadElfPhdrs:       "pathname",         // 0
+	events.DoMmap:             "pathname",         // 1
+	events.VfsUtimes:          "pathname",         // 0
+	events.DoTruncate:         "pathname",         // 0
+	events.InotifyWatch:       "pathname",         // 0
+	events.ModuleLoad:         "pathname",         // 3
+	events.ChmodCommon:        "pathname",         // 0
+	events.DeviceAdd:          "name",             // 0
+	events.DoInitModule:       "name",             // 0
+	events.ModuleFree:         "name",             // 0
+	events.ProcCreate:         "name",             // 0
+	events.RegisterChrdev:     "char_device_name", // 2
+	events.DebugfsCreateFile:  "file_name",        // 0
+	events.DebugfsCreateDir:   "name",             // 0
+	events.CgroupMkdir:        "cgroup_path",      // 1
+	events.CgroupRmdir:        "cgroup_path",      // 1
+	events.CgroupAttachTask:   "cgroup_path",      // 0
+	events.BpfAttach:          "prog_name",        // 1
+	events.KprobeAttach:       "symbol_name",      // 0
+	events.TaskRename:         "old_name",         // 0
+	events.FileModification:   "file_path",        // 0
+	events.SetFsPwd:           "resolved_path",    // 1
+	events.SchedSwitch:        "prev_comm",        // 2
+	events.HiddenInodes:       "hidden_process",   // 0
+	events.DirtyPipeSplice:    "in_file_path",     // 2
+
+	// Syscalls
+	events.Execve:   "pathname",
+	events.Execveat: "pathname",
+}
+
+// checkAvailabilityKernelFilter check if event ID and field name are allowed to be an kernel filter
+func (f *DataFilter) checkAvailabilityKernelFilter(event events.ID, field string) bool {
+	if selectedField := allowedKernelField[event]; selectedField != field {
+		return false
+	}
+
+	return true
+}
+
 func (f *DataFilter) Equalities() (StringFilterEqualities, error) {
 	if !f.Enabled() {
 		return StringFilterEqualities{
@@ -73,8 +153,9 @@ func (f *DataFilter) Equalities() (StringFilterEqualities, error) {
 		}, nil
 	}
 
-	// selected data name
-	dataField := "pathname"
+	// get the field name for in-kernel filter
+	// TODO: only one allowed at the moment (more to come)
+	dataField := f.kernelDataFilter.getKernelFieldName()
 
 	fieldName, ok := f.filters[dataField]
 	if !ok {
@@ -166,12 +247,10 @@ func (f *DataFilter) Parse(id events.ID, fieldName string, operatorAndValues str
 	// valueHandler is passed to the filter constructor to allow for custom value handling
 	// before the filter is applied
 	valueHandler := func(val string) (string, error) {
-		switch id {
-		case events.SecurityFileOpen,
-			events.MagicWrite,
-			events.SecurityMmapFile:
+		if f.checkAvailabilityKernelFilter(id, fieldName) {
 			return f.processKernelFilter(val, fieldName)
-
+		}
+		switch id {
 		case events.SysEnter,
 			events.SysExit,
 			events.SuspiciousSyscallSource,
@@ -280,10 +359,6 @@ func (f *DataFilter) checkKernelFilterRestrictions(val string) error {
 // enableKernelFilterArg activates a kernel filter for the specified data field.
 // This function currently supports enabling filters for the "pathname" field only.
 func (f *DataFilter) enableKernelFilterArg(fieldName string) {
-	if fieldName != "pathname" {
-		return
-	}
-
 	filter, ok := f.filters[fieldName]
 	if !ok {
 		return
