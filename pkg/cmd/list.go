@@ -41,7 +41,7 @@ func PrintEventList(includeSigs bool, wideOutput bool) {
 	}
 
 	tableRender := func(table *tablewriter.Table, title string) *tablewriter.Table {
-		fmt.Printf("\n" + title + "\n\n")
+		fmt.Print("\n" + title + "\n\n")
 		table.Render()
 		return newTable()
 	}
