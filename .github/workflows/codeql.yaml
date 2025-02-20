@@ -14,9 +14,6 @@ jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
-    env:
-      GOOS: linux
-      GOARCH: ${{ matrix.goarch }}
     permissions:
       security-events: write
       packages: read
@@ -26,13 +23,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        goarch: [amd64]
         language: [c-cpp, go]
         include:
           - language: c-cpp
             build-mode: autobuild
           - language: go
-            build-mode: autobuild
+            build-mode: manual
+            goarch: amd64
 
     steps:
     - name: Checkout repository
@@ -46,11 +43,22 @@ jobs:
     - name: Update submodules
       run: git submodule update --init --recursive
 
+    - name: Set GO Environment (for Go only)
+      if: matrix.language == 'go'
+      run: |
+        echo "GOOS=linux" >> $GITHUB_ENV
+        echo "GOARCH=${{ matrix.goarch }}" >> $GITHUB_ENV
+
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
+
+    - name: Manual Build for Go
+      if: matrix.language == 'go'
+      run: |
+        make
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
