@@ -13,7 +13,7 @@
 2. Building **dependencies**
 
     1. `clang` && `llvm` (14)
-    2. `golang` (1.22.3 toolchain)
+    2. `golang` (1.24.0 toolchain)
     3. `libelf` and `libelf-dev`
        (or elfutils-libelf and elfutils-libelf-devel)
     4. `zlib1g` and `zlib1g-dev`

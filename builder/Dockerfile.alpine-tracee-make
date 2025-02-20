@@ -52,7 +52,7 @@ FROM alpine-base AS go-setup
 LABEL AS=go-setup
 USER root
 
-ARG GO_VERSION=1.22.0
+ARG GO_VERSION=1.24.0
 ENV GOPATH=/go
 ENV GOROOT=/usr/local/go
 ENV GOTOOLCHAIN="auto"
