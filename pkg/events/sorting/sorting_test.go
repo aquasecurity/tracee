@@ -2,7 +2,7 @@ package sorting
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"sort"
 	"testing"
 	"time"
@@ -302,13 +302,13 @@ func retrieveEventsFromSorter(expectedEventsAmount int, sorterOutputChan <-chan 
 			outputList = append(outputList, *event)
 			eventsReceived++
 			if eventsReceived > expectedEventsAmount {
-				return outputList, fmt.Errorf("more events returned from sorter than expected")
+				return outputList, errors.New("more events returned from sorter than expected")
 			}
 		case err := <-fatalErrorsChan:
 			return nil, err
 		case <-ticker.C:
 			if eventsReceived != expectedEventsAmount {
-				return nil, fmt.Errorf("not all events received until timeout")
+				return nil, errors.New("not all events received until timeout")
 			}
 			return outputList, nil
 		}

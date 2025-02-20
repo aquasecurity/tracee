@@ -1,6 +1,7 @@
 package filehash
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -68,7 +69,7 @@ func (c *Cache) Get(k *Key) (string, error) {
 	}
 
 	if key == "" {
-		return "", fmt.Errorf("empty key given")
+		return "", errors.New("empty key given")
 	}
 
 	var fileHash string

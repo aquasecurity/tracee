@@ -2,6 +2,7 @@ package helpers
 
 import (
 	b64 "encoding/base64"
+	"errors"
 	"fmt"
 
 	"github.com/aquasecurity/tracee/types/trace"
@@ -156,12 +157,12 @@ func GetRawAddrArgumentByName(event trace.Event, argName string) (map[string]str
 		addr = make(map[string]string)
 		stringInterMap, isStringInterMap := arg.Value.(map[string]interface{})
 		if !isStringInterMap {
-			return addr, fmt.Errorf("couldn't convert arg to addr")
+			return addr, errors.New("couldn't convert arg to addr")
 		}
 		for k, v := range stringInterMap {
 			s, isString := v.(string)
 			if !isString {
-				return addr, fmt.Errorf("couldn't convert arg to addr")
+				return addr, errors.New("couldn't convert arg to addr")
 			}
 			addr[k] = s
 		}
@@ -205,7 +206,7 @@ func getHookedSymbolData(v interface{}) (trace.HookedSymbolData, error) {
 
 	hookedSymbolMap, ok := v.(map[string]interface{})
 	if !ok {
-		return symbol, fmt.Errorf("can't convert hooked symbol to map[string]interface{}")
+		return symbol, errors.New("can't convert hooked symbol to map[string]interface{}")
 	}
 
 	for key, value := range hookedSymbolMap {

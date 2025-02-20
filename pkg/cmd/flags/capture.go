@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -220,7 +221,7 @@ func parseFileCaptureOption(arg string, cap string, captureConfig *config.FileCa
 	}
 	optAndValue := strings.SplitN(cap, ":", 2)
 	if len(optAndValue) != 2 || optAndValue[0] != arg {
-		return fmt.Errorf("invalid capture option specified, use '--capture help' for more info")
+		return errors.New("invalid capture option specified, use '--capture help' for more info")
 	}
 	err := parseFileCaptureSubOption(optAndValue[1], captureConfig)
 	return err
@@ -231,18 +232,18 @@ func parseFileCaptureOption(arg string, cap string, captureConfig *config.FileCa
 func parseFileCaptureSubOption(option string, captureConfig *config.FileCaptureConfig) error {
 	optAndValue := strings.SplitN(option, "=", 2)
 	if len(optAndValue) != 2 || len(optAndValue[1]) == 0 {
-		return fmt.Errorf("invalid capture option specified, use '--capture help' for more info")
+		return errors.New("invalid capture option specified, use '--capture help' for more info")
 	}
 	opt := optAndValue[0]
 	value := optAndValue[1]
 	switch opt {
 	case "path":
 		if !strings.HasSuffix(option, "*") {
-			return fmt.Errorf("file path filter should end with *")
+			return errors.New("file path filter should end with *")
 		}
 		pathPrefix := strings.TrimSuffix(value, "*")
 		if len(pathPrefix) == 0 {
-			return fmt.Errorf("capture path filter cannot be empty")
+			return errors.New("capture path filter cannot be empty")
 		}
 		captureConfig.PathFilter = append(captureConfig.PathFilter, pathPrefix)
 	case "type":

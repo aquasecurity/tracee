@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -74,7 +75,7 @@ func main() {
 			address := ctx.String(prometheusAddressFlag)
 
 			if address == "" {
-				return fmt.Errorf("prometheus address required for tracee-er")
+				return errors.New("prometheus address required for tracee-er")
 			}
 
 			client, err := api.NewClient(api.Config{
