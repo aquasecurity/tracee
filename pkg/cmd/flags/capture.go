@@ -95,6 +95,8 @@ func PrepareCapture(captureSlice []string, newBinary bool) (config.CaptureConfig
 	outDir := "/tmp/tracee"
 	clearDir := false
 
+	// TODO: refactor this to reduce control flow nesting
+	// When done, reduce control-nesting rule to default "5" in .revive.toml
 	for i := range captureSlice {
 		c := captureSlice[i]
 		if strings.HasPrefix(c, "artifact:write") ||
