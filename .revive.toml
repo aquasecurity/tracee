@@ -82,6 +82,8 @@ enableAllRules = true
     Disabled = false
 [rule.indent-error-flow]
     Disabled = false
+[rule.max-control-nesting]
+    arguments = [15]
 [rule.imports-blacklist]
     Disabled = true
 [rule.import-shadowing]
