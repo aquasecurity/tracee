@@ -77,7 +77,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 # install staticcheck
 
 RUN GOROOT=/usr/local/go GOPATH=$HOME/go \
-    go install honnef.co/go/tools/cmd/staticcheck@2023.1.7 && \
+    go install honnef.co/go/tools/cmd/staticcheck@2025.1 && \
     cp $HOME/go/bin/staticcheck /usr/bin/
 
 # install goimports-reviser
