@@ -86,11 +86,11 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 				return
 			case f := <-wrkChannel:
 				fmt.Printf("WORKING (%v)...\n", f)
-			case r := <-retChannel:
-				if r.err != nil {
-					fmt.Printf("ERROR (%v): %v\n", r.eventName, r.err)
+			case workRet := <-retChannel:
+				if workRet.err != nil {
+					fmt.Printf("ERROR (%v): %v\n", workRet.eventName, workRet.err)
 				} else {
-					fmt.Printf("GENERATED (%v): %v\n", r.eventName, r.fileName)
+					fmt.Printf("GENERATED (%v): %v\n", workRet.eventName, workRet.fileName)
 				}
 			default:
 				time.Sleep(10 * time.Millisecond)
