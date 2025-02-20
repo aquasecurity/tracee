@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
@@ -50,7 +51,7 @@ func (sig *antiDebugging) OnEvent(event protocol.Event) error {
 	ee, ok := event.Payload.(trace.Event)
 
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 	if ee.EventName != "ptrace" {
 		return nil

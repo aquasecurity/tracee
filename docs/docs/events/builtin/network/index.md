@@ -122,7 +122,7 @@ func (sig *e2eDNS) GetSelectedEvents() ([]detect.SignatureEventSelector, error) 
 func (sig *e2eDNS) OnEvent(event protocol.Event) error {
     eventObj, ok := event.Payload.(trace.Event)
     if !ok {
-        return fmt.Errorf("failed to cast event's payload")
+        return errors.New("failed to cast event's payload")
     }
 
     if eventObj.EventName == "net_packet_dns" {

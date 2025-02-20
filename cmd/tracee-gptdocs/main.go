@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log"
 	"os"
 	"os/signal"
@@ -55,15 +55,15 @@ func main() {
 
 			key := c.String(openAIKey)
 			if key == "" {
-				return fmt.Errorf("you should provide an OpenAI API key")
+				return errors.New("you should provide an OpenAI API key")
 			}
 			temp := c.Float64(temperature)
 			if temp < 0.0 || temp > 2.0 {
-				return fmt.Errorf("temperature should be between 0.0 and 2.0")
+				return errors.New("temperature should be between 0.0 and 2.0")
 			}
 			token := c.Int(maxTokens)
 			if token < 0 || token > 4096 {
-				return fmt.Errorf("max tokens should be between 0 and 4096")
+				return errors.New("max tokens should be between 0 and 4096")
 			}
 			events := c.StringSlice(givenEvents)
 

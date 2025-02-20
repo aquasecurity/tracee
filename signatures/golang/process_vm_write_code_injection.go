@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -46,7 +46,7 @@ func (sig *ProcessVmWriteCodeInjection) GetSelectedEvents() ([]detect.SignatureE
 func (sig *ProcessVmWriteCodeInjection) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("invalid event")
+		return errors.New("invalid event")
 	}
 
 	switch eventObj.EventName {

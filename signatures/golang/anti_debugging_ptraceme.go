@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/signatures/helpers"
@@ -48,7 +48,7 @@ func (sig *AntiDebuggingPtraceme) GetSelectedEvents() ([]detect.SignatureEventSe
 func (sig *AntiDebuggingPtraceme) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("invalid event")
+		return errors.New("invalid event")
 	}
 
 	switch eventObj.EventName {
