@@ -1,6 +1,7 @@
 package derive
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -23,19 +24,19 @@ func alreadyRegisteredError(from, to events.ID) error {
 //
 
 func noPayloadError() error {
-	return fmt.Errorf("no payload ?")
+	return errors.New("no payload ?")
 }
 
 func emptyPayloadError() error {
-	return fmt.Errorf("empty payload ?")
+	return errors.New("empty payload ?")
 }
 
 func nonByteArgError() error {
-	return fmt.Errorf("non []byte argument ?")
+	return errors.New("non []byte argument ?")
 }
 
 func parsePacketError() error {
-	return fmt.Errorf("could not parse packet")
+	return errors.New("could not parse packet")
 }
 
 func notProtoPacketError(proto string) error {

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
 	"github.com/aquasecurity/tracee/signatures/helpers"
@@ -39,7 +39,7 @@ func (sig *e2eBpfAttach) GetSelectedEvents() ([]detect.SignatureEventSelector, e
 func (sig *e2eBpfAttach) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 
 	switch eventObj.EventName {

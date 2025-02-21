@@ -98,7 +98,7 @@ Now we can use this data source just like we would any other in a signature thro
     ...
     thresholdDataSource, ok := ctx.GetDataSource("my_namespace", "threshold_datasource")
     if !ok {
-        return fmt.Errorf("threshold data source not registered")
+        return errors.New("threshold data source not registered")
     }
     if thresholdDataSource.Version() > 1 {
         return fmt.Errorf("threshold data source version not supported, please update this signature")

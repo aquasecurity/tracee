@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"regexp"
 
 	"github.com/aquasecurity/tracee/signatures/helpers"
@@ -52,7 +52,7 @@ func (sig *DefaultLoaderModification) GetSelectedEvents() ([]detect.SignatureEve
 func (sig *DefaultLoaderModification) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("invalid event")
+		return errors.New("invalid event")
 	}
 
 	path := ""

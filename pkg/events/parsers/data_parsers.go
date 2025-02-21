@@ -2,6 +2,7 @@ package parsers
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -2958,7 +2959,7 @@ func ParseGUPFlagsCurrentOS(rawValue uint64) (systemFunctionArgument, error) {
 	case newVersionsParsing:
 		return ParseGUPFlags(rawValue), nil
 	default:
-		return nil, fmt.Errorf("no parsing function for GUP flags was found to this OD version")
+		return nil, errors.New("no parsing function for GUP flags was found to this OD version")
 	}
 }
 
