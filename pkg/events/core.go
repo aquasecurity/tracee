@@ -11197,6 +11197,7 @@ var CoreEvents = map[ID]Definition{
 			{Type: "char*", Name: "stdin_path"},
 			{Type: "bool", Name: "invoked_from_kernel"},
 			{Type: "const char*", Name: "prev_comm"},
+			{Type: "struct stdin_info", Name: "stdin_info"},
 			{Type: "const char**", Name: "env"},
 		},
 	},
