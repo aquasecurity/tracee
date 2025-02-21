@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -61,7 +62,7 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 	ee, ok := event.Payload.(trace.Event)
 
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 	switch ee.EventName {
 	case "open", "openat":
@@ -94,7 +95,7 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 
 		requestString, ok := request.Value.(string)
 		if !ok {
-			return fmt.Errorf("failed to cast request's value")
+			return errors.New("failed to cast request's value")
 		}
 
 		if requestString == "PTRACE_POKETEXT" || requestString == "PTRACE_POKEDATA" {

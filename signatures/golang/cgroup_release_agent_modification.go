@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"path"
 
 	"github.com/aquasecurity/tracee/signatures/helpers"
@@ -49,7 +49,7 @@ func (sig *CgroupReleaseAgentModification) GetSelectedEvents() ([]detect.Signatu
 func (sig *CgroupReleaseAgentModification) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("invalid event")
+		return errors.New("invalid event")
 	}
 
 	basename := ""

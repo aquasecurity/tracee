@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"path"
 	"strings"
 
@@ -55,7 +55,7 @@ func (sig *ScheduledTaskModification) GetSelectedEvents() ([]detect.SignatureEve
 func (sig *ScheduledTaskModification) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("invalid event")
+		return errors.New("invalid event")
 	}
 
 	switch eventObj.EventName {

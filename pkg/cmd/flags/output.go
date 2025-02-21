@@ -154,8 +154,6 @@ func setOption(cfg *config.OutputConfig, option string, newBinary bool) error {
 			}
 
 			return nil
-		} else {
-			goto invalidOption
 		}
 
 	invalidOption:

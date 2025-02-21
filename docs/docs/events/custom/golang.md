@@ -89,7 +89,7 @@ There are 2 ways you can get your own golang signatures working with tracee.
                     }
                 }
             default:
-                return fmt.Errorf("failed to cast event's payload")
+                return errors.New("failed to cast event's payload")
             }
 
             return nil

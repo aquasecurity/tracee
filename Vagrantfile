@@ -130,7 +130,7 @@ Vagrant.configure("2") do |config|
       USER="#{vm_user}"
       HOME="/home/#{vm_user}"
       LLVM_VERSION="14"
-      GO_VERSION="1.22.3"
+      GO_VERSION="1.24.0"
       KUBECTL_VERSION="v1.29"
       VM_TYPE="#{vm_type}"
 

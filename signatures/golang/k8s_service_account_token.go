@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"regexp"
 
 	"github.com/aquasecurity/tracee/signatures/helpers"
@@ -53,7 +53,7 @@ func (sig *K8SServiceAccountToken) GetSelectedEvents() ([]detect.SignatureEventS
 func (sig *K8SServiceAccountToken) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("invalid event")
+		return errors.New("invalid event")
 	}
 
 	switch eventObj.EventName {

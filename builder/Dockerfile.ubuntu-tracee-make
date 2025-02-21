@@ -11,7 +11,7 @@ ARG gid=1000
 # Version
 #
 
-ARG GO_VERSION=1.22.0
+ARG GO_VERSION=1.24.0
 
 # install needed environment
 
@@ -77,7 +77,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 # install staticcheck
 
 RUN GOROOT=/usr/local/go GOPATH=$HOME/go \
-    go install honnef.co/go/tools/cmd/staticcheck@2023.1.7 && \
+    go install honnef.co/go/tools/cmd/staticcheck@2025.1 && \
     cp $HOME/go/bin/staticcheck /usr/bin/
 
 # install goimports-reviser
@@ -89,13 +89,13 @@ RUN GOROOT=/usr/local/go GOPATH=$HOME/go \
 # install revive
 
 RUN GOROOT=/usr/local/go GOPATH=$HOME/go \
-    go install github.com/mgechev/revive@e33fb87 && \
+    go install github.com/mgechev/revive@v1.7.0 && \
     cp $HOME/go/bin/revive /usr/bin/
 
 # install errcheck
 
 RUN GOROOT=/usr/local/go GOPATH=$HOME/go \
-    go install github.com/kisielk/errcheck@v1.7.0 && \
+    go install github.com/kisielk/errcheck@v1.9.0 && \
     cp $HOME/go/bin/errcheck /usr/bin/
 
 USER tracee

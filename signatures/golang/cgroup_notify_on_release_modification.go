@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"path"
 
 	"github.com/aquasecurity/tracee/signatures/helpers"
@@ -48,7 +48,7 @@ func (sig *CgroupNotifyOnReleaseModification) GetSelectedEvents() ([]detect.Sign
 func (sig *CgroupNotifyOnReleaseModification) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("invalid event")
+		return errors.New("invalid event")
 	}
 
 	switch eventObj.EventName {
