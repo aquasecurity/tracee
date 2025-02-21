@@ -11900,7 +11900,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{},
 		fields: []trace.ArgMeta{
-			{Type: "char*", Name: "hidden_process"},
+			{Type: "char*", Name: "hidden_dirent"},
 		},
 	},
 	KernelWrite: {
