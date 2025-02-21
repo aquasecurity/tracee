@@ -592,7 +592,7 @@ func (m *Manager) LookupByName(name string) (*Policy, error) {
 
 func (m *Manager) UpdateBPF(
 	bpfModule *bpf.Module,
-	cts *containers.Containers,
+	cts *containers.Manager,
 	eventsFields map[events.ID][]bufferdecoder.ArgType,
 	createNewMaps bool,
 	updateProcTree bool,

@@ -28,7 +28,7 @@ type Controller struct {
 	bpfModule      *libbpfgo.Module
 	signalBuffer   *libbpfgo.PerfBuffer
 	signalPool     *sync.Pool
-	cgroupManager  *containers.Containers
+	cgroupManager  *containers.Manager
 	processTree    *proctree.ProcessTree
 	enrichDisabled bool
 }
@@ -36,7 +36,7 @@ type Controller struct {
 // NewController creates a new controller.
 func NewController(
 	bpfModule *libbpfgo.Module,
-	cgroupManager *containers.Containers,
+	cgroupManager *containers.Manager,
 	enrichDisabled bool,
 	procTree *proctree.ProcessTree,
 ) (*Controller, error) {
