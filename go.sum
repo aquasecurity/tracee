@@ -387,8 +387,8 @@ github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOEl
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/IBM/fluent-forward-go v0.2.2 h1:T48kAjSMOAqTcpd6zkzqLAFOWlYPYIbCFJcEjrVzV1U=
-github.com/IBM/fluent-forward-go v0.2.2/go.mod h1:U1SVl6rVRGMC/QhCTZ3iQx4P/ykCeg1y6UoVnlz+OAY=
+github.com/IBM/fluent-forward-go v0.3.0 h1:SwY+/ALUkNEUCFDBDErVuxW/r1sqKtxo/u3kKISGpVs=
+github.com/IBM/fluent-forward-go v0.3.0/go.mod h1:b4UBE/RlhoJJKsrInpEB02Z/DnZMYM+DazAvIvAEHy0=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
 github.com/Masterminds/goutils v1.1.1/go.mod h1:8cTjp+g8YejhMuvIA5y2vz3BpJxksy863GQaJW2MFNU=
 github.com/Masterminds/semver/v3 v3.3.1 h1:QtNSWtVZ3nBfk8mAOu/B6v7FMJ+NHTIgUPi7rj+4nv4=
