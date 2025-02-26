@@ -230,7 +230,7 @@ env:
 	@echo "OUTPUT_DIR               $(OUTPUT_DIR)"
 	@echo ---------------------------------------
 	@echo "LIBBPF_CFLAGS            $(LIBBPF_CFLAGS)"
-	@echo "LIBBPF_LDLAGS            $(LIBBPF_LDFLAGS)"
+	@echo "LIBBPF_LDFLAGS           $(LIBBPF_LDFLAGS)"
 	@echo "LIBBPF_SRC               $(LIBBPF_SRC)"
 	@echo ---------------------------------------
 	@echo "STATIC                   $(STATIC)"
@@ -1011,11 +1011,11 @@ protoc:
 MARKDOWN_DIR ?= docs/docs/flags
 MAN_DIR ?= docs/man
 OUTPUT_MAN_DIR := $(OUTPUT_DIR)/$(MAN_DIR)
-MARKDOW_FILES := $(shell find $(MARKDOWN_DIR) \
+MARKDOWN_FILES := $(shell find $(MARKDOWN_DIR) \
 					-type f \
 					-name '*.md' \
 				)
-MAN_FILES := $(patsubst $(MARKDOWN_DIR)/%.md,$(MAN_DIR)/%,$(MARKDOW_FILES))
+MAN_FILES := $(patsubst $(MARKDOWN_DIR)/%.md,$(MAN_DIR)/%,$(MARKDOWN_FILES))
 
 $(OUTPUT_MAN_DIR): \
 	| .check_$(CMD_MKDIR)
