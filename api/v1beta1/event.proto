@@ -511,7 +511,7 @@ enum EventId {
     security_mmap_file = 1046;
     security_file_mprotect = 1047;
     socket_dup = 1048;
-    hidden_inodes = 1049;
+    zeroed_inodes = 1049;
     kernel_write = 1050;
     proc_create = 1051;
     kprobe_attach = 1052;
