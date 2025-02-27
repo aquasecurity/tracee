@@ -620,7 +620,7 @@ struct sockaddr_un {
 
 struct unix_address {
     int len;
-    struct sockaddr_un name[0];
+    struct sockaddr_un name[];
 };
 
 struct ipv6_pinfo {
