@@ -1,7 +1,7 @@
 package server
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -89,37 +89,37 @@ func TestPrepareServer(t *testing.T) {
 			testName:       "invalid server flag",
 			serverFlags:    []string{"invalid"},
 			expectedServer: nil,
-			expectedError:  fmt.Errorf("cannot process the flag: try grpc.Xxx or http.Xxx instead"),
+			expectedError:  errors.New("cannot process the flag: try grpc.Xxx or http.Xxx instead"),
 		},
 		{
 			testName:       "invalid server flag",
 			serverFlags:    []string{"invalid.invalid"},
 			expectedServer: nil,
-			expectedError:  fmt.Errorf("cannot process the flag: try grpc.Xxx or http.Xxx instead"),
+			expectedError:  errors.New("cannot process the flag: try grpc.Xxx or http.Xxx instead"),
 		},
 		{
 			testName:       "invalid http flag",
 			serverFlags:    []string{"http.invalid=true"},
 			expectedServer: nil,
-			expectedError:  fmt.Errorf("invalid http flag, consider using one of the following commands: address, metrics, healthz, pprof, pyroscope"),
+			expectedError:  errors.New("invalid http flag, consider using one of the following commands: address, metrics, healthz, pprof, pyroscope"),
 		},
 		{
 			testName:       "invalid grpc flag",
 			serverFlags:    []string{"grpc.invalid=true"},
 			expectedServer: nil,
-			expectedError:  fmt.Errorf("invalid grpc flag, consider using address"),
+			expectedError:  errors.New("invalid grpc flag, consider using address"),
 		},
 		{
 			testName:       "invalid grpc protocol",
 			serverFlags:    []string{"grpc.address=invalid:4466"},
 			expectedServer: nil,
-			expectedError:  fmt.Errorf("grpc supported protocols are tcp or unix. eg: tcp:4466, unix:/var/run/tracee.sock"),
+			expectedError:  errors.New("grpc supported protocols are tcp or unix. eg: tcp:4466, unix:/var/run/tracee.sock"),
 		},
 		{
 			testName:       "invalid http protocol",
 			serverFlags:    []string{"http.address=invalid:8080"},
 			expectedServer: nil,
-			expectedError:  fmt.Errorf("invalid http address"),
+			expectedError:  errors.New("invalid http address"),
 		},
 	}
 	for _, testcase := range testCases {

@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"net/url"
 	"os"
@@ -48,7 +47,7 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 		// split flag http.address or grpc.address for example
 		serverParts := strings.SplitN(endpoint, ".", 2)
 		if len(serverParts) < 2 {
-			return nil, fmt.Errorf("cannot process the flag: try grpc.Xxx or http.Xxx instead")
+			return nil, errors.New("cannot process the flag: try grpc.Xxx or http.Xxx instead")
 		}
 		switch serverParts[0] {
 		// flag http.Xxx
@@ -56,11 +55,10 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 			httpParts := strings.SplitN(serverParts[1], "=", 2)
 			switch httpParts[0] {
 			case ListenEndpointFlag:
-				if isValidAddr(httpParts[1]) {
-					server.HTTPServer = http.New(httpParts[1])
-				} else {
+				if !isValidAddr(httpParts[1]) {
 					return nil, errors.New("invalid http address")
 				}
+				server.HTTPServer = http.New(httpParts[1])
 			case MetricsEndpointFlag:
 				if len(httpParts) == 1 || strings.Compare(httpParts[1], "true") == 0 {
 					enableMetrics = true
@@ -110,7 +108,7 @@ func PrepareServer(serverSlice []string) (*Server, error) {
 				return nil, errors.New("invalid grpc flag, consider using address")
 			}
 		default:
-			return nil, fmt.Errorf("cannot process the flag: try grpc.Xxx or http.Xxx instead")
+			return nil, errors.New("cannot process the flag: try grpc.Xxx or http.Xxx instead")
 		}
 	}
 
