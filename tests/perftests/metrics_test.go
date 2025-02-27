@@ -108,7 +108,7 @@ func TestMetricsAndPprofExist(t *testing.T) {
 	}
 
 	cmd := "--output none --events=syslog --server http.metrics --server http.pprof"
-	cmd = fmt.Sprintf("--http.address=:%d %s", testutils.TraceePort, cmd)
+	cmd = fmt.Sprintf("--http.addr=:%d %s", testutils.TraceePort, cmd)
 
 	running := testutils.NewRunningTracee(context.Background(), cmd)
 
