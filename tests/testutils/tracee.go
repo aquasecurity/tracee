@@ -53,8 +53,8 @@ func NewRunningTracee(givenCtx context.Context, cmdLine string) *RunningTracee {
 		cmdLine = fmt.Sprintf("--server http.healthz %s", cmdLine)
 	}
 
-	if !strings.Contains(cmdLine, "--http.address") {
-		cmdLine = fmt.Sprintf("--http.address=:%d %s", TraceePort, cmdLine)
+	if !strings.Contains(cmdLine, "--http.addr") {
+		cmdLine = fmt.Sprintf("--http.addr=:%d %s", TraceePort, cmdLine)
 	}
 
 	cmdLine = fmt.Sprintf("%s %s", TraceeBinary, cmdLine)

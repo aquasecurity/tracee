@@ -30,10 +30,6 @@ func (t *Tracee) countPerfEventSubmissions(ctx context.Context) {
 
 	evtStatZero := eventStatsValues{}
 	for _, id := range t.policyManager.EventsToSubmit() {
-		if id >= events.MaxCommonID {
-			continue
-		}
-
 		key := uint32(id)
 		err := evtsCountsBPFMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&evtStatZero))
 		if err != nil {
