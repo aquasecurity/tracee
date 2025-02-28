@@ -2792,14 +2792,16 @@ int BPF_KPROBE(trace_security_socket_connect)
     if (!evaluate_scope_filters(&p))
         return 0;
 
-    u64 addr_len = PT_REGS_PARM3(ctx);
-
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
     if (!sock)
         return 0;
 
     struct sockaddr *address = (struct sockaddr *) PT_REGS_PARM2(ctx);
     if (!address)
+        return 0;
+
+    int addrlen = (int) PT_REGS_PARM3(ctx);
+    if (addrlen <= 0)
         return 0;
 
     // Check if the socket type is supported.
@@ -2848,8 +2850,6 @@ int BPF_KPROBE(trace_security_socket_connect)
     // Save the socket type argument to the event.
     stsb(args_buf, &type, sizeof(u32), 1);
 
-    bool need_workaround = false;
-
     // Save the sockaddr struct, depending on the family.
     size_t sockaddr_len = 0;
     switch (sa_fam) {
@@ -2860,26 +2860,12 @@ int BPF_KPROBE(trace_security_socket_connect)
             sockaddr_len = bpf_core_type_size(struct sockaddr_in6);
             break;
         case AF_UNIX:
-            sockaddr_len = bpf_core_type_size(struct sockaddr_un);
-            if (addr_len < sockaddr_len)
-                need_workaround = true;
-
+            sockaddr_len = addrlen;
+            update_min(sockaddr_len, bpf_core_type_size(struct sockaddr_un));
             break;
     }
 
-#if defined(bpf_target_x86)
-    if (need_workaround) {
-        // Workaround for sockaddr_un struct length (issue: #1129).
-        struct sockaddr_un sockaddr = {0};
-        bpf_probe_read(&sockaddr, (u32) addr_len, (void *) address);
-        // NOTE(nadav.str): stack allocated, so runtime core size check is avoided
-        stsb(args_buf, (void *) &sockaddr, sizeof(struct sockaddr_un), 2);
-    }
-#endif
-
-    // Save the sockaddr struct argument to the event.
-    if (!need_workaround)
-        stsb(args_buf, (void *) address, sockaddr_len, 2);
+    stsb(args_buf, (void *) address, sockaddr_len, 2);
 
     // Submit the event.
     return events_perf_submit(&p, 0);
