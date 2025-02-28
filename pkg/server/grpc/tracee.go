@@ -520,7 +520,7 @@ var EventTranslationTable = [events.MaxBuiltinID]pb.EventId{
 	events.SecurityMmapFile:             pb.EventId_security_mmap_file,
 	events.SecurityFileMprotect:         pb.EventId_security_file_mprotect,
 	events.SocketDup:                    pb.EventId_socket_dup,
-	events.HiddenInodes:                 pb.EventId_hidden_inodes,
+	events.ZeroedInodes:                 pb.EventId_zeroed_inodes,
 	events.KernelWrite:                  pb.EventId_kernel_write,
 	events.ProcCreate:                   pb.EventId_proc_create,
 	events.KprobeAttach:                 pb.EventId_kprobe_attach,

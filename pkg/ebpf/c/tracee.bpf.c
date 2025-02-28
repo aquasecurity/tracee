@@ -1674,20 +1674,20 @@ SEC("kprobe/filldir64")
 int BPF_KPROBE(trace_filldir64)
 {
     // only inode=0 is relevant, simple filter prior to program run
-    unsigned long process_inode_number = (unsigned long) PT_REGS_PARM5(ctx);
-    if (process_inode_number != 0)
+    unsigned long dirent_inode_number = (unsigned long) PT_REGS_PARM5(ctx);
+    if (dirent_inode_number != 0)
         return 0;
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, HIDDEN_INODES))
+    if (!init_program_data(&p, ctx, ZEROED_INODES))
         return 0;
 
     if (!evaluate_scope_filters(&p))
         return 0;
 
-    char *process_name = (char *) PT_REGS_PARM2(ctx);
+    char *dirent_name = (char *) PT_REGS_PARM2(ctx);
 
-    save_str_to_buf(&p.event->args_buf, process_name, 0);
+    save_str_to_buf(&p.event->args_buf, dirent_name, 0);
     return events_perf_submit(&p, 0);
 }
 
