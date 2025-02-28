@@ -513,8 +513,8 @@ statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
         get_network_details_from_sock_v4(sk, &net_details, 0);
         get_remote_sockaddr_in_from_network_details(&remote, &net_details, family);
 
-        save_to_submit_buf(
-            &(p->event->args_buf), &remote, bpf_core_type_size(struct sockaddr_in), 2);
+        // NOTE: for stack allocated, use sizeof instead of bpf_core_type_size
+        save_to_submit_buf(&(p->event->args_buf), &remote, sizeof(remote), 2);
     } else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
         struct sockaddr_in6 remote;
@@ -522,14 +522,14 @@ statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
         get_network_details_from_sock_v6(sk, &net_details, 0);
         get_remote_sockaddr_in6_from_network_details(&remote, &net_details, family);
 
-        save_to_submit_buf(
-            &(p->event->args_buf), &remote, bpf_core_type_size(struct sockaddr_in6), 2);
+        // NOTE: for stack allocated, use sizeof instead of bpf_core_type_size
+        save_to_submit_buf(&(p->event->args_buf), &remote, sizeof(remote), 2);
     } else if (family == AF_UNIX) {
         struct unix_sock *unix_sk = (struct unix_sock *) sk;
         struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
 
-        save_to_submit_buf(
-            &(p->event->args_buf), &sockaddr, bpf_core_type_size(struct sockaddr_un), 2);
+        // NOTE: for stack allocated, use sizeof instead of bpf_core_type_size
+        save_to_submit_buf(&(p->event->args_buf), &sockaddr, sizeof(sockaddr), 2);
     }
 
     return events_perf_submit(p, 0);
@@ -2837,8 +2837,6 @@ int BPF_KPROBE(trace_security_socket_connect)
     // Save the socket type argument to the event.
     stsb(args_buf, &type, sizeof(u32), 1);
 
-    bool need_workaround = false;
-
     // Save the sockaddr struct, depending on the family.
     size_t sockaddr_len = 0;
     switch (sa_fam) {
@@ -2850,25 +2848,11 @@ int BPF_KPROBE(trace_security_socket_connect)
             break;
         case AF_UNIX:
             sockaddr_len = bpf_core_type_size(struct sockaddr_un);
-            if (addr_len < sockaddr_len)
-                need_workaround = true;
-
             break;
     }
 
-#if defined(bpf_target_x86)
-    if (need_workaround) {
-        // Workaround for sockaddr_un struct length (issue: #1129).
-        struct sockaddr_un sockaddr = {0};
-        bpf_probe_read(&sockaddr, (u32) addr_len, (void *) address);
-        // NOTE(nadav.str): stack allocated, so runtime core size check is avoided
-        stsb(args_buf, (void *) &sockaddr, sizeof(struct sockaddr_un), 2);
-    }
-#endif
-
     // Save the sockaddr struct argument to the event.
-    if (!need_workaround)
-        stsb(args_buf, (void *) address, sockaddr_len, 2);
+    stsb(args_buf, (void *) address, sockaddr_len, 2);
 
     // Submit the event.
     return events_perf_submit(&p, 0);
