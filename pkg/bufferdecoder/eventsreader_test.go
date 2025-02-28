@@ -138,10 +138,31 @@ func TestReadArgFromBuff(t *testing.T) {
 			name: "sockAddrT - AF_UNIX",
 			input: []byte{0,
 				1, 0, // sa_family=AF_UNIX
-				47, 116, 109, 112, 47, 115, 111, 99, 107, 101, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 101, 110, 0, 0, 0, // sun_path=/tmp/socket
+				47, 116, 109, 112, 47, 115, 111, 99, 107, 101, 116, 0, // sun_path=/tmp/socket
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 101, 110, 0, 0, 0,
 			},
 			fields:      []trace.ArgMeta{{Type: "struct sockaddr*", Name: "sockAddr0"}},
 			expectedArg: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/tmp/socket"},
+		},
+		{
+			name: "sockAddrT - AF_UNIX (abstract socket)",
+			input: []byte{0,
+				1, 0, // sa_family=AF_UNIX
+				// it must be 108 bytes long
+				0, 115, 111, 109, 101, 116, 104, 105, 110, 103, 0, // sun_path=@something
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			},
+			fields:      []trace.ArgMeta{{Type: "struct sockaddr*", Name: "sockAddr0"}},
+			expectedArg: map[string]string{"sa_family": "AF_UNIX", "sun_path": "@something"},
 		},
 		{
 			name:          "unknown",
@@ -188,7 +209,7 @@ func TestReadArgFromBuff(t *testing.T) {
 	}
 }
 
-func TestReadStringVarFromBuff(t *testing.T) {
+func Test_readSunPathFromBuff(t *testing.T) {
 	tests := []struct {
 		name           string
 		buffer         []byte
@@ -209,7 +230,7 @@ func TestReadStringVarFromBuff(t *testing.T) {
 			name:           "Buffer with same length as max without null terminator",
 			buffer:         []byte{'H', 'e', 'l', 'l', 'o'},
 			max:            5,
-			expected:       "Hell",
+			expected:       "Hello",
 			expectedCursor: 5,
 			expectError:    false,
 		},
@@ -217,7 +238,7 @@ func TestReadStringVarFromBuff(t *testing.T) {
 			name:           "Buffer longer than max length without null terminator",
 			buffer:         []byte{'H', 'e', 'l', 'l', 'o', 'W', 'o', 'r', 'l', 'd'},
 			max:            5,
-			expected:       "Hell",
+			expected:       "Hello",
 			expectedCursor: 5,
 			expectError:    false,
 		},
@@ -227,14 +248,22 @@ func TestReadStringVarFromBuff(t *testing.T) {
 			max:            0,
 			expected:       "",
 			expectedCursor: 0,
-			expectError:    false,
+			expectError:    true,
 		},
 		{
 			name:           "Buffer started with null terminator",
-			buffer:         []byte{0, 'N', 'u', 'l', 'l', 0, 'W', 'o', 'r', 'l', 'd'},
-			max:            6,
+			buffer:         []byte{0, 'A', 'b', 's', 't', 'r', 'a', 'c', 't', 0, 'd'},
+			max:            10,
+			expected:       "@Abstract",
+			expectedCursor: 10,
+			expectError:    false,
+		},
+		{
+			name:           "Zeroed buffer",
+			buffer:         []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			max:            10,
 			expected:       "",
-			expectedCursor: 6,
+			expectedCursor: 10,
 			expectError:    false,
 		},
 		{
@@ -258,7 +287,7 @@ func TestReadStringVarFromBuff(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			decoder := New(tt.buffer)
-			actual, err := readStringVarFromBuff(decoder, tt.max)
+			actual, err := readSunPathFromBuff(decoder, tt.max)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
