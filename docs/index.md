@@ -6,10 +6,10 @@ hide:
 
 👋 Welcome to Tracee Documentation! To help you get around, please notice the different sections at the top global menu:
 
-- You are currently in the [Getting Started](./) section where you can find general information and help with first steps.
-- In the [Tutorials](./tutorials/overview) section you can find step-by-step guides that help you accomplish specific tasks.
-- In the [Docs](./docs/overview) section you can find the complete reference documentation for all of the different features and settings that Tracee has to offer.
-- In the [Contributing](./contributing/overview) section you can find technical developer documentation and contribution guidelines.
+- You are currently in the [Getting Started](index.md) section where you can find general information and help with first steps.
+- In the [Tutorials](tutorials/overview.md) section you can find step-by-step guides that help you accomplish specific tasks.
+- In the [Docs](docs/overview.md) section you can find the complete reference documentation for all of the different features and settings that Tracee has to offer.
+- In the [Contributing](contributing/overview.md) section you can find technical developer documentation and contribution guidelines.
 
 <!-- links that differ between docs and readme -->
 [installation]:./docs/install/index.md
@@ -20,7 +20,7 @@ hide:
 <!-- everything below is copied from readme -->
 
 Before moving on, please consider giving us a GitHub star ⭐️. Thank you!
-
+ 
 ## About Tracee
 
 Tracee is a runtime security and observability tool that helps you understand how your system and applications behave.  
@@ -32,7 +32,7 @@ To learn more about Tracee, check out the [documentation](https://aquasecurity.g
 ## Quickstart
 
 To quickly try Tracee use one of the following snippets. For a more complete installation guide, check out the [Installation section][installation].  
-Tracee should run on most common Linux distributions and kernels. For compatibility information see the [Prerequisites][prereqs] page. Mac users, please read [this FAQ](macfaq).
+Tracee should run on most common Linux distributions and kernels. For compatibility information see the [Prerequisites][prereqs] page. Mac users, please read [this FAQ][macfaq].
 
 ### Using Docker
 
@@ -65,7 +65,7 @@ For a complete walkthrough please see the [Kubernetes getting started guide][kub
 Join the community, and talk to us about any matter in the [GitHub Discussions](https://github.com/aquasecurity/tracee/discussions) or [Slack](https://slack.aquasec.com).  
 If you run into any trouble using Tracee or you would like to give use user feedback, please [create an issue.](https://github.com/aquasecurity/tracee/issues)
 
-Find more information on [contribution documentation](./contributing/overview/).
+Find more information on [contribution documentation](contributing/overview.md).
 
 ## More about Aqua Security
 
