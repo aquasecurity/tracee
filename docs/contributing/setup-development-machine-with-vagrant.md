@@ -4,7 +4,7 @@
 all software requirements, packages, operating system configuration, and users
 to provide the same development environment for everyone.
 
-The [Vagrantfile](/Vagrantfile) describes the type of machine required to build Tracee from the [Getting Started](../index.md) guides.
+The [Vagrantfile](https://github.com/aquasecurity/tracee/blob/main/Vagrantfile) describes the type of machine required to build Tracee from the [Getting Started](../index.md) guides.
 
 This allows developers involved in the project to check out the code, run `vagrant up`, and be on their way.
 
