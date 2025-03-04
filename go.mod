@@ -11,7 +11,7 @@ require (
 	github.com/aquasecurity/tracee/api v0.0.0-20250228145335-0fbac6d55107
 	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20250225170549-3d4b390e091b
 	github.com/aquasecurity/tracee/types v0.0.0-20250225150010-27311e99d782
-	github.com/containerd/containerd v1.7.25
+	github.com/containerd/containerd v1.7.26
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/golang/protobuf v1.5.4
 	github.com/google/gopacket v1.1.19
@@ -126,7 +126,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/continuity v0.4.4 // indirect
 	github.com/containerd/fifo v1.1.0 // indirect
-	github.com/containerd/ttrpc v1.2.5 // indirect
+	github.com/containerd/ttrpc v1.2.7 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
