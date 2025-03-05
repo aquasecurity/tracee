@@ -12,7 +12,7 @@ require (
 	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20250225170549-3d4b390e091b
 	github.com/aquasecurity/tracee/types v0.0.0-20250225150010-27311e99d782
 	github.com/containerd/containerd v1.7.26
-	github.com/docker/docker v27.5.1+incompatible
+	github.com/docker/docker v28.0.1+incompatible
 	github.com/golang/protobuf v1.5.4
 	github.com/google/gopacket v1.1.19
 	github.com/grafana/pyroscope-go v1.2.0
