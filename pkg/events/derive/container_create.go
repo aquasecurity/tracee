@@ -12,11 +12,11 @@ import (
 
 // ContainerCreate receives a containers as a closure argument to track it's containers.
 // If it receives a cgroup_mkdir event, it can derive a container_create event from it.
-func ContainerCreate(cts *containers.Containers) DeriveFunction {
+func ContainerCreate(cts *containers.Manager) DeriveFunction {
 	return deriveSingleEvent(events.ContainerCreate, deriveContainerCreateArgs(cts))
 }
 
-func deriveContainerCreateArgs(cts *containers.Containers) func(event trace.Event) ([]interface{}, error) {
+func deriveContainerCreateArgs(cts *containers.Manager) func(event trace.Event) ([]interface{}, error) {
 	return func(event trace.Event) ([]interface{}, error) {
 		// if cgroup_id is from non default hid (v1 case), the cgroup info query will fail, so we skip
 		if check, err := isCgroupEventInHid(&event, cts); !check {
@@ -26,19 +26,19 @@ func deriveContainerCreateArgs(cts *containers.Containers) func(event trace.Even
 		if err != nil {
 			return nil, errfmt.WrapError(err)
 		}
-		if info := cts.GetCgroupInfo(cgroupId); info.ContainerRoot {
-			logger.Debugw("derive container_create from cgroup", "cgroup_id", cgroupId, "container_id", info.Container.ContainerId)
+		if info, container := cts.GetCgroupInfo(cgroupId); info.ContainerRoot {
+			logger.Debugw("derive container_create from cgroup", "cgroup_id", cgroupId, "container_id", container.ContainerId)
 			args := []interface{}{
-				info.Runtime.String(),
-				info.Container.ContainerId,
-				info.Ctime.UnixNano(),
-				info.Container.Image,
-				info.Container.ImageDigest,
-				info.Container.Name,
-				info.Container.Pod.Name,
-				info.Container.Pod.Namespace,
-				info.Container.Pod.UID,
-				info.Container.Pod.Sandbox,
+				container.Runtime.String(),
+				container.ContainerId,
+				container.CreatedAt.UnixNano(),
+				container.Image,
+				container.ImageDigest,
+				container.Name,
+				container.Pod.Name,
+				container.Pod.Namespace,
+				container.Pod.UID,
+				container.Pod.Sandbox,
 			}
 			return args, nil
 		}
@@ -49,7 +49,7 @@ func deriveContainerCreateArgs(cts *containers.Containers) func(event trace.Even
 // isCgroupEventInHid checks if cgroup event is relevant for deriving container event in its hierarchy id.
 // in tracee we only care about containers inside the cpuset controller, as such other hierarchy ids will lead
 // to a failed query.
-func isCgroupEventInHid(event *trace.Event, cts *containers.Containers) (bool, error) {
+func isCgroupEventInHid(event *trace.Event, cts *containers.Manager) (bool, error) {
 	if cts.GetCgroupVersion() == cgroup.CgroupVersion2 {
 		return true, nil
 	}

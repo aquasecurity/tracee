@@ -7,10 +7,10 @@ import (
 )
 
 type SignaturesDataSource struct {
-	containers *Containers
+	containers *Manager
 }
 
-func NewDataSource(c *Containers) *SignaturesDataSource {
+func NewDataSource(c *Manager) *SignaturesDataSource {
 	return &SignaturesDataSource{
 		containers: c,
 	}
@@ -21,17 +21,16 @@ func (ctx SignaturesDataSource) Get(key interface{}) (map[string]interface{}, er
 	if !ok {
 		return nil, detect.ErrKeyNotSupported
 	}
-	ctx.containers.cgroupsMutex.RLock()
-	defer ctx.containers.cgroupsMutex.RUnlock()
-	for _, cgroup := range ctx.containers.cgroupsMap {
-		if cgroup.Container.ContainerId == containerId {
-			containerData := cgroup.Container
-			podData := containerData.Pod
+	ctx.containers.lock.RLock()
+	defer ctx.containers.lock.RUnlock()
+	for _, cont := range ctx.containers.containerMap {
+		if cont.ContainerId == containerId {
+			podData := cont.Pod
 			result := make(map[string]interface{}, 8)
-			result["container_id"] = containerData.ContainerId
-			result["container_ctime"] = int(cgroup.Ctime.UnixNano())
-			result["container_name"] = containerData.Name
-			result["container_image"] = containerData.Image
+			result["container_id"] = cont.ContainerId
+			result["container_ctime"] = int(cont.CreatedAt.UnixNano())
+			result["container_name"] = cont.Name
+			result["container_image"] = cont.Image
 			result["k8s_pod_id"] = podData.UID
 			result["k8s_pod_name"] = podData.Name
 			result["k8s_pod_namespace"] = podData.Namespace
