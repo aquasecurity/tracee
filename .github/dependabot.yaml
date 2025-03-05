@@ -6,7 +6,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "gomod"
     directories:
       - "/"
@@ -14,9 +14,9 @@ updates:
       - "/types"
       - "/signatures/helpers"
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "docker"
     directories:
       - "/builder"
     schedule:
-      interval: "daily"
+      interval: "weekly"
