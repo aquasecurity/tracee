@@ -26,6 +26,7 @@ GOENV_MK = goenv.mk
 #
 
 CMD_AWK ?= awk
+CMD_BEAR ?= bear
 CMD_CAT ?= cat
 CMD_CLANG ?= clang
 CMD_CP ?= cp
@@ -195,6 +196,7 @@ env:
 	@echo "GO_VERSION               $(GO_VERSION)"
 	@echo ---------------------------------------
 	@echo "CMD_AWK                  $(CMD_AWK)"
+	@echo "CMD_BEAR                 $(CMD_BEAR)"
 	@echo "CMD_CAT                  $(CMD_CAT)"
 	@echo "CMD_CLANG                $(CMD_CLANG)"
 	@echo "CMD_CUT                  $(CMD_CUT)"
@@ -228,7 +230,7 @@ env:
 	@echo "OUTPUT_DIR               $(OUTPUT_DIR)"
 	@echo ---------------------------------------
 	@echo "LIBBPF_CFLAGS            $(LIBBPF_CFLAGS)"
-	@echo "LIBBPF_LDLAGS            $(LIBBPF_LDFLAGS)"
+	@echo "LIBBPF_LDFLAGS           $(LIBBPF_LDFLAGS)"
 	@echo "LIBBPF_SRC               $(LIBBPF_SRC)"
 	@echo ---------------------------------------
 	@echo "STATIC                   $(STATIC)"
@@ -316,6 +318,13 @@ help:
 	@echo "    $$ make test-unit                # run unit tests"
 	@echo "    $$ make test-types               # run unit tests for types module"
 	@echo "    $$ make test-integration         # run integration tests"
+	@echo ""
+	@echo "# development"
+	@echo ""
+	@echo "    $$ make bear                     # generate compile_commands.json"
+	@echo "    $$ make check-pr                 # check code for PR"
+	@echo "    $$ make format-pr                # print formatted text for PR"
+	@echo "    $$ make fix-fmt                  # fix formatting"
 	@echo ""
 	@echo "# flags"
 	@echo ""
@@ -864,8 +873,16 @@ test-performance: \
 		./tests/perftests/... \
 
 #
-# code checkers (hidden from help on purpose)
+# development
 #
+
+.PHONY: bear
+bear: \
+	clean \
+	$(LIBBPF_OBJ) \
+	| .check_$(CMD_BEAR)
+#
+	$(CMD_BEAR) -- $(MAKE) tracee
 
 .PHONY: check-fmt
 check-fmt::
@@ -994,11 +1011,11 @@ protoc:
 MARKDOWN_DIR ?= docs/docs/flags
 MAN_DIR ?= docs/man
 OUTPUT_MAN_DIR := $(OUTPUT_DIR)/$(MAN_DIR)
-MARKDOW_FILES := $(shell find $(MARKDOWN_DIR) \
+MARKDOWN_FILES := $(shell find $(MARKDOWN_DIR) \
 					-type f \
 					-name '*.md' \
 				)
-MAN_FILES := $(patsubst $(MARKDOWN_DIR)/%.md,$(MAN_DIR)/%,$(MARKDOW_FILES))
+MAN_FILES := $(patsubst $(MARKDOWN_DIR)/%.md,$(MAN_DIR)/%,$(MARKDOWN_FILES))
 
 $(OUTPUT_MAN_DIR): \
 	| .check_$(CMD_MKDIR)
