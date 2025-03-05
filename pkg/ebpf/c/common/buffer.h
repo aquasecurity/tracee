@@ -452,7 +452,8 @@ statfunc int save_sockaddr_to_buf(args_buffer_t *buf, struct socket *sock, u8 in
         get_network_details_from_sock_v4(sk, &net_details, 0);
         get_local_sockaddr_in_from_network_details(&local, &net_details, family);
 
-        save_to_submit_buf(buf, (void *) &local, bpf_core_type_size(struct sockaddr_in), index);
+        // NOTE: for stack allocated, use sizeof instead of bpf_core_type_size
+        save_to_submit_buf(buf, (void *) &local, sizeof(local), index);
     } else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
         struct sockaddr_in6 local;
@@ -460,12 +461,16 @@ statfunc int save_sockaddr_to_buf(args_buffer_t *buf, struct socket *sock, u8 in
         get_network_details_from_sock_v6(sk, &net_details, 0);
         get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
 
-        save_to_submit_buf(buf, (void *) &local, bpf_core_type_size(struct sockaddr_in6), index);
+        // NOTE: for stack allocated, use sizeof instead of bpf_core_type_size
+        save_to_submit_buf(buf, (void *) &local, sizeof(local), index);
     } else if (family == AF_UNIX) {
         struct unix_sock *unix_sk = (struct unix_sock *) sk;
         struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
-        save_to_submit_buf(buf, (void *) &sockaddr, bpf_core_type_size(struct sockaddr_un), index);
+
+        // NOTE: for stack allocated, use sizeof instead of bpf_core_type_size
+        save_to_submit_buf(buf, (void *) &sockaddr, sizeof(sockaddr), index);
     }
+
     return 0;
 }
 

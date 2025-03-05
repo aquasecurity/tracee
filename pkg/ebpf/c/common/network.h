@@ -369,11 +369,18 @@ statfunc struct sockaddr_un get_unix_sock_addr(struct unix_sock *sock)
 {
     struct unix_address *addr = BPF_CORE_READ(sock, addr);
     int len = BPF_CORE_READ(addr, len);
+
+    // name is a flexible array member (struct sockaddr_un[])
+    struct sockaddr_un *sockaddr_src = (struct sockaddr_un *) addr->name;
     struct sockaddr_un sockaddr = {};
-    // NOTE(nadav.str): stack allocated, so runtime core size check is avoided
-    if (len <= sizeof(struct sockaddr_un)) {
-        bpf_probe_read(&sockaddr, len, addr->name);
-    }
+    sockaddr.sun_family = BPF_CORE_READ(sockaddr_src, sun_family);
+
+    // https://elixir.bootlin.com/linux/v6.13.4/source/net/unix/af_unix.c#L363
+    len -= offsetof(struct sockaddr_un, sun_path);
+    update_min(len, UNIX_PATH_MAX); // truncate if too long for our buffer
+
+    bpf_core_read(&sockaddr.sun_path, len, &sockaddr_src->sun_path);
+
     return sockaddr;
 }
 

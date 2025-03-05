@@ -117,6 +117,19 @@ static __inline int strncmp(char *str1, char *str2, int n)
 #define list_first_entry_ebpf(ptr, type, member)                                                   \
     list_entry_ebpf(BPF_CORE_READ(ptr, next), type, member)
 
+#ifndef update_min
+    // update_min sets __var as __max_const if __var is greater than __max_const.
+    // It forces the check to be done via a register, which is sometimes necessary
+    // to satisfy the eBPF verifier.
+    #define update_min(__var, __max_const)                                                         \
+        ({                                                                                         \
+            asm volatile("if %[size] <= %[max_size] goto +1;\n"                                    \
+                         "%[size] = %[max_size];\n"                                                \
+                         :                                                                         \
+                         : [size] "r"(__var), [max_size] "r"(__max_const));                        \
+        })
+#endif
+
 statfunc u64 get_current_time_in_ns(void)
 {
     if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_ktime_get_boot_ns))
