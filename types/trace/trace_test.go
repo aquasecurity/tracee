@@ -98,7 +98,7 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 		{
 			name:   "random_struct* arg",
 			json:   `{ "name":"test", "type":"random_struct*", "value": ` + string(maxUint64JSON) + `}`,
-			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "random_struct*"}, Value: uintptr(math.MaxUint64)},
+			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "random_struct*"}, Value: Pointer(math.MaxUint64)},
 		},
 		{
 			name:   "float arg",

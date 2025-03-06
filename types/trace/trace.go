@@ -129,6 +129,11 @@ func (e Event) ToProtocol() protocol.Event {
 	}
 }
 
+// Type alias for data fields representing pointers.
+// uintptr is insufficient since it is architecture dependent.
+// Uint64 itself is irrepresentative of the purpose.
+type Pointer = uint64
+
 // Argument holds the information for one argument
 type Argument struct {
 	ArgMeta
@@ -190,7 +195,7 @@ var decodeAsStringDict = map[DecodeAs]string{
 	U8_T:         "uint8",
 	INT_ARR_2_T:  "[2]int",
 	UINT64_ARR_T: "[]uint64",
-	POINTER_T:    "uintptr",
+	POINTER_T:    "trace.Pointer",
 	BYTES_T:      "[]byte",
 	STR_T:        "string",
 	STR_ARR_T:    "[]string",
@@ -238,11 +243,11 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 	}
 	if num, isNum := arg.Value.(json.Number); isNum {
 		if strings.HasSuffix(arg.Type, "*") {
-			tmp, err := strconv.ParseUint(num.String(), 10, 32)
+			tmp, err := strconv.ParseUint(num.String(), 10, 64)
 			if err != nil {
 				return err
 			}
-			arg.Value = uintptr(tmp)
+			arg.Value = Pointer(tmp)
 			return nil
 		}
 		switch arg.Type {
