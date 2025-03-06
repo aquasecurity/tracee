@@ -216,7 +216,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "count"},
 		},
 		dependencies: Dependencies{
@@ -241,7 +241,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "count"},
 		},
 		dependencies: Dependencies{
@@ -314,7 +314,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "pathname"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "statbuf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -338,7 +338,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "statbuf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -362,7 +362,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "pathname"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "statbuf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -385,7 +385,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "fds"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "fds"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "nfds"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "timeout"},
 		},
@@ -435,7 +435,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "length"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "prot"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
@@ -463,7 +463,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "prot"},
 		},
@@ -488,7 +488,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "length"},
 		},
 		dependencies: Dependencies{
@@ -512,7 +512,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -536,8 +536,8 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "signals"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "signum"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "act"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "oldact"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "act"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "oldact"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
@@ -562,8 +562,8 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "signals"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "how"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "set"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "oldset"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "set"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "oldset"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
@@ -634,7 +634,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "count"},
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "offset"},
 		},
@@ -660,7 +660,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "count"},
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "offset"},
 		},
@@ -686,7 +686,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "iov"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "iov"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "iovcnt"},
 		},
 		dependencies: Dependencies{
@@ -711,7 +711,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "iov"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "iov"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "iovcnt"},
 		},
 		dependencies: Dependencies{
@@ -783,10 +783,10 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "nfds"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "readfds"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "writefds"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "exceptfds"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "timeout"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "readfds"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "writefds"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "exceptfds"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "timeout"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -830,11 +830,11 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "old_address"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "old_address"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "old_size"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "new_size"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "new_address"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "new_address"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -857,7 +857,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_sync"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "length"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
@@ -882,9 +882,9 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "length"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "vec"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "vec"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -907,7 +907,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "length"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "advice"},
 		},
@@ -958,7 +958,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "ipc", "ipc_shm"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "shmid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "shmaddr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "shmaddr"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "shmflg"},
 		},
 		dependencies: Dependencies{
@@ -984,7 +984,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "shmid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "cmd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -1088,7 +1088,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_timer"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "which"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "curr_value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "curr_value"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -1135,8 +1135,8 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_timer"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "which"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "new_value"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "old_value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "new_value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "old_value"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -1182,7 +1182,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "out_fd"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "in_fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "offset"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "offset"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "count"},
 		},
 		dependencies: Dependencies{
@@ -1282,7 +1282,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "net", "net_snd_rcv"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "sockfd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 			{DecodeAs: trace.SOCK_ADDR_T, Type: "SockAddr", Name: "dest_addr"},
@@ -1310,7 +1310,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "net", "net_snd_rcv"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "sockfd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 			{DecodeAs: trace.SOCK_ADDR_T, Type: "SockAddr", Name: "src_addr"},
@@ -1338,7 +1338,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "net", "net_snd_rcv"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "sockfd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "msg"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "msg"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -1363,7 +1363,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "net", "net_snd_rcv"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "sockfd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "msg"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "msg"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -1539,7 +1539,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "sockfd"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "level"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "optname"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "optval"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "optval"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "optlen"},
 		},
 		dependencies: Dependencies{
@@ -1566,8 +1566,8 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "sockfd"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "level"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "optname"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "optval"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "optlen"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "optval"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "optlen"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -1591,9 +1591,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_life"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "flags"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "stack"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "parent_tid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "child_tid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "stack"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "parent_tid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "child_tid"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "tls"},
 		},
 		dependencies: Dependencies{
@@ -1710,9 +1710,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_life"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "wstatus"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "wstatus"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "options"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "rusage"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "rusage"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -1759,7 +1759,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -1808,7 +1808,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "ipc", "ipc_sem"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "semid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sops"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sops"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "nsops"},
 		},
 		dependencies: Dependencies{
@@ -1858,7 +1858,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_shm"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "shmaddr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "shmaddr"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -1906,7 +1906,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "msqid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "msgp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "msgp"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "msgsz"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "msgflg"},
 		},
@@ -1932,7 +1932,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "msqid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "msgp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "msgp"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "msgsz"},
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "msgtyp"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "msgflg"},
@@ -1960,7 +1960,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "msqid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "cmd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -2127,7 +2127,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "dirp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "dirp"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "count"},
 		},
 		dependencies: Dependencies{
@@ -2558,8 +2558,8 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_tod"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "tv"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "tz"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "tv"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "tz"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -2583,7 +2583,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "resource"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "rlim"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "rlim"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -2607,7 +2607,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "who"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "usage"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "usage"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -2630,7 +2630,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "info"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "info"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -2653,7 +2653,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -2678,8 +2678,8 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "request"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "data"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "data"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -2987,7 +2987,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "size"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "list"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "list"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3011,7 +3011,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "size"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "list"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "list"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3059,9 +3059,9 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ruid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "euid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "suid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ruid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "euid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "suid"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3109,9 +3109,9 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "rgid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "egid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sgid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "rgid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "egid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sgid"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3226,8 +3226,8 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "hdrp"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "datap"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "hdrp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "datap"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3250,8 +3250,8 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "hdrp"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "datap"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "hdrp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "datap"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3274,7 +3274,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "set"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "set"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
@@ -3298,8 +3298,8 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "set"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "info"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "set"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "info"},
 			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sigsetsize"},
 		},
@@ -3326,7 +3326,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "tgid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "sig"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "info"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "info"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3349,7 +3349,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "mask"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "mask"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
@@ -3373,8 +3373,8 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ss"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "old_ss"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ss"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "old_ss"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3398,7 +3398,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "filename"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "times"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "times"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3493,7 +3493,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_info"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "dev"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ubuf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ubuf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3517,7 +3517,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_info"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "path"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3541,7 +3541,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_info"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3637,7 +3637,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_sched"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "param"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "param"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3661,7 +3661,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_sched"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "param"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "param"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3686,7 +3686,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "policy"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "param"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "param"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3802,7 +3802,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 		},
 		dependencies: Dependencies{
@@ -3826,7 +3826,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 		},
 		dependencies: Dependencies{
@@ -3916,7 +3916,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "func"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ptr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ptr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "bytecount"},
 		},
 		dependencies: Dependencies{
@@ -3964,7 +3964,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "args"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "args"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -4032,7 +4032,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_clock"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -4056,7 +4056,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "resource"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "rlim"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "rlim"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -4146,8 +4146,8 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_tod"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "tv"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "tz"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "tv"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "tz"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -4174,7 +4174,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "target"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "filesystemtype"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "mountflags"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "data"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "data"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -4271,7 +4271,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "magic"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "magic2"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "cmd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "arg"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "arg"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -4411,7 +4411,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"default", "syscalls", "system", "system_module"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "module_image"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "module_image"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "param_values"},
 		},
@@ -4505,7 +4505,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "cmd"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "special"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "id"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -4702,7 +4702,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "path"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "name"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "value"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "size"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
@@ -4729,7 +4729,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "path"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "name"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "value"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "size"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
@@ -4756,7 +4756,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "name"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "value"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "size"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
@@ -4783,7 +4783,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "path"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "name"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "value"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "size"},
 		},
 		dependencies: Dependencies{
@@ -4809,7 +4809,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "path"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "name"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "value"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "size"},
 		},
 		dependencies: Dependencies{
@@ -4835,7 +4835,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "name"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "value"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "size"},
 		},
 		dependencies: Dependencies{
@@ -5030,7 +5030,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_tod"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "tloc"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "tloc"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5053,11 +5053,11 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_futex"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "uaddr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "uaddr"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "futex_op"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "val"},
 			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "uaddr2"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "uaddr2"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "val3"},
 		},
 		dependencies: Dependencies{
@@ -5083,7 +5083,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "cpusetsize"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "mask"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "mask"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5108,7 +5108,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "cpusetsize"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "mask"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "mask"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5131,7 +5131,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "u_info"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "u_info"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5155,7 +5155,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "nr_events"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ctx_idp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ctx_idp"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5178,7 +5178,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ctx_id"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ctx_id"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5201,10 +5201,10 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ctx_id"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ctx_id"},
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "min_nr"},
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "nr"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "events"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "events"},
 			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
 		},
 		dependencies: Dependencies{
@@ -5228,9 +5228,9 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ctx_id"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ctx_id"},
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "nr"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "iocbpp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "iocbpp"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5253,9 +5253,9 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ctx_id"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "iocb"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "result"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ctx_id"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "iocb"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "result"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5278,7 +5278,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "u_info"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "u_info"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5391,7 +5391,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "size"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "prot"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "pgoff"},
@@ -5419,7 +5419,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "dirp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "dirp"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "count"},
 		},
 		dependencies: Dependencies{
@@ -5443,7 +5443,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "tidptr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "tidptr"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5488,7 +5488,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "ipc", "ipc_sem"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "semid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sops"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sops"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "nsops"},
 			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
 		},
@@ -5540,8 +5540,8 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_timer"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "clockid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sevp"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "timer_id"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sevp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "timer_id"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5566,8 +5566,8 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "timer_id"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "new_value"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "old_value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "new_value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "old_value"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5591,7 +5591,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_timer"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "timer_id"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "curr_value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "curr_value"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5782,7 +5782,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "epfd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "events"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "events"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "maxevents"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "timeout"},
 		},
@@ -5810,7 +5810,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "epfd"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "op"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "event"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "event"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5859,7 +5859,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "filename"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "times"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "times"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5903,10 +5903,10 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_numa"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "mode"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "nodemask"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "nodemask"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "maxnode"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
 		},
@@ -5932,7 +5932,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "system", "system_numa"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "mode"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "nodemask"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "nodemask"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "maxnode"},
 		},
 		dependencies: Dependencies{
@@ -5956,10 +5956,10 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_numa"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "mode"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "nodemask"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "mode"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "nodemask"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "maxnode"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -5986,7 +5986,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "name"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "oflag"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "mode"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "attr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "attr"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6062,7 +6062,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "mqdes"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "msg_ptr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "msg_len"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "msg_prio"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "msg_prio"},
 			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "abs_timeout"},
 		},
 		dependencies: Dependencies{
@@ -6087,7 +6087,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "mqdes"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sevp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sevp"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6111,8 +6111,8 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "mqdes"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "newattr"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "oldattr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "newattr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "oldattr"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6137,7 +6137,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "entry"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "nr_segments"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "segments"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "segments"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -6163,9 +6163,9 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "idtype"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "id"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "infop"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "infop"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "options"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "rusage"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "rusage"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6190,7 +6190,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "type"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "description"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "payload"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "payload"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "plen"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "keyring"},
 		},
@@ -6389,8 +6389,8 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "maxnode"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "old_nodes"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "new_nodes"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "old_nodes"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "new_nodes"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6519,7 +6519,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "dirfd"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "pathname"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "times"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "times"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6544,7 +6544,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "dirfd"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "pathname"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "statbuf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "statbuf"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -6750,11 +6750,11 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "nfds"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "readfds"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "writefds"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "exceptfds"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "readfds"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "writefds"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "exceptfds"},
 			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sigmask"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sigmask"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6777,10 +6777,10 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "fds"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "fds"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "nfds"},
 			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "tmo_p"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sigmask"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sigmask"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
@@ -6827,7 +6827,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_futex"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "head"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "head"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 		},
 		dependencies: Dependencies{
@@ -6852,8 +6852,8 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "ipc", "ipc_futex"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "head_ptr"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "len_ptr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "head_ptr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "len_ptr"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6877,9 +6877,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "ipc", "ipc_pipe"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd_in"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "off_in"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "off_in"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd_out"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "off_out"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "off_out"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
 		},
@@ -6957,7 +6957,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "ipc", "ipc_pipe"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "iov"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "iov"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "nr_segs"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
 		},
@@ -6984,9 +6984,9 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "count"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "pages"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "nodes"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "status"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "pages"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "nodes"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "status"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -7037,10 +7037,10 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "epfd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "events"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "events"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "maxevents"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "timeout"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sigmask"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sigmask"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
@@ -7065,7 +7065,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "signals"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "mask"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "mask"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -7165,8 +7165,8 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "new_value"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "old_value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "new_value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "old_value"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -7190,7 +7190,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_timer"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "curr_value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "curr_value"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -7240,7 +7240,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "signals"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "mask"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "mask"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sizemask"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
@@ -7379,7 +7379,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "iov"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "iov"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "iovcnt"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "pos_l"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "pos_h"},
@@ -7406,7 +7406,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "iov"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "iov"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "iovcnt"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "pos_l"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "pos_h"},
@@ -7435,7 +7435,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "tgid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "tid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "sig"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "info"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "info"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -7458,7 +7458,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "attr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "attr"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "cpu"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "group_fd"},
@@ -7486,7 +7486,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "net", "net_snd_rcv"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "sockfd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "msgvec"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "msgvec"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "vlen"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
@@ -7565,8 +7565,8 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "resource"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "new_limit"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "old_limit"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "new_limit"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "old_limit"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -7591,8 +7591,8 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "dirfd"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "pathname"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "handle"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "mount_id"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "handle"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "mount_id"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -7617,7 +7617,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "mount_fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "handle"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "handle"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -7642,7 +7642,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_clock"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "clk_id"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -7689,7 +7689,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "net", "net_snd_rcv"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "sockfd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "msgvec"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "msgvec"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "vlen"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
@@ -7738,9 +7738,9 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_numa"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "cpu"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "node"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "tcache"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "cpu"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "node"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "tcache"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -7764,9 +7764,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"default", "syscalls", "proc"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "local_iov"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "local_iov"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "liovcnt"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "remote_iov"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "remote_iov"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "riovcnt"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "flags"},
 		},
@@ -7792,9 +7792,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"default", "syscalls", "proc"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "local_iov"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "local_iov"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "liovcnt"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "remote_iov"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "remote_iov"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "riovcnt"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "flags"},
 		},
@@ -7866,7 +7866,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_sched"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "attr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "attr"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -7891,7 +7891,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_sched"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "attr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "attr"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "size"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
 		},
@@ -7945,7 +7945,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "operation"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "args"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "args"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -7968,7 +7968,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "buflen"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
 		},
@@ -8045,7 +8045,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "system"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "cmd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "attr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "attr"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "size"},
 		},
 		dependencies: Dependencies{
@@ -8145,7 +8145,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
@@ -8171,9 +8171,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd_in"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "off_in"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "off_in"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd_out"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "off_out"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "off_out"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
 		},
@@ -8199,7 +8199,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "iov"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "iov"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "iovcnt"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "pos_l"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "pos_h"},
@@ -8227,7 +8227,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_read_write"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "iov"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "iov"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "iovcnt"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "pos_l"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "pos_h"},
@@ -8254,7 +8254,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "prot"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pkey"},
@@ -8331,7 +8331,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "pathname"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "mask"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "statxbuf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "statxbuf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -8354,12 +8354,12 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ctx_id"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ctx_id"},
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "min_nr"},
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "nr"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "events"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "events"},
 			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "usig"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "usig"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -8382,7 +8382,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "rseq"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "rseq"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "rseq_len"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "sig"},
@@ -8410,7 +8410,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pidfd"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "sig"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "info"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "info"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -8435,7 +8435,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "entries"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "p"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "p"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -8462,7 +8462,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "to_submit"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "min_complete"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sig"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sig"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -8487,7 +8487,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "fd"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "opcode"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "arg"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "arg"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "nr_args"},
 		},
 		dependencies: Dependencies{
@@ -8587,10 +8587,10 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "fs_fd"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "fs_fd"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "cmd"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "key"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "value"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "value"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "aux"},
 		},
 		dependencies: Dependencies{
@@ -8688,7 +8688,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "cl_args"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "cl_args"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "size"},
 		},
 		dependencies: Dependencies{
@@ -8738,7 +8738,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "dirfd"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "pathname"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "how"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "how"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "size"},
 		},
 		dependencies: Dependencies{
@@ -8814,7 +8814,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pidfd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "length"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "advice"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "flags"},
@@ -8841,10 +8841,10 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "events"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "events"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "maxevents"},
 			{DecodeAs: trace.TIMESPEC_T, Type: "float64", Name: "timeout"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sigset"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sigset"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -8870,7 +8870,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "dfd"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "path"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "uattr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "uattr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "usize"},
 		},
 		dependencies: Dependencies{
@@ -8896,8 +8896,8 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "fd"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "cmd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "id"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "id"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -8920,7 +8920,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "fs"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "attr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "attr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "size"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
 		},
@@ -8947,7 +8947,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "ruleset_fd"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "rule_type"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "rule_attr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "rule_attr"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -9043,7 +9043,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "status"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "status"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "options"},
 		},
 		dependencies: Dependencies{
@@ -9110,7 +9110,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "filename"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "statbuf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9156,7 +9156,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "t"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "t"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9287,7 +9287,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "signum"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "handler"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "handler"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9373,7 +9373,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "name"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "name"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9397,8 +9397,8 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "sig"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "act"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "oact"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "act"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "oact"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9465,7 +9465,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "mask"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "mask"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9488,7 +9488,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "set"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "set"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9512,7 +9512,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "pathname"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "statbuf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9536,7 +9536,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "dirp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "dirp"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "count"},
 		},
 		dependencies: Dependencies{
@@ -9582,7 +9582,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "call"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "args"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "args"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9605,7 +9605,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9649,7 +9649,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "info"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "info"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9676,7 +9676,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "first"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "second"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "third"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ptr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ptr"},
 			{DecodeAs: trace.LONG_T, Type: "int64", Name: "fifth"},
 		},
 		dependencies: Dependencies{
@@ -9722,8 +9722,8 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "how"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "set"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "oldset"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "set"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "oldset"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9791,7 +9791,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "fd"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "offset_high"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "offset_low"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "result"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "result"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "whence"},
 		},
 		dependencies: Dependencies{
@@ -9816,10 +9816,10 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "nfds"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "readfds"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "writefds"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "exceptfds"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "timeout"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "readfds"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "writefds"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "exceptfds"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "timeout"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9843,7 +9843,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "fn"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "v86"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "v86"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9867,7 +9867,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "resource"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "rlim"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "rlim"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9967,7 +9967,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "pathname"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "statbuf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -9991,7 +9991,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "pathname"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "statbuf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10015,7 +10015,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "statbuf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10196,7 +10196,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "size"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "list"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "list"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10220,7 +10220,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "size"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "list"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "list"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10293,9 +10293,9 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ruid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "euid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "suid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ruid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "euid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "suid"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10343,9 +10343,9 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "rgid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "egid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sgid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "rgid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "egid"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sgid"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10512,7 +10512,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "out_fd"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "in_fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "offset"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "offset"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "count"},
 		},
 		dependencies: Dependencies{
@@ -10538,7 +10538,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "path"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sz"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10563,7 +10563,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sz"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "buf"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "buf"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10613,7 +10613,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "which_clock"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "tp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "tp"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10637,7 +10637,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "which_clock"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "tp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "tp"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10682,7 +10682,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "which_clock"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "tp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "tp"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10707,8 +10707,8 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "which_clock"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "rqtp"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "rmtp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "rqtp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "rmtp"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10732,7 +10732,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "timer_id"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "setting"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "setting"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10757,8 +10757,8 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "timer_id"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "new"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "old"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "new"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "old"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10782,7 +10782,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "ufd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "otmr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "otmr"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10807,8 +10807,8 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "ufd"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "utmr"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "otmr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "utmr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "otmr"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10833,7 +10833,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "dfd"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "filename"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "t"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "t"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "flags"},
 		},
 		dependencies: Dependencies{
@@ -10858,11 +10858,11 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "n"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "inp"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "outp"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "exp"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "tsp"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sig"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "inp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "outp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "exp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "tsp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sig"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10885,10 +10885,10 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ufds"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ufds"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "nfds"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "tsp"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sigmask"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "tsp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sigmask"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
@@ -10934,10 +10934,10 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "fd"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "mmsg"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "mmsg"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "vlen"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "timeout"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "timeout"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10964,7 +10964,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "u_msg_ptr"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "msg_len"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "msg_prio"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "u_abs_timeout"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "u_abs_timeout"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -10990,8 +10990,8 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "mqdes"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "u_msg_ptr"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "msg_len"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "u_msg_prio"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "u_abs_timeout"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "u_msg_prio"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "u_abs_timeout"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -11014,9 +11014,9 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "uthese"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "uinfo"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "uts"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "uthese"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "uinfo"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "uts"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
@@ -11040,11 +11040,11 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "uaddr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "uaddr"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "op"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "val"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "utime"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "uaddr2"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "utime"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "uaddr2"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "val3"},
 		},
 		dependencies: Dependencies{
@@ -11069,7 +11069,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pid"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "interval"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "interval"},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -11322,7 +11322,7 @@ var CoreEvents = map[ID]Definition{
 		sets: []string{},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "alert"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "prot"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "prev_prot"},
@@ -11788,7 +11788,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"fs", "fs_file_ops", "proc", "proc_mem"},
 		fields: []trace.ArgMeta{
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "pathname"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "flags"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "dev"},
@@ -11821,7 +11821,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "prot"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "ctime"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "prev_prot"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "addr"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "len"},
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "pkey"},
 		},
@@ -12018,7 +12018,7 @@ var CoreEvents = map[ID]Definition{
 		sets: []string{},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "name"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "proc_ops_addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "proc_ops_addr"},
 		},
 	},
 	KprobeAttach: {
@@ -12035,8 +12035,8 @@ var CoreEvents = map[ID]Definition{
 		sets: []string{},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "symbol_name"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "pre_handler_addr"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "post_handler_addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "pre_handler_addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "post_handler_addr"},
 		},
 	},
 	CallUsermodeHelper: {
@@ -12072,7 +12072,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "file_name"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "path"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "mode"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "proc_ops_addr"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "proc_ops_addr"},
 		},
 	},
 	SyscallTableCheck: {
@@ -12220,7 +12220,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "requested_major_number"},
 			{DecodeAs: trace.UINT_T, Type: "uint32", Name: "granted_major_number"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "char_device_name"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "char_device_fops"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "char_device_fops"},
 		},
 	},
 	SharedObjectLoaded: {
@@ -12631,12 +12631,12 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sa_flags"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "sa_mask"},
 			{DecodeAs: trace.U8_T, Type: "uint8", Name: "sa_handle_method"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sa_handler"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sa_handler"},
 			{DecodeAs: trace.BOOL_T, Type: "bool", Name: "is_old_sa_initialized"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "old_sa_flags"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "old_sa_mask"},
 			{DecodeAs: trace.U8_T, Type: "uint8", Name: "old_sa_handle_method"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "old_sa_handler"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "old_sa_handler"},
 		},
 	},
 	BpfAttach: {
@@ -12681,7 +12681,7 @@ var CoreEvents = map[ID]Definition{
 		sets: []string{},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.STR_T, Type: "string", Name: "symbol_name"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "symbol_address"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "symbol_address"},
 		},
 	},
 	PrintMemDump: {
@@ -12712,7 +12712,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.BYTES_T, Type: "[]byte", Name: "bytes"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "address"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "address"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "length"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "caller_context_id"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "arch"},
@@ -13079,9 +13079,9 @@ var CoreEvents = map[ID]Definition{
 		sets: []string{},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "syscall"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "ip"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "ip"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "vma_type"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "vma_start"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "vma_start"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "vma_size"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "vma_flags"},
 		},
@@ -13099,9 +13099,9 @@ var CoreEvents = map[ID]Definition{
 		sets: []string{},
 		fields: []trace.ArgMeta{
 			{DecodeAs: trace.INT_T, Type: "int32", Name: "syscall"}, // converted to syscall name (string) at processing stage
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "sp"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "sp"},
 			{DecodeAs: trace.STR_T, Type: "string", Name: "vma_type"},
-			{DecodeAs: trace.POINTER_T, Type: "void*", Name: "vma_start"},
+			{DecodeAs: trace.POINTER_T, Type: "trace.Pointer", Name: "vma_start"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "vma_size"},
 			{DecodeAs: trace.ULONG_T, Type: "uint64", Name: "vma_flags"},
 		},

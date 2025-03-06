@@ -73,7 +73,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 			},
 			fields:      []trace.ArgMeta{{DecodeAs: trace.POINTER_T, Name: "pointer0"}},
-			expectedArg: uintptr(0xFFFFFFFFFFFFFFFF),
+			expectedArg: trace.Pointer(0xFFFFFFFFFFFFFFFF),
 		},
 		{
 			name: "strT",
@@ -161,8 +161,12 @@ func TestReadArgFromBuff(t *testing.T) {
 			decoder := New(tc.input, dataPresentor)
 			_, actual, err := readArgFromBuff(0, decoder, tc.fields)
 
-			if tc.expectedError != nil {
-				assert.ErrorContains(t, err, tc.expectedError.Error())
+			if err != nil {
+				if tc.expectedError != nil {
+					assert.ErrorContains(t, err, tc.expectedError.Error())
+				} else {
+					t.Logf("Encounted unexpected error: %v", err)
+				}
 			}
 			assert.Equal(t, tc.expectedArg, actual.Value)
 

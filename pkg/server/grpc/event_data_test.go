@@ -340,7 +340,7 @@ func Test_getEventData(t *testing.T) {
 						Name: "sa_handler",
 						Type: "void*",
 					},
-					Value: uintptr(0xFFFFFFFFFFFFFFFF),
+					Value: trace.Pointer(0xFFFFFFFFFFFFFFFF),
 				},
 			},
 			expected: []*pb.EventValue{
@@ -548,7 +548,7 @@ func Test_getEventData(t *testing.T) {
 						Name: "sa_handler",
 						Type: "void*",
 					},
-					Value: uintptr(0xFFFFFFFFFFFFFFFF),
+					Value: trace.Pointer(0xFFFFFFFFFFFFFFFF),
 				},
 			},
 			expected: []*pb.EventValue{
