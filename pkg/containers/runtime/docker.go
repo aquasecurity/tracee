@@ -61,7 +61,7 @@ func (e *dockerEnricher) Get(ctx context.Context, containerId string) (Container
 
 	// attempt to get image name from registry (image from config usually has tag as sha/no tag at all)
 	imageId := container.Image
-	image, _, err := e.client.ImageInspectWithRaw(ctx, imageId)
+	image, err := e.client.ImageInspect(ctx, imageId)
 	if err != nil {
 		// if we can't fetch the image or image has no name, return the metadata with the image found in config
 		return metadata, nil
