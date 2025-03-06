@@ -56,7 +56,7 @@ func init() {
 		configCmd,
 		containersCmd,
 		eventsCmd,
-		logCmd,
+		loggingCmd,
 		outputCmd,
 		scopeCmd,
 		serverCmd,
@@ -132,12 +132,12 @@ var eventsCmd = &cobra.Command{
 	},
 }
 
-var logCmd = &cobra.Command{
-	Use:     "log",
+var loggingCmd = &cobra.Command{
+	Use:     "logging",
 	Aliases: []string{"l"},
-	Short:   "Show manual page for the --log flag",
+	Short:   "Show manual page for the --logging flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runManForFlag("log")
+		return runManForFlag("logging")
 	},
 }
 
