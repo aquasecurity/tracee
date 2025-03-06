@@ -116,7 +116,7 @@ func ArgZeroValueFromType(t string) interface{} {
 		return map[string]trace.HookedSymbolData{}
 	case "void*":
 		// pointer types
-		return uintptr(0)
+		return trace.Pointer(0)
 	}
 	// unknown type
 	return nil

@@ -287,8 +287,8 @@ func BenchmarkParseArgs_Uintptr(b *testing.B) {
 			Args: []trace.Argument{
 				{ArgMeta: trace.ArgMeta{Name: "request"}, Value: int64(0)},
 				{ArgMeta: trace.ArgMeta{Name: "pid"}, Value: int32(0)},
-				{ArgMeta: trace.ArgMeta{Name: "addr"}, Value: ^uintptr(0)},
-				{ArgMeta: trace.ArgMeta{Name: "data"}, Value: ^uintptr(0)},
+				{ArgMeta: trace.ArgMeta{Name: "addr"}, Value: trace.Pointer(^uintptr(0))},
+				{ArgMeta: trace.ArgMeta{Name: "data"}, Value: trace.Pointer(^uintptr(0))},
 			},
 		}
 

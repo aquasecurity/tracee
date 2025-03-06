@@ -73,7 +73,7 @@ func readArgFromBuff(
 	case trace.POINTER_T:
 		var data uint64
 		err = ebpfMsgDecoder.DecodeUint64(&data)
-		decodedValue = uintptr(data)
+		decodedValue = trace.Pointer(data)
 	case trace.SOCK_ADDR_T:
 		decodedValue, err = readSockaddrFromBuff(ebpfMsgDecoder)
 	case trace.CRED_T:
