@@ -183,8 +183,8 @@ rm -rf "${TRACEE_WORKDIR}" || die "Failed to remove ${TRACEE_WORKDIR}"
 
 # Build tracee command based on configuration
 output_flag="-o json:${EVENT_OUTPUT_FILE}"
-log_flag="-l file:${LOG_OUTPUT_FILE}"
-log_level_flag="-l ${LOG_LEVEL}"
+log_flag="--logging file=${LOG_OUTPUT_FILE}"
+log_level_flag="--logging level=${LOG_LEVEL}"
 runtime_flag="--runtime workdir=${TRACEE_WORKDIR}"
 
 tracee_cmd="${TRACEE_BIN} \

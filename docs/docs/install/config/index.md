@@ -87,7 +87,8 @@ A complete config file with all available options can be found [here](https://gi
 
 ### Log
 
-- **`--log` (`-l`)**: Controls the verbosity level of Tracee's logging system. The default log level is `info`.
+- **`--logging` (`-l`)**: Controls Tracee logging options, like verbosity,
+filters, destination file and others.
 
 
   __NOTE__: You can view more in the [Tracee Logs section](../../outputs/logging.md).

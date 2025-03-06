@@ -86,7 +86,7 @@ outputfile="${SCRIPT_TMP_DIR}/tracee-output-$$"
 tracee_command="./dist/tracee \
     --runtime workdir=$TRACEE_TMP_DIR \
     --output json:$outputfile \
-    --log file:$logfile \
+    --logging file=$logfile \
     --policy ./tests/policies/net/ \
     --signatures-dir ./dist/e2e-net-signatures/"
 

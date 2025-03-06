@@ -82,16 +82,16 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	// Logger initialization must be the first thing to be done,
 	// so all other packages can use
 
-	logFlags, err := flags.GetFlagsFromViper("log")
+	logFlags, err := flags.GetFlagsFromViper(flags.LoggingFlag)
 	if err != nil {
 		return runner, err
 	}
 
-	logCfg, err := flags.PrepareLogger(logFlags)
+	loggerConfig, err := flags.PrepareLogger(logFlags)
 	if err != nil {
 		return runner, err
 	}
-	logger.Init(logCfg)
+	logger.Init(loggerConfig.GetLoggingConfig())
 
 	// Signature directory command line flags
 

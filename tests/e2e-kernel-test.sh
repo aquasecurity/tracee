@@ -76,7 +76,7 @@ outputfile="${SCRIPT_TMP_DIR}/tracee-output-$$"
 tracee_command="./dist/tracee \
     --runtime workdir=$TRACEE_TMP_DIR \
     --output json:$outputfile \
-    --log file:$logfile \
+    --logging file=$logfile \
     --policy ./tests/policies/kernel/kernel.yaml 2>&1 \
     | tee $SCRIPT_TMP_DIR/build-$$"
 

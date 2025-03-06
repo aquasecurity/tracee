@@ -90,7 +90,7 @@ log:
     #     enabled: true
     #     flush-interval: 5s
     filters:
-        out:
+        exclude:
             pkg:
                 - capabilities
 # output

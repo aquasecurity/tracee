@@ -49,10 +49,10 @@ func init() {
 	)
 
 	analyzeCmd.Flags().StringArrayP(
-		"log",
-		"l",
-		[]string{"info"},
-		"Logger options [debug|info|warn...]",
+		flags.LoggingFlag,
+		flags.LoggingFlagShort,
+		[]string{flags.DefaultLogLevelFlag},
+		"Logger options",
 	)
 }
 
@@ -71,7 +71,7 @@ tracee analyze --events anti_debugging --source events.json`,
 		bindViperFlag(cmd, "events")
 		bindViperFlag(cmd, "source")
 		bindViperFlag(cmd, "output")
-		bindViperFlag(cmd, "log")
+		bindViperFlag(cmd, flags.LoggingFlag)
 		bindViperFlag(cmd, "signatures-dir")
 	},
 	Run:                   command,
@@ -79,13 +79,13 @@ tracee analyze --events anti_debugging --source events.json`,
 }
 
 func command(cmd *cobra.Command, args []string) {
-	logFlags := viper.GetStringSlice("log")
+	logFlags := viper.GetStringSlice(flags.LoggingFlag)
 
-	logCfg, err := flags.PrepareLogger(logFlags)
+	loggerConfig, err := flags.PrepareLogger(logFlags)
 	if err != nil {
 		logger.Fatalw("Failed to prepare logger", "error", err)
 	}
-	logger.Init(logCfg)
+	logger.Init(loggerConfig.GetLoggingConfig())
 
 	// Set up input
 	sourcePath := viper.GetString("source")

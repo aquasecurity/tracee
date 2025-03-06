@@ -198,56 +198,57 @@ containers:
 		{
 			name: "Test log configuration (cli flags)",
 			yamlContent: `
-log:
+logging:
     - debug
     - file:/var/log/test.log
-    - aggregate:5s
-    - filter:libbpf
-    - filter:msg=msg1
-    - filter:pkg=pkg1
-    - filter:pkg=pkg2
-    - filter:file=file1
-    - filter:lvl=info
-    - filter:regex=^regex.*
-    - filter-out:msg=msg1
-    - filter-out:pkg=pkg1
-    - filter-out:file=file1
-    - filter-out:file=file2
-    - filter-out:lvl=info
-    - filter-out:regex=^regex.*
+    - aggregate
+    - aggregate.flush-interval=5s
+    - filters.include.libbpf
+    - filters.include.msg=msg1
+    - filters.include.pkg=pkg1
+    - filters.include.pkg=pkg2
+    - filters.include.file=file1
+    - filters.include.level=info
+    - filters.include.regex=^regex.*
+    - filters.exclude.msg=msg1
+    - filters.exclude.pkg=pkg1
+    - filters.exclude.file=file1
+    - filters.exclude.file=file2
+    - filters.exclude.level=info
+    - filters.exclude.regex=^regex.*
 `,
-			key: "log",
+			key: "logging",
 			expectedFlags: []string{
 				"debug",
 				"file:/var/log/test.log",
-				"aggregate:5s",
-				"filter:libbpf",
-				"filter:msg=msg1",
-				"filter:pkg=pkg1",
-				"filter:pkg=pkg2",
-				"filter:file=file1",
-				"filter:lvl=info",
-				"filter:regex=^regex.*",
-				"filter-out:msg=msg1",
-				"filter-out:pkg=pkg1",
-				"filter-out:file=file1",
-				"filter-out:file=file2",
-				"filter-out:lvl=info",
-				"filter-out:regex=^regex.*",
+				"aggregate",
+				"aggregate.flush-interval=5s",
+				"filters.include.libbpf",
+				"filters.include.msg=msg1",
+				"filters.include.pkg=pkg1",
+				"filters.include.pkg=pkg2",
+				"filters.include.file=file1",
+				"filters.include.level=info",
+				"filters.include.regex=^regex.*",
+				"filters.exclude.msg=msg1",
+				"filters.exclude.pkg=pkg1",
+				"filters.exclude.file=file1",
+				"filters.exclude.file=file2",
+				"filters.exclude.level=info",
+				"filters.exclude.regex=^regex.*",
 			},
 		},
 		{
 			name: "Test log configuration (structured flags)",
 			yamlContent: `
-log:
+logging:
     level: debug
     file: /var/log/test.log
     aggregate:
-        enabled: true
         flush-interval: 5s
     filters:
-        libbpf: true
-        in:
+        include:
+            libbpf: true
             msg:
                 - msg1
             pkg:
@@ -255,11 +256,11 @@ log:
                 - pkg2
             file:
                 - file1
-            lvl:
+            level:
                 - info
             regex:
                 - ^regex.*
-        out:
+        exclude:
             msg:
                 - msg1
             pkg:
@@ -267,29 +268,30 @@ log:
             file:
                 - file1
                 - file2
-            lvl:
+            level:
                 - info
             regex:
                 - ^regex.*
 `,
-			key: "log",
+			key: "logging",
 			expectedFlags: []string{
-				"debug",
-				"file:/var/log/test.log",
-				"aggregate:5s",
-				"filter:libbpf",
-				"filter:msg=msg1",
-				"filter:pkg=pkg1",
-				"filter:pkg=pkg2",
-				"filter:file=file1",
-				"filter:lvl=info",
-				"filter:regex=^regex.*",
-				"filter-out:msg=msg1",
-				"filter-out:pkg=pkg1",
-				"filter-out:file=file1",
-				"filter-out:file=file2",
-				"filter-out:lvl=info",
-				"filter-out:regex=^regex.*",
+				"level=debug",
+				"file=/var/log/test.log",
+				"aggregate",
+				"aggregate.flush-interval=5s",
+				"filters.include.libbpf",
+				"filters.include.msg=msg1",
+				"filters.include.pkg=pkg1",
+				"filters.include.pkg=pkg2",
+				"filters.include.file=file1",
+				"filters.include.level=info",
+				"filters.include.regex=^regex.*",
+				"filters.exclude.msg=msg1",
+				"filters.exclude.pkg=pkg1",
+				"filters.exclude.file=file1",
+				"filters.exclude.file=file2",
+				"filters.exclude.level=info",
+				"filters.exclude.regex=^regex.*",
 			},
 		},
 		{
@@ -742,178 +744,6 @@ func TestContainerConfigFlag(t *testing.T) {
 			got := tt.config.flags()
 			assert.Equal(t, len(tt.expected), len(got), "Expected %d flags, got %d flags", len(tt.expected), len(got))
 			assert.ElementsMatch(t, tt.expected, got, "Expected %v, got %v", tt.expected, got)
-		})
-	}
-}
-
-//
-// log
-//
-
-func TestLogConfigFlags(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		config   LogConfig
-		expected []string
-	}{
-		{
-			name: "empty config",
-			config: LogConfig{
-				Level: "",
-				File:  "",
-			},
-			expected: []string{},
-		},
-		{
-			name: "level only",
-			config: LogConfig{
-				Level: "debug",
-			},
-			expected: []string{
-				"debug",
-			},
-		},
-		{
-			name: "file only",
-			config: LogConfig{
-				File: "/var/log/test.log",
-			},
-			expected: []string{
-				"file:/var/log/test.log",
-			},
-		},
-		{
-			name: "aggregate only",
-			config: LogConfig{
-				Aggregate: LogAggregateConfig{
-					Enabled:       true,
-					FlushInterval: "",
-				},
-			},
-			expected: []string{
-				"aggregate",
-			},
-		},
-		{
-			name: "aggregate with interval",
-			config: LogConfig{
-				Aggregate: LogAggregateConfig{
-					Enabled:       true,
-					FlushInterval: "5s",
-				},
-			},
-			expected: []string{
-				"aggregate:5s",
-			},
-		},
-		{
-			name: "filters with libbpf",
-			config: LogConfig{
-				Filters: LogFilterConfig{
-					LibBPF: true,
-				},
-			},
-			expected: []string{
-				"filter:libbpf",
-			},
-		},
-		{
-			name: "filters with attributes",
-			config: LogConfig{
-				Filters: LogFilterConfig{
-					In: LogFilterAttributes{
-						Msg: []string{
-							"msg1",
-							"msg2",
-						},
-						Pkg: []string{
-							"pkg1",
-						},
-						File: []string{
-							"file1",
-							"file2",
-						},
-						Level: []string{
-							"lvl1",
-						},
-						Regex: []string{
-							"^test.*",
-						},
-					},
-				},
-			},
-			expected: []string{
-				"filter:msg=msg1",
-				"filter:msg=msg2",
-				"filter:pkg=pkg1",
-				"filter:file=file1",
-				"filter:file=file2",
-				"filter:lvl=lvl1",
-				"filter:regex=^test.*",
-			},
-		},
-		{
-			name: "all flags",
-			config: LogConfig{
-				Level: "debug",
-				File:  "/var/log/test.log",
-				Aggregate: LogAggregateConfig{
-					Enabled:       true,
-					FlushInterval: "10s",
-				},
-				Filters: LogFilterConfig{
-					LibBPF: true,
-					In: LogFilterAttributes{
-						Msg:   []string{"msg1"},
-						Pkg:   []string{"pkg1", "pkg2"},
-						File:  []string{"file1"},
-						Level: []string{"lvl1", "lvl2"},
-						Regex: []string{"^regex.*"},
-					},
-					Out: LogFilterAttributes{
-						Msg:   []string{"msg1"},
-						Pkg:   []string{"pkg1"},
-						File:  []string{"file1", "file2"},
-						Level: []string{"lvl1"},
-						Regex: []string{"^regex.*"},
-					},
-				},
-			},
-			expected: []string{
-				"debug",
-				"file:/var/log/test.log",
-				"aggregate:10s",
-				"filter:libbpf",
-				"filter:msg=msg1",
-				"filter:pkg=pkg1",
-				"filter:pkg=pkg2",
-				"filter:file=file1",
-				"filter:lvl=lvl1",
-				"filter:lvl=lvl2",
-				"filter:regex=^regex.*",
-				"filter-out:msg=msg1",
-				"filter-out:pkg=pkg1",
-				"filter-out:file=file1",
-				"filter-out:file=file2",
-				"filter-out:lvl=lvl1",
-				"filter-out:regex=^regex.*",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			got := tt.config.flags()
-
-			if !slicesEqualIgnoreOrder(got, tt.expected) {
-				t.Errorf("flags() = %v, want %v", got, tt.expected)
-			}
 		})
 	}
 }
