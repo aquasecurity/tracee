@@ -206,8 +206,8 @@ tracee_command="./dist/tracee \
                     --output option:sort-events \
                     --output option:parse-arguments \
                     --output json:$outputfile \
-                    --log debug \
-                    --log file:$logfile \
+                    --log level=debug \
+                    --log file=$logfile \
                     --signatures-dir "$SIG_DIR" \
                     --dnscache enable \
                     --server grpc-address=unix:/tmp/tracee.sock \
