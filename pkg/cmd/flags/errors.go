@@ -63,11 +63,11 @@ func NoneOutputPathError() error {
 }
 
 func InvalidLogOptionError(opt, details string) error {
-	return fmt.Errorf("invalid log option: %s, %s, use 'tracee man log' for more info", opt, details)
+	return fmt.Errorf("invalid log option: %s, %s, use 'tracee man logging' for more info", opt, details)
 }
 
 func InvalidLogOptionValueError(opt, details string) error {
-	return fmt.Errorf("invalid log option value: %s, %s, use 'tracee man log' for more info", opt, details)
+	return fmt.Errorf("invalid log option value: %s, %s, use 'tracee man logging' for more info", opt, details)
 }
 
 func UnrecognizedOutputFormatError(format string) error {

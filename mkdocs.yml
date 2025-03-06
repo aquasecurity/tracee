@@ -39,7 +39,7 @@ nav:
                                   - config: docs/flags/config.1.md
                                   - containers: docs/flags/containers.1.md
                                   - capabilities: docs/flags/capabilities.1.md
-                                  - log: docs/flags/log.1.md
+                                  - logging: docs/flags/logging.1.md
                                   - server: docs/flags/server.1.md
           - Events:
                 - Overview: docs/events/index.md

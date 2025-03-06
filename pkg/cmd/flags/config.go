@@ -27,7 +27,7 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &CapabilitiesConfig{}
 	case "containers":
 		flagger = &ContainerConfig{}
-	case "log":
+	case LoggingFlag:
 		flagger = &LogConfig{}
 	case "output":
 		flagger = &OutputConfig{}
@@ -146,105 +146,6 @@ func (c *CapabilitiesConfig) flags() []string {
 	}
 
 	return flags
-}
-
-//
-// log flag
-//
-
-type LogConfig struct {
-	Level     string             `mapstructure:"level"`
-	File      string             `mapstructure:"file"`
-	Aggregate LogAggregateConfig `mapstructure:"aggregate"`
-	Filters   LogFilterConfig    `mapstructure:"filters"`
-}
-
-func (c *LogConfig) flags() []string {
-	flags := []string{}
-
-	// level
-	if c.Level != "" {
-		flags = append(flags, c.Level)
-	}
-
-	// file
-	if c.File != "" {
-		flags = append(flags, fmt.Sprintf("file:%s", c.File))
-	}
-
-	// aggregate
-	if c.Aggregate.Enabled {
-		if c.Aggregate.FlushInterval == "" {
-			flags = append(flags, "aggregate")
-		} else {
-			flags = append(flags, fmt.Sprintf("aggregate:%s", c.Aggregate.FlushInterval))
-		}
-	}
-
-	// filters
-	if c.Filters.LibBPF {
-		flags = append(flags, "filter:libbpf")
-	}
-
-	flags = append(flags, getLogFilterAttrFlags(false, c.Filters.In)...)
-	flags = append(flags, getLogFilterAttrFlags(true, c.Filters.Out)...)
-
-	return flags
-}
-
-type LogAggregateConfig struct {
-	Enabled       bool   `mapstructure:"enabled"`
-	FlushInterval string `mapstructure:"flush-interval"`
-}
-
-type LogFilterConfig struct {
-	LibBPF bool                `mapstructure:"libbpf"`
-	In     LogFilterAttributes `mapstructure:"in"`
-	Out    LogFilterAttributes `mapstructure:"out"`
-}
-
-type LogFilterAttributes struct {
-	Msg   []string `mapstructure:"msg"`
-	Pkg   []string `mapstructure:"pkg"`
-	File  []string `mapstructure:"file"`
-	Level []string `mapstructure:"lvl"`
-	Regex []string `mapstructure:"regex"`
-}
-
-func getLogFilterAttrFlags(filterOut bool, attrs LogFilterAttributes) []string {
-	attrFlags := []string{}
-	suffix := ""
-
-	if filterOut {
-		suffix = "-out"
-	}
-
-	// msg
-	for _, msg := range attrs.Msg {
-		attrFlags = append(attrFlags, fmt.Sprintf("filter%s:msg=%s", suffix, msg))
-	}
-
-	// pkg
-	for _, pkg := range attrs.Pkg {
-		attrFlags = append(attrFlags, fmt.Sprintf("filter%s:pkg=%s", suffix, pkg))
-	}
-
-	// file
-	for _, file := range attrs.File {
-		attrFlags = append(attrFlags, fmt.Sprintf("filter%s:file=%s", suffix, file))
-	}
-
-	// level
-	for _, level := range attrs.Level {
-		attrFlags = append(attrFlags, fmt.Sprintf("filter%s:lvl=%s", suffix, level))
-	}
-
-	// regex
-	for _, regex := range attrs.Regex {
-		attrFlags = append(attrFlags, fmt.Sprintf("filter%s:regex=%s", suffix, regex))
-	}
-
-	return attrFlags
 }
 
 //

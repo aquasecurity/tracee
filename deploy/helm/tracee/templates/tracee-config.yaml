@@ -43,6 +43,91 @@ data:
     {{- end }}
     log:
         level: {{ .Values.config.log.level }}
+        {{- if .Values.config.log.file }}
+        file: {{ .Values.config.log.file }}
+        {{- end }}
+        {{- if .Values.config.log.aggregate }}
+        aggregate:
+            enabled: {{ .Values.config.log.aggregate.enabled | default false }}
+            {{- if .Values.config.log.aggregate.flushInterval }}
+            flush-interval: {{ .Values.config.log.aggregate.flushInterval }}
+            {{- end }}
+        {{- end }}
+        {{- if .Values.config.log.filters }}
+        filters:
+            {{- if .Values.config.log.filters.libbpf }}
+            libbpf: {{ .Values.config.log.filters.libbpf }}
+            {{- end }}
+            {{- if .Values.config.log.filters.include }}
+            include:
+                {{- if .Values.config.log.filters.include.msg }}
+                msg:
+                    {{- range .Values.config.log.filters.include.msg }}
+                    - {{ . }}
+                    {{- end }}
+                {{- end }}
+                {{- if .Values.config.log.filters.include.pkg }}
+                pkg:
+                    {{- range .Values.config.log.filters.include.pkg }}
+                    - {{ . }}
+                    {{- end }}
+                {{- end }}
+                {{- if .Values.config.log.filters.include.file }}
+                file:
+                    {{- range .Values.config.log.filters.include.file }}
+                    - {{ . }}
+                    {{- end }}
+                {{- end }}
+                {{- if .Values.config.log.filters.include.level }}
+                level:
+                    {{- range .Values.config.log.filters.include.level }}
+                    - {{ . }}
+                    {{- end }}
+                {{- end }}
+                {{- if .Values.config.log.filters.include.regex }}
+                regex:
+                    {{- range .Values.config.log.filters.include.regex }}
+                    - {{ . }}
+                    {{- end }}
+                {{- end }}
+                {{- if .Values.config.log.filters.include.libbpf }}
+                libbpf: {{ .Values.config.log.filters.include.libbpf }}
+                {{- end }}
+            {{- end }}
+            {{- if .Values.config.log.filters.exclude }}
+            exclude:
+                {{- if .Values.config.log.filters.exclude.msg }}
+                msg:
+                    {{- range .Values.config.log.filters.exclude.msg }}
+                    - {{ . }}
+                    {{- end }}
+                {{- end }}
+                {{- if .Values.config.log.filters.exclude.pkg }}
+                pkg:
+                    {{- range .Values.config.log.filters.exclude.pkg }}
+                    - {{ . }}
+                    {{- end }}
+                {{- end }}
+                {{- if .Values.config.log.filters.exclude.file }}
+                file:
+                    {{- range .Values.config.log.filters.exclude.file }}
+                    - {{ . }}
+                    {{- end }}
+                {{- end }}
+                {{- if .Values.config.log.filters.exclude.level }}
+                level:
+                    {{- range .Values.config.log.filters.exclude.level }}
+                    - {{ . }}
+                    {{- end }}
+                {{- end }}
+                {{- if .Values.config.log.filters.exclude.regex }}
+                regex:
+                    {{- range .Values.config.log.filters.exclude.regex }}
+                    - {{ . }}
+                    {{- end }}
+                {{- end }}
+            {{- end }}
+        {{- end }}
     output:
         {{ .Values.config.output.format }}:
             files:
