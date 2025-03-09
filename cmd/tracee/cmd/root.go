@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 
 	cmdcobra "github.com/aquasecurity/tracee/pkg/cmd/cobra"
+	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -334,9 +335,9 @@ func initCmd() error {
 	}
 
 	rootCmd.Flags().StringArrayP(
-		"log",
-		"l",
-		[]string{"info"},
+		flags.LogFlag,
+		flags.LogFlagShort,
+		[]string{flags.DefaultLogLevel},
 		"[debug|info|warn...]\t\tLogger options",
 	)
 	err = viper.BindPFlag("log", rootCmd.Flags().Lookup("log"))

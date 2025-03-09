@@ -12,6 +12,8 @@ import (
 )
 
 const (
+	LogFlagShort                = "l"
+	LogFlag                     = "log"
 	LogLevel                    = "level"
 	LogLevelDebug               = "debug"
 	LogLevelInfo                = "info"
@@ -25,6 +27,7 @@ const (
 	LogAggregation              = "aggregation"
 	LogAggregationEnabled       = "enabled"
 	LogAggregationFlushInterval = "flush-interval"
+	DefaultLogLevel             = LogLevel + "=" + LogLevelInfo
 )
 
 func logHelp() string {
