@@ -261,7 +261,7 @@ func (c *LogConfig) flags() []string {
 
 	// level
 	if c.Level != "" {
-		flags = append(flags, fmt.Sprintf("level=%s", c.File))
+		flags = append(flags, fmt.Sprintf("level=%s", c.Level))
 	}
 
 	// file
@@ -278,10 +278,6 @@ func (c *LogConfig) flags() []string {
 	}
 
 	// filters
-	if c.Filters.LibBPF {
-		flags = append(flags, "filter.libbpf=true")
-	}
-
 	flags = append(flags, getLogFilterAttrFlags("include", c.Filters.Include)...)
 	flags = append(flags, getLogFilterAttrFlags("exclude", c.Filters.Exclude)...)
 
@@ -294,17 +290,17 @@ type LogAggregateConfig struct {
 }
 
 type LogFilterConfig struct {
-	LibBPF  bool                `mapstructure:"libbpf"`
 	Include LogFilterAttributes `mapstructure:"include"`
 	Exclude LogFilterAttributes `mapstructure:"exclude"`
 }
 
 type LogFilterAttributes struct {
-	Msg   []string `mapstructure:"msg"`
-	Pkg   []string `mapstructure:"pkg"`
-	File  []string `mapstructure:"file"`
-	Level []string `mapstructure:"lvl"`
-	Regex []string `mapstructure:"regex"`
+	Msg    []string `mapstructure:"msg"`
+	Pkg    []string `mapstructure:"pkg"`
+	File   []string `mapstructure:"file"`
+	Level  []string `mapstructure:"lvl"`
+	Regex  []string `mapstructure:"regex"`
+	LibBPF []bool   `mapstructure:"libbpf"`
 }
 
 func getLogFilterAttrFlags(suffix string, attrs LogFilterAttributes) []string {
@@ -333,6 +329,12 @@ func getLogFilterAttrFlags(suffix string, attrs LogFilterAttributes) []string {
 	// regex
 	for _, regex := range attrs.Regex {
 		attrFlags = append(attrFlags, fmt.Sprintf("filter.%s.regex=%s", suffix, regex))
+	}
+	// libbpf
+	for _, libbpf := range attrs.LibBPF {
+		if libbpf {
+			attrFlags = append(attrFlags, fmt.Sprintf("filter.%s.libbpf", suffix))
+		}
 	}
 
 	return attrFlags
