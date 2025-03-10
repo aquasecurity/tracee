@@ -5,12 +5,20 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/pprof"
+	"time"
 
 	"github.com/grafana/pyroscope-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"github.com/aquasecurity/tracee/pkg/ebpf/heartbeat"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
+
+// interval defines how often the heartbeat signal should be sent.
+const heartbeatSignalInterval = time.Duration(1 * time.Second)
+
+// timeout specifies the maximum duration to wait for a heartbeat acknowledgment
+const heartbeatAckTimeout = time.Duration(2 * time.Second)
 
 // Server represents a http server
 type Server struct {
@@ -42,7 +50,11 @@ func (s *Server) EnableMetricsEndpoint() {
 // EnableHealthzEndpoint enables healthz endpoint
 func (s *Server) EnableHealthzEndpoint() {
 	s.mux.HandleFunc("/healthz", func(w http.ResponseWriter, req *http.Request) {
-		fmt.Fprintf(w, "OK")
+		if heartbeat.GetInstance() != nil && heartbeat.GetInstance().IsAlive() {
+			fmt.Fprintf(w, "OK")
+			return
+		}
+		fmt.Fprintf(w, "NOT OK")
 	})
 }
 
@@ -61,6 +73,13 @@ func (s *Server) Start(ctx context.Context) {
 
 		srvCancel()
 	}()
+
+	heartbeatCtx, cancel := context.WithCancel(srvCtx)
+	defer cancel()
+
+	heartbeat.Init(heartbeatCtx, heartbeatSignalInterval, heartbeatAckTimeout)
+	heartbeat.GetInstance().SetCallback(invokeHeartbeat)
+	heartbeat.GetInstance().Start()
 
 	select {
 	case <-ctx.Done():
@@ -104,4 +123,9 @@ func (s *Server) EnablePyroAgent() error {
 // MetricsEndpointEnabled returns true if metrics endpoint is enabled
 func (s *Server) MetricsEndpointEnabled() bool {
 	return s.metricsEnabled
+}
+
+//go:noinline
+func invokeHeartbeat() {
+	// Intentionally left empty
 }

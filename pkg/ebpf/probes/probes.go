@@ -139,6 +139,7 @@ const (
 	SignalSchedProcessFork
 	SignalSchedProcessExec
 	SignalSchedProcessExit
+	SignalHeartbeat
 	ExecuteFinishedX86
 	ExecuteAtFinishedX86
 	ExecuteFinishedCompatX86

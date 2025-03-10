@@ -10,6 +10,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/ebpf/heartbeat"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -169,6 +170,8 @@ func (ctrl *Controller) processSignal(signal *signal) error {
 		}
 
 		return ctrl.procTreeExitProcessor(signal.args)
+	case events.SignalHeartbeat:
+		heartbeat.SendPulse()
 	}
 
 	return nil
