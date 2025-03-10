@@ -117,6 +117,10 @@ func processKernelReadFile(event *trace.Event) error {
 	return nil
 }
 
+func (t *Tracee) processHeartbeatEvent(event *trace.Event) error {
+	return nil
+}
+
 // processSchedProcessExec processes a sched_process_exec event by capturing the executed file.
 func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	// cache this pid by it's mnt ns

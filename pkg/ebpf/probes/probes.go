@@ -162,6 +162,7 @@ const (
 	Dup3
 	Dup3Ret
 	ChmodCommon
+	Heartbeat
 )
 
 // Test probe handles

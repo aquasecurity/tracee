@@ -137,6 +137,7 @@ enum event_id_e
     OPEN_FILE_NS,
     OPEN_FILE_MOUNT,
     MAX_EVENT_ID,
+    HEARTBEAT_EVENT,
     NO_EVENT_SUBMIT,
 
     // Test events IDs

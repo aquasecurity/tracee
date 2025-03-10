@@ -10,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/server/grpc"
 	"github.com/aquasecurity/tracee/pkg/server/http"
@@ -101,6 +102,12 @@ func (r Runner) Run(ctx context.Context) error {
 		for {
 			select {
 			case event := <-stream.ReceiveEvents():
+				if event.EventID == int(events.Heartbeat) {
+					select {
+					case r.HTTPServer.Heartbeat <- struct{}{}:
+					default:
+					}
+				}
 				r.Printer.Print(event)
 			case <-ctx.Done():
 				return

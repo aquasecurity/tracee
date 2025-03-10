@@ -1061,6 +1061,16 @@ int lkm_seeker_modtree_loop(struct pt_regs *ctx)
     return -1;
 }
 
+SEC("uprobe/capture_heartbeat_event")
+int heartbeat_capture(struct pt_regs *ctx)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, HEARTBEAT_EVENT))
+        return 0;
+
+    return events_perf_submit(&p, 0);
+}
+
 statfunc int find_modules_from_mod_tree(program_data_t *p)
 {
     char mod_tree_sym[9] = "mod_tree";

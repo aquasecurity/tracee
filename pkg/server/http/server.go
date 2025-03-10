@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/pprof"
+	"sync"
+	"time"
 
 	"github.com/grafana/pyroscope-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -18,6 +20,8 @@ type Server struct {
 	mux            *http.ServeMux // just an exposed copy of hs.Handler
 	metricsEnabled bool
 	pyroProfiler   *pyroscope.Profiler
+	Heartbeat      chan struct{}
+	isHealthy      bool
 }
 
 // New creates a new server
@@ -29,7 +33,9 @@ func New(listenAddr string) *Server {
 			Addr:    listenAddr,
 			Handler: mux,
 		},
-		mux: mux,
+		mux:       mux,
+		Heartbeat: make(chan struct{}, 1),
+		isHealthy: true,
 	}
 }
 
@@ -42,7 +48,11 @@ func (s *Server) EnableMetricsEndpoint() {
 // EnableHealthzEndpoint enables healthz endpoint
 func (s *Server) EnableHealthzEndpoint() {
 	s.mux.HandleFunc("/healthz", func(w http.ResponseWriter, req *http.Request) {
-		fmt.Fprintf(w, "OK")
+		if s.isHealthy {
+			fmt.Fprintf(w, "OK")
+			return
+		}
+		fmt.Fprintf(w, "NOT OK")
 	})
 }
 
@@ -50,6 +60,11 @@ func (s *Server) EnableHealthzEndpoint() {
 func (s *Server) Start(ctx context.Context) {
 	srvCtx, srvCancel := context.WithCancel(ctx)
 	defer srvCancel()
+
+	heartbeatCtx, cancel := context.WithCancel(srvCtx)
+	defer cancel()
+
+	var closeOnce sync.Once
 
 	go func() {
 		logger.Debugw("Starting serving metrics endpoint goroutine", "address", s.hs.Addr)
@@ -60,6 +75,45 @@ func (s *Server) Start(ctx context.Context) {
 		}
 
 		srvCancel()
+	}()
+
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				s.invokeHeartbeat()
+			case <-heartbeatCtx.Done():
+				closeOnce.Do(func() {
+					close(s.Heartbeat)
+				})
+				return
+			}
+		}
+	}()
+
+	go func() {
+		ticker := time.NewTicker(2 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				select {
+				case <-s.Heartbeat:
+					s.isHealthy = true
+				default:
+					s.isHealthy = false
+				}
+			case <-heartbeatCtx.Done():
+				closeOnce.Do(func() {
+					close(s.Heartbeat)
+				})
+				return
+			}
+		}
 	}()
 
 	select {
@@ -104,4 +158,8 @@ func (s *Server) EnablePyroAgent() error {
 // MetricsEndpointEnabled returns true if metrics endpoint is enabled
 func (s *Server) MetricsEndpointEnabled() bool {
 	return s.metricsEnabled
+}
+
+//go:noinline
+func (s *Server) invokeHeartbeat() {
 }
