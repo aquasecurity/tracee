@@ -29,7 +29,7 @@ func TestParseArgs(t *testing.T) {
 							Name: "addr",
 							Type: "void*",
 						},
-						Value: ^uintptr(0),
+						Value: trace.Pointer(^uintptr(0)),
 					},
 				},
 				expectedArgs: []trace.Argument{
@@ -50,7 +50,7 @@ func TestParseArgs(t *testing.T) {
 							Name: "addr",
 							Type: "void*",
 						},
-						Value: uintptr(0x42424242),
+						Value: trace.Pointer(uintptr(0x42424242)),
 					},
 				},
 				expectedArgs: []trace.Argument{

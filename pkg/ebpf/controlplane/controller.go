@@ -117,6 +117,7 @@ func (ctrl *Controller) processSignal(signal *signal) error {
 	case events.SignalCgroupRmdir:
 		return ctrl.processCgroupRmdir(signal.args)
 	case events.SignalSchedProcessFork:
+		// Not normalized at decode - normalize here.
 		err := events.NormalizeTimeArgs(
 			signal.args,
 			[]string{
@@ -133,6 +134,7 @@ func (ctrl *Controller) processSignal(signal *signal) error {
 
 		return ctrl.procTreeForkProcessor(signal.args)
 	case events.SignalSchedProcessExec:
+		// Not normalized at decode - normalize here.
 		err := events.NormalizeTimeArgs(
 			signal.args,
 			[]string{
@@ -149,6 +151,7 @@ func (ctrl *Controller) processSignal(signal *signal) error {
 
 		return ctrl.procTreeExecProcessor(signal.args)
 	case events.SignalSchedProcessExit:
+		// Not normalized at decode - normalize here.
 		err := events.NormalizeTimeArgs(
 			signal.args,
 			[]string{
