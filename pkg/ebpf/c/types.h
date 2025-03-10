@@ -152,6 +152,7 @@ enum signal_event_id_e
     SIGNAL_SCHED_PROCESS_FORK,
     SIGNAL_SCHED_PROCESS_EXEC,
     SIGNAL_SCHED_PROCESS_EXIT,
+    SIGNAL_HEARTBEAT,
 };
 
 typedef struct args {

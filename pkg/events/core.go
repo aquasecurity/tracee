@@ -174,6 +174,7 @@ const (
 	SignalSchedProcessFork
 	SignalSchedProcessExec
 	SignalSchedProcessExit
+	SignalHeartbeat
 )
 
 // Signature events
@@ -13281,6 +13282,19 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "exit_code"},
 			{Type: "int", Name: "signal_code"},
 			{Type: "bool", Name: "process_group_exit"},
+		},
+	},
+	SignalHeartbeat: {
+		id:       SignalHeartbeat,
+		id32Bit:  Sys32Undefined,
+		name:     "heartbeat_event",
+		version:  NewVersion(1, 0, 0),
+		internal: true,
+		sets:     []string{"default"},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SignalHeartbeat, required: true},
+			},
 		},
 	},
 	//

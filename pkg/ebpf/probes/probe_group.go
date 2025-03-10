@@ -234,6 +234,7 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, err
 		SignalSchedProcessFork:     NewTraceProbe(RawTracepoint, "sched:sched_process_fork", "sched_process_fork_signal"),
 		SignalSchedProcessExec:     NewTraceProbe(RawTracepoint, "sched:sched_process_exec", "sched_process_exec_signal"),
 		SignalSchedProcessExit:     NewTraceProbe(RawTracepoint, "sched:sched_process_exit", "sched_process_exit_signal"),
+		SignalHeartbeat:            NewUprobe("heartbeat_event", "heartbeat_capture", binaryPath, "github.com/aquasecurity/tracee/pkg/server/http.invokeHeartbeat"),
 		ExecuteFinishedX86:         NewTraceProbe(KretProbe, "__x64_sys_execve", "trace_execute_finished"),
 		ExecuteAtFinishedX86:       NewTraceProbe(KretProbe, "__x64_sys_execveat", "trace_execute_finished"),
 		ExecuteFinishedCompatX86:   NewTraceProbe(KretProbe, "__ia32_compat_sys_execve", "trace_execute_finished"),
