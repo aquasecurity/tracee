@@ -577,6 +577,7 @@ enum EventId {
     symbols_collision = 2024;
     hidden_kernel_module = 2025;
     ftrace_hook = 2026;
+    heartbeat_event=2027;
 }
 
 message Event {

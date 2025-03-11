@@ -188,6 +188,7 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, err
 		HiddenKernelModuleVerifier: NewUprobe("hidden_kernel_module", "uprobe_lkm_seeker_submitter", binaryPath, "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerKernelModuleSubmitter"),
 		PrintNetSeqOps:             NewUprobe("print_net_seq_ops", "uprobe_seq_ops_trigger", binaryPath, "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSeqOpsIntegrityCheckCall"),
 		PrintMemDump:               NewUprobe("print_mem_dump", "uprobe_mem_dump_trigger", binaryPath, "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerMemDumpCall"),
+		Heartbeat:                  NewUprobe("heartbeat_event", "heartbeat_capture", binaryPath, "github.com/aquasecurity/tracee/pkg/server/http.(*Server).invokeHeartbeat"),
 		SecurityInodeRename:        NewTraceProbe(KProbe, "security_inode_rename", "trace_security_inode_rename"),
 		DoSigaction:                NewTraceProbe(KProbe, "do_sigaction", "trace_do_sigaction"),
 		SecurityBpfProg:            NewTraceProbe(KProbe, "security_bpf_prog", "trace_security_bpf_prog"),

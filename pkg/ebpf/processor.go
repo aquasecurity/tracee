@@ -137,6 +137,7 @@ func (t *Tracee) registerEventProcessors() {
 	//
 	// Uprobe based events processors
 	//
+	t.RegisterEventProcessor(events.Heartbeat, t.processHeartbeatEvent)
 
 	// Remove task context
 	t.RegisterEventProcessor(events.HiddenKernelModule, t.removeIrrelevantContext)

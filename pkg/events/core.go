@@ -119,6 +119,7 @@ const (
 	OpenFileNS
 	OpenFileMount
 	MaxCommonID
+	Heartbeat
 )
 
 // Events originated from user-space
@@ -12718,6 +12719,18 @@ var CoreEvents = map[ID]Definition{
 			{Type: "char*", Name: "arch"},
 			{Type: "char*", Name: "symbol_name"},
 			{Type: "char*", Name: "symbol_owner"},
+		},
+	},
+	Heartbeat: {
+		id:      Heartbeat,
+		id32Bit: Sys32Undefined,
+		name:    "heartbeat_event",
+		version: NewVersion(1, 0, 0),
+		sets:    []string{"default"},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.Heartbeat, required: true},
+			},
 		},
 	},
 	VfsRead: {
