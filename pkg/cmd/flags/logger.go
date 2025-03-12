@@ -24,7 +24,8 @@ const (
 	LogFilter                   = "filter"
 	LogInclude                  = "include"
 	LogExclude                  = "exclude"
-	LogAggregation              = "aggregation"
+	LogLibbpf                   = "libbpf"
+	LogAggregation              = "aggregate"
 	LogAggregationEnabled       = "enabled"
 	LogAggregationFlushInterval = "flush-interval"
 	DefaultLogLevel             = LogLevel + "=" + LogLevelInfo
@@ -47,7 +48,7 @@ Filter options:
   pkg=<value,...>                      | Filters logs that originate from a package.
   file=<value,...>                     | Filters logs that originate from a file.
   lvl=<value,...>                      | Filters logs that are of a specific level.
-  libbpf                               | Filters logs that originate from libbpf.
+  libbpf		                       | Filters logs that originate from libbpf.
 
 Examples:
   --log level=debug                                      		     | outputs debug level logs
@@ -58,7 +59,8 @@ Examples:
   --log filter.exclude.msg=foo,bar --log filter.exclude.pkg=core  	 | Filters out logs that have either 'foo' or 'bar' in the message, and are from the 'core' package.
   --log filter.exclude.file=/pkg/cmd/flags/logger.go	 			 | Filters out logs that are from the '/pkg/cmd/flags/logger.go' file.
   --log filter.include.regex='^foo'                         		 | Filters in logs that messages match the regex '^foo'.
-  --log filter.include.libbpf                               		 | Filters in logs that originate from libbpf.
+  --log filter.include.libbpf                              			 | Filters in logs that originate from libbpf.
+  --log filter.exclude.libbpf                              			 | Filters out logs that originate from libbpf.
 `
 }
 
@@ -171,6 +173,9 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 
 		case LogFilter:
 			filterParts := strings.SplitN(logParts[1], ".", 2)
+			if len(filterParts) < 2 {
+				return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
+			}
 			var filterKind logger.FilterKind
 			switch filterParts[0] {
 			case LogInclude:
@@ -183,10 +188,15 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 
 			filterOpt := filterParts[1]
 			if filterOpt != "" {
-				processLogFilter(opt, newBinary, filterKind, filterOpt)
-			} else {
-				return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
+				filter, err = processLogFilter(opt, newBinary, filterKind, filterOpt)
+				if err != nil {
+					return logger.LoggingConfig{}, err
+				}
+				continue
 			}
+			return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
+		default:
+			return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
 		}
 	}
 
@@ -290,10 +300,8 @@ func processLogFilter(opt string, newBinary bool, filterKind logger.FilterKind, 
 		if err := filter.AddMsgRegex("^libbpf:", filterKind); err != nil {
 			if errors.Is(err, logger.ErrFilterOutExistsForKey) {
 				logger.Warnw(err.Error(), "regex", "^libbpf:")
-
-			} else {
-				return filter, invalidLogOptionValue(err, opt, newBinary)
 			}
+			return filter, invalidLogOptionValue(err, opt, newBinary)
 		}
 	default:
 		return filter, invalidLogOption(nil, opt, newBinary)

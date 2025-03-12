@@ -29,7 +29,7 @@ func TestPrepareLogger(t *testing.T) {
 		// valid log level
 		{
 			testName:   "valid log level",
-			logOptions: []string{"debug"},
+			logOptions: []string{"level=debug"},
 			expectedReturn: logger.LoggingConfig{
 				Aggregate:     false,
 				FlushInterval: logger.DefaultFlushInterval,
@@ -38,7 +38,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid log level",
-			logOptions: []string{"info"},
+			logOptions: []string{"level=info"},
 			expectedReturn: logger.LoggingConfig{
 				Aggregate:     false,
 				FlushInterval: logger.DefaultFlushInterval,
@@ -47,7 +47,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid log level",
-			logOptions: []string{"warn"},
+			logOptions: []string{"level=warn"},
 			expectedReturn: logger.LoggingConfig{
 				Aggregate:     false,
 				FlushInterval: logger.DefaultFlushInterval,
@@ -56,7 +56,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid log level",
-			logOptions: []string{"error"},
+			logOptions: []string{"level=error"},
 			expectedReturn: logger.LoggingConfig{
 				Aggregate:     false,
 				FlushInterval: logger.DefaultFlushInterval,
@@ -65,7 +65,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid log level",
-			logOptions: []string{"fatal"},
+			logOptions: []string{"level=fatal"},
 			expectedReturn: logger.LoggingConfig{
 				Aggregate:     false,
 				FlushInterval: logger.DefaultFlushInterval,
@@ -89,7 +89,7 @@ func TestPrepareLogger(t *testing.T) {
 		// valid log aggregate
 		{
 			testName:   "valid log aggregate",
-			logOptions: []string{"aggregate"},
+			logOptions: []string{"aggregate.enabled=true"},
 			expectedReturn: logger.LoggingConfig{
 				Aggregate:     true,
 				FlushInterval: logger.DefaultFlushInterval,
@@ -98,7 +98,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid log aggregate",
-			logOptions: []string{"aggregate:10s"},
+			logOptions: []string{"aggregate.flush-interval=10s"},
 			expectedReturn: logger.LoggingConfig{
 				Aggregate:     true,
 				FlushInterval: 10 * time.Second,
@@ -107,7 +107,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid log aggregate",
-			logOptions: []string{"aggregate:2m"},
+			logOptions: []string{"aggregate.flush-interval=2m"},
 			expectedReturn: logger.LoggingConfig{
 				Aggregate:     true,
 				FlushInterval: 2 * time.Minute,
@@ -155,7 +155,7 @@ func TestPrepareLogger(t *testing.T) {
 		// valid log level + aggregate
 		{
 			testName:   "valid log level + aggregate",
-			logOptions: []string{"debug", "aggregate"},
+			logOptions: []string{"level=debug", "aggregate.enabled=true"},
 			expectedReturn: logger.LoggingConfig{
 				Aggregate:     true,
 				FlushInterval: logger.DefaultFlushInterval,
@@ -164,7 +164,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid log level + aggregate",
-			logOptions: []string{"debug", "aggregate:10s"},
+			logOptions: []string{"level=debug", "aggregate.flush-interval=10s"},
 			expectedReturn: logger.LoggingConfig{
 				Aggregate:     true,
 				FlushInterval: 10 * time.Second,
@@ -178,97 +178,97 @@ func TestPrepareLogger(t *testing.T) {
 			expectedError:  invalidLogOptionValue(nil, "file:", false),
 		},
 
-		// valid filter-out options
+		// valid exclude filter options
 		{
-			testName:   "valid filter-out option",
-			logOptions: []string{"filter-out:msg=whatever"},
+			testName:   "valid exclude filter option",
+			logOptions: []string{"filter.exclude.msg=whatever"},
 			expectedReturn: logger.LoggingConfig{
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
 		{
-			testName:   "valid filter-out option",
-			logOptions: []string{"filter-out:regex=^whatever$"},
+			testName:   "valid exclude filter option",
+			logOptions: []string{"filter.exclude.regex=^whatever$"},
 			expectedReturn: logger.LoggingConfig{
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
 		{
-			testName:   "valid filter-out option",
-			logOptions: []string{"filter-out:pkg=whatever"},
+			testName:   "valid exclude filter option",
+			logOptions: []string{"filter.exclude.pkg=whatever"},
 			expectedReturn: logger.LoggingConfig{
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
 		{
-			testName:   "valid filter-out option",
-			logOptions: []string{"filter-out:file=whatever"},
+			testName:   "valid exclude filter option",
+			logOptions: []string{"filter.exclude.file=whatever"},
 			expectedReturn: logger.LoggingConfig{
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
 		{
-			testName:   "valid filter-out option",
-			logOptions: []string{"filter-out:lvl=info"},
+			testName:   "valid exclude filter option",
+			logOptions: []string{"filter.exclude.lvl=info"},
 			expectedReturn: logger.LoggingConfig{
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
 		{
-			testName:   "valid filter-out option",
-			logOptions: []string{"filter-out:libbpf"},
+			testName:   "valid exclude filter option",
+			logOptions: []string{"filter.exclude.libbpf"},
 			expectedReturn: logger.LoggingConfig{
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
-		// invalid filter-out options
+		// invalid exclude filter options
 		{
-			testName:       "invalid filter-out option",
-			logOptions:     []string{"filter-out:"},
+			testName:       "invalid exclude filter option",
+			logOptions:     []string{"filter.exclude."},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter-out:", false),
+			expectedError:  invalidLogOption(nil, "filter.exclude.", false),
 		},
 		{
-			testName:       "invalid filter-out option",
-			logOptions:     []string{"filter-out:invalid"},
+			testName:       "invalid exclude filter option",
+			logOptions:     []string{"filter.exclude.invalid"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter-out:invalid", false),
+			expectedError:  invalidLogOption(nil, "filter.exclude.invalid", false),
 		},
 		{
-			testName:       "invalid filter-out option",
-			logOptions:     []string{"filter-out:msg"},
+			testName:       "invalid exclude filter option",
+			logOptions:     []string{"filter.exclude.msg"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter-out:msg", false),
+			expectedError:  invalidLogOption(nil, "filter.exclude.msg", false),
 		},
 		{
-			testName:       "invalid filter-out option",
-			logOptions:     []string{"filter-out:msg="},
+			testName:       "invalid exclude filter option",
+			logOptions:     []string{"filter.exclude.msg="},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter-out:msg=", false),
+			expectedError:  invalidLogOptionValue(nil, "filter.exclude.msg=", false),
 		},
 		{
-			testName:       "invalid filter-out option",
-			logOptions:     []string{"filter-out:regex=[whatever"},
+			testName:       "invalid exclude filter option",
+			logOptions:     []string{"filter.exclude.regex=[whatever"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter-out:regex=[whatever", false),
+			expectedError:  invalidLogOptionValue(nil, "filter.exclude.regex=[whatever", false),
 		},
 		{
-			testName:       "valid filter-out option",
-			logOptions:     []string{"filter-out:lvl=invalid"},
+			testName:       "invalid exclude filter option",
+			logOptions:     []string{"filter.exclude.lvl=invalid"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter-out:lvl=invalid", false),
+			expectedError:  invalidLogOptionValue(nil, "filter.exclude.lvl=invalid", false),
 		},
 
 		// valid filter options
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter:msg=whatever"},
+			logOptions: []string{"filter.include.msg=whatever"},
 			expectedReturn: logger.LoggingConfig{
 				FlushInterval: logger.DefaultFlushInterval,
 			},
@@ -276,7 +276,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter:regex=^whatever$"},
+			logOptions: []string{"filter.include.regex=^whatever$"},
 			expectedReturn: logger.LoggingConfig{
 				FlushInterval: logger.DefaultFlushInterval,
 			},
@@ -284,7 +284,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter:pkg=whatever"},
+			logOptions: []string{"filter.include.pkg=whatever"},
 			expectedReturn: logger.LoggingConfig{
 				FlushInterval: logger.DefaultFlushInterval,
 			},
@@ -292,7 +292,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter:file=whatever"},
+			logOptions: []string{"filter.include.file=whatever"},
 			expectedReturn: logger.LoggingConfig{
 				FlushInterval: logger.DefaultFlushInterval,
 			},
@@ -300,7 +300,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter:lvl=info"},
+			logOptions: []string{"filter.include.lvl=info"},
 			expectedReturn: logger.LoggingConfig{
 				FlushInterval: logger.DefaultFlushInterval,
 			},
@@ -308,7 +308,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter:libbpf"},
+			logOptions: []string{"filter.include.libbpf"},
 			expectedReturn: logger.LoggingConfig{
 				FlushInterval: logger.DefaultFlushInterval,
 			},
@@ -317,39 +317,45 @@ func TestPrepareLogger(t *testing.T) {
 		// invalid filter options
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter:"},
+			logOptions:     []string{"filter.include"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter:", false),
+			expectedError:  invalidLogOption(nil, "filter.include", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter:invalid"},
+			logOptions:     []string{"filter.include."},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter:invalid", false),
+			expectedError:  invalidLogOption(nil, "filter.include.", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter:msg"},
+			logOptions:     []string{"filter.include.invalid"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter:msg", false),
+			expectedError:  invalidLogOption(nil, "filter.include.invalid", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter:msg="},
+			logOptions:     []string{"filter.include.msg"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter:msg=", false),
+			expectedError:  invalidLogOption(nil, "filter.include.msg", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter:regex=[whatever"},
+			logOptions:     []string{"filter.include.msg="},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter:regex=[whatever", false),
+			expectedError:  invalidLogOption(nil, "filter.include.msg=", false),
 		},
 		{
-			testName:       "valid filter option",
-			logOptions:     []string{"filter:lvl=invalid"},
+			testName:       "invalid filter option",
+			logOptions:     []string{"filter.include.regex=[whatever"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter:lvl=invalid", false),
+			expectedError:  invalidLogOption(nil, "filter.include.regex=[whatever", false),
+		},
+		{
+			testName:       "invalid filter option",
+			logOptions:     []string{"filter.include.lvl=invalid"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "filter.include.lvl=invalid", false),
 		},
 	}
 
