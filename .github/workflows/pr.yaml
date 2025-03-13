@@ -211,6 +211,21 @@ jobs:
       - name: Run Unit Tests
         run: |
           make test-unit
+  unit-tests-arm64:
+    name: Unit Tests (ARM64)
+    needs:
+      - verify-analyze-code
+    runs-on: ubuntu-22.04-arm
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          submodules: true
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies-arm64
+      - name: Run Unit Tests
+        run: |
+          make test-unit
   #
   # INTEGRATION TESTS
   #
@@ -226,6 +241,21 @@ jobs:
           submodules: true
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
+      - name: Run Integration Tests
+        run: |
+          sudo env "PATH=$PATH" make test-integration
+  integration-tests-arm64:
+    name: Integration Tests (ARM64)
+    needs:
+      - verify-analyze-code
+    runs-on: ubuntu-22.04-arm
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          submodules: true
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies-arm64
       - name: Run Integration Tests
         run: |
           sudo env "PATH=$PATH" make test-integration
