@@ -548,6 +548,11 @@ enum EventId {
     module_free = 1083;
     execute_finished = 1084;
     process_execute_failed_internal = 1085;
+    security_task_set_rlimit = 1086;
+    security_settime64 = 1087;
+    chmod_common = 1088;
+    open_file_ns = 1089;
+    open_file_mount = 1090;
 
     // Events originated from user-space
     net_packet_ipv4 = 2000;
