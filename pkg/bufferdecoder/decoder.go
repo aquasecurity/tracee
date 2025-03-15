@@ -13,12 +13,14 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type EbpfDecoder struct {
-	buffer []byte
-	cursor int
+	buffer  []byte
+	cursor  int
+	present DataPresentor
 }
 
 var ErrBufferTooShort = errors.New("can't read context from buffer: buffer too short")
@@ -27,11 +29,58 @@ var ErrBufferTooShort = errors.New("can't read context from buffer: buffer too s
 // The EbpfDecoder takes ownership of rawBuffer, and the caller should not use rawBuffer after this call.
 // New is intended to prepare a buffer to read existing data from it, translating it to protocol defined structs.
 // The protocol is specific between the Trace eBPF program and the Tracee-eBPF user space application.
-func New(rawBuffer []byte) *EbpfDecoder {
+func New(rawBuffer []byte, present DataPresentor) *EbpfDecoder {
 	return &EbpfDecoder{
-		buffer: rawBuffer,
-		cursor: 0,
+		buffer:  rawBuffer,
+		cursor:  0,
+		present: present,
 	}
+}
+
+type presentorFunc func(any) (any, error)
+type DataPresentor []map[string]presentorFunc
+
+func NewDataPresentor() DataPresentor {
+	// type default presentor - handled as a special case in decoding
+	// if no specific presentor is specified
+	identity := func(a any) (any, error) {
+		return a, nil
+	}
+
+	present := DataPresentor{
+		trace.INT_T:  {},
+		trace.UINT_T: {},
+		trace.LONG_T: {},
+		trace.ULONG_T: {
+			"time.Time": func(a any) (any, error) {
+				argVal, ok := a.(uint64)
+				if !ok {
+					return nil, errfmt.Errorf("error presenting uint64 as time.Time, type received was %T", a)
+				}
+				return time.NsSinceEpochToTime(time.BootToEpochNS(argVal)), nil
+			},
+		},
+		trace.U16_T:        {},
+		trace.U8_T:         {},
+		trace.INT_ARR_2_T:  {},
+		trace.UINT64_ARR_T: {},
+		trace.POINTER_T:    {},
+		trace.BYTES_T:      {},
+		trace.STR_T:        {},
+		trace.STR_ARR_T:    {},
+		trace.SOCK_ADDR_T:  {},
+		trace.CRED_T:       {},
+		trace.TIMESPEC_T: {
+			// timespec is seconds+nano in float
+			"float64": identity,
+		},
+		trace.ARGS_ARR_T: {},
+		trace.BOOL_T:     {},
+		trace.FLOAT_T:    {},
+		trace.FLOAT64_T:  {},
+	}
+
+	return present
 }
 
 // BuffLen returns the total length of the buffer owned by decoder.
@@ -39,8 +88,14 @@ func (decoder *EbpfDecoder) BuffLen() int {
 	return len(decoder.buffer)
 }
 
-// ReadAmountBytes returns the total amount of bytes that decoder has read from its buffer up until now.
-func (decoder *EbpfDecoder) ReadAmountBytes() int {
+// BytesRead returns the total amount of bytes that decoder has read from its buffer up until now.
+func (decoder *EbpfDecoder) BytesRead() int {
+	return decoder.cursor
+}
+
+// MoveCursor moves the buffer cursor over n bytes. Returns the new cursor position.
+func (decoder *EbpfDecoder) MoveCursor(n int) int {
+	decoder.cursor += n
 	return decoder.cursor
 }
 
@@ -107,7 +162,7 @@ func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, e
 		args[idx] = arg
 	}
 
-	// Fill missing arguments metadata
+	// Fill missing arguments
 	for i := 0; i < len(evtFields); i++ {
 		if args[i].Value == nil {
 			args[i].ArgMeta = evtFields[i]
@@ -260,8 +315,20 @@ func (decoder *EbpfDecoder) DecodeBytes(msg []byte, size int) error {
 	return nil
 }
 
-// DecodeIntArray translate from the decoder buffer, starting from the decoder cursor, to msg, size * 4 bytes (in order to get int32).
-func (decoder *EbpfDecoder) DecodeIntArray(msg []int32, size int) error {
+// ReadBytesLen is a helper which allocates a known size bytes buffer and decodes
+// the bytes from the buffer into it.
+func (decoder *EbpfDecoder) ReadBytesLen(len int) ([]byte, error) {
+	var err error
+	res := make([]byte, len)
+	err = decoder.DecodeBytes(res[:], len)
+	if err != nil {
+		return nil, errfmt.Errorf("error reading byte array: %v", err)
+	}
+	return res, nil
+}
+
+// DecodeInt32Array translate from the decoder buffer, starting from the decoder cursor, to msg, size * 4 bytes (in order to get int32).
+func (decoder *EbpfDecoder) DecodeInt32Array(msg []int32, size int) error {
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < size*4 {
 		return ErrBufferTooShort

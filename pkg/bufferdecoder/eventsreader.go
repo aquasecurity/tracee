@@ -13,48 +13,17 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-// argType is an enum that encodes the argument types that the BPF program may write to the shared buffer
-// argument types should match defined values in ebpf code
-type ArgType uint8
-
-const (
-	noneT ArgType = iota
-	intT
-	uintT
-	longT
-	ulongT
-	offT
-	modeT
-	devT
-	sizeT
-	pointerT
-	strT
-	strArrT
-	sockAddrT
-	bytesT
-	u16T
-	credT
-	intArr2T
-	uint64ArrT
-	u8T
-	timespecT
-)
-
-// These types don't match the ones defined in the ebpf code since they are not being used by syscalls arguments.
-// They have their own set of value to avoid collision in the future.
-const (
-	argsArrT ArgType = iota + 0x80
-	boolT
-)
-
 // readArgFromBuff read the next argument from the buffer.
 // Return the index of the argument and the parsed argument.
-func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.ArgMeta,
+func readArgFromBuff(
+	id events.ID,
+	ebpfMsgDecoder *EbpfDecoder,
+	fields []trace.ArgMeta,
 ) (
 	uint, trace.Argument, error,
 ) {
 	var err error
-	var res interface{}
+	var decodedValue interface{}
 	var argIdx uint8
 	var arg trace.Argument
 
@@ -66,67 +35,69 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 		return 0, arg, errfmt.Errorf("invalid arg index %d", argIdx)
 	}
 	arg.ArgMeta = fields[argIdx]
-	argType := GetFieldType(arg.Type)
+	decodeType := arg.DecodeAs
+	if decodeType == trace.NONE_T {
+		return 0, arg, errfmt.Errorf("arg \"%s\" from event %d: did not declare a decode type, this should not happen", arg.Name, id)
+	}
 
-	switch argType {
-	case u8T:
+	switch decodeType {
+	case trace.U8_T:
 		var data uint8
 		err = ebpfMsgDecoder.DecodeUint8(&data)
-		res = data
-	case u16T:
+		decodedValue = data
+	case trace.U16_T:
 		var data uint16
 		err = ebpfMsgDecoder.DecodeUint16(&data)
-		res = data
-	case intT:
+		decodedValue = data
+	case trace.INT_T:
 		var data int32
 		err = ebpfMsgDecoder.DecodeInt32(&data)
-		res = data
-	case uintT, devT, modeT:
+		decodedValue = data
+	case trace.UINT_T:
 		var data uint32
 		err = ebpfMsgDecoder.DecodeUint32(&data)
-		res = data
-	case longT:
+		decodedValue = data
+	case trace.LONG_T:
 		var data int64
 		err = ebpfMsgDecoder.DecodeInt64(&data)
-		res = data
-	case ulongT, offT, sizeT:
+		decodedValue = data
+	case trace.ULONG_T:
 		var data uint64
 		err = ebpfMsgDecoder.DecodeUint64(&data)
-		res = data
-	case boolT:
+		decodedValue = data
+	case trace.BOOL_T:
 		var data bool
 		err = ebpfMsgDecoder.DecodeBool(&data)
-		res = data
-	case pointerT:
+		decodedValue = data
+	case trace.POINTER_T:
 		var data uint64
 		err = ebpfMsgDecoder.DecodeUint64(&data)
-		res = uintptr(data)
-	case sockAddrT:
-		res, err = readSockaddrFromBuff(ebpfMsgDecoder)
-	case credT:
+		decodedValue = trace.Pointer(data)
+	case trace.SOCK_ADDR_T:
+		decodedValue, err = readSockaddrFromBuff(ebpfMsgDecoder)
+	case trace.CRED_T:
 		var data SlimCred
 		err = ebpfMsgDecoder.DecodeSlimCred(&data)
-		res = trace.SlimCred(data) // here we cast to trace.SlimCred to ensure we send the public interface and not bufferdecoder.SlimCred
-	case strT:
-		res, err = readStringFromBuff(ebpfMsgDecoder)
-	case strArrT:
-		// TODO optimization: create slice after getting arrLen
-		var ss []string
+		decodedValue = trace.SlimCred(data) // here we cast to trace.SlimCred to ensure we send the public interface and not bufferdecoder.SlimCred
+	case trace.STR_T:
+		decodedValue, err = readStringFromBuff(ebpfMsgDecoder)
+	case trace.STR_ARR_T:
 		var arrLen uint8
 		err = ebpfMsgDecoder.DecodeUint8(&arrLen)
 		if err != nil {
 			return uint(argIdx), arg, errfmt.Errorf("error reading string array number of elements: %v", err)
 		}
+		strSlice := make([]string, 0, arrLen)
 		for i := 0; i < int(arrLen); i++ {
 			s, err := readStringFromBuff(ebpfMsgDecoder)
 			if err != nil {
 				return uint(argIdx), arg, errfmt.Errorf("error reading string element: %v", err)
 			}
-			ss = append(ss, s)
+			strSlice = append(strSlice, s)
 		}
-		res = ss
-	case argsArrT:
-		var ss []string
+		decodedValue = strSlice
+	case trace.ARGS_ARR_T:
+		var strSlice []string
 		var arrLen uint32
 		var argNum uint32
 
@@ -138,19 +109,19 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 		if err != nil {
 			return uint(argIdx), arg, errfmt.Errorf("error reading args number: %v", err)
 		}
-		resBytes, err := ReadByteSliceFromBuff(ebpfMsgDecoder, int(arrLen))
+		resBytes, err := ebpfMsgDecoder.ReadBytesLen(int(arrLen))
 		if err != nil {
 			return uint(argIdx), arg, errfmt.Errorf("error reading args array: %v", err)
 		}
-		ss = strings.Split(string(resBytes), "\x00")
-		if ss[len(ss)-1] == "" {
-			ss = ss[:len(ss)-1]
+		strSlice = strings.Split(string(resBytes), "\x00")
+		if strSlice[len(strSlice)-1] == "" {
+			strSlice = strSlice[:len(strSlice)-1]
 		}
-		for int(argNum) > len(ss) {
-			ss = append(ss, "?")
+		for int(argNum) > len(strSlice) {
+			strSlice = append(strSlice, "?")
 		}
-		res = ss
-	case bytesT:
+		decodedValue = strSlice
+	case trace.BYTES_T:
 		var size uint32
 		err = ebpfMsgDecoder.DecodeUint32(&size)
 		if err != nil {
@@ -160,22 +131,22 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 		if size > 4096 && (id < events.NetPacketBase || id > events.MaxNetID) {
 			return uint(argIdx), arg, errfmt.Errorf("byte array size too big: %d", size)
 		}
-		res, err = ReadByteSliceFromBuff(ebpfMsgDecoder, int(size))
-	case intArr2T:
+		decodedValue, err = ebpfMsgDecoder.ReadBytesLen(int(size))
+	case trace.INT_ARR_2_T:
 		var intArray [2]int32
-		err = ebpfMsgDecoder.DecodeIntArray(intArray[:], 2)
+		err = ebpfMsgDecoder.DecodeInt32Array(intArray[:], 2)
 		if err != nil {
 			return uint(argIdx), arg, errfmt.Errorf("error reading int elements: %v", err)
 		}
-		res = intArray
-	case uint64ArrT:
+		decodedValue = intArray
+	case trace.UINT64_ARR_T:
 		ulongArray := make([]uint64, 0)
 		err := ebpfMsgDecoder.DecodeUint64Array(&ulongArray)
 		if err != nil {
 			return uint(argIdx), arg, errfmt.Errorf("error reading ulong elements: %v", err)
 		}
-		res = ulongArray
-	case timespecT:
+		decodedValue = ulongArray
+	case trace.TIMESPEC_T:
 		var sec int64
 		var nsec int64
 		err = ebpfMsgDecoder.DecodeInt64(&sec)
@@ -183,66 +154,74 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 			return uint(argIdx), arg, errfmt.WrapError(err)
 		}
 		err = ebpfMsgDecoder.DecodeInt64(&nsec)
-		res = float64(sec) + (float64(nsec) / float64(1000000000))
+		decodedValue = float64(sec) + (float64(nsec) / float64(1000000000))
 
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
-		return uint(argIdx), arg, errfmt.Errorf("error unknown arg type %v", argType)
+		return uint(argIdx), arg, errfmt.Errorf("error unknown arg type %v", decodeType)
 	}
 	if err != nil {
 		return uint(argIdx), arg, errfmt.WrapError(err)
 	}
-	arg.Value = res
+
+	// note(nadav.str): this allows defining data fields with a type - should we allow it?
+	if decodeType.String() == arg.Type || arg.Type == "" {
+		// identity case
+		arg.Value = decodedValue
+	} else {
+		// present the decoded type
+		presentor, ok := ebpfMsgDecoder.present[decodeType][arg.Type]
+		if !ok {
+			return uint(argIdx), arg, errfmt.Errorf("failed to present decoded argument (decoding from type %s to presented type %s)", decodeType, arg.Type)
+		}
+		arg.Value, err = presentor(decodedValue)
+		if err != nil {
+			return uint(argIdx), arg, errfmt.WrapError(err)
+		}
+	}
+
 	return uint(argIdx), arg, nil
 }
 
-func GetFieldType(fieldType string) ArgType {
+func GetDecodeType(fieldType string) trace.DecodeAs {
 	switch fieldType {
-	case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
-		return intT
-	case "unsigned int", "u32":
-		return uintT
+	case "int":
+		return trace.INT_T
+	case "unsigned int":
+		return trace.UINT_T
 	case "long":
-		return longT
-	case "unsigned long", "u64":
-		return ulongT
-	case "bool":
-		return boolT
-	case "off_t", "loff_t":
-		return offT
-	case "mode_t":
-		return modeT
-	case "dev_t":
-		return devT
-	case "size_t":
-		return sizeT
-	case "void*", "const void*":
-		return pointerT
-	case "char*", "const char*":
-		return strT
-	case "const char*const*": // used by execve(at) argv and env
-		return strArrT
-	case "const char**": // used by sched_process_exec argv and envp
-		return argsArrT
-	case "const struct sockaddr*", "struct sockaddr*":
-		return sockAddrT
-	case "bytes":
-		return bytesT
-	case "int[2]":
-		return intArr2T
-	case "slim_cred_t":
-		return credT
-	case "umode_t":
-		return u16T
+		return trace.LONG_T
+	case "unsigned long":
+		return trace.ULONG_T
+	case "u16":
+		return trace.U16_T
 	case "u8":
-		return u8T
+		return trace.U8_T
+	case "bool":
+		return trace.BOOL_T
+	case "void*":
+		return trace.POINTER_T
+	case "char*":
+		return trace.STR_T
+	case "const char*const*": // used by execve(at) argv and env
+		return trace.STR_ARR_T
+	case "const char**": // used by sched_process_exec argv and env
+		return trace.ARGS_ARR_T
+	case "struct sockaddr*":
+		return trace.SOCK_ADDR_T
+	case "bytes":
+		return trace.BYTES_T
+	case "[2]int32":
+		return trace.INT_ARR_2_T
+	case "slim_cred_t":
+		return trace.CRED_T
 	case "unsigned long[]", "[]trace.HookedSymbolData":
-		return uint64ArrT
-	case "struct timespec*", "const struct timespec*":
-		return timespecT
+		return trace.UINT64_ARR_T
+	case "struct timespec*":
+		return trace.TIMESPEC_T
 	default:
 		// Default to pointer (printed as hex) for unsupported types
-		return pointerT
+		return trace.POINTER_T
 	}
 }
 
@@ -267,7 +246,7 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 					char        sun_path[108];  // Pathname
 			};
 		*/
-		sunPath, err := readStringVarFromBuff(ebpfMsgDecoder, 108)
+		sunPath, err := readVarStringFromBuffer(ebpfMsgDecoder, 108)
 		if err != nil {
 			return nil, errfmt.Errorf("error parsing sockaddr_un: %v", err)
 		}
@@ -297,7 +276,7 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 			return nil, errfmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
 		res["sin_addr"] = PrintUint32IP(addr)
-		_, err := ReadByteSliceFromBuff(ebpfMsgDecoder, 8)
+		_, err := ebpfMsgDecoder.ReadBytesLen(8)
 		if err != nil {
 			return nil, errfmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
@@ -328,7 +307,7 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 			return nil, errfmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
 		res["sin6_flowinfo"] = strconv.Itoa(int(flowinfo))
-		addr, err := ReadByteSliceFromBuff(ebpfMsgDecoder, 16)
+		addr, err := ebpfMsgDecoder.ReadBytesLen(16)
 		if err != nil {
 			return nil, errfmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
@@ -343,6 +322,9 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 	return res, nil
 }
 
+// readStringFromBuff reads strings from the event buffer using the following format:
+//
+// [32bit:string_size][string_size-1:byte_buffer][8bit:null_terminator]
 func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 	var err error
 	var size uint32
@@ -353,7 +335,7 @@ func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 	if size > 4096 {
 		return "", errfmt.Errorf("string size too big: %d", size)
 	}
-	res, err := ReadByteSliceFromBuff(ebpfMsgDecoder, int(size-1)) // last byte is string terminating null
+	res, err := ebpfMsgDecoder.ReadBytesLen(int(size - 1)) // last byte is string terminating null
 	defer func() {
 		var dummy int8
 		err := ebpfMsgDecoder.DecodeInt8(&dummy) // discard last byte which is string terminating null
@@ -367,9 +349,10 @@ func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 	return string(res), nil
 }
 
-// readStringVarFromBuff reads a null-terminated string from `buff`
-// max length can be passed as `max` to optimize memory allocation, otherwise pass 0
-func readStringVarFromBuff(decoder *EbpfDecoder, max int) (string, error) {
+// readVarStringFromBuffer reads a null-terminated string from the ebpf buffer where the size is not
+// known. The helper will read from the buffer char-by-char until it hits the null terminator
+// or the given max length. The cursor will then skip to the point in the buffer after the max length.
+func readVarStringFromBuffer(decoder *EbpfDecoder, max int) (string, error) {
 	var err error
 	var char int8
 	res := make([]byte, 0, max)
@@ -394,18 +377,8 @@ func readStringVarFromBuff(decoder *EbpfDecoder, max int) (string, error) {
 	// The exact reason for this Trim is not known, so remove it for now,
 	// since it increases processing time.
 	// res = bytes.TrimLeft(res[:], "\000")
-	decoder.cursor += max - count // move cursor to the end of the buffer
+	decoder.MoveCursor(max - count) // skip the cursor to the desired endpoint
 	return string(res), nil
-}
-
-func ReadByteSliceFromBuff(ebpfMsgDecoder *EbpfDecoder, len int) ([]byte, error) {
-	var err error
-	res := make([]byte, len)
-	err = ebpfMsgDecoder.DecodeBytes(res[:], len)
-	if err != nil {
-		return nil, errfmt.Errorf("error reading byte array: %v", err)
-	}
-	return res, nil
 }
 
 // PrintUint32IP prints the IP address encoded as a uint32
