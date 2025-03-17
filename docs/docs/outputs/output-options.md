@@ -53,7 +53,7 @@ Available options:
 
 5. **sort-events**
 
-    This makes it possible to sort the events as they happened. Especially in systems where Tracee tracks lots of events, it can happen that they are received unordered.
+    This makes it possible to sort the events as they happened. Especially in systems where Tracee tracks lots of events, it can happen that they are received unordered. More information is provided in the [ordering-event](../advanced/ordering-events.md) section of the documentation.
     ```
     output:
         options:
