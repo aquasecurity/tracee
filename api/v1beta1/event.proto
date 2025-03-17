@@ -553,6 +553,7 @@ enum EventId {
     chmod_common = 1088;
     open_file_ns = 1089;
     open_file_mount = 1090;
+    security_task_prctl = 1091;
 
     // Events originated from user-space
     net_packet_ipv4 = 2000;
