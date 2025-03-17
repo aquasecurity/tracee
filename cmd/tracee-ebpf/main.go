@@ -160,7 +160,7 @@ func main() {
 			&cli.StringSliceFlag{
 				Name:  "log",
 				Usage: "logger option. run '--log help' for more info.",
-				Value: cli.NewStringSlice("info"),
+				Value: cli.NewStringSlice("level=info"),
 			},
 		},
 	}

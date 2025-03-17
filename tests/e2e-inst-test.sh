@@ -152,7 +152,7 @@ for TEST in $TESTS; do
                         --output option:sort-events \
                         --output option:parse-arguments \
                         --output json:$outputfile \
-                        --log file:$logfile \
+                        --log file=$logfile \
                         --signatures-dir "$SIG_DIR" \
                         --dnscache enable \
                         --grpc-listen-addr unix:/tmp/tracee.sock \
