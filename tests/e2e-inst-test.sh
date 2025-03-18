@@ -176,7 +176,7 @@ for TEST in $TESTS; do
         ;;
     esac
 
-    $tracee_command &
+    eval "$tracee_command &"
 
     # Wait tracee to start
 
@@ -237,10 +237,10 @@ for TEST in $TESTS; do
 
     # Make sure we exit tracee before checking output and log files
 
-    pid_tracee=$(pgrep -x tracee | xargs)
-    kill -SIGINT "$pid_tracee"
+    mapfile -t tracee_pids < <(pgrep -x tracee)
+    kill -SIGINT "${tracee_pids[@]}"
     sleep $TRACEE_SHUTDOWN_TIMEOUT
-    kill -SIGKILL "$pid_tracee" >/dev/null 2>&1
+    kill -SIGKILL "${tracee_pids[@]}" >/dev/null 2>&1
     sleep 3
 
     # Check if the test has failed or not
@@ -269,13 +269,13 @@ for TEST in $TESTS; do
         echo "$tracee_command" | tr -s ' '
 
         info "Tracee process is running?"
-        traceepids=$(pgrep tracee)
-        if [[ -n $traceepids ]]; then
-            info "YES, Tracee is still running (should not be, fix me!), pids: $traceepids"
+        mapfile -t tracee_pids < <(pgrep -x tracee)
+        if [[ -n "${tracee_pids[*]}" ]]; then
+            info "YES, Tracee is still running (should not be, fix me!), pids: ${tracee_pids[*]}"
             info "Aborting tests"
             break
         else
-            info "NO, Tracee is not running"
+            info "NO, Tracee is not running, as expected"
         fi
         info
     fi
