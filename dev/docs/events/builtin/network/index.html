@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.50+insiders-4.53.15">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9+insiders-4.53.16">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.6f50c755.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.ade31302.min.css">
       
       
 
@@ -3348,6 +3348,60 @@
     
   
     set_fs_pwd
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/stack_pivot/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    stack_pivot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/suspicious_syscall_source/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    suspicious_syscall_source
   
 
     
@@ -17788,7 +17842,7 @@ traced events.</p>
 <span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">sig</span><span class="w"> </span><span class="o">*</span><span class="nx">e2eDNS</span><span class="p">)</span><span class="w"> </span><span class="nx">OnEvent</span><span class="p">(</span><span class="nx">event</span><span class="w"> </span><span class="nx">protocol</span><span class="p">.</span><span class="nx">Event</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">eventObj</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">Payload</span><span class="p">.(</span><span class="nx">trace</span><span class="p">.</span><span class="nx">Event</span><span class="p">)</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;failed to cast event&#39;s payload&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;failed to cast event&#39;s payload&quot;</span><span class="p">)</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">eventObj</span><span class="p">.</span><span class="nx">EventName</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;net_packet_dns&quot;</span><span class="w"> </span><span class="p">{</span>
@@ -17897,7 +17951,7 @@ traced events.</p>
     <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link", "content.code.copy"], "search": "../../../../assets/javascripts/workers/search.c7c1ca2c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.b71cdcd1.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.f807c082.min.js"></script>
       
     
   </body>

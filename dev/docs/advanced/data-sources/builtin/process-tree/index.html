@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.50+insiders-4.53.15">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9+insiders-4.53.16">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.6f50c755.min.css">
+      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.ade31302.min.css">
       
       
 
@@ -3267,6 +3267,60 @@
     
   
     set_fs_pwd
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../events/builtin/extra/stack_pivot/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    stack_pivot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../events/builtin/extra/suspicious_syscall_source/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    suspicious_syscall_source
   
 
     
@@ -17901,8 +17955,7 @@
 The procfs query might increase the feature toll on CPU and memory. The runtime query might have a snowball effect on lost events, as it will reduce the system resources in the processes of filling missing information.</p>
 </blockquote>
 <h2 id="command-line-option">Command Line Option<a class="headerlink" href="#command-line-option" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>tracee<span class="w"> </span>--proctree<span class="w"> </span><span class="nb">help</span>
-Example:
+<div class="highlight"><pre><span></span><code>Example:
 <span class="w">  </span>--proctree<span class="w"> </span><span class="nv">source</span><span class="o">=[</span>none<span class="p">|</span>events<span class="p">|</span>signals<span class="p">|</span>both<span class="o">]</span>
 <span class="w">      </span>none<span class="w">         </span><span class="p">|</span><span class="w"> </span>process<span class="w"> </span>tree<span class="w"> </span>is<span class="w"> </span>disabled<span class="w"> </span><span class="o">(</span>default<span class="o">)</span>.
 <span class="w">      </span>events<span class="w">       </span><span class="p">|</span><span class="w"> </span>process<span class="w"> </span>tree<span class="w"> </span>is<span class="w"> </span>built<span class="w"> </span>from<span class="w"> </span>events.
@@ -17910,9 +17963,8 @@ Example:
 <span class="w">      </span>both<span class="w">         </span><span class="p">|</span><span class="w"> </span>process<span class="w"> </span>tree<span class="w"> </span>is<span class="w"> </span>built<span class="w"> </span>from<span class="w"> </span>both<span class="w"> </span>events<span class="w"> </span>and<span class="w"> </span>signals.
 <span class="w">  </span>--proctree<span class="w"> </span>process-cache<span class="o">=</span><span class="m">8192</span><span class="w">   </span><span class="p">|</span><span class="w"> </span>will<span class="w"> </span>cache<span class="w"> </span>up<span class="w"> </span>to<span class="w"> </span><span class="m">8192</span><span class="w"> </span>processes<span class="w"> </span><span class="k">in</span><span class="w"> </span>the<span class="w"> </span>tree<span class="w"> </span><span class="o">(</span>LRU<span class="w"> </span>cache<span class="o">)</span>.
 <span class="w">  </span>--proctree<span class="w"> </span>thread-cache<span class="o">=</span><span class="m">16384</span><span class="w">   </span><span class="p">|</span><span class="w"> </span>will<span class="w"> </span>cache<span class="w"> </span>up<span class="w"> </span>to<span class="w"> </span><span class="m">16384</span><span class="w"> </span>threads<span class="w"> </span><span class="k">in</span><span class="w"> </span>the<span class="w"> </span>tree<span class="w"> </span><span class="o">(</span>LRU<span class="w"> </span>cache<span class="o">)</span>.
-<span class="w">  </span>--proctree<span class="w"> </span>process-cache-ttl<span class="o">=</span><span class="m">60</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>will<span class="w"> </span><span class="nb">set</span><span class="w"> </span>the<span class="w"> </span>process<span class="w"> </span>cache<span class="w"> </span>element<span class="w"> </span>TTL<span class="w"> </span>to<span class="w"> </span><span class="m">60</span><span class="w"> </span>seconds.
-<span class="w">  </span>--proctree<span class="w"> </span>thread-cache-ttl<span class="o">=</span><span class="m">60</span><span class="w">  </span><span class="p">|</span><span class="w"> </span>will<span class="w"> </span><span class="nb">set</span><span class="w"> </span>the<span class="w"> </span>thread<span class="w"> </span>cache<span class="w"> </span>element<span class="w"> </span>TTL<span class="w"> </span>to<span class="w"> </span><span class="m">60</span><span class="w"> </span>seconds.
-<span class="w">  </span>--proctree<span class="w"> </span>disable-procfs-query<span class="w"> </span><span class="p">|</span><span class="w"> </span>Will<span class="w"> </span>disable<span class="w"> </span>procfs<span class="w"> </span>quering<span class="w"> </span>during<span class="w"> </span>runtime
+<span class="w">  </span>--proctree<span class="w"> </span>disable-procfs<span class="w">       </span><span class="p">|</span><span class="w"> </span>will<span class="w"> </span>disable<span class="w"> </span>procfs<span class="w"> </span>entirely.
+<span class="w">  </span>--proctree<span class="w"> </span>disable-procfs-query<span class="w"> </span><span class="p">|</span><span class="w"> </span>will<span class="w"> </span>disable<span class="w"> </span>procfs<span class="w"> </span>quering<span class="w"> </span>during<span class="w"> </span>runtime.
 
 Use<span class="w"> </span>comma<span class="w"> </span>OR<span class="w"> </span>use<span class="w"> </span>the<span class="w"> </span>flag<span class="w"> </span>multiple<span class="w"> </span><span class="nb">times</span><span class="w"> </span>to<span class="w"> </span>choose<span class="w"> </span>multiple<span class="w"> </span>options:
 <span class="w">  </span>--proctree<span class="w"> </span><span class="nv">source</span><span class="o">=</span>A,process-cache<span class="o">=</span>B,thread-cache<span class="o">=</span>C
@@ -17986,7 +18038,7 @@ Use<span class="w"> </span>comma<span class="w"> </span>OR<span class="w"> </spa
 
 <span class="w">    </span><span class="nx">processTreeDataSource</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">GetDataSource</span><span class="p">(</span><span class="s">&quot;tracee&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;process_tree&quot;</span><span class="p">)</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;data source tracee/process_tree is not registered&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;data source tracee/process_tree is not registered&quot;</span><span class="p">)</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="nx">sig</span><span class="p">.</span><span class="nx">processTreeDS</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">processTreeDataSource</span>
@@ -18005,7 +18057,7 @@ Use<span class="w"> </span>comma<span class="w"> </span>OR<span class="w"> </spa
 <span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">sig</span><span class="w"> </span><span class="o">*</span><span class="nx">e2eProcessTreeDataSource</span><span class="p">)</span><span class="w"> </span><span class="nx">OnEvent</span><span class="p">(</span><span class="nx">event</span><span class="w"> </span><span class="nx">protocol</span><span class="p">.</span><span class="nx">Event</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">eventObj</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">Payload</span><span class="p">.(</span><span class="nx">trace</span><span class="p">.</span><span class="nx">Event</span><span class="p">)</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;failed to cast event&#39;s payload&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;failed to cast event&#39;s payload&quot;</span><span class="p">)</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="k">switch</span><span class="w"> </span><span class="nx">eventObj</span><span class="p">.</span><span class="nx">EventName</span><span class="w"> </span><span class="p">{</span>
@@ -18047,22 +18099,22 @@ Use<span class="w"> </span>comma<span class="w"> </span>OR<span class="w"> </spa
 <span class="w">            </span><span class="nx">Time</span><span class="p">:</span><span class="w">     </span><span class="nx">time</span><span class="p">.</span><span class="nx">Unix</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nb">int64</span><span class="p">(</span><span class="nx">eventObj</span><span class="p">.</span><span class="nx">Timestamp</span><span class="p">)),</span>
 <span class="w">        </span><span class="p">})</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;could not find process&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;could not find process&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="nx">processInfo</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">procQueryAnswer</span><span class="p">[</span><span class="s">&quot;process_info&quot;</span><span class="p">].(</span><span class="nx">datasource</span><span class="p">.</span><span class="nx">ProcessInfo</span><span class="p">)</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;could not extract info&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;could not extract info&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="c1">// Compare PID, NS PID and PPID</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">processInfo</span><span class="p">.</span><span class="nx">Pid</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nx">eventObj</span><span class="p">.</span><span class="nx">HostProcessID</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;no match for pid&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;no match for pid&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">processInfo</span><span class="p">.</span><span class="nx">NsPid</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nx">eventObj</span><span class="p">.</span><span class="nx">ProcessID</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;no match for ns pid&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;no match for ns pid&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">processInfo</span><span class="p">.</span><span class="nx">Ppid</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nx">eventObj</span><span class="p">.</span><span class="nx">HostParentProcessID</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;no match for ppid&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;no match for ppid&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="c1">// Check if the process lists itself in the list of its threads</span>
@@ -18074,7 +18126,7 @@ Use<span class="w"> </span>comma<span class="w"> </span>OR<span class="w"> </spa
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">threadExist</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;process not listed as thread&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;process not listed as thread&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="p">}</span>
 </code></pre></div>
 <p>From the <a href="../../overview/">data-sources documentation</a>, you'll see that searches use keys. It's a bit like looking up information with a specific tag (or a key=value storage).</p>
@@ -18094,22 +18146,22 @@ Use<span class="w"> </span>comma<span class="w"> </span>OR<span class="w"> </spa
 <span class="w">        </span><span class="p">},</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;could not find thread&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;could not find thread&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="nx">threadInfo</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">threadQueryAnswer</span><span class="p">[</span><span class="s">&quot;thread_info&quot;</span><span class="p">].(</span><span class="nx">datasource</span><span class="p">.</span><span class="nx">ThreadInfo</span><span class="p">)</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;could not extract info&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;could not extract info&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="c1">// Compare TID, NS TID and PID</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">threadInfo</span><span class="p">.</span><span class="nx">Tid</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nx">eventObj</span><span class="p">.</span><span class="nx">HostThreadID</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;no match for tid&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;no match for tid&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">threadInfo</span><span class="p">.</span><span class="nx">NsTid</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nx">eventObj</span><span class="p">.</span><span class="nx">ThreadID</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;no match for ns tid&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;no match for ns tid&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">threadInfo</span><span class="p">.</span><span class="nx">Pid</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nx">eventObj</span><span class="p">.</span><span class="nx">HostProcessID</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;no match for pid&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;no match for pid&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span>
@@ -18130,11 +18182,11 @@ Use<span class="w"> </span>comma<span class="w"> </span>OR<span class="w"> </spa
 <span class="w">        </span><span class="p">},</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;could not find lineage&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">debug</span><span class="p">(</span><span class="s">&quot;could not find lineage&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="nx">lineageInfo</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">lineageQueryAnswer</span><span class="p">[</span><span class="s">&quot;process_lineage&quot;</span><span class="p">].(</span><span class="nx">datasource</span><span class="p">.</span><span class="nx">ProcessLineage</span><span class="p">)</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;failed to extract ProcessLineage from data&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;failed to extract ProcessLineage from data&quot;</span><span class="p">)</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="nx">compareMaps</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">map1</span><span class="p">,</span><span class="w"> </span><span class="nx">map2</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">int</span><span class="p">]</span><span class="kt">uint32</span><span class="p">)</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="p">{</span>
@@ -18196,7 +18248,7 @@ Use<span class="w"> </span>comma<span class="w"> </span>OR<span class="w"> </spa
     <script id="__config" type="application/json">{"base": "../../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link", "content.code.copy"], "search": "../../../../../assets/javascripts/workers/search.c7c1ca2c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../../../assets/javascripts/bundle.b71cdcd1.min.js"></script>
+      <script src="../../../../../assets/javascripts/bundle.f807c082.min.js"></script>
       
     
   </body>
