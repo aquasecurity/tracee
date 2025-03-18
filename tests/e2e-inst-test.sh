@@ -163,7 +163,7 @@ tracee_command="./dist/tracee \
                     --log file:$logfile \
                     --signatures-dir "$SIG_DIR" \
                     --dnscache enable \
-                    --grpc-listen-addr unix:/tmp/tracee.sock \
+                    --server grpc-address=unix:/tmp/tracee.sock \
                     --policy ./tests/policies/inst/"
 
 

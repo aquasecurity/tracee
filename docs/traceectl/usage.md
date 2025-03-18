@@ -30,7 +30,7 @@ To use traceectl effectively, you need to configure Tracee so that it can commun
 Use the following command to start Tracee with gRPC support over a Unix socket:
 
 ``` bash
-tracee --grpc-listen-addr unix:/var/run/tracee.sock
+tracee --server grpc-address=unix:/var/run/tracee.sock
 ```
 
 This command sets up Tracee to listen for incoming connections from traceectl at the specified Unix socket path (`/var/run/tracee.sock`). Ensure that this socket path is accessible and not blocked by permissions or other constraints.

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -28,12 +29,21 @@ func TestServer(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	grpcServer, err := New("unix", unixSock)
-	if err != nil {
-		t.Fatal(err)
-	}
+	grpcServer := New("unix", unixSock)
 
 	go grpcServer.Start(ctx, nil, nil)
+
+	// Wait for the server to start and create the socket
+	maxRetries := 50
+	for i := 0; i < maxRetries; i++ {
+		if _, err := os.Stat(unixSock); err == nil {
+			break // Socket exists, server is ready
+		}
+		if i == maxRetries-1 {
+			t.Fatalf("Server did not start within expected time")
+		}
+		time.Sleep(10 * time.Millisecond) // Short wait between checks
+	}
 
 	c := grpcClient("unix", unixSock)
 

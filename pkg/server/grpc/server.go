@@ -21,20 +21,23 @@ type Server struct {
 	server     *grpc.Server
 }
 
-func New(protocol, listenAddr string) (*Server, error) {
+func New(protocol, listenAddr string) *Server {
 	if protocol == "tcp" {
 		listenAddr = ":" + listenAddr
 	}
 
-	lis, err := net.Listen(protocol, listenAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Server{listener: lis, protocol: protocol, listenAddr: listenAddr}, nil
+	return &Server{listener: nil, protocol: protocol, listenAddr: listenAddr}
 }
 
 func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) {
+	// Create listener when starting
+	lis, err := net.Listen(s.protocol, s.listenAddr)
+	if err != nil {
+		logger.Errorw("Failed to start GRPC server", "protocol", s.protocol, "address", s.listenAddr, "error", err)
+		return
+	}
+	s.listener = lis
+
 	srvCtx, srvCancel := context.WithCancel(ctx)
 	defer srvCancel()
 

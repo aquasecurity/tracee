@@ -156,6 +156,7 @@ nav:
                 - containers: docs/flags/containers.1.md
                 - capabilities: docs/flags/capabilities.1.md
                 - log: docs/flags/log.1.md
+                - server: docs/flags/server.1.md
     - Traceectl: 
           - Overview: traceectl/index.md
           - Installation: traceectl/usage.md

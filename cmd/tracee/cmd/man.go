@@ -27,6 +27,7 @@ func init() {
 		logCmd,
 		outputCmd,
 		scopeCmd,
+		serverCmd,
 		eventCmd,
 	)
 }
@@ -123,6 +124,15 @@ var scopeCmd = &cobra.Command{
 	Short:   "Show manual page for the --scope flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("scope")
+	},
+}
+
+var serverCmd = &cobra.Command{
+	Use:     "server",
+	Aliases: []string{},
+	Short:   "Show manual page for the --server flag",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runManForFlag("server")
 	},
 }
 

@@ -135,18 +135,13 @@ func main() {
 				return fmt.Errorf("constructing engine: %w", err)
 			}
 
-			httpServer, err := server.PrepareHTTPServer(
-				c.String(server.HTTPListenEndpointFlag),
-				c.Bool(server.MetricsEndpointFlag),
-				c.Bool(server.HealthzEndpointFlag),
-				c.Bool(server.PProfEndpointFlag),
-				c.Bool(server.PyroscopeAgentFlag),
-			)
+			err = e.Init()
 			if err != nil {
 				return err
 			}
 
-			err = e.Init()
+			// Prepare HTTP server with new unified server flags
+			serverRunner, err := server.PrepareServer(c.StringSlice(server.ServerFlag))
 			if err != nil {
 				return err
 			}
@@ -154,8 +149,9 @@ func main() {
 			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
 
-			if httpServer != nil {
-				go httpServer.Start(ctx)
+			// Start HTTP server if configured
+			if serverRunner.HTTP != nil {
+				go serverRunner.HTTP.Start(ctx)
 			}
 
 			e.Start(ctx)
@@ -196,33 +192,12 @@ func main() {
 				Usage: "configure output format via templates. Usage: --output-template=path/to/my.tmpl",
 			},
 			&cli.BoolFlag{
-				Name:  server.PProfEndpointFlag,
-				Usage: "enable pprof endpoints",
-				Value: false,
-			},
-			&cli.BoolFlag{
-				Name:  server.PyroscopeAgentFlag,
-				Usage: "enable pyroscope agent",
-				Value: false,
-			},
-			&cli.BoolFlag{
 				Name:  "list-events",
 				Usage: "print a list of events that currently loaded signatures require",
 			},
-			&cli.BoolFlag{
-				Name:  server.MetricsEndpointFlag,
-				Usage: "enable metrics endpoint",
-				Value: false,
-			},
-			&cli.BoolFlag{
-				Name:  server.HealthzEndpointFlag,
-				Usage: "enable healthz endpoint",
-				Value: false,
-			},
-			&cli.StringFlag{
-				Name:  server.HTTPListenEndpointFlag,
-				Usage: "listening address of the metrics endpoint server",
-				Value: ":4466",
+			&cli.StringSliceFlag{
+				Name:  server.ServerFlag,
+				Usage: "Configure server endpoints. Examples: metrics, healthz",
 			},
 			&cli.BoolFlag{
 				Name:  "allcaps",

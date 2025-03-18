@@ -174,19 +174,13 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		return runner, errfmt.Errorf("failed preparing BPF object: %v", err)
 	}
 
-	httpServer, err := server.PrepareHTTPServer(
-		c.String(server.HTTPListenEndpointFlag),
-		c.Bool(server.MetricsEndpointFlag),
-		c.Bool(server.HealthzEndpointFlag),
-		c.Bool(server.PProfEndpointFlag),
-		c.Bool(server.PyroscopeAgentFlag),
-	)
-
+	// Prepare HTTP server using unified server flags
+	serverRunner, err := server.PrepareServer(c.StringSlice(server.ServerFlag))
 	if err != nil {
 		return runner, err
 	}
 
-	runner.HTTPServer = httpServer
+	runner.HTTP = serverRunner.HTTP
 	runner.TraceeConfig = cfg
 	runner.Printer = broadcast
 	runner.InstallPath = traceeInstallPath
