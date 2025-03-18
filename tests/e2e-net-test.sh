@@ -87,14 +87,16 @@ for TEST in $TESTS; do
 
     rm -f $SCRIPT_TMP_DIR/build-$$
 
-    ./dist/tracee \
+    tracee_command="./dist/tracee \
         --install-path $TRACEE_TMP_DIR \
         --cache cache-type=mem \
         --cache mem-cache-size=512 \
         --output json \
         --scope comm=ping,nc,nslookup,isc-net-0000,isc-worker0000,curl \
         --signatures-dir ./dist/e2e-net-signatures/ 2>&1 \
-        | tee "$SCRIPT_TMP_DIR/build-$$" &
+        | tee $SCRIPT_TMP_DIR/build-$$"
+
+    eval "$tracee_command &"
 
     # wait tracee to be started (30 sec most)
     times=0
@@ -138,6 +140,20 @@ for TEST in $TESTS; do
 
     ## cleanup at EXIT
 
+    # make sure we exit both to start them again
+
+    mapfile -t tracee_pids < <(pgrep -x tracee)
+
+    kill -SIGINT "${tracee_pids[@]}"
+
+    sleep $TRACEE_SHUTDOWN_TIMEOUT
+
+    # make sure tracee is exited with SIGKILL
+    kill -SIGKILL "${tracee_pids[@]}" >/dev/null 2>&1
+
+    # give a little break for OS noise to reduce
+    sleep 3
+
     found=0
     cat $SCRIPT_TMP_DIR/build-$$ | grep "\"signatureID\":\"$TEST\"" -B2 && found=1
     info
@@ -147,25 +163,24 @@ for TEST in $TESTS; do
         anyerror="${anyerror}$TEST,"
         info "$TEST: FAILED, stderr from tracee:"
         cat $SCRIPT_TMP_DIR/build-$$
+        
+        info "Tracee command:"
+        echo "$tracee_command" | tr -s ' '
+
+        info "Tracee process is running?"
+        mapfile -t tracee_pids < <(pgrep -x tracee)
+        if [[ -n "${tracee_pids[*]}" ]]; then
+            info "YES, Tracee is still running (should not be, fix me!), pids: ${tracee_pids[*]}"
+            info "Aborting tests"
+            break
+        else
+            info "NO, Tracee is not running, as expected"
+        fi
         info
     fi
     info
 
     rm -f $SCRIPT_TMP_DIR/build-$$
-
-    # make sure we exit both to start them again
-
-    pid_tracee=$(pidof tracee)
-
-    kill -SIGINT $pid_tracee
-
-    sleep $TRACEE_SHUTDOWN_TIMEOUT
-
-    # make sure tracee is exited with SIGKILL
-    kill -SIGKILL $pid_tracee >/dev/null 2>&1
-
-    # give a little break for OS noise to reduce
-    sleep 3
 
     # cleanup leftovers
     rm -rf $TRACEE_TMP_DIR
