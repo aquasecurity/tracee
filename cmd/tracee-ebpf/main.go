@@ -122,30 +122,9 @@ func main() {
 				Value: "/tmp/tracee",
 				Usage: "path where tracee will install or lookup it's resources",
 			},
-			&cli.BoolFlag{
-				Name:  server.MetricsEndpointFlag,
-				Usage: "enable metrics endpoint",
-				Value: false,
-			},
-			&cli.BoolFlag{
-				Name:  server.HealthzEndpointFlag,
-				Usage: "enable healthz endpoint",
-				Value: false,
-			},
-			&cli.BoolFlag{
-				Name:  server.PProfEndpointFlag,
-				Usage: "enable pprof endpoints",
-				Value: false,
-			},
-			&cli.BoolFlag{
-				Name:  server.PyroscopeAgentFlag,
-				Usage: "enable pyroscope agent",
-				Value: false,
-			},
-			&cli.StringFlag{
-				Name:  server.HTTPListenEndpointFlag,
-				Usage: "listening address of the metrics endpoint server",
-				Value: ":3366",
+			&cli.StringSliceFlag{
+				Name:  server.ServerFlag,
+				Usage: "Configure server endpoints. Examples: http-address=:3366, metrics, healthz, pprof, pyroscope",
 			},
 			&cli.StringSliceFlag{
 				Name:  "log",

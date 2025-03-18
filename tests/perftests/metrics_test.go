@@ -107,8 +107,9 @@ func TestMetricsAndPprofExist(t *testing.T) {
 		t.Skip("skipping: sudo command is not available for this user")
 	}
 
-	cmd := "--output none --events=syslog --metrics --pprof"
-	cmd = fmt.Sprintf("--http-listen-addr=:%d %s", testutils.TraceePort, cmd)
+	cmd := "--output none --events=syslog --server metrics --server pprof"
+	cmd = fmt.Sprintf("--server http-address=:%d %s", testutils.TraceePort, cmd)
+
 	running := testutils.NewRunningTracee(context.Background(), cmd)
 
 	// start tracee

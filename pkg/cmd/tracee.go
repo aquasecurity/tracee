@@ -20,8 +20,8 @@ type Runner struct {
 	TraceeConfig config.Config
 	Printer      *printer.Broadcast
 	InstallPath  string
-	HTTPServer   *http.Server
-	GRPCServer   *grpc.Server
+	HTTP         *http.Server
+	GRPC         *grpc.Server
 }
 
 func (r Runner) Run(ctx context.Context) error {
@@ -36,19 +36,19 @@ func (r Runner) Run(ctx context.Context) error {
 	t.AddReadyCallback(
 		func(ctx context.Context) {
 			logger.Debugw("Tracee is ready callback")
-			if r.HTTPServer != nil {
-				if r.HTTPServer.MetricsEndpointEnabled() {
+			if r.HTTP != nil {
+				if r.HTTP.MetricsEndpointEnabled() {
 					r.TraceeConfig.MetricsEnabled = true // TODO: is this needed ?
 					if err := t.Stats().RegisterPrometheus(); err != nil {
 						logger.Errorw("Registering prometheus metrics", "error", err)
 					}
 				}
-				go r.HTTPServer.Start(ctx)
+				go r.HTTP.Start(ctx)
 			}
 
 			// start server if one is configured
-			if r.GRPCServer != nil {
-				go r.GRPCServer.Start(ctx, t, t.Engine())
+			if r.GRPC != nil {
+				go r.GRPC.Start(ctx, t, t.Engine())
 			}
 		},
 	)

@@ -27,23 +27,28 @@ A complete config file with all available options can be found [here](https://gi
 
 ### Server
 
+- __`--server`__: Sets options for the HTTP and/or gRPC servers.
 
-- **`--metrics-endpoint`**: Enables the metrics endpoint.
+  CLI Examples:
+  ```bash
+  # Address configuration
+  tracee --server http-address=:3366
+  tracee --server grpc-address=unix:/var/run/tracee.sock
 
-  __NOTE__: You can view more in the [Prometheus section](../prometheus.md).
+  # HTTP features (boolean flags)
+  tracee --server metrics --server healthz --server pprof
+  ```
 
   YAML:
   ```yaml
-  metrics-endpoint: true
+  server:
+    http-address: ":3366"
+    grpc-address: "unix:/var/run/tracee.sock"
+    metrics: true
+    healthz: true
+    pprof: true
+    pyroscope: true
   ```
-
-- **`--grpc-listen-addr`**: Specifies the address for the gRPC server.
-
-  YAML:
-  ```yaml
-  grpc-listen-addr: tcp:50051
-  ```
-
 
 ### Process Tree
 

@@ -28,8 +28,13 @@ capabilities:
 
 metrics-endpoint: true
 
-grpc-listen-addr: tcp:50051
-
+server:
+    http-address: "127.0.0.1:8080"
+    grpc-address: "unix:/var/run/tracee.sock"
+    metrics: true
+    healthz: true
+    pprof: true
+    pyroscope: true
 dnscache: enable
 
 containers:

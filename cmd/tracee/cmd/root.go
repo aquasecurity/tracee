@@ -245,62 +245,12 @@ func initCmd() error {
 
 	// Server flags
 
-	rootCmd.Flags().Bool(
-		server.MetricsEndpointFlag,
-		false,
-		"\t\t\t\t\tEnable metrics endpoint",
-	)
-	err = viper.BindPFlag(server.MetricsEndpointFlag, rootCmd.Flags().Lookup(server.MetricsEndpointFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
+	rootCmd.Flags().StringArray(
+		server.ServerFlag,
+		[]string{server.DefaultServerFlagValue},
+		`Configure server options and endpoints. Examples: http-address=:3366, grpc-address=unix:/var/run/tracee.sock, grpc (defaults to unix:/var/run/tracee.sock), metrics, healthz, pprof, pyroscope`)
 
-	rootCmd.Flags().Bool(
-		server.HealthzEndpointFlag,
-		false,
-		"\t\t\t\t\tEnable healthz endpoint",
-	)
-	err = viper.BindPFlag(server.HealthzEndpointFlag, rootCmd.Flags().Lookup(server.HealthzEndpointFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	rootCmd.Flags().Bool(
-		server.PProfEndpointFlag,
-		false,
-		"\t\t\t\t\tEnable pprof endpoints",
-	)
-	err = viper.BindPFlag(server.PProfEndpointFlag, rootCmd.Flags().Lookup(server.PProfEndpointFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	rootCmd.Flags().Bool(
-		server.PyroscopeAgentFlag,
-		false,
-		"\t\t\t\t\tEnable pyroscope agent",
-	)
-	err = viper.BindPFlag(server.PyroscopeAgentFlag, rootCmd.Flags().Lookup(server.PyroscopeAgentFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	rootCmd.Flags().String(
-		server.HTTPListenEndpointFlag,
-		":3366",
-		"<url:port>\t\t\t\tListening address of the metrics endpoint server",
-	)
-	err = viper.BindPFlag(server.HTTPListenEndpointFlag, rootCmd.Flags().Lookup(server.HTTPListenEndpointFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	rootCmd.Flags().String(
-		server.GRPCListenEndpointFlag,
-		"", // disabled by default
-		"<protocol:addr>\t\t\tListening address of the grpc server eg: tcp:4466, unix:/tmp/tracee.sock (default: disabled)",
-	)
-	err = viper.BindPFlag(server.GRPCListenEndpointFlag, rootCmd.Flags().Lookup(server.GRPCListenEndpointFlag))
+	err = viper.BindPFlag(server.ServerFlag, rootCmd.Flags().Lookup(server.ServerFlag))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
