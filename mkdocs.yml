@@ -109,6 +109,8 @@ nav:
                             - vfs_readv: docs/events/builtin/extra/vfs_readv.md
                             - security_path_notify: docs/events/builtin/extra/security_path_notify.md
                             - set_fs_pwd: docs/events/builtin/extra/set_fs_pwd.md
+                            - stack_pivot: docs/events/builtin/extra/stack_pivot.md
+                            - suspicious_syscall_source: docs/events/builtin/extra/suspicious_syscall_source.md
                             - tracee_info: docs/events/builtin/extra/tracee_info.md
                             - chmod_common: docs/events/builtin/extra/chmod_common.md
                       - Syscalls:
