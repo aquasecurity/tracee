@@ -22,13 +22,13 @@ const (
 	LogLevelFatal               = "fatal"
 	LogFile                     = "file"
 	LogFilter                   = "filter"
-	LogInclude                  = "include"
-	LogExclude                  = "exclude"
-	LogLibbpf                   = "libbpf"
+	LogFilterInclude            = "include"
+	LogFilterExclude            = "exclude"
+	LogFilterLibbpf             = "libbpf"
 	LogAggregation              = "aggregate"
 	LogAggregationEnabled       = "enabled"
 	LogAggregationFlushInterval = "flush-interval"
-	DefaultLogLevel             = LogLevel + "=" + LogLevelInfo
+	DefaultLogLevelFlag         = LogLevel + "=" + LogLevelInfo
 )
 
 func logHelp() string {
@@ -178,9 +178,9 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 			}
 			var filterKind logger.FilterKind
 			switch filterParts[0] {
-			case LogInclude:
+			case LogFilterInclude:
 				filterKind = logger.FilterIn
-			case LogExclude:
+			case LogFilterExclude:
 				filterKind = logger.FilterOut
 			default:
 				return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)

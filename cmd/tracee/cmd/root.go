@@ -337,7 +337,7 @@ func initCmd() error {
 	rootCmd.Flags().StringArrayP(
 		flags.LogFlag,
 		flags.LogFlagShort,
-		[]string{flags.DefaultLogLevel},
+		[]string{flags.DefaultLogLevelFlag},
 		"[debug|info|warn...]\t\tLogger options",
 	)
 	err = viper.BindPFlag("log", rootCmd.Flags().Lookup("log"))
