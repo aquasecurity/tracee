@@ -756,7 +756,7 @@ func TestLogConfigFlags(t *testing.T) {
 			config: LogConfig{
 				Filters: LogFilterConfig{
 					Include: LogFilterAttributes{
-						LibBPF: []bool{true},
+						LibBPF: true,
 					},
 				},
 			},
@@ -815,7 +815,7 @@ func TestLogConfigFlags(t *testing.T) {
 						File:   []string{"file1"},
 						Level:  []string{"lvl1", "lvl2"},
 						Regex:  []string{"^regex.*"},
-						LibBPF: []bool{true},
+						LibBPF: true,
 					},
 					Exclude: LogFilterAttributes{
 						Msg:   []string{"msg1"},
