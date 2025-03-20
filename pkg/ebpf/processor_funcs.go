@@ -353,19 +353,6 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 // Timing related functions
 //
 
-// normalizeTimeArg returns a processor function for some argument name
-// which normalizes said event arg time to nanoseconds since the epoch.
-func (t *Tracee) normalizeTimeArg(argNames ...string) func(event *trace.Event) error {
-	return func(event *trace.Event) error {
-		err := events.NormalizeTimeArgs(event.Args, argNames)
-		if err != nil {
-			return errfmt.Errorf("error normalizing time args for event %s: %v", event.EventName, err)
-		}
-
-		return nil
-	}
-}
-
 // addHashArg calculate file hash (in a best-effort efficiency manner) and add it as an argument
 func (t *Tracee) addHashArg(event *trace.Event, fileKey *filehash.Key) error {
 	// Currently Tracee does not support hash calculation of memfd files
@@ -374,7 +361,7 @@ func (t *Tracee) addHashArg(event *trace.Event, fileKey *filehash.Key) error {
 	}
 
 	hashArg := trace.Argument{
-		ArgMeta: trace.ArgMeta{Name: "sha256", Type: "const char*"},
+		ArgMeta: trace.ArgMeta{Name: "sha256", Type: "string"},
 	}
 
 	hash, err := t.fileHashes.Get(fileKey)

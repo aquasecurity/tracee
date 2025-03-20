@@ -2,6 +2,7 @@ package ebpf
 
 import (
 	"errors"
+	"time"
 
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -44,10 +45,12 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 	if err != nil {
 		return err
 	}
-	forkFeed.ParentStartTime, err = parse.ArgVal[uint64](event.Args, "parent_process_start_time")
+	parentStartTime, err := parse.ArgVal[time.Time](event.Args, "parent_process_start_time")
 	if err != nil {
 		return err
 	}
+
+	forkFeed.ParentStartTime = uint64(parentStartTime.UnixNano())
 
 	// Thread Group Leader (might be the same as the "child", if "child" is a process)
 	forkFeed.LeaderTid, err = parse.ArgVal[int32](event.Args, "leader_tid")
@@ -66,10 +69,11 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 	if err != nil {
 		return err
 	}
-	forkFeed.LeaderStartTime, err = parse.ArgVal[uint64](event.Args, "leader_start_time")
+	leaderStartTime, err := parse.ArgVal[time.Time](event.Args, "leader_start_time")
 	if err != nil {
 		return err
 	}
+	forkFeed.LeaderStartTime = uint64(leaderStartTime.UnixNano())
 
 	// Child (might be a process or a thread)
 	forkFeed.ChildTid, err = parse.ArgVal[int32](event.Args, "child_tid")
@@ -88,10 +92,11 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 	if err != nil {
 		return err
 	}
-	forkFeed.ChildStartTime, err = parse.ArgVal[uint64](event.Args, "start_time") // child_start_time
+	childStartTime, err := parse.ArgVal[time.Time](event.Args, "start_time") // child_start_time
 	if err != nil {
 		return err
 	}
+	forkFeed.ChildStartTime = uint64(childStartTime.UnixNano())
 
 	forkFeed.TimeStamp = uint64(event.Timestamp)
 

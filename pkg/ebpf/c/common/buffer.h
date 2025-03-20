@@ -3,6 +3,7 @@
 
 #include <vmlinux.h>
 
+#include <types.h>
 #include <common/context.h>
 #include <common/hash.h>
 #include <common/network.h>
@@ -43,7 +44,7 @@ statfunc data_filter_lpm_key_t *get_string_data_filter_lpm_buf(int idx)
 }
 
 // biggest elem to be saved with 'save_to_submit_buf' should be defined here:
-#define MAX_ELEMENT_SIZE bpf_core_type_size(struct sockaddr_un)
+#define MAX_ELEMENT_SIZE sizeof(struct sockaddr_un)
 
 statfunc int reverse_string(char *dst, char *src, int src_off, int len)
 {
@@ -82,29 +83,40 @@ statfunc int save_to_submit_buf(args_buffer_t *buf, void *ptr, u32 size, u8 inde
 {
     // Data saved to submit buf: [index][ ... buffer[size] ... ]
 
-    if (size == 0)
-        return 0;
-
     barrier();
-    if (buf->offset > ARGS_BUF_SIZE - 1)
+    // set argument size bounds
+    if (size == 0 || size > MAX_ELEMENT_SIZE || buf->offset >= ARGS_BUF_SIZE)
         return 0;
 
-    // Save argument index
+    u32 buffer_index_offset = buf->offset + 1; // buffer offset after writing the index
+    if (buffer_index_offset > ARGS_BUF_SIZE)
+        return 0;
+
+    // Save argument index (add 1 to offset later)
     buf->args[buf->offset] = index;
 
-    // Satisfy verifier
-    if (buf->offset > ARGS_BUF_SIZE - (MAX_ELEMENT_SIZE + 1))
+    // Force verifier to compare size register with a bound maximum
+    asm volatile("if %[size] < %[max_size] goto +1;\n"
+                 "%[size] = %[max_size];\n"
+                 :
+                 : [size] "r"(size), [max_size] "i"(MAX_ELEMENT_SIZE));
+
+    u32 buffer_arg_offset = buffer_index_offset + size; // buffer offset after writing the ptr
+
+    // Satisfy verifier - offset+index+size(offset+size+1) must not go above ARGS_BUF_SIZE
+    if (buffer_arg_offset > ARGS_BUF_SIZE)
         return 0;
 
-    // Read into buffer
-    if (bpf_probe_read(&(buf->args[buf->offset + 1]), size, ptr) == 0) {
-        // We update offset only if all writes were successful
-        buf->offset += size + 1;
-        buf->argnum++;
-        return 1;
-    }
+    // Read into buffer after the argument index
+    if (bpf_probe_read(&(buf->args[buffer_index_offset]), size, ptr) < 0)
+        return 0;
 
-    return 0;
+    // Update buffer only if all writes were successful:
+    // 1. Update the buffer offset
+    // 2. Increment the argument count
+    buf->offset = buffer_arg_offset;
+    buf->argnum++;
+    return 1;
 }
 
 statfunc int save_bytes_to_buf(args_buffer_t *buf, void *ptr, u32 size, u8 index)
@@ -376,8 +388,12 @@ out:
 statfunc int save_args_str_arr_to_buf(
     args_buffer_t *buf, const char *start, const char *end, int elem_num, u8 index)
 {
-    // Data saved to submit buf: [index][len][arg_len][arg #][null delimited string array]
-    // Note: This helper saves null (0x00) delimited string array into buf
+    // Data saved to submit buf: [index][len][arg_len][arg #][array of null delimited string]
+    // Note: This helper saves null (0x00) delimited string array into buf in the format:
+    // [ char_arr1[0]  char_arr1[1]  ...  char_arr1[n-1]  '\0',
+    //   char_arr2[0]  char_arr2[1]  ...  char_arr2[n-1]  '\0',
+    //   ...
+    //   char_arrn[0]  char_arrn[1]  ...  char_arrn[n-1]  '\0' ]
 
     if (start >= end)
         return 0;
@@ -455,39 +471,35 @@ statfunc int save_sockaddr_to_buf(args_buffer_t *buf, struct socket *sock, u8 in
 
 #define DEC_ARG(n, enc_arg) ((enc_arg >> (8 * n)) & 0xFF)
 
-#define BITMASK_INDIRECT_VALUE_TYPES                                                               \
-    ((u64) 1 << STR_T | (u64) 1 << SOCKADDR_T | (u64) 1 << INT_ARR_2_T | (u64) 1 << TIMESPEC_T)
+// types whose data needs to be directly in type_size_table (arg = (void *) args->args[i])
+#define BITMASK_POINTER_TYPES                                                                      \
+    ((u64) 1 << INT_ARR_2_T | (u64) 1 << STR_T | (u64) 1 << SOCKADDR_T | (u64) 1 << TIMESPEC_T)
 
-#define BITMASK_COMMON_TYPES                                                                       \
+// types whose data needs to be handled through their address in type_size_table
+// ((arg = (void *) &args->args[i]))
+#define BITMASK_VALUE_TYPES                                                                        \
     ((u64) 1 << INT_T | (u64) 1 << UINT_T | (u64) 1 << LONG_T | (u64) 1 << ULONG_T |               \
-     (u64) 1 << OFF_T_T | (u64) 1 << MODE_T_T | (u64) 1 << DEV_T_T | (u64) 1 << SIZE_T_T |         \
-     (u64) 1 << POINTER_T | (u64) 1 << STR_ARR_T | (u64) 1 << BYTES_T | (u64) 1 << U16_T |         \
-     (u64) 1 << CRED_T | (u64) 1 << UINT64_ARR_T | (u64) 1 << U8_T)
+     (u64) 1 << U16_T | (u64) 1 << U8_T | (u64) 1 << UINT64_ARR_T | (u64) 1 << POINTER_T |         \
+     (u64) 1 << BYTES_T | (u64) 1 << STR_ARR_T | (u64) 1 << U8_T)
 
-#define ARG_TYPE_MAX_ARRAY (u8) TIMESPEC_T // last element defined in argument_type_e
-
-// Ensure that only values that can be held by an u8 are assigned to sizes.
+// Ensure that only values that can be held by an u32 are assigned to sizes.
 // If the size is greater than 255, assign 0 (making it evident) and handle it as a special case.
-static u8 type_size_table[ARG_TYPE_MAX_ARRAY + 1] = {
+static u32 type_size_table[ARG_TYPE_MAX_ARRAY + 1] = {
     [NONE_T] = 0,
     [INT_T] = sizeof(int),
-    [UINT_T] = sizeof(unsigned int),
+    [UINT_T] = sizeof(uint),
     [LONG_T] = sizeof(long),
     [ULONG_T] = sizeof(unsigned long),
-    [OFF_T_T] = sizeof(off_t),
-    [MODE_T_T] = sizeof(mode_t),
-    [DEV_T_T] = sizeof(dev_t),
-    [SIZE_T_T] = sizeof(size_t),
+    [U16_T] = sizeof(u16),
+    [U8_T] = sizeof(u8),
+    [INT_ARR_2_T] = sizeof(int[2]),
+    [UINT64_ARR_T] = 0,
     [POINTER_T] = sizeof(void *),
+    [BYTES_T] = 0,
     [STR_T] = 0,
     [STR_ARR_T] = 0,
     [SOCKADDR_T] = sizeof(short),
-    [BYTES_T] = 0,
-    [U16_T] = sizeof(u16),
     [CRED_T] = sizeof(struct cred),
-    [INT_ARR_2_T] = sizeof(int[2]),
-    [UINT64_ARR_T] = 0,
-    [U8_T] = sizeof(u8),
     [TIMESPEC_T] = 0,
 };
 
@@ -518,16 +530,16 @@ statfunc int save_args_to_submit_buf(event_data_t *event, args_t *args)
             continue;
         type_mask = (u64) 1 << type; // type value must be < 64
 
-        if (BITMASK_INDIRECT_VALUE_TYPES & type_mask)
+        if (BITMASK_POINTER_TYPES & type_mask)
             arg = (void *) args->args[i];
         else
             arg = (void *) &args->args[i];
 
-        // handle common types
-        if (BITMASK_COMMON_TYPES & type_mask)
+        // handle value types
+        if (BITMASK_VALUE_TYPES & type_mask)
             goto save_arg;
 
-        // handle special types
+        // handle pointer types
         switch (type) {
             case STR_T:
                 rc = save_str_to_buf(&(event->args_buf), arg, i);

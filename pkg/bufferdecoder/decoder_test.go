@@ -11,6 +11,8 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+var dataPresentor = NewTypeDecoder()
+
 func TestDecodeContext(t *testing.T) {
 	t.Parallel()
 
@@ -45,7 +47,7 @@ func TestDecodeContext(t *testing.T) {
 	assert.Equal(t, nil, err)
 	var eCtxObtained EventContext
 	rawData := buf.Bytes()
-	d := New(rawData)
+	d := New(rawData, dataPresentor)
 	cursorBefore := d.cursor
 	err = d.DecodeContext(&eCtxObtained)
 	cursorAfter := d.cursor
@@ -67,7 +69,7 @@ func TestDecodeUint8(t *testing.T) {
 	// checking no error
 	assert.Equal(t, nil, err)
 	b := buf.Bytes()
-	d := New(b)
+	d := New(b, dataPresentor)
 	cursorBefore := d.cursor
 	var obtained uint8
 	err = d.DecodeUint8(&obtained)
@@ -89,7 +91,7 @@ func TestDecodeInt8(t *testing.T) {
 	// checking no error
 	assert.Equal(t, nil, err)
 	b := buf.Bytes()
-	d := New(b)
+	d := New(b, dataPresentor)
 	cursorBefore := d.cursor
 	var obtained int8
 	err = d.DecodeInt8(&obtained)
@@ -111,7 +113,7 @@ func TestDecodeUint16(t *testing.T) {
 	// checking no error
 	assert.Equal(t, nil, err)
 	b := buf.Bytes()
-	d := New(b)
+	d := New(b, dataPresentor)
 	cursorBefore := d.cursor
 	var obtained uint16
 	err = d.DecodeUint16(&obtained)
@@ -133,7 +135,7 @@ func TestDecodeUint16BigEndian(t *testing.T) {
 	// checking no error
 	assert.Equal(t, nil, err)
 	b := buf.Bytes()
-	d := New(b)
+	d := New(b, dataPresentor)
 	cursorBefore := d.cursor
 	var obtained uint16
 	err = d.DecodeUint16BigEndian(&obtained)
@@ -154,7 +156,7 @@ func TestDecodeInt16(t *testing.T) {
 	// checking no error
 	assert.Equal(t, nil, err)
 	b := buf.Bytes()
-	d := New(b)
+	d := New(b, dataPresentor)
 	cursorBefore := d.cursor
 	var obtained int16
 	err = d.DecodeInt16(&obtained)
@@ -176,7 +178,7 @@ func TestDecodeUint32(t *testing.T) {
 	// checking no error
 	assert.Equal(t, nil, err)
 	b := buf.Bytes()
-	d := New(b)
+	d := New(b, dataPresentor)
 	cursorBefore := d.cursor
 	var obtained uint32
 	err = d.DecodeUint32(&obtained)
@@ -198,7 +200,7 @@ func TestDecodeUint32BigEndian(t *testing.T) {
 	// checking no error
 	assert.Equal(t, nil, err)
 	b := buf.Bytes()
-	d := New(b)
+	d := New(b, dataPresentor)
 	cursorBefore := d.cursor
 	var obtained uint32
 	err = d.DecodeUint32BigEndian(&obtained)
@@ -219,7 +221,7 @@ func TestDecodeInt32(t *testing.T) {
 	// checking no error
 	assert.Equal(t, nil, err)
 	b := buf.Bytes()
-	d := New(b)
+	d := New(b, dataPresentor)
 	cursorBefore := d.cursor
 	var obtained int32
 	err = d.DecodeInt32(&obtained)
@@ -241,7 +243,7 @@ func TestDecodeUint64(t *testing.T) {
 	// checking no error
 	assert.Equal(t, nil, err)
 	b := buf.Bytes()
-	d := New(b)
+	d := New(b, dataPresentor)
 	cursorBefore := d.cursor
 	var obtained uint64
 	err = d.DecodeUint64(&obtained)
@@ -263,7 +265,7 @@ func TestDecodeInt64(t *testing.T) {
 	// checking no error
 	assert.Equal(t, nil, err)
 	b := buf.Bytes()
-	d := New(b)
+	d := New(b, dataPresentor)
 	cursorBefore := d.cursor
 	var obtained int64
 	err = d.DecodeInt64(&obtained)
@@ -285,7 +287,7 @@ func TestDecodeBoolTrue(t *testing.T) {
 	// checking no error
 	assert.Equal(t, nil, err)
 	b := buf.Bytes()
-	d := New(b)
+	d := New(b, dataPresentor)
 	cursorBefore := d.cursor
 	var obtained bool
 	err = d.DecodeBool(&obtained)
@@ -307,7 +309,7 @@ func TestDecodeBoolFalse(t *testing.T) {
 	// checking no error
 	assert.Equal(t, nil, err)
 	b := buf.Bytes()
-	d := New(b)
+	d := New(b, dataPresentor)
 	cursorBefore := d.cursor
 	var obtained bool
 	err = d.DecodeBool(&obtained)
@@ -337,7 +339,7 @@ func TestDecodeBytes(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	var sunPathBuf [12]byte // 12 is the size of JustAStruct
-	d := New(buf.Bytes())
+	d := New(buf.Bytes(), dataPresentor)
 	err = d.DecodeBytes(sunPathBuf[:], 12)
 	assert.Equal(t, nil, err)
 
@@ -353,9 +355,9 @@ func TestDecodeIntArray(t *testing.T) {
 
 	var raw []byte
 	raw = append(raw, 1, 2, 3, 4, 5, 6, 7, 8)
-	decoder := New(raw)
+	decoder := New(raw, dataPresentor)
 	var obtained [2]int32
-	err := decoder.DecodeIntArray(obtained[:], 2)
+	err := decoder.DecodeInt32Array(obtained[:], 2)
 	assert.Equal(t, nil, err)
 	rawcp := append(raw, 1, 2, 3, 4, 5, 6, 7, 8)
 	dataBuff := bytes.NewBuffer(rawcp)
@@ -391,7 +393,7 @@ func TestDecodeSlimCred(t *testing.T) {
 	assert.Equal(t, nil, err)
 	var obtained SlimCred
 	rawBuf := buf.Bytes()
-	d := New(rawBuf)
+	d := New(rawBuf, dataPresentor)
 	err = d.DecodeSlimCred(&obtained)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, expected, obtained)
@@ -412,7 +414,7 @@ func TestDecodeChunkMeta(t *testing.T) {
 	assert.Equal(t, nil, err)
 	var obtained ChunkMeta
 	rawBuf := buf.Bytes()
-	d := New(rawBuf)
+	d := New(rawBuf, dataPresentor)
 	err = d.DecodeChunkMeta(&obtained)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, expected, obtained)
@@ -432,7 +434,7 @@ func TestDecodeVfsWriteMeta(t *testing.T) {
 	assert.Equal(t, nil, err)
 	var obtained VfsFileMeta
 	rawBuf := buf.Bytes()
-	d := New(rawBuf)
+	d := New(rawBuf, dataPresentor)
 	err = d.DecodeVfsFileMeta(&obtained)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, expected, obtained)
@@ -452,7 +454,7 @@ func TestDecodeKernelModuleMeta(t *testing.T) {
 	assert.Equal(t, nil, err)
 	var obtained KernelModuleMeta
 	rawBuf := buf.Bytes()
-	d := New(rawBuf)
+	d := New(rawBuf, dataPresentor)
 	err = d.DecodeKernelModuleMeta(&obtained)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, expected, obtained)
@@ -472,7 +474,7 @@ func TestDecodeBpfObjectMeta(t *testing.T) {
 	assert.Equal(t, nil, err)
 	var obtained BpfObjectMeta
 	rawBuf := buf.Bytes()
-	d := New(rawBuf)
+	d := New(rawBuf, dataPresentor)
 	err = d.DecodeBpfObjectMeta(&obtained)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, expected, obtained)
@@ -490,7 +492,7 @@ func TestDecodeMprotectWriteMeta(t *testing.T) {
 	assert.Equal(t, nil, err)
 	var obtained MprotectWriteMeta
 	rawBuf := buf.Bytes()
-	d := New(rawBuf)
+	d := New(rawBuf, dataPresentor)
 	err = d.DecodeMprotectWriteMeta(&obtained)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, expected, obtained)
@@ -528,7 +530,7 @@ func BenchmarkDecodeContext(*testing.B) {
 		2, 4, 0, 0, 0, 0, 5, 6, 7, 8, 9, 4, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 142, 2, 0, 0, 143, 25, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 234,
 		0, 0, 0}
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeContext(&eCtx)
 	}
 }
@@ -574,7 +576,7 @@ func BenchmarkDecodeUint8(*testing.B) {
 	buffer := []byte{234}
 	var num uint8
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeUint8(&num)
 	}
 }
@@ -592,7 +594,7 @@ func BenchmarkDecodeInt8(*testing.B) {
 	buffer := []byte{234}
 	var num int8
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeInt8(&num)
 	}
 }
@@ -610,7 +612,7 @@ func BenchmarkDecodeUint16(*testing.B) {
 	buffer := []byte{179, 21}
 	var num uint16
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeUint16(&num)
 	}
 }
@@ -628,7 +630,7 @@ func BenchmarkDecodeInt16(*testing.B) {
 	buffer := []byte{179, 221}
 	var num int16
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeInt16(&num)
 	}
 }
@@ -646,7 +648,7 @@ func BenchmarkDecodeUint32(*testing.B) {
 	buffer := []byte{179, 21, 56, 234}
 	var num uint32
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeUint32(&num)
 	}
 }
@@ -663,7 +665,7 @@ func BenchmarkDecodeInt32(*testing.B) {
 	buffer := []byte{179, 21, 56, 234}
 	var num int32
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeInt32(&num)
 	}
 }
@@ -681,7 +683,7 @@ func BenchmarkDecodeUint64(*testing.B) {
 	buffer := []byte{179, 21, 56, 234, 45, 65, 234, 255}
 	var num uint64
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeUint64(&num)
 	}
 }
@@ -699,7 +701,7 @@ func BenchmarkDecodeInt64(*testing.B) {
 	buffer := []byte{179, 21, 56, 234, 45, 65, 234, 255}
 	var num int64
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeInt64(&num)
 	}
 }
@@ -717,7 +719,7 @@ func BenchmarkDecodeBool(*testing.B) {
 	buffer := []byte{1}
 	var num bool
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeBool(&num)
 	}
 }
@@ -759,7 +761,7 @@ func BenchmarkDecodeSlimCred(*testing.B) {
 		61, 34, 0, 0, 0, 0, 0, 0, 239, 173, 11, 0, 0, 0, 0, 0}
 	var s SlimCred
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeSlimCred(&s)
 	}
 }
@@ -840,7 +842,7 @@ func BenchmarkDecodeChunkMeta(*testing.B) {
 		23, 42, 123, 32, 2, 2, 0, 0, 0, 23, 0, 0, 0, 0, 0, 0, 0}
 	var s ChunkMeta
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeChunkMeta(&s)
 	}
 }
@@ -907,7 +909,7 @@ func BenchmarkDecodeVfsWriteMeta(*testing.B) {
 	buffer := []byte{24, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 0, 0, 0, 0}
 	var s VfsFileMeta
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeVfsFileMeta(&s)
 	}
 }
@@ -948,7 +950,7 @@ func BenchmarkDecodeKernelModuleMeta(*testing.B) {
 	buffer := []byte{43, 0, 0, 0, 65, 0, 0, 0, 0, 0, 0, 0, 234, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0}
 	var s KernelModuleMeta
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeKernelModuleMeta(&s)
 	}
 }
@@ -985,7 +987,7 @@ func BenchmarkDecodeMprotectWriteMeta(*testing.B) {
 	buffer := []byte{123, 0, 0, 0, 0, 0, 0, 0}
 	var s MprotectWriteMeta
 	for i := 0; i < 100; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		decoder.DecodeMprotectWriteMeta(&s)
 	}
 }
@@ -1042,15 +1044,15 @@ func BenchmarkDecodeArguments(b *testing.B) {
 		6, 7, 0, 0, 0, 0, 0, 0, 0, // arg7
 		7, 8, 0, 0, 0, 0, 0, 0, 0, // arg8
 	}
-	evtFields := []trace.ArgMeta{
-		{Name: "arg1", Type: "u64", Zero: 0},
-		{Name: "arg2", Type: "u64", Zero: 0},
-		{Name: "arg3", Type: "u64", Zero: 0},
-		{Name: "arg4", Type: "u64", Zero: 0},
-		{Name: "arg5", Type: "u64", Zero: 0},
-		{Name: "arg6", Type: "u64", Zero: 0},
-		{Name: "arg7", Type: "u64", Zero: 0},
-		{Name: "arg8", Type: "u64", Zero: 0},
+	evtFields := []events.DataField{
+		{ArgMeta: trace.ArgMeta{Name: "arg1", Type: "u64", Zero: 0}},
+		{ArgMeta: trace.ArgMeta{Name: "arg2", Type: "u64", Zero: 0}},
+		{ArgMeta: trace.ArgMeta{Name: "arg3", Type: "u64", Zero: 0}},
+		{ArgMeta: trace.ArgMeta{Name: "arg4", Type: "u64", Zero: 0}},
+		{ArgMeta: trace.ArgMeta{Name: "arg5", Type: "u64", Zero: 0}},
+		{ArgMeta: trace.ArgMeta{Name: "arg6", Type: "u64", Zero: 0}},
+		{ArgMeta: trace.ArgMeta{Name: "arg7", Type: "u64", Zero: 0}},
+		{ArgMeta: trace.ArgMeta{Name: "arg8", Type: "u64", Zero: 0}},
 	}
 
 	// decode half of the arguments leaving the rest to be populated as zero values
@@ -1078,7 +1080,7 @@ func BenchmarkDecodeArguments(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		decoder := New(buffer)
+		decoder := New(buffer, dataPresentor)
 		args := make([]trace.Argument, len(evtFields))
 		_ = decoder.DecodeArguments(args, argnum, evtFields, evtName, eventId)
 	}

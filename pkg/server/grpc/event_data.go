@@ -207,6 +207,8 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 			},
 		}, nil
 	case uintptr:
+		// nadav.str: should be unreachable, leaving, just in case
+		logger.Warnw("uintptr is not supported as an argument value, converting to uint64")
 		return &pb.EventValue{
 			Value: &pb.EventValue_UInt64{
 				UInt64: uint64(v),

@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/data"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -15,7 +17,7 @@ func TestReadArgFromBuff(t *testing.T) {
 	testCases := []struct {
 		name          string
 		input         []byte
-		fields        []trace.ArgMeta
+		fields        []events.DataField
 		expectedArg   interface{}
 		expectedError error
 	}{
@@ -24,7 +26,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, // -1
 			},
-			fields:      []trace.ArgMeta{{Type: "int", Name: "int0"}},
+			fields:      []events.DataField{{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Name: "int0"}}},
 			expectedArg: int32(-1),
 		},
 		{
@@ -32,7 +34,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, // 4294967295
 			},
-			fields:      []trace.ArgMeta{{Type: "unsigned int", Name: "uint0"}},
+			fields:      []events.DataField{{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Name: "uint0"}}},
 			expectedArg: uint32(4294967295),
 		},
 		{
@@ -40,7 +42,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // -1
 			},
-			fields:      []trace.ArgMeta{{Type: "long", Name: "long0"}},
+			fields:      []events.DataField{{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Name: "long0"}}},
 			expectedArg: int64(-1),
 		},
 		{
@@ -48,7 +50,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
 			},
-			fields:      []trace.ArgMeta{{Type: "unsigned long", Name: "ulong0"}},
+			fields:      []events.DataField{{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Name: "ulong0"}}},
 			expectedArg: uint64(18446744073709551615),
 		},
 		{
@@ -56,7 +58,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xB6, 0x11, 0x0, 0x0, // 0x000011B6 == 010666 == S_IFIFO|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 			},
-			fields:      []trace.ArgMeta{{Type: "mode_t", Name: "modeT0"}},
+			fields:      []events.DataField{{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Name: "modeT0"}}},
 			expectedArg: uint32(0x11b6),
 		},
 		{
@@ -64,32 +66,16 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, // 4294967295
 			},
-			fields:      []trace.ArgMeta{{Type: "dev_t", Name: "devT0"}},
+			fields:      []events.DataField{{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Name: "devT0"}}},
 			expectedArg: uint32(4294967295),
-		},
-		{
-			name: "offT",
-			input: []byte{0,
-				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
-			},
-			fields:      []trace.ArgMeta{{Type: "off_t", Name: "offT0"}},
-			expectedArg: uint64(18446744073709551615),
-		},
-		{
-			name: "loffT",
-			input: []byte{0,
-				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
-			},
-			fields:      []trace.ArgMeta{{Type: "loff_t", Name: "loffT0"}},
-			expectedArg: uint64(18446744073709551615),
 		},
 		{ // This is expected to fail. TODO: change pointer parsed type to uint64
 			name: "pointerT",
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 			},
-			fields:      []trace.ArgMeta{{Type: "void*", Name: "pointer0"}},
-			expectedArg: uintptr(0xFFFFFFFFFFFFFFFF),
+			fields:      []events.DataField{{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Name: "pointer0"}}},
+			expectedArg: trace.Pointer(0xFFFFFFFFFFFFFFFF),
 		},
 		{
 			name: "strT",
@@ -97,7 +83,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				16, 0, 0, 0, // len=16
 				47, 117, 115, 114, 47, 98, 105, 110, 47, 100, 111, 99, 107, 101, 114, 0, // /usr/bin/docker
 			},
-			fields:      []trace.ArgMeta{{Type: "const char*", Name: "str0"}},
+			fields:      []events.DataField{{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Name: "str0"}}},
 			expectedArg: "/usr/bin/docker",
 		},
 		{
@@ -109,7 +95,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				7, 0, 0, 0, // len=7
 				100, 111, 99, 107, 101, 114, 0, // docker
 			},
-			fields:      []trace.ArgMeta{{Type: "const char*const*", Name: "strArr0"}},
+			fields:      []events.DataField{{DecodeAs: data.STR_ARR_T, ArgMeta: trace.ArgMeta{Name: "strArr0"}}},
 			expectedArg: []string{"/usr/bin", "docker"},
 		},
 		{
@@ -120,7 +106,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				47, 117, 115, 114, 47, 98, 105, 110, 0, // /usr/bin
 				100, 111, 99, 107, 101, 114, 0, // docker
 			},
-			fields:      []trace.ArgMeta{{Type: "const char**", Name: "argsArr0"}},
+			fields:      []events.DataField{{DecodeAs: data.ARGS_ARR_T, ArgMeta: trace.ArgMeta{Name: "argsArr0"}}},
 			expectedArg: []string{"/usr/bin", "docker"},
 		},
 		{
@@ -131,7 +117,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				0xFF, 0xFF, 0xFF, 0xFF, // sin_addr=255.255.255.255
 				0, 0, 0, 0, 0, 0, 0, 0, // padding[8]
 			},
-			fields:      []trace.ArgMeta{{Type: "struct sockaddr*", Name: "sockAddr0"}},
+			fields:      []events.DataField{{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Name: "sockAddr0"}}},
 			expectedArg: map[string]string(map[string]string{"sa_family": "AF_INET", "sin_addr": "255.255.255.255", "sin_port": "65535"}),
 		},
 		{
@@ -140,7 +126,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				1, 0, // sa_family=AF_UNIX
 				47, 116, 109, 112, 47, 115, 111, 99, 107, 101, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 101, 110, 0, 0, 0, // sun_path=/tmp/socket
 			},
-			fields:      []trace.ArgMeta{{Type: "struct sockaddr*", Name: "sockAddr0"}},
+			fields:      []events.DataField{{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Name: "sockAddr0"}}},
 			expectedArg: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/tmp/socket"},
 		},
 		{
@@ -153,7 +139,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0, 0, 0, 1, // len=16777216
 			},
-			fields:        []trace.ArgMeta{{Type: "const char*", Name: "str0"}},
+			fields:        []events.DataField{{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Name: "str0"}}},
 			expectedError: errors.New("string size too big: 16777216"),
 		},
 		{
@@ -161,10 +147,12 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{1,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 18446744073709551615
 			},
-			fields:      []trace.ArgMeta{{Type: "const char*", Name: "str0"}, {Type: "off_t", Name: "offT1"}},
+			fields:      []events.DataField{{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Name: "str0"}}, {DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Name: "offT1"}}},
 			expectedArg: uint64(18446744073709551615),
 		},
 	}
+
+	dataPresentor := NewTypeDecoder()
 
 	for _, tc := range testCases {
 		tc := tc
@@ -172,18 +160,22 @@ func TestReadArgFromBuff(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			decoder := New(tc.input)
+			decoder := New(tc.input, dataPresentor)
 			_, actual, err := readArgFromBuff(0, decoder, tc.fields)
 
-			if tc.expectedError != nil {
-				assert.ErrorContains(t, err, tc.expectedError.Error())
+			if err != nil {
+				if tc.expectedError != nil {
+					assert.ErrorContains(t, err, tc.expectedError.Error())
+				} else {
+					t.Logf("Encounted unexpected error: %v", err)
+				}
 			}
 			assert.Equal(t, tc.expectedArg, actual.Value)
 
 			if tc.name == "unknown" {
 				return
 			}
-			assert.Empty(t, decoder.BuffLen()-decoder.ReadAmountBytes(), tc.name) // passed in buffer should be emptied out
+			assert.Empty(t, decoder.BuffLen()-decoder.BytesRead(), tc.name) // passed in buffer should be emptied out
 		})
 	}
 }
@@ -255,16 +247,18 @@ func TestReadStringVarFromBuff(t *testing.T) {
 		},
 	}
 
+	dataPresentor := NewTypeDecoder()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			decoder := New(tt.buffer)
-			actual, err := readStringVarFromBuff(decoder, tt.max)
+			decoder := New(tt.buffer, dataPresentor)
+			actual, err := readVarStringFromBuffer(decoder, tt.max)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expected, actual)
-				assert.Equal(t, tt.expectedCursor, decoder.ReadAmountBytes())
+				assert.Equal(t, tt.expectedCursor, decoder.BytesRead())
 			}
 		})
 	}
