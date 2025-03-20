@@ -173,25 +173,25 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 			return nil
 		}
 		switch arg.Type {
-		case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t", "landlock_rule_type":
+		case "int32":
 			tmp, err := strconv.ParseInt(num.String(), 10, 32)
 			if err != nil {
 				return err
 			}
 			arg.Value = int32(tmp)
-		case "long":
+		case "int64":
 			tmp, err := num.Int64()
 			if err != nil {
 				return err
 			}
 			arg.Value = tmp
-		case "unsigned int", "u32", "mode_t", "dev_t":
+		case "uint32":
 			tmp, err := strconv.ParseUint(num.String(), 10, 32)
 			if err != nil {
 				return err
 			}
 			arg.Value = uint32(tmp)
-		case "unsigned long", "u64", "off_t", "size_t":
+		case "uint64":
 			tmp, err := strconv.ParseUint(num.String(), 10, 64)
 			if err != nil {
 				return err
@@ -203,13 +203,13 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 				return err
 			}
 			arg.Value = float32(tmp)
-		case "float64", "double":
+		case "float64":
 			tmp, err := num.Float64()
 			if err != nil {
 				return err
 			}
 			arg.Value = tmp
-		case "unsigned short", "old_uid_t", "old_gid_t", "umode_t", "u16", "uint16":
+		case "uint16":
 			tmp, err := strconv.ParseUint(num.String(), 10, 16)
 			if err != nil {
 				return err
@@ -221,7 +221,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 				return err
 			}
 			arg.Value = int8(tmp)
-		case "u8", "uint8":
+		case "uint8":
 			tmp, err := strconv.ParseUint(num.String(), 10, 8)
 			if err != nil {
 				return err
@@ -235,11 +235,11 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 	var err error
 
 	switch arg.Type {
-	case "const char*const*", "const char**":
+	case "[]string":
 		if arg.Value != nil {
 			argValue, ok := arg.Value.([]interface{})
 			if !ok {
-				return errors.New("const char*const*: type error")
+				return errors.New("[]string: type error")
 			}
 			arg.Value = jsonConvertToStringSlice(argValue)
 		} else {

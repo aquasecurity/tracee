@@ -28,9 +28,9 @@ func TestEventUnmarshalJSON(t *testing.T) {
 			json: `{"timestamp":26018249532,"processId":12434,"threadId":12434,"parentprocessid":23921,
 			"hostprocessid":12434,"hostthreadid":12434,"hostparentprocessid":23921,"userid":1000,"mountnamespace":4026531840,
 			"pidnamespace":4026531836,"processname":"strace","hostname":"ubuntu","eventid":"101","eventname":"ptrace",
-			"argsnum":4,"returnvalue":0,"args":[{"name":"request","type":"long","value":"ptrace_seize"},
-			{"name":"pid","type":"pid_t","value":12435},{"name":"addr","type":"void*","value":"0x0"},{"name":"data","type":"void*","value":"0x7f6f1eb44b83"}]}`,
-			expect: Event{Timestamp: 26018249532, ProcessID: 12434, ThreadID: 12434, ParentProcessID: 23921, HostProcessID: 12434, HostThreadID: 12434, HostParentProcessID: 23921, UserID: 1000, MountNS: 4026531840, PIDNS: 4026531836, ProcessName: "strace", HostName: "ubuntu", EventID: 101, EventName: "ptrace", ArgsNum: 4, ReturnValue: 0, Args: []Argument{{ArgMeta: ArgMeta{Name: "request", Type: "long"}, Value: "ptrace_seize"}, {ArgMeta: ArgMeta{Name: "pid", Type: "pid_t"}, Value: int32(12435)}, {ArgMeta: ArgMeta{Name: "addr", Type: "void*"}, Value: "0x0"}, {ArgMeta: ArgMeta{Name: "data", Type: "void*"}, Value: "0x7f6f1eb44b83"}}, ContextFlags: ContextFlags{ContainerStarted: false}},
+			"argsnum":4,"returnvalue":0,"args":[{"name":"request","type":"int64","value":"ptrace_seize"},
+			{"name":"pid","type":"int32","value":12435},{"name":"addr","type":"void*","value":"0x0"},{"name":"data","type":"void*","value":"0x7f6f1eb44b83"}]}`,
+			expect: Event{Timestamp: 26018249532, ProcessID: 12434, ThreadID: 12434, ParentProcessID: 23921, HostProcessID: 12434, HostThreadID: 12434, HostParentProcessID: 23921, UserID: 1000, MountNS: 4026531840, PIDNS: 4026531836, ProcessName: "strace", HostName: "ubuntu", EventID: 101, EventName: "ptrace", ArgsNum: 4, ReturnValue: 0, Args: []Argument{{ArgMeta: ArgMeta{Name: "request", Type: "int64"}, Value: "ptrace_seize"}, {ArgMeta: ArgMeta{Name: "pid", Type: "int32"}, Value: int32(12435)}, {ArgMeta: ArgMeta{Name: "addr", Type: "void*"}, Value: "0x0"}, {ArgMeta: ArgMeta{Name: "data", Type: "void*"}, Value: "0x7f6f1eb44b83"}}, ContextFlags: ContextFlags{ContainerStarted: false}},
 		},
 	}
 	for _, tc := range testCases {
@@ -77,23 +77,23 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:   "int arg",
-			json:   `{ "name":"test", "type":"int", "value": ` + string(maxInt32JSON) + `}`,
-			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "int"}, Value: int32(math.MaxInt32)},
+			json:   `{ "name":"test", "type":"int32", "value": ` + string(maxInt32JSON) + `}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "int32"}, Value: int32(math.MaxInt32)},
 		},
 		{
-			name:   "unsigned int arg",
-			json:   `{ "name":"test", "type":"unsigned int", "value": ` + string(maxUint32JSON) + `}`,
-			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "unsigned int"}, Value: uint32(math.MaxUint32)},
+			name:   "uint32 arg",
+			json:   `{ "name":"test", "type":"uint32", "value": ` + string(maxUint32JSON) + `}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "uint32"}, Value: uint32(math.MaxUint32)},
 		},
 		{
-			name:   "long arg",
-			json:   `{ "name":"test", "type":"long", "value": ` + string(maxInt64JSON) + `}`,
-			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "long"}, Value: int64(math.MaxInt64)},
+			name:   "int64 arg",
+			json:   `{ "name":"test", "type":"int64", "value": ` + string(maxInt64JSON) + `}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "int64"}, Value: int64(math.MaxInt64)},
 		},
 		{
-			name:   "unsigned long arg",
-			json:   `{ "name":"test", "type":"unsigned long", "value": ` + string(maxUint64JSON) + `}`,
-			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "unsigned long"}, Value: uint64(math.MaxUint64)},
+			name:   "uint64 arg",
+			json:   `{ "name":"test", "type":"uint64", "value": ` + string(maxUint64JSON) + `}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "uint64"}, Value: uint64(math.MaxUint64)},
 		},
 		{
 			name:   "random_struct* arg",
@@ -111,14 +111,14 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "float64"}, Value: float64(math.MaxFloat64)},
 		},
 		{
-			name:   "const char*const* arg",
-			json:   `{ "name":"test", "type":"const char*const*", "value": [ "foo", "bar" ]}`,
-			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "const char*const*"}, Value: []string{"foo", "bar"}},
+			name:   "[]string arg",
+			json:   `{ "name":"test", "type":"[]string", "value": [ "foo", "bar" ]}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "[]string"}, Value: []string{"foo", "bar"}},
 		},
 		{
-			name:   "const char*const* arg",
-			json:   `{ "name":"test", "type":"const char*const*", "value": null}`,
-			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "const char*const*"}, Value: nil},
+			name:   "[]string arg",
+			json:   `{ "name":"test", "type":"[]string", "value": null}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "[]string"}, Value: nil},
 		},
 		{
 			name:        "err arg",
