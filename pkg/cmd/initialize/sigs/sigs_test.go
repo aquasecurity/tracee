@@ -9,7 +9,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func Test_CreateEventsFromSigs(t *testing.T) {
@@ -50,7 +49,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 						[]events.TailCall{},
 						events.Capabilities{},
 					),
-					[]trace.ArgMeta{},
+					[]events.DataField{},
 					nil,
 				),
 			},
@@ -86,7 +85,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 						[]events.TailCall{},
 						events.Capabilities{},
 					),
-					[]trace.ArgMeta{},
+					[]events.DataField{},
 					nil,
 				),
 				events.NewDefinition(
@@ -109,7 +108,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 						[]events.TailCall{},
 						events.Capabilities{},
 					),
-					[]trace.ArgMeta{},
+					[]events.DataField{},
 					nil,
 				),
 			},
@@ -147,7 +146,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 						[]events.TailCall{},
 						events.Capabilities{},
 					),
-					[]trace.ArgMeta{},
+					[]events.DataField{},
 					nil,
 				),
 			},

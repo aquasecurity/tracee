@@ -54,9 +54,9 @@ func TraceeInfoEvent(bootTime uint64, startTime uint64) trace.Event {
 	def := Core.GetDefinitionByID(TraceeInfo)
 	fields := def.GetFields()
 	args := []trace.Argument{
-		{ArgMeta: fields[0], Value: bootTime},
-		{ArgMeta: fields[1], Value: startTime},
-		{ArgMeta: fields[2], Value: traceeversion.GetVersion()},
+		{ArgMeta: fields[0].ArgMeta, Value: bootTime},
+		{ArgMeta: fields[1].ArgMeta, Value: startTime},
+		{ArgMeta: fields[2].ArgMeta, Value: traceeversion.GetVersion()},
 	}
 
 	traceeInfoEvent := trace.Event{
@@ -81,7 +81,7 @@ func getInitNamespaceArguments() []trace.Argument {
 	fields := eventDefinition.GetFields()
 
 	for i, arg := range initNamespacesArgs {
-		arg.ArgMeta = fields[i]
+		arg.ArgMeta = fields[i].ArgMeta
 		arg.Value = initNamespaces[arg.Name]
 		initNamespacesArgs[i] = arg
 	}
@@ -129,16 +129,16 @@ func ExistingContainersEvents(cts *containers.Manager, enrichDisabled bool) []tr
 		}
 		fields := def.GetFields()
 		args := []trace.Argument{
-			{ArgMeta: fields[0], Value: cRuntime},
-			{ArgMeta: fields[1], Value: containerId},
-			{ArgMeta: fields[2], Value: ctime},
-			{ArgMeta: fields[3], Value: container.Image},
-			{ArgMeta: fields[4], Value: container.ImageDigest},
-			{ArgMeta: fields[5], Value: container.Name},
-			{ArgMeta: fields[6], Value: container.Pod.Name},
-			{ArgMeta: fields[7], Value: container.Pod.Namespace},
-			{ArgMeta: fields[8], Value: container.Pod.UID},
-			{ArgMeta: fields[9], Value: container.Pod.Sandbox},
+			{ArgMeta: fields[0].ArgMeta, Value: cRuntime},
+			{ArgMeta: fields[1].ArgMeta, Value: containerId},
+			{ArgMeta: fields[2].ArgMeta, Value: ctime},
+			{ArgMeta: fields[3].ArgMeta, Value: container.Image},
+			{ArgMeta: fields[4].ArgMeta, Value: container.ImageDigest},
+			{ArgMeta: fields[5].ArgMeta, Value: container.Name},
+			{ArgMeta: fields[6].ArgMeta, Value: container.Pod.Name},
+			{ArgMeta: fields[7].ArgMeta, Value: container.Pod.Namespace},
+			{ArgMeta: fields[8].ArgMeta, Value: container.Pod.UID},
+			{ArgMeta: fields[9].ArgMeta, Value: container.Pod.Sandbox},
 		}
 		existingContainerEvent := trace.Event{
 			Timestamp:   int(time.Now().UnixNano()),
