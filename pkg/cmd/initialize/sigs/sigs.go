@@ -7,7 +7,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/set"
 	"github.com/aquasecurity/tracee/types/detect"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[string]int32 {
@@ -99,7 +98,7 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 				[]events.TailCall{},
 				events.Capabilities{},
 			),
-			[]trace.ArgMeta{},
+			[]events.DataField{},
 			properties,
 		)
 
