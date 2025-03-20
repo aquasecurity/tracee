@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	ServerFlag                 = "server"
 	HTTPServer                 = "http"
 	GRPCServer                 = "grpc"
 	MetricsEndpointFlag        = "metrics"
@@ -21,6 +22,7 @@ const (
 	PProfEndpointFlag          = "pprof"
 	ListenEndpointFlag         = "address"
 	PyroscopeAgentEndpointFlag = "pyroscope"
+	DefaultServerFlagValue     = ""
 )
 
 // TODO: this should be extract to be under 'pkg/cmd/flags' once we remove the binary tracee-rules.

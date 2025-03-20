@@ -7,6 +7,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 
+	serverflag "github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
@@ -22,7 +23,7 @@ func GetFlagsFromViper(key string) ([]string, error) {
 	rawValue := viper.Get(key)
 
 	switch key {
-	case "server":
+	case serverflag.ServerFlag:
 		flagger = &ServerConfig{}
 	case "cache":
 		flagger = &CacheConfig{}

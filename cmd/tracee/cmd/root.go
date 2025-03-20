@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 
 	cmdcobra "github.com/aquasecurity/tracee/pkg/cmd/cobra"
+	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -250,13 +251,13 @@ func initCmd() error {
 	// Server flags
 
 	rootCmd.Flags().StringArray(
-		"server",
-		[]string{""},
+		server.ServerFlag,
+		[]string{server.DefaultServerFlagValue},
 		`<type>.<option>=<value>		Configure HTTP or gRPC server options.  <type> is either "http" or "grpc".  Options include:
   									http: address, metrics, pprof, healthz, pyroscope
   									grpc: address`)
 
-	err = viper.BindPFlag("server", rootCmd.Flags().Lookup("server"))
+	err = viper.BindPFlag(server.ServerFlag, rootCmd.Flags().Lookup(server.ServerFlag))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
