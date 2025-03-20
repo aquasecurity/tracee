@@ -557,6 +557,11 @@ var EventTranslationTable = [events.MaxBuiltinID]pb.EventId{
 	events.ModuleFree:                   pb.EventId_module_free,
 	events.ExecuteFinished:              pb.EventId_execute_finished,
 	events.ProcessExecuteFailedInternal: pb.EventId_process_execute_failed_internal,
+	events.SecurityTaskSetrlimit:        pb.EventId_security_task_set_rlimit,
+	events.SecuritySettime64:            pb.EventId_security_settime64,
+	events.ChmodCommon:                  pb.EventId_chmod_common,
+	events.OpenFileNS:                   pb.EventId_open_file_ns,
+	events.OpenFileMount:                pb.EventId_open_file_mount,
 
 	// Events from user-space translation section
 	events.NetPacketIPv4:         pb.EventId_net_packet_ipv4,
