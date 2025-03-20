@@ -38,7 +38,7 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		default:
 			return nil, errfmt.Errorf("unrecognized type %T for cri", v)
 		}
-	case "log":
+	case cmdflags.LogFlag:
 		flagger = &LogConfig{}
 	case "output":
 		flagger = &OutputConfig{}
