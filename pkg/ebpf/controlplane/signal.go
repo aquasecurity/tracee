@@ -12,8 +12,8 @@ type signal struct {
 	args []trace.Argument
 }
 
-func (sig *signal) Unmarshal(buffer []byte) error {
-	ebpfDecoder := bufferdecoder.New(buffer)
+func (sig *signal) Unmarshal(buffer []byte, dataPresentor bufferdecoder.TypeDecoder) error {
+	ebpfDecoder := bufferdecoder.New(buffer, dataPresentor)
 	var eventIdUint32 uint32
 	err := ebpfDecoder.DecodeUint32(&eventIdUint32)
 	if err != nil {

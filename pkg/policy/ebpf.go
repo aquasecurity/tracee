@@ -10,10 +10,10 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/data"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
@@ -288,7 +288,7 @@ type eventConfig struct {
 func (ps *policies) createNewEventsMapVersion(
 	bpfModule *bpf.Module,
 	rules map[events.ID]*eventFlags,
-	eventsFields map[events.ID][]bufferdecoder.ArgType,
+	eventsFields map[events.ID][]data.DecodeAs,
 	eventsFilterCfg map[events.ID]stringFilterConfig,
 ) error {
 	polsVersion := ps.version()
@@ -318,6 +318,25 @@ func (ps *policies) createNewEventsMapVersion(
 		// encoded event's field types
 		var fieldTypes uint64
 		fields := eventsFields[id]
+
+		/*
+			Each event can have up to 8 argument data types stored.
+			These argument types are encoded in a 64-bit bitmap where:
+			- Each byte (8 bits) represents a single argument type.
+			- Therefore, a maximum of 8 argument types can be represented.
+			For example, consider an event with:
+			- Two integer arguments (argType = 1)
+			- One string argument (argType = 10)
+			The bitmap would be encoded as (in hex representation):
+			00 00 00 00 00 0A 01 01 (0x00000000000A0101)
+			Breaking down the bitmap from right to left (least significant byte first):
+			| Byte Position | Argument Type          |
+			|---------------|------------------------|
+			| 0             | 0x01 (int argument)    |
+			| 1             | 0x01 (int argument)    |
+			| 2             | 0x0A (string argument) |
+			| 3 - 7         | 0x00 (padding, unused) |
+		*/
 		for n, fieldType := range fields {
 			fieldTypes = fieldTypes | (uint64(fieldType) << (8 * n))
 		}
@@ -673,7 +692,7 @@ func (ps *policies) updateBPF(
 	bpfModule *bpf.Module,
 	cts *containers.Manager,
 	rules map[events.ID]*eventFlags,
-	eventsFields map[events.ID][]bufferdecoder.ArgType,
+	eventsFields map[events.ID][]data.DecodeAs,
 	createNewMaps bool,
 	updateProcTree bool,
 ) (*PoliciesConfig, error) {
