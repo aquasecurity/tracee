@@ -31,7 +31,7 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &CapabilitiesConfig{}
 	case "containers":
 		flagger = &ContainerConfig{}
-	case "log":
+	case cmdflags.LogFlag:
 		flagger = &LogConfig{}
 	case "output":
 		flagger = &OutputConfig{}
