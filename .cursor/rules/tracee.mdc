@@ -1,0 +1,725 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+// @tracee.mdc - Machine-Directed Comments for Tracee
+// This file provides guidance for AI agents to understand Tracee's codebase structure and conventions.
+
+// Project Overview
+/*
+Tracee is a Runtime Security and Forensics tool for Linux. It uses eBPF technology 
+to trace system calls and other system events, providing deep visibility into running 
+systems and containers. The project aims to enhance security by detecting suspicious 
+behavior and potential threats in real-time.
+
+Key Features:
+- System call and kernel events tracing
+- Container-aware event monitoring
+- Runtime security detection
+- Forensics capabilities
+- eBPF-based implementation
+*/
+
+// Project Structure
+/*
+/pkg/                    - Core packages and functionality
+  /ebpf/                - eBPF program management and interaction
+  /events/              - Event definitions and handling
+  /logger/              - Logging infrastructure
+  /counter/             - Performance metrics and counting
+  /utils/               - Common utility functions
+  /containers/          - Container runtime integration
+  /signatures/          - Security signatures and detections
+  /filters/             - Event filtering mechanisms
+  /policy/              - Policy management and enforcement
+
+/signatures/            - Security detection signatures
+  /golang/             - Golang-based security signatures
+  
+/docs/                  - Project documentation
+  /tutorials/          - User guides and tutorials
+  /contributing/       - Contribution guidelines
+  /man/               - Manual pages
+  
+/tests/                 - Test suites
+  /integration/        - Integration tests
+  /e2e/               - End-to-end tests
+*/
+
+// Core Concepts
+/*
+1. Events
+   - Events are the primary data type in Tracee
+   - Each event represents a system activity (syscall, kernel event, etc.)
+   - Events contain rich metadata including process, container, and K8s context
+   - Events can be filtered, aggregated, and processed in real-time
+
+2. eBPF Programs
+   - Core tracing functionality implemented in eBPF
+   - Programs attached to various kernel hooks
+   - Efficient and secure system monitoring
+   - Minimal overhead on the host system
+
+3. Signatures
+   - Security detection rules
+   - Written in Go for flexibility and performance
+   - Can process multiple event types
+   - Support complex detection logic
+
+4. Containers Integration
+   - Native support for multiple container runtimes
+   - Docker, Containerd, CRI-O, and Podman support
+   - Container context enrichment
+   - Container-aware security policies
+*/
+
+// Coding Conventions
+/*
+1. Error Handling
+   - Use explicit error handling
+   - Wrap errors with context using errfmt package
+   - Log errors with appropriate severity levels
+
+2. Logging
+   - Structured logging using the logger package
+   - Log levels: Debug, Info, Warn, Error
+   - Include relevant context in log fields
+
+3. Testing
+   - Unit tests for packages
+   - Integration tests for system interaction
+   - Table-driven tests preferred
+   - Parallel test execution where possible
+
+4. Configuration
+   - Configuration via YAML files
+   - Environment variable support
+   - Command-line flags for runtime options
+   - Sensible defaults with override capability
+*/
+
+// Security Considerations
+/*
+1. Privileged Operation
+   - Tracee requires privileged access
+   - Careful handling of capabilities
+   - Security-first approach to feature implementation
+
+2. Data Handling
+   - No sensitive data in logs
+   - Secure handling of file paths
+   - Protection against command injection
+   - Safe handling of user input
+
+3. Container Security
+   - Secure container runtime integration
+   - Container isolation awareness
+   - Container escape detection
+*/
+
+// Performance Guidelines
+/*
+1. eBPF Optimization
+   - Minimize map operations
+   - Efficient event filtering
+   - Careful memory management
+
+2. Event Processing
+   - Batch processing where possible
+   - Efficient event serialization
+   - Memory pool usage for events
+
+3. Resource Management
+   - Controlled buffer sizes
+   - Graceful handling of resource exhaustion
+   - Performance monitoring and metrics
+*/
+
+// Dependencies
+/*
+Key External Dependencies:
+- libbpfgo: eBPF program loading and management
+- zap: Structured logging
+- testify: Testing framework
+- cobra: CLI framework
+- yaml: Configuration parsing
+*/
+
+// Contribution Guidelines
+/*
+1. Code Style
+   - Follow Go best practices
+   - Use gofmt for formatting
+   - Clear and concise documentation
+   - Meaningful commit messages
+
+2. Testing Requirements
+   - Unit tests for new functionality
+   - Integration tests for system interaction
+   - Performance impact consideration
+   - Security implications review
+
+3. Documentation
+   - Update relevant docs
+   - Include examples
+   - Clear API documentation
+   - Update man pages if needed
+*/ 
+
+---
+description: This rule provides a comprehensive set of best practices for developing Go applications, covering code organization, performance, security, testing, and common pitfalls.
+globs: **/*.go
+---
+- # Go Best Practices
+
+  This document outlines best practices for developing Go applications, covering various aspects of the development lifecycle.
+
+- ## 1. Code Organization and Structure
+
+  - ### 1.1 Directory Structure
+
+    - **Recommended Structure:**
+
+      
+      project-name/
+      ├── cmd/
+      │   └── project-name/
+      │       └── main.go  # Application entry point
+      ├── internal/
+      │   ├── app/         # Application-specific business logic
+      │   ├── domain/      # Core domain logic and types
+      │   └── pkg/          # Reusable internal packages
+      ├── pkg/           # External packages (libraries for other projects)
+      ├── api/           # API definitions (protobuf, OpenAPI specs)
+      ├── web/           # Web assets (HTML, CSS, JavaScript)
+      ├── scripts/       # Build, deployment, or utility scripts
+      ├── configs/       # Configuration files
+      ├── .gitignore
+      ├── go.mod
+      ├── go.sum
+      └── README.md
+      
+
+    - **Explanation:**
+
+      - `cmd`:  Contains the main applications for your project. Each subdirectory should represent a separate application.
+      - `internal`:  Holds code that's private to your application. Other projects shouldn't import these.
+        - `internal/app`: High-level application logic.
+        - `internal/domain`: Core business logic, data models, and interfaces.
+        - `internal/pkg`: Reusable utilities and helpers within the internal codebase.
+      - `pkg`: Contains reusable libraries that can be used by other projects. Use this for code you want to share.
+      - `api`: Defines API contracts (e.g., Protocol Buffers or OpenAPI/Swagger definitions).
+      - `web`: Stores static web assets like HTML, CSS, and JavaScript files.
+      - `scripts`: Contains scripts for building, testing, deploying, and other tasks.
+      - `configs`: Houses configuration files for various environments.
+
+  - ### 1.2 File Naming Conventions
+
+    - **General:**  Use lowercase and snake_case for file names (e.g., `user_service.go`).
+    - **Test Files:**  Append `_test.go` to the name of the file being tested (e.g., `user_service_test.go`).
+    - **Main Package:** The file containing the `main` function is typically named `main.go`.
+
+  - ### 1.3 Module Organization
+
+    - **Go Modules:**  Use Go modules for dependency management.  Initialize a module with `go mod init <module-name>`. The module name should reflect the repository path (e.g., `github.com/your-username/project-name`).
+    - **Versioning:** Follow semantic versioning (SemVer) for your modules.  Use tags in your Git repository to represent releases (e.g., `v1.0.0`).
+    - **Vendoring:** Consider vendoring dependencies using `go mod vendor` to ensure reproducible builds, especially for critical applications. However, be mindful of vendor directory size.
+
+  - ### 1.4 Component Architecture
+
+    - **Layered Architecture:**  Structure your application into layers (e.g., presentation, service, repository, data access). This promotes separation of concerns and testability.
+    - **Clean Architecture:** A variation of layered architecture that emphasizes dependency inversion and testability. Core business logic should not depend on implementation details.
+    - **Microservices:** For larger applications, consider a microservices architecture where different parts of the application are deployed as independent services.
+    - **Dependency Injection:** Use dependency injection to decouple components and make them easier to test. Frameworks like `google/wire` or manual dependency injection can be used.
+
+  - ### 1.5 Code Splitting
+
+    - **Package Organization:**  Group related functionality into packages.  Each package should have a clear responsibility.  Keep packages small and focused.
+    - **Interface Abstraction:**  Use interfaces to define contracts between components.  This allows you to swap implementations without changing the code that depends on the interface.
+    - **Functional Options Pattern:** For functions with many optional parameters, use the functional options pattern to improve readability and maintainability.
+
+      go
+      type Server struct {
+          Addr     string
+          Port     int
+          Protocol string
+          Timeout  time.Duration
+      }
+
+      type Option func(*Server)
+
+      func WithAddress(addr string) Option {
+          return func(s *Server) {
+              s.Addr = addr
+          }
+      }
+
+      func WithPort(port int) Option {
+          return func(s *Server) {
+              s.Port = port
+          }
+      }
+
+      func NewServer(options ...Option) *Server {
+          srv := &Server{
+              Addr:     "localhost",
+              Port:     8080,
+              Protocol: "tcp",
+              Timeout:  30 * time.Second,
+          }
+
+          for _, option := range options {
+              option(srv)
+          }
+
+          return srv
+      }
+
+      // Usage
+      server := NewServer(WithAddress("127.0.0.1"), WithPort(9000))
+      
+
+- ## 2. Common Patterns and Anti-patterns
+
+  - ### 2.1 Design Patterns
+
+    - **Factory Pattern:** Use factory functions to create instances of complex objects.
+    - **Strategy Pattern:** Define a family of algorithms and encapsulate each one in a separate class, making them interchangeable.
+    - **Observer Pattern:** Define a one-to-many dependency between objects so that when one object changes state, all its dependents are notified and updated automatically.
+    - **Context Pattern:**  Use the `context` package to manage request-scoped values, cancellation signals, and deadlines.  Pass `context.Context` as the first argument to functions that perform I/O or long-running operations.
+
+      go
+      func handleRequest(ctx context.Context, req *http.Request) {
+          select {
+          case <-ctx.Done():
+              // Operation cancelled
+              return
+          default:
+              // Process the request
+          }
+      }
+      
+
+    - **Middleware Pattern:**  Chain functions to process HTTP requests.  Middleware can be used for logging, authentication, authorization, and other cross-cutting concerns.
+
+      go
+      func loggingMiddleware(next http.Handler) http.Handler {
+          return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+              log.Printf("Request: %s %s", r.Method, r.URL.Path)
+              next.ServeHTTP(w, r)
+          })
+      }
+      
+
+  - ### 2.2 Recommended Approaches for Common Tasks
+
+    - **Configuration Management:** Use a library like `spf13/viper` or `joho/godotenv` to load configuration from files, environment variables, and command-line flags.
+    - **Logging:** Use a structured logging library like `sirupsen/logrus` or `uber-go/zap` to log events with context and severity levels.
+    - **Database Access:** Use the `database/sql` package with a driver for your specific database (e.g., `github.com/lib/pq` for PostgreSQL, `github.com/go-sql-driver/mysql` for MySQL). Consider an ORM like `gorm.io/gorm` for more complex database interactions. Use prepared statements to prevent SQL injection.
+    - **HTTP Handling:** Use the `net/http` package for building HTTP servers and clients. Consider using a framework like `gin-gonic/gin` or `go-chi/chi` for more advanced routing and middleware features. Always set appropriate timeouts.
+    - **Asynchronous Tasks:** Use goroutines and channels to perform asynchronous tasks. Use wait groups to synchronize goroutines.
+    - **Input Validation:** Use libraries like `go-playground/validator` for validating input data. Always sanitize user input to prevent injection attacks.
+
+  - ### 2.3 Anti-patterns and Code Smells
+
+    - **Ignoring Errors:** Never ignore errors. Always handle errors explicitly, even if it's just logging them.
+
+      go
+      // Bad
+      _, _ = fmt.Println("Hello, world!")
+
+      // Good
+      _, err := fmt.Println("Hello, world!")
+      if err != nil {
+          log.Println("Error printing: ", err)
+      }
+      
+
+    - **Panic Usage:** Avoid using `panic` for normal error handling. Use it only for truly exceptional situations where the program cannot continue.
+    - **Global Variables:** Minimize the use of global variables. Prefer passing state explicitly as function arguments.
+    - **Shadowing Variables:** Avoid shadowing variables, where a variable in an inner scope has the same name as a variable in an outer scope. This can lead to confusion and bugs.
+    - **Unbuffered Channels:** Be careful when using unbuffered channels. They can easily lead to deadlocks if not used correctly.
+    - **Overusing Goroutines:** Don't launch too many goroutines, as it can lead to excessive context switching and resource consumption.  Consider using a worker pool to limit the number of concurrent goroutines.
+    - **Mutable Global State:** Avoid modifying global state, especially concurrently, as it can introduce race conditions.
+    - **Magic Numbers/Strings:** Avoid using hardcoded numbers or strings directly in your code. Define them as constants instead.
+    - **Long Functions:** Keep functions short and focused. If a function is too long, break it down into smaller, more manageable functions.
+    - **Deeply Nested Code:** Avoid deeply nested code, as it can be difficult to read and understand. Use techniques like early returns and helper functions to flatten the code structure.
+
+  - ### 2.4 State Management
+
+    - **Local State:**  For simple components, manage state locally within the component using variables.
+    - **Shared State:** When multiple goroutines need to access and modify shared state, use synchronization primitives like mutexes, read-write mutexes, or atomic operations to prevent race conditions.
+
+      go
+      var mu sync.Mutex
+      var counter int
+
+      func incrementCounter() {
+          mu.Lock()
+          defer mu.Unlock()
+          counter++
+      }
+      
+
+    - **Channels for State Management:** Use channels to pass state between goroutines. This can be a safer alternative to shared memory and locks.
+    - **Context for Request-Scoped State:** Use `context.Context` to pass request-scoped state, such as user authentication information or transaction IDs.
+    - **External Stores (Redis, Databases):** For persistent state or state that needs to be shared across multiple services, use an external store like Redis or a database.
+
+  - ### 2.5 Error Handling Patterns
+
+    - **Explicit Error Handling:** Go treats errors as values. Always check for errors and handle them appropriately.
+    - **Error Wrapping:** Wrap errors with context information to provide more details about where the error occurred. Use `fmt.Errorf` with `%w` verb to wrap errors.
+
+      go
+      func readFile(filename string) ([]byte, error) {
+          data, err := ioutil.ReadFile(filename)
+          if err != nil {
+              return nil, fmt.Errorf("failed to read file %s: %w", filename, err)
+          }
+          return data, nil
+      }
+      
+
+    - **Error Types:** Define custom error types to represent specific error conditions. This allows you to handle errors more precisely.
+
+      go
+      type NotFoundError struct {
+          Resource string
+      }
+
+      func (e *NotFoundError) Error() string {
+          return fmt.Sprintf("%s not found", e.Resource)
+      }
+      
+
+    - **Sentinel Errors:** Define constant errors that can be compared directly using `==`. This is simpler than error types but less flexible.
+
+      go
+      var ErrNotFound = errors.New("not found")
+
+      func getUser(id int) (*User, error) {
+          if id == 0 {
+              return nil, ErrNotFound
+          }
+          // ...
+      }
+      
+
+    - **Error Grouping:** Use libraries like `go.uber.org/multierr` to collect multiple errors and return them as a single error.
+    - **Defers for Resource Cleanup:** Use `defer` to ensure that resources are cleaned up, even if an error occurs.
+
+      go
+      func processFile(filename string) error {
+          file, err := os.Open(filename)
+          if err != nil {
+              return err
+          }
+          defer file.Close() // Ensure file is closed
+          // ...
+      }
+      
+
+- ## 3. Performance Considerations
+
+  - ### 3.1 Optimization Techniques
+
+    - **Profiling:** Use the `pprof` package to profile your application and identify performance bottlenecks. `go tool pprof` allows you to analyze CPU and memory usage.
+
+      bash
+      go tool pprof http://localhost:6060/debug/pprof/profile  # CPU profiling
+      go tool pprof http://localhost:6060/debug/pprof/heap     # Memory profiling
+      
+
+    - **Benchmarking:** Use the `testing` package to benchmark critical sections of your code.
+
+      go
+      func BenchmarkFunction(b *testing.B) {
+          for i := 0; i < b.N; i++ {
+              // Code to benchmark
+          }
+      }
+      
+
+    - **Efficient Data Structures:** Choose the right data structures for your needs. For example, use `sync.Map` for concurrent access to maps.
+    - **String Concatenation:** Use `strings.Builder` for efficient string concatenation, especially in loops.
+
+      go
+      var sb strings.Builder
+      for i := 0; i < 1000; i++ {
+          sb.WriteString("hello")
+      }
+      result := sb.String()
+      
+
+    - **Reduce Allocations:** Minimize memory allocations, as garbage collection can be expensive. Reuse buffers and objects when possible.
+    - **Inline Functions:** Use the `//go:inline` directive to inline frequently called functions. However, use this sparingly, as it can increase code size.
+    - **Escape Analysis:** Understand how Go's escape analysis works to minimize heap allocations. Values that don't escape to the heap are allocated on the stack, which is faster.
+    - **Compiler Optimizations:** Experiment with compiler flags like `-gcflags=-S` to see the generated assembly code and understand how the compiler is optimizing your code.
+    - **Caching:** Implement caching strategies to reduce database or network calls. Use in-memory caches like `lru` or distributed caches like Redis.
+
+  - ### 3.2 Memory Management
+
+    - **Garbage Collection Awareness:** Be aware of how Go's garbage collector works. Understand the trade-offs between memory usage and CPU usage.
+    - **Reduce Heap Allocations:** Try to allocate memory on the stack whenever possible to avoid the overhead of garbage collection.
+    - **Object Pooling:** Use object pooling to reuse frequently created and destroyed objects. This can reduce the number of allocations and improve performance.
+    - **Slices vs. Arrays:** Understand the difference between slices and arrays. Slices are dynamically sized and backed by an array. Arrays have a fixed size. Slices are generally more flexible, but arrays can be more efficient in some cases.
+    - **Copying Data:** Be mindful of copying data, especially large data structures. Use pointers to avoid unnecessary copies.
+
+  - ### 3.3 Rendering Optimization (if applicable)
+    - This section is less relevant for back-end Go applications. If your Go application serves HTML templates:
+    - **Template Caching:** Cache parsed templates to avoid reparsing them on every request.
+    - **Efficient Template Engine:** Use an efficient template engine like `html/template` from the standard library.
+    - **Minimize DOM Manipulations (if using JavaScript):** Reduce the number of DOM manipulations in your JavaScript code, as they can be expensive.
+
+  - ### 3.4 Bundle Size Optimization (if applicable)
+    - This section is mostly irrelevant for back-end Go applications. If your Go application serves static assets:
+    - **Minification:** Minify your CSS and JavaScript files to reduce their size.
+    - **Compression:** Compress your assets using Gzip or Brotli.
+    - **Code Splitting (JavaScript):** Split your JavaScript code into smaller chunks that can be loaded on demand.
+
+  - ### 3.5 Lazy Loading (if applicable)
+    - This is mostly relevant for front-end applications, or database connections:
+    - **Database Connections:** Only establish database connections when they are needed.
+    - **Expensive Resources:** Load expensive resources (e.g., images, large data structures) only when they are actually used.
+
+- ## 4. Security Best Practices
+
+  - ### 4.1 Common Vulnerabilities
+
+    - **SQL Injection:** Prevent SQL injection by using parameterized queries or an ORM that automatically escapes user input.
+    - **Cross-Site Scripting (XSS):** If your Go application renders HTML, prevent XSS by escaping user input before rendering it.
+    - **Cross-Site Request Forgery (CSRF):** Protect against CSRF attacks by using CSRF tokens.
+    - **Command Injection:** Avoid executing external commands directly with user input. If you must, sanitize the input carefully.
+    - **Path Traversal:** Prevent path traversal attacks by validating and sanitizing file paths provided by users.
+    - **Denial of Service (DoS):** Protect against DoS attacks by setting appropriate timeouts and resource limits. Use rate limiting to prevent abuse.
+    - **Authentication and Authorization Issues:** Implement robust authentication and authorization mechanisms to protect sensitive data and functionality.
+    - **Insecure Dependencies:** Regularly audit your dependencies for known vulnerabilities. Use tools like `govulncheck` to identify vulnerabilities.
+
+  - ### 4.2 Input Validation
+
+    - **Validate All Input:** Validate all input data, including user input, API requests, and data from external sources.
+    - **Use Validation Libraries:** Use validation libraries like `go-playground/validator` to simplify input validation.
+    - **Sanitize Input:** Sanitize user input to remove potentially harmful characters or code.
+    - **Whitelist vs. Blacklist:** Prefer whitelisting allowed values over blacklisting disallowed values.
+    - **Regular Expressions:** Use regular expressions to validate complex input formats.
+
+  - ### 4.3 Authentication and Authorization
+
+    - **Use Strong Authentication:** Use strong authentication mechanisms like multi-factor authentication (MFA).
+    - **Password Hashing:** Hash passwords using a strong hashing algorithm like bcrypt or Argon2.
+    - **JWT (JSON Web Tokens):** Use JWT for stateless authentication.  Verify the signature of JWTs before trusting them.
+    - **RBAC (Role-Based Access Control):** Implement RBAC to control access to resources based on user roles.
+    - **Least Privilege:** Grant users only the minimum privileges necessary to perform their tasks.
+    - **OAuth 2.0:** Use OAuth 2.0 for delegated authorization, allowing users to grant third-party applications access to their data without sharing their credentials.
+
+  - ### 4.4 Data Protection
+
+    - **Encryption:** Encrypt sensitive data at rest and in transit.
+    - **TLS (Transport Layer Security):** Use TLS to encrypt communication between clients and servers.
+    - **Data Masking:** Mask sensitive data in logs and displays.
+    - **Regular Backups:** Regularly back up your data to prevent data loss.
+    - **Access Control:** Restrict access to sensitive data to authorized personnel only.
+    - **Data Minimization:** Collect only the data that is necessary for your application.
+
+  - ### 4.5 Secure API Communication
+
+    - **HTTPS:** Use HTTPS for all API communication.
+    - **API Keys:** Use API keys to authenticate clients.
+    - **Rate Limiting:** Implement rate limiting to prevent abuse.
+    - **Input Validation:** Validate all input data to prevent injection attacks.
+    - **Output Encoding:** Encode output data appropriately to prevent XSS attacks.
+    - **CORS (Cross-Origin Resource Sharing):** Configure CORS properly to allow requests from trusted origins only.
+
+- ## 5. Testing Approaches
+
+  - ### 5.1 Unit Testing
+
+    - **Focus on Individual Units:** Unit tests should focus on testing individual functions, methods, or packages in isolation.
+    - **Table-Driven Tests:** Use table-driven tests to test multiple inputs and outputs for a single function.
+
+      go
+      func TestAdd(t *testing.T) {
+          testCases := []struct {
+              a, b     int
+              expected int
+          }{
+              {1, 2, 3},
+              {0, 0, 0},
+              {-1, 1, 0},
+          }
+
+          for _, tc := range testCases {
+              result := Add(tc.a, tc.b)
+              if result != tc.expected {
+                  t.Errorf("Add(%d, %d) = %d; expected %d", tc.a, tc.b, result, tc.expected)
+              }
+          }
+      }
+      
+
+    - **Test Coverage:** Aim for high test coverage. Use `go test -cover` to measure test coverage.
+    - **Clear Assertions:** Use clear and informative assertions. Libraries like `testify` provide helpful assertion functions.
+    - **Test Naming:** Use descriptive test names that clearly indicate what is being tested.
+
+  - ### 5.2 Integration Testing
+
+    - **Test Interactions Between Components:** Integration tests should test the interactions between different components of your application.
+    - **Use Real Dependencies (where possible):** Use real dependencies (e.g., real databases) in integration tests, where possible. This provides more realistic testing.
+    - **Mock External Services:** Mock external services that are not under your control.
+    - **Test Data Setup and Teardown:** Set up test data before each test and tear it down after each test to ensure that tests are independent.
+
+  - ### 5.3 End-to-End Testing
+
+    - **Test the Entire Application:** End-to-end tests should test the entire application, from the user interface to the backend.
+    - **Automated Browser Testing:** Use automated browser testing tools like Selenium or Cypress to simulate user interactions.
+    - **Test Real-World Scenarios:** Test real-world scenarios to ensure that the application works as expected in production.
+    - **Data Persistence:** Be careful of data persistence between tests. Clean up any generated data after each test run.
+
+  - ### 5.4 Test Organization
+
+    - **Test Files:** Place test files in the same directory as the code being tested. Use the `_test.go` suffix.
+    - **Package Tests:** Write tests for each package in your application.
+    - **Test Suites:** Use test suites to group related tests together.
+
+  - ### 5.5 Mocking and Stubbing
+
+    - **Interfaces for Mocking:** Use interfaces to define contracts between components, making it easier to mock dependencies.
+    - **Mocking Libraries:** Use mocking libraries like `gomock` or `testify/mock` to generate mocks for interfaces.
+
+      go
+      //go:generate mockgen -destination=mocks/mock_user_repository.go -package=mocks github.com/your-username/project-name/internal/domain UserRepository
+
+      type UserRepository interface {
+          GetUser(id int) (*User, error)
+      }
+      
+
+    - **Stubbing:** Use stubs to replace dependencies with simple, predefined responses.
+    - **Avoid Over-Mocking:** Don't over-mock your code. Mock only the dependencies that are necessary to isolate the unit being tested.
+
+- ## 6. Common Pitfalls and Gotchas
+
+  - ### 6.1 Frequent Mistakes
+
+    - **Nil Pointer Dereferences:** Be careful of nil pointer dereferences. Always check for nil before accessing a pointer.
+    - **Data Races:** Avoid data races by using synchronization primitives like mutexes or channels.
+    - **Deadlocks:** Be careful of deadlocks when using goroutines and channels. Ensure that channels are closed properly and that goroutines are not waiting on each other indefinitely.
+    - **For Loop Variable Capture:** Be careful when capturing loop variables in goroutines. The loop variable may change before the goroutine is executed. Copy the loop variable to a local variable before passing it to the goroutine.
+
+      go
+      for _, item := range items {
+          item := item // Copy loop variable to local variable
+          go func() {
+              // Use local variable item
+          }()
+      }
+      
+
+    - **Incorrect Type Conversions:** Be careful when converting between types. Ensure that the conversion is valid and that you handle potential errors.
+    - **Incorrect Error Handling:** Ignoring or mishandling errors is a common pitfall. Always check errors and handle them appropriately.
+    - **Over-reliance on Global State:** Using global variables excessively leads to tight coupling and makes code difficult to test and reason about.
+
+  - ### 6.2 Edge Cases
+
+    - **Integer Overflow:** Be aware of integer overflow when performing arithmetic operations.
+    - **Floating-Point Precision:** Be aware of the limitations of floating-point precision.
+    - **Time Zones:** Be careful when working with time zones. Use the `time` package to handle time zones correctly.
+    - **Unicode Handling:** Be careful when handling Unicode characters. Use the `unicode/utf8` package to correctly encode and decode UTF-8 strings.
+
+  - ### 6.3 Version-Specific Issues
+
+    - **Go 1.18 Generics:**  Understand how generics work in Go 1.18 and later versions.  Use them judiciously to improve code reusability and type safety.
+    - **Module Compatibility:**  Be aware of compatibility issues between different versions of Go modules.  Use `go mod tidy` to update your dependencies and resolve compatibility issues.
+
+  - ### 6.4 Compatibility Concerns
+
+    - **C Interoperability:** Be aware of the complexities of C interoperability when using the `cgo` tool. Ensure that memory is managed correctly and that there are no data races.
+    - **Operating System Differences:** Be aware of differences between operating systems (e.g., file path separators, environment variables). Use the `os` package to handle operating system-specific behavior.
+
+  - ### 6.5 Debugging Strategies
+
+    - **Print Statements:** Use `fmt.Println` or `log.Println` to print debugging information.
+    - **Delve Debugger:** Use the Delve debugger (`dlv`) to step through your code and inspect variables.
+
+      bash
+      dlv debug ./cmd/your-application
+      
+
+    - **pprof Profiling:** Use the `pprof` package to profile your application and identify performance bottlenecks.
+    - **Race Detector:** Use the race detector (`go run -race`) to identify data races in your code.
+    - **Logging:** Add detailed logging to your application to help diagnose issues in production.
+    - **Core Dumps:** Generate core dumps when your application crashes to help diagnose the cause of the crash.
+    - **Code Reviews:** Have your code reviewed by other developers to catch potential issues.
+
+- ## 7. Tooling and Environment
+
+  - ### 7.1 Recommended Development Tools
+
+    - **GoLand:** A commercial IDE from JetBrains with excellent Go support.
+    - **Visual Studio Code:** A free and open-source editor with Go support via the Go extension.
+    - **Vim:** A powerful text editor with Go support via plugins.
+    - **gopls:** The official Go language server, providing features like code completion, linting, and formatting.
+
+  - ### 7.2 Build Configuration
+
+    - **Makefile:** Use a Makefile to automate build and deployment tasks.
+
+      makefile
+      build:
+          go build -o bin/your-application ./cmd/your-application
+
+      run:
+          go run ./cmd/your-application
+
+      test:
+          go test ./...
+      
+
+    - **GoReleaser:** Use GoReleaser to automate the release process, including building binaries for multiple platforms, generating checksums, and creating release notes.
+    - **Docker:** Use Docker to containerize your application for easy deployment.
+
+      dockerfile
+      FROM golang:1.21-alpine AS builder
+      WORKDIR /app
+      COPY go.mod go.sum ./
+      RUN go mod download
+      COPY . .
+      RUN go build -o /bin/your-application ./cmd/your-application
+
+      FROM alpine:latest
+      WORKDIR /app
+      COPY --from=builder /bin/your-application .
+      CMD ["./your-application"]
+      
+
+  - ### 7.3 Linting and Formatting
+
+    - **gofmt:** Use `gofmt` to automatically format your Go code according to the standard style guidelines.  Run it regularly to keep your code consistent.
+
+      bash
+      gofmt -s -w .
+      
+
+    - **golint:** Use `golint` to check your code for style and potential issues.
+    - **staticcheck:** Use `staticcheck` for more comprehensive static analysis.
+    - **revive:**  A fast, configurable, extensible, flexible, and beautiful linter for Go.
+    - **errcheck:** Use `errcheck` to ensure that you are handling all errors.
+    - **.golangci.yml:** Use a `.golangci.yml` file to configure `golangci-lint` with your preferred linting rules.
+
+  - ### 7.4 Deployment
+
+    - **Cloud Platforms:** Deploy your application to cloud platforms like AWS, Google Cloud, or Azure.
+    - **Kubernetes:** Deploy your application to Kubernetes for scalability and high availability.
+    - **Systemd:** Use systemd to manage your application as a service on Linux systems.
+    - **Serverless Functions:** Consider using serverless functions for small, event-driven applications.
+
+  - ### 7.5 CI/CD Integration
+
+    - **GitHub Actions:** Use GitHub Actions to automate your CI/CD pipeline.
+    - **GitLab CI:** Use GitLab CI to automate your CI/CD pipeline.
+    - **Jenkins:** Use Jenkins to automate your CI/CD pipeline.
+    - **CircleCI:** Use CircleCI to automate your CI/CD pipeline.
+    - **Automated Testing:** Run unit tests, integration tests, and end-to-end tests automatically as part of your CI/CD pipeline.
+    - **Automated Deployment:** Automate the deployment process to reduce the risk of human error.
+    - **Infrastructure as Code:** Use Infrastructure as Code (IaC) tools like Terraform or CloudFormation to automate the provisioning and management of your infrastructure.
