@@ -2,8 +2,6 @@ module github.com/aquasecurity/tracee
 
 go 1.24
 
-toolchain go1.24.0
-
 require (
 	github.com/IBM/fluent-forward-go v0.3.0
 	github.com/Masterminds/sprig/v3 v3.3.0
@@ -31,7 +29,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/sys v0.31.0
 	google.golang.org/grpc v1.70.0
-	google.golang.org/protobuf v1.36.5
+	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.32.1
