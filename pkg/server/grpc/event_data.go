@@ -207,6 +207,7 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 			},
 		}, nil
 	case uintptr:
+		// nadav.str: should be unreachable, leaving, just in case
 		return &pb.EventValue{
 			Value: &pb.EventValue_UInt64{
 				UInt64: uint64(v),

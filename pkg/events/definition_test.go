@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func TestNewDefinition(t *testing.T) {
@@ -40,7 +38,7 @@ func TestNewDefinition(t *testing.T) {
 			[]TailCall{},
 			Capabilities{},
 		),
-		[]trace.ArgMeta{},
+		[]DataField{},
 		nil,
 	)
 
