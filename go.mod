@@ -2,8 +2,6 @@ module github.com/aquasecurity/tracee
 
 go 1.24
 
-toolchain go1.24.1
-
 require (
 	github.com/IBM/fluent-forward-go v0.3.0
 	github.com/Masterminds/sprig/v3 v3.3.0
@@ -24,7 +22,7 @@ require (
 	github.com/prometheus/client_golang v1.21.0
 	github.com/sashabaranov/go-gpt3 v1.4.0
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.5
 	go.uber.org/goleak v1.3.0
