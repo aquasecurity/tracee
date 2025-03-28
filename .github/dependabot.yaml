@@ -5,8 +5,19 @@ version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
+    commit-message:
+      prefix: '[dependabot][github-actions] - '
     schedule:
       interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directories:
+      - "/builder"
+    commit-message:
+      prefix: '[dependabot][docker] - '
+    schedule:
+      interval: "weekly"
+
   - package-ecosystem: "gomod"
     directories:
       - "/"
@@ -14,9 +25,13 @@ updates:
       - "/types"
       - "/signatures/helpers"
     schedule:
-      interval: "weekly"
-  - package-ecosystem: "docker"
-    directories:
-      - "/builder"
-    schedule:
-      interval: "weekly"
+      interval: "daily"
+    commit-message:
+      prefix: '[dependabot][gomod-security] - '
+    groups:
+      # Group security updates for golang dependencies
+      # into a single pull request
+      golang:
+        applies-to: security-updates
+        patterns:
+          - "*"
