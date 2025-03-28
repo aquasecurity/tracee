@@ -2,15 +2,15 @@ module github.com/aquasecurity/tracee
 
 go 1.24
 
-toolchain go1.24.0
+toolchain go1.24.1
 
 require (
 	github.com/IBM/fluent-forward-go v0.3.0
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/aquasecurity/libbpfgo v0.8.0-libbpf-1.5.0.20250117141322-c0ac6035ae61
-	github.com/aquasecurity/tracee/api v0.0.0-20250313132452-ecadc0c7c567
-	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20250225170549-3d4b390e091b
-	github.com/aquasecurity/tracee/types v0.0.0-20250225150010-27311e99d782
+	github.com/aquasecurity/tracee/api v0.0.0-20250328183514-3587efe59aa3
+	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20250328185402-7b0abdab8d1a
+	github.com/aquasecurity/tracee/types v0.0.0-20250328183453-448ef27793c2
 	github.com/containerd/containerd v1.7.27
 	github.com/docker/docker v28.0.0+incompatible
 	github.com/golang/protobuf v1.5.4
@@ -31,7 +31,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/sys v0.31.0
 	google.golang.org/grpc v1.70.0
-	google.golang.org/protobuf v1.36.5
+	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.32.1
