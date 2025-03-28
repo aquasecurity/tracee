@@ -401,8 +401,8 @@ github.com/Microsoft/hcsshim v0.12.3 h1:LS9NXqXhMoqNCplK1ApmVSfB4UnVLRDWRapB6EIl
 github.com/Microsoft/hcsshim v0.12.3/go.mod h1:Iyl1WVpZzr+UkzjekHZbV8o5Z9ZkxNGx6CtY2Qg/JVQ=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
-github.com/aquasecurity/libbpfgo v0.8.0-libbpf-1.5.0.20250117141322-c0ac6035ae61 h1:EdqmOm8rk/FMtYetPcceDdW27lZxXzpHZw8XpF3lG+g=
-github.com/aquasecurity/libbpfgo v0.8.0-libbpf-1.5.0.20250117141322-c0ac6035ae61/go.mod h1:HB2DYWHuMraOB0IFcfjL8tsxN8TcFOdWKTrNqnHrTrs=
+github.com/aquasecurity/libbpfgo v0.8.0-libbpf-1.5.0.20250318181534-c412f162778b h1:yiYeg2DIkX55/OyaQDqH2hSSC3xEEh2LgwfScWONXak=
+github.com/aquasecurity/libbpfgo v0.8.0-libbpf-1.5.0.20250318181534-c412f162778b/go.mod h1:5LblNhDPCqk7aGIfNdsEZ4wGZHQcK/SKXAfq6PZ6pPQ=
 github.com/aquasecurity/tracee/api v0.0.0-20250328183514-3587efe59aa3 h1:aHFO+4QfwCgiw7zBbjgjSAKYOCQNWOuWsxw2aKVtD8c=
 github.com/aquasecurity/tracee/api v0.0.0-20250328183514-3587efe59aa3/go.mod h1:lmNPMqX5KAX82roDAUPtfU4AwfheAqELgjuxLERY6tM=
 github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20250328185402-7b0abdab8d1a h1:jM+32KWKmajomCI67raiVr5MsAAsnuMC/Ev1KXC7dyU=
