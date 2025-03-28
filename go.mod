@@ -2,8 +2,6 @@ module github.com/aquasecurity/tracee
 
 go 1.24
 
-toolchain go1.24.1
-
 require (
 	github.com/IBM/fluent-forward-go v0.3.0
 	github.com/Masterminds/sprig/v3 v3.3.0
@@ -12,7 +10,7 @@ require (
 	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20250328185402-7b0abdab8d1a
 	github.com/aquasecurity/tracee/types v0.0.0-20250328183453-448ef27793c2
 	github.com/containerd/containerd v1.7.27
-	github.com/docker/docker v28.0.0+incompatible
+	github.com/docker/docker v28.0.4+incompatible
 	github.com/golang/protobuf v1.5.4
 	github.com/google/gopacket v1.1.19
 	github.com/grafana/pyroscope-go v1.2.1
