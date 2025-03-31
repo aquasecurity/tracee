@@ -2,8 +2,6 @@ module github.com/aquasecurity/tracee
 
 go 1.24
 
-toolchain go1.24.1
-
 require (
 	github.com/IBM/fluent-forward-go v0.3.0
 	github.com/Masterminds/sprig/v3 v3.3.0
@@ -39,7 +37,7 @@ require (
 	k8s.io/client-go v0.32.1
 	k8s.io/cri-api v0.32.2
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.75
-	sigs.k8s.io/controller-runtime v0.20.3
+	sigs.k8s.io/controller-runtime v0.20.4
 )
 
 require (
