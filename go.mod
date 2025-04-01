@@ -8,7 +8,7 @@ require (
 	github.com/IBM/fluent-forward-go v0.3.0
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/aquasecurity/libbpfgo v0.8.0-libbpf-1.5.0.20250318181534-c412f162778b
-	github.com/aquasecurity/tracee/api v0.0.0-20250328183514-3587efe59aa3
+	github.com/aquasecurity/tracee/api v0.0.0-20250401135339-54a0e17df504
 	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20250328185402-7b0abdab8d1a
 	github.com/aquasecurity/tracee/types v0.0.0-20250328183453-448ef27793c2
 	github.com/containerd/containerd v1.7.27
