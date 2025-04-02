@@ -1,9 +1,5 @@
 package events
 
-import (
-	"github.com/aquasecurity/tracee/types/trace"
-)
-
 type Definition struct {
 	id           ID // TODO: use id ?
 	id32Bit      ID
@@ -15,7 +11,7 @@ type Definition struct {
 	syscall      bool
 	dependencies Dependencies
 	sets         []string
-	fields       []trace.ArgMeta
+	fields       []DataField
 	properties   map[string]interface{}
 }
 
@@ -30,7 +26,7 @@ func NewDefinition(
 	syscall bool,
 	sets []string,
 	deps Dependencies,
-	fields []trace.ArgMeta,
+	fields []DataField,
 	properties map[string]interface{},
 ) Definition {
 	return Definition{
@@ -91,7 +87,7 @@ func (d Definition) GetSets() []string {
 	return d.sets
 }
 
-func (d Definition) GetFields() []trace.ArgMeta {
+func (d Definition) GetFields() []DataField {
 	return d.fields
 }
 

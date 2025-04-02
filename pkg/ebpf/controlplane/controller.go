@@ -8,6 +8,7 @@ import (
 
 	"github.com/aquasecurity/libbpfgo"
 
+	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -31,6 +32,7 @@ type Controller struct {
 	cgroupManager  *containers.Manager
 	processTree    *proctree.ProcessTree
 	enrichDisabled bool
+	dataPresentor  bufferdecoder.TypeDecoder
 }
 
 // NewController creates a new controller.
@@ -39,6 +41,7 @@ func NewController(
 	cgroupManager *containers.Manager,
 	enrichDisabled bool,
 	procTree *proctree.ProcessTree,
+	dataPresentor bufferdecoder.TypeDecoder,
 ) (*Controller, error) {
 	var err error
 
@@ -54,6 +57,7 @@ func NewController(
 		cgroupManager:  cgroupManager,
 		processTree:    procTree,
 		enrichDisabled: enrichDisabled,
+		dataPresentor:  dataPresentor,
 	}
 
 	p.signalBuffer, err = bpfModule.InitPerfBuf("signals", p.signalChan, p.lostSignalChan, 1024)
@@ -80,7 +84,7 @@ func (ctrl *Controller) Run(ctx context.Context) {
 			signal := ctrl.getSignalFromPool()
 
 			// NOTE: override all the fields of the signal, to avoid any previous data.
-			err := signal.Unmarshal(signalData)
+			err := signal.Unmarshal(signalData, ctrl.dataPresentor)
 			if err != nil {
 				logger.Errorw("error unmarshaling signal ebpf buffer", "error", err)
 				ctrl.putSignalInPool(signal)
@@ -117,6 +121,7 @@ func (ctrl *Controller) processSignal(signal *signal) error {
 	case events.SignalCgroupRmdir:
 		return ctrl.processCgroupRmdir(signal.args)
 	case events.SignalSchedProcessFork:
+		// Not normalized at decode - normalize here.
 		err := events.NormalizeTimeArgs(
 			signal.args,
 			[]string{
@@ -133,6 +138,7 @@ func (ctrl *Controller) processSignal(signal *signal) error {
 
 		return ctrl.procTreeForkProcessor(signal.args)
 	case events.SignalSchedProcessExec:
+		// Not normalized at decode - normalize here.
 		err := events.NormalizeTimeArgs(
 			signal.args,
 			[]string{
@@ -149,6 +155,7 @@ func (ctrl *Controller) processSignal(signal *signal) error {
 
 		return ctrl.procTreeExecProcessor(signal.args)
 	case events.SignalSchedProcessExit:
+		// Not normalized at decode - normalize here.
 		err := events.NormalizeTimeArgs(
 			signal.args,
 			[]string{
