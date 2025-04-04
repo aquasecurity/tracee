@@ -38,6 +38,7 @@ const (
 	uint64ArrT
 	u8T
 	timespecT
+	stdinInfoT
 )
 
 // These types don't match the ones defined in the ebpf code since they are not being used by syscalls arguments.
@@ -185,6 +186,8 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, fields []trace.A
 		err = ebpfMsgDecoder.DecodeInt64(&nsec)
 		res = float64(sec) + (float64(nsec) / float64(1000000000))
 
+	case stdinInfoT:
+		res, err = readStdinInfoFromBuff(ebpfMsgDecoder)
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
 		return uint(argIdx), arg, errfmt.Errorf("error unknown arg type %v", argType)
@@ -240,10 +243,42 @@ func GetFieldType(fieldType string) ArgType {
 		return uint64ArrT
 	case "struct timespec*", "const struct timespec*":
 		return timespecT
+	case "struct stdin_info":
+		return stdinInfoT
 	default:
 		// Default to pointer (printed as hex) for unsupported types
 		return pointerT
 	}
+}
+
+func readStdinInfoFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error) {
+	res := make(map[string]string, 5)
+	var header int16
+	err := ebpfMsgDecoder.DecodeInt16(&header)
+	if err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
+	if uint64(header) == parsers.S_IFIFO.Value() {
+		return readStdinFifoFromBuffer(ebpfMsgDecoder)
+	}
+
+	if header == 0 {
+		return nil, nil
+	}
+
+	socketFamily, err := parsers.ParseSocketDomainArgument(uint64(header))
+	if err == nil {
+		return fillSocketInfo(ebpfMsgDecoder, res, int16(socketFamily))
+	}
+
+	return nil, nil
+}
+
+// TOOD: implement
+func readStdinFifoFromBuffer(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error) {
+	res := make(map[string]string, 5)
+	return res, nil
 }
 
 func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error) {
@@ -253,6 +288,10 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
+	return fillSocketInfo(ebpfMsgDecoder, res, family)
+}
+
+func fillSocketInfo(ebpfMsgDecoder *EbpfDecoder, res map[string]string, family int16) (map[string]string, error) {
 	socketDomainArg, err := parsers.ParseSocketDomainArgument(uint64(family))
 	if err != nil {
 		socketDomainArg = parsers.AF_UNSPEC.String()

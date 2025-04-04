@@ -1462,6 +1462,43 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
 // clang-format on
 
+statfunc void handle_stdin_sock(args_buffer_t *args_buf, struct file *stdin_file, u8 index)
+{
+    struct socket *socket_from_file = (struct socket *) BPF_CORE_READ(stdin_file, private_data);
+    if (socket_from_file == NULL)
+        return;
+
+    save_sockaddr_to_buf(args_buf, socket_from_file, index);
+}
+
+struct stdin_fifo {
+    unsigned short file_type;
+};
+
+statfunc void handle_stdin_fifo(args_buffer_t *args_buf, struct file *stdin_file, u8 index)
+{
+    struct stdin_fifo stdin_fifo = {.file_type = S_IFIFO};
+
+    save_to_submit_buf(args_buf, (void *) &stdin_fifo, sizeof(stdin_fifo), index);
+}
+
+statfunc void save_stdin_details(args_buffer_t *args_buf,
+                                 unsigned short stdin_type,
+                                 struct file *stdin_file,
+                                 u8 index)
+{
+    switch (stdin_type) {
+        case S_IFSOCK:
+            handle_stdin_sock(args_buf, stdin_file, index);
+            break;
+        case S_IFIFO:
+            handle_stdin_fifo(args_buf, stdin_file, index);
+            break;
+        default:
+            return;
+    }
+}
+
 SEC("raw_tracepoint/sched_process_exec_event_submit_tail")
 int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
 {
@@ -1496,6 +1533,7 @@ int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
     save_str_to_buf(&p.event->args_buf, stdin_path, 13);
     save_to_submit_buf(&p.event->args_buf, &invoked_from_kernel, sizeof(bool), 14);
     save_str_to_buf(&p.event->args_buf, (void *) p.task_info->context.comm, 15);
+    save_stdin_details(&p.event->args_buf, stdin_type, stdin_file, 16);
     if (p.config->options & OPT_EXEC_ENV) {
         unsigned long env_start, env_end;
         env_start = get_env_start_from_mm(mm);
@@ -1503,7 +1541,7 @@ int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
         int envc = get_envc_from_bprm(bprm);
 
         save_args_str_arr_to_buf(
-            &p.event->args_buf, (void *) env_start, (void *) env_end, envc, 16);
+            &p.event->args_buf, (void *) env_start, (void *) env_end, envc, 17);
     }
 
     events_perf_submit(&p, 0);
