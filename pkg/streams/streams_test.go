@@ -7,7 +7,7 @@ import (
 
 	"gotest.tools/assert"
 
-	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 )
 
 const (
@@ -17,10 +17,10 @@ const (
 )
 
 var (
-	policy1Event     = trace.Event{MatchedPoliciesUser: 0b1}
-	policy2Event     = trace.Event{MatchedPoliciesUser: 0b10}
-	policy3Event     = trace.Event{MatchedPoliciesUser: 0b100}
-	policy1And2Event = trace.Event{MatchedPoliciesUser: 0b11}
+	policy1Event     = pipeline.Event{MatchedPoliciesUser: 0b1}
+	policy2Event     = pipeline.Event{MatchedPoliciesUser: 0b10}
+	policy3Event     = pipeline.Event{MatchedPoliciesUser: 0b100}
+	policy1And2Event = pipeline.Event{MatchedPoliciesUser: 0b11}
 )
 
 func TestStreamManager(t *testing.T) {
@@ -112,7 +112,7 @@ func Test_shouldIgnorePolicy(t *testing.T) {
 	tests := []struct {
 		name       string
 		policyMask uint64
-		event      trace.Event
+		event      pipeline.Event
 		expected   bool
 	}{
 		{

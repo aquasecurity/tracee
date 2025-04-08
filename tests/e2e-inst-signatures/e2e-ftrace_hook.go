@@ -41,7 +41,7 @@ func (sig *e2eFtraceHook) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "ftrace_hook":
 		symbolName, err := helpers.GetTraceeStringArgumentByName(eventObj, "symbol")
 		if err != nil {

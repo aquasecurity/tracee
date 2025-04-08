@@ -56,12 +56,12 @@ func (ptds *ProcessTreeDS) GetThreadInfo(threadKey datasource.ThreadKey) (
 }
 
 // GetEventThreadInfo get the information of the thread emitting the current event
-func (ptds *ProcessTreeDS) GetEventThreadInfo(eventObj *trace.Event) (
+func (ptds *ProcessTreeDS) GetEventThreadInfo(eventObj trace.Event) (
 	*datasource.TimeRelevantInfo[datasource.ThreadInfo], error,
 ) {
 	queryKey := datasource.ThreadKey{
-		EntityId: eventObj.ThreadEntityId,
-		Time:     time.Unix(0, int64(eventObj.Timestamp)), // at the time event was emitted
+		EntityId: eventObj.GetThreadEntityId(),
+		Time:     time.Unix(0, int64(eventObj.GetTimestamp())), // at the time event was emitted
 	}
 	return ptds.GetThreadInfo(queryKey)
 }
@@ -83,12 +83,12 @@ func (ptds *ProcessTreeDS) GetProcessInfo(processKey datasource.ProcKey) (
 }
 
 // GetEventProcessInfo get the information of the process emitting the current event
-func (ptds *ProcessTreeDS) GetEventProcessInfo(eventObj *trace.Event) (
+func (ptds *ProcessTreeDS) GetEventProcessInfo(eventObj trace.Event) (
 	*datasource.TimeRelevantInfo[datasource.ProcessInfo], error,
 ) {
 	queryKey := datasource.ProcKey{
-		EntityId: eventObj.ProcessEntityId,
-		Time:     time.Unix(0, int64(eventObj.Timestamp)), // at the time event was emitted
+		EntityId: eventObj.GetProcessEntityId(),
+		Time:     time.Unix(0, int64(eventObj.GetTimestamp())), // at the time event was emitted
 	}
 	return ptds.GetProcessInfo(queryKey)
 }
@@ -113,12 +113,12 @@ func (ptds *ProcessTreeDS) GetProcessLineage(lineageKey datasource.LineageKey) (
 // GetEventProcessLineage get the process lineage information of the process emitting the
 // current event.
 func (ptds *ProcessTreeDS) GetEventProcessLineage(
-	eventObj *trace.Event,
+	eventObj trace.Event,
 	maxDepth int,
 ) (*datasource.ProcessLineage, error) {
 	queryKey := datasource.LineageKey{
-		EntityId: eventObj.ProcessEntityId,
-		Time:     time.Unix(0, int64(eventObj.Timestamp)), // at the time event was emitted
+		EntityId: eventObj.GetProcessEntityId(),
+		Time:     time.Unix(0, int64(eventObj.GetTimestamp())), // at the time event was emitted
 		MaxDepth: maxDepth,
 	}
 	return ptds.GetProcessLineage(queryKey)

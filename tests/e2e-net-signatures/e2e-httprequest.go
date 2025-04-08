@@ -49,13 +49,13 @@ func (sig *e2eHTTPRequest) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	if eventObj.ProcessName != "curl" {
+	if eventObj.GetProcessName() != "curl" {
 		return nil
 	}
 
-	if eventObj.EventName == "net_packet_http_request" {
+	if eventObj.GetEventName() == "net_packet_http_request" {
 		// validate tast context
-		if eventObj.HostName == "" {
+		if eventObj.GetHostName() == "" {
 			return nil
 		}
 

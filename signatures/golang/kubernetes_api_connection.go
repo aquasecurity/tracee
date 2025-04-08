@@ -50,12 +50,12 @@ func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	containerID := eventObj.Container.ID
+	containerID := eventObj.GetContainer().ID
 	if containerID == "" {
 		return nil
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "sched_process_exec":
 		envVars, err := helpers.GetTraceeSliceStringArgumentByName(eventObj, "env")
 		if err != nil {

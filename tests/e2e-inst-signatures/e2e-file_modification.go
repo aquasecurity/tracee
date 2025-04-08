@@ -42,7 +42,7 @@ func (sig *e2eFileModification) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "file_modification":
 		filePath, err := helpers.GetTraceeStringArgumentByName(eventObj, "file_path")
 		if err != nil {

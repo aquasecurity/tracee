@@ -4,11 +4,11 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 )
 
 type eventNode struct {
-	event       *trace.Event
+	event       *pipeline.Event
 	previous    *eventNode
 	next        *eventNode
 	isAllocated bool
@@ -23,7 +23,7 @@ type eventsQueue struct {
 }
 
 // Put insert new event to the double linked list
-func (eq *eventsQueue) Put(newEvent *trace.Event) error {
+func (eq *eventsQueue) Put(newEvent *pipeline.Event) error {
 	newNode, err := eq.pool.Alloc(newEvent)
 	if err != nil {
 		eq.pool.Reset()
@@ -37,7 +37,7 @@ func (eq *eventsQueue) Put(newEvent *trace.Event) error {
 // Get remove the node at the head of the queue and return it
 // Might return error with a valid event in case of internal pool error, for the user to know that an error occurred
 // but was contained
-func (eq *eventsQueue) Get() (*trace.Event, error) {
+func (eq *eventsQueue) Get() (*pipeline.Event, error) {
 	eq.mutex.Lock()
 	defer eq.mutex.Unlock()
 	if eq.head == nil {
@@ -74,7 +74,7 @@ func (eq *eventsQueue) Get() (*trace.Event, error) {
 	return extractedEvent, nil
 }
 
-func (eq *eventsQueue) PeekHead() *trace.Event {
+func (eq *eventsQueue) PeekHead() *pipeline.Event {
 	eq.mutex.Lock()
 	defer eq.mutex.Unlock()
 	if eq.head == nil {
@@ -83,7 +83,7 @@ func (eq *eventsQueue) PeekHead() *trace.Event {
 	return eq.head.event
 }
 
-func (eq *eventsQueue) PeekTail() *trace.Event {
+func (eq *eventsQueue) PeekTail() *pipeline.Event {
 	eq.mutex.Lock()
 	defer eq.mutex.Unlock()
 	if eq.tail == nil {

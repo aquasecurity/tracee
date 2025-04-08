@@ -46,13 +46,13 @@ func (sig *e2eSuspiciousSyscallSource) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "suspicious_syscall_source":
-		syscall, err := helpers.ArgVal[string](eventObj.Args, "syscall")
+		syscall, err := helpers.ArgVal[string](eventObj.GetArgs(), "syscall")
 		if err != nil {
 			return err
 		}
-		vmaType, err := helpers.ArgVal[string](eventObj.Args, "vma_type")
+		vmaType, err := helpers.ArgVal[string](eventObj.GetArgs(), "vma_type")
 		if err != nil {
 			return err
 		}

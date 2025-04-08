@@ -50,7 +50,7 @@ func (sig *counter) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	if ee.ArgsNum > 0 && ee.Args[0].Name == "pathname" && strings.HasPrefix(ee.Args[0].Value.(string), "yo") {
+	if ee.GetArgsNum() > 0 && ee.GetArgs()[0].Name == "pathname" && strings.HasPrefix(ee.GetArgs()[0].Value.(string), "yo") {
 		sig.count++
 	}
 	if sig.count == sig.target {

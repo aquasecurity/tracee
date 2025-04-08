@@ -55,7 +55,7 @@ func (sig *LdPreload) OnEvent(event protocol.Event) error {
 		return errors.New("invalid event")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "sched_process_exec":
 		envVars, err := helpers.GetTraceeSliceStringArgumentByName(eventObj, "env")
 		if err != nil {

@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	traceetime "github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/pkg/utils"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 //
@@ -16,7 +16,7 @@ import (
 //
 
 // procTreeForkProcessor handles process fork events.
-func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
+func (t *Tracee) procTreeForkProcessor(event *pipeline.Event) error {
 	if t.processTree == nil {
 		return errors.New("process tree is disabled")
 	}
@@ -109,7 +109,7 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 }
 
 // procTreeExecProcessor handles process exec events.
-func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
+func (t *Tracee) procTreeExecProcessor(event *pipeline.Event) error {
 	if t.processTree == nil {
 		return errors.New("process tree is disabled")
 	}
@@ -192,7 +192,7 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 }
 
 // procTreeExitProcessor handles process exit events.
-func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
+func (t *Tracee) procTreeExitProcessor(event *pipeline.Event) error {
 	if t.processTree == nil {
 		return errors.New("process tree is disabled")
 	}
@@ -231,7 +231,7 @@ func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
 //
 
 // procTreeAddBinInfo enriches the event with processes information from the process tree.
-func (t *Tracee) procTreeAddBinInfo(event *trace.Event) error {
+func (t *Tracee) procTreeAddBinInfo(event *pipeline.Event) error {
 	currentProcess, procOk := t.processTree.GetProcessByHash(event.ProcessEntityId)
 	if !procOk {
 		_, threadOk := t.processTree.GetThreadByHash(event.ProcessEntityId)
