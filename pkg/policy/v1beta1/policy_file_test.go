@@ -8,7 +8,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func TestPolicyValidate(t *testing.T) {
@@ -31,7 +30,7 @@ func TestPolicyValidate(t *testing.T) {
 			[]events.TailCall{},
 			events.Capabilities{},
 		),
-		[]trace.ArgMeta{},
+		[]events.DataField{},
 		nil,
 	)
 

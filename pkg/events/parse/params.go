@@ -1,7 +1,7 @@
 package parse
 
 import (
-	"strings"
+	"time"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -43,66 +43,33 @@ func ArgVal[T any](args []trace.Argument, argName string) (T, error) {
 
 func ArgZeroValueFromType(t string) interface{} {
 	switch t {
-	case "char":
+	case "char", "byte":
 		return byte(0)
-	case "bytes":
+	case "[]byte":
 		return []byte{}
-	case "s8":
+	case "int8":
 		return int8(0)
-	case "u8":
+	case "uint8":
 		return uint8(0)
-	case "s16",
-		"short":
+	case "int16":
 		return int16(0)
-	case "u16",
-		"unsigned short",
-		"old_gid_t",
-		"old_uid_t",
-		"umode_t":
+	case "uint16":
 		return uint16(0)
-	case "s32",
-		"int",
-		"pid_t",
-		"key_t",
-		"clockid_t",
-		"const clockid_t",
-		"timer_t",
-		"mqd_t",
-		"key_serial_t",
-		"landlock_rule_type":
+	case "int32":
 		return int32(0)
-	case "u32",
-		"unsigned int",
-		"dev_t",
-		"uid_t",
-		"gid_t",
-		"mode_t",
-		"qid_t":
+	case "uint32":
 		return uint32(0)
-	case "int[2]":
+	case "[2]int32":
 		return [2]int32{}
-	case "s64",
-		"long",
-		"long long",
-		"off_t",
-		"loff_t":
+	case "int64":
 		return int64(0)
-	case "u64",
-		"unsigned long",
-		"unsigned long long",
-		"const unsigned long",
-		"const unsigned long long",
-		"size_t",
-		"aio_context_t":
+	case "uint64":
 		return uint64(0)
-	case "unsigned long[]":
+	case "[]uint64":
 		return []uint64{}
-	case "char*",
-		"const char*",
-		"const char *":
+	case "string":
 		return string("")
-	case "const char**",
-		"const char **":
+	case "[]string":
 		return []string{}
 	case "bool":
 		return false
@@ -110,7 +77,10 @@ func ArgZeroValueFromType(t string) interface{} {
 		return float32(0)
 	case "float64":
 		return float64(0)
-	case "slim_cred_t":
+	case "time.Time":
+		// TODO: is this the right choice? Maybe abuse the any and return int(0)?
+		return time.Unix(0, 0)
+	case "trace.SlimCred":
 		return trace.SlimCred{}
 	case "trace.ProtoIPv4":
 		return trace.ProtoIPv4{}
@@ -144,26 +114,12 @@ func ArgZeroValueFromType(t string) interface{} {
 		return []trace.HookedSymbolData{}
 	case "map[string]trace.HookedSymbolData":
 		return map[string]trace.HookedSymbolData{}
-	default:
-		//
+	case "void*":
 		// pointer types
-		//
-		switch {
-		case strings.HasSuffix(t, "*"),
-			strings.HasSuffix(t, " *restrict"):
-			return uintptr(0)
-		}
-		switch t {
-		case "cap_user_header_t",
-			"cap_user_data_t",
-			"const cap_user_data_t",
-			"sighandler_t":
-			return uintptr(0)
-		}
-
-		// unknown type
-		return nil
+		return trace.Pointer(0)
 	}
+	// unknown type
+	return nil
 }
 
 // ArgIndex find the index of an argument by name

@@ -28,6 +28,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/data"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
@@ -68,7 +69,7 @@ type Tracee struct {
 	// Events
 	eventsSorter     *sorting.EventsChronologicalSorter
 	eventsPool       *sync.Pool
-	eventsFieldTypes map[events.ID][]bufferdecoder.ArgType
+	eventDecodeTypes map[events.ID][]data.DecodeAs
 	eventProcessor   map[events.ID][]func(evt *trace.Event) error
 	eventDerivations derive.Table
 	// Artifacts
@@ -80,9 +81,10 @@ type Tracee struct {
 	readFiles   map[string]string
 	pidsInMntns bucketscache.BucketsCache // first n PIDs in each mountns
 	// eBPF
-	bpfModule     *bpf.Module
-	defaultProbes *probes.ProbeGroup
-	extraProbes   map[string]*probes.ProbeGroup
+	bpfModule       *bpf.Module
+	defaultProbes   *probes.ProbeGroup
+	extraProbes     map[string]*probes.ProbeGroup
+	dataTypeDecoder bufferdecoder.TypeDecoder
 	// BPF Maps
 	StackAddressesMap *bpf.BPFMap
 	FDArgPathMap      *bpf.BPFMap
@@ -244,6 +246,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		eventsDependencies: depsManager,
 		requiredKsyms:      []string{},
 		extraProbes:        make(map[string]*probes.ProbeGroup),
+		dataTypeDecoder:    bufferdecoder.NewTypeDecoder(),
 	}
 
 	// clear initial policies to avoid wrong references
@@ -438,12 +441,12 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize events field types map
 
-	t.eventsFieldTypes = make(map[events.ID][]bufferdecoder.ArgType)
+	t.eventDecodeTypes = make(map[events.ID][]data.DecodeAs)
 	for _, eventDefinition := range events.Core.GetDefinitions() {
 		id := eventDefinition.GetID()
 		fields := eventDefinition.GetFields()
 		for _, field := range fields {
-			t.eventsFieldTypes[id] = append(t.eventsFieldTypes[id], bufferdecoder.GetFieldType(field.Type))
+			t.eventDecodeTypes[id] = append(t.eventDecodeTypes[id], field.DecodeAs)
 		}
 	}
 
@@ -1140,7 +1143,7 @@ func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
 	polCfg, err := t.policyManager.UpdateBPF(
 		t.bpfModule,
 		t.containers,
-		t.eventsFieldTypes,
+		t.eventDecodeTypes,
 		true,
 		updateProcTree,
 	)
@@ -1296,13 +1299,14 @@ func (t *Tracee) initBPF() error {
 		t.containers,
 		t.config.NoContainersEnrich,
 		t.processTree,
+		t.dataTypeDecoder,
 	)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
-	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventsFieldTypes, false, true)
+	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventDecodeTypes, false, true)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

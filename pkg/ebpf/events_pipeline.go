@@ -165,7 +165,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 		defer close(out)
 		defer close(errc)
 		for dataRaw := range sourceChan {
-			ebpfMsgDecoder := bufferdecoder.New(dataRaw)
+			ebpfMsgDecoder := bufferdecoder.New(dataRaw, t.dataTypeDecoder)
 			var eCtx bufferdecoder.EventContext
 			if err := ebpfMsgDecoder.DecodeContext(&eCtx); err != nil {
 				t.handleError(err)

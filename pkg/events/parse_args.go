@@ -16,8 +16,8 @@ import (
 
 func ParseArgs(event *trace.Event) error {
 	for i := range event.Args {
-		// Convert uintptr to hex string
-		if ptr, isUintptr := event.Args[i].Value.(uintptr); isUintptr {
+		// Convert pointers to hex string
+		if ptr, isPointer := event.Args[i].Value.(trace.Pointer); isPointer {
 			v := []byte{'0', 'x'}
 			v = strconv.AppendUint(v, uint64(ptr), 16)
 			event.Args[i].Value = string(v)

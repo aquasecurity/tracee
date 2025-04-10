@@ -8,12 +8,11 @@ import (
 	"github.com/olekukonko/tablewriter"
 
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func PrintEventList(includeSigs bool, wideOutput bool) {
 	// TODO: Create String() method in types trace.ArgMeta
-	fieldsToString := func(fields []trace.ArgMeta) string {
+	fieldsToString := func(fields []events.DataField) string {
 		strSlice := []string{}
 		for _, p := range fields {
 			strSlice = append(strSlice, p.Type+" "+p.Name)

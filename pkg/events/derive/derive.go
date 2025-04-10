@@ -67,7 +67,7 @@ func (t Table) DeriveEvent(event trace.Event, origArgs []trace.Argument) ([]trac
 type deriveBase struct {
 	Name   string
 	ID     int
-	Fields []trace.ArgMeta
+	Fields []events.DataField
 }
 
 // deriveArgsFunction defines the logic of deriving an Event.
@@ -144,7 +144,7 @@ func buildDerivedEvent(baseEvent *trace.Event, skeleton deriveBase, argsValues [
 	de.StackAddresses = make([]uint64, 1)
 	de.Args = make([]trace.Argument, len(skeleton.Fields))
 	for i, value := range argsValues {
-		de.Args[i] = trace.Argument{ArgMeta: skeleton.Fields[i], Value: value}
+		de.Args[i] = trace.Argument{ArgMeta: skeleton.Fields[i].ArgMeta, Value: value}
 	}
 	de.ArgsNum = len(de.Args)
 	return de, nil

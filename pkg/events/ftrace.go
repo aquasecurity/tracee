@@ -114,15 +114,15 @@ func getFtraceHooksData() ([]byte, error) {
 	return data, err
 }
 
-func initFtraceArgs(fields []trace.ArgMeta) []trace.Argument {
+func initFtraceArgs(fields []DataField) []trace.Argument {
 	args := []trace.Argument{ // Init empty args
-		{ArgMeta: fields[symbolIndex], Value: nil},
-		{ArgMeta: fields[trampIndex], Value: nil},
-		{ArgMeta: fields[callbackFuncIndex], Value: nil},
-		{ArgMeta: fields[callbackOffsetIndex], Value: nil},
-		{ArgMeta: fields[callbackOwnerIndex], Value: nil},
-		{ArgMeta: fields[flagsIndex], Value: nil},
-		{ArgMeta: fields[countIndex], Value: nil},
+		{ArgMeta: fields[symbolIndex].ArgMeta, Value: nil},
+		{ArgMeta: fields[trampIndex].ArgMeta, Value: nil},
+		{ArgMeta: fields[callbackFuncIndex].ArgMeta, Value: nil},
+		{ArgMeta: fields[callbackOffsetIndex].ArgMeta, Value: nil},
+		{ArgMeta: fields[callbackOwnerIndex].ArgMeta, Value: nil},
+		{ArgMeta: fields[flagsIndex].ArgMeta, Value: nil},
+		{ArgMeta: fields[countIndex].ArgMeta, Value: nil},
 	}
 
 	return args

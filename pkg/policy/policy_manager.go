@@ -5,13 +5,13 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/data"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
@@ -593,7 +593,7 @@ func (m *Manager) LookupByName(name string) (*Policy, error) {
 func (m *Manager) UpdateBPF(
 	bpfModule *bpf.Module,
 	cts *containers.Manager,
-	eventsFields map[events.ID][]bufferdecoder.ArgType,
+	eventsFields map[events.ID][]data.DecodeAs,
 	createNewMaps bool,
 	updateProcTree bool,
 ) (*PoliciesConfig, error) {

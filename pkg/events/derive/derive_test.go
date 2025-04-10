@@ -98,7 +98,7 @@ func Test_DeriveSingleEvent(t *testing.T) {
 		false,                      // Syscall
 		[]string{},                 // Sets
 		events.Dependencies{},      // Dependencies
-		[]trace.ArgMeta{
+		events.DataFieldsFromArgMeta([]trace.ArgMeta{
 			{
 				Name: "arg1",
 				Type: "int",
@@ -107,7 +107,7 @@ func Test_DeriveSingleEvent(t *testing.T) {
 				Name: "arg2",
 				Type: "int",
 			},
-		},
+		}),
 		nil,
 	)
 
@@ -197,7 +197,7 @@ func TestDeriveMultipleEvents(t *testing.T) {
 		false,                      // Syscall
 		[]string{},                 // Sets
 		events.Dependencies{},      // Dependencies
-		[]trace.ArgMeta{
+		events.DataFieldsFromArgMeta([]trace.ArgMeta{
 			{
 				Name: "arg1",
 				Type: "int",
@@ -206,7 +206,7 @@ func TestDeriveMultipleEvents(t *testing.T) {
 				Name: "arg2",
 				Type: "int",
 			},
-		},
+		}),
 		nil,
 	)
 
@@ -314,7 +314,7 @@ func TestNewEvent(t *testing.T) {
 	skeleton := deriveBase{
 		Name: "test_derive",
 		ID:   124,
-		Fields: []trace.ArgMeta{
+		Fields: events.DataFieldsFromArgMeta([]trace.ArgMeta{
 			{
 				Name: "arg1",
 				Type: "int",
@@ -323,7 +323,7 @@ func TestNewEvent(t *testing.T) {
 				Name: "arg2",
 				Type: "string",
 			},
-		},
+		}),
 	}
 
 	testCases := []struct {
@@ -364,7 +364,7 @@ func TestNewEvent(t *testing.T) {
 			assert.Equal(t, skeleton.ID, evt.EventID)
 			require.Len(t, evt.Args, len(testCase.Args))
 			for i, arg := range evt.Args {
-				assert.Equal(t, skeleton.Fields[i], arg.ArgMeta)
+				assert.Equal(t, skeleton.Fields[i].ArgMeta, arg.ArgMeta)
 				assert.Equal(t, testCase.Args[i], arg.Value)
 			}
 			temp := evt

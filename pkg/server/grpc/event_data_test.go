@@ -128,7 +128,7 @@ func Test_getEventData(t *testing.T) {
 				{
 					ArgMeta: trace.ArgMeta{
 						Name: "pos",
-						Type: "off_t",
+						Type: "long",
 					},
 					Value: uint64(2),
 				},
@@ -168,7 +168,7 @@ func Test_getEventData(t *testing.T) {
 				{
 					ArgMeta: trace.ArgMeta{
 						Name: "dev",
-						Type: "dev_t",
+						Type: "unsigned int",
 					},
 					Value: uint32(59),
 				},
@@ -298,7 +298,7 @@ func Test_getEventData(t *testing.T) {
 				{
 					ArgMeta: trace.ArgMeta{
 						Name: "inode_mode",
-						Type: "umode_t",
+						Type: "u16",
 					},
 					Value: uint16(1818),
 				},
@@ -340,7 +340,7 @@ func Test_getEventData(t *testing.T) {
 						Name: "sa_handler",
 						Type: "void*",
 					},
-					Value: uintptr(0xFFFFFFFFFFFFFFFF),
+					Value: trace.Pointer(0xFFFFFFFFFFFFFFFF),
 				},
 			},
 			expected: []*pb.EventValue{
@@ -358,7 +358,7 @@ func Test_getEventData(t *testing.T) {
 				{
 					ArgMeta: trace.ArgMeta{
 						Name: "pipefd",
-						Type: "int[2]",
+						Type: "[2]int32",
 					},
 					Value: [2]int32{3, 4},
 				},
@@ -532,7 +532,7 @@ func Test_getEventData(t *testing.T) {
 				{
 					ArgMeta: trace.ArgMeta{
 						Name: "inode_mode",
-						Type: "umode_t",
+						Type: "u16",
 					},
 					Value: uint16(1818),
 				},
@@ -548,7 +548,7 @@ func Test_getEventData(t *testing.T) {
 						Name: "sa_handler",
 						Type: "void*",
 					},
-					Value: uintptr(0xFFFFFFFFFFFFFFFF),
+					Value: trace.Pointer(0xFFFFFFFFFFFFFFFF),
 				},
 			},
 			expected: []*pb.EventValue{
@@ -580,7 +580,7 @@ func Test_getEventData(t *testing.T) {
 				{
 					ArgMeta: trace.ArgMeta{
 						Name: "inode_mode",
-						Type: "umode_t",
+						Type: "u16",
 					},
 					Value: uint16(1818),
 				},
@@ -608,7 +608,7 @@ func Test_getEventData(t *testing.T) {
 				{
 					ArgMeta: trace.ArgMeta{
 						Name: "inode_mode",
-						Type: "umode_t",
+						Type: "u16",
 					},
 					Value: uint16(1818),
 				},

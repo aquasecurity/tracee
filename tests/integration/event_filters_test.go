@@ -1644,7 +1644,7 @@ func Test_EventFilters(t *testing.T) {
 						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-data-64"), orPolIDs(64),
 							expectArg("dirfd", int32(0)),
 							expectArg("flags", int32(0)),
-							expectArg("mode", uint16(0)),
+							expectArg("mode", uint32(0)),
 						),
 					},
 					[]string{},
@@ -1656,7 +1656,7 @@ func Test_EventFilters(t *testing.T) {
 					[]trace.Event{
 						expectEvent(anyHost, "fakeprog2", testutils.CPUForTests, anyPID, 0, events.Open, orPolNames("comm-event-data-42"), orPolIDs(42),
 							expectArg("flags", int32(0)),
-							expectArg("mode", uint16(0)),
+							expectArg("mode", uint32(0)),
 						),
 					},
 					[]string{},
@@ -1724,7 +1724,7 @@ func Test_EventFilters(t *testing.T) {
 						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-retval-64"), orPolIDs(64),
 							expectArg("dirfd", int32(0)),
 							expectArg("flags", int32(0)),
-							expectArg("mode", uint16(0)),
+							expectArg("mode", uint32(0)),
 						),
 					},
 					[]string{},
@@ -3029,16 +3029,16 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 						if strings.Contains(v, "*") {
 							v = strings.ReplaceAll(v, "*", "")
 							if !strings.Contains(actVal, v) {
-								return fmt.Errorf("Event %+v:\narg value mismatch: expected %s, got %s", expEvt, v, actVal)
+								return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", expEvt, v, v, actVal, actVal)
 							}
 						} else {
 							if !assert.ObjectsAreEqual(v, actVal) {
-								return fmt.Errorf("Event %+v:\narg value mismatch: expected %s, got %s", expEvt, v, actVal)
+								return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", expEvt, v, v, actVal, actVal)
 							}
 						}
 					default:
 						if !assert.ObjectsAreEqual(v, actArg.Value) {
-							return fmt.Errorf("Event %+v:\narg value mismatch: expected %v, got %v", expEvt, v, actArg.Value)
+							return fmt.Errorf("Event %+v:\narg value mismatch: expected %v (type %T), got %v (type %T)", expEvt, v, v, actArg.Value, actArg.Value)
 						}
 					}
 				}
@@ -3137,17 +3137,17 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 					if strings.Contains(v, "*") {
 						v = strings.ReplaceAll(v, "*", "")
 						if !strings.Contains(actVal, v) {
-							return fmt.Errorf("Event %+v:\narg value mismatch: expected %s, got %s", expEvt, v, actVal)
+							return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", expEvt, v, v, actVal, actVal)
 						}
 					} else {
 						if !assert.ObjectsAreEqual(v, actArg.Value) {
-							return fmt.Errorf("Event %+v:\narg value mismatch: expected %s, got %s", expEvt, v, actVal)
+							return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", expEvt, v, v, actVal, actVal)
 						}
 					}
 
 				default:
 					if !assert.ObjectsAreEqual(v, actArg.Value) {
-						return fmt.Errorf("Event %+v:\narg value mismatch: expected %v, got %v", expEvt, v, actArg.Value)
+						return fmt.Errorf("Event %+v:\narg value mismatch: expected %v (type %T), got %v (type %T)", expEvt, v, v, actArg.Value, actArg.Value)
 					}
 				}
 			}

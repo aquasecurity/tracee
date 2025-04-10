@@ -132,7 +132,7 @@ func createFakeEventAndFinding() detect.Finding {
 			[]events.TailCall{},
 			events.Capabilities{},
 		),
-		[]trace.ArgMeta{},
+		[]events.DataField{},
 		nil,
 	)
 
