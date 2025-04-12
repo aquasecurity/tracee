@@ -112,7 +112,11 @@ enum perf_type_id
     #define PAGE_SIZE  (_AC(1, UL) << PAGE_SHIFT)
     #define PAGE_MASK  (~(PAGE_SIZE - 1))
 
+    // # ifdef CONFIG_X86_FRED
+    #define TOP_OF_KERNEL_STACK_PADDING_FRED (2 * 8)
+    // # else
     #define TOP_OF_KERNEL_STACK_PADDING 0
+    // # endif
 
 #elif defined(__TARGET_ARCH_arm64)
 
