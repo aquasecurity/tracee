@@ -13,6 +13,28 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
+const (
+	CaptureFlag          = "capture"
+	CaptureFileWrite     = "file-write"
+	CaptureFileRead      = "file-read"
+	CaptureFileFilter    = "filter"
+	CaptureFileFilterPath = "path"
+	CaptureFileFilterType = "type"
+	CaptureFileFilterFD  = "fd"
+	CaptureExecutable    = "executable"
+	CaptureKernelModule  = "kernel-modules"
+	CaptureBpfPrograms   = "bpf-programs"
+	CaptureMemoryRegions = "memory-regions"
+	CaptureNetwork       = "network"
+	CaptureNetworkPcap          = "pcap"
+	CaptureNetworkPcapOptions   = "pcap-options"
+	CaptureNetworkPcapSnaplen   = "pcap-snaplen"
+	CaptureDir           = "dir"
+	CaptureClearDir      = "clear"
+	defaultOutputDir     = "/tmp/tracee"
+	defaultClearDir      = false
+)
+
 func captureHelp() string {
 	return `Capture artifacts that were written, executed or found to be suspicious.
 Captured artifacts will appear in the 'output-path' directory.
@@ -88,23 +110,159 @@ Network notes worth mentioning:
   - If you specify "headers" but trace for net_packet_http events, only L2/L3 headers will be captured.
 `
 }
+func invalidCaptureOption(err error, opt string, newBinary bool) error {
+	if err == nil {
+		// this is a hack to clear the previous two chars from the error message
+		err = errors.New("\b\b")
+	}
 
-func PrepareCapture(captureSlice []string, newBinary bool) (config.CaptureConfig, error) {
+	if newBinary {
+		return errfmt.Errorf("invalid capture option: %s, %s, run 'man capture' for more info", opt, err)
+	}
+
+	return errfmt.Errorf("invalid capture option: %s, %s, use '--capture help' for more info", opt, err)
+}
+
+func invalidCaptureOptionValue(err error, opt string, newBinary bool) error {
+	if err == nil {
+		// this is a hack to clear the previous two chars from the error message
+		err = errors.New("\b\b")
+	}
+
+	if newBinary {
+		return errfmt.Errorf("invalid capture option value: %s, %s, use '--help' for more info", opt, err)
+	}
+
+	return errfmt.Errorf("invalid capture option value: %s, %s, use '--capture help' for more info", opt, err)
+}
+
+func PrepareCapture(captureOption []string, newBinary bool) (config.CaptureConfig, error) {
 	capture := config.CaptureConfig{}
-
-	outDir := "/tmp/tracee"
-	clearDir := false
-
+	outDir := defaultOutputDir
+	clearDir := defaultClearDir
 	// TODO: refactor this to reduce control flow nesting
 	// When done, reduce control-nesting rule to default "5" in .revive.toml
-	for i := range captureSlice {
-		c := captureSlice[i]
-		if strings.HasPrefix(c, "artifact:write") ||
-			strings.HasPrefix(c, "artifact:exec") ||
-			strings.HasPrefix(c, "artifact:mem") ||
-			strings.HasPrefix(c, "artifact:module") {
-			c = strings.TrimPrefix(c, "artifact:")
+
+	for _, opt := range captureOption {
+		captureParts := strings.SplitN(opt, ".", 2)
+		if len(captureParts) != 2 {
+			return capture, invalidCaptureOption(nil, opt, newBinary)
 		}
+
+		// check for flags with only enable feature
+		if strings.HasPrefix("enable=true", captureParts[1]) {
+			switch captureParts[0] {
+			case CaptureExecutable:
+				capture.Exec = true
+				continue
+			case CaptureKernelModule:
+				capture.Module = true
+				continue
+			case CaptureBpfPrograms:
+				capture.Bpf = true
+				continue
+			case CaptureMemoryRegions:
+				capture.Mem = true
+				continue
+			}
+		}
+		capturePartsValues := strings.SplitN(captureParts[1], "=", 2)
+		if len(captureParts) != 2 {
+			return capture, invalidCaptureOption(nil, opt, newBinary)
+		}
+		// check for the other flags
+		switch captureParts[0] {
+		case CaptureFileWrite:
+			switch capturePartsValues[0] {
+			case "enabled":
+			case CaptureFileFilter:
+				
+		case CaptureFileRead:
+
+		case CaptureNetwork:
+			switch capturePartsValues[0] {
+			case "enabled": // default payload
+				capture.Net.CaptureSingle = true
+				capture.Net.CaptureLength = 96 
+				continue
+			case CaptureNetworkPcap:
+				switch capturePartsValues[1] {
+				case "single":
+					capture.Net.CaptureSingle = true
+				case "process":
+					capture.Net.CaptureProcess = true
+				case "container":
+					capture.Net.CaptureContainer = true
+				case "command":
+					capture.Net.CaptureCommand = true
+				default:
+					return capture, invalidCaptureOptionValue(nil, opt, newBinary)
+				}
+				capture.Net.CaptureLength = 96
+				continue
+			case CaptureNetworkPcapOptions:
+				switch capturePartsValues[1] {
+				case "none":
+					capture.Net.CaptureFiltered = false
+				case "filtered":
+					capture.Net.CaptureFiltered = true
+				}
+				continue
+			case CaptureNetworkPcapSnaplen:
+				switch capturePartsValues[1] {
+				case "default":
+					capture.Net.CaptureLength = 96
+					continue
+				case "headers":
+					capture.Net.CaptureLength = 0
+					continue
+				case "max":
+					capture.Net.CaptureLength = (1 << 16) - 1
+					continue
+				case strings.HasSuffix(capturePartsValues[1], "kb"):
+					scope := strings.TrimSuffix(capturePartsValues[1], "kb")
+					amount, err := strconv.ParseUint(scope, 10, 64)
+					if err != nil {
+						return capture, invalidCaptureOptionValue(err, opt, newBinary)
+					}
+					capture.Net.CaptureLength  = 1024 * amount // result in bytes
+					continue
+				case strings.HasSuffix(capturePartsValues[1], "k"):
+					scope := strings.TrimSuffix(capturePartsValues[1], "k")
+					amount, err := strconv.ParseUint(scope, 10, 64)
+					if err != nil {
+						return capture, invalidCaptureOptionValue(err, opt, newBinary)
+					}				
+					capture.Net.CaptureLength  = 1024 * amount // result in bytes
+					continue
+				case strings.HasSuffix(capturePartsValues[1], "b"):
+					scope = strings.TrimSuffix(scope, "b")
+					amount, err = strconv.ParseUint(scope, 10, 64)
+					if err != nil {
+						return capture, invalidCaptureOptionValue(err, opt, newBinary)
+					}	
+					capture.Net.CaptureLength  =  amount
+					continue
+				default:
+					return capture, invalidCaptureOptionValue(nil, opt, newBinary)
+			}	
+		case CaptureDir:
+			switch capturePartsValues[0] {
+			case CaptureDir:
+				outDir = capturePartsValues[1]
+				if len(outDir) == 0 {
+					return capture, errfmt.Errorf("capture output dir cannot be empty")
+				}
+				continue
+			case CaptureClearDir:
+				clearDir = true
+				continue
+			}
+		default:
+			return capture, invalidCaptureOption(nil, opt, newBinary)
+		}
+
+
 		if strings.HasPrefix(c, "write") {
 			err := parseFileCaptureOption("write", c, &capture.FileWrite)
 			if err != nil {
@@ -115,90 +273,9 @@ func PrepareCapture(captureSlice []string, newBinary bool) (config.CaptureConfig
 			if err != nil {
 				return config.CaptureConfig{}, err
 			}
-		} else if c == "exec" {
-			capture.Exec = true
-		} else if c == "module" {
-			capture.Module = true
-		} else if c == "mem" {
-			capture.Mem = true
-		} else if c == "bpf" {
-			capture.Bpf = true
-		} else if c == "network" || c == "net" || c == "pcap" {
-			// default capture mode: a single pcap file with all traffic
-			capture.Net.CaptureSingle = true
-			capture.Net.CaptureLength = 96 // default payload
-		} else if strings.HasPrefix(c, "pcap:") {
-			capture.Net.CaptureSingle = false // remove default mode
-			scope := strings.TrimPrefix(c, "pcap:")
-			fields := strings.Split(scope, ",")
-			for _, field := range fields {
-				if field == "single" {
-					capture.Net.CaptureSingle = true
-				}
-				if field == "process" {
-					capture.Net.CaptureProcess = true
-				}
-				if field == "container" {
-					capture.Net.CaptureContainer = true
-				}
-				if field == "command" {
-					capture.Net.CaptureCommand = true
-				}
-			}
-			capture.Net.CaptureLength = 96 // default payload
-		} else if strings.HasPrefix(c, "pcap-options:") {
-			scope := strings.TrimPrefix(c, "pcap-options:")
-			scope = strings.ToLower(scope) // normalize
-			if scope == "none" {
-				capture.Net.CaptureFiltered = false // proforma
-			} else if scope == "filtered" {
-				capture.Net.CaptureFiltered = true
-			}
-		} else if strings.HasPrefix(c, "pcap-snaplen:") {
-			scope := strings.TrimPrefix(c, "pcap-snaplen:")
-			var amount uint64
-			var err error
-			scope = strings.ToLower(scope) // normalize
-			if scope == "default" {
-				amount = 96 // default payload
-			} else if scope == "max" {
-				amount = (1 << 16) - 1 // max length for IP packets
-			} else if scope == "headers" {
-				amount = 0 // sets headers only length for capturing (default)
-			} else if strings.HasSuffix(scope, "kb") ||
-				strings.HasSuffix(scope, "k") {
-				scope = strings.TrimSuffix(scope, "kb")
-				scope = strings.TrimSuffix(scope, "k")
-				amount, err = strconv.ParseUint(scope, 10, 64)
-				amount *= 1024 // result in bytes
-			} else if strings.HasSuffix(scope, "b") {
-				scope = strings.TrimSuffix(scope, "b")
-				amount, err = strconv.ParseUint(scope, 10, 64)
-			} else {
-				return config.CaptureConfig{}, errfmt.Errorf("could not parse pcap snaplen: missing b or kb ?")
-			}
-			if err != nil {
-				return config.CaptureConfig{}, errfmt.Errorf("could not parse pcap snaplen: %v", err)
-			}
-			if amount >= (1 << 16) {
-				amount = (1 << 16) - 1
-			}
-			capture.Net.CaptureLength = uint32(amount) // of packet length to be captured in bytes
-		} else if c == "clear-dir" {
-			clearDir = true
-		} else if strings.HasPrefix(c, "dir:") {
-			outDir = strings.TrimPrefix(c, "dir:")
-			if len(outDir) == 0 {
-				return config.CaptureConfig{}, errfmt.Errorf("capture output dir cannot be empty")
-			}
-		} else {
-			if newBinary {
-				return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, run 'man capture' for more info")
-			}
-
-			return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--capture help' for more info")
 		}
 	}
+
 
 	capture.OutputPath = filepath.Join(outDir, "out")
 	if !clearDir {
