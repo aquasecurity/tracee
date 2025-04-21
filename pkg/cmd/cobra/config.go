@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -28,15 +27,8 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &ProcTreeConfig{}
 	case "capabilities":
 		flagger = &CapabilitiesConfig{}
-	case "cri":
-		switch v := rawValue.(type) {
-		case []string: // via cli
-			return getConfigFlags(rawValue, nil, "cri")
-		case []interface{}: // via config file
-			return getCRIConfigFlags(rawValue)
-		default:
-			return nil, errfmt.Errorf("unrecognized type %T for cri", v)
-		}
+	case "containers":
+		flagger = &ContainerConfig{}
 	case "log":
 		flagger = &LogConfig{}
 	case "output":
@@ -76,50 +68,50 @@ func getConfigFlags(rawValue interface{}, flagger cliFlagger, key string) ([]str
 	}
 }
 
-// getCRIConfigFlags handles the cri config key, which is a special case.
-// For structured flags, it uses mapstructure to decode the config into a
-// CRIConfig struct. For raw cli flags, it returns the raw values as strings.
-func getCRIConfigFlags(rawValue interface{}) ([]string, error) {
-	rawValues, ok := rawValue.([]interface{})
-	if !ok {
-		return nil, errfmt.Errorf("unrecognized type %T for cri", rawValue)
-	}
+type ContainerConfig struct {
+	Enrich   *bool          `mapstructure:"enrich"`
+	Sockets  []SocketConfig `mapstructure:"sockets"`
+	Cgroupfs string         `mapstructure:"cgroupfs"`
+}
 
+type SocketConfig struct {
+	Runtime string `mapstructure:"runtime"`
+	Socket  string `mapstructure:"socket"`
+}
+
+func (c *ContainerConfig) flags() []string {
 	flags := make([]string, 0)
-	flagger := &CRIConfig{}
-	for _, raw := range rawValues {
-		switch v := raw.(type) {
-		// raw cli flags
-		case string:
-			// cri:
-			//     - containerd:/var/run/containerd/containerd.sock
-			//     - docker:/var/run/docker.sock
-			flags = append(flags, v)
 
-		// structured flags
-		case map[string]interface{}:
-			// cri:
-			//     - runtime:
-			//         name: containerd
-			//         socket: /var/run/containerd/containerd.sock
-			//     - runtime:
-			//         name: docker
-			//         socket: /var/run/docker.sock
-			runtimeMap, exists := v["runtime"].(map[string]interface{})
-			if !exists {
-				return nil, errfmt.Errorf("runtime key not found or not a map")
-			}
-			if err := mapstructure.Decode(runtimeMap, flagger); err != nil {
-				return nil, errfmt.WrapError(err)
-			}
-			flags = append(flags, flagger.flags()...)
-
-		default:
-			return nil, errfmt.Errorf("unrecognized type %T for cri", v)
-		}
+	if c.Enrich == nil {
+		// default to true
+		flags = append(flags, "enrich=true")
+	} else if *c.Enrich {
+		// if set to true
+		flags = append(flags, "enrich=true")
+	} else {
+		// if set to false
+		flags = append(flags, "enrich=false")
 	}
 
-	return flags, nil
+	if c.Cgroupfs != "" {
+		flags = append(flags, fmt.Sprintf("cgroupfs=%s", c.Cgroupfs))
+	}
+
+	for _, socket := range c.Sockets {
+		flags = append(flags, socket.flags()...)
+	}
+
+	return flags
+}
+
+func (c *SocketConfig) flags() []string {
+	flags := make([]string, 0)
+
+	if c.Runtime != "" && c.Socket != "" {
+		flags = append(flags, fmt.Sprintf("sockets.%s=%s", c.Runtime, c.Socket))
+	}
+
+	return flags
 }
 
 //
@@ -221,25 +213,6 @@ func (c *CapabilitiesConfig) flags() []string {
 	}
 	for _, cap := range c.Drop {
 		flags = append(flags, fmt.Sprintf("drop=%s", cap))
-	}
-
-	return flags
-}
-
-//
-// cri flag
-//
-
-type CRIConfig struct {
-	Name   string `mapstructure:"name"`
-	Socket string `mapstructure:"socket"`
-}
-
-func (c *CRIConfig) flags() []string {
-	flags := make([]string, 0)
-
-	if c.Name != "" && c.Socket != "" {
-		flags = append(flags, fmt.Sprintf("%s:%s", c.Name, c.Socket))
 	}
 
 	return flags

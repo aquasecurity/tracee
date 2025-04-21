@@ -58,7 +58,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		PerfBufferSize:      viper.GetInt("perf-buffer-size"),
 		BlobPerfBufferSize:  viper.GetInt("blob-perf-buffer-size"),
 		PipelineChannelSize: viper.GetInt("pipeline-channel-size"),
-		NoContainersEnrich:  viper.GetBool("no-containers"),
 	}
 
 	// OS release information
@@ -77,20 +76,20 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	cfg.OSInfo = osInfo
 
-	// Container Runtime command line flags
+	// Container command line flags
 
-	if !cfg.NoContainersEnrich {
-		criFlags, err := GetFlagsFromViper("cri")
-		if err != nil {
-			return runner, err
-		}
-
-		sockets, err := flags.PrepareContainers(criFlags)
-		if err != nil {
-			return runner, err
-		}
-		cfg.Sockets = sockets
+	containerFlags, err := GetFlagsFromViper(flags.ContainersFlag)
+	if err != nil {
+		return runner, err
 	}
+
+	sockets, noEnrich, cgroupfsPath, err := flags.PrepareContainers(containerFlags)
+	if err != nil {
+		return runner, err
+	}
+	cfg.Sockets = sockets
+	cfg.NoContainersEnrich = noEnrich
+	cfg.CgroupFSPath = cgroupfsPath
 
 	// Cache command line flags
 
