@@ -319,7 +319,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize cgroups filesystems
 
-	t.cgroups, err = cgroup.NewCgroups()
+	t.cgroups, err = cgroup.NewCgroups(t.config.CgroupFSPath)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
