@@ -33,6 +33,7 @@ type Config struct {
 	OSInfo              *environment.OSInfo
 	Sockets             runtime.Sockets
 	NoContainersEnrich  bool
+	CgroupFSPath        string
 	EngineConfig        engine.Config
 	MetricsEnabled      bool
 	DNSCacheConfig      dnscache.Config
