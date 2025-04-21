@@ -143,7 +143,7 @@ func GetContainerMode(containerFilterEnabled, noContainersEnrich bool) config.Co
 		return config.ContainerModeDisabled
 	}
 
-	// If "no-containers" enrichment is set, return just enabled mode ...
+	// If containers enrichment is disabled, return just enabled mode ...
 	if noContainersEnrich {
 		return config.ContainerModeEnabled
 	}

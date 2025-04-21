@@ -120,35 +120,23 @@ capabilities:
 			},
 		},
 		{
-			name: "Test cri configuration (cli flags)",
+			name: "Test containers socket configuration",
 			yamlContent: `
-cri:
-    - test1:/var/run/test1.sock
-    - test2:/var/run/test2.sock
+containers:
+  enrich: true
+  cgroupfs: /host/sys/fs/cgroup
+  sockets:
+    - runtime: docker
+      socket: /var/run/test2.sock
+    - runtime: crio
+      socket: /var/run/test1.sock
 `,
-			key: "cri",
+			key: "containers",
 			expectedFlags: []string{
-				"test1:/var/run/test1.sock",
-				"test2:/var/run/test2.sock",
-			},
-		},
-		{
-			name: "Test cri configuration (structured flags)",
-			// test1: /var/run/test1.sock
-			// test2: /var/run/test2.sock
-			yamlContent: `
-cri:
-    - runtime:
-        name: test1
-        socket: /var/run/test1.sock
-    - runtime:
-        name: test2
-        socket: /var/run/test2.sock
-`,
-			key: "cri",
-			expectedFlags: []string{
-				"test1:/var/run/test1.sock",
-				"test2:/var/run/test2.sock",
+				"sockets.docker=/var/run/test2.sock",
+				"sockets.crio=/var/run/test1.sock",
+				"cgroupfs=/host/sys/fs/cgroup",
+				"enrich=true",
 			},
 		},
 		{
@@ -652,30 +640,87 @@ func TestCapabilitiesConfigFlags(t *testing.T) {
 // cri
 //
 
-func TestCRIConfigFlag(t *testing.T) {
+func TestContainerConfigFlag(t *testing.T) {
 	t.Parallel()
+
+	truePtr := true
+	falsePtr := false
 
 	tests := []struct {
 		name     string
-		config   CRIConfig
+		config   ContainerConfig
 		expected []string
 	}{
 		{
 			name: "empty config",
-			config: CRIConfig{
-				Name:   "",
-				Socket: "",
+			expected: []string{
+				"enrich=true",
 			},
-			expected: []string{},
 		},
 		{
-			name: "valid config",
-			config: CRIConfig{
-				Name:   "testName",
-				Socket: "/var/run/socket.sock",
+			name: "valid config (socket)",
+			config: ContainerConfig{
+				Sockets: []SocketConfig{
+					{
+						Runtime: "testName",
+						Socket:  "/var/run/socket.sock",
+					},
+				},
 			},
 			expected: []string{
-				"testName:/var/run/socket.sock",
+				"enrich=true",
+				"sockets.testName=/var/run/socket.sock",
+			},
+		},
+		{
+			name: "valid config (cgroupfs)",
+			config: ContainerConfig{
+				Cgroupfs: "/host/sys/fs/cgroup",
+			},
+			expected: []string{
+				"enrich=true",
+				"cgroupfs=/host/sys/fs/cgroup",
+			},
+		},
+		{
+			name: "valid config (enrich=true)",
+			config: ContainerConfig{
+				Enrich: &truePtr,
+			},
+			expected: []string{
+				"enrich=true",
+			},
+		},
+		{
+			name: "valid config (enrich=false)",
+			config: ContainerConfig{
+				Enrich: &falsePtr,
+			},
+			expected: []string{
+				"enrich=false",
+			},
+		},
+		{
+			name: "valid config (combined)",
+			config: ContainerConfig{
+				Sockets: []SocketConfig{
+					{
+						Runtime: "docker",
+						Socket:  "/var/run/docker.sock",
+					},
+					{
+						Runtime: "crio",
+						Socket:  "/var/run/crio.sock",
+					},
+				},
+				Cgroupfs: "/host/sys/fs/cgroup",
+				Enrich:   &truePtr,
+			},
+			expected: []string{
+				"sockets.docker=/var/run/docker.sock",
+				"sockets.crio=/var/run/crio.sock",
+				"cgroupfs=/host/sys/fs/cgroup",
+				"enrich=true",
 			},
 		},
 	}
@@ -687,12 +732,8 @@ func TestCRIConfigFlag(t *testing.T) {
 			t.Parallel()
 
 			got := tt.config.flags()
-			if len(got) != len(tt.expected) {
-				t.Errorf("flags() = %v, want %v", got, tt.expected)
-			}
-			if len(got) > 0 && got[0] != tt.expected[0] {
-				t.Errorf("flags() = %v, want %v", got, tt.expected)
-			}
+			assert.Equal(t, len(tt.expected), len(got), "Expected %d flags, got %d flags", len(tt.expected), len(got))
+			assert.ElementsMatch(t, tt.expected, got, "Expected %v, got %v", tt.expected, got)
 		})
 	}
 }

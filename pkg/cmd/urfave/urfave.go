@@ -22,7 +22,6 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		PerfBufferSize:      c.Int("perf-buffer-size"),
 		BlobPerfBufferSize:  c.Int("blob-perf-buffer-size"),
 		PipelineChannelSize: c.Int("pipeline-channel-size"),
-		NoContainersEnrich:  c.Bool("no-containers"),
 	}
 
 	// Output command line flags
@@ -63,13 +62,13 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Container Runtime command line flags
 
-	if !cfg.NoContainersEnrich {
-		sockets, err := flags.PrepareContainers(c.StringSlice("cri"))
-		if err != nil {
-			return runner, err
-		}
-		cfg.Sockets = sockets
+	sockets, noEnrich, cgroupfsPath, err := flags.PrepareContainers(c.StringSlice(flags.ContainersFlag))
+	if err != nil {
+		return runner, err
 	}
+	cfg.Sockets = sockets
+	cfg.NoContainersEnrich = noEnrich
+	cfg.CgroupFSPath = cgroupfsPath
 
 	// Cache command line flags
 
