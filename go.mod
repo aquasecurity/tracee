@@ -12,7 +12,7 @@ require (
 	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20250328185402-7b0abdab8d1a
 	github.com/aquasecurity/tracee/types v0.0.0-20250410113051-d722e32e8d56
 	github.com/containerd/containerd v1.7.27
-	github.com/docker/docker v28.0.0+incompatible
+	github.com/docker/docker v28.1.1+incompatible
 	github.com/golang/protobuf v1.5.4
 	github.com/google/gopacket v1.1.19
 	github.com/grafana/pyroscope-go v1.2.2
@@ -76,7 +76,8 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
-	github.com/moby/sys/sequential v0.5.0 // indirect
+	github.com/moby/sys/atomicwriter v0.1.0 // indirect
+	github.com/moby/sys/sequential v0.6.0 // indirect
 	github.com/moby/sys/user v0.3.0 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
