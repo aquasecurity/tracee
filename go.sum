@@ -668,8 +668,8 @@ github.com/mailru/easyjson v0.7.7/go.mod h1:xzfreul335JAWq5oZzymOObrkdz5UnU4kGfJ
 github.com/mattn/go-runewidth v0.0.9/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m2gUSrubnMI=
 github.com/mattn/go-runewidth v0.0.15 h1:UNAjwbU9l54TA3KzvqLGxwWjHmMgBUVhBiTjelZgg3U=
 github.com/mattn/go-runewidth v0.0.15/go.mod h1:Jdepj2loyihRzMpdS35Xk/zdY8IAYHsh153qUoGf23w=
-github.com/mennanov/fmutils v0.3.0 h1:2YSyrO8oOLQQwB/iKe+xDDGO6xCUHiIAj3gYhY7D4Ao=
-github.com/mennanov/fmutils v0.3.0/go.mod h1:ph1jsu8gV1gUgMURCmfIVbXKG3O2/O5o/UbPbbqu8zs=
+github.com/mennanov/fmutils v0.3.1 h1:OFOKauQCj6UxtoZ7hk1ryyBT5QwVP+fKum17pFqtoHY=
+github.com/mennanov/fmutils v0.3.1/go.mod h1:ph1jsu8gV1gUgMURCmfIVbXKG3O2/O5o/UbPbbqu8zs=
 github.com/minio/sha256-simd v1.0.1 h1:6kaan5IFmwTNynnKKpDHe6FWHohJOHhCPchzK49dzMM=
 github.com/minio/sha256-simd v1.0.1/go.mod h1:Pz6AKMiUdngCLpeTL/RJY1M9rUuPMYujV5xJjtbRSN8=
 github.com/mitchellh/copystructure v1.2.0 h1:vpKXTN4ewci03Vljg/q9QvCGUDttBOGBIa15WveJJGw=
