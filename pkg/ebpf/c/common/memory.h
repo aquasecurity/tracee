@@ -105,10 +105,7 @@ statfunc struct vm_area_struct *find_vma(void *ctx, struct task_struct *task, u6
     struct vm_area_struct *vma = NULL;
     struct rb_node *rb_node = BPF_CORE_READ(mm, mm_rb.rb_node);
 
-#pragma unroll
     for (int i = 0; i < MAX_VMA_RB_TREE_DEPTH; i++) {
-        barrier(); // without this, the compiler refuses to unroll the loop
-
         if (rb_node == NULL)
             break;
 

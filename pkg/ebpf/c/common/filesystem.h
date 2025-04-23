@@ -318,7 +318,6 @@ statfunc void *get_dentry_path_str_buf(struct dentry *dentry, buf_t *out_buf)
 
     u32 buf_off = (MAX_PERCPU_BUFSIZE >> 1);
 
-#pragma unroll
     for (int i = 0; i < MAX_PATH_COMPONENTS; i++) {
         struct dentry *d_parent = get_d_parent_ptr_from_dentry(dentry);
         if (dentry == d_parent) {
@@ -406,7 +405,6 @@ statfunc int get_standard_fds_from_struct_file(struct file *file)
     }
 
     int fds = 0;
-#pragma unroll
     for (int i = STDIN; i <= STDERR; i++) {
         struct file *fd_file = NULL;
         bpf_core_read(&fd_file, sizeof(struct file *), &fd[i]);
