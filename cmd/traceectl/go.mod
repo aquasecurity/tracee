@@ -6,7 +6,7 @@ toolchain go1.24.2
 
 require (
 	github.com/aquasecurity/table v1.8.0
-	github.com/aquasecurity/tracee/api v0.0.0-20240918153521-1b3f9e8657e0
+	github.com/aquasecurity/tracee/api v0.0.0-20250423121028-213b81a1b8f5
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
@@ -39,7 +39,7 @@ require (
 	golang.org/x/term v0.30.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
