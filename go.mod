@@ -39,7 +39,7 @@ require (
 	k8s.io/client-go v0.32.1
 	k8s.io/cri-api v0.32.3
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.76
-	sigs.k8s.io/controller-runtime v0.20.3
+	sigs.k8s.io/controller-runtime v0.20.4
 )
 
 require (
