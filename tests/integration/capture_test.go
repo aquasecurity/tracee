@@ -89,6 +89,11 @@ func Test_TraceeCapture(t *testing.T) {
 			// start tracee
 			ready, runErr := running.Start(20 * time.Second)
 			require.NoError(t, runErr)
+			defer func() {
+				if errs := running.Stop(); len(errs) > 0 {
+					t.Logf("failed to stop tracee: %v", errs)
+				}
+			}()
 
 			r := <-ready // block until tracee is ready (or not)
 			switch r {
