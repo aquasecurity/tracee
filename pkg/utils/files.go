@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"strings"
 
 	"golang.org/x/sys/unix"
 
@@ -53,6 +54,35 @@ func MkdirAtExist(dir *os.File, relativePath string, perm fs.FileMode) error {
 			return errfmt.WrapError(err)
 		}
 	}
+	return nil
+}
+
+// MkdirAllAtExist recursively creates a directory and all necessary parents using mkdirat, ignoring EEXIST errors.
+func MkdirAllAtExist(dir *os.File, relativePath string, perm fs.FileMode) error {
+	cleanPath := path.Clean(relativePath)
+	if cleanPath == "." || cleanPath == "/" {
+		return nil
+	}
+
+	parts := strings.Split(cleanPath, "/")
+	var curr string
+	for _, part := range parts {
+		if part == "" || part == "." {
+			continue
+		}
+
+		if curr == "" {
+			curr = part
+		} else {
+			curr = path.Join(curr, part)
+		}
+
+		err := MkdirAtExist(dir, curr, perm)
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+
 	return nil
 }
 
