@@ -119,6 +119,7 @@ const (
 	ChmodCommon
 	OpenFileNS
 	OpenFileMount
+	SecuritySbUmount
 	MaxCommonID
 )
 
@@ -11656,6 +11657,23 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
 		},
 	},
+	SecuritySbUmount: {
+		id:      SecuritySbUmount,
+		id32Bit: Sys32Undefined,
+		name:    "security_sb_umount",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SecuritySbUmount, required: true},
+			},
+		},
+		sets: []string{"default", "lsm_hooks", "fs"},
+		fields: []DataField{
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "mountpoint"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "type"}},
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+		},
+	},
+
 	SecurityBPF: {
 		id:      SecurityBPF,
 		id32Bit: Sys32Undefined,

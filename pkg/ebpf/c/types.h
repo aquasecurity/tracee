@@ -136,6 +136,7 @@ enum event_id_e
     CHMOD_COMMON,
     OPEN_FILE_NS,
     OPEN_FILE_MOUNT,
+    SECURITY_SB_UMOUNT,
     MAX_EVENT_ID,
     NO_EVENT_SUBMIT,
 

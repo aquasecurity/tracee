@@ -5544,6 +5544,32 @@ int BPF_KPROBE(syscall_checker)
     return 0;
 }
 
+SEC("kprobe/security_sb_umount")
+int BPF_KPROBE(trace_security_sb_umount)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, SECURITY_SB_UMOUNT))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    struct vfsmount *vfsmnt = (struct vfsmount *) PT_REGS_PARM1(ctx);
+    int flags = PT_REGS_PARM2(ctx);
+
+    const char *type = BPF_CORE_READ(vfsmnt, mnt_sb, s_type, name);
+
+    struct mount *m = real_mount(vfsmnt);
+    struct dentry *mnt_mountpoint = BPF_CORE_READ(m, mnt_mountpoint);
+    void *mountpoint_str = get_dentry_path_str(mnt_mountpoint);
+
+    save_str_to_buf(&p.event->args_buf, mountpoint_str, 0);
+    save_str_to_buf(&p.event->args_buf, (void *) type, 1);
+    save_to_submit_buf(&p.event->args_buf, &flags, sizeof(int), 2);
+
+    return events_perf_submit(&p, 0);
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)
