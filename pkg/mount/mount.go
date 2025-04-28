@@ -43,15 +43,36 @@ type MountHostOnce struct {
 	mounted bool
 }
 
-func NewMountHostOnce(source, fstype, data, where string) (*MountHostOnce, error) {
+type Config struct {
+	Source string
+	FsType string
+	Data   string
+	Where  string
+	Force  bool
+}
+
+func NewMountHostOnce(cfg Config) (*MountHostOnce, error) {
 	m := &MountHostOnce{
-		source: source, // device and/or pseudo-filesystem to mount
-		fsType: fstype, // fs type
-		data:   data,   // extra data
+		source: cfg.Source, // device and/or pseudo-filesystem to mount
+		fsType: cfg.FsType, // fs type
+		data:   cfg.Data,   // extra data
+	}
+
+	if cfg.Force {
+		m.managed = false
+		m.mounted = true
+		m.target = m.data
+		var stat syscall.Stat_t
+		if err := syscall.Stat(m.target, &stat); err != nil {
+			logger.Warnw("Stat failed", "mountpoint", m.target, "error", err)
+		} else {
+			m.mpInode = int(stat.Ino)
+		}
+		return m, nil
 	}
 
 	// already mounted filesystems will be like mounted ones, but un-managed
-	alreadyMounted, err := m.isMountedByOS(where)
+	alreadyMounted, err := m.isMountedByOS(cfg.Where)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}

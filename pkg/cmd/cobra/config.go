@@ -71,7 +71,12 @@ func getConfigFlags(rawValue interface{}, flagger cliFlagger, key string) ([]str
 type ContainerConfig struct {
 	Enrich   *bool          `mapstructure:"enrich"`
 	Sockets  []SocketConfig `mapstructure:"sockets"`
-	Cgroupfs string         `mapstructure:"cgroupfs"`
+	Cgroupfs CgroupfsConfig `mapstructure:"cgroupfs"`
+}
+
+type CgroupfsConfig struct {
+	Path  string `mapstructure:"path"`
+	Force bool   `mapstructure:"force"`
 }
 
 type SocketConfig struct {
@@ -93,8 +98,11 @@ func (c *ContainerConfig) flags() []string {
 		flags = append(flags, "enrich=false")
 	}
 
-	if c.Cgroupfs != "" {
-		flags = append(flags, fmt.Sprintf("cgroupfs=%s", c.Cgroupfs))
+	if c.Cgroupfs.Path != "" {
+		flags = append(flags, fmt.Sprintf("cgroupfs.path=%s", c.Cgroupfs.Path))
+	}
+	if c.Cgroupfs.Force {
+		flags = append(flags, "cgroupfs.force=true")
 	}
 
 	for _, socket := range c.Sockets {

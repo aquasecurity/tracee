@@ -11,7 +11,7 @@ tracee **\-\-containers** - Configure container enrichment and runtime sockets f
 
 ## SYNOPSIS
 
-tracee **\-\-containers** <[enrich=<true|false>|sockets.<runtime>=<path>|cgroupfs=<path>\>] [**\-\-containers** ...]
+tracee **\-\-containers** <[enrich=<true|false>|sockets.<runtime>=<path>|cgroupfs.path=<path>|cgroupfs.force=<true|false>\>] [**\-\-containers** ...]
 
 ## DESCRIPTION
 
@@ -38,11 +38,18 @@ The `--containers` flag allows you to configure container enrichment and runtime
   --containers sockets.docker=/var/run/docker.sock
   ```
 
-- **cgroupfs=<path>**  
-  Configure the path to the cgroupfs where container cgroups are created.  
+- **cgroupfs.path=<path>**  
+  Configure the path to the cgroupfs where container cgroups are created. This is used as a hint for auto-detection.  
   Example:  
   ```console
-  --containers cgroupfs=/sys/fs/cgroup
+  --containers cgroupfs.path=/sys/fs/cgroup
+  ```
+
+- **cgroupfs.force=<true|false>**  
+  Force the usage of the provided mountpoint path and skip auto-detection (only applies if cgroupfs.path is provided).  
+  Example:  
+  ```console
+  --containers cgroupfs.force=true
   ```
 
 ## EXAMPLES
@@ -57,14 +64,14 @@ The `--containers` flag allows you to configure container enrichment and runtime
    --containers sockets.docker=/var/run/docker.sock
    ```
 
-3. Set the cgroupfs path:  
+3. Set the cgroupfs path and force its usage:  
    ```console
-   --containers cgroupfs=/sys/fs/cgroup
+   --containers cgroupfs.path=/sys/fs/cgroup cgroupfs.force=true
    ```
 
 4. Combine multiple flags:  
    ```console
-   --containers enrich=true sockets.containerd=/var/run/containerd/containerd.sock cgroupfs=/sys/fs/cgroup
+   --containers enrich=true sockets.containerd=/var/run/containerd/containerd.sock cgroupfs.path=/sys/fs/cgroup cgroupfs.force=true
    ```
 
 Please refer to the [documentation](../install/container-engines.md) for more information on container events enrichment.

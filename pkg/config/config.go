@@ -34,6 +34,7 @@ type Config struct {
 	Sockets             runtime.Sockets
 	NoContainersEnrich  bool
 	CgroupFSPath        string
+	CgroupFSForce       bool
 	EngineConfig        engine.Config
 	MetricsEnabled      bool
 	DNSCacheConfig      dnscache.Config

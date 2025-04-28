@@ -62,13 +62,14 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Container Runtime command line flags
 
-	sockets, noEnrich, cgroupfsPath, err := flags.PrepareContainers(c.StringSlice(flags.ContainersFlag))
+	res, err := flags.PrepareContainers(c.StringSlice(flags.ContainersFlag))
 	if err != nil {
 		return runner, err
 	}
-	cfg.Sockets = sockets
-	cfg.NoContainersEnrich = noEnrich
-	cfg.CgroupFSPath = cgroupfsPath
+	cfg.Sockets = res.Sockets
+	cfg.NoContainersEnrich = res.NoEnrich
+	cfg.CgroupFSPath = res.CgroupfsPath
+	cfg.CgroupFSForce = res.CgroupfsForce
 
 	// Cache command line flags
 

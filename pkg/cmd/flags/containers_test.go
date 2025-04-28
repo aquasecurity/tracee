@@ -8,21 +8,22 @@ import (
 
 func TestPrepareContainers(t *testing.T) {
 	tests := []struct {
-		name           string
-		containerFlags []string
-		expectedEnrich bool
-		expectedCgroup string
-		expectError    bool
+		name                string
+		containerFlags      []string
+		expectedNoEnrich    bool
+		expectedCgroup      string
+		expectedCgroupForce bool
+		expectError         bool
 	}{
 		{
-			name:           "valid enrich flag",
-			containerFlags: []string{"enrich=true"},
-			expectedEnrich: false,
+			name:             "valid enrich flag",
+			containerFlags:   []string{"enrich=true"},
+			expectedNoEnrich: false,
 		},
 		{
-			name:           "disable enrichment",
-			containerFlags: []string{"enrich=false"},
-			expectedEnrich: true,
+			name:             "disable enrichment",
+			containerFlags:   []string{"enrich=false"},
+			expectedNoEnrich: true,
 		},
 		{
 			name:           "valid socket flag",
@@ -30,8 +31,13 @@ func TestPrepareContainers(t *testing.T) {
 		},
 		{
 			name:           "valid cgroupfs flag",
-			containerFlags: []string{"cgroupfs=/sys/fs/cgroup"},
+			containerFlags: []string{"cgroupfs.path=/sys/fs/cgroup"},
 			expectedCgroup: "/sys/fs/cgroup",
+		},
+		{
+			name:                "valid cgroupfs force flag",
+			containerFlags:      []string{"cgroupfs.force=true"},
+			expectedCgroupForce: true,
 		},
 		{
 			name:           "invalid enrich flag",
@@ -52,14 +58,15 @@ func TestPrepareContainers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, noEnrich, cgroupfs, err := PrepareContainers(tt.containerFlags)
+			res, err := PrepareContainers(tt.containerFlags)
 
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedEnrich, noEnrich)
-				assert.Equal(t, tt.expectedCgroup, cgroupfs)
+				assert.Equal(t, tt.expectedNoEnrich, res.NoEnrich)
+				assert.Equal(t, tt.expectedCgroup, res.CgroupfsPath)
+				assert.Equal(t, tt.expectedCgroupForce, res.CgroupfsForce)
 			}
 		})
 	}

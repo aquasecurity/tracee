@@ -20,13 +20,22 @@ Flags:
                                          - Containerd (containerd)
                                          - Docker     (docker)
                                          - Podman     (podman)
-  --containers cgroupfs=<path>          Configure the path to the cgroupfs where container cgroups are created.
+  --containers cgroupfs.path=<path>     Configure the path to the cgroupfs where container cgroups are created. This is used as a hint for auto-detection.
+  --containers cgroupfs.force=true      Force the usage of the provided mountpoint path and skip auto-detection (only applies if cgroupfs.path is provided).
 
 Examples:
   --containers enrich=true
   --containers sockets.docker=/var/run/docker.sock
-  --containers cgroupfs=/sys/fs/cgroup
+  --containers cgroupfs.path=/sys/fs/cgroup
+  --containers cgroupfs.force=true
 `
+}
+
+type CgroupFlagsResult struct {
+	NoEnrich      bool
+	Sockets       runtime.Sockets
+	CgroupfsPath  string
+	CgroupfsForce bool
 }
 
 func contains(s []string, val string) bool {
@@ -49,9 +58,11 @@ func parseContainerFlags(containerArgs []string) map[string]string {
 	return containerFlags
 }
 
-func PrepareContainers(containerFlags []string) (runtime.Sockets, bool, string, error) {
+func PrepareContainers(containerFlags []string) (CgroupFlagsResult, error) {
 	var noContainersEnrich bool
 	var cgroupfsPath string
+	var cgroupfsForce bool
+
 	supportedRuntimes := []string{"crio", "cri-o", "containerd", "docker", "podman"}
 	sockets := runtime.Sockets{}
 	anySocketRegistered := false
@@ -63,21 +74,25 @@ func PrepareContainers(containerFlags []string) (runtime.Sockets, bool, string, 
 			if value == "false" {
 				noContainersEnrich = true
 			} else if value != "true" {
-				return sockets, noContainersEnrich, cgroupfsPath, errfmt.Errorf("invalid value for enrich flag (must be true or false)")
+				return CgroupFlagsResult{}, errfmt.Errorf("invalid value for enrich flag (must be true or false)")
 			}
 		} else if strings.HasPrefix(key, "sockets.") {
 			runtimeName := strings.TrimPrefix(key, "sockets.")
 			if !contains(supportedRuntimes, runtimeName) {
-				return sockets, noContainersEnrich, cgroupfsPath, errfmt.Errorf("unsupported container runtime in sockets flag (see --containers help for supported runtimes)")
+				return CgroupFlagsResult{}, errfmt.Errorf("unsupported container runtime in sockets flag (see --containers help for supported runtimes)")
 			}
 			err := sockets.Register(runtime.FromString(runtimeName), value)
 			if err != nil {
-				return sockets, noContainersEnrich, cgroupfsPath, errfmt.Errorf("failed to register runtime socket, %s", err.Error())
+				return CgroupFlagsResult{}, errfmt.Errorf("failed to register runtime socket, %s", err.Error())
 			}
-		} else if key == "cgroupfs" {
-			cgroupfsPath = value
+		} else if strings.HasPrefix(key, "cgroupfs.") {
+			if key == "cgroupfs.path" {
+				cgroupfsPath = value
+			} else if key == "cgroupfs.force" {
+				cgroupfsForce = value == "true"
+			}
 		} else {
-			return sockets, noContainersEnrich, cgroupfsPath, errfmt.Errorf("unknown container flag: %s", key)
+			return CgroupFlagsResult{}, errfmt.Errorf("unknown container flag: %s", key)
 		}
 	}
 
@@ -91,5 +106,10 @@ func PrepareContainers(containerFlags []string) (runtime.Sockets, bool, string, 
 		})
 	}
 
-	return sockets, noContainersEnrich, cgroupfsPath, nil
+	return CgroupFlagsResult{
+		NoEnrich:      noContainersEnrich,
+		Sockets:       sockets,
+		CgroupfsPath:  cgroupfsPath,
+		CgroupfsForce: cgroupfsForce,
+	}, nil
 }
