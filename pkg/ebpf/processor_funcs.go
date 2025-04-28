@@ -321,7 +321,7 @@ func (t *Tracee) processTriggeredEvent(event *trace.Event) error {
 
 // processPrintSyscallTable processes a print_syscall_table event.
 func (t *Tracee) processPrintMemDump(event *trace.Event) error {
-	address, err := parse.ArgVal[uintptr](event.Args, "address")
+	address, err := parse.ArgVal[trace.Pointer](event.Args, "address")
 	if err != nil || address == 0 {
 		return errfmt.Errorf("error parsing print_mem_dump args: %v", err)
 	}
