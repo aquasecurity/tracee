@@ -527,7 +527,7 @@ func Test_getEventData(t *testing.T) {
 			},
 		},
 		{
-			name: "multipe arguments",
+			name: "multiple arguments",
 			args: []trace.Argument{
 				{
 					ArgMeta: trace.ArgMeta{
