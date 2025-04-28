@@ -214,6 +214,12 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 				UInt64: uint64(v),
 			},
 		}, nil
+	case trace.Pointer:
+		return &pb.EventValue{
+			Value: &pb.EventValue_UInt64{
+				UInt64: uint64(v),
+			},
+		}, nil
 	case trace.ProtoIPv4:
 		return convertHttpIpv4(&v)
 	case *trace.ProtoIPv4:
