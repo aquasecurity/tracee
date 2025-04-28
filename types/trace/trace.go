@@ -132,7 +132,7 @@ func (e Event) ToProtocol() protocol.Event {
 // Type alias for data fields representing pointers.
 // uintptr is insufficient since it is architecture dependent.
 // Uint64 itself is irrepresentative of the purpose.
-type Pointer = uint64
+type Pointer uint64
 
 // Argument holds the information for one argument
 type Argument struct {
