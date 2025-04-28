@@ -84,7 +84,7 @@ func (p tableEventPrinter) Print(event *pb.Event) {
 		event.Timestamp.AsTime().Format("15:04:05.00000"),
 		event.Name,
 		strings.Join(event.Policies.Matched, ","),
-		strconv.Itoa(int(event.Context.Process.Pid.Value)),
+		strconv.Itoa(int(event.Workload.Process.Pid.Value)),
 		eventData,
 	)
 }
