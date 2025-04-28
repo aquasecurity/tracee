@@ -57,7 +57,7 @@ type Cgroups struct {
 	hid      int     // default cgroup controller hierarchy ID
 }
 
-func NewCgroups(cgroupFsPath string) (*Cgroups, error) {
+func NewCgroups(cgroupFsPath string, cgroupFsForce bool) (*Cgroups, error) {
 	var err error
 	var cgrp *Cgroup
 	var cgroupv1, cgroupv2 Cgroup
@@ -71,8 +71,9 @@ func NewCgroups(cgroupFsPath string) (*Cgroups, error) {
 	// only start cgroupv1 if it is the OS default (or else it isn't needed)
 	if defaultVersion == CgroupVersion1 {
 		cgroupv1, err = NewCgroup(Config{
-			Version:      CgroupVersion1,
-			CgroupfsPath: cgroupFsPath,
+			Version:         CgroupVersion1,
+			CgroupfsPath:    cgroupFsPath,
+			ForceMountpoint: cgroupFsForce,
 		})
 		if err != nil {
 			if _, ok := err.(*VersionNotSupported); !ok {
@@ -83,8 +84,9 @@ func NewCgroups(cgroupFsPath string) (*Cgroups, error) {
 
 	// start cgroupv2 (if supported)
 	cgroupv2, err = NewCgroup(Config{
-		Version:      CgroupVersion2,
-		CgroupfsPath: cgroupFsPath,
+		Version:         CgroupVersion2,
+		CgroupfsPath:    cgroupFsPath,
+		ForceMountpoint: cgroupFsForce,
 	})
 	if err != nil {
 		if _, ok := err.(*VersionNotSupported); !ok {
@@ -168,7 +170,7 @@ func (cs *Cgroups) GetCgroup(ver CgroupVersion) Cgroup {
 //
 
 type Cgroup interface {
-	init(cgroupfsPath string) error
+	init(cgroupfsPath string, forceMount bool) error
 	destroy() error
 	GetMountPoint() string
 	getDefaultHierarchyID() int
@@ -176,8 +178,9 @@ type Cgroup interface {
 }
 
 type Config struct {
-	Version      CgroupVersion
-	CgroupfsPath string
+	Version         CgroupVersion
+	CgroupfsPath    string
+	ForceMountpoint bool
 }
 
 func NewCgroup(cfg Config) (Cgroup, error) {
@@ -191,11 +194,14 @@ func NewCgroup(cfg Config) (Cgroup, error) {
 	}
 
 	fsPath := cfg.CgroupfsPath
+	forceMount := cfg.ForceMountpoint
 	if fsPath == "" {
+		// if no path is provided, use the default path and auto-detection.
 		fsPath = sysFsCgroup
+		forceMount = false
 	}
 
-	return c, c.init(fsPath)
+	return c, c.init(fsPath, forceMount)
 }
 
 // cgroupv1
@@ -206,7 +212,7 @@ type CgroupV1 struct {
 	hid        int
 }
 
-func (c *CgroupV1) init(cgroupfsPath string) error {
+func (c *CgroupV1) init(cgroupfsPath string, forceMount bool) error {
 	// 0. check if cgroup type is supported
 	supported, err := mount.IsFileSystemSupported(CgroupVersion1.String())
 	if err != nil {
@@ -218,10 +224,13 @@ func (c *CgroupV1) init(cgroupfsPath string) error {
 
 	// 1. mount cgroup (if needed)
 	c.mounted, err = mount.NewMountHostOnce(
-		CgroupV1FsType,
-		CgroupV1FsType,
-		CgroupDefaultController,
-		cgroupfsPath, // where to check for already mounted cgroupfs
+		mount.Config{
+			Source: CgroupV1FsType,
+			FsType: CgroupV1FsType,
+			Data:   CgroupDefaultController,
+			Where:  cgroupfsPath,
+			Force:  forceMount,
+		},
 	)
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -262,7 +271,7 @@ type CgroupV2 struct {
 	hid        int
 }
 
-func (c *CgroupV2) init(cgroupfsPath string) error {
+func (c *CgroupV2) init(cgroupfsPath string, forceMount bool) error {
 	// 0. check if cgroup type is supported
 	supported, err := mount.IsFileSystemSupported(CgroupVersion2.String())
 	if err != nil {
@@ -274,10 +283,13 @@ func (c *CgroupV2) init(cgroupfsPath string) error {
 
 	// 1. mount cgroup (if needed)
 	c.mounted, err = mount.NewMountHostOnce(
-		CgroupV2FsType,
-		CgroupV2FsType,
-		"",           // cgroupv2 has no default controller
-		cgroupfsPath, // where to check for already mounted cgroupfs
+		mount.Config{
+			Source: CgroupV2FsType,
+			FsType: CgroupV2FsType,
+			Data:   "",           // cgroupv2 has no default controller
+			Where:  cgroupfsPath, // where to check for already mounted cgroupfs
+			Force:  forceMount,
+		},
 	)
 	if err != nil {
 		return errfmt.WrapError(err)

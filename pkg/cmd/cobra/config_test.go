@@ -124,7 +124,9 @@ capabilities:
 			yamlContent: `
 containers:
   enrich: true
-  cgroupfs: /host/sys/fs/cgroup
+  cgroupfs:
+    path: /host/sys/fs/cgroup
+    force: true
   sockets:
     - runtime: docker
       socket: /var/run/test2.sock
@@ -135,7 +137,8 @@ containers:
 			expectedFlags: []string{
 				"sockets.docker=/var/run/test2.sock",
 				"sockets.crio=/var/run/test1.sock",
-				"cgroupfs=/host/sys/fs/cgroup",
+				"cgroupfs.path=/host/sys/fs/cgroup",
+				"cgroupfs.force=true",
 				"enrich=true",
 			},
 		},
@@ -675,11 +678,14 @@ func TestContainerConfigFlag(t *testing.T) {
 		{
 			name: "valid config (cgroupfs)",
 			config: ContainerConfig{
-				Cgroupfs: "/host/sys/fs/cgroup",
+				Cgroupfs: CgroupfsConfig{
+					Path:  "/host/sys/fs/cgroup",
+					Force: false,
+				},
 			},
 			expected: []string{
 				"enrich=true",
-				"cgroupfs=/host/sys/fs/cgroup",
+				"cgroupfs.path=/host/sys/fs/cgroup",
 			},
 		},
 		{
@@ -713,13 +719,17 @@ func TestContainerConfigFlag(t *testing.T) {
 						Socket:  "/var/run/crio.sock",
 					},
 				},
-				Cgroupfs: "/host/sys/fs/cgroup",
-				Enrich:   &truePtr,
+				Cgroupfs: CgroupfsConfig{
+					Path:  "/host/sys/fs/cgroup",
+					Force: true,
+				},
+				Enrich: &truePtr,
 			},
 			expected: []string{
 				"sockets.docker=/var/run/docker.sock",
 				"sockets.crio=/var/run/crio.sock",
-				"cgroupfs=/host/sys/fs/cgroup",
+				"cgroupfs.path=/host/sys/fs/cgroup",
+				"cgroupfs.force=true",
 				"enrich=true",
 			},
 		},

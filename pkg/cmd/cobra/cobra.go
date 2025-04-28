@@ -83,14 +83,14 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	sockets, noEnrich, cgroupfsPath, err := flags.PrepareContainers(containerFlags)
+	res, err := flags.PrepareContainers(containerFlags)
 	if err != nil {
 		return runner, err
 	}
-	cfg.Sockets = sockets
-	cfg.NoContainersEnrich = noEnrich
-	cfg.CgroupFSPath = cgroupfsPath
-
+	cfg.Sockets = res.Sockets
+	cfg.NoContainersEnrich = res.NoEnrich
+	cfg.CgroupFSPath = res.CgroupfsPath
+	cfg.CgroupFSForce = res.CgroupfsForce
 	// Cache command line flags
 
 	cacheFlags, err := GetFlagsFromViper("cache")
