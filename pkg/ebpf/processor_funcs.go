@@ -271,6 +271,7 @@ const (
 )
 
 // processHookedProcFops processes a hooked_proc_fops event.
+// TODO(nadav.str): deprecate this in favor of a solution in the type decoder.
 func (t *Tracee) processHookedProcFops(event *trace.Event) error {
 	const hookedFopsPointersArgName = "hooked_fops_pointers"
 	fopsAddresses, err := parse.ArgVal[[]uint64](event.Args, hookedFopsPointersArgName)
