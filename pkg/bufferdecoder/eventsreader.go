@@ -327,7 +327,7 @@ func readSunPathFromBuff(decoder *EbpfDecoder, max int) (string, error) {
 	for i := 0; i < max; i++ {
 		err = decoder.DecodeInt8(&char)
 		if err != nil {
-			return "", errfmt.Errorf("error reading sun_path: %v", err)
+			return "", errfmt.Errorf("error reading sun_path at index %d out of %d: %v", i, max, err)
 		}
 		count++
 
