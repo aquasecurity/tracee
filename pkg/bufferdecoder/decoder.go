@@ -42,7 +42,7 @@ type presentorFunc func(any) (any, error)
 type TypeDecoder []map[string]presentorFunc
 
 func NewTypeDecoder() TypeDecoder {
-	present := TypeDecoder{
+	typeDecoder := TypeDecoder{
 		data.INT_T:  {},
 		data.UINT_T: {},
 		data.LONG_T: {},
@@ -55,16 +55,22 @@ func NewTypeDecoder() TypeDecoder {
 				return time.NsSinceEpochToTime(time.BootToEpochNS(argVal)), nil
 			},
 		},
-		data.U16_T:        {},
-		data.U8_T:         {},
-		data.INT_ARR_2_T:  {},
-		data.UINT64_ARR_T: {},
-		data.POINTER_T:    {},
-		data.BYTES_T:      {},
-		data.STR_T:        {},
-		data.STR_ARR_T:    {},
-		data.SOCK_ADDR_T:  {},
-		data.CRED_T:       {},
+		data.U16_T:       {},
+		data.U8_T:        {},
+		data.INT_ARR_2_T: {},
+		data.UINT64_ARR_T: {
+			"[]trace.HookedSymbolData": func(a any) (any, error) {
+				// TODO: this is a temporary solution to present the uint64 array as []trace.HookedSymbolData
+				// we need a redesign such that decoders can have access to the kernel symbols table.
+				return a, nil
+			},
+		},
+		data.POINTER_T:   {},
+		data.BYTES_T:     {},
+		data.STR_T:       {},
+		data.STR_ARR_T:   {},
+		data.SOCK_ADDR_T: {},
+		data.CRED_T:      {},
 		data.TIMESPEC_T: {
 			// timespec is seconds+nano in float
 			"float64": func(a any) (any, error) {
@@ -77,7 +83,7 @@ func NewTypeDecoder() TypeDecoder {
 		data.FLOAT64_T:  {},
 	}
 
-	return present
+	return typeDecoder
 }
 
 // BuffLen returns the total length of the buffer owned by decoder.
