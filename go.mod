@@ -1,7 +1,6 @@
 module github.com/aquasecurity/tracee
 
 go 1.24
-
 toolchain go1.24.2
 
 require (
@@ -37,7 +36,7 @@ require (
 	k8s.io/api v0.32.4
 	k8s.io/apimachinery v0.32.4
 	k8s.io/client-go v0.32.1
-	k8s.io/cri-api v0.32.3
+	k8s.io/cri-api v0.33.0
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.76
 	sigs.k8s.io/controller-runtime v0.20.4
 )
