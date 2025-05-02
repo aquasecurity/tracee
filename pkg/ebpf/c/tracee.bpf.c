@@ -2059,10 +2059,14 @@ send_bpf_perf_attach(program_data_t *p, struct file *bpf_prog_file, struct file 
         bpf_probe_read_kernel_str(&event_name, MAX_KSYM_NAME_SIZE, BPF_CORE_READ(tp_event, name));
 
     } else {
+        if (!bpf_core_enum_value_exists(enum perf_probe_config, PERF_PROBE_CONFIG_IS_RETPROBE))
+            return 0; // kprobe and uprobe are not supported
+
         bool is_ret_probe = false;
         void *tracep_ptr = get_trace_probe_from_trace_event_call(tp_event);
 
-        if (flags & TRACE_EVENT_FL_KPROBE) { // event is kprobe
+        if (bpf_core_type_exists(struct kprobe) && flags & TRACE_EVENT_FL_KPROBE) {
+            // event is kprobe
 
             struct trace_kprobe *tracekp = get_trace_kprobe_from_trace_probe(tracep_ptr);
 
@@ -2085,7 +2089,8 @@ send_bpf_perf_attach(program_data_t *p, struct file *bpf_prog_file, struct file 
             if (!event_name[0])
                 probe_addr = (unsigned long) BPF_CORE_READ(krp, kp.addr);
 
-        } else if (flags & TRACE_EVENT_FL_UPROBE) { // event is uprobe
+        } else if (bpf_core_type_exists(struct uprobe_task) && flags & TRACE_EVENT_FL_UPROBE) {
+            // event is uprobe
 
             struct trace_uprobe *traceup = get_trace_uprobe_from_trace_probe(tracep_ptr);
 
