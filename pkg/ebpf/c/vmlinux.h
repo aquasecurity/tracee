@@ -1183,6 +1183,16 @@ struct perf_event {
     struct trace_event_call *tp_event;
 };
 
+// #if defined(CONFIG_KPROBE_EVENTS) || defined(CONFIG_UPROBE_EVENTS)
+enum perf_probe_config
+{
+    PERF_PROBE_CONFIG_IS_RETPROBE = 1U << 0,
+};
+
+// #ifdef CONFIG_UPROBES
+struct uprobe_task {
+};
+
 struct bpf_verifier_env {
     struct bpf_prog *prog;
 };
