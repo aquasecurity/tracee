@@ -337,9 +337,9 @@ func (k *KernelConfig) GetValueString(option KernelConfigOption) (string, error)
 // and it will return false if the KernelConfigOption is not set (# XXXXX is not set)
 //
 // Examples:
-// kernelConfig.Exists(helpers.CONFIG_BPF)
-// kernelConfig.Exists(helpers.CONFIG_BPF_PRELOAD)
-// kernelConfig.Exists(helpers.CONFIG_HZ)
+// kernelConfig.Exists(environment.CONFIG_BPF)
+// kernelConfig.Exists(environment.CONFIG_BPF_PRELOAD)
+// kernelConfig.Exists(environment.CONFIG_HZ)
 func (k *KernelConfig) Exists(option KernelConfigOption) bool {
 	if _, ok := k.configs[option]; ok {
 		return true
@@ -388,9 +388,9 @@ func (k *KernelConfig) CheckMissing() []KernelConfigOption {
 // AddNeeded adds a KernelConfigOption and its value, if needed, as required for further checks with CheckMissing
 //
 // Examples:
-// kernelConfig.AddNeeded(helpers.CONFIG_BPF, helpers.ANY)
-// kernelConfig.AddNeeded(helpers.CONFIG_BPF_PRELOAD, helpers.ANY)
-// kernelConfig.AddNeeded(helpers.CONFIG_HZ, "250")
+// kernelConfig.AddNeeded(environment.CONFIG_BPF, environment.ANY)
+// kernelConfig.AddNeeded(environment.CONFIG_BPF_PRELOAD, environment.ANY)
+// kernelConfig.AddNeeded(environment.CONFIG_HZ, "250")
 func (k *KernelConfig) AddNeeded(option KernelConfigOption, value interface{}) {
 	if _, ok := kernelConfigKeyIDToString[option]; ok {
 		k.needed[option] = value
