@@ -5,7 +5,7 @@ go 1.24
 toolchain go1.24.2
 
 require (
-	github.com/aquasecurity/table v1.8.0
+	github.com/aquasecurity/table v1.10.0
 	github.com/aquasecurity/tracee/api v0.0.0-20250423121028-213b81a1b8f5
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.20.1
