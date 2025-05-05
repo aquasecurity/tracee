@@ -1,5 +1,5 @@
-github.com/aquasecurity/table v1.8.0 h1:9ntpSwrUfjrM6/YviArlx/ZBGd6ix8W+MtojQcM7tv0=
-github.com/aquasecurity/table v1.8.0/go.mod h1:eqOmvjjB7AhXFgFqpJUEE/ietg7RrMSJZXyTN8E/wZw=
+github.com/aquasecurity/table v1.10.0 h1:gPWV28qp9XSlvXdT3ku8yKQoZE6II0vsmegKpW+dB08=
+github.com/aquasecurity/table v1.10.0/go.mod h1:eqOmvjjB7AhXFgFqpJUEE/ietg7RrMSJZXyTN8E/wZw=
 github.com/aquasecurity/tracee/api v0.0.0-20250423121028-213b81a1b8f5 h1:zseTkmEkMBo4b2gYzE5dnj6EfEjajipUQLGs+FtTw3M=
 github.com/aquasecurity/tracee/api v0.0.0-20250423121028-213b81a1b8f5/go.mod h1:fCLvZ7yle7SJoMNFSUCNVZo6Qf6xWXUmP0isGvRrIL8=
 github.com/cpuguy83/go-md2man/v2 v2.0.4/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
