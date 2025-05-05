@@ -12,10 +12,10 @@ at helpers/kernel_config).
 ## OS-RELEASE
 
 Tracee will show you collected information about the running Linux OS with the
-`--log debug` argument:
+`--log level=debug` argument:
 
 ```console
-sudo ./dist/tracee --log debug --scope uid=1000 --scope pid=new --events execve
+sudo ./dist/tracee --log level=debug --scope uid=1000 --scope pid=new --events execve
 ```
 
 ```text
@@ -39,7 +39,7 @@ because you're running inside a container that does not support it, you may
 face the following error:
 
 ```console
-sudo ./dist/tracee --log debug --scope uid=1000 --scope pid=new --events execve
+sudo ./dist/tracee --log level=debug --scope uid=1000 --scope pid=new --events execve
 ```
 
 ```text
@@ -81,7 +81,7 @@ Tracee needs access to kconfig file (/proc/config.gz OR /boot/config-$(uname -r)
     - **missing kconfig file**
 
     ```console
-    sudo ./dist/tracee --log debug --scope uid=1000 --scope pid=new --events execve
+    sudo ./dist/tracee --log level=debug --scope uid=1000 --scope pid=new --events execve
     ```
 
     ```json
@@ -110,7 +110,7 @@ Tracee needs access to kconfig file (/proc/config.gz OR /boot/config-$(uname -r)
     variable:
 
 ```console
-sudo LIBBPFGO_KCONFIG_FILE=/boot/config-other -E ./dist/tracee --log debug --scope uid=1000 --scope pid=new --events execve
+sudo LIBBPFGO_KCONFIG_FILE=/boot/config-other -E ./dist/tracee --log level=debug --scope uid=1000 --scope pid=new --events execve
 ```
 
 ```text
