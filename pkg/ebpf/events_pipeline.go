@@ -275,7 +275,13 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.Metadata = nil
 			// compute hashes using normalized times
 			evt.ThreadEntityId = utils.HashTaskID(eCtx.HostTid, uint64(evt.ThreadStartTime))
-			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, traceetime.BootToEpochNS(eCtx.LeaderStartTime))
+			if eCtx.HostTid == eCtx.HostPid && eCtx.StartTime == eCtx.LeaderStartTime {
+				// If the thread is the leader (i.e., HostTid == HostPid and StartTime == LeaderStartTime),
+				// then ProcessEntityId and ThreadEntityId are identical and can be shared.
+				evt.ProcessEntityId = evt.ThreadEntityId
+			} else {
+				evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, traceetime.BootToEpochNS(eCtx.LeaderStartTime))
+			}
 			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, traceetime.BootToEpochNS(eCtx.ParentStartTime))
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
