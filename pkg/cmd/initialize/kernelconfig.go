@@ -17,6 +17,7 @@ func KernelConfig() (*environment.KernelConfig, error) {
 	kernelConfig.AddNeeded(environment.CONFIG_BPF, environment.BUILTIN)
 	kernelConfig.AddNeeded(environment.CONFIG_BPF_SYSCALL, environment.BUILTIN)
 	kernelConfig.AddNeeded(environment.CONFIG_KPROBE_EVENTS, environment.BUILTIN)
+	kernelConfig.AddNeeded(environment.CONFIG_UPROBE_EVENTS, environment.BUILTIN)
 	kernelConfig.AddNeeded(environment.CONFIG_BPF_EVENTS, environment.BUILTIN)
 	missing := kernelConfig.CheckMissing()
 	if len(missing) > 0 {
