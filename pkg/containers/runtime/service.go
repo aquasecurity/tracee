@@ -49,7 +49,7 @@ func (e *Service) getFromKnownRuntime(ctx context.Context, containerId string, c
 	if enricher != nil {
 		return enricher.Get(ctx, containerId)
 	}
-	return EnrichResult{}, errfmt.Errorf("unsupported runtime")
+	return EnrichResult{}, errfmt.Errorf("unsupported runtime %s", containerRuntime.String())
 }
 
 // in case where we don't know the container's runtime, we query through all the registered enrichers
