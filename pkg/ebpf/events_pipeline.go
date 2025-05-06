@@ -1,7 +1,6 @@
 package ebpf
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -211,6 +210,9 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				PodUID:       containerInfo.Pod.UID,
 			}
 
+			commStr := string(utils.TrimTrailingNUL(eCtx.Comm[:]))       // clean potential trailing null
+			utsNameStr := string(utils.TrimTrailingNUL(eCtx.UtsName[:])) // clean potential trailing null
+
 			flags := parseContextFlags(containerData.ID, eCtx.Flags)
 			syscall := ""
 			if eCtx.Syscall != noSyscall {
@@ -221,8 +223,6 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				id := events.ID(eCtx.Syscall)
 				syscallDef := events.Core.GetDefinitionByID(id)
 				if syscallDef.NotValid() {
-					commStr := string(eCtx.Comm[:bytes.IndexByte(eCtx.Comm[:], 0)])
-					utsNameStr := string(eCtx.UtsName[:bytes.IndexByte(eCtx.UtsName[:], 0)])
 					logger.Debugw(
 						fmt.Sprintf("Event %s with an invalid syscall id %d", evtName, id),
 						"Comm", commStr,
@@ -254,8 +254,8 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.UserID = int(eCtx.Uid)
 			evt.MountNS = int(eCtx.MntID)
 			evt.PIDNS = int(eCtx.PidID)
-			evt.ProcessName = string(bytes.TrimRight(eCtx.Comm[:], "\x00")) // set and clean potential trailing null
-			evt.HostName = string(bytes.TrimRight(eCtx.UtsName[:], "\x00")) // set and clean potential trailing null
+			evt.ProcessName = commStr
+			evt.HostName = utsNameStr
 			evt.CgroupID = uint(eCtx.CgroupID)
 			evt.ContainerID = containerData.ID
 			evt.Container = containerData
