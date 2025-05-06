@@ -11,11 +11,11 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func SymbolsLoaded(
@@ -110,7 +110,7 @@ func initSymbolsLoadedEventGenerator(
 }
 
 func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
-	event trace.Event,
+	event pipeline.Event,
 ) (
 	[]interface{}, error,
 ) {
@@ -207,7 +207,7 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) getSymbolsFromCache(id shared
 }
 
 // getSharedObjectInfo extract from SO loading event the information available about the SO
-func getSharedObjectInfo(event trace.Event) (sharedobjs.ObjInfo, error) {
+func getSharedObjectInfo(event pipeline.Event) (sharedobjs.ObjInfo, error) {
 	var objInfo sharedobjs.ObjInfo
 
 	loadedObjectInode, err := parse.ArgVal[uint64](event.Args, "inode")

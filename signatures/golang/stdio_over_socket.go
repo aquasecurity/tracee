@@ -54,7 +54,7 @@ func (sig *StdioOverSocket) OnEvent(event protocol.Event) error {
 	var sockfd int
 	var err error
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "security_socket_connect":
 		sockfd, err = helpers.GetTraceeIntArgumentByName(eventObj, "sockfd")
 		if err != nil {

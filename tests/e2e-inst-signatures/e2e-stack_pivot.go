@@ -43,19 +43,19 @@ func (sig *e2eStackPivot) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "stack_pivot":
-		syscall, err := helpers.ArgVal[string](eventObj.Args, "syscall")
+		syscall, err := helpers.ArgVal[string](eventObj.GetArgs(), "syscall")
 		if err != nil {
 			return err
 		}
-		vmaType, err := helpers.ArgVal[string](eventObj.Args, "vma_type")
+		vmaType, err := helpers.ArgVal[string](eventObj.GetArgs(), "vma_type")
 		if err != nil {
 			return err
 		}
 
 		// Make sure this is the exact event we're looking for
-		if eventObj.ProcessName == "stack_pivot" && syscall == "exit_group" && vmaType == "heap" {
+		if eventObj.GetProcessName() == "stack_pivot" && syscall == "exit_group" && vmaType == "heap" {
 			// Make sure there was no false positive
 			if !sig.falsePositive {
 				m, _ := sig.GetMetadata()

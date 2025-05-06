@@ -45,7 +45,7 @@ func (sig *e2eSecurityPathNotify) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "security_path_notify":
 		pathName, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {

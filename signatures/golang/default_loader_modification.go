@@ -57,7 +57,7 @@ func (sig *DefaultLoaderModification) OnEvent(event protocol.Event) error {
 
 	path := ""
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "security_file_open":
 		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
 		if err != nil {

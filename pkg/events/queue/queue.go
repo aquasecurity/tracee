@@ -3,14 +3,12 @@
 // eventQueueMem.
 package queue
 
-import (
-	"github.com/aquasecurity/tracee/types/trace"
-)
+import "github.com/aquasecurity/tracee/pkg/events/pipeline"
 
 type CacheConfig EventQueue
 
 type EventQueue interface {
 	String() string
-	Enqueue(*trace.Event)
-	Dequeue() *trace.Event
+	Enqueue(*pipeline.Event)
+	Dequeue() *pipeline.Event
 }

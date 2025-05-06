@@ -42,7 +42,7 @@ func (sig *e2eSecurityInodeRename) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "security_inode_rename":
 		oldPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "old_path")
 		if err != nil {

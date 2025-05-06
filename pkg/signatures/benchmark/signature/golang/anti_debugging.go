@@ -53,7 +53,7 @@ func (sig *antiDebugging) OnEvent(event protocol.Event) error {
 	if !ok {
 		return errors.New("failed to cast event's payload")
 	}
-	if ee.EventName != "ptrace" {
+	if ee.GetEventName() != "ptrace" {
 		return nil
 	}
 	requestArg, err := helpers.GetTraceeIntArgumentByName(ee, "request")

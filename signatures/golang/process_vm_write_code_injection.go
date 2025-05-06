@@ -49,14 +49,14 @@ func (sig *ProcessVmWriteCodeInjection) OnEvent(event protocol.Event) error {
 		return errors.New("invalid event")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "process_vm_writev":
 		dstPid, err := helpers.GetTraceeIntArgumentByName(eventObj, "pid")
 		if err != nil {
 			return err
 		}
 
-		if eventObj.ProcessID != dstPid {
+		if eventObj.GetProcessID() != dstPid {
 			metadata, err := sig.GetMetadata()
 			if err != nil {
 				return err

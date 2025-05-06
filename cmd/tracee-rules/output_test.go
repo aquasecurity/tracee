@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -31,10 +32,10 @@ func Test_setupOutput(t *testing.T) {
 	}{
 		{
 			name: "happy path with tracee event and default output",
-			inputEvent: trace.Event{
+			inputEvent: trace.ToProtocol(&pipeline.Event{
 				ProcessName: "foobar.exe",
 				HostName:    "foobar.local",
-			}.ToProtocol(),
+			}),
 			expectedOutput: `
 *** Detection ***
 Time: 2021-02-23T01:54:57Z
@@ -47,10 +48,10 @@ Hostname: foobar.local
 		},
 		{
 			name: "happy path with tracee event and simple custom output template",
-			inputEvent: trace.Event{
+			inputEvent: trace.ToProtocol(&pipeline.Event{
 				ProcessName: "foobar.exe",
 				HostName:    "foobar.local",
-			}.ToProtocol(),
+			}),
 			expectedOutput: `*** Detection ***
 Timestamp: 2021-02-23T01:54:57Z
 ProcessName: foobar.exe
@@ -74,10 +75,10 @@ HostName: foobar.local
 		},
 		{
 			name: "sad path with invalid custom template",
-			inputEvent: trace.Event{
+			inputEvent: trace.ToProtocol(&pipeline.Event{
 				ProcessName: "foobar.exe",
 				HostName:    "foobar.local",
-			}.ToProtocol(),
+			}),
 			outputFormat: "testdata/goldens/broken.tmpl",
 		},
 	}
@@ -199,10 +200,10 @@ func Test_sendToWebhook(t *testing.T) {
 					"foo1": "bar1, baz1",
 					"foo2": []string{"bar2", "baz2"},
 				},
-				Event: trace.Event{
+				Event: trace.ToProtocol(&pipeline.Event{
 					ProcessName: "foobar.exe",
 					HostName:    "foobar.local",
-				}.ToProtocol(),
+				}),
 				SigMetadata: m,
 			}, ts.URL, tc.inputTemplateFile, tc.contentType)
 
@@ -236,7 +237,7 @@ func TestOutputTemplates(t *testing.T) {
 						"foo": "bar",
 					},
 				},
-				Event: trace.Event{
+				Event: trace.ToProtocol(&pipeline.Event{
 					ProcessID:   21312,
 					Timestamp:   1321321,
 					UserID:      0,
@@ -250,7 +251,7 @@ func TestOutputTemplates(t *testing.T) {
 						Path: "/bin/test",
 					},
 					ContextFlags: trace.ContextFlags{ContainerStarted: true},
-				}.ToProtocol(),
+				}),
 				SigMetadata: detect.SignatureMetadata{
 					ID:          "TRC-1",
 					Version:     "0.1.0",
