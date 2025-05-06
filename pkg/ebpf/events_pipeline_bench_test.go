@@ -1,7 +1,6 @@
 package ebpf
 
 import (
-	"bytes"
 	"sync"
 	"testing"
 	"time"
@@ -87,8 +86,8 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 				evt.UserID = int(ctx.Uid)
 				evt.MountNS = int(ctx.MntID)
 				evt.PIDNS = int(ctx.PidID)
-				evt.ProcessName = string(bytes.TrimRight(ctx.Comm[:], "\x00"))
-				evt.HostName = string(bytes.TrimRight(ctx.UtsName[:], "\x00"))
+				evt.ProcessName = string(utils.TrimTrailingNUL(ctx.Comm[:]))
+				evt.HostName = string(utils.TrimTrailingNUL(ctx.UtsName[:]))
 				evt.CgroupID = uint(ctx.CgroupID)
 				evt.ContainerID = containerData.ID
 				evt.Container = containerData
@@ -247,8 +246,8 @@ func BenchmarkNewEventObject(b *testing.B) {
 					UserID:                int(ctx.Uid),
 					MountNS:               int(ctx.MntID),
 					PIDNS:                 int(ctx.PidID),
-					ProcessName:           string(bytes.TrimRight(ctx.Comm[:], "\x00")),
-					HostName:              string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
+					ProcessName:           string(utils.TrimTrailingNUL(ctx.Comm[:])),
+					HostName:              string(utils.TrimTrailingNUL(ctx.UtsName[:])),
 					CgroupID:              uint(ctx.CgroupID),
 					ContainerID:           containerData.ID,
 					Container:             containerData,
