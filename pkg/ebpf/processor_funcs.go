@@ -1,7 +1,6 @@
 package ebpf
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -334,7 +333,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	if err := unix.Uname(&utsName); err != nil {
 		return errfmt.WrapError(err)
 	}
-	arch = string(bytes.TrimRight(utsName.Machine[:], "\x00"))
+	arch = string(utils.TrimTrailingNUL(utsName.Machine[:]))
 	err = events.SetArgValue(event, "arch", arch)
 	if err != nil {
 		return err
