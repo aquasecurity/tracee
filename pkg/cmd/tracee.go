@@ -18,7 +18,7 @@ import (
 
 type Runner struct {
 	TraceeConfig config.Config
-	Printer      printer.EventPrinter
+	Printer      *printer.Broadcast
 	InstallPath  string
 	HTTPServer   *http.Server
 	GRPCServer   *grpc.Server
@@ -88,15 +88,30 @@ func (r Runner) Run(ctx context.Context) error {
 		}
 	}()
 
+	// Run Tracee
+
+	if r.Printer.Active() {
+		// Run Tracee with event subscription and printing.
+		return r.runWithPrinter(ctx, t) // blocks until ctx is done
+	}
+
+	// Printer is inactive, run Tracee without event subscription.
+	return t.Run(ctx) // blocks until ctx is done
+}
+
+// runWithPrinter runs Tracee with event subscription and printing enabled.
+//
+// It wraps Tracee's Run method to handle event subscription and printing, and ensures
+// that any remaining events are drained when the context is cancelled.
+//
+// NOTE: This should only be called if a printer is active.
+func (r Runner) runWithPrinter(ctx context.Context, t *tracee.Tracee) error {
 	stream := t.SubscribeAll()
 	defer t.Unsubscribe(stream)
 
-	// Preeamble
-
 	r.Printer.Preamble()
 
-	// Start event channel reception
-
+	// Start goroutine to print incoming events
 	go func() {
 		for {
 			select {
@@ -108,11 +123,10 @@ func (r Runner) Run(ctx context.Context) error {
 		}
 	}()
 
-	// Blocks (until ctx is Done)
-	err = t.Run(ctx)
+	// Blocks until ctx is done
+	err := t.Run(ctx)
 
-	// Drain remaininig channel events (sent during shutdown),
-	// the channel is closed by the tracee when it's done
+	// Drain remaining channel events (sent during shutdown)
 	for event := range stream.ReceiveEvents() {
 		r.Printer.Print(event)
 	}

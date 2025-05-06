@@ -93,6 +93,34 @@ func (b *Broadcast) Close() {
 	}
 }
 
+// Active reports whether the broadcast has meaningful kinds to process.
+//
+// It returns true if there is at least one printer kind and it's not solely "ignore".
+// If no printer configurations are present or if the only kind is "ignore",
+// the broadcast is considered inactive.
+func (b *Broadcast) Active() bool {
+	kinds := b.Kinds()
+
+	if len(kinds) == 0 || (len(kinds) == 1 && kinds[0] == "ignore") {
+		return false
+	}
+
+	return true
+}
+
+// Kinds returns a list of all printer kinds configured in the broadcast.
+//
+// Each kind corresponds to a specific printer configuration.
+func (b *Broadcast) Kinds() []string {
+	kinds := make([]string, 0, len(b.PrinterConfigs))
+
+	for _, p := range b.PrinterConfigs {
+		kinds = append(kinds, p.Kind)
+	}
+
+	return kinds
+}
+
 func startPrinter(wg *sync.WaitGroup, done chan struct{}, c chan trace.Event, p EventPrinter) {
 	for {
 		select {
