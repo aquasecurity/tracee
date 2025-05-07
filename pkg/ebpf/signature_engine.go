@@ -77,29 +77,42 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 				return
 			}
 
-			// Get a copy of event before parsing it or sending it down the pipeline.
-			// This is needed because a later modification of the event (matched policies or
-			// arguments parsing) can affect engine stage.
-			eventCopy := *event
+			emittable := t.policyManager.IsEventToEmit(id)
+			reqBySig := t.policyManager.IsRequiredBySignature(id)
 
-			if t.config.Output.ParseArguments {
-				// shallow clone the event arguments before parsing them (new slice is created),
-				// to keep the eventCopy with raw arguments.
-				eventCopy.Args = slices.Clone(event.Args)
+			var eventToEngine *trace.Event
 
-				err := t.parseArguments(event)
-				if err != nil {
-					t.handleError(err)
-					return
+			if reqBySig {
+				if emittable {
+					// make a shallow copy to prevent mutation for the engine
+					eventCopy := *event
+					eventToEngine = &eventCopy
+				} else {
+					// use the original event for the engine
+					eventToEngine = event
 				}
 			}
 
-			// pass the event to the sink stage, if the event is also marked as emit
-			// it will be sent to print by the sink stage
-			out <- event
+			if emittable {
+				if t.config.Output.ParseArguments {
+					if reqBySig {
+						// clone arguments for the engine before modifying
+						eventToEngine.Args = slices.Clone(event.Args)
+					}
 
-			// send the copied event to the rules engine
-			engineInput <- eventCopy.ToProtocol()
+					if err := t.parseArguments(event); err != nil {
+						t.handleError(err)
+						return
+					}
+				}
+
+				// send the event to the output channel
+				out <- event
+			}
+
+			if reqBySig {
+				engineInput <- eventToEngine.ToProtocol()
+			}
 		}
 
 		for {
