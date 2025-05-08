@@ -39,8 +39,8 @@ var testLoadedObjectInfo = ObjInfo{
 }
 
 var testDynamicSymbols = &DynamicSymbols{
-	Exported: map[string]bool{"open": true, "close": true},
-	Imported: map[string]bool{"syscall": true},
+	Exported: map[string]struct{}{"open": {}, "close": {}},
+	Imported: map[string]struct{}{"syscall": {}},
 }
 
 func TestHostSharedObjectSymbolsLoader_GetDynamicSymbols(t *testing.T) {
@@ -63,7 +63,7 @@ func TestHostSharedObjectSymbolsLoader_GetDynamicSymbols(t *testing.T) {
 		}
 		syms, err := soLoader.GetDynamicSymbols(testLoadedObjectInfo)
 		assert.NoError(t, err)
-		assert.Equal(t, fmt.Sprint(map[string]bool{"open": true, "close": true, "syscall": true}), fmt.Sprint(syms))
+		assert.Equal(t, fmt.Sprint(map[string]struct{}{"open": {}, "close": {}, "syscall": {}}), fmt.Sprint(syms))
 	})
 
 	t.Run("Sad flow", func(t *testing.T) {
@@ -103,7 +103,7 @@ func TestHostSharedObjectSymbolsLoader_GetExportedSymbols(t *testing.T) {
 		}
 		syms, err := soLoader.GetExportedSymbols(testLoadedObjectInfo)
 		assert.NoError(t, err)
-		assert.Equal(t, fmt.Sprint(map[string]bool{"open": true, "close": true}), fmt.Sprint(syms))
+		assert.Equal(t, fmt.Sprint(map[string]struct{}{"open": {}, "close": {}}), fmt.Sprint(syms))
 	})
 
 	t.Run("Sad flow", func(t *testing.T) {
@@ -143,7 +143,7 @@ func TestHostSharedObjectSymbolsLoader_GetImportedSymbols(t *testing.T) {
 		}
 		syms, err := soLoader.GetImportedSymbols(testLoadedObjectInfo)
 		assert.NoError(t, err)
-		assert.Equal(t, fmt.Sprint(map[string]bool{"syscall": true}), fmt.Sprint(syms))
+		assert.Equal(t, fmt.Sprint(map[string]struct{}{"syscall": {}}), fmt.Sprint(syms))
 	})
 
 	t.Run("Sad flow", func(t *testing.T) {
@@ -249,9 +249,9 @@ func TestParseDynamicSymbols(t *testing.T) {
 			Name:  "Full details import symbols",
 			Input: []elf.Symbol{{Name: "__ctype_toupper_loc", Info: 18, Section: elf.SHN_UNDEF + 12, Version: "GLIBC_2.3", Library: "libc.so.6"}},
 			ExpecteResult: DynamicSymbols{
-				Exported: make(map[string]bool),
-				Imported: map[string]bool{
-					"__ctype_toupper_loc": true,
+				Exported: make(map[string]struct{}),
+				Imported: map[string]struct{}{
+					"__ctype_toupper_loc": {},
 				},
 			},
 		},
@@ -259,9 +259,9 @@ func TestParseDynamicSymbols(t *testing.T) {
 			Name:  "Missing details import symbol",
 			Input: []elf.Symbol{{Name: "cap_to_text", Info: 18, Section: elf.SHN_UNDEF}},
 			ExpecteResult: DynamicSymbols{
-				Exported: make(map[string]bool),
-				Imported: map[string]bool{
-					"cap_to_text": true,
+				Exported: make(map[string]struct{}),
+				Imported: map[string]struct{}{
+					"cap_to_text": {},
 				},
 			},
 		},
@@ -269,10 +269,10 @@ func TestParseDynamicSymbols(t *testing.T) {
 			Name:  "Export import symbol",
 			Input: []elf.Symbol{{Name: "_obstack_memory_used", Info: 18, Section: elf.SHN_UNDEF + 12, Value: 55424, Size: 38}},
 			ExpecteResult: DynamicSymbols{
-				Exported: map[string]bool{
-					"_obstack_memory_used": true,
+				Exported: map[string]struct{}{
+					"_obstack_memory_used": {},
 				},
-				Imported: make(map[string]bool),
+				Imported: make(map[string]struct{}),
 			},
 		},
 		{
@@ -283,12 +283,12 @@ func TestParseDynamicSymbols(t *testing.T) {
 				{Name: "_obstack_memory_used", Info: 18, Section: elf.SHN_UNDEF + 12, Value: 55424, Size: 38},
 			},
 			ExpecteResult: DynamicSymbols{
-				Exported: map[string]bool{
-					"_obstack_memory_used": true,
+				Exported: map[string]struct{}{
+					"_obstack_memory_used": {},
 				},
-				Imported: map[string]bool{
-					"__ctype_toupper_loc": true,
-					"cap_to_text":         true,
+				Imported: map[string]struct{}{
+					"__ctype_toupper_loc": {},
+					"cap_to_text":         {},
 				},
 			},
 		},

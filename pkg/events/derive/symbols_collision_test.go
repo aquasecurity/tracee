@@ -37,7 +37,7 @@ func getSymbolsCollisionTestCases() []struct {
 			name: "One loaded SO which collides",
 			loadingSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
-				exportedSymbols: map[string]bool{"open": true},
+				exportedSymbols: map[string]struct{}{"open": {}},
 			},
 			loadedSOs: []testSO{
 				{
@@ -46,7 +46,7 @@ func getSymbolsCollisionTestCases() []struct {
 							Id:   sharedobjs.ObjID{Inode: 2},
 							Path: "2.so",
 						},
-						exportedSymbols: map[string]bool{"open": true},
+						exportedSymbols: map[string]struct{}{"open": {}},
 					},
 					expectedCollisions: []string{"open"},
 				},
@@ -56,7 +56,7 @@ func getSymbolsCollisionTestCases() []struct {
 			name: "One loaded SO which doesn't collide",
 			loadingSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
-				exportedSymbols: map[string]bool{"open": true},
+				exportedSymbols: map[string]struct{}{"open": {}},
 			},
 			loadedSOs: []testSO{
 				{
@@ -65,7 +65,7 @@ func getSymbolsCollisionTestCases() []struct {
 							Id:   sharedobjs.ObjID{Inode: 2},
 							Path: "2.so",
 						},
-						exportedSymbols: map[string]bool{"write": true},
+						exportedSymbols: map[string]struct{}{"write": {}},
 					},
 					expectedCollisions: []string{},
 				},
@@ -75,7 +75,7 @@ func getSymbolsCollisionTestCases() []struct {
 			name: "One loaded SO which collides partly",
 			loadingSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
-				exportedSymbols: map[string]bool{"open": true, "ioctl": true},
+				exportedSymbols: map[string]struct{}{"open": {}, "ioctl": {}},
 			},
 			loadedSOs: []testSO{
 				{
@@ -84,7 +84,7 @@ func getSymbolsCollisionTestCases() []struct {
 							Id:   sharedobjs.ObjID{Inode: 2},
 							Path: "2.so",
 						},
-						exportedSymbols: map[string]bool{"open": true, "write": true},
+						exportedSymbols: map[string]struct{}{"open": {}, "write": {}},
 					},
 					expectedCollisions: []string{"open"},
 				},
@@ -94,7 +94,7 @@ func getSymbolsCollisionTestCases() []struct {
 			name: "Multiple loaded SO which collides",
 			loadingSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
-				exportedSymbols: map[string]bool{"open": true},
+				exportedSymbols: map[string]struct{}{"open": {}},
 			},
 			loadedSOs: []testSO{
 				{
@@ -103,7 +103,7 @@ func getSymbolsCollisionTestCases() []struct {
 							Id:   sharedobjs.ObjID{Inode: 2},
 							Path: "2.so",
 						},
-						exportedSymbols: map[string]bool{"open": true},
+						exportedSymbols: map[string]struct{}{"open": {}},
 					},
 					expectedCollisions: []string{"open"},
 				},
@@ -113,7 +113,7 @@ func getSymbolsCollisionTestCases() []struct {
 							Id:   sharedobjs.ObjID{Inode: 3},
 							Path: "3.so",
 						},
-						exportedSymbols: map[string]bool{"open": true},
+						exportedSymbols: map[string]struct{}{"open": {}},
 					},
 					expectedCollisions: []string{"open"},
 				},
@@ -123,7 +123,7 @@ func getSymbolsCollisionTestCases() []struct {
 			name: "Multiple loaded SO which doesn't collide",
 			loadingSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
-				exportedSymbols: map[string]bool{"open": true},
+				exportedSymbols: map[string]struct{}{"open": {}},
 			},
 			loadedSOs: []testSO{
 				{
@@ -132,7 +132,7 @@ func getSymbolsCollisionTestCases() []struct {
 							Id:   sharedobjs.ObjID{Inode: 2},
 							Path: "2.so",
 						},
-						exportedSymbols: map[string]bool{"write": true},
+						exportedSymbols: map[string]struct{}{"write": {}},
 					},
 					expectedCollisions: []string{},
 				},
@@ -142,7 +142,7 @@ func getSymbolsCollisionTestCases() []struct {
 							Id:   sharedobjs.ObjID{Inode: 3},
 							Path: "3.so",
 						},
-						exportedSymbols: map[string]bool{"ioctl": true},
+						exportedSymbols: map[string]struct{}{"ioctl": {}},
 					},
 					expectedCollisions: []string{},
 				},
@@ -152,7 +152,7 @@ func getSymbolsCollisionTestCases() []struct {
 			name: "Multiple loaded SO which partly collide",
 			loadingSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
-				exportedSymbols: map[string]bool{"open": true, "ioctl": true},
+				exportedSymbols: map[string]struct{}{"open": {}, "ioctl": {}},
 			},
 			loadedSOs: []testSO{
 				{
@@ -161,7 +161,7 @@ func getSymbolsCollisionTestCases() []struct {
 							Id:   sharedobjs.ObjID{Inode: 2},
 							Path: "2.so",
 						},
-						exportedSymbols: map[string]bool{"write": true},
+						exportedSymbols: map[string]struct{}{"write": {}},
 					},
 					expectedCollisions: []string{},
 				},
@@ -171,7 +171,7 @@ func getSymbolsCollisionTestCases() []struct {
 							Id:   sharedobjs.ObjID{Inode: 3},
 							Path: "3.so",
 						},
-						exportedSymbols: map[string]bool{"open": true},
+						exportedSymbols: map[string]struct{}{"open": {}},
 					},
 					expectedCollisions: []string{"open"},
 				},
@@ -181,7 +181,7 @@ func getSymbolsCollisionTestCases() []struct {
 							Id:   sharedobjs.ObjID{Inode: 4},
 							Path: "4.so",
 						},
-						exportedSymbols: map[string]bool{"ioctl": true},
+						exportedSymbols: map[string]struct{}{"ioctl": {}},
 					},
 					expectedCollisions: []string{"ioctl"},
 				},
@@ -191,7 +191,7 @@ func getSymbolsCollisionTestCases() []struct {
 			name: "Collision which is partly filtered in",
 			loadingSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
-				exportedSymbols: map[string]bool{"open": true, "write": true},
+				exportedSymbols: map[string]struct{}{"open": {}, "write": {}},
 			},
 			blackList: []string{"open"},
 			loadedSOs: []testSO{
@@ -201,7 +201,7 @@ func getSymbolsCollisionTestCases() []struct {
 							Id:   sharedobjs.ObjID{Inode: 2},
 							Path: "2.so",
 						},
-						exportedSymbols: map[string]bool{"open": true, "write": true},
+						exportedSymbols: map[string]struct{}{"open": {}, "write": {}},
 					},
 					expectedCollisions: []string{"open"},
 				},
@@ -211,7 +211,7 @@ func getSymbolsCollisionTestCases() []struct {
 			name: "Collision which is partly filtered out",
 			loadingSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
-				exportedSymbols: map[string]bool{"open": true, "write": true},
+				exportedSymbols: map[string]struct{}{"open": {}, "write": {}},
 			},
 			whiteList: []string{"write"},
 			loadedSOs: []testSO{
@@ -221,7 +221,7 @@ func getSymbolsCollisionTestCases() []struct {
 							Id:   sharedobjs.ObjID{Inode: 2},
 							Path: "2.so",
 						},
-						exportedSymbols: map[string]bool{"open": true, "write": true},
+						exportedSymbols: map[string]struct{}{"open": {}, "write": {}},
 					},
 					expectedCollisions: []string{"open"},
 				},
@@ -231,7 +231,7 @@ func getSymbolsCollisionTestCases() []struct {
 			name: "Collision which is filtered out",
 			loadingSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
-				exportedSymbols: map[string]bool{"open": true, "write": true},
+				exportedSymbols: map[string]struct{}{"open": {}, "write": {}},
 			},
 			whiteList: []string{"open", "write"},
 			loadedSOs: []testSO{
@@ -241,7 +241,7 @@ func getSymbolsCollisionTestCases() []struct {
 							Id:   sharedobjs.ObjID{Inode: 2},
 							Path: "2.so",
 						},
-						exportedSymbols: map[string]bool{"open": true, "write": true},
+						exportedSymbols: map[string]struct{}{"open": {}, "write": {}},
 					},
 					expectedCollisions: []string{},
 				},
@@ -261,11 +261,11 @@ func TestSymbolsCollisionArgsGenerator_FindSOCollision(t *testing.T) {
 			name: "One symbol which collides",
 			loadingSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
-				exportedSymbols: map[string]bool{"open": true},
+				exportedSymbols: map[string]struct{}{"open": {}},
 			},
 			loadedSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 2}, Path: "2.so"},
-				exportedSymbols: map[string]bool{"open": true},
+				exportedSymbols: map[string]struct{}{"open": {}},
 			},
 			expectedResults: []string{"open"},
 		},
@@ -273,11 +273,11 @@ func TestSymbolsCollisionArgsGenerator_FindSOCollision(t *testing.T) {
 			name: "One symbols which doesn't collide",
 			loadingSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
-				exportedSymbols: map[string]bool{"write": true},
+				exportedSymbols: map[string]struct{}{"write": {}},
 			},
 			loadedSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 2}, Path: "2.so"},
-				exportedSymbols: map[string]bool{"ioctl": true},
+				exportedSymbols: map[string]struct{}{"ioctl": {}},
 			},
 			expectedResults: nil,
 		},
@@ -285,11 +285,11 @@ func TestSymbolsCollisionArgsGenerator_FindSOCollision(t *testing.T) {
 			name: "Multiple symbols which part of them collide",
 			loadingSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
-				exportedSymbols: map[string]bool{"open": true, "write": true},
+				exportedSymbols: map[string]struct{}{"open": {}, "write": {}},
 			},
 			loadedSO: loadingSharedObj{
 				ObjInfo:         sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 2}, Path: "2.so"},
-				exportedSymbols: map[string]bool{"open": true, "ioctl": true},
+				exportedSymbols: map[string]struct{}{"open": {}, "ioctl": {}},
 			},
 			expectedResults: []string{"open"},
 		},

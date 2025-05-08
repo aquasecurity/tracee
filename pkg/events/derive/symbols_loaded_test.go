@@ -19,36 +19,36 @@ type testSOInstance struct {
 }
 
 type symbolsLoaderMock struct {
-	cache         map[sharedobjs.ObjInfo]map[string]bool
+	cache         map[sharedobjs.ObjInfo]map[string]struct{}
 	returnedError error
 }
 
 func initLoaderMock(returnedError error) symbolsLoaderMock {
-	return symbolsLoaderMock{cache: make(map[sharedobjs.ObjInfo]map[string]bool), returnedError: returnedError}
+	return symbolsLoaderMock{cache: make(map[sharedobjs.ObjInfo]map[string]struct{}), returnedError: returnedError}
 }
 
-func (loader symbolsLoaderMock) GetDynamicSymbols(info sharedobjs.ObjInfo) (map[string]bool, error) {
+func (loader symbolsLoaderMock) GetDynamicSymbols(info sharedobjs.ObjInfo) (map[string]struct{}, error) {
 	if loader.returnedError != nil {
 		return nil, loader.returnedError
 	}
 	return loader.cache[info], nil
 }
 
-func (loader symbolsLoaderMock) GetExportedSymbols(info sharedobjs.ObjInfo) (map[string]bool, error) {
+func (loader symbolsLoaderMock) GetExportedSymbols(info sharedobjs.ObjInfo) (map[string]struct{}, error) {
 	if loader.returnedError != nil {
 		return nil, loader.returnedError
 	}
 	return loader.cache[info], nil
 }
 
-func (loader symbolsLoaderMock) GetImportedSymbols(info sharedobjs.ObjInfo) (map[string]bool, error) {
+func (loader symbolsLoaderMock) GetImportedSymbols(info sharedobjs.ObjInfo) (map[string]struct{}, error) {
 	return nil, nil
 }
 
 func (loader symbolsLoaderMock) addSOSymbols(info testSOInstance) {
-	symsMap := make(map[string]bool)
+	symsMap := make(map[string]struct{})
 	for _, s := range info.syms {
-		symsMap[s] = true
+		symsMap[s] = struct{}{}
 	}
 	loader.cache[info.info] = symsMap
 }
