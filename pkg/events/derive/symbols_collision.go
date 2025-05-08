@@ -374,7 +374,7 @@ func (so *loadingSharedObj) GetSymbols() []string {
 
 	i := 0
 	for sym := range so.exportedSymbols {
-		symbols[i] = sym
+		symbols[i] = string([]byte(sym)) // force copy
 		i++
 	}
 
@@ -403,7 +403,8 @@ func (so *loadingSharedObj) FilterSymbols(filterSymbols map[string]bool) {
 	filteredSymbols := make(map[string]bool)
 	for filterSym := range filterSymbols {
 		if so.exportedSymbols[filterSym] {
-			filteredSymbols[filterSym] = true
+			safeSym := string([]byte(filterSym)) // force copy
+			filteredSymbols[safeSym] = true
 		}
 	}
 
@@ -419,7 +420,8 @@ func (so *loadingSharedObj) FilterOutSymbols(filterSymbols map[string]bool) {
 	filteredSymbols := make(map[string]bool)
 	for exSymbol := range so.exportedSymbols {
 		if !filterSymbols[exSymbol] {
-			filteredSymbols[exSymbol] = true
+			safeSym := string([]byte(exSymbol)) // force copy
+			filteredSymbols[safeSym] = true
 		}
 	}
 
