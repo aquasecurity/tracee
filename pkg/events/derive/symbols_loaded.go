@@ -95,7 +95,7 @@ func initSymbolsLoadedEventGenerator(
 		}
 	}
 
-	cacheLRU, _ := lru.New[sharedobjs.ObjID, []string](10240)
+	cacheLRU, _ := lru.New[sharedobjs.ObjID, []string](1024)
 
 	return &symbolsLoadedEventGenerator{
 		soLoader:            soLoader,
