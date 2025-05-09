@@ -5,10 +5,12 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"kernel.org/pub/linux/libs/security/libcap/cap"
@@ -478,7 +480,37 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize containers related logic
 
 	t.contPathResolver = containers.InitContainerPathResolver(&t.pidsInMntns)
-	t.contSymbolsLoader = sharedobjs.InitContainersSymbolsLoader(t.contPathResolver, 1024)
+	t.contSymbolsLoader = sharedobjs.InitContainersSymbolsLoader(t.contPathResolver, 1024) // 1024 entries hardcoded cache size
+
+	go func() {
+		for {
+			impSyms := t.contSymbolsLoader.GetAllImportedSymbols()
+			expSyms := t.contSymbolsLoader.GetAllExportedSymbols()
+			fmt.Printf("Imported symbols: [%d] - %v\n", len(impSyms), impSyms)
+			fmt.Printf("Exported symbols: [%d] - %v\n", len(expSyms), expSyms)
+
+			// check if there's repeated symbols
+			repeatedSyms := make(map[string]int)
+			for _, sym := range impSyms {
+				repeatedSyms[sym]++
+			}
+			for _, sym := range expSyms {
+				repeatedSyms[sym]++
+			}
+			for sym, count := range repeatedSyms {
+				if count > 1 {
+					fmt.Printf("Repeated symbol: %s - %d times\n", sym, count)
+				}
+			}
+
+			impSyms = nil
+			expSyms = nil
+			repeatedSyms = nil
+			runtime.GC()
+
+			time.Sleep(5 * time.Second)
+		}
+	}()
 
 	// Initialize eBPF probes
 
