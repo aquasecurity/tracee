@@ -141,13 +141,11 @@ func loadSharedObjectDynamicSymbols(path string) (*DynamicSymbols, error) {
 
 func parseDynamicSymbols(dynamicSymbols []elf.Symbol) *DynamicSymbols {
 	objSymbols := NewSOSymbols()
-	for i := range dynamicSymbols {
-		sym := &dynamicSymbols[i]        // avoid copying the whole struct
-		name := string([]byte(sym.Name)) // force copy of the string to avoid memory retention
+	for _, sym := range dynamicSymbols {
 		if sym.Library != "" || sym.Value == 0 {
-			objSymbols.Imported[name] = true
+			objSymbols.Imported[sym.Name] = true
 		} else {
-			objSymbols.Exported[name] = true
+			objSymbols.Exported[sym.Name] = true
 		}
 	}
 	return &objSymbols
