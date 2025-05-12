@@ -54,32 +54,6 @@ func (soLoader *HostSymbolsLoader) GetExportedSymbols(soInfo ObjInfo) (map[strin
 	return syms.Exported, nil
 }
 
-func (soLoader *HostSymbolsLoader) GetAllExportedSymbols() []string {
-	syms := []string{}
-	for _, so := range soLoader.soCache.(*dynamicSymbolsLRUCache).lru.Keys() {
-		if objInfo, ok := so.(*DynamicSymbols); ok {
-			for expSym := range objInfo.Exported {
-				safeExpSym := string([]byte(expSym)) // force copy of the string to avoid memory retention
-				syms = append(syms, safeExpSym)
-			}
-		}
-	}
-	return syms
-}
-
-func (soLoader *HostSymbolsLoader) GetAllImportedSymbols() []string {
-	syms := []string{}
-	for _, so := range soLoader.soCache.(*dynamicSymbolsLRUCache).lru.Keys() {
-		if objInfo, ok := so.(*DynamicSymbols); ok {
-			for impSym := range objInfo.Imported {
-				safeImpSym := string([]byte(impSym)) // force copy of the string to avoid memory retention
-				syms = append(syms, safeImpSym)
-			}
-		}
-	}
-	return syms
-}
-
 // GetImportedSymbols try to get shared objects imported symbols from lru, and if fails read needed information
 // from ELF file.
 // The returned map is part of a cache, so if the user wants to modify it he should copy it and modify it there.

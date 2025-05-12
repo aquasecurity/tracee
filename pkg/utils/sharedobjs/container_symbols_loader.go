@@ -46,11 +46,3 @@ func (cLoader *ContainersSymbolsLoader) GetImportedSymbols(soInfo ObjInfo) (map[
 	}
 	return cLoader.hostLoader.GetImportedSymbols(soInfo)
 }
-
-func (cLoader *ContainersSymbolsLoader) GetAllExportedSymbols() []string {
-	return cLoader.hostLoader.(*HostSymbolsLoader).GetAllExportedSymbols()
-}
-
-func (cLoader *ContainersSymbolsLoader) GetAllImportedSymbols() []string {
-	return cLoader.hostLoader.(*HostSymbolsLoader).GetAllImportedSymbols()
-}
