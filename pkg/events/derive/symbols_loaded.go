@@ -117,22 +117,15 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 		return nil, errfmt.WrapError(err)
 	}
 
-	path := strings.Clone(loadingObjectInfo.Path) // copy string to avoid memory retention
-
-	if symbsLoadedGen.isWhitelist(path) {
+	if symbsLoadedGen.isWhitelist(loadingObjectInfo.Path) {
 		return nil, nil
 	}
 
 	matchedSyms, ok := symbsLoadedGen.getSymbolsFromCache(loadingObjectInfo.Id)
 	if ok {
 		if len(matchedSyms) > 0 {
-			matchedSymsCopy := make([]string, len(matchedSyms))
-			for i := range matchedSyms {
-				matchedSymsCopy[i] = strings.Clone(matchedSyms[i]) // copy string to avoid memory retention
-			}
 			hash, _ := parse.ArgVal[string](event.Args, "sha256")
-			hash = strings.Clone(hash) // copy string to avoid memory retention
-			return []interface{}{path, matchedSymsCopy, hash}, nil
+			return []interface{}{loadingObjectInfo.Path, matchedSyms, hash}, nil
 		}
 		return nil, nil
 	}
@@ -160,7 +153,6 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 
 	for sym := range soSyms {
 		if symbsLoadedGen.watchedSymbols[sym] {
-			sym = strings.Clone(sym) // copy string to avoid memory retention
 			exportedWatchSymbols = append(exportedWatchSymbols, sym)
 		}
 	}
@@ -168,8 +160,7 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 	symbsLoadedGen.libsCache.Add(loadingObjectInfo.Id, exportedWatchSymbols)
 	if len(exportedWatchSymbols) > 0 {
 		hash, _ := parse.ArgVal[string](event.Args, "sha256")
-		hash = strings.Clone(hash) // copy string to avoid memory retention
-		return []interface{}{path, exportedWatchSymbols, hash}, nil
+		return []interface{}{loadingObjectInfo.Path, exportedWatchSymbols, hash}, nil
 	}
 
 	return nil, nil
