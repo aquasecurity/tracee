@@ -179,6 +179,9 @@ jobs:
       - name: Run Unit Tests
         run: |
           make test-unit
+      - name: Run Scripts Unit Tests
+        run: |
+          make run-scripts-test-unit
   #
   # INTEGRATION TESTS
   #

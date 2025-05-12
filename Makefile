@@ -276,6 +276,8 @@ env:
 	@echo ---------------------------------------
 	@echo "TRACEE_PROTOS            $(TRACEE_PROTOS)"
 	@echo ---------------------------------------
+	@echo "SCRIPTS_TEST_DIR         $(SCRIPTS_TEST_DIR)"
+	@echo ---------------------------------------
 
 #
 # usage
@@ -856,6 +858,13 @@ test-types: \
 		-v \
 		-coverprofile=coverage.txt \
 		./...
+
+SCRIPTS_TEST_DIR = scripts
+
+.PHONY: run-scripts-test-unit
+run-scripts-test-unit:
+#
+	@$(SCRIPTS_TEST_DIR)/run_test_scripts.sh
 
 #
 # integration tests
