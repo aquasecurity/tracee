@@ -15,20 +15,20 @@ type ObjInfo struct {
 }
 
 type DynamicSymbolsLoader interface {
-	GetDynamicSymbols(info ObjInfo) (map[string]struct{}, error)
-	GetExportedSymbols(info ObjInfo) (map[string]struct{}, error)
-	GetImportedSymbols(info ObjInfo) (map[string]struct{}, error)
+	GetDynamicSymbols(info ObjInfo) (map[string]bool, error)
+	GetExportedSymbols(info ObjInfo) (map[string]bool, error)
+	GetImportedSymbols(info ObjInfo) (map[string]bool, error)
 }
 
 type DynamicSymbols struct {
-	Exported map[string]struct{}
-	Imported map[string]struct{}
+	Exported map[string]bool
+	Imported map[string]bool
 }
 
 func NewSOSymbols() DynamicSymbols {
 	return DynamicSymbols{
-		Exported: make(map[string]struct{}),
-		Imported: make(map[string]struct{}),
+		Exported: make(map[string]bool),
+		Imported: make(map[string]bool),
 	}
 }
 

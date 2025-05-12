@@ -20,7 +20,7 @@ func InitContainersSymbolsLoader(pathResolver *containers.ContainerPathResolver,
 	}
 }
 
-func (cLoader *ContainersSymbolsLoader) GetDynamicSymbols(soInfo ObjInfo) (map[string]struct{}, error) {
+func (cLoader *ContainersSymbolsLoader) GetDynamicSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	var err error
 	soInfo.Path, err = cLoader.pathResolver.GetHostAbsPath(soInfo.Path, soInfo.MountNS)
 	if err != nil {
@@ -29,7 +29,7 @@ func (cLoader *ContainersSymbolsLoader) GetDynamicSymbols(soInfo ObjInfo) (map[s
 	return cLoader.hostLoader.GetDynamicSymbols(soInfo)
 }
 
-func (cLoader *ContainersSymbolsLoader) GetExportedSymbols(soInfo ObjInfo) (map[string]struct{}, error) {
+func (cLoader *ContainersSymbolsLoader) GetExportedSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	var err error
 	soInfo.Path, err = cLoader.pathResolver.GetHostAbsPath(soInfo.Path, soInfo.MountNS)
 	if err != nil {
@@ -38,7 +38,7 @@ func (cLoader *ContainersSymbolsLoader) GetExportedSymbols(soInfo ObjInfo) (map[
 	return cLoader.hostLoader.GetExportedSymbols(soInfo)
 }
 
-func (cLoader *ContainersSymbolsLoader) GetImportedSymbols(soInfo ObjInfo) (map[string]struct{}, error) {
+func (cLoader *ContainersSymbolsLoader) GetImportedSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	var err error
 	soInfo.Path, err = cLoader.pathResolver.GetHostAbsPath(soInfo.Path, soInfo.MountNS)
 	if err != nil {

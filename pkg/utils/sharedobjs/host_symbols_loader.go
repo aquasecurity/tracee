@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/hashicorp/golang-lru/simplelru"
+	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -30,15 +31,14 @@ func InitHostSymbolsLoader(cacheSize int) *HostSymbolsLoader {
 
 // GetDynamicSymbols try to get shared objects dynamic symbols from lru, and if fails read needed information
 // from ELF file.
-func (soLoader *HostSymbolsLoader) GetDynamicSymbols(soInfo ObjInfo) (map[string]struct{}, error) {
+func (soLoader *HostSymbolsLoader) GetDynamicSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	syms, err := soLoader.loadSOSymbols(soInfo)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 	dynSyms := copyMap(syms.Imported)
 	for expSym := range syms.Exported {
-		safeExpSym := string([]byte(expSym)) // force copy of the string to avoid memory retention
-		dynSyms[safeExpSym] = struct{}{}
+		dynSyms[expSym] = true
 	}
 	return dynSyms, nil
 }
@@ -46,7 +46,7 @@ func (soLoader *HostSymbolsLoader) GetDynamicSymbols(soInfo ObjInfo) (map[string
 // GetExportedSymbols try to get shared objects exported symbols from lru, and if fails read needed information
 // from ELF file.
 // The returned map is part of a cache, so if the user wants to modify it he should copy it and modify it there.
-func (soLoader *HostSymbolsLoader) GetExportedSymbols(soInfo ObjInfo) (map[string]struct{}, error) {
+func (soLoader *HostSymbolsLoader) GetExportedSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	syms, err := soLoader.loadSOSymbols(soInfo)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
@@ -57,7 +57,7 @@ func (soLoader *HostSymbolsLoader) GetExportedSymbols(soInfo ObjInfo) (map[strin
 // GetImportedSymbols try to get shared objects imported symbols from lru, and if fails read needed information
 // from ELF file.
 // The returned map is part of a cache, so if the user wants to modify it he should copy it and modify it there.
-func (soLoader *HostSymbolsLoader) GetImportedSymbols(soInfo ObjInfo) (map[string]struct{}, error) {
+func (soLoader *HostSymbolsLoader) GetImportedSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	syms, err := soLoader.loadSOSymbols(soInfo)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
@@ -145,21 +145,16 @@ func parseDynamicSymbols(dynamicSymbols []elf.Symbol) *DynamicSymbols {
 		sym := &dynamicSymbols[i]        // avoid copying the whole struct
 		name := string([]byte(sym.Name)) // force copy of the string to avoid memory retention
 		if sym.Library != "" || sym.Value == 0 {
-			objSymbols.Imported[name] = struct{}{}
+			objSymbols.Imported[name] = true
 		} else {
-			objSymbols.Exported[name] = struct{}{}
+			objSymbols.Exported[name] = true
 		}
 	}
 	return &objSymbols
 }
 
-func copyMap(source map[string]struct{}) map[string]struct{} {
-	copiedMap := make(map[string]struct{}, len(source))
-
-	for key := range source {
-		safeKey := string([]byte(key)) // force copy of the string to avoid memory retention
-		copiedMap[safeKey] = struct{}{}
-	}
-
+func copyMap(source map[string]bool) map[string]bool {
+	copiedMap := make(map[string]bool, len(source))
+	maps.Copy(copiedMap, source)
 	return copiedMap
 }

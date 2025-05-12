@@ -63,9 +63,9 @@ type SymbolsCollisionArgsGenerator struct {
 	soLoader               sharedobjs.DynamicSymbolsLoader
 	loadedObjsPerProcCache loadedObjsPerProcessCache // cache of loaded shared objects per process
 	collisionChecksCache   collisionChecksCache      // cache of symbols collisions
-	symbolsBlacklistMap    map[string]struct{}       // will delete symbols NOT in this map
-	symbolsWhitelistMap    map[string]struct{}       // will delete symbols IN this map
-	returnedErrorsMap      map[string]struct{}       // keep track of logged/debugged errors
+	symbolsBlacklistMap    map[string]bool           // will delete symbols NOT in this map
+	symbolsWhitelistMap    map[string]bool           // will delete symbols IN this map
+	returnedErrorsMap      map[string]bool           // keep track of logged/debugged errors
 }
 
 func initSOCollisionsEventGenerator(
@@ -77,14 +77,14 @@ func initSOCollisionsEventGenerator(
 	loadedObsPerProcessLRU, _ := simplelru.NewLRU(1024, noCallback)
 	collisionChecksLRU, _ := simplelru.NewLRU(1024, noCallback)
 
-	symbolsBlackListMap := make(map[string]struct{})
+	symbolsBlackListMap := make(map[string]bool)
 	for _, sym := range symbolsBlackList {
-		symbolsBlackListMap[sym] = struct{}{}
+		symbolsBlackListMap[sym] = true
 	}
 
-	symbolsWhiteListMap := make(map[string]struct{})
+	symbolsWhiteListMap := make(map[string]bool)
 	for _, sym := range symbolsWhiteList {
-		symbolsWhiteListMap[sym] = struct{}{}
+		symbolsWhiteListMap[sym] = true
 	}
 
 	return &SymbolsCollisionArgsGenerator{
@@ -93,7 +93,7 @@ func initSOCollisionsEventGenerator(
 		collisionChecksCache:   collisionChecksCache{collisionChecksLRU},
 		symbolsBlacklistMap:    symbolsBlackListMap,
 		symbolsWhitelistMap:    symbolsWhiteListMap,
-		returnedErrorsMap:      make(map[string]struct{}),
+		returnedErrorsMap:      make(map[string]bool),
 	}
 }
 
@@ -195,7 +195,7 @@ func (gen *SymbolsCollisionArgsGenerator) findShObjsCollisions(
 			// TODO: rate limit frequent errors for overloaded envs
 			_, ok := gen.returnedErrorsMap[err.Error()]
 			if !ok {
-				gen.returnedErrorsMap[err.Error()] = struct{}{}
+				gen.returnedErrorsMap[err.Error()] = true
 				logger.Debugw("symbols_loaded", "object loaded", loadingShObj.ObjInfo, "error", err.Error())
 			}
 			return nil, nil
@@ -209,7 +209,7 @@ func (gen *SymbolsCollisionArgsGenerator) findShObjsCollisions(
 			// TODO: rate limit frequent errors for overloaded envs
 			_, ok := gen.returnedErrorsMap[err.Error()]
 			if !ok {
-				gen.returnedErrorsMap[err.Error()] = struct{}{}
+				gen.returnedErrorsMap[err.Error()] = true
 				logger.Warnw("symbols_loaded", "object loaded", loadedShObjInfo, "error", err.Error())
 			} else {
 				logger.Debugw("symbols_loaded", "object loaded", loadedShObjInfo, "error", err.Error())
@@ -359,7 +359,7 @@ func (socCache collisionChecksCache) setObjCollisions(key collisionsKey, collisi
 
 type loadingSharedObj struct { // extends ObjInfo
 	sharedobjs.ObjInfo
-	exportedSymbols map[string]struct{}
+	exportedSymbols map[string]bool
 }
 
 // ContainsSymbol returns true if the shared object being loaded contains the given symbol.
@@ -395,16 +395,16 @@ func (so *loadingSharedObj) GetCollisions(obj loadingSharedObj) []string {
 }
 
 // FilterSymbols removes all exported symbols which ARE NOT in the filter map.
-func (so *loadingSharedObj) FilterSymbols(filterSymbols map[string]struct{}) {
+func (so *loadingSharedObj) FilterSymbols(filterSymbols map[string]bool) {
 	if len(filterSymbols) == 0 {
 		return
 	}
 
-	filteredSymbols := make(map[string]struct{})
+	filteredSymbols := make(map[string]bool)
 	for filterSym := range filterSymbols {
-		if _, ok := so.exportedSymbols[filterSym]; ok {
+		if so.exportedSymbols[filterSym] {
 			safeSym := string([]byte(filterSym)) // force copy
-			filteredSymbols[safeSym] = struct{}{}
+			filteredSymbols[safeSym] = true
 		}
 	}
 
@@ -412,16 +412,16 @@ func (so *loadingSharedObj) FilterSymbols(filterSymbols map[string]struct{}) {
 }
 
 // FilterOutSymbols removes all exported symbols which ARE in the filter map.
-func (so *loadingSharedObj) FilterOutSymbols(filterSymbols map[string]struct{}) {
+func (so *loadingSharedObj) FilterOutSymbols(filterSymbols map[string]bool) {
 	if len(filterSymbols) == 0 {
 		return
 	}
 
-	filteredSymbols := make(map[string]struct{})
+	filteredSymbols := make(map[string]bool)
 	for exSymbol := range so.exportedSymbols {
-		if _, ok := filterSymbols[exSymbol]; !ok {
+		if !filterSymbols[exSymbol] {
 			safeSym := string([]byte(exSymbol)) // force copy
-			filteredSymbols[safeSym] = struct{}{}
+			filteredSymbols[safeSym] = true
 		}
 	}
 
