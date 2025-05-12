@@ -1,8 +1,6 @@
 package derive
 
 import (
-	"bytes"
-
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -133,28 +131,17 @@ func buildDerivedEvent(baseEvent *trace.Event, skeleton deriveBase, argsValues [
 	if len(skeleton.Params) != len(argsValues) {
 		return trace.Event{}, unexpectedArgCountError(skeleton.Name, len(skeleton.Params), len(argsValues))
 	}
-
 	de := *baseEvent // shallow copy
 	de.PoliciesVersion = baseEvent.PoliciesVersion
 	de.EventID = skeleton.ID
 	de.EventName = skeleton.Name
 	de.ReturnValue = 0
 	de.StackAddresses = make([]uint64, 1)
-	de.ArgsNum = len(skeleton.Params)
 	de.Args = make([]trace.Argument, len(skeleton.Params))
-
 	for i, value := range argsValues {
-		// force copy to avoid retaining underlying data
-		switch v := value.(type) {
-		case string:
-			value = string([]byte(v))
-		case []byte:
-			value = bytes.Clone(v)
-		}
-
 		de.Args[i] = trace.Argument{ArgMeta: skeleton.Params[i], Value: value}
 	}
-
+	de.ArgsNum = len(de.Args)
 	return de, nil
 }
 
