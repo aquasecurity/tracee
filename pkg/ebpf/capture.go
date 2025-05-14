@@ -1,7 +1,6 @@
 package ebpf
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -136,7 +135,7 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 					t.handleError(err)
 					continue
 				}
-				bpfName := string(bytes.TrimRight(bpfObjectMeta.Name[:], "\x00"))
+				bpfName := utils.TrimTrailingNUL(bpfObjectMeta.Name[:])
 				filename = fmt.Sprintf("bpf.name-%s", bpfName)
 				if bpfObjectMeta.Pid != 0 {
 					filename = fmt.Sprintf("%s.pid-%d", filename, bpfObjectMeta.Pid)
