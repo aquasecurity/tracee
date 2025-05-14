@@ -154,8 +154,8 @@ func GetOSInfo() (*OSInfo, error) {
 // OSInfo object contains all OS relevant information
 //
 // OSRelease is relevant to examples such as:
-// 1) OSInfo.OSReleaseInfo[helpers.OS_KERNEL_RELEASE] => will provide $(uname -r) string
-// 2) if OSInfo.GetReleaseID() == helpers.UBUNTU => {} will allow running code in specific distribution
+// 1) OSInfo.OSReleaseInfo[environment.OS_KERNEL_RELEASE] => will provide $(uname -r) string
+// 2) if OSInfo.GetReleaseID() == environment.UBUNTU => {} will allow running code in specific distribution
 type OSInfo struct {
 	osReleaseFieldValues map[OSReleaseField]string
 	osReleaseID          OSReleaseID
