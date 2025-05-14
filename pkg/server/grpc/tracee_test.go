@@ -8,6 +8,7 @@ import (
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -16,7 +17,7 @@ func Test_convertEventWithProcessWorkload(t *testing.T) {
 
 	unixTime := int(time.Now().UnixNano())
 
-	traceEvent := trace.Event{
+	traceEvent := pipeline.Event{
 		Timestamp:           unixTime,
 		ThreadStartTime:     unixTime,
 		ProcessID:           1,
@@ -61,7 +62,7 @@ func Test_convertEventWithProcessWorkload(t *testing.T) {
 func Test_convertEventWithStackaddresses(t *testing.T) {
 	t.Parallel()
 
-	traceEvent := trace.Event{
+	traceEvent := pipeline.Event{
 		StackAddresses: []uint64{1, 2, 3},
 	}
 
@@ -82,7 +83,7 @@ func Test_convertEventWithStackaddresses(t *testing.T) {
 func Test_convertEventWithContainerWorkload(t *testing.T) {
 	t.Parallel()
 
-	traceEvent := trace.Event{
+	traceEvent := pipeline.Event{
 		Container: trace.Container{
 			ID:          "containerID",
 			Name:        "containerName",
@@ -103,7 +104,7 @@ func Test_convertEventWithContainerWorkload(t *testing.T) {
 func Test_convertEventWithK8sWorkload(t *testing.T) {
 	t.Parallel()
 
-	traceEvent := trace.Event{
+	traceEvent := pipeline.Event{
 		Kubernetes: trace.Kubernetes{
 			PodName:      "podName",
 			PodNamespace: "podNamespace",
@@ -122,7 +123,7 @@ func Test_convertEventWithK8sWorkload(t *testing.T) {
 func Test_convertEventWithThreat(t *testing.T) {
 	t.Parallel()
 
-	traceEvent := trace.Event{
+	traceEvent := pipeline.Event{
 		Metadata: &trace.Metadata{
 			Description: "An attempt to abuse the Docker UNIX ..",
 			Properties: map[string]interface{}{

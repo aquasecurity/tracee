@@ -196,22 +196,22 @@ func (p tableEventPrinter) Preamble() {
 }
 
 func (p tableEventPrinter) Print(event trace.Event) {
-	ut := time.Unix(0, int64(event.Timestamp))
+	ut := time.Unix(0, int64(event.GetTimestamp()))
 	if p.relativeTS {
 		ut = ut.UTC()
 	}
 	timestamp := fmt.Sprintf("%02d:%02d:%02d:%06d", ut.Hour(), ut.Minute(), ut.Second(), ut.Nanosecond()/1000)
 
-	containerId := event.Container.ID
+	containerId := event.GetContainer().ID
 	if len(containerId) > 12 {
 		containerId = containerId[:12]
 	}
-	containerImage := event.Container.ImageName
+	containerImage := event.GetContainer().ImageName
 	if len(containerImage) > 16 {
 		containerImage = containerImage[:16]
 	}
 
-	eventName := event.EventName
+	eventName := event.GetEventName()
 	if len(eventName) > 25 {
 		eventName = eventName[:22] + "..."
 	}
@@ -222,56 +222,56 @@ func (p tableEventPrinter) Print(event trace.Event) {
 			fmt.Fprintf(p.out,
 				"%-16s %-17s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-25s ",
 				timestamp,
-				event.HostName,
+				event.GetHostName(),
 				containerId,
-				event.MountNS,
-				event.PIDNS,
-				event.UserID,
-				event.ProcessName,
-				event.ProcessID,
-				event.ThreadID,
-				event.ParentProcessID,
-				event.ReturnValue,
-				event.EventName,
+				event.GetMountNS(),
+				event.GetPIDNS(),
+				event.GetUserID(),
+				event.GetProcessName(),
+				event.GetProcessID(),
+				event.GetThreadID(),
+				event.GetParentProcessID(),
+				event.GetReturnValue(),
+				eventName,
 			)
 		case config.ContainerModeEnabled:
 			fmt.Fprintf(p.out,
 				"%-16s %-17s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-25s ",
 				timestamp,
-				event.HostName,
+				event.GetHostName(),
 				containerId,
-				event.MountNS,
-				event.PIDNS,
-				event.UserID,
-				event.ProcessName,
-				event.ProcessID,
-				event.HostProcessID,
-				event.ThreadID,
-				event.HostThreadID,
-				event.ParentProcessID,
-				event.HostParentProcessID,
-				event.ReturnValue,
-				event.EventName,
+				event.GetMountNS(),
+				event.GetPIDNS(),
+				event.GetUserID(),
+				event.GetProcessName(),
+				event.GetProcessID(),
+				event.GetHostProcessID(),
+				event.GetThreadID(),
+				event.GetHostThreadID(),
+				event.GetParentProcessID(),
+				event.GetHostParentProcessID(),
+				event.GetReturnValue(),
+				eventName,
 			)
 		case config.ContainerModeEnriched:
 			fmt.Fprintf(p.out,
 				"%-16s %-17s %-13s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-25s ",
 				timestamp,
-				event.HostName,
+				event.GetHostName(),
 				containerId,
-				event.Container.ImageName,
-				event.MountNS,
-				event.PIDNS,
-				event.UserID,
-				event.ProcessName,
-				event.ProcessID,
-				event.HostProcessID,
-				event.ThreadID,
-				event.HostThreadID,
-				event.ParentProcessID,
-				event.HostParentProcessID,
-				event.ReturnValue,
-				event.EventName,
+				event.GetContainer().ImageName,
+				event.GetMountNS(),
+				event.GetPIDNS(),
+				event.GetUserID(),
+				event.GetProcessName(),
+				event.GetProcessID(),
+				event.GetHostProcessID(),
+				event.GetThreadID(),
+				event.GetHostThreadID(),
+				event.GetParentProcessID(),
+				event.GetHostParentProcessID(),
+				event.GetReturnValue(),
+				eventName,
 			)
 		}
 	} else {
@@ -280,11 +280,11 @@ func (p tableEventPrinter) Print(event trace.Event) {
 			fmt.Fprintf(p.out,
 				"%-16s %-6d %-16s %-7d %-7d %-16d %-25s ",
 				timestamp,
-				event.UserID,
-				event.ProcessName,
-				event.ProcessID,
-				event.ThreadID,
-				event.ReturnValue,
+				event.GetUserID(),
+				event.GetProcessName(),
+				event.GetProcessID(),
+				event.GetThreadID(),
+				event.GetReturnValue(),
 				eventName,
 			)
 		case config.ContainerModeEnabled:
@@ -292,13 +292,13 @@ func (p tableEventPrinter) Print(event trace.Event) {
 				"%-16s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-25s ",
 				timestamp,
 				containerId,
-				event.UserID,
-				event.ProcessName,
-				event.ProcessID,
-				event.HostProcessID,
-				event.ThreadID,
-				event.HostThreadID,
-				event.ReturnValue,
+				event.GetUserID(),
+				event.GetProcessName(),
+				event.GetProcessID(),
+				event.GetHostProcessID(),
+				event.GetThreadID(),
+				event.GetHostThreadID(),
+				event.GetReturnValue(),
 				eventName,
 			)
 		case config.ContainerModeEnriched:
@@ -307,18 +307,18 @@ func (p tableEventPrinter) Print(event trace.Event) {
 				timestamp,
 				containerId,
 				containerImage,
-				event.UserID,
-				event.ProcessName,
-				event.ProcessID,
-				event.HostProcessID,
-				event.ThreadID,
-				event.HostThreadID,
-				event.ReturnValue,
+				event.GetUserID(),
+				event.GetProcessName(),
+				event.GetProcessID(),
+				event.GetHostProcessID(),
+				event.GetThreadID(),
+				event.GetHostThreadID(),
+				event.GetReturnValue(),
 				eventName,
 			)
 		}
 	}
-	for i, arg := range event.Args {
+	for i, arg := range event.GetArgs() {
 		name := arg.Name
 		value := arg.Value
 

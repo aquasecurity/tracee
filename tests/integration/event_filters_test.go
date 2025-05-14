@@ -15,6 +15,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -68,7 +69,7 @@ func Test_EventFilters(t *testing.T) {
 					"docker run -d --rm hello-world",
 					0,
 					10*time.Second, // give some time for the container to start (possibly downloading the image)
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "hello", anyProcessorID, 1, 0, events.SchedProcessExec, orPolNames("container-event"), orPolIDs(1)),
 					},
 					[]string{}, // no sets
@@ -100,9 +101,9 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				// no event expected
-				newCmdEvents("ls", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
-				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
-				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
+				newCmdEvents("ls", 100*time.Millisecond, 1*time.Second, []pipeline.Event{}, []string{}),
+				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []pipeline.Event{}, []string{}),
+				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []pipeline.Event{}, []string{}),
 			},
 			useSyscaller: false,
 			coolDown:     0,
@@ -129,8 +130,8 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				// no event expected
-				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
-				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
+				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []pipeline.Event{}, []string{}),
+				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []pipeline.Event{}, []string{}),
 			},
 			useSyscaller: false,
 			coolDown:     0,
@@ -157,8 +158,8 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				// no event expected
-				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
-				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
+				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []pipeline.Event{}, []string{}),
+				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []pipeline.Event{}, []string{}),
 			},
 			useSyscaller: false,
 			coolDown:     0,
@@ -199,7 +200,7 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm_mntns_pidns_event"), orPolIDs(1)),
 						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm_mntns_pidns_event"), orPolIDs(1)),
 					},
@@ -243,7 +244,7 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm-event"), orPolIDs(1)),
 						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm-event"), orPolIDs(1)),
 					},
@@ -283,7 +284,7 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event"), orPolIDs(5)),
 						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event"), orPolIDs(5)),
 					},
@@ -325,7 +326,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "integration.tes", // note that comm name is from the go test binary that runs the command
 							testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event-data"), orPolIDs(42), expectArg("pathname", "*ls")),
 					},
@@ -364,9 +365,9 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				// no event expected
-				newCmdEvents("ls", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
-				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
-				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
+				newCmdEvents("ls", 100*time.Millisecond, 1*time.Second, []pipeline.Event{}, []string{}),
+				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []pipeline.Event{}, []string{}),
+				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []pipeline.Event{}, []string{}),
 			},
 			useSyscaller: false,
 			coolDown:     0,
@@ -403,7 +404,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("comm-event-data"), orPolIDs(42), expectArg("pathname", "*integration")),
 					},
 					[]string{},
@@ -461,7 +462,7 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm-event-4"), orPolIDs(4)),
 					},
 					[]string{},
@@ -469,7 +470,7 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("uname",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm-event-2"), orPolIDs(2)),
 					},
 					[]string{},
@@ -527,7 +528,7 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("who",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("exec-event-1"), orPolIDs(1)),
 					},
 					[]string{},
@@ -535,7 +536,7 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("uname",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("exec-event-2"), orPolIDs(2)),
 					},
 					[]string{},
@@ -578,7 +579,7 @@ func Test_EventFilters(t *testing.T) {
 					"kill -SIGUSR1 1", // systemd: try to reconnect to the D-Bus bus
 					500*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid-0-event-data"), orPolIDs(1), expectArg("next_comm", "systemd")),
 					},
 					[]string{},
@@ -616,7 +617,7 @@ func Test_EventFilters(t *testing.T) {
 					"kill -SIGHUP 1", // systemd: reloads the complete daemon configuration
 					500*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "systemd", anyProcessorID, 1, 0, events.MemfdCreate, orPolNames("pid-1"), orPolIDs(1)),
 						expectEvent(anyHost, "systemd", anyProcessorID, 1, 0, events.SecurityInodeUnlink, orPolNames("pid-1"), orPolIDs(1)),
 					},
@@ -652,7 +653,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("uid-0-comm"), orPolIDs(1)),
 					},
 					[]string{},
@@ -687,7 +688,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					100*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{}, // no events expected
+					[]pipeline.Event{}, // no events expected
 					[]string{},
 				),
 			},
@@ -724,7 +725,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("event-fs"), orPolIDs(1)),
 					},
 					[]string{"fs"},
@@ -763,7 +764,7 @@ func Test_EventFilters(t *testing.T) {
 					"docker run -d --rm hello-world",
 					0,
 					10*time.Second, // give some time for the container to start (possibly downloading the image)
-					[]trace.Event{
+					[]pipeline.Event{
 						// using anyComm as some versions of dockerd may result in e.g. "dockerd" or "exe"
 						expectEvent(anyHost, anyComm, anyProcessorID, anyPID, 0, events.Setns, orPolNames("exec-event"), orPolIDs(1)),
 					},
@@ -799,7 +800,7 @@ func Test_EventFilters(t *testing.T) {
 					"kill -SIGUSR1 1", // systemd: try to reconnect to the D-Bus bus
 					500*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{}, // no events expected
+					[]pipeline.Event{}, // no events expected
 					[]string{},
 				),
 			},
@@ -831,7 +832,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64"), orPolIDs(64)),
 					},
 					[]string{},
@@ -881,7 +882,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64"), orPolIDs(64)),
 					},
 					[]string{},
@@ -930,7 +931,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64"), orPolIDs(64)),
 					},
 					[]string{},
@@ -939,7 +940,7 @@ func Test_EventFilters(t *testing.T) {
 					"who",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-42"), orPolIDs(42)),
 					},
 					[]string{},
@@ -981,7 +982,7 @@ func Test_EventFilters(t *testing.T) {
 					"bash -c ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "bash", // note that comm name is from the runner
 							testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("event-data-context"), orPolIDs(42), expectArg("pathname", "*ls")),
 					},
@@ -1021,7 +1022,7 @@ func Test_EventFilters(t *testing.T) {
 					"bash -c '/usr/bin/tee /tmp/magic_write_test < <(echo 42)'",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "tee", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("comm-event"), orPolIDs(42)),
 					},
 					[]string{},
@@ -1085,7 +1086,7 @@ func Test_EventFilters(t *testing.T) {
 		// 		newCmdEvents(
 		// 			"ping -c1 0.0.0.0",
 		// 			1*time.Second,
-		// 			[]trace.Event{
+		// 			[]pipeline.Event{
 		// 				expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event"), orPolIDs(3)),
 		// 			},
 		// 			[]string{},
@@ -1093,7 +1094,7 @@ func Test_EventFilters(t *testing.T) {
 		// 		newCmdEvents(
 		// 			"strace ls",
 		// 			1*time.Second,
-		// 			[]trace.Event{
+		// 			[]pipeline.Event{
 		// 				expectEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.Ptrace, orPolNames("event-data"), orPolIDs(5)),
 		// 				expectEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.anti_debugging, orPolNames("sign"), orPolIDs(9)),
 		// 			},
@@ -1155,7 +1156,7 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					100*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
 						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
 					},
@@ -1219,7 +1220,7 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					100*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.Setuid, orPolNames("comm-event-5"), orPolIDs(5)),
 
 						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
@@ -1325,7 +1326,7 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					100*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm-event-7", "comm-event-9"), orPolIDs(7, 9)),
 
 						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SecuritySocketConnect, orPolNames("comm-event-9"), orPolIDs(9)),
@@ -1369,7 +1370,7 @@ func Test_EventFilters(t *testing.T) {
 					"bash -c 'nc -zv localhost 7777 || true'",
 					0,
 					2*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(
 							anyHost, "nc", testutils.CPUForTests, anyPID, 0, events.NetTCPConnect, orPolNames("net-event-1"), orPolIDs(1)),
 					},
@@ -1420,7 +1421,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64", "comm-42"), orPolIDs(64, 42)),
 					},
 					[]string{},
@@ -1429,7 +1430,7 @@ func Test_EventFilters(t *testing.T) {
 					"who",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-42"), orPolIDs(42)),
 					},
 					[]string{},
@@ -1478,7 +1479,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64", "comm-42"), orPolIDs(64, 42)),
 					},
 					[]string{},
@@ -1487,7 +1488,7 @@ func Test_EventFilters(t *testing.T) {
 					"who",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-42"), orPolIDs(42)),
 					},
 					[]string{},
@@ -1536,7 +1537,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Read, orPolNames("comm-event"), orPolIDs(1)),
 						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Write, orPolNames("comm-event"), orPolIDs(1)),
 					},
@@ -1574,7 +1575,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event-pol-42"), orPolIDs(42)),
 					},
 					[]string{},
@@ -1640,7 +1641,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-data-64"), orPolIDs(64),
 							expectArg("dirfd", int32(0)),
 							expectArg("flags", int32(0)),
@@ -1653,7 +1654,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog2",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "fakeprog2", testutils.CPUForTests, anyPID, 0, events.Open, orPolNames("comm-event-data-42"), orPolIDs(42),
 							expectArg("flags", int32(0)),
 							expectArg("mode", uint16(0)),
@@ -1720,7 +1721,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-retval-64"), orPolIDs(64),
 							expectArg("dirfd", int32(0)),
 							expectArg("flags", int32(0)),
@@ -1733,7 +1734,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog2",
 					100*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{}, // no events expected
+					[]pipeline.Event{}, // no events expected
 					[]string{},
 				),
 			},
@@ -1827,7 +1828,7 @@ func Test_EventFilters(t *testing.T) {
 					20*time.Second,
 					// Running the commands inside a container caused duplicate
 					// security_file_open events to be generated. This is why the events are duplicated.
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "more", anyProcessorID, 1, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/ld.so.cache")),
 						expectEvent(anyHost, "more", anyProcessorID, 1, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/ld.so.cache")),
 						expectEvent(anyHost, "more", anyProcessorID, 1, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-3"), orPolIDs(1, 3), expectArg("pathname", "/etc/netconfig")),
@@ -1911,7 +1912,7 @@ func Test_EventFilters(t *testing.T) {
 					20*time.Second,
 					// Running the commands inside a container caused duplicate
 					// security_file_open events to be generated. This is why the events are duplicated.
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1"), orPolIDs(1), expectArg("pathname", "/etc/ld.so.cache")),
 						expectEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1"), orPolIDs(1), expectArg("pathname", "/etc/ld.so.cache")),
 						expectEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1", "sfo-mw-combined-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/netconfig")),
@@ -1979,7 +1980,7 @@ func Test_EventFilters(t *testing.T) {
 					"sh -c 'more /etc/hostname > /tmp/hostname; more /etc/shadow > /tmp/shadow; more /etc/passwd > /tmp/passwd;'",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1", "mw-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/tmp/hostname")),
 						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/shadow")),
 						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1", "mw-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/tmp/passwd")),
@@ -2044,7 +2045,7 @@ func Test_EventFilters(t *testing.T) {
 					"more /sys/class/dmi/id/bios_date",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1"), orPolIDs(1), expectArg("syscall_pathname", "/sys/class/dmi/id/bios_date")),
 					},
 					[]string{},
@@ -2053,7 +2054,7 @@ func Test_EventFilters(t *testing.T) {
 					"more /etc/pam.d/other",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-2"), orPolIDs(2), expectArg("pathname", "/etc/pam.d/other")),
 					},
 					[]string{},
@@ -2117,7 +2118,7 @@ func Test_EventFilters(t *testing.T) {
 					"more /sys/class/dmi/id/bios_date",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1"), orPolIDs(1), expectArg("pathname", "/sys/devices/virtual/dmi/id/bios_date")),
 					},
 					[]string{},
@@ -2159,7 +2160,7 @@ func Test_EventFilters(t *testing.T) {
 					"ldd /usr/bin/bash",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "ldd", testutils.CPUForTests, anyPID, 0, events.SecurityMmapFile, orPolNames("smf-pol-1"), orPolIDs(1), expectArg("pathname", "/usr/bin/bash")),
 						expectEvent(anyHost, "ldd", testutils.CPUForTests, anyPID, 0, events.SecurityMmapFile, orPolNames("smf-pol-1"), orPolIDs(1), expectArg("pathname", "/etc/ld.so.cache")),
 					},
@@ -2208,7 +2209,7 @@ func Test_EventFilters(t *testing.T) {
 					"sh -c 'more /etc/hostname > /tmp/hostname; more /etc/shadow > /tmp/shadow; more /etc/passwd > /tmp/passwd;'",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/hostname")),
 						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/shadow")),
 						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/passwd")),
@@ -2277,7 +2278,7 @@ func Test_EventFilters(t *testing.T) {
 						"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCDEFGHIJK'",
 					0,
 					1*time.Second,
-					[]trace.Event{
+					[]pipeline.Event{
 						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), orPolIDs(1, 2),
 							expectArg("pathname", "/tmp/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"+
 								"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"+
@@ -2391,13 +2392,13 @@ type cmdEvents struct {
 	runCmd           string
 	waitFor          time.Duration // time to wait before collecting events
 	timeout          time.Duration // timeout for the command to run
-	expectedEvents   []trace.Event
-	unexpectedEvents []trace.Event
+	expectedEvents   []pipeline.Event
+	unexpectedEvents []pipeline.Event
 	sets             []string
 }
 
 // newCmdEvents is a helper function to create a cmdEvents
-func newCmdEvents(runCmd string, waitFor, timeout time.Duration, evts []trace.Event, sets []string) cmdEvents {
+func newCmdEvents(runCmd string, waitFor, timeout time.Duration, evts []pipeline.Event, sets []string) cmdEvents {
 	return cmdEvents{
 		runCmd:         runCmd,
 		waitFor:        waitFor,
@@ -2443,8 +2444,8 @@ func expectEvent(
 	matchPolName []string,
 	matchPols uint64,
 	args ...trace.Argument,
-) trace.Event {
-	return trace.Event{
+) pipeline.Event {
+	return pipeline.Event{
 		ProcessorID:         processorID,
 		ProcessID:           pid,
 		UserID:              uid,
@@ -2452,8 +2453,8 @@ func expectEvent(
 		HostName:            host,
 		EventID:             int(eventID),
 		MatchedPolicies:     matchPolName,
-		MatchedPoliciesUser: matchPols,
 		Args:                args,
+		MatchedPoliciesUser: matchPols,
 	}
 }
 
@@ -2599,7 +2600,7 @@ func isCmdAShellRunner(cmd string) bool {
 }
 
 // pidToCheck returns the pid of the process to check for events
-func pidToCheck(cmd string, actEvt trace.Event) int {
+func pidToCheck(cmd string, actEvt pipeline.Event) int {
 	if isCmdAShellRunner(cmd) {
 		return actEvt.ParentProcessID
 	}
@@ -2664,7 +2665,7 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 
 		actEvtsCopy := actual.getCopy()
 
-		findEventInResults := func(expEvt trace.Event) (bool, error) {
+		findEventInResults := func(expEvt pipeline.Event) (bool, error) {
 			checkHost := expEvt.HostName != anyHost
 			checkComm := expEvt.ProcessName != anyComm
 			checkProcessorID := expEvt.ProcessorID != anyProcessorID
@@ -2725,7 +2726,7 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 				// check args
 				for _, expArg := range expEvt.Args {
 					actArg, err := helpers.GetTraceeArgumentByName(
-						actEvt,
+						&actEvt,
 						expArg.Name,
 						helpers.GetArgOps{DefaultArgs: false},
 					)
@@ -2894,7 +2895,7 @@ func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 
 				// check args
 				for _, expArg := range expEvt.Args {
-					actArg, err := helpers.GetTraceeArgumentByName(actEvt, expArg.Name, helpers.GetArgOps{DefaultArgs: false})
+					actArg, err := helpers.GetTraceeArgumentByName(&actEvt, expArg.Name, helpers.GetArgOps{DefaultArgs: false})
 					if err != nil {
 						return err
 					}
@@ -3016,7 +3017,7 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 
 				// check args
 				for _, expArg := range expEvt.Args {
-					actArg, err := helpers.GetTraceeArgumentByName(actEvt, expArg.Name, helpers.GetArgOps{DefaultArgs: false})
+					actArg, err := helpers.GetTraceeArgumentByName(&actEvt, expArg.Name, helpers.GetArgOps{DefaultArgs: false})
 					if err != nil {
 						return err
 					}
@@ -3124,7 +3125,7 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 
 			// check args
 			for _, expArg := range expEvt.Args {
-				actArg, err := helpers.GetTraceeArgumentByName(actEvt, expArg.Name, helpers.GetArgOps{DefaultArgs: false})
+				actArg, err := helpers.GetTraceeArgumentByName(&actEvt, expArg.Name, helpers.GetArgOps{DefaultArgs: false})
 				if err != nil {
 					return err
 				}

@@ -9,9 +9,9 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 var outputDirectory *os.File
@@ -42,9 +42,9 @@ func initializeGlobalVars(output *os.File) {
 	outputDirectory = output // where to save pcap files
 }
 
-// getItemIndexFromEvent returns correct trace.Event variable according to
+// getItemIndexFromEvent returns correct pipeline.Event variable according to
 // given PcapType
-func getItemIndexFromEvent(event *trace.Event, itemType PcapType) string {
+func getItemIndexFromEvent(event *pipeline.Event, itemType PcapType) string {
 	switch itemType {
 	case Single:
 		return itemType.String()
@@ -65,7 +65,7 @@ func getItemIndexFromEvent(event *trace.Event, itemType PcapType) string {
 
 // getPcapFileName returns a string used to create a pcap file under the
 // capture output directory.
-func getPcapFileName(event *trace.Event, pcapType PcapType) (string, error) {
+func getPcapFileName(event *pipeline.Event, pcapType PcapType) (string, error) {
 	var err error
 
 	contID := getContainerID(event.Container.ID)
@@ -93,7 +93,7 @@ func getContainerID(contID string) string {
 }
 
 // getFileStringFormat creates the string that will hold the pcap filename
-func getFileStringFormat(e *trace.Event, c string, t PcapType) string {
+func getFileStringFormat(e *pipeline.Event, c string, t PcapType) string {
 	var format string
 
 	switch t {
@@ -174,7 +174,7 @@ func mkdirForPcapType(o *os.File, c string, t PcapType) error {
 
 // getPcapFileAndWriter returns a file descriptor and and its associated pcap
 // writer depending on the type "t" given (a Pcap interface implementation).
-func getPcapFileAndWriter(event *trace.Event, t PcapType) (
+func getPcapFileAndWriter(event *pipeline.Event, t PcapType) (
 	*os.File,
 	*pcapgo.NgWriter,
 	error,

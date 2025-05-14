@@ -51,7 +51,7 @@ func (sig *e2eContainersDataSource) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "sched_process_exec":
 		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {
@@ -62,7 +62,7 @@ func (sig *e2eContainersDataSource) OnEvent(event protocol.Event) error {
 			return nil
 		}
 
-		containerId := eventObj.Container.ID
+		containerId := eventObj.GetContainer().ID
 		if containerId == "" {
 			return errors.New("received non container event")
 		}

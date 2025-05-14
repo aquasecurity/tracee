@@ -11,6 +11,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -43,13 +44,13 @@ func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan protocol.Event, 
 	scanner := bufio.NewScanner(opts.inputFile)
 	go func() {
 		for scanner.Scan() {
-			event := scanner.Bytes()
-			var e trace.Event
-			err := json.Unmarshal(event, &e)
+			inBuf := scanner.Bytes()
+			var e pipeline.Event
+			err := json.Unmarshal(inBuf, &e)
 			if err != nil {
-				logger.Errorw("Invalid json in " + string(event) + ": " + err.Error())
+				logger.Errorw("Invalid json in " + string(inBuf) + ": " + err.Error())
 			} else {
-				res <- e.ToProtocol()
+				res <- trace.ToProtocol(&e)
 			}
 		}
 		if err := opts.inputFile.Close(); err != nil {

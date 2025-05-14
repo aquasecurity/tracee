@@ -5,7 +5,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 )
 
 // ContainerRemove receives a containers.Containers object as a closure argument to track it's containers.
@@ -15,7 +15,7 @@ func ContainerRemove(cts *containers.Manager) DeriveFunction {
 }
 
 func deriveContainerRemoveArgs(cts *containers.Manager) deriveArgsFunction {
-	return func(event trace.Event) ([]interface{}, error) {
+	return func(event pipeline.Event) ([]interface{}, error) {
 		// if cgroup_id is from non default hid (v1 case), the cgroup info query will fail, so we skip
 		if check, err := isCgroupEventInHid(&event, cts); !check {
 			return nil, errfmt.WrapError(err)

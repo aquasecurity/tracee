@@ -18,13 +18,14 @@ import (
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 var (
 	foundHiddenKernModsCache *lru.Cache[uint64, struct{}]
-	eventsFromHistoryScan    *lru.Cache[*trace.Event, struct{}]
+	eventsFromHistoryScan    *lru.Cache[*pipeline.Event, struct{}]
 	allModsMap               *bpf.BPFMap
 	newModuleOnlyMap         *bpf.BPFMap
 	recentDeletedModulesMap  *bpf.BPFMap
@@ -53,7 +54,7 @@ func HiddenKernelModule() DeriveFunction {
 }
 
 func deriveHiddenKernelModulesArgs() multiDeriveArgsFunction {
-	return func(event trace.Event) ([][]interface{}, []error) {
+	return func(event pipeline.Event) ([][]interface{}, []error) {
 		if !isInitialized {
 			logger.Debugw("hidden kernel module derive logic: not initialized yet... skipping")
 			return nil, nil
@@ -120,7 +121,7 @@ func InitHiddenKernelModules(modsMap *bpf.BPFMap, newModMap *bpf.BPFMap, deleted
 		return err
 	}
 
-	eventsFromHistoryScan, err = lru.New[*trace.Event, struct{}](50) // If there are more hidden modules found in history scan, it'll report only the size of the LRU
+	eventsFromHistoryScan, err = lru.New[*pipeline.Event, struct{}](50) // If there are more hidden modules found in history scan, it'll report only the size of the LRU
 	if err != nil {
 		return err
 	}

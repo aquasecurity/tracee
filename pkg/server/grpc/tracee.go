@@ -14,6 +14,7 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/pkg/version"
@@ -711,7 +712,7 @@ func convertDefinitionToProto(d events.Definition) *pb.EventDefinition {
 	}
 }
 
-func getExternalID(e trace.Event) pb.EventId {
+func getExternalID(e pipeline.Event) pb.EventId {
 	// Only use translation table if is built-in events (below 10,000)
 	if e.EventID <= int(events.MaxBuiltinID) {
 		idExternal := EventTranslationTable[events.ID(e.EventID)]
@@ -720,7 +721,7 @@ func getExternalID(e trace.Event) pb.EventId {
 	return pb.EventId(e.EventID)
 }
 
-func convertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
+func convertTraceeEventToProto(e pipeline.Event) (*pb.Event, error) {
 	process := getProcess(e)
 	container := getContainer(e)
 	k8s := getK8s(e)
@@ -769,7 +770,7 @@ func convertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 	return event, nil
 }
 
-func getProcess(e trace.Event) *pb.Process {
+func getProcess(e pipeline.Event) *pb.Process {
 	var userStackTrace *pb.UserStackTrace
 
 	if len(e.StackAddresses) > 0 {
@@ -812,7 +813,7 @@ func getProcess(e trace.Event) *pb.Process {
 	}
 }
 
-func getAncestors(e trace.Event) []*pb.Process {
+func getAncestors(e pipeline.Event) []*pb.Process {
 	var ancestors []*pb.Process
 	if e.ParentEntityId != 0 {
 		ancestors = append(ancestors, &pb.Process{
@@ -824,7 +825,7 @@ func getAncestors(e trace.Event) []*pb.Process {
 	return ancestors
 }
 
-func getContainer(e trace.Event) *pb.Container {
+func getContainer(e pipeline.Event) *pb.Container {
 	if e.Container.ID == "" && e.Container.Name == "" {
 		return nil
 	}
@@ -849,7 +850,7 @@ func getContainer(e trace.Event) *pb.Container {
 	return container
 }
 
-func getK8s(e trace.Event) *pb.K8S {
+func getK8s(e pipeline.Event) *pb.K8S {
 	if e.Kubernetes.PodName == "" &&
 		e.Kubernetes.PodUID == "" &&
 		e.Kubernetes.PodNamespace == "" {

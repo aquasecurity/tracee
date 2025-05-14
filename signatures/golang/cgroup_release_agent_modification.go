@@ -54,7 +54,7 @@ func (sig *CgroupReleaseAgentModification) OnEvent(event protocol.Event) error {
 
 	basename := ""
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "security_file_open":
 		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
 		if err != nil {

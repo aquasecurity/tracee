@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -16,12 +17,12 @@ func TestK8sApiConnection(t *testing.T) {
 
 	testCases := []struct {
 		Name     string
-		Events   []trace.Event
+		Events   []pipeline.Event
 		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "sched_process_exec",
 					Container: trace.Container{ID: "0907ef86d7be"},
@@ -62,7 +63,7 @@ func TestK8sApiConnection(t *testing.T) {
 					Data: map[string]interface{}{
 						"ip": "1.1.1.1",
 					},
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "security_socket_connect",
 						Container: trace.Container{ID: "0907ef86d7be"},
 						Args: []trace.Argument{
@@ -77,7 +78,7 @@ func TestK8sApiConnection(t *testing.T) {
 								},
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-1013",
 						Version:     "0.1.0",
@@ -95,7 +96,7 @@ func TestK8sApiConnection(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "sched_process_exec",
 					Container: trace.Container{ID: "0907ef86d7be"},
@@ -144,7 +145,7 @@ func TestK8sApiConnection(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, e := range tc.Events {
-				err = sig.OnEvent(e.ToProtocol())
+				err = sig.OnEvent(trace.ToProtocol(&e))
 				require.NoError(t, err)
 			}
 

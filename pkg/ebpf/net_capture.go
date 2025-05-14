@@ -9,8 +9,8 @@ import (
 	"github.com/google/gopacket/layers"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 //
@@ -49,7 +49,7 @@ func (t *Tracee) handleNetCaptureEvents(ctx context.Context) {
 	}
 }
 
-func (t *Tracee) processNetCapEvents(ctx context.Context, in <-chan *trace.Event) <-chan error {
+func (t *Tracee) processNetCapEvents(ctx context.Context, in <-chan *pipeline.Event) <-chan error {
 	errc := make(chan error, 1)
 
 	go func() {
@@ -83,7 +83,7 @@ func (t *Tracee) processNetCapEvents(ctx context.Context, in <-chan *trace.Event
 // TODO: usually networking parsing functions are big, still, this might need
 // some refactoring to make it smaller (code reuse might not be a key for the
 // refactor).
-func (t *Tracee) processNetCapEvent(event *trace.Event) {
+func (t *Tracee) processNetCapEvent(event *pipeline.Event) {
 	eventId := events.ID(event.EventID)
 
 	switch eventId {

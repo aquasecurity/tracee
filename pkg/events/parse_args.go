@@ -10,11 +10,12 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	traceetime "github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func ParseArgs(event *trace.Event) error {
+func ParseArgs(event *pipeline.Event) error {
 	for i := range event.Args {
 		// Convert pointers to hex string
 		if ptr, isPointer := event.Args[i].Value.(trace.Pointer); isPointer {
@@ -252,7 +253,7 @@ func ParseArgs(event *trace.Event) error {
 	return nil
 }
 
-func ParseArgsFDs(event *trace.Event, origTimestamp uint64, fdArgPathMap *bpf.BPFMap) error {
+func ParseArgsFDs(event *pipeline.Event, origTimestamp uint64, fdArgPathMap *bpf.BPFMap) error {
 	if fdArg := GetArg(event.Args, "fd"); fdArg != nil {
 		if fd, isInt32 := fdArg.Value.(int32); isInt32 {
 			ts := origTimestamp
@@ -285,7 +286,7 @@ func GetArg(args []trace.Argument, argName string) *trace.Argument {
 	return nil
 }
 
-func SetArgValue(event *trace.Event, argName string, value any) error {
+func SetArgValue(event *pipeline.Event, argName string, value any) error {
 	arg := GetArg(event.Args, argName)
 	if arg == nil {
 		return fmt.Errorf("event %s has no argument named %s", event.EventName, argName)

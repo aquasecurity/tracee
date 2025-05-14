@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -61,7 +62,7 @@ func TestArgVal(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				e := trace.Event{Args: []trace.Argument{tt.arg}}
+				e := pipeline.Event{Args: []trace.Argument{tt.arg}}
 				val, err := ArgVal[int32](e.Args, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
@@ -124,7 +125,7 @@ func TestArgVal(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				e := trace.Event{Args: []trace.Argument{tt.arg}}
+				e := pipeline.Event{Args: []trace.Argument{tt.arg}}
 				val, err := ArgVal[string](e.Args, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
@@ -187,7 +188,7 @@ func TestArgVal(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				e := trace.Event{Args: []trace.Argument{tt.arg}}
+				e := pipeline.Event{Args: []trace.Argument{tt.arg}}
 				val, err := ArgVal[uint64](e.Args, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
@@ -250,7 +251,7 @@ func TestArgVal(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				e := trace.Event{Args: []trace.Argument{tt.arg}}
+				e := pipeline.Event{Args: []trace.Argument{tt.arg}}
 				val, err := ArgVal[uint32](e.Args, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
@@ -313,7 +314,7 @@ func TestArgVal(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				e := trace.Event{Args: []trace.Argument{tt.arg}}
+				e := pipeline.Event{Args: []trace.Argument{tt.arg}}
 				val, err := ArgVal[[]string](e.Args, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
@@ -376,7 +377,7 @@ func TestArgVal(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				e := trace.Event{Args: []trace.Argument{tt.arg}}
+				e := pipeline.Event{Args: []trace.Argument{tt.arg}}
 				val, err := ArgVal[[]uint64](e.Args, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)

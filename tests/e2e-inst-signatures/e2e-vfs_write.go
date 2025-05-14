@@ -42,7 +42,7 @@ func (sig *e2eVfsWrite) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "vfs_write":
 		filePath, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {

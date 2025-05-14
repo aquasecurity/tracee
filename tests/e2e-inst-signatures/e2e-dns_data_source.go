@@ -50,9 +50,9 @@ func (sig *e2eDnsDataSource) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "sched_process_exit":
-		if eventObj.Executable.Path != "/usr/bin/ping" {
+		if eventObj.GetExecutable().Path != "/usr/bin/ping" {
 			return nil // irrelevant code path
 		}
 
