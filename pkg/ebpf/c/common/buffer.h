@@ -143,12 +143,14 @@ statfunc int save_bytes_to_buf(args_buffer_t *buf, void *ptr, u32 size, u8 index
     if (buf->offset > ARGS_BUF_SIZE - (MAX_BYTES_ARR_SIZE + 1 + sizeof(int)))
         return 0;
 
+    size_t read_size = size;
+    if (read_size >= MAX_BYTES_ARR_SIZE)
+        read_size = MAX_BYTES_ARR_SIZE - 1;
+
     // Read bytes into buffer
-    if (bpf_probe_read(&(buf->args[buf->offset + 1 + sizeof(int)]),
-                       size & (MAX_BYTES_ARR_SIZE - 1),
-                       ptr) == 0) {
+    if (bpf_probe_read(&(buf->args[buf->offset + 1 + sizeof(int)]), read_size, ptr) == 0) {
         // We update offset only if all writes were successful
-        buf->offset += size + 1 + sizeof(int);
+        buf->offset += read_size + 1 + sizeof(int);
         buf->argnum++;
         return 1;
     }
