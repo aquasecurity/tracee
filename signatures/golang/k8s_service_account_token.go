@@ -11,18 +11,18 @@ import (
 )
 
 type K8SServiceAccountToken struct {
-	cb               detect.SignatureHandler
-	legitProcs       []string
-	tokenPathPattern string
-	compiledRegex    *regexp.Regexp
+	cb            detect.SignatureHandler
+	legitProcs    []string
+	compiledRegex *regexp.Regexp
 }
+
+var tokenPathRegexString = `secrets/kubernetes\.io/serviceaccount/.*token$`
 
 func (sig *K8SServiceAccountToken) Init(ctx detect.SignatureContext) error {
 	var err error
 	sig.cb = ctx.Callback
 	sig.legitProcs = []string{"flanneld", "kube-proxy", "etcd", "kube-apiserver", "coredns", "kube-controller", "kubectl"}
-	sig.tokenPathPattern = `secrets/kubernetes.io/serviceaccount.+token$`
-	sig.compiledRegex, err = regexp.Compile(sig.tokenPathPattern)
+	sig.compiledRegex, err = regexp.Compile(tokenPathRegexString)
 	return err
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -171,5 +172,34 @@ func TestK8SServiceAccountToken(t *testing.T) {
 			}
 			assert.Equal(t, tc.Findings, holder.GroupBySigID())
 		})
+	}
+}
+
+func TestK8SServiceAccountTokenRegex(t *testing.T) {
+	re := regexp.MustCompile(tokenPathRegexString)
+
+	validPaths := []string{
+		"/var/run/secrets/kubernetes.io/serviceaccount/token",
+		"/var/run/secrets/kubernetes.io/serviceaccount/token1234token",
+		"/mnt/data/secrets/kubernetes.io/serviceaccount/my-token",
+		"/any/secrets/kubernetes.io/serviceaccount/1234token",
+	}
+
+	invalidPaths := []string{
+		"/var/run/secrets/kubernetes.io/serviceaccounttoken",      // no slash after serviceaccount
+		"/var/run/secrets/kubernetes.io/serviceaccount-my-token",  // no slash after serviceaccount
+		"/var/run/secrets/kubernetes.io/serviceaccount/token1234", // not ending with 'token'
+		"/var/run/secrets/kubernetesXio/serviceaccount/token",     // typo in 'kubernetes.io'
+		"/var/run/secrets/kubernetes/io/serviceaccount/token",     // typo in 'kubernetes.io'
+
+		"/tmp/token", // not a k8s path
+	}
+
+	for _, p := range validPaths {
+		assert.True(t, re.MatchString(p), "regex should match: %s", p)
+	}
+
+	for _, p := range invalidPaths {
+		assert.False(t, re.MatchString(p), "regex should not match: %s", p)
 	}
 }
