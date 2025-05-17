@@ -21,7 +21,9 @@ func (sig *K8SServiceAccountToken) Init(ctx detect.SignatureContext) error {
 	var err error
 	sig.cb = ctx.Callback
 	sig.legitProcs = []string{"flanneld", "kube-proxy", "etcd", "kube-apiserver", "coredns", "kube-controller", "kubectl"}
-	sig.tokenPathPattern = `secrets/kubernetes.io/serviceaccount.+token$`
+	// - "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	// - "/custom/path/secrets/kubernetes.io/serviceaccount/special-token"
+	sig.tokenPathPattern = `secrets/kubernetes\.io/serviceaccount.+token$`
 	sig.compiledRegex, err = regexp.Compile(sig.tokenPathPattern)
 	return err
 }
