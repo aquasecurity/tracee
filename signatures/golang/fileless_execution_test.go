@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -16,12 +17,12 @@ func TestFilelessExecution(t *testing.T) {
 
 	testCases := []struct {
 		Name     string
-		Events   []trace.Event
+		Events   []pipeline.Event
 		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "sched_process_exec",
 					Args: []trace.Argument{
@@ -37,7 +38,7 @@ func TestFilelessExecution(t *testing.T) {
 			Findings: map[string]*detect.Finding{
 				"TRC-105": {
 					Data: nil,
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "sched_process_exec",
 						Args: []trace.Argument{
 							{
@@ -47,7 +48,7 @@ func TestFilelessExecution(t *testing.T) {
 								Value: "memfd://something",
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-105",
 						Version:     "1",
@@ -68,7 +69,7 @@ func TestFilelessExecution(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - wrong path",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "sched_process_exec",
 					Args: []trace.Argument{
@@ -96,7 +97,7 @@ func TestFilelessExecution(t *testing.T) {
 			sig.Init(detect.SignatureContext{Callback: holder.OnFinding})
 
 			for _, e := range tc.Events {
-				err := sig.OnEvent(e.ToProtocol())
+				err := sig.OnEvent(trace.ToProtocol(&e))
 				require.NoError(t, err)
 			}
 			assert.Equal(t, tc.Findings, holder.GroupBySigID())

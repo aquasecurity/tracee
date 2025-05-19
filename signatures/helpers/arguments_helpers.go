@@ -34,7 +34,7 @@ type GetArgOps struct {
 
 // GetTraceeArgumentByName fetches the argument in event with `Name` that matches argName
 func GetTraceeArgumentByName(event trace.Event, argName string, opts GetArgOps) (trace.Argument, error) {
-	for _, arg := range event.Args {
+	for _, arg := range event.GetArgs() {
 		if arg.Name == argName {
 			if !opts.DefaultArgs && arg.Value == nil {
 				return arg, fmt.Errorf("argument %s is not initialized", argName)

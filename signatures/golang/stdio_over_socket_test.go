@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -16,12 +17,12 @@ func TestStdioOverSocket(t *testing.T) {
 
 	testCases := []struct {
 		Name     string
-		Events   []trace.Event
+		Events   []pipeline.Event
 		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection - security_socket_connect",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_socket_connect",
 					Args: []trace.Argument{
@@ -47,7 +48,7 @@ func TestStdioOverSocket(t *testing.T) {
 						"IP address":      "10.225.0.2",
 						"Port":            "53",
 					},
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "security_socket_connect",
 						Args: []trace.Argument{
 							{
@@ -63,7 +64,7 @@ func TestStdioOverSocket(t *testing.T) {
 								Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-101",
 						Version:     "2",
@@ -84,7 +85,7 @@ func TestStdioOverSocket(t *testing.T) {
 		},
 		{
 			Name: "should trigger detection - socket_dup",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "socket_dup",
 					Args: []trace.Argument{
@@ -110,7 +111,7 @@ func TestStdioOverSocket(t *testing.T) {
 						"IP address":      "10.225.0.2",
 						"Port":            "53",
 					},
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "socket_dup",
 						Args: []trace.Argument{
 							{
@@ -126,7 +127,7 @@ func TestStdioOverSocket(t *testing.T) {
 								Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-101",
 						Version:     "2",
@@ -147,7 +148,7 @@ func TestStdioOverSocket(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - security_socket_connect wrong FD",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_socket_connect",
 					Args: []trace.Argument{
@@ -170,7 +171,7 @@ func TestStdioOverSocket(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - security_socket_connect legit port",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_socket_connect",
 					Args: []trace.Argument{
@@ -193,7 +194,7 @@ func TestStdioOverSocket(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - socket_dup wrong FD",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "socket_dup",
 					Args: []trace.Argument{
@@ -216,7 +217,7 @@ func TestStdioOverSocket(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - socket_dup legit port",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "socket_dup",
 					Args: []trace.Argument{
@@ -250,7 +251,7 @@ func TestStdioOverSocket(t *testing.T) {
 			sig.Init(detect.SignatureContext{Callback: holder.OnFinding})
 
 			for _, e := range tc.Events {
-				err := sig.OnEvent(e.ToProtocol())
+				err := sig.OnEvent(trace.ToProtocol(&e))
 				require.NoError(t, err)
 			}
 			assert.Equal(t, tc.Findings, holder.GroupBySigID())

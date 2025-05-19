@@ -54,7 +54,7 @@ func (sig *DockerAbuse) OnEvent(event protocol.Event) error {
 
 	path := ""
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "security_file_open":
 		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {

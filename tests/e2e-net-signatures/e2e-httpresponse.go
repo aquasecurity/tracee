@@ -49,9 +49,9 @@ func (sig *e2eHTTPResponse) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	if eventObj.EventName == "net_packet_http_response" {
+	if eventObj.GetEventName() == "net_packet_http_response" {
 		// validate tast context
-		if eventObj.HostName == "" {
+		if eventObj.GetHostName() == "" {
 			return nil
 		}
 

@@ -52,7 +52,7 @@ func (sig *IllegitimateShell) OnEvent(event protocol.Event) error {
 		return errors.New("invalid event")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "sched_process_exec":
 		prevComm, err := helpers.GetTraceeStringArgumentByName(eventObj, "prev_comm")
 		if err != nil {
@@ -61,7 +61,7 @@ func (sig *IllegitimateShell) OnEvent(event protocol.Event) error {
 		for _, webServersProcessName := range sig.webServersProcessNames {
 			if webServersProcessName == prevComm {
 				for _, shellName := range sig.shellNames {
-					if eventObj.ProcessName == shellName {
+					if eventObj.GetProcessName() == shellName {
 						metadata, err := sig.GetMetadata()
 						if err != nil {
 							return err

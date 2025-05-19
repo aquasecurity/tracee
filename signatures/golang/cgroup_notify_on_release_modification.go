@@ -51,7 +51,7 @@ func (sig *CgroupNotifyOnReleaseModification) OnEvent(event protocol.Event) erro
 		return errors.New("invalid event")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "security_file_open":
 		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {

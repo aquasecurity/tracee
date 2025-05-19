@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -17,12 +18,12 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 
 	testCases := []struct {
 		Name     string
-		Events   []trace.Event
+		Events   []pipeline.Event
 		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection - security_file_open",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_file_open",
 					Args: []trace.Argument{
@@ -44,7 +45,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 			Findings: map[string]*detect.Finding{
 				"TRC-1010": {
 					Data: nil,
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "security_file_open",
 						Args: []trace.Argument{
 							{
@@ -60,7 +61,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 								Value: interface{}(buildFlagArgValue(parsers.O_WRONLY)),
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-1010",
 						Version:     "1",
@@ -81,7 +82,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 		},
 		{
 			Name: "should trigger detection - security_inode_rename",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_inode_rename",
 					Args: []trace.Argument{
@@ -97,7 +98,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 			Findings: map[string]*detect.Finding{
 				"TRC-1010": {
 					Data: nil,
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "security_inode_rename",
 						Args: []trace.Argument{
 							{
@@ -107,7 +108,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 								Value: interface{}("/tmp/cgrp/release_agent"),
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-1010",
 						Version:     "1",
@@ -128,7 +129,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - security_file_open wrong open flags",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_file_open",
 					Args: []trace.Argument{
@@ -151,7 +152,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - security_file_open wrong path",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_file_open",
 					Args: []trace.Argument{
@@ -174,7 +175,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - security_inode_rename wrong path",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_inode_rename",
 					Args: []trace.Argument{
@@ -202,7 +203,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 			sig.Init(detect.SignatureContext{Callback: holder.OnFinding})
 
 			for _, e := range tc.Events {
-				err := sig.OnEvent(e.ToProtocol())
+				err := sig.OnEvent(trace.ToProtocol(&e))
 				require.NoError(t, err)
 			}
 			assert.Equal(t, tc.Findings, holder.GroupBySigID())

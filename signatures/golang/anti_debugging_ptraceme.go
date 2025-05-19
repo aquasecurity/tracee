@@ -51,7 +51,7 @@ func (sig *AntiDebuggingPtraceme) OnEvent(event protocol.Event) error {
 		return errors.New("invalid event")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "ptrace":
 		requestArg, err := helpers.GetTraceeIntArgumentByName(eventObj, "request")
 		if err != nil {

@@ -41,10 +41,10 @@ func (sig *e2eICMPv6) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "net_packet_icmpv6":
 		// validate tast context
-		if eventObj.HostName == "" {
+		if eventObj.GetHostName() == "" {
 			return nil
 		}
 

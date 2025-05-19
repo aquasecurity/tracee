@@ -50,7 +50,7 @@ func (sig *SystemRequestKeyConfigModification) OnEvent(event protocol.Event) err
 		return errors.New("invalid event")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "security_file_open":
 		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
 		if err != nil {

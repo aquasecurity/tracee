@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -16,12 +17,12 @@ func TestDroppedExecutable(t *testing.T) {
 
 	testCases := []struct {
 		Name     string
-		Events   []trace.Event
+		Events   []pipeline.Event
 		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "magic_write",
 					Args: []trace.Argument{
@@ -43,7 +44,7 @@ func TestDroppedExecutable(t *testing.T) {
 			Findings: map[string]*detect.Finding{
 				"TRC-1022": {
 					Data: map[string]interface{}{"path": "/bin/malware"},
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "magic_write",
 						Args: []trace.Argument{
 							{
@@ -59,7 +60,7 @@ func TestDroppedExecutable(t *testing.T) {
 								Value: interface{}([]byte{127, 69, 76, 70}),
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-1022",
 						Version:     "1",
@@ -80,7 +81,7 @@ func TestDroppedExecutable(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - not an ELF",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "magic_write",
 					Args: []trace.Argument{
@@ -103,7 +104,7 @@ func TestDroppedExecutable(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - memory path",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "magic_write",
 					Args: []trace.Argument{
@@ -137,7 +138,7 @@ func TestDroppedExecutable(t *testing.T) {
 			sig.Init(detect.SignatureContext{Callback: holder.OnFinding})
 
 			for _, e := range tc.Events {
-				err := sig.OnEvent(e.ToProtocol())
+				err := sig.OnEvent(trace.ToProtocol(&e))
 				require.NoError(t, err)
 			}
 			assert.Equal(t, tc.Findings, holder.GroupBySigID())

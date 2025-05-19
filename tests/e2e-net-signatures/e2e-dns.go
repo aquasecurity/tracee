@@ -56,9 +56,9 @@ func (sig *e2eDNS) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	if eventObj.EventName == "net_packet_dns" {
+	if eventObj.GetEventName() == "net_packet_dns" {
 		// validate tast context
-		if eventObj.HostName == "" {
+		if eventObj.GetHostName() == "" {
 			return nil
 		}
 

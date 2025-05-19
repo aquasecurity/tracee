@@ -69,7 +69,7 @@ func (sig *e2eSetFsPwd) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "set_fs_pwd":
 		unresolvedPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "unresolved_path")
 		if sig.hasReadUser && err != nil {

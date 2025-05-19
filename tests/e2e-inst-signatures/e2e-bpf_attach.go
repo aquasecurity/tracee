@@ -42,7 +42,7 @@ func (sig *e2eBpfAttach) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "bpf_attach":
 		symbolName, err := helpers.GetTraceeStringArgumentByName(eventObj, "symbol_name")
 		if err != nil {

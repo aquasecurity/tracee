@@ -40,7 +40,7 @@ func (sig *e2eSignatureDerivation) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "FILE_MODIFICATION":
 		m, _ := sig.GetMetadata()
 

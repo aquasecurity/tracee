@@ -47,7 +47,7 @@ func (sig *KernelModuleLoading) OnEvent(event protocol.Event) error {
 		return errors.New("invalid event")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "module_load":
 		metadata, err := sig.GetMetadata()
 		if err != nil {

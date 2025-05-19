@@ -64,7 +64,7 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 	if !ok {
 		return errors.New("failed to cast event's payload")
 	}
-	switch ee.EventName {
+	switch ee.GetEventName() {
 	case "open", "openat":
 		flags, err := helpers.GetTraceeIntArgumentByName(ee, "flags")
 		if err != nil {
