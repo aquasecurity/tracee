@@ -8,6 +8,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -25,7 +26,7 @@ const (
 func BenchmarkGetEventFromPool(b *testing.B) {
 	evtPool := sync.Pool{
 		New: func() interface{} {
-			return &trace.Event{}
+			return &pipeline.Event{}
 		},
 	}
 	// warm up the pool
@@ -44,10 +45,10 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 	argnum := uint8(0)
 
 	decodeChan := make(chan *bufferdecoder.EventContext, 10000)
-	processChan := make(chan *trace.Event, 10000)
-	deriveChan := make(chan *trace.Event)
-	engineChan := make(chan *trace.Event)
-	sinkChan := make(chan *trace.Event)
+	processChan := make(chan *pipeline.Event, 10000)
+	deriveChan := make(chan *pipeline.Event)
+	engineChan := make(chan *pipeline.Event)
+	sinkChan := make(chan *pipeline.Event)
 
 	var wg sync.WaitGroup
 
@@ -71,7 +72,7 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for j := 0; j < decodeEvts; j++ {
 				ctx := <-decodeChan
-				evt, ok := evtPool.Get().(*trace.Event)
+				evt, ok := evtPool.Get().(*pipeline.Event)
 				if !ok {
 					b.Error("Failed to get event from pool")
 				}
@@ -127,7 +128,7 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 
 				// get an event from the pool, fill it with data and
 				// pass it to the other stages
-				evtCopy, ok := evtPool.Get().(*trace.Event)
+				evtCopy, ok := evtPool.Get().(*pipeline.Event)
 				if !ok {
 					b.Error("Failed to get event from pool")
 				}
@@ -206,10 +207,10 @@ func BenchmarkNewEventObject(b *testing.B) {
 	argnum := uint8(0)
 
 	decodeChan := make(chan *bufferdecoder.EventContext, 10000)
-	processChan := make(chan *trace.Event, 10000)
-	deriveChan := make(chan *trace.Event)
-	engineChan := make(chan *trace.Event)
-	sinkChan := make(chan *trace.Event)
+	processChan := make(chan *pipeline.Event, 10000)
+	deriveChan := make(chan *pipeline.Event)
+	engineChan := make(chan *pipeline.Event)
+	sinkChan := make(chan *pipeline.Event)
 
 	var wg sync.WaitGroup
 
@@ -234,38 +235,39 @@ func BenchmarkNewEventObject(b *testing.B) {
 			for j := 0; j < decodeEvts; j++ {
 				ctx := <-decodeChan
 
-				evt := trace.Event{
-					Timestamp:             int(ctx.Ts),
-					ThreadStartTime:       int(ctx.StartTime),
-					ProcessorID:           int(ctx.ProcessorId),
-					ProcessID:             int(ctx.Pid),
-					ThreadID:              int(ctx.Tid),
-					ParentProcessID:       int(ctx.Ppid),
-					HostProcessID:         int(ctx.HostPid),
-					HostThreadID:          int(ctx.HostTid),
-					HostParentProcessID:   int(ctx.HostPpid),
-					UserID:                int(ctx.Uid),
-					MountNS:               int(ctx.MntID),
-					PIDNS:                 int(ctx.PidID),
-					ProcessName:           string(bytes.TrimRight(ctx.Comm[:], "\x00")),
-					HostName:              string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
-					CgroupID:              uint(ctx.CgroupID),
-					ContainerID:           containerData.ID,
-					Container:             containerData,
-					Kubernetes:            kubernetesData,
-					EventID:               int(ctx.EventID),
-					EventName:             eventDefinition.GetName(),
+				evt := pipeline.Event{
+					Timestamp:           int(ctx.Ts),
+					ThreadStartTime:     int(ctx.StartTime),
+					ProcessorID:         int(ctx.ProcessorId),
+					ProcessID:           int(ctx.Pid),
+					ThreadID:            int(ctx.Tid),
+					ParentProcessID:     int(ctx.Ppid),
+					HostProcessID:       int(ctx.HostPid),
+					HostThreadID:        int(ctx.HostTid),
+					HostParentProcessID: int(ctx.HostPpid),
+					UserID:              int(ctx.Uid),
+					MountNS:             int(ctx.MntID),
+					PIDNS:               int(ctx.PidID),
+					ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
+					HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
+					CgroupID:            uint(ctx.CgroupID),
+					ContainerID:         containerData.ID,
+					Container:           containerData,
+					Kubernetes:          kubernetesData,
+					EventID:             int(ctx.EventID),
+					EventName:           eventDefinition.GetName(),
+					ArgsNum:             int(argnum),
+					ReturnValue:         int(ctx.Retval),
+					Args:                args,
+					StackAddresses:      stackAddresses,
+					ContextFlags:        flags,
+					Syscall:             syscall,
+					ThreadEntityId:      utils.HashTaskID(ctx.HostTid, ctx.StartTime),
+					ProcessEntityId:     utils.HashTaskID(ctx.HostPid, ctx.LeaderStartTime),
+					ParentEntityId:      utils.HashTaskID(ctx.HostPpid, ctx.ParentStartTime),
+
 					PoliciesVersion:       ctx.PoliciesVersion,
 					MatchedPoliciesKernel: ctx.MatchedPolicies,
-					ArgsNum:               int(argnum),
-					ReturnValue:           int(ctx.Retval),
-					Args:                  args,
-					StackAddresses:        stackAddresses,
-					ContextFlags:          flags,
-					Syscall:               syscall,
-					ThreadEntityId:        utils.HashTaskID(ctx.HostTid, ctx.StartTime),
-					ProcessEntityId:       utils.HashTaskID(ctx.HostPid, ctx.LeaderStartTime),
-					ParentEntityId:        utils.HashTaskID(ctx.HostPpid, ctx.ParentStartTime),
 				}
 
 				processChan <- &evt

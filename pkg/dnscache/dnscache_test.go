@@ -14,11 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/dnscache"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
-var eventDump []trace.Event = []trace.Event{}
+var eventDump []pipeline.Event = []pipeline.Event{}
 
 func init() {
 	zippedEventsFile, err := os.OpenFile("./dns_events_test.gz", os.O_RDONLY, os.ModeAppend)
@@ -34,7 +34,7 @@ func init() {
 	scanner := bufio.NewScanner(gzipReader)
 	for scanner.Scan() {
 		event := scanner.Bytes()
-		var e trace.Event
+		var e pipeline.Event
 		err := json.Unmarshal(event, &e)
 		if err != nil {
 			logger.Errorw("Invalid json in " + string(event) + ": " + err.Error())

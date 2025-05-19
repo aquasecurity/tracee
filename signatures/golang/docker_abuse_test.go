@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -17,12 +18,12 @@ func TestDockerAbuse(t *testing.T) {
 
 	testCases := []struct {
 		Name     string
-		Events   []trace.Event
+		Events   []pipeline.Event
 		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection - security_file_open",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_file_open",
 					Container: trace.Container{ID: "dockercontainer"},
@@ -45,7 +46,7 @@ func TestDockerAbuse(t *testing.T) {
 			Findings: map[string]*detect.Finding{
 				"TRC-1019": {
 					Data: nil,
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "security_file_open",
 						Container: trace.Container{ID: "dockercontainer"},
 						Args: []trace.Argument{
@@ -62,7 +63,7 @@ func TestDockerAbuse(t *testing.T) {
 								Value: interface{}("/var/run/docker.sock"),
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-1019",
 						Version:     "1",
@@ -83,7 +84,7 @@ func TestDockerAbuse(t *testing.T) {
 		},
 		{
 			Name: "should trigger detection - security_socket_connect",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_socket_connect",
 					Container: trace.Container{ID: "dockercontainer"},
@@ -100,7 +101,7 @@ func TestDockerAbuse(t *testing.T) {
 			Findings: map[string]*detect.Finding{
 				"TRC-1019": {
 					Data: nil,
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "security_socket_connect",
 						Container: trace.Container{ID: "dockercontainer"},
 						Args: []trace.Argument{
@@ -111,7 +112,7 @@ func TestDockerAbuse(t *testing.T) {
 								Value: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/var/run/docker.sock"},
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-1019",
 						Version:     "1",
@@ -132,7 +133,7 @@ func TestDockerAbuse(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - security_file_open wrong path",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_file_open",
 					Container: trace.Container{ID: "dockercontainer"},
@@ -156,7 +157,7 @@ func TestDockerAbuse(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - security_file_open wrong open flags",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_file_open",
 					Container: trace.Container{ID: "dockercontainer"},
@@ -180,7 +181,7 @@ func TestDockerAbuse(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - security_socket_connect wrong addr",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_socket_connect",
 					Container: trace.Container{ID: "dockercontainer"},
@@ -209,7 +210,7 @@ func TestDockerAbuse(t *testing.T) {
 			sig.Init(detect.SignatureContext{Callback: holder.OnFinding})
 
 			for _, e := range tc.Events {
-				err := sig.OnEvent(e.ToProtocol())
+				err := sig.OnEvent(trace.ToProtocol(&e))
 				require.NoError(t, err)
 			}
 			assert.Equal(t, tc.Findings, holder.GroupBySigID())

@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -17,12 +18,12 @@ func TestSudoersModification(t *testing.T) {
 
 	testCases := []struct {
 		Name     string
-		Events   []trace.Event
+		Events   []pipeline.Event
 		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection - security_file_open file",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_file_open",
 					Args: []trace.Argument{
@@ -44,7 +45,7 @@ func TestSudoersModification(t *testing.T) {
 			Findings: map[string]*detect.Finding{
 				"TRC-1028": {
 					Data: nil,
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "security_file_open",
 						Args: []trace.Argument{
 							{
@@ -60,7 +61,7 @@ func TestSudoersModification(t *testing.T) {
 								Value: buildFlagArgValue(parsers.O_WRONLY),
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-1028",
 						Version:     "1",
@@ -81,7 +82,7 @@ func TestSudoersModification(t *testing.T) {
 		},
 		{
 			Name: "should trigger detection - security_file_open dir",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_file_open",
 					Args: []trace.Argument{
@@ -103,7 +104,7 @@ func TestSudoersModification(t *testing.T) {
 			Findings: map[string]*detect.Finding{
 				"TRC-1028": {
 					Data: nil,
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "security_file_open",
 						Args: []trace.Argument{
 							{
@@ -119,7 +120,7 @@ func TestSudoersModification(t *testing.T) {
 								Value: buildFlagArgValue(parsers.O_WRONLY),
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-1028",
 						Version:     "1",
@@ -140,7 +141,7 @@ func TestSudoersModification(t *testing.T) {
 		},
 		{
 			Name: "should trigger detection - security_inode_rename file",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_inode_rename",
 					Args: []trace.Argument{
@@ -156,7 +157,7 @@ func TestSudoersModification(t *testing.T) {
 			Findings: map[string]*detect.Finding{
 				"TRC-1028": {
 					Data: nil,
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "security_inode_rename",
 						Args: []trace.Argument{
 							{
@@ -166,7 +167,7 @@ func TestSudoersModification(t *testing.T) {
 								Value: interface{}("/etc/sudoers"),
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-1028",
 						Version:     "1",
@@ -187,7 +188,7 @@ func TestSudoersModification(t *testing.T) {
 		},
 		{
 			Name: "should trigger detection - security_inode_rename dir",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_inode_rename",
 					Args: []trace.Argument{
@@ -203,7 +204,7 @@ func TestSudoersModification(t *testing.T) {
 			Findings: map[string]*detect.Finding{
 				"TRC-1028": {
 					Data: nil,
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "security_inode_rename",
 						Args: []trace.Argument{
 							{
@@ -213,7 +214,7 @@ func TestSudoersModification(t *testing.T) {
 								Value: interface{}("/etc/sudoers.d/amnon"),
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-1028",
 						Version:     "1",
@@ -234,7 +235,7 @@ func TestSudoersModification(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - security_file_open wrong open flags",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_file_open",
 					Args: []trace.Argument{
@@ -257,7 +258,7 @@ func TestSudoersModification(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - security_file_open wrong path",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_file_open",
 					Args: []trace.Argument{
@@ -280,7 +281,7 @@ func TestSudoersModification(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - security_inode_rename wrong path",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "security_inode_rename",
 					Args: []trace.Argument{
@@ -308,7 +309,7 @@ func TestSudoersModification(t *testing.T) {
 			sig.Init(detect.SignatureContext{Callback: holder.OnFinding})
 
 			for _, e := range tc.Events {
-				err := sig.OnEvent(e.ToProtocol())
+				err := sig.OnEvent(trace.ToProtocol(&e))
 				require.NoError(t, err)
 			}
 			assert.Equal(t, tc.Findings, holder.GroupBySigID())

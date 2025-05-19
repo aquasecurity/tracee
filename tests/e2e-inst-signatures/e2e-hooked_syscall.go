@@ -41,7 +41,7 @@ func (sig *e2eHookedSyscall) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "hooked_syscall":
 		syscall, err := helpers.GetTraceeStringArgumentByName(eventObj, "syscall")
 		if err != nil {

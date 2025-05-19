@@ -106,9 +106,9 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // The minimum time of delay before sending events forward.
@@ -142,9 +142,9 @@ func InitEventSorter() (*EventsChronologicalSorter, error) {
 	return &newSorter, nil
 }
 
-func (sorter *EventsChronologicalSorter) StartPipeline(ctx gocontext.Context, in <-chan *trace.Event, outChanSize int) (
-	chan *trace.Event, chan error) {
-	out := make(chan *trace.Event, outChanSize)
+func (sorter *EventsChronologicalSorter) StartPipeline(ctx gocontext.Context, in <-chan *pipeline.Event, outChanSize int) (
+	chan *pipeline.Event, chan error) {
+	out := make(chan *pipeline.Event, outChanSize)
 	errc := make(chan error, 1)
 	go sorter.Start(in, out, ctx, errc)
 	return out, errc
@@ -153,7 +153,7 @@ func (sorter *EventsChronologicalSorter) StartPipeline(ctx gocontext.Context, in
 // Start is the main function of the EventsChronologicalSorter class, which orders input events from events channels
 // and pass forward all ordered events to the output channel after each interval.
 // When exits, the sorter will send forward all buffered events in ordered matter.
-func (sorter *EventsChronologicalSorter) Start(in <-chan *trace.Event, out chan<- *trace.Event,
+func (sorter *EventsChronologicalSorter) Start(in <-chan *pipeline.Event, out chan<- *pipeline.Event,
 	ctx gocontext.Context, errc chan error) {
 	sorter.errorChan = errc
 	defer close(out)
@@ -183,7 +183,7 @@ func (sorter *EventsChronologicalSorter) Start(in <-chan *trace.Event, out chan<
 }
 
 // addEvent add a new event to the appropriate place in queue according to its timestamp
-func (sorter *EventsChronologicalSorter) addEvent(newEvent *trace.Event) {
+func (sorter *EventsChronologicalSorter) addEvent(newEvent *pipeline.Event) {
 	cq := &sorter.cpuEventsQueues[newEvent.ProcessorID]
 	err := cq.InsertByTimestamp(newEvent)
 	if err != nil {
@@ -193,7 +193,7 @@ func (sorter *EventsChronologicalSorter) addEvent(newEvent *trace.Event) {
 }
 
 // sendEvents send to output channel all events up to given timestamp
-func (sorter *EventsChronologicalSorter) sendEvents(outputChan chan<- *trace.Event, extractionMaxTimestamp int) {
+func (sorter *EventsChronologicalSorter) sendEvents(outputChan chan<- *pipeline.Event, extractionMaxTimestamp int) {
 	sorter.outputChanMutex.Lock()
 	defer sorter.outputChanMutex.Unlock()
 	for {

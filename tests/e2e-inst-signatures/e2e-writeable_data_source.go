@@ -50,9 +50,9 @@ func (sig *e2eWritableDatasourceSig) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "sched_process_exit":
-		if eventObj.ProcessName != "ds_writer" {
+		if eventObj.GetProcessName() != "ds_writer" {
 			return nil
 		}
 

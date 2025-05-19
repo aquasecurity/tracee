@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -17,12 +18,12 @@ func TestPtraceCodeInjection(t *testing.T) {
 
 	testCases := []struct {
 		Name     string
-		Events   []trace.Event
+		Events   []pipeline.Event
 		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection - PTRACE_POKETEXT",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "ptrace",
 					Args: []trace.Argument{
@@ -38,7 +39,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 			Findings: map[string]*detect.Finding{
 				"TRC-103": {
 					Data: nil,
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "ptrace",
 						Args: []trace.Argument{
 							{
@@ -48,7 +49,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 								Value: int32(parsers.PTRACE_POKETEXT.Value()),
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-103",
 						Version:     "1",
@@ -69,7 +70,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 		},
 		{
 			Name: "should trigger detection - PTRACE_POKEDATA",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "ptrace",
 					Args: []trace.Argument{
@@ -85,7 +86,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 			Findings: map[string]*detect.Finding{
 				"TRC-103": {
 					Data: nil,
-					Event: trace.Event{
+					Event: trace.ToProtocol(&pipeline.Event{
 						EventName: "ptrace",
 						Args: []trace.Argument{
 							{
@@ -95,7 +96,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 								Value: int32(parsers.PTRACE_POKEDATA.Value()),
 							},
 						},
-					}.ToProtocol(),
+					}),
 					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-103",
 						Version:     "1",
@@ -116,7 +117,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection - wrong request",
-			Events: []trace.Event{
+			Events: []pipeline.Event{
 				{
 					EventName: "ptrace",
 					Args: []trace.Argument{
@@ -144,7 +145,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 			sig.Init(detect.SignatureContext{Callback: holder.OnFinding})
 
 			for _, e := range tc.Events {
-				err := sig.OnEvent(e.ToProtocol())
+				err := sig.OnEvent(trace.ToProtocol(&e))
 				require.NoError(t, err)
 			}
 			assert.Equal(t, tc.Findings, holder.GroupBySigID())

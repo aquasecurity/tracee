@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 )
 
 const poolFreeingPart = 2
@@ -24,7 +24,7 @@ type eventsPool struct {
 // Alloc return an eventNode that contains the event given.
 // The function will try to use stored eventNode if there is one available.
 // If there isn't, it will allocate new one.
-func (p *eventsPool) Alloc(event *trace.Event) (*eventNode, error) {
+func (p *eventsPool) Alloc(event *pipeline.Event) (*eventNode, error) {
 	p.poolMutex.Lock()
 	p.allocationsCount++
 	node := p.head

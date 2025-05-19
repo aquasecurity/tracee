@@ -52,7 +52,7 @@ func (sig *e2eProcessExecuteFailed) OnEvent(event protocol.Event) error {
 		return errors.New("failed to cast event's payload")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "init_namespaces":
 		// The event is not guaranteed to work for kernel version 5.7 or older, making the test
 		// unreliable.

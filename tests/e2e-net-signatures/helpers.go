@@ -7,7 +7,7 @@ import (
 )
 
 func GetTraceeArgumentByName(event trace.Event, argName string) (trace.Argument, error) {
-	for _, arg := range event.Args {
+	for _, arg := range event.GetArgs() {
 		if arg.Name == argName {
 			return arg, nil
 		}

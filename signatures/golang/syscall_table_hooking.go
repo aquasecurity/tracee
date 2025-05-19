@@ -47,7 +47,7 @@ func (sig *SyscallTableHooking) OnEvent(event protocol.Event) error {
 		return errors.New("invalid event")
 	}
 
-	switch eventObj.EventName {
+	switch eventObj.GetEventName() {
 	case "hooked_syscall":
 		metadata, err := sig.GetMetadata()
 		if err != nil {

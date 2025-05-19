@@ -6,7 +6,7 @@ import (
 
 	"gotest.tools/assert"
 
-	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 )
 
 func TestEnqueueDequeue(t *testing.T) {
@@ -29,7 +29,7 @@ func TestEnqueueDequeue(t *testing.T) {
 	}()
 	go func() {
 		for i := 0; i < 1000; i++ {
-			e := trace.Event{Timestamp: i}
+			e := pipeline.Event{Timestamp: i}
 			q.Enqueue(&e)
 		}
 	}()
