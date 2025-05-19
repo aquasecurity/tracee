@@ -14,42 +14,39 @@ import (
 )
 
 // Event is a single result of an ebpf event process. It is used as a payload later delivered to tracee-rules.
-type Event struct {
-	Timestamp             int          `json:"timestamp"`
-	ThreadStartTime       int          `json:"threadStartTime"`
-	ProcessorID           int          `json:"processorId"`
-	ProcessID             int          `json:"processId"`
-	CgroupID              uint         `json:"cgroupId"`
-	ThreadID              int          `json:"threadId"`
-	ParentProcessID       int          `json:"parentProcessId"`
-	HostProcessID         int          `json:"hostProcessId"`
-	HostThreadID          int          `json:"hostThreadId"`
-	HostParentProcessID   int          `json:"hostParentProcessId"`
-	UserID                int          `json:"userId"`
-	MountNS               int          `json:"mountNamespace"`
-	PIDNS                 int          `json:"pidNamespace"`
-	ProcessName           string       `json:"processName"`
-	Executable            File         `json:"executable"`
-	HostName              string       `json:"hostName"`
-	ContainerID           string       `json:"containerId"`
-	Container             Container    `json:"container,omitempty"`
-	Kubernetes            Kubernetes   `json:"kubernetes,omitempty"`
-	EventID               int          `json:"eventId,string"`
-	EventName             string       `json:"eventName"`
-	PoliciesVersion       uint16       `json:"-"`
-	MatchedPoliciesKernel uint64       `json:"-"`
-	MatchedPoliciesUser   uint64       `json:"-"`
-	MatchedPolicies       []string     `json:"matchedPolicies,omitempty"`
-	ArgsNum               int          `json:"argsNum"`
-	ReturnValue           int          `json:"returnValue"`
-	Syscall               string       `json:"syscall"`
-	StackAddresses        []uint64     `json:"stackAddresses"`
-	ContextFlags          ContextFlags `json:"contextFlags"`
-	ThreadEntityId        uint32       `json:"threadEntityId"`  // thread task unique identifier (*)
-	ProcessEntityId       uint32       `json:"processEntityId"` // process unique identifier (*)
-	ParentEntityId        uint32       `json:"parentEntityId"`  // parent process unique identifier (*)
-	Args                  []Argument   `json:"args"`            // args are ordered according their appearance in the original event
-	Metadata              *Metadata    `json:"metadata,omitempty"`
+type Event interface {
+	GetTimestamp() int
+	GetThreadStartTime() int
+	GetProcessorID() int
+	GetProcessID() int
+	GetCgroupID() uint
+	GetThreadID() int
+	GetParentProcessID() int
+	GetHostProcessID() int
+	GetHostThreadID() int
+	GetHostParentProcessID() int
+	GetUserID() int
+	GetMountNS() int
+	GetPIDNS() int
+	GetProcessName() string
+	GetExecutable() File
+	GetHostName() string
+	GetContainerID() string
+	GetContainer() Container
+	GetKubernetes() Kubernetes
+	GetEventID() int
+	GetEventName() string
+	GetMatchedPolicies() []string
+	GetArgsNum() int
+	GetReturnValue() int
+	GetSyscall() string
+	GetStackAddresses() []uint64
+	GetContextFlags() ContextFlags
+	GetThreadEntityId() uint32  // thread task unique identifier (*)
+	GetProcessEntityId() uint32 // process unique identifier (*)
+	GetParentEntityId() uint32  // parent process unique identifier (*)
+	GetArgs() []Argument        // args are ordered according their appearance in the original event
+	GetMetadata() *Metadata
 }
 
 // (*) For an OS task to be uniquely identified, tracee builds a hash consisting of:
@@ -101,11 +98,11 @@ const (
 )
 
 // Origin derive the EventOrigin of a trace.Event
-func (e Event) Origin() EventOrigin {
-	if e.ContextFlags.ContainerStarted {
+func Origin(e Event) EventOrigin {
+	if e.GetContextFlags().ContainerStarted {
 		return ContainerOrigin
 	}
-	if e.Container.ID != "" {
+	if e.GetContainer().ID != "" {
 		return ContainerInitOrigin
 	}
 	return HostOrigin
@@ -116,12 +113,12 @@ const (
 )
 
 // Converts a trace.Event into a protocol.Event that the rules engine can consume
-func (e Event) ToProtocol() protocol.Event {
+func ToProtocol(e Event) protocol.Event {
 	return protocol.Event{
 		Headers: protocol.EventHeaders{
 			Selector: protocol.Selector{
-				Name:   e.EventName,
-				Origin: string(e.Origin()),
+				Name:   e.GetEventName(),
+				Origin: string(Origin(e)),
 				Source: "tracee",
 			},
 		},
