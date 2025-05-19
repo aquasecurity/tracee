@@ -206,7 +206,7 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 					char        sun_path[108];  // Pathname
 			};
 		*/
-		sunPath, err := readSunPathFromBuff(ebpfMsgDecoder, 108)
+		sunPath, err := readVarStringFromBuffer(ebpfMsgDecoder, 108)
 		if err != nil {
 			return nil, errfmt.Errorf("error parsing sockaddr_un: %v", err)
 		}
@@ -309,52 +309,35 @@ func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 	return string(res), nil
 }
 
-// readSunPathFromBuff reads a null-terminated string from the eBPF buffer, up to `max` bytes.
-// Characters are read one by one until a NUL byte or the max limit is reached.
-// If the first byte is NUL and the second is not, it's treated as an abstract socket and
-// the first byte is replaced with '@'.
-// After reading, the decoder cursor advances past `max` bytes in the buffer.
-func readSunPathFromBuff(decoder *EbpfDecoder, max int) (string, error) {
-	if max <= 0 {
-		return "", errfmt.Errorf("max to decode sun_path must be greater than 0")
-	}
-
+// readVarStringFromBuffer reads a null-terminated string from the ebpf buffer where the size is not
+// known. The helper will read from the buffer char-by-char until it hits the null terminator
+// or the given max length. The cursor will then skip to the point in the buffer after the max length.
+func readVarStringFromBuffer(decoder *EbpfDecoder, max int) (string, error) {
 	var err error
 	var char int8
 	res := make([]byte, 0, max)
 
-	count := 0
-	for i := 0; i < max; i++ {
+	err = decoder.DecodeInt8(&char)
+	if err != nil {
+		return "", errfmt.Errorf("error reading null terminated string: %v", err)
+	}
+
+	count := 1 // first char is already decoded
+	for char != 0 && count < max {
+		res = append(res, byte(char))
+
+		// decode next char
 		err = decoder.DecodeInt8(&char)
 		if err != nil {
-			return "", errfmt.Errorf("error reading sun_path at index %d out of %d: %v", i, max, err)
+			return "", errfmt.Errorf("error reading sun_path at index %d out of %d: %v", count, max, err)
 		}
 		count++
-
-		if char == 0 {
-			// char as NUL may signal the end of the string or an abstract socket
-			// https://elixir.bootlin.com/linux/v6.13.4/source/net/unix/af_unix.c#L72
-			// https://man7.org/linux/man-pages/man7/unix.7.html
-			if i > 0 {
-				// NUL found after the first char means the end of the string
-				break
-			}
-		}
-
-		res = append(res, byte(char))
 	}
 
-	if res[0] == 0 {
-		if len(res) == 1 {
-			res = []byte{} // empty string
-		} else {
-			// abstract socket - res[0] = NUL && res[1] != NUL
-			// https://elixir.bootlin.com/linux/v6.13.4/source/net/unix/af_unix.c#L3438
-			res[0] = '@'
-		}
-	}
-
-	decoder.MoveCursor(max - count) // move cursor to the desired endpoint
+	// The exact reason for this Trim is not known, so remove it for now,
+	// since it increases processing time.
+	// res = bytes.TrimLeft(res[:], "\000")
+	decoder.MoveCursor(max - count) // skip the cursor to the desired endpoint
 	return string(res), nil
 }
 
