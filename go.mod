@@ -34,8 +34,8 @@ require (
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
-	k8s.io/api v0.32.4
-	k8s.io/apimachinery v0.32.4
+	k8s.io/api v0.32.5
+	k8s.io/apimachinery v0.32.5
 	k8s.io/client-go v0.32.1
 	k8s.io/cri-api v0.32.3
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.76
