@@ -8,6 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/findings"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
@@ -17,13 +18,13 @@ import (
 )
 
 // engineEvents stage in the pipeline allows signatures detection to be executed in the pipeline
-func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
-	out := make(chan *trace.Event, t.config.PipelineChannelSize)
+func (t *Tracee) engineEvents(ctx context.Context, in <-chan *pipeline.Event) (<-chan *pipeline.Event, <-chan error) {
+	out := make(chan *pipeline.Event, t.config.PipelineChannelSize)
 	errc := make(chan error, 1)
 
 	engineOutput := make(chan *detect.Finding, t.config.PipelineChannelSize)
 	engineInput := make(chan protocol.Event, t.config.PipelineChannelSize)
-	engineOutputEvents := make(chan *trace.Event, t.config.PipelineChannelSize)
+	engineOutputEvents := make(chan *pipeline.Event, t.config.PipelineChannelSize)
 	source := engine.EventSources{Tracee: engineInput}
 
 	// Prepare built in data sources
@@ -65,7 +66,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		defer close(engineOutput)
 
 		// feedEngine feeds an event to the rules engine
-		feedEngine := func(event *trace.Event) {
+		feedEngine := func(event *pipeline.Event) {
 			if event == nil {
 				return // might happen during initialization (ctrl+c seg faults)
 			}
@@ -99,7 +100,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 			out <- event
 
 			// send the copied event to the rules engine
-			engineInput <- eventCopy.ToProtocol()
+			engineInput <- trace.ToProtocol(&eventCopy)
 		}
 
 		for {

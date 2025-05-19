@@ -9,6 +9,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -48,9 +49,9 @@ import (
 //
 
 // enrichContainerEvents is a pipeline stage that enriches container events with metadata.
-func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.Event,
+func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *pipeline.Event,
 ) (
-	chan *trace.Event, chan error,
+	chan *pipeline.Event, chan error,
 ) {
 	// Events may be enriched in the initial decode state, if the enrichment data has been
 	// stored in the Containers structure. In that case, this pipeline stage will be
@@ -69,16 +70,16 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	// big lock
 	bLock := sync.RWMutex{}
 	// pipeline channels
-	out := make(chan *trace.Event, t.config.PipelineChannelSize)
+	out := make(chan *pipeline.Event, t.config.PipelineChannelSize)
 	errc := make(chan error, 1)
 	// state machine for enrichment
 	enrichDone := make(map[uint64]bool)
 	enrichInfo := make(map[uint64]*enrichResult)
 	// 1 queue per cgroupId
-	queues := make(map[uint64]chan *trace.Event)
+	queues := make(map[uint64]chan *pipeline.Event)
 	// scheduler queues
 	queueReady := make(chan uint64, queueReadySize)
-	queueClean := make(chan *trace.Event, queueReadySize)
+	queueClean := make(chan *pipeline.Event, queueReadySize)
 
 	// queues map writer
 	go func() {
@@ -127,7 +128,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				// make sure a queue channel exists for this cgroupId
 				bLock.Lock()
 				if _, ok := queues[cgroupId]; !ok {
-					queues[cgroupId] = make(chan *trace.Event, contQueueSize)
+					queues[cgroupId] = make(chan *pipeline.Event, contQueueSize)
 
 					go func(cgroupId uint64) {
 						metadata, err := t.containers.EnrichCgroupInfo(cgroupId)
@@ -237,7 +238,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	return out, errc
 }
 
-func enrichEvent(evt *trace.Event, cont containers.Container) {
+func enrichEvent(evt *pipeline.Event, cont containers.Container) {
 	evt.Container = trace.Container{
 		ID:          cont.ContainerId,
 		ImageName:   cont.Image,
@@ -254,7 +255,7 @@ func enrichEvent(evt *trace.Event, cont containers.Container) {
 // isCgroupEventInHid checks if cgroup event is relevant for deriving container event in its hierarchy id.
 // in tracee we only care about containers inside the cpuset controller, as such other hierarchy ids will lead
 // to a failed query.
-func isCgroupEventInHid(event *trace.Event, cts *containers.Manager) (bool, error) {
+func isCgroupEventInHid(event *pipeline.Event, cts *containers.Manager) (bool, error) {
 	if cts.GetCgroupVersion() == cgroup.CgroupVersion2 {
 		return true, nil
 	}

@@ -17,6 +17,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/filehash"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -25,7 +26,7 @@ import (
 )
 
 // processWriteEvent processes a write event by indexing the written file.
-func (t *Tracee) processWriteEvent(event *trace.Event) error {
+func (t *Tracee) processWriteEvent(event *pipeline.Event) error {
 	// only capture written files
 	if !t.config.Capture.FileWrite.Capture {
 		return nil
@@ -64,7 +65,7 @@ func (t *Tracee) processWriteEvent(event *trace.Event) error {
 }
 
 // processReadEvent processes a read event by indexing the read file.
-func (t *Tracee) processReadEvent(event *trace.Event) error {
+func (t *Tracee) processReadEvent(event *pipeline.Event) error {
 	// only capture read files
 	if !t.config.Capture.FileRead.Capture {
 		return nil
@@ -103,7 +104,7 @@ func (t *Tracee) processReadEvent(event *trace.Event) error {
 }
 
 // processKernelReadFile processes a security read event and changes the read type value.
-func processKernelReadFile(event *trace.Event) error {
+func processKernelReadFile(event *pipeline.Event) error {
 	readTypeArg := events.GetArg(event.Args, "type")
 	readTypeInt, ok := readTypeArg.Value.(int32)
 	if !ok {
@@ -118,7 +119,7 @@ func processKernelReadFile(event *trace.Event) error {
 }
 
 // processSchedProcessExec processes a sched_process_exec event by capturing the executed file.
-func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
+func (t *Tracee) processSchedProcessExec(event *pipeline.Event) error {
 	// cache this pid by it's mnt ns
 	if event.ProcessID == 1 {
 		t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
@@ -219,7 +220,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 }
 
 // processDoFinitModule handles a do_finit_module event and triggers other hooking detection logic.
-func (t *Tracee) processDoInitModule(event *trace.Event) error {
+func (t *Tracee) processDoInitModule(event *pipeline.Event) error {
 	// Check if related events are being traced.
 	okSyscalls := t.policyManager.IsEventSelected(events.HookedSyscall)
 	okSeqOps := t.policyManager.IsEventSelected(events.HookedSeqOps)
@@ -272,7 +273,7 @@ const (
 
 // processHookedProcFops processes a hooked_proc_fops event.
 // TODO(nadav.str): deprecate this in favor of a solution in the type decoder.
-func (t *Tracee) processHookedProcFops(event *trace.Event) error {
+func (t *Tracee) processHookedProcFops(event *pipeline.Event) error {
 	const hookedFopsPointersArgName = "hooked_fops_pointers"
 	fopsAddresses, err := parse.ArgVal[[]uint64](event.Args, hookedFopsPointersArgName)
 	if err != nil || fopsAddresses == nil {
@@ -304,7 +305,7 @@ func (t *Tracee) processHookedProcFops(event *trace.Event) error {
 }
 
 // processTriggeredEvent processes a triggered event (e.g. print_syscall_table, print_net_seq_ops).
-func (t *Tracee) processTriggeredEvent(event *trace.Event) error {
+func (t *Tracee) processTriggeredEvent(event *pipeline.Event) error {
 	// Initial event - no need to process
 	if event.Timestamp == 0 {
 		return nil
@@ -321,7 +322,7 @@ func (t *Tracee) processTriggeredEvent(event *trace.Event) error {
 }
 
 // processPrintSyscallTable processes a print_syscall_table event.
-func (t *Tracee) processPrintMemDump(event *trace.Event) error {
+func (t *Tracee) processPrintMemDump(event *pipeline.Event) error {
 	address, err := parse.ArgVal[trace.Pointer](event.Args, "address")
 	if err != nil || address == 0 {
 		return errfmt.Errorf("error parsing print_mem_dump args: %v", err)
@@ -355,7 +356,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 //
 
 // addHashArg calculate file hash (in a best-effort efficiency manner) and add it as an argument
-func (t *Tracee) addHashArg(event *trace.Event, fileKey *filehash.Key) error {
+func (t *Tracee) addHashArg(event *pipeline.Event, fileKey *filehash.Key) error {
 	// Currently Tracee does not support hash calculation of memfd files
 	if strings.HasPrefix(fileKey.Pathname(), "memfd") {
 		return nil
@@ -385,7 +386,7 @@ func (t *Tracee) addHashArg(event *trace.Event, fileKey *filehash.Key) error {
 	return err
 }
 
-func (t *Tracee) processSharedObjectLoaded(event *trace.Event) error {
+func (t *Tracee) processSharedObjectLoaded(event *pipeline.Event) error {
 	filePath, err := parse.ArgVal[string](event.Args, "pathname")
 	if err != nil {
 		logger.Debugw("Error parsing argument", "error", err)
@@ -426,7 +427,7 @@ func (t *Tracee) processSharedObjectLoaded(event *trace.Event) error {
 // Context related functions
 //
 
-func (t *Tracee) removeContext(event *trace.Event) error {
+func (t *Tracee) removeContext(event *pipeline.Event) error {
 	event.ThreadStartTime = 0
 	event.ProcessorID = 0
 	event.ProcessID = 0
@@ -455,7 +456,7 @@ func (t *Tracee) removeContext(event *trace.Event) error {
 	return nil
 }
 
-func (t *Tracee) removeIrrelevantContext(event *trace.Event) error {
+func (t *Tracee) removeIrrelevantContext(event *pipeline.Event) error {
 	// Uprobe events are created in the context of tracee's process,
 	// but that context is meaningless. Remove it.
 	if event.ProcessID == os.Getpid() {
@@ -465,7 +466,7 @@ func (t *Tracee) removeIrrelevantContext(event *trace.Event) error {
 	return nil
 }
 
-func (t *Tracee) convertSyscallIDToName(event *trace.Event) error {
+func (t *Tracee) convertSyscallIDToName(event *pipeline.Event) error {
 	syscallArg := events.GetArg(event.Args, "syscall")
 	if syscallArg == nil {
 		return errfmt.Errorf("cannot find syscall argument")

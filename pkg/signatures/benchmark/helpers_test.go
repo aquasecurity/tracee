@@ -4,13 +4,14 @@ import (
 	_ "embed"
 	"math/rand"
 
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 var (
-	innocentEvent = trace.Event{
+	innocentEvent = &pipeline.Event{
 		Timestamp:           7126141189,
 		ProcessID:           1,
 		ThreadID:            1,
@@ -59,7 +60,7 @@ var (
 		},
 	}
 
-	triggerCodeInjectorPtraceEvent = trace.Event{
+	triggerCodeInjectorPtraceEvent = &pipeline.Event{
 		Timestamp:           6123321183,
 		ProcessID:           1,
 		ThreadID:            1,
@@ -85,7 +86,7 @@ var (
 			},
 		},
 	}
-	triggerCodeInjectorOpenEvent = trace.Event{
+	triggerCodeInjectorOpenEvent = &pipeline.Event{
 		Timestamp:           5123321532,
 		ProcessID:           1,
 		ThreadID:            1,
@@ -118,7 +119,7 @@ var (
 		},
 	}
 
-	triggerAntiDebuggingEvent = trace.Event{
+	triggerAntiDebuggingEvent = &pipeline.Event{
 		Timestamp:           5323321532,
 		ProcessID:           1,
 		ThreadID:            1,
@@ -147,7 +148,7 @@ var (
 )
 
 func ProduceEventsInMemory(n int) engine.EventSources {
-	return ProduceEventsInMemoryRandom(n, []trace.Event{
+	return ProduceEventsInMemoryRandom(n, []*pipeline.Event{
 		innocentEvent,
 		innocentEvent,
 		innocentEvent,
@@ -157,12 +158,13 @@ func ProduceEventsInMemory(n int) engine.EventSources {
 	}...)
 }
 
-func ProduceEventsInMemoryRandom(n int, seed ...trace.Event) engine.EventSources {
+func ProduceEventsInMemoryRandom(n int, seed ...*pipeline.Event) engine.EventSources {
 	eventsCh := make(chan protocol.Event, n)
 
 	for i := 0; i < n; i++ {
 		s := rand.Intn(len(seed))
-		e := seed[s].ToProtocol()
+		copy := *seed[s]
+		e := trace.ToProtocol(&copy)
 		eventsCh <- e
 	}
 

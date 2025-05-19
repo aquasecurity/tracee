@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -53,8 +54,8 @@ func (loader symbolsLoaderMock) addSOSymbols(info testSOInstance) {
 	loader.cache[info.info] = symsMap
 }
 
-func generateSOLoadedEvent(pid int, so sharedobjs.ObjInfo) trace.Event {
-	return trace.Event{
+func generateSOLoadedEvent(pid int, so sharedobjs.ObjInfo) pipeline.Event {
+	return pipeline.Event{
 		EventName:     "shared_object_loaded",
 		EventID:       int(events.SharedObjectLoaded),
 		HostProcessID: pid,

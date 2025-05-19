@@ -8,11 +8,11 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 //
@@ -100,7 +100,7 @@ func initSOCollisionsEventGenerator(
 }
 
 // deriveArgs calls the appropriate derivation handler depending on the event type.
-func (gen *SymbolsCollisionArgsGenerator) deriveArgs(event trace.Event) ([][]interface{}, []error) {
+func (gen *SymbolsCollisionArgsGenerator) deriveArgs(event pipeline.Event) ([][]interface{}, []error) {
 	switch events.ID(event.EventID) {
 	case events.SharedObjectLoaded:
 		return gen.handleShObjLoaded(event) // manages symbol collisions caches and generate events
@@ -112,7 +112,7 @@ func (gen *SymbolsCollisionArgsGenerator) deriveArgs(event trace.Event) ([][]int
 }
 
 // handleShObjLoaded handles the shared object loaded event (from mmap).
-func (gen *SymbolsCollisionArgsGenerator) handleShObjLoaded(event trace.Event) (
+func (gen *SymbolsCollisionArgsGenerator) handleShObjLoaded(event pipeline.Event) (
 	[][]interface{}, []error,
 ) {
 	// When a shared object is loaded into a process virtual memory address space, check if some of
@@ -234,7 +234,7 @@ func (gen *SymbolsCollisionArgsGenerator) findShObjsCollisions(
 }
 
 // handleExec handles the execve() system call event.
-func (gen *SymbolsCollisionArgsGenerator) handleExec(event trace.Event) (
+func (gen *SymbolsCollisionArgsGenerator) handleExec(event pipeline.Event) (
 	[][]interface{}, []error,
 ) {
 	// Delete (set to empty) a process saved data (loaded shared objects information) for the

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -19,7 +20,7 @@ func Benchmark_procTreeForkProcessor(b *testing.B) {
 		},
 	)
 
-	event := &trace.Event{
+	event := pipeline.Event{
 		Args: []trace.Argument{
 			{ArgMeta: trace.ArgMeta{Name: "parent_process_tid"}, Value: int32(1)},
 			{ArgMeta: trace.ArgMeta{Name: "parent_process_ns_tid"}, Value: int32(1)},
@@ -41,7 +42,7 @@ func Benchmark_procTreeForkProcessor(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = t.procTreeForkProcessor(event)
+		_ = t.procTreeForkProcessor(&event)
 	}
 }
 
@@ -56,7 +57,7 @@ func Benchmark_procTreeExecProcessor(b *testing.B) {
 		},
 	)
 
-	event := &trace.Event{
+	event := pipeline.Event{
 		Args: []trace.Argument{
 			{ArgMeta: trace.ArgMeta{Name: "cmdpath"}, Value: "/bin/bash"},
 			{ArgMeta: trace.ArgMeta{Name: "pathname"}, Value: "/bin/bash"},
@@ -77,7 +78,7 @@ func Benchmark_procTreeExecProcessor(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = t.procTreeExecProcessor(event)
+		_ = t.procTreeExecProcessor(&event)
 	}
 }
 
@@ -92,7 +93,7 @@ func Benchmark_procTreeExitProcessor(b *testing.B) {
 		},
 	)
 
-	event := &trace.Event{
+	event := pipeline.Event{
 		Args: []trace.Argument{
 			{ArgMeta: trace.ArgMeta{Name: "exit_code"}, Value: int32(1)},
 			{ArgMeta: trace.ArgMeta{Name: "signal_code"}, Value: int32(1)},
@@ -102,6 +103,6 @@ func Benchmark_procTreeExitProcessor(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = t.procTreeExitProcessor(event)
+		_ = t.procTreeExitProcessor(&event)
 	}
 }

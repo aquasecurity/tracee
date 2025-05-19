@@ -7,6 +7,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/counter"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -15,13 +16,13 @@ const ContextArgName = "caller_context_id"
 
 // Context is an interface for a struct used to store the triggering events context.
 type Context interface {
-	Store(trace.Event) uint64               // store an invoke context
-	Load(uint64) (trace.Event, bool)        // loads an invoked event context
-	Apply(trace.Event) (trace.Event, error) // apply an invoked event context (implicitly gets the event)
+	Store(pipeline.Event) uint64                  // store an invoke context
+	Load(uint64) (pipeline.Event, bool)           // loads an invoked event context
+	Apply(pipeline.Event) (pipeline.Event, error) // apply an invoked event context (implicitly gets the event)
 }
 
 type context struct {
-	store   map[uint64]trace.Event
+	store   map[uint64]pipeline.Event
 	mutex   *sync.Mutex
 	counter *counter.Counter
 }
@@ -29,14 +30,14 @@ type context struct {
 // NewContext creates a new context store.
 func NewContext() *context {
 	return &context{
-		store:   make(map[uint64]trace.Event),
+		store:   make(map[uint64]pipeline.Event),
 		mutex:   &sync.Mutex{},
 		counter: counter.NewCounter(0),
 	}
 }
 
 // Store stores an event in the context store.
-func (store *context) Store(event trace.Event) uint64 {
+func (store *context) Store(event pipeline.Event) uint64 {
 	store.mutex.Lock()
 	defer store.mutex.Unlock()
 
@@ -51,13 +52,13 @@ func (store *context) Store(event trace.Event) uint64 {
 }
 
 // Load loads an event from the context store.
-func (store *context) Load(id uint64) (trace.Event, bool) {
+func (store *context) Load(id uint64) (pipeline.Event, bool) {
 	store.mutex.Lock()
 	defer store.mutex.Unlock()
 
 	contextEvent, ok := store.store[id]
 	if !ok {
-		return trace.Event{}, false
+		return pipeline.Event{}, false
 	}
 
 	delete(store.store, id)
@@ -66,14 +67,14 @@ func (store *context) Load(id uint64) (trace.Event, bool) {
 }
 
 // Apply applies an event from the context store to the given event.
-func (store *context) Apply(event trace.Event) (trace.Event, error) {
+func (store *context) Apply(event pipeline.Event) (pipeline.Event, error) {
 	contextID, err := parse.ArgVal[uint64](event.Args, ContextArgName)
 	if err != nil {
-		return trace.Event{}, errfmt.Errorf("error parsing caller_context_id arg: %v", err)
+		return pipeline.Event{}, errfmt.Errorf("error parsing caller_context_id arg: %v", err)
 	}
 	invoking, ok := store.Load(contextID)
 	if !ok {
-		return trace.Event{}, NoEventContextError(contextID)
+		return pipeline.Event{}, NoEventContextError(contextID)
 	}
 
 	// Apply the invoking event data on top of the argument event. This is done in the opposite
@@ -89,7 +90,7 @@ func (store *context) Apply(event trace.Event) (trace.Event, error) {
 	invoking.MatchedPoliciesUser = event.MatchedPoliciesUser
 	copied := copy(invoking.Args, event.Args)
 	if copied != len(event.Args) {
-		return trace.Event{}, errfmt.Errorf("failed to apply event's args")
+		return pipeline.Event{}, errfmt.Errorf("failed to apply event's args")
 	}
 	invoking.ArgsNum = len(invoking.Args)
 

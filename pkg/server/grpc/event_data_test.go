@@ -9,6 +9,7 @@ import (
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -654,7 +655,7 @@ func Test_getEventData(t *testing.T) {
 				id = int(events.Ptrace)
 			}
 
-			eventData, err := getEventData(trace.Event{EventID: id, Args: tt.args, ReturnValue: tt.returnValue})
+			eventData, err := getEventData(pipeline.Event{EventID: id, Args: tt.args, ReturnValue: tt.returnValue})
 			assert.NoError(t, err)
 
 			assert.Equal(t, len(tt.expected), len(eventData))
@@ -717,7 +718,7 @@ func Test_getEventData(t *testing.T) {
 }
 
 func TestEventTrigger(t *testing.T) {
-	event := trace.Event{
+	event := pipeline.Event{
 		Args: []trace.Argument{
 			{
 				ArgMeta: trace.ArgMeta{

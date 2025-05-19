@@ -13,6 +13,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/counter"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -48,8 +49,8 @@ func init() {
 }
 
 // GetFtraceBaseEvent creates an ftrace hook event with basic common fields
-func GetFtraceBaseEvent() *trace.Event {
-	ftraceHookBaseEvent := &trace.Event{
+func GetFtraceBaseEvent() *pipeline.Event {
+	ftraceHookBaseEvent := &pipeline.Event{
 		ProcessName: "tracee",
 		EventID:     int(FtraceHook),
 		EventName:   Core.GetDefinitionByID(FtraceHook).GetName(),
@@ -60,7 +61,7 @@ func GetFtraceBaseEvent() *trace.Event {
 
 // FtraceHookEvent check for ftrace hooks periodically and reports them.
 // It wakes up every random time to check if there was a change in the hooks.
-func FtraceHookEvent(eventsCounter *counter.Counter, out chan *trace.Event, baseEvent *trace.Event, selfLoadedProgs map[string]int) {
+func FtraceHookEvent(eventsCounter *counter.Counter, out chan *pipeline.Event, baseEvent *pipeline.Event, selfLoadedProgs map[string]int) {
 	if reportedFtraceHooks == nil { // Failed allocating cache - no point in running
 		return
 	}
@@ -129,7 +130,7 @@ func initFtraceArgs(fields []DataField) []trace.Argument {
 }
 
 // checkFtraceHooks checks for ftrace hooks
-func checkFtraceHooks(eventsCounter *counter.Counter, out chan *trace.Event, baseEvent *trace.Event, ftraceDef *Definition, selfLoadedProgs map[string]int) error {
+func checkFtraceHooks(eventsCounter *counter.Counter, out chan *pipeline.Event, baseEvent *pipeline.Event, ftraceDef *Definition, selfLoadedProgs map[string]int) error {
 	ftraceHooksBytes, err := getFtraceHooksData()
 	if err != nil {
 		return err

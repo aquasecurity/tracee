@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -71,7 +72,7 @@ func TestParseArgs(t *testing.T) {
 			t.Run(testCase.name, func(t *testing.T) {
 				t.Parallel()
 
-				event := trace.Event{
+				event := pipeline.Event{
 					EventID: int(Ptrace),
 					Args:    testCase.args,
 				}
@@ -178,7 +179,7 @@ func TestParseArgs(t *testing.T) {
 			t.Run(testCase.name, func(t *testing.T) {
 				t.Parallel()
 
-				event := trace.Event{
+				event := pipeline.Event{
 					EventID: int(Setsockopt),
 					Args:    testCase.args,
 				}
@@ -264,7 +265,7 @@ func TestParseArgs(t *testing.T) {
 			t.Run(testCase.name, func(t *testing.T) {
 				t.Parallel()
 
-				event := &trace.Event{
+				event := &pipeline.Event{
 					EventID: int(Getsockopt),
 					Args:    testCase.args,
 				}

@@ -6,8 +6,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 //
@@ -62,7 +62,7 @@ func New(simple config.PcapsConfig, output *os.File) (*Pcaps, error) {
 }
 
 // Write writes a packet to all opened pcap files from all supported pcap types
-func (p *Pcaps) Write(event *trace.Event, payload []byte) error {
+func (p *Pcaps) Write(event *pipeline.Event, payload []byte) error {
 	// sanity check
 	if events.ID(event.EventID) != events.NetPacketCapture {
 		return errfmt.Errorf("wrong event type given to pcap")

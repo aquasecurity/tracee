@@ -8,7 +8,7 @@ import (
 	"github.com/google/gopacket/pcapgo"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 )
 
 var packetContextVersion = "1.0"
@@ -64,7 +64,7 @@ type KubernetesContext struct {
 	PodSandbox   bool   `json:"podSandbox,omitempty"`
 }
 
-func initPacketContext(event *trace.Event, t PcapType) PacketContext {
+func initPacketContext(event *pipeline.Event, t PcapType) PacketContext {
 	ctx := PacketContext{Version: packetContextVersion}
 
 	if t == Container || t == Command || t == Process {
@@ -107,7 +107,7 @@ func initPacketContext(event *trace.Event, t PcapType) PacketContext {
 	return ctx
 }
 
-func GenerateInterface(event *trace.Event, t PcapType) (pcapgo.NgInterface, error) {
+func GenerateInterface(event *pipeline.Event, t PcapType) (pcapgo.NgInterface, error) {
 	packetContext := initPacketContext(event, t)
 
 	descBytes, err := json.Marshal(packetContext)

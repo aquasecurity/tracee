@@ -4,10 +4,11 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-var events = []*trace.Event{
+var events = []*pipeline.Event{
 	{
 		EventID: int(MemProtAlert),
 		Args: []trace.Argument{
@@ -282,7 +283,7 @@ func BenchmarkParseArgs(b *testing.B) {
 
 func BenchmarkParseArgs_Uintptr(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		ptraceEvent := &trace.Event{
+		ptraceEvent := &pipeline.Event{
 			EventID: int(Ptrace),
 			Args: []trace.Argument{
 				{ArgMeta: trace.ArgMeta{Name: "request"}, Value: int64(0)},

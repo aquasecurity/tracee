@@ -13,6 +13,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -81,7 +82,7 @@ func strToLower(given string) string {
 }
 
 // parsePayloadArg returns the packet payload from the event.
-func parsePayloadArg(event *trace.Event) ([]byte, error) {
+func parsePayloadArg(event *pipeline.Event) ([]byte, error) {
 	payloadArg := events.GetArg(event.Args, "payload")
 	if payloadArg == nil {
 		return nil, noPayloadError()
@@ -123,7 +124,7 @@ func swapSrcDst(s, d net.IP, sp, dp uint16) (net.IP, net.IP, uint16, uint16) {
 // revive:enable:function-result-limit
 
 // getPacketDirection returns the packet direction from the event.
-func getPacketDirection(event *trace.Event) trace.PacketDirection {
+func getPacketDirection(event *pipeline.Event) trace.PacketDirection {
 	switch {
 	case event.ReturnValue&packetIngress == packetIngress:
 		return trace.PacketIngress
@@ -134,7 +135,7 @@ func getPacketDirection(event *trace.Event) trace.PacketDirection {
 }
 
 // getPacketHTTPDirection returns the packet HTTP direction from the event.
-func getPacketHTTPDirection(event *trace.Event) int {
+func getPacketHTTPDirection(event *pipeline.Event) int {
 	switch {
 	case event.ReturnValue&protoHTTPRequest == protoHTTPRequest:
 		return protoHTTPRequest
@@ -145,7 +146,7 @@ func getPacketHTTPDirection(event *trace.Event) int {
 }
 
 // createPacketFromEvent creates a gopacket.Packet from the event.
-func createPacketFromEvent(event *trace.Event) (gopacket.Packet, error) {
+func createPacketFromEvent(event *pipeline.Event) (gopacket.Packet, error) {
 	payload, err := parsePayloadArg(event)
 	if err != nil {
 		return nil, err
@@ -273,7 +274,7 @@ func getLayer3TypeFromFlag(layer3TypeFlag int) (gopacket.LayerType, error) {
 }
 
 // getLayer3TypeFlagFromEvent returns the layer 3 protocol type from a given event.
-func getLayer3TypeFlagFromEvent(event *trace.Event) (int, error) {
+func getLayer3TypeFlagFromEvent(event *pipeline.Event) (int, error) {
 	switch {
 	case event.ReturnValue&familyIPv4 == familyIPv4:
 		return familyIPv4, nil

@@ -4,8 +4,8 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // PcapCache is an intermediate LRU cache in between Pcap and Pcaps
@@ -33,7 +33,7 @@ func newPcapCache(itemType PcapType) (*PcapCache, error) {
 	}, errfmt.WrapError(err)
 }
 
-func (p *PcapCache) get(event *trace.Event) (*Pcap, error) {
+func (p *PcapCache) get(event *pipeline.Event) (*Pcap, error) {
 	var ok bool
 	var item *Pcap
 	var i interface{}

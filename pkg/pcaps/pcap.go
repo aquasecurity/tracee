@@ -8,8 +8,8 @@ import (
 	"github.com/google/gopacket/pcapgo"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // Check pcaps.go for package description.
@@ -66,7 +66,7 @@ type Pcap struct {
 	pcapWriter  *pcapgo.NgWriter // pcap writer descriptor
 }
 
-func NewPcap(e *trace.Event, t PcapType) (*Pcap, error) {
+func NewPcap(e *pipeline.Event, t PcapType) (*Pcap, error) {
 	var err error
 
 	p := &Pcap{
@@ -78,7 +78,7 @@ func NewPcap(e *trace.Event, t PcapType) (*Pcap, error) {
 	return p, errfmt.WrapError(err)
 }
 
-func (p *Pcap) write(event *trace.Event, payload []byte) error {
+func (p *Pcap) write(event *pipeline.Event, payload []byte) error {
 	info := gopacket.CaptureInfo{
 		Timestamp:     time.Unix(0, int64(event.Timestamp)),
 		CaptureLength: int(len(payload)),

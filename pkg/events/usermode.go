@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	traceeversion "github.com/aquasecurity/tracee/pkg/version"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -33,11 +34,11 @@ const InitProcNsDir = "/proc/1/ns"
 
 // InitNamespacesEvent collect the init process namespaces and create event from
 // them.
-func InitNamespacesEvent() trace.Event {
+func InitNamespacesEvent() pipeline.Event {
 	initNamespacesDef := Core.GetDefinitionByID(InitNamespaces)
 	initNamespacesArgs := getInitNamespaceArguments()
 
-	initNamespacesEvent := trace.Event{
+	initNamespacesEvent := pipeline.Event{
 		Timestamp:   int(time.Now().UnixNano()),
 		ProcessName: "tracee-ebpf",
 		EventID:     int(InitNamespaces),
@@ -50,7 +51,7 @@ func InitNamespacesEvent() trace.Event {
 }
 
 // TraceeInfoEvent exports data related to Tracee's initialization
-func TraceeInfoEvent(bootTime uint64, startTime uint64) trace.Event {
+func TraceeInfoEvent(bootTime uint64, startTime uint64) pipeline.Event {
 	def := Core.GetDefinitionByID(TraceeInfo)
 	fields := def.GetFields()
 	args := []trace.Argument{
@@ -59,7 +60,7 @@ func TraceeInfoEvent(bootTime uint64, startTime uint64) trace.Event {
 		{ArgMeta: fields[2].ArgMeta, Value: traceeversion.GetVersion()},
 	}
 
-	traceeInfoEvent := trace.Event{
+	traceeInfoEvent := pipeline.Event{
 		Timestamp:   int(time.Now().UnixNano()),
 		ProcessName: "tracee",
 		EventID:     int(def.GetID()),
@@ -113,8 +114,8 @@ func fetchInitNamespaces() map[string]uint32 {
 }
 
 // ExistingContainersEvents returns a list of events for each existing container
-func ExistingContainersEvents(cts *containers.Manager, enrichDisabled bool) []trace.Event {
-	var events []trace.Event
+func ExistingContainersEvents(cts *containers.Manager, enrichDisabled bool) []pipeline.Event {
+	var events []pipeline.Event
 
 	def := Core.GetDefinitionByID(ExistingContainer)
 	existingContainers := cts.GetLiveContainers()
@@ -140,7 +141,7 @@ func ExistingContainersEvents(cts *containers.Manager, enrichDisabled bool) []tr
 			{ArgMeta: fields[8].ArgMeta, Value: container.Pod.UID},
 			{ArgMeta: fields[9].ArgMeta, Value: container.Pod.Sandbox},
 		}
-		existingContainerEvent := trace.Event{
+		existingContainerEvent := pipeline.Event{
 			Timestamp:   int(time.Now().UnixNano()),
 			ProcessName: "tracee-ebpf",
 			EventID:     int(ExistingContainer),

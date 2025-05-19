@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
@@ -21,7 +22,7 @@ func init() {
 }
 
 // processEvent processes an event by passing it through all registered event processors.
-func (t *Tracee) processEvent(event *trace.Event) []error {
+func (t *Tracee) processEvent(event *pipeline.Event) []error {
 	var errs []error
 
 	processors := t.eventProcessor[events.ID(event.EventID)]         // this event processors
@@ -66,12 +67,12 @@ func (t *Tracee) processLostEvents() {
 }
 
 // RegisterEventProcessor registers a new event processor for a specific event id.
-func (t *Tracee) RegisterEventProcessor(id events.ID, proc func(evt *trace.Event) error) {
+func (t *Tracee) RegisterEventProcessor(id events.ID, proc func(evt *pipeline.Event) error) {
 	if t.eventProcessor == nil {
-		t.eventProcessor = make(map[events.ID][]func(evt *trace.Event) error)
+		t.eventProcessor = make(map[events.ID][]func(evt *pipeline.Event) error)
 	}
 	if t.eventProcessor[id] == nil {
-		t.eventProcessor[id] = make([]func(evt *trace.Event) error, 0)
+		t.eventProcessor[id] = make([]func(evt *pipeline.Event) error, 0)
 	}
 	t.eventProcessor[id] = append(t.eventProcessor[id], proc)
 }

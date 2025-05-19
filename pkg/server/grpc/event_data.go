@@ -12,12 +12,13 @@ import (
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func getEventData(e trace.Event) ([]*pb.EventValue, error) {
+func getEventData(e pipeline.Event) ([]*pb.EventValue, error) {
 	data := make([]*pb.EventValue, 0)
 
 	for _, arg := range e.Args {

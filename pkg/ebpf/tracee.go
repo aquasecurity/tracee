@@ -31,6 +31,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/data"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/pkg/filehash"
@@ -48,7 +49,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/pkg/version"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const (
@@ -70,7 +70,7 @@ type Tracee struct {
 	eventsSorter     *sorting.EventsChronologicalSorter
 	eventsPool       *sync.Pool
 	eventDecodeTypes map[events.ID][]data.DecodeAs
-	eventProcessor   map[events.ID][]func(evt *trace.Event) error
+	eventProcessor   map[events.ID][]func(evt *pipeline.Event) error
 	eventDerivations derive.Table
 	// Artifacts
 	fileHashes     *filehash.Cache
@@ -538,7 +538,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	t.eventsPool = &sync.Pool{
 		New: func() interface{} {
-			return &trace.Event{}
+			return &pipeline.Event{}
 		},
 	}
 
@@ -1387,8 +1387,8 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 	go t.hookedSyscallTableRoutine(ctx)
 
-	t.triggerSeqOpsIntegrityCheck(trace.Event{})
-	errs := t.triggerMemDump(trace.Event{})
+	t.triggerSeqOpsIntegrityCheck(pipeline.Event{})
+	errs := t.triggerMemDump(pipeline.Event{})
 	for _, err := range errs {
 		logger.Warnw("Memory dump", "error", err)
 	}
@@ -1647,10 +1647,10 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 // invokeInitEvents emits Tracee events, called Initialization Events, that are generated from the
 // userland process itself, and not from the kernel. These events usually serve as informational
 // events for the signatures engine/logic.
-func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
+func (t *Tracee) invokeInitEvents(out chan *pipeline.Event) {
 	var matchedPolicies uint64
 
-	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64) {
+	setMatchedPolicies := func(event *pipeline.Event, matchedPolicies uint64) {
 		event.PoliciesVersion = 1 // version will be removed soon
 		event.MatchedPoliciesKernel = matchedPolicies
 		event.MatchedPoliciesUser = matchedPolicies
@@ -1685,9 +1685,9 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	if matchedPolicies > 0 {
 		existingContainerEvents := events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich)
 		for i := range existingContainerEvents {
-			event := &(existingContainerEvents[i])
-			setMatchedPolicies(event, matchedPolicies)
-			out <- event
+			event := existingContainerEvents[i]
+			setMatchedPolicies(&event, matchedPolicies)
+			out <- &event
 			_ = t.stats.EventCount.Increment()
 		}
 	}
@@ -1730,7 +1730,7 @@ func (t *Tracee) netEnabled() bool {
 
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program
 // that prints the seq ops pointers
-func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
+func (t *Tracee) triggerSeqOpsIntegrityCheck(event pipeline.Event) {
 	if !t.policyManager.IsEventSelected(events.HookedSeqOps) {
 		return
 	}
@@ -1758,7 +1758,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 
 // triggerMemDump is used by a Uprobe to trigger an eBPF program
 // that prints the first bytes of requested symbols or addresses
-func (t *Tracee) triggerMemDump(event trace.Event) []error {
+func (t *Tracee) triggerMemDump(event pipeline.Event) []error {
 	if !t.policyManager.IsEventSelected(events.PrintMemDump) {
 		return nil
 	}

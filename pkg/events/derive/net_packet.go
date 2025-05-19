@@ -3,6 +3,7 @@ package derive
 import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -13,7 +14,7 @@ import (
 
 func NetPacketIPv4() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketIPv4,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event pipeline.Event) ([]interface{}, error) {
 			layer3TypeFlag, _ := getLayer3TypeFlagFromEvent(&event)
 			if layer3TypeFlag != familyIPv4 {
 				return nil, nil // no event if not IPv4
@@ -40,7 +41,7 @@ func NetPacketIPv4() DeriveFunction {
 
 func NetPacketIPv6() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketIPv6,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event pipeline.Event) ([]interface{}, error) {
 			layer3TypeFlag, _ := getLayer3TypeFlagFromEvent(&event)
 			if layer3TypeFlag != familyIPv6 {
 				return nil, nil // no event if not IPv6
@@ -71,7 +72,7 @@ func NetPacketIPv6() DeriveFunction {
 
 func NetPacketTCP() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketTCP,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event pipeline.Event) ([]interface{}, error) {
 			packet, err := createPacketFromEvent(&event)
 			if err != nil {
 				return nil, err
@@ -100,7 +101,7 @@ func NetPacketTCP() DeriveFunction {
 
 func NetPacketUDP() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketUDP,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event pipeline.Event) ([]interface{}, error) {
 			packet, err := createPacketFromEvent(&event)
 			if err != nil {
 				return nil, err
@@ -133,7 +134,7 @@ func NetPacketUDP() DeriveFunction {
 
 func NetPacketICMP() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketICMP,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event pipeline.Event) ([]interface{}, error) {
 			packet, err := createPacketFromEvent(&event)
 			if err != nil {
 				return nil, err
@@ -160,7 +161,7 @@ func NetPacketICMP() DeriveFunction {
 
 func NetPacketICMPv6() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketICMPv6,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event pipeline.Event) ([]interface{}, error) {
 			packet, err := createPacketFromEvent(&event)
 			if err != nil {
 				return nil, err
@@ -191,7 +192,7 @@ func NetPacketICMPv6() DeriveFunction {
 
 func NetPacketDNS() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketDNS,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event pipeline.Event) ([]interface{}, error) {
 			packet, err := createPacketFromEvent(&event)
 			if err != nil {
 				return nil, err
@@ -224,7 +225,7 @@ func NetPacketDNS() DeriveFunction {
 
 func NetPacketDNSRequest() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketDNSRequest,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event pipeline.Event) ([]interface{}, error) {
 			packet, err := createPacketFromEvent(&event)
 			if err != nil {
 				return nil, err
@@ -276,7 +277,7 @@ func NetPacketDNSRequest() DeriveFunction {
 
 func NetPacketDNSResponse() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketDNSResponse,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event pipeline.Event) ([]interface{}, error) {
 			packet, err := createPacketFromEvent(&event)
 			if err != nil {
 				return nil, err
@@ -333,7 +334,7 @@ func NetPacketDNSResponse() DeriveFunction {
 
 func NetPacketHTTP() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketHTTP,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event pipeline.Event) ([]interface{}, error) {
 			packet, err := createPacketFromEvent(&event)
 			if err != nil {
 				return nil, err
@@ -382,7 +383,7 @@ func NetPacketHTTP() DeriveFunction {
 
 func NetPacketHTTPRequest() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketHTTPRequest,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event pipeline.Event) ([]interface{}, error) {
 			packet, err := createPacketFromEvent(&event)
 			if err != nil {
 				return nil, err
@@ -428,7 +429,7 @@ func NetPacketHTTPRequest() DeriveFunction {
 
 func NetPacketHTTPResponse() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketHTTPResponse,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event pipeline.Event) ([]interface{}, error) {
 			packet, err := createPacketFromEvent(&event)
 			if err != nil {
 				return nil, err

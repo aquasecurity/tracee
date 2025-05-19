@@ -6,8 +6,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // ContainerCreate receives a containers as a closure argument to track it's containers.
@@ -16,8 +16,8 @@ func ContainerCreate(cts *containers.Manager) DeriveFunction {
 	return deriveSingleEvent(events.ContainerCreate, deriveContainerCreateArgs(cts))
 }
 
-func deriveContainerCreateArgs(cts *containers.Manager) func(event trace.Event) ([]interface{}, error) {
-	return func(event trace.Event) ([]interface{}, error) {
+func deriveContainerCreateArgs(cts *containers.Manager) func(event pipeline.Event) ([]interface{}, error) {
+	return func(event pipeline.Event) ([]interface{}, error) {
 		// if cgroup_id is from non default hid (v1 case), the cgroup info query will fail, so we skip
 		if check, err := isCgroupEventInHid(&event, cts); !check {
 			return nil, errfmt.WrapError(err)
@@ -49,7 +49,7 @@ func deriveContainerCreateArgs(cts *containers.Manager) func(event trace.Event) 
 // isCgroupEventInHid checks if cgroup event is relevant for deriving container event in its hierarchy id.
 // in tracee we only care about containers inside the cpuset controller, as such other hierarchy ids will lead
 // to a failed query.
-func isCgroupEventInHid(event *trace.Event, cts *containers.Manager) (bool, error) {
+func isCgroupEventInHid(event *pipeline.Event, cts *containers.Manager) (bool, error) {
 	if cts.GetCgroupVersion() == cgroup.CgroupVersion2 {
 		return true, nil
 	}

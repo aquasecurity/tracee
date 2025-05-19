@@ -11,6 +11,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/signatures/metrics"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const ALL_EVENT_ORIGINS = "*"
@@ -157,7 +158,7 @@ func (engine *Engine) matchHandler(res *detect.Finding) {
 		logger.Errorw("Failed to convert finding to event, will not feedback", "err", err)
 		return
 	}
-	prot := e.ToProtocol()
+	prot := trace.ToProtocol(e)
 	engine.inputs.Tracee <- prot
 }
 

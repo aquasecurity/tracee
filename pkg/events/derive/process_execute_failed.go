@@ -7,12 +7,13 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // ExecFailedGenerator is the object which implement the ProcessExecuteFailed event derivation
 type ExecFailedGenerator struct {
-	baseEvents *lru.Cache[int, *trace.Event]
+	baseEvents *lru.Cache[int, *pipeline.Event]
 	deriveBase deriveBase
 }
 
@@ -22,7 +23,7 @@ func InitProcessExecuteFailedGenerator() (*ExecFailedGenerator, error) {
 	// For now, we assume that the current value is sufficient
 	const executionEventsCacheSize = 16
 
-	executeFieldsCache, err := lru.New[int, *trace.Event](executionEventsCacheSize)
+	executeFieldsCache, err := lru.New[int, *pipeline.Event](executionEventsCacheSize)
 	if err != nil {
 		return nil, err
 	}
@@ -34,9 +35,9 @@ func InitProcessExecuteFailedGenerator() (*ExecFailedGenerator, error) {
 
 // ProcessExecuteFailed return the DeriveFunction for the "process_execute_failed" event.
 func (gen *ExecFailedGenerator) ProcessExecuteFailed() DeriveFunction {
-	return func(event trace.Event) ([]trace.Event, []error) {
+	return func(event pipeline.Event) ([]pipeline.Event, []error) {
 		var errs []error
-		var derivedEvents []trace.Event
+		var derivedEvents []pipeline.Event
 		derivedEvent, err := gen.deriveEvent(&event)
 		if err != nil {
 			errs = append(errs, err)
@@ -56,8 +57,8 @@ type execEndInfo struct {
 }
 
 // deriveEvent is the main logic, which will try to derive the event from the given event.
-func (gen *ExecFailedGenerator) deriveEvent(event *trace.Event) (
-	*trace.Event, error,
+func (gen *ExecFailedGenerator) deriveEvent(event *pipeline.Event) (
+	*pipeline.Event, error,
 ) {
 	switch events.ID(event.EventID) {
 	case events.ProcessExecuteFailedInternal:
@@ -71,7 +72,7 @@ func (gen *ExecFailedGenerator) deriveEvent(event *trace.Event) (
 
 // handleExecFinished will add info on top of base event unless events came out of order. Sends an event in any case.
 // Should be simplified once events reach from kernel-space to user-space are ordered!
-func (gen *ExecFailedGenerator) handleExecFinished(event *trace.Event) (*trace.Event, error) {
+func (gen *ExecFailedGenerator) handleExecFinished(event *pipeline.Event) (*pipeline.Event, error) {
 	defer gen.baseEvents.Remove(event.HostProcessID)
 	execInfo := execEndInfo{
 		returnCode: event.ReturnValue,
@@ -92,7 +93,7 @@ func (gen *ExecFailedGenerator) handleExecFinished(event *trace.Event) (*trace.E
 
 // handleExecBaseEvent will derive the event if the event parts were received, else will cache
 // the base event for future use
-func (gen *ExecFailedGenerator) handleExecBaseEvent(event *trace.Event) (*trace.Event, error) {
+func (gen *ExecFailedGenerator) handleExecBaseEvent(event *pipeline.Event) (*pipeline.Event, error) {
 	// We don't have the execution end info - cache current event and wait for it to be received
 	// This is the expected flow, as the execution finished event come chronology after
 	gen.baseEvents.Add(event.HostProcessID, event)
@@ -101,9 +102,9 @@ func (gen *ExecFailedGenerator) handleExecBaseEvent(event *trace.Event) (*trace.
 
 // generateEvent create the ProcessExecuteFailed event from its parts
 func (gen *ExecFailedGenerator) generateEvent(
-	baseEvent *trace.Event,
+	baseEvent *pipeline.Event,
 	execInfo execEndInfo,
-) (*trace.Event, error) {
+) (*pipeline.Event, error) {
 	newEvent := *baseEvent
 	newEvent.Timestamp = execInfo.timestamp
 	newEvent.EventID = gen.deriveBase.ID

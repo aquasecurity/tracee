@@ -13,6 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/findings"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
@@ -146,12 +147,12 @@ func produce(ctx context.Context, cancel context.CancelFunc, inputFile *os.File,
 				return
 			}
 
-			var e trace.Event
+			var e pipeline.Event
 			err := json.Unmarshal(scanner.Bytes(), &e)
 			if err != nil {
 				logger.Fatalw("Failed to unmarshal event", "err", err)
 			}
-			engineInput <- e.ToProtocol()
+			engineInput <- trace.ToProtocol(&e)
 		}
 	}
 }
@@ -163,7 +164,7 @@ func processWithPrinter(p printer.EventPrinter) func(finding *detect.Finding) {
 			logger.Fatalw("Failed to convert finding to event", "err", err)
 		}
 
-		p.Print(*event)
+		p.Print(event)
 	}
 }
 

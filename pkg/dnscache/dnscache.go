@@ -9,6 +9,7 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -45,7 +46,7 @@ func New(config Config) (*DNSCache, error) {
 	return nc, nil
 }
 
-func (nc *DNSCache) Add(event *trace.Event) error {
+func (nc *DNSCache) Add(event *pipeline.Event) error {
 	// parse dns argument
 	dns, err := parse.ArgVal[trace.ProtoDNS](event.Args, "proto_dns")
 	if err != nil {

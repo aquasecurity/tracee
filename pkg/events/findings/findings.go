@@ -5,17 +5,18 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // FindingToEvent converts a detect.Finding into a trace.Event
 // This is used because the pipeline expects trace.Event, but the rule engine returns detect.Finding
-func FindingToEvent(f *detect.Finding) (*trace.Event, error) {
-	s, ok := f.Event.Payload.(trace.Event)
+func FindingToEvent(f *detect.Finding) (*pipeline.Event, error) {
+	s, ok := f.Event.Payload.(*pipeline.Event)
 
 	if !ok {
-		return nil, errfmt.Errorf("error converting finding to event: %s", f.SigMetadata.ID)
+		return nil, errfmt.Errorf("error converting finding to event: %s (received type %T)", f.SigMetadata.ID, f.Event.Payload)
 	}
 
 	eventDefID, found := events.Core.GetDefinitionIDByName(f.SigMetadata.EventName)
@@ -26,11 +27,11 @@ func FindingToEvent(f *detect.Finding) (*trace.Event, error) {
 	return newEvent(int(eventDefID), f, s), nil
 }
 
-func newEvent(id int, f *detect.Finding, e trace.Event) *trace.Event {
+func newEvent(id int, f *detect.Finding, e *pipeline.Event) *pipeline.Event {
 	arguments := getArguments(f, e)
 	metadata := getMetadataFromSignatureMetadata(f.SigMetadata)
 
-	return &trace.Event{
+	return &pipeline.Event{
 		EventID:               id,
 		EventName:             f.SigMetadata.EventName,
 		Timestamp:             e.Timestamp,
@@ -59,16 +60,16 @@ func newEvent(id int, f *detect.Finding, e trace.Event) *trace.Event {
 		ThreadEntityId:        e.ThreadEntityId,
 		ProcessEntityId:       e.ProcessEntityId,
 		ParentEntityId:        e.ParentEntityId,
-		PoliciesVersion:       e.PoliciesVersion,
-		MatchedPoliciesKernel: e.MatchedPoliciesKernel,
-		MatchedPoliciesUser:   e.MatchedPoliciesUser,
 		ArgsNum:               len(arguments),
 		Args:                  arguments,
 		Metadata:              metadata,
+		PoliciesVersion:       e.PoliciesVersion,
+		MatchedPoliciesKernel: e.MatchedPoliciesKernel,
+		MatchedPoliciesUser:   e.MatchedPoliciesUser,
 	}
 }
 
-func getArguments(f *detect.Finding, triggerEvent trace.Event) []trace.Argument {
+func getArguments(f *detect.Finding, triggerEvent *pipeline.Event) []trace.Argument {
 	findingData := f.GetData()
 	arguments := make([]trace.Argument, 0, len(findingData))
 

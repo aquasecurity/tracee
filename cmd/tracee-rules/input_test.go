@@ -7,9 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 )
 
 func TestParseTraceeInputOptions(t *testing.T) {
@@ -93,12 +92,12 @@ func TestParseTraceeInputOptions(t *testing.T) {
 func TestSetupTraceeJSONInputSource(t *testing.T) {
 	testCases := []struct {
 		testName      string
-		events        []trace.Event
+		events        []pipeline.Event
 		expectedError error
 	}{
 		{
 			testName: "one event",
-			events: []trace.Event{
+			events: []pipeline.Event{
 				{
 					EventName: "Yankees are the best team in baseball",
 				},
@@ -107,7 +106,7 @@ func TestSetupTraceeJSONInputSource(t *testing.T) {
 		},
 		{
 			testName: "two events",
-			events: []trace.Event{
+			events: []pipeline.Event{
 				{
 					EventName: "Yankees are the best team in baseball",
 				},
@@ -150,12 +149,10 @@ func TestSetupTraceeJSONInputSource(t *testing.T) {
 			eventsChan, err := setupTraceeJSONInputSource(opts)
 			assert.Equal(t, testCase.expectedError, err)
 
-			readEvents := []trace.Event{}
+			readEvents := []pipeline.Event{}
 
 			for e := range eventsChan {
-				traceeEvt, ok := e.Payload.(trace.Event)
-				require.True(t, ok)
-				readEvents = append(readEvents, traceeEvt)
+				readEvents = append(readEvents, *e.Payload.(*pipeline.Event))
 			}
 
 			assert.Equal(t, testCase.events, readEvents)

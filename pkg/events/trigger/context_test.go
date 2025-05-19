@@ -8,12 +8,13 @@ import (
 	"gotest.tools/assert"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func NewFakeTriggerEvent() trace.Event {
-	return trace.Event{
+func NewFakeTriggerEvent() pipeline.Event {
+	return pipeline.Event{
 		Timestamp:           123,
 		ProcessorID:         12,
 		ProcessID:           99,
@@ -32,7 +33,7 @@ func NewFakeTriggerEvent() trace.Event {
 	}
 }
 
-func EventsMatch(t *testing.T, expected, actual trace.Event) {
+func EventsMatch(t *testing.T, expected, actual pipeline.Event) {
 	require.Equal(t, expected.Timestamp, actual.Timestamp)
 	require.Equal(t, expected.ProcessorID, actual.ProcessorID)
 	require.Equal(t, expected.ProcessID, actual.ProcessID)
@@ -105,14 +106,14 @@ func TestContext_Apply(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		invokingEvent trace.Event
-		inputEvent    trace.Event
-		expectedEvent trace.Event
+		invokingEvent pipeline.Event
+		inputEvent    pipeline.Event
+		expectedEvent pipeline.Event
 		expectedError error
 	}{
 		{
 			name: "happy path - successful apply",
-			invokingEvent: trace.Event{
+			invokingEvent: pipeline.Event{
 				EventID:     int(events.Open),
 				EventName:   "open",
 				Timestamp:   123,
@@ -121,7 +122,7 @@ func TestContext_Apply(t *testing.T) {
 				ProcessName: "insmod",
 				ReturnValue: 2,
 			},
-			inputEvent: trace.Event{
+			inputEvent: pipeline.Event{
 				EventID:     int(events.PrintNetSeqOps),
 				EventName:   "print_net_seq_ops",
 				Timestamp:   187,
@@ -153,7 +154,7 @@ func TestContext_Apply(t *testing.T) {
 					},
 				},
 			},
-			expectedEvent: trace.Event{
+			expectedEvent: pipeline.Event{
 				EventID:     int(events.PrintNetSeqOps),
 				EventName:   "print_net_seq_ops",
 				Timestamp:   123,
@@ -189,14 +190,14 @@ func TestContext_Apply(t *testing.T) {
 		},
 		{
 			name: "error path - wrong context id argument",
-			invokingEvent: trace.Event{
+			invokingEvent: pipeline.Event{
 				EventID:     int(events.Open),
 				EventName:   "open",
 				Timestamp:   123,
 				ProcessID:   5,
 				ReturnValue: 2,
 			},
-			inputEvent: trace.Event{
+			inputEvent: pipeline.Event{
 				EventID:   int(events.PrintNetSeqOps),
 				EventName: "print_net_seq_ops",
 				Timestamp: 187,

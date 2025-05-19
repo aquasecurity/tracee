@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -67,7 +68,7 @@ func TestParseMMapProt(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseMMapProt(GetArg(event.Args, "prot"), testCase.args[0].Value.(uint64))
@@ -132,7 +133,7 @@ func TestParseSocketDomainArgument(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseSocketDomainArgument(GetArg(event.Args, "domain"), testCase.args[0].Value.(uint64))
@@ -200,7 +201,7 @@ func TestParseSocketType(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				EventID: testCase.eventId,
 				Args:    testCase.args,
 			}
@@ -265,7 +266,7 @@ func TestParseInodeMode(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseInodeMode(GetArg(event.Args, "mode"), testCase.args[0].Value.(uint64))
@@ -330,7 +331,7 @@ func TestParseBPFProgType(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseBPFProgType(GetArg(event.Args, "type"), testCase.args[0].Value.(uint64))
@@ -395,7 +396,7 @@ func TestParseCapability(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseCapability(GetArg(event.Args, "capability"), testCase.args[0].Value.(uint64))
@@ -439,7 +440,7 @@ func TestParseMemProtAlert(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseMemProtAlert(GetArg(event.Args, "alert"), testCase.args[0].Value.(uint32))
@@ -504,7 +505,7 @@ func TestParseSyscall(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseSyscall(GetArg(event.Args, "id"), testCase.args[0].Value.(int32))
@@ -569,7 +570,7 @@ func TestParsePtraceRequestArgument(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parsePtraceRequestArgument(GetArg(event.Args, "req"), testCase.args[0].Value.(uint64))
@@ -634,7 +635,7 @@ func TestParsePrctlOption(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parsePrctlOption(GetArg(event.Args, "opt"), testCase.args[0].Value.(uint64))
@@ -699,7 +700,7 @@ func TestParseSocketcallCall(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseSocketcallCall(GetArg(event.Args, "call"), testCase.args[0].Value.(uint64))
@@ -765,7 +766,7 @@ func TestParseAccessMode(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseAccessMode(GetArg(event.Args, "mode"), testCase.args[0].Value.(uint64))
@@ -830,7 +831,7 @@ func TestParseExecveatFlag(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseExecveatFlag(GetArg(event.Args, "flags"), testCase.args[0].Value.(uint64))
@@ -896,7 +897,7 @@ func TestParseOpenFlagArgument(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseOpenFlagArgument(GetArg(event.Args, "flags"), testCase.args[0].Value.(uint64))
@@ -981,7 +982,7 @@ func TestParseCloneFlags(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseCloneFlags(GetArg(event.Args, "flags"), testCase.args[0].Value.(uint64))
@@ -1046,7 +1047,7 @@ func TestParseBPFCmd(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseBPFCmd(GetArg(event.Args, "cmd"), testCase.args[0].Value.(uint64))
@@ -1111,7 +1112,7 @@ func TestParseSocketLevel(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseSocketLevel(GetArg(event.Args, "level"), testCase.args[0].Value.(uint64))
@@ -1176,7 +1177,7 @@ func TestParseGetSocketOption(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseGetSocketOption(GetArg(event.Args, "optname"), testCase.args[0].Value.(uint64), Getsockopt)
@@ -1241,7 +1242,7 @@ func TestParseFsNotifyObjType(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseFsNotifyObjType(GetArg(event.Args, "objType"), testCase.args[0].Value.(uint64))
@@ -1307,7 +1308,7 @@ func TestParseBpfHelpersUsage(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseBpfHelpersUsage(GetArg(event.Args, "helpersList"), testCase.args[0].Value.([]uint64))
@@ -1372,7 +1373,7 @@ func TestParseBpfAttachType(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.name, func(t *testing.T) {
-			event := &trace.Event{
+			event := &pipeline.Event{
 				Args: testCase.args,
 			}
 			parseBpfAttachType(GetArg(event.Args, "attachType"), testCase.args[0].Value.(int32))

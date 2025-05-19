@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -32,7 +33,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 	}{
 		{
 			name: "happy path - with one matching selector",
-			inputEvent: trace.Event{
+			inputEvent: trace.ToProtocol(&pipeline.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
 				ParentProcessID: 1,
@@ -44,7 +45,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 						Value: "/proc/self/mem",
 					},
 				},
-			}.ToProtocol(),
+			}),
 			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -56,16 +57,16 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
-			expectedEvent: trace.Event{
+			expectedEvent: &pipeline.Event{
 				ProcessID: 2, ParentProcessID: 1, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
 				EventName: "test_event",
 			},
 		},
 		{
 			name: "happy path - with no matching event selector",
-			inputEvent: trace.Event{
+			inputEvent: trace.ToProtocol(&pipeline.Event{
 				EventName: "execve",
-			}.ToProtocol(),
+			}),
 			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -80,9 +81,9 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		},
 		{
 			name: "happy path - with all events selector",
-			inputEvent: trace.Event{
+			inputEvent: trace.ToProtocol(&pipeline.Event{
 				EventName: "execve",
-			}.ToProtocol(),
+			}),
 			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -94,13 +95,13 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
-			expectedEvent: trace.Event{
+			expectedEvent: &pipeline.Event{
 				EventName: "execve",
 			},
 		},
 		{
 			name:       "happy path - with all events selector, no name",
-			inputEvent: trace.Event{EventName: "execve"}.ToProtocol(),
+			inputEvent: trace.ToProtocol(&pipeline.Event{EventName: "execve"}),
 			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -111,11 +112,11 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
-			expectedEvent:     trace.Event{EventName: "execve"},
+			expectedEvent:     &pipeline.Event{EventName: "execve"},
 		},
 		{
 			name: "happy path - with one matching selector including event origin from container",
-			inputEvent: trace.Event{
+			inputEvent: trace.ToProtocol(&pipeline.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
 				HostProcessID:   1002,
@@ -130,7 +131,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 						Value: "/proc/self/mem",
 					},
 				},
-			}.ToProtocol(),
+			}),
 			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -143,14 +144,14 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
-			expectedEvent: trace.Event{
+			expectedEvent: &pipeline.Event{
 				ProcessID: 2, ParentProcessID: 1, HostProcessID: 1002, Container: trace.Container{ID: "container ID"}, ContextFlags: trace.ContextFlags{ContainerStarted: true}, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
 				EventName: "test_event",
 			},
 		},
 		{
 			name: "happy path - with one matching selector with mismatching event origin from container",
-			inputEvent: trace.Event{
+			inputEvent: trace.ToProtocol(&pipeline.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
 				HostProcessID:   1002,
@@ -165,7 +166,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 						Value: "/proc/self/mem",
 					},
 				},
-			}.ToProtocol(),
+			}),
 			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -181,7 +182,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		},
 		{
 			name: "happy path - with one matching selector including event origin from host",
-			inputEvent: trace.Event{
+			inputEvent: trace.ToProtocol(&pipeline.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
 				HostProcessID:   2,
@@ -195,7 +196,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 						Value: "/proc/self/mem",
 					},
 				},
-			}.ToProtocol(),
+			}),
 			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -208,7 +209,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
-			expectedEvent: trace.Event{
+			expectedEvent: &pipeline.Event{
 				ProcessID: 2, ParentProcessID: 2, HostProcessID: 2, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
 				EventName: "test_event",
 			},

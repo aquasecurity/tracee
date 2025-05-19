@@ -8,6 +8,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/findings"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -16,7 +17,7 @@ import (
 func TestFindingToEvent(t *testing.T) {
 	t.Parallel()
 
-	expected := &trace.Event{
+	expected := &pipeline.Event{
 		EventID:             int(events.StartSignatureID),
 		EventName:           "fake_signature_event",
 		ProcessorID:         1,
@@ -42,10 +43,8 @@ func TestFindingToEvent(t *testing.T) {
 			PodNamespace: "namespace",
 			PodUID:       "uid",
 		},
-		ReturnValue:           10,
-		MatchedPoliciesKernel: 1,
-		MatchedPoliciesUser:   1,
-		ArgsNum:               3,
+		ReturnValue: 10,
+		ArgsNum:     3,
 		Args: []trace.Argument{
 			{
 				ArgMeta: trace.ArgMeta{
@@ -98,6 +97,8 @@ func TestFindingToEvent(t *testing.T) {
 				"external_id":   "t1000",
 			},
 		},
+		MatchedPoliciesKernel: 1,
+		MatchedPoliciesUser:   1,
 	}
 
 	finding := createFakeEventAndFinding()
@@ -162,22 +163,24 @@ func createFakeEventAndFinding() detect.Finding {
 		},
 		Event: protocol.Event{
 			Headers: protocol.EventHeaders{},
-			Payload: trace.Event{
-				EventID:             int(events.Ptrace),
-				EventName:           "ptrace",
-				ProcessorID:         1,
-				ProcessID:           2,
-				CgroupID:            3,
-				ThreadID:            4,
-				ParentProcessID:     5,
-				HostProcessID:       6,
-				HostThreadID:        7,
-				HostParentProcessID: 8,
-				UserID:              9,
-				MountNS:             10,
-				PIDNS:               11,
-				ProcessName:         "process",
-				HostName:            "host",
+			Payload: &pipeline.Event{
+				EventID:               int(events.Ptrace),
+				EventName:             "ptrace",
+				MatchedPoliciesKernel: 1,
+				MatchedPoliciesUser:   1,
+				ProcessorID:           1,
+				ProcessID:             2,
+				CgroupID:              3,
+				ThreadID:              4,
+				ParentProcessID:       5,
+				HostProcessID:         6,
+				HostThreadID:          7,
+				HostParentProcessID:   8,
+				UserID:                9,
+				MountNS:               10,
+				PIDNS:                 11,
+				ProcessName:           "process",
+				HostName:              "host",
 				Container: trace.Container{
 					ID:        "containerID",
 					Name:      "container",
@@ -188,10 +191,8 @@ func createFakeEventAndFinding() detect.Finding {
 					PodNamespace: "namespace",
 					PodUID:       "uid",
 				},
-				ReturnValue:           10,
-				MatchedPoliciesKernel: 1,
-				MatchedPoliciesUser:   1,
-				ArgsNum:               1,
+				ReturnValue: 10,
+				ArgsNum:     1,
 				Args: []trace.Argument{
 					{
 						ArgMeta: trace.ArgMeta{

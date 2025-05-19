@@ -13,6 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const (
@@ -38,7 +39,7 @@ func BenchmarkOnEventWithCodeInjectionSignature(b *testing.B) {
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				event := triggerCodeInjectorPtraceEvent.ToProtocol()
+				event := trace.ToProtocol(triggerCodeInjectorPtraceEvent)
 				require.NoError(b, s.OnEvent(event), bc.name)
 			}
 		})

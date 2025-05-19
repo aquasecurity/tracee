@@ -2,8 +2,8 @@ package filters
 
 import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/events/pipeline"
 	"github.com/aquasecurity/tracee/pkg/utils"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type ScopeFilter struct {
@@ -79,7 +79,7 @@ func (f *ScopeFilter) Enabled() bool {
 	return f.enabled
 }
 
-func (f *ScopeFilter) Filter(evt trace.Event) bool {
+func (f *ScopeFilter) Filter(evt *pipeline.Event) bool {
 	if !f.enabled {
 		return true
 	}
