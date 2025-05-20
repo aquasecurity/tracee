@@ -21,7 +21,7 @@ statfunc int add_u64_elements_to_buf(args_buffer_t *, const u64 __user *, int, v
 statfunc int save_u64_arr_to_buf(args_buffer_t *, const u64 __user *, int, u8);
 statfunc int save_str_arr_to_buf(args_buffer_t *, const char __user *const __user *, u8);
 statfunc int save_args_str_arr_to_buf(args_buffer_t *, const char *, const char *, int, u8);
-statfunc int save_sockaddr_to_buf(args_buffer_t *, struct socket *, u8);
+statfunc int save_sockaddr_to_buf(args_buffer_t *, struct socket *, bool, u8);
 statfunc int save_args_to_submit_buf(event_data_t *, args_t *);
 statfunc int events_perf_submit(program_data_t *, long);
 statfunc int signal_perf_submit(void *, controlplane_signal_t *);
@@ -436,7 +436,8 @@ statfunc int save_args_str_arr_to_buf(
     return 0;
 }
 
-statfunc int save_sockaddr_to_buf(args_buffer_t *buf, struct socket *sock, u8 index)
+statfunc int
+save_sockaddr_to_buf(args_buffer_t *buf, struct socket *sock, bool local_address, u8 index)
 {
     struct sock *sk = get_socket_sock(sock);
 
@@ -447,22 +448,28 @@ statfunc int save_sockaddr_to_buf(args_buffer_t *buf, struct socket *sock, u8 in
 
     if (family == AF_INET) {
         net_conn_v4_t net_details = {};
-        struct sockaddr_in local;
+        struct sockaddr_in addr;
 
         get_network_details_from_sock_v4(sk, &net_details, 0);
-        get_local_sockaddr_in_from_network_details(&local, &net_details, family);
+        if (local_address)
+            get_local_sockaddr_in_from_network_details(&addr, &net_details, family);
+        else
+            get_remote_sockaddr_in_from_network_details(&addr, &net_details, family);
 
         // NOTE: for stack allocated, use sizeof instead of bpf_core_type_size
-        save_to_submit_buf(buf, (void *) &local, sizeof(local), index);
+        save_to_submit_buf(buf, (void *) &addr, sizeof(addr), index);
     } else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
-        struct sockaddr_in6 local;
+        struct sockaddr_in6 addr;
 
         get_network_details_from_sock_v6(sk, &net_details, 0);
-        get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
+        if (local_address)
+            get_local_sockaddr_in6_from_network_details(&addr, &net_details, family);
+        else
+            get_remote_sockaddr_in6_from_network_details(&addr, &net_details, family);
 
         // NOTE: for stack allocated, use sizeof instead of bpf_core_type_size
-        save_to_submit_buf(buf, (void *) &local, sizeof(local), index);
+        save_to_submit_buf(buf, (void *) &addr, sizeof(addr), index);
     } else if (family == AF_UNIX) {
         struct unix_sock *unix_sk = (struct unix_sock *) sk;
         struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
