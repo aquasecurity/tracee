@@ -360,7 +360,7 @@ statfunc void *get_dentry_path_str_buf(struct dentry *dentry, buf_t *out_buf)
         bpf_probe_read_kernel(&(out_buf->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
     }
 
-    return &out_buf->buf[buf_off];
+    return &out_buf->buf[buf_off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)];
 }
 
 statfunc void *get_dentry_path_str(struct dentry *dentry)
