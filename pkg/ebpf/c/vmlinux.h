@@ -415,6 +415,7 @@ struct uts_namespace {
 
 struct css_set {
     struct cgroup_subsys_state *subsys[12];
+    struct cgroup *dfl_cgrp;
 };
 
 struct percpu_ref {
@@ -476,8 +477,38 @@ typedef unsigned int fmode_t;
 
 struct dir_context {
 };
-struct iov_iter {
+
+enum iter_type
+{
+    /* iter types */
+    ITER_UBUF,
+    ITER_IOVEC,
+    ITER_BVEC,
+    ITER_KVEC,
+    ITER_FOLIOQ,
+    ITER_XARRAY,
+    ITER_DISCARD,
 };
+
+struct iov_iter {
+    unsigned int type; // iterator type (kernels <= 5.13)
+    u8 iter_type;      // iterator type (kernels >= 5.14)
+    size_t iov_offset;
+    union {
+        struct {
+            union {
+                const struct iovec *iov;   // iovec (kernels <= 6.3)
+                const struct iovec *__iov; // iovec (kernels >= 6.4)
+                void *ubuf;                // user pointer (kernels >= 6.0)
+            };
+            size_t count;
+        };
+    };
+    union {
+        unsigned long nr_segs;
+    };
+};
+
 struct kiocb {
 };
 
@@ -491,6 +522,7 @@ struct file {
     union {
         unsigned int f_iocb_flags;
     };
+    fmode_t f_mode;
     struct path f_path;
     struct inode *f_inode;
     const struct file_operations *f_op;
@@ -640,6 +672,7 @@ struct sockaddr_in6 {
 
 struct msghdr {
     void *msg_name;
+    struct iov_iter msg_iter;
 };
 
 typedef s64 ktime_t;

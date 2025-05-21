@@ -266,4 +266,25 @@ static inline struct inet_sock *inet_sk(const struct sock *sk)
 #define IPPROTO_DSTOPTS  60  // IPv6 destination options
 #define IPPROTO_MH       135 // IPv6 mobility header
 
+//
+// include/linux/fs.h
+//
+
+/* file is open for reading */
+#define FMODE_READ ((fmode_t) (1 << 0))
+/* file is open for writing */
+#define FMODE_WRITE ((fmode_t) (1 << 1))
+/* file is seekable */
+#define FMODE_LSEEK ((fmode_t) (1 << 2))
+/* file can be accessed using pread */
+#define FMODE_PREAD ((fmode_t) (1 << 3))
+/* file can be accessed using pwrite */
+#define FMODE_PWRITE ((fmode_t) (1 << 4))
+/* File is opened for execution with sys_execve / sys_uselib */
+#define FMODE_EXEC ((fmode_t) (1 << 5))
+/* File writes are restricted (block device specific) */
+#define FMODE_WRITE_RESTRICTED ((fmode_t) (1 << 6))
+/* File supports atomic writes */
+#define FMODE_CAN_ATOMIC_WRITE ((fmode_t) (1 << 7))
+
 #endif
