@@ -1,9 +1,9 @@
 #!/bin/sh
 # tracee_common.sh - Common functions and variables for tracee scripts
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+__LIB_DIR="${0%/*}"
 # shellcheck disable=SC1091
-. "${SCRIPT_DIR}/lib.sh"
+. "${__LIB_DIR}/lib.sh"
 
 # prevent multiple sourcing
 if [ -n "${__TRACEE_COMMON_INCLUDED}" ]; then

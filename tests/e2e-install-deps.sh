@@ -4,15 +4,15 @@ set -e
 set -x # for debugging
 
 # Source lib.sh for consistent logging and utilities
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+__LIB_DIR="${0%/*}/../scripts"
 # shellcheck disable=SC1091
-. "${SCRIPT_DIR}/../scripts/lib.sh"
+. "${__LIB_DIR}/lib.sh"
 
 # Configuration - must match centralized install script
 CLANG_VERSION=19
 
 # Path to centralized Clang installation script
-INSTALL_SCRIPT="$SCRIPT_DIR/../scripts/installation/install-clang.sh"
+INSTALL_SCRIPT="${0%/*}/../scripts/installation/install-clang.sh"
 
 # This script installs the dependencies for compiling tracee and running the e2e
 # tests. Note that for llvm, binaries might be installed from the OS package
@@ -42,7 +42,7 @@ wait_for_apt_locks() {
 
     echo "Checking for unattended-upgrades..."
     while pgrep -f unattended-upgrades > /dev/null; do
-        if (( elapsed >= timeout )); then
+        if ( (elapsed > = timeout)); then
             echo "Timed out waiting for unattended-upgrades to finish. Attempting to kill..."
             pkill -SIGQUIT -f unattended-upgrades || true
             pkill -SIGKILL -f unattended-upgrades || true
@@ -51,35 +51,35 @@ wait_for_apt_locks() {
 
         echo "unattended-upgrades is still running. Waiting..."
         sleep $wait_interval
-        ((elapsed += wait_interval))
+        ( (elapsed += wait_interval))
     done
 
     timeout=5 # reduce timeout for apt locks
     elapsed=0 # reset timer
 
-    while : ; do
-        if ! fuser $lock >/dev/null 2>&1 &&
-           ! fuser $lock_frontend >/dev/null 2>&1 &&
-           ! fuser $lock_lists >/dev/null 2>&1 &&
-           ! fuser $lock_archives >/dev/null 2>&1; then
+    while :; do
+        if ! fuser $lock > /dev/null 2>&1 \
+            && ! fuser $lock_frontend > /dev/null 2>&1 \
+            && ! fuser $lock_lists > /dev/null 2>&1 \
+            && ! fuser $lock_archives > /dev/null 2>&1; then
             echo "All apt locks are free."
             break
         fi
 
-        if (( elapsed >= timeout )); then
+        if ( (elapsed > = timeout)); then
             echo "Timed out waiting for apt locks to be released. Attempting to kill locking processes."
-            fuser -k -SIGQUIT $lock >/dev/null 2>&1 || true
-            fuser -k -SIGQUIT $lock_frontend >/dev/null 2>&1 || true
-            fuser -k -SIGQUIT $lock_lists >/dev/null 2>&1 || true
-            fuser -k -SIGQUIT $lock_archives >/dev/null 2>&1 || true
+            fuser -k -SIGQUIT $lock > /dev/null 2>&1 || true
+            fuser -k -SIGQUIT $lock_frontend > /dev/null 2>&1 || true
+            fuser -k -SIGQUIT $lock_lists > /dev/null 2>&1 || true
+            fuser -k -SIGQUIT $lock_archives > /dev/null 2>&1 || true
 
             # Give some time for processes to terminate gracefully
             sleep 2
 
-            fuser -k -SIGKILL $lock >/dev/null 2>&1 || true
-            fuser -k -SIGKILL $lock_frontend >/dev/null 2>&1 || true
-            fuser -k -SIGKILL $lock_lists >/dev/null 2>&1 || true
-            fuser -k -SIGKILL $lock_archives >/dev/null 2>&1 || true
+            fuser -k -SIGKILL $lock > /dev/null 2>&1 || true
+            fuser -k -SIGKILL $lock_frontend > /dev/null 2>&1 || true
+            fuser -k -SIGKILL $lock_lists > /dev/null 2>&1 || true
+            fuser -k -SIGKILL $lock_archives > /dev/null 2>&1 || true
 
             # Delete lock files if they still exist
             rm -f $lock $lock_frontend $lock_lists $lock_archives
@@ -90,7 +90,7 @@ wait_for_apt_locks() {
 
         echo "Waiting for other software managers to finish..."
         sleep $wait_interval
-        ((elapsed += wait_interval))
+        ( (elapsed += wait_interval))
     done
 }
 
@@ -179,17 +179,17 @@ remove_golang_os_packages() {
 
 install_libzstd_os_packages() {
     case $ID in
-    "ubuntu")
-        wait_for_apt_locks
-        apt-get install -y libzstd-dev
-    ;;
-    "almalinux")
-        yum install -y libzstd-devel
-    ;;
-    *)
-        echo "Unsupported OS: $ID"
-        exit 1
-    ;;
+        "ubuntu")
+            wait_for_apt_locks
+            apt-get install -y libzstd-dev
+            ;;
+        "almalinux")
+            yum install -y libzstd-devel
+            ;;
+        *)
+            echo "Unsupported OS: $ID"
+            exit 1
+            ;;
     esac
 }
 
@@ -219,36 +219,36 @@ if [[ $ID == "ubuntu" ]]; then
     remove_golang_usr_bin_files
 
     case $VERSION_CODENAME in
-    "focal")
-        # apt-get install -y libtinfo5
-        install_clang_os_packages
-        install_golang_from_github
-        ;;
-    "jammy")
-        if [[ "$KERNEL" == *"5.19"* ]]; then
-            # needed by instrumentation tests
-            install_gcc11_os_packages
-            install_gcc12_os_packages
-        fi
-        install_clang_os_packages
-        install_golang_from_github
-        ;;
-    "noble")
-        install_clang_os_packages
-        install_golang_from_github
-        ;;
-    "lunar")
-        install_clang_os_packages
-        install_golang_from_github
-        ;;
-    "mantic")
-        install_clang_os_packages
-        install_golang_from_github
-        ;;
-    *)
-        echo "Unsupported Ubuntu version: $VERSION_CODENAME"
-        exit 1
-        ;;
+        "focal")
+            # apt-get install -y libtinfo5
+            install_clang_os_packages
+            install_golang_from_github
+            ;;
+        "jammy")
+            if [[ "$KERNEL" == *"5.19"* ]]; then
+                # needed by instrumentation tests
+                install_gcc11_os_packages
+                install_gcc12_os_packages
+            fi
+            install_clang_os_packages
+            install_golang_from_github
+            ;;
+        "noble")
+            install_clang_os_packages
+            install_golang_from_github
+            ;;
+        "lunar")
+            install_clang_os_packages
+            install_golang_from_github
+            ;;
+        "mantic")
+            install_clang_os_packages
+            install_golang_from_github
+            ;;
+        *)
+            echo "Unsupported Ubuntu version: $VERSION_CODENAME"
+            exit 1
+            ;;
     esac
 fi
 

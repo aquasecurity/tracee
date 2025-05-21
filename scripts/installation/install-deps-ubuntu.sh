@@ -6,9 +6,10 @@
 set -e
 
 # Source lib.sh for consistent logging and utilities
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+SCRIPT_DIR="${0%/*}"
+__LIB_DIR="${SCRIPT_DIR}/.."
 # shellcheck disable=SC1091
-. "$SCRIPT_DIR/../lib.sh"
+. "${__LIB_DIR}/lib.sh"
 
 info "Starting Tracee dependency installation on Ubuntu/Debian"
 
@@ -21,7 +22,7 @@ ERRCHECK_VERSION="v1.9.0"
 
 wait_for_apt_locks() {
     info "Waiting for apt locks to be released..."
-    while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+    while sudo fuser /var/lib/dpkg/lock-frontend > /dev/null 2>&1 || sudo fuser /var/lib/apt/lists/lock > /dev/null 2>&1; do
         sleep 1
     done
 }
@@ -91,7 +92,7 @@ install_clang() {
     require_cmds bash
 
     # Call our existing Clang installation script
-    bash "$SCRIPT_DIR/install-clang.sh"
+    bash "${SCRIPT_DIR}/install-clang.sh"
 
     info "Clang installation completed"
 }
@@ -166,7 +167,7 @@ verify_installation() {
     staticcheck -version
 
     # Check Docker availability (optional)
-    if command -v docker >/dev/null 2>&1; then
+    if command -v docker > /dev/null 2>&1; then
         docker --version
     else
         info "Docker not available (might be installed but not accessible)"
