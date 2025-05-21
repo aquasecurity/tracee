@@ -11,13 +11,13 @@
 # Note: You may opt out from fetching repositories changes in the beginning of
 # the execution by exporting SKIP_FETCH=1 env variable.
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+__LIB_DIR="${0%/*}"
 # shellcheck disable=SC1091
-. "${SCRIPT_DIR}/lib.sh"
+. "${__LIB_DIR}/lib.sh"
 
 require_cmds git grep # optional: nproc
 
-BASEDIR=$(cd "${SCRIPT_DIR}/../" && pwd)
+BASEDIR=$(cd "${0%/*}/../" && pwd)
 cd "${BASEDIR}"
 
 TRACEE_BPF_CORE="${BASEDIR}/dist/tracee.bpf.o"
@@ -144,7 +144,7 @@ btfgen="./tools/btfgen.sh"
 mkdir -p ./custom-archive
 
 # Get number of CPUs
-if command -v nproc >/dev/null 2>&1; then
+if command -v nproc > /dev/null 2>&1; then
     NPROC=$(nproc)
 elif [ -f /proc/cpuinfo ]; then
     NPROC=$(grep -c ^processor /proc/cpuinfo)
@@ -152,17 +152,17 @@ else
     NPROC=1
 fi
 # Fallback to 1 if detection failed or result is empty/non-numeric
-if ! [ "${NPROC}" -ge 1 ] 2>/dev/null; then
+if ! [ "${NPROC}" -ge 1 ] 2> /dev/null; then
     NPROC=1
 fi
 
 # Calculate optimal number of parallel jobs
 if [ "${NPROC}" -le 2 ]; then
-    JOBS="${NPROC}"      # Use all cores on small systems - prioritize BTF tailoring completion
+    JOBS="${NPROC}" # Use all cores on small systems - prioritize BTF tailoring completion
 elif [ "${NPROC}" -le 4 ]; then
-    JOBS=$((NPROC - 1))  # Reserve 1 core on medium systems
+    JOBS=$((NPROC - 1)) # Reserve 1 core on medium systems
 else
-    JOBS=$((NPROC - 2))  # Reserve 2 cores on larger systems
+    JOBS=$((NPROC - 2)) # Reserve 2 cores on larger systems
 fi
 
 info "Generating tailored BTFs using ${JOBS} parallel jobs..."

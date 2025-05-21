@@ -1,8 +1,9 @@
 #!/bin/sh
 # Main script to run all unit test scripts in the scripts directory.
 
+__LIB_DIR="${0%/*}"
 # shellcheck disable=SC1091
-. "${0%/*}/lib.sh"
+. "${__LIB_DIR}/lib.sh"
 
 UNIT_TEST_SCRIPTS_DIR="scripts"
 FAILED_TESTS=""

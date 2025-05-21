@@ -7,8 +7,9 @@
 set -e
 
 # Source lib.sh for common functions
+__LIB_DIR="${0%/*}"
 # shellcheck disable=SC1091
-. "${0%/*}/lib.sh"
+. "${__LIB_DIR}/lib.sh"
 
 # Print functions using lib.sh
 print_info() {

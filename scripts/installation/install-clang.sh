@@ -6,9 +6,9 @@
 set -e
 
 # Source lib.sh for consistent logging and utilities
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+__LIB_DIR="${0%/*}/.."
 # shellcheck disable=SC1091
-. "${SCRIPT_DIR}/../lib.sh"
+. "${__LIB_DIR}/lib.sh"
 
 # Configuration - single source of truth for Clang version
 CLANG_VERSION=19
@@ -102,11 +102,11 @@ setup_ubuntu_alternatives() {
 
     # Remove all existing alternatives to avoid conflicts
     for tool in $CLANG_TOOLS; do
-        update-alternatives --remove-all $tool 2>/dev/null || true
+        update-alternatives --remove-all $tool 2> /dev/null || true
     done
 
     # Check if current clang is already the target version
-    if command -v clang >/dev/null 2>&1; then
+    if command -v clang > /dev/null 2>&1; then
         current_version=$(clang --version | grep -o "clang version [0-9]\+" | head -1 | grep -o "[0-9]\+")
         if [ "$current_version" = "$CLANG_VERSION" ]; then
             info "Default clang is already version ${CLANG_VERSION}"
@@ -139,16 +139,16 @@ verify_installation() {
     require_cmds clang
 
     # Check clang version
-    if command -v clang >/dev/null 2>&1; then
-        clang_version_output=$(clang --version 2>/dev/null | head -1 || echo "")
+    if command -v clang > /dev/null 2>&1; then
+        clang_version_output=$(clang --version 2> /dev/null | head -1 || echo "")
         info "Clang: $clang_version_output"
     else
         warn "clang command not found"
     fi
 
     # Check clang-format version if available
-    if command -v clang-format >/dev/null 2>&1; then
-        clang_format_version_output=$(clang-format --version 2>/dev/null | head -1 || echo "")
+    if command -v clang-format > /dev/null 2>&1; then
+        clang_format_version_output=$(clang-format --version 2> /dev/null | head -1 || echo "")
         info "clang-format: $clang_format_version_output"
     else
         warn "clang-format command not found"
