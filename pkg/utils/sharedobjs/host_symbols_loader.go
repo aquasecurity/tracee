@@ -3,6 +3,7 @@ package sharedobjs
 import (
 	"debug/elf"
 	"errors"
+	"strings"
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	"golang.org/x/exp/maps"
@@ -141,11 +142,16 @@ func loadSharedObjectDynamicSymbols(path string) (*DynamicSymbols, error) {
 
 func parseDynamicSymbols(dynamicSymbols []elf.Symbol) *DynamicSymbols {
 	objSymbols := NewSOSymbols()
-	for _, sym := range dynamicSymbols {
+	for i := range dynamicSymbols {
+		sym := &dynamicSymbols[i] // avoid copying the entire struct by taking its address
+		// NOTE(geyslan): unique.Handle might be a better choice here - and elsewhere -
+		// for deduplicating strings or avoiding retention of backing memory.
+		// Issue: #4761
+		name := strings.Clone(sym.Name)
 		if sym.Library != "" || sym.Value == 0 {
-			objSymbols.Imported[sym.Name] = true
+			objSymbols.Imported[name] = true
 		} else {
-			objSymbols.Exported[sym.Name] = true
+			objSymbols.Exported[name] = true
 		}
 	}
 	return &objSymbols
