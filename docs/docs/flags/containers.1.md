@@ -1,42 +1,77 @@
 ---
-title: TRACEE-CRI
+title: TRACEE-CONTAINERS
 section: 1
-header: Tracee CRI Flag Manual
-date: 2024/06
+header: Tracee Containers Flag Manual
+date: 2025/04
 ...
 
 ## NAME
 
-tracee **\-\-cri** - Select container runtimes to connect to for container events enrichment
+tracee **\-\-containers** - Configure container enrichment and runtime sockets for container events enrichment
 
 ## SYNOPSIS
 
-tracee **\-\-cri** <[crio|containerd|docker|podman]:socket\> [**\-\-cri** ...] ...
+tracee **\-\-containers** <[enrich=<true|false>|sockets.<runtime>=<path>|cgroupfs.path=<path>|cgroupfs.force=<true|false>\>] [**\-\-containers** ...]
 
 ## DESCRIPTION
 
-By default, if no flag is passed, Tracee will automatically detect installed runtimes by going through known runtime socket paths, looking for the following paths:
+The `--containers` flag allows you to configure container enrichment and runtime sockets for container events enrichment.
 
-1. **Docker**:     `/var/run/docker.sock`
-2. **Containerd**: `/var/run/containerd/containerd.sock`
-3. **CRI-O**:      `/var/run/crio/crio.sock`
-4. **Podman**:     `/var/run/podman/podman.sock`
+### Flags
 
-If runtimes are specified using the **\-\-cri** flag, only the ones passed through the flags will be connected to through the provided socket file path.
-
-Supported runtimes are:
-
-1. **CRI-O** (crio, cri-o)
-2. **Containerd** (containerd)
-3. **Docker** (docker)
-4. **Podman** (podman)
-
-## EXAMPLE
-
-- To connect to CRI-O using the socket file path `/var/run/crio/crio.sock`, use the following flag:
-
+- **enrich=<true|false>**  
+  Enable or disable container enrichment.  
+  Example:  
   ```console
-  --cri crio:/var/run/crio/crio.sock
+  --containers enrich=true
   ```
+
+- **sockets.<runtime>=<path>**  
+  Configure container runtime sockets for enrichment. `<runtime>` must be one of the supported runtimes:  
+  - CRI-O      (`crio`, `cri-o`)  
+  - Containerd (`containerd`)  
+  - Docker     (`docker`)  
+  - Podman     (`podman`)  
+
+  Example:  
+  ```console
+  --containers sockets.docker=/var/run/docker.sock
+  ```
+
+- **cgroupfs.path=<path>**  
+  Configure the path to the cgroupfs where container cgroups are created. This is used as a hint for auto-detection.  
+  Example:  
+  ```console
+  --containers cgroupfs.path=/sys/fs/cgroup
+  ```
+
+- **cgroupfs.force=<true|false>**  
+  Force the usage of the provided mountpoint path and skip auto-detection (only applies if cgroupfs.path is provided).  
+  Example:  
+  ```console
+  --containers cgroupfs.force=true
+  ```
+
+## EXAMPLES
+
+1. Enable container enrichment:  
+   ```console
+   --containers enrich=true
+   ```
+
+2. Configure Docker socket:  
+   ```console
+   --containers sockets.docker=/var/run/docker.sock
+   ```
+
+3. Set the cgroupfs path and force its usage:  
+   ```console
+   --containers cgroupfs.path=/sys/fs/cgroup cgroupfs.force=true
+   ```
+
+4. Combine multiple flags:  
+   ```console
+   --containers enrich=true sockets.containerd=/var/run/containerd/containerd.sock cgroupfs.path=/sys/fs/cgroup cgroupfs.force=true
+   ```
 
 Please refer to the [documentation](../install/container-engines.md) for more information on container events enrichment.
