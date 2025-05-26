@@ -18,7 +18,7 @@ require (
 	github.com/grafana/pyroscope-go v1.2.2
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/mennanov/fmutils v0.3.1
+	github.com/mennanov/fmutils v0.3.3
 	github.com/minio/sha256-simd v1.0.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.22.0
