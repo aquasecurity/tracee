@@ -180,7 +180,7 @@ func TestReadArgFromBuff(t *testing.T) {
 	}
 }
 
-func TestReadStringVarFromBuff(t *testing.T) {
+func TestReadSunPathFromBuffer(t *testing.T) {
 	tests := []struct {
 		name           string
 		buffer         []byte
@@ -201,7 +201,7 @@ func TestReadStringVarFromBuff(t *testing.T) {
 			name:           "Buffer with same length as max without null terminator",
 			buffer:         []byte{'H', 'e', 'l', 'l', 'o'},
 			max:            5,
-			expected:       "Hell",
+			expected:       "Hello",
 			expectedCursor: 5,
 			expectError:    false,
 		},
@@ -209,7 +209,7 @@ func TestReadStringVarFromBuff(t *testing.T) {
 			name:           "Buffer longer than max length without null terminator",
 			buffer:         []byte{'H', 'e', 'l', 'l', 'o', 'W', 'o', 'r', 'l', 'd'},
 			max:            5,
-			expected:       "Hell",
+			expected:       "Hello",
 			expectedCursor: 5,
 			expectError:    false,
 		},
@@ -222,8 +222,16 @@ func TestReadStringVarFromBuff(t *testing.T) {
 			expectError:    false,
 		},
 		{
-			name:           "Buffer started with null terminator",
+			name:           "Buffer started with null terminator (abstract socket)",
 			buffer:         []byte{0, 'N', 'u', 'l', 'l', 0, 'W', 'o', 'r', 'l', 'd'},
+			max:            6,
+			expected:       "@Null",
+			expectedCursor: 6,
+			expectError:    false,
+		},
+		{
+			name:           "Buffer started with two null terminators (empty string)",
+			buffer:         []byte{0, 0, 'W', 'o', 'r', 'l', 'd'},
 			max:            6,
 			expected:       "",
 			expectedCursor: 6,
@@ -252,7 +260,7 @@ func TestReadStringVarFromBuff(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			decoder := New(tt.buffer, dataPresentor)
-			actual, err := readVarStringFromBuffer(decoder, tt.max)
+			actual, err := readSunPathFromBuffer(decoder, tt.max)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {

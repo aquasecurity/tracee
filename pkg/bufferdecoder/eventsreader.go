@@ -206,7 +206,7 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 					char        sun_path[108];  // Pathname
 			};
 		*/
-		sunPath, err := readVarStringFromBuffer(ebpfMsgDecoder, 108)
+		sunPath, err := readSunPathFromBuffer(ebpfMsgDecoder, 108)
 		if err != nil {
 			return nil, errfmt.Errorf("error parsing sockaddr_un: %v", err)
 		}
@@ -309,36 +309,54 @@ func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 	return string(res), nil
 }
 
-// readVarStringFromBuffer reads a null-terminated string from the ebpf buffer where the size is not
+// readSunPathFromBuffer reads a null-terminated string from the ebpf buffer where the size is not
 // known. The helper will read from the buffer char-by-char until it hits the null terminator
 // or the given max length. The cursor will then skip to the point in the buffer after the max length.
-func readVarStringFromBuffer(decoder *EbpfDecoder, max int) (string, error) {
+// Special handling is applied for abstract sockets: a leading null byte is mapped to '@', and a lone
+// '@' is treated as an empty string. This behavior ensures compatibility with Linux abstract socket
+// naming conventions.
+func readSunPathFromBuffer(decoder *EbpfDecoder, max int) (string, error) {
+	if max == 0 {
+		// Sanity check
+		return "", nil
+	}
+
 	var err error
 	var char int8
-	res := make([]byte, 0, max)
+	var res strings.Builder
 
 	err = decoder.DecodeInt8(&char)
 	if err != nil {
 		return "", errfmt.Errorf("error reading null terminated string: %v", err)
 	}
 
-	count := 1 // first char is already decoded
-	for char != 0 && count < max {
-		res = append(res, byte(char))
+	if char == 0 {
+		// treat abstract socket case
+		char = '@'
+	}
 
+	res.WriteByte(byte(char))
+
+	count := 1 // first char is already decoded
+	for count < max {
 		// decode next char
 		err = decoder.DecodeInt8(&char)
 		if err != nil {
 			return "", errfmt.Errorf("error reading sun_path at index %d out of %d: %v", count, max, err)
 		}
 		count++
+		if char == 0 {
+			break
+		}
+		res.WriteByte(byte(char))
 	}
 
-	// The exact reason for this Trim is not known, so remove it for now,
-	// since it increases processing time.
-	// res = bytes.TrimLeft(res[:], "\000")
 	decoder.MoveCursor(max - count) // skip the cursor to the desired endpoint
-	return string(res), nil
+
+	if res.String() == "@" {
+		return "", nil
+	}
+	return res.String(), nil
 }
 
 // PrintUint32IP prints the IP address encoded as a uint32
