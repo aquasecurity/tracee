@@ -1,9 +1,7 @@
 name: Echo my vars
 
 on:
-  push:
-    paths:
-      - .github/workflows/remove-me-test-max.yml
+  workflow_dispatch:
  
 jobs:
   dump-vars:
