@@ -37,28 +37,31 @@ The flush-interval defines how often the Tracee logs will be forwarded.
 
 ```console
 log:
-    filters: 
-        msg: 
-            - foo
-            - bar
+    filter: 
+        include:
+            msg: 
+                - foo
+                - bar
 ```
 
 **Filter logs using regular expressions against messages:**
 
 ```console
 log:
-    filters: 
-        regex: 
-            - ^pattern-one
+    filter: 
+        include:
+            regex: 
+                - ^pattern-one
 ```
 
 **Filter logs originating from a specific package:**
 
 ```console
 log:
-    filters: 
-        pkg:
-            - core
+    filter: 
+        include: 
+            pkg:
+                - core
 ```
 
 **Filter logs originating from a specific file:**
@@ -66,36 +69,39 @@ log:
 ```console
 log:
     filter: 
-        file: 
-            - /pkg/cmd/flags/logger.go
+        include: 
+            file: 
+                - /pkg/cmd/flags/logger.go
 ```
 
 **Filter logs based on their severity level:**
 
 ```console
 log:
-    filters: 
-        level: 
-            - error
+    filter: 
+        include: 
+            level: 
+                - error
 ```
 
 **Filter logs originating from libbpf**:
 
 ```console
 log:
-    filters: 
+    filter: 
         libbpf: true
 ```
 
 ## Additional Configuration
 
-All `filters` options can also be used with `filter-out` to achieve the opposite behavior. 
+All `filter` options can also be used with `exclude` to achieve the opposite behavior. 
 
 For instance, the following configuration would exclude all logs with the severity level `error`:
 
 ```console
 log:
-    filter-out: 
-        level: 
-            - error
+    filter: 
+        exclude:
+            level: 
+                - error
 ```
