@@ -70,7 +70,7 @@ enableAllRules = true
     Disabled = true
 [rule.function-result-limit]
     Disabled = false
-    arguments = [3]
+    arguments = [4]
 [rule.function-length]
     Disabled = true # TODO: consider enabling this
 [rule.get-return]

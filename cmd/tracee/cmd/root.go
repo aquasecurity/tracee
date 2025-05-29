@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 
 	cmdcobra "github.com/aquasecurity/tracee/pkg/cmd/cobra"
+	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -147,22 +148,12 @@ func initCmd() error {
 
 	// Container flags
 
-	rootCmd.Flags().Bool(
-		"no-containers",
-		false,
-		"\t\t\t\t\tDisable container info enrichment to events. Safeguard option.",
-	)
-	err = viper.BindPFlag("no-containers", rootCmd.Flags().Lookup("no-containers"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
 	rootCmd.Flags().StringArray(
-		"cri",
+		flags.ContainersFlag,
 		[]string{},
-		"<runtime:socket>\t\t\tDefine connected container runtimes",
+		"Configure container enrichment and runtime sockets for container events enrichment (see documentation)",
 	)
-	err = viper.BindPFlag("cri", rootCmd.Flags().Lookup("cri"))
+	err = viper.BindPFlag(flags.ContainersFlag, rootCmd.Flags().Lookup(flags.ContainersFlag))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

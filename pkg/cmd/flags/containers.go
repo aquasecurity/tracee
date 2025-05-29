@@ -8,27 +8,34 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
+const ContainersFlag = "containers"
+
 func containersHelp() string {
-	return `Select which container runtimes to connect to for container events enrichment.
-By default, if no flag is passed, tracee will automatically detect installed runtimes by going through known runtime socket paths.
+	return `Configure container enrichment and runtime sockets for container events enrichment.
 
-Tracee will look for the following paths:
-1. Docker:     /var/run/docker.sock
-2. Containerd: /var/run/containerd/containerd.sock
-3. CRI-O:      /var/run/crio/crio.sock
-4. Podman:     /var/run/podman/podman.sock
+Flags:
+  --containers enrich=<true/false>       Enable or disable container enrichment.
+  --containers sockets.<runtime>=<path> Configure container runtime sockets for enrichment. Supported runtimes:
+                                         - CRI-O      (crio, cri-o)
+                                         - Containerd (containerd)
+                                         - Docker     (docker)
+                                         - Podman     (podman)
+  --containers cgroupfs.path=<path>     Configure the path to the cgroupfs where container cgroups are created. This is used as a hint for auto-detection.
+  --containers cgroupfs.force=true      Force the usage of the provided mountpoint path and skip auto-detection (only applies if cgroupfs.path is provided).
 
-If runtimes are specified, only the ones passed through flags will be connected to through the provided socket file path.
-Supported runtimes are:
-
-1. CRI-O      (crio, cri-o)
-2. Containerd (containerd)
-3. Docker     (docker)
-4. Podman     (podman)
-
-Example:
-  --cri crio:/var/run/crio/crio.sock
+Examples:
+  --containers enrich=true
+  --containers sockets.docker=/var/run/docker.sock
+  --containers cgroupfs.path=/sys/fs/cgroup
+  --containers cgroupfs.force=true
 `
+}
+
+type CgroupFlagsResult struct {
+	NoEnrich      bool
+	Sockets       runtime.Sockets
+	CgroupfsPath  string
+	CgroupfsForce bool
 }
 
 func contains(s []string, val string) bool {
@@ -40,39 +47,69 @@ func contains(s []string, val string) bool {
 	return false
 }
 
-func PrepareContainers(containerFlags []string) (runtime.Sockets, error) {
-	if len(containerFlags) == 0 {
-		return runtime.Autodiscover(func(err error, runtime runtime.RuntimeId, socket string) {
+func parseContainerFlags(containerArgs []string) map[string]string {
+	containerFlags := make(map[string]string)
+	for _, arg := range containerArgs {
+		parts := strings.SplitN(arg, "=", 2)
+		if len(parts) == 2 {
+			containerFlags[parts[0]] = parts[1]
+		}
+	}
+	return containerFlags
+}
+
+func PrepareContainers(containerFlags []string) (CgroupFlagsResult, error) {
+	var noContainersEnrich bool
+	var cgroupfsPath string
+	var cgroupfsForce bool
+
+	supportedRuntimes := []string{"crio", "cri-o", "containerd", "docker", "podman"}
+	sockets := runtime.Sockets{}
+	anySocketRegistered := false
+
+	flagMap := parseContainerFlags(containerFlags)
+
+	for key, value := range flagMap {
+		if key == "enrich" {
+			if value == "false" {
+				noContainersEnrich = true
+			} else if value != "true" {
+				return CgroupFlagsResult{}, errfmt.Errorf("invalid value for enrich flag (must be true or false)")
+			}
+		} else if strings.HasPrefix(key, "sockets.") {
+			runtimeName := strings.TrimPrefix(key, "sockets.")
+			if !contains(supportedRuntimes, runtimeName) {
+				return CgroupFlagsResult{}, errfmt.Errorf("unsupported container runtime in sockets flag (see --containers help for supported runtimes)")
+			}
+			err := sockets.Register(runtime.FromString(runtimeName), value)
+			if err != nil {
+				return CgroupFlagsResult{}, errfmt.Errorf("failed to register runtime socket, %s", err.Error())
+			}
+		} else if strings.HasPrefix(key, "cgroupfs.") {
+			if key == "cgroupfs.path" {
+				cgroupfsPath = value
+			} else if key == "cgroupfs.force" {
+				cgroupfsForce = value == "true"
+			}
+		} else {
+			return CgroupFlagsResult{}, errfmt.Errorf("unknown container flag: %s", key)
+		}
+	}
+
+	if !anySocketRegistered {
+		sockets = runtime.Autodiscover(func(err error, runtime runtime.RuntimeId, socket string) {
 			if err != nil {
 				logger.Debugw("RuntimeSockets: failed to register default", "socket", runtime.String(), "error", err)
 			} else {
 				logger.Debugw("RuntimeSockets: registered default", "socket", runtime.String(), "from", socket)
 			}
-		}), nil
+		})
 	}
 
-	supportedRuntimes := []string{"crio", "cri-o", "containerd", "docker", "podman"}
-
-	sockets := runtime.Sockets{}
-
-	for _, flag := range containerFlags {
-		parts := strings.Split(flag, ":")
-		if len(parts) != 2 {
-			return sockets, errfmt.Errorf("failed to parse container flags (must be of format {runtime}:{socket path})")
-		}
-		containerRuntime := parts[0]
-
-		if !contains(supportedRuntimes, containerRuntime) {
-			return sockets, errfmt.Errorf("provided unsupported container runtime (see --cri help for supported runtimes)")
-		}
-
-		socket := parts[1]
-		err := sockets.Register(runtime.FromString(containerRuntime), socket)
-
-		if err != nil {
-			return sockets, errfmt.Errorf("failed to register runtime socket, %s", err.Error())
-		}
-	}
-
-	return sockets, nil
+	return CgroupFlagsResult{
+		NoEnrich:      noContainersEnrich,
+		Sockets:       sockets,
+		CgroupfsPath:  cgroupfsPath,
+		CgroupfsForce: cgroupfsForce,
+	}, nil
 }
