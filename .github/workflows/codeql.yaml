@@ -32,35 +32,39 @@ jobs:
             goarch: amd64
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libelf-dev clang make gcc pkg-config
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libelf-dev clang make gcc pkg-config file
 
-    - name: Update submodules
-      run: git submodule update --init --recursive
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: "1.24"
 
-    - name: Set GO Environment (for Go only)
-      if: matrix.language == 'go'
-      run: |
-        echo "GOOS=linux" >> $GITHUB_ENV
-        echo "GOARCH=${{ matrix.goarch }}" >> $GITHUB_ENV
+      - name: Set Go Environment
+        run: |
+          echo "GOOS=linux" >> $GITHUB_ENV
+          echo "GOARCH=${{ matrix.goarch }}" >> $GITHUB_ENV
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }}
-        build-mode: ${{ matrix.build-mode }}
+      - name: Update submodules
+        run: git submodule update --init --recursive
 
-    - name: Manual Build for Go
-      if: matrix.language == 'go'
-      run: |
-        make
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      with:
-        category: "/language:${{ matrix.language }}"
+      - name: Manual Build for Go
+        if: matrix.language == 'go'
+        run: |
+          make
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
