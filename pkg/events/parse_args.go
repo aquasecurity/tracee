@@ -83,7 +83,7 @@ func ParseArgs(event *trace.Event) error {
 				parsePtraceRequestArgument(reqArg, uint64(req))
 			}
 		}
-	case Prctl:
+	case Prctl, SecurityTaskPrctl:
 		if optArg := GetArg(event.Args, "option"); optArg != nil {
 			if option, isInt32 := optArg.Value.(int32); isInt32 {
 				parsePrctlOption(optArg, uint64(option))

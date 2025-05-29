@@ -164,6 +164,7 @@ const (
 	Dup3Ret
 	ChmodCommon
 	SecuritySbUmount
+	SecurityTaskPrctl
 )
 
 // Test probe handles
