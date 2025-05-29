@@ -4,10 +4,11 @@
 name: PR
 on:
   workflow_dispatch: {}
+
   pull_request:
     branches:
       - "main"
-      - "v.*"
+      - "release-v*.*.*"
     paths:
       - "!docs/**"
       - "!deploy/**"
@@ -292,17 +293,17 @@ jobs:
     name: ${{ matrix.job_name }}
     needs:
       - generate-matrix
-    runs-on: 
+    runs-on:
       - graas_ami-${{ matrix.ami }}_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ matrix.sufix }}
       - EXECUTION_TYPE=LONG
     strategy:
       matrix:
         include: ${{fromJson(needs.generate-matrix.outputs.matrix01)}}
     env:
-        HOME: "/tmp/root"
-        GOPATH: "/tmp/go"
-        GOCACHE: "/tmp/go-cache"
-        GOROOT: "/usr/local/go"
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
     steps:
       - name: "Checkout"
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
