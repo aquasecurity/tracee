@@ -3,7 +3,7 @@ name: "CodeQL Advanced"
 on:
   workflow_dispatch: {}
 
-  push: &common-config
+  push:
     branches:
       - "main"
       - "release-v*.*.*"
@@ -13,7 +13,13 @@ on:
       - "**/*.go"
 
   pull_request:
-    <<: *common-config
+    branches:
+      - "main"
+      - "release-v*.*.*"
+    paths:
+      - "**/*.c"
+      - "**/*.h"
+      - "**/*.go"
 
 jobs:
   analyze:
