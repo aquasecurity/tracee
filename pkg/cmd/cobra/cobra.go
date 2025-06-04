@@ -319,7 +319,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		Signatures:       signatures,
 		// This used to be a flag, we have removed the flag from this binary to test
 		// if users do use it or not.
-		SignatureBufferSize: 1000,
+		SignatureBufferSize: 200,
 		DataSources:         dataSources,
 	}
 
