@@ -29,58 +29,11 @@ on:
       - "**.sh"
       - "**/pr.yaml"
       - "**/action.yaml"
+
 concurrency:
   group: ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-env:
-  TESTS: >
-    TRC-102
-    TRC-103
-    TRC-104
-    TRC-105
-    TRC-107
-    TRC-1010
-    TRC-1014
-    TRC-1016
-    TRC-1018
-    TRC-1022
-  ARM64_TESTS: >
-    TRC-102
-    TRC-103
-    TRC-104
-    TRC-105
-    TRC-107
-    TRC-1010
-    TRC-1014
-    TRC-1016
-    TRC-1018
-  NETTESTS: >
-    IPv4
-    IPv6
-    TCP
-    UDP
-    ICMP
-    ICMPv6
-    DNS
-    HTTP
-    HTTPRequest
-    HTTPResponse
-  INSTTESTS: >
-    PROCESS_EXECUTE_FAILED
-    VFS_WRITE
-    FILE_MODIFICATION
-    HOOKED_SYSCALL
-    FTRACE_HOOK
-    SECURITY_INODE_RENAME
-    BPF_ATTACH
-    CONTAINERS_DATA_SOURCE
-    PROCTREE_DATA_SOURCE
-    DNS_DATA_SOURCE
-    WRITABLE_DATA_SOURCE
-    SECURITY_PATH_NOTIFY
-    SET_FS_PWD
-    SUSPICIOUS_SYSCALL_SOURCE
-    STACK_PIVOT
+
 jobs:
   #
   # DOC VERIFICATION
@@ -91,6 +44,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
       - name: Ensure updates of *.1.md and *.1 pairs
         run: |
           ./scripts/verify_man_md_sync.sh --base-ref origin/main --fetch-depth 1
@@ -105,8 +59,10 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
+
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
+
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then
@@ -116,18 +72,23 @@ jobs:
             gofmt -s -d .
             exit 1
           fi
+
       - name: Lint (Revive)
         run: |
           make check-lint
+
       - name: Check Code Style
         run: |
           make check-fmt
+
       - name: Check Golang Vet
         run: |
           make check-vet
+
       - name: Check with StaticCheck
         run: |
           make check-staticcheck
+
       - name: Check with errcheck
         run: |
           make check-err
@@ -144,20 +105,25 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
+
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
+
       - name: Build Tracee Benchmark Tool
         run: |
           make clean
           make tracee-bench
+
       - name: Build Tracee GPT Docs Tool
         run: |
           make clean
           make tracee-gptdocs
+
       - name: Build E2E Network Signatures
         run: |
           make clean
           make e2e-net-signatures
+
       - name: Build E2E Instrumentation Signatures
         run: |
           make clean
@@ -175,11 +141,14 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
+
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
+
       - name: Run Unit Tests
         run: |
           make test-unit
+
       - name: Run Scripts Unit Tests
         run: |
           make run-scripts-test-unit
@@ -192,12 +161,14 @@ jobs:
       - verify-analyze-code
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
+
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
+
       - name: Run Integration Tests
         run: |
           sudo env "PATH=$PATH" make test-integration
@@ -210,12 +181,14 @@ jobs:
       - verify-analyze-code
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
+
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
+
       - name: Run Performance Tests
         run: |
           sudo env "PATH=$PATH" make test-performance
@@ -230,95 +203,93 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix01: ${{ steps.set-matrix.outputs.matrix01 }}
+      matrix02: ${{ steps.set-matrix.outputs.matrix02 }}
     steps:
-      - name: Set Matrix
-        id: set-matrix
-        run: |
-          declare -A job_names=(
-              ["GKE 5.4"]="0013845506cbdf2ca x86_64"
-              ["GKE 5.10"]="049b1b3a4a5fdf9fd x86_64"
-              ["GKE 5.15 x86_64"]="01f6d4f80f256ffe4 x86_64"
-              ["GKE 5.15 aarch64"]="079f308677600eebf aarch64"
-              ["AMZN2 5.10 x86_64"]="05d03d50b6008ede7 x86_64"
-              ["AMZN2 5.10 aarch64"]="05e46d0a87c96bf69 aarch64"
-              ["RHEL8 4.18 x86_64"]="08c6b52c312ffee85 x86_64"
-              ["Focal 5.4 x86_64"]="0c75089aa342ffa26 x86_64"
-              ["Focal 5.13 x86_64"]="094d5310a281c8679 x86_64"
-              ["Focal 5.13 aarch64"]="08f88e2a2bd1b72a7 aarch64"
-              ["Jammy 5.15 x86_64"]="0d01de8f7b26afe02 x86_64"
-              ["Jammy 5.15 aarch64"]="08e91aa07134e6a36 aarch64"
-              ["Jammy 5.19 x86_64"]="02691308713b4cec2 x86_64"
-              ["Jammy 5.19 aarch64"]="046579f8e52acb104 aarch64"
-              ["Lunar 6.2 x86_64"]="034e03e1bdb7c205f x86_64"
-              ["Lunar 6.2 aarch64"]="04b03463ee4e32182 aarch64"
-              ["Mantic 6.5 x86_64"]="0a44ad46e5c42e499 x86_64"
-              ["Mantic 6.5 aarch64"]="0387f77c4820c98db aarch64"
-              ["Mantic 6.6 x86_64"]="05b5ac8f6c43b3ca5 x86_64"
-              ["Mantic 6.6 aarch64"]="05c9d6cd9343f0a43 aarch64"
-              ["Noble 6.8 x86_64"]="0cc63426ae75d47c8 x86_64"
-              ["Noble 6.8 aarch64"]="0f5260685b3ec2293 aarch64"
-              ["Noble 6.10 x86_64"]="0ae23eabda70efc60 x86_64"
-              ["Noble 6.10 aarch64"]="01ce0f71400b5ff38 aarch64"
-              ["Noble 6.11 x86_64"]="0ce1f88aa63091921 x86_64"
-              ["Noble 6.11 aarch64"]="0123508488affb578 aarch64"
-              ["Noble 6.12 x86_64"]="0e38f3caba1b4234d x86_64"
-              ["Noble 6.12 aarch64"]="0547f429681dc1f2a aarch64"
-              # expand as needed
-          )
-          for num in 01; do
-              output="["
-              first=1
-              for job in "${!job_names[@]}"; do
-                  timestamp=$(date +%s)
-                  ami="${job_names[$job]%% *}"
-                  arch="${job_names[$job]##* }"
-                  if (( first )); then
-                      first=0
-                  else
-                      output+=","
-                  fi
-                  output+="{\"job_name\": \"$job\", \"arch\": \"$arch\", \"ami\": \"$ami\", \"sufix\": \"$timestamp\"}"
-              done
-            output+="]"
-            echo "matrix$num=$output" >> $GITHUB_OUTPUT
-            echo "matrix$num=$output"
-          done
-        shell: bash
-      - name: Show Matrix
-        id: show-matrix
-        run: |
-          echo ${{ steps.set-matrix.outputs.matrix01 }}
-        shell: bash
-  kernel-tests:
-    name: ${{ matrix.job_name }}
-    needs:
-      - generate-matrix
-    runs-on:
-      - graas_ami-${{ matrix.ami }}_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ matrix.sufix }}
-      - EXECUTION_TYPE=LONG
-    strategy:
-      matrix:
-        include: ${{fromJson(needs.generate-matrix.outputs.matrix01)}}
-    env:
-      HOME: "/tmp/root"
-      GOPATH: "/tmp/go"
-      GOCACHE: "/tmp/go-cache"
-      GOROOT: "/usr/local/go"
-    steps:
-      - name: "Checkout"
+      - name: Checkout (sparse)
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
-          submodules: true
-      # - name: "Prepare Image (Fix AMIs)"
-      #   run: ./tests/e2e-install-deps.sh
-      - name: "Environment Variables"
+          sparse-checkout: .github/kernels.csv
+          sparse-checkout-cone-mode: false
+          fetch-depth: 1
+
+      - name: Set Matrix
+        id: set-matrix
+        shell: sh
         run: |
-          if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
-            echo "TESTS=${{ env.ARM64_TESTS }}" >> $GITHUB_ENV
+          current_job=0
+          # Count lines but not comments and not the header
+          total_jobs=$(grep -v '^#' .github/kernels.csv | tail -n +2 | grep -vc '^$')
+          half_jobs=$(((total_jobs + 1) / 2))
+
+          matrix01="["
+          matrix02="["
+
+          tail -n +2 .github/kernels.csv > .kernels.tmp
+          while IFS=, read -r name arch ami; do
+            # Skip comment or empty lines
+            case "$name" in
+              ""|\#*) continue ;;
+            esac
+
+            job_name="$name $arch"
+            suffix="$(date +%6N)"
+            if [ -z "${suffix}" ]; then
+              suffix="${current_job}"
+            fi
+            entry="{\"job_name\": \"${job_name}\", \"arch\": \"$arch\", \"ami\": \"$ami\", \"suffix\": \"${suffix}\"}"
+            if [ ${current_job} -lt ${half_jobs} ]; then
+              [ "${matrix01}" != "[" ] && matrix01="${matrix01},"
+              matrix01="${matrix01}${entry}"
+            else
+              [ "${matrix02}" != "[" ] && matrix02="${matrix02},"
+              matrix02="${matrix02}${entry}"
+            fi
+            current_job=$((current_job + 1))
+          done < .kernels.tmp
+          rm .kernels.tmp
+
+          matrix01="${matrix01}]"
+          matrix02="${matrix02}]"
+
+          if [ "${matrix01}" = "[]" ]; then
+            echo "No valid entries found for Matrix 01."
+            exit 1
           fi
-      - name: "Instrumentation Test"
-        run: ./tests/e2e-inst-test.sh
-      - name: "Network Test"
-        run: ./tests/e2e-net-test.sh
-      - name: "Kernel Test"
-        run: ./tests/e2e-kernel-test.sh
+
+          echo "matrix01=${matrix01}" >> $GITHUB_OUTPUT
+          echo "matrix02=${matrix02}" >> $GITHUB_OUTPUT
+
+      - name: Show Matrix
+        id: show-matrix
+        shell: sh
+        run: |
+          echo "Matrix 01:"
+          echo ${{ steps.set-matrix.outputs.matrix01 }}
+          echo "Matrix 02:"
+          echo ${{ steps.set-matrix.outputs.matrix02 }}
+
+  kernel-tests-matrix01:
+    name: Kernel Tests Matrix 01
+    needs:
+      - generate-matrix
+    uses: ./.github/workflows/kernel-tests-matrix.yaml
+    with:
+      matrix: ${{ needs.generate-matrix.outputs.matrix01 }}
+
+  delay-before-matrix02:
+    name: Delay before starting Matrix 02
+    needs:
+      - generate-matrix
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait before triggering Matrix 02
+        run: sleep 30
+
+  kernel-tests-matrix02:
+    name: Kernel Tests Matrix 02
+    needs:
+      - generate-matrix
+      - delay-before-matrix02
+    uses: ./.github/workflows/kernel-tests-matrix.yaml
+    with:
+      matrix: ${{ needs.generate-matrix.outputs.matrix02 }}
