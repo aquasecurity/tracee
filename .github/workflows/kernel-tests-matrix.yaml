@@ -1,0 +1,28 @@
+name: Kernel Tests Matrix
+
+on:
+  workflow_call:
+    inputs:
+      matrix:
+        required: true
+        type: string
+
+jobs:
+  kernel-tests:
+    name: ${{ matrix.job_name }}
+    runs-on:
+      - graas_ami-${{ matrix.ami }}_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ matrix.suffix }}
+      - EXECUTION_TYPE=LONG
+    strategy:
+      matrix:
+        include: ${{ fromJson(inputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          submodules: true
+
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: ${{ matrix.arch }}
