@@ -7,19 +7,11 @@ on:
     branches:
       - "main"
       - "release-v*.*.*"
-    paths:
-      - "**/*.c"
-      - "**/*.h"
-      - "**/*.go"
 
   pull_request:
     branches:
       - "main"
       - "release-v*.*.*"
-    paths:
-      - "**/*.c"
-      - "**/*.h"
-      - "**/*.go"
 
 jobs:
   analyze:
