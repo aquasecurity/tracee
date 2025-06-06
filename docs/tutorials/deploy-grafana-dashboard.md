@@ -26,7 +26,7 @@ There are two options for accessing Tracee metrics:
 ## Tracee Docker Container Image
 
 These metrics exports are enabled by default in all docker images and can be
-enabled using the `--metrics` flag.
+enabled using the `--server http.metrics` flag.
 
 [tracee]: https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/cmd/tracee
 
@@ -53,7 +53,7 @@ docker run --name tracee -it --rm \
   -v /var/run:/var/run:ro \
   -p 3366:3366 \
   aquasec/tracee:latest \
-  --metrics 
+  --server http.metrics 
 ```
 
 Of course, the forwarded metrics ports can be changed, but you should note that

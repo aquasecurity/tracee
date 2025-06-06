@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/viper"
 
+	serverflag "github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
@@ -21,6 +22,8 @@ func GetFlagsFromViper(key string) ([]string, error) {
 	rawValue := viper.Get(key)
 
 	switch key {
+	case serverflag.ServerFlag:
+		flagger = &ServerConfig{}
 	case "cache":
 		flagger = &CacheConfig{}
 	case "proctree":
@@ -119,6 +122,50 @@ func (c *SocketConfig) flags() []string {
 		flags = append(flags, fmt.Sprintf("sockets.%s=%s", c.Runtime, c.Socket))
 	}
 
+	return flags
+}
+
+//
+// server flag
+//
+
+type ServerConfig struct {
+	Http HttpConfig `mapstructure:"http"`
+	Grpc GrpcConfig `mapstructure:"grpc"`
+}
+type HttpConfig struct {
+	Metrics   bool   `mapstructure:"metrics"`
+	Pprof     bool   `mapstructure:"pprof"`
+	Healthz   bool   `mapstructure:"healthz"`
+	Pyroscope bool   `mapstructure:"pyroscope"`
+	Address   string `mapstructure:"address"`
+}
+
+type GrpcConfig struct {
+	Address string `mapstructure:"address"`
+}
+
+func (s *ServerConfig) flags() []string {
+	flags := make([]string, 0)
+
+	if s.Grpc.Address != "" {
+		flags = append(flags, fmt.Sprintf("grpc.address=%s", s.Grpc.Address))
+	}
+	if s.Http.Address != "" {
+		flags = append(flags, fmt.Sprintf("http.address=%s", s.Http.Address))
+	}
+	if s.Http.Metrics {
+		flags = append(flags, "http.metrics=true")
+	}
+	if s.Http.Pprof {
+		flags = append(flags, "http.pprof=true")
+	}
+	if s.Http.Healthz {
+		flags = append(flags, "http.healthz=true")
+	}
+	if s.Http.Pyroscope {
+		flags = append(flags, "http.pyroscope=true")
+	}
 	return flags
 }
 
