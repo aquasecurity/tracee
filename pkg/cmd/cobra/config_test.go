@@ -149,38 +149,38 @@ log:
     - debug
     - file:/var/log/test.log
     - aggregate:5s
-    - filter:libbpf
-    - filter:msg=msg1
-    - filter:pkg=pkg1
-    - filter:pkg=pkg2
-    - filter:file=file1
-    - filter:lvl=info
-    - filter:regex=^regex.*
-    - filter-out:msg=msg1
-    - filter-out:pkg=pkg1
-    - filter-out:file=file1
-    - filter-out:file=file2
-    - filter-out:lvl=info
-    - filter-out:regex=^regex.*
+    - filter.include.libbpf
+    - filter.include.msg=msg1
+    - filter.include.pkg=pkg1
+    - filter.include.pkg=pkg2
+    - filter.include.file=file1
+    - filter.include.lvl=info
+    - filter.include.regex=^regex.*
+    - filter.exclude.msg=msg1
+    - filter.exclude.pkg=pkg1
+    - filter.exclude.file=file1
+    - filter.exclude.file=file2
+    - filter.exclude.lvl=info
+    - filter.exclude.regex=^regex.*
 `,
 			key: "log",
 			expectedFlags: []string{
 				"debug",
 				"file:/var/log/test.log",
 				"aggregate:5s",
-				"filter:libbpf",
-				"filter:msg=msg1",
-				"filter:pkg=pkg1",
-				"filter:pkg=pkg2",
-				"filter:file=file1",
-				"filter:lvl=info",
-				"filter:regex=^regex.*",
-				"filter-out:msg=msg1",
-				"filter-out:pkg=pkg1",
-				"filter-out:file=file1",
-				"filter-out:file=file2",
-				"filter-out:lvl=info",
-				"filter-out:regex=^regex.*",
+				"filter.include.libbpf",
+				"filter.include.msg=msg1",
+				"filter.include.pkg=pkg1",
+				"filter.include.pkg=pkg2",
+				"filter.include.file=file1",
+				"filter.include.lvl=info",
+				"filter.include.regex=^regex.*",
+				"filter.exclude.msg=msg1",
+				"filter.exclude.pkg=pkg1",
+				"filter.exclude.file=file1",
+				"filter.exclude.file=file2",
+				"filter.exclude.lvl=info",
+				"filter.exclude.regex=^regex.*",
 			},
 		},
 		{
@@ -193,8 +193,8 @@ log:
         enabled: true
         flush-interval: 5s
     filters:
-        libbpf: true
-        in:
+        include:
+            libbpf: true
             msg:
                 - msg1
             pkg:
@@ -206,7 +206,7 @@ log:
                 - info
             regex:
                 - ^regex.*
-        out:
+        exclude:
             msg:
                 - msg1
             pkg:
@@ -221,22 +221,23 @@ log:
 `,
 			key: "log",
 			expectedFlags: []string{
-				"debug",
-				"file:/var/log/test.log",
-				"aggregate:5s",
-				"filter:libbpf",
-				"filter:msg=msg1",
-				"filter:pkg=pkg1",
-				"filter:pkg=pkg2",
-				"filter:file=file1",
-				"filter:lvl=info",
-				"filter:regex=^regex.*",
-				"filter-out:msg=msg1",
-				"filter-out:pkg=pkg1",
-				"filter-out:file=file1",
-				"filter-out:file=file2",
-				"filter-out:lvl=info",
-				"filter-out:regex=^regex.*",
+				"level=debug",
+				"file=/var/log/test.log",
+				"aggregate.enabled=true",
+				"aggregate.flush-interval=5s",
+				"filter.include.libbpf",
+				"filter.include.msg=msg1",
+				"filter.include.pkg=pkg1",
+				"filter.include.pkg=pkg2",
+				"filter.include.file=file1",
+				"filter.include.lvl=info",
+				"filter.include.regex=^regex.*",
+				"filter.exclude.msg=msg1",
+				"filter.exclude.pkg=pkg1",
+				"filter.exclude.file=file1",
+				"filter.exclude.file=file2",
+				"filter.exclude.lvl=info",
+				"filter.exclude.regex=^regex.*",
 			},
 		},
 		{
@@ -774,7 +775,7 @@ func TestLogConfigFlags(t *testing.T) {
 				Level: "debug",
 			},
 			expected: []string{
-				"debug",
+				"level=debug",
 			},
 		},
 		{
@@ -783,7 +784,7 @@ func TestLogConfigFlags(t *testing.T) {
 				File: "/var/log/test.log",
 			},
 			expected: []string{
-				"file:/var/log/test.log",
+				"file=/var/log/test.log",
 			},
 		},
 		{
@@ -795,7 +796,7 @@ func TestLogConfigFlags(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"aggregate",
+				"aggregate.enabled=true",
 			},
 		},
 		{
@@ -807,25 +808,28 @@ func TestLogConfigFlags(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"aggregate:5s",
+				"aggregate.enabled=true",
+				"aggregate.flush-interval=5s",
 			},
 		},
 		{
 			name: "filters with libbpf",
 			config: LogConfig{
 				Filters: LogFilterConfig{
-					LibBPF: true,
+					Include: LogFilterAttributes{
+						LibBPF: true,
+					},
 				},
 			},
 			expected: []string{
-				"filter:libbpf",
+				"filter.include.libbpf",
 			},
 		},
 		{
 			name: "filters with attributes",
 			config: LogConfig{
 				Filters: LogFilterConfig{
-					In: LogFilterAttributes{
+					Include: LogFilterAttributes{
 						Msg: []string{
 							"msg1",
 							"msg2",
@@ -847,13 +851,13 @@ func TestLogConfigFlags(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"filter:msg=msg1",
-				"filter:msg=msg2",
-				"filter:pkg=pkg1",
-				"filter:file=file1",
-				"filter:file=file2",
-				"filter:lvl=lvl1",
-				"filter:regex=^test.*",
+				"filter.include.msg=msg1",
+				"filter.include.msg=msg2",
+				"filter.include.pkg=pkg1",
+				"filter.include.file=file1",
+				"filter.include.file=file2",
+				"filter.include.lvl=lvl1",
+				"filter.include.regex=^test.*",
 			},
 		},
 		{
@@ -866,15 +870,15 @@ func TestLogConfigFlags(t *testing.T) {
 					FlushInterval: "10s",
 				},
 				Filters: LogFilterConfig{
-					LibBPF: true,
-					In: LogFilterAttributes{
-						Msg:   []string{"msg1"},
-						Pkg:   []string{"pkg1", "pkg2"},
-						File:  []string{"file1"},
-						Level: []string{"lvl1", "lvl2"},
-						Regex: []string{"^regex.*"},
+					Include: LogFilterAttributes{
+						Msg:    []string{"msg1"},
+						Pkg:    []string{"pkg1", "pkg2"},
+						File:   []string{"file1"},
+						Level:  []string{"lvl1", "lvl2"},
+						Regex:  []string{"^regex.*"},
+						LibBPF: true,
 					},
-					Out: LogFilterAttributes{
+					Exclude: LogFilterAttributes{
 						Msg:   []string{"msg1"},
 						Pkg:   []string{"pkg1"},
 						File:  []string{"file1", "file2"},
@@ -884,23 +888,24 @@ func TestLogConfigFlags(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"debug",
-				"file:/var/log/test.log",
-				"aggregate:10s",
-				"filter:libbpf",
-				"filter:msg=msg1",
-				"filter:pkg=pkg1",
-				"filter:pkg=pkg2",
-				"filter:file=file1",
-				"filter:lvl=lvl1",
-				"filter:lvl=lvl2",
-				"filter:regex=^regex.*",
-				"filter-out:msg=msg1",
-				"filter-out:pkg=pkg1",
-				"filter-out:file=file1",
-				"filter-out:file=file2",
-				"filter-out:lvl=lvl1",
-				"filter-out:regex=^regex.*",
+				"level=debug",
+				"file=/var/log/test.log",
+				"aggregate.flush-interval=10s",
+				"aggregate.enabled=true",
+				"filter.include.libbpf",
+				"filter.include.msg=msg1",
+				"filter.include.pkg=pkg1",
+				"filter.include.pkg=pkg2",
+				"filter.include.file=file1",
+				"filter.include.lvl=lvl1",
+				"filter.include.lvl=lvl2",
+				"filter.include.regex=^regex.*",
+				"filter.exclude.msg=msg1",
+				"filter.exclude.pkg=pkg1",
+				"filter.exclude.file=file1",
+				"filter.exclude.file=file2",
+				"filter.exclude.lvl=lvl1",
+				"filter.exclude.regex=^regex.*",
 			},
 		},
 	}
