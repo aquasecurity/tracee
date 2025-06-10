@@ -3,7 +3,12 @@
 #
 name: PR
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref (branch, tag, or SHA) to checkout"
+        required: true
+        default: "main"
 
   pull_request:
     branches:
@@ -195,101 +200,107 @@ jobs:
   #
   # FUNCTIONAL TESTS AGAINST DIFFERENT KERNELS
   #
-  generate-matrix:
-    name: Generate Test Matrix
-    #needs:
-    #  - verify-signatures
-    #  - verify-tools
-    runs-on: ubuntu-latest
-    outputs:
-      matrix01: ${{ steps.set-matrix.outputs.matrix01 }}
-      matrix02: ${{ steps.set-matrix.outputs.matrix02 }}
-    steps:
-      - name: Checkout (sparse)
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          sparse-checkout: .github/kernels.csv
-          sparse-checkout-cone-mode: false
-          fetch-depth: 1
+  # generate-matrix:
+  #   name: Generate Test Matrix
+  #   #needs:
+  #   #  - verify-signatures
+  #   #  - verify-tools
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     matrix01: ${{ steps.set-matrix.outputs.matrix01 }}
+  #     matrix02: ${{ steps.set-matrix.outputs.matrix02 }}
+  #   steps:
+  #     - name: Checkout (sparse)
+  #       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+  #       with:
+  #         sparse-checkout: .github/kernels.csv
+  #         sparse-checkout-cone-mode: false
+  #         fetch-depth: 1
 
-      - name: Set Matrix
-        id: set-matrix
-        shell: sh
-        run: |
-          current_job=0
-          # Count lines but not comments and not the header
-          total_jobs=$(grep -v '^#' .github/kernels.csv | tail -n +2 | grep -vc '^$')
-          half_jobs=$(((total_jobs + 1) / 2))
+  #     - name: Set Matrix
+  #       id: set-matrix
+  #       shell: sh
+  #       run: |
+  #         current_job=0
+  #         # Count lines but not comments and not the header
+  #         total_jobs=$(grep -v '^#' .github/kernels.csv | tail -n +2 | grep -vc '^$')
+  #         half_jobs=$(((total_jobs + 1) / 2))
 
-          matrix01="["
-          matrix02="["
+  #         matrix01="["
+  #         matrix02="["
 
-          tail -n +2 .github/kernels.csv > .kernels.tmp
-          while IFS=, read -r name arch ami; do
-            # Skip comment or empty lines
-            case "$name" in
-              ""|\#*) continue ;;
-            esac
+  #         tail -n +2 .github/kernels.csv > .kernels.tmp
+  #         while IFS=, read -r name arch ami; do
+  #           # Skip comment or empty lines
+  #           case "$name" in
+  #             ""|\#*) continue ;;
+  #           esac
 
-            job_name="$name $arch"
-            suffix="$(date +%6N)"
-            if [ -z "${suffix}" ]; then
-              suffix="${current_job}"
-            fi
-            entry="{\"job_name\": \"${job_name}\", \"arch\": \"$arch\", \"ami\": \"$ami\", \"suffix\": \"${suffix}\"}"
-            if [ ${current_job} -lt ${half_jobs} ]; then
-              [ "${matrix01}" != "[" ] && matrix01="${matrix01},"
-              matrix01="${matrix01}${entry}"
-            else
-              [ "${matrix02}" != "[" ] && matrix02="${matrix02},"
-              matrix02="${matrix02}${entry}"
-            fi
-            current_job=$((current_job + 1))
-          done < .kernels.tmp
-          rm .kernels.tmp
+  #           job_name="$name $arch"
+  #           suffix="$(date +%6N)"
+  #           if [ -z "${suffix}" ]; then
+  #             suffix="${current_job}"
+  #           fi
+  #           entry="{\"job_name\": \"${job_name}\", \"arch\": \"$arch\", \"ami\": \"$ami\", \"suffix\": \"${suffix}\"}"
+  #           if [ ${current_job} -lt ${half_jobs} ]; then
+  #             [ "${matrix01}" != "[" ] && matrix01="${matrix01},"
+  #             matrix01="${matrix01}${entry}"
+  #           else
+  #             [ "${matrix02}" != "[" ] && matrix02="${matrix02},"
+  #             matrix02="${matrix02}${entry}"
+  #           fi
+  #           current_job=$((current_job + 1))
+  #         done < .kernels.tmp
+  #         rm .kernels.tmp
 
-          matrix01="${matrix01}]"
-          matrix02="${matrix02}]"
+  #         matrix01="${matrix01}]"
+  #         matrix02="${matrix02}]"
 
-          if [ "${matrix01}" = "[]" ]; then
-            echo "No valid entries found for Matrix 01."
-            exit 1
-          fi
+  #         if [ "${matrix01}" = "[]" ]; then
+  #           echo "No valid entries found for Matrix 01."
+  #           exit 1
+  #         fi
 
-          echo "matrix01=${matrix01}" >> $GITHUB_OUTPUT
-          echo "matrix02=${matrix02}" >> $GITHUB_OUTPUT
+  #         echo "matrix01=${matrix01}" >> $GITHUB_OUTPUT
+  #         echo "matrix02=${matrix02}" >> $GITHUB_OUTPUT
 
-      - name: Show Matrix
-        id: show-matrix
-        shell: sh
-        run: |
-          echo "Matrix 01:"
-          echo ${{ steps.set-matrix.outputs.matrix01 }}
-          echo "Matrix 02:"
-          echo ${{ steps.set-matrix.outputs.matrix02 }}
+  #     - name: Show Matrix
+  #       id: show-matrix
+  #       shell: sh
+  #       run: |
+  #         echo "Matrix 01:"
+  #         echo ${{ steps.set-matrix.outputs.matrix01 }}
+  #         echo "Matrix 02:"
+  #         echo ${{ steps.set-matrix.outputs.matrix02 }}
 
-  kernel-tests-matrix01:
-    name: Kernel Tests Matrix 01
-    needs:
-      - generate-matrix
+  # kernel-tests-matrix01:
+  #   name: Kernel Tests Matrix 01
+  #   needs:
+  #     - generate-matrix
+  #   uses: ./.github/workflows/kernel-tests-matrix.yaml
+  #   with:
+  #     matrix: ${{ needs.generate-matrix.outputs.matrix01 }}
+
+  # delay-before-matrix02:
+  #   name: Delay before starting Matrix 02
+  #   needs:
+  #     - generate-matrix
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Wait before triggering Matrix 02
+  #       run: sleep 30
+
+  # kernel-tests-matrix02:
+  #   name: Kernel Tests Matrix 02
+  #   needs:
+  #     - generate-matrix
+  #     - delay-before-matrix02
+  #   uses: ./.github/workflows/kernel-tests-matrix.yaml
+  #   with:
+  #     matrix: ${{ needs.generate-matrix.outputs.matrix02 }}
+
+  kernel-tests:
+    name: Kernel Tests
     uses: ./.github/workflows/kernel-tests-matrix.yaml
     with:
-      matrix: ${{ needs.generate-matrix.outputs.matrix01 }}
-
-  delay-before-matrix02:
-    name: Delay before starting Matrix 02
-    needs:
-      - generate-matrix
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait before triggering Matrix 02
-        run: sleep 30
-
-  kernel-tests-matrix02:
-    name: Kernel Tests Matrix 02
-    needs:
-      - generate-matrix
-      - delay-before-matrix02
-    uses: ./.github/workflows/kernel-tests-matrix.yaml
-    with:
-      matrix: ${{ needs.generate-matrix.outputs.matrix02 }}
+      ref: ${{ github.event.inputs.ref || github.event.pull_request.head.sha || github.ref }}

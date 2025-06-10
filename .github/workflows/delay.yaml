@@ -1,0 +1,26 @@
+name: Delay
+
+on:
+  workflow_call:
+    inputs:
+      seconds:
+        required: true
+        type: number
+    outputs:
+      timestamp:
+        description: "Timestamp after delay"
+        value: ${{ jobs.delay.outputs.timestamp }}
+
+jobs:
+  delay:
+    name: Delaying for ${{ inputs.seconds }} seconds
+    runs-on: ubuntu-latest
+    outputs:
+      timestamp: ${{ steps.set-timestamp.outputs.timestamp }}
+    steps:
+      - name: Delaying
+        id: set-timestamp
+        run: |
+          sleep ${{ inputs.seconds }}
+          timestamp=$(date +%s%6N) # partial timestamp with seconds and microseconds
+          echo "timestamp=${timestamp}" >> ${GITHUB_OUTPUT}

@@ -3,26 +3,645 @@ name: Kernel Tests Matrix
 on:
   workflow_call:
     inputs:
-      matrix:
+      # matrix:
+      #   required: true
+      #   type: string
+      ref:
         required: true
         type: string
 
 jobs:
-  kernel-tests:
-    name: ${{ matrix.job_name }}
+  # kernel-tests:
+  #   name: ${{ matrix.job_name }}
+  #   runs-on:
+  #     - graas_ami-${{ matrix.ami }}_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ matrix.suffix }}
+  #     - EXECUTION_TYPE=LONG
+  #   strategy:
+  #     matrix:
+  #       include: ${{ fromJson(inputs.matrix) }}
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+  #       with:
+  #         submodules: true
+
+  #     - name: Run Kernel Tests
+  #       uses: ./.github/actions/kernel-tests
+  #       with:
+  #         arch: ${{ matrix.arch }}
+
+  delay1:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 1
+
+  runner1:
+    name: GKE 5.4 x86_64
+    needs: delay1
     runs-on:
-      - graas_ami-${{ matrix.ami }}_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ matrix.suffix }}
+      - graas_ami-0013845506cbdf2ca_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay1.outputs.timestamp }}
       - EXECUTION_TYPE=LONG
-    strategy:
-      matrix:
-        include: ${{ fromJson(inputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
+          ref: ${{ inputs.ref }}
           submodules: true
-
       - name: Run Kernel Tests
         uses: ./.github/actions/kernel-tests
         with:
-          arch: ${{ matrix.arch }}
+          arch: x86_64
+
+  delay2:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 2
+
+  runner2:
+    name: GKE 5.10 x86_64
+    needs: delay2
+    runs-on:
+      - graas_ami-049b1b3a4a5fdf9fd_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay2.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay3:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 3
+
+  runner3:
+    name: GKE 5.15 x86_64
+    needs: delay3
+    runs-on:
+      - graas_ami-01f6d4f80f256ffe4_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay3.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay4:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 4
+
+  runner4:
+    name: GKE 5.15 aarch64
+    needs: delay4
+    runs-on:
+      - graas_ami-079f308677600eebf_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay4.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: aarch64
+
+  delay5:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 5
+
+  runner5:
+    name: AMZN2 5.10 x86_64
+    needs: delay5
+    runs-on:
+      - graas_ami-05d03d50b6008ede7_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay5.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay6:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 6
+
+  runner6:
+    name: AMZN2 5.10 aarch64
+    needs: delay6
+    runs-on:
+      - graas_ami-05e46d0a87c96bf69_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay6.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: aarch64
+
+  delay7:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 7
+
+  runner7:
+    name: RHEL8 4.18 x86_64
+    needs: delay7
+    runs-on:
+      - graas_ami-0e6e8bf2181db9d65_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay7.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay8:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 8
+
+  runner8:
+    name: Focal 5.4 x86_64
+    needs: delay8
+    runs-on:
+      - graas_ami-0c75089aa342ffa26_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay8.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay9:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 9
+
+  runner9:
+    name: Focal 5.13 x86_64
+    needs: delay9
+    runs-on:
+      - graas_ami-094d5310a281c8679_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay9.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay10:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 10
+
+  runner10:
+    name: Focal 5.13 aarch64
+    needs: delay10
+    runs-on:
+      - graas_ami-08f88e2a2bd1b72a7_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay10.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: aarch64
+
+  delay11:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 11
+
+  runner11:
+    name: Jammy 5.15 x86_64
+    needs: delay11
+    runs-on:
+      - graas_ami-0d01de8f7b26afe02_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay11.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay12:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 12
+
+  runner12:
+    name: Jammy 5.15 aarch64
+    needs: delay12
+    runs-on:
+      - graas_ami-08e91aa07134e6a36_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay12.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: aarch64
+
+  delay13:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 13
+
+  runner13:
+    name: Jammy 5.19 x86_64
+    needs: delay13
+    runs-on:
+      - graas_ami-02691308713b4cec2_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay13.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay14:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 14
+
+  runner14:
+    name: Jammy 5.19 aarch64
+    needs: delay14
+    runs-on:
+      - graas_ami-046579f8e52acb104_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay14.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: aarch64
+
+  delay15:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 15
+
+  runner15:
+    name: Lunar 6.2 x86_64
+    needs: delay15
+    runs-on:
+      - graas_ami-034e03e1bdb7c205f_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay15.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay16:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 16
+
+  runner16:
+    name: Lunar 6.2 aarch64
+    needs: delay16
+    runs-on:
+      - graas_ami-04b03463ee4e32182_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay16.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: aarch64
+
+  delay17:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 17
+
+  runner17:
+    name: Mantic 6.5 x86_64
+    needs: delay17
+    runs-on:
+      - graas_ami-0a44ad46e5c42e499_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay17.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay18:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 18
+
+  runner18:
+    name: Mantic 6.5 aarch64
+    needs: delay18
+    runs-on:
+      - graas_ami-0387f77c4820c98db_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay18.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: aarch64
+
+  delay19:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 19
+
+  runner19:
+    name: Mantic 6.6 x86_64
+    needs: delay19
+    runs-on:
+      - graas_ami-05b5ac8f6c43b3ca5_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay19.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay20:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 20
+
+  runner20:
+    name: Mantic 6.6 aarch64
+    needs: delay20
+    runs-on:
+      - graas_ami-05c9d6cd9343f0a43_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay20.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: aarch64
+
+  delay21:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 21
+
+  runner21:
+    name: Noble 6.8 x86_64
+    needs: delay21
+    runs-on:
+      - graas_ami-0cc63426ae75d47c8_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay21.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay22:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 22
+
+  runner22:
+    name: Noble 6.8 aarch64
+    needs: delay22
+    runs-on:
+      - graas_ami-0f5260685b3ec2293_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay22.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: aarch64
+
+  delay23:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 23
+
+  runner23:
+    name: Noble 6.10 x86_64
+    needs: delay23
+    runs-on:
+      - graas_ami-0ae23eabda70efc60_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay23.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay24:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 24
+
+  runner24:
+    name: Noble 6.10 aarch64
+    needs: delay24
+    runs-on:
+      - graas_ami-01ce0f71400b5ff38_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay24.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: aarch64
+
+  delay25:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 25
+
+  runner25:
+    name: Noble 6.11 x86_64
+    needs: delay25
+    runs-on:
+      - graas_ami-0ce1f88aa63091921_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay25.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay26:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 26
+
+  runner26:
+    name: Noble 6.11 aarch64
+    needs: delay26
+    runs-on:
+      - graas_ami-0123508488affb578_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay26.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: aarch64
+
+  delay27:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 27
+
+  runner27:
+    name: Noble 6.12 x86_64
+    needs: delay27
+    runs-on:
+      - graas_ami-0e38f3caba1b4234d_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay27.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: x86_64
+
+  delay28:
+    uses: ./.github/workflows/delay.yaml
+    with:
+      seconds: 28
+
+  runner28:
+    name: Noble 6.12 aarch64
+    needs: delay28
+    runs-on:
+      - graas_ami-0547f429681dc1f2a_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.delay28.outputs.timestamp }}
+      - EXECUTION_TYPE=LONG
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: aarch64
