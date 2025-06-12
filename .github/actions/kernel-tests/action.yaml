@@ -1,0 +1,112 @@
+name: Kernel Tests Action
+
+description: Run Tracee Kernel Tests
+
+inputs:
+  arch:
+    description: "Architecture"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # - name: Prepare Image (Fix AMIs)
+    #   shell: sh
+    #   run: |
+    #     echo "::group::Prepare Image (Fix AMIs)"
+    #     ./tests/e2e-install-deps.sh
+    #     echo "::endgroup::"
+
+    - name: Environment Variables
+      shell: sh
+      run: |
+        echo "::group::Environment Variables"
+
+        echo "HOME=/tmp/root" >> ${GITHUB_ENV}
+        echo "GOPATH=/tmp/go" >> ${GITHUB_ENV}
+        echo "GOCACHE=/tmp/go-cache" >> ${GITHUB_ENV}
+        echo "GOROOT=/usr/local/go" >> ${GITHUB_ENV}
+
+        TESTS="TRC-102 \
+        TRC-103 \
+        TRC-104 \
+        TRC-105 \
+        TRC-107 \
+        TRC-1010 \
+        TRC-1014 \
+        TRC-1016 \
+        TRC-1018 \
+        TRC-1022"
+
+        ARM64_TESTS="TRC-102 \
+        TRC-103 \
+        TRC-104 \
+        TRC-105 \
+        TRC-107 \
+        TRC-1010 \
+        TRC-1014 \
+        TRC-1016 \
+        TRC-1018"
+
+        if [ "${{ inputs.arch }}" = "aarch64" ]; then
+          TESTS="${ARM64_TESTS}"
+        fi
+        echo "TESTS=${TESTS}" >> ${GITHUB_ENV}
+
+        NETTESTS="IPv4 \
+        IPv6 \
+        TCP \
+        UDP \
+        ICMP \
+        ICMPv6 \
+        DNS \
+        HTTP \
+        HTTPRequest \
+        HTTPResponse"
+        echo "NETTESTS=${NETTESTS}" >> ${GITHUB_ENV}
+
+        INSTTESTS="PROCESS_EXECUTE_FAILED \
+        VFS_WRITE \
+        FILE_MODIFICATION \
+        HOOKED_SYSCALL \
+        FTRACE_HOOK \
+        SECURITY_INODE_RENAME \
+        BPF_ATTACH \
+        CONTAINERS_DATA_SOURCE \
+        PROCTREE_DATA_SOURCE \
+        DNS_DATA_SOURCE \
+        WRITABLE_DATA_SOURCE \
+        SECURITY_PATH_NOTIFY \
+        SET_FS_PWD \
+        SUSPICIOUS_SYSCALL_SOURCE \
+        STACK_PIVOT"
+        echo "INSTTESTS=${INSTTESTS}" >> ${GITHUB_ENV}
+
+        echo "::endgroup::"
+
+    - name: Instrumentation Test
+      shell: sh
+      run: |
+        echo "::group::Instrumentation Test"
+
+        ./tests/e2e-inst-test.sh
+
+        echo "::endgroup::"
+
+    - name: Network Test
+      shell: sh
+      run: |
+        echo "::group::Network Test"
+
+        ./tests/e2e-net-test.sh
+
+        echo "::endgroup::"
+
+    - name: Kernel Test
+      shell: sh
+      run: |
+        echo "::group::Kernel Test"
+
+        ./tests/e2e-kernel-test.sh
+
+        echo "::endgroup::"

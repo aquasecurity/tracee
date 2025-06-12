@@ -1,0 +1,96 @@
+name: Kernel Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      kernel:
+        description: Select a Kernel (name and arch)
+        required: true
+        type: choice
+        options:
+          - GKE 5.4 x86_64
+          - GKE 5.10 x86_64
+          - GKE 5.15 x86_64
+          - GKE 5.15 aarch64
+          - AMZN2 5.10 x86_64
+          - AMZN2 5.10 aarch64
+          - RHEL8 4.18 x86_64
+          - Focal 5.4 x86_64
+          - Focal 5.13 x86_64
+          - Focal 5.13 aarch64
+          - Jammy 5.15 x86_64
+          - Jammy 5.15 aarch64
+          - Jammy 5.19 x86_64
+          - Jammy 5.19 aarch64
+          - Lunar 6.2 x86_64
+          - Lunar 6.2 aarch64
+          - Mantic 6.5 x86_64
+          - Mantic 6.5 aarch64
+          - Mantic 6.6 x86_64
+          - Mantic 6.6 aarch64
+          - Noble 6.8 x86_64
+          - Noble 6.8 aarch64
+          - Noble 6.10 x86_64
+          - Noble 6.10 aarch64
+          - Noble 6.11 x86_64
+          - Noble 6.11 aarch64
+          - Noble 6.12 x86_64
+          - Noble 6.12 aarch64
+      ref:
+        description: Git ref (branch, tag, or SHA) to checkout
+        required: true
+        default: main
+
+jobs:
+  lookup-ami:
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.lookup.outputs.name }}
+      arch: ${{ steps.lookup.outputs.arch }}
+      ami: ${{ steps.lookup.outputs.ami }}
+    steps:
+      - name: Checkout (sparse)
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ github.event.inputs.ref }}
+          sparse-checkout: .github/kernels.csv
+          sparse-checkout-cone-mode: false
+          fetch-depth: 1
+
+      - name: Lookup AMI
+        id: lookup
+        run: |
+          kernel="${{ github.event.inputs.kernel }}"
+          arch=$(printf '%s\n' "${kernel}" | awk '{print $NF}')
+          name=$(printf '%s\n' "${kernel}" | awk '{$NF=""; sub(/[ \t]+$/, ""); print}')
+          
+          # Lookup AMI in CSV
+          ami=$(awk -F, -v n="${name}" -v a="${arch}" 'NR>1 && $1==n && $2==a {print $3}' .github/kernels.csv)
+          if [ -z "${ami}" ]; then
+            echo "Error: No AMI found for kernel '${kernel}'." >&2
+            exit 1
+          fi
+
+          suffix="$(date +%s)"
+          echo "name=${name}" >> ${GITHUB_OUTPUT}
+          echo "arch=${arch}" >> ${GITHUB_OUTPUT}
+          echo "ami=${ami}" >> ${GITHUB_OUTPUT}
+          echo "suffix=${suffix}" >> ${GITHUB_OUTPUT}
+
+  run-kernel-test:
+    needs: lookup-ami
+    runs-on:
+      - graas_ami-${{ needs.lookup-ami.outputs.ami }}_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ needs.lookup-ami.outputs.suffix }}
+      - EXECUTION_TYPE=LONG
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ github.event.inputs.ref }}
+          submodules: true
+
+      - name: Run Kernel Tests
+        uses: ./.github/actions/kernel-tests
+        with:
+          arch: ${{ needs.lookup-ami.outputs.arch }}
