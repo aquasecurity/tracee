@@ -1649,8 +1649,8 @@ int syscall__accept4(void *ctx)
     }
 
     save_to_submit_buf(&p.event->args_buf, (void *) &sockfd, sizeof(u32), 0);
-    save_sockaddr_to_buf(&p.event->args_buf, old_sock, 1);
-    save_sockaddr_to_buf(&p.event->args_buf, new_sock, 2);
+    save_sockaddr_to_buf(&p.event->args_buf, old_sock, true, 1);
+    save_sockaddr_to_buf(&p.event->args_buf, new_sock, true, 2);
 
     return events_perf_submit(&p, 0);
 }
@@ -2781,7 +2781,7 @@ int BPF_KPROBE(trace_security_socket_listen)
             return 0;
     }
 
-    save_sockaddr_to_buf(&p.event->args_buf, sock, 1);
+    save_sockaddr_to_buf(&p.event->args_buf, sock, true, 1);
     save_to_submit_buf(&p.event->args_buf, (void *) &backlog, sizeof(int), 2);
 
     return events_perf_submit(&p, 0);
@@ -2934,7 +2934,7 @@ int BPF_KPROBE(trace_security_socket_accept)
             return 0;
     }
 
-    save_sockaddr_to_buf(&p.event->args_buf, sock, 1);
+    save_sockaddr_to_buf(&p.event->args_buf, sock, true, 1);
 
     return events_perf_submit(&p, 0);
 }
@@ -3056,7 +3056,7 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
 
     save_to_submit_buf(&p.event->args_buf, (void *) &level, sizeof(int), 1);
     save_to_submit_buf(&p.event->args_buf, (void *) &optname, sizeof(int), 2);
-    save_sockaddr_to_buf(&p.event->args_buf, sock, 3);
+    save_sockaddr_to_buf(&p.event->args_buf, sock, true, 3);
 
     return events_perf_submit(&p, 0);
 }
