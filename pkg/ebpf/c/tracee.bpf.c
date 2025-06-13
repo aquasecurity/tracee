@@ -8,14 +8,13 @@
 #include <vmlinux_flavors.h>
 #include <vmlinux_missing.h>
 
-#undef container_of
-
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
-#include <maps.h>
+
 #include <types.h>
+#include <maps.h>
 #include <capture_filtering.h>
 #include <tracee.h>
 
