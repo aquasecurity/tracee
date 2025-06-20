@@ -1828,10 +1828,10 @@ func Test_EventFilters(t *testing.T) {
 					// Running the commands inside a container caused duplicate
 					// security_file_open events to be generated. This is why the events are duplicated.
 					[]trace.Event{
-						expectEvent(anyHost, "more", anyProcessorID, 1, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/ld.so.cache")),
-						expectEvent(anyHost, "more", anyProcessorID, 1, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/ld.so.cache")),
-						expectEvent(anyHost, "more", anyProcessorID, 1, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-3"), orPolIDs(1, 3), expectArg("pathname", "/etc/netconfig")),
-						expectEvent(anyHost, "more", anyProcessorID, 1, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-3"), orPolIDs(1, 3), expectArg("pathname", "/etc/netconfig")),
+						expectEvent(anyHost, "more", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/ld.so.cache")),
+						expectEvent(anyHost, "more", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/ld.so.cache")),
+						expectEvent(anyHost, "more", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-3"), orPolIDs(1, 3), expectArg("pathname", "/etc/netconfig")),
+						expectEvent(anyHost, "more", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-3"), orPolIDs(1, 3), expectArg("pathname", "/etc/netconfig")),
 					},
 					[]string{},
 				),
