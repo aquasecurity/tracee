@@ -50,14 +50,10 @@ func Analyze(cfg Config) {
 	sigNamesToIds := sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
 
 	engineConfig := engine.Config{
+		Mode:                engine.ModeAnalyze,
 		Signatures:          signatures,
 		SignatureBufferSize: 1000,
-		Enabled:             true, // simulate tracee single binary mode
 		SigNameToEventID:    sigNamesToIds,
-		ShouldDispatchEvent: func(eventIdInt32 int32) bool {
-			// in analyze mode we don't need to filter by policy
-			return true
-		},
 	}
 
 	// two seperate contexts.
