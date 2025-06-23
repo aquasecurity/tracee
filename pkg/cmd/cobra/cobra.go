@@ -314,7 +314,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	runner.InstallPath = traceeInstallPath
 
 	runner.TraceeConfig.EngineConfig = engine.Config{
-		Enabled:          true,
+		Mode:             engine.ModeSingleBinary,
 		SigNameToEventID: sigNameToEventId,
 		Signatures:       signatures,
 		// This used to be a flag, we have removed the flag from this binary to test

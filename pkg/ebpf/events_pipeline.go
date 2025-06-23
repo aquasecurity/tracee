@@ -14,6 +14,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	traceetime "github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -72,7 +73,7 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 
 	// Engine events stage: events go through the signatures engine for detection.
 
-	if t.config.EngineConfig.Enabled {
+	if t.config.EngineConfig.Mode == engine.ModeSingleBinary {
 		eventsChan, errc = t.engineEvents(ctx, eventsChan)
 		errcList = append(errcList, errc)
 	}
@@ -615,7 +616,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 			event.MatchedPolicies = t.policyManager.MatchedNames(event.MatchedPoliciesUser)
 
 			// Parse args here if the rule engine is NOT enabled (parsed there if it is).
-			if t.config.Output.ParseArguments && !t.config.EngineConfig.Enabled {
+			if t.config.Output.ParseArguments && t.config.EngineConfig.Mode != engine.ModeSingleBinary {
 				err := t.parseArguments(event)
 				if err != nil {
 					t.handleError(err)

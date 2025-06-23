@@ -18,10 +18,18 @@ const EVENT_CONTAINER_ORIGIN = "container"
 const EVENT_HOST_ORIGIN = "host"
 const ALL_EVENT_TYPES = "*"
 
+type Mode uint8
+
+const (
+	ModeRules Mode = iota
+	ModeAnalyze
+	ModeSingleBinary
+)
+
 // Config defines the engine's configurable values
 type Config struct {
 	// Engine-in-Pipeline related configuration
-	Enabled          bool             // Enables the signatures engine to run in the events pipeline
+	Mode             Mode
 	SigNameToEventID map[string]int32 // Cache of loaded signature event names to event ids, used to filter in dispatching
 
 	// Callback from tracee to determine if event should be dispatched to signature.
@@ -148,9 +156,15 @@ func (engine *Engine) unloadAllSignatures() {
 func (engine *Engine) matchHandler(res *detect.Finding) {
 	_ = engine.stats.Detections.Increment()
 	engine.output <- res
-	if !engine.config.Enabled {
+	// TODO: the feedback here is enabled only in analyze, as it was causing a deadlock in the pipeline
+	//       when the engine was blocked on sending a new event to the feedbacking signature.
+	//       This is because the engine would eventually block on trying to to send
+	//       a new event to the feedbacking signature. This would cause a deadlock
+	//       there - propagating back to the engine and pipeline in general.
+	// TODO2: Once we integrate the pipeline into analyze mode, we can remove this logic.
+	if !(engine.config.Mode == ModeAnalyze) {
 		return
-		// next section is relevant only for engine-in-pipeline and analyze
+		// next section is relevant only for  analyze
 	}
 	e, err := findings.FindingToEvent(res)
 	if err != nil {
@@ -272,8 +286,8 @@ drain:
 }
 
 func (engine *Engine) dispatchEvent(s detect.Signature, event protocol.Event) {
-	if engine.config.Enabled {
-		// Do this test only if engine runs as part of the event pipeline
+	if engine.config.Mode == ModeSingleBinary {
+		// Filter only if engine runs as part of the event pipeline (single binary mode)
 		if ok := engine.filterDispatchInPipeline(s, event); !ok {
 			return
 		}
