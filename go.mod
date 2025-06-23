@@ -7,7 +7,7 @@ toolchain go1.24.2
 require (
 	github.com/IBM/fluent-forward-go v0.3.0
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/aquasecurity/libbpfgo v0.8.0-libbpf-1.5.0.20250417221229-b9709610f6da
+	github.com/aquasecurity/libbpfgo v0.9.0-libbpf-1.5.1
 	github.com/aquasecurity/tracee/api v0.0.0-20250423121028-213b81a1b8f5
 	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20250423143044-dcfcaf219805
 	github.com/aquasecurity/tracee/types v0.0.0-20250428133851-386881405295
@@ -20,7 +20,6 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/mennanov/fmutils v0.3.1
 	github.com/minio/sha256-simd v1.0.1
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/sashabaranov/go-gpt3 v1.4.0
 	github.com/spf13/cobra v1.9.1
