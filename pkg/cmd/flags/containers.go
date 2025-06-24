@@ -85,6 +85,7 @@ func PrepareContainers(containerFlags []string) (CgroupFlagsResult, error) {
 			if err != nil {
 				return CgroupFlagsResult{}, errfmt.Errorf("failed to register runtime socket, %s", err.Error())
 			}
+			anySocketRegistered = true
 		} else if strings.HasPrefix(key, "cgroupfs.") {
 			if key == "cgroupfs.path" {
 				cgroupfsPath = value
