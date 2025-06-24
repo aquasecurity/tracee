@@ -61,7 +61,7 @@ func NewMountHostOnce(cfg Config) (*MountHostOnce, error) {
 	if cfg.Force {
 		m.managed = false
 		m.mounted = true
-		m.target = m.data
+		m.target = cfg.Where // In force mode we force the target mountpoint
 		var stat syscall.Stat_t
 		if err := syscall.Stat(m.target, &stat); err != nil {
 			logger.Warnw("Stat failed", "mountpoint", m.target, "error", err)
