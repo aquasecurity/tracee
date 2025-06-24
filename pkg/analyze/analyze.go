@@ -50,14 +50,10 @@ func Analyze(cfg Config) {
 	sigNamesToIds := sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
 
 	engineConfig := engine.Config{
+		Mode:                engine.ModeAnalyze,
 		Signatures:          signatures,
 		SignatureBufferSize: 1000,
-		Enabled:             true, // simulate tracee single binary mode
 		SigNameToEventID:    sigNamesToIds,
-		ShouldDispatchEvent: func(eventIdInt32 int32) bool {
-			// in analyze mode we don't need to filter by policy
-			return true
-		},
 	}
 
 	// two seperate contexts.
@@ -68,6 +64,7 @@ func Analyze(cfg Config) {
 
 	engineOutput := make(chan *detect.Finding)
 	engineInput := make(chan protocol.Event)
+	fromFile := make(chan protocol.Event)
 
 	source := engine.EventSources{Tracee: engineInput}
 	sigEngine, err := engine.NewEngine(engineConfig, source, engineOutput)
@@ -91,13 +88,18 @@ func Analyze(cfg Config) {
 	}
 
 	// producer
-	go produce(fileReadCtx, stop, cfg.Source, engineInput)
+	go produce(fileReadCtx, stop, cfg.Source, fromFile)
 
 	cfg.Printer.Preamble()
 	defer cfg.Printer.Close()
 	// consumer
 	for {
 		select {
+		case event, ok := <-fromFile:
+			if !ok {
+				return
+			}
+			engineInput <- event
 		case finding, ok := <-engineOutput:
 			if !ok {
 				return
@@ -116,6 +118,11 @@ drain:
 	defer close(engineInput)
 	for {
 		select {
+		case event, ok := <-fromFile:
+			if !ok {
+				return
+			}
+			engineInput <- event
 		case finding, ok := <-engineOutput:
 			if !ok {
 				return
