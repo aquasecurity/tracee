@@ -164,6 +164,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 	}
 	if num, isNum := arg.Value.(json.Number); isNum {
 		if strings.HasSuffix(arg.Type, "*") {
+			// Legacy case, convert to trace.Pointer
 			tmp, err := strconv.ParseUint(num.String(), 10, 64)
 			if err != nil {
 				return err
@@ -173,6 +174,13 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 			return nil
 		}
 		switch arg.Type {
+		case "trace.Pointer":
+			// New case, output as is set to trace.Pointer
+			tmp, err := strconv.ParseUint(num.String(), 10, 64)
+			if err != nil {
+				return err
+			}
+			arg.Value = Pointer(tmp)
 		case "int32":
 			tmp, err := strconv.ParseInt(num.String(), 10, 32)
 			if err != nil {
