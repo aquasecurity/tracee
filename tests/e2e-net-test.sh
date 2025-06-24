@@ -113,11 +113,11 @@ done
 # tracee could not start for some reason, check stderr
 if [[ $timedout -eq 1 ]]; then
     info
-    info "$TEST: FAILED. ERRORS:"
+    info "TIMEDOUT"
     info
     cat $SCRIPT_TMP_DIR/build-$$
 
-    anyerror="${anyerror}$TEST,"
+    exit 1
 fi
 
 # give some time for tracee to settle

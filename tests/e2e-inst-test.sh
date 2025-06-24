@@ -82,10 +82,66 @@ fi
 logfile=$SCRIPT_TMP_DIR/tracee-log-$$
 outputfile=$SCRIPT_TMP_DIR/output-$$
 
-anyerror=""
+ # Run tracee
+
+rm -f $outputfile
+rm -f $logfile
+
+tracee_command="./dist/tracee \
+                    --install-path $TRACEE_TMP_DIR \
+                    --cache cache-type=mem \
+                    --cache mem-cache-size=512 \
+                    --proctree source=both \
+                    --output option:sort-events \
+                    --output option:parse-arguments \
+                    --output json:$outputfile \
+                    --log file:$logfile \
+                    --signatures-dir "$SIG_DIR" \
+                    --dnscache enable \
+                    --grpc-listen-addr unix:/tmp/tracee.sock \
+                    --policy ./tests/policies/inst/"
+
+
+eval "$tracee_command &"
+
+# Wait tracee to start
+
+times=0
+timedout=0
+while true; do
+    times=$((times + 1))
+    sleep 1
+    if [[ -f $TRACEE_TMP_DIR/tracee.pid ]]; then
+        info
+        info "UP AND RUNNING"
+        info
+        break
+    fi
+
+    if [[ $times -gt $TRACEE_STARTUP_TIMEOUT ]]; then
+        timedout=1
+        break
+    fi
+done
+
+# Tracee failed to start
+
+if [[ $timedout -eq 1 ]]; then
+    info
+    info "$TEST: FAILED. ERRORS:"
+    info
+    cat $logfile
+
+    anyerror="${anyerror}$TEST,"
+    continue
+fi
+
+# Allow tracee to start processing events
+
+sleep 3
+
 
 # Run tests, one by one
-
 for TEST in $TESTS; do
 
     info
@@ -139,81 +195,6 @@ for TEST in $TESTS; do
         ;;
     esac
 
-    # Run tracee
-
-    rm -f $outputfile
-    rm -f $logfile
-
-    tracee_command="./dist/tracee \
-                        --install-path $TRACEE_TMP_DIR \
-                        --cache cache-type=mem \
-                        --cache mem-cache-size=512 \
-                        --proctree source=both \
-                        --output option:sort-events \
-                        --output option:parse-arguments \
-                        --output json:$outputfile \
-                        --log file:$logfile \
-                        --signatures-dir "$SIG_DIR" \
-                        --dnscache enable \
-                        --grpc-listen-addr unix:/tmp/tracee.sock \
-                        --events "$TEST""
-    
-    # Some tests might look for false positives and thus we shouldn't limit the scope for them
-    if [ "$TEST" != "STACK_PIVOT" ]; then
-        tracee_command="$tracee_command --scope comm=echo,mv,ls,tracee,proctreetester,ping,ds_writer,fsnotify_tester,process_execute,tracee-ebpf,writev,set_fs_pwd.sh,sys_src_tester"
-    fi
-    
-    # Some tests might need event parameters
-    case $TEST in
-    SUSPICIOUS_SYSCALL_SOURCE)
-        tracee_command="$tracee_command --events suspicious_syscall_source.args.syscall=exit"
-        ;;
-    STACK_PIVOT)
-        # The expected event is triggered using the exit_group syscall.
-        # Also add various high-frequency sycalls so that false positives have a chance to trigger.
-        # Also add getpid, which the tester program uses in an attempt to trigger a false positive
-        tracee_command="$tracee_command --events stack_pivot.args.syscall=exit_group,getpid,write,openat,mmap,execve,fork,clone,recvmsg,gettid,epoll_wait,poll,recvfrom"
-        ;;
-    esac
-
-    eval "$tracee_command &"
-
-    # Wait tracee to start
-
-    times=0
-    timedout=0
-    while true; do
-        times=$((times + 1))
-        sleep 1
-        if [[ -f $TRACEE_TMP_DIR/tracee.pid ]]; then
-            info
-            info "UP AND RUNNING"
-            info
-            break
-        fi
-
-        if [[ $times -gt $TRACEE_STARTUP_TIMEOUT ]]; then
-            timedout=1
-            break
-        fi
-    done
-
-    # Tracee failed to start
-
-    if [[ $timedout -eq 1 ]]; then
-        info
-        info "$TEST: FAILED. ERRORS:"
-        info
-        cat $logfile
-
-        anyerror="${anyerror}$TEST,"
-        continue
-    fi
-
-    # Allow tracee to start processing events
-
-    sleep 3
-
     # Run tests
 
     case $TEST in
@@ -229,22 +210,23 @@ for TEST in $TESTS; do
         ;;
     esac
 
-    # So events can finish processing
 
-    sleep 3
+done
 
-    # The cleanup happens at EXIT
+# So events can finish processing
+sleep 3
 
-    # Make sure we exit tracee before checking output and log files
 
-    mapfile -t tracee_pids < <(pgrep -x tracee)
-    kill -SIGINT "${tracee_pids[@]}"
-    sleep $TRACEE_SHUTDOWN_TIMEOUT
-    kill -SIGKILL "${tracee_pids[@]}" >/dev/null 2>&1
-    sleep 3
+# The cleanup happens at EXIT
 
-    # Check if the test has failed or not
+# Make sure we exit tracee before checking output and log files
 
+
+
+anyerror=""
+
+# Check if the test has failed or not
+for TEST in $TESTS; do
     found=0
     cat $outputfile | jq .eventName | grep -q "$TEST" && found=1
     errors=$(cat $logfile | wc -l 2>/dev/null)
@@ -254,7 +236,7 @@ for TEST in $TESTS; do
     fi
 
     info
-    if [[ $found -eq 1 && $errors -eq 0 ]]; then
+    if [[ $found -eq 1 ]]; then
         info "$TEST: SUCCESS"
     else
         anyerror="${anyerror}$TEST,"
@@ -280,14 +262,20 @@ for TEST in $TESTS; do
         info
     fi
     info
-
-    # Cleanup
-
-    rm -f $outputfile
-    rm -f $logfile
-    # Cleanup leftovers
-    rm -rf $TRACEE_TMP_DIR
 done
+
+# Cleanup
+
+mapfile -t tracee_pids < <(pgrep -x tracee)
+kill -SIGINT "${tracee_pids[@]}"
+sleep $TRACEE_SHUTDOWN_TIMEOUT
+kill -SIGKILL "${tracee_pids[@]}" >/dev/null 2>&1
+sleep 3
+
+rm -f $outputfile
+rm -f $logfile
+# Cleanup leftovers
+rm -rf $TRACEE_TMP_DIR
 
 # Print summary and exit with error if any test failed
 

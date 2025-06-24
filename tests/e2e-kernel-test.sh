@@ -37,8 +37,8 @@ fi
 
 DOCKER_IMAGE=ghcr.io/aquasecurity/tracee-tester:latest
 
-# run CO-RE TRC-102 test only by default
-TESTS=${TESTS:=TRC-102}
+# run CO-RE ARM compatible tests only by default (x86_64 has more but this is for manual user runs)
+TESTS=${TESTS:=TRC-102 TRC-103 TRC-104 TRC-105 TRC-107 TRC-1010 TRC-1014 TRC-1016 TRC-1018}
 
 # startup needs
 rm -rf $TRACEE_TMP_DIR/* || error_exit "could not delete $TRACEE_TMP_DIR"
@@ -68,54 +68,55 @@ fi
 # if any test has failed
 anyerror=""
 
+rm -f $SCRIPT_TMP_DIR/build-$$
+
+tracee_command="./dist/tracee \
+    --install-path $TRACEE_TMP_DIR \
+    --cache cache-type=mem \
+    --cache mem-cache-size=512 \
+    --output json \
+    --policy ./tests/policies/kernel/kernel.yaml 2>&1 \
+    | tee $SCRIPT_TMP_DIR/build-$$"
+
+eval "$tracee_command &"
+
+# give some time for tracee to settle
+sleep 5
+
+# wait tracee to be started (30 sec most)
+times=0
+timedout=0
+while true; do
+    times=$(($times + 1))
+    sleep 1
+    if [[ -f $TRACEE_TMP_DIR/tracee.pid ]]; then
+        info
+        info "UP AND RUNNING"
+        info
+        break
+    fi
+
+    if [[ $times -gt $TRACEE_STARTUP_TIMEOUT ]]; then
+        timedout=1
+        break
+    fi
+done
+
+# tracee could not start for some reason, check stderr
+if [[ $timedout -eq 1 ]]; then
+    info
+    info "TIMEDOUT"
+    info
+    cat $SCRIPT_TMP_DIR/build-$$
+
+    exit 1
+fi
+
 # run tests
 for TEST in $TESTS; do
-
     info
-    info "= TEST: $TEST ================================================="
+    info "= $TEST TEST RUNNING =========================================="
     info
-
-    rm -f $SCRIPT_TMP_DIR/build-$$
-
-    tracee_command="./dist/tracee \
-        --install-path $TRACEE_TMP_DIR \
-        --cache cache-type=mem \
-        --cache mem-cache-size=512 \
-        --output json \
-        --scope container=new 2>&1 \
-        | tee $SCRIPT_TMP_DIR/build-$$"
-    
-    eval "$tracee_command &"
-
-    # wait tracee to be started (30 sec most)
-    times=0
-    timedout=0
-    while true; do
-        times=$(($times + 1))
-        sleep 1
-        if [[ -f $TRACEE_TMP_DIR/tracee.pid ]]; then
-            info
-            info "UP AND RUNNING"
-            info
-            break
-        fi
-
-        if [[ $times -gt $TRACEE_STARTUP_TIMEOUT ]]; then
-            timedout=1
-            break
-        fi
-    done
-
-    # tracee-ebpf could not start for some reason, check stderr
-    if [[ $timedout -eq 1 ]]; then
-        info
-        info "$TEST: FAILED. ERRORS:"
-        info
-        cat $SCRIPT_TMP_DIR/build-$$
-
-        anyerror="${anyerror}$TEST,"
-        continue
-    fi
 
     # special capabilities needed for some tests
     case $TEST in
@@ -128,31 +129,15 @@ for TEST in $TESTS; do
     *) ;;
     esac
 
-    # give some time for tracee to settle
-    sleep 5
-
     # run tracee-tester (triggering the signature)
     docker run $docker_extra_arg --rm $DOCKER_IMAGE $TEST >/dev/null 2>&1
 
     # so event can be processed and detected
     sleep 5
+done
 
-    ## cleanup at EXIT
-
-    mapfile -t tracee_pids < <(pgrep -x tracee)
-
-    # cleanup tracee with SIGINT
-    kill -SIGINT "${tracee_pids[@]}"
-
-    sleep $TRACEE_SHUTDOWN_TIMEOUT
-
-    # make sure tracee is exited with SIGKILL
-    kill -SIGKILL "${tracee_pids[@]}" >/dev/null 2>&1
-
-    # give a little break for OS noise to reduce
-    sleep 3
-
-    found=0
+for TEST in $TESTS; do
+found=0
     cat $SCRIPT_TMP_DIR/build-$$ | grep "\"signatureID\":\"$TEST\"" -B2 && found=1
     info
     if [[ $found -eq 1 ]]; then
@@ -165,24 +150,30 @@ for TEST in $TESTS; do
         info "Tracee command:"
         echo "$tracee_command" | tr -s ' '
 
-        info "Tracee process is running?"
-        mapfile -t tracee_pids < <(pgrep -x tracee)
-        if [[ -n "${tracee_pids[*]}" ]]; then
-            info "YES, Tracee is still running (should not be, fix me!), pids: ${tracee_pids[*]}"
-            info "Aborting tests"
-            break
-        else
-            info "NO, Tracee is not running, as expected"
-        fi
         info
     fi
     info
-
-    rm -f $SCRIPT_TMP_DIR/build-$$
-
-    # cleanup leftovers
-    rm -rf $TRACEE_TMP_DIR
 done
+
+## cleanup at EXIT
+
+mapfile -t tracee_pids < <(pgrep -x tracee)
+
+# cleanup tracee with SIGINT
+kill -SIGINT "${tracee_pids[@]}"
+
+sleep $TRACEE_SHUTDOWN_TIMEOUT
+
+# make sure tracee is exited with SIGKILL
+kill -SIGKILL "${tracee_pids[@]}" >/dev/null 2>&1
+
+# give a little break for OS noise to reduce
+sleep 3
+
+rm -f $SCRIPT_TMP_DIR/build-$$
+
+# cleanup leftovers
+rm -rf $TRACEE_TMP_DIR
 
 info
 if [[ $anyerror != "" ]]; then
