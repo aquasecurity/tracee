@@ -9,3 +9,5 @@ spec:
     - comm=sys_src_tester
   rules:
     - event: SUSPICIOUS_SYSCALL_SOURCE
+      filters:
+      - args.syscall=exit

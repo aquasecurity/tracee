@@ -9,3 +9,5 @@ spec:
     - global
   rules:
     - event: STACK_PIVOT
+      filters:
+        - args.syscall=exit_group,getpid,write,openat,mmap,execve,fork,clone,recvmsg,gettid,epoll_wait,poll,recvfrom
