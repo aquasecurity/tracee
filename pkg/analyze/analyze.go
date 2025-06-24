@@ -62,6 +62,7 @@ func Analyze(cfg Config) {
 	signalCtx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	fileReadCtx, stop := context.WithCancel(signalCtx)
 
+	count := 0
 	engineOutput := make(chan *detect.Finding)
 	engineInput := make(chan protocol.Event)
 	fromFile := make(chan protocol.Event)
@@ -104,6 +105,7 @@ func Analyze(cfg Config) {
 			if !ok {
 				return
 			}
+			count++
 			process(finding)
 		case <-fileReadCtx.Done():
 			// ensure the engineInput channel will be closed
@@ -127,9 +129,10 @@ drain:
 			if !ok {
 				return
 			}
-
+			count++
 			process(finding)
 		default:
+			logger.Debugw("Drained engine output", "findings", count)
 			return
 		}
 	}
@@ -138,6 +141,7 @@ drain:
 func produce(ctx context.Context, cancel context.CancelFunc, inputFile *os.File, engineInput chan<- protocol.Event) {
 	scanner := bufio.NewScanner(inputFile)
 	scanner.Split(bufio.ScanLines)
+	count := 0
 	for {
 		select {
 		case <-ctx.Done():
@@ -146,17 +150,19 @@ func produce(ctx context.Context, cancel context.CancelFunc, inputFile *os.File,
 		default:
 			if !scanner.Scan() { // if EOF or error close the done channel and return
 				if err := scanner.Err(); err != nil {
-					logger.Errorw("Error while scanning input file", "error", err)
+					// Not EOF
+					logger.Errorw("Error while scanning input file", "error", err, "line", count)
 				}
 				// terminate analysis here and proceed to draining
 				cancel()
 				return
 			}
+			count++
 
 			var e trace.Event
 			err := json.Unmarshal(scanner.Bytes(), &e)
 			if err != nil {
-				logger.Fatalw("Failed to unmarshal event", "err", err)
+				logger.Fatalw("Failed to unmarshal event", "err", err, "line", count)
 			}
 			engineInput <- e.ToProtocol()
 		}
