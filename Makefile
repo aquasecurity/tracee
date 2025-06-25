@@ -451,6 +451,13 @@ endif
 TRACEE_EBPF_OBJ_SRC = ./pkg/ebpf/c/tracee.bpf.c
 TRACEE_EBPF_OBJ_HEADERS = $(shell find pkg/ebpf/c -name *.h)
 
+# Consider only the first multiarch include directory
+MULTIARCH_INCLUDE := $(shell multiarch_dir=$$( $(CMD_CLANG) -print-multiarch 2> /dev/null | head -n1 ); \
+    include_dir="/usr/include/$${multiarch_dir}"; \
+    if [ -n "$${multiarch_dir}" ] && [ -d "$${include_dir}" ]; then \
+        echo "-I$${include_dir}"; \
+    fi)
+
 .PHONY: bpf
 bpf: $(OUTPUT_DIR)/tracee.bpf.o
 
@@ -465,6 +472,7 @@ $(OUTPUT_DIR)/tracee.bpf.o: \
 		-D__BPF_TRACING__ \
 		-DCORE \
 		$(TRACEE_EBPF_CFLAGS) \
+		$(MULTIARCH_INCLUDE) \
 		-I./pkg/ebpf/c/ \
 		-target bpf \
 		-O2 -g \
