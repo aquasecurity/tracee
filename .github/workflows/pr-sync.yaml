@@ -14,7 +14,11 @@ on:
 
 jobs:
   pr-sync:
+    name: PR Sync
     runs-on: ubuntu-latest
+    container:
+      image: alpine
+
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -24,10 +28,10 @@ jobs:
         run: |
           . ./scripts/lib.sh
 
-          apt-get update
-          apt-get install -y \
+          apk update
+          apk add --no-cache \
               curl \
-              gh
+              github-cli
 
           require_cmds curl gh
 
