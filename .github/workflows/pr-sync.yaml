@@ -80,13 +80,14 @@ jobs:
         shell: sh
         env:
           max_attempts: 5 # Maximum attempts to sync the PR
-          sleep_time: 3 # Time to wait between attempts in seconds
+          timeout: 3 # Maximum time for each curl request in seconds
+          sleep_time: 1 # Time to wait between attempts in seconds
         run: |
           . ./scripts/lib.sh
 
           attempts=0
           while [ "${attempts}" -lt "${max_attempts}" ]; do
-              if curl --max-time 10 \
+              if curl --max-time "${timeout}" \
                   -X POST "${{ secrets.SYNC_PR_URL }}" \
                   -H "Content-Type: application/json" \
                   -d "{\"number\": \"${{ steps.pr-number.outputs.pr_number }}\"}"; then
