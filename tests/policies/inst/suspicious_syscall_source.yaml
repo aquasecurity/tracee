@@ -1,0 +1,13 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: suspicious-syscall-src-test
+  annotations:
+    description: test tracee's suspicious syscall source events
+spec:
+  scope: 
+    - comm=sys_src_tester
+  rules:
+    - event: SUSPICIOUS_SYSCALL_SOURCE
+      filters:
+      - args.syscall=exit

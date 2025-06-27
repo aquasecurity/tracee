@@ -1,0 +1,13 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: stack-pivot-test
+  annotations:
+    description: test tracee's stack pivot events
+spec:
+  scope: 
+    - global
+  rules:
+    - event: STACK_PIVOT
+      filters:
+        - args.syscall=exit_group,getpid,write,openat,mmap,execve,fork,clone,recvmsg,gettid,epoll_wait,poll,recvfrom
