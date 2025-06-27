@@ -3,6 +3,7 @@ package pcaps
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/gopacket/pcapgo"
@@ -129,44 +130,24 @@ func getFileStringFormat(e *trace.Event, c string, t PcapType) string {
 
 // mkdirForPcapType creates the dir that will hold the pcap file(s)
 func mkdirForPcapType(o *os.File, c string, t PcapType) error {
-	var e error
-
-	s := "pcap"
-
-	e = utils.MkdirAtExist(o, s, os.ModePerm)
-	if e != nil {
-		return errfmt.WrapError(e)
-	}
+	var dirToCreate string
 
 	switch t {
 	case Single:
-		e = utils.MkdirAtExist(o, pcapSingleDir, os.ModePerm)
-		if e != nil {
-			return errfmt.WrapError(e)
-		}
+		dirToCreate = pcapSingleDir
 	case Process:
-		e = utils.MkdirAtExist(o, pcapProcDir, os.ModePerm)
-		if e != nil {
-			return errfmt.WrapError(e)
-		}
-		e = utils.MkdirAtExist(o, pcapProcDir+c, os.ModePerm)
-		if e != nil {
-			return errfmt.WrapError(e)
-		}
+		dirToCreate = pcapProcDir + c + "/"
 	case Container:
-		e = utils.MkdirAtExist(o, pcapContDir, os.ModePerm)
-		if e != nil {
-			return errfmt.WrapError(e)
-		}
+		dirToCreate = pcapContDir
 	case Command:
-		e = utils.MkdirAtExist(o, pcapCommDir, os.ModePerm)
-		if e != nil {
-			return errfmt.WrapError(e)
-		}
-		e = utils.MkdirAtExist(o, pcapCommDir+c, os.ModePerm)
-		if e != nil {
-			return errfmt.WrapError(e)
-		}
+		dirToCreate = pcapCommDir + c + "/"
+	default:
+		dirToCreate = "pcap"
+	}
+
+	err := utils.MkdirAllAtExist(o, dirToCreate, os.ModePerm)
+	if err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	return nil
@@ -183,6 +164,13 @@ func getPcapFileAndWriter(event *trace.Event, t PcapType) (
 	if err != nil {
 		return nil, nil, errfmt.WrapError(err)
 	}
+
+	parentDir := filepath.Dir(pcapFilePath)
+	err = utils.MkdirAllAtExist(outputDirectory, parentDir, os.ModePerm)
+	if err != nil {
+		return nil, nil, errfmt.WrapError(fmt.Errorf("failed to create parent dirs for %s: %w", pcapFilePath, err))
+	}
+
 	file, err := utils.OpenAt(
 		outputDirectory,
 		pcapFilePath,
@@ -190,7 +178,7 @@ func getPcapFileAndWriter(event *trace.Event, t PcapType) (
 		0644,
 	)
 	if err != nil {
-		return nil, nil, errfmt.WrapError(err)
+		return nil, nil, errfmt.WrapError(fmt.Errorf("failed to open file %s at %s: %w", pcapFilePath, outputDirectory.Name(), err))
 	}
 
 	logger.Debugw("pcap file (re)opened", "filename", pcapFilePath)
