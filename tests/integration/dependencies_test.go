@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -134,8 +135,16 @@ func Test_EventsDependencies(t *testing.T) {
 
 			// set test logger
 			logsDone := make(chan struct{})
+			var logsDoneOnce sync.Once
+			closeLogsDone := func() {
+				logsDoneOnce.Do(func() {
+					close(logsDone)
+				})
+			}
+
 			logOutChan, restoreLogger := testutils.SetTestLogger(t, logger.DebugLevel)
 			logsResultChan := testutils.TestLogs(t, testCaseInst.expectedLogs, logOutChan, logsDone)
+			defer closeLogsDone()
 
 			// start tracee
 			trc, err := startTracee(ctx, t, testConfig, nil, nil)
@@ -186,18 +195,14 @@ func Test_EventsDependencies(t *testing.T) {
 				goto cleanup
 			}
 
-			close(logsDone)
+			closeLogsDone()
 			if !<-logsResultChan {
 				t.Logf("Test %s failed: not all logs were found", t.Name())
 				failed = true
 			}
 		cleanup:
 			// ensure that logsDone is closed
-			select {
-			case <-logsDone:
-			default:
-				close(logsDone)
-			}
+			closeLogsDone()
 			restoreLogger()
 			cancel()
 			errStop := waitForTraceeStop(trc)
