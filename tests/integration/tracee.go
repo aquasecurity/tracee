@@ -216,7 +216,7 @@ func waitForTraceeOutputEvents(t *testing.T, waitFor time.Duration, actual *even
 	timeoutTicker := time.NewTicker(timeout)
 	defer timeoutTicker.Stop()
 
-	t.Logf("  . waiting for at least %d event(s) for %s", expectedEvts, timeout.String())
+	t.Logf("  . waiting for at least %d event(s), up to %s", expectedEvts, timeout.String())
 	defer t.Logf("  . done waiting for %d event(s)", expectedEvts)
 
 	for {
