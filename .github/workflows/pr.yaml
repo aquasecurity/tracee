@@ -3,7 +3,13 @@
 #
 name: PR
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      tracee_ref:
+        description: 'Tracee ref to checkout'
+        required: true
+        default: 'main'
+        type: string
 
   pull_request:
     branches:
@@ -33,6 +39,7 @@ concurrency:
   group: ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 env:
+  TRACEE_REF: ${{ github.event.inputs.tracee_ref || github.ref }}
   TESTS: >
     TRC-102
     TRC-103
@@ -91,6 +98,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ env.TRACEE_REF }}
       - name: Ensure updates of *.1.md and *.1 pairs
         run: |
           ./scripts/verify_man_md_sync.sh --base-ref origin/main --fetch-depth 1
@@ -105,6 +114,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
+          ref: ${{ env.TRACEE_REF }}
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
       - name: Lint
@@ -144,6 +154,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
+          ref: ${{ env.TRACEE_REF }}
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
       - name: Build Tracee Benchmark Tool
@@ -175,6 +186,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
+          ref: ${{ env.TRACEE_REF }}
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
       - name: Run Unit Tests
@@ -196,6 +208,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
+          ref: ${{ env.TRACEE_REF }}
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
       - name: Run Integration Tests
@@ -214,6 +227,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
+          ref: ${{ env.TRACEE_REF }}
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
       - name: Run Performance Tests
@@ -309,6 +323,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
+          ref: ${{ env.TRACEE_REF }}
       # - name: "Prepare Image (Fix AMIs)"
       #   run: ./tests/e2e-install-deps.sh
       - name: "Environment Variables"
