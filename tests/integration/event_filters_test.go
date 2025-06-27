@@ -2311,19 +2311,28 @@ func Test_EventFilters(t *testing.T) {
 			}
 			config.InitialPolicies = initialPolicies
 
-			ctx, cancel := context.WithCancel(context.Background())
+			traceeTimeout := 60 * time.Second
+			ctx, cancel := context.WithTimeout(context.Background(), traceeTimeout)
+			defer func() {
+				if ctx.Err() != nil {
+					if ctx.Err() == context.DeadlineExceeded {
+						t.Log("  Tracee timedout")
+					} else {
+						t.Logf("  %v", ctx.Err())
+					}
+				}
+				cancel()
+			}()
 
 			// start tracee
 			trc, err := startTracee(ctx, t, config, nil, nil)
 			if err != nil {
-				cancel()
 				t.Fatal(err)
 			}
 
 			t.Logf("  --- started tracee ---")
 			err = waitForTraceeStart(trc)
 			if err != nil {
-				cancel()
 				t.Fatal(err)
 			}
 
