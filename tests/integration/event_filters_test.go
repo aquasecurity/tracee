@@ -2290,6 +2290,341 @@ func Test_EventFilters(t *testing.T) {
 			coolDown:     0,
 			test:         ExpectAllInOrderSequentially,
 		},
+		{
+			name: "event: data: trace event security_kernel_read_file and security_kernel_post_read_file using data filter",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "lsm-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_kernel_read_file",
+									Filters: []string{
+										"data.pathname=*linux_module.ko",
+									},
+								},
+							},
+						},
+					},
+				}, {
+					Id: 2,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "lsm-pol-2",
+						},
+						Spec: k8s.PolicySpec{
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_kernel_post_read_file",
+									Filters: []string{
+										"data.pathname=*linux_module.ko",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"sh -c 'scripts/load_module_security_checks.sh'",
+					1*time.Second,
+					30*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "insmod", testutils.CPUForTests, anyPID, 0, events.SecurityKernelReadFile, orPolNames("lsm-pol-1"), orPolIDs(1), expectArg("pathname", "*linux_module.ko")),
+						expectEvent(anyHost, "insmod", testutils.CPUForTests, anyPID, 0, events.SecurityPostReadFile, orPolNames("lsm-pol-2"), orPolIDs(2), expectArg("pathname", "*linux_module.ko")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
+		},
+		{
+			name: "event: data: trace event security_inode_symlink, security_inode_rename and security_inode_unlink using data filter",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "lsm-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_inode_symlink",
+									Filters: []string{
+										"data.linkpath=/tmp/inodefile",
+									},
+								},
+								{
+									Event: "security_inode_rename",
+									Filters: []string{
+										"data.old_path=/tmp/inodefi*",
+									},
+								},
+							},
+						},
+					},
+				}, {
+					Id: 2,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "lsm-pol-2",
+						},
+						Spec: k8s.PolicySpec{
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_inode_unlink",
+									Filters: []string{
+										"data.pathname=*inodefile_new",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"sh -c 'ln -s /etc/passwd /tmp/inodefile ; mv /tmp/inodefile /tmp/inodefile_new ; rm -rf /tmp/inodefile_new'",
+					0,
+					2*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "ln", testutils.CPUForTests, anyPID, 0, events.SecurityInodeSymlinkEventId, orPolNames("lsm-pol-1"), orPolIDs(1), expectArg("linkpath", "/tmp/inodefile")),
+						expectEvent(anyHost, "mv", testutils.CPUForTests, anyPID, 0, events.SecurityInodeRename, orPolNames("lsm-pol-1"), orPolIDs(1), expectArg("old_path", "/tmp/inodefile")),
+						expectEvent(anyHost, "rm", testutils.CPUForTests, anyPID, 0, events.SecurityInodeUnlink, orPolNames("lsm-pol-2"), orPolIDs(2), expectArg("pathname", "/tmp/inodefile_new")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
+		},
+		{
+			name: "comm: event: data: trace event shared_object_loaded, security_file_mprotect and security_bprm_check using data filter",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "lsm-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							DefaultActions: []string{"log"},
+							Scope: []string{
+								"comm=exec_sec_chk.sh",
+							},
+							Rules: []k8s.Rule{
+								{
+									Event: "shared_object_loaded",
+									Filters: []string{
+										"data.pathname=*libc.so.6",
+									},
+								},
+								{
+									Event: "security_file_mprotect",
+									Filters: []string{
+										"data.pathname=*bash",
+									},
+								},
+								{
+									Event: "security_bprm_check",
+									Filters: []string{
+										"data.pathname=/usr/bin/ls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"sh -c 'scripts/exec_sec_chk.sh'",
+					1*time.Second,
+					10*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "exec_sec_chk.sh", testutils.CPUForTests, anyPID, 0, events.SharedObjectLoaded, orPolNames("lsm-pol-1"), orPolIDs(1), expectArg("pathname", "*libc.so.6")),
+						expectEvent(anyHost, "exec_sec_chk.sh", testutils.CPUForTests, anyPID, 0, events.SecurityFileMprotect, orPolNames("lsm-pol-1"), orPolIDs(1), expectArg("pathname", "*bash")),
+						expectEvent(anyHost, "exec_sec_chk.sh", testutils.CPUForTests, anyPID, 0, events.SecurityBprmCheck, orPolNames("lsm-pol-1"), orPolIDs(1), expectArg("pathname", "/usr/bin/ls")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
+		},
+		{
+			name: "event: data: trace event security_sb_mount using data filter",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "lsm-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_sb_mount",
+									Filters: []string{
+										"data.path=/mnt/tmpfs",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"sh -c 'mkdir -p /mnt/tmpfs && mount -t tmpfs tmpfs /mnt/tmpfs'",
+					0,
+					5*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "mount", testutils.CPUForTests, anyPID, 0, events.SecuritySbMount, orPolNames("lsm-pol-1"), orPolIDs(1), expectArg("path", "/mnt/tmpfs")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
+		},
+		{
+			name: "event: data: trace event security_inode_mknod using data filter",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "lsm-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_inode_mknod",
+									Filters: []string{
+										"data.file_name=/tmp/char_file",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"sh -c 'mknod /tmp/char_file c 1 3'",
+					0,
+					5*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "mknod", testutils.CPUForTests, anyPID, 0, events.SecurityInodeMknod, orPolNames("lsm-pol-1"), orPolIDs(1), expectArg("file_name", "/tmp/char_file")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
+		},
+		{
+			name: "event: data: trace event security_path_notify using data filter",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "lsm-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_path_notify",
+									Filters: []string{
+										"data.pathname=/tmp/inotify_file",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"sh -c 'scripts/inotify_file.sh'",
+					1*time.Second,
+					30*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "inotifywait", testutils.CPUForTests, anyPID, 0, events.SecurityPathNotify, orPolNames("lsm-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/inotify_file")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
+		},
+		{
+			name: "event: data: trace event security_bpf_prog and security_bpf_map using data filter",
+			policyFiles: []testutils.PolicyFileWithID{
+				{
+					Id: 1,
+					PolicyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "lsm-pol-1",
+						},
+						Spec: k8s.PolicySpec{
+							DefaultActions: []string{"log"},
+							Rules: []k8s.Rule{
+								{
+									Event: "security_bpf_prog",
+									Filters: []string{
+										"data.name=sys_enter_exe*",
+									},
+								},
+								{
+									Event: "security_bpf_map",
+									Filters: []string{
+										"data.map_name=*my_fixed_map",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"sh -c 'scripts/load_ebpf_prog_map.sh'",
+					1*time.Second,
+					30*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "bpftrace", testutils.CPUForTests, anyPID, 0, events.SecurityBPFMap, orPolNames("lsm-pol-1"), orPolIDs(1), expectArg("map_name", "AT_my_fixed_map")),
+						expectEvent(anyHost, "bpftrace", testutils.CPUForTests, anyPID, 0, events.SecurityBpfProg, orPolNames("lsm-pol-1"), orPolIDs(1), expectArg("name", "sys_enter_execv")),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
+		},
 	}
 
 	// run tests cases
