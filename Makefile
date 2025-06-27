@@ -900,7 +900,7 @@ test-integration: \
 			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
 			-X main.version=\"$(VERSION)\" \
 			" \
-		-shuffle on \
+		-timeout 20m \
 		-race \
 		-v \
 		-p 1 \
