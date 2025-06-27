@@ -1650,7 +1650,7 @@ int syscall__accept4(void *ctx)
 
     save_to_submit_buf(&p.event->args_buf, (void *) &sockfd, sizeof(u32), 0);
     save_sockaddr_to_buf(&p.event->args_buf, old_sock, true, 1);
-    save_sockaddr_to_buf(&p.event->args_buf, new_sock, true, 2);
+    save_sockaddr_to_buf(&p.event->args_buf, new_sock, false, 2);
 
     return events_perf_submit(&p, 0);
 }
