@@ -449,7 +449,14 @@ endif
 #
 
 TRACEE_EBPF_OBJ_SRC = ./pkg/ebpf/c/tracee.bpf.c
-TRACEE_EBPF_OBJ_HEADERS = $(shell find pkg/ebpf/c -name *.h)
+TRACEE_EBPF_OBJ_HEADERS = $(shell find pkg/ebpf/c -name *.h) $(wildcard ./pkg/ebpf/c/tracee.bpf*.c)
+
+EXTENDED_BUILD_EXISTS := $(shell [ -f .extended-build ] && echo yes)
+ifeq ($(EXTENDED_BUILD_EXISTS),yes)
+    BUILD_TYPE_FLAG := EXTENDED_BUILD
+else
+    BUILD_TYPE_FLAG := COMMON_BUILD
+endif
 
 # Consider only the first multiarch include directory
 MULTIARCH_INCLUDE := $(shell multiarch_dir=$$( $(CMD_CLANG) -print-multiarch 2> /dev/null | head -n1 ); \
@@ -471,6 +478,7 @@ $(OUTPUT_DIR)/tracee.bpf.o: \
 		-D__TARGET_ARCH_$(LINUX_ARCH) \
 		-D__BPF_TRACING__ \
 		-DCORE \
+		-D$(BUILD_TYPE_FLAG) \
 		$(TRACEE_EBPF_CFLAGS) \
 		$(MULTIARCH_INCLUDE) \
 		-I./pkg/ebpf/c/ \
