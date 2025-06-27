@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -565,12 +566,8 @@ func Test_EventFilters(t *testing.T) {
 							DefaultActions: []string{"log"},
 							Rules: []k8s.Rule{
 								{
-									Event: "sched_switch",
-									Filters: []string{
-										"data.prev_tid=0",
-										"data.next_tid=1",
-										"parentProcessId=1", // narrow down to systemd
-									},
+									Event:   "sched_switch",
+									Filters: []string{},
 								},
 							},
 						},
@@ -579,17 +576,14 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
-					// Run 'kill -SIGUSR1 1' more than once as an attempt to make systemd to reconnect
-					// to the D-Bus bus which would result in at least one 'sched_switch' event
-					// with prev_tid=0 and next_tid=1.
-					"bash -c 'for i in $(seq 5); do kill -SIGUSR1 1; sleep 1; done'",
-					500*time.Millisecond,
-					7*time.Second, // as the command sleeps 1 second between signals, give it a bit more time
+					// Do not execute any command; simply wait to capture background system activity (primarily from Tracee).
+					// During this waiting period, the system is expected to produce numerous 'sched_switch' events
+					// from the 'swapper' process (pid 0), even in minimal environments with only one CPU.
+					expectFromSystem,
+					50*time.Millisecond, // wait
+					0,                   // this value is ignored when 'expectFromSystem' is used
 					[]trace.Event{
-						expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid-0-event-data"), orPolIDs(1),
-							expectArg("prev_tid", int32(0)),
-							expectArg("next_tid", int32(1)),
-						),
+						expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid-0-event-data"), orPolIDs(1)),
 					},
 					[]string{},
 				),
@@ -2378,6 +2372,9 @@ func Test_EventFilters(t *testing.T) {
 }
 
 const (
+	expectFromSystem    = ""
+	expectFromSystemPid = math.MaxInt
+
 	anyProcessorID = -1
 	anyHost        = ""
 	anyComm        = ""
@@ -2487,14 +2484,20 @@ func runCmd(t *testing.T, cmd cmdEvents, expectedEvts int, actual *eventBuffer, 
 		err error
 	)
 
-	if useSyscaller {
-		formatCmdEvents(&cmd)
-	}
+	if cmd.runCmd == expectFromSystem {
+		pid = expectFromSystemPid
 
-	t.Logf("  >>> running: %s", cmd.runCmd)
-	pid, err = testutils.ExecPinnedCmdWithTimeout(cmd.runCmd, cmd.timeout)
-	if err != nil {
-		return proc{}, err
+		t.Log("  >>> expect events from system")
+	} else {
+		if useSyscaller {
+			formatCmdEvents(&cmd)
+		}
+
+		t.Logf("  >>> running: %s", cmd.runCmd)
+		pid, err = testutils.ExecPinnedCmdWithTimeout(cmd.runCmd, cmd.timeout)
+		if err != nil {
+			return proc{}, err
+		}
 	}
 
 	err = waitForTraceeOutputEvents(t, cmd.waitFor, actual, expectedEvts, failOnTimeout)
