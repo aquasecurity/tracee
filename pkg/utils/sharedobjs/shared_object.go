@@ -18,17 +18,20 @@ type DynamicSymbolsLoader interface {
 	GetDynamicSymbols(info ObjInfo) (map[string]bool, error)
 	GetExportedSymbols(info ObjInfo) (map[string]bool, error)
 	GetImportedSymbols(info ObjInfo) (map[string]bool, error)
+	GetLocalSymbols(info ObjInfo) (map[string]bool, error)
 }
 
-type DynamicSymbols struct {
+type Symbols struct {
 	Exported map[string]bool
 	Imported map[string]bool
+	Local    map[string]bool
 }
 
-func NewSOSymbols() DynamicSymbols {
-	return DynamicSymbols{
+func NewSOSymbols() Symbols {
+	return Symbols{
 		Exported: make(map[string]bool),
 		Imported: make(map[string]bool),
+		Local:    make(map[string]bool),
 	}
 }
 
