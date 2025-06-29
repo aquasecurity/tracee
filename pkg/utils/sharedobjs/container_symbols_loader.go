@@ -46,3 +46,12 @@ func (cLoader *ContainersSymbolsLoader) GetImportedSymbols(soInfo ObjInfo) (map[
 	}
 	return cLoader.hostLoader.GetImportedSymbols(soInfo)
 }
+
+func (cLoader *ContainersSymbolsLoader) GetLocalSymbols(soInfo ObjInfo) (map[string]bool, error) {
+	var err error
+	soInfo.Path, err = cLoader.pathResolver.GetHostAbsPath(soInfo.Path, soInfo.MountNS)
+	if err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+	return cLoader.hostLoader.GetLocalSymbols(soInfo)
+}
