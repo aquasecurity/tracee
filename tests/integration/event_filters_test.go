@@ -2608,7 +2608,12 @@ func isCmdAShellRunner(cmd string) bool {
 }
 
 // pidToCheck returns the pid of the process to check for events
-func pidToCheck(cmd string, actEvt trace.Event) int {
+func pidToCheck(cmd string, actEvt trace.Event, expectedPid int) int {
+	switch expectedPid {
+	case 0, 1, 2: // special pids: 0 swapper, 1 systemd, 2 kthreadd
+		return expectedPid
+	}
+
 	if isCmdAShellRunner(cmd) {
 		return actEvt.ParentProcessID
 	}
@@ -2697,7 +2702,7 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 				if checkProcessorID && actEvt.ProcessorID != expEvt.ProcessorID {
 					continue
 				}
-				if checkPID && pidToCheck(cmd.runCmd, actEvt) != expEvt.ProcessID {
+				if checkPID && pidToCheck(cmd.runCmd, actEvt, expEvt.ProcessID) != expEvt.ProcessID {
 					continue
 				}
 				if checkPID && actEvt.ProcessID != expEvt.ProcessID {
@@ -2867,7 +2872,7 @@ func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 				if checkProcessorID && actEvt.ProcessorID != expEvt.ProcessorID {
 					continue
 				}
-				if checkPID && pidToCheck(cmd.runCmd, actEvt) != expEvt.ProcessID {
+				if checkPID && pidToCheck(cmd.runCmd, actEvt, expEvt.ProcessID) != expEvt.ProcessID {
 					continue
 				}
 				if checkPID && actEvt.ProcessID != expEvt.ProcessID {
@@ -3005,7 +3010,7 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 					return fmt.Errorf("Event %+v:\nprocessor Id mismatch: expected %d, got %d", expEvt, expEvt.ProcessorID, actEvt.ProcessorID)
 				}
 				if checkPID {
-					actPID := pidToCheck(cmd.runCmd, actEvt)
+					actPID := pidToCheck(cmd.runCmd, actEvt, expEvt.ProcessID)
 					if !assert.ObjectsAreEqual(expEvt.ProcessID, actPID) {
 						return fmt.Errorf("Event %+v:\npid mismatch: expected %d, got %d", expEvt, expEvt.ProcessID, actPID)
 					}
@@ -3113,7 +3118,7 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 				return fmt.Errorf("Event %+v:\nprocessor Id mismatch: expected %d, got %d", expEvt, expEvt.ProcessorID, actEvt.ProcessorID)
 			}
 			if checkPID {
-				actPID := pidToCheck(cmd.runCmd, actEvt)
+				actPID := pidToCheck(cmd.runCmd, actEvt, expEvt.ProcessID)
 				if !assert.ObjectsAreEqual(expEvt.ProcessID, actPID) {
 					return fmt.Errorf("Event %+v:\npid mismatch: expected %d, got %d", expEvt, expEvt.ProcessID, actPID)
 				}
