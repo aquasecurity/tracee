@@ -10,13 +10,14 @@ import (
 )
 
 type e2eStackPivot struct {
-	cb            detect.SignatureHandler
-	falsePositive bool
+	cb  detect.SignatureHandler
+	log detect.Logger
+	// falsePositive bool // TODO: re-figure out how to handle false positives, currently they get triggered by other tests
 }
 
 func (sig *e2eStackPivot) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
-
+	sig.log = ctx.Logger
 	return nil
 }
 
@@ -45,6 +46,7 @@ func (sig *e2eStackPivot) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "stack_pivot":
+		sig.log.Infow("stack_pivot event", "event", eventObj)
 		syscall, err := helpers.ArgVal[string](eventObj.Args, "syscall")
 		if err != nil {
 			return err
@@ -53,22 +55,17 @@ func (sig *e2eStackPivot) OnEvent(event protocol.Event) error {
 		if err != nil {
 			return err
 		}
+		sig.log.Infow("initial", "syscall", syscall, "vma_type", vmaType)
 
 		// Make sure this is the exact event we're looking for
 		if eventObj.ProcessName == "stack_pivot" && syscall == "exit_group" && vmaType == "heap" {
-			// Make sure there was no false positive
-			if !sig.falsePositive {
-				m, _ := sig.GetMetadata()
+			m, _ := sig.GetMetadata()
 
-				sig.cb(&detect.Finding{
-					SigMetadata: m,
-					Event:       event,
-					Data:        map[string]interface{}{},
-				})
-			}
-		} else {
-			// False positive, mark it so that the test will fail
-			sig.falsePositive = true
+			sig.cb(&detect.Finding{
+				SigMetadata: m,
+				Event:       event,
+				Data:        map[string]interface{}{},
+			})
 		}
 	}
 
