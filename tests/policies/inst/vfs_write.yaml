@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: vfs-write-test
+  annotations:
+    description: test tracee's vfs write events
+spec:
+  scope: 
+    - comm=echo,write
+  rules:
+    - event: VFS_WRITE

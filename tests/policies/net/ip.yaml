@@ -1,0 +1,12 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: ip-test
+  annotations:
+    description: test tracee's ip events
+spec:
+  scope: 
+    - comm=ping
+  rules:
+    - event: IPv4
+    - event: IPv6

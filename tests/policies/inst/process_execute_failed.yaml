@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: execute-failed-test
+  annotations:
+    description: test tracee's execute failed events
+spec:
+  scope: 
+    - comm=process_execute
+  rules:
+    - event: PROCESS_EXECUTE_FAILED
