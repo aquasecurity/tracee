@@ -195,14 +195,15 @@ func Test_EventsDependencies(t *testing.T) {
 				goto cleanup
 			}
 
-			closeLogsDone()
-			if !<-logsResultChan {
-				t.Logf("Test %s failed: not all logs were found", t.Name())
-				failed = true
-			}
 		cleanup:
 			// ensure that logsDone is closed
 			closeLogsDone()
+			if !<-logsResultChan { // always consume the result channel
+				if !failed {
+					t.Logf("Test %s failed: not all logs were found", t.Name())
+					failed = true
+				}
+			}
 			restoreLogger()
 			cancel()
 			errStop := waitForTraceeStop(trc)
