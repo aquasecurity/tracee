@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -87,7 +88,7 @@ func TestLogs(
 		testResults[log] = false
 	}
 
-	outChan := make(chan bool)
+	outChan := make(chan bool, 1)
 
 	go func() {
 		defer close(outChan)
@@ -115,7 +116,12 @@ func TestLogs(
 				allFound = false
 			}
 		}
-		outChan <- allFound
+		select {
+		case outChan <- allFound:
+			// sent successfully
+		case <-time.After(10 * time.Second):
+			t.Logf("Test %s failed: TestLogs: timeout sending result to outChan", t.Name())
+		}
 	}()
 	return outChan
 }
