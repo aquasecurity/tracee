@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"math"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -547,6 +548,8 @@ func Test_EventFilters(t *testing.T) {
 		// TODO: Add pid>0 pid<1000
 		// TODO: Add u>0 u!=1000
 		{
+			// This test is a bit tricky, as it relies on the environment where the test is run.
+			// The main goal is to ensure that at least one event coming from pid 0 (swapper) is captured.
 			name: "pid: event: data: trace event sched_switch with data from pid 0",
 			policyFiles: []testutils.PolicyFileWithID{
 				{
@@ -562,10 +565,8 @@ func Test_EventFilters(t *testing.T) {
 							DefaultActions: []string{"log"},
 							Rules: []k8s.Rule{
 								{
-									Event: "sched_switch",
-									Filters: []string{
-										"data.next_comm=systemd",
-									},
+									Event:   "sched_switch",
+									Filters: []string{},
 								},
 							},
 						},
@@ -574,18 +575,21 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
-					"kill -SIGUSR1 1", // systemd: try to reconnect to the D-Bus bus
-					500*time.Millisecond,
-					1*time.Second,
+					// Do not execute any command; simply wait to capture background system activity (primarily from Tracee).
+					// During this waiting period, the system is expected to produce numerous 'sched_switch' events
+					// from the 'swapper' process (pid 0), even in minimal environments with only one CPU.
+					expectFromSystem,
+					100*time.Millisecond, // wait
+					0,                    // this value is ignored when 'expectFromSystem' is used
 					[]trace.Event{
-						expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid-0-event-data"), orPolIDs(1), expectArg("next_comm", "systemd")),
+						expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid-0-event-data"), orPolIDs(1)),
 					},
 					[]string{},
 				),
 			},
 			useSyscaller: false,
 			coolDown:     1 * time.Second,
-			test:         ExpectAtLeastOneForEach,
+			test:         ExpectAllEvtsEqualToOne,
 		},
 		{
 			name: "pid: trace events from pid 1",
@@ -2376,6 +2380,9 @@ func Test_EventFilters(t *testing.T) {
 }
 
 const (
+	expectFromSystem    = ""
+	expectFromSystemPid = math.MaxInt
+
 	anyProcessorID = -1
 	anyHost        = ""
 	anyComm        = ""
@@ -2485,14 +2492,20 @@ func runCmd(t *testing.T, cmd cmdEvents, expectedEvts int, actual *eventBuffer, 
 		err error
 	)
 
-	if useSyscaller {
-		formatCmdEvents(&cmd)
-	}
+	if cmd.runCmd == expectFromSystem {
+		pid = expectFromSystemPid
 
-	t.Logf("  >>> running: %s", cmd.runCmd)
-	pid, err = testutils.ExecPinnedCmdWithTimeout(cmd.runCmd, cmd.timeout)
-	if err != nil {
-		return proc{}, err
+		t.Log("  >>> expect events from system")
+	} else {
+		if useSyscaller {
+			formatCmdEvents(&cmd)
+		}
+
+		t.Logf("  >>> running: %s", cmd.runCmd)
+		pid, err = testutils.ExecPinnedCmdWithTimeout(cmd.runCmd, cmd.timeout)
+		if err != nil {
+			return proc{}, err
+		}
 	}
 
 	err = waitForTraceeOutputEvents(t, cmd.waitFor, actual, expectedEvts, failOnTimeout)
