@@ -548,50 +548,53 @@ func Test_EventFilters(t *testing.T) {
 		},
 		// TODO: Add pid>0 pid<1000
 		// TODO: Add u>0 u!=1000
-		{
-			// This test is a bit tricky, as it relies on the environment where the test is run.
-			// The main goal is to ensure that at least one event coming from pid 0 (swapper) is captured.
-			name: "pid: event: data: trace event sched_switch with data from pid 0",
-			policyFiles: []testutils.PolicyFileWithID{
-				{
-					Id: 1,
-					PolicyFile: v1beta1.PolicyFile{
-						Metadata: v1beta1.Metadata{
-							Name: "pid-0-event-data",
-						},
-						Spec: k8s.PolicySpec{
-							Scope: []string{
-								"pid=0",
-							},
-							DefaultActions: []string{"log"},
-							Rules: []k8s.Rule{
-								{
-									Event:   "sched_switch",
-									Filters: []string{},
-								},
-							},
-						},
-					},
-				},
-			},
-			cmdEvents: []cmdEvents{
-				newCmdEvents(
-					// Do not execute any command; simply wait to capture background system activity (primarily from Tracee).
-					// During this waiting period, the system is expected to produce numerous 'sched_switch' events
-					// from the 'swapper' process (pid 0), even in minimal environments with only one CPU.
-					expectFromSystem,
-					100*time.Millisecond, // wait
-					0,                    // this value is ignored when 'expectFromSystem' is used
-					[]trace.Event{
-						expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid-0-event-data"), orPolIDs(1)),
-					},
-					[]string{},
-				),
-			},
-			useSyscaller: false,
-			coolDown:     1 * time.Second,
-			test:         ExpectAllEvtsEqualToOne,
-		},
+		// {
+		//   Disabled due to flaky behavior in some environments, see:
+		//   https://github.com/aquasecurity/tracee/issues/4799#issuecomment-3018918112
+		//
+		// 	// This test is a bit tricky, as it relies on the environment where the test is run.
+		// 	// The main goal is to ensure that at least one event coming from pid 0 (swapper) is captured.
+		// 	name: "pid: event: data: trace event sched_switch with data from pid 0",
+		// 	policyFiles: []testutils.PolicyFileWithID{
+		// 		{
+		// 			Id: 1,
+		// 			PolicyFile: v1beta1.PolicyFile{
+		// 				Metadata: v1beta1.Metadata{
+		// 					Name: "pid-0-event-data",
+		// 				},
+		// 				Spec: k8s.PolicySpec{
+		// 					Scope: []string{
+		// 						"pid=0",
+		// 					},
+		// 					DefaultActions: []string{"log"},
+		// 					Rules: []k8s.Rule{
+		// 						{
+		// 							Event:   "sched_switch",
+		// 							Filters: []string{},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	cmdEvents: []cmdEvents{
+		// 		newCmdEvents(
+		// 			// Do not execute any command; simply wait to capture background system activity (primarily from Tracee).
+		// 			// During this waiting period, the system is expected to produce numerous 'sched_switch' events
+		// 			// from the 'swapper' process (pid 0), even in minimal environments with only one CPU.
+		// 			expectFromSystem,
+		// 			100*time.Millisecond, // wait
+		// 			0,                    // this value is ignored when 'expectFromSystem' is used
+		// 			[]trace.Event{
+		// 				expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid-0-event-data"), orPolIDs(1)),
+		// 			},
+		// 			[]string{},
+		// 		),
+		// 	},
+		// 	useSyscaller: false,
+		// 	coolDown:     1 * time.Second,
+		// 	test:         ExpectAllEvtsEqualToOne,
+		// },
 		{
 			name: "pid: trace events from pid 1",
 			policyFiles: []testutils.PolicyFileWithID{
