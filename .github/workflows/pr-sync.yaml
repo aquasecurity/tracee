@@ -15,7 +15,7 @@ on:
 jobs:
   pr-sync:
     name: PR Sync
-    runs-on: ubuntu-latest
+    runs-on: aquasec-com-arc-runner-set-amd64
     container:
       image: alpine
 
