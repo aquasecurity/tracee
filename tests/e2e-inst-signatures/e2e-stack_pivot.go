@@ -10,9 +10,9 @@ import (
 )
 
 type e2eStackPivot struct {
-	cb  detect.SignatureHandler
-	log detect.Logger
-	// falsePositive bool // TODO: re-figure out how to handle false positives, currently they get triggered by other tests
+	cb            detect.SignatureHandler
+	log           detect.Logger
+	falsePositive bool // TODO: re-figure out how to handle false positives, currently they get triggered by other tests
 }
 
 func (sig *e2eStackPivot) Init(ctx detect.SignatureContext) error {
@@ -59,13 +59,17 @@ func (sig *e2eStackPivot) OnEvent(event protocol.Event) error {
 
 		// Make sure this is the exact event we're looking for
 		if eventObj.ProcessName == "stack_pivot" && syscall == "exit_group" && vmaType == "heap" {
-			m, _ := sig.GetMetadata()
+			if !sig.falsePositive {
+				m, _ := sig.GetMetadata()
 
-			sig.cb(&detect.Finding{
-				SigMetadata: m,
-				Event:       event,
-				Data:        map[string]interface{}{},
-			})
+				sig.cb(&detect.Finding{
+					SigMetadata: m,
+					Event:       event,
+					Data:        map[string]interface{}{},
+				})
+			}
+		} else {
+			sig.falsePositive = true
 		}
 	}
 
