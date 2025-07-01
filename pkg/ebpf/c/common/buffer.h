@@ -263,7 +263,7 @@ add_u64_elements_to_buf(args_buffer_t *buf, const u64 __user *ptr, int len, vola
     // save count_off into a new variable to avoid verifier errors
     u32 off = count_off;
     u8 elem_num = 0;
-#pragma unroll
+
     for (int i = 0; i < len; i++) {
         void *addr = &(buf->args[buf->offset]);
         if (buf->offset > ARGS_BUF_SIZE - sizeof(u64))
