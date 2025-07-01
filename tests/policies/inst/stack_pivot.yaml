@@ -6,7 +6,7 @@ metadata:
     description: test tracee's stack pivot events
 spec:
   scope: 
-    - comm=stack_pivot
+    - global
   rules:
     - event: STACK_PIVOT # e2e signature for tracing
     - event: stack_pivot # actual event to pass the parameters
