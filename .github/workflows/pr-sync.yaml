@@ -15,7 +15,8 @@ on:
 jobs:
   pr-sync:
     name: PR Sync
-    runs-on: aquasec-com-arc-runner-set-amd64
+    # runs-on: aquasec-com-arc-runner-set-amd64
+    runs-on: arc-runner-set
     container:
       image: alpine
 
