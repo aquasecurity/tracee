@@ -2,12 +2,14 @@ package proc
 
 import (
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
+// ProcNS represents the namespace IDs for all namespace types of a process
 // https://elixir.bootlin.com/linux/v6.13/source/include/linux/ns_common.h#L12
 // struct ns_common inum member is unsigned int
 type ProcNS struct {
@@ -23,7 +25,7 @@ type ProcNS struct {
 	Uts             uint32
 }
 
-// GetAllProcNS return all the namespaces of a given process.
+// GetAllProcNS returns all the namespaces of a given process.
 // To do so, it requires access to the /proc file system of the host, and CAP_SYS_PTRACE capability.
 func GetAllProcNS(pid int32) (*ProcNS, error) {
 	nsDirPath := GetProcNSDirPath(pid)
@@ -114,7 +116,7 @@ func extractNSFromLink(link string) (uint32, error) {
 	return ns, nil
 }
 
-// GetMountNSFirstProcesses return mapping between mount NS to its first process
+// GetMountNSFirstProcesses returns mapping between mount NS to its first process
 // (aka, the process with the oldest start time in the mount NS)
 func GetMountNSFirstProcesses() (map[uint32]int32, error) { // map[mountNS]pid
 	procDir, err := os.Open("/proc")
@@ -182,4 +184,79 @@ func GetMountNSFirstProcesses() (map[uint32]int32, error) { // map[mountNS]pid
 	}
 
 	return mountNSToFirstProcess, nil
+}
+
+// GetAnyProcessInNS returns the PID of any process in the given namespace type and number.
+// It returns the first process it finds when iterating over /proc that satisfies the request.
+func GetAnyProcessInNS(nsName string, nsNum uint32) (int32, error) {
+	procDir, err := os.Open("/proc")
+	if err != nil {
+		return 0, errfmt.Errorf("could not open proc dir: %v", err)
+	}
+	defer func() {
+		if err := procDir.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
+
+	entries, err := procDir.Readdirnames(-1)
+	if err != nil {
+		return 0, errfmt.Errorf("could not read proc dir: %v", err)
+	}
+
+	for _, entry := range entries {
+		pid, err := strconv.ParseInt(entry, 10, 32)
+		if err != nil {
+			continue
+		}
+		ns, err := GetProcNS(int32(pid), nsName)
+		if err != nil {
+			logger.Debugw("Failed fetching process namespace", "pid", pid, "namespace", nsName, "error", err)
+			continue
+		}
+		if uint32(ns) == nsNum {
+			return int32(pid), nil
+		}
+	}
+
+	return 0, errfmt.Errorf("could not find any process in %s namespace %d", nsName, nsNum)
+}
+
+// GetNamespaces returns a list of all namespace IDs for the given namespace type
+func GetNamespaces(nsName string) ([]uint32, error) {
+	procDir, err := os.Open("/proc")
+	if err != nil {
+		return []uint32{}, errfmt.Errorf("could not open proc dir: %v", err)
+	}
+	defer func() {
+		if err := procDir.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
+
+	entries, err := procDir.Readdirnames(-1)
+	if err != nil {
+		return []uint32{}, errfmt.Errorf("could not read proc dir: %v", err)
+	}
+
+	namespacesSet := map[uint32]struct{}{}
+	for _, entry := range entries {
+		pid, err := strconv.ParseInt(entry, 10, 32)
+		if err != nil {
+			continue
+		}
+		ns, err := GetProcNS(int32(pid), nsName)
+		if err != nil {
+			logger.Debugw("Failed fetching process namespace", "pid", pid, "namespace", nsName, "error", err)
+			continue
+		}
+		namespacesSet[uint32(ns)] = struct{}{}
+	}
+
+	namespaces := make([]uint32, 0, len(namespacesSet))
+	for ns := range namespacesSet {
+		namespaces = append(namespaces, ns)
+	}
+
+	return namespaces, nil
 }
