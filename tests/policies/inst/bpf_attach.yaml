@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: bpf-attach-test
+  annotations:
+    description: test tracee's bpf attach events
+spec:
+  scope: 
+    - comm=tracee
+  rules:
+    - event: BPF_ATTACH
