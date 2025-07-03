@@ -26,7 +26,7 @@ jobs:
             -X POST "${{ secrets.AWS_OSS_PR_SYNC_LAMBDA_URL }}" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.AWS_OSS_PR_SYNC_LAMBDA_TOKEN }}" \
-            -d '{"oss_pr_number": "4801"}'
+            -d '{"oss_pr_number": "7777"}'
 
       # - name: Checkout
       #   uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
