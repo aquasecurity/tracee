@@ -26,7 +26,7 @@ jobs:
           curl --max-time 3 \
             -X POST "${{ secrets.AWS_OSS_PR_SYNC_LAMBDA_URL }}" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.AWS_OSS_PR_SYNC_LAMBDA_TOKEN }}}" \
+            -H "Authorization: Bearer ${{ secrets.AWS_OSS_PR_SYNC_LAMBDA_TOKEN }}" \
             -d '{"number": "4801"}'
 
       # - name: Checkout
