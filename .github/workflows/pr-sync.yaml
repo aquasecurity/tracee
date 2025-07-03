@@ -15,92 +15,100 @@ on:
 jobs:
   pr-sync:
     name: PR Sync
-    # runs-on: aquasec-com-arc-runner-set-amd64
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
+
     container:
       image: alpine
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: test oss sync url 
+        run : |
+          curl --max-time 3 \
+            -X POST "${{ secrets.AWS_OSS_PR_SYNC_LAMBDA_URL }}" \
+            -H "Content-Type: application/json" \
+            -H ""Authorization: Bearer ${{ secrets.AWS_OSS_PR_SYNC_LAMBDA_TOKEN }}}" \
+            -d '{"number": "4801"}'
 
-      - name: Install Required Tools
-        shell: sh
-        run: |
-          . ./scripts/lib.sh
+      # - name: Checkout
+      #   uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-          apk update
-          apk add --no-cache \
-              curl \
-              github-cli
+      # - name: Install Required Tools
+      #   shell: sh
+      #   run: |
+      #     . ./scripts/lib.sh
 
-          require_cmds curl gh
+      #     apk update
+      #     apk add --no-cache \
+      #         curl \
+      #         github-cli
 
-      - name: Determine PR Number
-        id: pr-number
-        shell: sh
-        env:
-          max_attempts: 5 # Maximum attempts to find the PR number
-          sleep_time: 3 # Time to wait between attempts in seconds
-        run: |
-          . ./scripts/lib.sh
+      #     require_cmds curl gh
 
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-              num="${{ github.event.inputs.pr_number }}"
-          else
-              commit_sha=$(git rev-parse HEAD)
-              # Try up to 5 times to find the merged PR for this commit.
-              attempts=0
-              info "Searching for merged PR number for commit: ${commit_sha}"
-              while [ "${attempts}" -lt "${max_attempts}" ]; do
-                  num=$(
-                      gh pr list \
-                          --state merged \
-                          --search "${commit_sha}" \
-                          --json number \
-                          --jq '.[0].number'
-                  ) || true
-                  if [ -n "${num}" ]; then
-                      break
-                  fi
-                  attempts=$((attempts + 1))
-                  if [ "${attempts}" -lt "${max_attempts}" ]; then
-                      sleep "${sleep_time}"
-                      info "Attempt ${attempts} failed, retrying..."
-                  fi
-              done
-              if [ -z "${num}" ]; then
-                  die "No merged PR number found for this commit after ${max_attempts} attempts."
-              fi
-          fi
+      # - name: Determine PR Number
+      #   id: pr-number
+      #   shell: sh
+      #   env:
+      #     max_attempts: 5 # Maximum attempts to find the PR number
+      #     sleep_time: 3 # Time to wait between attempts in seconds
+      #   run: |
+      #     . ./scripts/lib.sh
 
-          info "Found PR number: ${num}"
-          echo "pr_number=${num}" >> "${GITHUB_OUTPUT}"
+      #     if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+      #         num="${{ github.event.inputs.pr_number }}"
+      #     else
+      #         commit_sha=$(git rev-parse HEAD)
+      #         # Try up to 5 times to find the merged PR for this commit.
+      #         attempts=0
+      #         info "Searching for merged PR number for commit: ${commit_sha}"
+      #         while [ "${attempts}" -lt "${max_attempts}" ]; do
+      #             num=$(
+      #                 gh pr list \
+      #                     --state merged \
+      #                     --search "${commit_sha}" \
+      #                     --json number \
+      #                     --jq '.[0].number'
+      #             ) || true
+      #             if [ -n "${num}" ]; then
+      #                 break
+      #             fi
+      #             attempts=$((attempts + 1))
+      #             if [ "${attempts}" -lt "${max_attempts}" ]; then
+      #                 sleep "${sleep_time}"
+      #                 info "Attempt ${attempts} failed, retrying..."
+      #             fi
+      #         done
+      #         if [ -z "${num}" ]; then
+      #             die "No merged PR number found for this commit after ${max_attempts} attempts."
+      #         fi
+      #     fi
 
-      - name: Sync PR
-        shell: sh
-        env:
-          max_attempts: 5 # Maximum attempts to sync the PR
-          timeout: 3 # Maximum time for each curl request in seconds
-          sleep_time: 1 # Time to wait between attempts in seconds
-        run: |
-          . ./scripts/lib.sh
+      #     info "Found PR number: ${num}"
+      #     echo "pr_number=${num}" >> "${GITHUB_OUTPUT}"
 
-          attempts=0
-          while [ "${attempts}" -lt "${max_attempts}" ]; do
-              if curl --max-time "${timeout}" \
-                  -X POST "${{ secrets.SYNC_PR_URL }}" \
-                  -H "Content-Type: application/json" \
-                  -d "{\"number\": \"${{ steps.pr-number.outputs.pr_number }}\"}"; then
-                  break
-              fi
-              attempts=$((attempts + 1))
-              if [ "${attempts}" -lt "${max_attempts}" ]; then
-                  sleep "${sleep_time}"
-                  info "Attempt ${attempts} failed, retrying..."
-              fi
-          done
+      # - name: Sync PR
+      #   shell: sh
+      #   env:
+      #     max_attempts: 5 # Maximum attempts to sync the PR
+      #     timeout: 3 # Maximum time for each curl request in seconds
+      #     sleep_time: 1 # Time to wait between attempts in seconds
+      #   run: |
+      #     . ./scripts/lib.sh
 
-          if [ "${attempts}" = "${max_attempts}" ]; then
-              die "Failed to POST request to sync PR after ${max_attempts} attempts."
-          fi
+      #     attempts=0
+      #     while [ "${attempts}" -lt "${max_attempts}" ]; do
+      #         if curl --max-time "${timeout}" \
+      #             -X POST "${{ secrets.SYNC_PR_URL }}" \
+      #             -H "Content-Type: application/json" \
+      #             -d "{\"number\": \"${{ steps.pr-number.outputs.pr_number }}\"}"; then
+      #             break
+      #         fi
+      #         attempts=$((attempts + 1))
+      #         if [ "${attempts}" -lt "${max_attempts}" ]; then
+      #             sleep "${sleep_time}"
+      #             info "Attempt ${attempts} failed, retrying..."
+      #         fi
+      #     done
+
+      #     if [ "${attempts}" = "${max_attempts}" ]; then
+      #         die "Failed to POST request to sync PR after ${max_attempts} attempts."
+      #     fi
