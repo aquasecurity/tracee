@@ -172,10 +172,11 @@ func initCmd() error {
 
 	// Buffer/Cache flags
 
+	defaultBufferPages := (4096 * 1024) / os.Getpagesize() // 4 MB of contiguous pages
 	rootCmd.Flags().IntP(
 		"perf-buffer-size",
 		"b",
-		1024, // 4 MB of contiguous pages
+		defaultBufferPages,
 		"<size>\t\t\t\tSize, in pages, of the internal perf ring buffer used to submit events from the kernel",
 	)
 	err = viper.BindPFlag("perf-buffer-size", rootCmd.Flags().Lookup("perf-buffer-size"))
@@ -185,7 +186,7 @@ func initCmd() error {
 
 	rootCmd.Flags().Int(
 		"blob-perf-buffer-size",
-		1024, // 4 MB of contiguous pages
+		defaultBufferPages,
 		"<size>\t\t\t\tSize, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 	)
 	err = viper.BindPFlag("blob-perf-buffer-size", rootCmd.Flags().Lookup("blob-perf-buffer-size"))
