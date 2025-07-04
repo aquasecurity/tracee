@@ -4,7 +4,8 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/utils/elf"
 )
 
 // NOTE: thread-safety guaranteed by the ProbeGroup big lock.
@@ -63,12 +64,25 @@ func (p *Uprobe) attach(module *bpf.Module, args ...interface{}) error {
 		return errfmt.WrapError(err)
 	}
 
-	offset, err := utils.SymbolToOffset(p.binaryPath, p.symbolName)
+	// Create ELF analyzer to get symbol offset
+	wantedSymbols := []elf.WantedSymbol{elf.NewPlainSymbolName(p.symbolName)}
+	ea, err := elf.NewElfAnalyzer(p.binaryPath, wantedSymbols)
+	if err != nil {
+		return errfmt.Errorf("error creating ELF analyzer for %s: %v", p.binaryPath, err)
+	}
+	defer func() {
+		if closeErr := ea.Close(); closeErr != nil {
+			// Log the error but don't override the main error
+			logger.Warnw("error closing file", "path", p.binaryPath, "error", closeErr)
+		}
+	}()
+
+	offset, err := ea.GetSymbolOffset(p.symbolName)
 	if err != nil {
 		return errfmt.Errorf("error finding %s function offset: %v", p.symbolName, err)
 	}
 
-	link, err = prog.AttachUprobe(-1, p.binaryPath, offset)
+	link, err = prog.AttachUprobe(-1, p.binaryPath, uint32(offset))
 	if err != nil {
 		return errfmt.Errorf("error attaching uprobe on %s: %v", p.symbolName, err)
 	}
