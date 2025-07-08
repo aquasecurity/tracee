@@ -355,7 +355,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				return nil
 			}
 
-			tc.config.Signatures = sigs
+			tc.config.AvailableSignatures = sigs
+			tc.config.SelectedSignatures = sigs
 
 			e, err := NewEngine(tc.config, inputs, outputChan)
 			require.NoError(t, err, "constructing engine")
@@ -422,7 +423,7 @@ func TestEngine_GetSelectedEvents(t *testing.T) {
 		},
 	}
 
-	config := Config{Signatures: sigs}
+	config := Config{AvailableSignatures: sigs, SelectedSignatures: sigs}
 	e, err := NewEngine(config, EventSources{Tracee: make(chan protocol.Event)}, make(chan *detect.Finding))
 	require.NoError(t, err, "constructing engine")
 
