@@ -41,7 +41,8 @@ type Config struct {
 
 	// General engine configuration
 	SignatureBufferSize uint
-	Signatures          []detect.Signature
+	AvailableSignatures []detect.Signature // All available signatures found in signature directories
+	SelectedSignatures  []detect.Signature // Only signatures that should be loaded based on user policies/events
 	DataSources         []detect.DataSource
 }
 
@@ -116,7 +117,9 @@ func (engine *Engine) Init() error {
 		}
 	}
 
-	for _, sig := range engine.config.Signatures {
+	// Load only selected signatures instead of all available signatures
+	logger.Debugw("Loading signatures", "total_available", len(engine.config.AvailableSignatures), "selected_for_loading", len(engine.config.SelectedSignatures))
+	for _, sig := range engine.config.SelectedSignatures {
 		_, err := engine.loadSignature(sig)
 		if err != nil {
 			logger.Errorw("Loading signature: " + err.Error())
@@ -325,6 +328,9 @@ func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) 
 	go signatureStart(signature, engine.signatures[signature], &engine.waitGroup)
 	engine.signaturesMutex.RUnlock()
 
+	metadata, _ := signature.GetMetadata()
+	logger.Debugw("Signature loaded at runtime", "signature", metadata.Name, "event", metadata.EventName, "id", metadata.ID)
+
 	return id, nil
 }
 
@@ -414,6 +420,9 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 		}()
 		defer signature.Close()
 		defer close(c)
+
+		metadata, _ := signature.GetMetadata()
+		logger.Debugw("Signature unloaded at runtime", "signature", metadata.Name, "event", metadata.EventName, "id", metadata.ID)
 	}
 	// remove from engine.signaturesIndex map
 	for _, selectedEvent := range selectedEvents {

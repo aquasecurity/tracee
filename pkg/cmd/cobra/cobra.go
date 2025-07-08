@@ -22,7 +22,56 @@ import (
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
+	"github.com/aquasecurity/tracee/types/detect"
 )
+
+// selectSignaturesBasedOnPolicies determines which signatures should be loaded based on user policies
+func selectSignaturesBasedOnPolicies(availableSignatures []detect.Signature, policies []*policy.Policy) []detect.Signature {
+	// If no policies are configured, load no signatures
+	if len(policies) == 0 {
+		logger.Debugw("No policies configured, loading no signatures")
+		return []detect.Signature{}
+	}
+
+	// Create a set of all signature event names required by policies
+	requiredEventNames := make(map[string]struct{})
+	for _, p := range policies {
+		for eventID := range p.Rules {
+			eventDef := events.Core.GetDefinitionByID(eventID)
+			if eventDef.IsSignature() {
+				requiredEventNames[eventDef.GetName()] = struct{}{}
+			}
+		}
+	}
+
+	// If no signature events are required, don't load any signatures
+	if len(requiredEventNames) == 0 {
+		logger.Debugw("No signature events required by policies, loading no signatures")
+		return []detect.Signature{}
+	}
+
+	// Iterate through available signatures and select those whose EventName is required
+	selectedSignatures := []detect.Signature{}
+	for _, sig := range availableSignatures {
+		metadata, err := sig.GetMetadata()
+		if err != nil {
+			logger.Errorw("Failed to get signature metadata", "error", err)
+			continue
+		}
+
+		// Check if this signature's EventName is required by any policy
+		if _, required := requiredEventNames[metadata.EventName]; required {
+			selectedSignatures = append(selectedSignatures, sig)
+		}
+	}
+
+	logger.Debugw("Selected signatures based on policies",
+		"total_available", len(availableSignatures),
+		"selected", len(selectedSignatures),
+		"required_events", len(requiredEventNames))
+
+	return selectedSignatures
+}
 
 func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	var runner cmd.Runner
@@ -314,9 +363,10 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	runner.InstallPath = traceeInstallPath
 
 	runner.TraceeConfig.EngineConfig = engine.Config{
-		Mode:             engine.ModeSingleBinary,
-		SigNameToEventID: sigNameToEventId,
-		Signatures:       signatures,
+		Mode:                engine.ModeSingleBinary,
+		SigNameToEventID:    sigNameToEventId,
+		AvailableSignatures: signatures,
+		SelectedSignatures:  selectSignaturesBasedOnPolicies(signatures, initialPolicies),
 		// This used to be a flag, we have removed the flag from this binary to test
 		// if users do use it or not.
 		SignatureBufferSize: 200,

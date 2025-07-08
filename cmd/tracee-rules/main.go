@@ -131,7 +131,8 @@ func main() {
 
 			config := engine.Config{
 				SignatureBufferSize: c.Uint(signatureBufferFlag),
-				Signatures:          sigs,
+				AvailableSignatures: sigs,
+				SelectedSignatures:  sigs, // In tracee-rules, load all signatures
 				DataSources:         []detect.DataSource{},
 			}
 			e, err := engine.NewEngine(config, inputs, output)
