@@ -125,8 +125,8 @@ static __inline int strncmp(char *str1, char *str2, int n)
         ({                                                                                         \
             asm volatile("if %[size] <= %[max_size] goto +1;\n"                                    \
                          "%[size] = %[max_size];\n"                                                \
-                         :                                                                         \
-                         : [size] "r"(__var), [max_size] "r"(__max_const));                        \
+                         : [size] "+r"(__var)                                                      \
+                         : [max_size] "r"(__max_const));                                           \
         })
 #endif
 
