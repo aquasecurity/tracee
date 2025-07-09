@@ -360,9 +360,9 @@ statfunc int save_str_arr_to_buf(args_buffer_t *buf, const char __user *const __
     }
     // handle truncated argument list
     char ellipsis[] = "...";
-    if (buf->offset > ARGS_BUF_SIZE - MAX_STRING_SIZE - sizeof(int))
-        // not enough space - return
-        goto out;
+
+    // Clamp buffer offset to prevent overflow
+    update_min(buf->offset, ARGS_BUF_SIZE - MAX_STRING_SIZE - sizeof(int));
 
     // Read into buffer
     int sz = bpf_probe_read_str(&(buf->args[buf->offset + sizeof(int)]), MAX_STRING_SIZE, ellipsis);
