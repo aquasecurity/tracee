@@ -345,14 +345,19 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 	if err != nil {
 		return "", fmt.Errorf("error getting selected events for signature %s: %w", metadata.Name, err)
 	}
-	// insert in engine.signatures map
+
+	// Check if signature with this ID already exists
 	engine.signaturesMutex.RLock()
-	if engine.signatures[signature] != nil {
-		engine.signaturesMutex.RUnlock()
-		// signature already exists
-		return "", fmt.Errorf("failed to store signature: signature \"%s\" already loaded", metadata.Name)
+	for existingSig := range engine.signatures {
+		existingMetadata, _ := existingSig.GetMetadata()
+		if existingMetadata.ID == metadata.ID {
+			engine.signaturesMutex.RUnlock()
+			// signature already exists
+			return "", fmt.Errorf("failed to store signature: signature \"%s\" already loaded", metadata.Name)
+		}
 	}
 	engine.signaturesMutex.RUnlock()
+
 	signatureCtx := detect.SignatureContext{
 		Callback: engine.matchHandler,
 		Logger:   logger.Current(),
