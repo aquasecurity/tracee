@@ -1932,6 +1932,32 @@ func (t *Tracee) EnableEvent(eventName string) error {
 
 	t.policyManager.EnableEvent(id)
 
+	// If this is a signature event, also load the signature to start its goroutine
+	eventDef := events.Core.GetDefinitionByID(id)
+	if eventDef.IsSignature() {
+		// Find the corresponding signature in available signatures
+		if t.sigEngine != nil {
+			for _, sig := range t.config.EngineConfig.AvailableSignatures {
+				metadata, err := sig.GetMetadata()
+				if err != nil {
+					logger.Errorw("Failed to get signature metadata", "error", err)
+					continue
+				}
+
+				// Check if this signature matches the event name
+				if metadata.EventName == eventName {
+					_, err := t.sigEngine.LoadSignature(sig)
+					if err != nil {
+						logger.Errorw("Failed to load signature", "signature", metadata.Name, "error", err)
+						return errfmt.Errorf("failed to load signature %s: %v", metadata.Name, err)
+					}
+					logger.Debugw("Loaded signature", "signature", metadata.Name, "event", eventName)
+					break
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -1942,6 +1968,32 @@ func (t *Tracee) DisableEvent(eventName string) error {
 	}
 
 	t.policyManager.DisableEvent(id)
+
+	// If this is a signature event, also unload the signature to stop its goroutine
+	eventDef := events.Core.GetDefinitionByID(id)
+	if eventDef.IsSignature() {
+		// Find the corresponding signature in available signatures
+		if t.sigEngine != nil {
+			for _, sig := range t.config.EngineConfig.AvailableSignatures {
+				metadata, err := sig.GetMetadata()
+				if err != nil {
+					logger.Errorw("Failed to get signature metadata", "error", err)
+					continue
+				}
+
+				// Check if this signature matches the event name
+				if metadata.EventName == eventName {
+					err := t.sigEngine.UnloadSignature(metadata.ID)
+					if err != nil {
+						logger.Errorw("Failed to unload signature", "signature", metadata.Name, "error", err)
+						return errfmt.Errorf("failed to unload signature %s: %v", metadata.Name, err)
+					}
+					logger.Debugw("Unloaded signature", "signature", metadata.Name, "event", eventName)
+					break
+				}
+			}
+		}
+	}
 
 	return nil
 }
