@@ -393,6 +393,12 @@ func TestEngine_GetSelectedEvents(t *testing.T) {
 
 	sigs := []detect.Signature{
 		&signature.FakeSignature{
+			FakeGetMetadata: func() (detect.SignatureMetadata, error) {
+				return detect.SignatureMetadata{
+					ID:   "TRC-FAKE-1",
+					Name: "Fake Signature 1",
+				}, nil
+			},
 			FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 				return []detect.SignatureEventSelector{
 					{
@@ -407,6 +413,12 @@ func TestEngine_GetSelectedEvents(t *testing.T) {
 			},
 		},
 		&signature.FakeSignature{
+			FakeGetMetadata: func() (detect.SignatureMetadata, error) {
+				return detect.SignatureMetadata{
+					ID:   "TRC-FAKE-2",
+					Name: "Fake Signature 2",
+				}, nil
+			},
 			FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 				return []detect.SignatureEventSelector{
 					{
@@ -465,8 +477,25 @@ func TestEngine_LoadSignature(t *testing.T) {
 			expectedCount: 1,
 		},
 		{
-			name:          "load two signatures",
-			signatures:    []detect.Signature{&signature.FakeSignature{}, &signature.FakeSignature{}},
+			name: "load two signatures",
+			signatures: []detect.Signature{
+				&signature.FakeSignature{
+					FakeGetMetadata: func() (detect.SignatureMetadata, error) {
+						return detect.SignatureMetadata{
+							ID:   "TRC-FAKE-1",
+							Name: "Fake Signature 1",
+						}, nil
+					},
+				},
+				&signature.FakeSignature{
+					FakeGetMetadata: func() (detect.SignatureMetadata, error) {
+						return detect.SignatureMetadata{
+							ID:   "TRC-FAKE-2",
+							Name: "Fake Signature 2",
+						}, nil
+					},
+				},
+			},
 			expectedCount: 2,
 		},
 	}
@@ -495,4 +524,50 @@ func TestEngine_LoadSignature(t *testing.T) {
 			close(input)
 		})
 	}
+}
+
+func TestEngine_LoadSignature_DuplicateID(t *testing.T) {
+	t.Parallel()
+
+	input := make(chan protocol.Event)
+	source := EventSources{
+		Tracee: input,
+	}
+	output := make(chan *detect.Finding)
+	engine, err := NewEngine(Config{}, source, output)
+	require.NoError(t, err)
+
+	// Create two different signature objects with the same ID
+	sig1 := &signature.FakeSignature{
+		FakeGetMetadata: func() (detect.SignatureMetadata, error) {
+			return detect.SignatureMetadata{
+				ID:   "TRC-DUPLICATE",
+				Name: "Duplicate Signature 1",
+			}, nil
+		},
+	}
+
+	sig2 := &signature.FakeSignature{
+		FakeGetMetadata: func() (detect.SignatureMetadata, error) {
+			return detect.SignatureMetadata{
+				ID:   "TRC-DUPLICATE",
+				Name: "Duplicate Signature 2",
+			}, nil
+		},
+	}
+
+	// First signature should load successfully
+	id, err := engine.LoadSignature(sig1)
+	assert.NoError(t, err)
+	assert.Equal(t, "TRC-DUPLICATE", id)
+	assert.Equal(t, 1, int(engine.Stats().Signatures.Get()))
+
+	// Second signature with same ID should be rejected
+	id, err = engine.LoadSignature(sig2)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "already loaded")
+	assert.Equal(t, "", id)
+	assert.Equal(t, 1, int(engine.Stats().Signatures.Get())) // Count should not increase
+
+	close(input)
 }
