@@ -756,7 +756,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     return 0;
 }
 
-#define MAX_NUM_MODULES          420
+#define MAX_NUM_MODULES          330
 #define MAX_MODULES_MAP_ENTRIES  2 * MAX_NUM_MODULES
 #define MOD_TREE_LOOP_ITERATIONS 240
 #define MOD_TREE_LOOP_DEPTH      14
