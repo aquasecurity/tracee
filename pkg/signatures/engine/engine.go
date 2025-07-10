@@ -186,48 +186,29 @@ func (engine *Engine) processEvent(event protocol.Event) {
 	engine.signaturesMutex.RLock()
 	defer engine.signaturesMutex.RUnlock()
 
-	signatureSelector := detect.SignatureEventSelector{
-		Source: event.Headers.Selector.Source,
-		Name:   event.Headers.Selector.Name,
-		Origin: event.Headers.Selector.Origin,
-	}
 	_ = engine.stats.Events.Increment()
 
-	// Check the selector for every case and partial case
+	// Pre-compute all selector patterns to avoid repeated struct creation
+	sourceSelector := event.Headers.Selector.Source
+	nameSelector := event.Headers.Selector.Name
+	originSelector := event.Headers.Selector.Origin
 
-	// Match full selector
-	for _, s := range engine.signaturesIndex[signatureSelector] {
-		engine.dispatchEvent(s, event)
-	}
-
-	// Match partial selector, select for all origins
-	partialSigEvtSelector := detect.SignatureEventSelector{
-		Source: signatureSelector.Source,
-		Name:   signatureSelector.Name,
-		Origin: ALL_EVENT_ORIGINS,
-	}
-	for _, s := range engine.signaturesIndex[partialSigEvtSelector] {
-		engine.dispatchEvent(s, event)
-	}
-
-	// Match partial selector, select for event names
-	partialSigEvtSelector = detect.SignatureEventSelector{
-		Source: signatureSelector.Source,
-		Name:   ALL_EVENT_TYPES,
-		Origin: signatureSelector.Origin,
-	}
-	for _, s := range engine.signaturesIndex[partialSigEvtSelector] {
-		engine.dispatchEvent(s, event)
+	selectors := [4]detect.SignatureEventSelector{
+		// Full selector
+		{Source: sourceSelector, Name: nameSelector, Origin: originSelector},
+		// Partial selector, select for all origins
+		{Source: sourceSelector, Name: nameSelector, Origin: ALL_EVENT_ORIGINS},
+		// Partial selector, select for event names
+		{Source: sourceSelector, Name: ALL_EVENT_TYPES, Origin: originSelector},
+		// Partial selector, select for all origins and event names
+		{Source: sourceSelector, Name: ALL_EVENT_TYPES, Origin: ALL_EVENT_ORIGINS},
 	}
 
-	// Match partial selector, select for all origins and event names
-	partialSigEvtSelector = detect.SignatureEventSelector{
-		Source: signatureSelector.Source,
-		Name:   ALL_EVENT_TYPES,
-		Origin: ALL_EVENT_ORIGINS,
-	}
-	for _, s := range engine.signaturesIndex[partialSigEvtSelector] {
-		engine.dispatchEvent(s, event)
+	// Single loop through all selector patterns
+	for i := range selectors {
+		for _, s := range engine.signaturesIndex[selectors[i]] {
+			engine.dispatchEvent(s, event)
+		}
 	}
 }
 
