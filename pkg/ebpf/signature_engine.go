@@ -64,6 +64,13 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		defer close(engineInput)
 		defer close(engineOutput)
 
+		// Cache events to submit for better performance
+		// This map is created once and reused for all events
+		submittableEvents := make(map[events.ID]bool)
+		for _, eventID := range t.policyManager.EventsToSubmit() {
+			submittableEvents[eventID] = true
+		}
+
 		// feedEngine feeds an event to the rules engine
 		feedEngine := func(event *trace.Event) {
 			if event == nil {
@@ -72,8 +79,8 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 			id := events.ID(event.EventID)
 
-			// if the event is NOT marked as submit, it is not sent to the rules engine
-			if !t.policyManager.IsEventToSubmit(id) {
+			// Fast lookup in cached map instead of policy manager call
+			if !submittableEvents[id] {
 				return
 			}
 
