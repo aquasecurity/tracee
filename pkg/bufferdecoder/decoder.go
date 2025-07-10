@@ -478,3 +478,10 @@ func (decoder *EbpfDecoder) DecodeMprotectWriteMeta(mprotectWriteMeta *MprotectW
 	decoder.cursor += int(mprotectWriteMeta.GetSizeBytes())
 	return nil
 }
+
+// SetBuffer resets the decoder with a new buffer and resets the cursor to 0.
+// This allows reusing decoder instances from a pool.
+func (decoder *EbpfDecoder) SetBuffer(newBuffer []byte) {
+	decoder.buffer = newBuffer
+	decoder.cursor = 0
+}
