@@ -170,6 +170,20 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
+	rootCmd.Flags().Bool(
+		"no-signatures",
+		false,
+		"\t\t\t\t\tDisable signature processing while keeping the same events loaded (for performance testing)",
+	)
+	err = viper.BindPFlag("no-signatures", rootCmd.Flags().Lookup("no-signatures"))
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	err = rootCmd.Flags().MarkHidden("no-signatures")
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	// Buffer/Cache flags
 
 	defaultBufferPages := (4096 * 1024) / os.Getpagesize() // 4 MB of contiguous pages
