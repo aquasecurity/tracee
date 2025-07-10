@@ -169,25 +169,44 @@ func (t *Tracee) queueEvents(ctx context.Context, in <-chan *trace.Event) (chan 
 func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event, t.config.PipelineChannelSize)
 	errc := make(chan error, 1)
+
+	// Create local decoder pool for this pipeline stage
+	decoderPool := &sync.Pool{
+		New: func() interface{} {
+			return bufferdecoder.New(nil, t.dataTypeDecoder)
+		},
+	}
+
 	go func() {
 		defer close(out)
 		defer close(errc)
 		for dataRaw := range sourceChan {
-			ebpfMsgDecoder := bufferdecoder.New(dataRaw, t.dataTypeDecoder)
+			// Get decoder from local pool and reset it with the provided buffer
+			decoderValue := decoderPool.Get()
+			ebpfMsgDecoder, ok := decoderValue.(*bufferdecoder.EbpfDecoder)
+			if !ok {
+				t.handleError(errfmt.Errorf("failed to get decoder from pool: unexpected type %T", decoderValue))
+				continue
+			}
+			ebpfMsgDecoder.SetBuffer(dataRaw)
+
 			var eCtx bufferdecoder.EventContext
 			if err := ebpfMsgDecoder.DecodeContext(&eCtx); err != nil {
 				t.handleError(err)
+				decoderPool.Put(ebpfMsgDecoder)
 				continue
 			}
 			var argnum uint8
 			if err := ebpfMsgDecoder.DecodeUint8(&argnum); err != nil {
 				t.handleError(err)
+				decoderPool.Put(ebpfMsgDecoder)
 				continue
 			}
 			eventId := events.ID(eCtx.EventID)
 			eventDefinition := events.Core.GetDefinitionByID(eventId)
 			if eventDefinition.NotValid() {
 				t.handleError(errfmt.Errorf("failed to get configuration of event %d", eventId))
+				decoderPool.Put(ebpfMsgDecoder)
 				continue
 			}
 
@@ -197,6 +216,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), evtFields, evtName, eventId)
 			if err != nil {
 				t.handleError(err)
+				decoderPool.Put(ebpfMsgDecoder)
 				continue
 			}
 
@@ -253,6 +273,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt, ok := t.eventsPool.Get().(*trace.Event)
 			if !ok {
 				t.handleError(errfmt.Errorf("failed to get event from pool"))
+				decoderPool.Put(ebpfMsgDecoder)
 				continue
 			}
 
@@ -311,6 +332,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				if !hasDerivation && !reqBySig {
 					_ = t.stats.EventsFiltered.Increment()
 					t.eventsPool.Put(evt)
+					decoderPool.Put(ebpfMsgDecoder)
 					continue
 				}
 			}
@@ -318,8 +340,12 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			select {
 			case out <- evt:
 			case <-ctx.Done():
+				decoderPool.Put(ebpfMsgDecoder)
 				return
 			}
+
+			// Return decoder to pool for reuse
+			decoderPool.Put(ebpfMsgDecoder)
 		}
 	}()
 	return out, errc
