@@ -40,6 +40,7 @@ type Config struct {
 	ShouldDispatchEvent func(eventIdInt32 int32) bool
 
 	// General engine configuration
+	NoSignatures        bool // Skip signature processing while keeping events loaded (for performance testing)
 	SignatureBufferSize uint
 	AvailableSignatures []detect.Signature // All available signatures found in signature directories
 	SelectedSignatures  []detect.Signature // Only signatures that should be loaded based on user policies/events
@@ -96,8 +97,11 @@ func NewEngine(config Config, sources EventSources, output chan *detect.Finding)
 }
 
 // signatureStart is the signature handling business logics.
-func signatureStart(signature detect.Signature, c chan protocol.Event, wg *sync.WaitGroup) {
+func signatureStart(signature detect.Signature, c chan protocol.Event, wg *sync.WaitGroup, noSignatures bool) {
 	for e := range c {
+		if noSignatures {
+			continue // Just drain the channel without processing
+		}
 		if err := signature.OnEvent(e); err != nil {
 			meta, _ := signature.GetMetadata()
 			logger.Errorw("Handling event by signature " + meta.Name + ": " + err.Error())
@@ -138,7 +142,7 @@ func (engine *Engine) Start(ctx context.Context) {
 	engine.signaturesMutex.RLock()
 	for s, c := range engine.signatures {
 		engine.waitGroup.Add(1)
-		go signatureStart(s, c, &engine.waitGroup)
+		go signatureStart(s, c, &engine.waitGroup, engine.config.NoSignatures)
 	}
 	engine.signaturesMutex.RUnlock()
 	engine.consumeSources(ctx)
@@ -245,21 +249,24 @@ func (engine *Engine) consumeSources(ctx context.Context) {
 		select {
 		case event, ok := <-engine.inputs.Tracee:
 			if !ok {
-				engine.signaturesMutex.RLock()
-				for sig := range engine.signatures {
-					se, err := sig.GetSelectedEvents()
-					if err != nil {
-						logger.Errorw("Getting selected events: " + err.Error())
-						continue
-					}
-					for _, sel := range se {
-						if sel.Source == "tracee" {
-							_ = sig.OnSignal(detect.SignalSourceComplete("tracee"))
-							break
+				// Skip signature signals if NoSignatures is enabled (signatures not initialized)
+				if !engine.config.NoSignatures {
+					engine.signaturesMutex.RLock()
+					for sig := range engine.signatures {
+						se, err := sig.GetSelectedEvents()
+						if err != nil {
+							logger.Errorw("Getting selected events: " + err.Error())
+							continue
+						}
+						for _, sel := range se {
+							if sel.Source == "tracee" {
+								_ = sig.OnSignal(detect.SignalSourceComplete("tracee"))
+								break
+							}
 						}
 					}
+					engine.signaturesMutex.RUnlock()
 				}
-				engine.signaturesMutex.RUnlock()
 				engine.inputs.Tracee = nil
 				if engine.checkCompletion() {
 					close(engine.output)
@@ -325,7 +332,7 @@ func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) 
 	}
 	engine.signaturesMutex.RLock()
 	engine.waitGroup.Add(1)
-	go signatureStart(signature, engine.signatures[signature], &engine.waitGroup)
+	go signatureStart(signature, engine.signatures[signature], &engine.waitGroup, engine.config.NoSignatures)
 	engine.signaturesMutex.RUnlock()
 
 	metadata, _ := signature.GetMetadata()
@@ -365,10 +372,15 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 			return engine.GetDataSource(namespace, id)
 		},
 	}
-	if err := signature.Init(signatureCtx); err != nil {
-		// failed to initialize
-		return "", fmt.Errorf("error initializing signature %s: %w", metadata.Name, err)
+
+	// Skip signature initialization if NoSignatures is enabled
+	if !engine.config.NoSignatures {
+		if err := signature.Init(signatureCtx); err != nil {
+			// failed to initialize
+			return "", fmt.Errorf("error initializing signature %s: %w", metadata.Name, err)
+		}
 	}
+
 	c := make(chan protocol.Event, engine.config.SignatureBufferSize)
 	engine.signaturesMutex.Lock()
 	engine.signatures[signature] = c

@@ -362,8 +362,14 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	runner.Printer = p
 	runner.InstallPath = traceeInstallPath
 
+	noSignaturesMode := viper.GetBool("no-signatures")
+	if noSignaturesMode {
+		logger.Debugw("No-signatures mode enabled, using same signature selection as normal mode for fair comparison")
+	}
+
 	runner.TraceeConfig.EngineConfig = engine.Config{
 		Mode:                engine.ModeSingleBinary,
+		NoSignatures:        noSignaturesMode,
 		SigNameToEventID:    sigNameToEventId,
 		AvailableSignatures: signatures,
 		SelectedSignatures:  selectSignaturesBasedOnPolicies(signatures, initialPolicies),
