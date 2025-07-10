@@ -358,6 +358,11 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		return bitmap
 	}
 
+	// Cache frequently accessed event fields
+	eventUID := uint32(event.UserID)
+	eventPID := uint32(event.HostProcessID)
+	eventRetVal := int64(event.ReturnValue)
+
 	// range through each userland filterable policy
 	for it := t.policyManager.CreateUserlandIterator(); it.HasNext(); {
 		p := it.Next()
@@ -372,75 +377,56 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		// event ID. This happens whenever the event submitted by the kernel is going to
 		// derive an event that this policy is interested in. In this case, don't do
 		// anything and let the derivation stage handle this event.
-		_, ok := p.Rules[eventID]
+		rule, ok := p.Rules[eventID]
 		if !ok {
 			continue
 		}
 
 		//
-		// Do the userland filtering
+		// Do the userland filtering - ordered by efficiency (cheapest first)
 		//
 
-		// 1. event scope filters
-		if !p.Rules[eventID].ScopeFilter.Filter(*event) {
-			utils.ClearBit(&bitmap, bitOffset)
-			continue
-		}
-
-		// 2. event return value filters
-		if !p.Rules[eventID].RetFilter.Filter(int64(event.ReturnValue)) {
-			utils.ClearBit(&bitmap, bitOffset)
-			continue
-		}
-
-		// 3. event data filters
-		// TODO: remove PrintMemDump check once events params are introduced
-		//       i.e. print_mem_dump.params.symbol_name=system:security_file_open
-		// events.PrintMemDump bypass was added due to issue #2546
-		// because it uses usermode applied filters as parameters for the event,
-		// which occurs after filtering
-		if eventID != events.PrintMemDump && !p.Rules[eventID].DataFilter.Filter(event.Args) {
-			utils.ClearBit(&bitmap, bitOffset)
-			continue
-		}
-
-		//
-		// Do the userland filtering for filters with global ranges
-		//
-
+		// 1. UID/PID range checks (very fast)
 		if p.UIDFilter.Enabled() {
-			//
-			// An event with a matched policy for global min/max range might not match all
-			// policies with UID and PID filters with different min/max ranges, e.g.:
-			//
-			//   policy 59: comm=who, pid>100 and pid<1257738
-			//   policy 30: comm=who, pid>502000 and pid<505000
-			//
-			// For kernel filtering, the flags from the example would compute:
-			//
-			// pid_max = 1257738
-			// pid_min = 100
-			//
-			// Userland filtering needs to refine the bitmap to match the policies: A
-			// "who" command with pid 150 is a match ONLY for the policy 59 in this
-			// example.
-			//
-			// Clear the policy bit if the event UID is not in THIS policy UID min/max range:
-			if !p.UIDFilter.InMinMaxRange(uint32(event.UserID)) {
+			if !p.UIDFilter.InMinMaxRange(eventUID) {
 				utils.ClearBit(&bitmap, bitOffset)
 				continue
 			}
 		}
 
 		if p.PIDFilter.Enabled() {
-			//
-			// The same happens for the global PID min/max range. Clear the policy bit if
-			// the event PID is not in THIS policy PID min/max range.
-			//
-			if !p.PIDFilter.InMinMaxRange(uint32(event.HostProcessID)) {
+			if !p.PIDFilter.InMinMaxRange(eventPID) {
 				utils.ClearBit(&bitmap, bitOffset)
 				continue
 			}
+		}
+
+		// 2. event return value filters (fast)
+		if !rule.RetFilter.Filter(eventRetVal) {
+			utils.ClearBit(&bitmap, bitOffset)
+			continue
+		}
+
+		// 3. event scope filters (medium cost)
+		if !rule.ScopeFilter.Filter(*event) {
+			utils.ClearBit(&bitmap, bitOffset)
+			continue
+		}
+
+		// 4. event data filters (potentially expensive)
+		// TODO: remove PrintMemDump check once events params are introduced
+		//       i.e. print_mem_dump.params.symbol_name=system:security_file_open
+		// events.PrintMemDump bypass was added due to issue #2546
+		// because it uses usermode applied filters as parameters for the event,
+		// which occurs after filtering
+		if eventID != events.PrintMemDump && !rule.DataFilter.Filter(event.Args) {
+			utils.ClearBit(&bitmap, bitOffset)
+			continue
+		}
+
+		// Early exit optimization: if bitmap becomes 0, no need to continue
+		if bitmap == 0 {
+			break
 		}
 	}
 
