@@ -230,8 +230,11 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				PodUID:       containerInfo.Pod.UID,
 			}
 
-			commStr := string(utils.TrimTrailingNUL(eCtx.Comm[:]))       // clean potential trailing null
-			utsNameStr := string(utils.TrimTrailingNUL(eCtx.UtsName[:])) // clean potential trailing null
+			commBytes := utils.TrimTrailingNUL(eCtx.Comm[:])
+			utsNameBytes := utils.TrimTrailingNUL(eCtx.UtsName[:])
+
+			commStr := string(commBytes)
+			utsNameStr := string(utsNameBytes)
 
 			flags := parseContextFlags(containerData.ID, eCtx.Flags)
 
