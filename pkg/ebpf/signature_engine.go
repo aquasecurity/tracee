@@ -2,7 +2,6 @@ package ebpf
 
 import (
 	"context"
-	"slices"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
@@ -90,9 +89,14 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 			eventCopy := *event
 
 			if t.config.Output.ParseArguments {
-				// shallow clone the event arguments before parsing them (new slice is created),
-				// to keep the eventCopy with raw arguments.
-				eventCopy.Args = slices.Clone(event.Args)
+				// Optimize argument cloning by pre-allocating exact capacity
+				// instead of using slices.Clone which may over-allocate
+				if len(event.Args) > 0 {
+					eventCopy.Args = make([]trace.Argument, len(event.Args))
+					copy(eventCopy.Args, event.Args)
+				} else {
+					eventCopy.Args = nil
+				}
 
 				err := t.parseArguments(event)
 				if err != nil {
