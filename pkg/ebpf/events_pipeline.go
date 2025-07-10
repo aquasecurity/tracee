@@ -218,17 +218,6 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			}
 
 			_, containerInfo := t.containers.GetCgroupInfo(eCtx.CgroupID)
-			containerData := trace.Container{
-				ID:          containerInfo.ContainerId,
-				ImageName:   containerInfo.Image,
-				ImageDigest: containerInfo.ImageDigest,
-				Name:        containerInfo.Name,
-			}
-			kubernetesData := trace.Kubernetes{
-				PodName:      containerInfo.Pod.Name,
-				PodNamespace: containerInfo.Pod.Namespace,
-				PodUID:       containerInfo.Pod.UID,
-			}
 
 			commBytes := utils.TrimTrailingNUL(eCtx.Comm[:])
 			utsNameBytes := utils.TrimTrailingNUL(eCtx.UtsName[:])
@@ -236,7 +225,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			commStr := string(commBytes)
 			utsNameStr := string(utsNameBytes)
 
-			flags := parseContextFlags(containerData.ID, eCtx.Flags)
+			flags := parseContextFlags(containerInfo.ContainerId, eCtx.Flags)
 
 			// Optimize syscall lookup - reuse eventDefinition if possible
 			syscall := ""
@@ -288,9 +277,18 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.ProcessName = commStr
 			evt.HostName = utsNameStr
 			evt.CgroupID = uint(eCtx.CgroupID)
-			evt.ContainerID = containerData.ID
-			evt.Container = containerData
-			evt.Kubernetes = kubernetesData
+			evt.ContainerID = containerInfo.ContainerId
+			evt.Container = trace.Container{
+				ID:          containerInfo.ContainerId,
+				ImageName:   containerInfo.Image,
+				ImageDigest: containerInfo.ImageDigest,
+				Name:        containerInfo.Name,
+			}
+			evt.Kubernetes = trace.Kubernetes{
+				PodName:      containerInfo.Pod.Name,
+				PodNamespace: containerInfo.Pod.Namespace,
+				PodUID:       containerInfo.Pod.UID,
+			}
 			evt.EventID = int(eCtx.EventID)
 			evt.EventName = evtName
 			evt.PoliciesVersion = eCtx.PoliciesVersion
