@@ -638,6 +638,8 @@ GOSIGNATURES_SRC :=	$(shell find $(GOSIGNATURES_DIR) \
 			! -path '$(GOSIGNATURES_DIR)/examples/*' \
 			)
 
+GO_TAGS_SIGNATURES ?=
+
 .PHONY: signatures
 signatures: $(OUTPUT_DIR)/signatures
 
@@ -651,6 +653,7 @@ $(OUTPUT_DIR)/signatures: \
 	$(CMD_MKDIR) -p $@
 	$(GO_ENV_EBPF) $(CMD_GO) build \
 		--buildmode=plugin \
+		$(if $(GO_TAGS_SIGNATURES),-tags $(GO_TAGS_SIGNATURES),) \
 		-o $@/builtin.so \
 		$(GOSIGNATURES_SRC)
 
