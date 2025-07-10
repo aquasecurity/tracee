@@ -75,7 +75,8 @@ func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 				require.NoError(b, err, bc.name)
 
 				config := engine.Config{
-					Signatures: []detect.Signature{s},
+					AvailableSignatures: []detect.Signature{s},
+					SelectedSignatures:  []detect.Signature{s},
 				}
 
 				e, err := engine.NewEngine(config, inputs, output)
@@ -136,7 +137,8 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 					output := make(chan *detect.Finding, inputEventsCount*len(sigs))
 
 					config := engine.Config{
-						Signatures: sigs,
+						AvailableSignatures: sigs,
+						SelectedSignatures:  sigs,
 					}
 
 					e, err := engine.NewEngine(config, inputs, output)

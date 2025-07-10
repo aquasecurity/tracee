@@ -40,7 +40,8 @@ type Config struct {
 
 	// General engine configuration
 	SignatureBufferSize uint
-	Signatures          []detect.Signature
+	AvailableSignatures []detect.Signature // All available signatures found in signature directories
+	SelectedSignatures  []detect.Signature // Only signatures that should be loaded based on user policies/events
 	DataSources         []detect.DataSource
 }
 
@@ -115,7 +116,9 @@ func (engine *Engine) Init() error {
 		}
 	}
 
-	for _, sig := range engine.config.Signatures {
+	// Load only selected signatures instead of all available signatures
+	logger.Debugw("Loading signatures", "total_available", len(engine.config.AvailableSignatures), "selected_for_loading", len(engine.config.SelectedSignatures))
+	for _, sig := range engine.config.SelectedSignatures {
 		_, err := engine.loadSignature(sig)
 		if err != nil {
 			logger.Errorw("Loading signature: " + err.Error())
@@ -324,6 +327,9 @@ func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) 
 	go signatureStart(signature, engine.signatures[signature], &engine.waitGroup)
 	engine.signaturesMutex.RUnlock()
 
+	metadata, _ := signature.GetMetadata()
+	logger.Debugw("Signature loaded at runtime", "signature", metadata.Name, "event", metadata.EventName, "id", metadata.ID)
+
 	return id, nil
 }
 
@@ -338,14 +344,19 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 	if err != nil {
 		return "", fmt.Errorf("error getting selected events for signature %s: %w", metadata.Name, err)
 	}
-	// insert in engine.signatures map
+
+	// Check if signature with this ID already exists
 	engine.signaturesMutex.RLock()
-	if engine.signatures[signature] != nil {
-		engine.signaturesMutex.RUnlock()
-		// signature already exists
-		return "", fmt.Errorf("failed to store signature: signature \"%s\" already loaded", metadata.Name)
+	for existingSig := range engine.signatures {
+		existingMetadata, _ := existingSig.GetMetadata()
+		if existingMetadata.ID == metadata.ID {
+			engine.signaturesMutex.RUnlock()
+			// signature already exists
+			return "", fmt.Errorf("failed to store signature: signature \"%s\" already loaded", metadata.Name)
+		}
 	}
 	engine.signaturesMutex.RUnlock()
+
 	signatureCtx := detect.SignatureContext{
 		Callback: engine.matchHandler,
 		Logger:   logger.Current(),
@@ -413,6 +424,9 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 		}()
 		defer signature.Close()
 		defer close(c)
+
+		metadata, _ := signature.GetMetadata()
+		logger.Debugw("Signature unloaded at runtime", "signature", metadata.Name, "event", metadata.EventName, "id", metadata.ID)
 	}
 	// remove from engine.signaturesIndex map
 	for _, selectedEvent := range selectedEvents {
