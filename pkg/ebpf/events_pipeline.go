@@ -215,6 +215,8 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			utsNameStr := string(utils.TrimTrailingNUL(eCtx.UtsName[:])) // clean potential trailing null
 
 			flags := parseContextFlags(containerData.ID, eCtx.Flags)
+
+			// Optimize syscall lookup - reuse eventDefinition if possible
 			syscall := ""
 			if eCtx.Syscall != noSyscall {
 				// The syscall ID returned from eBPF is actually the event ID representing that syscall.
@@ -222,16 +224,21 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				// For 32-bit (compat) processes, the syscall ID gets translated in eBPF to the event ID of its
 				// 64-bit counterpart, or if it's a 32-bit exclusive syscall, to the event ID corresponding to it.
 				id := events.ID(eCtx.Syscall)
-				syscallDef := events.Core.GetDefinitionByID(id)
-				if syscallDef.NotValid() {
-					logger.Debugw(
-						fmt.Sprintf("Event %s with an invalid syscall id %d", evtName, id),
-						"Comm", commStr,
-						"UtsName", utsNameStr,
-						"EventContext", eCtx,
-					)
+				if id == eventId {
+					// Reuse the already-fetched eventDefinition
+					syscall = evtName
+				} else {
+					syscallDef := events.Core.GetDefinitionByID(id)
+					if syscallDef.NotValid() {
+						logger.Debugw(
+							fmt.Sprintf("Event %s with an invalid syscall id %d", evtName, id),
+							"Comm", commStr,
+							"UtsName", utsNameStr,
+							"EventContext", eCtx,
+						)
+					}
+					syscall = syscallDef.GetName()
 				}
-				syscall = syscallDef.GetName()
 			}
 
 			// get an event pointer from the pool
