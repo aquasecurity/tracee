@@ -1,7 +1,6 @@
 package filehash
 
 import (
-	"bytes"
 	"encoding/hex"
 	"io"
 	"os"
@@ -28,23 +27,29 @@ func ComputeFileHashAtPath(path string) (string, error) {
 	return ComputeFileHash(f)
 }
 
-// Preallocate a copy buffer for use between hash computations.
-// This reduces allocations and garbage collection which would happen
-// from using io.Copy.
-var (
-	hashBuffer        = make([]byte, 1024*32)
-	hashBufferWrapper = bytes.NewBuffer(hashBuffer)
-	bufferMutex       = new(sync.Mutex) // add a mutex to prevent concurrent calls deleting the buffer
-)
+// Pool of copy buffers for use between hash computations.
+// This reduces allocations and eliminates lock contention that occurred
+// with the previous shared buffer approach.
+var hashBufferPool = sync.Pool{
+	New: func() interface{} {
+		buf := make([]byte, 1024*32)
+		return &buf
+	},
+}
 
 // ComputeFileHashAtPath attempts to calculate the sha256 hash of a file
 // (the file must already be opened).
 func ComputeFileHash(file *os.File) (string, error) {
-	bufferMutex.Lock()
-	defer bufferMutex.Unlock()
-	hashBufferWrapper.Reset()
+	// Get a buffer from the pool
+	bufValue := hashBufferPool.Get()
+	bufPtr, ok := bufValue.(*[]byte)
+	if !ok {
+		return "", errfmt.Errorf("failed to get buffer from pool: unexpected type %T", bufValue)
+	}
+	defer hashBufferPool.Put(bufPtr)
+
 	h := miniosha.New()
-	_, err := io.CopyBuffer(h, file, hashBuffer)
+	_, err := io.CopyBuffer(h, file, *bufPtr)
 	if err != nil {
 		return "", errfmt.WrapError(err)
 	}
