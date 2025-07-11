@@ -117,12 +117,14 @@ statfunc struct vm_area_struct *find_vma(void *ctx, struct task_struct *task, u6
         unsigned long vm_end = BPF_CORE_READ(tmp, vm_end);
 
         if (vm_end > addr) {
-            vma = tmp;
-            if (vm_start <= addr)
+            if (vm_start <= addr) {
+                vma = tmp;
                 break;
+            }
             rb_node = BPF_CORE_READ(rb_node, rb_left);
-        } else
+        } else {
             rb_node = BPF_CORE_READ(rb_node, rb_right);
+        }
     }
 
     return vma;

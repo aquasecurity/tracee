@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: security-inode-rename-test
+  annotations:
+    description: test tracee's security inode rename events
+spec:
+  scope: 
+    - comm=echo,mv
+  rules:
+    - event: SECURITY_INODE_RENAME
