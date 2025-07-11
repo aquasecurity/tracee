@@ -105,6 +105,13 @@ struct inode___older_v611 {
     struct timespec64 __i_ctime;
 };
 
+// struct fred_info //
+
+// CONFIG_X86_FRED
+struct fred_info___check {
+    unsigned long edata;
+};
+
 ///////////////////
 
 #pragma clang attribute pop
