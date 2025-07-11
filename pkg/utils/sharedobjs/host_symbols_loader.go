@@ -16,7 +16,7 @@ import (
 // The logic of the loader here is used on absolute paths, so container relative paths won't work here.
 // This object operation requires the CAP_DAC_OVERRIDE to access files across the system.
 type HostSymbolsLoader struct {
-	loadingFunc func(path string) (*DynamicSymbols, error)
+	loadingFunc func(path string) (*Symbols, error)
 	soCache     soDynamicSymbolsCache
 }
 
@@ -66,7 +66,15 @@ func (soLoader *HostSymbolsLoader) GetImportedSymbols(soInfo ObjInfo) (map[strin
 	return syms.Imported, nil
 }
 
-func (soLoader *HostSymbolsLoader) loadSOSymbols(soInfo ObjInfo) (*DynamicSymbols, error) {
+func (soLoader *HostSymbolsLoader) GetLocalSymbols(soInfo ObjInfo) (map[string]bool, error) {
+	syms, err := soLoader.loadSOSymbols(soInfo)
+	if err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+	return syms.Local, nil
+}
+
+func (soLoader *HostSymbolsLoader) loadSOSymbols(soInfo ObjInfo) (*Symbols, error) {
 	syms, ok := soLoader.soCache.Get(soInfo.Id)
 	if ok {
 		return syms, nil
@@ -80,8 +88,8 @@ func (soLoader *HostSymbolsLoader) loadSOSymbols(soInfo ObjInfo) (*DynamicSymbol
 }
 
 type soDynamicSymbolsCache interface {
-	Get(ObjID) (*DynamicSymbols, bool)
-	Add(obj ObjInfo, dynamicSymbols *DynamicSymbols)
+	Get(ObjID) (*Symbols, bool)
+	Add(obj ObjInfo, dynamicSymbols *Symbols)
 }
 
 // dynamicSymbolsLRUCache is a lru for examined shared objects symbols, in order to reduce file access.
@@ -91,10 +99,10 @@ type dynamicSymbolsLRUCache struct {
 
 // Get SO instance from the lru.
 // Return the SO symbols from lru and if the SO symbols were in the lru.
-func (soCache *dynamicSymbolsLRUCache) Get(objID ObjID) (*DynamicSymbols, bool) {
+func (soCache *dynamicSymbolsLRUCache) Get(objID ObjID) (*Symbols, bool) {
 	objInfoIface, ok := soCache.lru.Get(objID)
 	if ok {
-		if objInfo, ok := objInfoIface.(*DynamicSymbols); ok {
+		if objInfo, ok := objInfoIface.(*Symbols); ok {
 			return objInfo, true
 		}
 	}
@@ -102,12 +110,12 @@ func (soCache *dynamicSymbolsLRUCache) Get(objID ObjID) (*DynamicSymbols, bool) 
 	return nil, false
 }
 
-func (soCache *dynamicSymbolsLRUCache) Add(obj ObjInfo, dynamicSymbols *DynamicSymbols) {
+func (soCache *dynamicSymbolsLRUCache) Add(obj ObjInfo, dynamicSymbols *Symbols) {
 	soCache.lru.Add(obj.Id, dynamicSymbols)
 }
 
 // loadSharedObjectDynamicSymbols loads all dynamic symbols of a shared object file in given path.
-func loadSharedObjectDynamicSymbols(path string) (*DynamicSymbols, error) {
+func loadSharedObjectDynamicSymbols(path string) (*Symbols, error) {
 	var err error
 	var loadedObject *elf.File
 
@@ -132,16 +140,27 @@ func loadSharedObjectDynamicSymbols(path string) (*DynamicSymbols, error) {
 		}
 	}()
 
-	dynamicSymbols, err := loadedObject.DynamicSymbols()
-	if err != nil {
-		return nil, errfmt.WrapError(err)
+	symbols, err1 := loadedObject.Symbols()
+	dynamicSymbols, err2 := loadedObject.DynamicSymbols()
+	if err1 != nil && err2 != nil {
+		return nil, errfmt.Errorf("binary %s has no symbols: %v, %v", path, err1, err2)
 	}
 
-	return parseDynamicSymbols(dynamicSymbols), nil
+	return parseSymbols(symbols, dynamicSymbols), nil
 }
 
-func parseDynamicSymbols(dynamicSymbols []elf.Symbol) *DynamicSymbols {
+func parseSymbols(symbols, dynamicSymbols []elf.Symbol) *Symbols {
 	objSymbols := NewSOSymbols()
+	for i := range symbols {
+		sym := &symbols[i] // avoid copying the entire struct by taking its address
+		// NOTE(geyslan): unique.Handle might be a better choice here - and elsewhere -
+		// for deduplicating strings or avoiding retention of backing memory.
+		// Issue: #4761
+		if sym.Value != 0 {
+			name := strings.Clone(sym.Name)
+			objSymbols.Local[name] = true
+		}
+	}
 	for i := range dynamicSymbols {
 		sym := &dynamicSymbols[i] // avoid copying the entire struct by taking its address
 		// NOTE(geyslan): unique.Handle might be a better choice here - and elsewhere -
@@ -151,6 +170,7 @@ func parseDynamicSymbols(dynamicSymbols []elf.Symbol) *DynamicSymbols {
 		if sym.Library != "" || sym.Value == 0 {
 			objSymbols.Imported[name] = true
 		} else {
+			objSymbols.Local[name] = true
 			objSymbols.Exported[name] = true
 		}
 	}

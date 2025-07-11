@@ -45,6 +45,10 @@ func (loader symbolsLoaderMock) GetImportedSymbols(info sharedobjs.ObjInfo) (map
 	return nil, nil
 }
 
+func (loader symbolsLoaderMock) GetLocalSymbols(info sharedobjs.ObjInfo) (map[string]bool, error) {
+	return nil, nil
+}
+
 func (loader symbolsLoaderMock) addSOSymbols(info testSOInstance) {
 	symsMap := make(map[string]bool)
 	for _, s := range info.syms {
