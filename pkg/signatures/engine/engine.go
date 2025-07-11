@@ -59,6 +59,7 @@ type Engine struct {
 	stats            metrics.Stats
 	dataSources      map[string]map[string]detect.DataSource
 	dataSourcesMutex sync.RWMutex
+	metadataCache    map[detect.Signature]*detect.SignatureMetadata
 }
 
 // EventSources is a bundle of input sources used to configure the Engine
@@ -87,6 +88,7 @@ func NewEngine(config Config, sources EventSources, output chan *detect.Finding)
 	engine.signaturesMutex.Lock()
 	engine.signatures = make(map[detect.Signature]chan protocol.Event)
 	engine.signaturesIndex = make(map[detect.SignatureEventSelector][]detect.Signature)
+	engine.metadataCache = make(map[detect.Signature]*detect.SignatureMetadata)
 	engine.signaturesMutex.Unlock()
 
 	engine.dataSourcesMutex.Lock()
@@ -155,6 +157,7 @@ func (engine *Engine) unloadAllSignatures() {
 		sig.Close()
 		close(c)
 		delete(engine.signatures, sig)
+		delete(engine.metadataCache, sig)
 	}
 	engine.signaturesIndex = make(map[detect.SignatureEventSelector][]detect.Signature)
 }
@@ -288,9 +291,9 @@ func (engine *Engine) dispatchEvent(s detect.Signature, event protocol.Event) {
 }
 
 func (engine *Engine) filterDispatchInPipeline(s detect.Signature, event protocol.Event) bool {
-	md, err := s.GetMetadata()
-	if err != nil {
-		logger.Warnw(fmt.Sprintf("event %s not dispatched to signature: no metadata", event.Selector().Name))
+	md, ok := engine.metadataCache[s]
+	if !ok {
+		logger.Warnw(fmt.Sprintf("event %s not dispatched to signature: no cached metadata", event.Selector().Name))
 		return false
 	}
 	evtName := md.EventName
@@ -365,6 +368,7 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 	c := make(chan protocol.Event, engine.config.SignatureBufferSize)
 	engine.signaturesMutex.Lock()
 	engine.signatures[signature] = c
+	engine.metadataCache[signature] = &metadata
 	engine.signaturesMutex.Unlock()
 
 	// insert in engine.signaturesIndex map
@@ -413,6 +417,7 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 	c, ok := engine.signatures[signature]
 	if ok {
 		delete(engine.signatures, signature)
+		delete(engine.metadataCache, signature)
 		defer func() {
 			_ = engine.stats.Signatures.Decrement()
 		}()
