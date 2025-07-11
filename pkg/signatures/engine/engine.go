@@ -87,16 +87,20 @@ func NewEngine(config Config, sources EventSources, output chan *detect.Finding)
 
 // signatureStart is the signature handling business logics.
 func signatureStart(signature detect.Signature, c chan protocol.Event, wg *sync.WaitGroup, noSignatures bool) {
+	defer wg.Done()
+
+	// Pre-fetch metadata once to avoid repeated calls on errors
+	meta, _ := signature.GetMetadata()
+	sigName := meta.Name
+
 	for e := range c {
 		if noSignatures {
 			continue // Just drain the channel without processing
 		}
 		if err := signature.OnEvent(e); err != nil {
-			meta, _ := signature.GetMetadata()
-			logger.Errorw("Handling event by signature " + meta.Name + ": " + err.Error())
+			logger.Errorw("Handling event by signature " + sigName + ": " + err.Error())
 		}
 	}
-	wg.Done()
 }
 
 // Init loads and initializes signatures and data sources passed in NewEngine.
