@@ -46,8 +46,7 @@ statfunc bool filter_file_path(void *ctx, void *filter_map, struct file *file)
     bool has_filter = false;
     bool filter_match = false;
 
-// Check if the path matches filter prefixes
-#pragma unroll
+    // Check if the path matches filter prefixes
     for (int i = 0; i < 3; i++) {
         int idx = i;
         path_filter_t *filter_p = bpf_map_lookup_elem(filter_map, &idx);
@@ -160,7 +159,7 @@ statfunc bool filter_file_fd(void *ctx, void *filter_map, size_t map_idx, struct
     if (*fds_filter != 0 && *fds_filter & FILTER_FDS_MASK) {
         has_fds_filter = true;
         int standard_fds = get_standard_fds_from_struct_file(file);
-#pragma unroll
+
         for (int fd = STDIN; fd <= STDERR; fd++) {
             bool is_fd = standard_fds & (1 << fd);
             int fd_filter = 1 << (fd + FILTER_FILE_FD_START_BIT);

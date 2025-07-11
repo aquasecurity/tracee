@@ -882,7 +882,6 @@ statfunc int init_shown_modules()
     pos = list_first_entry_ebpf(head, typeof(*pos), list);
     n = pos;
 
-#pragma unroll
     for (int i = 0; i < MAX_NUM_MODULES; i++) {
         pos = n;
         n = list_next_entry_ebpf(n, list);
@@ -1107,7 +1106,6 @@ static __always_inline u64 check_new_mods_only(program_data_t *p)
     pos = list_first_entry_ebpf(head, typeof(*pos), list);
     n = pos;
 
-#pragma unroll
     for (int i = 0; i < MAX_NUM_MODULES; i++) {
         pos = n;
         n = list_next_entry_ebpf(n, list);
@@ -1838,7 +1836,6 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     u32 count_off = p.event->args_buf.offset + 1;
     save_u64_arr_to_buf(&p.event->args_buf, NULL, 0, 0); // init u64 array with size 0
 
-#pragma unroll
     for (int i = 0; i < NET_SEQ_OPS_TYPES; i++) {
         bpf_probe_read_user(&struct_address, 8, (address_array + i));
         struct seq_operations *seq_ops = (struct seq_operations *) struct_address;
@@ -2319,8 +2316,8 @@ statfunc bool check_file_mount(struct file *file)
 
     struct dentry *dentry = path.dentry;
     struct dentry *root = BPF_CORE_READ(path.mnt, mnt_root);
+
     int i;
-#pragma unroll
     for (i = 0; i < MAX_PATH_COMPONENTS; i++) {
         struct dentry *parent = BPF_CORE_READ(dentry, d_parent);
         if (dentry == root || dentry == parent)
@@ -3148,12 +3145,8 @@ statfunc u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
     unsigned int full_chunk_num = bin_args->full_size / F_CHUNK_SIZE;
     void *data = file_buf_p->buf;
 
-// Handle full chunks in loop
-#pragma unroll
+    // Handle full chunks in loop
     for (i = 0; i < MAX_BIN_CHUNKS; i++) {
-        // Dummy instruction, as break instruction can't be first with unroll optimization
-        chunk_size = F_CHUNK_SIZE;
-
         if (i == full_chunk_num)
             break;
 
@@ -4165,7 +4158,6 @@ statfunc int handle_bpf_helper_func_id(u32 host_tid, int func_id)
     int arr_num;
     int arr_idx = func_id;
 
-#pragma unroll
     for (int i = 0; i < NUM_OF_HELPERS_ELEMS; i++) {
         arr_num = i;
         if (arr_idx - SIZE_OF_HELPER_ELEM >= 0) {

@@ -19,58 +19,9 @@ statfunc const char *get_device_name(struct device *dev)
     return kobj.name;
 }
 
-// Workaround: Newer LLVM versions might fail to optimize has_prefix()
-// loop unrolling with the following error:
-//
-//     warning: loop not unrolled: the optimizer was unable to perform
-//     the requested transformation; the transformation might be
-//     disabled or specified as part of an unsupported transformation
-//     ordering
-//
-
-#if defined(__clang__) && __clang_major__ > 13
-
-    #define has_prefix(p, s, n)                                                                    \
-        ({                                                                                         \
-            int rc = 1;                                                                            \
-            char *pre = p, *str = s;                                                               \
-            int z;                                                                                 \
-            _Pragma("unroll") for (z = 0; z < n; pre++, str++, z++)                                \
-            {                                                                                      \
-                if (!*pre) {                                                                       \
-                    rc = 1;                                                                        \
-                    break;                                                                         \
-                } else if (*pre != *str) {                                                         \
-                    rc = 0;                                                                        \
-                    break;                                                                         \
-                }                                                                                  \
-            }                                                                                      \
-            /* if prefix is longer than n, return 0 */                                             \
-            if (z == n && *pre)                                                                    \
-                rc = 0;                                                                            \
-            rc;                                                                                    \
-        })
-
-    #define strncmp(str1, str2, n)                                                                 \
-        ({                                                                                         \
-            int rc = 0;                                                                            \
-            char *s1 = str1, *s2 = str2;                                                           \
-            _Pragma("unroll") for (int z = 0; z < n; s1++, s2++, z++)                              \
-            {                                                                                      \
-                if (*s1 != *s2 || *s1 == '\0' || *s2 == '\0') {                                    \
-                    rc = (unsigned char) *s1 - (unsigned char) *s2;                                \
-                    break;                                                                         \
-                }                                                                                  \
-            }                                                                                      \
-            rc;                                                                                    \
-        })
-
-#else
-
-static __inline int has_prefix(char *prefix, char *str, int n)
+statfunc int has_prefix(char *prefix, char *str, int n)
 {
     int i;
-    #pragma unroll
     for (i = 0; i < n; prefix++, str++, i++) {
         if (!*prefix)
             return 1;
@@ -87,18 +38,15 @@ static __inline int has_prefix(char *prefix, char *str, int n)
     return 1;
 }
 
-static __inline int strncmp(char *str1, char *str2, int n)
+statfunc int strncmp(char *str1, char *str2, int n)
 {
     int i;
-    #pragma unroll
     for (i = 0; i < n; str1++, str2++, i++) {
         if (*str1 != *str2 || *str1 == '\0' || *str2 == '\0')
             return (unsigned char) *str1 - (unsigned char) *str2;
     }
     return 0;
 }
-
-#endif
 
 // helper macros for branch prediction
 #ifndef likely
