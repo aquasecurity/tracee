@@ -40,7 +40,7 @@ type Cache struct {
 //   - digest-inode: is the most efficient, as it keys the hash to a pair consisting of the container image digest and inode.
 //     This approach, however, necessitates container enrichment.
 func NewCache(mode config.CalcHashesOption, resolver pathResolver) (*Cache, error) {
-	hashes, err := lru.New[string, hashInfo](1024)
+	hashes, err := lru.New[string, hashInfo](2048)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create exechash cache: %v", err)
 	}
