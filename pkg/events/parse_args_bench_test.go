@@ -272,7 +272,7 @@ var events = []*trace.Event{
 func BenchmarkParseArgs(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		for _, event := range events {
-			err := ParseArgs(event)
+			err := ParseArgsSlice(event.Args, event.EventID)
 			if err != nil {
 				b.Errorf("Error parsing args: %v", err)
 			}
@@ -292,7 +292,7 @@ func BenchmarkParseArgs_Uintptr(b *testing.B) {
 			},
 		}
 
-		err := ParseArgs(ptraceEvent)
+		err := ParseArgsSlice(ptraceEvent.Args, ptraceEvent.EventID)
 		if err != nil {
 			b.Errorf("Error parsing args: %v", err)
 		}

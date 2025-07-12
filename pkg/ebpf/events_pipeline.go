@@ -741,17 +741,24 @@ func (t *Tracee) handleError(err error) {
 
 // parseArguments parses the arguments of the event for display purposes.
 // This converts raw arguments (e.g., syscall numbers, addresses) to human-readable
-// format (e.g., syscall names, file paths). It happens in the sink stage of the
-// pipeline, after signature engine processing, since signatures need raw arguments
-// for pattern matching while output formatting needs parsed arguments for readability.
+// format (e.g., syscall names, file paths). It uses the efficient slice-based parsing
+// functions and modifies the event's Args slice in-place.
 func (t *Tracee) parseArguments(e *trace.Event) error {
-	err := events.ParseArgs(e)
+	if !t.config.Output.ParseArguments || len(e.Args) == 0 {
+		return nil
+	}
+
+	// Parse arguments in-place using the efficient slice-based functions
+	err := events.ParseArgsSlice(e.Args, e.EventID)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	if t.config.Output.ParseArgumentsFDs {
-		return events.ParseArgsFDs(e, uint64(e.Timestamp), t.FDArgPathMap)
+		err = events.ParseArgsFDsSlice(e.Args, uint64(e.Timestamp), t.FDArgPathMap)
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
 	}
 
 	return nil

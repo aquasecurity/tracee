@@ -75,7 +75,7 @@ func TestParseArgs(t *testing.T) {
 					EventID: int(Ptrace),
 					Args:    testCase.args,
 				}
-				err := ParseArgs(&event)
+				err := ParseArgsSlice(event.Args, event.EventID)
 				require.NoError(t, err)
 				for _, expArg := range testCase.expectedArgs {
 					arg := GetArg(event.Args, expArg.Name)
@@ -182,7 +182,7 @@ func TestParseArgs(t *testing.T) {
 					EventID: int(Setsockopt),
 					Args:    testCase.args,
 				}
-				err := ParseArgs(&event)
+				err := ParseArgsSlice(event.Args, event.EventID)
 				require.NoError(t, err)
 				for _, expArg := range testCase.expectedArgs {
 					arg := GetArg(event.Args, expArg.Name)
@@ -268,7 +268,7 @@ func TestParseArgs(t *testing.T) {
 					EventID: int(Getsockopt),
 					Args:    testCase.args,
 				}
-				err := ParseArgs(event)
+				err := ParseArgsSlice(event.Args, event.EventID)
 				require.NoError(t, err)
 				for _, expArg := range testCase.expectedArgs {
 					arg := GetArg(event.Args, expArg.Name)

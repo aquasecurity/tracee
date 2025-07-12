@@ -204,7 +204,7 @@ func TestParseSocketType(t *testing.T) {
 				EventID: testCase.eventId,
 				Args:    testCase.args,
 			}
-			err := ParseArgs(event)
+			err := ParseArgsSlice(event.Args, event.EventID)
 			require.NoError(t, err)
 			for _, expArg := range testCase.expectedArgs {
 				arg := GetArg(event.Args, expArg.Name)
