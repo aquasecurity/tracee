@@ -72,8 +72,8 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 			}
 
 			// Get a copy of event before parsing it or sending it down the pipeline.
-			// This is needed because a later modification of the event (matched policies or
-			// arguments parsing) can affect engine stage.
+			// This prevents race conditions between the sink stage (which modifies events
+			// for output formatting) and the signature engine (which needs raw event data).
 			eventCopy := *event
 
 			// Deep copy the Args slice to prevent race conditions during argument parsing
@@ -86,7 +86,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 			// Send original event to sink stage (sink will handle parsing if needed)
 			out <- event
 
-			// Send protocol event to signature engine
+			// Send protocol event to signature engine using the safe copy
 			engineInput <- eventCopy.ToProtocol()
 		}
 
