@@ -624,8 +624,8 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 			// Populate the event with the names of the matched policies.
 			event.MatchedPolicies = t.policyManager.MatchedNames(event.MatchedPoliciesUser)
 
-			// Parse args here if the rule engine is NOT enabled (parsed there if it is).
-			if t.config.Output.ParseArguments && t.config.EngineConfig.Mode != engine.ModeSingleBinary {
+			// Parse arguments for output formatting if enabled.
+			if t.config.Output.ParseArguments {
 				err := t.parseArguments(event)
 				if err != nil {
 					t.handleError(err)
@@ -731,11 +731,11 @@ func (t *Tracee) handleError(err error) {
 	logger.Errorw("Tracee encountered an error", "error", err)
 }
 
-// parseArguments parses the arguments of the event. It must happen before the signatures
-// are evaluated. For the new experience (cmd/tracee), it needs to happen in the the
-// "events_engine" stage of the pipeline. For the old experience (cmd/tracee-ebpf &&
-// cmd/tracee-rules), it happens on the "sink" stage of the pipeline (close to the
-// printers).
+// parseArguments parses the arguments of the event for display purposes.
+// This converts raw arguments (e.g., syscall numbers, addresses) to human-readable
+// format (e.g., syscall names, file paths). It happens in the sink stage of the
+// pipeline, after signature engine processing, since signatures need raw arguments
+// for pattern matching while output formatting needs parsed arguments for readability.
 func (t *Tracee) parseArguments(e *trace.Event) error {
 	err := events.ParseArgs(e)
 	if err != nil {
