@@ -88,28 +88,18 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 			// arguments parsing) can affect engine stage.
 			eventCopy := *event
 
-			if t.config.Output.ParseArguments {
-				// Optimize argument cloning by pre-allocating exact capacity
-				// instead of using slices.Clone which may over-allocate
-				if len(event.Args) > 0 {
-					eventCopy.Args = make([]trace.Argument, len(event.Args))
-					copy(eventCopy.Args, event.Args)
-				} else {
-					eventCopy.Args = nil
-				}
-
-				err := t.parseArguments(event)
-				if err != nil {
-					t.handleError(err)
-					return
-				}
+			// Deep copy the Args slice to prevent race conditions during argument parsing
+			if len(event.Args) > 0 {
+				eventCopy.Args = make([]trace.Argument, len(event.Args))
+				copy(eventCopy.Args, event.Args)
+			} else {
+				eventCopy.Args = nil
 			}
 
-			// pass the event to the sink stage, if the event is also marked as emit
-			// it will be sent to print by the sink stage
+			// Send original event to sink stage (sink will handle parsing if needed)
 			out <- event
 
-			// send the copied event to the rules engine
+			// Send protocol event to signature engine
 			engineInput <- eventCopy.ToProtocol()
 		}
 
