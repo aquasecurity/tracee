@@ -14,7 +14,7 @@ const (
 
 func NetFlowTCPBegin(cache *dnscache.DNSCache) DeriveFunction {
 	return deriveSingleEvent(events.NetFlowTCPBegin,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event *trace.Event) ([]interface{}, error) {
 			tcpBegin := event.ReturnValue&flowTCPBegin == flowTCPBegin
 			ingress := event.ReturnValue&packetIngress == packetIngress
 			egress := event.ReturnValue&packetEgress == packetEgress
@@ -30,7 +30,7 @@ func NetFlowTCPBegin(cache *dnscache.DNSCache) DeriveFunction {
 			}
 
 			// Get the packet from the event
-			packet, err := createPacketFromEvent(&event)
+			packet, err := createPacketFromEvent(event)
 			if err != nil {
 				return nil, err
 			}
@@ -81,7 +81,7 @@ func NetFlowTCPBegin(cache *dnscache.DNSCache) DeriveFunction {
 
 func NetFlowTCPEnd(cache *dnscache.DNSCache) DeriveFunction {
 	return deriveSingleEvent(events.NetFlowTCPEnd,
-		func(event trace.Event) ([]interface{}, error) {
+		func(event *trace.Event) ([]interface{}, error) {
 			tcpEnd := event.ReturnValue&flowTCPEnd == flowTCPEnd
 			ingress := event.ReturnValue&packetIngress == packetIngress
 			egress := event.ReturnValue&packetEgress == packetEgress
@@ -98,7 +98,7 @@ func NetFlowTCPEnd(cache *dnscache.DNSCache) DeriveFunction {
 			}
 
 			// Get the packet from the event
-			packet, err := createPacketFromEvent(&event)
+			packet, err := createPacketFromEvent(event)
 			if err != nil {
 				return nil, err
 			}
