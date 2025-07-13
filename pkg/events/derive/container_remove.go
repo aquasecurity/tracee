@@ -15,9 +15,9 @@ func ContainerRemove(cts *containers.Manager) DeriveFunction {
 }
 
 func deriveContainerRemoveArgs(cts *containers.Manager) deriveArgsFunction {
-	return func(event trace.Event) ([]interface{}, error) {
+	return func(event *trace.Event) ([]interface{}, error) {
 		// if cgroup_id is from non default hid (v1 case), the cgroup info query will fail, so we skip
-		if check, err := isCgroupEventInHid(&event, cts); !check {
+		if check, err := isCgroupEventInHid(event, cts); !check {
 			return nil, errfmt.WrapError(err)
 		}
 		cgroupId, err := parse.ArgVal[uint64](event.Args, "cgroup_id")

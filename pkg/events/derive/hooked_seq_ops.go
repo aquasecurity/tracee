@@ -31,7 +31,7 @@ func HookedSeqOps(kernelSymbols *environment.KernelSymbolTable) DeriveFunction {
 }
 
 func deriveHookedSeqOpsArgs(kernelSymbols *environment.KernelSymbolTable) deriveArgsFunction {
-	return func(event trace.Event) ([]interface{}, error) {
+	return func(event *trace.Event) ([]interface{}, error) {
 		seqOpsArr, err := parse.ArgVal[[]uint64](event.Args, "net_seq_ops")
 		if err != nil || len(seqOpsArr) < 1 {
 			return nil, errfmt.WrapError(err)
