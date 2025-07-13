@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"slices"
 	"strconv"
 	"sync"
 	"unsafe"
@@ -553,19 +552,12 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					continue // might happen during initialization (ctrl+c seg faults)
 				}
 
-				// Get a copy of our event before sending it down the pipeline. This is
-				// needed because later modification of the event (in particular of the
-				// matched policies) can affect the derivation and later pipeline logic
-				// acting on the derived event.
+				// Derive events using original event pointer directly (no copying needed)
+				// We derive before sending the event downstream to avoid race conditions
+				derivatives, errors := t.eventDerivations.DeriveEvent(event)
 
-				eventCopy := *event
-				// shallow clone the event arguments (new slice is created) before deriving the copy,
-				// to ensure the original event arguments are not modified by the derivation stage.
-				argsCopy := slices.Clone(event.Args)
+				// Send original event down the pipeline
 				out <- event
-
-				// Note: event is being derived before any of its args are parsed.
-				derivatives, errors := t.eventDerivations.DeriveEvent(eventCopy, argsCopy)
 
 				for _, err := range errors {
 					t.handleError(err)

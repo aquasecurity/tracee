@@ -32,7 +32,7 @@ func DetectHookedSyscall(kernelSymbols *environment.KernelSymbolTable) DeriveFun
 }
 
 func deriveDetectHookedSyscallArgs(kernelSymbols *environment.KernelSymbolTable) multiDeriveArgsFunction {
-	return func(event trace.Event) ([][]interface{}, []error) {
+	return func(event *trace.Event) ([][]interface{}, []error) {
 		syscallId, err := parse.ArgVal[int32](event.Args, "syscall_id")
 		if err != nil {
 			return nil, []error{errfmt.Errorf("error parsing syscall_id arg: %v", err)}

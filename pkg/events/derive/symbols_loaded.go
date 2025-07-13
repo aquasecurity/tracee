@@ -110,7 +110,7 @@ func initSymbolsLoadedEventGenerator(
 }
 
 func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
-	event trace.Event,
+	event *trace.Event,
 ) (
 	[]interface{}, error,
 ) {
@@ -207,7 +207,7 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) getSymbolsFromCache(id shared
 }
 
 // getSharedObjectInfo extract from SO loading event the information available about the SO
-func getSharedObjectInfo(event trace.Event) (sharedobjs.ObjInfo, error) {
+func getSharedObjectInfo(event *trace.Event) (sharedobjs.ObjInfo, error) {
 	var objInfo sharedobjs.ObjInfo
 
 	loadedObjectInode, err := parse.ArgVal[uint64](event.Args, "inode")

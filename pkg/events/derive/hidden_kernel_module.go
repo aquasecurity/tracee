@@ -53,7 +53,7 @@ func HiddenKernelModule() DeriveFunction {
 }
 
 func deriveHiddenKernelModulesArgs() multiDeriveArgsFunction {
-	return func(event trace.Event) ([][]interface{}, []error) {
+	return func(event *trace.Event) ([][]interface{}, []error) {
 		if !isInitialized {
 			logger.Debugw("hidden kernel module derive logic: not initialized yet... skipping")
 			return nil, nil
@@ -92,7 +92,7 @@ func deriveHiddenKernelModulesArgs() multiDeriveArgsFunction {
 		} else if flags&kset != 0 || flags&modTree != 0 {
 			// These types of scan only happens once on tracee's startup.
 			// Cache results and only send them out when receiving that the history scan finished successfully
-			eventsFromHistoryScan.Add(&event, struct{}{})
+			eventsFromHistoryScan.Add(event, struct{}{})
 			return nil, nil
 		} else if flags&historyScanFinished != 0 {
 			// Happens only once on tracee's startup when the scan finished (successfully/unsuccessfully)
