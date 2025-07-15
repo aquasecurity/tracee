@@ -149,7 +149,7 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 
 	// sanity checks
 	switch givenPid {
-	case 0, 1, 2: // PIDs 0, 1 and 2 are special
+	case 1, 2: // PIDs 1 and 2 are special
 	default:
 		if name == "" || pid == 0 || tgid == 0 || ppid == 0 {
 			return errfmt.Errorf("invalid process - status: %v, stat: %v", status, stat)

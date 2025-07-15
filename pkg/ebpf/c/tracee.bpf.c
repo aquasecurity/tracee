@@ -543,7 +543,7 @@ int sys_dup_exit_tail(void *ctx)
 
     syscall_data_t *sys = &p.task_info->syscall_data;
 
-    if (sys->ret < 0) {
+    if (sys->ret == (unsigned long) -1) {
         // dup failed
         return 0;
     }
@@ -2841,7 +2841,10 @@ int BPF_KPROBE(trace_security_socket_connect)
         case SYSCALL_SOCKETCALL:
             arr_addr = (void *) get_syscall_arg2(p.event->task, task_regs, false);
             // fd is the first entry in the array
-            bpf_probe_read_user(&sockfd, sizeof(int), arr_addr);
+            if (bpf_probe_read_user(&sockfd, sizeof(int), arr_addr) != 0) {
+                // Failed to read sockfd, set to -1 to indicate error
+                sockfd = -1;
+            }
             stsb(args_buf, &sockfd, sizeof(int), 0);
             break;
     }
@@ -3251,7 +3254,10 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
     // Extract device id, inode number, and pos (offset)
     file_info.id.device = get_dev_from_file(file);
     file_info.id.inode = get_inode_nr_from_file(file);
-    bpf_probe_read_kernel(&start_pos, sizeof(off_t), pos);
+    start_pos = 0; // Initialize in case pos is NULL or read fails
+    if (pos != NULL) {
+        bpf_probe_read_kernel(&start_pos, sizeof(off_t), pos);
+    }
 
     u32 io_bytes_amount = PT_REGS_RC(ctx);
 
@@ -3388,8 +3394,10 @@ statfunc int capture_file_read(struct pt_regs *ctx, u32 event_id, bool is_buf)
     loff_t *pos = (loff_t *) saved_args.args[3];
     size_t read_bytes = PT_REGS_RC(ctx);
 
-    off_t start_pos;
-    bpf_probe_read_kernel(&start_pos, sizeof(off_t), pos);
+    off_t start_pos = 0; // Initialize in case pos is NULL or read fails
+    if (pos != NULL) {
+        bpf_probe_read_kernel(&start_pos, sizeof(off_t), pos);
+    }
     // Calculate write start offset
     if (start_pos != 0)
         start_pos -= read_bytes;
@@ -4467,7 +4475,7 @@ int BPF_KPROBE(trace_ret_do_splice)
     loff_t *off_in_addr = (loff_t *) saved_args.args[1];
     // In kernel v5.10 the pointer passed was no longer of the user, so flexibility is needed to
     // read it
-    loff_t off_in;
+    loff_t off_in = 0;
 
     //
     // Check if field of struct exist to determine kernel version - some fields change between
@@ -4479,11 +4487,12 @@ int BPF_KPROBE(trace_ret_do_splice)
     //
     struct public_key_signature *check;
 
-    if (!bpf_core_field_exists(check->data)) // version < v5.10
-        bpf_core_read_user(&off_in, sizeof(off_in), off_in_addr);
-
-    else // version >= v5.10
-        bpf_core_read(&off_in, sizeof(off_in), off_in_addr);
+    if (off_in_addr != NULL) {
+        if (!bpf_core_field_exists(check->data)) // version < v5.10
+            bpf_core_read_user(&off_in, sizeof(off_in), off_in_addr);
+        else // version >= v5.10
+            bpf_core_read(&off_in, sizeof(off_in), off_in_addr);
+    }
 
     struct inode *out_inode = BPF_CORE_READ(out_file, f_inode);
     u64 out_inode_number = BPF_CORE_READ(out_inode, i_ino);
@@ -4834,10 +4843,13 @@ int BPF_KPROBE(trace_do_sigaction)
         // In 64-bit system there is only 1 node in the mask array
         old_sa_mask = BPF_CORE_READ(old_act, sa.sa_mask.sig[0]);
         old_sa_handler = BPF_CORE_READ(old_act, sa.sa_handler);
+        // Signal handlers can be: SIG_DFL (0), SIG_IGN (1), or real function pointers (>= 2)
+        // For special values 0/1, extract the low byte to encode the handler type
+        // For real functions, just mark as SIG_HND and keep the pointer
         if (old_sa_handler >= (void *) SIG_HND)
             old_handle_method = SIG_HND;
         else {
-            old_handle_method = (u8) (old_sa_handler && 0xFF);
+            old_handle_method = (u8) ((unsigned long) old_sa_handler & 0xFF);
             old_sa_handler = NULL;
         }
     }
@@ -4855,10 +4867,13 @@ int BPF_KPROBE(trace_do_sigaction)
         // In 64-bit system there is only 1 node in the mask array
         new_sa_mask = BPF_CORE_READ(new_sigaction, sa_mask.sig[0]);
         new_sa_handler = BPF_CORE_READ(new_sigaction, sa_handler);
+        // Signal handlers can be: SIG_DFL (0), SIG_IGN (1), or real function pointers (>= 2)
+        // For special values 0/1, extract the low byte to encode the handler type
+        // For real functions, just mark as SIG_HND and keep the pointer
         if (new_sa_handler >= (void *) SIG_HND)
             new_handle_method = SIG_HND;
         else {
-            new_handle_method = (u8) (new_sa_handler && 0xFF);
+            new_handle_method = (u8) ((unsigned long) new_sa_handler & 0xFF);
             new_sa_handler = NULL;
         }
     }
