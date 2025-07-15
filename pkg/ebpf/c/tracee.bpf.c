@@ -1744,7 +1744,6 @@ statfunc void syscall_table_check(program_data_t *p)
 
     int index = 0; // For the verifier
 
-#pragma unroll
     for (int i = 0; i < MAX_SYS_CALL_TABLE_SIZE; i++) {
         index = i;
         syscall_table_entry_t *expected_entry =
