@@ -88,9 +88,10 @@ jobs:
           attempts=0
           while [ "${attempts}" -lt "${max_attempts}" ]; do
               if curl --max-time "${timeout}" \
-                  -X POST "${{ secrets.SYNC_PR_URL }}" \
+                  -X POST "${{ secrets.AWS_OSS_PR_SYNC_LAMBDA_URL }}" \
                   -H "Content-Type: application/json" \
-                  -d "{\"number\": \"${{ steps.pr-number.outputs.pr_number }}\"}"; then
+                  -H "Authorization: Bearer ${{ secrets.AWS_OSS_PR_SYNC_LAMBDA_TOKEN }}" \
+                  -d "{\"oss_pr_number\": \"${{ steps.pr-number.outputs.pr_number }}\"}"; then
                   break
               fi
               attempts=$((attempts + 1))
@@ -103,3 +104,4 @@ jobs:
           if [ "${attempts}" = "${max_attempts}" ]; then
               die "Failed to POST request to sync PR after ${max_attempts} attempts."
           fi
+          info "PR sync request sent successfully."
