@@ -20,6 +20,10 @@ jobs:
       image: alpine
 
     steps:
+      - name: Install git
+        run: apk add --no-cache git
+        shell: sh
+
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
@@ -39,15 +43,24 @@ jobs:
         id: pr-number
         shell: sh
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           max_attempts: 5 # Maximum attempts to find the PR number
           sleep_time: 3 # Time to wait between attempts in seconds
         run: |
           . ./scripts/lib.sh
 
+          if ! git config --global --add safe.directory "${GITHUB_WORKSPACE}"; then
+              die "Failed to add safe.directory to git config."
+          fi
+
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
               num="${{ github.event.inputs.pr_number }}"
           else
               commit_sha=$(git rev-parse HEAD)
+              if [ -z "${commit_sha}" ]; then
+                  die "Failed to get the current commit SHA."
+              fi
+
               # Try up to 5 times to find the merged PR for this commit.
               attempts=0
               info "Searching for merged PR number for commit: ${commit_sha}"
