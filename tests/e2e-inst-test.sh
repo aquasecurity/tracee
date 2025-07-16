@@ -114,6 +114,7 @@ for TEST in $TESTS; do
             skip_hooked_syscall=1
             continue
         fi
+        info "setting up hooked_syscall test"
         "${TESTS_DIR}"/hooked_syscall.sh
         ;;
     FTRACE_HOOK)
@@ -132,6 +133,7 @@ for TEST in $TESTS; do
             skip_ftrace_hook=1
             continue
         fi
+        info "setting up ftrace_hook test"
         "${TESTS_DIR}"/ftrace_hook.sh
         ;;
     SECURITY_PATH_NOTIFY)
