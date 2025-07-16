@@ -238,6 +238,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 }
 
 func enrichEvent(evt *trace.Event, cont containers.Container) {
+	logger.Infow("enriching event", "event", evt.EventName, "container", cont)
 	evt.Container = trace.Container{
 		ID:          cont.ContainerId,
 		ImageName:   cont.Image,
