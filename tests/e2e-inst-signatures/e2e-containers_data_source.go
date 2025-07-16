@@ -64,7 +64,7 @@ func (sig *e2eContainersDataSource) OnEvent(event protocol.Event) error {
 
 		containerId := eventObj.Container.ID
 		if containerId == "" {
-			return errors.New("received non container event")
+			return fmt.Errorf("received non container event: %+v", eventObj)
 		}
 
 		container, err := sig.containersData.Get(containerId)
