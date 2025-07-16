@@ -7,4 +7,4 @@ exit_err() {
 }
 
 docker image pull ubuntu:jammy-20240627.1 > /dev/null
-docker container run --rm ubuntu:jammy-20240627.1 /usr/bin/ls&&sleep 10 > /dev/null
+docker container run --rm ubuntu:jammy-20240627.1 /usr/bin/ls > /dev/null && sleep 10
