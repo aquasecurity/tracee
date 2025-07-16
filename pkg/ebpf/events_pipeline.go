@@ -38,12 +38,14 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 	// Decode stage: events are read from the perf buffer and decoded into trace.Event type.
 
 	eventsChan, errc := t.decodeEvents(ctx, t.eventsChannel)
+	t.stats.Channels["decode"] = eventsChan
 	errcList = append(errcList, errc)
 
 	// Cache stage: events go through a caching function.
 
 	if t.config.Cache != nil {
 		eventsChan, errc = t.queueEvents(ctx, eventsChan)
+		t.stats.Channels["cache"] = eventsChan
 		errcList = append(errcList, errc)
 	}
 
@@ -51,36 +53,42 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 
 	if t.config.Output.EventsSorting {
 		eventsChan, errc = t.eventsSorter.StartPipeline(ctx, eventsChan, t.config.BlobPerfBufferSize)
+		t.stats.Channels["sort"] = eventsChan
 		errcList = append(errcList, errc)
 	}
 
 	// Process events stage: events go through a processing functions.
 
 	eventsChan, errc = t.processEvents(ctx, eventsChan)
+	t.stats.Channels["process"] = eventsChan
 	errcList = append(errcList, errc)
 
 	// Enrichment stage: container events are enriched with additional runtime data.
 
 	if !t.config.NoContainersEnrich { // TODO: remove safe-guard soon.
 		eventsChan, errc = t.enrichContainerEvents(ctx, eventsChan)
+		t.stats.Channels["enrich"] = eventsChan
 		errcList = append(errcList, errc)
 	}
 
 	// Derive events stage: events go through a derivation function.
 
 	eventsChan, errc = t.deriveEvents(ctx, eventsChan)
+	t.stats.Channels["derive"] = eventsChan
 	errcList = append(errcList, errc)
 
 	// Engine events stage: events go through the signatures engine for detection.
 
 	if t.config.EngineConfig.Mode == engine.ModeSingleBinary {
 		eventsChan, errc = t.engineEvents(ctx, eventsChan)
+		t.stats.Channels["engine"] = eventsChan
 		errcList = append(errcList, errc)
 	}
 
 	// Sink pipeline stage: events go through printers.
 
 	errc = t.sinkEvents(ctx, eventsChan)
+	t.stats.Channels["sink"] = eventsChan
 	errcList = append(errcList, errc)
 
 	initialized <- struct{}{}

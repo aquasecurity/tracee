@@ -8,6 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/counter"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/version"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // When updating this struct, please make sure to update the relevant exporting functions
@@ -31,6 +32,8 @@ type Stats struct {
 	// independently, without direct comparison.
 	BPFPerfEventSubmitAttemptsCount *EventCollector `json:"BPFPerfEventSubmitAttemptsCount,omitempty"`
 	BPFPerfEventSubmitFailuresCount *EventCollector `json:"BPFPerfEventSubmitFailuresCount,omitempty"`
+
+	Channels ChannelMetrics[*trace.Event] `json:"ChannelMetrics"`
 }
 
 func NewStats() *Stats {
@@ -44,6 +47,7 @@ func NewStats() *Stats {
 		LostWrCount:      counter.NewCounter(0),
 		LostNtCapCount:   counter.NewCounter(0),
 		LostBPFLogsCount: counter.NewCounter(0),
+		Channels:         make(ChannelMetrics[*trace.Event]),
 	}
 
 	if version.MetricsBuild() {
@@ -158,8 +162,16 @@ func (s *Stats) RegisterPrometheus() error {
 		Name:      "network_capture_lostevents_total",
 		Help:      "network capture lost events in network capture buffer",
 	}, func() float64 { return float64(s.LostNtCapCount.Get()) }))
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
 
-	return errfmt.WrapError(err)
+	err = s.Channels.RegisterChannels()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	return nil
 }
 
 // JSON marshaler interface
