@@ -69,6 +69,7 @@ func (sig *e2eStackPivot) OnEvent(event protocol.Event) error {
 				})
 			}
 		} else {
+			sig.log.Infow("setting false positive", "event", eventObj)
 			sig.falsePositive = true
 		}
 	}
