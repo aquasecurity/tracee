@@ -91,24 +91,11 @@ const (
 // 4.18.0-305.7.1.el8_4.centos.plus.x86_64 (centos + plus repo)
 // 5.13.13-arch1-1 (archlinux)
 // 5.4.228+ (ubuntu-gke 5.4)
+// 5.15.153.1-microsoft-standard-WSL2+
 func CompareKernelRelease(base, given string) (KernelVersionComparison, error) {
-	b := strings.Split(base, "-") // [base]-xxx
-	b = strings.Split(b[0], ".")  // [major][minor][patch]
-	for len(b) < 3 {
-		b = append(b, "0")
-	}
-	if len(b) != 3 {
-		return KernelVersionInvalid, fmt.Errorf("invalid base kernel version format: %s", base)
-	}
+	b := splitKernelVersionParts(base)
 
-	g := strings.Split(given, "-")
-	g = strings.Split(g[0], ".")
-	for len(g) < 3 {
-		g = append(g, "0")
-	}
-	if len(g) != 3 {
-		return KernelVersionInvalid, fmt.Errorf("invalid given kernel version format: %s", given)
-	}
+	g := splitKernelVersionParts(given)
 
 	for n := 0; n <= 2; n++ {
 		givenValue, err := strconv.Atoi(cleanVersionNumber(g[n]))
@@ -137,4 +124,21 @@ func cleanVersionNumber(number string) string {
 		}
 		return -1
 	}, number)
+}
+
+// splitKernelVersionParts splits the kernel release string into major, minor, and patch parts.
+func splitKernelVersionParts(kernelRelease string) []string {
+	versionAndRest := strings.Split(kernelRelease, "-")   // [version]-rest
+	versionParts := strings.Split(versionAndRest[0], ".") // [major][minor][patch]
+
+	// If the version string has less than 3 parts, add "0" to make it 3 parts.
+	for len(versionParts) < 3 {
+		versionParts = append(versionParts, "0")
+	}
+	// Only keep the first three components: major, minor, patch.
+	if len(versionParts) != 3 {
+		versionParts = versionParts[:3]
+	}
+
+	return versionParts
 }

@@ -135,11 +135,11 @@ func TestOSInfo_CompareOSBaseKernelRelease(t *testing.T) {
 			expectedError:      nil,
 		},
 		{
-			testName:           "invalid, too many",
+			testName:           "too many parts",
 			base:               "3.0.0.0",
 			given:              "4.3.2",
-			expectedComparison: KernelVersionInvalid,
-			expectedError:      errors.New("invalid base kernel version format: 3.0.0.0"),
+			expectedComparison: KernelVersionNewer,
+			expectedError:      nil,
 		},
 		{
 			testName:           "invalid, not a number",
@@ -147,6 +147,20 @@ func TestOSInfo_CompareOSBaseKernelRelease(t *testing.T) {
 			given:              "4.3.2",
 			expectedComparison: KernelVersionInvalid,
 			expectedError:      errors.New("invalid base kernel version value: X.5.4 issue with: X"),
+		},
+		{
+			testName:           "real version - fedora",
+			base:               "6.15.8-200.fc42.x86_64",
+			given:              "4.3.2",
+			expectedComparison: KernelVersionOlder,
+			expectedError:      nil,
+		},
+		{
+			testName:           "real version - wsl2",
+			base:               "6.6.87.2-microsoft-standard-WSL2",
+			given:              "4.3.2",
+			expectedComparison: KernelVersionOlder,
+			expectedError:      nil,
 		},
 	}
 
