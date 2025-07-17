@@ -81,7 +81,7 @@ statfunc struct mount *real_mount(struct vfsmount *mnt)
  * To be extra safe and accomodate for VMA counts higher than 1000,
  * we define the max traversal depth as 25.
  */
-#define MAX_VMA_RB_TREE_DEPTH 25
+#define MAX_VMA_RB_TREE_DEPTH 35
 
 static bool alerted_find_vma_unsupported = false;
 
