@@ -23,6 +23,7 @@ type e2eDNS struct {
 	foundNS  bool
 	foundSOA bool
 	cb       detect.SignatureHandler
+	log      detect.Logger
 }
 
 func (sig *e2eDNS) Init(ctx detect.SignatureContext) error {
@@ -30,6 +31,7 @@ func (sig *e2eDNS) Init(ctx detect.SignatureContext) error {
 	sig.foundMX = false  // proforma
 	sig.foundNS = false  // proforma
 	sig.foundSOA = false // proforma
+	sig.log = ctx.Logger
 	return nil
 }
 
@@ -73,14 +75,17 @@ func (sig *e2eDNS) OnEvent(event protocol.Event) error {
 				if answer.MX.Name == "smtp.google.com" &&
 					answer.MX.Preference == 10 {
 					sig.foundMX = true
+					sig.log.Infow("found MX", "name", answer.MX.Name, "preference", answer.MX.Preference)
 				}
 				// check if NS works
 				if answer.NS == "ns1.google.com" {
 					sig.foundNS = true
+					sig.log.Infow("found NS", "name", answer.NS)
 				}
 				// check if SOA works
 				if answer.SOA.RName == "dns-admin.google.com" {
 					sig.foundSOA = true
+					sig.log.Infow("found SOA", "name", answer.SOA.RName)
 				}
 			}
 		}

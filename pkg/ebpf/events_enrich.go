@@ -169,11 +169,15 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 							continue // might happen during initialization (ctrl+c seg faults)
 						}
 						eventID := events.ID(event.EventID)
+						i, ok := enrichInfo[cgroupId]
+						if !ok {
+							logger.Errorw("enrich info not found in enrich queue", "cgroup_id", cgroupId)
+							continue
+						}
 						if eventID == events.CgroupMkdir {
 							// only one cgroup_mkdir should make it here
 							// report enrich success or error once
-							i := enrichInfo[cgroupId]
-							if i.err == nil || i.result.ContainerId == "" {
+							if i.err == nil && i.result.Name != "" {
 								logger.Debugw("done enriching in enrich queue", "cgroup_id", cgroupId)
 							} else {
 								logger.Errorw("failed enriching in enrich queue", "error", i.err, "cgroup_id", cgroupId)
@@ -182,9 +186,8 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 						// check if not enriched, and only enrich regular non cgroup related events
 						if event.Container.Name == "" && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
 							// event is not enriched: enrich if enrichment worked
-							i := enrichInfo[cgroupId]
 							if i.err == nil {
-								enrichEvent(event, i.result)
+								enrichEvent(event, i.result, cgroupId)
 							}
 						}
 						out <- event
@@ -237,7 +240,8 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	return out, errc
 }
 
-func enrichEvent(evt *trace.Event, cont containers.Container) {
+func enrichEvent(evt *trace.Event, cont containers.Container, cgroupId uint64) {
+	logger.Infow("enriching event", "event", evt.EventName, "container", cont, "cgroup_id", cgroupId)
 	evt.Container = trace.Container{
 		ID:          cont.ContainerId,
 		ImageName:   cont.Image,
