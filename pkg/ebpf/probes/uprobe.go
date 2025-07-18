@@ -82,7 +82,7 @@ func (p *Uprobe) attach(module *bpf.Module, args ...interface{}) error {
 		return errfmt.Errorf("error finding %s function offset: %v", p.symbolName, err)
 	}
 
-	link, err = prog.AttachUprobe(-1, p.binaryPath, uint32(offset))
+	link, err = prog.AttachUprobe(-1, p.binaryPath, offset)
 	if err != nil {
 		return errfmt.Errorf("error attaching uprobe on %s: %v", p.symbolName, err)
 	}
