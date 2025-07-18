@@ -155,7 +155,7 @@ for TEST in $TESTS; do
                         --log file:$logfile \
                         --signatures-dir "$SIG_DIR" \
                         --dnscache enable \
-                        --grpc-listen-addr unix:/tmp/tracee.sock \
+                        --server grpc.address=unix:/tmp/tracee.sock \
                         --events "$TEST""
     
     # Some tests might look for false positives and thus we shouldn't limit the scope for them

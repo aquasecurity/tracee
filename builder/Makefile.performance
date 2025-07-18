@@ -50,7 +50,7 @@ help:
 	@echo "    $$ make -f builder/Makefile.performance dashboard-stop"
 	@echo ""
 	@echo "Note: tracee should BE RUNNING before starting dashboard."
-	@echo "Note: run tracee with --pyroscope cmd line option."
+	@echo "Note: run tracee with --server http.pyroscope cmd line option."
 	@echo ""
 
 #
@@ -83,11 +83,11 @@ dashboard-start: | \
 		exit 0
 	fi
 	if [ $(shell $(CMD_PS) -axho args | grep -- "-[p]yroscope" | wc -l) -eq 0 ]; then
-		echo "tracee is NOT RUNNING with --pyroscope"
+		echo "tracee is NOT RUNNING with --server http.pyroscope"
 		exit 0
 	fi
 	if [ $(shell $(CMD_PS) -axho args | grep -- "-[p]prof" | wc -l) -eq 0 ]; then
-		echo "tracee is NOT RUNNING with --pprof"
+		echo "tracee is NOT RUNNING with --server http.pprof"
 		exit 0
 	fi
 	echo ""
