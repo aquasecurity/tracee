@@ -34,10 +34,10 @@ func InitProcessExecuteFailedGenerator() (*ExecFailedGenerator, error) {
 
 // ProcessExecuteFailed return the DeriveFunction for the "process_execute_failed" event.
 func (gen *ExecFailedGenerator) ProcessExecuteFailed() DeriveFunction {
-	return func(event trace.Event) ([]trace.Event, []error) {
+	return func(event *trace.Event) ([]trace.Event, []error) {
 		var errs []error
 		var derivedEvents []trace.Event
-		derivedEvent, err := gen.deriveEvent(&event)
+		derivedEvent, err := gen.deriveEvent(event)
 		if err != nil {
 			errs = append(errs, err)
 		}

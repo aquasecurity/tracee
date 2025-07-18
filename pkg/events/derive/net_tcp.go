@@ -17,8 +17,8 @@ import (
 
 func NetTCPConnect(cache *dnscache.DNSCache) DeriveFunction {
 	return deriveSingleEvent(events.NetTCPConnect,
-		func(event trace.Event) ([]interface{}, error) {
-			dstIP, dstPort, err := pickIpAndPort(event, "remote_addr")
+		func(event *trace.Event) ([]interface{}, error) {
+			dstIP, dstPort, err := pickIpAndPort(*event, "remote_addr")
 			if err != nil {
 				logger.Debugw("error picking address", "error", err)
 				return nil, nil

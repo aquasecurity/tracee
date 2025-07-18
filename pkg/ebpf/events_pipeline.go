@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"slices"
 	"strconv"
 	"sync"
 	"unsafe"
@@ -161,25 +160,43 @@ func (t *Tracee) queueEvents(ctx context.Context, in <-chan *trace.Event) (chan 
 func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event, t.config.PipelineChannelSize)
 	errc := make(chan error, 1)
+
+	// Create local decoder pool for this pipeline stage
+	decoderPool := &sync.Pool{
+		New: func() interface{} {
+			return bufferdecoder.New(nil, t.dataTypeDecoder)
+		},
+	}
+
 	go func() {
 		defer close(out)
 		defer close(errc)
 		for dataRaw := range sourceChan {
-			ebpfMsgDecoder := bufferdecoder.New(dataRaw, t.dataTypeDecoder)
+			// Get decoder from local pool and reset it with the provided buffer
+			ebpfMsgDecoder, ok := decoderPool.Get().(*bufferdecoder.EbpfDecoder)
+			if !ok {
+				t.handleError(errfmt.Errorf("failed to get decoder from pool: unexpected type"))
+				continue
+			}
+			ebpfMsgDecoder.SetBuffer(dataRaw)
+
 			var eCtx bufferdecoder.EventContext
 			if err := ebpfMsgDecoder.DecodeContext(&eCtx); err != nil {
 				t.handleError(err)
+				decoderPool.Put(ebpfMsgDecoder)
 				continue
 			}
 			var argnum uint8
 			if err := ebpfMsgDecoder.DecodeUint8(&argnum); err != nil {
 				t.handleError(err)
+				decoderPool.Put(ebpfMsgDecoder)
 				continue
 			}
 			eventId := events.ID(eCtx.EventID)
 			eventDefinition := events.Core.GetDefinitionByID(eventId)
 			if eventDefinition.NotValid() {
 				t.handleError(errfmt.Errorf("failed to get configuration of event %d", eventId))
+				decoderPool.Put(ebpfMsgDecoder)
 				continue
 			}
 
@@ -189,6 +206,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), evtFields, evtName, eventId)
 			if err != nil {
 				t.handleError(err)
+				decoderPool.Put(ebpfMsgDecoder)
 				continue
 			}
 
@@ -199,22 +217,16 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			}
 
 			_, containerInfo := t.containers.GetCgroupInfo(eCtx.CgroupID)
-			containerData := trace.Container{
-				ID:          containerInfo.ContainerId,
-				ImageName:   containerInfo.Image,
-				ImageDigest: containerInfo.ImageDigest,
-				Name:        containerInfo.Name,
-			}
-			kubernetesData := trace.Kubernetes{
-				PodName:      containerInfo.Pod.Name,
-				PodNamespace: containerInfo.Pod.Namespace,
-				PodUID:       containerInfo.Pod.UID,
-			}
 
-			commStr := string(utils.TrimTrailingNUL(eCtx.Comm[:]))       // clean potential trailing null
-			utsNameStr := string(utils.TrimTrailingNUL(eCtx.UtsName[:])) // clean potential trailing null
+			commBytes := utils.TrimTrailingNUL(eCtx.Comm[:])
+			utsNameBytes := utils.TrimTrailingNUL(eCtx.UtsName[:])
 
-			flags := parseContextFlags(containerData.ID, eCtx.Flags)
+			commStr := string(commBytes)
+			utsNameStr := string(utsNameBytes)
+
+			flags := parseContextFlags(containerInfo.ContainerId, eCtx.Flags)
+
+			// Optimize syscall lookup - reuse eventDefinition if possible
 			syscall := ""
 			if eCtx.Syscall != noSyscall {
 				// The syscall ID returned from eBPF is actually the event ID representing that syscall.
@@ -222,22 +234,28 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				// For 32-bit (compat) processes, the syscall ID gets translated in eBPF to the event ID of its
 				// 64-bit counterpart, or if it's a 32-bit exclusive syscall, to the event ID corresponding to it.
 				id := events.ID(eCtx.Syscall)
-				syscallDef := events.Core.GetDefinitionByID(id)
-				if syscallDef.NotValid() {
-					logger.Debugw(
-						fmt.Sprintf("Event %s with an invalid syscall id %d", evtName, id),
-						"Comm", commStr,
-						"UtsName", utsNameStr,
-						"EventContext", eCtx,
-					)
+				if id == eventId {
+					// Reuse the already-fetched eventDefinition
+					syscall = evtName
+				} else {
+					syscallDef := events.Core.GetDefinitionByID(id)
+					if syscallDef.NotValid() {
+						logger.Debugw(
+							fmt.Sprintf("Event %s with an invalid syscall id %d", evtName, id),
+							"Comm", commStr,
+							"UtsName", utsNameStr,
+							"EventContext", eCtx,
+						)
+					}
+					syscall = syscallDef.GetName()
 				}
-				syscall = syscallDef.GetName()
 			}
 
 			// get an event pointer from the pool
 			evt, ok := t.eventsPool.Get().(*trace.Event)
 			if !ok {
 				t.handleError(errfmt.Errorf("failed to get event from pool"))
+				decoderPool.Put(ebpfMsgDecoder)
 				continue
 			}
 
@@ -258,9 +276,18 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.ProcessName = commStr
 			evt.HostName = utsNameStr
 			evt.CgroupID = uint(eCtx.CgroupID)
-			evt.ContainerID = containerData.ID
-			evt.Container = containerData
-			evt.Kubernetes = kubernetesData
+			evt.ContainerID = containerInfo.ContainerId
+			evt.Container = trace.Container{
+				ID:          containerInfo.ContainerId,
+				ImageName:   containerInfo.Image,
+				ImageDigest: containerInfo.ImageDigest,
+				Name:        containerInfo.Name,
+			}
+			evt.Kubernetes = trace.Kubernetes{
+				PodName:      containerInfo.Pod.Name,
+				PodNamespace: containerInfo.Pod.Namespace,
+				PodUID:       containerInfo.Pod.UID,
+			}
 			evt.EventID = int(eCtx.EventID)
 			evt.EventName = evtName
 			evt.PoliciesVersion = eCtx.PoliciesVersion
@@ -296,6 +323,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				if !hasDerivation && !reqBySig {
 					_ = t.stats.EventsFiltered.Increment()
 					t.eventsPool.Put(evt)
+					decoderPool.Put(ebpfMsgDecoder)
 					continue
 				}
 			}
@@ -303,8 +331,12 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			select {
 			case out <- evt:
 			case <-ctx.Done():
+				decoderPool.Put(ebpfMsgDecoder)
 				return
 			}
+
+			// Return decoder to pool for reuse
+			decoderPool.Put(ebpfMsgDecoder)
 		}
 	}()
 	return out, errc
@@ -325,6 +357,17 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		return bitmap
 	}
 
+	// Early exit if no policies match
+	if bitmap == 0 {
+		event.MatchedPoliciesUser = 0
+		return 0
+	}
+
+	// Cache frequently accessed event fields
+	eventUID := uint32(event.UserID)
+	eventPID := uint32(event.HostProcessID)
+	eventRetVal := int64(event.ReturnValue)
+
 	// range through each userland filterable policy
 	for it := t.policyManager.CreateUserlandIterator(); it.HasNext(); {
 		p := it.Next()
@@ -339,75 +382,56 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		// event ID. This happens whenever the event submitted by the kernel is going to
 		// derive an event that this policy is interested in. In this case, don't do
 		// anything and let the derivation stage handle this event.
-		_, ok := p.Rules[eventID]
+		rule, ok := p.Rules[eventID]
 		if !ok {
 			continue
 		}
 
 		//
-		// Do the userland filtering
+		// Do the userland filtering - ordered by efficiency (cheapest first)
 		//
 
-		// 1. event scope filters
-		if !p.Rules[eventID].ScopeFilter.Filter(*event) {
-			utils.ClearBit(&bitmap, bitOffset)
-			continue
-		}
-
-		// 2. event return value filters
-		if !p.Rules[eventID].RetFilter.Filter(int64(event.ReturnValue)) {
-			utils.ClearBit(&bitmap, bitOffset)
-			continue
-		}
-
-		// 3. event data filters
-		// TODO: remove PrintMemDump check once events params are introduced
-		//       i.e. print_mem_dump.params.symbol_name=system:security_file_open
-		// events.PrintMemDump bypass was added due to issue #2546
-		// because it uses usermode applied filters as parameters for the event,
-		// which occurs after filtering
-		if eventID != events.PrintMemDump && !p.Rules[eventID].DataFilter.Filter(event.Args) {
-			utils.ClearBit(&bitmap, bitOffset)
-			continue
-		}
-
-		//
-		// Do the userland filtering for filters with global ranges
-		//
-
+		// 1. UID/PID range checks (very fast)
 		if p.UIDFilter.Enabled() {
-			//
-			// An event with a matched policy for global min/max range might not match all
-			// policies with UID and PID filters with different min/max ranges, e.g.:
-			//
-			//   policy 59: comm=who, pid>100 and pid<1257738
-			//   policy 30: comm=who, pid>502000 and pid<505000
-			//
-			// For kernel filtering, the flags from the example would compute:
-			//
-			// pid_max = 1257738
-			// pid_min = 100
-			//
-			// Userland filtering needs to refine the bitmap to match the policies: A
-			// "who" command with pid 150 is a match ONLY for the policy 59 in this
-			// example.
-			//
-			// Clear the policy bit if the event UID is not in THIS policy UID min/max range:
-			if !p.UIDFilter.InMinMaxRange(uint32(event.UserID)) {
+			if !p.UIDFilter.InMinMaxRange(eventUID) {
 				utils.ClearBit(&bitmap, bitOffset)
 				continue
 			}
 		}
 
 		if p.PIDFilter.Enabled() {
-			//
-			// The same happens for the global PID min/max range. Clear the policy bit if
-			// the event PID is not in THIS policy PID min/max range.
-			//
-			if !p.PIDFilter.InMinMaxRange(uint32(event.HostProcessID)) {
+			if !p.PIDFilter.InMinMaxRange(eventPID) {
 				utils.ClearBit(&bitmap, bitOffset)
 				continue
 			}
+		}
+
+		// 2. event return value filters (fast)
+		if !rule.RetFilter.Filter(eventRetVal) {
+			utils.ClearBit(&bitmap, bitOffset)
+			continue
+		}
+
+		// 3. event scope filters (medium cost)
+		if !rule.ScopeFilter.Filter(*event) {
+			utils.ClearBit(&bitmap, bitOffset)
+			continue
+		}
+
+		// 4. event data filters (potentially expensive)
+		// TODO: remove PrintMemDump check once events params are introduced
+		//       i.e. print_mem_dump.params.symbol_name=system:security_file_open
+		// events.PrintMemDump bypass was added due to issue #2546
+		// because it uses usermode applied filters as parameters for the event,
+		// which occurs after filtering
+		if eventID != events.PrintMemDump && !rule.DataFilter.Filter(event.Args) {
+			utils.ClearBit(&bitmap, bitOffset)
+			continue
+		}
+
+		// Early exit optimization: if bitmap becomes 0, no need to continue
+		if bitmap == 0 {
+			break
 		}
 	}
 
@@ -528,19 +552,12 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					continue // might happen during initialization (ctrl+c seg faults)
 				}
 
-				// Get a copy of our event before sending it down the pipeline. This is
-				// needed because later modification of the event (in particular of the
-				// matched policies) can affect the derivation and later pipeline logic
-				// acting on the derived event.
+				// Derive events using original event pointer directly (no copying needed)
+				// We derive before sending the event downstream to avoid race conditions
+				derivatives, errors := t.eventDerivations.DeriveEvent(event)
 
-				eventCopy := *event
-				// shallow clone the event arguments (new slice is created) before deriving the copy,
-				// to ensure the original event arguments are not modified by the derivation stage.
-				argsCopy := slices.Clone(event.Args)
+				// Send original event down the pipeline
 				out <- event
-
-				// Note: event is being derived before any of its args are parsed.
-				derivatives, errors := t.eventDerivations.DeriveEvent(eventCopy, argsCopy)
 
 				for _, err := range errors {
 					t.handleError(err)
@@ -615,8 +632,8 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 			// Populate the event with the names of the matched policies.
 			event.MatchedPolicies = t.policyManager.MatchedNames(event.MatchedPoliciesUser)
 
-			// Parse args here if the rule engine is NOT enabled (parsed there if it is).
-			if t.config.Output.ParseArguments && t.config.EngineConfig.Mode != engine.ModeSingleBinary {
+			// Parse arguments for output formatting if enabled.
+			if t.config.Output.ParseArguments {
 				err := t.parseArguments(event)
 				if err != nil {
 					t.handleError(err)
@@ -722,19 +739,26 @@ func (t *Tracee) handleError(err error) {
 	logger.Errorw("Tracee encountered an error", "error", err)
 }
 
-// parseArguments parses the arguments of the event. It must happen before the signatures
-// are evaluated. For the new experience (cmd/tracee), it needs to happen in the the
-// "events_engine" stage of the pipeline. For the old experience (cmd/tracee-ebpf &&
-// cmd/tracee-rules), it happens on the "sink" stage of the pipeline (close to the
-// printers).
+// parseArguments parses the arguments of the event for display purposes.
+// This converts raw arguments (e.g., syscall numbers, addresses) to human-readable
+// format (e.g., syscall names, file paths). It uses the efficient slice-based parsing
+// functions and modifies the event's Args slice in-place.
 func (t *Tracee) parseArguments(e *trace.Event) error {
-	err := events.ParseArgs(e)
+	if !t.config.Output.ParseArguments || len(e.Args) == 0 {
+		return nil
+	}
+
+	// Parse arguments in-place using the efficient slice-based functions
+	err := events.ParseArgsSlice(e.Args, e.EventID)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	if t.config.Output.ParseArgumentsFDs {
-		return events.ParseArgsFDs(e, uint64(e.Timestamp), t.FDArgPathMap)
+		err = events.ParseArgsFDsSlice(e.Args, uint64(e.Timestamp), t.FDArgPathMap)
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
 	}
 
 	return nil

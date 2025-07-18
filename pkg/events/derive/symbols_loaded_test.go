@@ -179,7 +179,8 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 				t.Parallel()
 
 				gen := initSymbolsLoadedEventGenerator(mockLoader, testCase.watchedSymbols, testCase.whitelistedLibs)
-				eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, testCase.loadingSO.info))
+				event := generateSOLoadedEvent(pid, testCase.loadingSO.info)
+				eventArgs, err := gen.deriveArgs(&event)
 				assert.Empty(t, errChan)
 				require.NoError(t, err)
 				if len(testCase.expectedSymbols) > 0 {
@@ -207,7 +208,8 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil)
 
 			// First error should always be logged for debug
-			eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			event := generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"})
+			eventArgs, err := gen.deriveArgs(&event)
 			assert.NoError(t, err)
 			assert.Nil(t, eventArgs)
 			assert.NotEmpty(t, errChan)
@@ -215,7 +217,8 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			assert.Empty(t, errChan)
 
 			// Error should be suppressed
-			eventArgs, err = gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			event = generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"})
+			eventArgs, err = gen.deriveArgs(&event)
 			assert.NoError(t, err)
 			assert.Nil(t, eventArgs)
 			assert.Empty(t, errChan)
@@ -227,13 +230,15 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil)
 
 			// First error should create debug log, so we won't see it
-			eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			event := generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"})
+			eventArgs, err := gen.deriveArgs(&event)
 			assert.NoError(t, err)
 			assert.Nil(t, eventArgs)
 			assert.Empty(t, errChan)
 
 			// Error should be suppressed
-			eventArgs, err = gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			event = generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"})
+			eventArgs, err = gen.deriveArgs(&event)
 			assert.NoError(t, err)
 			assert.Nil(t, eventArgs)
 			assert.Empty(t, errChan)
@@ -245,13 +250,15 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil)
 
 			// First error should create warning
-			eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			event := generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"})
+			eventArgs, err := gen.deriveArgs(&event)
 			assert.NoError(t, err)
 			assert.Nil(t, eventArgs)
 			assert.Empty(t, errChan)
 
 			// Error should be suppressed
-			eventArgs, err = gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			event = generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"})
+			eventArgs, err = gen.deriveArgs(&event)
 			assert.NoError(t, err)
 			assert.Nil(t, eventArgs)
 			assert.Empty(t, errChan)

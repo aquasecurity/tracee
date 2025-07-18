@@ -59,6 +59,7 @@ type Engine struct {
 	stats            metrics.Stats
 	dataSources      map[string]map[string]detect.DataSource
 	dataSourcesMutex sync.RWMutex
+	metadataCache    map[detect.Signature]*detect.SignatureMetadata
 }
 
 // EventSources is a bundle of input sources used to configure the Engine
@@ -87,6 +88,7 @@ func NewEngine(config Config, sources EventSources, output chan *detect.Finding)
 	engine.signaturesMutex.Lock()
 	engine.signatures = make(map[detect.Signature]chan protocol.Event)
 	engine.signaturesIndex = make(map[detect.SignatureEventSelector][]detect.Signature)
+	engine.metadataCache = make(map[detect.Signature]*detect.SignatureMetadata)
 	engine.signaturesMutex.Unlock()
 
 	engine.dataSourcesMutex.Lock()
@@ -98,16 +100,20 @@ func NewEngine(config Config, sources EventSources, output chan *detect.Finding)
 
 // signatureStart is the signature handling business logics.
 func signatureStart(signature detect.Signature, c chan protocol.Event, wg *sync.WaitGroup, noSignatures bool) {
+	defer wg.Done()
+
+	// Pre-fetch metadata once to avoid repeated calls on errors
+	meta, _ := signature.GetMetadata()
+	sigName := meta.Name
+
 	for e := range c {
 		if noSignatures {
 			continue // Just drain the channel without processing
 		}
 		if err := signature.OnEvent(e); err != nil {
-			meta, _ := signature.GetMetadata()
-			logger.Errorw("Handling event by signature " + meta.Name + ": " + err.Error())
+			logger.Errorw("Handling event by signature " + sigName + ": " + err.Error())
 		}
 	}
-	wg.Done()
 }
 
 // Init loads and initializes signatures and data sources passed in NewEngine.
@@ -155,6 +161,7 @@ func (engine *Engine) unloadAllSignatures() {
 		sig.Close()
 		close(c)
 		delete(engine.signatures, sig)
+		delete(engine.metadataCache, sig)
 	}
 	engine.signaturesIndex = make(map[detect.SignatureEventSelector][]detect.Signature)
 }
@@ -197,48 +204,29 @@ func (engine *Engine) processEvent(event protocol.Event) {
 	engine.signaturesMutex.RLock()
 	defer engine.signaturesMutex.RUnlock()
 
-	signatureSelector := detect.SignatureEventSelector{
-		Source: event.Headers.Selector.Source,
-		Name:   event.Headers.Selector.Name,
-		Origin: event.Headers.Selector.Origin,
-	}
 	_ = engine.stats.Events.Increment()
 
-	// Check the selector for every case and partial case
+	// Pre-compute all selector patterns to avoid repeated struct creation
+	sourceSelector := event.Headers.Selector.Source
+	nameSelector := event.Headers.Selector.Name
+	originSelector := event.Headers.Selector.Origin
 
-	// Match full selector
-	for _, s := range engine.signaturesIndex[signatureSelector] {
-		engine.dispatchEvent(s, event)
-	}
-
-	// Match partial selector, select for all origins
-	partialSigEvtSelector := detect.SignatureEventSelector{
-		Source: signatureSelector.Source,
-		Name:   signatureSelector.Name,
-		Origin: ALL_EVENT_ORIGINS,
-	}
-	for _, s := range engine.signaturesIndex[partialSigEvtSelector] {
-		engine.dispatchEvent(s, event)
-	}
-
-	// Match partial selector, select for event names
-	partialSigEvtSelector = detect.SignatureEventSelector{
-		Source: signatureSelector.Source,
-		Name:   ALL_EVENT_TYPES,
-		Origin: signatureSelector.Origin,
-	}
-	for _, s := range engine.signaturesIndex[partialSigEvtSelector] {
-		engine.dispatchEvent(s, event)
+	selectors := [4]detect.SignatureEventSelector{
+		// Full selector
+		{Source: sourceSelector, Name: nameSelector, Origin: originSelector},
+		// Partial selector, select for all origins
+		{Source: sourceSelector, Name: nameSelector, Origin: ALL_EVENT_ORIGINS},
+		// Partial selector, select for event names
+		{Source: sourceSelector, Name: ALL_EVENT_TYPES, Origin: originSelector},
+		// Partial selector, select for all origins and event names
+		{Source: sourceSelector, Name: ALL_EVENT_TYPES, Origin: ALL_EVENT_ORIGINS},
 	}
 
-	// Match partial selector, select for all origins and event names
-	partialSigEvtSelector = detect.SignatureEventSelector{
-		Source: signatureSelector.Source,
-		Name:   ALL_EVENT_TYPES,
-		Origin: ALL_EVENT_ORIGINS,
-	}
-	for _, s := range engine.signaturesIndex[partialSigEvtSelector] {
-		engine.dispatchEvent(s, event)
+	// Single loop through all selector patterns
+	for _, selector := range selectors {
+		for _, s := range engine.signaturesIndex[selector] {
+			engine.dispatchEvent(s, event)
+		}
 	}
 }
 
@@ -307,9 +295,9 @@ func (engine *Engine) dispatchEvent(s detect.Signature, event protocol.Event) {
 }
 
 func (engine *Engine) filterDispatchInPipeline(s detect.Signature, event protocol.Event) bool {
-	md, err := s.GetMetadata()
-	if err != nil {
-		logger.Warnw(fmt.Sprintf("event %s not dispatched to signature: no metadata", event.Selector().Name))
+	md, ok := engine.metadataCache[s]
+	if !ok {
+		logger.Warnw(fmt.Sprintf("event %s not dispatched to signature: no cached metadata", event.Selector().Name))
 		return false
 	}
 	evtName := md.EventName
@@ -384,6 +372,7 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 	c := make(chan protocol.Event, engine.config.SignatureBufferSize)
 	engine.signaturesMutex.Lock()
 	engine.signatures[signature] = c
+	engine.metadataCache[signature] = &metadata
 	engine.signaturesMutex.Unlock()
 
 	// insert in engine.signaturesIndex map
@@ -432,6 +421,7 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 	c, ok := engine.signatures[signature]
 	if ok {
 		delete(engine.signatures, signature)
+		delete(engine.metadataCache, signature)
 		defer func() {
 			_ = engine.stats.Signatures.Decrement()
 		}()

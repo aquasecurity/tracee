@@ -2,7 +2,6 @@ package ebpf
 
 import (
 	"context"
-	"slices"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
@@ -64,6 +63,13 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		defer close(engineInput)
 		defer close(engineOutput)
 
+		// Cache events to submit for better performance
+		// This map is created once and reused for all events
+		submittableEvents := make(map[events.ID]bool)
+		for _, eventID := range t.policyManager.EventsToSubmit() {
+			submittableEvents[eventID] = true
+		}
+
 		// feedEngine feeds an event to the rules engine
 		feedEngine := func(event *trace.Event) {
 			if event == nil {
@@ -72,33 +78,28 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 			id := events.ID(event.EventID)
 
-			// if the event is NOT marked as submit, it is not sent to the rules engine
-			if !t.policyManager.IsEventToSubmit(id) {
+			// Fast lookup in cached map instead of policy manager call
+			if !submittableEvents[id] {
 				return
 			}
 
 			// Get a copy of event before parsing it or sending it down the pipeline.
-			// This is needed because a later modification of the event (matched policies or
-			// arguments parsing) can affect engine stage.
+			// This prevents race conditions between the sink stage (which modifies events
+			// for output formatting) and the signature engine (which needs raw event data).
 			eventCopy := *event
 
-			if t.config.Output.ParseArguments {
-				// shallow clone the event arguments before parsing them (new slice is created),
-				// to keep the eventCopy with raw arguments.
-				eventCopy.Args = slices.Clone(event.Args)
-
-				err := t.parseArguments(event)
-				if err != nil {
-					t.handleError(err)
-					return
-				}
+			// Deep copy the Args slice to prevent race conditions during argument parsing
+			if len(event.Args) > 0 {
+				eventCopy.Args = make([]trace.Argument, len(event.Args))
+				copy(eventCopy.Args, event.Args)
+			} else {
+				eventCopy.Args = nil
 			}
 
-			// pass the event to the sink stage, if the event is also marked as emit
-			// it will be sent to print by the sink stage
+			// Send original event to sink stage (sink will handle parsing if needed)
 			out <- event
 
-			// send the copied event to the rules engine
+			// Send protocol event to signature engine using the safe copy
 			engineInput <- eventCopy.ToProtocol()
 		}
 

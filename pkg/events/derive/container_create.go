@@ -16,10 +16,10 @@ func ContainerCreate(cts *containers.Manager) DeriveFunction {
 	return deriveSingleEvent(events.ContainerCreate, deriveContainerCreateArgs(cts))
 }
 
-func deriveContainerCreateArgs(cts *containers.Manager) func(event trace.Event) ([]interface{}, error) {
-	return func(event trace.Event) ([]interface{}, error) {
+func deriveContainerCreateArgs(cts *containers.Manager) func(event *trace.Event) ([]interface{}, error) {
+	return func(event *trace.Event) ([]interface{}, error) {
 		// if cgroup_id is from non default hid (v1 case), the cgroup info query will fail, so we skip
-		if check, err := isCgroupEventInHid(&event, cts); !check {
+		if check, err := isCgroupEventInHid(event, cts); !check {
 			return nil, errfmt.WrapError(err)
 		}
 		cgroupId, err := parse.ArgVal[uint64](event.Args, "cgroup_id")
@@ -28,7 +28,7 @@ func deriveContainerCreateArgs(cts *containers.Manager) func(event trace.Event) 
 		}
 		if info, container := cts.GetCgroupInfo(cgroupId); info.ContainerRoot {
 			logger.Debugw("derive container_create from cgroup", "cgroup_id", cgroupId, "container_id", container.ContainerId)
-			args := []interface{}{
+			argsResult := []interface{}{
 				container.Runtime.String(),
 				container.ContainerId,
 				container.CreatedAt.UnixNano(),
@@ -40,7 +40,7 @@ func deriveContainerCreateArgs(cts *containers.Manager) func(event trace.Event) 
 				container.Pod.UID,
 				container.Pod.Sandbox,
 			}
-			return args, nil
+			return argsResult, nil
 		}
 		return nil, nil
 	}

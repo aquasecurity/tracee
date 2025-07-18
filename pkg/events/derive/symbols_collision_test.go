@@ -429,9 +429,8 @@ func TestSymbolsCollisionArgsGenerator_deriveArgs(t *testing.T) {
 			}
 			gen.loadedObjsPerProcCache.SetProcessLoadedObjects(pid, loadedSOs)
 
-			colEventsArgs, errs := gen.deriveArgs(
-				generateSOLoadedEvent(pid, testCase.loadingSO.ObjInfo),
-			)
+			event := generateSOLoadedEvent(pid, testCase.loadingSO.ObjInfo)
+			colEventsArgs, errs := gen.deriveArgs(&event)
 			require.Empty(t, errs)
 			for _, lso := range testCase.loadedSOs {
 				if len(lso.expectedCollisions) > 0 {
@@ -522,11 +521,13 @@ func TestSymbolsCollision(t *testing.T) {
 				mockLoader.addSOSymbols(
 					testSOInstance{info: lso.so.ObjInfo, syms: lso.so.GetSymbols()},
 				)
-				_, errs := deriveFunc(generateSOLoadedEvent(pid, lso.so.ObjInfo))
+				event := generateSOLoadedEvent(pid, lso.so.ObjInfo)
+				_, errs := deriveFunc(&event)
 				require.Empty(t, errs)
 			}
 
-			colEvents, errs := deriveFunc(generateSOLoadedEvent(pid, testCase.loadingSO.ObjInfo))
+			event := generateSOLoadedEvent(pid, testCase.loadingSO.ObjInfo)
+			colEvents, errs := deriveFunc(&event)
 			require.Empty(t, errs)
 			for _, lso := range testCase.loadedSOs {
 				if len(lso.expectedCollisions) > 0 {
