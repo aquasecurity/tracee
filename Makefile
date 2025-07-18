@@ -917,6 +917,7 @@ test-integration: \
 		-v \
 		-p 1 \
 		-count=1 \
+		-timeout=20m \
 		./tests/integration/... \
 
 .PHONY: test-upstream-libbpfgo
