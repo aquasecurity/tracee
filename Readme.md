@@ -25,12 +25,14 @@ Tracee should run on most common Linux distributions and kernels. For compatibil
 ### Using Docker
 
 ```shell
-docker run --name tracee -it --rm \
+sudo docker run --name tracee -it --rm \
   --pid=host --cgroupns=host --privileged \
   -v /etc/os-release:/etc/os-release-host:ro \
   -v /var/run:/var/run:ro \
   aquasec/tracee:latest
 ```
+
+docker command is run with sudo (Tracee needs root privileges when starting - it takes care of remove caps when not required).
 
 For a complete walkthrough please see the [Docker getting started guide][docker-guide].
 
