@@ -367,9 +367,15 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		logger.Debugw("No-signatures mode enabled, using same signature selection as normal mode for fair comparison")
 	}
 
+	sequentialSignatures := viper.GetBool("sequential-signatures")
+	if sequentialSignatures {
+		logger.Debugw("Sequential signatures mode enabled for CPU optimization")
+	}
+
 	runner.TraceeConfig.EngineConfig = engine.Config{
 		Mode:                engine.ModeSingleBinary,
 		NoSignatures:        noSignaturesMode,
+		UseSequential:       sequentialSignatures,
 		AvailableSignatures: signatures,
 		SelectedSignatures:  selectSignaturesBasedOnPolicies(signatures, initialPolicies),
 		// This used to be a flag, we have removed the flag from this binary to test

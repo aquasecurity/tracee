@@ -30,6 +30,7 @@ const (
 type Config struct {
 	Mode                Mode // Engine in pipeline mode, can be ModeRules, ModeAnalyze or ModeSingleBinary
 	NoSignatures        bool // Skip signature processing while keeping events loaded (for performance testing)
+	UseSequential       bool // Use sequential processing for CPU optimization
 	SignatureBufferSize uint
 	AvailableSignatures []detect.Signature // All available signatures found in signature directories
 	SelectedSignatures  []detect.Signature // Only signatures that should be loaded based on user policies/events
@@ -128,12 +129,20 @@ func (engine *Engine) Init() error {
 // note that the input and output channels are created by the consumer and therefore are not closed
 func (engine *Engine) Start(ctx context.Context) {
 	defer engine.unloadAllSignatures()
-	engine.signaturesMutex.RLock()
-	for s, c := range engine.signatures {
-		engine.waitGroup.Add(1)
-		go signatureStart(s, c, &engine.waitGroup, engine.config.NoSignatures)
+
+	if engine.config.UseSequential {
+		logger.Debugw("Starting signature engine in sequential mode for CPU optimization")
+	} else {
+		logger.Debugw("Starting signature engine in parallel mode")
+		// Only start goroutines in parallel mode
+		engine.signaturesMutex.RLock()
+		for s, c := range engine.signatures {
+			engine.waitGroup.Add(1)
+			go signatureStart(s, c, &engine.waitGroup, engine.config.NoSignatures)
+		}
+		engine.signaturesMutex.RUnlock()
 	}
-	engine.signaturesMutex.RUnlock()
+
 	engine.consumeSources(ctx)
 }
 
@@ -142,7 +151,10 @@ func (engine *Engine) unloadAllSignatures() {
 	defer engine.signaturesMutex.Unlock()
 	for sig, c := range engine.signatures {
 		sig.Close()
-		close(c)
+		// Only close channel if it exists (parallel mode)
+		if c != nil {
+			close(c)
+		}
 		delete(engine.signatures, sig)
 	}
 	engine.signaturesIndex = make(map[detect.SignatureEventSelector][]detect.Signature)
@@ -285,7 +297,18 @@ drain:
 }
 
 func (engine *Engine) dispatchEvent(s detect.Signature, event protocol.Event) {
-	engine.signatures[s] <- event
+	if engine.config.UseSequential {
+		// Sequential mode: Direct call for maximum CPU efficiency
+		if !engine.config.NoSignatures {
+			if err := s.OnEvent(event); err != nil {
+				meta, _ := s.GetMetadata()
+				logger.Errorw("Processing event in signature " + meta.Name + ": " + err.Error())
+			}
+		}
+	} else {
+		// Parallel mode: Original channel dispatch
+		engine.signatures[s] <- event
+	}
 }
 
 // TODO: This method seems not to be used, let's confirm inside the team and remove it if not needed
@@ -296,10 +319,14 @@ func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) 
 	if err != nil {
 		return id, err
 	}
-	engine.signaturesMutex.RLock()
-	engine.waitGroup.Add(1)
-	go signatureStart(signature, engine.signatures[signature], &engine.waitGroup, engine.config.NoSignatures)
-	engine.signaturesMutex.RUnlock()
+
+	// Only start goroutine in parallel mode
+	if !engine.config.UseSequential {
+		engine.signaturesMutex.RLock()
+		engine.waitGroup.Add(1)
+		go signatureStart(signature, engine.signatures[signature], &engine.waitGroup, engine.config.NoSignatures)
+		engine.signaturesMutex.RUnlock()
+	}
 
 	metadata, _ := signature.GetMetadata()
 	logger.Debugw("Signature loaded at runtime", "signature", metadata.Name, "event", metadata.EventName, "id", metadata.ID)
@@ -347,9 +374,15 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 		}
 	}
 
-	c := make(chan protocol.Event, engine.config.SignatureBufferSize)
 	engine.signaturesMutex.Lock()
-	engine.signatures[signature] = c
+	if engine.config.UseSequential {
+		// Sequential mode: No channel needed, store nil
+		engine.signatures[signature] = nil
+	} else {
+		// Parallel mode: Create and store channel
+		c := make(chan protocol.Event, engine.config.SignatureBufferSize)
+		engine.signatures[signature] = c
+	}
 	engine.signaturesMutex.Unlock()
 
 	// insert in engine.signaturesIndex map
@@ -402,7 +435,10 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 			_ = engine.stats.Signatures.Decrement()
 		}()
 		defer signature.Close()
-		defer close(c)
+		// Only close channel if it exists (parallel mode)
+		if c != nil {
+			defer close(c)
+		}
 
 		metadata, _ := signature.GetMetadata()
 		logger.Debugw("Signature unloaded at runtime", "signature", metadata.Name, "event", metadata.EventName, "id", metadata.ID)
