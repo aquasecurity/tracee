@@ -28,18 +28,7 @@ const (
 
 // Config defines the engine's configurable values
 type Config struct {
-	// Engine-in-Pipeline related configuration
-	Mode             Mode
-	SigNameToEventID map[string]int32 // Cache of loaded signature event names to event ids, used to filter in dispatching
-
-	// Callback from tracee to determine if event should be dispatched to signature.
-	// This is done as a callback becaues importing the events package breaks compilation for the
-	// tracee-rules binary.
-	// When tracee-rules is removed, and the policy coordinator is implemented (PR #3305)
-	// this solution should be abandoned in favor of using it alongside the engine.
-	ShouldDispatchEvent func(eventIdInt32 int32) bool
-
-	// General engine configuration
+	Mode                Mode // Engine in pipeline mode, can be ModeRules, ModeAnalyze or ModeSingleBinary
 	NoSignatures        bool // Skip signature processing while keeping events loaded (for performance testing)
 	SignatureBufferSize uint
 	AvailableSignatures []detect.Signature // All available signatures found in signature directories
@@ -296,30 +285,7 @@ drain:
 }
 
 func (engine *Engine) dispatchEvent(s detect.Signature, event protocol.Event) {
-	if engine.config.Mode == ModeSingleBinary {
-		// Filter only if engine runs as part of the event pipeline (single binary mode)
-		if ok := engine.filterDispatchInPipeline(s, event); !ok {
-			return
-		}
-	}
-
 	engine.signatures[s] <- event
-}
-
-func (engine *Engine) filterDispatchInPipeline(s detect.Signature, event protocol.Event) bool {
-	md, err := s.GetMetadata()
-	if err != nil {
-		logger.Warnw(fmt.Sprintf("event %s not dispatched to signature: no metadata", event.Selector().Name))
-		return false
-	}
-	evtName := md.EventName
-	id, ok := engine.config.SigNameToEventID[evtName] // use specialized cache to avoid definiton lookup
-	if !ok {
-		logger.Warnw(fmt.Sprintf("event %s not dispatched to signature: no eventname declared for siganture %s", event.Selector().Name, md.ID))
-		return false
-	}
-
-	return engine.config.ShouldDispatchEvent(id)
 }
 
 // TODO: This method seems not to be used, let's confirm inside the team and remove it if not needed

@@ -99,7 +99,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	sigNameToEventId := sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
+	sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
 
 	// Initialize a tracee config structure
 
@@ -370,7 +370,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	runner.TraceeConfig.EngineConfig = engine.Config{
 		Mode:                engine.ModeSingleBinary,
 		NoSignatures:        noSignaturesMode,
-		SigNameToEventID:    sigNameToEventId,
 		AvailableSignatures: signatures,
 		SelectedSignatures:  selectSignaturesBasedOnPolicies(signatures, initialPolicies),
 		// This used to be a flag, we have removed the flag from this binary to test
