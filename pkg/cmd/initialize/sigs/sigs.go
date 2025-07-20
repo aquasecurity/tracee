@@ -9,7 +9,7 @@ import (
 	"github.com/aquasecurity/tracee/types/detect"
 )
 
-func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[string]int32 {
+func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 	namesToIds := allocateEventIdsForSigs(startId, sigs)
 
 	for _, s := range sigs {
@@ -108,7 +108,6 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 			continue
 		}
 	}
-	return namesToIds
 }
 
 // allocateEventIdsForSigs give each signature an event ID, and return the matching between

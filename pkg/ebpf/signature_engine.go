@@ -29,11 +29,6 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	// Prepare built in data sources
 	t.config.EngineConfig.DataSources = append(t.config.EngineConfig.DataSources, t.PrepareBuiltinDataSources()...)
 
-	// Share event states (by reference)
-	t.config.EngineConfig.ShouldDispatchEvent = func(eventIdInt32 int32) bool {
-		return t.policyManager.IsEventSelected(events.ID(eventIdInt32))
-	}
-
 	sigEngine, err := engine.NewEngine(t.config.EngineConfig, source, engineOutput)
 	if err != nil {
 		logger.Fatalw("failed to start signature engine in \"everything is an event\" mode", "error", err)
