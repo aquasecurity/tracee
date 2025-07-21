@@ -311,6 +311,7 @@ jobs:
       - graas_ami-${{ matrix.ami }}_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ matrix.sufix }}
       - EXECUTION_TYPE=LONG
     strategy:
+      fail-fast: false
       matrix:
         include: ${{fromJson(needs.generate-matrix.outputs.matrix01)}}
     env:
