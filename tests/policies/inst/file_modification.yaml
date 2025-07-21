@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: file-modification-test
+  annotations:
+    description: test tracee's file modification events
+spec:
+  scope: 
+    - comm=echo,write
+  rules:
+    - event: FILE_MODIFICATION

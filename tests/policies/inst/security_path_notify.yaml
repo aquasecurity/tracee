@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: security-path-notify-test
+  annotations:
+    description: test tracee's security path notify events
+spec:
+  scope: 
+    - comm=fsnotify_tester
+  rules:
+    - event: SECURITY_PATH_NOTIFY

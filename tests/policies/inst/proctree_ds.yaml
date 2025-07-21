@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: proctree-ds-test
+  annotations:
+    description: test tracee's proctree data source events
+spec: 
+  scope: 
+    - comm=proctreetester
+  rules:
+    - event: PROCTREE_DATA_SOURCE

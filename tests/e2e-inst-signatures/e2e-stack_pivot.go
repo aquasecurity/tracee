@@ -11,12 +11,13 @@ import (
 
 type e2eStackPivot struct {
 	cb            detect.SignatureHandler
-	falsePositive bool
+	log           detect.Logger
+	falsePositive bool // TODO: re-figure out how to handle false positives, currently they get triggered by other tests
 }
 
 func (sig *e2eStackPivot) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
-
+	sig.log = ctx.Logger
 	return nil
 }
 

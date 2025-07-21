@@ -18,11 +18,13 @@ import (
 //        This will cause it trigger once and reset it status.
 
 type e2eHTTPResponse struct {
-	cb detect.SignatureHandler
+	cb  detect.SignatureHandler
+	log detect.Logger
 }
 
 func (sig *e2eHTTPResponse) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
+	sig.log = ctx.Logger
 	return nil
 }
 
@@ -61,6 +63,16 @@ func (sig *e2eHTTPResponse) OnEvent(event protocol.Event) error {
 		}
 
 		if !strings.HasPrefix(httpResponse.Protocol, "HTTP/") {
+			sig.log.Infow("not HTTP", "protocol", httpResponse.Protocol)
+			return nil
+		}
+
+		location := httpResponse.Headers["Location"]
+		if len(location) == 0 {
+			return nil
+		}
+		if !strings.Contains(location[0], "google.com") {
+			sig.log.Infow("not google.com", "location", location[0])
 			return nil
 		}
 

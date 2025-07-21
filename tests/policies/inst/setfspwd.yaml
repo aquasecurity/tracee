@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: set-fs-pwd-test
+  annotations:
+    description: test tracee's setfs pwd events
+spec:
+  scope: 
+    - comm=set_fs_pwd.sh
+  rules:
+    - event: SET_FS_PWD

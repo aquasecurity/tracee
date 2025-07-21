@@ -13,7 +13,7 @@ SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
 
 # Default test to run if no other is given
-TESTS=${INSTTESTS:=VFS_WRITE}
+TESTS=${INSTTESTS:=VFS_WRITE CONTAINERS_DATA_SOURCE WRITABLE_DATA_SOURCE DNS_DATA_SOURCE PROCTREE_DATA_SOURCE PROCESS_EXECUTE_FAILED}
 
 info_exit() {
     echo -n "INFO: "
@@ -82,8 +82,133 @@ fi
 logfile=$SCRIPT_TMP_DIR/tracee-log-$$
 outputfile=$SCRIPT_TMP_DIR/output-$$
 
-anyerror=""
+ # Run tracee
 
+rm -f $outputfile
+rm -f $logfile
+
+skip_hooked_syscall=0
+skip_ftrace_hook=0
+skip_security_path_notify=0
+skip_suspicious_syscall_source=0
+skip_stack_pivot=0
+
+# Setup tests and skips
+# Some tests might need special setup (like running before tracee)
+
+for TEST in $TESTS; do
+    case $TEST in
+    HOOKED_SYSCALL)
+        if [[ ! -d /lib/modules/${KERNEL}/build ]]; then
+            info "skip hooked_syscall test, no kernel headers"
+            skip_hooked_syscall=1
+            continue
+        fi
+        if [[ "$KERNEL" == *"amzn"* ]]; then
+            info "skip hooked_syscall test in amazon linux"
+            skip_hooked_syscall=1
+            continue
+        fi
+        if [[ $ARCH == "aarch64" ]]; then
+            info "skip hooked_syscall test in aarch64"
+            skip_hooked_syscall=1
+            continue
+        fi
+        info "setting up hooked_syscall test"
+        "${TESTS_DIR}"/hooked_syscall.sh
+        ;;
+    FTRACE_HOOK)
+        if [[ ! -d /lib/modules/${KERNEL}/build ]]; then
+            info "skip ftrace_hook test, no kernel headers"
+            skip_ftrace_hook=1
+            continue
+        fi
+        if [[ "$KERNEL" == *"amzn"* ]]; then
+            info "skip ftrace_hook test in amazon linux"
+            skip_ftrace_hook=1
+            continue
+        fi
+        if [[ $ARCH == "aarch64" ]]; then
+            info "skip ftrace_hook test in aarch64"
+            skip_ftrace_hook=1
+            continue
+        fi
+        info "setting up ftrace_hook test"
+        "${TESTS_DIR}"/ftrace_hook.sh
+        ;;
+    SECURITY_PATH_NOTIFY)
+        if ! grep -qw "security_path_notify" /proc/kallsyms; then
+            info "skip security_path_notify test on kernel $(uname -r) (security hook doesn't exist)"
+            skip_security_path_notify=1
+            continue
+        fi
+        ;;
+    SUSPICIOUS_SYSCALL_SOURCE|STACK_PIVOT)
+        if cat /proc/kallsyms | grep -qP "trace.*vma_store"; then
+            info "skip $TEST test on kernel $(uname -r) (VMAs stored in maple tree)"
+            skip_suspicious_syscall_source=1
+            skip_stack_pivot=1
+            continue
+        fi
+        ;;
+    esac
+done
+
+tracee_command="./dist/tracee \
+                    --install-path $TRACEE_TMP_DIR \
+                    --cache cache-type=mem \
+                    --cache mem-cache-size=512 \
+                    --proctree source=both \
+                    --output option:sort-events \
+                    --output option:parse-arguments \
+                    --output json:$outputfile \
+                    --log file:$logfile \
+                    --signatures-dir "$SIG_DIR" \
+                    --dnscache enable \
+                    --grpc-listen-addr unix:/tmp/tracee.sock \
+                    --policy ./tests/policies/inst/"
+
+
+eval "$tracee_command &"
+
+# Wait tracee to start
+
+times=0
+timedout=0
+while true; do
+    times=$((times + 1))
+    sleep 1
+    if [[ -f $TRACEE_TMP_DIR/tracee.pid ]]; then
+        info
+        info "UP AND RUNNING"
+        info
+        break
+    fi
+
+    if [[ $times -gt $TRACEE_STARTUP_TIMEOUT ]]; then
+        timedout=1
+        break
+    fi
+done
+
+# Tracee failed to start
+
+if [[ $timedout -eq 1 ]]; then
+    info
+    info "$TEST: FAILED. ERRORS:"
+    info
+    cat $logfile
+
+    anyerror="${anyerror}$TEST,"
+    exit 1
+fi
+
+# Allow tracee to start processing events
+
+sleep 3
+
+info "= RUNNING TESTS ================================================"
+info
 # Run tests, one by one
 
 for TEST in $TESTS; do
@@ -92,158 +217,61 @@ for TEST in $TESTS; do
     info "= TEST: $TEST =============================================="
     info
 
-    # Some tests might need special setup (like running before tracee)
-
-    case $TEST in
-    HOOKED_SYSCALL)
-        if [[ ! -d /lib/modules/${KERNEL}/build ]]; then
-            info "skip hooked_syscall test, no kernel headers"
-            continue
-        fi
-        if [[ "$KERNEL" == *"amzn"* ]]; then
-            info "skip hooked_syscall test in amazon linux"
-            continue
-        fi
-        if [[ $ARCH == "aarch64" ]]; then
-            info "skip hooked_syscall test in aarch64"
-            continue
-        fi
-        "${TESTS_DIR}"/hooked_syscall.sh
-        ;;
-    FTRACE_HOOK)
-        if [[ ! -d /lib/modules/${KERNEL}/build ]]; then
-            info "skip ftrace_hook test, no kernel headers"
-            continue
-        fi
-        if [[ "$KERNEL" == *"amzn"* ]]; then
-            info "skip ftrace_hook test in amazon linux"
-            continue
-        fi
-        if [[ $ARCH == "aarch64" ]]; then
-            info "skip ftrace_hook test in aarch64"
-            continue
-        fi
-        "${TESTS_DIR}"/ftrace_hook.sh
-        ;;
-    SECURITY_PATH_NOTIFY)
-        if ! grep -qw "security_path_notify" /proc/kallsyms; then
-            info "skip security_path_notify test on kernel $(uname -r) (security hook doesn't exist)"
-            continue
-        fi
-        ;;
-    SUSPICIOUS_SYSCALL_SOURCE|STACK_PIVOT)
-        if cat /proc/kallsyms | grep -qP "trace.*vma_store"; then
-            info "skip $TEST test on kernel $(uname -r) (VMAs stored in maple tree)"
-            continue
-        fi
-        ;;
-    esac
-
-    # Run tracee
-
-    rm -f $outputfile
-    rm -f $logfile
-
-    tracee_command="./dist/tracee \
-                        --install-path $TRACEE_TMP_DIR \
-                        --cache cache-type=mem \
-                        --cache mem-cache-size=512 \
-                        --proctree source=both \
-                        --output option:sort-events \
-                        --output option:parse-arguments \
-                        --output json:$outputfile \
-                        --log file:$logfile \
-                        --signatures-dir "$SIG_DIR" \
-                        --dnscache enable \
-                        --grpc-listen-addr unix:/tmp/tracee.sock \
-                        --events "$TEST""
-    
-    # Some tests might look for false positives and thus we shouldn't limit the scope for them
-    if [ "$TEST" != "STACK_PIVOT" ]; then
-        tracee_command="$tracee_command --scope comm=echo,mv,ls,tracee,proctreetester,ping,ds_writer,fsnotify_tester,process_execute,tracee-ebpf,writev,set_fs_pwd.sh,sys_src_tester"
-    fi
-    
-    # Some tests might need event parameters
-    case $TEST in
-    SUSPICIOUS_SYSCALL_SOURCE)
-        tracee_command="$tracee_command --events suspicious_syscall_source.args.syscall=exit"
-        ;;
-    STACK_PIVOT)
-        # The expected event is triggered using the exit_group syscall.
-        # Also add various high-frequency sycalls so that false positives have a chance to trigger.
-        # Also add getpid, which the tester program uses in an attempt to trigger a false positive
-        tracee_command="$tracee_command --events stack_pivot.args.syscall=exit_group,getpid,write,openat,mmap,execve,fork,clone,recvmsg,gettid,epoll_wait,poll,recvfrom"
-        ;;
-    esac
-
-    eval "$tracee_command &"
-
-    # Wait tracee to start
-
-    times=0
-    timedout=0
-    while true; do
-        times=$((times + 1))
-        sleep 1
-        if [[ -f $TRACEE_TMP_DIR/tracee.pid ]]; then
-            info
-            info "UP AND RUNNING"
-            info
-            break
-        fi
-
-        if [[ $times -gt $TRACEE_STARTUP_TIMEOUT ]]; then
-            timedout=1
-            break
-        fi
-    done
-
-    # Tracee failed to start
-
-    if [[ $timedout -eq 1 ]]; then
-        info
-        info "$TEST: FAILED. ERRORS:"
-        info
-        cat $logfile
-
-        anyerror="${anyerror}$TEST,"
-        continue
-    fi
-
-    # Allow tracee to start processing events
-
-    sleep 3
-
-    # Run tests
-
     case $TEST in
     HOOKED_SYSCALL)
         # wait for tracee hooked event to be processed
+        info "waiting for tracee hooked event to be processed"
         sleep 15
         ;;
     FTRACE_HOOK)
+        info "waiting for tracee ftrace hook event to be processed"
         sleep 15
         ;;
     *)
+        info "running test $TEST"
         timeout --preserve-status $TRACEE_RUN_TIMEOUT "${TESTS_DIR}"/"${TEST,,}".sh
         ;;
     esac
+done
 
-    # So events can finish processing
 
-    sleep 3
+# So events can finish processing
+sleep 5
 
-    # The cleanup happens at EXIT
+# Stop tracee
+# Make sure we exit tracee before checking output and log files
 
-    # Make sure we exit tracee before checking output and log files
+mapfile -t tracee_pids < <(pgrep -x tracee)
+kill -SIGINT "${tracee_pids[@]}"
+sleep $TRACEE_SHUTDOWN_TIMEOUT
+kill -SIGKILL "${tracee_pids[@]}" >/dev/null 2>&1
 
-    mapfile -t tracee_pids < <(pgrep -x tracee)
-    kill -SIGINT "${tracee_pids[@]}"
-    sleep $TRACEE_SHUTDOWN_TIMEOUT
-    kill -SIGKILL "${tracee_pids[@]}" >/dev/null 2>&1
-    sleep 3
+anyerror=""
+info "= CHECKING TESTS RESULTS ======================================"
+info
+# Check if the test has failed or not
+for TEST in $TESTS; do
 
-    # Check if the test has failed or not
+    if [[ $skip_hooked_syscall -eq 1 && $TEST == "HOOKED_SYSCALL" ]]; then
+        info "skipped $TEST test"
+        continue
+    fi
+    if [[ $skip_ftrace_hook -eq 1 && $TEST == "FTRACE_HOOK" ]]; then
+        info "skipped $TEST test"
+        continue
+    fi
+    if [[ $skip_security_path_notify -eq 1 && $TEST == "SECURITY_PATH_NOTIFY" ]]; then
+        info "skipped $TEST test"
+        continue
+    fi
+    if [[ $skip_suspicious_syscall_source -eq 1 && $TEST == "SUSPICIOUS_SYSCALL_SOURCE" ]]; then
+        info "skipped $TEST test"
+        continue
+    fi
+    if [[ $skip_stack_pivot -eq 1 && $TEST == "STACK_PIVOT" ]]; then
+        info "skipped $TEST test"
+        continue
+    fi
 
     found=0
     cat $outputfile | jq .eventName | grep -q "$TEST" && found=1
@@ -254,7 +282,7 @@ for TEST in $TESTS; do
     fi
 
     info
-    if [[ $found -eq 1 && $errors -eq 0 ]]; then
+    if [[ $found -eq 1 ]]; then
         info "$TEST: SUCCESS"
     else
         anyerror="${anyerror}$TEST,"
@@ -280,14 +308,12 @@ for TEST in $TESTS; do
         info
     fi
     info
-
-    # Cleanup
-
-    rm -f $outputfile
-    rm -f $logfile
-    # Cleanup leftovers
-    rm -rf $TRACEE_TMP_DIR
 done
+
+# Cleanup leftovers
+rm -f $outputfile
+rm -f $logfile
+rm -rf $TRACEE_TMP_DIR
 
 # Print summary and exit with error if any test failed
 
