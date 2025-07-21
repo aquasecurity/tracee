@@ -18,11 +18,13 @@ import (
 //        This will cause it trigger once and reset it status.
 
 type e2eHTTP struct {
-	cb detect.SignatureHandler
+	cb  detect.SignatureHandler
+	log detect.Logger
 }
 
 func (sig *e2eHTTP) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
+	sig.log = ctx.Logger
 	return nil
 }
 
@@ -74,10 +76,12 @@ func (sig *e2eHTTP) OnEvent(event protocol.Event) error {
 		}
 
 		if !testHttpDirectionAndPacketDirection(&md, &http) {
+			sig.log.Infow("direction mismatch", "direction", http.Direction, "packet_direction", md.Direction)
 			return nil
 		}
 
 		if !strings.HasPrefix(http.Protocol, "HTTP/") {
+			sig.log.Infow("not HTTP", "protocol", http.Protocol)
 			return nil
 		}
 

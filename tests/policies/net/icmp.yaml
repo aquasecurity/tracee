@@ -1,0 +1,12 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: icmp-test
+  annotations:
+    description: test tracee's icmp events
+spec:
+  scope: 
+    - comm=ping
+  rules:
+    - event: ICMP
+    - event: ICMPv6

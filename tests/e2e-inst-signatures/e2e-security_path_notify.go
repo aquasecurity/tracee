@@ -12,6 +12,7 @@ import (
 
 type e2eSecurityPathNotify struct {
 	cb             detect.SignatureHandler
+	log            detect.Logger
 	found_dnotify  bool
 	found_inotify  bool
 	found_fanotify bool
@@ -19,6 +20,7 @@ type e2eSecurityPathNotify struct {
 
 func (sig *e2eSecurityPathNotify) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
+	sig.log = ctx.Logger
 	return nil
 }
 
@@ -56,10 +58,13 @@ func (sig *e2eSecurityPathNotify) OnEvent(event protocol.Event) error {
 
 		if strings.HasSuffix(pathName, "/dnotify_test") {
 			sig.found_dnotify = true
+			sig.log.Infow("found dnotify_test", "pathname", pathName)
 		} else if strings.HasSuffix(pathName, "/inotify_test") {
 			sig.found_inotify = true
+			sig.log.Infow("found inotify_test", "pathname", pathName)
 		} else if strings.HasSuffix(pathName, "/fanotify_test") {
 			sig.found_fanotify = true
+			sig.log.Infow("found fanotify_test", "pathname", pathName)
 		} else {
 			return nil
 		}

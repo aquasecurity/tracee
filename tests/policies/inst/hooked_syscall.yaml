@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: hooked-syscall-test
+  annotations:
+    description: test tracee's hooked syscall events
+spec:
+  scope: 
+    - global # TODO: what is the scope for this event?
+  rules:
+    - event: HOOKED_SYSCALL

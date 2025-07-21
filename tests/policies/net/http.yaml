@@ -1,0 +1,13 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: http-test
+  annotations:
+    description: test tracee's http events
+spec:
+  scope: 
+    - comm=curl
+  rules:
+    - event: HTTP
+    - event: HTTPRequest
+    - event: HTTPResponse

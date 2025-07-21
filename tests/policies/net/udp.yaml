@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: udp-test
+  annotations:
+    description: test tracee's udp events
+spec:
+  scope: 
+    - comm=nc
+  rules:
+    - event: UDP
