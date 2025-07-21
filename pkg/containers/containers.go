@@ -253,6 +253,7 @@ func (c *Manager) EnrichCgroupInfo(cgroupId uint64) (Container, error) {
 		}
 		c.cgroupsMap[uint32(cgroupId)] = info
 		c.containerMap[containerId] = container
+		cont = container
 	}
 
 	return cont, nil
