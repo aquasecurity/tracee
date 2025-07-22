@@ -220,7 +220,7 @@ func initCmd() error {
 
 	rootCmd.Flags().Int(
 		"pipeline-channel-size",
-		10000,
+		1000,
 		"<size>\t\t\t\tSize, in event objects, of each pipeline stage's output channel",
 	)
 	err = viper.BindPFlag("pipeline-channel-size", rootCmd.Flags().Lookup("pipeline-channel-size"))

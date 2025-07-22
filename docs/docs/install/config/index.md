@@ -154,7 +154,7 @@ A complete config file with all available options can be found [here](https://gi
 
 - **`--pipeline-channel-size`**: Specifies the size of each pipeline stage's output channel.
 
-  Default: `10000`
+  Default: `1000`
 
   YAML:
   ```yaml
