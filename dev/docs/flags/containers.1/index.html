@@ -23,15 +23,15 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.12+insiders-4.53.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.15+insiders-4.53.16">
     
     
       
-        <title>TRACEE-CRI - Tracee</title>
+        <title>TRACEE-CONTAINERS - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ff49f96f.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.8cce3a28.min.css">
       
       
 
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              TRACEE-CRI
+              TRACEE-CONTAINERS
             
           </span>
         </div>
@@ -17640,13 +17640,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="DESCRIPTION">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flags
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        EXAMPLE
+        EXAMPLES
       
     </span>
   </a>
@@ -18845,13 +18862,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="DESCRIPTION">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flags
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        EXAMPLE
+        EXAMPLES
       
     </span>
   </a>
@@ -18878,31 +18912,71 @@
   <h1>cri</h1>
 
 <h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--cri</strong> - Select container runtimes to connect to for container events enrichment</p>
+<p>tracee <strong>--containers</strong> - Configure container enrichment and runtime sockets for container events enrichment</p>
 <h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--cri</strong> &lt;[crio|containerd|docker|podman]:socket&gt; [<strong>--cri</strong> ...] ...</p>
+<p>tracee <strong>--containers</strong> &lt;[enrich=<true|false>|sockets.<runtime>=<path>|cgroupfs.path=<path>|cgroupfs.force=<true|false>&gt;] [<strong>--containers</strong> ...]</p>
 <h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>By default, if no flag is passed, Tracee will automatically detect installed runtimes by going through known runtime socket paths, looking for the following paths:</p>
-<ol>
-<li><strong>Docker</strong>:     <code>/var/run/docker.sock</code></li>
-<li><strong>Containerd</strong>: <code>/var/run/containerd/containerd.sock</code></li>
-<li><strong>CRI-O</strong>:      <code>/var/run/crio/crio.sock</code></li>
-<li><strong>Podman</strong>:     <code>/var/run/podman/podman.sock</code></li>
-</ol>
-<p>If runtimes are specified using the <strong>--cri</strong> flag, only the ones passed through the flags will be connected to through the provided socket file path.</p>
-<p>Supported runtimes are:</p>
-<ol>
-<li><strong>CRI-O</strong> (crio, cri-o)</li>
-<li><strong>Containerd</strong> (containerd)</li>
-<li><strong>Docker</strong> (docker)</li>
-<li><strong>Podman</strong> (podman)</li>
-</ol>
-<h2 id="example">EXAMPLE<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
+<p>The <code>--containers</code> flag allows you to configure container enrichment and runtime sockets for container events enrichment.</p>
+<h3 id="flags">Flags<a class="headerlink" href="#flags" title="Permanent link">&para;</a></h3>
 <ul>
-<li>To connect to CRI-O using the socket file path <code>/var/run/crio/crio.sock</code>, use the following flag:</li>
+<li>
+<p><strong>enrich=<true|false></strong><br />
+  Enable or disable container enrichment.<br />
+  Example:<br />
+  <div class="highlight"><pre><span></span><code><span class="go">--containers enrich=true</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>sockets.<runtime>=<path></strong><br />
+  Configure container runtime sockets for enrichment. <code>&lt;runtime&gt;</code> must be one of the supported runtimes:  </p>
+</li>
+<li>CRI-O      (<code>crio</code>, <code>cri-o</code>)  </li>
+<li>Containerd (<code>containerd</code>)  </li>
+<li>Docker     (<code>docker</code>)  </li>
+<li>Podman     (<code>podman</code>)  </li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--cri crio:/var/run/crio/crio.sock</span>
-</code></pre></div>
+<p>Example:<br />
+  <div class="highlight"><pre><span></span><code><span class="go">--containers sockets.docker=/var/run/docker.sock</span>
+</code></pre></div></p>
+<ul>
+<li>
+<p><strong>cgroupfs.path=<path></strong><br />
+  Configure the path to the cgroupfs where container cgroups are created. This is used as a hint for auto-detection.<br />
+  Example:<br />
+  <div class="highlight"><pre><span></span><code><span class="go">--containers cgroupfs.path=/sys/fs/cgroup</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>cgroupfs.force=<true|false></strong><br />
+  Force the usage of the provided mountpoint path and skip auto-detection (only applies if cgroupfs.path is provided).<br />
+  Example:<br />
+  <div class="highlight"><pre><span></span><code><span class="go">--containers cgroupfs.force=true</span>
+</code></pre></div></p>
+</li>
+</ul>
+<h2 id="examples">EXAMPLES<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p>Enable container enrichment:<br />
+   <div class="highlight"><pre><span></span><code><span class="go">--containers enrich=true</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>Configure Docker socket:<br />
+   <div class="highlight"><pre><span></span><code><span class="go">--containers sockets.docker=/var/run/docker.sock</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>Set the cgroupfs path and force its usage:<br />
+   <div class="highlight"><pre><span></span><code><span class="go">--containers cgroupfs.path=/sys/fs/cgroup cgroupfs.force=true</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>Combine multiple flags:<br />
+   <div class="highlight"><pre><span></span><code><span class="go">--containers enrich=true sockets.containerd=/var/run/containerd/containerd.sock cgroupfs.path=/sys/fs/cgroup cgroupfs.force=true</span>
+</code></pre></div></p>
+</li>
+</ol>
 <p>Please refer to the <a href="../../install/container-engines/">documentation</a> for more information on container events enrichment.</p>
 
 
@@ -18953,10 +19027,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.c7c1ca2c.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.ad38c271.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.f807c082.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.b66b2b78.min.js"></script>
       
     
   </body>
