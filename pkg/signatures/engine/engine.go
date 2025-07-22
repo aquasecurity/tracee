@@ -28,10 +28,8 @@ const (
 
 // Config defines the engine's configurable values
 type Config struct {
-	Mode                Mode // Engine in pipeline mode, can be ModeRules, ModeAnalyze or ModeSingleBinary
-	NoSignatures        bool // Skip signature processing while keeping events loaded (for performance testing)
-	UseSequential       bool // Use sequential processing for CPU optimization
-	SignatureBufferSize uint
+	Mode                Mode               // Engine in pipeline mode, can be ModeRules, ModeAnalyze or ModeSingleBinary
+	NoSignatures        bool               // Skip signature processing while keeping events loaded (for performance testing)
 	AvailableSignatures []detect.Signature // All available signatures found in signature directories
 	SelectedSignatures  []detect.Signature // Only signatures that should be loaded based on user policies/events
 	DataSources         []detect.DataSource
@@ -39,12 +37,11 @@ type Config struct {
 
 // Engine is a signatures-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
 type Engine struct {
-	signatures       map[detect.Signature]chan protocol.Event
+	signatures       map[detect.Signature]struct{}
 	signaturesIndex  map[detect.SignatureEventSelector][]detect.Signature
 	signaturesMutex  sync.RWMutex
 	inputs           EventSources
 	output           chan *detect.Finding
-	waitGroup        sync.WaitGroup
 	config           Config
 	stats            metrics.Stats
 	dataSources      map[string]map[string]detect.DataSource
@@ -68,14 +65,13 @@ func NewEngine(config Config, sources EventSources, output chan *detect.Finding)
 		return nil, errors.New("nil input received")
 	}
 	engine := Engine{}
-	engine.waitGroup = sync.WaitGroup{}
 
 	engine.inputs = sources
 	engine.output = output
 	engine.config = config
 
 	engine.signaturesMutex.Lock()
-	engine.signatures = make(map[detect.Signature]chan protocol.Event)
+	engine.signatures = make(map[detect.Signature]struct{})
 	engine.signaturesIndex = make(map[detect.SignatureEventSelector][]detect.Signature)
 	engine.signaturesMutex.Unlock()
 
@@ -84,24 +80,6 @@ func NewEngine(config Config, sources EventSources, output chan *detect.Finding)
 	engine.dataSourcesMutex.Unlock()
 
 	return &engine, nil
-}
-
-// signatureStart is the signature handling business logics.
-func signatureStart(signature detect.Signature, c chan protocol.Event, wg *sync.WaitGroup, noSignatures bool) {
-	defer wg.Done()
-
-	// Pre-fetch metadata once to avoid repeated calls on errors
-	meta, _ := signature.GetMetadata()
-	sigName := meta.Name
-
-	for e := range c {
-		if noSignatures {
-			continue // Just drain the channel without processing
-		}
-		if err := signature.OnEvent(e); err != nil {
-			logger.Errorw("Handling event by signature " + sigName + ": " + err.Error())
-		}
-	}
 }
 
 // Init loads and initializes signatures and data sources passed in NewEngine.
@@ -133,32 +111,15 @@ func (engine *Engine) Init() error {
 // note that the input and output channels are created by the consumer and therefore are not closed
 func (engine *Engine) Start(ctx context.Context) {
 	defer engine.unloadAllSignatures()
-
-	if engine.config.UseSequential {
-		logger.Debugw("Starting signature engine in sequential mode for CPU optimization")
-	} else {
-		logger.Debugw("Starting signature engine in parallel mode")
-		// Only start goroutines in parallel mode
-		engine.signaturesMutex.RLock()
-		for s, c := range engine.signatures {
-			engine.waitGroup.Add(1)
-			go signatureStart(s, c, &engine.waitGroup, engine.config.NoSignatures)
-		}
-		engine.signaturesMutex.RUnlock()
-	}
-
+	logger.Debugw("Starting signature engine")
 	engine.consumeSources(ctx)
 }
 
 func (engine *Engine) unloadAllSignatures() {
 	engine.signaturesMutex.Lock()
 	defer engine.signaturesMutex.Unlock()
-	for sig, c := range engine.signatures {
+	for sig := range engine.signatures {
 		sig.Close()
-		// Only close channel if it exists (parallel mode)
-		if c != nil {
-			close(c)
-		}
 		delete(engine.signatures, sig)
 	}
 	engine.signaturesIndex = make(map[detect.SignatureEventSelector][]detect.Signature)
@@ -192,7 +153,6 @@ func (engine *Engine) matchHandler(res *detect.Finding) {
 func (engine *Engine) checkCompletion() bool {
 	if engine.inputs.Tracee == nil {
 		engine.unloadAllSignatures()
-		engine.waitGroup.Wait()
 		return true
 	}
 	return false
@@ -282,17 +242,17 @@ drain:
 }
 
 func (engine *Engine) dispatchEvent(s detect.Signature, event protocol.Event) {
-	if engine.config.UseSequential {
-		// Sequential mode: Direct call for maximum CPU efficiency
-		if !engine.config.NoSignatures {
-			if err := s.OnEvent(event); err != nil {
-				meta, _ := s.GetMetadata()
-				logger.Errorw("Processing event in signature " + meta.Name + ": " + err.Error())
-			}
+	// Early return if NoSignatures is enabled
+	if engine.config.NoSignatures {
+		return
+	}
+
+	if err := s.OnEvent(event); err != nil {
+		if meta, metaErr := s.GetMetadata(); metaErr == nil {
+			logger.Errorw("Processing event in signature", "signature", meta.Name, "error", err)
+		} else {
+			logger.Errorw("Processing event in signature", "signature", "unknown", "error", err, "metadata_error", metaErr)
 		}
-	} else {
-		// Parallel mode: Original channel dispatch
-		engine.signatures[s] <- event
 	}
 }
 
@@ -303,14 +263,6 @@ func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) 
 	id, err := engine.loadSignature(signature)
 	if err != nil {
 		return id, err
-	}
-
-	// Only start goroutine in parallel mode
-	if !engine.config.UseSequential {
-		engine.signaturesMutex.RLock()
-		engine.waitGroup.Add(1)
-		go signatureStart(signature, engine.signatures[signature], &engine.waitGroup, engine.config.NoSignatures)
-		engine.signaturesMutex.RUnlock()
 	}
 
 	metadata, _ := signature.GetMetadata()
@@ -360,14 +312,7 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 	}
 
 	engine.signaturesMutex.Lock()
-	if engine.config.UseSequential {
-		// Sequential mode: No channel needed, store nil
-		engine.signatures[signature] = nil
-	} else {
-		// Parallel mode: Create and store channel
-		c := make(chan protocol.Event, engine.config.SignatureBufferSize)
-		engine.signatures[signature] = c
-	}
+	engine.signatures[signature] = struct{}{}
 	engine.signaturesMutex.Unlock()
 
 	// insert in engine.signaturesIndex map
@@ -413,17 +358,13 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 	engine.signaturesMutex.Lock()
 	defer engine.signaturesMutex.Unlock()
 	// remove from engine.signatures map
-	c, ok := engine.signatures[signature]
+	_, ok := engine.signatures[signature]
 	if ok {
 		delete(engine.signatures, signature)
 		defer func() {
 			_ = engine.stats.Signatures.Decrement()
 		}()
 		defer signature.Close()
-		// Only close channel if it exists (parallel mode)
-		if c != nil {
-			defer close(c)
-		}
 
 		metadata, _ := signature.GetMetadata()
 		logger.Debugw("Signature unloaded at runtime", "signature", metadata.Name, "event", metadata.EventName, "id", metadata.ID)

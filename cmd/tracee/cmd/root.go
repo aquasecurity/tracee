@@ -184,16 +184,6 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
-	rootCmd.Flags().Bool(
-		"sequential-signatures",
-		true,
-		"\t\t\t\tUse sequential signature processing for CPU optimization (reduces overhead but loses parallelism)",
-	)
-	err = viper.BindPFlag("sequential-signatures", rootCmd.Flags().Lookup("sequential-signatures"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
 	// Buffer flags
 
 	defaultBufferPages := (4096 * 1024) / os.Getpagesize() // 4 MB of contiguous pages
