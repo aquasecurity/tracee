@@ -53,7 +53,6 @@ func Analyze(cfg Config) {
 		Mode:                engine.ModeAnalyze,
 		AvailableSignatures: signatures,
 		SelectedSignatures:  signatures, // in analyze mode, load all signatures
-		SignatureBufferSize: 1000,
 	}
 
 	// two seperate contexts.

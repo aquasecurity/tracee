@@ -22,10 +22,6 @@ import (
 	"github.com/aquasecurity/tracee/types/detect"
 )
 
-const (
-	signatureBufferFlag = "sig-buffer"
-)
-
 func main() {
 	app := &cli.App{
 		Name:  "tracee-rules",
@@ -130,7 +126,6 @@ func main() {
 			}
 
 			config := engine.Config{
-				SignatureBufferSize: c.Uint(signatureBufferFlag),
 				AvailableSignatures: sigs,
 				SelectedSignatures:  sigs, // In tracee-rules, load all signatures
 				DataSources:         []detect.DataSource{},
@@ -213,11 +208,6 @@ func main() {
 			&cli.BoolFlag{
 				Name:  "list-events",
 				Usage: "print a list of events that currently loaded signatures require",
-			},
-			&cli.UintFlag{
-				Name:  signatureBufferFlag,
-				Usage: "size of the event channel's buffer consumed by signatures",
-				Value: 1000,
 			},
 			&cli.BoolFlag{
 				Name:  server.MetricsEndpointFlag,
