@@ -54,7 +54,11 @@ statfunc int init_task_context(task_context_t *tsk_ctx, struct task_struct *task
     if (is_compat(task))
         tsk_ctx->flags |= IS_COMPAT_FLAG;
 
-    // Program name
+    // Program name - initialize to 0 before getting comm, because in some kernels (5.18-6.3)
+    // the destination buffer is not padded with zeroes (see
+    // https://github.com/torvalds/linux/commit/03b9c7fa3f15f51bcd07f3828c2a01311e7746c4 and
+    // https://github.com/torvalds/linux/commit/f3f21349779776135349a8e6f114a1485b2476b7)
+    __builtin_memset(&tsk_ctx->comm, 0, sizeof(tsk_ctx->comm));
     bpf_get_current_comm(&tsk_ctx->comm, sizeof(tsk_ctx->comm));
 
     // UTS Name
