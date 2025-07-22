@@ -6078,6 +6078,10 @@ int BPF_KRETPROBE(trace_ret_sock_alloc_file)
     if (inode == 0)
         return 0;
 
+    // initialize task context before submit since it will not be available when
+    // submitting the network event.
+    init_task_context(&p.event->context.task, p.event->task, p.config->options);
+
     // save context to further create an event when no context exists
     net_task_context_t netctx = {0};
     set_net_task_context(p.event, &netctx);
@@ -6196,6 +6200,10 @@ int BPF_KPROBE(trace_security_socket_recvmsg)
 
     if (!evaluate_scope_filters(&p))
         return 0;
+    
+    // initialize task context before submit since it will not be available when
+    // submitting the network event.
+    init_task_context(&p.event->context.task, p.event->task, p.config->options);
 
     return update_net_inodemap(sock, p.event);
 }
@@ -6221,6 +6229,10 @@ int BPF_KPROBE(trace_security_socket_sendmsg)
 
     if (!evaluate_scope_filters(&p))
         return 0;
+    
+    // initialize task context before submit since it will not be available when
+    // submitting the network event.
+    init_task_context(&p.event->context.task, p.event->task, p.config->options);
 
     return update_net_inodemap(sock, p.event);
 }
@@ -6448,10 +6460,6 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     //
 
     neteventctx.bytes = 0; // event arg size: no payload by default (changed inside skb prog)
-
-    // initialize task context before submit since it will not be available when
-    // submitting the network event.
-    init_task_context(&eventctx->task, p.event->task, p.config->options);
 
     // TODO: log collisions
     bpf_map_update_elem(cgrpctxmap, &indexer, &neteventctx, BPF_NOEXIST);
