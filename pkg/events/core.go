@@ -762,7 +762,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_pipe"},
 		fields: []DataField{
-			{DecodeAs: data.INT_ARR_2_T, ArgMeta: trace.ArgMeta{Type: "[2]int32", Name: "pipefd"}},
+			{DecodeAs: data.INT_ARR_2_T, ArgMeta: trace.ArgMeta{Type: "[2]int", Name: "pipefd"}},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -1516,7 +1516,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "domain"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "type"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "protocol"}},
-			{DecodeAs: data.INT_ARR_2_T, ArgMeta: trace.ArgMeta{Type: "[2]int32", Name: "sv"}},
+			{DecodeAs: data.INT_ARR_2_T, ArgMeta: trace.ArgMeta{Type: "[2]int", Name: "sv"}},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -7334,7 +7334,7 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "ipc", "ipc_pipe"},
 		fields: []DataField{
-			{DecodeAs: data.INT_ARR_2_T, ArgMeta: trace.ArgMeta{Type: "[2]int32", Name: "pipefd"}},
+			{DecodeAs: data.INT_ARR_2_T, ArgMeta: trace.ArgMeta{Type: "[2]int", Name: "pipefd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
 		dependencies: Dependencies{
