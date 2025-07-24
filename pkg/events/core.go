@@ -11203,6 +11203,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.BOOL_T, ArgMeta: trace.ArgMeta{Type: "bool", Name: "invoked_from_kernel"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "prev_comm"}},
 			{DecodeAs: data.ARGS_ARR_T, ArgMeta: trace.ArgMeta{Type: "[]string", Name: "env"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pwd"}},
 		},
 	},
 	SchedProcessExit: {

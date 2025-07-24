@@ -1514,6 +1514,9 @@ int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
             &p.event->args_buf, (void *) env_start, (void *) env_end, envc, 16);
     }
 
+    void *pwd_path = get_task_pwd_path(task);
+    save_str_to_buf(&p.event->args_buf, pwd_path, 17);
+
     events_perf_submit(&p, 0);
     return 0;
 }
