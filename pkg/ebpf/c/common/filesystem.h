@@ -28,6 +28,7 @@ statfunc dev_t get_dev_from_dentry(struct dentry *);
 statfunc u64 get_ctime_nanosec_from_dentry(struct dentry *);
 statfunc size_t get_path_str_buf(struct path *, buf_t *);
 statfunc void *get_path_str(struct path *);
+statfunc void *get_task_pwd_path(struct task_struct *);
 statfunc file_id_t get_file_id(struct file *);
 statfunc void *get_path_str_cached(struct file *);
 statfunc void *get_dentry_path_str(struct dentry *);
@@ -269,6 +270,15 @@ statfunc void *get_path_str(struct path *path)
 
     size_t buf_off = get_path_str_buf(path, string_p);
     return &string_p->buf[buf_off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)];
+}
+
+statfunc void *get_task_pwd_path(struct task_struct *task)
+{
+    struct fs_struct *fs = BPF_CORE_READ(task, fs);
+    if (!fs)
+        return NULL;
+
+    return get_path_str(__builtin_preserve_access_index(&fs->pwd));
 }
 
 statfunc file_id_t get_file_id(struct file *file)
