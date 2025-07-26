@@ -92,7 +92,9 @@ func deriveHiddenKernelModulesArgs() multiDeriveArgsFunction {
 		} else if flags&kset != 0 || flags&modTree != 0 {
 			// These types of scan only happens once on tracee's startup.
 			// Cache results and only send them out when receiving that the history scan finished successfully
-			eventsFromHistoryScan.Add(event, struct{}{})
+
+			evtCopy := shallowCopyEvent(event)
+			eventsFromHistoryScan.Add(evtCopy, struct{}{})
 			return nil, nil
 		} else if flags&historyScanFinished != 0 {
 			// Happens only once on tracee's startup when the scan finished (successfully/unsuccessfully)

@@ -95,7 +95,8 @@ func (gen *ExecFailedGenerator) handleExecFinished(event *trace.Event) (*trace.E
 func (gen *ExecFailedGenerator) handleExecBaseEvent(event *trace.Event) (*trace.Event, error) {
 	// We don't have the execution end info - cache current event and wait for it to be received
 	// This is the expected flow, as the execution finished event come chronology after
-	gen.baseEvents.Add(event.HostProcessID, event)
+	evtCopy := shallowCopyEvent(event)
+	gen.baseEvents.Add(event.HostProcessID, evtCopy)
 	return nil, nil
 }
 
@@ -104,7 +105,7 @@ func (gen *ExecFailedGenerator) generateEvent(
 	baseEvent *trace.Event,
 	execInfo execEndInfo,
 ) (*trace.Event, error) {
-	newEvent := *baseEvent
+	newEvent := shallowCopyEvent(baseEvent)
 	newEvent.Timestamp = execInfo.timestamp
 	newEvent.EventID = gen.deriveBase.ID
 	newEvent.EventName = gen.deriveBase.Name
@@ -114,7 +115,7 @@ func (gen *ExecFailedGenerator) generateEvent(
 	newEvent.Args[parse.ArgIndex(newEvent.Args, "argv")] = execInfo.args[parse.ArgIndex(execInfo.args, "argv")]
 	newEvent.Args[parse.ArgIndex(newEvent.Args, "envp")] = execInfo.args[parse.ArgIndex(execInfo.args, "envp")]
 
-	return &newEvent, nil
+	return newEvent, nil
 }
 
 func isFailedExec(returnCode int) bool {
