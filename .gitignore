@@ -15,6 +15,9 @@
 # needed for the makefile btfhub building logic
 *.md5
 
+# ignore clangd files
+.clangd
+
 # ignore local and temporary packaging files
 debian
 .ubuntu*
