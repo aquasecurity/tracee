@@ -11,6 +11,8 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/common"
+	"github.com/aquasecurity/tracee/pkg/common/environment"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -18,8 +20,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/filehash"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/utils"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -156,7 +156,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 			// capture exec'ed files ?
 			if t.config.Capture.Exec {
 				destinationDirPath := containerId
-				if err := utils.MkdirAtExist(t.OutDir, destinationDirPath, 0755); err != nil {
+				if err := common.MkdirAtExist(t.OutDir, destinationDirPath, 0755); err != nil {
 					return errfmt.WrapError(err)
 				}
 				destinationFilePath := filepath.Join(
@@ -173,7 +173,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 					// capture (SchedProcessExec sets base capabilities to have cap.SYS_PTRACE set.
 					// This is needed at this point because raising and dropping capabilities too
 					// frequently would have a big performance impact)
-					err := utils.CopyRegularFileByRelativePath(
+					err := common.CopyRegularFileByRelativePath(
 						sourceFilePath,
 						t.OutDir,
 						destinationFilePath,
@@ -333,7 +333,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	if err := unix.Uname(&utsName); err != nil {
 		return errfmt.WrapError(err)
 	}
-	arch = string(utils.TrimTrailingNUL(utsName.Machine[:]))
+	arch = string(common.TrimTrailingNUL(utsName.Machine[:]))
 	err = events.SetArgValue(event, "arch", arch)
 	if err != nil {
 		return err

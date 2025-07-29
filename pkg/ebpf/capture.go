@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/common"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/time"
-	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 func (t *Tracee) handleFileCaptures(ctx context.Context) {
@@ -63,7 +63,7 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 				containerId = "host"
 			}
 			pathname := containerId
-			if err := utils.MkdirAtExist(t.OutDir, pathname, 0755); err != nil {
+			if err := common.MkdirAtExist(t.OutDir, pathname, 0755); err != nil {
 				t.handleError(err)
 				continue
 			}
@@ -135,7 +135,7 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 					t.handleError(err)
 					continue
 				}
-				bpfName := utils.TrimTrailingNUL(bpfObjectMeta.Name[:])
+				bpfName := common.TrimTrailingNUL(bpfObjectMeta.Name[:])
 				filename = fmt.Sprintf("bpf.name-%s", bpfName)
 				if bpfObjectMeta.Pid != 0 {
 					filename = fmt.Sprintf("%s.pid-%d", filename, bpfObjectMeta.Pid)
@@ -148,7 +148,7 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 
 			fullname := path.Join(pathname, filename)
 
-			f, err := utils.OpenAt(t.OutDir, fullname, os.O_CREATE|os.O_WRONLY, 0640)
+			f, err := common.OpenAt(t.OutDir, fullname, os.O_CREATE|os.O_WRONLY, 0640)
 			if err != nil {
 				t.handleError(err)
 				continue
@@ -193,7 +193,7 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 			// Rename the file to add hash when last chunk was received
 			if meta.BinType == bufferdecoder.SendKernelModule && uint32(meta.Size)+uint32(meta.Off) == kernelModuleMeta.Size {
 				fileHash, _ := t.computeOutFileHash(fullname)
-				err := utils.RenameAt(t.OutDir, fullname, t.OutDir, fullname+"."+fileHash)
+				err := common.RenameAt(t.OutDir, fullname, t.OutDir, fullname+"."+fileHash)
 				if err != nil {
 					t.handleError(err)
 					continue
@@ -202,7 +202,7 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 				fileHash, _ := t.computeOutFileHash(fullname)
 				// Delete the random int used to differentiate files
 				dotIndex := strings.LastIndex(fullname, ".")
-				err := utils.RenameAt(t.OutDir, fullname, t.OutDir, fullname[:dotIndex]+"."+fileHash)
+				err := common.RenameAt(t.OutDir, fullname, t.OutDir, fullname[:dotIndex]+"."+fileHash)
 				if err != nil {
 					t.handleError(err)
 					continue

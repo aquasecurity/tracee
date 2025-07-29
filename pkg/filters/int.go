@@ -9,8 +9,8 @@ import (
 	"golang.org/x/exp/constraints"
 	"golang.org/x/exp/maps"
 
+	"github.com/aquasecurity/tracee/pkg/common"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 const (
@@ -28,7 +28,7 @@ type IntFilter[T constraints.Signed] struct {
 }
 
 // Compile-time check to ensure that IntFilter implements the Cloner interface
-var _ utils.Cloner[*IntFilter[int32]] = &IntFilter[int32]{}
+var _ common.Cloner[*IntFilter[int32]] = &IntFilter[int32]{}
 
 // TODO: Add int16 and int8 filters?
 

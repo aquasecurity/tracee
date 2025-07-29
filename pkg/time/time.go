@@ -14,8 +14,8 @@ import (
 
 	"golang.org/x/sys/unix"
 
+	"github.com/aquasecurity/tracee/pkg/common"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 var configHZOnce, clockTickOnce sync.Once
@@ -30,7 +30,7 @@ func GetSystemHZ() int {
 			time.Sleep(time.Second)
 			jiffiesEnd := getBootTimeInJiffies()
 			inferredHz := jiffiesEnd - jiffiesStart
-			configHZ = utils.RoundToClosestN(int(inferredHz), 50) // round to closest 50Hz (100, 150,...)
+			configHZ = common.RoundToClosestN(int(inferredHz), 50) // round to closest 50Hz (100, 150,...)
 		},
 	)
 	return configHZ // CONFIG_HZ

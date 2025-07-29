@@ -20,6 +20,10 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/cgroup"
+	"github.com/aquasecurity/tracee/pkg/common"
+	"github.com/aquasecurity/tracee/pkg/common/environment"
+	"github.com/aquasecurity/tracee/pkg/common/proc"
+	"github.com/aquasecurity/tracee/pkg/common/sharedobjs"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
@@ -43,10 +47,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/streams"
 	traceetime "github.com/aquasecurity/tracee/pkg/time"
-	"github.com/aquasecurity/tracee/pkg/utils"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
-	"github.com/aquasecurity/tracee/pkg/utils/proc"
-	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/pkg/version"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -63,7 +63,7 @@ type Tracee struct {
 	startTime uint64
 	running   atomic.Bool
 	done      chan struct{} // signal to safely stop end-stage processing
-	OutDir    *os.File      // use utils.XXX functions to create or write to this file
+	OutDir    *os.File      // use common.XXX functions to create or write to this file
 	stats     *metrics.Stats
 	sigEngine *engine.Engine
 	// Events
@@ -493,7 +493,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.Errorf("error creating output path: %v", err)
 	}
 
-	t.OutDir, err = utils.OpenExistingDir(t.config.Capture.OutputPath)
+	t.OutDir, err = common.OpenExistingDir(t.config.Capture.OutputPath)
 	if err != nil {
 		t.Close()
 		return errfmt.Errorf("error opening out directory: %v", err)
@@ -1474,7 +1474,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 }
 
 func updateCaptureMapFile(fileDir *os.File, filePath string, capturedFiles map[string]string, cfg config.FileCaptureConfig) error {
-	f, err := utils.OpenAt(fileDir, filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := common.OpenAt(fileDir, filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return errfmt.Errorf("error logging captured files")
 	}
@@ -1551,7 +1551,7 @@ func (t *Tracee) Running() bool {
 }
 
 func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
-	f, err := utils.OpenAt(t.OutDir, fileName, os.O_RDONLY, 0)
+	f, err := common.OpenAt(t.OutDir, fileName, os.O_RDONLY, 0)
 	if err != nil {
 		return "", errfmt.WrapError(err)
 	}
@@ -1907,7 +1907,7 @@ func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
 		if err != nil {
 			return nil, err
 		}
-		utils.SetBit(&policyMask, uint(p.ID))
+		common.SetBit(&policyMask, uint(p.ID))
 	}
 
 	return t.subscribe(policyMask), nil

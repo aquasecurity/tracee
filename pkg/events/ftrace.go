@@ -12,9 +12,9 @@ import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/common"
 	"github.com/aquasecurity/tracee/pkg/counter"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -76,7 +76,7 @@ func FtraceHookEvent(eventsCounter *counter.Counter, out chan *trace.Event, base
 
 		select {
 		case <-FtraceWakeupChan:
-		case <-time.After(utils.GenerateRandomDuration(10, 300)):
+		case <-time.After(common.GenerateRandomDuration(10, 300)):
 		}
 	}
 }

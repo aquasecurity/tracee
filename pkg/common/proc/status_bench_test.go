@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/utils/tests"
+	"github.com/aquasecurity/tracee/pkg/common/tests"
 )
 
 func Benchmark_newProcStatus(b *testing.B) {

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/common"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 const (
@@ -73,7 +73,7 @@ func (ks kernelSymbolInternal) Clone() kernelSymbolInternal {
 }
 
 type KernelSymbolTable struct {
-	symbols *utils.SymbolTable[kernelSymbolInternal]
+	symbols *common.SymbolTable[kernelSymbolInternal]
 
 	// Used for memory efficient representation of symbol owners
 	idxToSymbolOwner []string
@@ -88,7 +88,7 @@ type KernelSymbolTable struct {
 // optional requiredDataSymbols argument will be added.
 func NewKernelSymbolTableFromReader(reader io.Reader, lazyNameLookup bool, requiredDataSymbolsOnly bool, requiredDataSymbols ...string) (*KernelSymbolTable, error) {
 	kst := &KernelSymbolTable{
-		symbols:          utils.NewSymbolTable[kernelSymbolInternal](lazyNameLookup),
+		symbols:          common.NewSymbolTable[kernelSymbolInternal](lazyNameLookup),
 		idxToSymbolOwner: []string{"system"},
 		symbolOwnerToIdx: map[string]uint16{"system": 0},
 	}

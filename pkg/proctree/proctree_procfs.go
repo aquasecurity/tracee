@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/common"
+	"github.com/aquasecurity/tracee/pkg/common/proc"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	traceetime "github.com/aquasecurity/tracee/pkg/time"
-	"github.com/aquasecurity/tracee/pkg/utils"
-	"github.com/aquasecurity/tracee/pkg/utils/proc"
 )
 
 const debugMsgs = false                         // debug messages can be too verbose, so they are disabled by default
@@ -109,7 +109,7 @@ func getProcessByPID(pt *ProcessTree, givenPid int32) (*Process, error) {
 
 	statStartTime := stat.GetStartTime()
 	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(statStartTime)
-	hash := utils.HashTaskID(uint32(givenPid), startTimeNs) // status pid == tid
+	hash := common.HashTaskID(uint32(givenPid), startTimeNs) // status pid == tid
 
 	return pt.GetOrCreateProcessByHash(hash), nil
 }
@@ -159,7 +159,7 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 	// thread start time (monotonic boot)
 	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(start)
 	// process hash
-	hash := utils.HashTaskID(uint32(pid), startTimeNs)
+	hash := common.HashTaskID(uint32(pid), startTimeNs)
 
 	// update tree for the given process
 	process := pt.GetOrCreateProcessByHash(hash)
@@ -251,7 +251,7 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 	// thread start time (monotonic boot)
 	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(start)
 	// thread hash
-	hash := utils.HashTaskID(uint32(pid), startTimeNs)
+	hash := common.HashTaskID(uint32(pid), startTimeNs)
 
 	// update tree for the given thread
 	thread := pt.GetOrCreateThreadByHash(hash)

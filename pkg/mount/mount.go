@@ -11,9 +11,9 @@ import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/common"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 // Constants
@@ -120,7 +120,7 @@ func (m *MountHostOnce) Mount() error {
 	)
 	if err != nil {
 		// remove created target directory on errors
-		empty, _ := utils.IsDirEmpty(m.target)
+		empty, _ := common.IsDirEmpty(m.target)
 		if empty {
 			errRA := os.RemoveAll(m.target) // best effort for cleanup
 			if errRA != nil {
@@ -150,7 +150,7 @@ func (m *MountHostOnce) Umount() error {
 		m.managed = false
 
 		// check if target dir is empty before removing it
-		empty, err := utils.IsDirEmpty(m.target)
+		empty, err := common.IsDirEmpty(m.target)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}

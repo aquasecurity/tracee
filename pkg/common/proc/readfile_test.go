@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/utils/tests"
+	"github.com/aquasecurity/tracee/pkg/common/tests"
 )
 
 func TestReadFile(t *testing.T) {

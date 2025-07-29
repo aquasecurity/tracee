@@ -1,9 +1,9 @@
 package initialization
 
 import (
+	"github.com/aquasecurity/tracee/pkg/common/environment"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 // Custom KernelConfigOption's to extend kernel_config helper support
