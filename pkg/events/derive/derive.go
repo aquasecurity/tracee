@@ -163,3 +163,27 @@ func makeDeriveBase(eventID events.ID) deriveBase {
 		Fields: def.GetFields(),
 	}
 }
+
+// shallowCopyEvent creates a shallow copy of the given trace.Event.
+// It allocates a new trace.Event struct, copies all top-level fields, and creates a new Args slice,
+// copying each trace.Argument value. However, any reference types within trace.Argument (such as Value),
+// or other reference-type fields in trace.Event (e.g., slices, maps, pointers, or structs containing them),
+// are not deeply copied. Changes to nested reference data (like a map or slice in an argument's Value)
+// will affect both the original and the copy.
+//
+// Note: This includes strings - while immutable, their backing arrays may be shared if derived from a slice.
+// Modifying the original backing array (e.g., via a byte slice) can affect both the original and copied event.
+//
+// In summary, this function duplicates the event structure and its argument list, but does NOT deep copy
+// any nested reference data.
+func shallowCopyEvent(event *trace.Event) *trace.Event {
+	if event == nil {
+		return nil
+	}
+
+	evtCopy := *event
+	evtCopy.Args = make([]trace.Argument, len(event.Args))
+	copy(evtCopy.Args, event.Args)
+
+	return &evtCopy
+}
