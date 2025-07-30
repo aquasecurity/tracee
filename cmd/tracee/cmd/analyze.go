@@ -10,8 +10,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/analyze"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func init() {

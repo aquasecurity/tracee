@@ -9,8 +9,8 @@ import (
 	"golang.org/x/exp/constraints"
 	"golang.org/x/exp/maps"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/pkg/common"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
 )
 
 const (
@@ -28,7 +28,7 @@ type UIntFilter[T constraints.Unsigned] struct {
 }
 
 // Compile-time check to ensure that UIntFilter implements the Cloner interface
-var _ utils.Cloner[*UIntFilter[uint32]] = &UIntFilter[uint32]{}
+var _ common.Cloner[*UIntFilter[uint32]] = &UIntFilter[uint32]{}
 
 // TODO: Add uint16 and uint8 filters?
 

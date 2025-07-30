@@ -3,13 +3,14 @@ package config
 import (
 	"io"
 
+	"github.com/aquasecurity/tracee/pkg/common/environment"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/filehash"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 // Config is a struct containing user defined configuration to initialize Tracee
@@ -140,34 +141,10 @@ type CapabilitiesConfig struct {
 // Output
 //
 
-type CalcHashesOption int
-
-const (
-	CalcHashesNone CalcHashesOption = iota
-	CalcHashesInode
-	CalcHashesDevInode
-	CalcHashesDigestInode
-)
-
-func (c CalcHashesOption) String() string {
-	switch c {
-	case CalcHashesNone:
-		return "none"
-	case CalcHashesInode:
-		return "pathname"
-	case CalcHashesDevInode:
-		return "dev-inode"
-	case CalcHashesDigestInode:
-		return "digest-inode"
-	default:
-		return "unknown"
-	}
-}
-
 type OutputConfig struct {
 	StackAddresses bool
 	ExecEnv        bool
-	CalcHashes     CalcHashesOption
+	CalcHashes     filehash.CalcHashesOption
 
 	ParseArguments    bool
 	ParseArgumentsFDs bool

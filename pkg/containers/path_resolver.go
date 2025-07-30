@@ -7,9 +7,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/bucketscache"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/common/bucketcache"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 )
 
 // ContainerPathResolver generates an accessible absolute path from the root
@@ -18,12 +18,12 @@ import (
 // capability.
 type ContainerPathResolver struct {
 	fs               fs.FS
-	mountNSPIDsCache *bucketscache.BucketsCache
+	mountNSPIDsCache *bucketcache.BucketCache
 }
 
 // InitContainerPathResolver creates a resolver for paths from within
 // containers.
-func InitContainerPathResolver(mountNSPIDsCache *bucketscache.BucketsCache) *ContainerPathResolver {
+func InitContainerPathResolver(mountNSPIDsCache *bucketcache.BucketCache) *ContainerPathResolver {
 	return &ContainerPathResolver{
 		fs:               os.DirFS("/"),
 		mountNSPIDsCache: mountNSPIDsCache,

@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/aquasecurity/tracee/pkg/common/filehash"
 	"github.com/aquasecurity/tracee/pkg/config"
 )
 
@@ -82,7 +83,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			outputSlice: []string{"option:exec-hash=inode"},
 			expectedOutput: PrepareOutputResult{
 				TraceeConfig: &config.OutputConfig{
-					CalcHashes:     config.CalcHashesInode,
+					CalcHashes:     filehash.CalcHashesInode,
 					ParseArguments: true,
 				},
 			},
@@ -131,7 +132,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 				TraceeConfig: &config.OutputConfig{
 					StackAddresses:    true,
 					ExecEnv:           true,
-					CalcHashes:        config.CalcHashesNone,
+					CalcHashes:        filehash.CalcHashesNone,
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
 					EventsSorting:     true,
