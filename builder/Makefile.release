@@ -150,6 +150,7 @@ RELEASE_GITHUB ?= 1
 release: override BTFHUB=1
 release: override STATIC=0
 release: override SNAPSHOT=0
+release: override STRIP_BPF_DEBUG=1
 
 .PHONY: release
 release: \
@@ -226,7 +227,7 @@ alpine-prepare:
 .PHONY: build-tracee-container
 build-tracee-container: alpine-prepare
 # build official container image (CO-RE obj)
-	BTFHUB=$(BTFHUB) STATIC=$(STATIC) SNAPSHOT=$(SNAPSHOT) RELEASE_VERSION=$(RELEASE_VERSION) \
+	BTFHUB=$(BTFHUB) STATIC=$(STATIC) SNAPSHOT=$(SNAPSHOT) STRIP_BPF_DEBUG=$(STRIP_BPF_DEBUG) RELEASE_VERSION=$(RELEASE_VERSION) \
 		$(MAKE) -f builder/Makefile.tracee-container build-tracee
 
 #
@@ -241,7 +242,7 @@ ubuntu-prepare:
 .PHONY: build-tracee-binary-static
 build-tracee-binary-static: ubuntu-prepare
 # static
-	BTFHUB=0 STATIC=1 RELEASE_VERSION=$(RELEASE_VERSION) \
+	BTFHUB=0 STATIC=1 STRIP_BPF_DEBUG=$(STRIP_BPF_DEBUG) RELEASE_VERSION=$(RELEASE_VERSION) \
 		$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf tracee" && \
 		$(CMD_MV) dist/tracee-ebpf dist/tracee-ebpf-static && \
 		$(CMD_MV) dist/tracee dist/tracee-static
@@ -249,7 +250,7 @@ build-tracee-binary-static: ubuntu-prepare
 .PHONY: build-tracee-binary-shared
 build-tracee-binary-shared: ubuntu-prepare
 # shared libs
-	BTFHUB=0 STATIC=0 RELEASE_VERSION=$(RELEASE_VERSION) \
+	BTFHUB=0 STATIC=0 STRIP_BPF_DEBUG=$(STRIP_BPF_DEBUG) RELEASE_VERSION=$(RELEASE_VERSION) \
 		$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
 
 .PHONY: copy-man
