@@ -776,17 +776,20 @@ E2E_NET_SRC := $(shell find $(E2E_NET_DIR) \
 #
 #	traceectl 
 #
+
 SUBDIR_TRACEECTL = cmd/traceectl
 .PHONY: traceectl
+.ONESHELL:
 traceectl: $(OUTPUT_DIR)
 	$(MAKE) -C $(SUBDIR_TRACEECTL) all
 	cp $(SUBDIR_TRACEECTL)/dist/traceectl $(OUTPUT_DIR)/
 	@echo "Moved traceectl binary to $(OUTPUT_DIR)"
 
 .PHONY: clean-traceectl
+.ONESHELL:
 clean-traceectl:
 	$(MAKE) -C $(SUBDIR_TRACEECTL) clean
-	 rm -f $(OUTPUT_DIR)/traceectl
+	rm -f $(OUTPUT_DIR)/traceectl
 
 
 .PHONY: e2e-net-signatures
