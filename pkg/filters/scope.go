@@ -2,7 +2,7 @@ package filters
 
 import (
 	"github.com/aquasecurity/tracee/pkg/common"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 

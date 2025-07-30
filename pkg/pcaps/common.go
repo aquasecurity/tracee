@@ -8,9 +8,9 @@ import (
 	"github.com/google/gopacket/pcapgo"
 
 	"github.com/aquasecurity/tracee/pkg/common"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 

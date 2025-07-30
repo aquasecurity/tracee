@@ -10,12 +10,12 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/common"
+	"github.com/aquasecurity/tracee/pkg/common/capabilities"
 	"github.com/aquasecurity/tracee/pkg/common/environment"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 var expectedSyscallTableInit = false

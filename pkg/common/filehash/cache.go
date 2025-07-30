@@ -8,9 +8,8 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
-	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/config"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/common/capabilities"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 )
 
 var onceHashCapsAdd sync.Once // capabilities for exec hash enabled only once
@@ -24,8 +23,32 @@ type pathResolver interface {
 	GetHostAbsPath(absolutePath string, mountNS int) (string, error)
 }
 
+type CalcHashesOption int
+
+const (
+	CalcHashesNone CalcHashesOption = iota
+	CalcHashesInode
+	CalcHashesDevInode
+	CalcHashesDigestInode
+)
+
+func (c CalcHashesOption) String() string {
+	switch c {
+	case CalcHashesNone:
+		return "none"
+	case CalcHashesInode:
+		return "pathname"
+	case CalcHashesDevInode:
+		return "dev-inode"
+	case CalcHashesDigestInode:
+		return "digest-inode"
+	default:
+		return "unknown"
+	}
+}
+
 type Cache struct {
-	execHashMode config.CalcHashesOption
+	execHashMode CalcHashesOption
 	hashes       *lru.Cache[string, hashInfo]
 	resolver     pathResolver
 }
@@ -39,7 +62,7 @@ type Cache struct {
 //     is preferred over performance without container enrichment.
 //   - digest-inode: is the most efficient, as it keys the hash to a pair consisting of the container image digest and inode.
 //     This approach, however, necessitates container enrichment.
-func NewCache(mode config.CalcHashesOption, resolver pathResolver) (*Cache, error) {
+func NewCache(mode CalcHashesOption, resolver pathResolver) (*Cache, error) {
 	hashes, err := lru.New[string, hashInfo](2048)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create exechash cache: %v", err)

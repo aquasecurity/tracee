@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 )
 
 const (

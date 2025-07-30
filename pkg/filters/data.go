@@ -9,9 +9,9 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/pkg/common"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 

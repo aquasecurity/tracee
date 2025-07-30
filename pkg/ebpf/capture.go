@@ -10,9 +10,9 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/common"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/time"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
+	"github.com/aquasecurity/tracee/pkg/common/timeutil"
 )
 
 func (t *Tracee) handleFileCaptures(ctx context.Context) {
@@ -111,7 +111,7 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 					continue
 				}
 				// note: size of buffer will determine maximum extracted file size! (as writes from kernel are immediate)
-				mprotectMeta.Ts = time.BootToEpochNS(uint64(mprotectMeta.Ts))
+				mprotectMeta.Ts = timeutil.BootToEpochNS(uint64(mprotectMeta.Ts))
 				filename = fmt.Sprintf("bin.pid-%d.ts-%d", mprotectMeta.Pid, mprotectMeta.Ts)
 			} else if meta.BinType == bufferdecoder.SendKernelModule {
 				err = metaBuffDecoder.DecodeKernelModuleMeta(&kernelModuleMeta)

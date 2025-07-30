@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/common/environment"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/types/trace"
 )

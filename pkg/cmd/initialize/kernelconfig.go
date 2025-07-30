@@ -2,7 +2,7 @@ package initialize
 
 import (
 	"github.com/aquasecurity/tracee/pkg/common/environment"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 )
 
 func KernelConfig() (*environment.KernelConfig, error) {

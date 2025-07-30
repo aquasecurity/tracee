@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/common"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
+	"github.com/aquasecurity/tracee/pkg/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/logger"
-	traceetime "github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -249,7 +249,7 @@ func (t *Tracee) procTreeAddBinInfo(event *trace.Event) error {
 	}
 
 	// Event timestamp is changed to relative (or not) at the end of all processors only.
-	eventTimestamp := traceetime.NsSinceEpochToTime(uint64(event.Timestamp))
+	eventTimestamp := timeutil.NsSinceEpochToTime(uint64(event.Timestamp))
 
 	executable := currentProcess.GetExecutable()
 

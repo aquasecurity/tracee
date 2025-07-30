@@ -3,8 +3,7 @@ package filehash
 import (
 	"fmt"
 
-	"github.com/aquasecurity/tracee/pkg/config"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
 )
 
 const hostDigest = "host"
@@ -90,13 +89,13 @@ func (k *Key) InodeKey() string {
 
 // get key with relation to CalcHashesOption
 // Note: this may still return empty according to values supplied to the key
-func getKeyByExecHashMode(k *Key, mode config.CalcHashesOption) (string, error) {
+func getKeyByExecHashMode(k *Key, mode CalcHashesOption) (string, error) {
 	switch mode {
-	case config.CalcHashesInode:
+	case CalcHashesInode:
 		return k.InodeKey(), nil
-	case config.CalcHashesDevInode:
+	case CalcHashesDevInode:
 		return k.DeviceKey(), nil
-	case config.CalcHashesDigestInode:
+	case CalcHashesDigestInode:
 		return k.DigestKey(), nil // can be empty if container digest is not available
 	}
 

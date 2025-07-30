@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/common/filehash"
 	"github.com/aquasecurity/tracee/pkg/config"
 )
 
@@ -290,7 +291,7 @@ func TestPrepareOutput(t *testing.T) {
 					{Kind: "table", OutPath: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
-					CalcHashes:     config.CalcHashesDevInode,
+					CalcHashes:     filehash.CalcHashesDevInode,
 					ParseArguments: true,
 				},
 			},
@@ -303,7 +304,7 @@ func TestPrepareOutput(t *testing.T) {
 					{Kind: "table", OutPath: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
-					CalcHashes:     config.CalcHashesInode,
+					CalcHashes:     filehash.CalcHashesInode,
 					ParseArguments: true,
 				},
 			},
@@ -374,7 +375,7 @@ func TestPrepareOutput(t *testing.T) {
 				TraceeConfig: &config.OutputConfig{
 					StackAddresses:    true,
 					ExecEnv:           true,
-					CalcHashes:        config.CalcHashesDevInode,
+					CalcHashes:        filehash.CalcHashesDevInode,
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
 					EventsSorting:     true,

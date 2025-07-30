@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/aquasecurity/tracee/pkg/bucketscache"
-	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/common/bucketcache"
+	"github.com/aquasecurity/tracee/pkg/common/capabilities"
 )
 
 func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
@@ -82,7 +82,7 @@ func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
 
 				// Initialize a mock for the os.Stat function
 				mfs := fstest.MapFS{}
-				bucket := bucketscache.BucketsCache{}
+				bucket := bucketcache.BucketCache{}
 				bucket.Init(20)
 				for _, p := range testCase.nsProcesses {
 					if p.alive {
@@ -137,7 +137,7 @@ func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
 		}
 		testMntNS := 1
 		testPID := 1
-		bucket := bucketscache.BucketsCache{}
+		bucket := bucketcache.BucketCache{}
 		bucket.Init(20)
 		bucket.AddBucketItem(uint32(testMntNS), 1)
 		for _, testCase := range testCases {

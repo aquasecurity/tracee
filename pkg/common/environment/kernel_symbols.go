@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/common"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
 )
 
 const (

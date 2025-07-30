@@ -1,19 +1,19 @@
-package bucketscache
+package bucketcache
 
 import (
 	"sync"
 	"testing"
 )
 
-type BucketsCacheWithOneLock struct {
-	bc BucketsCache
+type BucketCacheWithOneLock struct {
+	bc BucketCache
 }
 
-func (c *BucketsCacheWithOneLock) Init(bucketLimit int) {
+func (c *BucketCacheWithOneLock) Init(bucketLimit int) {
 	c.bc.Init(bucketLimit)
 }
 
-func (c *BucketsCacheWithOneLock) addBucketItem(key uint32, value uint32, force bool) {
+func (c *BucketCacheWithOneLock) addBucketItem(key uint32, value uint32, force bool) {
 	c.bc.bucketsMutex.Lock()
 	defer c.bc.bucketsMutex.Unlock()
 
@@ -34,7 +34,7 @@ func (c *BucketsCacheWithOneLock) addBucketItem(key uint32, value uint32, force 
 }
 
 func BenchmarkAddBucketItemCurrent(b *testing.B) {
-	bc := &BucketsCache{}
+	bc := &BucketCache{}
 	bc.Init(100)
 
 	start := make(chan struct{})
@@ -57,7 +57,7 @@ func BenchmarkAddBucketItemCurrent(b *testing.B) {
 }
 
 func BenchmarkAddBucketItemWithOneLock(b *testing.B) {
-	bc := &BucketsCacheWithOneLock{}
+	bc := &BucketCacheWithOneLock{}
 	bc.Init(100)
 
 	start := make(chan struct{})

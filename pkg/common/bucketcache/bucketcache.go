@@ -1,24 +1,24 @@
-package bucketscache
+package bucketcache
 
 import (
 	"sync"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
 )
 
-type BucketsCache struct {
+type BucketCache struct {
 	buckets      map[uint32][]uint32
 	bucketLimit  int
 	bucketsMutex *sync.RWMutex
 }
 
-func (c *BucketsCache) Init(bucketLimit int) {
+func (c *BucketCache) Init(bucketLimit int) {
 	c.bucketLimit = bucketLimit
 	c.buckets = make(map[uint32][]uint32)
 	c.bucketsMutex = new(sync.RWMutex)
 }
 
-func (c *BucketsCache) GetBucket(key uint32) []uint32 {
+func (c *BucketCache) GetBucket(key uint32) []uint32 {
 	c.bucketsMutex.RLock()
 	defer c.bucketsMutex.RUnlock()
 
@@ -31,7 +31,7 @@ func (c *BucketsCache) GetBucket(key uint32) []uint32 {
 	return nil
 }
 
-func (c *BucketsCache) GetBucketItem(key uint32, index int) (uint32, error) {
+func (c *BucketCache) GetBucketItem(key uint32, index int) (uint32, error) {
 	c.bucketsMutex.RLock()
 	defer c.bucketsMutex.RUnlock()
 	b, exists := c.buckets[key]
@@ -44,15 +44,15 @@ func (c *BucketsCache) GetBucketItem(key uint32, index int) (uint32, error) {
 	return b[index], nil
 }
 
-func (c *BucketsCache) AddBucketItem(key uint32, value uint32) {
+func (c *BucketCache) AddBucketItem(key uint32, value uint32) {
 	c.addBucketItem(key, value, false)
 }
 
-func (c *BucketsCache) ForceAddBucketItem(key uint32, value uint32) {
+func (c *BucketCache) ForceAddBucketItem(key uint32, value uint32) {
 	c.addBucketItem(key, value, true)
 }
 
-func (c *BucketsCache) addBucketItem(key uint32, value uint32, force bool) {
+func (c *BucketCache) addBucketItem(key uint32, value uint32, force bool) {
 	c.bucketsMutex.Lock()
 	defer c.bucketsMutex.Unlock()
 

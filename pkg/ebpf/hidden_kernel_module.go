@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/common"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // lkmSeekerRoutine handles the kernel module hiding check logic. The logic runs

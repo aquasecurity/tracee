@@ -14,11 +14,11 @@ import (
 
 	"github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/cgroup"
+	"github.com/aquasecurity/tracee/pkg/common/cgroup"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/k8s"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 type Container struct {

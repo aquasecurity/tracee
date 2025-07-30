@@ -3,7 +3,7 @@ package proc
 import (
 	"bytes"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
 )
 
 //

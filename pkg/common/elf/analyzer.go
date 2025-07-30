@@ -22,9 +22,9 @@ import (
 	"golang.org/x/arch/arm64/arm64asm"
 	"golang.org/x/arch/x86/x86asm"
 
-	"github.com/aquasecurity/tracee/pkg/common"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
+	"github.com/aquasecurity/tracee/pkg/common/read"
 )
 
 type ElfAnalyzer struct {
@@ -65,7 +65,7 @@ func NewElfAnalyzer(filePath string, wantedSymbols []WantedSymbol) (*ElfAnalyzer
 		goto exit_close
 	}
 
-	mmapFile = common.NewProtectedReader(data)
+	mmapFile = read.NewProtectedReader(data)
 
 	elfFile, err = elf.NewFile(mmapFile)
 	if err != nil {

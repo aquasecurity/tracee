@@ -7,14 +7,14 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/common"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 	"github.com/aquasecurity/tracee/pkg/common/proc"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
-	traceetime "github.com/aquasecurity/tracee/pkg/time"
+	"github.com/aquasecurity/tracee/pkg/common/timeutil"
 )
 
-const debugMsgs = false                         // debug messages can be too verbose, so they are disabled by default
-const ProcfsClockId = traceetime.CLOCK_BOOTTIME // Procfs uses jiffies, which are based on boottime
+const debugMsgs = false                       // debug messages can be too verbose, so they are disabled by default
+const ProcfsClockId = timeutil.CLOCK_BOOTTIME // Procfs uses jiffies, which are based on boottime
 
 const (
 	AllPIDs = 0
@@ -108,7 +108,7 @@ func getProcessByPID(pt *ProcessTree, givenPid int32) (*Process, error) {
 	}
 
 	statStartTime := stat.GetStartTime()
-	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(statStartTime)
+	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(statStartTime)
 	hash := common.HashTaskID(uint32(givenPid), startTimeNs) // status pid == tid
 
 	return pt.GetOrCreateProcessByHash(hash), nil
@@ -157,7 +157,7 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 	}
 
 	// thread start time (monotonic boot)
-	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(start)
+	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(start)
 	// process hash
 	hash := common.HashTaskID(uint32(pid), startTimeNs)
 
@@ -174,7 +174,7 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 		}
 	}
 
-	procfsTimeStamp := traceetime.BootToEpochNS(startTimeNs)
+	procfsTimeStamp := timeutil.BootToEpochNS(startTimeNs)
 
 	// NOTE: override all the fields of the taskInfoFeed, to avoid any previous data.
 	taskInfoFeed := pt.GetTaskInfoFeedFromPool()
@@ -193,7 +193,7 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 
 	procInfo.SetFeedAt(
 		taskInfoFeed,
-		traceetime.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
+		timeutil.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
 	)
 
 	// Release the feed back to the pool as soon as it is not needed anymore
@@ -249,7 +249,7 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 	}
 
 	// thread start time (monotonic boot)
-	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(start)
+	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(start)
 	// thread hash
 	hash := common.HashTaskID(uint32(pid), startTimeNs)
 
@@ -262,7 +262,7 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 		return nil
 	}
 
-	procfsTimeStamp := traceetime.BootToEpochNS(startTimeNs)
+	procfsTimeStamp := timeutil.BootToEpochNS(startTimeNs)
 
 	// NOTE: override all the fields of the taskInfoFeed, to avoid any previous data.
 	taskInfoFeed := pt.GetTaskInfoFeedFromPool()
@@ -281,7 +281,7 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 
 	threadInfo.SetFeedAt(
 		taskInfoFeed,
-		traceetime.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
+		timeutil.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
 	)
 
 	// Release the feed back to the pool as soon as it is not needed anymore

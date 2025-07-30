@@ -10,16 +10,15 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/common"
+	"github.com/aquasecurity/tracee/pkg/common/capabilities"
 	"github.com/aquasecurity/tracee/pkg/common/environment"
-	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/filehash"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/filehash"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -126,7 +125,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	}
 
 	// capture executed files
-	if t.config.Capture.Exec || t.config.Output.CalcHashes != config.CalcHashesNone {
+	if t.config.Capture.Exec || t.config.Output.CalcHashes != filehash.CalcHashesNone {
 		filePath, err := parse.ArgVal[string](event.Args, "pathname")
 		if err != nil {
 			return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
@@ -187,7 +186,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				}
 			}
 			// check exec'ed hash ?
-			if t.config.Output.CalcHashes != config.CalcHashesNone {
+			if t.config.Output.CalcHashes != filehash.CalcHashesNone {
 				dev, err := parse.ArgVal[uint32](event.Args, "dev")
 				if err != nil {
 					return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
@@ -408,7 +407,7 @@ func (t *Tracee) processSharedObjectLoaded(event *trace.Event) error {
 	if containerId == "" {
 		containerId = "host"
 	}
-	if t.config.Output.CalcHashes != config.CalcHashesNone {
+	if t.config.Output.CalcHashes != filehash.CalcHashesNone {
 		fileKey := filehash.NewKey(filePath, event.MountNS,
 			filehash.WithDevice(dev),
 			filehash.WithInode(ino, int64(fileCtime)),

@@ -9,8 +9,8 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 )
 
 // OpenExistingDir open a directory with given path, and return the os.File of it.

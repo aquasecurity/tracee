@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 )
 
 // ProcNS represents the namespace IDs for all namespace types of a process

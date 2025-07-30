@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/mount"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
+	"github.com/aquasecurity/tracee/pkg/common/mount"
 )
 
 // Constants

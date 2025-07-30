@@ -9,8 +9,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 )
 
 // WantedSymbol interface for different types of symbols that can be searched for

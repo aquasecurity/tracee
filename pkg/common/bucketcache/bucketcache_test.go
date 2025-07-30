@@ -1,18 +1,16 @@
-package bucketscache_test
+package bucketcache
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/aquasecurity/tracee/pkg/bucketscache"
 )
 
-func TestBucketsCache(t *testing.T) {
+func TestBucketCache(t *testing.T) {
 	t.Parallel()
 
-	var cache bucketscache.BucketsCache
+	var cache BucketCache
 	cache.Init(5)
 	cache.AddBucketItem(1, 32)
 	cache.AddBucketItem(1, 32)
@@ -37,5 +35,5 @@ func TestBucketsCache(t *testing.T) {
 
 	// get non existing bucket item
 	_, err = cache.GetBucketItem(2, 0)
-	assert.Equal(t, err.Error(), bucketscache.NoSuchItem(2, 0).Error())
+	assert.Equal(t, err.Error(), NoSuchItem(2, 0).Error())
 }

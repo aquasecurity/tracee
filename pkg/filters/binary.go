@@ -8,8 +8,8 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/pkg/common"
+	"github.com/aquasecurity/tracee/pkg/common/errfmt"
 	"github.com/aquasecurity/tracee/pkg/common/proc"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 type NSBinary struct {

@@ -1,4 +1,4 @@
-package time
+package timeutil
 
 /*
 #include <unistd.h>
@@ -15,7 +15,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/aquasecurity/tracee/pkg/common"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/common/logger"
 )
 
 var configHZOnce, clockTickOnce sync.Once
