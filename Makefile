@@ -44,6 +44,7 @@ CMD_RM ?= rm
 CMD_SED ?= sed
 CMD_STATICCHECK ?= staticcheck
 CMD_STRIP ?= llvm-strip
+CMD_OBJCOPY ?= llvm-objcopy
 CMD_TOUCH ?= touch
 CMD_TR ?= tr
 CMD_PROTOC ?= protoc
@@ -173,6 +174,9 @@ ifeq ($(METRICS),1)
 	BPF_DEBUG_FLAG += -DMETRICS
 endif
 
+# Strip debug symbols from BPF object
+STRIP_BPF_DEBUG ?= 0
+
 ifeq ($(UNAME_M),x86_64)
 	ARCH = x86_64
 	LINUX_ARCH = x86
@@ -213,6 +217,7 @@ env:
 	@echo "CMD_SED                  $(CMD_SED)"
 	@echo "CMD_STATICCHECK          $(CMD_STATICCHECK)"
 	@echo "CMD_STRIP                $(CMD_STRIP)"
+	@echo "CMD_OBJCOPY              $(CMD_OBJCOPY)"
 	@echo "CMD_TOUCH                $(CMD_TOUCH)"
 	@echo "CMD_TR                   $(CMD_TR)"
 	@echo "CMD_PROTOC               $(CMD_PROTOC)"
@@ -246,6 +251,7 @@ env:
 	@echo ---------------------------------------
 	@echo "DEBUG                    $(DEBUG)"
 	@echo "GO_DEBUG_FLAG            $(GO_DEBUG_FLAG)"
+	@echo "STRIP_BPF_DEBUG          $(STRIP_BPF_DEBUG)"
 	@echo ---------------------------------------
 	@echo "CUSTOM_CGO_CFLAGS        $(CUSTOM_CGO_CFLAGS)"
 	@echo "CUSTOM_CGO_LDFLAGS       $(CUSTOM_CGO_LDFLAGS)"
@@ -487,6 +493,9 @@ $(OUTPUT_DIR)/tracee.bpf.o: \
 		-mcpu=$(BPF_VCPU) \
 		-c $(TRACEE_EBPF_OBJ_SRC) \
 		-o $@
+ifeq ($(STRIP_BPF_DEBUG),1)
+	$(CMD_OBJCOPY) --strip-debug $@
+endif
 
 .PHONY: clean-bpf
 clean-bpf:
