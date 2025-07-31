@@ -245,10 +245,19 @@ func validateEvent(policyName, eventName string) error {
 		return errfmt.Errorf("policy %s, event cannot be empty", policyName)
 	}
 
-	_, ok := events.Core.GetDefinitionIDByName(eventName)
-	if !ok {
-		return errfmt.Errorf("policy %s, event %s is not valid", policyName, eventName)
+	eventNames := strings.Split(eventName, ",")
+	for _, event := range eventNames {
+		if events.Core.IsASet(event) {
+			continue
+		}
+
+		e := strings.TrimPrefix(event, "-")
+		_, ok := events.Core.GetDefinitionIDByName(e)
+		if !ok {
+			return errfmt.Errorf("policy %s, event %s is not valid", policyName, event)
+		}
 	}
+
 	return nil
 }
 
