@@ -15,6 +15,8 @@ type Probe interface {
 	detach(...interface{}) error
 	// autoload sets the probe's ebpf program automatic attaching to its hook.
 	autoload(module *bpf.Module, autoload bool) error
+	// isCompatible checks if the probe is compatible with the given environment.
+	isCompatible(env EnvironmentProvider) (bool, error)
 }
 
 //
