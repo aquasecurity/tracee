@@ -7353,20 +7353,43 @@ int tracepoint__exec_test(struct bpf_raw_tracepoint_args *ctx)
     if (!evaluate_scope_filters(&p))
         return 0;
 
-    if (!reset_event(p.event, EXEC_TEST))
-        return 0;
-    if (evaluate_scope_filters(&p))
-        ret |= events_perf_submit(&p, 0);
+    if (reset_event(p.event, EXEC_TEST)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
 
-    if (!reset_event(p.event, TEST_MISSING_KSYMBOLS))
-        return 0;
-    if (evaluate_scope_filters(&p))
-        ret |= events_perf_submit(&p, 0);
+    if (reset_event(p.event, TEST_MISSING_KSYMBOLS)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
 
-    if (!reset_event(p.event, TEST_FAILED_ATTACH))
-        return 0;
-    if (evaluate_scope_filters(&p))
-        ret |= events_perf_submit(&p, 0);
+    if (reset_event(p.event, TEST_FAILED_ATTACH)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
 
+    if (reset_event(p.event, KERNEL_VERSION_INCOMPATIBLE)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
+    if (reset_event(p.event, KERNEL_VERSION_INCOMPATIBLE_WITH_FALLBACK)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
+    if (reset_event(p.event, EVENT_DEPENDENCY_FAILED)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
+    return 0;
+}
+
+SEC("kprobe/kernel_version_incompatible_probe")
+int BPF_KPROBE(kernel_version_incompatible_probe)
+{
+    // This probe is designed to be incompatible with current kernel versions
+    // It will be filtered out by the compatibility check
     return 0;
 }

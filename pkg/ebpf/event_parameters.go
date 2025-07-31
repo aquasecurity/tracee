@@ -108,7 +108,7 @@ func registerSyscallChecker(t *Tracee, eventParams []map[string]filters.Filter[*
 	probeGroupName := "syscall_checkers"
 	probeGroup, ok := t.extraProbes[probeGroupName]
 	if !ok {
-		probeGroup = probes.NewProbeGroup(t.bpfModule, map[probes.Handle]probes.Probe{})
+		probeGroup = probes.NewProbeGroup(t.bpfModule, map[probes.Handle]probes.Probe{}, map[probes.Handle]*probes.ProbeCompatibility{})
 		t.extraProbes[probeGroupName] = probeGroup
 	}
 
