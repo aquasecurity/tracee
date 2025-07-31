@@ -15,17 +15,19 @@ import (
 
 // ProbeGroup is a collection of probes.
 type ProbeGroup struct {
-	probesLock *sync.Mutex // disallow concurrent access to the probe group
-	module     *bpf.Module
-	probes     map[Handle]Probe
+	probesLock      *sync.Mutex // disallow concurrent access to the probe group
+	module          *bpf.Module
+	probes          map[Handle]Probe
+	compatabilities map[Handle]*ProbeCompatibility
 }
 
 // NewProbeGroup creates a new ProbeGroup.
-func NewProbeGroup(m *bpf.Module, p map[Handle]Probe) *ProbeGroup {
+func NewProbeGroup(m *bpf.Module, p map[Handle]Probe, c map[Handle]*ProbeCompatibility) *ProbeGroup {
 	return &ProbeGroup{
-		probesLock: &sync.Mutex{}, // no parallel attaching/detaching of probes
-		probes:     p,
-		module:     m,
+		probesLock:      &sync.Mutex{}, // no parallel attaching/detaching of probes
+		probes:          p,
+		module:          m,
+		compatabilities: c,
 	}
 }
 
@@ -62,6 +64,20 @@ func (p *ProbeGroup) GetProbeType(handle Handle) ProbeType {
 	}
 
 	return InvalidProbeType
+}
+
+// IsProbeCompatible checks if a probe is compatible with the given environment.
+func (p *ProbeGroup) IsProbeCompatible(handle Handle, osInfo OSInfoProvider) (bool, error) {
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
+
+	// If no requirements are specified, the probe is compatible.
+	probeCompatibility, ok := p.compatabilities[handle]
+	if !ok {
+		return true, nil
+	}
+
+	return probeCompatibility.IsCompatible(osInfo)
 }
 
 // Attach attaches a probe's program to its hook, by given handle.
@@ -272,6 +288,8 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 		EmptyKprobe:         NewTraceProbe(KProbe, "security_bprm_check", "empty_kprobe"),
 	}
 
+	probesRequirements := map[Handle]*ProbeCompatibility{}
+
 	if !netEnabled {
 		// disable network cgroup probes (avoid effective CAP_NET_ADMIN if not needed)
 		if err := allProbes[CgroupSKBIngress].autoload(module, false); err != nil {
@@ -294,5 +312,5 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 		}
 	}
 
-	return NewProbeGroup(module, allProbes), nil
+	return NewProbeGroup(module, allProbes, probesRequirements), nil
 }

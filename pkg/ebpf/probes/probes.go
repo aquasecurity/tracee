@@ -2,11 +2,19 @@ package probes
 
 import (
 	bpf "github.com/aquasecurity/libbpfgo"
+
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 //
 // Probe
 //
+
+// OSInfoProvider defines the interface for OS information needed by probe compatibility checks
+type OSInfoProvider interface {
+	GetOSReleaseID() environment.OSReleaseID
+	CompareOSBaseKernelRelease(version string) (environment.KernelVersionComparison, error)
+}
 
 type Probe interface {
 	// attach attaches the probe's program to its hook.
