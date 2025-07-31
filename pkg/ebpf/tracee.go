@@ -176,7 +176,7 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Initialize Dependencies Manager
 
 	depsManager := dependencies.NewDependenciesManager(
-		func(id events.ID) events.Dependencies {
+		func(id events.ID) events.DependencyStrategy {
 			return events.Core.GetDefinitionByID(id).GetDependencies()
 		})
 
@@ -841,7 +841,7 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 
 		depsNode, err := t.eventsDependencies.GetEvent(id)
 		if err != nil {
-			logger.Warnw("failed to extract required ksymbols from event", "event_id", id, "error", err)
+			logger.Warnw("failed to extract required ksymbols from event", "event", events.Core.GetDefinitionByID(id).GetName(), "error", err)
 			continue
 		}
 		// Add directly dependant symbols
@@ -947,18 +947,9 @@ func getUnavailbaleKsymbols(ksymbols []events.KSymbol, kernelSymbols *symbols.Ke
 // from the kallsyms file to check for missing symbols. If some symbols are
 // missing, it will cancel their event with informative error message.
 func (t *Tracee) validateKallsymsDependencies() {
-	evtDefSymDeps := func(id events.ID) []events.KSymbol {
-		depsNode, err := t.eventsDependencies.GetEvent(id)
-		if err != nil {
-			logger.Debugw("Failed to get dependencies for event", "id", id, "error", err)
-			return nil
-		}
-		deps := depsNode.GetDependencies()
-		return deps.GetKSymbols()
-	}
-
-	validateEvent := func(eventId events.ID) bool {
-		missingDepSyms := getUnavailbaleKsymbols(evtDefSymDeps(eventId), t.getKernelSymbols())
+	validateNode := func(node *dependencies.EventNode) bool {
+		deps := node.GetDependencies()
+		missingDepSyms := getUnavailbaleKsymbols(deps.GetKSymbols(), t.getKernelSymbols())
 		shouldFailEvent := false
 		for _, symDep := range missingDepSyms {
 			if symDep.IsRequired() {
@@ -967,7 +958,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 			}
 		}
 		if shouldFailEvent {
-			eventNameToCancel := events.Core.GetDefinitionByID(eventId).GetName()
+			eventNameToCancel := events.Core.GetDefinitionByID(node.GetID()).GetName()
 			var missingSymsNames []string
 			for _, symDep := range missingDepSyms {
 				missingSymsNames = append(missingSymsNames, symDep.GetSymbolName())
@@ -981,6 +972,15 @@ func (t *Tracee) validateKallsymsDependencies() {
 		return true
 	}
 
+	validateEvent := func(eventId events.ID) bool {
+		depsNode, err := t.eventsDependencies.GetEvent(eventId)
+		if err != nil {
+			logger.Debugw("Failed to get dependencies for event", "event", events.Core.GetDefinitionByID(eventId).GetName(), "error", err)
+			return false
+		}
+		return validateNode(depsNode)
+	}
+
 	t.eventsDependencies.SubscribeAdd(
 		dependencies.EventNodeType,
 		func(node interface{}) []dependencies.Action {
@@ -989,19 +989,27 @@ func (t *Tracee) validateKallsymsDependencies() {
 				logger.Errorw("Got node from type not requested")
 				return nil
 			}
-			if !validateEvent(eventNode.GetID()) {
-				return []dependencies.Action{dependencies.NewCancelNodeAddAction(errors.New("event is missing ksymbols"))}
+			if !validateNode(eventNode) {
+				return []dependencies.Action{dependencies.NewFailNodeAddAction(errors.New("event is missing ksymbols"))}
 			}
 			return nil
 		})
 
 	for _, eventId := range t.policyManager.EventsSelected() {
-		if !validateEvent(eventId) {
+		// Continuously validate the event and mark it as failed if required ksymbols are missing,
+		// until all necessary ksymbols become available or the event is removed.
+		// This process enables the event to attempt fallbacks as needed, potentially resulting in different ksymbol dependencies each time.
+		for !validateEvent(eventId) {
 			// Cancel the event, its dependencies and its dependent events
-			err := t.eventsDependencies.RemoveEvent(eventId)
+			removed, err := t.eventsDependencies.FailEvent(eventId)
 			if err != nil {
 				logger.Warnw("Failed to remove event from dependencies manager", "remove reason", "missing ksymbols", "error", err)
+				break
 			}
+			if removed {
+				break
+			}
+			// If the event is not removed, it means it has fallbacks, so we need to try the next fallback
 		}
 	}
 }
@@ -1243,6 +1251,9 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize tail call dependencies
+	// TODO: Tail calls are not updated upon events changes in the dependency manager.
+	//       Hence, upon events addition, fallbacks or removal, tail calls will not be updated.
+	//       This should be fixed dynamically in the future.
 	eventsToSubmit := t.policyManager.EventsToSubmit()
 	tailCalls := events.Core.GetTailCalls(eventsToSubmit)
 	for _, tailCall := range tailCalls {
@@ -1351,6 +1362,8 @@ func (t *Tracee) attachProbes() error {
 	for _, eventID := range t.policyManager.EventsSelected() {
 		err := t.attachEvent(eventID)
 		if err != nil {
+			// TODO: Consider implementing fallback logic here.
+			// At this stage, only the probes currently in use are loaded, which prevents transitioning to fallbacks.
 			err := t.eventsDependencies.RemoveEvent(eventID)
 			if err != nil {
 				logger.Warnw("Failed to remove event from dependencies manager", "remove reason", "failed probes attachment", "error", err)
@@ -1386,8 +1399,8 @@ func (t *Tracee) validateProbesCompatibility() error {
 			return nil
 		})
 
-	// Check all existing events for incompatible probes and remove them
-	var eventsToRemove []events.ID
+	// Check all existing events for incompatible probes and fail them
+	incompatibleProbes := make(map[probes.Handle]struct{})
 	for _, eventID := range t.policyManager.EventsSelected() {
 		depsNode, err := t.eventsDependencies.GetEvent(eventID)
 		if err != nil {
@@ -1397,7 +1410,6 @@ func (t *Tracee) validateProbesCompatibility() error {
 		deps := depsNode.GetDependencies()
 		depProbes := deps.GetProbes()
 
-		shouldRemoveEvent := false
 		for _, probe := range depProbes {
 			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probe.GetHandle(), t.config.OSInfo)
 			if err != nil {
@@ -1405,25 +1417,19 @@ func (t *Tracee) validateProbesCompatibility() error {
 				continue
 			}
 			if !probeCompatibility {
-				// TODO: Remove only probe from event dependencies and let it handle the event removal.
 				eventName := events.Core.GetDefinitionByID(eventID).GetName()
 				logger.Debugw("Event failed due to incompatible probe", "event", eventName, "probe", probe.GetHandle())
-				shouldRemoveEvent = true
-				break
+				incompatibleProbes[probe.GetHandle()] = struct{}{}
 			}
-		}
-
-		if shouldRemoveEvent {
-			eventsToRemove = append(eventsToRemove, eventID)
 		}
 	}
 
-	// Remove events with incompatible required probes
-	for _, eventID := range eventsToRemove {
-		err := t.eventsDependencies.RemoveEvent(eventID)
+	// Fail incompatible probes, which will automatically fail all dependent events
+	for probeHandle := range incompatibleProbes {
+		logger.Debugw("Failing incompatible probe", "probe", probeHandle)
+		err := t.eventsDependencies.FailProbe(probeHandle)
 		if err != nil {
-			eventName := events.Core.GetDefinitionByID(eventID).GetName()
-			logger.Warnw("Failed to remove event with incompatible probe", "event", eventName, "error", err)
+			logger.Warnw("Failed to fail incompatible probe", "probe", probeHandle, "error", err)
 		}
 	}
 
@@ -1784,7 +1790,12 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 			continue
 		}
 
-		for _, depProbes := range definition.GetDependencies().GetProbes() {
+		eventNode, err := t.eventsDependencies.GetEvent(tr)
+		if err != nil {
+			continue
+		}
+
+		for _, depProbes := range eventNode.GetDependencies().GetProbes() {
 			currProbe := t.defaultProbes.GetProbeByHandle(depProbes.GetHandle())
 			name := ""
 			switch p := currProbe.(type) {

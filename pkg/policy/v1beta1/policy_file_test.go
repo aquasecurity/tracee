@@ -22,13 +22,14 @@ func TestPolicyValidate(t *testing.T) {
 		false,
 		false,
 		[]string{"signatures", "default"},
-		events.NewDependencies(
-			[]events.ID{},
-			[]events.KSymbol{},
-			[]events.Probe{},
-			[]events.TailCall{},
-			events.Capabilities{},
-		),
+		events.NewDependencyStrategy(
+			events.NewDependencies(
+				[]events.ID{},
+				[]events.KSymbol{},
+				[]events.Probe{},
+				[]events.TailCall{},
+				events.Capabilities{},
+			)),
 		[]events.DataField{},
 		nil,
 	)

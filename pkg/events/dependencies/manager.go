@@ -1,6 +1,7 @@
 package dependencies
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"sync"
@@ -29,10 +30,16 @@ type Manager struct {
 	probes             map[probes.Handle]*ProbeNode
 	onAdd              map[NodeType][]func(node interface{}) []Action
 	onRemove           map[NodeType][]func(node interface{}) []Action
-	dependenciesGetter func(events.ID) events.Dependencies
+	dependenciesGetter func(events.ID) events.DependencyStrategy
+	// Track failed probes and events to prevent issues such as incorrect fallback handling,
+	// duplicate processing, or inconsistent state when dependencies are shared between events.
+	failedProbes map[probes.Handle]struct{}
+	failedEvents map[events.ID]struct{}
+
+	processingEvents map[events.ID]struct{} // Track events currently being processed - safeguard against recursive calls
 }
 
-func NewDependenciesManager(dependenciesGetter func(events.ID) events.Dependencies) *Manager {
+func NewDependenciesManager(dependenciesGetter func(events.ID) events.DependencyStrategy) *Manager {
 	return &Manager{
 		mu:                 sync.RWMutex{},
 		events:             make(map[events.ID]*EventNode),
@@ -40,6 +47,9 @@ func NewDependenciesManager(dependenciesGetter func(events.ID) events.Dependenci
 		onAdd:              make(map[NodeType][]func(node interface{}) []Action),
 		onRemove:           make(map[NodeType][]func(node interface{}) []Action),
 		dependenciesGetter: dependenciesGetter,
+		failedProbes:       make(map[probes.Handle]struct{}),
+		failedEvents:       make(map[events.ID]struct{}),
+		processingEvents:   make(map[events.ID]struct{}), // Initialize processing state
 	}
 }
 
@@ -127,15 +137,28 @@ func (m *Manager) RemoveEvent(id events.ID) error {
 	return m.removeEvent(id)
 }
 
+// removeEvent removes the given event from the tree.
+// It also fails all dependent events.
+// removeEventNode should be used instead if you already have node reference to avoid search failures.
 func (m *Manager) removeEvent(id events.ID) error {
 	node := m.getEventNode(id)
 	if node == nil {
 		return ErrNodeNotFound
 	}
+	return m.removeEventNode(node)
+}
 
-	m.removeEventNodeFromDependencies(node)
-	m.removeNode(node)
-	m.removeEventDependents(node)
+// removeEventNode removes the given event node from the tree.
+// It also fails all dependent events.
+// This is the function to call with a node that might not be already registered in the tree.
+// In general, it should be used if you already have node reference to avoid search failures.
+func (m *Manager) removeEventNode(eventNode *EventNode) error {
+	eventName := events.Core.GetDefinitionByID(eventNode.GetID()).GetName()
+	logger.Debugw("Removing event from tree", "event", eventName)
+
+	m.removeEventNodeFromDependencies(eventNode)
+	m.removeNode(eventNode)
+	m.failEventDependents(eventNode)
 
 	return nil
 }
@@ -146,6 +169,21 @@ func (m *Manager) removeEvent(id events.ID) error {
 // If the event exists in the tree, it will only update its dependents or its explicitlySelected
 // value if it is built without dependents.
 func (m *Manager) buildEvent(id events.ID, dependentEvents []events.ID) (*EventNode, error) {
+	logger.Debugw("Building event", "event", id)
+
+	// Check if already processing this event (prevents loops)
+	if _, processing := m.processingEvents[id]; processing {
+		return nil, fmt.Errorf("event %v is currently being processed", id)
+	}
+
+	if _, failed := m.failedEvents[id]; failed {
+		return nil, fmt.Errorf("event %v previously failed to add", id)
+	}
+
+	// Mark as processing
+	m.processingEvents[id] = struct{}{}
+	defer delete(m.processingEvents, id) // Always cleanup
+
 	explicitlySelected := len(dependentEvents) == 0
 	node := m.getEventNode(id)
 	if node != nil {
@@ -155,6 +193,7 @@ func (m *Manager) buildEvent(id events.ID, dependentEvents []events.ID) (*EventN
 		for _, dependent := range dependentEvents {
 			node.addDependent(dependent)
 		}
+		logger.Debugw("Event already exists", "event", id)
 		return node, nil
 	}
 	// Create node for the given ID and dependencies
@@ -165,16 +204,23 @@ func (m *Manager) buildEvent(id events.ID, dependentEvents []events.ID) (*EventN
 	}
 	_, err := m.buildEventNode(node)
 	if err != nil {
-		m.removeEventNodeFromDependencies(node)
-		return nil, err
+		err = m.handleEventAddError(node, err)
+		if err != nil {
+			m.failedEvents[id] = struct{}{}
+			logger.Debugw("Event failed to build", "event", id, "error", err)
+			return nil, err
+		}
 	}
 	err = m.addNode(node)
 	if err != nil {
-		m.removeEventNodeFromDependencies(node)
-		// As the add watchers were called, remove watchers need to be called to clean after them.
-		m.triggerOnRemove(node)
-		return nil, err
+		err = m.handleEventAddError(node, err)
+		if err != nil {
+			m.failedEvents[id] = struct{}{}
+			logger.Debugw("Event failed to add", "event", id, "error", err)
+			return nil, err
+		}
 	}
+	logger.Debugw("Event built successfully", "event", id)
 	return node, nil
 }
 
@@ -184,6 +230,7 @@ func (m *Manager) buildEventNode(eventNode *EventNode) (*EventNode, error) {
 	// Get the dependency event IDs
 	dependenciesIDs := eventNode.GetDependencies().GetIDs()
 
+	// Build probe dependencies
 	for _, probe := range eventNode.GetDependencies().GetProbes() {
 		err := m.buildProbe(probe.GetHandle(), eventNode.GetID())
 		if err != nil {
@@ -208,6 +255,17 @@ func (m *Manager) buildEventNode(eventNode *EventNode) (*EventNode, error) {
 			[]events.ID{eventNode.GetID()},
 		)
 		if err != nil {
+			// If a dependency was cancelled, convert to failure for this dependent event
+			// This ensures dependent events use fallback mechanisms instead of being cancelled
+			var cancelErr *ErrNodeAddCancelled
+			if errors.As(err, &cancelErr) {
+				// Convert cancellation to failure for dependent events
+				failureReasons := make([]error, len(cancelErr.Reasons))
+				for i, reason := range cancelErr.Reasons {
+					failureReasons[i] = fmt.Errorf("dependency cancelled: %w", reason)
+				}
+				return nil, NewErrNodeAddFailed(failureReasons)
+			}
 			return nil, err
 		}
 	}
@@ -224,11 +282,13 @@ func (m *Manager) addEventNode(eventNode *EventNode) {
 	m.events[eventNode.GetID()] = eventNode
 }
 
-// removeEventNode removes the node from the tree.
-func (m *Manager) removeEventNode(eventNode *EventNode) {
+// removeEventNodeFromTree removes the node from the tree.
+func (m *Manager) removeEventNodeFromTree(eventNode *EventNode) {
 	delete(m.events, eventNode.GetID())
 }
 
+// addNode adds a node generically to the tree and triggers the on-add watchers.
+// It returns an error if the node is not of a valid type, or if the on-add watchers return an error.
 func (m *Manager) addNode(node interface{}) error {
 	nodeType, err := getNodeType(node)
 	if err != nil {
@@ -244,11 +304,13 @@ func (m *Manager) addNode(node interface{}) error {
 	case EventNodeType:
 		m.addEventNode(node.(*EventNode))
 	case ProbeNodeType:
-		m.addProbe(node.(*ProbeNode))
+		m.addProbeNodeToTree(node.(*ProbeNode))
 	}
 	return nil
 }
 
+// removeNode removes a node generically from the tree and triggers the on-remove watchers.
+// It returns an error if the node is not of a valid type, or if the on-remove watchers return an error.
 func (m *Manager) removeNode(node interface{}) {
 	nodeType, err := getNodeType(node)
 	if err != nil {
@@ -260,13 +322,14 @@ func (m *Manager) removeNode(node interface{}) {
 
 	switch nodeType {
 	case EventNodeType:
-		m.removeEventNode(node.(*EventNode))
+		m.removeEventNodeFromTree(node.(*EventNode))
 	case ProbeNodeType:
-		m.removeProbe(node.(*ProbeNode))
+		m.removeProbeNodeFromTree(node.(*ProbeNode))
 	}
 }
 
 // triggerOnAdd triggers all on-add watchers and handle their returned actions.
+// As the tree supports cancelling or failing node add actions, it will return an error if the node add was cancelled or failed.
 func (m *Manager) triggerOnAdd(node interface{}) error {
 	nodeType, err := getNodeType(node)
 	if err != nil {
@@ -284,20 +347,35 @@ func (m *Manager) triggerOnAdd(node interface{}) error {
 	}
 
 	var cancelNodeAddErr *ErrNodeAddCancelled
+	var failNodeAddErr *ErrNodeAddFailed
 	shouldCancel := false
+	shouldFail := false
+
 	for _, action := range actions {
 		switch typedAction := action.(type) {
 		case *CancelNodeAddAction:
 			shouldCancel = true
 			if cancelNodeAddErr == nil {
-				err = NewErrNodeAddCancelled([]error{typedAction.Reason})
+				cancelNodeAddErr = NewErrNodeAddCancelled([]error{typedAction.Reason})
 			} else {
 				cancelNodeAddErr.AddReason(typedAction.Reason)
 			}
+		case *FailNodeAddAction:
+			shouldFail = true
+			if failNodeAddErr == nil {
+				failNodeAddErr = NewErrNodeAddFailed([]error{typedAction.Reason})
+			} else {
+				failNodeAddErr.AddReason(typedAction.Reason)
+			}
 		}
 	}
+
+	// Cancellation takes priority over failure
 	if shouldCancel {
 		return cancelNodeAddErr
+	}
+	if shouldFail {
+		return failNodeAddErr
 	}
 	return nil
 }
@@ -367,13 +445,13 @@ func (m *Manager) removeEventNodeFromDependencies(eventNode *EventNode) {
 	}
 }
 
-// removeEventDependents removes all dependent events from the tree
-func (m *Manager) removeEventDependents(eventNode *EventNode) {
+// failEventDependents fails all dependent events from the tree
+func (m *Manager) failEventDependents(eventNode *EventNode) {
 	for _, dependentEvent := range eventNode.GetDependents() {
-		err := m.removeEvent(dependentEvent)
+		_, err := m.failEvent(dependentEvent)
 		if err != nil {
 			eventName := events.Core.GetDefinitionByID(dependentEvent).GetName()
-			logger.Debugw("failed to remove dependent event", "event", eventName, "error", err)
+			logger.Debugw("failed to fail dependent event", "event", eventName, "error", err)
 		}
 	}
 }
@@ -382,12 +460,18 @@ func (m *Manager) getProbe(handle probes.Handle) *ProbeNode {
 	return m.probes[handle]
 }
 
+// buildProbe adds the probe dependent to the probe node.
+// It also creates the probe node if it does not exist in the tree.
 func (m *Manager) buildProbe(handle probes.Handle, dependent events.ID) error {
+	if _, failed := m.failedProbes[handle]; failed {
+		return fmt.Errorf("probe %v previously failed to add", handle)
+	}
 	probeNode, ok := m.probes[handle]
 	if !ok {
 		probeNode = NewProbeNode(handle, []events.ID{dependent})
 		err := m.addNode(probeNode)
 		if err != nil {
+			m.failedProbes[handle] = struct{}{}
 			return err
 		}
 	} else {
@@ -396,11 +480,151 @@ func (m *Manager) buildProbe(handle probes.Handle, dependent events.ID) error {
 	return nil
 }
 
-func (m *Manager) addProbe(probeNode *ProbeNode) {
+func (m *Manager) addProbeNodeToTree(probeNode *ProbeNode) {
 	m.probes[probeNode.GetHandle()] = probeNode
 }
 
-// removeNode removes the node from the tree.
-func (m *Manager) removeProbe(handle *ProbeNode) {
+// removeProbeNodeFromTree removes the node from the tree.
+func (m *Manager) removeProbeNodeFromTree(handle *ProbeNode) {
 	delete(m.probes, handle.GetHandle())
+}
+
+// FailEvent is similar to RemoveEvent, except for the fact that instead of
+// removing the current event immediately, it will try to use its fallback dependencies first.
+// The old events dependencies of it will be removed in any case.
+// The event will be removed if it has no fallback though, and with it the events
+// that depend on it will fail as well.
+// The return value specifies if the event was removed or not from the tree and any error that occurred.
+func (m *Manager) FailEvent(id events.ID) (bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.failEvent(id)
+}
+
+// failEvent attempts to switch the given event dependencies to its next available fallback ones.
+// It removes the event's current dependencies and tries each fallback in order.
+// If a fallback is successfully applied (i.e., buildEventNode succeeds), the function returns (false, nil),
+// indicating the event was not removed but switched to a fallback.
+// If no fallbacks are available or all fail, the event is removed and the function returns (true, error),
+// where the error is from the removal or nil if successful.
+func (m *Manager) failEvent(eventID events.ID) (bool, error) {
+	// Check if already processing this event (prevents loops)
+	if _, processing := m.processingEvents[eventID]; processing {
+		return false, fmt.Errorf("event %v is currently being processed", eventID)
+	}
+
+	node := m.getEventNode(eventID)
+	if node == nil {
+		return false, ErrNodeNotFound
+	}
+
+	// Mark as processing
+	m.processingEvents[eventID] = struct{}{}
+	defer delete(m.processingEvents, eventID) // Always cleanup
+
+	return m.failEventNode(node)
+}
+
+func (m *Manager) failEventNode(node *EventNode) (bool, error) {
+	eventName := events.Core.GetDefinitionByID(node.GetID()).GetName()
+	logger.Debugw("Failing event", "event", eventName)
+	// Try fallbacks in a loop until one succeeds or we run out of fallbacks
+	for node.hasMoreFallbacks() {
+		m.removeEventNodeFromDependencies(node)
+		if !node.fallback() {
+			break
+		}
+		logger.Debugw("Switching to fallback", "event", eventName, "fallback number", node.currentFallbackIndex)
+
+		_, err := m.buildEventNode(node)
+		if err == nil {
+			logger.Debugw("Successfully switched to fallback", "event", eventName)
+			return false, nil
+		}
+		logger.Debugw("Failed to switch to fallback", "event", eventName, "fallback number", node.currentFallbackIndex, "error", err)
+	}
+	logger.Debugw("All fallbacks failed, removing event", "event", eventName)
+	return true, m.removeEventNode(node)
+}
+
+// handleEventAddError handles the error of adding a node to the tree.
+// As errors in adding a node to the tree are caused either by dependencies failure or by add-watchers actions,
+// it will determine the handling strategy based on the error type.
+func (m *Manager) handleEventAddError(node *EventNode, err error) error {
+	var cancelErr *ErrNodeAddCancelled
+
+	if errors.As(err, &cancelErr) {
+		// Cancellation: immediate removal, no fallbacks
+		// No need to fail event dependents, as they will fail using event add failure error handling
+		eventName := events.Core.GetDefinitionByID(node.GetID()).GetName()
+		logger.Debugw("Event add cancelled", "event", eventName)
+		m.removeEventNodeFromDependencies(node)
+		m.removeNode(node)
+		return err
+	}
+	// Failure: try fallbacks
+	removed, failEventErr := m.failEventNode(node)
+	if failEventErr != nil {
+		logger.Errorw("Failed to fail", "error", failEventErr)
+		m.removeEventNodeFromDependencies(node)
+		return err
+	}
+	if removed {
+		// All fallbacks exhausted, event was removed
+		return err
+	}
+	// Fallback succeeded, no error to return
+	return nil
+}
+
+// FailProbe marks a probe as failed and fails all events that depend on it.
+func (m *Manager) FailProbe(handle probes.Handle) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Mark probe as failed
+	m.failedProbes[handle] = struct{}{}
+
+	m.removeProbe(handle)
+
+	return nil
+}
+
+// removeProbe removes the probe from the tree and fails all dependent events.
+func (m *Manager) removeProbe(handle probes.Handle) {
+	probeNode := m.getProbe(handle)
+	if probeNode == nil {
+		return
+	}
+
+	// Get all events that depend on this probe directly from the probe node
+	dependentEvents := probeNode.GetDependents()
+
+	// Remove the probe node from the tree
+	m.removeNode(probeNode)
+
+	// Fail all dependent events
+	for _, eventID := range dependentEvents {
+		// Check if the event is still in the tree and not being processed
+		if eventNode := m.getEventNode(eventID); eventNode != nil {
+			if _, processing := m.processingEvents[eventID]; !processing {
+				isRequired := true
+				for _, probe := range eventNode.GetDependencies().GetProbes() {
+					if probe.GetHandle() == handle {
+						isRequired = probe.IsRequired()
+					}
+				}
+				if !isRequired {
+					// We don't need to fail dependent events that don't have this probe as a required dependency
+					continue
+				}
+				_, err := m.failEvent(eventID)
+				if err != nil {
+					eventName := events.Core.GetDefinitionByID(eventID).GetName()
+					logger.Warnw("failed to fail dependent event", "event", eventName, "error", err)
+				}
+			}
+		}
+	}
 }
