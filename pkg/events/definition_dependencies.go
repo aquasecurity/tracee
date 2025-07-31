@@ -13,6 +13,8 @@ type Dependencies struct {
 	probes       []Probe
 	tailCalls    []TailCall
 	capabilities Capabilities
+	// fallbacks contains alternative dependency sets to try if the primary dependencies fail
+	fallbacks []Dependencies
 }
 
 func NewDependencies(
@@ -28,6 +30,26 @@ func NewDependencies(
 		probes:       givenProbes,
 		tailCalls:    givenTailCalls,
 		capabilities: givenCapabilities,
+		fallbacks:    nil,
+	}
+}
+
+// NewDependenciesWithFallbacks creates a Dependencies struct with fallback dependency sets
+func NewDependenciesWithFallbacks(
+	givenIDs []ID,
+	givenkSymbols []KSymbol,
+	givenProbes []Probe,
+	givenTailCalls []TailCall,
+	givenCapabilities Capabilities,
+	fallbacks []Dependencies,
+) Dependencies {
+	return Dependencies{
+		ids:          givenIDs,
+		kSymbols:     givenkSymbols,
+		probes:       givenProbes,
+		tailCalls:    givenTailCalls,
+		capabilities: givenCapabilities,
+		fallbacks:    fallbacks,
 	}
 }
 
@@ -73,8 +95,33 @@ func (d Dependencies) GetCapabilities() Capabilities {
 	return d.capabilities
 }
 
-// Probe
+// GetFallbacks returns the fallback dependency sets
+func (d Dependencies) GetFallbacks() []Dependencies {
+	if d.fallbacks == nil {
+		return []Dependencies{}
+	}
+	return d.fallbacks
+}
 
+// HasFallbacks returns true if this Dependencies has fallback sets defined
+func (d Dependencies) HasFallbacks() bool {
+	return len(d.fallbacks) > 0
+}
+
+// GetFallbackAt returns the fallback dependency set at the specified index
+func (d Dependencies) GetFallbackAt(index int) (Dependencies, bool) {
+	if index < 0 || index >= len(d.fallbacks) {
+		return Dependencies{}, false
+	}
+	return d.fallbacks[index], true
+}
+
+// AddFallback adds a fallback dependency set to existing dependencies
+func (d *Dependencies) AddFallback(fallback Dependencies) {
+	d.fallbacks = append(d.fallbacks, fallback)
+}
+
+// Probe
 type Probe struct {
 	handle   probes.Handle
 	required bool // tracee fails if probe can't be attached

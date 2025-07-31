@@ -33,3 +33,11 @@ type CancelNodeAddAction struct {
 func NewCancelNodeAddAction(reason error) *CancelNodeAddAction {
 	return &CancelNodeAddAction{Reason: reason}
 }
+
+type FailNodeAddAction struct {
+	Reason error
+}
+
+func NewFailNodeAddAction(reason error) *FailNodeAddAction {
+	return &FailNodeAddAction{Reason: reason}
+}
