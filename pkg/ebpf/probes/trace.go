@@ -25,6 +25,7 @@ const (
 	RawTracepoint        // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#7-raw-tracep
 	SyscallEnter
 	SyscallExit
+	Fentry
 	InvalidProbeType
 )
 
@@ -42,6 +43,8 @@ func (t ProbeType) String() string {
 		return "syscall_enter"
 	case SyscallExit:
 		return "syscall_exit"
+	case Fentry:
+		return "fentry"
 	}
 
 	return "invalid"
@@ -229,7 +232,7 @@ func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 		return nil
 	}
 
-	// Tracepoint and RawTracepoint
+	// Tracepoint, RawTracepoint and Fentry
 
 	var link *bpf.BPFLink
 	switch p.probeType {
@@ -241,6 +244,8 @@ func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 	case RawTracepoint:
 		tpEvent := strings.Split(p.eventName, ":")[1]
 		link, err = prog.AttachRawTracepoint(tpEvent)
+	case Fentry:
+		link, err = prog.AttachGeneric()
 	}
 	if err != nil {
 		return errfmt.Errorf("failed to attach event: %s (%v)", p.eventName, err)
