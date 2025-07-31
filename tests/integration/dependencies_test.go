@@ -84,6 +84,63 @@ func Test_EventsDependencies(t *testing.T) {
 			expectedEvents:   []events.ID{events.ExecTest},
 			expectedKprobes:  []string{"security_bprm_check"},
 		},
+		{
+			name:   "kernel version incompatible probe",
+			events: []events.ID{events.KernelVersionIncompatible},
+			expectedLogs: []string{
+				"Event removed due to incompatible required probe",
+			},
+			unexpectedEvents:  []events.ID{events.KernelVersionIncompatible},
+			unexpectedKprobes: []string{"security_bprm_check"},
+		},
+		{
+			name:   "kernel version incompatible probe with sanity",
+			events: []events.ID{events.KernelVersionIncompatible, events.ExecTest},
+			expectedLogs: []string{
+				"Event removed due to incompatible required probe",
+			},
+			unexpectedEvents: []events.ID{events.KernelVersionIncompatible},
+			expectedEvents:   []events.ID{events.ExecTest},
+			expectedKprobes:  []string{"security_bprm_check"},
+		},
+		{
+			name:   "kernel version incompatible probe with fallback",
+			events: []events.ID{events.KernelVersionIncompatibleWithFallback},
+			expectedLogs: []string{
+				"Event moved to fallback due to incompatible probe",
+			},
+			expectedEvents:  []events.ID{events.KernelVersionIncompatibleWithFallback},
+			expectedKprobes: []string{"security_bprm_check"},
+		},
+		{
+			name:   "kernel version incompatible probe with fallback and sanity",
+			events: []events.ID{events.KernelVersionIncompatibleWithFallback, events.ExecTest},
+			expectedLogs: []string{
+				"Event moved to fallback due to incompatible probe",
+			},
+			expectedEvents:  []events.ID{events.KernelVersionIncompatibleWithFallback, events.ExecTest},
+			expectedKprobes: []string{"security_bprm_check"},
+		},
+		{
+			name:   "event dependency removed",
+			events: []events.ID{events.EventDependencyFailed},
+			expectedLogs: []string{
+				"Event moved to fallback due to incompatible probe",
+			},
+			unexpectedEvents: []events.ID{events.KernelVersionIncompatible},
+			expectedEvents:   []events.ID{events.ExecTest, events.EventDependencyFailed},
+			expectedKprobes:  []string{"security_bprm_check"},
+		},
+		{
+			name:   "event dependency removed with sanity",
+			events: []events.ID{events.EventDependencyFailed, events.ExecTest},
+			expectedLogs: []string{
+				"Event moved to fallback due to incompatible probe",
+			},
+			unexpectedEvents: []events.ID{events.KernelVersionIncompatible},
+			expectedEvents:   []events.ID{events.ExecTest, events.EventDependencyFailed},
+			expectedKprobes:  []string{"security_bprm_check"},
+		},
 	}
 
 	// Each test will run a test binary that triggers the "exec_test" event.
