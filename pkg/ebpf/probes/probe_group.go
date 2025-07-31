@@ -64,6 +64,18 @@ func (p *ProbeGroup) GetProbeType(handle Handle) ProbeType {
 	return InvalidProbeType
 }
 
+// IsProbeCompatible checks if a probe is compatible with the given environment.
+func (p *ProbeGroup) IsProbeCompatible(handle Handle, env EnvironmentProvider) (bool, error) {
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
+
+	if probe, ok := p.probes[handle]; ok {
+		return probe.isCompatible(env)
+	}
+
+	return false, errfmt.Errorf("probe handle (%d) does not exist", handle)
+}
+
 // Attach attaches a probe's program to its hook, by given handle.
 func (p *ProbeGroup) Attach(handle Handle, args ...interface{}) error {
 	p.probesLock.Lock()

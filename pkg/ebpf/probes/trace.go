@@ -62,6 +62,7 @@ func (t ProbeType) String() string {
 //     DetachAll()
 
 type TraceProbe struct {
+	ProbeCompatibility
 	eventName   string
 	programName string
 	probeType   ProbeType
@@ -75,6 +76,15 @@ func NewTraceProbe(t ProbeType, evtName string, progName string) *TraceProbe {
 		programName: progName,
 		eventName:   evtName,
 		probeType:   t,
+	}
+}
+
+func NewTraceProbeWithCompatibility(t ProbeType, evtName string, progName string, compatibility *ProbeCompatibility) *TraceProbe {
+	return &TraceProbe{
+		ProbeCompatibility: *compatibility,
+		eventName:          evtName,
+		programName:        progName,
+		probeType:          t,
 	}
 }
 
