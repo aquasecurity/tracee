@@ -114,8 +114,15 @@ func (p *ProbeGroup) GetProbeByHandle(handle Handle) Probe {
 	return p.probes[handle]
 }
 
-// NewDefaultProbeGroup initializes the default ProbeGroup (TODO: extensions will use probe groups)
-func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, error) {
+// NewDefaultProbeGroup initializes the default ProbeGroup (TODO: extensions will use probe groups).
+//
+// Arguments:
+//   - module: the eBPF module containing the loaded BPF object file.
+//   - netEnabled: set to true to enable network-related probes; set to false to disable them (avoids requiring CAP_NET_ADMIN if not needed).
+//   - defaultAutoload: set to false to disable autoload for all probes by default; probes must then be explicitly enabled.
+//
+// Returns the initialized ProbeGroup and any error encountered during initialization.
+func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload bool) (*ProbeGroup, error) {
 	binaryPath := "/proc/self/exe"
 
 	allProbes := map[Handle]Probe{
@@ -272,6 +279,18 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, err
 		}
 		if err := allProbes[CgroupSKBEgress].autoload(module, false); err != nil {
 			logger.Errorw("CgroupSKBEgress probe autoload", "error", err)
+		}
+	}
+
+	// In libbpfgo, "autoload" refers to whether an eBPF program (probe) is automatically loaded into the kernel
+	// when the eBPF object is loaded. By default, all probes are set to autoload, meaning they will be loaded
+	// automatically unless explicitly disabled. Disabling autoload for a probe prevents it from being loaded
+	// into the kernel until it is manually enabled.
+	if !defaultAutoload {
+		for handle := range allProbes {
+			if err := allProbes[handle].autoload(module, false); err != nil {
+				logger.Errorw("Failed to disable probe autoload", "handle", handle, "error", err)
+			}
 		}
 	}
 

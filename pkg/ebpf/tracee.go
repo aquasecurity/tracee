@@ -1006,6 +1006,67 @@ func (t *Tracee) validateKallsymsDependencies() {
 	}
 }
 
+// setProgramsAutoload configures which eBPF programs are set to autoload based on the selected events.
+// When the eBPF module is loaded, only programs marked for autoload will be loaded into the kernel.
+// This function ensures that all programs required by the selected events are set to autoload.
+// Additionally, it registers dependency watchers to automatically update the autoload status of probes
+// when events are added or removed. This approach guarantees that only the necessary programs are loaded,
+// supporting kernels where some programs may not be available.
+func (t *Tracee) setProgramsAutoload() {
+	evtDefProgHandlesDeps := func(id events.ID) []probes.Handle {
+		depsNode, _ := t.eventsDependencies.GetEvent(id)
+		deps := depsNode.GetDependencies()
+		probeDeps := deps.GetProbes()
+		var progHandles []probes.Handle
+		for _, probeDep := range probeDeps {
+			progHandles = append(progHandles, probeDep.GetHandle())
+		}
+		return progHandles
+	}
+
+	for _, eventId := range t.policyManager.EventsSelected() {
+		progHandles := evtDefProgHandlesDeps(eventId)
+		for _, progHandle := range progHandles {
+			err := t.defaultProbes.Autoload(progHandle, true)
+			if err != nil {
+				logger.Debugw("Failed to autoload program", "handle", progHandle, "error", err)
+			}
+		}
+	}
+
+	// Upon adding a probe, ensure it's autoloaded
+	t.eventsDependencies.SubscribeAdd(
+		dependencies.ProbeNodeType,
+		func(node interface{}) []dependencies.Action {
+			probeNode, ok := node.(*dependencies.ProbeNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested", "type", fmt.Sprintf("%T", node))
+				return nil
+			}
+			err := t.defaultProbes.Autoload(probeNode.GetHandle(), true)
+			if err != nil {
+				logger.Debugw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
+			}
+			return nil
+		})
+
+	// Upon removing a probe, ensure it's not autoloaded
+	t.eventsDependencies.SubscribeRemove(
+		dependencies.ProbeNodeType,
+		func(node interface{}) []dependencies.Action {
+			probeNode, ok := node.(*dependencies.ProbeNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested", "type", fmt.Sprintf("%T", node))
+				return nil
+			}
+			err := t.defaultProbes.Autoload(probeNode.GetHandle(), false)
+			if err != nil {
+				logger.Debugw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
+			}
+			return nil
+		})
+}
+
 func (t *Tracee) populateBPFMaps() error {
 	// Prepare 32bit to 64bit syscall number mapping
 	sys32to64BPFMap, err := t.bpfModule.GetMap("sys_32_to_64_map") // u32, u32
@@ -1263,7 +1324,7 @@ func (t *Tracee) initBPFProbes() error {
 
 	// Initialize probes
 
-	t.defaultProbes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled())
+	t.defaultProbes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled(), false)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1275,6 +1336,8 @@ func (t *Tracee) initBPF() error {
 	var err error
 
 	// Load the eBPF object into kernel
+
+	t.setProgramsAutoload()
 
 	err = t.bpfModule.BPFLoadObject()
 	if err != nil {
