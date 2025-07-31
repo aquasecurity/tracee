@@ -28,6 +28,28 @@ func (cancelErr *ErrNodeAddCancelled) AddReason(reason error) {
 	cancelErr.Reasons = append(cancelErr.Reasons, reason)
 }
 
+// ErrNodeAddFailed is the error produced when failing a node add to the manager
+// using the FailNodeAddAction Action. This triggers fallback mechanisms.
+type ErrNodeAddFailed struct {
+	Reasons []error
+}
+
+func NewErrNodeAddFailed(reasons []error) *ErrNodeAddFailed {
+	return &ErrNodeAddFailed{Reasons: reasons}
+}
+
+func (failErr *ErrNodeAddFailed) Error() string {
+	var errorsStrings []string
+	for _, err := range failErr.Reasons {
+		errorsStrings = append(errorsStrings, err.Error())
+	}
+	return fmt.Sprintf("node add was failed, reasons: \"%s\"", strings.Join(errorsStrings, "\", \""))
+}
+
+func (failErr *ErrNodeAddFailed) AddReason(reason error) {
+	failErr.Reasons = append(failErr.Reasons, reason)
+}
+
 var (
 	ErrNodeType     = errors.New("unsupported node type")
 	ErrNodeNotFound = errors.New("node not found")

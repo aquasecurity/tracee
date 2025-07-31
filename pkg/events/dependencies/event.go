@@ -9,9 +9,11 @@ import (
 // EventNode represent an event in the dependencies tree.
 // It should be read-only for other packages, as it is internally managed.
 type EventNode struct {
-	id                 events.ID
-	explicitlySelected bool
-	dependencies       events.Dependencies
+	id                   events.ID
+	explicitlySelected   bool
+	originalDependencies events.Dependencies // The original dependencies from event definition
+	activeDependencies   events.Dependencies // Currently active dependencies (may be a fallback)
+	currentFallbackIndex int                 // Index of current fallback (-1 means using primary dependencies)
 	// There won't be more than a couple of dependents, so a slice is better for
 	// both performance and supporting efficient thread-safe operation in the future
 	dependents []events.ID
@@ -19,10 +21,12 @@ type EventNode struct {
 
 func newDependenciesNode(id events.ID, dependencies events.Dependencies, chosenDirectly bool) *EventNode {
 	return &EventNode{
-		id:                 id,
-		explicitlySelected: chosenDirectly,
-		dependencies:       dependencies,
-		dependents:         make([]events.ID, 0),
+		id:                   id,
+		explicitlySelected:   chosenDirectly,
+		originalDependencies: dependencies,
+		activeDependencies:   dependencies,
+		currentFallbackIndex: -1, // -1 means using primary dependencies
+		dependents:           make([]events.ID, 0),
 	}
 }
 
@@ -31,7 +35,30 @@ func (en *EventNode) GetID() events.ID {
 }
 
 func (en *EventNode) GetDependencies() events.Dependencies {
-	return en.dependencies
+	return en.activeDependencies
+}
+
+// hasMoreFallbacks returns true if there are more fallback dependency sets to try
+func (en *EventNode) hasMoreFallbacks() bool {
+	fallbacks := en.originalDependencies.GetFallbacks()
+	return en.currentFallbackIndex+1 < len(fallbacks)
+}
+
+// fallback switches to the next available fallback dependency set
+// Returns true if successful, false if no more fallbacks available
+func (en *EventNode) fallback() bool {
+	if !en.hasMoreFallbacks() {
+		return false
+	}
+
+	en.currentFallbackIndex++
+	fallback, exists := en.originalDependencies.GetFallbackAt(en.currentFallbackIndex)
+	if !exists {
+		return false
+	}
+
+	en.activeDependencies = fallback
+	return true
 }
 
 func (en *EventNode) GetDependents() []events.ID {
