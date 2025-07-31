@@ -230,7 +230,7 @@ func (d *DefinitionGroup) GetTailCalls(evtsToSubmit []ID) []TailCall {
 			continue
 		}
 
-		tailCalls = append(tailCalls, def.GetDependencies().GetTailCalls()...)
+		tailCalls = append(tailCalls, def.GetDependencies().GetPrimaryDependencies().GetTailCalls()...)
 	}
 
 	return tailCalls

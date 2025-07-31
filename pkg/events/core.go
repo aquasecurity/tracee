@@ -224,16 +224,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Read)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Read)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Read)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Read)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Read)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Read)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Read)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Read)}},
+				},
 			},
 		},
 	},
@@ -249,16 +251,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Write)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Write)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Write)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Write)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Write)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Write)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Write)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Write)}},
+				},
 			},
 		},
 	},
@@ -274,16 +278,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Open)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Open)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Open)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Open)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Open)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Open)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Open)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Open)}},
+				},
 			},
 		},
 	},
@@ -297,16 +303,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Close)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Close)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Close)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Close)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Close)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Close)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Close)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Close)}},
+				},
 			},
 		},
 	},
@@ -321,16 +329,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Stat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Stat)}},
+				},
 			},
 		},
 	},
@@ -345,16 +355,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fstat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fstat)}},
+				},
 			},
 		},
 	},
@@ -369,16 +381,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lstat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lstat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lstat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lstat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lstat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lstat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lstat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lstat)}},
+				},
 			},
 		},
 	},
@@ -394,16 +408,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "nfds"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "timeout"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Poll)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Poll)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Poll)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Poll)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Poll)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Poll)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Poll)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Poll)}},
+				},
 			},
 		},
 	},
@@ -419,16 +435,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "offset"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "whence"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lseek)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lseek)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lseek)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lseek)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lseek)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lseek)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lseek)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lseek)}},
+				},
 			},
 		},
 	},
@@ -447,16 +465,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "off"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mmap)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mmap)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mmap)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mmap)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mmap)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mmap)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mmap)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mmap)}},
+				},
 			},
 		},
 	},
@@ -472,16 +492,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "prot"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mprotect)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mprotect)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mprotect)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mprotect)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mprotect)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mprotect)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mprotect)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mprotect)}},
+				},
 			},
 		},
 	},
@@ -496,16 +518,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "length"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munmap)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Munmap)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Munmap)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Munmap)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munmap)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Munmap)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Munmap)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Munmap)}},
+				},
 			},
 		},
 	},
@@ -519,16 +543,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Brk)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Brk)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Brk)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Brk)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Brk)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Brk)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Brk)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Brk)}},
+				},
 			},
 		},
 	},
@@ -545,16 +571,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "oldact"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigaction)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigaction)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigaction)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigaction)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigaction)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigaction)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigaction)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigaction)}},
+				},
 			},
 		},
 	},
@@ -571,16 +599,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "oldset"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigprocmask)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigprocmask)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigprocmask)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigprocmask)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigprocmask)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigprocmask)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigprocmask)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigprocmask)}},
+				},
 			},
 		},
 	},
@@ -592,16 +622,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigreturn)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigreturn)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigreturn)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigreturn)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigreturn)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigreturn)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigreturn)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigreturn)}},
+				},
 			},
 		},
 	},
@@ -617,16 +649,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "request"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ioctl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ioctl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ioctl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ioctl)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ioctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ioctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ioctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ioctl)}},
+				},
 			},
 		},
 	},
@@ -643,16 +677,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "offset"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pread64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pread64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pread64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pread64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pread64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pread64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pread64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pread64)}},
+				},
 			},
 		},
 	},
@@ -669,16 +705,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "offset"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwrite64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pwrite64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pwrite64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pwrite64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwrite64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pwrite64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pwrite64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pwrite64)}},
+				},
 			},
 		},
 	},
@@ -694,16 +732,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "iov"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "iovcnt"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readv)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readv)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readv)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readv)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readv)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readv)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readv)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readv)}},
+				},
 			},
 		},
 	},
@@ -719,16 +759,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "iov"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "iovcnt"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Writev)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Writev)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Writev)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Writev)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Writev)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Writev)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Writev)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Writev)}},
+				},
 			},
 		},
 	},
@@ -743,16 +785,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "mode"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Access)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Access)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Access)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Access)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Access)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Access)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Access)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Access)}},
+				},
 			},
 		},
 	},
@@ -766,16 +810,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_ARR_2_T, ArgMeta: trace.ArgMeta{Type: "[2]int", Name: "pipefd"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pipe)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pipe)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pipe)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pipe)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pipe)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pipe)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pipe)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pipe)}},
+				},
 			},
 		},
 	},
@@ -793,16 +839,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "exceptfds"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "timeout"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Select)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Select)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Select)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Select)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Select)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Select)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Select)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Select)}},
+				},
 			},
 		},
 	},
@@ -814,16 +862,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedYield)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedYield)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedYield)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedYield)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedYield)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedYield)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedYield)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedYield)}},
+				},
 			},
 		},
 	},
@@ -841,16 +891,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_address"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mremap)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mremap)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mremap)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mremap)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mremap)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mremap)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mremap)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mremap)}},
+				},
 			},
 		},
 	},
@@ -866,16 +918,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "length"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msync)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msync)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msync)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msync)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msync)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msync)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msync)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msync)}},
+				},
 			},
 		},
 	},
@@ -891,16 +945,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "length"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "vec"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mincore)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mincore)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mincore)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mincore)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mincore)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mincore)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mincore)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mincore)}},
+				},
 			},
 		},
 	},
@@ -916,16 +972,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "length"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "advice"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Madvise)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Madvise)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Madvise)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Madvise)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Madvise)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Madvise)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Madvise)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Madvise)}},
+				},
 			},
 		},
 	},
@@ -941,16 +999,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "shmflg"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmget)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmget)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmget)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shmget)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmget)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmget)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmget)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shmget)}},
+				},
 			},
 		},
 	},
@@ -966,16 +1026,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "shmaddr"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "shmflg"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shmat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shmat)}},
+				},
 			},
 		},
 	},
@@ -991,16 +1053,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmctl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmctl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmctl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shmctl)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shmctl)}},
+				},
 			},
 		},
 	},
@@ -1014,10 +1078,12 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "oldfd"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.Dup, required: true},
-				{handle: probes.DupRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.Dup, required: true},
+					{handle: probes.DupRet, required: true},
+				},
 			},
 		},
 	},
@@ -1032,10 +1098,12 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "oldfd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "newfd"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.Dup2, required: true},
-				{handle: probes.Dup2Ret, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.Dup2, required: true},
+					{handle: probes.Dup2Ret, required: true},
+				},
 			},
 		},
 	},
@@ -1047,16 +1115,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pause)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pause)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pause)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pause)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pause)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pause)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pause)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pause)}},
+				},
 			},
 		},
 	},
@@ -1071,16 +1141,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "req"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "rem"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nanosleep)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Nanosleep)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Nanosleep)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Nanosleep)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nanosleep)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Nanosleep)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Nanosleep)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Nanosleep)}},
+				},
 			},
 		},
 	},
@@ -1095,16 +1167,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "curr_value"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getitimer)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getitimer)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getitimer)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getitimer)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getitimer)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getitimer)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getitimer)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getitimer)}},
+				},
 			},
 		},
 	},
@@ -1118,16 +1192,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "seconds"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Alarm)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Alarm)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Alarm)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Alarm)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Alarm)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Alarm)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Alarm)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Alarm)}},
+				},
 			},
 		},
 	},
@@ -1143,16 +1219,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_value"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_value"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setitimer)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setitimer)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setitimer)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setitimer)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setitimer)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setitimer)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setitimer)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setitimer)}},
+				},
 			},
 		},
 	},
@@ -1164,16 +1242,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpid)}},
+				},
 			},
 		},
 	},
@@ -1190,16 +1270,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "offset"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendfile)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendfile)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendfile)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendfile)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendfile)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendfile)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendfile)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendfile)}},
+				},
 			},
 		},
 	},
@@ -1215,16 +1297,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "type"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "protocol"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socket)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Socket)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Socket)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Socket)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socket)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Socket)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Socket)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Socket)}},
+				},
 			},
 		},
 	},
@@ -1240,16 +1324,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "addr"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "addrlen"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Connect)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Connect)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Connect)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Connect)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Connect)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Connect)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Connect)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Connect)}},
+				},
 			},
 		},
 	},
@@ -1265,16 +1351,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "addr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addrlen"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Accept)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Accept)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Accept)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Accept)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Accept)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Accept)}},
+				},
 			},
 		},
 	},
@@ -1293,16 +1381,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "dest_addr"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "addrlen"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendto)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendto)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendto)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendto)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendto)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendto)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendto)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendto)}},
+				},
 			},
 		},
 	},
@@ -1321,16 +1411,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "src_addr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addrlen"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvfrom)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Recvfrom)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Recvfrom)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Recvfrom)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvfrom)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Recvfrom)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Recvfrom)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Recvfrom)}},
+				},
 			},
 		},
 	},
@@ -1346,16 +1438,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "msg"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendmsg)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendmsg)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendmsg)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendmsg)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendmsg)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendmsg)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendmsg)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendmsg)}},
+				},
 			},
 		},
 	},
@@ -1371,16 +1465,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "msg"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvmsg)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Recvmsg)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Recvmsg)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Recvmsg)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvmsg)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Recvmsg)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Recvmsg)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Recvmsg)}},
+				},
 			},
 		},
 	},
@@ -1395,16 +1491,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sockfd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "how"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shutdown)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shutdown)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shutdown)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shutdown)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shutdown)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shutdown)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shutdown)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shutdown)}},
+				},
 			},
 		},
 	},
@@ -1420,16 +1518,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "addr"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "addrlen"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bind)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Bind)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Bind)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Bind)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bind)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Bind)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Bind)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Bind)}},
+				},
 			},
 		},
 	},
@@ -1444,16 +1544,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sockfd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "backlog"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listen)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Listen)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Listen)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Listen)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listen)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Listen)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Listen)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Listen)}},
+				},
 			},
 		},
 	},
@@ -1469,16 +1571,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "addr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addrlen"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsockname)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getsockname)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getsockname)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getsockname)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsockname)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getsockname)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getsockname)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getsockname)}},
+				},
 			},
 		},
 	},
@@ -1494,16 +1598,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "addr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addrlen"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpeername)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpeername)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpeername)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpeername)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpeername)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpeername)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpeername)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpeername)}},
+				},
 			},
 		},
 	},
@@ -1520,16 +1626,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "protocol"}},
 			{DecodeAs: data.INT_ARR_2_T, ArgMeta: trace.ArgMeta{Type: "[2]int", Name: "sv"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socketpair)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Socketpair)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Socketpair)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Socketpair)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socketpair)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Socketpair)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Socketpair)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Socketpair)}},
+				},
 			},
 		},
 	},
@@ -1547,16 +1655,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "optval"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "optlen"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsockopt)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setsockopt)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setsockopt)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setsockopt)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsockopt)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setsockopt)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setsockopt)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setsockopt)}},
+				},
 			},
 		},
 	},
@@ -1574,16 +1684,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "optval"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "optlen"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsockopt)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getsockopt)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getsockopt)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getsockopt)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsockopt)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getsockopt)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getsockopt)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getsockopt)}},
+				},
 			},
 		},
 	},
@@ -1601,16 +1713,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "child_tid"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "tls"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Clone)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Clone)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Clone)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Clone)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Clone)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Clone)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Clone)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Clone)}},
+				},
 			},
 		},
 	},
@@ -1622,16 +1736,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fork)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fork)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fork)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fork)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fork)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fork)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fork)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fork)}},
+				},
 			},
 		},
 	},
@@ -1643,16 +1759,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vfork)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vfork)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vfork)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vfork)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vfork)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vfork)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vfork)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vfork)}},
+				},
 			},
 		},
 	},
@@ -1668,18 +1786,20 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_ARR_T, ArgMeta: trace.ArgMeta{Type: "[]string", Name: "argv"}},
 			{DecodeAs: data.STR_ARR_T, ArgMeta: trace.ArgMeta{Type: "[]string", Name: "envp"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execve)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Execve)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Execve)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Execve)}},
-				{"sys_enter_tails", "syscall__execve_enter", []uint32{uint32(Execve)}},
-				{"sys_exit_tails", "syscall__execve_exit", []uint32{uint32(Execve)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execve)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Execve)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Execve)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Execve)}},
+					{"sys_enter_tails", "syscall__execve_enter", []uint32{uint32(Execve)}},
+					{"sys_exit_tails", "syscall__execve_exit", []uint32{uint32(Execve)}},
+				},
 			},
 		},
 	},
@@ -1693,16 +1813,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "status"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Exit)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Exit)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Exit)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Exit)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Exit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Exit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Exit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Exit)}},
+				},
 			},
 		},
 	},
@@ -1719,16 +1841,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "options"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rusage"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Wait4)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Wait4)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Wait4)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Wait4)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Wait4)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Wait4)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Wait4)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Wait4)}},
+				},
 			},
 		},
 	},
@@ -1743,16 +1867,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sig"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Kill)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Kill)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Kill)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Kill)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Kill)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Kill)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Kill)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Kill)}},
+				},
 			},
 		},
 	},
@@ -1766,16 +1892,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Uname)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Uname)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Uname)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Uname)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Uname)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Uname)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Uname)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Uname)}},
+				},
 			},
 		},
 	},
@@ -1791,16 +1919,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "nsems"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "semflg"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semget)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semget)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semget)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Semget)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semget)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semget)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semget)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Semget)}},
+				},
 			},
 		},
 	},
@@ -1816,16 +1946,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sops"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "nsops"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semop)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semop)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semop)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Semop)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semop)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semop)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semop)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Semop)}},
+				},
 			},
 		},
 	},
@@ -1842,16 +1974,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semctl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semctl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semctl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Semctl)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Semctl)}},
+				},
 			},
 		},
 	},
@@ -1865,16 +1999,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "shmaddr"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmdt)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmdt)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmdt)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shmdt)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmdt)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmdt)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmdt)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shmdt)}},
+				},
 			},
 		},
 	},
@@ -1889,16 +2025,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "key"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "msgflg"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgget)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgget)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgget)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msgget)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgget)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgget)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgget)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msgget)}},
+				},
 			},
 		},
 	},
@@ -1915,16 +2053,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "msgsz"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "msgflg"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgsnd)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgsnd)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgsnd)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msgsnd)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgsnd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgsnd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgsnd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msgsnd)}},
+				},
 			},
 		},
 	},
@@ -1942,16 +2082,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "msgtyp"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "msgflg"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgrcv)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgrcv)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgrcv)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msgrcv)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgrcv)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgrcv)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgrcv)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msgrcv)}},
+				},
 			},
 		},
 	},
@@ -1967,16 +2109,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgctl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgctl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgctl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msgctl)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msgctl)}},
+				},
 			},
 		},
 	},
@@ -1992,16 +2136,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fcntl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fcntl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fcntl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fcntl)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fcntl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fcntl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fcntl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fcntl)}},
+				},
 			},
 		},
 	},
@@ -2016,16 +2162,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "operation"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Flock)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Flock)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Flock)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Flock)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Flock)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Flock)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Flock)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Flock)}},
+				},
 			},
 		},
 	},
@@ -2039,16 +2187,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsync)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsync)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsync)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsync)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsync)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsync)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsync)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsync)}},
+				},
 			},
 		},
 	},
@@ -2062,16 +2212,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fdatasync)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fdatasync)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fdatasync)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fdatasync)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fdatasync)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fdatasync)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fdatasync)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fdatasync)}},
+				},
 			},
 		},
 	},
@@ -2086,16 +2238,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "length"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Truncate)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Truncate)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Truncate)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Truncate)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Truncate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Truncate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Truncate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Truncate)}},
+				},
 			},
 		},
 	},
@@ -2110,16 +2264,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "length"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftruncate)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ftruncate)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ftruncate)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ftruncate)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftruncate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ftruncate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ftruncate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ftruncate)}},
+				},
 			},
 		},
 	},
@@ -2135,16 +2291,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "dirp"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "count"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getdents)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getdents)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getdents)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getdents)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getdents)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getdents)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getdents)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getdents)}},
+				},
 			},
 		},
 	},
@@ -2159,16 +2317,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "buf"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getcwd)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getcwd)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getcwd)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getcwd)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getcwd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getcwd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getcwd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getcwd)}},
+				},
 			},
 		},
 	},
@@ -2182,16 +2342,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chdir)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chdir)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chdir)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chdir)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chdir)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chdir)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chdir)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chdir)}},
+				},
 			},
 		},
 	},
@@ -2205,16 +2367,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchdir)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchdir)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchdir)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchdir)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchdir)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchdir)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchdir)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchdir)}},
+				},
 			},
 		},
 	},
@@ -2229,16 +2393,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "oldpath"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "newpath"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rename)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Rename)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Rename)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Rename)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rename)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Rename)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Rename)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Rename)}},
+				},
 			},
 		},
 	},
@@ -2253,16 +2419,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mkdir)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mkdir)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mkdir)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mkdir)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mkdir)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mkdir)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mkdir)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mkdir)}},
+				},
 			},
 		},
 	},
@@ -2276,16 +2444,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rmdir)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Rmdir)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Rmdir)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Rmdir)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rmdir)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Rmdir)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Rmdir)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Rmdir)}},
+				},
 			},
 		},
 	},
@@ -2300,16 +2470,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Creat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Creat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Creat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Creat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Creat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Creat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Creat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Creat)}},
+				},
 			},
 		},
 	},
@@ -2324,16 +2496,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "oldpath"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "newpath"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Link)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Link)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Link)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Link)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Link)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Link)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Link)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Link)}},
+				},
 			},
 		},
 	},
@@ -2347,16 +2521,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unlink)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Unlink)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Unlink)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Unlink)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unlink)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Unlink)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Unlink)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Unlink)}},
+				},
 			},
 		},
 	},
@@ -2371,16 +2547,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "target"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "linkpath"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Symlink)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Symlink)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Symlink)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Symlink)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Symlink)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Symlink)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Symlink)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Symlink)}},
+				},
 			},
 		},
 	},
@@ -2396,16 +2574,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "buf"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "bufsiz"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readlink)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readlink)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readlink)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readlink)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readlink)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readlink)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readlink)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readlink)}},
+				},
 			},
 		},
 	},
@@ -2420,16 +2600,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chmod)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chmod)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chmod)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chmod)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chmod)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chmod)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chmod)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chmod)}},
+				},
 			},
 		},
 	},
@@ -2444,16 +2626,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchmod)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchmod)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchmod)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchmod)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchmod)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchmod)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchmod)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchmod)}},
+				},
 			},
 		},
 	},
@@ -2469,16 +2653,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "owner"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "group"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chown)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chown)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chown)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chown)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chown)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chown)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chown)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chown)}},
+				},
 			},
 		},
 	},
@@ -2494,16 +2680,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "owner"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "group"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchown)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchown)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchown)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchown)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchown)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchown)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchown)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchown)}},
+				},
 			},
 		},
 	},
@@ -2519,16 +2707,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "owner"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "group"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lchown)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lchown)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lchown)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lchown)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lchown)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lchown)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lchown)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lchown)}},
+				},
 			},
 		},
 	},
@@ -2542,16 +2732,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "mask"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umask)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Umask)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Umask)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Umask)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umask)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Umask)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Umask)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Umask)}},
+				},
 			},
 		},
 	},
@@ -2566,16 +2758,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tv"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tz"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gettimeofday)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Gettimeofday)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Gettimeofday)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Gettimeofday)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gettimeofday)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Gettimeofday)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Gettimeofday)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Gettimeofday)}},
+				},
 			},
 		},
 	},
@@ -2590,16 +2784,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "resource"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rlim"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrlimit)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getrlimit)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getrlimit)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getrlimit)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrlimit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getrlimit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getrlimit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getrlimit)}},
+				},
 			},
 		},
 	},
@@ -2614,16 +2810,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "who"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "usage"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrusage)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getrusage)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getrusage)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getrusage)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrusage)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getrusage)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getrusage)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getrusage)}},
+				},
 			},
 		},
 	},
@@ -2637,16 +2835,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "info"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysinfo)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sysinfo)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sysinfo)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sysinfo)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysinfo)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sysinfo)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sysinfo)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sysinfo)}},
+				},
 			},
 		},
 	},
@@ -2660,16 +2860,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Times)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Times)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Times)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Times)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Times)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Times)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Times)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Times)}},
+				},
 			},
 		},
 	},
@@ -2686,10 +2888,12 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "data"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.Ptrace, required: true},
-				{handle: probes.PtraceRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.Ptrace, required: true},
+					{handle: probes.PtraceRet, required: true},
+				},
 			},
 		},
 	},
@@ -2701,16 +2905,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getuid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getuid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getuid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getuid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getuid)}},
+				},
 			},
 		},
 	},
@@ -2726,16 +2932,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "bufp"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "len"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Syslog)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Syslog)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Syslog)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Syslog)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Syslog)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Syslog)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Syslog)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Syslog)}},
+				},
 			},
 		},
 	},
@@ -2747,16 +2955,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getgid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getgid)}},
+				},
 			},
 		},
 	},
@@ -2770,16 +2980,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "uid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setuid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setuid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setuid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setuid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setuid)}},
+				},
 			},
 		},
 	},
@@ -2793,16 +3005,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "gid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setgid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setgid)}},
+				},
 			},
 		},
 	},
@@ -2814,16 +3028,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Geteuid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Geteuid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Geteuid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Geteuid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Geteuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Geteuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Geteuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Geteuid)}},
+				},
 			},
 		},
 	},
@@ -2835,16 +3051,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getegid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getegid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getegid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getegid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getegid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getegid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getegid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getegid)}},
+				},
 			},
 		},
 	},
@@ -2859,16 +3077,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pgid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setpgid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setpgid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setpgid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setpgid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setpgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setpgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setpgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setpgid)}},
+				},
 			},
 		},
 	},
@@ -2880,16 +3100,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getppid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getppid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getppid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getppid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getppid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getppid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getppid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getppid)}},
+				},
 			},
 		},
 	},
@@ -2901,16 +3123,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpgrp)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpgrp)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpgrp)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpgrp)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpgrp)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpgrp)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpgrp)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpgrp)}},
+				},
 			},
 		},
 	},
@@ -2922,16 +3146,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setsid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setsid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setsid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setsid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setsid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setsid)}},
+				},
 			},
 		},
 	},
@@ -2946,16 +3172,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "ruid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "euid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setreuid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setreuid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setreuid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setreuid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setreuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setreuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setreuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setreuid)}},
+				},
 			},
 		},
 	},
@@ -2970,16 +3198,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "rgid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "egid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setregid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setregid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setregid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setregid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setregid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setregid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setregid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setregid)}},
+				},
 			},
 		},
 	},
@@ -2994,16 +3224,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "size"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "list"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgroups)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgroups)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgroups)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getgroups)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgroups)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgroups)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgroups)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getgroups)}},
+				},
 			},
 		},
 	},
@@ -3018,16 +3250,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "size"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "list"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgroups)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgroups)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgroups)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setgroups)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgroups)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgroups)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgroups)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setgroups)}},
+				},
 			},
 		},
 	},
@@ -3043,16 +3277,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "euid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "suid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresuid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresuid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresuid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setresuid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setresuid)}},
+				},
 			},
 		},
 	},
@@ -3068,16 +3304,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "euid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "suid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresuid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresuid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresuid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getresuid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getresuid)}},
+				},
 			},
 		},
 	},
@@ -3093,16 +3331,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "egid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sgid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresgid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresgid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresgid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setresgid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setresgid)}},
+				},
 			},
 		},
 	},
@@ -3118,16 +3358,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "egid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sgid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresgid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresgid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresgid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getresgid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getresgid)}},
+				},
 			},
 		},
 	},
@@ -3141,16 +3383,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpgid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpgid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpgid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpgid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpgid)}},
+				},
 			},
 		},
 	},
@@ -3164,16 +3408,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fsuid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsuid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsuid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsuid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setfsuid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setfsuid)}},
+				},
 			},
 		},
 	},
@@ -3187,16 +3433,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fsgid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsgid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsgid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsgid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setfsgid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setfsgid)}},
+				},
 			},
 		},
 	},
@@ -3210,16 +3458,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getsid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getsid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getsid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getsid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getsid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getsid)}},
+				},
 			},
 		},
 	},
@@ -3234,16 +3484,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "hdrp"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "datap"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Capget)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Capget)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Capget)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Capget)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Capget)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Capget)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Capget)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Capget)}},
+				},
 			},
 		},
 	},
@@ -3258,16 +3510,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "hdrp"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "datap"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Capset)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Capset)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Capset)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Capset)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Capset)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Capset)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Capset)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Capset)}},
+				},
 			},
 		},
 	},
@@ -3282,16 +3536,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "set"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigpending)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigpending)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigpending)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigpending)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigpending)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigpending)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigpending)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigpending)}},
+				},
 			},
 		},
 	},
@@ -3308,16 +3564,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigtimedwait)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigtimedwait)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigtimedwait)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigtimedwait)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigtimedwait)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigtimedwait)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigtimedwait)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigtimedwait)}},
+				},
 			},
 		},
 	},
@@ -3333,16 +3591,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sig"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "info"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigqueueinfo)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigqueueinfo)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigqueueinfo)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigqueueinfo)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigqueueinfo)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigqueueinfo)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigqueueinfo)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigqueueinfo)}},
+				},
 			},
 		},
 	},
@@ -3357,16 +3617,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mask"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigsuspend)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigsuspend)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigsuspend)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigsuspend)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigsuspend)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigsuspend)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigsuspend)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigsuspend)}},
+				},
 			},
 		},
 	},
@@ -3381,16 +3643,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ss"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_ss"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigaltstack)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigaltstack)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigaltstack)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigaltstack)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigaltstack)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigaltstack)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigaltstack)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigaltstack)}},
+				},
 			},
 		},
 	},
@@ -3405,16 +3669,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "times"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utime)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Utime)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Utime)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Utime)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Utime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Utime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Utime)}},
+				},
 			},
 		},
 	},
@@ -3430,16 +3696,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "dev"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mknod)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mknod)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mknod)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mknod)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mknod)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mknod)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mknod)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mknod)}},
+				},
 			},
 		},
 	},
@@ -3453,16 +3721,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "library"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Uselib)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Uselib)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Uselib)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Uselib)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Uselib)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Uselib)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Uselib)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Uselib)}},
+				},
 			},
 		},
 	},
@@ -3476,16 +3746,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "persona"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Personality)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Personality)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Personality)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Personality)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Personality)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Personality)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Personality)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Personality)}},
+				},
 			},
 		},
 	},
@@ -3500,16 +3772,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "dev"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ubuf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ustat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ustat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ustat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ustat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ustat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ustat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ustat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ustat)}},
+				},
 			},
 		},
 	},
@@ -3524,16 +3798,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statfs)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Statfs)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Statfs)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Statfs)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statfs)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Statfs)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Statfs)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Statfs)}},
+				},
 			},
 		},
 	},
@@ -3548,16 +3824,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstatfs)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstatfs)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstatfs)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fstatfs)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstatfs)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstatfs)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstatfs)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fstatfs)}},
+				},
 			},
 		},
 	},
@@ -3571,16 +3849,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "option"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysfs)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sysfs)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sysfs)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sysfs)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysfs)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sysfs)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sysfs)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sysfs)}},
+				},
 			},
 		},
 	},
@@ -3595,16 +3875,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "who"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpriority)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpriority)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpriority)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpriority)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpriority)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpriority)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpriority)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpriority)}},
+				},
 			},
 		},
 	},
@@ -3620,16 +3902,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "who"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "prio"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setpriority)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setpriority)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setpriority)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setpriority)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setpriority)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setpriority)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setpriority)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setpriority)}},
+				},
 			},
 		},
 	},
@@ -3644,16 +3928,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "param"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetparam)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetparam)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetparam)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedSetparam)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetparam)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetparam)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetparam)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedSetparam)}},
+				},
 			},
 		},
 	},
@@ -3668,16 +3954,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "param"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetparam)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetparam)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetparam)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetparam)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetparam)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetparam)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetparam)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetparam)}},
+				},
 			},
 		},
 	},
@@ -3693,16 +3981,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "policy"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "param"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetscheduler)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetscheduler)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetscheduler)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedSetscheduler)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetscheduler)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetscheduler)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetscheduler)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedSetscheduler)}},
+				},
 			},
 		},
 	},
@@ -3716,16 +4006,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetscheduler)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetscheduler)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetscheduler)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetscheduler)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetscheduler)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetscheduler)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetscheduler)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetscheduler)}},
+				},
 			},
 		},
 	},
@@ -3739,16 +4031,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "policy"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetPriorityMax)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetPriorityMax)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetPriorityMax)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetPriorityMax)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetPriorityMax)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetPriorityMax)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetPriorityMax)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetPriorityMax)}},
+				},
 			},
 		},
 	},
@@ -3762,16 +4056,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "policy"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetPriorityMin)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetPriorityMin)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetPriorityMin)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetPriorityMin)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetPriorityMin)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetPriorityMin)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetPriorityMin)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetPriorityMin)}},
+				},
 			},
 		},
 	},
@@ -3786,16 +4082,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "tp"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedRrGetInterval)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedRrGetInterval)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedRrGetInterval)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedRrGetInterval)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedRrGetInterval)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedRrGetInterval)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedRrGetInterval)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedRrGetInterval)}},
+				},
 			},
 		},
 	},
@@ -3810,16 +4108,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlock)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mlock)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mlock)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mlock)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlock)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mlock)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mlock)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mlock)}},
+				},
 			},
 		},
 	},
@@ -3834,16 +4134,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munlock)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Munlock)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Munlock)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Munlock)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munlock)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Munlock)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Munlock)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Munlock)}},
+				},
 			},
 		},
 	},
@@ -3857,16 +4159,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlockall)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mlockall)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mlockall)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mlockall)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlockall)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mlockall)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mlockall)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mlockall)}},
+				},
 			},
 		},
 	},
@@ -3878,16 +4182,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munlockall)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Munlockall)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Munlockall)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Munlockall)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munlockall)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Munlockall)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Munlockall)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Munlockall)}},
+				},
 			},
 		},
 	},
@@ -3899,16 +4205,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vhangup)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vhangup)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vhangup)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vhangup)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vhangup)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vhangup)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vhangup)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vhangup)}},
+				},
 			},
 		},
 	},
@@ -3924,16 +4232,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ptr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "bytecount"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ModifyLdt)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ModifyLdt)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ModifyLdt)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ModifyLdt)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ModifyLdt)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ModifyLdt)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ModifyLdt)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ModifyLdt)}},
+				},
 			},
 		},
 	},
@@ -3948,16 +4258,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "new_root"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "put_old"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PivotRoot)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PivotRoot)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PivotRoot)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PivotRoot)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PivotRoot)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PivotRoot)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PivotRoot)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PivotRoot)}},
+				},
 			},
 		},
 	},
@@ -3971,16 +4283,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "args"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysctl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sysctl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sysctl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sysctl)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sysctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sysctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sysctl)}},
+				},
 			},
 		},
 	},
@@ -3998,16 +4312,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg4"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg5"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prctl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Prctl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Prctl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Prctl)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Prctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Prctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Prctl)}},
+				},
 			},
 		},
 	},
@@ -4022,10 +4338,12 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "option"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "addr"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.ArchPrctl, required: true},
-				{handle: probes.ArchPrctlRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.ArchPrctl, required: true},
+					{handle: probes.ArchPrctlRet, required: true},
+				},
 			},
 		},
 	},
@@ -4039,16 +4357,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Adjtimex)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Adjtimex)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Adjtimex)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Adjtimex)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Adjtimex)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Adjtimex)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Adjtimex)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Adjtimex)}},
+				},
 			},
 		},
 	},
@@ -4063,16 +4383,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "resource"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rlim"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setrlimit)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setrlimit)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setrlimit)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setrlimit)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setrlimit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setrlimit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setrlimit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setrlimit)}},
+				},
 			},
 		},
 	},
@@ -4086,16 +4408,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chroot)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chroot)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chroot)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chroot)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chroot)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chroot)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chroot)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chroot)}},
+				},
 			},
 		},
 	},
@@ -4107,16 +4431,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_sync"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sync)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sync)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sync)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sync)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sync)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sync)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sync)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sync)}},
+				},
 			},
 		},
 	},
@@ -4130,16 +4456,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Acct)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Acct)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Acct)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Acct)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Acct)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Acct)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Acct)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Acct)}},
+				},
 			},
 		},
 	},
@@ -4154,16 +4482,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tv"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tz"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Settimeofday)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Settimeofday)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Settimeofday)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Settimeofday)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Settimeofday)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Settimeofday)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Settimeofday)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Settimeofday)}},
+				},
 			},
 		},
 	},
@@ -4181,16 +4511,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "mountflags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "data"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mount)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mount)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mount)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mount)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mount)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mount)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mount)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mount)}},
+				},
 			},
 		},
 	},
@@ -4205,16 +4537,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "target"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umount2)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Umount2)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Umount2)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Umount2)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umount2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Umount2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Umount2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Umount2)}},
+				},
 			},
 		},
 	},
@@ -4229,16 +4563,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "swapflags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Swapon)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Swapon)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Swapon)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Swapon)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Swapon)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Swapon)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Swapon)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Swapon)}},
+				},
 			},
 		},
 	},
@@ -4252,16 +4588,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Swapoff)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Swapoff)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Swapoff)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Swapoff)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Swapoff)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Swapoff)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Swapoff)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Swapoff)}},
+				},
 			},
 		},
 	},
@@ -4278,16 +4616,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "arg"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Reboot)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Reboot)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Reboot)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Reboot)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Reboot)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Reboot)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Reboot)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Reboot)}},
+				},
 			},
 		},
 	},
@@ -4302,16 +4642,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sethostname)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sethostname)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sethostname)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sethostname)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sethostname)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sethostname)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sethostname)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sethostname)}},
+				},
 			},
 		},
 	},
@@ -4326,16 +4668,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setdomainname)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setdomainname)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setdomainname)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setdomainname)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setdomainname)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setdomainname)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setdomainname)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setdomainname)}},
+				},
 			},
 		},
 	},
@@ -4349,16 +4693,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "level"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Iopl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Iopl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Iopl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Iopl)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Iopl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Iopl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Iopl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Iopl)}},
+				},
 			},
 		},
 	},
@@ -4374,16 +4720,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "num"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "turn_on"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ioperm)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ioperm)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ioperm)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ioperm)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ioperm)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ioperm)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ioperm)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ioperm)}},
+				},
 			},
 		},
 	},
@@ -4395,16 +4743,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CreateModule)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(CreateModule)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(CreateModule)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(CreateModule)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CreateModule)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(CreateModule)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(CreateModule)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(CreateModule)}},
+				},
 			},
 		},
 	},
@@ -4420,16 +4770,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "param_values"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InitModule)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InitModule)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InitModule)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InitModule)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InitModule)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InitModule)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InitModule)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InitModule)}},
+				},
 			},
 		},
 	},
@@ -4444,16 +4796,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(DeleteModule)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(DeleteModule)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(DeleteModule)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(DeleteModule)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(DeleteModule)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(DeleteModule)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(DeleteModule)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(DeleteModule)}},
+				},
 			},
 		},
 	},
@@ -4465,16 +4819,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetKernelSyms)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetKernelSyms)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetKernelSyms)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(GetKernelSyms)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetKernelSyms)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetKernelSyms)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetKernelSyms)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(GetKernelSyms)}},
+				},
 			},
 		},
 	},
@@ -4486,16 +4842,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(QueryModule)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(QueryModule)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(QueryModule)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(QueryModule)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(QueryModule)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(QueryModule)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(QueryModule)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(QueryModule)}},
+				},
 			},
 		},
 	},
@@ -4512,16 +4870,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "id"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Quotactl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Quotactl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Quotactl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Quotactl)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Quotactl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Quotactl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Quotactl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Quotactl)}},
+				},
 			},
 		},
 	},
@@ -4533,16 +4893,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nfsservctl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Nfsservctl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Nfsservctl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Nfsservctl)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nfsservctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Nfsservctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Nfsservctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Nfsservctl)}},
+				},
 			},
 		},
 	},
@@ -4554,16 +4916,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpmsg)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpmsg)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpmsg)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpmsg)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpmsg)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpmsg)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpmsg)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpmsg)}},
+				},
 			},
 		},
 	},
@@ -4575,16 +4939,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Putpmsg)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Putpmsg)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Putpmsg)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Putpmsg)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Putpmsg)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Putpmsg)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Putpmsg)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Putpmsg)}},
+				},
 			},
 		},
 	},
@@ -4596,16 +4962,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Afs)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Afs)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Afs)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Afs)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Afs)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Afs)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Afs)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Afs)}},
+				},
 			},
 		},
 	},
@@ -4617,16 +4985,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tuxcall)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tuxcall)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tuxcall)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Tuxcall)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tuxcall)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tuxcall)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tuxcall)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Tuxcall)}},
+				},
 			},
 		},
 	},
@@ -4638,16 +5008,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Security)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Security)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Security)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Security)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Security)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Security)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Security)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Security)}},
+				},
 			},
 		},
 	},
@@ -4659,16 +5031,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gettid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Gettid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Gettid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Gettid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gettid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Gettid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Gettid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Gettid)}},
+				},
 			},
 		},
 	},
@@ -4684,16 +5058,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "offset"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readahead)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readahead)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readahead)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readahead)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readahead)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readahead)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readahead)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readahead)}},
+				},
 			},
 		},
 	},
@@ -4711,16 +5087,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setxattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setxattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setxattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setxattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setxattr)}},
+				},
 			},
 		},
 	},
@@ -4738,16 +5116,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lsetxattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lsetxattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lsetxattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lsetxattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lsetxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lsetxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lsetxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lsetxattr)}},
+				},
 			},
 		},
 	},
@@ -4765,16 +5145,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsetxattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsetxattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsetxattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsetxattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsetxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsetxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsetxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsetxattr)}},
+				},
 			},
 		},
 	},
@@ -4791,16 +5173,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "value"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getxattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getxattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getxattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getxattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getxattr)}},
+				},
 			},
 		},
 	},
@@ -4817,16 +5201,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "value"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lgetxattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lgetxattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lgetxattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lgetxattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lgetxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lgetxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lgetxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lgetxattr)}},
+				},
 			},
 		},
 	},
@@ -4843,16 +5229,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "value"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fgetxattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fgetxattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fgetxattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fgetxattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fgetxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fgetxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fgetxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fgetxattr)}},
+				},
 			},
 		},
 	},
@@ -4868,16 +5256,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "list"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listxattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Listxattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Listxattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Listxattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Listxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Listxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Listxattr)}},
+				},
 			},
 		},
 	},
@@ -4893,16 +5283,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "list"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Llistxattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Llistxattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Llistxattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Llistxattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Llistxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Llistxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Llistxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Llistxattr)}},
+				},
 			},
 		},
 	},
@@ -4918,16 +5310,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "list"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Flistxattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Flistxattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Flistxattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Flistxattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Flistxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Flistxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Flistxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Flistxattr)}},
+				},
 			},
 		},
 	},
@@ -4942,16 +5336,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Removexattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Removexattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Removexattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Removexattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Removexattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Removexattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Removexattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Removexattr)}},
+				},
 			},
 		},
 	},
@@ -4966,16 +5362,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lremovexattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lremovexattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lremovexattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lremovexattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lremovexattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lremovexattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lremovexattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lremovexattr)}},
+				},
 			},
 		},
 	},
@@ -4990,16 +5388,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fremovexattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fremovexattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fremovexattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fremovexattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fremovexattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fremovexattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fremovexattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fremovexattr)}},
+				},
 			},
 		},
 	},
@@ -5014,16 +5414,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "tid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sig"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tkill)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tkill)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tkill)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Tkill)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tkill)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tkill)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tkill)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Tkill)}},
+				},
 			},
 		},
 	},
@@ -5037,16 +5439,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tloc"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Time)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Time)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Time)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Time)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Time)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Time)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Time)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Time)}},
+				},
 			},
 		},
 	},
@@ -5065,16 +5469,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uaddr2"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "val3"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Futex)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Futex)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Futex)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Futex)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Futex)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Futex)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Futex)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Futex)}},
+				},
 			},
 		},
 	},
@@ -5090,16 +5496,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "cpusetsize"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mask"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetaffinity)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetaffinity)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetaffinity)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedSetaffinity)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetaffinity)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetaffinity)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetaffinity)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedSetaffinity)}},
+				},
 			},
 		},
 	},
@@ -5115,16 +5523,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "cpusetsize"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mask"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetaffinity)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetaffinity)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetaffinity)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetaffinity)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetaffinity)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetaffinity)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetaffinity)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetaffinity)}},
+				},
 			},
 		},
 	},
@@ -5138,16 +5548,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "u_info"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetThreadArea)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetThreadArea)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetThreadArea)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SetThreadArea)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetThreadArea)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetThreadArea)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetThreadArea)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SetThreadArea)}},
+				},
 			},
 		},
 	},
@@ -5162,16 +5574,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "nr_events"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ctx_idp"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoSetup)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoSetup)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoSetup)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoSetup)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoSetup)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoSetup)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoSetup)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoSetup)}},
+				},
 			},
 		},
 	},
@@ -5185,16 +5599,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ctx_id"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoDestroy)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoDestroy)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoDestroy)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoDestroy)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoDestroy)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoDestroy)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoDestroy)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoDestroy)}},
+				},
 			},
 		},
 	},
@@ -5212,16 +5628,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "events"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoGetevents)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoGetevents)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoGetevents)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoGetevents)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoGetevents)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoGetevents)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoGetevents)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoGetevents)}},
+				},
 			},
 		},
 	},
@@ -5237,16 +5655,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "nr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "iocbpp"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoSubmit)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoSubmit)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoSubmit)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoSubmit)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoSubmit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoSubmit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoSubmit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoSubmit)}},
+				},
 			},
 		},
 	},
@@ -5262,16 +5682,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "iocb"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "result"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoCancel)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoCancel)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoCancel)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoCancel)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoCancel)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoCancel)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoCancel)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoCancel)}},
+				},
 			},
 		},
 	},
@@ -5285,16 +5707,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "u_info"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetThreadArea)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetThreadArea)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetThreadArea)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(GetThreadArea)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetThreadArea)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetThreadArea)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetThreadArea)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(GetThreadArea)}},
+				},
 			},
 		},
 	},
@@ -5310,16 +5734,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "buffer"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LookupDcookie)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LookupDcookie)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LookupDcookie)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LookupDcookie)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LookupDcookie)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LookupDcookie)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LookupDcookie)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LookupDcookie)}},
+				},
 			},
 		},
 	},
@@ -5333,16 +5759,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "size"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCreate)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCreate)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCreate)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollCreate)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCreate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCreate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCreate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollCreate)}},
+				},
 			},
 		},
 	},
@@ -5354,16 +5782,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCtlOld)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCtlOld)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCtlOld)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollCtlOld)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCtlOld)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCtlOld)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCtlOld)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollCtlOld)}},
+				},
 			},
 		},
 	},
@@ -5375,16 +5805,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollWaitOld)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollWaitOld)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollWaitOld)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollWaitOld)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollWaitOld)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollWaitOld)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollWaitOld)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollWaitOld)}},
+				},
 			},
 		},
 	},
@@ -5402,16 +5834,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pgoff"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RemapFilePages)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RemapFilePages)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RemapFilePages)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RemapFilePages)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RemapFilePages)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RemapFilePages)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RemapFilePages)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RemapFilePages)}},
+				},
 			},
 		},
 	},
@@ -5427,16 +5861,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "dirp"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "count"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getdents64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getdents64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getdents64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getdents64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getdents64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getdents64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getdents64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getdents64)}},
+				},
 			},
 		},
 	},
@@ -5450,16 +5886,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tidptr"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetTidAddress)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetTidAddress)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetTidAddress)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SetTidAddress)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetTidAddress)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetTidAddress)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetTidAddress)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SetTidAddress)}},
+				},
 			},
 		},
 	},
@@ -5471,16 +5909,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RestartSyscall)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RestartSyscall)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RestartSyscall)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RestartSyscall)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RestartSyscall)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RestartSyscall)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RestartSyscall)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RestartSyscall)}},
+				},
 			},
 		},
 	},
@@ -5497,16 +5937,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "nsops"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semtimedop)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semtimedop)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semtimedop)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Semtimedop)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semtimedop)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semtimedop)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semtimedop)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Semtimedop)}},
+				},
 			},
 		},
 	},
@@ -5523,16 +5965,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "advice"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fadvise64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fadvise64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fadvise64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fadvise64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fadvise64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fadvise64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fadvise64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fadvise64)}},
+				},
 			},
 		},
 	},
@@ -5548,16 +5992,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sevp"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "timer_id"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerCreate)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerCreate)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerCreate)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerCreate)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerCreate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerCreate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerCreate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerCreate)}},
+				},
 			},
 		},
 	},
@@ -5574,16 +6020,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_value"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_value"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerSettime)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerSettime)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerSettime)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerSettime)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerSettime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerSettime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerSettime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerSettime)}},
+				},
 			},
 		},
 	},
@@ -5598,16 +6046,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "timer_id"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "curr_value"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGettime)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerGettime)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerGettime)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerGettime)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGettime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerGettime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerGettime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerGettime)}},
+				},
 			},
 		},
 	},
@@ -5621,16 +6071,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "timer_id"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGetoverrun)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerGetoverrun)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerGetoverrun)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerGetoverrun)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGetoverrun)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerGetoverrun)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerGetoverrun)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerGetoverrun)}},
+				},
 			},
 		},
 	},
@@ -5644,16 +6096,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "timer_id"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerDelete)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerDelete)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerDelete)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerDelete)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerDelete)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerDelete)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerDelete)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerDelete)}},
+				},
 			},
 		},
 	},
@@ -5668,16 +6122,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "tp"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockSettime)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockSettime)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockSettime)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockSettime)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockSettime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockSettime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockSettime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockSettime)}},
+				},
 			},
 		},
 	},
@@ -5692,16 +6148,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "tp"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGettime)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGettime)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGettime)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockGettime)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGettime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGettime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGettime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockGettime)}},
+				},
 			},
 		},
 	},
@@ -5716,16 +6174,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "res"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGetres)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGetres)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGetres)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockGetres)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGetres)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGetres)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGetres)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockGetres)}},
+				},
 			},
 		},
 	},
@@ -5742,16 +6202,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "request"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "remain"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockNanosleep)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockNanosleep)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockNanosleep)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockNanosleep)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockNanosleep)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockNanosleep)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockNanosleep)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockNanosleep)}},
+				},
 			},
 		},
 	},
@@ -5765,16 +6227,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "status"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ExitGroup)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ExitGroup)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ExitGroup)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ExitGroup)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ExitGroup)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ExitGroup)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ExitGroup)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ExitGroup)}},
+				},
 			},
 		},
 	},
@@ -5791,16 +6255,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "maxevents"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "timeout"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollWait)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollWait)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollWait)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollWait)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollWait)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollWait)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollWait)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollWait)}},
+				},
 			},
 		},
 	},
@@ -5817,16 +6283,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "event"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCtl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCtl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCtl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollCtl)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCtl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCtl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCtl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollCtl)}},
+				},
 			},
 		},
 	},
@@ -5842,16 +6310,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "tid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sig"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tgkill)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tgkill)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tgkill)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Tgkill)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tgkill)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tgkill)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tgkill)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Tgkill)}},
+				},
 			},
 		},
 	},
@@ -5866,16 +6336,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "times"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utimes)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Utimes)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Utimes)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Utimes)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utimes)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Utimes)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Utimes)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Utimes)}},
+				},
 			},
 		},
 	},
@@ -5887,16 +6359,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vserver)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vserver)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vserver)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vserver)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vserver)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vserver)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vserver)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vserver)}},
+				},
 			},
 		},
 	},
@@ -5915,16 +6389,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "maxnode"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mbind)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mbind)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mbind)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mbind)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mbind)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mbind)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mbind)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mbind)}},
+				},
 			},
 		},
 	},
@@ -5940,16 +6416,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "nodemask"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "maxnode"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetMempolicy)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetMempolicy)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetMempolicy)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SetMempolicy)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetMempolicy)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetMempolicy)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetMempolicy)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SetMempolicy)}},
+				},
 			},
 		},
 	},
@@ -5967,16 +6445,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetMempolicy)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetMempolicy)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetMempolicy)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(GetMempolicy)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetMempolicy)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetMempolicy)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetMempolicy)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(GetMempolicy)}},
+				},
 			},
 		},
 	},
@@ -5993,16 +6473,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "attr"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqOpen)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqOpen)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqOpen)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqOpen)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqOpen)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqOpen)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqOpen)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqOpen)}},
+				},
 			},
 		},
 	},
@@ -6016,16 +6498,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqUnlink)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqUnlink)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqUnlink)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqUnlink)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqUnlink)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqUnlink)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqUnlink)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqUnlink)}},
+				},
 			},
 		},
 	},
@@ -6043,16 +6527,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "msg_prio"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "abs_timeout"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedsend)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedsend)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedsend)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqTimedsend)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedsend)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedsend)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedsend)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqTimedsend)}},
+				},
 			},
 		},
 	},
@@ -6070,16 +6556,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "msg_prio"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "abs_timeout"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedreceive)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedreceive)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedreceive)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqTimedreceive)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedreceive)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedreceive)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedreceive)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqTimedreceive)}},
+				},
 			},
 		},
 	},
@@ -6094,16 +6582,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "mqdes"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sevp"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqNotify)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqNotify)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqNotify)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqNotify)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqNotify)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqNotify)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqNotify)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqNotify)}},
+				},
 			},
 		},
 	},
@@ -6119,16 +6609,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "newattr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "oldattr"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqGetsetattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqGetsetattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqGetsetattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqGetsetattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqGetsetattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqGetsetattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqGetsetattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqGetsetattr)}},
+				},
 			},
 		},
 	},
@@ -6145,16 +6637,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "segments"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(KexecLoad)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(KexecLoad)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(KexecLoad)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(KexecLoad)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(KexecLoad)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(KexecLoad)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(KexecLoad)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(KexecLoad)}},
+				},
 			},
 		},
 	},
@@ -6172,16 +6666,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "options"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rusage"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Waitid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Waitid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Waitid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Waitid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Waitid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Waitid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Waitid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Waitid)}},
+				},
 			},
 		},
 	},
@@ -6199,16 +6695,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "plen"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "keyring"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(AddKey)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(AddKey)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(AddKey)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(AddKey)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(AddKey)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(AddKey)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(AddKey)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(AddKey)}},
+				},
 			},
 		},
 	},
@@ -6225,16 +6723,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "callout_info"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dest_keyring"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RequestKey)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RequestKey)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RequestKey)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RequestKey)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RequestKey)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RequestKey)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RequestKey)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RequestKey)}},
+				},
 			},
 		},
 	},
@@ -6252,16 +6752,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg4"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg5"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Keyctl)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Keyctl)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Keyctl)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Keyctl)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Keyctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Keyctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Keyctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Keyctl)}},
+				},
 			},
 		},
 	},
@@ -6277,16 +6779,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "who"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "ioprio"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoprioSet)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoprioSet)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoprioSet)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoprioSet)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoprioSet)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoprioSet)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoprioSet)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoprioSet)}},
+				},
 			},
 		},
 	},
@@ -6301,16 +6805,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "who"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoprioGet)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoprioGet)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoprioGet)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoprioGet)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoprioGet)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoprioGet)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoprioGet)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoprioGet)}},
+				},
 			},
 		},
 	},
@@ -6322,16 +6828,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_monitor"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyInit)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyInit)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyInit)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InotifyInit)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyInit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyInit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyInit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InotifyInit)}},
+				},
 			},
 		},
 	},
@@ -6347,16 +6855,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "mask"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyAddWatch)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyAddWatch)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyAddWatch)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InotifyAddWatch)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyAddWatch)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyAddWatch)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyAddWatch)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InotifyAddWatch)}},
+				},
 			},
 		},
 	},
@@ -6371,16 +6881,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "wd"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyRmWatch)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyRmWatch)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyRmWatch)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InotifyRmWatch)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyRmWatch)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyRmWatch)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyRmWatch)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InotifyRmWatch)}},
+				},
 			},
 		},
 	},
@@ -6397,16 +6909,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_nodes"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_nodes"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MigratePages)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MigratePages)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MigratePages)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MigratePages)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MigratePages)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MigratePages)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MigratePages)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MigratePages)}},
+				},
 			},
 		},
 	},
@@ -6423,16 +6937,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Openat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Openat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Openat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Openat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Openat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Openat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Openat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Openat)}},
+				},
 			},
 		},
 	},
@@ -6448,16 +6964,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mkdirat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mkdirat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mkdirat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mkdirat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mkdirat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mkdirat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mkdirat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mkdirat)}},
+				},
 			},
 		},
 	},
@@ -6474,16 +6992,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "dev"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mknodat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mknodat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mknodat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mknodat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mknodat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mknodat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mknodat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mknodat)}},
+				},
 			},
 		},
 	},
@@ -6501,16 +7021,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "group"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchownat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchownat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchownat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchownat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchownat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchownat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchownat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchownat)}},
+				},
 			},
 		},
 	},
@@ -6526,16 +7048,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "times"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Futimesat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Futimesat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Futimesat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Futimesat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Futimesat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Futimesat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Futimesat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Futimesat)}},
+				},
 			},
 		},
 	},
@@ -6552,16 +7076,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Newfstatat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Newfstatat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Newfstatat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Newfstatat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Newfstatat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Newfstatat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Newfstatat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Newfstatat)}},
+				},
 			},
 		},
 	},
@@ -6577,16 +7103,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unlinkat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Unlinkat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Unlinkat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Unlinkat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unlinkat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Unlinkat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Unlinkat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Unlinkat)}},
+				},
 			},
 		},
 	},
@@ -6603,16 +7131,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "newdirfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "newpath"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Renameat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Renameat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Renameat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Renameat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Renameat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Renameat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Renameat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Renameat)}},
+				},
 			},
 		},
 	},
@@ -6630,16 +7160,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "newpath"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Linkat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Linkat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Linkat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Linkat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Linkat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Linkat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Linkat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Linkat)}},
+				},
 			},
 		},
 	},
@@ -6655,16 +7187,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "newdirfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "linkpath"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Symlinkat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Symlinkat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Symlinkat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Symlinkat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Symlinkat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Symlinkat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Symlinkat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Symlinkat)}},
+				},
 			},
 		},
 	},
@@ -6681,16 +7215,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "buf"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "bufsiz"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readlinkat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readlinkat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readlinkat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readlinkat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readlinkat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readlinkat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readlinkat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readlinkat)}},
+				},
 			},
 		},
 	},
@@ -6707,16 +7243,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchmodat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchmodat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchmodat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchmodat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchmodat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchmodat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchmodat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchmodat)}},
+				},
 			},
 		},
 	},
@@ -6733,16 +7271,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "mode"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Faccessat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Faccessat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Faccessat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Faccessat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Faccessat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Faccessat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Faccessat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Faccessat)}},
+				},
 			},
 		},
 	},
@@ -6761,16 +7301,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sigmask"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pselect6)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pselect6)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pselect6)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pselect6)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pselect6)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pselect6)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pselect6)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pselect6)}},
+				},
 			},
 		},
 	},
@@ -6788,16 +7330,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sigmask"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ppoll)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ppoll)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ppoll)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ppoll)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ppoll)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ppoll)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ppoll)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ppoll)}},
+				},
 			},
 		},
 	},
@@ -6811,16 +7355,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unshare)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Unshare)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Unshare)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Unshare)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unshare)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Unshare)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Unshare)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Unshare)}},
+				},
 			},
 		},
 	},
@@ -6835,16 +7381,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "head"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetRobustList)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetRobustList)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetRobustList)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SetRobustList)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetRobustList)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetRobustList)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetRobustList)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SetRobustList)}},
+				},
 			},
 		},
 	},
@@ -6860,16 +7408,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "head_ptr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "len_ptr"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetRobustList)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetRobustList)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetRobustList)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(GetRobustList)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetRobustList)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetRobustList)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetRobustList)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(GetRobustList)}},
+				},
 			},
 		},
 	},
@@ -6888,16 +7438,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Splice)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Splice)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Splice)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Splice)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Splice)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Splice)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Splice)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Splice)}},
+				},
 			},
 		},
 	},
@@ -6914,16 +7466,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tee)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tee)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tee)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Tee)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tee)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tee)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tee)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Tee)}},
+				},
 			},
 		},
 	},
@@ -6940,16 +7494,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "nbytes"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SyncFileRange)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SyncFileRange)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SyncFileRange)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SyncFileRange)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SyncFileRange)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SyncFileRange)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SyncFileRange)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SyncFileRange)}},
+				},
 			},
 		},
 	},
@@ -6966,16 +7522,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "nr_segs"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vmsplice)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vmsplice)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vmsplice)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vmsplice)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vmsplice)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vmsplice)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vmsplice)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vmsplice)}},
+				},
 			},
 		},
 	},
@@ -6994,16 +7552,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "status"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MovePages)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MovePages)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MovePages)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MovePages)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MovePages)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MovePages)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MovePages)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MovePages)}},
+				},
 			},
 		},
 	},
@@ -7020,16 +7580,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "times"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utimensat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Utimensat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Utimensat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Utimensat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utimensat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Utimensat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Utimensat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Utimensat)}},
+				},
 			},
 		},
 	},
@@ -7048,16 +7610,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sigmask"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollPwait)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollPwait)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollPwait)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollPwait)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollPwait)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollPwait)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollPwait)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollPwait)}},
+				},
 			},
 		},
 	},
@@ -7073,16 +7637,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mask"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signalfd)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Signalfd)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Signalfd)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Signalfd)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signalfd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Signalfd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Signalfd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Signalfd)}},
+				},
 			},
 		},
 	},
@@ -7097,16 +7663,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdCreate)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdCreate)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdCreate)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdCreate)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdCreate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdCreate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdCreate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdCreate)}},
+				},
 			},
 		},
 	},
@@ -7121,16 +7689,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "initval"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Eventfd)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Eventfd)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Eventfd)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Eventfd)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Eventfd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Eventfd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Eventfd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Eventfd)}},
+				},
 			},
 		},
 	},
@@ -7147,16 +7717,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "offset"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "len"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fallocate)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fallocate)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fallocate)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fallocate)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fallocate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fallocate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fallocate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fallocate)}},
+				},
 			},
 		},
 	},
@@ -7173,16 +7745,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_value"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_value"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdSettime)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdSettime)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdSettime)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdSettime)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdSettime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdSettime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdSettime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdSettime)}},
+				},
 			},
 		},
 	},
@@ -7197,16 +7771,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "curr_value"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdGettime)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdGettime)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdGettime)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdGettime)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdGettime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdGettime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdGettime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdGettime)}},
+				},
 			},
 		},
 	},
@@ -7223,16 +7799,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addrlen"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept4)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Accept4)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Accept4)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Accept4)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept4)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Accept4)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Accept4)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Accept4)}},
+				},
 			},
 		},
 	},
@@ -7249,16 +7827,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sizemask"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signalfd4)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Signalfd4)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Signalfd4)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Signalfd4)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signalfd4)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Signalfd4)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Signalfd4)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Signalfd4)}},
+				},
 			},
 		},
 	},
@@ -7273,16 +7853,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "initval"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Eventfd2)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Eventfd2)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Eventfd2)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Eventfd2)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Eventfd2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Eventfd2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Eventfd2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Eventfd2)}},
+				},
 			},
 		},
 	},
@@ -7296,16 +7878,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCreate1)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCreate1)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCreate1)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollCreate1)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCreate1)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCreate1)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCreate1)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollCreate1)}},
+				},
 			},
 		},
 	},
@@ -7321,10 +7905,12 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "newfd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.Dup3, required: true},
-				{handle: probes.Dup3Ret, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.Dup3, required: true},
+					{handle: probes.Dup3Ret, required: true},
+				},
 			},
 		},
 	},
@@ -7339,16 +7925,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_ARR_2_T, ArgMeta: trace.ArgMeta{Type: "[2]int", Name: "pipefd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pipe2)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pipe2)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pipe2)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pipe2)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pipe2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pipe2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pipe2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pipe2)}},
+				},
 			},
 		},
 	},
@@ -7362,16 +7950,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyInit1)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyInit1)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyInit1)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InotifyInit1)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyInit1)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyInit1)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyInit1)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InotifyInit1)}},
+				},
 			},
 		},
 	},
@@ -7389,16 +7979,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_l"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_h"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Preadv)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Preadv)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Preadv)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Preadv)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Preadv)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Preadv)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Preadv)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Preadv)}},
+				},
 			},
 		},
 	},
@@ -7416,16 +8008,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_l"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_h"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwritev)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pwritev)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pwritev)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pwritev)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwritev)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pwritev)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pwritev)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pwritev)}},
+				},
 			},
 		},
 	},
@@ -7442,16 +8036,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sig"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "info"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtTgsigqueueinfo)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtTgsigqueueinfo)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtTgsigqueueinfo)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtTgsigqueueinfo)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtTgsigqueueinfo)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtTgsigqueueinfo)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtTgsigqueueinfo)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtTgsigqueueinfo)}},
+				},
 			},
 		},
 	},
@@ -7469,16 +8065,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "group_fd"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PerfEventOpen)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PerfEventOpen)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PerfEventOpen)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PerfEventOpen)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PerfEventOpen)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PerfEventOpen)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PerfEventOpen)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PerfEventOpen)}},
+				},
 			},
 		},
 	},
@@ -7496,16 +8094,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvmmsg)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Recvmmsg)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Recvmmsg)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Recvmmsg)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvmmsg)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Recvmmsg)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Recvmmsg)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Recvmmsg)}},
+				},
 			},
 		},
 	},
@@ -7520,16 +8120,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "event_f_flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FanotifyInit)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FanotifyInit)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FanotifyInit)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FanotifyInit)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FanotifyInit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FanotifyInit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FanotifyInit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FanotifyInit)}},
+				},
 			},
 		},
 	},
@@ -7547,16 +8149,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dirfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FanotifyMark)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FanotifyMark)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FanotifyMark)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FanotifyMark)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FanotifyMark)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FanotifyMark)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FanotifyMark)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FanotifyMark)}},
+				},
 			},
 		},
 	},
@@ -7573,16 +8177,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_limit"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_limit"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prlimit64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Prlimit64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Prlimit64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Prlimit64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prlimit64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Prlimit64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Prlimit64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Prlimit64)}},
+				},
 			},
 		},
 	},
@@ -7600,16 +8206,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mount_id"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(NameToHandleAt)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(NameToHandleAt)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(NameToHandleAt)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(NameToHandleAt)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(NameToHandleAt)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(NameToHandleAt)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(NameToHandleAt)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(NameToHandleAt)}},
+				},
 			},
 		},
 	},
@@ -7625,16 +8233,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "handle"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OpenByHandleAt)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OpenByHandleAt)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OpenByHandleAt)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(OpenByHandleAt)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OpenByHandleAt)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OpenByHandleAt)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OpenByHandleAt)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(OpenByHandleAt)}},
+				},
 			},
 		},
 	},
@@ -7649,16 +8259,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clk_id"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockAdjtime)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockAdjtime)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockAdjtime)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockAdjtime)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockAdjtime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockAdjtime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockAdjtime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockAdjtime)}},
+				},
 			},
 		},
 	},
@@ -7672,16 +8284,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Syncfs)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Syncfs)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Syncfs)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Syncfs)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Syncfs)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Syncfs)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Syncfs)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Syncfs)}},
+				},
 			},
 		},
 	},
@@ -7698,16 +8312,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "vlen"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendmmsg)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendmmsg)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendmmsg)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendmmsg)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendmmsg)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendmmsg)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendmmsg)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendmmsg)}},
+				},
 			},
 		},
 	},
@@ -7722,16 +8338,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "nstype"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setns)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setns)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setns)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setns)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setns)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setns)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setns)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setns)}},
+				},
 			},
 		},
 	},
@@ -7747,16 +8365,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "node"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tcache"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getcpu)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getcpu)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getcpu)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getcpu)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getcpu)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getcpu)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getcpu)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getcpu)}},
+				},
 			},
 		},
 	},
@@ -7775,16 +8395,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "riovcnt"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessVmReadv)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessVmReadv)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessVmReadv)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ProcessVmReadv)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessVmReadv)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessVmReadv)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessVmReadv)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ProcessVmReadv)}},
+				},
 			},
 		},
 	},
@@ -7803,10 +8425,12 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "riovcnt"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.ProcessVmWritev, required: true},
-				{handle: probes.ProcessVmWritevRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.ProcessVmWritev, required: true},
+					{handle: probes.ProcessVmWritevRet, required: true},
+				},
 			},
 		},
 	},
@@ -7824,16 +8448,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "idx1"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "idx2"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Kcmp)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Kcmp)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Kcmp)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Kcmp)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Kcmp)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Kcmp)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Kcmp)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Kcmp)}},
+				},
 			},
 		},
 	},
@@ -7849,16 +8475,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "param_values"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FinitModule)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FinitModule)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FinitModule)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FinitModule)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FinitModule)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FinitModule)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FinitModule)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FinitModule)}},
+				},
 			},
 		},
 	},
@@ -7874,16 +8502,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "attr"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedSetattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedSetattr)}},
+				},
 			},
 		},
 	},
@@ -7900,16 +8530,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "size"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetattr)}},
+				},
 			},
 		},
 	},
@@ -7927,16 +8559,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "newpath"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Renameat2)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Renameat2)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Renameat2)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Renameat2)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Renameat2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Renameat2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Renameat2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Renameat2)}},
+				},
 			},
 		},
 	},
@@ -7952,16 +8586,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "args"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Seccomp)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Seccomp)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Seccomp)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Seccomp)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Seccomp)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Seccomp)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Seccomp)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Seccomp)}},
+				},
 			},
 		},
 	},
@@ -7977,16 +8613,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "buflen"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrandom)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getrandom)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getrandom)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getrandom)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrandom)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getrandom)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getrandom)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getrandom)}},
+				},
 			},
 		},
 	},
@@ -8001,16 +8639,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MemfdCreate)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MemfdCreate)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MemfdCreate)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MemfdCreate)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MemfdCreate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MemfdCreate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MemfdCreate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MemfdCreate)}},
+				},
 			},
 		},
 	},
@@ -8028,16 +8668,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "cmdline"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(KexecFileLoad)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(KexecFileLoad)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(KexecFileLoad)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(KexecFileLoad)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(KexecFileLoad)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(KexecFileLoad)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(KexecFileLoad)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(KexecFileLoad)}},
+				},
 			},
 		},
 	},
@@ -8053,16 +8695,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "attr"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "size"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bpf)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Bpf)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Bpf)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Bpf)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bpf)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Bpf)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Bpf)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Bpf)}},
+				},
 			},
 		},
 	},
@@ -8080,18 +8724,20 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_ARR_T, ArgMeta: trace.ArgMeta{Type: "[]string", Name: "envp"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execveat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Execveat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Execveat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Execveat)}},
-				{"sys_enter_tails", "syscall__execveat_enter", []uint32{uint32(Execveat)}},
-				{"sys_exit_tails", "syscall__execveat_exit", []uint32{uint32(Execveat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execveat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Execveat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Execveat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Execveat)}},
+					{"sys_enter_tails", "syscall__execveat_enter", []uint32{uint32(Execveat)}},
+					{"sys_exit_tails", "syscall__execveat_exit", []uint32{uint32(Execveat)}},
+				},
 			},
 		},
 	},
@@ -8105,16 +8751,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Userfaultfd)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Userfaultfd)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Userfaultfd)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Userfaultfd)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Userfaultfd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Userfaultfd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Userfaultfd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Userfaultfd)}},
+				},
 			},
 		},
 	},
@@ -8129,16 +8777,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Membarrier)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Membarrier)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Membarrier)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Membarrier)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Membarrier)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Membarrier)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Membarrier)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Membarrier)}},
+				},
 			},
 		},
 	},
@@ -8154,16 +8804,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlock2)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mlock2)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mlock2)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mlock2)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlock2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mlock2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mlock2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mlock2)}},
+				},
 			},
 		},
 	},
@@ -8182,16 +8834,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CopyFileRange)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(CopyFileRange)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(CopyFileRange)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(CopyFileRange)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CopyFileRange)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(CopyFileRange)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(CopyFileRange)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(CopyFileRange)}},
+				},
 			},
 		},
 	},
@@ -8210,16 +8864,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_h"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Preadv2)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Preadv2)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Preadv2)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Preadv2)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Preadv2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Preadv2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Preadv2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Preadv2)}},
+				},
 			},
 		},
 	},
@@ -8238,16 +8894,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_h"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwritev2)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pwritev2)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pwritev2)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pwritev2)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwritev2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pwritev2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pwritev2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pwritev2)}},
+				},
 			},
 		},
 	},
@@ -8264,16 +8922,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "prot"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pkey"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyMprotect)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PkeyMprotect)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PkeyMprotect)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PkeyMprotect)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyMprotect)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PkeyMprotect)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PkeyMprotect)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PkeyMprotect)}},
+				},
 			},
 		},
 	},
@@ -8288,16 +8948,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "access_rights"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyAlloc)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PkeyAlloc)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PkeyAlloc)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PkeyAlloc)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyAlloc)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PkeyAlloc)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PkeyAlloc)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PkeyAlloc)}},
+				},
 			},
 		},
 	},
@@ -8311,16 +8973,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pkey"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyFree)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PkeyFree)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PkeyFree)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PkeyFree)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyFree)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PkeyFree)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PkeyFree)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PkeyFree)}},
+				},
 			},
 		},
 	},
@@ -8338,16 +9002,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "mask"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statxbuf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statx)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Statx)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Statx)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Statx)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statx)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Statx)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Statx)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Statx)}},
+				},
 			},
 		},
 	},
@@ -8366,16 +9032,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "usig"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoPgetevents)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoPgetevents)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoPgetevents)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoPgetevents)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoPgetevents)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoPgetevents)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoPgetevents)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoPgetevents)}},
+				},
 			},
 		},
 	},
@@ -8392,16 +9060,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "sig"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rseq)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Rseq)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Rseq)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Rseq)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rseq)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Rseq)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Rseq)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Rseq)}},
+				},
 			},
 		},
 	},
@@ -8418,16 +9088,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "info"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdSendSignal)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PidfdSendSignal)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PidfdSendSignal)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PidfdSendSignal)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdSendSignal)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PidfdSendSignal)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PidfdSendSignal)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PidfdSendSignal)}},
+				},
 			},
 		},
 	},
@@ -8442,16 +9114,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "entries"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "p"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringSetup)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoUringSetup)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoUringSetup)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoUringSetup)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringSetup)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoUringSetup)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoUringSetup)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoUringSetup)}},
+				},
 			},
 		},
 	},
@@ -8469,16 +9143,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sig"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringEnter)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoUringEnter)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoUringEnter)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoUringEnter)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringEnter)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoUringEnter)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoUringEnter)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoUringEnter)}},
+				},
 			},
 		},
 	},
@@ -8495,16 +9171,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "arg"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "nr_args"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringRegister)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoUringRegister)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoUringRegister)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoUringRegister)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringRegister)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoUringRegister)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoUringRegister)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoUringRegister)}},
+				},
 			},
 		},
 	},
@@ -8520,16 +9198,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OpenTree)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OpenTree)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OpenTree)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(OpenTree)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OpenTree)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OpenTree)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OpenTree)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(OpenTree)}},
+				},
 			},
 		},
 	},
@@ -8547,16 +9227,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "to_path"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MoveMount)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MoveMount)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MoveMount)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MoveMount)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MoveMount)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MoveMount)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MoveMount)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MoveMount)}},
+				},
 			},
 		},
 	},
@@ -8571,16 +9253,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "fsname"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsopen)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsopen)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsopen)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsopen)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsopen)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsopen)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsopen)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsopen)}},
+				},
 			},
 		},
 	},
@@ -8598,16 +9282,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "value"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "aux"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsconfig)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsconfig)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsconfig)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsconfig)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsconfig)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsconfig)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsconfig)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsconfig)}},
+				},
 			},
 		},
 	},
@@ -8623,16 +9309,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "ms_flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsmount)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsmount)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsmount)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsmount)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsmount)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsmount)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsmount)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsmount)}},
+				},
 			},
 		},
 	},
@@ -8648,16 +9336,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fspick)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fspick)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fspick)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fspick)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fspick)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fspick)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fspick)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fspick)}},
+				},
 			},
 		},
 	},
@@ -8672,16 +9362,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdOpen)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PidfdOpen)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PidfdOpen)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PidfdOpen)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdOpen)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PidfdOpen)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PidfdOpen)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PidfdOpen)}},
+				},
 			},
 		},
 	},
@@ -8696,16 +9388,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "cl_args"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Clone3)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Clone3)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Clone3)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Clone3)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Clone3)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Clone3)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Clone3)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Clone3)}},
+				},
 			},
 		},
 	},
@@ -8720,16 +9414,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "first"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "last"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CloseRange)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(CloseRange)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(CloseRange)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(CloseRange)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CloseRange)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(CloseRange)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(CloseRange)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(CloseRange)}},
+				},
 			},
 		},
 	},
@@ -8746,16 +9442,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "how"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Openat2)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Openat2)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Openat2)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Openat2)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Openat2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Openat2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Openat2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Openat2)}},
+				},
 			},
 		},
 	},
@@ -8771,16 +9469,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "targetfd"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdGetfd)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PidfdGetfd)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PidfdGetfd)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PidfdGetfd)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdGetfd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PidfdGetfd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PidfdGetfd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PidfdGetfd)}},
+				},
 			},
 		},
 	},
@@ -8797,16 +9497,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "mode"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flag"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Faccessat2)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Faccessat2)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Faccessat2)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Faccessat2)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Faccessat2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Faccessat2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Faccessat2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Faccessat2)}},
+				},
 			},
 		},
 	},
@@ -8824,16 +9526,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "advice"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessMadvise)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessMadvise)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessMadvise)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ProcessMadvise)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessMadvise)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessMadvise)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessMadvise)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ProcessMadvise)}},
+				},
 			},
 		},
 	},
@@ -8851,16 +9555,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sigset"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollPwait2)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollPwait2)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollPwait2)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollPwait2)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollPwait2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollPwait2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollPwait2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollPwait2)}},
+				},
 			},
 		},
 	},
@@ -8878,16 +9584,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uattr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "usize"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MountSetattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MountSetattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MountSetattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MountSetattr)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MountSetattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MountSetattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MountSetattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MountSetattr)}},
+				},
 			},
 		},
 	},
@@ -8904,16 +9612,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "id"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(QuotactlFd)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(QuotactlFd)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(QuotactlFd)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(QuotactlFd)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(QuotactlFd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(QuotactlFd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(QuotactlFd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(QuotactlFd)}},
+				},
 			},
 		},
 	},
@@ -8929,16 +9639,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockCreateRuleset)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandlockCreateRuleset)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandlockCreateRuleset)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LandlockCreateRuleset)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockCreateRuleset)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandlockCreateRuleset)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandlockCreateRuleset)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LandlockCreateRuleset)}},
+				},
 			},
 		},
 	},
@@ -8955,16 +9667,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rule_attr"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockAddRule)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandlockAddRule)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandlockAddRule)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LandlockAddRule)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockAddRule)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandlockAddRule)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandlockAddRule)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LandlockAddRule)}},
+				},
 			},
 		},
 	},
@@ -8979,16 +9693,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "ruleset_fd"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockRestrictSelf)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandlockRestrictSelf)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandlockRestrictSelf)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LandlockRestrictSelf)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockRestrictSelf)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandlockRestrictSelf)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandlockRestrictSelf)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LandlockRestrictSelf)}},
+				},
 			},
 		},
 	},
@@ -9002,16 +9718,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MemfdSecret)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MemfdSecret)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MemfdSecret)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MemfdSecret)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MemfdSecret)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MemfdSecret)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MemfdSecret)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MemfdSecret)}},
+				},
 			},
 		},
 	},
@@ -9026,16 +9744,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pidfd"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessMrelease)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessMrelease)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessMrelease)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ProcessMrelease)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessMrelease)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessMrelease)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessMrelease)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ProcessMrelease)}},
+				},
 			},
 		},
 	},
@@ -9051,16 +9771,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "status"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "options"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Waitpid)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Waitpid)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Waitpid)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Waitpid)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Waitpid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Waitpid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Waitpid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Waitpid)}},
+				},
 			},
 		},
 	},
@@ -9072,16 +9794,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldfstat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldfstat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldfstat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Oldfstat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldfstat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldfstat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldfstat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Oldfstat)}},
+				},
 			},
 		},
 	},
@@ -9093,16 +9817,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Break)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Break)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Break)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Break)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Break)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Break)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Break)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Break)}},
+				},
 			},
 		},
 	},
@@ -9117,16 +9843,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldstat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldstat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldstat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Oldstat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldstat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldstat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldstat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Oldstat)}},
+				},
 			},
 		},
 	},
@@ -9140,16 +9868,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "target"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umount)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Umount)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Umount)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Umount)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umount)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Umount)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Umount)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Umount)}},
+				},
 			},
 		},
 	},
@@ -9163,16 +9893,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "t"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stime)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stime)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stime)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Stime)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Stime)}},
+				},
 			},
 		},
 	},
@@ -9184,16 +9916,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stty)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stty)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stty)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Stty)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stty)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stty)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stty)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Stty)}},
+				},
 			},
 		},
 	},
@@ -9205,16 +9939,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gtty)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Gtty)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Gtty)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Gtty)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gtty)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Gtty)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Gtty)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Gtty)}},
+				},
 			},
 		},
 	},
@@ -9228,16 +9964,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "inc"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nice)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Nice)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Nice)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Nice)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nice)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Nice)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Nice)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Nice)}},
+				},
 			},
 		},
 	},
@@ -9249,16 +9987,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftime)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ftime)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ftime)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ftime)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ftime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ftime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ftime)}},
+				},
 			},
 		},
 	},
@@ -9270,16 +10010,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prof)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Prof)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Prof)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Prof)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prof)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Prof)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Prof)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Prof)}},
+				},
 			},
 		},
 	},
@@ -9294,16 +10036,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "signum"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "handler"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signal)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Signal)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Signal)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Signal)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signal)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Signal)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Signal)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Signal)}},
+				},
 			},
 		},
 	},
@@ -9315,16 +10059,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lock)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lock)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lock)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lock)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lock)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lock)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lock)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lock)}},
+				},
 			},
 		},
 	},
@@ -9336,16 +10082,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mpx)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mpx)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mpx)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mpx)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mpx)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mpx)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mpx)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mpx)}},
+				},
 			},
 		},
 	},
@@ -9357,16 +10105,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ulimit)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ulimit)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ulimit)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ulimit)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ulimit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ulimit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ulimit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ulimit)}},
+				},
 			},
 		},
 	},
@@ -9380,16 +10130,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "name"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldolduname)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldolduname)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldolduname)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Oldolduname)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldolduname)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldolduname)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldolduname)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Oldolduname)}},
+				},
 			},
 		},
 	},
@@ -9405,16 +10157,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "act"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "oact"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigaction)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigaction)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigaction)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigaction)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigaction)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigaction)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigaction)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigaction)}},
+				},
 			},
 		},
 	},
@@ -9426,16 +10180,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sgetmask)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sgetmask)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sgetmask)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sgetmask)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sgetmask)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sgetmask)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sgetmask)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sgetmask)}},
+				},
 			},
 		},
 	},
@@ -9449,16 +10205,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "newmask"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ssetmask)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ssetmask)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ssetmask)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ssetmask)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ssetmask)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ssetmask)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ssetmask)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ssetmask)}},
+				},
 			},
 		},
 	},
@@ -9472,16 +10230,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mask"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigsuspend)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigsuspend)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigsuspend)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigsuspend)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigsuspend)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigsuspend)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigsuspend)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigsuspend)}},
+				},
 			},
 		},
 	},
@@ -9495,16 +10255,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "set"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigpending)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigpending)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigpending)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigpending)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigpending)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigpending)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigpending)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigpending)}},
+				},
 			},
 		},
 	},
@@ -9519,16 +10281,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldlstat)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldlstat)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldlstat)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Oldlstat)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldlstat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldlstat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldlstat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Oldlstat)}},
+				},
 			},
 		},
 	},
@@ -9544,16 +10308,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "dirp"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "count"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readdir)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readdir)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readdir)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readdir)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readdir)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readdir)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readdir)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readdir)}},
+				},
 			},
 		},
 	},
@@ -9565,16 +10331,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Profil)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Profil)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Profil)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Profil)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Profil)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Profil)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Profil)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Profil)}},
+				},
 			},
 		},
 	},
@@ -9589,16 +10357,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "call"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "args"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socketcall)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Socketcall)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Socketcall)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Socketcall)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socketcall)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Socketcall)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Socketcall)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Socketcall)}},
+				},
 			},
 		},
 	},
@@ -9612,16 +10382,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Olduname)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Olduname)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Olduname)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Olduname)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Olduname)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Olduname)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Olduname)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Olduname)}},
+				},
 			},
 		},
 	},
@@ -9633,16 +10405,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Idle)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Idle)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Idle)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Idle)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Idle)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Idle)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Idle)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Idle)}},
+				},
 			},
 		},
 	},
@@ -9656,16 +10430,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "info"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vm86old)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vm86old)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vm86old)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vm86old)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vm86old)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vm86old)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vm86old)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vm86old)}},
+				},
 			},
 		},
 	},
@@ -9684,16 +10460,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ptr"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "fifth"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ipc)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ipc)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ipc)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ipc)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ipc)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ipc)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ipc)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ipc)}},
+				},
 			},
 		},
 	},
@@ -9705,16 +10483,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigreturn)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigreturn)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigreturn)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigreturn)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigreturn)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigreturn)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigreturn)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigreturn)}},
+				},
 			},
 		},
 	},
@@ -9730,16 +10510,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "set"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "oldset"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigprocmask)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigprocmask)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigprocmask)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigprocmask)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigprocmask)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigprocmask)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigprocmask)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigprocmask)}},
+				},
 			},
 		},
 	},
@@ -9751,16 +10533,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bdflush)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Bdflush)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Bdflush)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Bdflush)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bdflush)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Bdflush)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Bdflush)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Bdflush)}},
+				},
 			},
 		},
 	},
@@ -9772,16 +10556,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Afs_syscall)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Afs_syscall)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Afs_syscall)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Afs_syscall)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Afs_syscall)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Afs_syscall)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Afs_syscall)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Afs_syscall)}},
+				},
 			},
 		},
 	},
@@ -9799,16 +10585,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "result"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "whence"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Llseek)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Llseek)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Llseek)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Llseek)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Llseek)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Llseek)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Llseek)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Llseek)}},
+				},
 			},
 		},
 	},
@@ -9826,16 +10614,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "exceptfds"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "timeout"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OldSelect)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OldSelect)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OldSelect)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(OldSelect)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OldSelect)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OldSelect)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OldSelect)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(OldSelect)}},
+				},
 			},
 		},
 	},
@@ -9850,16 +10640,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "fn"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "v86"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vm86)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vm86)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vm86)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vm86)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vm86)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vm86)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vm86)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vm86)}},
+				},
 			},
 		},
 	},
@@ -9874,16 +10666,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "resource"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rlim"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OldGetrlimit)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OldGetrlimit)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OldGetrlimit)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(OldGetrlimit)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OldGetrlimit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OldGetrlimit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OldGetrlimit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(OldGetrlimit)}},
+				},
 			},
 		},
 	},
@@ -9902,16 +10696,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "fd"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pgoffset"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mmap2)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mmap2)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mmap2)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mmap2)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mmap2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mmap2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mmap2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mmap2)}},
+				},
 			},
 		},
 	},
@@ -9926,16 +10722,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "length"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Truncate64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Truncate64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Truncate64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Truncate64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Truncate64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Truncate64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Truncate64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Truncate64)}},
+				},
 			},
 		},
 	},
@@ -9950,16 +10748,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "length"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftruncate64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ftruncate64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ftruncate64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ftruncate64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftruncate64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ftruncate64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ftruncate64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ftruncate64)}},
+				},
 			},
 		},
 	},
@@ -9974,16 +10774,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stat64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stat64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stat64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Stat64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stat64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stat64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stat64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Stat64)}},
+				},
 			},
 		},
 	},
@@ -9998,16 +10800,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lstat64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lstat64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lstat64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lstat64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lstat64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lstat64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lstat64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lstat64)}},
+				},
 			},
 		},
 	},
@@ -10022,16 +10826,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstat64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstat64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstat64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fstat64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstat64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstat64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstat64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fstat64)}},
+				},
 			},
 		},
 	},
@@ -10047,16 +10853,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "owner"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "group"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lchown16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lchown16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lchown16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lchown16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lchown16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lchown16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lchown16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lchown16)}},
+				},
 			},
 		},
 	},
@@ -10068,16 +10876,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getuid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getuid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getuid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getuid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getuid16)}},
+				},
 			},
 		},
 	},
@@ -10089,16 +10899,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getgid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getgid16)}},
+				},
 			},
 		},
 	},
@@ -10110,16 +10922,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Geteuid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Geteuid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Geteuid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Geteuid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Geteuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Geteuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Geteuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Geteuid16)}},
+				},
 			},
 		},
 	},
@@ -10131,16 +10945,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getegid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getegid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getegid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getegid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getegid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getegid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getegid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getegid16)}},
+				},
 			},
 		},
 	},
@@ -10155,16 +10971,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "ruid"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "euid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setreuid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setreuid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setreuid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setreuid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setreuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setreuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setreuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setreuid16)}},
+				},
 			},
 		},
 	},
@@ -10179,16 +10997,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "rgid"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "egid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setregid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setregid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setregid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setregid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setregid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setregid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setregid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setregid16)}},
+				},
 			},
 		},
 	},
@@ -10203,16 +11023,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "size"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "list"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgroups16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgroups16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgroups16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getgroups16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgroups16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgroups16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgroups16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getgroups16)}},
+				},
 			},
 		},
 	},
@@ -10227,16 +11049,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "list"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgroups16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgroups16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgroups16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setgroups16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgroups16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgroups16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgroups16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setgroups16)}},
+				},
 			},
 		},
 	},
@@ -10252,16 +11076,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "user"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "group"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchown16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchown16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchown16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchown16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchown16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchown16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchown16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchown16)}},
+				},
 			},
 		},
 	},
@@ -10277,16 +11103,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "euid"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "suid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresuid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresuid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresuid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setresuid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setresuid16)}},
+				},
 			},
 		},
 	},
@@ -10302,16 +11130,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "euid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "suid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresuid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresuid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresuid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getresuid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getresuid16)}},
+				},
 			},
 		},
 	},
@@ -10327,16 +11157,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "euid"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "suid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresgid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresgid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresgid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setresgid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresgid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresgid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresgid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setresgid16)}},
+				},
 			},
 		},
 	},
@@ -10352,16 +11184,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "egid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sgid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresgid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresgid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresgid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getresgid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresgid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresgid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresgid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getresgid16)}},
+				},
 			},
 		},
 	},
@@ -10377,16 +11211,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "owner"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "group"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chown16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chown16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chown16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chown16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chown16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chown16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chown16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chown16)}},
+				},
 			},
 		},
 	},
@@ -10400,16 +11236,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "uid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setuid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setuid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setuid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setuid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setuid16)}},
+				},
 			},
 		},
 	},
@@ -10423,16 +11261,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "gid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setgid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setgid16)}},
+				},
 			},
 		},
 	},
@@ -10446,16 +11286,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "fsuid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsuid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsuid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsuid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setfsuid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setfsuid16)}},
+				},
 			},
 		},
 	},
@@ -10469,16 +11311,18 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "fsgid"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsgid16)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsgid16)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsgid16)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setfsgid16)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsgid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsgid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsgid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setfsgid16)}},
+				},
 			},
 		},
 	},
@@ -10494,16 +11338,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fcntl64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fcntl64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fcntl64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fcntl64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fcntl64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fcntl64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fcntl64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fcntl64)}},
+				},
 			},
 		},
 	},
@@ -10520,16 +11366,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "offset"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendfile32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendfile32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendfile32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendfile32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendfile32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendfile32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendfile32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendfile32)}},
+				},
 			},
 		},
 	},
@@ -10545,16 +11393,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sz"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statfs64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Statfs64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Statfs64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Statfs64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statfs64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Statfs64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Statfs64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Statfs64)}},
+				},
 			},
 		},
 	},
@@ -10570,16 +11420,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sz"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstatfs64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstatfs64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstatfs64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fstatfs64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstatfs64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstatfs64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstatfs64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fstatfs64)}},
+				},
 			},
 		},
 	},
@@ -10596,16 +11448,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "advice"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fadvise64_64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fadvise64_64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fadvise64_64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fadvise64_64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fadvise64_64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fadvise64_64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fadvise64_64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fadvise64_64)}},
+				},
 			},
 		},
 	},
@@ -10620,16 +11474,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which_clock"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tp"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGettime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGettime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGettime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockGettime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGettime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGettime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGettime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockGettime32)}},
+				},
 			},
 		},
 	},
@@ -10644,16 +11500,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which_clock"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tp"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockSettime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockSettime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockSettime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockSettime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockSettime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockSettime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockSettime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockSettime32)}},
+				},
 			},
 		},
 	},
@@ -10665,16 +11523,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockAdjtime64)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockAdjtime64)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockAdjtime64)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockAdjtime64)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockAdjtime64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockAdjtime64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockAdjtime64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockAdjtime64)}},
+				},
 			},
 		},
 	},
@@ -10689,16 +11549,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which_clock"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tp"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGetresTime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGetresTime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGetresTime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockGetresTime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGetresTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGetresTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGetresTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockGetresTime32)}},
+				},
 			},
 		},
 	},
@@ -10715,16 +11577,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rqtp"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rmtp"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockNanosleepTime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockNanosleepTime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockNanosleepTime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockNanosleepTime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockNanosleepTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockNanosleepTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockNanosleepTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockNanosleepTime32)}},
+				},
 			},
 		},
 	},
@@ -10739,16 +11603,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "timer_id"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "setting"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGettime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerGettime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerGettime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerGettime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGettime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerGettime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerGettime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerGettime32)}},
+				},
 			},
 		},
 	},
@@ -10765,16 +11631,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerSettime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerSettime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerSettime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerSettime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerSettime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerSettime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerSettime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerSettime32)}},
+				},
 			},
 		},
 	},
@@ -10789,16 +11657,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "ufd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "otmr"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdGettime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdGettime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdGettime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdGettime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdGettime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdGettime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdGettime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdGettime32)}},
+				},
 			},
 		},
 	},
@@ -10815,16 +11685,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "utmr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "otmr"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdSettime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdSettime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdSettime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdSettime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdSettime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdSettime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdSettime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdSettime32)}},
+				},
 			},
 		},
 	},
@@ -10841,16 +11713,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "t"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(UtimensatTime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(UtimensatTime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(UtimensatTime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(UtimensatTime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(UtimensatTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(UtimensatTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(UtimensatTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(UtimensatTime32)}},
+				},
 			},
 		},
 	},
@@ -10869,16 +11743,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tsp"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sig"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pselect6Time32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pselect6Time32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pselect6Time32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pselect6Time32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pselect6Time32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pselect6Time32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pselect6Time32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pselect6Time32)}},
+				},
 			},
 		},
 	},
@@ -10896,16 +11772,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sigmask"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PpollTime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PpollTime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PpollTime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PpollTime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PpollTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PpollTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PpollTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PpollTime32)}},
+				},
 			},
 		},
 	},
@@ -10917,16 +11795,18 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoPgeteventsTime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoPgeteventsTime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoPgeteventsTime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoPgeteventsTime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoPgeteventsTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoPgeteventsTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoPgeteventsTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoPgeteventsTime32)}},
+				},
 			},
 		},
 	},
@@ -10944,16 +11824,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "timeout"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RecvmmsgTime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RecvmmsgTime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RecvmmsgTime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RecvmmsgTime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RecvmmsgTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RecvmmsgTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RecvmmsgTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RecvmmsgTime32)}},
+				},
 			},
 		},
 	},
@@ -10971,16 +11853,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "msg_prio"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "u_abs_timeout"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedsendTime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedsendTime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedsendTime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqTimedsendTime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedsendTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedsendTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedsendTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqTimedsendTime32)}},
+				},
 			},
 		},
 	},
@@ -10998,16 +11882,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "u_msg_prio"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "u_abs_timeout"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedreceiveTime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedreceiveTime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedreceiveTime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqTimedreceiveTime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedreceiveTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedreceiveTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedreceiveTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqTimedreceiveTime32)}},
+				},
 			},
 		},
 	},
@@ -11024,16 +11910,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uts"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigtimedwaitTime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigtimedwaitTime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigtimedwaitTime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigtimedwaitTime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigtimedwaitTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigtimedwaitTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigtimedwaitTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigtimedwaitTime32)}},
+				},
 			},
 		},
 	},
@@ -11052,16 +11940,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uaddr2"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "val3"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FutexTime32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FutexTime32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FutexTime32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FutexTime32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FutexTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FutexTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FutexTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FutexTime32)}},
+				},
 			},
 		},
 	},
@@ -11076,16 +11966,18 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "interval"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedRrGetInterval32)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedRrGetInterval32)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedRrGetInterval32)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedRrGetInterval32)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedRrGetInterval32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedRrGetInterval32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedRrGetInterval32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedRrGetInterval32)}},
+				},
 			},
 		},
 	},
@@ -11097,9 +11989,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "sys_enter",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SysEnter, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SysEnter, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11112,9 +12006,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "sys_exit",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SysExit, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SysExit, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11127,9 +12023,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "sched_process_fork",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SchedProcessFork, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SchedProcessFork, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11166,23 +12064,25 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "sched_process_exec",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SchedProcessExec, required: true},
-				{handle: probes.LoadElfPhdrs, required: false},
-			},
-			tailCalls: []TailCall{
-				{
-					"prog_array_tp",
-					"sched_process_exec_event_submit_tail",
-					[]uint32{TailSchedProcessExecEventSubmit},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SchedProcessExec, required: true},
+					{handle: probes.LoadElfPhdrs, required: false},
 				},
-			},
-			capabilities: Capabilities{
-				base: []cap.Value{
-					// 1. set by processSchedProcessFork IF CalcHashes enabled
-					// 2. set by processSchedProcessExec by CaptureExec if needed
-					// cap.SYS_PTRACE,
+				tailCalls: []TailCall{
+					{
+						"prog_array_tp",
+						"sched_process_exec_event_submit_tail",
+						[]uint32{TailSchedProcessExecEventSubmit},
+					},
+				},
+				capabilities: Capabilities{
+					base: []cap.Value{
+						// 1. set by processSchedProcessFork IF CalcHashes enabled
+						// 2. set by processSchedProcessExec by CaptureExec if needed
+						// cap.SYS_PTRACE,
+					},
 				},
 			},
 		},
@@ -11213,10 +12113,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "sched_process_exit",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SchedProcessExit, required: true},
-				{handle: probes.SchedProcessFree, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SchedProcessExit, required: true},
+					{handle: probes.SchedProcessFree, required: true},
+				},
 			},
 		},
 		sets: []string{"proc", "proc_life"},
@@ -11234,9 +12136,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "sched_switch",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SchedSwitch, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SchedSwitch, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11253,8 +12157,10 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "do_exit",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{{handle: probes.DoExit, required: true}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{{handle: probes.DoExit, required: true}},
+			},
 		},
 		sets:   []string{"proc", "proc_life"},
 		fields: []DataField{},
@@ -11264,9 +12170,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "cap_capable",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.CapCapable, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.CapCapable, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11279,10 +12187,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "vfs_write",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsWrite, required: true},
-				{handle: probes.VfsWriteRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.VfsWrite, required: true},
+					{handle: probes.VfsWriteRet, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11299,10 +12209,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "vfs_writev",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsWriteV, required: true},
-				{handle: probes.VfsWriteVRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.VfsWriteV, required: true},
+					{handle: probes.VfsWriteVRet, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11319,10 +12231,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "mem_prot_alert",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityMmapAddr, required: true},
-				{handle: probes.SecurityFileMProtect, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityMmapAddr, required: true},
+					{handle: probes.SecurityFileMProtect, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11343,9 +12257,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "commit_creds",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.CommitCreds, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.CommitCreds, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11359,9 +12275,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "switch_task_ns",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SwitchTaskNS, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SwitchTaskNS, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11380,14 +12298,16 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "magic_write",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsWriteMagic, required: true},
-				{handle: probes.VfsWriteMagicRet, required: true},
-				{handle: probes.VfsWriteVMagic, required: false},
-				{handle: probes.VfsWriteVMagicRet, required: false},
-				{handle: probes.KernelWriteMagic, required: false},
-				{handle: probes.KernelWriteMagicRet, required: false},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.VfsWriteMagic, required: true},
+					{handle: probes.VfsWriteMagicRet, required: true},
+					{handle: probes.VfsWriteVMagic, required: false},
+					{handle: probes.VfsWriteVMagicRet, required: false},
+					{handle: probes.KernelWriteMagic, required: false},
+					{handle: probes.KernelWriteMagicRet, required: false},
+				},
 			},
 		},
 		sets: []string{},
@@ -11403,9 +12323,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "cgroup_attach_task",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.CgroupAttachTask, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.CgroupAttachTask, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11420,9 +12342,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "cgroup_mkdir",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.CgroupMkdir, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.CgroupMkdir, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11437,9 +12361,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "cgroup_rmdir",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.CgroupRmdir, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.CgroupRmdir, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11454,17 +12380,19 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_bprm_check",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityBPRMCheck, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{
-					"sys_enter_init_tail",
-					"sys_enter_init",
-					[]uint32{
-						uint32(Execve), uint32(Execveat),
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityBPRMCheck, required: true},
+					{handle: probes.SyscallEnter__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{
+						"sys_enter_init_tail",
+						"sys_enter_init",
+						[]uint32{
+							uint32(Execve), uint32(Execveat),
+						},
 					},
 				},
 			},
@@ -11483,9 +12411,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_file_open",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityFileOpen, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityFileOpen, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops"},
@@ -11503,9 +12433,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_inode_unlink",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityInodeUnlink, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityInodeUnlink, required: true},
+				},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"},
@@ -11521,9 +12453,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_socket_create",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySocketCreate, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecuritySocketCreate, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks", "net", "net_sock"},
@@ -11539,13 +12473,15 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_socket_listen",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySocketListen, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listen)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecuritySocketListen, required: true},
+					{handle: probes.SyscallEnter__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listen)}},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks", "net", "net_sock"},
@@ -11560,9 +12496,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_socket_connect",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySocketConnect, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecuritySocketConnect, required: true},
+				},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "net", "net_sock"},
@@ -11577,9 +12515,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_tcp_connect",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				SecuritySocketConnect,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					SecuritySocketConnect,
+				},
 			},
 		},
 		sets: []string{"default", "flows"},
@@ -11594,9 +12534,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_socket_accept",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySocketAccept, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecuritySocketAccept, required: true},
+				},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "net", "net_sock"},
@@ -11611,9 +12553,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_socket_bind",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySocketBind, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecuritySocketBind, required: true},
+				},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "net", "net_sock"},
@@ -11627,9 +12571,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_socket_setsockopt",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySocketSetsockopt, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecuritySocketSetsockopt, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks", "net", "net_sock"},
@@ -11645,9 +12591,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_sb_mount",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySbMount, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecuritySbMount, required: true},
+				},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "fs"},
@@ -11662,9 +12610,11 @@ var CoreEvents = map[ID]Definition{
 		id:      SecuritySbUmount,
 		id32Bit: Sys32Undefined,
 		name:    "security_sb_umount",
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySbUmount, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecuritySbUmount, required: true},
+				},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "fs"},
@@ -11680,9 +12630,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_bpf",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityBPF, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityBPF, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -11695,9 +12647,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_bpf_map",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityBPFMap, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityBPFMap, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -11711,9 +12665,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_kernel_read_file",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityKernelReadFile, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityKernelReadFile, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -11730,9 +12686,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_kernel_post_read_file",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityKernelPostReadFile, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityKernelPostReadFile, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -11747,9 +12705,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_inode_mknod",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityInodeMknod, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityInodeMknod, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -11764,9 +12724,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_inode_symlink",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityInodeSymlink, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityInodeSymlink, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops"},
@@ -11780,9 +12742,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_mmap_file",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityMmapFile, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityMmapFile, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
@@ -11801,10 +12765,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "do_mmap",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DoMmap, required: true},
-				{handle: probes.DoMmapRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.DoMmap, required: true},
+					{handle: probes.DoMmapRet, required: true},
+				},
 			},
 		},
 		sets: []string{"fs", "fs_file_ops", "proc", "proc_mem"},
@@ -11826,13 +12792,15 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_file_mprotect",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityFileMProtect, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mprotect), uint32(PkeyMprotect)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityFileMProtect, required: true},
+					{handle: probes.SyscallEnter__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mprotect), uint32(PkeyMprotect)}},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks", "proc", "proc_mem", "fs", "fs_file_ops"},
@@ -11852,10 +12820,12 @@ var CoreEvents = map[ID]Definition{
 		name:    "init_namespaces",
 		version: NewVersion(1, 0, 0),
 		sets:    []string{},
-		dependencies: Dependencies{
-			capabilities: Capabilities{
-				base: []cap.Value{
-					cap.SYS_PTRACE,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				capabilities: Capabilities{
+					base: []cap.Value{
+						cap.SYS_PTRACE,
+					},
 				},
 			},
 		},
@@ -11873,12 +12843,14 @@ var CoreEvents = map[ID]Definition{
 		},
 	},
 	TraceeInfo: {
-		id:           TraceeInfo,
-		id32Bit:      Sys32Undefined,
-		name:         "tracee_info",
-		version:      NewVersion(1, 0, 0),
-		sets:         []string{},
-		dependencies: Dependencies{},
+		id:      TraceeInfo,
+		id32Bit: Sys32Undefined,
+		name:    "tracee_info",
+		version: NewVersion(1, 0, 0),
+		sets:    []string{},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{},
+		},
 		fields: []DataField{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "boot_time"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "start_time"}},
@@ -11890,17 +12862,19 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "socket_dup",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.Dup, required: true},
-				{handle: probes.DupRet, required: true},
-				{handle: probes.Dup2, required: false},
-				{handle: probes.Dup2Ret, required: false},
-				{handle: probes.Dup3, required: true},
-				{handle: probes.Dup3Ret, required: true},
-			},
-			tailCalls: []TailCall{
-				{"generic_sys_exit_tails", "sys_dup_exit_tail", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.Dup, required: true},
+					{handle: probes.DupRet, required: true},
+					{handle: probes.Dup2, required: false},
+					{handle: probes.Dup2Ret, required: false},
+					{handle: probes.Dup3, required: true},
+					{handle: probes.Dup3Ret, required: true},
+				},
+				tailCalls: []TailCall{
+					{"generic_sys_exit_tails", "sys_dup_exit_tail", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},
+				},
 			},
 		},
 		sets: []string{},
@@ -11915,9 +12889,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "zeroed_inodes",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.Filldir64, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.Filldir64, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11930,10 +12906,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "__kernel_write",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.KernelWrite, required: true},
-				{handle: probes.KernelWriteRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.KernelWrite, required: true},
+					{handle: probes.KernelWriteRet, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -11951,13 +12929,15 @@ var CoreEvents = map[ID]Definition{
 		name:    "dirty_pipe_splice",
 		version: NewVersion(1, 0, 0),
 		sets:    []string{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DoSplice, required: true},
-				{handle: probes.DoSpliceRet, required: true},
-			},
-			kSymbols: []KSymbol{
-				{symbol: "pipe_write", required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.DoSplice, required: true},
+					{handle: probes.DoSpliceRet, required: true},
+				},
+				kSymbols: []KSymbol{
+					{symbol: "pipe_write", required: true},
+				},
 			},
 		},
 		fields: []DataField{
@@ -11975,8 +12955,10 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "container_create",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{CgroupMkdir},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{CgroupMkdir},
+			},
 		},
 		sets: []string{"default", "containers"},
 		fields: []DataField{
@@ -11997,8 +12979,10 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "container_remove",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{CgroupRmdir},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{CgroupRmdir},
+			},
 		},
 		sets: []string{"default", "containers"},
 		fields: []DataField{
@@ -12030,9 +13014,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "proc_create",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.ProcCreate, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.ProcCreate, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12046,10 +13032,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "kprobe_attach",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.RegisterKprobe, required: true},
-				{handle: probes.RegisterKprobeRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.RegisterKprobe, required: true},
+					{handle: probes.RegisterKprobeRet, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12064,9 +13052,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "call_usermodehelper",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.CallUsermodeHelper, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.CallUsermodeHelper, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12082,9 +13072,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "debugfs_create_file",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DebugfsCreateFile, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.DebugfsCreateFile, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12101,12 +13093,14 @@ var CoreEvents = map[ID]Definition{
 		name:     "syscall_table_check",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallTableCheck, required: true},
-			},
-			kSymbols: []KSymbol{
-				{symbol: "sys_call_table", required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallTableCheck, required: true},
+				},
+				kSymbols: []KSymbol{
+					{symbol: "sys_call_table", required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12120,9 +13114,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "hidden_kernel_module",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				HiddenKernelModuleSeeker,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					HiddenKernelModuleSeeker,
+				},
 			},
 		},
 		sets: []string{},
@@ -12138,26 +13134,28 @@ var CoreEvents = map[ID]Definition{
 		name:     "hidden_kernel_module_seeker",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.HiddenKernelModuleSeeker, required: true},
-				{handle: probes.HiddenKernelModuleVerifier, required: true},
-				{handle: probes.ModuleLoad, required: true},
-				{handle: probes.ModuleFree, required: true},
-				{handle: probes.DoInitModule, required: true},
-				{handle: probes.DoInitModuleRet, required: true},
-			},
-			kSymbols: []KSymbol{
-				{symbol: "modules", required: true},
-				{symbol: "module_kset", required: true},
-				{symbol: "mod_tree", required: true},
-			},
-			tailCalls: []TailCall{
-				{"prog_array", "lkm_seeker_proc_tail", []uint32{TailHiddenKernelModuleProc}},
-				{"prog_array", "lkm_seeker_kset_tail", []uint32{TailHiddenKernelModuleKset}},
-				{"prog_array", "lkm_seeker_mod_tree_tail", []uint32{TailHiddenKernelModuleModTree}},
-				{"prog_array", "lkm_seeker_new_mod_only_tail", []uint32{TailHiddenKernelModuleNewModOnly}},
-				{"prog_array", "lkm_seeker_modtree_loop", []uint32{TailHiddenKernelModuleModTreeLoop}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.HiddenKernelModuleSeeker, required: true},
+					{handle: probes.HiddenKernelModuleVerifier, required: true},
+					{handle: probes.ModuleLoad, required: true},
+					{handle: probes.ModuleFree, required: true},
+					{handle: probes.DoInitModule, required: true},
+					{handle: probes.DoInitModuleRet, required: true},
+				},
+				kSymbols: []KSymbol{
+					{symbol: "modules", required: true},
+					{symbol: "module_kset", required: true},
+					{symbol: "mod_tree", required: true},
+				},
+				tailCalls: []TailCall{
+					{"prog_array", "lkm_seeker_proc_tail", []uint32{TailHiddenKernelModuleProc}},
+					{"prog_array", "lkm_seeker_kset_tail", []uint32{TailHiddenKernelModuleKset}},
+					{"prog_array", "lkm_seeker_mod_tree_tail", []uint32{TailHiddenKernelModuleModTree}},
+					{"prog_array", "lkm_seeker_new_mod_only_tail", []uint32{TailHiddenKernelModuleNewModOnly}},
+					{"prog_array", "lkm_seeker_modtree_loop", []uint32{TailHiddenKernelModuleModTreeLoop}},
+				},
 			},
 		},
 		sets: []string{},
@@ -12173,14 +13171,16 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "hooked_syscall",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				SyscallTableCheck,
-				DoInitModule,
-			},
-			capabilities: Capabilities{
-				base: []cap.Value{
-					cap.SYSLOG, // read /proc/kallsyms
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					SyscallTableCheck,
+					DoInitModule,
+				},
+				capabilities: Capabilities{
+					base: []cap.Value{
+						cap.SYSLOG, // read /proc/kallsyms
+					},
 				},
 			},
 		},
@@ -12197,9 +13197,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "debugfs_create_dir",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DebugfsCreateDir, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.DebugfsCreateDir, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12213,9 +13215,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "device_add",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DeviceAdd, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.DeviceAdd, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12229,10 +13233,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "register_chrdev",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.RegisterChrdev, required: true},
-				{handle: probes.RegisterChrdevRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.RegisterChrdev, required: true},
+					{handle: probes.RegisterChrdevRet, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12248,13 +13254,15 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "shared_object_loaded",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityMmapFile, required: true},
-			},
-			capabilities: Capabilities{
-				base: []cap.Value{
-					cap.SYS_PTRACE, // loadSharedObjectDynamicSymbols()
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityMmapFile, required: true},
+				},
+				capabilities: Capabilities{
+					base: []cap.Value{
+						cap.SYS_PTRACE, // loadSharedObjectDynamicSymbols()
+					},
 				},
 			},
 		},
@@ -12272,10 +13280,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "symbols_loaded",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				SharedObjectLoaded,
-				SchedProcessExec, // Used to get mount namespace cache
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					SharedObjectLoaded,
+					SchedProcessExec, // Used to get mount namespace cache
+				},
 			},
 		},
 		sets: []string{"derived", "fs", "security_alert"},
@@ -12290,10 +13300,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "symbols_collision",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				SharedObjectLoaded,
-				SchedProcessExec, // Used to get mount namespace cache
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					SharedObjectLoaded,
+					SchedProcessExec, // Used to get mount namespace cache
+				},
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
@@ -12309,24 +13321,26 @@ var CoreEvents = map[ID]Definition{
 		name:     "capture_file_write",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsWrite, required: true},
-				{handle: probes.VfsWriteRet, required: true},
-				{handle: probes.VfsWriteV, required: false},
-				{handle: probes.VfsWriteVRet, required: false},
-				{handle: probes.KernelWrite, required: false},
-				{handle: probes.KernelWriteRet, required: false},
-				{handle: probes.SecurityInodeUnlink, required: false}, // Used for ELF filter
-			},
-			tailCalls: []TailCall{
-				{"prog_array", "trace_ret_vfs_write_tail", []uint32{TailVfsWrite}},
-				{"prog_array", "trace_ret_vfs_writev_tail", []uint32{TailVfsWritev}},
-				{"prog_array", "trace_ret_kernel_write_tail", []uint32{TailKernelWrite}},
-				{"prog_array", "send_bin", []uint32{TailSendBin}},
-			},
-			kSymbols: []KSymbol{
-				{symbol: "pipe_write", required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.VfsWrite, required: true},
+					{handle: probes.VfsWriteRet, required: true},
+					{handle: probes.VfsWriteV, required: false},
+					{handle: probes.VfsWriteVRet, required: false},
+					{handle: probes.KernelWrite, required: false},
+					{handle: probes.KernelWriteRet, required: false},
+					{handle: probes.SecurityInodeUnlink, required: false}, // Used for ELF filter
+				},
+				tailCalls: []TailCall{
+					{"prog_array", "trace_ret_vfs_write_tail", []uint32{TailVfsWrite}},
+					{"prog_array", "trace_ret_vfs_writev_tail", []uint32{TailVfsWritev}},
+					{"prog_array", "trace_ret_kernel_write_tail", []uint32{TailKernelWrite}},
+					{"prog_array", "send_bin", []uint32{TailSendBin}},
+				},
+				kSymbols: []KSymbol{
+					{symbol: "pipe_write", required: true},
+				},
 			},
 		},
 	},
@@ -12336,21 +13350,23 @@ var CoreEvents = map[ID]Definition{
 		name:     "capture_file_read",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsRead, required: true},
-				{handle: probes.VfsReadRet, required: true},
-				{handle: probes.VfsReadV, required: false},
-				{handle: probes.VfsReadVRet, required: false},
-				{handle: probes.SecurityInodeUnlink, required: false}, // Used for ELF filter
-			},
-			tailCalls: []TailCall{
-				{"prog_array", "trace_ret_vfs_read_tail", []uint32{TailVfsRead}},
-				{"prog_array", "trace_ret_vfs_readv_tail", []uint32{TailVfsReadv}},
-				{"prog_array", "send_bin", []uint32{TailSendBin}},
-			},
-			kSymbols: []KSymbol{
-				{symbol: "pipe_write", required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.VfsRead, required: true},
+					{handle: probes.VfsReadRet, required: true},
+					{handle: probes.VfsReadV, required: false},
+					{handle: probes.VfsReadVRet, required: false},
+					{handle: probes.SecurityInodeUnlink, required: false}, // Used for ELF filter
+				},
+				tailCalls: []TailCall{
+					{"prog_array", "trace_ret_vfs_read_tail", []uint32{TailVfsRead}},
+					{"prog_array", "trace_ret_vfs_readv_tail", []uint32{TailVfsReadv}},
+					{"prog_array", "send_bin", []uint32{TailSendBin}},
+				},
+				kSymbols: []KSymbol{
+					{symbol: "pipe_write", required: true},
+				},
 			},
 		},
 	},
@@ -12360,13 +13376,15 @@ var CoreEvents = map[ID]Definition{
 		name:     "capture_exec",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			ids: []ID{
-				SchedProcessExec,
-			},
-			capabilities: Capabilities{
-				base: []cap.Value{
-					cap.SYS_PTRACE, // processSchedProcessExec() performance
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					SchedProcessExec,
+				},
+				capabilities: Capabilities{
+					base: []cap.Value{
+						cap.SYS_PTRACE, // processSchedProcessExec() performance
+					},
 				},
 			},
 		},
@@ -12377,19 +13395,21 @@ var CoreEvents = map[ID]Definition{
 		name:     "capture_module",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-				{handle: probes.SecurityKernelPostReadFile, required: true},
-			},
-			ids: []ID{
-				SchedProcessExec,
-			},
-			tailCalls: []TailCall{
-				{"sys_enter_tails", "syscall__init_module", []uint32{uint32(InitModule)}},
-				{"prog_array_tp", "send_bin_tp", []uint32{TailSendBinTP}},
-				{"prog_array", "send_bin", []uint32{TailSendBin}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+					{handle: probes.SecurityKernelPostReadFile, required: true},
+				},
+				ids: []ID{
+					SchedProcessExec,
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_tails", "syscall__init_module", []uint32{uint32(InitModule)}},
+					{"prog_array_tp", "send_bin_tp", []uint32{TailSendBinTP}},
+					{"prog_array", "send_bin", []uint32{TailSendBin}},
+				},
 			},
 		},
 	},
@@ -12399,9 +13419,11 @@ var CoreEvents = map[ID]Definition{
 		name:     "capture_mem",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			tailCalls: []TailCall{
-				{"prog_array", "send_bin", []uint32{TailSendBin}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				tailCalls: []TailCall{
+					{"prog_array", "send_bin", []uint32{TailSendBin}},
+				},
 			},
 		},
 	},
@@ -12411,12 +13433,14 @@ var CoreEvents = map[ID]Definition{
 		name:     "capture_bpf",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityBPF, required: true},
-			},
-			tailCalls: []TailCall{
-				{"prog_array", "send_bin", []uint32{TailSendBin}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityBPF, required: true},
+				},
+				tailCalls: []TailCall{
+					{"prog_array", "send_bin", []uint32{TailSendBin}},
+				},
 			},
 		},
 	},
@@ -12425,14 +13449,16 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "do_init_module",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DoInitModule, required: true},
-				{handle: probes.DoInitModuleRet, required: true},
-			},
-			capabilities: Capabilities{
-				base: []cap.Value{
-					cap.SYSLOG, // read /proc/kallsyms
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.DoInitModule, required: true},
+					{handle: probes.DoInitModuleRet, required: true},
+				},
+				capabilities: Capabilities{
+					base: []cap.Value{
+						cap.SYSLOG, // read /proc/kallsyms
+					},
 				},
 			},
 		},
@@ -12448,9 +13474,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "module_load",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.ModuleLoad, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.ModuleLoad, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12469,9 +13497,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "module_free",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.ModuleFree, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.ModuleFree, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12487,17 +13517,19 @@ var CoreEvents = map[ID]Definition{
 		name:     "socket_accept",
 		version:  NewVersion(1, 0, 0),
 		internal: false,
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-			},
-			ids: []ID{
-				SecuritySocketAccept,
-			},
-			tailCalls: []TailCall{
-				{"sys_exit_tails", "syscall__accept4", []uint32{uint32(Accept), uint32(Accept4)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Accept), uint32(Accept4)}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				ids: []ID{
+					SecuritySocketAccept,
+				},
+				tailCalls: []TailCall{
+					{"sys_exit_tails", "syscall__accept4", []uint32{uint32(Accept), uint32(Accept4)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Accept), uint32(Accept4)}},
+				},
 			},
 		},
 		sets: []string{},
@@ -12511,9 +13543,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "load_elf_phdrs",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.LoadElfPhdrs, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.LoadElfPhdrs, required: true},
+				},
 			},
 		},
 		sets: []string{"proc"},
@@ -12528,20 +13562,22 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "hooked_proc_fops",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityFilePermission, required: true},
-			},
-			kSymbols: []KSymbol{
-				{symbol: "_stext", required: true},
-				{symbol: "_etext", required: true},
-			},
-			ids: []ID{
-				DoInitModule,
-			},
-			capabilities: Capabilities{
-				base: []cap.Value{
-					cap.SYSLOG, // read /proc/kallsyms
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityFilePermission, required: true},
+				},
+				kSymbols: []KSymbol{
+					{symbol: "_stext", required: true},
+					{symbol: "_etext", required: true},
+				},
+				ids: []ID{
+					DoInitModule,
+				},
+				capabilities: Capabilities{
+					base: []cap.Value{
+						cap.SYSLOG, // read /proc/kallsyms
+					},
 				},
 			},
 		},
@@ -12555,17 +13591,19 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "print_net_seq_ops",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.PrintNetSeqOps, required: true},
-			},
-			kSymbols: []KSymbol{
-				{symbol: "tcp4_seq_ops", required: true},
-				{symbol: "tcp6_seq_ops", required: true},
-				{symbol: "udp_seq_ops", required: true},
-				{symbol: "udp6_seq_ops", required: true},
-				{symbol: "raw_seq_ops", required: true},
-				{symbol: "raw6_seq_ops", required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.PrintNetSeqOps, required: true},
+				},
+				kSymbols: []KSymbol{
+					{symbol: "tcp4_seq_ops", required: true},
+					{symbol: "tcp6_seq_ops", required: true},
+					{symbol: "udp_seq_ops", required: true},
+					{symbol: "udp6_seq_ops", required: true},
+					{symbol: "raw_seq_ops", required: true},
+					{symbol: "raw6_seq_ops", required: true},
+				},
 			},
 		},
 		internal: true,
@@ -12580,18 +13618,20 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "hooked_seq_ops",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			kSymbols: []KSymbol{
-				{symbol: "_stext", required: true},
-				{symbol: "_etext", required: true},
-			},
-			ids: []ID{
-				PrintNetSeqOps,
-				DoInitModule,
-			},
-			capabilities: Capabilities{
-				base: []cap.Value{
-					cap.SYSLOG, // read /proc/kallsyms
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				kSymbols: []KSymbol{
+					{symbol: "_stext", required: true},
+					{symbol: "_etext", required: true},
+				},
+				ids: []ID{
+					PrintNetSeqOps,
+					DoInitModule,
+				},
+				capabilities: Capabilities{
+					base: []cap.Value{
+						cap.SYSLOG, // read /proc/kallsyms
+					},
 				},
 			},
 		},
@@ -12605,9 +13645,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "task_rename",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.TaskRename, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.TaskRename, required: true},
+				},
 			},
 		},
 		sets: []string{"proc"},
@@ -12621,9 +13663,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_inode_rename",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityInodeRename, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityInodeRename, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12637,9 +13681,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "do_sigaction",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DoSigaction, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.DoSigaction, required: true},
+				},
 			},
 		},
 		sets: []string{"proc"},
@@ -12662,14 +13708,16 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "bpf_attach",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityFileIoctl, required: true},
-				{handle: probes.SecurityBpfProg, required: true},
-				{handle: probes.SecurityBPF, required: true},
-				{handle: probes.TpProbeRegPrioMayExist, required: true},
-				{handle: probes.CheckHelperCall, required: false},
-				{handle: probes.CheckMapFuncCompatibility, required: false},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityFileIoctl, required: true},
+					{handle: probes.SecurityBpfProg, required: true},
+					{handle: probes.SecurityBPF, required: true},
+					{handle: probes.TpProbeRegPrioMayExist, required: true},
+					{handle: probes.CheckHelperCall, required: false},
+					{handle: probes.CheckMapFuncCompatibility, required: false},
+				},
 			},
 		},
 		sets: []string{},
@@ -12688,10 +13736,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "kallsyms_lookup_name",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.KallsymsLookupName, required: true},
-				{handle: probes.KallsymsLookupNameRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.KallsymsLookupName, required: true},
+					{handle: probes.KallsymsLookupNameRet, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12706,23 +13756,25 @@ var CoreEvents = map[ID]Definition{
 		name:    "print_mem_dump",
 		version: NewVersion(1, 0, 0),
 		sets:    []string{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.PrintMemDump, required: true},
-			},
-			ids: []ID{
-				DoInitModule,
-			},
-			kSymbols: []KSymbol{
-				// Special case for this event: Single symbol, common to all kernel versions. Placed
-				// here so the ksymbols engine is always enabled, during tracee startup. The symbols
-				// are resolved dynamically, during runtime depending on the arguments passed to
-				// the event.
-				{symbol: "_stext", required: true},
-			},
-			capabilities: Capabilities{
-				base: []cap.Value{
-					cap.SYSLOG, // read /proc/kallsyms
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.PrintMemDump, required: true},
+				},
+				ids: []ID{
+					DoInitModule,
+				},
+				kSymbols: []KSymbol{
+					// Special case for this event: Single symbol, common to all kernel versions. Placed
+					// here so the ksymbols engine is always enabled, during tracee startup. The symbols
+					// are resolved dynamically, during runtime depending on the arguments passed to
+					// the event.
+					{symbol: "_stext", required: true},
+				},
+				capabilities: Capabilities{
+					base: []cap.Value{
+						cap.SYSLOG, // read /proc/kallsyms
+					},
 				},
 			},
 		},
@@ -12741,10 +13793,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "vfs_read",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsRead, required: true},
-				{handle: probes.VfsReadRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.VfsRead, required: true},
+					{handle: probes.VfsReadRet, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12761,10 +13815,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "vfs_readv",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsReadV, required: true},
-				{handle: probes.VfsReadVRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.VfsReadV, required: true},
+					{handle: probes.VfsReadVRet, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12781,10 +13837,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "vfs_utimes",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsUtimes, required: false},    // this probe exits in kernels >= 5.9
-				{handle: probes.UtimesCommon, required: false}, // this probe exits in kernels < 5.9
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.VfsUtimes, required: false},    // this probe exits in kernels >= 5.9
+					{handle: probes.UtimesCommon, required: false}, // this probe exits in kernels < 5.9
+				},
 			},
 		},
 		sets: []string{},
@@ -12801,9 +13859,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "do_truncate",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DoTruncate, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.DoTruncate, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12827,14 +13887,16 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "old_ctime"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "new_ctime"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.FdInstall, required: true},
-				{handle: probes.FilpClose, required: true},
-				{handle: probes.FileUpdateTime, required: true},
-				{handle: probes.FileUpdateTimeRet, required: true},
-				{handle: probes.FileModified, required: false},    // not required because doesn't ...
-				{handle: probes.FileModifiedRet, required: false}, // ... exist in kernels < 5.3
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.FdInstall, required: true},
+					{handle: probes.FilpClose, required: true},
+					{handle: probes.FileUpdateTime, required: true},
+					{handle: probes.FileUpdateTimeRet, required: true},
+					{handle: probes.FileModified, required: false},    // not required because doesn't ...
+					{handle: probes.FileModifiedRet, required: false}, // ... exist in kernels < 5.3
+				},
 			},
 		},
 	},
@@ -12843,10 +13905,12 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "inotify_watch",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.InotifyFindInode, required: true},
-				{handle: probes.InotifyFindInodeRet, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.InotifyFindInode, required: true},
+					{handle: probes.InotifyFindInodeRet, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -12861,12 +13925,14 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_bpf_prog",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityBpfProg, required: true},
-				{handle: probes.BpfCheck, required: true},
-				{handle: probes.CheckHelperCall, required: false},
-				{handle: probes.CheckMapFuncCompatibility, required: false},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityBpfProg, required: true},
+					{handle: probes.BpfCheck, required: true},
+					{handle: probes.CheckHelperCall, required: false},
+					{handle: probes.CheckMapFuncCompatibility, required: false},
+				},
 			},
 		},
 		sets: []string{},
@@ -12885,17 +13951,19 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		sets:     []string{"proc"},
 		internal: true,
-		dependencies: Dependencies{
-			probes: []Probe{
-				// TODO: Change all of these probes to tracepoints (requires debugfs)
-				{handle: probes.ExecuteFinishedX86, required: false},
-				{handle: probes.ExecuteAtFinishedX86, required: false},
-				{handle: probes.ExecuteFinishedCompatX86, required: false},
-				{handle: probes.ExecuteAtFinishedCompatX86, required: false},
-				{handle: probes.ExecuteFinishedARM, required: false},
-				{handle: probes.ExecuteAtFinishedARM, required: false},
-				{handle: probes.ExecuteFinishedCompatARM, required: false},
-				{handle: probes.ExecuteAtFinishedCompatARM, required: false},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					// TODO: Change all of these probes to tracepoints (requires debugfs)
+					{handle: probes.ExecuteFinishedX86, required: false},
+					{handle: probes.ExecuteAtFinishedX86, required: false},
+					{handle: probes.ExecuteFinishedCompatX86, required: false},
+					{handle: probes.ExecuteAtFinishedCompatX86, required: false},
+					{handle: probes.ExecuteFinishedARM, required: false},
+					{handle: probes.ExecuteAtFinishedARM, required: false},
+					{handle: probes.ExecuteFinishedCompatARM, required: false},
+					{handle: probes.ExecuteAtFinishedCompatARM, required: false},
+				},
 			},
 		},
 		fields: []DataField{
@@ -12922,14 +13990,16 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		sets:     []string{"proc"},
 		internal: true,
-		dependencies: Dependencies{
-			ids: []ID{ExecuteFinished},
-			probes: []Probe{
-				{handle: probes.ExecBinprm, required: false},
-				{handle: probes.SecurityBprmCredsForExec, required: false}, // TODO: Change to required once fallbacks are supported
-			},
-			tailCalls: []TailCall{
-				{"prog_array", "process_execute_failed_tail", []uint32{TailProcessExecuteFailed}},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{ExecuteFinished},
+				probes: []Probe{
+					{handle: probes.ExecBinprm, required: false},
+					{handle: probes.SecurityBprmCredsForExec, required: false}, // TODO: Change to required once fallbacks are supported
+				},
+				tailCalls: []TailCall{
+					{"prog_array", "process_execute_failed_tail", []uint32{TailProcessExecuteFailed}},
+				},
 			},
 		},
 		fields: []DataField{
@@ -12955,8 +14025,10 @@ var CoreEvents = map[ID]Definition{
 		name:    "process_execute_failed",
 		version: NewVersion(1, 0, 0),
 		sets:    []string{"proc"},
-		dependencies: Dependencies{
-			ids: []ID{ProcessExecuteFailedInternal},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{ProcessExecuteFailedInternal},
+			},
 		},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dirfd"}},
@@ -12979,9 +14051,11 @@ var CoreEvents = map[ID]Definition{
 		id:      FtraceHook,
 		id32Bit: Sys32Undefined,
 		name:    "ftrace_hook",
-		dependencies: Dependencies{
-			ids: []ID{
-				DoInitModule,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					DoInitModule,
+				},
 			},
 		},
 		sets: []string{},
@@ -13000,9 +14074,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_path_notify",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityPathNotify, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityPathNotify, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks", "fs_monitor"},
@@ -13018,9 +14094,11 @@ var CoreEvents = map[ID]Definition{
 		id:      SetFsPwd,
 		id32Bit: Sys32Undefined,
 		name:    "set_fs_pwd",
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SetFsPwd, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SetFsPwd, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -13033,9 +14111,11 @@ var CoreEvents = map[ID]Definition{
 		id:      SecurityTaskSetrlimit,
 		id32Bit: Sys32Undefined,
 		name:    "security_task_setrlimit",
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityTaskSetrlimit, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityTaskSetrlimit, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm"},
@@ -13050,9 +14130,11 @@ var CoreEvents = map[ID]Definition{
 		id:      SecuritySettime64,
 		id32Bit: Sys32Undefined,
 		name:    "security_settime64",
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySettime64, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecuritySettime64, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm"},
@@ -13074,9 +14156,11 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 		},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.ChmodCommon, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.ChmodCommon, required: true},
+				},
 			},
 		},
 	},
@@ -13084,10 +14168,12 @@ var CoreEvents = map[ID]Definition{
 		id:      SuspiciousSyscallSource,
 		id32Bit: Sys32Undefined,
 		name:    "suspicious_syscall_source",
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SchedProcessFork, required: false}, // for thread stack tracking
-				{handle: probes.SchedProcessExec, required: false}, // for thread stack tracking
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SchedProcessFork, required: false}, // for thread stack tracking
+					{handle: probes.SchedProcessExec, required: false}, // for thread stack tracking
+				},
 			},
 		},
 		sets: []string{},
@@ -13104,10 +14190,12 @@ var CoreEvents = map[ID]Definition{
 		id:      StackPivot,
 		id32Bit: Sys32Undefined,
 		name:    "stack_pivot",
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SchedProcessFork, required: false}, // for thread stack tracking
-				{handle: probes.SchedProcessExec, required: false}, // for thread stack tracking
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SchedProcessFork, required: false}, // for thread stack tracking
+					{handle: probes.SchedProcessExec, required: false}, // for thread stack tracking
+				},
 			},
 		},
 		sets: []string{},
@@ -13125,9 +14213,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "open_file_ns",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityFileOpen, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityFileOpen, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -13143,9 +14233,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "open_file_mount",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityFileOpen, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityFileOpen, required: true},
+				},
 			},
 		},
 		sets: []string{},
@@ -13161,9 +14253,11 @@ var CoreEvents = map[ID]Definition{
 		id:      SecurityTaskPrctl,
 		id32Bit: Sys32Undefined,
 		name:    "security_task_prctl",
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityTaskPrctl, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityTaskPrctl, required: true},
+				},
 			},
 		},
 		sets: []string{"lsm", "proc"},
@@ -13222,9 +14316,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit:  Sys32Undefined,
 		name:     "signal_cgroup_mkdir",
 		internal: true,
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SignalCgroupMkdir, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SignalCgroupMkdir, required: true},
+				},
 			},
 		},
 		sets: []string{"signal"},
@@ -13239,9 +14335,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit:  Sys32Undefined,
 		name:     "signal_cgroup_rmdir",
 		internal: true,
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SignalCgroupRmdir, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SignalCgroupRmdir, required: true},
+				},
 			},
 		},
 		sets: []string{"signal"},
@@ -13256,9 +14354,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit:  Sys32Undefined,
 		name:     "signal_sched_process_fork",
 		internal: true,
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SignalSchedProcessFork, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SignalSchedProcessFork, required: true},
+				},
 			},
 		},
 		sets: []string{"signal"},
@@ -13295,12 +14395,14 @@ var CoreEvents = map[ID]Definition{
 		id32Bit:  Sys32Undefined,
 		name:     "signal_sched_process_exec",
 		internal: true,
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SignalSchedProcessExec, required: true},
-				{handle: probes.SchedProcessFork, required: true}, // proc_info_map
-				{handle: probes.SchedProcessFree, required: true}, // proc_info_map
-				{handle: probes.LoadElfPhdrs, required: false},    // interpreter info
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SignalSchedProcessExec, required: true},
+					{handle: probes.SchedProcessFork, required: true}, // proc_info_map
+					{handle: probes.SchedProcessFree, required: true}, // proc_info_map
+					{handle: probes.LoadElfPhdrs, required: false},    // interpreter info
+				},
 			},
 		},
 		sets: []string{"signal"},
@@ -13339,9 +14441,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit:  Sys32Undefined,
 		name:     "signal_sched_process_exit",
 		internal: true,
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SignalSchedProcessExit, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SignalSchedProcessExit, required: true},
+				},
 			},
 		},
 		sets: []string{"signal"},
@@ -13361,9 +14465,11 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		sets:     []string{"default"},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SignalHeartbeat, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SignalHeartbeat, required: true},
+				},
 			},
 		},
 	},
@@ -13376,21 +14482,23 @@ var CoreEvents = map[ID]Definition{
 		name:     "net_packet_base",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			capabilities: Capabilities{
-				ebpf: []cap.Value{
-					cap.NET_ADMIN, // needed for BPF_PROG_TYPE_CGROUP_SKB
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				capabilities: Capabilities{
+					ebpf: []cap.Value{
+						cap.NET_ADMIN, // needed for BPF_PROG_TYPE_CGROUP_SKB
+					},
 				},
-			},
-			probes: []Probe{
-				{handle: probes.CgroupSKBIngress, required: true},
-				{handle: probes.CgroupSKBEgress, required: true},
-				{handle: probes.SockAllocFile, required: true},
-				{handle: probes.SockAllocFileRet, required: true},
-				{handle: probes.CgroupBPFRunFilterSKB, required: true},
-				{handle: probes.SecuritySocketRecvmsg, required: true},
-				{handle: probes.SecuritySocketSendmsg, required: true},
-				{handle: probes.SecuritySkClone, required: true},
+				probes: []Probe{
+					{handle: probes.CgroupSKBIngress, required: true},
+					{handle: probes.CgroupSKBEgress, required: true},
+					{handle: probes.SockAllocFile, required: true},
+					{handle: probes.SockAllocFileRet, required: true},
+					{handle: probes.CgroupBPFRunFilterSKB, required: true},
+					{handle: probes.SecuritySocketRecvmsg, required: true},
+					{handle: probes.SecuritySocketSendmsg, required: true},
+					{handle: probes.SecuritySkClone, required: true},
+				},
 			},
 		},
 		sets:   []string{"network_events"},
@@ -13401,9 +14509,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_raw",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketBase,
+				},
 			},
 		},
 		sets: []string{"packets"},
@@ -13417,9 +14527,11 @@ var CoreEvents = map[ID]Definition{
 		name:     "net_packet_ip_base",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketBase,
+				},
 			},
 		},
 		sets: []string{"network_events"},
@@ -13432,9 +14544,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_ipv4",
 		version: NewVersion(1, 1, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketIPBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketIPBase,
+				},
 			},
 		},
 		sets: []string{"network_events"},
@@ -13450,9 +14564,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_ipv6",
 		version: NewVersion(1, 1, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketIPBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketIPBase,
+				},
 			},
 		},
 		sets: []string{"network_events"},
@@ -13469,9 +14585,11 @@ var CoreEvents = map[ID]Definition{
 		name:     "net_packet_tcp_base",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketBase,
+				},
 			},
 		},
 		sets: []string{"network_events"},
@@ -13484,9 +14602,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_tcp",
 		version: NewVersion(1, 1, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketTCPBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketTCPBase,
+				},
 			},
 		},
 		sets: []string{"network_events"},
@@ -13505,9 +14625,11 @@ var CoreEvents = map[ID]Definition{
 		name:     "net_packet_udp_base",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketBase,
+				},
 			},
 		},
 		sets: []string{"network_events"},
@@ -13520,9 +14642,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_udp",
 		version: NewVersion(1, 1, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketUDPBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketUDPBase,
+				},
 			},
 		},
 		sets: []string{"network_events"},
@@ -13540,9 +14664,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_icmp_base",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketBase,
+				},
 			},
 		},
 		internal: true,
@@ -13556,9 +14682,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_icmp",
 		version: NewVersion(1, 1, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketICMPBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketICMPBase,
+				},
 			},
 		},
 		sets: []string{"default", "network_events"},
@@ -13575,9 +14703,11 @@ var CoreEvents = map[ID]Definition{
 		name:     "net_packet_icmpv6_base",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketBase,
+				},
 			},
 		},
 		sets: []string{"network_events"},
@@ -13590,9 +14720,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_icmpv6",
 		version: NewVersion(1, 1, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketICMPv6Base,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketICMPv6Base,
+				},
 			},
 		},
 		sets: []string{"default", "network_events"},
@@ -13609,9 +14741,11 @@ var CoreEvents = map[ID]Definition{
 		name:     "net_packet_dns_base",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketBase,
+				},
 			},
 		},
 		sets: []string{"network_events"},
@@ -13624,9 +14758,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_dns", // preferred event to write signatures
 		version: NewVersion(1, 1, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketDNSBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketDNSBase,
+				},
 			},
 		},
 		sets: []string{"network_events"},
@@ -13644,9 +14780,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_dns_request", // simple dns event compatible dns_request (deprecated)
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketDNSBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketDNSBase,
+				},
 			},
 		},
 		sets: []string{"default", "network_events"},
@@ -13660,9 +14798,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_dns_response", // simple dns event compatible dns_response (deprecated)
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketDNSBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketDNSBase,
+				},
 			},
 		},
 		sets: []string{"default", "network_events"},
@@ -13677,9 +14817,11 @@ var CoreEvents = map[ID]Definition{
 		name:     "net_packet_http_base",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketBase,
+				},
 			},
 		},
 		sets: []string{"network_events"},
@@ -13692,9 +14834,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_http", // preferred event to write signatures
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketHTTPBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketHTTPBase,
+				},
 			},
 		},
 		sets: []string{"network_events"},
@@ -13712,9 +14856,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_http_request",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketHTTPBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketHTTPBase,
+				},
 			},
 		},
 		sets: []string{"default", "network_events"},
@@ -13728,9 +14874,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_http_response",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketHTTPBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketHTTPBase,
+				},
 			},
 		},
 		sets: []string{"default", "network_events"},
@@ -13745,9 +14893,11 @@ var CoreEvents = map[ID]Definition{
 		name:     "net_packet_capture",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketBase,
+				},
 			},
 		},
 		fields: []DataField{
@@ -13760,9 +14910,11 @@ var CoreEvents = map[ID]Definition{
 		name:     "capture_net_packet",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketCapture,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketCapture,
+				},
 			},
 		},
 	},
@@ -13772,9 +14924,11 @@ var CoreEvents = map[ID]Definition{
 		name:     "net_packet_flow_base",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketBase,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketBase,
+				},
 			},
 		},
 		sets: []string{"network_events"},
@@ -13787,9 +14941,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_flow_tcp_begin",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketFlow,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketFlow,
+				},
 			},
 		},
 		sets: []string{"network_events", "flows"},
@@ -13808,9 +14964,11 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "net_flow_tcp_end",
 		version: NewVersion(1, 0, 0),
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketFlow,
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				ids: []ID{
+					NetPacketFlow,
+				},
 			},
 		},
 		sets: []string{"network_events", "flows"},
@@ -13833,10 +14991,12 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: false,
 		sets:    []string{"tests", "dependencies"},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.ExecTest, required: true},
-				{handle: probes.EmptyKprobe, required: true}, // Required for testing kprobe attachment
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.ExecTest, required: true},
+					{handle: probes.EmptyKprobe, required: true}, // Required for testing kprobe attachment
+				},
 			},
 		},
 		fields: []DataField{},
@@ -13849,12 +15009,14 @@ var CoreEvents = map[ID]Definition{
 		syscall: false,
 		sets:    []string{"tests", "dependencies"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			kSymbols: []KSymbol{
-				{symbol: "non_existing_symbol", required: true},
-			},
-			probes: []Probe{
-				{handle: probes.ExecTest, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				kSymbols: []KSymbol{
+					{symbol: "non_existing_symbol", required: true},
+				},
+				probes: []Probe{
+					{handle: probes.ExecTest, required: true},
+				},
 			},
 		},
 	},
@@ -13866,10 +15028,12 @@ var CoreEvents = map[ID]Definition{
 		syscall: false,
 		sets:    []string{"tests", "dependencies"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.TestUnavailableHook, required: true},
-				{handle: probes.ExecTest, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.TestUnavailableHook, required: true},
+					{handle: probes.ExecTest, required: true},
+				},
 			},
 		},
 	},
@@ -13881,11 +15045,12 @@ var CoreEvents = map[ID]Definition{
 		syscall: false,
 		sets:    []string{"tests", "dependencies"},
 		fields:  []DataField{},
-		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.IncompatibleProbe, required: true},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.IncompatibleProbe, required: true},
+				},
 			},
-			ids: []ID{ExecTest},
 		},
 	},
 }

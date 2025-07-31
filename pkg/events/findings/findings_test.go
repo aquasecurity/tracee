@@ -124,13 +124,13 @@ func createFakeEventAndFinding() detect.Finding {
 		false,                      // internal
 		false,                      // syscall
 		[]string{"signatures"},     // sets
-		events.NewDependencies(
+		events.NewDependencyStrategy(events.NewDependencies(
 			[]events.ID{events.Ptrace},
 			[]events.KSymbol{},
 			[]events.Probe{},
 			[]events.TailCall{},
 			events.Capabilities{},
-		),
+		)),
 		[]events.DataField{},
 		nil,
 	)

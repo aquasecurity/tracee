@@ -90,13 +90,14 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 			false,                 // internal
 			false,                 // syscall
 			tags.Items(),          // tags
-			events.NewDependencies(
-				evtDependency,
-				[]events.KSymbol{},
-				[]events.Probe{},
-				[]events.TailCall{},
-				events.Capabilities{},
-			),
+			events.NewDependencyStrategy(
+				events.NewDependencies(
+					evtDependency,
+					[]events.KSymbol{},
+					[]events.Probe{},
+					[]events.TailCall{},
+					events.Capabilities{},
+				)),
 			[]events.DataField{},
 			properties,
 		)

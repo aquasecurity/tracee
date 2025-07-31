@@ -6,7 +6,49 @@ import (
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 )
 
-// Dependencies is a struct that holds all the dependencies of a given event definition.
+// DependencyStrategy implements the Strategy pattern for event dependency resolution.
+// It encapsulates multiple approaches to satisfying event requirements: a primary
+// dependency configuration followed by an ordered sequence of fallback alternatives.
+// Fallbacks are attempted sequentially in the order they appear until one succeeds
+// or all options are exhausted, providing graceful degradation of functionality.
+//
+// Currently, fallbacks are not supporting tail calls, kernel symbols and capabilities in the dependencies.
+// Event dependencies with these dependencies are not supported in fallbacks as well.
+type DependencyStrategy struct {
+	primary   Dependencies
+	fallbacks []Dependencies
+}
+
+func NewDependencyStrategy(dependencies Dependencies) DependencyStrategy {
+	return DependencyStrategy{primary: dependencies, fallbacks: nil}
+}
+
+func NewDependencyStrategyWithFallbacks(dependencies Dependencies, fallbacks []Dependencies) DependencyStrategy {
+	return DependencyStrategy{primary: dependencies, fallbacks: fallbacks}
+}
+
+func (e DependencyStrategy) GetPrimaryDependencies() Dependencies {
+	return e.primary
+}
+
+func (e DependencyStrategy) GetFallbackDependencies() []Dependencies {
+	return e.fallbacks
+}
+
+func (e DependencyStrategy) GetFallbackAt(index int) (Dependencies, bool) {
+	if index < 0 || index >= len(e.fallbacks) {
+		return Dependencies{}, false
+	}
+	return e.fallbacks[index], true
+}
+
+func (e DependencyStrategy) GetFallbacks() []Dependencies {
+	return e.fallbacks
+}
+
+// Dependencies represents a cohesive set of runtime requirements for event execution.
+// It encapsulates all necessary system resources, kernel interfaces, and security
+// constraints required for successful event operation.
 type Dependencies struct {
 	ids          []ID
 	kSymbols     []KSymbol
@@ -74,7 +116,6 @@ func (d Dependencies) GetCapabilities() Capabilities {
 }
 
 // Probe
-
 type Probe struct {
 	handle   probes.Handle
 	required bool // tracee fails if probe can't be attached
