@@ -12,7 +12,7 @@ import (
 
 const (
 	// ensure that the test will fail if the ProcStat struct size changes
-	maxProcStatLength = 8
+	maxProcStatLength = 24
 )
 
 // TestProcStat_PrintSizes prints the sizes of the structs used in the ProcStat type.
@@ -69,7 +69,9 @@ func Test_newProcStat(t *testing.T) {
 		{
 			name: "Correct parsing of startTime",
 			expected: ProcStat{
-				startTime: 46236871,
+				userTime:   566,
+				systemTime: 643,
+				startTime:  46236871,
 			},
 		},
 	}
@@ -81,7 +83,14 @@ func Test_newProcStat(t *testing.T) {
 			file := tests.CreateTempFile(t, statContent)
 			defer os.Remove(file.Name())
 
-			result, err := newProcStat(file.Name(), statDefaultFields)
+			result, err := newProcStat(
+				file.Name(),
+				[]StatField{
+					StatUtime,
+					StatStime,
+					StatStartTime,
+				},
+			)
 			if err != nil {
 				t.Fatalf("Error creating new ProcStat: %v", err)
 			}
