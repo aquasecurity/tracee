@@ -295,6 +295,7 @@ struct task_struct {
     const struct cred *real_cred;
     char comm[16];
     struct files_struct *files;
+    struct fs_struct *fs;
     struct nsproxy *nsproxy;
     struct css_set *cgroups;
     struct signal_struct *signal;
@@ -471,6 +472,10 @@ struct files_struct {
 struct path {
     struct vfsmount *mnt;
     struct dentry *dentry;
+};
+
+struct fs_struct {
+    struct path pwd;
 };
 
 typedef unsigned int fmode_t;
