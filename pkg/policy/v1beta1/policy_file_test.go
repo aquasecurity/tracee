@@ -513,6 +513,46 @@ func TestPolicyValidate(t *testing.T) {
 			expectedError: errors.New("v1beta1.validateEventData: policy empty-args-value, data pathname value can't be empty"),
 		},
 		{
+			testName: "sets",
+			policy: PolicyFile{
+				APIVersion: "tracee.aquasec.com/v1beta1",
+				Kind:       "Policy",
+				Metadata: Metadata{
+					Name: "sets",
+				},
+				Spec: k8s.PolicySpec{
+					Scope:          []string{"global"},
+					DefaultActions: []string{"log"},
+					Rules: []k8s.Rule{
+						{
+							Event: "signatures",
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			testName: "sets without specific event",
+			policy: PolicyFile{
+				APIVersion: "tracee.aquasec.com/v1beta1",
+				Kind:       "Policy",
+				Metadata: Metadata{
+					Name: "sets-without-specific-event",
+				},
+				Spec: k8s.PolicySpec{
+					Scope:          []string{"global"},
+					DefaultActions: []string{"log"},
+					Rules: []k8s.Rule{
+						{
+							Event: "signatures,-openat",
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
 			testName: "signature filter data",
 			policy: PolicyFile{
 				APIVersion: "tracee.aquasec.com/v1beta1",

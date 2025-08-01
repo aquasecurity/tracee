@@ -222,6 +222,39 @@ func TestDefinitionGroup_IDs32ToIDs(t *testing.T) {
 	require.Equal(t, idS32ToIDs[id2+1000], id2)                  // same definition ID
 }
 
+// TestDefinitionGroup_IsASet tests that IsASet returns true if the set name exists in any definition.
+func TestDefinitionGroup_IsASet(t *testing.T) {
+	t.Parallel()
+
+	defGroup := NewDefinitionGroup()
+
+	id1 := ID(1)
+	id2 := ID(2)
+	id3 := ID(3)
+
+	// Create definitions with different sets
+	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{"set1", "set2"}, Dependencies{}, nil, nil)
+	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{"set2", "set3"}, Dependencies{}, nil, nil)
+	def3 := NewDefinition(id3, id3+1000, "def3", version, "", "", false, false, []string{}, Dependencies{}, nil, nil) // no sets
+
+	err := defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2, id3: def3})
+	require.NoError(t, err)
+
+	// Test existing sets
+	require.True(t, defGroup.IsASet("set1")) // exists in def1
+	require.True(t, defGroup.IsASet("set2")) // exists in both def1 and def2
+	require.True(t, defGroup.IsASet("set3")) // exists in def2
+
+	// Test non-existing sets
+	require.False(t, defGroup.IsASet("set4"))     // doesn't exist
+	require.False(t, defGroup.IsASet("nonexist")) // doesn't exist
+	require.False(t, defGroup.IsASet(""))         // empty string
+
+	// Test with empty definition group
+	emptyDefGroup := NewDefinitionGroup()
+	require.False(t, emptyDefGroup.IsASet("set1")) // no definitions at all
+}
+
 //
 // Thread Safety
 //

@@ -1,6 +1,7 @@
 package events
 
 import (
+	"slices"
 	"sort"
 	"sync"
 
@@ -233,6 +234,20 @@ func (d *DefinitionGroup) GetTailCalls(evtsToSubmit []ID) []TailCall {
 	}
 
 	return tailCalls
+}
+
+// IsASet returns true if the set name is a set.
+func (d *DefinitionGroup) IsASet(setName string) bool {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	for _, def := range d.definitions {
+		if slices.Contains(def.sets, setName) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Errors
