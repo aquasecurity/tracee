@@ -13,7 +13,7 @@ import (
 const (
 	// ensure that the test will fail if the ProcStatus struct size changes
 	maxProcStatusNameLength = 64 // https://elixir.bootlin.com/linux/v6.11.4/source/fs/proc/array.c#L99
-	maxProcStatusLength     = 104
+	maxProcStatusLength     = 112
 )
 
 // TestProcStatus_PrintSizes prints the sizes of the structs used in the ProcStatus type.
@@ -34,12 +34,12 @@ func TestProcStatusSize(t *testing.T) {
 		{
 			name:         "Empty string",
 			input:        ProcStatus{name: ""},
-			expectedSize: 40, // 40 bytes struct = [24 bytes (6 * int32)] + [16 bytes (string = 8 bytes pointer + 8 bytes length)]
+			expectedSize: 48, // 48 bytes struct = [24 bytes (6 * int32)] + [8 bytes (1 * uint64)] + [16 bytes (string = 8 bytes pointer + 8 bytes length)]
 		},
 		{
 			name:         "String with 64 characters (max length)",
 			input:        ProcStatus{name: string(make([]byte, maxProcStatusNameLength))},
-			expectedSize: maxProcStatusLength, // 104 bytes struct = [24 bytes (6 * int32)] + [16 bytes (string = 8 bytes pointer + 8 bytes length)] + [64 bytes (string content)]
+			expectedSize: maxProcStatusLength, // 112 bytes struct = [24 bytes (6 * int32)] + [8 bytes (1 * uint64)] + [16 bytes (string = 8 bytes pointer + 8 bytes length)] + [64 bytes (string content)]
 		},
 	}
 
@@ -137,6 +137,7 @@ func Test_newProcStatus(t *testing.T) {
 				nstgid: 216443,
 				nspid:  216445,
 				nspgid: 216444,
+				vmrss:  6400,
 			},
 		},
 	}
@@ -148,7 +149,19 @@ func Test_newProcStatus(t *testing.T) {
 			file := tests.CreateTempFile(t, statusContent)
 			defer os.Remove(file.Name())
 
-			result, err := newProcStatus(file.Name(), statusDefaultFields)
+			result, err := newProcStatus(
+				file.Name(),
+				[]StatusField{
+					Name,
+					Tgid,
+					Pid,
+					PPid,
+					NStgid,
+					NSpid,
+					NSpgid,
+					VmRSS,
+				},
+			)
 			if err != nil {
 				t.Fatalf("Error parsing the proc status: %v", err)
 			}

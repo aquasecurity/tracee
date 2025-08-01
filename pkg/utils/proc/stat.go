@@ -90,7 +90,9 @@ const (
 
 // ProcStat represents the minimal required fields of the /proc stat file.
 type ProcStat struct {
-	startTime uint64 // StatStartTime
+	userTime   uint64 // StatUtime
+	systemTime uint64 // StatStime
+	startTime  uint64 // StatStartTime
 	// rss       uint64 // StatRss (parsed as int64)
 }
 
@@ -99,7 +101,9 @@ type procStatValueParser func(value []byte, s *ProcStat)
 // procStatValueParserArray maps the index of the field in the stat file to its respective value parser.
 // If a parser is nil, the field is ignored on parsing.
 var procStatValueParserArray = [StatMaxNumFields]procStatValueParser{
-	StatStartTime: parseStartTime, // StartTime
+	StatUtime:     parseUserTime,   // UserTime
+	StatStime:     parseSystemTime, // SystemTime
+	StatStartTime: parseStartTime,  // StartTime
 }
 
 // statDefaultFields is the default set of fields to parse from the stat file.
@@ -232,6 +236,14 @@ func (s *ProcStat) parse(statBytes []byte, fields []StatField) error {
 
 // stat fields parsers
 
+func parseUserTime(value []byte, s *ProcStat) {
+	s.userTime, _ = ParseUint64(string(value))
+}
+
+func parseSystemTime(value []byte, s *ProcStat) {
+	s.systemTime, _ = ParseUint64(string(value))
+}
+
 func parseStartTime(value []byte, s *ProcStat) {
 	s.startTime, _ = ParseUint64(string(value))
 }
@@ -248,6 +260,16 @@ func parseStartTime(value []byte, s *ProcStat) {
 // GetStartTime returns the time the process started after system boot (in clock ticks).
 func (s *ProcStat) GetStartTime() uint64 {
 	return s.startTime
+}
+
+// GetUserTime returns the user mode jiffies (clock ticks).
+func (s *ProcStat) GetUserTime() uint64 {
+	return s.userTime
+}
+
+// GetSystemTime returns the kernel mode jiffies (clock ticks).
+func (s *ProcStat) GetSystemTime() uint64 {
+	return s.systemTime
 }
 
 // // GetRss returns the resident set memory size.

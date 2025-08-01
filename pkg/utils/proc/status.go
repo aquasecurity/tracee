@@ -134,6 +134,7 @@ type ProcStatus struct {
 	nstgid int32
 	nspid  int32
 	nspgid int32
+	vmrss  uint64
 }
 
 type procStatusParser struct {
@@ -150,6 +151,7 @@ var procStatusValueParserArray = [StatusMaxNumFields]procStatusParser{
 	NStgid: {fieldName: []byte("NStgid"), parse: parseNsTgid},
 	NSpid:  {fieldName: []byte("NSpid"), parse: parseNsPid},
 	NSpgid: {fieldName: []byte("NSpgid"), parse: parseNsPgid},
+	VmRSS:  {fieldName: []byte("VmRSS"), parse: parseVmRSS},
 }
 
 // statusDefaultFields is the default set of fields to parse from the status file.
@@ -292,6 +294,15 @@ func parseNsPgid(value []byte, s *ProcStatus) {
 	s.nspgid, _ = ParseInt32(string(value))
 }
 
+func parseVmRSS(value []byte, s *ProcStatus) {
+	// value = []byte("6400 kB") -> [value] [space] [unit]
+	spaceIdx := bytes.IndexByte(value, ' ')
+	if spaceIdx == -1 {
+		return // no space found, cannot parse
+	}
+	s.vmrss, _ = ParseUint64(string(value[:spaceIdx]))
+}
+
 //
 // Public methods
 //
@@ -329,4 +340,9 @@ func (s *ProcStatus) GetNsTgid() int32 {
 // GetNsPPid returns process group ID in the namespace of the process.
 func (s *ProcStatus) GetNsPPid() int32 {
 	return s.nspgid
+}
+
+// GetVmRSS returns process resident set size (RSS) in kilobytes.
+func (s *ProcStatus) GetVmRSS() uint64 {
+	return s.vmrss
 }
