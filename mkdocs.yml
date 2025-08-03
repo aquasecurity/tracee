@@ -180,6 +180,7 @@ nav:
     - Contributing:
           - Overview: contributing/overview.md
           - Guidelines: contributing/guidelines.md
+          - PR Validation (Checkpatch): contributing/checkpatch.md
           - Adding New Events: contributing/adding-events.md
           - Code Coverage: contributing/testing-coverage.md
           - Performance: contributing/performance.md
