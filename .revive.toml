@@ -122,8 +122,7 @@ enableAllRules = true
     Disabled = false
 [rule.redundant-build-tag]
     Disabled = false
-[rule.redundant-test-main-exit]
-    Disabled = false
+# [rule.redundant-test-main-exit] - Rule removed as it doesn't exist in current revive version
 [rule.string-format]
     Disabled = true # TODO: interesting to check
 [rule.superfluous-else]
