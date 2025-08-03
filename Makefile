@@ -330,7 +330,6 @@ help:
 	@echo "# development"
 	@echo ""
 	@echo "    $$ make bear                     # generate compile_commands.json"
-	@echo "    $$ make go-tidy                  # run go mod tidy for all modules and sync dependencies"
 	@echo "    $$ make check-pr                 # check code for PR"
 	@echo "    $$ make format-pr                # print formatted text for PR"
 	@echo "    $$ make fix-fmt                  # fix formatting"
@@ -971,20 +970,6 @@ bear: \
 	| .check_$(CMD_BEAR)
 #
 	$(CMD_BEAR) -- $(MAKE) tracee
-
-.PHONY: go-tidy
-.ONESHELL:
-go-tidy: \
-	| .checkver_$(CMD_GO)
-#
-	@$(CMD_GO) work sync
-	@echo "Running go mod tidy on all workspace modules..."
-	@for dir in $$($(CMD_GO) list -f "{{.Dir}}" -m | sort -u); do \
-		echo "Tidying $$dir..."; \
-		(cd "$$dir" && $(CMD_GO) mod tidy); \
-	done
-	@$(CMD_GO) work sync
-	@echo "Workspace maintenance complete!"
 
 .PHONY: check-fmt
 check-fmt::
