@@ -330,7 +330,9 @@ help:
 	@echo "# development"
 	@echo ""
 	@echo "    $$ make bear                     # generate compile_commands.json"
-	@echo "    $$ make check-pr                 # check code for PR"
+	@echo "    $$ make check-pr                 # comprehensive PR checks (code, tests)"
+	@echo "    $$ make check-pr-fast            # quick PR checks (skip static analysis + unit tests)"
+	@echo "    $$ make check-pr-skip-tests      # PR checks without unit tests"
 	@echo "    $$ make format-pr                # print formatted text for PR"
 	@echo "    $$ make fix-fmt                  # fix formatting"
 	@echo ""
@@ -1000,14 +1002,14 @@ check-lint::
 
 .PHONY: check-code
 check-code:: \
-	tracee-ebpf
+	tracee
 #
 	@$(MAKE) -f builder/Makefile.checkers code-check
 
 
 .PHONY: check-vet
 check-vet: \
-	tracee-ebpf \
+	tracee \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
 #
@@ -1018,7 +1020,7 @@ check-vet: \
 
 .PHONY: check-staticcheck
 check-staticcheck: \
-	tracee-ebpf \
+	tracee \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
 	.check_$(CMD_STATICCHECK)
@@ -1030,7 +1032,7 @@ check-staticcheck: \
 
 .PHONY: check-err
 check-err: \
-	tracee-ebpf \
+	tracee \
 	| .checkver_$(CMD_GO) \
 	.check_$(CMD_ERRCHECK)
 #
@@ -1083,11 +1085,31 @@ format-pr: \
 	@echo
 
 .PHONY: check-pr
-check-pr: \
-	check-fmt \
-	check-lint \
-	check-code \
-	format-pr
+check-pr:
+#	Enhanced to use comprehensive checkpatch script that includes:
+#	- Code analysis (formatting, linting, static analysis)
+#	- Unit tests (Go and script tests)
+#	- PR formatting
+#	Examples:
+#	  make check-pr                     # Check HEAD (default)
+#	  make check-pr-fast                # Quick checks only
+#	  make check-pr-skip-docs           # Skip documentation verification
+#	  make check-pr-skip-tests          # Skip unit tests
+#	  make check-pr ARGS="--fast HEAD~1"  # Custom options + commit
+	@./scripts/checkpatch.sh $(if $(ARGS),$(ARGS),HEAD)
+
+# Convenience targets for common use cases
+.PHONY: check-pr-fast
+check-pr-fast:
+	@./scripts/checkpatch.sh --fast HEAD
+
+.PHONY: check-pr-skip-docs
+check-pr-skip-docs:
+	@./scripts/checkpatch.sh --skip-docs HEAD
+
+.PHONY: check-pr-skip-tests
+check-pr-skip-tests:
+	@./scripts/checkpatch.sh --skip-unit-tests HEAD
 
 #
 # tracee.proto
