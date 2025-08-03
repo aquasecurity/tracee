@@ -21,7 +21,7 @@ type hashInfo struct {
 }
 
 type pathResolver interface {
-	GetHostAbsPath(absolutePath string, mountNS int) (string, error)
+	GetHostAbsPath(absolutePath string, mountNS uint32) (string, error)
 }
 
 type Cache struct {
