@@ -11,7 +11,7 @@ const hostDigest = "host"
 
 type Key struct {
 	filePath string
-	mountNS  int
+	mountNS  uint32
 
 	device      uint32
 	inode       uint64
@@ -22,7 +22,7 @@ type Key struct {
 // NewKey creates a base key for usage with the file hash cache.
 // It requires a filepath and mountns for the key as base information.
 // Further information must be added through options.
-func NewKey(filepath string, mountNS int, opts ...func(*Key)) Key {
+func NewKey(filepath string, mountNS uint32, opts ...func(*Key)) Key {
 	k := Key{filePath: filepath, mountNS: mountNS}
 	for _, o := range opts {
 		o(&k)
@@ -61,7 +61,7 @@ func (k *Key) Pathname() string {
 }
 
 // Pathname returns the file's mount namespace associated to the key.
-func (k *Key) MountNS() int {
+func (k *Key) MountNS() uint32 {
 	return k.mountNS
 }
 

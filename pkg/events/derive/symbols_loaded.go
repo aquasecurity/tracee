@@ -233,7 +233,7 @@ func getSharedObjectInfo(event *trace.Event) (sharedobjs.ObjInfo, error) {
 			Device: loadedObjectDevice,
 			Ctime:  loadedObjectCtime},
 		Path:    loadedObjectPath,
-		MountNS: event.MountNS,
+		MountNS: uint32(event.MountNS),
 	}
 
 	return objInfo, nil

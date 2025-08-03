@@ -11,7 +11,7 @@ type ObjID struct {
 type ObjInfo struct {
 	Id      ObjID
 	Path    string
-	MountNS int
+	MountNS uint32
 }
 
 type DynamicSymbolsLoader interface {

@@ -197,7 +197,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 					return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
 				}
 
-				fileKey := filehash.NewKey(filePath, event.MountNS,
+				fileKey := filehash.NewKey(filePath, uint32(event.MountNS),
 					filehash.WithDevice(dev),
 					filehash.WithInode(ino, castedSourceFileCtime),
 					filehash.WithDigest(event.Container.ImageDigest),
@@ -409,7 +409,7 @@ func (t *Tracee) processSharedObjectLoaded(event *trace.Event) error {
 		containerId = "host"
 	}
 	if t.config.Output.CalcHashes != config.CalcHashesNone {
-		fileKey := filehash.NewKey(filePath, event.MountNS,
+		fileKey := filehash.NewKey(filePath, uint32(event.MountNS),
 			filehash.WithDevice(dev),
 			filehash.WithInode(ino, int64(fileCtime)),
 			filehash.WithDigest(event.Container.ImageDigest),
