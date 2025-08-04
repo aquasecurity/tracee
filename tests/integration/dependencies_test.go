@@ -104,6 +104,90 @@ func Test_EventsDependencies(t *testing.T) {
 			expectedEvents:   []events.ID{events.ExecTest},
 			expectedKprobes:  []string{"security_bprm_check"},
 		},
+		{
+			name:   "incompatible probe with fallback",
+			events: []events.ID{events.IncompatibleProbeWithFallbackTest},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"Failing event",
+				"Successfully switched to fallback\",\"event\":\"incompatible_probe_with_fallback_test",
+			},
+			expectedEvents:  []events.ID{events.IncompatibleProbeWithFallbackTest},
+			expectedKprobes: []string{"security_bprm_check"},
+		},
+		{
+			name:   "incompatible probe with fallback and sanity",
+			events: []events.ID{events.IncompatibleProbeWithFallbackTest, events.ExecTest},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"Failing event",
+				"Successfully switched to fallback\",\"event\":\"incompatible_probe_with_fallback_test",
+			},
+			expectedEvents:  []events.ID{events.IncompatibleProbeWithFallbackTest, events.ExecTest},
+			expectedKprobes: []string{"security_bprm_check"},
+		},
+		{
+			name:   "failed event dependency",
+			events: []events.ID{events.FailedEventDependencyTest},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"All fallbacks failed, removing event\",\"event\":\"incompatible_probe_test",
+				"All fallbacks failed, removing event\",\"event\":\"failed_event_dependency_test",
+			},
+			unexpectedEvents:  []events.ID{events.FailedEventDependencyTest},
+			unexpectedKprobes: []string{"security_bprm_check"},
+		},
+		{
+			name:   "failed event dependency with sanity",
+			events: []events.ID{events.FailedEventDependencyTest, events.ExecTest},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"All fallbacks failed, removing event\",\"event\":\"incompatible_probe_test",
+				"All fallbacks failed, removing event\",\"event\":\"failed_event_dependency_test",
+			},
+			unexpectedEvents: []events.ID{events.FailedEventDependencyTest},
+			expectedEvents:   []events.ID{events.ExecTest},
+			expectedKprobes:  []string{"security_bprm_check"},
+		},
+		{
+			name:   "multiple fallbacks event",
+			events: []events.ID{events.MultipleFallbacksTest},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"All fallbacks failed, removing event\",\"event\":\"incompatible_probe_test",
+				"All fallbacks failed, removing event\",\"event\":\"failed_event_dependency_test",
+				"Event canceled because of missing kernel symbol dependency",
+				"Successfully switched to fallback\",\"event\":\"multiple_fallbacks_test",
+			},
+			unexpectedEvents: []events.ID{events.IncompatibleProbeTest, events.FailedEventDependencyTest},
+			expectedEvents:   []events.ID{events.MultipleFallbacksTest},
+			expectedKprobes:  []string{"security_bprm_check"},
+		},
+		{
+			name:   "multiple fallbacks event with sanity",
+			events: []events.ID{events.MultipleFallbacksTest, events.ExecTest},
+			expectedLogs: []string{
+				"All fallbacks failed, removing event\",\"event\":\"incompatible_probe_test",
+				"All fallbacks failed, removing event\",\"event\":\"failed_event_dependency_test",
+				"Event canceled because of missing kernel symbol dependency",
+				"Successfully switched to fallback\",\"event\":\"multiple_fallbacks_test",
+			},
+			unexpectedEvents: []events.ID{events.IncompatibleProbeTest},
+			expectedEvents:   []events.ID{events.ExecTest, events.MultipleFallbacksTest},
+			expectedKprobes:  []string{"security_bprm_check"},
+		},
+		{
+			name:   "shared probe events with incompatible probe",
+			events: []events.ID{events.SharedProbeEventA, events.SharedProbeEventB},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"Successfully switched to fallback\",\"event\":\"shared_probe_event_a",
+				"Successfully switched to fallback\",\"event\":\"shared_probe_event_b",
+			},
+			unexpectedEvents: []events.ID{events.IncompatibleProbeTest},
+			expectedEvents:   []events.ID{events.SharedProbeEventA, events.SharedProbeEventB},
+			expectedKprobes:  []string{"security_bprm_check"},
+		},
 	}
 
 	// Each test will run a test binary that triggers the "exec_test" event.

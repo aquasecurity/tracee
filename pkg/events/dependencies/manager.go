@@ -169,18 +169,19 @@ func (m *Manager) removeEventNode(eventNode *EventNode) error {
 // If the event exists in the tree, it will only update its dependents or its explicitlySelected
 // value if it is built without dependents.
 func (m *Manager) buildEvent(id events.ID, dependentEvents []events.ID) (*EventNode, error) {
-	logger.Debugw("Building event", "event", id)
+	// Resolve event name once for this function (only when needed for error logging)
+	eventName := events.Core.GetDefinitionByID(id).GetName()
 
 	// Check if already processing this event (prevents loops)
 	if _, processing := m.processingEvents[id]; processing {
-		return nil, fmt.Errorf("event %v is currently being processed", id)
+		return nil, fmt.Errorf("event %s is currently being processed", eventName)
 	}
 
 	if _, failed := m.failedEvents[id]; failed {
-		return nil, fmt.Errorf("event %v previously failed to add", id)
+		return nil, fmt.Errorf("event %s has previously failed", eventName)
 	}
 
-	// Mark as processing
+	// Mark as processing - this is a safeguard against recursive calls so it is not important for it to be thread-safe with the check above.
 	m.processingEvents[id] = struct{}{}
 	defer delete(m.processingEvents, id) // Always cleanup
 
@@ -193,7 +194,6 @@ func (m *Manager) buildEvent(id events.ID, dependentEvents []events.ID) (*EventN
 		for _, dependent := range dependentEvents {
 			node.addDependent(dependent)
 		}
-		logger.Debugw("Event already exists", "event", id)
 		return node, nil
 	}
 	// Create node for the given ID and dependencies
@@ -207,7 +207,7 @@ func (m *Manager) buildEvent(id events.ID, dependentEvents []events.ID) (*EventN
 		err = m.handleEventAddError(node, err)
 		if err != nil {
 			m.failedEvents[id] = struct{}{}
-			logger.Debugw("Event failed to build", "event", id, "error", err)
+			logger.Debugw("Event failed to build", "event", eventName, "error", err)
 			return nil, err
 		}
 	}
@@ -216,11 +216,10 @@ func (m *Manager) buildEvent(id events.ID, dependentEvents []events.ID) (*EventN
 		err = m.handleEventAddError(node, err)
 		if err != nil {
 			m.failedEvents[id] = struct{}{}
-			logger.Debugw("Event failed to add", "event", id, "error", err)
+			logger.Debugw("Event failed to add", "event", eventName, "error", err)
 			return nil, err
 		}
 	}
-	logger.Debugw("Event built successfully", "event", id)
 	return node, nil
 }
 
@@ -535,16 +534,17 @@ func (m *Manager) failEventNode(node *EventNode) (bool, error) {
 		if !node.fallback() {
 			break
 		}
-		logger.Debugw("Switching to fallback", "event", eventName, "fallback number", node.currentFallbackIndex)
 
 		_, err := m.buildEventNode(node)
 		if err == nil {
-			logger.Debugw("Successfully switched to fallback", "event", eventName)
+			logger.Debugw("Successfully switched to fallback", "event", eventName, "fallback_index", node.currentFallbackIndex)
 			return false, nil
 		}
 		logger.Debugw("Failed to switch to fallback", "event", eventName, "fallback number", node.currentFallbackIndex, "error", err)
 	}
+
 	logger.Debugw("All fallbacks failed, removing event", "event", eventName)
+	m.failedEvents[node.GetID()] = struct{}{}
 	return true, m.removeEventNode(node)
 }
 
