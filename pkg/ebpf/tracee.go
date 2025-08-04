@@ -743,6 +743,12 @@ func (t *Tracee) initDerivationTable() error {
 				DeriveFunction: derive.NetPacketHTTPResponse(),
 			},
 		},
+		events.DnsRequestKernelBase: {
+			events.DnsRequestKernel: {
+				Enabled:        shouldSubmit(events.DnsRequestKernel),
+				DeriveFunction: derive.DnsRequestKernel(),
+			},
+		},
 		//
 		// Network Flow Derivations
 		//

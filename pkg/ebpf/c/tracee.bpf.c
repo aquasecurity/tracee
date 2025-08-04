@@ -5836,6 +5836,113 @@ int BPF_KPROBE(trace_security_sb_umount)
     return events_perf_submit(&p, 0);
 }
 
+statfunc const struct iovec *get_iovec(struct iov_iter *msg_iter)
+{
+    return bpf_core_field_exists(((struct iov_iter *) 0)->iov) ? msg_iter->iov : msg_iter->__iov;
+}
+
+// Inspired by the iov_iter_type function in the kernel source code
+statfunc enum iter_type get_iter_type(const struct iov_iter *iter)
+{
+    if (bpf_core_field_exists(((struct iov_iter *) 0)->iter_type)) {
+        return iter->iter_type;
+    } else if (bpf_core_field_exists(((struct iov_iter *) 0)->type)) {
+        return iter->type & ~(READ | WRITE);
+    } else {
+        return -1;
+    }
+}
+
+statfunc int get_iov_iter_type(struct iov_iter *iter)
+{
+    enum iter_type type = get_iter_type(iter);
+    if (type == -1)
+        return -1;
+
+    if (type == bpf_core_enum_value(enum iter_type, ITER_IOVEC))
+        return ITER_IOVEC;
+    else if (bpf_core_field_exists(((struct iov_iter *) 0)->ubuf) &&
+             type == bpf_core_enum_value(enum iter_type, ITER_UBUF))
+        return ITER_UBUF;
+    else
+        return -1;
+}
+
+statfunc int get_message_port(struct sock *sk, struct msghdr *msg)
+{
+    struct inet_sock *inet = inet_sk(sk);
+    u16 dport = get_inet_dport(inet);
+
+    // Also check port from msg_name if available
+    if (dport == bpf_htons(0) && msg) {
+        void *msg_name = BPF_CORE_READ(msg, msg_name);
+        int msg_namelen = BPF_CORE_READ(msg, msg_namelen);
+
+        if (msg_name && msg_namelen >= sizeof(struct sockaddr)) {
+            struct sockaddr sa;
+            if (bpf_probe_read(&sa, sizeof(sa), msg_name) == 0) {
+                if (sa.sa_family == AF_INET && msg_namelen >= sizeof(struct sockaddr_in)) {
+                    struct sockaddr_in sin;
+                    if (bpf_probe_read(&sin, sizeof(sin), msg_name) == 0) {
+                        return sin.sin_port;
+                    }
+                } else if (sa.sa_family == AF_INET6 && msg_namelen >= sizeof(struct sockaddr_in6)) {
+                    struct sockaddr_in6 sin6;
+                    if (bpf_probe_read(&sin6, sizeof(sin6), msg_name) == 0) {
+                        return sin6.sin6_port;
+                    }
+                }
+            }
+        }
+    }
+
+    return dport;
+}
+
+SEC("kprobe/udp_sendmsg")
+int BPF_KPROBE(trace_udp_sendmsg_dns)
+{
+    struct sock *sk = (struct sock *) PT_REGS_PARM1(ctx);
+    struct msghdr *msg = (struct msghdr *) PT_REGS_PARM2(ctx);
+
+    int dport = get_message_port(sk, msg);
+    if (dport != bpf_htons(UDP_PORT_DNS)) // We are interested only in DNS requests (port 53)
+        return 0;
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, DNS_REQUEST_KERNEL_BASE))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    struct iov_iter msg_iter = BPF_CORE_READ(msg, msg_iter);
+
+    int type = get_iov_iter_type(&msg_iter);
+    if (type == -1)
+        return 0;
+
+    if (type == ITER_IOVEC) {
+        const struct iovec *iov = get_iovec(&msg_iter);
+        struct iovec curr_iov;
+        bpf_probe_read(&curr_iov, sizeof(curr_iov), &iov[0]);
+        // Currently we support only one iov node in the vector.
+        // Vectors consisting of multiple iov nodes will fail to parse in user mode.
+        // TODO: support multiple iov nodes in the vector.
+        save_bytes_to_buf(&p.event->args_buf, curr_iov.iov_base, curr_iov.iov_len, 0);
+    } else if (type == ITER_UBUF) {
+        if (!bpf_core_field_exists(((struct iov_iter *) 0)->ubuf))
+            return 0;
+        void *ubuf = (void *) msg_iter.ubuf;
+        size_t total_size = msg_iter.count;
+        save_bytes_to_buf(&p.event->args_buf, ubuf, total_size, 0);
+    }
+
+    events_perf_submit(&p, 0);
+
+    return 0;
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)

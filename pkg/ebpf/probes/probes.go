@@ -167,6 +167,7 @@ const (
 	ChmodCommon
 	SecuritySbUmount
 	SecurityTaskPrctl
+	UdpSendmsg
 )
 
 // Test probe handles
