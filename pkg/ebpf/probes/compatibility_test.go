@@ -238,22 +238,18 @@ func TestProbeCompatibility_Basic(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		probe        Handle
 		requirements []ProbeRequirement
 	}{
 		{
 			name:         "no requirements",
-			probe:        1, // Mock handle
 			requirements: []ProbeRequirement{},
 		},
 		{
 			name:         "single requirement",
-			probe:        1,
 			requirements: []ProbeRequirement{req1},
 		},
 		{
 			name:         "multiple requirements",
-			probe:        1,
 			requirements: []ProbeRequirement{req1, req2},
 		},
 	}
@@ -262,10 +258,9 @@ func TestProbeCompatibility_Basic(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			compatibility := NewProbeCompatibility(tt.probe, tt.requirements)
+			compatibility := NewProbeCompatibility(tt.requirements...)
 
 			assert.NotNil(t, compatibility)
-			assert.Equal(t, tt.probe, compatibility.probe)
 			assert.Equal(t, len(tt.requirements), len(compatibility.requirements))
 
 			// Verify each requirement is stored correctly
@@ -329,10 +324,10 @@ func TestProbeCompatibility_MultipleRequirements(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			compatibility := NewProbeCompatibility(1, tt.requirements)
+			compatibility := NewProbeCompatibility(tt.requirements...)
 			osInfo := newMockOSInfo(tt.currentKernel, tt.currentDistro)
 
-			result, err := compatibility.IsCompatible(osInfo)
+			result, err := compatibility.isCompatible(osInfo)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
