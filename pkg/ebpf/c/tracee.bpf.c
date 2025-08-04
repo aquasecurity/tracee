@@ -7614,5 +7614,30 @@ int tracepoint__exec_test(struct bpf_raw_tracepoint_args *ctx)
             ret |= events_perf_submit(&p, 0);
     }
 
+    if (reset_event(p.event, INCOMPATIBLE_PROBE_WITH_FALLBACKS_TEST)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
+    if (reset_event(p.event, MULTIPLE_FALLBACKS_TEST)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
+    if (reset_event(p.event, FAILED_EVENT_DEPENDENCY_TEST)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
+    if (reset_event(p.event, SHARED_PROBE_EVENT_A)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
+    if (reset_event(p.event, SHARED_PROBE_EVENT_B)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
     return 0;
 }

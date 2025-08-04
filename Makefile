@@ -920,6 +920,7 @@ test-integration:: \
 		-count=1 \
 		-coverprofile=integration-coverage.txt \
 		-covermode=atomic \
+		$(if $(TEST),-run $(TEST)) \
 		./tests/integration/... \
 
 .PHONY: test-upstream-libbpfgo
