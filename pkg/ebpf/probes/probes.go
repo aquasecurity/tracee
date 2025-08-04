@@ -179,4 +179,5 @@ const (
 	TestUnavailableHook = 1000 + iota
 	ExecTest
 	EmptyKprobe
+	KernelVersionIncompatibleProbe
 )

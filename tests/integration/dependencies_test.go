@@ -15,6 +15,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/tests/testutils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -84,6 +85,111 @@ func Test_EventsDependencies(t *testing.T) {
 			expectedEvents:   []events.ID{events.ExecTest},
 			expectedKprobes:  []string{"security_bprm_check"},
 		},
+		{
+			name:   "kernel version incompatible probe",
+			events: []events.ID{events.KernelVersionIncompatible},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"All fallbacks failed, removing event\",\"event\":\"kernel_version_incompatible",
+			},
+			unexpectedEvents:  []events.ID{events.KernelVersionIncompatible},
+			unexpectedKprobes: []string{"security_bprm_check"},
+		},
+		{
+			name:   "kernel version incompatible probe with sanity",
+			events: []events.ID{events.KernelVersionIncompatible, events.ExecTest},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"All fallbacks failed, removing event\",\"event\":\"kernel_version_incompatible",
+			},
+			unexpectedEvents: []events.ID{events.KernelVersionIncompatible},
+			expectedEvents:   []events.ID{events.ExecTest},
+			expectedKprobes:  []string{"security_bprm_check"},
+		},
+		{
+			name:   "kernel version incompatible probe with fallback",
+			events: []events.ID{events.KernelVersionIncompatibleWithFallback},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"Failing event",
+				"Successfully switched to fallback\",\"event\":\"kernel_version_incompatible_with_fallback",
+			},
+			expectedEvents:  []events.ID{events.KernelVersionIncompatibleWithFallback},
+			expectedKprobes: []string{"security_bprm_check"},
+		},
+		{
+			name:   "kernel version incompatible probe with fallback and sanity",
+			events: []events.ID{events.KernelVersionIncompatibleWithFallback, events.ExecTest},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"Failing event",
+				"Successfully switched to fallback\",\"event\":\"kernel_version_incompatible_with_fallback",
+			},
+			expectedEvents:  []events.ID{events.KernelVersionIncompatibleWithFallback, events.ExecTest},
+			expectedKprobes: []string{"security_bprm_check"},
+		},
+		{
+			name:   "event with failed dependency",
+			events: []events.ID{events.EventWithFailedDependency},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"All fallbacks failed, removing event\",\"event\":\"kernel_version_incompatible",
+				"All fallbacks failed, removing event\",\"event\":\"event_with_failed_dependency",
+			},
+			unexpectedEvents:  []events.ID{events.EventWithFailedDependency},
+			unexpectedKprobes: []string{"security_bprm_check"},
+		},
+		{
+			name:   "event with failed dependency and sanity",
+			events: []events.ID{events.EventWithFailedDependency, events.ExecTest},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"All fallbacks failed, removing event\",\"event\":\"kernel_version_incompatible",
+				"All fallbacks failed, removing event\",\"event\":\"event_with_failed_dependency",
+			},
+			unexpectedEvents: []events.ID{events.EventWithFailedDependency},
+			expectedEvents:   []events.ID{events.ExecTest},
+			expectedKprobes:  []string{"security_bprm_check"},
+		},
+		{
+			name:   "event with multiple fallbacks",
+			events: []events.ID{events.EventWithMultipleFallbacks},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"All fallbacks failed, removing event\",\"event\":\"kernel_version_incompatible",
+				"All fallbacks failed, removing event\",\"event\":\"event_with_failed_dependency",
+				"Event canceled because of missing kernel symbol dependency",
+				"Successfully switched to fallback\",\"event\":\"event_with_multiple_fallbacks",
+			},
+			unexpectedEvents: []events.ID{events.KernelVersionIncompatible, events.EventWithFailedDependency},
+			expectedEvents:   []events.ID{events.EventWithMultipleFallbacks},
+			expectedKprobes:  []string{"security_bprm_check"},
+		},
+		{
+			name:   "event with multiple fallbacks and sanity",
+			events: []events.ID{events.EventWithMultipleFallbacks, events.ExecTest},
+			expectedLogs: []string{
+				"All fallbacks failed, removing event\",\"event\":\"kernel_version_incompatible",
+				"All fallbacks failed, removing event\",\"event\":\"event_with_failed_dependency",
+				"Event canceled because of missing kernel symbol dependency",
+				"Successfully switched to fallback\",\"event\":\"event_with_multiple_fallbacks",
+			},
+			unexpectedEvents: []events.ID{events.KernelVersionIncompatible},
+			expectedEvents:   []events.ID{events.ExecTest, events.EventWithMultipleFallbacks},
+			expectedKprobes:  []string{"security_bprm_check"},
+		},
+		{
+			name:   "shared probe events with incompatible probe",
+			events: []events.ID{events.SharedProbeEventA, events.SharedProbeEventB},
+			expectedLogs: []string{
+				"Failing incompatible probe",
+				"Successfully switched to fallback\",\"event\":\"shared_probe_event_a",
+				"Successfully switched to fallback\",\"event\":\"shared_probe_event_b",
+			},
+			unexpectedEvents: []events.ID{events.KernelVersionIncompatible},
+			expectedEvents:   []events.ID{events.SharedProbeEventA, events.SharedProbeEventB},
+			expectedKprobes:  []string{"security_bprm_check"},
+		},
 	}
 
 	// Each test will run a test binary that triggers the "exec_test" event.
@@ -124,6 +230,13 @@ func Test_EventsDependencies(t *testing.T) {
 					BypassCaps: true,
 				},
 			}
+			// Initialize OSInfo to prevent nil pointer dereference in probes compatibility
+			osInfo, err := environment.GetOSInfo()
+			if err != nil {
+				t.Fatalf("Failed to get OS info: %v", err)
+			}
+			testConfig.OSInfo = osInfo
+
 			ps := testutils.BuildPoliciesFromEvents(testCaseInst.events)
 			initialPolicies := make([]interface{}, 0, len(ps))
 			for _, p := range ps {

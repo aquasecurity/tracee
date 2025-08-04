@@ -190,6 +190,12 @@ const (
 	ExecTest ID = 8000 + iota
 	MissingKsymbol
 	FailedAttach
+	KernelVersionIncompatible
+	KernelVersionIncompatibleWithFallback
+	EventWithFailedDependency
+	EventWithMultipleFallbacks
+	SharedProbeEventA
+	SharedProbeEventB
 )
 
 //
@@ -13785,7 +13791,7 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.ExecTest, required: true},
-				{handle: probes.EmptyKprobe, required: true},
+				{handle: probes.EmptyKprobe, required: true}, // Required for testing kprobe attachment
 			},
 		},
 		fields: []DataField{},
@@ -13805,7 +13811,6 @@ var CoreEvents = map[ID]Definition{
 			probes: []Probe{
 				{handle: probes.ExecTest, required: true},
 			},
-			ids: []ID{ExecTest},
 		},
 	},
 	FailedAttach: {
@@ -13821,7 +13826,141 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.TestUnavailableHook, required: true},
 				{handle: probes.ExecTest, required: true},
 			},
-			ids: []ID{ExecTest},
+		},
+	},
+	KernelVersionIncompatible: {
+		id:      KernelVersionIncompatible,
+		id32Bit: Sys32Undefined,
+		name:    "kernel_version_incompatible",
+		version: NewVersion(1, 0, 0),
+		syscall: false,
+		sets:    []string{"tests", "dependencies"},
+		fields:  []DataField{},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.KernelVersionIncompatibleProbe, required: true},
+				{handle: probes.ExecTest, required: true},
+			},
+		},
+	},
+	KernelVersionIncompatibleWithFallback: {
+		id:      KernelVersionIncompatibleWithFallback,
+		id32Bit: Sys32Undefined,
+		name:    "kernel_version_incompatible_with_fallback",
+		version: NewVersion(1, 0, 0),
+		syscall: false,
+		sets:    []string{"tests", "dependencies"},
+		fields:  []DataField{},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.KernelVersionIncompatibleProbe, required: true},
+				{handle: probes.ExecTest, required: true},
+			},
+			fallbacks: []Dependencies{
+				{
+					probes: []Probe{
+						{handle: probes.ExecTest, required: true},
+						{handle: probes.EmptyKprobe, required: true}, // Required for testing kprobe attachment
+					},
+				},
+			},
+		},
+	},
+	EventWithFailedDependency: {
+		id:      EventWithFailedDependency,
+		id32Bit: Sys32Undefined,
+		name:    "event_with_failed_dependency",
+		version: NewVersion(1, 0, 0),
+		syscall: false,
+		sets:    []string{"tests", "dependencies"},
+		fields:  []DataField{},
+		dependencies: Dependencies{
+			ids: []ID{KernelVersionIncompatible, ExecTest},
+		},
+	},
+	EventWithMultipleFallbacks: {
+		id:      EventWithMultipleFallbacks,
+		id32Bit: Sys32Undefined,
+		name:    "event_with_multiple_fallbacks",
+		version: NewVersion(1, 0, 0),
+		syscall: false,
+		sets:    []string{"tests", "dependencies"},
+		fields:  []DataField{},
+		dependencies: Dependencies{
+			ids: []ID{KernelVersionIncompatible, ExecTest},
+			fallbacks: []Dependencies{
+				{
+					ids: []ID{EventWithFailedDependency, ExecTest},
+				},
+				{
+					ids: []ID{ExecTest},
+					kSymbols: []KSymbol{
+						{symbol: "non_existing_symbol", required: true},
+					},
+				},
+				{
+					ids: []ID{ExecTest},
+				},
+			},
+		},
+	},
+	SharedProbeEventA: {
+		id:      SharedProbeEventA,
+		id32Bit: Sys32Undefined,
+		name:    "shared_probe_event_a",
+		version: NewVersion(1, 0, 0),
+		syscall: false,
+		sets:    []string{"tests", "dependencies"},
+		fields:  []DataField{},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.KernelVersionIncompatibleProbe, required: true},
+				{handle: probes.ExecTest, required: true},
+			},
+			fallbacks: []Dependencies{
+				{
+					probes: []Probe{
+						{handle: probes.KernelVersionIncompatibleProbe, required: true},
+						{handle: probes.ExecTest, required: true},
+					},
+				},
+				{
+					probes: []Probe{
+						{handle: probes.ExecTest, required: true},
+						{handle: probes.EmptyKprobe, required: true}, // Required for testing kprobe attachment
+					},
+					ids: []ID{ExecTest},
+				},
+			},
+		},
+	},
+	SharedProbeEventB: {
+		id:      SharedProbeEventB,
+		id32Bit: Sys32Undefined,
+		name:    "shared_probe_event_b",
+		version: NewVersion(1, 0, 0),
+		syscall: false,
+		sets:    []string{"tests", "dependencies"},
+		fields:  []DataField{},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.KernelVersionIncompatibleProbe, required: true},
+				{handle: probes.ExecTest, required: true},
+			},
+			fallbacks: []Dependencies{
+				{
+					probes: []Probe{
+						{handle: probes.KernelVersionIncompatibleProbe, required: true},
+						{handle: probes.ExecTest, required: true},
+					},
+				},
+				{
+					probes: []Probe{
+						{handle: probes.ExecTest, required: true},
+						{handle: probes.EmptyKprobe, required: true}, // Required for testing kprobe attachment
+					},
+				},
+			},
 		},
 	},
 }

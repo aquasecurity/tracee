@@ -283,12 +283,20 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 		ChmodCommon:                NewTraceProbe(KProbe, "chmod_common", "trace_chmod_common"),
 		SecuritySbUmount:           NewTraceProbe(KProbe, "security_sb_umount", "trace_security_sb_umount"),
 
-		TestUnavailableHook: NewTraceProbe(KProbe, "non_existing_func", "empty_kprobe"),
-		ExecTest:            NewTraceProbe(RawTracepoint, "raw_syscalls:sched_process_exec", "tracepoint__exec_test"),
-		EmptyKprobe:         NewTraceProbe(KProbe, "security_bprm_check", "empty_kprobe"),
+		TestUnavailableHook:            NewTraceProbe(KProbe, "non_existing_func", "empty_kprobe"),
+		ExecTest:                       NewTraceProbe(RawTracepoint, "raw_syscalls:sched_process_exec", "tracepoint__exec_test"),
+		EmptyKprobe:                    NewTraceProbe(KProbe, "security_bprm_check", "empty_kprobe"),
+		KernelVersionIncompatibleProbe: NewTraceProbe(KProbe, "security_bprm_check", "kernel_version_incompatible_probe"),
 	}
 
-	probesRequirements := map[Handle]*ProbeCompatibility{}
+	probesRequirements := map[Handle]*ProbeCompatibility{
+		KernelVersionIncompatibleProbe: NewProbeCompatibility(
+			KernelVersionIncompatibleProbe,
+			[]ProbeRequirement{
+				NewKernelVersionRequirement("", "", "0.0.0"), // Requires kernel up to 0.0.0, so no kernel version is compatible
+			},
+		),
+	}
 
 	if !netEnabled {
 		// disable network cgroup probes (avoid effective CAP_NET_ADMIN if not needed)

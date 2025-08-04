@@ -7368,5 +7368,43 @@ int tracepoint__exec_test(struct bpf_raw_tracepoint_args *ctx)
             ret |= events_perf_submit(&p, 0);
     }
 
+    if (reset_event(p.event, KERNEL_VERSION_INCOMPATIBLE)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
+    if (reset_event(p.event, KERNEL_VERSION_INCOMPATIBLE_WITH_FALLBACK)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
+    if (reset_event(p.event, EVENT_WITH_MULTIPLE_FALLBACKS)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
+    if (reset_event(p.event, EVENT_WITH_FAILED_DEPENDENCY)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
+    if (reset_event(p.event, SHARED_PROBE_EVENT_A)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
+    if (reset_event(p.event, SHARED_PROBE_EVENT_B)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
+    return 0;
+}
+
+SEC("kprobe/kernel_version_incompatible_probe")
+int BPF_KPROBE(kernel_version_incompatible_probe)
+{
+    // This probe is designed to be incompatible with current kernel versions
+    // It will be filtered out by the compatibility check
     return 0;
 }
