@@ -7371,5 +7371,10 @@ int tracepoint__exec_test(struct bpf_raw_tracepoint_args *ctx)
             ret |= events_perf_submit(&p, 0);
     }
 
+    if (reset_event(p.event, INCOMPATIBLE_PROBE_TEST)) {
+        if (evaluate_scope_filters(&p))
+            ret |= events_perf_submit(&p, 0);
+    }
+
     return 0;
 }

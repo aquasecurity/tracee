@@ -282,6 +282,9 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 		TestUnavailableHook: NewTraceProbe(KProbe, "non_existing_func", "empty_kprobe"),
 		ExecTest:            NewTraceProbe(RawTracepoint, "raw_syscalls:sched_process_exec", "tracepoint__exec_test"),
 		EmptyKprobe:         NewTraceProbe(KProbe, "security_bprm_check", "empty_kprobe"),
+		IncompatibleProbe: NewTraceProbeWithCompatibility(KProbe, "security_bprm_check", "empty_kprobe", NewProbeCompatibility(
+			NewKernelVersionRequirement("", "", "0.0.0"), // Requires kernel up to 0.0.0, so kernel version is always incompatible
+		)),
 	}
 
 	if !netEnabled {
