@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"golang.org/x/sys/unix"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/config"
@@ -282,7 +283,16 @@ func (t *Tracee) processHookedProcFops(event *trace.Event) error {
 		if addr == 0 { // address is in text segment, marked as 0
 			continue
 		}
-		hookingFunction := t.getKernelSymbols().GetPotentiallyHiddenSymbolByAddr(addr)[0]
+		var hookingFunction *environment.KernelSymbol
+		err = capabilities.GetInstance().Specific(
+			func() error {
+				hookingFunction = t.getKernelSymbols().GetPotentiallyHiddenSymbolByAddr(addr)[0]
+				return nil
+			},
+			cap.SYSLOG) // Required to read /proc/kallsyms
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
 		if hookingFunction.Owner == "system" {
 			continue
 		}
@@ -327,7 +337,16 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	}
 
 	addressUint64 := uint64(address)
-	symbol := t.getKernelSymbols().GetPotentiallyHiddenSymbolByAddr(addressUint64)[0]
+	var symbol *environment.KernelSymbol
+	err = capabilities.GetInstance().Specific(
+		func() error {
+			symbol = t.getKernelSymbols().GetPotentiallyHiddenSymbolByAddr(addressUint64)[0]
+			return nil
+		},
+		cap.SYSLOG) // Required to read /proc/kallsyms
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
 	var utsName unix.Utsname
 	arch := ""
 	if err := unix.Uname(&utsName); err != nil {
