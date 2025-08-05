@@ -85,12 +85,6 @@ Available only for:
   --events 'open*'
   ```
 
-- To exclude events prefixed by "open" or "dup", use the following flag:
-
-  ```console
-  --events '-open*,-dup*'
-  ```
-
 - To trace all file-system related events, use the following flag:
 
   ```console
