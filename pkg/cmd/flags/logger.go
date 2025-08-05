@@ -53,7 +53,7 @@ func invalidLogOption(err error, opt string, newBinary bool) error {
 		return errfmt.Errorf("invalid log option: %s, %s, run 'man log' for more info", opt, err)
 	}
 
-	return errfmt.Errorf("invalid log option: %s, %s, use '--log help' for more info", opt, err)
+	return InvalidLogOptionError(opt, err.Error())
 }
 
 func invalidLogOptionValue(err error, opt string, newBinary bool) error {
@@ -66,7 +66,7 @@ func invalidLogOptionValue(err error, opt string, newBinary bool) error {
 		return errfmt.Errorf("invalid log option value: %s, %s, use '--help' for more info", opt, err)
 	}
 
-	return errfmt.Errorf("invalid log option value: %s, %s, use '--log help' for more info", opt, err)
+	return InvalidLogOptionValueError(opt, err.Error())
 }
 
 func parseLevel(level string) (logger.Level, error) {

@@ -196,7 +196,7 @@ func PrepareCapture(captureSlice []string, newBinary bool) (config.CaptureConfig
 				return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, run 'man capture' for more info")
 			}
 
-			return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--capture help' for more info")
+			return config.CaptureConfig{}, InvalidCaptureOptionError()
 		}
 	}
 
@@ -223,7 +223,7 @@ func parseFileCaptureOption(arg string, cap string, captureConfig *config.FileCa
 	}
 	optAndValue := strings.SplitN(cap, ":", 2)
 	if len(optAndValue) != 2 || optAndValue[0] != arg {
-		return errors.New("invalid capture option specified, use '--capture help' for more info")
+		return InvalidCaptureOptionError()
 	}
 	err := parseFileCaptureSubOption(optAndValue[1], captureConfig)
 	return err
@@ -234,7 +234,7 @@ func parseFileCaptureOption(arg string, cap string, captureConfig *config.FileCa
 func parseFileCaptureSubOption(option string, captureConfig *config.FileCaptureConfig) error {
 	optAndValue := strings.SplitN(option, "=", 2)
 	if len(optAndValue) != 2 || len(optAndValue[1]) == 0 {
-		return errors.New("invalid capture option specified, use '--capture help' for more info")
+		return InvalidCaptureOptionError()
 	}
 	opt := optAndValue[0]
 	value := optAndValue[1]
