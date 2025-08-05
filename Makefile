@@ -868,6 +868,7 @@ test-unit: \
 		-short \
 		-race \
 		-shuffle on \
+		-failfast \
 		-v \
 		-coverprofile=coverage.txt \
 		./cmd/... \
