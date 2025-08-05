@@ -109,7 +109,9 @@ func getProcessByPID(pt *ProcessTree, givenPid int32) (*Process, error) {
 
 	statStartTime := stat.GetStartTime()
 	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(statStartTime)
-	hash := utils.HashTaskID(uint32(givenPid), startTimeNs) // status pid == tid
+	// process hash (using epoch time for consistency with kernel signals)
+	epochTimeNs := traceetime.BootToEpochNS(startTimeNs)
+	hash := utils.HashTaskID(uint32(givenPid), epochTimeNs)
 
 	return pt.GetOrCreateProcessByHash(hash), nil
 }
@@ -158,8 +160,9 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 
 	// thread start time (monotonic boot)
 	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(start)
-	// process hash
-	hash := utils.HashTaskID(uint32(pid), startTimeNs)
+	// process hash (using epoch time for consistency with kernel signals)
+	epochTimeNs := traceetime.BootToEpochNS(startTimeNs)
+	hash := utils.HashTaskID(uint32(pid), epochTimeNs)
 
 	// update tree for the given process
 	process := pt.GetOrCreateProcessByHash(hash)
@@ -250,8 +253,9 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 
 	// thread start time (monotonic boot)
 	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(start)
-	// thread hash
-	hash := utils.HashTaskID(uint32(pid), startTimeNs)
+	// thread hash (using epoch time for consistency with kernel signals)
+	epochTimeNs := traceetime.BootToEpochNS(startTimeNs)
+	hash := utils.HashTaskID(uint32(pid), epochTimeNs)
 
 	// update tree for the given thread
 	thread := pt.GetOrCreateThreadByHash(hash)
