@@ -12,11 +12,10 @@ func TestNewDefinition(t *testing.T) {
 	expectedDefinition := Definition{
 		name: "hooked_seq_ops2",
 		dependencies: Dependencies{
-			ids:          []ID{PrintNetSeqOps, DoInitModule},
-			kSymbols:     []KSymbol{},
-			probes:       []Probe{},
-			tailCalls:    []TailCall{},
-			capabilities: Capabilities{},
+			ids:       []ID{PrintNetSeqOps, DoInitModule},
+			kSymbols:  []KSymbol{},
+			probes:    []Probe{},
+			tailCalls: []TailCall{},
 		},
 		sets: []string{"signatures"},
 	}

@@ -4,10 +4,13 @@ import (
 	"fmt"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -53,8 +56,19 @@ func deriveDetectHookedSyscallArgs(kernelSymbols *environment.KernelSymbolTable)
 		syscallName := convertToSyscallName(syscallId)
 		hexAddress := fmt.Sprintf("%x", address)
 
-		hookedFuncSymbols, err := kernelSymbols.GetSymbolByAddr(address)
+		var hookedFuncSymbols []*environment.KernelSymbol
+		err = capabilities.GetInstance().Specific(
+			func() error {
+				var capErr error
+				hookedFuncSymbols, capErr = kernelSymbols.GetSymbolByAddr(address)
+				return capErr
+			},
+			cap.SYSLOG) // Required to read /proc/kallsyms
 		if err != nil {
+			logger.Warnw("Failed to get kernel symbols for hooked syscall",
+				"error", err,
+				"syscall", syscallName,
+				"address", hexAddress)
 			return [][]interface{}{{syscallName, hexAddress, "", ""}}, nil
 		}
 
