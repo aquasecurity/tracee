@@ -1,7 +1,6 @@
 package flags
 
 import (
-	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -25,27 +24,27 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:      "invalid output flag",
 			outputSlice:   []string{"foo"},
-			expectedError: errors.New("invalid output flag: foo, use '--output help' for more info"),
+			expectedError: InvalidOutputFlagError("foo"),
 		},
 		{
 			testName:      "empty option flag",
 			outputSlice:   []string{"option"},
-			expectedError: errors.New("parseOption: option flag can't be empty, use '--output help' for more info"),
+			expectedError: EmptyOutputFlagError("option"),
 		},
 		{
 			testName:      "empty option flag 2",
 			outputSlice:   []string{"option:"},
-			expectedError: errors.New("parseOption: option flag can't be empty, use '--output help' for more info"),
+			expectedError: EmptyOutputFlagError("option"),
 		},
 		{
 			testName:      "invalid option value",
 			outputSlice:   []string{"option:foo"},
-			expectedError: errors.New("setOption: invalid output option: foo, use '--output help' for more info"),
+			expectedError: InvalidOutputOptionError("foo"),
 		},
 		{
 			testName:      "empty file for format",
 			outputSlice:   []string{"json:"},
-			expectedError: errors.New("parseFormat: format flag can't be empty, use '--output help' for more info"),
+			expectedError: EmptyOutputFlagError("format"),
 		},
 		// formats
 		{
@@ -171,17 +170,17 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:      "two formats for stdout",
 			outputSlice:   []string{"table", "json"},
-			expectedError: errors.New("parseFormat: cannot use the same path for multiple outputs: stdout, use '--output help' for more info"),
+			expectedError: DuplicateOutputPathError("stdout"),
 		},
 		{
 			testName:      "format for the same file twice",
 			outputSlice:   []string{"table:/tmp/test,/tmp/test"},
-			expectedError: errors.New("parseFormat: cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
+			expectedError: DuplicateOutputPathError("/tmp/test"),
 		},
 		{
 			testName:      "two different formats for the same file",
 			outputSlice:   []string{"table:/tmp/test", "json:/tmp/test"},
-			expectedError: errors.New("parseFormat: cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
+			expectedError: DuplicateOutputPathError("/tmp/test"),
 		},
 		{
 			testName:    "none",
@@ -196,28 +195,28 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:      "invalid value for none format",
 			outputSlice:   []string{"none:"},
-			expectedError: errors.New("none output does not support path. Use '--output help' for more info"),
+			expectedError: NoneOutputPathError(),
 		},
 		{
 			testName:      "invalid value for none format 2",
 			outputSlice:   []string{"none:/tmp/test"},
-			expectedError: errors.New("none output does not support path. Use '--output help' for more info"),
+			expectedError: NoneOutputPathError(),
 		},
 		// forward
 		{
 			testName:      "empty forward flag",
 			outputSlice:   []string{"forward"},
-			expectedError: errors.New("validateURL: forward flag can't be empty, use '--output help' for more info"),
+			expectedError: EmptyOutputFlagError("forward"),
 		},
 		{
 			testName:      "empty forward flag",
 			outputSlice:   []string{"forward:"},
-			expectedError: errors.New("validateURL: forward flag can't be empty, use '--output help' for more info"),
+			expectedError: EmptyOutputFlagError("forward"),
 		},
 		{
 			testName:      "invalid forward url",
 			outputSlice:   []string{"forward:lalala"},
-			expectedError: errors.New("validateURL: invalid uri for forward output \"lalala\". Use '--output help' for more info"),
+			expectedError: InvalidOutputURIError("forward", "lalala"),
 		},
 		{
 			testName:    "forward",
@@ -233,17 +232,17 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:      "empty webhook flag",
 			outputSlice:   []string{"webhook"},
-			expectedError: errors.New("validateURL: webhook flag can't be empty, use '--output help' for more info"),
+			expectedError: EmptyOutputFlagError("webhook"),
 		},
 		{
 			testName:      "empty webhook flag",
 			outputSlice:   []string{"webhook:"},
-			expectedError: errors.New("validateURL: webhook flag can't be empty, use '--output help' for more info"),
+			expectedError: EmptyOutputFlagError("webhook"),
 		},
 		{
 			testName:      "invalid webhook url",
 			outputSlice:   []string{"webhook:lalala"},
-			expectedError: errors.New("validateURL: invalid uri for webhook output \"lalala\". Use '--output help' for more info"),
+			expectedError: InvalidOutputURIError("webhook", "lalala"),
 		},
 		{
 			testName:    "webhook",
@@ -311,12 +310,12 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:      "option exec-hash invalid",
 			outputSlice:   []string{"option:exec-hash=notvalid"},
-			expectedError: errors.New("invalid output option: exec-hash=notvalid, use '--output help' for more info"),
+			expectedError: InvalidOutputOptionError("exec-hash=notvalid"),
 		},
 		{
 			testName:      "option exec-hash invalid",
 			outputSlice:   []string{"option:exec-hasha"},
-			expectedError: errors.New("invalid output option: exec-hasha, use '--output help' for more info"),
+			expectedError: InvalidOutputOptionError("exec-hasha"),
 		},
 		{
 			testName:    "option parse-arguments",
@@ -396,7 +395,7 @@ func TestPrepareOutput(t *testing.T) {
 				}
 			}()
 
-			output, err := PrepareOutput(testcase.outputSlice, false)
+			output, err := PrepareOutput(testcase.outputSlice)
 			if err != nil {
 				require.NotNil(t, testcase.expectedError)
 				assert.Contains(t, err.Error(), testcase.expectedError.Error())
