@@ -362,7 +362,9 @@ func (p *templateEventPrinter) Init() error {
 	if tmplPath == "" {
 		return errfmt.Errorf("please specify a gotemplate for event-based output")
 	}
-	tmpl, err := template.ParseFiles(tmplPath)
+	tmpl, err := template.New(filepath.Base(tmplPath)).
+		Funcs(sprig.TxtFuncMap()).
+		ParseFiles(tmplPath)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
