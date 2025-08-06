@@ -310,6 +310,7 @@ jobs:
     runs-on:
       - graas_ami-${{ matrix.ami }}_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ matrix.sufix }}
       - EXECUTION_TYPE=LONG
+      - INSTANCE_TYPE=XLARGE
     strategy:
       fail-fast: false
       matrix:
