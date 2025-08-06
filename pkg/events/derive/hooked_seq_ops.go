@@ -1,9 +1,6 @@
 package derive
 
 import (
-	"kernel.org/pub/linux/libs/security/libcap/cap"
-
-	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
@@ -45,16 +42,7 @@ func deriveHookedSeqOpsArgs(kernelSymbols *environment.KernelSymbolTable) derive
 			if addr == 0 {
 				continue
 			}
-			var hookingFunction *environment.KernelSymbol
-			err := capabilities.GetInstance().Specific(
-				func() error {
-					hookingFunction = kernelSymbols.GetPotentiallyHiddenSymbolByAddr(addr)[0]
-					return nil
-				},
-				cap.SYSLOG) // Required to read /proc/kallsyms
-			if err != nil {
-				return nil, errfmt.WrapError(err)
-			}
+			hookingFunction := kernelSymbols.GetPotentiallyHiddenSymbolByAddr(addr)[0]
 			seqOpsStruct := NetSeqOps[i/4]
 			seqOpsFunc := NetSeqOpsFuncs[i%4]
 			hookedSeqOps[seqOpsStruct+"_"+seqOpsFunc] =

@@ -1893,14 +1893,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 
 					continue
 				}
-				var symbol []*environment.KernelSymbol
-				err = capabilities.GetInstance().Specific(
-					func() error {
-						var capErr error
-						symbol, capErr = t.getKernelSymbols().GetSymbolByOwnerAndName(owner, name)
-						return capErr
-					},
-					cap.SYSLOG) // Required to read /proc/kallsyms
+				symbol, err := t.getKernelSymbols().GetSymbolByOwnerAndName(owner, name)
 				if err != nil {
 					if owner != "system" {
 						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - %v", p.ID, field, err))
@@ -1910,18 +1903,14 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 
 					// Checking if the user specified a syscall name
 					prefixes := []string{"sys_", "__x64_sys_", "__arm64_sys_"}
-					err = capabilities.GetInstance().Specific(
-						func() error {
-							var capErr error
-							for _, prefix := range prefixes {
-								symbol, capErr = t.getKernelSymbols().GetSymbolByOwnerAndName(owner, prefix+name)
-								if capErr == nil {
-									break
-								}
-							}
-							return capErr
-						},
-						cap.SYSLOG) // Required to read /proc/kallsyms
+					var errSyscall error
+					for _, prefix := range prefixes {
+						symbol, errSyscall = t.getKernelSymbols().GetSymbolByOwnerAndName(owner, prefix+name)
+						if errSyscall == nil {
+							err = nil
+							break
+						}
+					}
 					if err != nil {
 						// syscall not found for the given name using all the prefixes
 						valuesStr := make([]string, 0)
