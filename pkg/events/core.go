@@ -190,6 +190,7 @@ const (
 	ExecTest ID = 8000 + iota
 	MissingKsymbol
 	FailedAttach
+	KernelVersionIncompatible
 )
 
 //
@@ -13786,7 +13787,7 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.ExecTest, required: true},
-				{handle: probes.EmptyKprobe, required: true},
+				{handle: probes.EmptyKprobe, required: true}, // Required for testing kprobe attachment
 			},
 		},
 		fields: []DataField{},
@@ -13806,7 +13807,6 @@ var CoreEvents = map[ID]Definition{
 			probes: []Probe{
 				{handle: probes.ExecTest, required: true},
 			},
-			ids: []ID{ExecTest},
 		},
 	},
 	FailedAttach: {
@@ -13821,6 +13821,20 @@ var CoreEvents = map[ID]Definition{
 			probes: []Probe{
 				{handle: probes.TestUnavailableHook, required: true},
 				{handle: probes.ExecTest, required: true},
+			},
+		},
+	},
+	KernelVersionIncompatible: {
+		id:      KernelVersionIncompatible,
+		id32Bit: Sys32Undefined,
+		name:    "kernel_version_incompatible",
+		version: NewVersion(1, 0, 0),
+		syscall: false,
+		sets:    []string{"tests", "dependencies"},
+		fields:  []DataField{},
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.KernelVersionIncompatibleProbe, required: true},
 			},
 			ids: []ID{ExecTest},
 		},

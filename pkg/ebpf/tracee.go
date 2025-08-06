@@ -1305,6 +1305,75 @@ func (t *Tracee) attachProbes() error {
 	return nil
 }
 
+// validateProbesCompatibility validates the compatibility of probes and their fallbacks.
+// It will subscribe to the dependencies to validate the compatibility of new probes and their fallbacks as well.
+func (t *Tracee) validateProbesCompatibility() error {
+	// First, check the compatibility of newly added probes.
+	// If a probe is incompatible and the event has a fallback, the fallback's compatibility will also be checked.
+	// This ensures that only compatible probes (or their fallbacks) are used for event handling.
+	t.eventsDependencies.SubscribeAdd(
+		dependencies.ProbeNodeType,
+		func(node interface{}) []dependencies.Action {
+			probeNode, ok := node.(*dependencies.ProbeNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested")
+				return nil
+			}
+			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probeNode.GetHandle(), t.config.OSInfo)
+			if err != nil {
+				logger.Errorw("Failed to check probe compatibility", "error", err)
+				return nil
+			}
+			if !probeCompatibility {
+				return []dependencies.Action{dependencies.CancelNodeAddAction{Reason: errors.New("probe is not compatible with the current OS")}}
+			}
+			return nil
+		})
+
+	// Check all existing events for incompatible probes and remove them
+	var eventsToRemove []events.ID
+	for _, eventID := range t.policyManager.EventsSelected() {
+		depsNode, err := t.eventsDependencies.GetEvent(eventID)
+		if err != nil {
+			continue
+		}
+
+		deps := depsNode.GetDependencies()
+		depProbes := deps.GetProbes()
+
+		shouldRemoveEvent := false
+		for _, probe := range depProbes {
+			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probe.GetHandle(), t.config.OSInfo)
+			if err != nil {
+				logger.Errorw("Failed to check probe compatibility", "error", err)
+				continue
+			}
+			if !probeCompatibility {
+				// TODO: Remove only probe from event dependencies and let it handle the event removal.
+				eventName := events.Core.GetDefinitionByID(eventID).GetName()
+				logger.Debugw("Event failed due to incompatible probe", "event", eventName, "probe", probe.GetHandle())
+				shouldRemoveEvent = true
+				break
+			}
+		}
+
+		if shouldRemoveEvent {
+			eventsToRemove = append(eventsToRemove, eventID)
+		}
+	}
+
+	// Remove events with incompatible required probes
+	for _, eventID := range eventsToRemove {
+		err := t.eventsDependencies.RemoveEvent(eventID)
+		if err != nil {
+			eventName := events.Core.GetDefinitionByID(eventID).GetName()
+			logger.Warnw("Failed to remove event with incompatible probe", "event", eventName, "error", err)
+		}
+	}
+
+	return nil
+}
+
 func (t *Tracee) initBPFProbes() error {
 	var err error
 	// Execute code with higher privileges: ring1 (required)
@@ -1329,7 +1398,7 @@ func (t *Tracee) initBPFProbes() error {
 		return errfmt.WrapError(err)
 	}
 
-	return nil
+	return t.validateProbesCompatibility()
 }
 
 func (t *Tracee) initBPF() error {

@@ -15,17 +15,19 @@ import (
 
 // ProbeGroup is a collection of probes.
 type ProbeGroup struct {
-	probesLock *sync.Mutex // disallow concurrent access to the probe group
-	module     *bpf.Module
-	probes     map[Handle]Probe
+	probesLock      *sync.Mutex // disallow concurrent access to the probe group
+	module          *bpf.Module
+	probes          map[Handle]Probe
+	compatibilities map[Handle]*ProbeCompatibility
 }
 
 // NewProbeGroup creates a new ProbeGroup.
-func NewProbeGroup(m *bpf.Module, p map[Handle]Probe) *ProbeGroup {
+func NewProbeGroup(m *bpf.Module, p map[Handle]Probe, c map[Handle]*ProbeCompatibility) *ProbeGroup {
 	return &ProbeGroup{
-		probesLock: &sync.Mutex{}, // no parallel attaching/detaching of probes
-		probes:     p,
-		module:     m,
+		probesLock:      &sync.Mutex{}, // no parallel attaching/detaching of probes
+		probes:          p,
+		module:          m,
+		compatibilities: c,
 	}
 }
 
@@ -62,6 +64,20 @@ func (p *ProbeGroup) GetProbeType(handle Handle) ProbeType {
 	}
 
 	return InvalidProbeType
+}
+
+// IsProbeCompatible checks if a probe is compatible with the given environment.
+func (p *ProbeGroup) IsProbeCompatible(handle Handle, osInfo OSInfoProvider) (bool, error) {
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
+
+	// If no requirements are specified, the probe is compatible.
+	probeCompatibility, ok := p.compatibilities[handle]
+	if !ok {
+		return true, nil
+	}
+
+	return probeCompatibility.IsCompatible(osInfo)
 }
 
 // Attach attaches a probe's program to its hook, by given handle.
@@ -267,9 +283,19 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 		ChmodCommon:                NewTraceProbe(KProbe, "chmod_common", "trace_chmod_common"),
 		SecuritySbUmount:           NewTraceProbe(KProbe, "security_sb_umount", "trace_security_sb_umount"),
 
-		TestUnavailableHook: NewTraceProbe(KProbe, "non_existing_func", "empty_kprobe"),
-		ExecTest:            NewTraceProbe(RawTracepoint, "raw_syscalls:sched_process_exec", "tracepoint__exec_test"),
-		EmptyKprobe:         NewTraceProbe(KProbe, "security_bprm_check", "empty_kprobe"),
+		TestUnavailableHook:            NewTraceProbe(KProbe, "non_existing_func", "empty_kprobe"),
+		ExecTest:                       NewTraceProbe(RawTracepoint, "raw_syscalls:sched_process_exec", "tracepoint__exec_test"),
+		EmptyKprobe:                    NewTraceProbe(KProbe, "security_bprm_check", "empty_kprobe"),
+		KernelVersionIncompatibleProbe: NewTraceProbe(KProbe, "security_bprm_check", "kernel_version_incompatible_probe"),
+	}
+
+	probesRequirements := map[Handle]*ProbeCompatibility{
+		KernelVersionIncompatibleProbe: NewProbeCompatibility(
+			KernelVersionIncompatibleProbe,
+			[]ProbeRequirement{
+				NewKernelVersionRequirement("", "", "0.0.0"), // Requires kernel up to 0.0.0, so no kernel version is compatible
+			},
+		),
 	}
 
 	if !netEnabled {
@@ -294,5 +320,5 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 		}
 	}
 
-	return NewProbeGroup(module, allProbes), nil
+	return NewProbeGroup(module, allProbes, probesRequirements), nil
 }

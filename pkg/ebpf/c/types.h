@@ -147,6 +147,7 @@ typedef struct event_context {
     X(EXEC_TEST, = 8000)                                                                           \
     X(TEST_MISSING_KSYMBOLS, )                                                                     \
     X(TEST_FAILED_ATTACH, )                                                                        \
+    X(KERNEL_VERSION_INCOMPATIBLE, )                                                               \
     // ...
 
 #ifndef EXTENDED_BUILD
