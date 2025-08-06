@@ -35,10 +35,6 @@ spec:
           args:
             - --config
             - /tracee/config.yaml
-          {{- if .Values.webhook }}
-            - --output
-            - webhook:{{ .Values.webhook }}
-          {{- end }}
           env:
             - name: LIBBPFGO_OSRELEASE_FILE
               value: /etc/os-release-host
