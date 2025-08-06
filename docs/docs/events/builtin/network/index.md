@@ -12,6 +12,7 @@ activity in common protocols.
 - [net_packet_dns](./net_packet_dns.md)
 - [net_packet_dns_request](./net_packet_dns_request.md)
 - [net_packet_dns_response](./net_packet_dns_response.md)
+- [dns_request_kernel](./dns_request_kernel.md)
 - [net_packet_http](./net_packet_http.md)
 - [net_packet_http_request](./net_packet_http_request.md)
 - [net_packet_http_response](./net_packet_http_response.md)

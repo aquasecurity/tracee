@@ -164,6 +164,7 @@ const (
 	Dup3Ret
 	ChmodCommon
 	SecuritySbUmount
+	UdpSendmsg
 )
 
 // Test probe handles

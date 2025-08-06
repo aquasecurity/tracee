@@ -266,6 +266,7 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 		Dup3Ret:                    NewTraceProbe(SyscallExit, "dup3", "trace_ret_dup3"),
 		ChmodCommon:                NewTraceProbe(KProbe, "chmod_common", "trace_chmod_common"),
 		SecuritySbUmount:           NewTraceProbe(KProbe, "security_sb_umount", "trace_security_sb_umount"),
+		UdpSendmsg:                 NewTraceProbe(KProbe, "udp_sendmsg", "trace_udp_sendmsg_dns"),
 
 		TestUnavailableHook: NewTraceProbe(KProbe, "non_existing_func", "empty_kprobe"),
 		ExecTest:            NewTraceProbe(RawTracepoint, "raw_syscalls:sched_process_exec", "tracepoint__exec_test"),

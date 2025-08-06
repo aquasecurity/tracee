@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: dns-request-kernel-test
+  annotations:
+    description: test tracee's dns request kernel event
+spec:
+  scope: 
+    - comm=dns_lookup_c,dns_iovec_clien
+  rules:
+    - event: DNS_REQUEST_KERNEL

@@ -36,6 +36,8 @@ const (
 	NetPacketHTTPBase
 	NetPacketCapture
 	NetPacketFlow
+	DnsRequestKernelBase
+	DnsRequestKernel
 	MaxNetID // network base events go ABOVE this item
 	SysEnter
 	SysExit
@@ -13315,6 +13317,35 @@ var CoreEvents = map[ID]Definition{
 			probes: []Probe{
 				{handle: probes.SignalHeartbeat, required: true},
 			},
+		},
+	},
+	DnsRequestKernelBase: {
+		id:       DnsRequestKernelBase,
+		id32Bit:  Sys32Undefined,
+		name:     "dns_request_kernel_base",
+		internal: false,
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.UdpSendmsg, required: true},
+			},
+		},
+		fields: []DataField{
+			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "payload"}},
+		},
+	},
+	DnsRequestKernel: {
+		id:      DnsRequestKernel,
+		id32Bit: Sys32Undefined,
+		name:    "dns_request_kernel",
+		dependencies: Dependencies{
+			ids: []ID{
+				DnsRequestKernelBase,
+			},
+		},
+		sets: []string{},
+		fields: []DataField{
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "hostname"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "query_type"}},
 		},
 	},
 	//

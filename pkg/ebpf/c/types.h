@@ -50,6 +50,8 @@ typedef struct event_context {
     X(NET_PACKET_HTTP, )                                                                           \
     X(NET_CAPTURE_BASE, )                                                                          \
     X(NET_FLOW_BASE, )                                                                             \
+    X(DNS_REQUEST_KERNEL_BASE, )                                                                   \
+    X(DNS_REQUEST_KERNEL, )                                                                        \
     X(MAX_NET_EVENT_ID, )                                                                          \
     // ...
 
