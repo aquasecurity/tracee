@@ -79,6 +79,49 @@ docker run --rm -it --pid=host --privileged aquasec/tracee:dev --version
 
 Development images are built daily from the `main` branch and include the latest features and fixes. See [Building Documentation](building/building.md#development-images) for complete details.
 
+### Development Workflows
+
+Tracee provides several `make` targets to streamline development:
+
+```bash
+# Quick development checks before committing
+make check-pr              # Run all code quality checks for PR submission
+make format-pr             # Show what formatting changes are needed
+make fix-fmt               # Automatically fix code formatting
+
+# Testing workflows
+make test-unit             # Run unit tests with coverage
+make test-types            # Run tests for the types module
+make test-integration      # Run integration tests
+
+# Development builds
+make all                   # Build all components (tracee-ebpf, tracee-rules, signatures)
+make tracee                # Build the main tracee binary
+make bpf                   # Build just the eBPF object
+
+# Code analysis and debugging
+make bear                  # Generate compile_commands.json for IDE integration
+DEBUG=1 make              # Build with debug symbols
+METRICS=1 make            # Build with BPF metrics enabled
+```
+
+**Quick Start for Development:**
+```bash
+# 1. Check your environment
+make env
+
+# 2. Build everything
+make all
+
+# 3. Run tests
+make test-unit
+
+# 4. Check code quality before submitting PR
+make check-pr
+```
+
+For a complete list of available targets, run `make help`.
+
 ## Code
 
 1. Follow Golang's code review standards: [https://github.com/golang/go/wiki/CodeReviewComments](https://github.com/golang/go/wiki/CodeReviewComments)
