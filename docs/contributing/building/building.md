@@ -3,7 +3,8 @@
 !!! Note
     Consider also visiting the following instructions:  
     1. docker container as [building environment](./environment.md)  
-    2. building tracee [container images](./containers.md)  
+    2. building tracee [container images](./containers.md)
+    3. using [development images](./containers.md#development-images) for testing latest changes  
 
 1. Supported **Architectures**
 
@@ -131,3 +132,7 @@
     ```bash
     METRICS=1 make
     ```
+
+## Development Images
+
+See the development images, usage examples, and stability guidance in the container images guide: [Development Images](./containers.md#development-images).
