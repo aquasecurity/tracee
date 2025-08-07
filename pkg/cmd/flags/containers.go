@@ -79,7 +79,7 @@ func PrepareContainers(containerFlags []string) (CgroupFlagsResult, error) {
 		} else if strings.HasPrefix(key, "sockets.") {
 			runtimeName := strings.TrimPrefix(key, "sockets.")
 			if !contains(supportedRuntimes, runtimeName) {
-				return CgroupFlagsResult{}, errfmt.Errorf("unsupported container runtime in sockets flag (see --containers help for supported runtimes)")
+				return CgroupFlagsResult{}, UnsupportedContainerRuntimeError()
 			}
 			err := sockets.Register(runtime.FromString(runtimeName), value)
 			if err != nil {

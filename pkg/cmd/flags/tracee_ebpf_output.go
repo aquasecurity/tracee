@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/config"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 func outputHelp() string {
@@ -61,19 +60,19 @@ func TraceeEbpfPrepareOutput(outputSlice []string, newBinary bool) (PrepareOutpu
 		case "out-file":
 			outPath = outputParts[1]
 		case "option":
-			err := setOption(traceeConfig, outputParts[1], newBinary)
+			err := setOption(traceeConfig, outputParts[1])
 			if err != nil {
 				return outConfig, err
 			}
 		default:
-			return outConfig, errfmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
+			return outConfig, InvalidOutputFlagError(outputParts[1])
 		}
 	}
 
 	printerConfigs := make([]config.PrinterConfig, 0)
 
 	if printerKind == "table" {
-		if err := setOption(traceeConfig, "parse-arguments", newBinary); err != nil {
+		if err := setOption(traceeConfig, "parse-arguments"); err != nil {
 			return outConfig, err
 		}
 	}
@@ -111,7 +110,7 @@ func validateFormat(printerKind string) error {
 		printerKind != "table-verbose" &&
 		printerKind != "json" &&
 		!strings.HasPrefix(printerKind, "gotemplate=") {
-		return errfmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', or 'gotemplate='. Use '--output help' for more info", printerKind)
+		return UnrecognizedOutputFormatError(printerKind)
 	}
 
 	return nil

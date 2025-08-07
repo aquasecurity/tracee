@@ -104,7 +104,7 @@ func main() {
 			},
 			&cli.StringSliceFlag{
 				Name:  "cri",
-				Usage: "define connected container runtimes. run '--cri help' for more info.",
+				Usage: "define connected container runtimes",
 				Value: cli.NewStringSlice(),
 			},
 			&cli.IntFlag{

@@ -1,8 +1,6 @@
 package flags
 
 import (
-	"errors"
-	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -17,7 +15,7 @@ type PrepareOutputResult struct {
 	PrinterConfigs []config.PrinterConfig
 }
 
-func PrepareOutput(outputSlice []string, newBinary bool) (PrepareOutputResult, error) {
+func PrepareOutput(outputSlice []string) (PrepareOutputResult, error) {
 	outConfig := PrepareOutputResult{}
 	traceeConfig := &config.OutputConfig{}
 
@@ -28,7 +26,7 @@ func PrepareOutput(outputSlice []string, newBinary bool) (PrepareOutputResult, e
 		outputParts := strings.SplitN(o, ":", 2)
 
 		if strings.HasPrefix(outputParts[0], "gotemplate=") {
-			err := parseFormat(outputParts, printerMap, newBinary)
+			err := parseFormat(outputParts, printerMap)
 			if err != nil {
 				return outConfig, err
 			}
@@ -38,43 +36,35 @@ func PrepareOutput(outputSlice []string, newBinary bool) (PrepareOutputResult, e
 		switch outputParts[0] {
 		case "none":
 			if len(outputParts) > 1 {
-				if newBinary {
-					return outConfig, errors.New("none output does not support path. Run 'man output' for more info")
-				}
-
-				return outConfig, errors.New("none output does not support path. Use '--output help' for more info")
+				return outConfig, NoneOutputPathError()
 			}
 			printerMap["stdout"] = "ignore"
 		case "table", "table-verbose", "json":
-			err := parseFormat(outputParts, printerMap, newBinary)
+			err := parseFormat(outputParts, printerMap)
 			if err != nil {
 				return outConfig, err
 			}
 		case "forward":
-			err := validateURL(outputParts, "forward", newBinary)
+			err := validateURL(outputParts, "forward")
 			if err != nil {
 				return outConfig, err
 			}
 
 			printerMap[outputParts[1]] = "forward"
 		case "webhook":
-			err := validateURL(outputParts, "webhook", newBinary)
+			err := validateURL(outputParts, "webhook")
 			if err != nil {
 				return outConfig, err
 			}
 
 			printerMap[outputParts[1]] = "webhook"
 		case "option":
-			err := parseOption(outputParts, traceeConfig, newBinary)
+			err := parseOption(outputParts, traceeConfig)
 			if err != nil {
 				return outConfig, err
 			}
 		default:
-			if newBinary {
-				return outConfig, fmt.Errorf("invalid output flag: %s, run 'man output' for more info", outputParts[0])
-			}
-
-			return outConfig, fmt.Errorf("invalid output flag: %s, use '--output help' for more info", outputParts[0])
+			return outConfig, InvalidOutputFlagError(outputParts[0])
 		}
 	}
 
@@ -83,7 +73,7 @@ func PrepareOutput(outputSlice []string, newBinary bool) (PrepareOutputResult, e
 		printerMap["stdout"] = "table"
 	}
 
-	printerConfigs, err := getPrinterConfigs(printerMap, traceeConfig, newBinary)
+	printerConfigs, err := getPrinterConfigs(printerMap, traceeConfig)
 	if err != nil {
 		return outConfig, err
 	}
@@ -113,7 +103,7 @@ func PreparePrinterConfig(printerKind string, outputPath string) (config.Printer
 }
 
 // setOption sets the given option in the given config
-func setOption(cfg *config.OutputConfig, option string, newBinary bool) error {
+func setOption(cfg *config.OutputConfig, option string) error {
 	switch option {
 	case "stack-addresses":
 		cfg.StackAddresses = true
@@ -157,23 +147,19 @@ func setOption(cfg *config.OutputConfig, option string, newBinary bool) error {
 		}
 
 	invalidOption:
-		if newBinary {
-			return errfmt.Errorf("invalid output option: %s, run 'man output' for more info", option)
-		}
-
-		return errfmt.Errorf("invalid output option: %s, use '--output help' for more info", option)
+		return InvalidOutputOptionError(option)
 	}
 
 	return nil
 }
 
 // getPrinterConfigs returns a slice of printer.Configs based on the given printerMap
-func getPrinterConfigs(printerMap map[string]string, traceeConfig *config.OutputConfig, newBinary bool) ([]config.PrinterConfig, error) {
+func getPrinterConfigs(printerMap map[string]string, traceeConfig *config.OutputConfig) ([]config.PrinterConfig, error) {
 	printerConfigs := make([]config.PrinterConfig, 0, len(printerMap))
 
 	for outPath, printerKind := range printerMap {
 		if printerKind == "table" {
-			if err := setOption(traceeConfig, "parse-arguments", newBinary); err != nil {
+			if err := setOption(traceeConfig, "parse-arguments"); err != nil {
 				return nil, err
 			}
 		}
@@ -188,7 +174,7 @@ func getPrinterConfigs(printerMap map[string]string, traceeConfig *config.Output
 }
 
 // parseFormat parses the given format and sets it in the given printerMap
-func parseFormat(outputParts []string, printerMap map[string]string, newBinary bool) error {
+func parseFormat(outputParts []string, printerMap map[string]string) error {
 	// if not file was passed, we use stdout
 	if len(outputParts) == 1 {
 		outputParts = append(outputParts, "stdout")
@@ -196,19 +182,11 @@ func parseFormat(outputParts []string, printerMap map[string]string, newBinary b
 
 	for _, outPath := range strings.Split(outputParts[1], ",") {
 		if outPath == "" {
-			if newBinary {
-				return errfmt.Errorf("format flag can't be empty, run 'man output' for more info")
-			}
-
-			return errfmt.Errorf("format flag can't be empty, use '--output help' for more info")
+			return EmptyOutputFlagError("format")
 		}
 
 		if _, ok := printerMap[outPath]; ok {
-			if newBinary {
-				return errfmt.Errorf("cannot use the same path for multiple outputs: %s, run  'man output' for more info", outPath)
-			}
-
-			return errfmt.Errorf("cannot use the same path for multiple outputs: %s, use '--output help' for more info", outPath)
+			return DuplicateOutputPathError(outPath)
 		}
 		printerMap[outPath] = outputParts[0]
 	}
@@ -217,17 +195,13 @@ func parseFormat(outputParts []string, printerMap map[string]string, newBinary b
 }
 
 // parseOption parses the given option and sets it in the given config
-func parseOption(outputParts []string, traceeConfig *config.OutputConfig, newBinary bool) error {
+func parseOption(outputParts []string, traceeConfig *config.OutputConfig) error {
 	if len(outputParts) == 1 || outputParts[1] == "" {
-		if newBinary {
-			return errfmt.Errorf("option flag can't be empty, run 'man output' for more info")
-		}
-
-		return errfmt.Errorf("option flag can't be empty, use '--output help' for more info")
+		return EmptyOutputFlagError("option")
 	}
 
 	for _, option := range strings.Split(outputParts[1], ",") {
-		err := setOption(traceeConfig, option, newBinary)
+		err := setOption(traceeConfig, option)
 		if err != nil {
 			return err
 		}
@@ -257,23 +231,15 @@ func CreateOutputFile(path string) (*os.File, error) {
 
 // validateURL validates the given URL
 // --output [webhook|forward]:[protocol://user:pass@]host:port[?k=v#f]
-func validateURL(outputParts []string, flag string, newBinary bool) error {
+func validateURL(outputParts []string, flag string) error {
 	if len(outputParts) == 1 || outputParts[1] == "" {
-		if newBinary {
-			return errfmt.Errorf("%s flag can't be empty, run 'man output' for more info", flag)
-		}
-
-		return errfmt.Errorf("%s flag can't be empty, use '--output help' for more info", flag)
+		return EmptyOutputFlagError(flag)
 	}
 	// Now parse our URL using the standard library and report any errors from basic parsing.
 	_, err := url.ParseRequestURI(outputParts[1])
 
 	if err != nil {
-		if newBinary {
-			return errfmt.Errorf("invalid uri for %s output %q. Run 'man output' for more info", flag, outputParts[1])
-		}
-
-		return errfmt.Errorf("invalid uri for %s output %q. Use '--output help' for more info", flag, outputParts[1])
+		return InvalidOutputURIError(flag, outputParts[1])
 	}
 
 	return nil

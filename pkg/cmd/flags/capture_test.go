@@ -26,7 +26,7 @@ func TestPrepareCapture(t *testing.T) {
 				testName:        "invalid capture option",
 				captureSlice:    []string{"foo"},
 				expectedCapture: config.CaptureConfig{},
-				expectedError:   errors.New("invalid capture option specified, use '--capture help' for more info"),
+				expectedError:   InvalidCaptureOptionError(),
 			},
 			{
 				testName:      "invalid capture dir",
@@ -37,7 +37,7 @@ func TestPrepareCapture(t *testing.T) {
 				testName:        "invalid capture write filter",
 				captureSlice:    []string{"write="},
 				expectedCapture: config.CaptureConfig{},
-				expectedError:   errors.New("invalid capture option specified, use '--capture help' for more info"),
+				expectedError:   InvalidCaptureOptionError(),
 			},
 			{
 				testName:        "invalid capture write filter 2",

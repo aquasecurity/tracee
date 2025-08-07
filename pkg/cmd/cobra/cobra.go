@@ -275,7 +275,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	output, err := flags.PrepareOutput(outputFlags, true)
+	output, err := flags.PrepareOutput(outputFlags)
 	if err != nil {
 		return runner, err
 	}

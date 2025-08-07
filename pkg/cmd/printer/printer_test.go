@@ -1,7 +1,6 @@
 package printer_test
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -24,13 +23,13 @@ func TestTraceeEbpfPrepareOutputPrinterConfig(t *testing.T) {
 			testName:        "invalid format",
 			outputSlice:     []string{"notaformat"},
 			expectedPrinter: config.PrinterConfig{},
-			expectedError:   fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', or 'gotemplate='. Use '--output help' for more info", "notaformat"),
+			expectedError:   flags.UnrecognizedOutputFormatError("notaformat"),
 		},
 		{
 			testName:        "invalid format with format prefix",
 			outputSlice:     []string{"format:notaformat2"},
 			expectedPrinter: config.PrinterConfig{},
-			expectedError:   fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', or 'gotemplate='. Use '--output help' for more info", "notaformat2"),
+			expectedError:   flags.UnrecognizedOutputFormatError("notaformat2"),
 		},
 		{
 			testName:    "default",

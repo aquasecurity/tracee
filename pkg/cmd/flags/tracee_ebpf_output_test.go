@@ -1,7 +1,6 @@
 package flags
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,22 +21,22 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "invalid output option",
 			outputSlice: []string{"foo"},
 			// it's not the preparer job to validate input. in this case foo is considered an implicit output format.
-			expectedError: errors.New("unrecognized output format: foo. Valid format values: 'table', 'table-verbose', 'json', or 'gotemplate='. Use '--output help' for more info"),
+			expectedError: UnrecognizedOutputFormatError("foo"),
 		},
 		{
 			testName:      "invalid output option",
 			outputSlice:   []string{"option:"},
-			expectedError: errors.New("invalid output option: , use '--output help' for more info"),
+			expectedError: InvalidOutputOptionError(""),
 		},
 		{
 			testName:      "invalid output option 2",
 			outputSlice:   []string{"option:foo"},
-			expectedError: errors.New("invalid output option: foo, use '--output help' for more info"),
+			expectedError: InvalidOutputOptionError("foo"),
 		},
 		{
 			testName:      "empty val",
 			outputSlice:   []string{"out-file"},
-			expectedError: errors.New("unrecognized output format: out-file. Valid format values: 'table', 'table-verbose', 'json', or 'gotemplate='. Use '--output help' for more info"),
+			expectedError: UnrecognizedOutputFormatError("out-file"),
 		},
 		{
 			testName:    "default format",

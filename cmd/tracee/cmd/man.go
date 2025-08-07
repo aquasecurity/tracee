@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 
+	"github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
@@ -79,11 +79,11 @@ var configCmd = &cobra.Command{
 }
 
 var containersCmd = &cobra.Command{
-	Use:     "cri",
+	Use:     "containers",
 	Aliases: []string{},
 	Short:   "containers flag help",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runManForFlag("cri")
+		return runManForFlag("containers")
 	},
 }
 
@@ -125,21 +125,36 @@ var scopeCmd = &cobra.Command{
 
 // runManForFlag runs man for the specified flag name
 func runManForFlag(flagName string) error {
-	const manHelpPath = "./docs/man"
-	manFlagFile := fmt.Sprintf("%s/%s.1", manHelpPath, flagName)
-	manFlagFileAbs, err := filepath.Abs(manFlagFile)
+	// Read the embedded manual page
+	manFileName := fmt.Sprintf("docs/man/%s.1", flagName)
+	manContent, err := tracee.ManPagesBundle.ReadFile(manFileName)
+	if err != nil {
+		return errfmt.Errorf("manual page not found for %s: %v", flagName, err)
+	}
+
+	// Create a temporary file with the manual content
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("tracee-man-%s-*.1", flagName))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
+	defer func() {
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpFile.Name())
+	}()
 
-	// check if the file exists
-	if _, err := os.Stat(manFlagFileAbs); os.IsNotExist(err) {
+	// Write the embedded content to the temporary file
+	if _, err := tmpFile.Write(manContent); err != nil {
 		return errfmt.WrapError(err)
 	}
 
-	// execute man
+	// Close the file so man can read it
+	if err := tmpFile.Close(); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Execute man on the temporary file
 	manPath := "/usr/bin/man"
-	cmd := exec.Command(manPath, manFlagFileAbs)
+	cmd := exec.Command(manPath, tmpFile.Name())
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
