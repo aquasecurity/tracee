@@ -21,18 +21,18 @@ Events are defined in the [Policy](../policies/index.md) YAML manifest.
 
 Tracing the `execve` events in a [policy](../policies/index.md):
 
-```
+```yaml
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-policy
-	annotations:
-		description: traces execve events
+  name: sample-policy
+  annotations:
+    description: traces execve events
 spec:
-	scope:
-	  - global
-	rules:
-	  - event: execve
+  scope:
+    - global
+  rules:
+    - event: execve
 ```
 
 If no event is passed with [filters] or [policies], tracee will start with a set of default events.
@@ -44,18 +44,18 @@ Please head over to the [Tracee usage](../policies/usage/kubernetes.md) document
 Events can be part of a set. For example, `default`, `network_events`, `syscalls`. 
 We can ask Tracee to trace a full set, or sets, instead of passing event by event, for example:
 
-```
+```yaml
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-policy
-	annotations:
-		description: traces execve events
+  name: sample-policy
+  annotations:
+    description: traces syscall events
 spec:
-	scope:
-	  - global
-	rules:
-	  - event: syscalls
+  scope:
+    - global
+  rules:
+    - event: syscalls
 ```
 
 ## Video Content
