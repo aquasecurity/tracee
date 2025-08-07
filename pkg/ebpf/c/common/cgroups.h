@@ -12,6 +12,7 @@ statfunc const char *get_cgroup_dirname(struct cgroup *);
 statfunc const u64 get_cgroup_id(struct cgroup *);
 statfunc const u32 get_cgroup_hierarchy_id(struct cgroup *);
 statfunc const u64 get_cgroup_v1_subsys0_id(struct task_struct *);
+statfunc u64 get_current_cgroup_id(void);
 
 // FUNCTIONS
 
@@ -61,6 +62,20 @@ statfunc const u64 get_cgroup_v1_subsys0_id(struct task_struct *task)
 {
     struct cgroup *cgroup = BPF_CORE_READ(task, cgroups, subsys[0], cgroup);
     return get_cgroup_id(cgroup);
+}
+
+statfunc u64 get_current_cgroup_id(void)
+{
+    u32 zero = 0;
+    config_entry_t *config = bpf_map_lookup_elem(&config_map, &zero);
+    if (unlikely(config == NULL))
+        return 0;
+
+    if (config->options & OPT_CGROUP_V1) {
+        struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+        return get_cgroup_v1_subsys0_id(task);
+    } else
+        return bpf_get_current_cgroup_id();
 }
 
 #endif
