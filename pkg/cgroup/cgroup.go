@@ -484,3 +484,65 @@ func GetCgroupPath(rootDir string, cgroupId uint64, subPath string) (string, tim
 
 	return "", time.Time{}, fs.ErrNotExist
 }
+
+// GetCgroupID returns the cgroup ID (inode number) for a given process and cgroup version.
+// The cgroup ID is extracted from /proc/<pid>/cgroup and the corresponding filesystem path.
+func GetCgroupID(pid int32, cgroupVersion CgroupVersion) (uint64, error) {
+	if pid <= 0 {
+		return 0, errfmt.Errorf("invalid pid %d: must be positive", pid)
+	}
+
+	cgroupFile := "/proc/" + strconv.Itoa(int(pid)) + "/cgroup"
+	cgroupData, err := os.ReadFile(cgroupFile)
+	if err != nil {
+		return 0, errfmt.Errorf("failed to read cgroup file %s: %v", cgroupFile, err)
+	}
+
+	// Find the cgroupv2 path (prefixed with "0::") or the cgroupv1 path (cpuset subsystem)
+	cgroupPath := ""
+	lines := strings.Split(string(cgroupData), "\n")
+	for _, line := range lines {
+		parts := strings.SplitN(line, ":", 3)
+		if len(parts) < 3 {
+			continue
+		}
+		if cgroupVersion == CgroupVersion2 && (parts[1] == "" || parts[0] == "0") {
+			cgroupPath = parts[2]
+			break
+		}
+
+		if cgroupVersion == CgroupVersion1 && parts[1] == "cpuset" {
+			cgroupPath = parts[2]
+		}
+	}
+
+	if cgroupPath == "" {
+		return 0, errfmt.Errorf("could not find cgroup path for pid %d", pid)
+	}
+
+	var fullCgroupPath string
+	switch cgroupVersion {
+	case CgroupVersion1:
+		fullCgroupPath = filepath.Join("/sys/fs/cgroup/cpuset", cgroupPath)
+	case CgroupVersion2:
+		// Use existing mount detection functionality
+		cgroupV2Mountpoint, _, err := mount.SearchMountpointFromHost("cgroup2", "")
+		if err != nil {
+			return 0, errfmt.Errorf("failed to find cgroup v2 mount point: %v", err)
+		}
+		if cgroupV2Mountpoint == "" {
+			return 0, errfmt.Errorf("could not find cgroup v2 mount point")
+		}
+		fullCgroupPath = filepath.Join(cgroupV2Mountpoint, cgroupPath)
+	default:
+		return 0, errfmt.Errorf("invalid cgroup version %d (%s)", cgroupVersion, cgroupVersion.String())
+	}
+
+	// Get file info to retrieve the inode number (which is the cgroup ID)
+	var stat syscall.Stat_t
+	if err := syscall.Stat(fullCgroupPath, &stat); err != nil {
+		return 0, errfmt.Errorf("failed to stat cgroup path %s: %v relative cgroup path: %s", fullCgroupPath, err, cgroupPath)
+	}
+
+	return stat.Ino, nil
+}
