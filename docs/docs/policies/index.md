@@ -10,17 +10,17 @@ Here is an example policy:
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: overview-policy
-	annotations:
-		description: sample overview policy
+  name: overview-policy
+  annotations:
+    description: sample overview policy
 spec:
-	scope:
-	  - global
-	rules:
-	  - event: dropped_executable
-	  - event: security_file_open
-	    filters:
-		- data.pathname=/tmp/*
+  scope:
+    - global
+  rules:
+    - event: dropped_executable
+    - event: security_file_open
+      filters:
+        - data.pathname=/tmp/*
 ```
 
 This policy applies to any workload (`global`) and will log the `dropped_executable`, and `security_file_open` events. A data filter (`data.pathname`) is set on the `security_file_open` event to log only files which were opened from the `/tmp` directory.

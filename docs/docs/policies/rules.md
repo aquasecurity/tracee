@@ -15,16 +15,16 @@ Below is an example showcasing a policy:
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-scope-filter
-	annotations:
-		description: sample scope filter
+  name: sample-scope-filter
+  annotations:
+    description: sample scope filter
 spec:
-	scope:
-	    - global
-	rules:
-	    event: openat
-	    filters:
-		- uid=1000
+  scope:
+    - global
+  rules:
+    - event: openat
+      filters:
+        - uid=1000
 ```
 ## Events
 
@@ -50,16 +50,16 @@ Further refinement of the policy's scope is achievable through the application o
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-scope-filter
-	annotations:
-		description: sample scope filter
+  name: sample-scope-filter
+  annotations:
+    description: sample scope filter
 spec:
-	scope:
-	    - global
-	rules:
-	    event: sched_process_exec
-	    filters:
-		- pid=1000
+  scope:
+    - global
+  rules:
+    - event: sched_process_exec
+      filters:
+        - pid=1000
 ```
 
 The scope filters supported are:
@@ -225,16 +225,16 @@ Events contain data that can be filtered.
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-data-filter
-	annotations:
-		description: sample data filter
+  name: sample-data-filter
+  annotations:
+    description: sample data filter
 spec:
-	scope:
-	    - global
-	rules:
-	    event: security_file_open
-	    filters:
-		- data.pathname=/tmp*
+  scope:
+    - global
+  rules:
+    - event: security_file_open
+      filters:
+        - data.pathname=/tmp*
 ```
 
 Data fields can be found on the respective event definition, in this case [security_file_open](https://github.com/aquasecurity/tracee/blob/656eb976fbb66aba54c5f306019258e436d4814a/pkg/events/core.go#L11502-L11533) - be aware of possible changes to the definition linked above, so always check the main branch.
@@ -257,14 +257,14 @@ Return values can also be filtered.
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-return-value
-	annotations:
-		description: sample return value
+  name: sample-return-value
+  annotations:
+    description: sample return value
 spec:
-	scope:
-	    - global
-	rules:
-	    event: close
-	    filters:
-		- retval!=0
+  scope:
+    - global
+  rules:
+    - event: close
+      filters:
+        - retval!=0
 ```
