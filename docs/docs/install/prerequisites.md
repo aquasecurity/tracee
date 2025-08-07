@@ -108,6 +108,9 @@ capabilities and justifications:
 For more information and help about process capabilities, please see
 [here](../advanced/dropping-capabilities.md).
 
+!!! tip "Having Issues?"
+    If you encounter problems during installation or setup, check our [Troubleshooting Guide](../troubleshooting.md) for common solutions.
+
 ## Processor architecture
 
 Tracee supports x86 and arm64 processors.
