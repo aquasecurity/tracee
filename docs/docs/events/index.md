@@ -1,15 +1,17 @@
 # Events
 
-Events refer to the system activity that Tracee monitors. There are two types of events: built-in events that are part of Tracee and custom events, which are user-defined events. 
+Events are the core of how Tracee works. Whether you're monitoring system calls, network activity, or security threats, Tracee treats everything as events that you can filter, combine, and act upon in your policies.
 
-As part of built-in events, there are six types of events:
+### Event Categories
 
-* syscalls 
-* network 
-* security 
-* lsm 
-* containers 
-* misc
+Tracee provides rich built-in events across six main categories:
+
+* **syscalls** - System call monitoring
+* **network** - Network activity and protocol analysis
+* **security** - Security-focused detections and signatures
+* **lsm** - Linux Security Module hooks
+* **containers** - Container lifecycle and metadata
+* **misc** - Additional system events and utilities
 
 This section documents all of the different events that Tracee exposes.
 
@@ -60,5 +62,5 @@ spec:
 
 If you are curious to learn more about the Tracee Events architecture and related decision making, then have a look at the following video Q&A:
 
-Everything is an Event in Tracee 
+Everything is an Event in Tracee
   [![Watch the video](../../images/liveqa.png)](https://www.youtube.com/live/keqVe4d71uk?si=OTbVxgWsFBtdqEMW)

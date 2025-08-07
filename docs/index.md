@@ -23,11 +23,29 @@ Before moving on, please consider giving us a GitHub star ⭐️. Thank you!
  
 ## About Tracee
 
-Tracee is a runtime security and observability tool that helps you understand how your system and applications behave.  
-It is using [eBPF technology](https://ebpf.io/what-is-ebpf/) to tap into your system and expose that information as events that you can consume.  
-Events range from factual system activity events to sophisticated security events that detect suspicious behavioral patterns.
+Tracee is a runtime security and observability tool that helps you understand how your system and applications behave using [eBPF technology](https://ebpf.io/what-is-ebpf/). It provides deep visibility into Linux systems by monitoring system calls, network activity, and file operations in real-time.
 
-To learn more about Tracee, check out the [documentation](https://aquasecurity.github.io/tracee/). 
+### What Tracee Does
+
+- **🔍 System Monitoring**: Tracks system calls, process execution, file operations, and network activity
+- **🛡️ Security Detection**: Identifies suspicious behavior patterns and potential security threats
+- **📊 Observability**: Provides detailed insights into application and system behavior
+- **🚨 Real-time Alerts**: Generates events for immediate threat detection and response
+
+### Key Features
+
+- **Zero Code Changes**: Monitor existing applications without modification
+- **Low Overhead**: Minimal performance impact using efficient eBPF programs
+- **Container Aware**: Native support for containerized environments and Kubernetes
+- **Flexible Policies**: Customize what to monitor and how to respond to events
+- **Rich Event Data**: Detailed context including process lineage, file paths, and network connections
+
+### Use Cases
+
+- **Security Monitoring**: Detect malware, privilege escalation, and suspicious activity
+- **Compliance**: Monitor file access, data exfiltration, and system changes
+- **Troubleshooting**: Debug application issues and system behavior
+- **Forensics**: Investigate security incidents with detailed audit trails
 
 ## Quickstart
 
@@ -59,6 +77,25 @@ kubectl logs --follow --namespace tracee daemonset/tracee
 ```
 
 For a complete walkthrough please see the [Kubernetes getting started guide][kubernetes-guide].
+
+## Next Steps
+
+After trying the quickstart, here's how to dive deeper:
+
+### 🎯 For Security Analysts
+- **[Events Documentation](docs/events/index.md)**: Learn about security events and signatures
+- **[Policies Guide](docs/policies/index.md)**: Create custom detection rules
+- **[Kubernetes Tutorial](tutorials/k8s-policies.md)**: Monitor containerized workloads
+
+### 🛠️ For DevOps Engineers
+- **[Installation Guide](docs/install/index.md)**: Production deployment options
+- **[Configuration](docs/install/config/index.md)**: Customize Tracee for your environment
+- **[Outputs](docs/outputs/index.md)**: Integrate with your monitoring stack
+
+### 👨‍💻 For Developers
+- **[Custom Events](docs/events/custom/overview.md)**: Create your own detection logic
+- **[Contributing Guide](contributing/overview.md)**: Help improve Tracee
+- **[Building from Source](contributing/building/building.md)**: Development setup
 
 ## Contributing
   
