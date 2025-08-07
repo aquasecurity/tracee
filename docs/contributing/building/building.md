@@ -3,7 +3,8 @@
 !!! Note
     Consider also visiting the following instructions:  
     1. docker container as [building environment](./environment.md)  
-    2. building tracee [container images](./containers.md)  
+    2. building tracee [container images](./containers.md)
+    3. using [development images](#development-images) for testing latest changes  
 
 1. Supported **Architectures**
 
@@ -131,3 +132,88 @@
     ```bash
     METRICS=1 make
     ```
+
+## Development Images
+
+For contributors who want to test the latest changes without building from source, Tracee provides daily development images built from the `main` branch.
+
+### Available Images
+
+**Multi-architecture image (recommended):**
+```bash
+docker pull aquasec/tracee:dev
+```
+
+**Architecture-specific images:**
+```bash
+# For x86_64 systems
+docker pull aquasec/tracee:x86_64-dev
+
+# For ARM64 systems  
+docker pull aquasec/tracee:aarch64-dev
+```
+
+**Timestamped images:**
+```bash
+# Images with specific build timestamps (format: YYYYMMDD-HHMMSSUTC)
+docker pull aquasec/tracee:dev-20240115-050123UTC
+```
+
+### Image Details
+
+- **Build Schedule**: Daily at 05:00 UTC
+- **Source**: Latest `main` branch
+- **Security**: All images are scanned for critical vulnerabilities before publishing
+- **Architectures**: x86_64 and ARM64 supported
+- **Registry**: Docker Hub (`aquasec/tracee`)
+
+### Using Development Images
+
+Development images work exactly like release images but contain the latest features and fixes:
+
+```bash
+# Quick test with development image
+docker run --rm -it --pid=host --privileged \
+  aquasec/tracee:dev --events syscalls --output format:table
+
+# Use in development workflows
+docker run --rm --pid=host --privileged \
+  -v $(pwd)/policy.yaml:/policy.yaml \
+  aquasec/tracee:dev --policy /policy.yaml
+```
+
+### When to Use Development Images
+
+**✅ Good for:**
+- Testing unreleased features
+- Validating bug fixes before releases
+- Development and testing workflows
+- Contributing feedback on latest changes
+
+**❌ Not recommended for:**
+- Production environments
+- Critical security monitoring
+- Environments requiring stability guarantees
+
+!!! warning "Development Image Stability"
+    Development images are built from the latest `main` branch and may contain:
+    
+    - Unreleased features that could change
+    - Potential bugs or instabilities
+    - Breaking changes not yet documented
+    
+    Always use official releases for production environments.
+
+### Finding Image Information
+
+Check the build date and source commit of a development image:
+
+```bash
+# Get image labels and metadata
+docker inspect aquasec/tracee:dev | jq '.[0].Config.Labels'
+
+# Check Tracee version in the image
+docker run --rm aquasec/tracee:dev --version
+```
+
+For the latest stable release images, see the [Installation Guide](../../docs/install/index.md).

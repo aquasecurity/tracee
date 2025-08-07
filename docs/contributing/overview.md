@@ -63,6 +63,22 @@ To backport or cherry-pick a change:
 5. Code related information should be in commit message, review related information should be in PR description.
 6. For changes that span different areas please try to make each change self contained and independent.
 
+## Development and Testing
+
+### Development Images
+
+For testing the latest changes without building from source, Tracee provides daily development images:
+
+```bash
+# Get the latest development build
+docker pull aquasec/tracee:dev
+
+# Test your changes quickly
+docker run --rm -it --pid=host --privileged aquasec/tracee:dev --version
+```
+
+Development images are built daily from the `main` branch and include the latest features and fixes. See [Building Documentation](building/building.md#development-images) for complete details.
+
 ## Code
 
 1. Follow Golang's code review standards: [https://github.com/golang/go/wiki/CodeReviewComments](https://github.com/golang/go/wiki/CodeReviewComments)
