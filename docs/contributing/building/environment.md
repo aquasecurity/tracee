@@ -127,7 +127,7 @@ Instead of executing a builder shell, you may use `alpine-make`, or
 
 > **Note**: the generated binary must be compatible to your host (depending on glibc version).
 
-If you don't want to depend on host's libraries versions, or you are using the `alpine-make` container as a replacement for `make`, then it's necessary  to set `STATIC` variable to `1` so you can run compiled binaries in your host machine:
+If you don't want to depend on the host's library versions, or you are using the `alpine-make` container as a replacement for `make`, then it's necessary to set the `STATIC` variable to `1` so you can run compiled binaries on your host machine:
 
 1. Compile tracee
 
