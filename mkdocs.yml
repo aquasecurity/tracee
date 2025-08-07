@@ -578,6 +578,7 @@ nav:
                 - Output Formats: docs/outputs/output-formats.md
                 - Output Options: docs/outputs/output-options.md
                 - Logging: docs/outputs/logging.md
+          - Troubleshooting: docs/troubleshooting.md
           - Advanced:
                 - Caching Events: docs/advanced/caching-events.md
                 - Ordering Events: docs/advanced/ordering-events.md
