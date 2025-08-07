@@ -16,11 +16,12 @@ release):
 
 1. **SNAPSHOT (development) container images:**
 
-     These container images are built daily and its tags always point to the
-     latest daily built container images (based on the version currently being
-     developed).
+     Daily development images built from the latest `main` branch. Tags:
 
-     - **aquasec/tracee:dev**
+     - **aquasec/tracee:dev** (multi-arch)
+     - **aquasec/tracee:x86_64-dev** (amd64 only)
+     - **aquasec/tracee:aarch64-dev** (arm64 only)
+     - **aquasec/tracee:dev-YYYYMMDD-HHMMSSUTC** (timestamped)
 
 2. **RELEASE (official versions) container images:**
 
@@ -71,3 +72,54 @@ the "run" targets:
         ```console
         make -f builder/Makefile.tracee-container run-tracee ARG="--help"
         ```
+
+## Development Images
+
+For contributors who want to test the latest changes without building from source, use the daily development images from Docker Hub.
+
+### Available Images
+
+```bash
+# Multi-architecture (recommended)
+docker pull aquasec/tracee:dev
+
+# Architecture-specific
+docker pull aquasec/tracee:x86_64-dev
+docker pull aquasec/tracee:aarch64-dev
+
+# Timestamped build
+docker pull aquasec/tracee:dev-20240115-050123UTC
+```
+
+### Image Details
+
+- Build Schedule: Daily at 05:00 UTC
+- Source: Latest `main` branch
+- Security: Scanned for critical vulnerabilities before publishing
+- Architectures: x86_64 and ARM64
+
+### Usage Examples
+
+```bash
+# Quick test with development image
+docker run --rm -it --pid=host --privileged \
+  aquasec/tracee:dev --events syscalls --output format:table
+
+# Use in development workflows
+docker run --rm --pid=host --privileged \
+  -v $(pwd)/policy.yaml:/policy.yaml \
+  aquasec/tracee:dev --policy /policy.yaml
+```
+
+### Guidance
+
+Use development images for testing unreleased features and validating fixes. Do not use them in production environments.
+
+To inspect build metadata:
+
+```bash
+docker inspect aquasec/tracee:dev | jq '.[0].Config.Labels'
+docker run --rm aquasec/tracee:dev --version
+```
+
+For stable release images, see the [Installation Guide](../../docs/install/index.md).
