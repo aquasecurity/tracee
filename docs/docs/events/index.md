@@ -1,6 +1,6 @@
 # Events
 
-Events refer to the system activity that tracee monitors. There are two types of events, built-in events that are part of Tracee and custom events, which are user defined events. 
+Events refer to the system activity that Tracee monitors. There are two types of events: built-in events that are part of Tracee and custom events, which are user-defined events. 
 
 As part of built-in events, there are six types of events:
 

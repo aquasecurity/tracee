@@ -6,8 +6,8 @@ Thank you for taking interest in contributing to Tracee! This document covers ou
 
 We encourage open discussion and collaboration using both GitHub Issues and Discussions.  
 
-- [Discussions](https://github.com/aquasecurity/tracee/discussions) are free-style conversational tool.
-- [Issues](https://github.com/aquasecurity/tracee/issues) are project management tool, we use them to keep track on who's working on what and plan ahead.
+- [Discussions](https://github.com/aquasecurity/tracee/discussions) are a free-style conversational tool.
+- [Issues](https://github.com/aquasecurity/tracee/issues) are a project management tool, we use them to keep track of who's working on what and plan ahead.
 
 If you have a suggestion, question, or a general comment - please use Discussions. If there's a clear work item (including bugs) - you can open an Issue.
 

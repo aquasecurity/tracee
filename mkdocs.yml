@@ -628,7 +628,7 @@ nav:
     - Contributing:
           - Overview: contributing/overview.md
           - Guidelines: contributing/guidelines.md
-          - Performence: contributing/performance.md
+          - Performance: contributing/performance.md
           - Kubernetes: contributing/kubernetes.md
           - Setup Development Machine with Vagrant: contributing/setup-development-machine-with-vagrant.md
           - Building:

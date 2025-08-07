@@ -73,6 +73,7 @@ scope:
 ```
 
 ### mntns
+
 Events are collected from the mount namespace:
 
 ```yaml
@@ -81,6 +82,7 @@ scope:
 ```
 
 ### pidns
+
 Events are collected from the pid namespace:
 
 ```yaml
@@ -89,6 +91,7 @@ scope:
 ```
 
 ### uts
+
 Events are collected from uts namespace:
 
 ```yaml
@@ -106,6 +109,7 @@ scope:
 ```
 
 ### container
+
 Events are collected only from containers:
 
 ```yaml
@@ -114,6 +118,7 @@ scope:
 ```
 
 ### not-container
+
 Events are collected from everything but containers:
 
 ```yaml
@@ -122,6 +127,7 @@ scope:
 ```
 
 ### tree
+
 Events are collected from process tree:
 
 ```yaml
@@ -130,6 +136,7 @@ scope:
 ```
 
 ### executable, exec
+
 Events are collected from executable:
 
 ```yaml

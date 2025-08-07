@@ -33,7 +33,7 @@ make -f ./builder/Makefile.mkdocs mkdocs-serve
 Open `localhost:8000/tracee`
 
 Now you should see the documentation.
-Check that everything is like you intent.
+Check that everything is as you intended.
 
 And finally Submit a PR about the changes.
 
@@ -46,7 +46,7 @@ To contribute to the code:
 
 Tracee relies on several generated files and has strict formatting requirements. Ensure you run the following commands before committing:
 
-**`NOTE:`** In order to not depend on host's libraries versions, we recommend that you always run make and other project dependencies on a virtual environment so the formatting will be align with Tracee guidelines
+**`NOTE:`** In order to not depend on the host's library versions, we recommend that you always run make and other project dependencies in a virtual environment so the formatting will be aligned with Tracee guidelines
 
 1. Man Pages Generation: If you've modified core code or documentation that impacts the man pages, run:
 
@@ -56,7 +56,7 @@ Tracee relies on several generated files and has strict formatting requirements.
 
     This regenerates the man pages to reflect your changes.
 
-2. Protocol Buffer Compilation: If your changes involve modifications to protocol buffer (`.proto`) files,run:
+2. Protocol Buffer Compilation: If your changes involve modifications to protocol buffer (`.proto`) files, run:
 
     ```bash
     make -f builder/Makefile.man
@@ -66,7 +66,7 @@ Tracee relies on several generated files and has strict formatting requirements.
 
 3. Pre-commit checks: Every time you're about to create a pull request, execute:
 
-    **`NOTE:`**  If your host machine dependencies doesn't align with Tracee dependencies, This command have to run on a supported [environment](./building/environment.md)
+    **`NOTE:`**  If your host machine dependencies don't align with Tracee dependencies, this command has to run on a supported [environment](./building/environment.md)
 
     ```bash
     make check-pr
