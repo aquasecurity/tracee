@@ -58,6 +58,12 @@ spec:
     - event: syscalls
 ```
 
+## Related Topics
+
+* [Policies Documentation](../policies/index.md) - Learn how to create policies that use events
+* [Custom Signatures](./custom/overview.md) - Build your own detection logic using Go
+* [Troubleshooting](../troubleshooting.md) - Solutions for event-related issues
+
 ## Video Content
 
 If you are curious to learn more about the Tracee Events architecture and related decision making, then have a look at the following video Q&A:

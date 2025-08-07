@@ -42,6 +42,9 @@ docker run --name tracee -it --rm \
 
  After running this command, you should start seeing a stream of events that Tracee is emitting.
 
+!!! tip "Not seeing events?"
+    If Tracee isn't producing events or you encounter issues, check our [Troubleshooting Guide](../troubleshooting.md) for solutions.
+
  For next steps, please read about Tracee [Policies](../policies/index.md)
 
 ## Installing Tracee
