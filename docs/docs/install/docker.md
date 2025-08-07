@@ -31,11 +31,11 @@ docker run --name tracee -it --rm \
 
  1. Docker general flags:
     - `--name` - name our container so that we can interact with it easily.
-    - `--rm` - remove the container one it exits, assuming this is an interactive trial of Tracee.
+    - `--rm` - remove the container once it exits, assuming this is an interactive trial of Tracee.
     - `-it` - allow the container to interact with your terminal.
  2. Since Tracee runs in a container but is instrumenting the host, it will need access to some resources from the host:
     - `--pid=host` - share the host's [process namespace]() with Tracee's container.
-    - `--cgroupns-host` - share the host's [cgroup namespace]() with Tracee's container.
+    - `--cgroupns=host` - share the host's [cgroup namespace]() with Tracee's container.
     - `--privileged` - run the Tracee container as root so it has all the [required capabilities](./prerequisites.md#process-capabilities).
     - `-v /etc/os-release:/etc/os-release-host:ro` - share the host's [OS information file](./prerequisites.md#os-information) with the Tracee container.
     - `-v /var/run:/var/run` - share the host's container runtime socket for [container enrichment](./container-engines.md)
