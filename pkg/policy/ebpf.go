@@ -360,16 +360,17 @@ func (ps *policies) createNewEventsMapVersion(
 }
 
 // updateUIntFilterBPF updates the BPF maps for the given uint equalities.
-func (ps *policies) updateUIntFilterBPF(uintEqualities map[uint64]equality, innerMapName string) error {
-	// UInt equalities
-	// 1. uid_filter        u32, eq_t
-	// 2. pid_filter        u32, eq_t
-	// 3. mnt_ns_filter     u32, eq_t
-	// 4. pid_ns_filter     u32, eq_t
-	// 5. cgroup_id_filter  u32, eq_t
+// Supports both uint32 and uint64 keys. All keys are converted to uint32 for BPF maps.
+func updateUIntFilterBPF[T uint32 | uint64](ps *policies, uintEqualities map[T]equality, innerMapName string) error {
+	// UInt equalities - all BPF maps use u32 keys:
+	// 1. uid_filter        u32, eq_t (native uint32)
+	// 2. pid_filter        u32, eq_t (native uint32)
+	// 3. mnt_ns_filter     u32, eq_t (uint64 -> uint32)
+	// 4. pid_ns_filter     u32, eq_t (uint64 -> uint32)
+	// 5. cgroup_id_filter  u32, eq_t (uint64 -> uint32)
 
 	for k, v := range uintEqualities {
-		u32Key := uint32(k)
+		u32Key := uint32(k) // Convert to uint32 for BPF map
 		keyPointer := unsafe.Pointer(&u32Key)
 
 		eqVal := make([]byte, equalityValueSize)
@@ -697,8 +698,8 @@ func (ps *policies) updateBPF(
 	updateProcTree bool,
 ) (*PoliciesConfig, error) {
 	fEqs := &filtersEqualities{
-		uidEqualities:        make(map[uint64]equality),
-		pidEqualities:        make(map[uint64]equality),
+		uidEqualities:        make(map[uint32]equality),
+		pidEqualities:        make(map[uint32]equality),
 		mntNSEqualities:      make(map[uint64]equality),
 		pidNSEqualities:      make(map[uint64]equality),
 		cgroupIdEqualities:   make(map[uint64]equality),
@@ -739,19 +740,19 @@ func (ps *policies) updateBPF(
 	}
 
 	// Update UInt equalities filter maps
-	if err := ps.updateUIntFilterBPF(fEqs.uidEqualities, UIDFilterMap); err != nil {
+	if err := updateUIntFilterBPF(ps, fEqs.uidEqualities, UIDFilterMap); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	if err := ps.updateUIntFilterBPF(fEqs.pidEqualities, PIDFilterMap); err != nil {
+	if err := updateUIntFilterBPF(ps, fEqs.pidEqualities, PIDFilterMap); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	if err := ps.updateUIntFilterBPF(fEqs.mntNSEqualities, MntNSFilterMap); err != nil {
+	if err := updateUIntFilterBPF(ps, fEqs.mntNSEqualities, MntNSFilterMap); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	if err := ps.updateUIntFilterBPF(fEqs.pidNSEqualities, PidNSFilterMap); err != nil {
+	if err := updateUIntFilterBPF(ps, fEqs.pidNSEqualities, PidNSFilterMap); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	if err := ps.updateUIntFilterBPF(fEqs.cgroupIdEqualities, CgroupIdFilterMap); err != nil {
+	if err := updateUIntFilterBPF(ps, fEqs.cgroupIdEqualities, CgroupIdFilterMap); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 
