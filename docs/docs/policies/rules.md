@@ -6,7 +6,7 @@ Rules are part of the Tracee Policy, `rules` let you define which events to trac
 - events: let you define which events you want to trace.
 - filters: enable you to refine the policy's scope.
 
-Tracee support many kind of events to tracee you can find which events you can trace in [Events section](../events/index.md).
+Tracee supports many kinds of events to trace. You can find which events you can trace in the [Events section](../events/index.md).
 
 - **NOTE:** It is possible to define multiple events within each policy.
 
@@ -15,21 +15,21 @@ Below is an example showcasing a policy:
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-scope-filter
-	annotations:
-		description: sample scope filter
+  name: sample-scope-filter
+  annotations:
+    description: sample scope filter
 spec:
-	scope:
-	    - global
-	rules:
-	    event: openat
-	    filters:
-		- uid=1000
+  scope:
+    - global
+  rules:
+    - event: openat
+      filters:
+        - uid=1000
 ```
 ## Events
 
 ### Type of Events
-The value of an `event` it's the event name from the supported events.
+The value of an `event` is the event name from the supported events.
 
 For example: `syscall` event would be the `syscall` event name.
 
@@ -50,16 +50,16 @@ Further refinement of the policy's scope is achievable through the application o
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-scope-filter
-	annotations:
-		description: sample scope filter
+  name: sample-scope-filter
+  annotations:
+    description: sample scope filter
 spec:
-	scope:
-	    - global
-	rules:
-	    event: sched_process_exec
-	    filters:
-		- pid=1000
+  scope:
+    - global
+  rules:
+    - event: sched_process_exec
+      filters:
+        - pid=1000
 ```
 
 The scope filters supported are:
@@ -225,16 +225,16 @@ Events contain data that can be filtered.
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-data-filter
-	annotations:
-		description: sample data filter
+  name: sample-data-filter
+  annotations:
+    description: sample data filter
 spec:
-	scope:
-	    - global
-	rules:
-	    event: security_file_open
-	    filters:
-		- data.pathname=/tmp*
+  scope:
+    - global
+  rules:
+    - event: security_file_open
+      filters:
+        - data.pathname=/tmp*
 ```
 
 Data fields can be found on the respective event definition, in this case [security_file_open](https://github.com/aquasecurity/tracee/blob/656eb976fbb66aba54c5f306019258e436d4814a/pkg/events/core.go#L11502-L11533) - be aware of possible changes to the definition linked above, so always check the main branch.
@@ -257,14 +257,14 @@ Return values can also be filtered.
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-return-value
-	annotations:
-		description: sample return value
+  name: sample-return-value
+  annotations:
+    description: sample return value
 spec:
-	scope:
-	    - global
-	rules:
-	    event: close
-	    filters:
-		- retval!=0
+  scope:
+    - global
+  rules:
+    - event: close
+      filters:
+        - retval!=0
 ```

@@ -6,8 +6,8 @@ Thank you for taking interest in contributing to Tracee! This document covers ou
 
 We encourage open discussion and collaboration using both GitHub Issues and Discussions.  
 
-- [Discussions](https://github.com/aquasecurity/tracee/discussions) are free-style conversational tool.
-- [Issues](https://github.com/aquasecurity/tracee/issues) are project management tool, we use them to keep track on who's working on what and plan ahead.
+- [Discussions](https://github.com/aquasecurity/tracee/discussions) are a free-style conversational tool.
+- [Issues](https://github.com/aquasecurity/tracee/issues) are a project management tool, we use them to keep track of who's working on what and plan ahead.
 
 If you have a suggestion, question, or a general comment - please use Discussions. If there's a clear work item (including bugs) - you can open an Issue.
 
@@ -62,6 +62,65 @@ To backport or cherry-pick a change:
 4. Optional commit body (separated by empty line from subject) may explain why the change was made and not how. Wrap at 72 chars.
 5. Code related information should be in commit message, review related information should be in PR description.
 6. For changes that span different areas please try to make each change self contained and independent.
+
+## Development and Testing
+
+### Development Images
+
+For testing the latest changes without building from source, Tracee provides daily development images:
+
+```bash
+# Get the latest development build
+docker pull aquasec/tracee:dev
+
+# Test your changes quickly
+docker run --rm -it --pid=host --privileged aquasec/tracee:dev --version
+```
+
+Development images are built daily from the `main` branch and include the latest features and fixes. See [Building Documentation](building/building.md#development-images) for complete details.
+
+### Development Workflows
+
+Tracee provides several `make` targets to streamline development:
+
+```bash
+# Quick development checks before committing
+make check-pr              # Run all code quality checks for PR submission
+make format-pr             # Show what formatting changes are needed
+make fix-fmt               # Automatically fix code formatting
+
+# Testing workflows
+make test-unit             # Run unit tests with coverage
+make test-types            # Run tests for the types module
+make test-integration      # Run integration tests
+
+# Development builds
+make all                   # Build all components (tracee-ebpf, tracee-rules, signatures)
+make tracee                # Build the main tracee binary
+make bpf                   # Build just the eBPF object
+
+# Code analysis and debugging
+make bear                  # Generate compile_commands.json for IDE integration
+DEBUG=1 make              # Build with debug symbols
+METRICS=1 make            # Build with BPF metrics enabled
+```
+
+**Quick Start for Development:**
+```bash
+# 1. Check your environment
+make env
+
+# 2. Build everything
+make all
+
+# 3. Run tests
+make test-unit
+
+# 4. Check code quality before submitting PR
+make check-pr
+```
+
+For a complete list of available targets, run `make help`.
 
 ## Code
 

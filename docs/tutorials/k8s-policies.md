@@ -31,10 +31,10 @@ This command installs Tracee in the tracee-system namespace, enabling the use of
 
 ## Add a new Tracee policy
 
-By default, Tracee comes with a policy for signature events. In this step, you will learn how to add a new policy suit your requirements.
+By default, Tracee comes with a policy for signature events. In this step, you will learn how to add a new policy to suit your requirements.
 
 
-The `tracee-policies` configmap should have all policies tracee will load when booting. Let's take a look on the default policy:
+The `tracee-policies` configmap should have all policies Tracee will load when booting. Let's take a look at the default policy:
 
 ```console
 kubectl get configmap -n tracee-system
@@ -44,7 +44,7 @@ tracee-config      1      58m
 tracee-policies    2      58m
 ```
 
-Let's take a look at a look at the default policy:
+Let's take a look at the default policy:
 
 ```console
 kubectl describe configmap/tracee-policies -ntracee-system
@@ -98,7 +98,7 @@ spec:
 	  - event: dropped_executable
 ```
 
-But let's supposed we also need tracee to trace all `execve` events, for it we need to change the configmap `tracee-policies` adding a new policy.
+But let's suppose we also need Tracee to trace all `execve` events. For this, we need to change the configmap `tracee-policies` by adding a new policy.
 
 Let's edit the tracee-policies ConfigMap using kubectl:
 
@@ -130,7 +130,7 @@ data:
 Save and close the file. The changes will be applied to the configmap.
 
 !!! note
-	If you having a problem editing the configmap, you can apply it directly with:
+	If you are having a problem editing the configmap, you can apply it directly with:
 	```console
 	kubectl apply -f https://gist.githubusercontent.com/josedonizetti/3df19a61d39840441ea5be448d6c9354/raw/c50b9b66d7996bb27b6fac301d24d6390e356f8c/tracee-policies-configmap.yaml
 	```
@@ -152,7 +152,7 @@ kubectl rollout status ds/tracee -n tracee-system
 
 Then check for `execve` events:
 
-```conosle
+```console
 kubectl logs -f ds/tracee -n tracee-system | grep execve
 ```
 

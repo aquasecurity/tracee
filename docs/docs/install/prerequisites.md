@@ -82,7 +82,7 @@ Tracee will try to probe the running OS and kernel to detect available
 capabilities. For this, it needs access to some standard informative files:
 
 - For OS information please make sure the file `/etc/os-release` is available.
-- For Kernel information please make sure on of the files `/boot/config-$(uname-r)` OR `/proc/config.gz` is available.
+- For Kernel information please make sure one of the files `/boot/config-$(uname-r)` OR `/proc/config.gz` is available.
 
 For more information and help about OS info files, please see [here](../advanced/os-info.md).
 
@@ -107,6 +107,9 @@ capabilities and justifications:
 
 For more information and help about process capabilities, please see
 [here](../advanced/dropping-capabilities.md).
+
+!!! tip "Having Issues?"
+    If you encounter problems during installation or setup, check our [Troubleshooting Guide](../troubleshooting.md) for common solutions.
 
 ## Processor architecture
 
