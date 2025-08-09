@@ -8,20 +8,20 @@ import (
 
 type ScopeFilter struct {
 	enabled                    bool
-	timestampFilter            *IntFilter[int64]
-	processorIDFilter          *IntFilter[int64]
-	pidFilter                  *IntFilter[int64]
-	tidFilter                  *IntFilter[int64]
-	ppidFilter                 *IntFilter[int64]
-	hostPidFilter              *IntFilter[int64]
-	hostTidFilter              *IntFilter[int64]
-	hostPpidFilter             *IntFilter[int64]
-	uidFilter                  *IntFilter[int64]
-	mntNSFilter                *IntFilter[int64]
-	pidNSFilter                *IntFilter[int64]
+	timestampFilter            *NumericFilter[int64]
+	processorIDFilter          *NumericFilter[int64]
+	pidFilter                  *NumericFilter[int64]
+	tidFilter                  *NumericFilter[int64]
+	ppidFilter                 *NumericFilter[int64]
+	hostPidFilter              *NumericFilter[int64]
+	hostTidFilter              *NumericFilter[int64]
+	hostPpidFilter             *NumericFilter[int64]
+	uidFilter                  *NumericFilter[int64]
+	mntNSFilter                *NumericFilter[int64]
+	pidNSFilter                *NumericFilter[int64]
 	processNameFilter          *StringFilter
 	hostNameFilter             *StringFilter
-	cgroupIDFilter             *UIntFilter[uint64]
+	cgroupIDFilter             *NumericFilter[uint64]
 	containerFilter            *BoolFilter
 	containerIDFilter          *StringFilter
 	containerImageFilter       *StringFilter
