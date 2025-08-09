@@ -41,22 +41,27 @@ Please head over to the [Tracee usage](../policies/usage/kubernetes.md) document
 
 ### Event Sets
 
-Events can be part of a set. For example, `default`, `network_events`, `syscalls`. 
-We can ask Tracee to trace a full set, or sets, instead of passing event by event, for example:
+Event sets are predefined groups of related events. Instead of listing events individually, you can use sets like `syscalls` (all system calls), `fs` (file system operations), or `net` (network events).
 
-```yaml
-apiVersion: tracee.aquasec.com/v1beta1
-kind: Policy
-metadata:
-  name: sample-policy
-  annotations:
-    description: traces syscall events
-spec:
-  scope:
-    - global
-  rules:
-    - event: syscalls
+**Discover available sets:**
+```bash
+tracee list --wide
 ```
+
+**Use in policies:**
+```yaml
+rules:
+  - event: syscalls     # All system calls
+  - event: fs           # File system events
+```
+
+**Use on command line:**
+```bash
+tracee --events syscalls,net
+```
+
+!!! tip "Tracing All System Calls"
+    Use `--events syscalls` to trace all system calls without listing them individually.
 
 ## Related Topics
 
