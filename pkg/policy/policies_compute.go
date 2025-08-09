@@ -45,20 +45,20 @@ func (ps *policies) calculateGlobalMinMax() {
 		if p.UIDFilter.Enabled() {
 			uidFilterCount++
 
-			if p.UIDFilter.Minimum() != filters.MinNotSetUInt {
+			if p.UIDFilter.Minimum() != filters.GetUnsetMin[uint32]() {
 				uidMinFilterCount++
 			}
-			if p.UIDFilter.Maximum() != filters.MaxNotSetUInt {
+			if p.UIDFilter.Maximum() != filters.GetUnsetMax[uint32]() {
 				uidMaxFilterCount++
 			}
 		}
 		if p.PIDFilter.Enabled() {
 			pidFilterCount++
 
-			if p.PIDFilter.Minimum() != filters.MinNotSetUInt {
+			if p.PIDFilter.Minimum() != filters.GetUnsetMin[uint32]() {
 				pidMinFilterCount++
 			}
-			if p.PIDFilter.Maximum() != filters.MaxNotSetUInt {
+			if p.PIDFilter.Maximum() != filters.GetUnsetMax[uint32]() {
 				pidMaxFilterCount++
 			}
 		}
@@ -70,10 +70,10 @@ func (ps *policies) calculateGlobalMinMax() {
 	pidMaxFilterableInUserland = policyCount > 1 && (pidMaxFilterCount != pidFilterCount)
 
 	// reset global min max
-	ps.uidFilterMax = filters.MaxNotSetUInt
-	ps.uidFilterMin = filters.MinNotSetUInt
-	ps.pidFilterMax = filters.MaxNotSetUInt
-	ps.pidFilterMin = filters.MinNotSetUInt
+	ps.uidFilterMax = filters.GetUnsetMax[uint64]()
+	ps.uidFilterMin = filters.GetUnsetMin[uint64]()
+	ps.pidFilterMax = filters.GetUnsetMax[uint64]()
+	ps.pidFilterMin = filters.GetUnsetMin[uint64]()
 
 	ps.uidFilterableInUserland = uidMinFilterableInUserland || uidMaxFilterableInUserland
 	ps.pidFilterableInUserland = pidMinFilterableInUserland || pidMaxFilterableInUserland
@@ -88,19 +88,19 @@ func (ps *policies) calculateGlobalMinMax() {
 	// set a reduced range of uint values to be filtered in ebpf
 	for _, p := range ps.allFromMap() {
 		if p.UIDFilter.Enabled() {
-			if !uidMinFilterableInUserland {
-				ps.uidFilterMin = utils.Min(ps.uidFilterMin, p.UIDFilter.Minimum())
+			if !uidMinFilterableInUserland && p.UIDFilter.Minimum() != filters.GetUnsetMin[uint32]() {
+				ps.uidFilterMin = utils.Min(ps.uidFilterMin, uint64(p.UIDFilter.Minimum()))
 			}
-			if !uidMaxFilterableInUserland {
-				ps.uidFilterMax = utils.Max(ps.uidFilterMax, p.UIDFilter.Maximum())
+			if !uidMaxFilterableInUserland && p.UIDFilter.Maximum() != filters.GetUnsetMax[uint32]() {
+				ps.uidFilterMax = utils.Max(ps.uidFilterMax, uint64(p.UIDFilter.Maximum()))
 			}
 		}
 		if p.PIDFilter.Enabled() {
-			if !pidMinFilterableInUserland {
-				ps.pidFilterMin = utils.Min(ps.pidFilterMin, p.PIDFilter.Minimum())
+			if !pidMinFilterableInUserland && p.PIDFilter.Minimum() != filters.GetUnsetMin[uint32]() {
+				ps.pidFilterMin = utils.Min(ps.pidFilterMin, uint64(p.PIDFilter.Minimum()))
 			}
-			if !pidMaxFilterableInUserland {
-				ps.pidFilterMax = utils.Max(ps.pidFilterMax, p.PIDFilter.Maximum())
+			if !pidMaxFilterableInUserland && p.PIDFilter.Maximum() != filters.GetUnsetMax[uint32]() {
+				ps.pidFilterMax = utils.Max(ps.pidFilterMax, uint64(p.PIDFilter.Maximum()))
 			}
 		}
 	}

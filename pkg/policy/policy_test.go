@@ -20,10 +20,10 @@ func TestPolicyClone(t *testing.T) {
 
 	opt1 := cmp.AllowUnexported(
 		filters.StringFilter{},
-		filters.UIntFilter[uint32]{},
-		filters.UIntFilter[uint64]{},
+		filters.NumericFilter[uint32]{},
+		filters.NumericFilter[uint64]{},
 		filters.BoolFilter{},
-		filters.IntFilter[int64]{},
+		filters.NumericFilter[int64]{},
 		filters.DataFilter{},
 		filters.ScopeFilter{},
 		filters.ProcessTreeFilter{},

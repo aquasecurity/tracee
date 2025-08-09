@@ -9,11 +9,11 @@ import (
 type Policy struct {
 	ID                int
 	Name              string
-	UIDFilter         *filters.UIntFilter[uint32]
-	PIDFilter         *filters.UIntFilter[uint32]
+	UIDFilter         *filters.NumericFilter[uint32]
+	PIDFilter         *filters.NumericFilter[uint32]
 	NewPidFilter      *filters.BoolFilter
-	MntNSFilter       *filters.UIntFilter[uint64]
-	PidNSFilter       *filters.UIntFilter[uint64]
+	MntNSFilter       *filters.NumericFilter[uint64]
+	PidNSFilter       *filters.NumericFilter[uint64]
 	UTSFilter         *filters.StringFilter
 	CommFilter        *filters.StringFilter
 	ContFilter        *filters.BoolFilter
@@ -29,7 +29,7 @@ type RuleData struct {
 	EventID     events.ID
 	ScopeFilter *filters.ScopeFilter
 	DataFilter  *filters.DataFilter
-	RetFilter   *filters.IntFilter[int64]
+	RetFilter   *filters.NumericFilter[int64]
 }
 
 // Compile-time check to ensure that Policy implements the Cloner interface

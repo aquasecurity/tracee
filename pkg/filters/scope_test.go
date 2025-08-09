@@ -20,8 +20,8 @@ func TestScopeFilterClone(t *testing.T) {
 
 	opt1 := cmp.AllowUnexported(
 		ScopeFilter{},
-		IntFilter[int64]{},
-		UIntFilter[uint64]{},
+		NumericFilter[int64]{},
+		NumericFilter[uint64]{},
 		BoolFilter{},
 		StringFilter{},
 		sets.PrefixSet{},
