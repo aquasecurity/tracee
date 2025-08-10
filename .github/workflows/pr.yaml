@@ -192,9 +192,18 @@ jobs:
       - name: Run Unit Tests
         run: |
           make test-unit
+      - name: Upload Unit Test Coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.txt
+          flags: unit
+          name: unit-tests
+          fail_ci_if_error: false
       - name: Run Scripts Unit Tests
         run: |
           make run-scripts-test-unit
+
   #
   # INTEGRATION TESTS
   #
@@ -214,6 +223,14 @@ jobs:
       - name: Run Integration Tests
         run: |
           sudo env "PATH=$PATH" make test-integration
+      - name: Upload Integration Test Coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./integration-coverage.txt
+          flags: integration
+          name: integration-tests
+          fail_ci_if_error: false
   #
   # PERFORMANCE TESTS
   #
