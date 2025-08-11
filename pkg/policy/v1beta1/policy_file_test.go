@@ -19,7 +19,6 @@ func TestPolicyValidate(t *testing.T) {
 		"fake_signature",
 		events.NewVersion(1, 0, 0), // Version
 		"fake_description",
-		"",
 		false,
 		false,
 		[]string{"signatures", "default"},

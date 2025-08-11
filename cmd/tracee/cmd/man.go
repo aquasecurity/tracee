@@ -11,6 +11,7 @@ import (
 
 	"github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/events"
 )
 
 func init() {
@@ -26,22 +27,23 @@ func init() {
 		logCmd,
 		outputCmd,
 		scopeCmd,
+		eventCmd,
 	)
 }
 
 var manCmd = &cobra.Command{
 	Use:     "man",
 	Aliases: []string{"m"},
-	Short:   "Open man page for a specified flag name",
-	Long: `Open manual pages for tracee flags.
+	Short:   "Open manual pages for tracee flags and events",
+	Long: `Open manual pages for tracee flags and events.
 
-This command provides access to detailed documentation for each tracee flag.
-Use the available subcommands to open the manual page for a specific flag.
+This command provides access to detailed documentation for tracee flags and events.
+Use the available subcommands to access documentation for specific topics.
 
 Examples:
-  tracee man cache        # Open manual page for --cache flag
-  tracee man events       # Open manual page for --events flag
-  tracee man output       # Open manual page for --output flag`,
+  tracee man cache          # Open manual page for --cache flag
+  tracee man events         # Open manual page for --events flag
+  tracee man event bpf_attach # Open documentation for the 'bpf_attach' event`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// if here, no valid subcommand was provided
 		if err := cmd.Help(); err != nil {
@@ -124,6 +126,15 @@ var scopeCmd = &cobra.Command{
 	},
 }
 
+var eventCmd = &cobra.Command{
+	Use:   "event [event-name]",
+	Short: "Show manual page for a specific event",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return showEventDocumentation(args[0])
+	},
+}
+
 // runManForFlag runs man for the specified flag name
 func runManForFlag(flagName string) error {
 	// Read the embedded manual page
@@ -160,6 +171,79 @@ func runManForFlag(flagName string) error {
 		cleanContent := cleanGroffFormatting(string(manContent))
 		fmt.Print(cleanContent)
 		return nil
+	}
+
+	// Execute man on the temporary file
+	cmd := exec.Command(manPath, tmpFile.Name())
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	return errfmt.WrapError(err)
+}
+
+// showEventDocumentation displays documentation for a specific event
+func showEventDocumentation(eventName string) error {
+	// Check if event exists first
+	eventID, found := events.Core.GetDefinitionIDByName(eventName)
+	if !found {
+		return errfmt.Errorf("event '%s' not found", eventName)
+	}
+
+	// Try to use embedded man page
+	manFileName := fmt.Sprintf("docs/man/%s.1", eventName)
+	if manContent, err := tracee.ManPagesBundle.ReadFile(manFileName); err == nil {
+		return displayManPage(manContent, eventName)
+	}
+
+	// Fallback: show basic information about the event
+	definition := events.Core.GetDefinitionByID(eventID)
+	fmt.Printf("Event: %s\n", definition.GetName())
+	fmt.Printf("Description: %s\n", definition.GetDescription())
+	fmt.Printf("ID: %d\n", definition.GetID())
+	if definition.IsSyscall() {
+		fmt.Println("Type: System call")
+	} else if definition.IsSignature() {
+		fmt.Println("Type: Security signature")
+	} else if definition.IsNetwork() {
+		fmt.Println("Type: Network event")
+	} else {
+		fmt.Println("Type: Built-in event")
+	}
+	fmt.Println("\nNo detailed documentation available for this event.")
+	return nil
+}
+
+// displayManPage displays a man page using the system man command or fallback
+func displayManPage(manContent []byte, name string) error {
+	// Try to find man command in PATH
+	manPath, err := exec.LookPath("man")
+	if err != nil {
+		// Fallback: display content directly without man formatting
+		cleanContent := cleanGroffFormatting(string(manContent))
+		fmt.Print(cleanContent)
+		return nil
+	}
+
+	// Create a temporary file with the manual content
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("tracee-man-%s-*.1", name))
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	defer func() {
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpFile.Name())
+	}()
+
+	// Write the embedded content to the temporary file
+	if _, err := tmpFile.Write(manContent); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Close the file so man can read it
+	if err := tmpFile.Close(); err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	// Execute man on the temporary file

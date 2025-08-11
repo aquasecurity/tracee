@@ -91,7 +91,6 @@ func Test_DeriveSingleEvent(t *testing.T) {
 		"test_event",               // Name
 		events.NewVersion(1, 0, 0), // Version
 		"description",              // Description
-		"test_event",               // DocPath
 		false,                      // Internal
 		false,                      // Syscall
 		[]string{},                 // Sets
@@ -190,7 +189,6 @@ func TestDeriveMultipleEvents(t *testing.T) {
 		"test_event",               // Name
 		events.NewVersion(1, 0, 0), // Version
 		"description",              // Description
-		"test_event",               // DocPath
 		false,                      // Internal
 		false,                      // Syscall
 		[]string{},                 // Sets
