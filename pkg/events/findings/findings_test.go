@@ -121,7 +121,6 @@ func createFakeEventAndFinding() detect.Finding {
 		eventName,                  // eventName
 		events.NewVersion(1, 0, 0), // Version
 		"fake_description",         // description
-		"",                         // docPath
 		false,                      // internal
 		false,                      // syscall
 		[]string{"signatures"},     // sets

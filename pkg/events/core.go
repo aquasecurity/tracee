@@ -11380,7 +11380,6 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "magic_write",
 		version: NewVersion(1, 0, 0),
-		docPath: "security_alerts/magic_write.md",
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.VfsWriteMagic, required: true},
@@ -11628,7 +11627,6 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_socket_setsockopt",
 		version: NewVersion(1, 0, 0),
-		docPath: "lsm_hooks/security_socket_setsockopt.md",
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SecuritySocketSetsockopt, required: true},
@@ -11828,7 +11826,6 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_file_mprotect",
 		version: NewVersion(1, 0, 0),
-		docPath: "lsm_hooks/security_file_mprotect.md",
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SecurityFileMProtect, required: true},
@@ -12275,7 +12272,6 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "symbols_loaded",
 		version: NewVersion(1, 0, 0),
-		docPath: "security_alerts/symbols_load.md",
 		dependencies: Dependencies{
 			ids: []ID{
 				SharedObjectLoaded,
@@ -12294,7 +12290,6 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "symbols_collision",
 		version: NewVersion(1, 0, 0),
-		docPath: "security_alerts/symbols_collision.md",
 		dependencies: Dependencies{
 			ids: []ID{
 				SharedObjectLoaded,
@@ -12667,7 +12662,6 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "bpf_attach",
 		version: NewVersion(1, 0, 0),
-		docPath: "docs/events/builtin/extra/bpf_attach.md",
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SecurityFileIoctl, required: true},
@@ -12694,7 +12688,6 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "kallsyms_lookup_name",
 		version: NewVersion(1, 0, 0),
-		docPath: "kprobes/kallsyms_lookup_name.md",
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.KallsymsLookupName, required: true},
@@ -12826,7 +12819,6 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "file_modification",
 		version: NewVersion(1, 0, 0),
-		docPath: "kprobes/file_modification.md",
 		sets:    []string{},
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "file_path"}},
@@ -12869,7 +12861,6 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "security_bpf_prog",
 		version: NewVersion(1, 0, 0),
-		docPath: "docs/events/builtin/extra/security_bpf_prog.md",
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SecurityBpfProg, required: true},

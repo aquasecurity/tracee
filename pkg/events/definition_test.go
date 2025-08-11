@@ -27,7 +27,6 @@ func TestNewDefinition(t *testing.T) {
 		"hooked_seq_ops2",
 		version,
 		"",
-		"",
 		false,
 		false,
 		[]string{"signatures"},

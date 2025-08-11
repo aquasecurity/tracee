@@ -38,7 +38,6 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					"fake_event_0",                    // eventName
 					events.NewVersion(1, 0, 0),        // version
 					"fake_description",                // description
-					"",                                // docPath
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
@@ -74,7 +73,6 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					"fake_event_1",                    // eventName
 					events.NewVersion(1, 0, 0),        // version
 					"fake_description",                // description
-					"",                                // docPath
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
@@ -94,7 +92,6 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					"fake_event_2",                    // eventName
 					events.NewVersion(1, 0, 0),        // version
 					"fake_description",                // description
-					"",                                // docPath
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
@@ -132,7 +129,6 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					"fake_event_3",                    // eventName
 					events.NewVersion(1, 0, 0),        // version
 					"fake_description",                // description
-					"",                                // docPath
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
@@ -169,7 +165,6 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 				assert.Equal(t, expected.GetID(), eventDefinition.GetID())
 				assert.Equal(t, expected.GetID32Bit(), eventDefinition.GetID32Bit())
 				assert.Equal(t, expected.GetName(), eventDefinition.GetName())
-				assert.Equal(t, expected.GetDocPath(), eventDefinition.GetDocPath())
 				assert.Equal(t, expected.IsInternal(), eventDefinition.IsInternal())
 				assert.Equal(t, expected.IsSyscall(), eventDefinition.IsSyscall())
 				assert.ElementsMatch(t, expected.GetSets(), eventDefinition.GetSets())

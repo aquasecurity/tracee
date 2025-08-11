@@ -1115,25 +1115,49 @@ protoc:
 # man pages
 #
 
-MARKDOWN_DIR ?= docs/docs/flags
+FLAGS_MARKDOWN_DIR ?= docs/docs/flags
+EVENTS_MARKDOWN_DIR ?= docs/docs/events-man
 MAN_DIR ?= docs/man
 OUTPUT_MAN_DIR := $(OUTPUT_DIR)/$(MAN_DIR)
-MARKDOWN_FILES := $(shell find $(MARKDOWN_DIR) \
+FLAGS_MARKDOWN_FILES := $(shell find $(FLAGS_MARKDOWN_DIR) \
 					-type f \
 					-name '*.md' \
 				)
-MAN_FILES := $(patsubst $(MARKDOWN_DIR)/%.md,$(MAN_DIR)/%,$(MARKDOWN_FILES))
+EVENTS_MARKDOWN_FILES := $(shell find $(EVENTS_MARKDOWN_DIR) \
+					-type f \
+					-name '*.md' \
+				)
+# Extract just the basename for event man files (e.g., builtin/extra/bpf_attach.md -> bpf_attach.1)
+EVENTS_MAN_FILES := $(addprefix $(MAN_DIR)/,$(notdir $(patsubst %.md,%.1,$(EVENTS_MARKDOWN_FILES))))
+MAN_FILES := $(patsubst $(FLAGS_MARKDOWN_DIR)/%.md,$(MAN_DIR)/%,$(FLAGS_MARKDOWN_FILES)) \
+			 $(EVENTS_MAN_FILES)
+
+# Define function to create a rule for each event man page
+define EVENT_MAN_RULE
+$(MAN_DIR)/$(notdir $(patsubst %.md,%.1,$(1))): $(1) \
+	| .check_$(CMD_PANDOC) \
+	$(OUTPUT_MAN_DIR)
+	@echo Generating event man page $$@ from $$< && \
+	$(CMD_PANDOC) \
+		--verbose \
+		--standalone \
+		--to man \
+		$$< \
+		-o $$@ && \
+	echo Copying $$@ to $(OUTPUT_MAN_DIR) && \
+	$(CMD_CP) $$@ $(OUTPUT_MAN_DIR)
+endef
 
 $(OUTPUT_MAN_DIR): \
 	| .check_$(CMD_MKDIR)
 #
 	$(CMD_MKDIR) -p $@
 
-$(MAN_DIR)/%: $(MARKDOWN_DIR)/%.md \
+$(MAN_DIR)/%: $(FLAGS_MARKDOWN_DIR)/%.md \
 	| .check_$(CMD_PANDOC) \
 	$(OUTPUT_MAN_DIR)
 #
-	@echo Generating $@ && \
+	@echo Generating flag man page $@ && \
 	$(CMD_PANDOC) \
 		--verbose \
 		--standalone \
@@ -1142,6 +1166,9 @@ $(MAN_DIR)/%: $(MARKDOWN_DIR)/%.md \
 		-o $@ && \
 	echo Copying $@ to $(OUTPUT_MAN_DIR) && \
 	$(CMD_CP) $@ $(OUTPUT_MAN_DIR)
+
+# Generate specific rules for each event man page
+$(foreach src,$(EVENTS_MARKDOWN_FILES),$(eval $(call EVENT_MAN_RULE,$(src))))
 
 .PHONY: clean-man
 clean-man:
