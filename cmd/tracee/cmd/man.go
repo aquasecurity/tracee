@@ -31,6 +31,15 @@ var manCmd = &cobra.Command{
 	Use:     "man",
 	Aliases: []string{"m"},
 	Short:   "Open man page for a specified flag name",
+	Long: `Open manual pages for tracee flags.
+
+This command provides access to detailed documentation for each tracee flag.
+Use the available subcommands to open the manual page for a specific flag.
+
+Examples:
+  tracee man cache        # Open manual page for --cache flag
+  tracee man events       # Open manual page for --events flag
+  tracee man output       # Open manual page for --output flag`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// if here, no valid subcommand was provided
 		if err := cmd.Help(); err != nil {
@@ -44,7 +53,7 @@ var manCmd = &cobra.Command{
 var capabilitiesCmd = &cobra.Command{
 	Use:     "capabilities",
 	Aliases: []string{"C"},
-	Short:   "capabilities flag help",
+	Short:   "Show manual page for the --capabilities flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("capabilities")
 	},
@@ -53,7 +62,7 @@ var capabilitiesCmd = &cobra.Command{
 var captureCmd = &cobra.Command{
 	Use:     "capture",
 	Aliases: []string{"c"},
-	Short:   "capture flag help",
+	Short:   "Show manual page for the --capture flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("capture")
 	},
@@ -62,7 +71,7 @@ var captureCmd = &cobra.Command{
 var configCmd = &cobra.Command{
 	Use:     "config",
 	Aliases: []string{},
-	Short:   "config flag help",
+	Short:   "Show manual page for the --config flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("config")
 	},
@@ -71,7 +80,7 @@ var configCmd = &cobra.Command{
 var containersCmd = &cobra.Command{
 	Use:     "containers",
 	Aliases: []string{},
-	Short:   "containers flag help",
+	Short:   "Show manual page for the --containers flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("containers")
 	},
@@ -80,7 +89,7 @@ var containersCmd = &cobra.Command{
 var eventsCmd = &cobra.Command{
 	Use:     "events",
 	Aliases: []string{"e"},
-	Short:   "events flag help",
+	Short:   "Show manual page for the --events flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("events")
 	},
@@ -89,7 +98,7 @@ var eventsCmd = &cobra.Command{
 var logCmd = &cobra.Command{
 	Use:     "log",
 	Aliases: []string{"l"},
-	Short:   "log flag help",
+	Short:   "Show manual page for the --log flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("log")
 	},
@@ -98,7 +107,7 @@ var logCmd = &cobra.Command{
 var outputCmd = &cobra.Command{
 	Use:     "output",
 	Aliases: []string{"o"},
-	Short:   "output flag help",
+	Short:   "Show manual page for the --output flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("output")
 	},
@@ -107,7 +116,7 @@ var outputCmd = &cobra.Command{
 var scopeCmd = &cobra.Command{
 	Use:     "scope",
 	Aliases: []string{"s"},
-	Short:   "scope flag help",
+	Short:   "Show manual page for the --scope flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("scope")
 	},
