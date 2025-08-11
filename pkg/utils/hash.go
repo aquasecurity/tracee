@@ -83,7 +83,7 @@ func HashU32AndU64(arg1 uint32, arg2 uint64) uint32 {
 // and custom kernels).
 
 func HashTaskID(arg1 uint32, arg2 uint64) uint32 {
-	round := arg2 / 10000000 // (1000000000 / USER_HZ) = 10000000
-	round *= 10000000
+	round := arg2 / 100000000 // (1000000000 / USER_HZ) * 10 = 100000000
+	round *= 100000000
 	return HashU32AndU64(arg1, round)
 }
