@@ -127,3 +127,15 @@ For a complete list of available targets, run `make help`.
 1. Follow Golang's code review standards: [https://github.com/golang/go/wiki/CodeReviewComments](https://github.com/golang/go/wiki/CodeReviewComments)
 2. Follow `gofmt` + `govet` + `goimports` formatting.
 3. Tests should be included alongside code changes wherever applicable, except for parts that are harder to test and are not currently tested (e.g. eBPF). When modifying already tested code, your changes must be represented in the existing tests.
+
+## Contributing Code
+
+### Adding New Event Tracing
+
+If you're looking to add new event tracing capabilities to Tracee, see our comprehensive guide: [Adding New Event Tracing](adding-events.md).
+
+This guide covers:
+- Event definition in Go code
+- eBPF probe configuration
+- Implementation patterns and best practices
+- Testing and troubleshooting
