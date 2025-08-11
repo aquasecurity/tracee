@@ -98,14 +98,46 @@ if [ -n "$FETCH_DEPTH" ] || [ "$FORCE_FETCH" -eq 1 ]; then
     git fetch "$BASE_REMOTE" "$BASE_BRANCH" "$depth_arg" || die "Failed to fetch $BASE_BRANCH from $BASE_REMOTE"
 fi
 
-md_files=$(git_changed_files "$BASE_REF" "$TARGET_REF" 'docs/docs/flags/*.1.md') || die "Failed to get md changed files"
+flags_md_files=$(git_changed_files "$BASE_REF" "$TARGET_REF" 'docs/docs/flags/*.1.md') || die "Failed to get flags md changed files"
+events_md_files=$(git_changed_files "$BASE_REF" "$TARGET_REF" 'docs/docs/events-man/**/*.md') || die "Failed to get events md changed files"
 man_files=$(git_changed_files "$BASE_REF" "$TARGET_REF" 'docs/man/*.1') || die "Failed to get man changed files"
 
+# Combine flags and events md files
+md_files="$flags_md_files"
+if [ -n "$events_md_files" ]; then
+    if [ -n "$md_files" ]; then
+        md_files="$md_files
+$events_md_files"
+    else
+        md_files="$events_md_files"
+    fi
+fi
+
 if [ -z "$md_files" ]; then
-    info "No changes in '.1.md' files"
+    info "No changes in '.md' or '.1.md' files"
 else
-    info "Found changes in '.1.md' files"
-    md_basenames=$(basename_strip_ext "$md_files" '1.md') || die "Failed to get md basenames"
+    info "Found changes in '.md' or '.1.md' files"
+    # Extract basenames from both flags (.1.md) and events (.md) files
+    flags_basenames=""
+    events_basenames=""
+    if [ -n "$flags_md_files" ]; then
+        flags_basenames=$(basename_strip_ext "$flags_md_files" '1.md') || die "Failed to get flags basenames"
+    fi
+
+    if [ -n "$events_md_files" ]; then
+        events_basenames=$(basename_strip_ext "$events_md_files" 'md') || die "Failed to get events basenames"
+    fi
+
+    # Combine all basenames
+    md_basenames="$flags_basenames"
+    if [ -n "$events_basenames" ]; then
+        if [ -n "$md_basenames" ]; then
+            md_basenames="$md_basenames
+$events_basenames"
+        else
+            md_basenames="$events_basenames"
+        fi
+    fi
 fi
 
 if [ -z "$man_files" ]; then
@@ -122,14 +154,14 @@ if [ -n "$missing_updates" ]; then
 
     printf "%s\n" "$missing_updates" | while IFS= read -r file; do
         [ -n "$file" ] || continue # skip empty lines
-        error " - $file.1.md change requires corresponding $file.1 change"
+        error " - $file source change requires corresponding $file.1 change"
     done
 
     error
 
     error "How to Fix It"
-    error " 1. Modify only '.1.md' files, updating the date if needed."
-    error " 2. Run 'make -f builder/Makefile.man man-run' to regenerate '.1' files."
+    error " 1. Modify source files (flags: '.1.md', events: '.md'), updating the date if needed."
+    error " 2. Run 'make man' to regenerate '.1' files."
 
     exit 1
 fi

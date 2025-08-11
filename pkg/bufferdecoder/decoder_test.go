@@ -1067,7 +1067,6 @@ func BenchmarkDecodeArguments(b *testing.B) {
 		evtName,
 		evtVersion,
 		"",
-		"",
 		false,
 		false,
 		[]string{},

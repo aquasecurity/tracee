@@ -6,7 +6,6 @@ type Definition struct {
 	name         string
 	version      Version
 	description  string
-	docPath      string // Relative to the 'doc/events' directory
 	internal     bool
 	syscall      bool
 	dependencies Dependencies
@@ -21,7 +20,6 @@ func NewDefinition(
 	name string,
 	version Version,
 	description string,
-	docPath string,
 	internal bool,
 	syscall bool,
 	sets []string,
@@ -35,7 +33,6 @@ func NewDefinition(
 		name:         name,
 		version:      version,
 		description:  description,
-		docPath:      docPath,
 		internal:     internal,
 		syscall:      syscall,
 		dependencies: deps,
@@ -65,10 +62,6 @@ func (d Definition) GetVersion() Version {
 
 func (d Definition) GetDescription() string {
 	return d.description
-}
-
-func (d Definition) GetDocPath() string {
-	return d.docPath
 }
 
 func (d Definition) IsInternal() bool {

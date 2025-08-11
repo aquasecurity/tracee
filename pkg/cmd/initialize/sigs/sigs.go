@@ -87,7 +87,6 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 			m.EventName,           // eventName
 			version,               // version
 			m.Description,         // description
-			"",                    // docPath
 			false,                 // internal
 			false,                 // syscall
 			tags.Items(),          // tags
