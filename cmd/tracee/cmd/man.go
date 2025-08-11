@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -151,8 +153,16 @@ func runManForFlag(flagName string) error {
 		return errfmt.WrapError(err)
 	}
 
+	// Try to find man command in PATH
+	manPath, err := exec.LookPath("man")
+	if err != nil {
+		// Fallback: display content directly without man formatting
+		cleanContent := cleanGroffFormatting(string(manContent))
+		fmt.Print(cleanContent)
+		return nil
+	}
+
 	// Execute man on the temporary file
-	manPath := "/usr/bin/man"
 	cmd := exec.Command(manPath, tmpFile.Name())
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -160,4 +170,30 @@ func runManForFlag(flagName string) error {
 
 	err = cmd.Run()
 	return errfmt.WrapError(err)
+}
+
+// cleanGroffFormatting removes groff/troff formatting directives for plain text display
+func cleanGroffFormatting(content string) string {
+	lines := strings.Split(content, "\n")
+	var cleanLines []string
+
+	// Regex patterns for common groff formatting
+	formattingRegex := regexp.MustCompile(`\\f\[[BR]\]|\\f\[R\]|\\-`)
+
+	for _, line := range lines {
+		// Skip lines that start with groff directives
+		if strings.HasPrefix(strings.TrimSpace(line), ".") {
+			continue
+		}
+
+		// Remove inline formatting codes
+		cleanLine := formattingRegex.ReplaceAllString(line, "")
+
+		// Only add non-empty lines or preserve intentional spacing
+		if strings.TrimSpace(cleanLine) != "" || strings.TrimSpace(line) == "" {
+			cleanLines = append(cleanLines, cleanLine)
+		}
+	}
+
+	return strings.Join(cleanLines, "\n")
 }
