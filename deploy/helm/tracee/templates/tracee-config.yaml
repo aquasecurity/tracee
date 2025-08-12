@@ -11,9 +11,6 @@ data:
     {{- toYaml .Values.configFile | nindent 4 }}
   {{- else }}
   config.yaml: |-
-    cache:
-        type: {{ .Values.config.cache.type }}
-        size: {{ .Values.config.cache.size }}
     perf-buffer-size: {{ .Values.config.perfBufferSize }}
     healthz: {{ .Values.config.healthz }}
     metrics: {{ .Values.config.metrics }}

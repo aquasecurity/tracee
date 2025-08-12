@@ -75,8 +75,6 @@ logfile=$SCRIPT_TMP_DIR/tracee-log-$$
 
 tracee_command="./dist/tracee \
     --install-path $TRACEE_TMP_DIR \
-    --cache cache-type=mem \
-    --cache mem-cache-size=512 \
     --output json:$outputfile \
     --log file:$logfile \
     --policy ./tests/policies/kernel/kernel.yaml 2>&1 \

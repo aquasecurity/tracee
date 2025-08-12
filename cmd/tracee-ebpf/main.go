@@ -86,12 +86,6 @@ func main() {
 				Usage:   "control how and where output is printed. run '--output help' for more info.",
 			},
 			&cli.StringSliceFlag{
-				Name:    "cache",
-				Aliases: []string{"a"},
-				Value:   cli.NewStringSlice("none"),
-				Usage:   "control event caching queues. run '--cache help' for more info.",
-			},
-			&cli.StringSliceFlag{
 				Name:    "proctree",
 				Aliases: []string{"t"},
 				Value:   cli.NewStringSlice("none"),

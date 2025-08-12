@@ -16,7 +16,6 @@ func init() {
 
 	// add subcommands to manCmd
 	manCmd.AddCommand(
-		cacheCmd,
 		capabilitiesCmd,
 		captureCmd,
 		configCmd,
@@ -40,15 +39,6 @@ var manCmd = &cobra.Command{
 		}
 	},
 	DisableFlagsInUseLine: true,
-}
-
-var cacheCmd = &cobra.Command{
-	Use:     "cache",
-	Aliases: []string{"a"},
-	Short:   "cache flag help",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runManForFlag("cache")
-	},
 }
 
 var capabilitiesCmd = &cobra.Command{

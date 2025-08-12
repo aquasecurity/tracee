@@ -12,7 +12,6 @@ import (
 func PrintAndExitIfHelp(ctx *cli.Context) {
 	keys := []string{
 		"containers",
-		"cache",
 		"proctree",
 		"capture",
 		"scope",
@@ -49,8 +48,6 @@ func GetHelpString(key string) string {
 		return configHelp()
 	case "containers":
 		return containersHelp()
-	case "cache":
-		return cacheHelp()
 	case "proctree":
 		return procTreeHelp()
 	case "capture":

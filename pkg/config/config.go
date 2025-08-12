@@ -6,7 +6,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
@@ -21,7 +20,6 @@ type Config struct {
 	Capture             *CaptureConfig
 	Capabilities        *CapabilitiesConfig
 	Output              *OutputConfig
-	Cache               queue.CacheConfig
 	ProcTree            proctree.ProcTreeConfig
 	PerfBufferSize      int
 	BlobPerfBufferSize  int

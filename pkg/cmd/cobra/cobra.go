@@ -140,21 +140,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	cfg.NoContainersEnrich = res.NoEnrich
 	cfg.CgroupFSPath = res.CgroupfsPath
 	cfg.CgroupFSForce = res.CgroupfsForce
-	// Cache command line flags
-
-	cacheFlags, err := GetFlagsFromViper("cache")
-	if err != nil {
-		return runner, err
-	}
-
-	cache, err := flags.PrepareCache(cacheFlags)
-	if err != nil {
-		return runner, err
-	}
-	cfg.Cache = cache
-	if cfg.Cache != nil {
-		logger.Debugw("Cache", "type", cfg.Cache.String())
-	}
 
 	// Process Tree command line flags
 
