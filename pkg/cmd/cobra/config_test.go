@@ -23,32 +23,6 @@ func TestGetFlagsFromViper(t *testing.T) {
 		expectedFlags []string
 	}{
 		{
-			name: "Test cache configuration (cli flags)",
-			yamlContent: `
-cache:
-    - cache-type=mem
-    - mem-cache-size=556
-`,
-			key: "cache",
-			expectedFlags: []string{
-				"cache-type=mem",
-				"mem-cache-size=556",
-			},
-		},
-		{
-			name: "Test cache configuration (structured flags)",
-			yamlContent: `
-cache:
-    type: mem
-    size: 1024
-`,
-			key: "cache",
-			expectedFlags: []string{
-				"cache-type=mem",
-				"mem-cache-size=1024",
-			},
-		},
-		{
 			name: "Test proctree configuration (cli flags)",
 			yamlContent: `
 proctree:
@@ -366,59 +340,6 @@ output:
 
 			if !slicesEqualIgnoreOrder(flags, tt.expectedFlags) {
 				t.Errorf("Expected %v, got %v", tt.expectedFlags, flags)
-			}
-		})
-	}
-}
-
-//
-// cache
-//
-
-func TestCacheConfigFlags(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		config   CacheConfig
-		expected []string
-	}{
-		{
-			name:     "empty config",
-			config:   CacheConfig{},
-			expected: []string{},
-		},
-		{
-			name: "only type",
-			config: CacheConfig{
-				Type: "none",
-			},
-			expected: []string{
-				"cache-type=none",
-			},
-		},
-		{
-			name: "both type and size",
-			config: CacheConfig{
-				Type: "mem",
-				Size: 1024,
-			},
-			expected: []string{
-				"cache-type=mem",
-				"mem-cache-size=1024",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			flags := tt.config.flags()
-			if !slicesEqualIgnoreOrder(flags, tt.expected) {
-				t.Errorf("flags() = %v, want %v", flags, tt.expected)
 			}
 		})
 	}

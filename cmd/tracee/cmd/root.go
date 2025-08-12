@@ -194,7 +194,7 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
-	// Buffer/Cache flags
+	// Buffer flags
 
 	defaultBufferPages := (4096 * 1024) / os.Getpagesize() // 4 MB of contiguous pages
 	rootCmd.Flags().IntP(
@@ -224,17 +224,6 @@ func initCmd() error {
 		"<size>\t\t\t\tSize, in event objects, of each pipeline stage's output channel",
 	)
 	err = viper.BindPFlag("pipeline-channel-size", rootCmd.Flags().Lookup("pipeline-channel-size"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	rootCmd.Flags().StringArrayP(
-		"cache",
-		"a",
-		[]string{"none"},
-		"[type|mem-cache-size]\t\tControl event caching queues",
-	)
-	err = viper.BindPFlag("cache", rootCmd.Flags().Lookup("cache"))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

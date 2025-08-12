@@ -71,19 +71,6 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	cfg.CgroupFSPath = res.CgroupfsPath
 	cfg.CgroupFSForce = res.CgroupfsForce
 
-	// Cache command line flags
-
-	cache, err := flags.PrepareCache(c.StringSlice("cache"))
-	if err != nil {
-		return runner, err
-	}
-	cfg.Cache = cache
-	if cfg.Cache != nil {
-		logger.Debugw("Cache", "type", cfg.Cache.String())
-	}
-
-	// Cache command line flags
-
 	procTree, err := flags.PrepareProcTree(c.StringSlice("proctree"))
 	if err != nil {
 		return runner, err

@@ -156,8 +156,6 @@ done
 
 tracee_command="./dist/tracee \
                     --install-path $TRACEE_TMP_DIR \
-                    --cache cache-type=mem \
-                    --cache mem-cache-size=512 \
                     --proctree source=both \
                     --output option:sort-events \
                     --output option:parse-arguments \

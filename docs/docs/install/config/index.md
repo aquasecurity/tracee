@@ -163,11 +163,3 @@ A complete config file with all available options can be found [here](https://gi
   ```yaml
   pipeline-channel-size: 2048
   ```
-
-- **`--cache` (`-a`)**: Controls event caching options.
-
-  YAML:
-  ```yaml
-  cache:
-    - mem-cache-size=512
-  ```

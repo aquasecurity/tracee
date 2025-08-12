@@ -13,9 +13,12 @@ metadata:
   name: tracee
 data:
   config.yaml: |-
-    cache:
-      - cache-type=mem
-      - mem-cache-size=512
+    output:
+      json:
+        files:
+          - /var/log/tracee.json
+      options:
+        parse-arguments: true
 ```
 
 ## Kubectl

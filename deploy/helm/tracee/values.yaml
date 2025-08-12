@@ -88,9 +88,6 @@ config:
   listenAddr: :3366
   installPath: ""
   signaturesDir: ""
-  cache:
-    type: mem
-    size: 512
   log:
     level: info
   output:

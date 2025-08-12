@@ -21,8 +21,6 @@ func GetFlagsFromViper(key string) ([]string, error) {
 	rawValue := viper.Get(key)
 
 	switch key {
-	case "cache":
-		flagger = &CacheConfig{}
 	case "proctree":
 		flagger = &ProcTreeConfig{}
 	case "capabilities":
@@ -117,28 +115,6 @@ func (c *SocketConfig) flags() []string {
 
 	if c.Runtime != "" && c.Socket != "" {
 		flags = append(flags, fmt.Sprintf("sockets.%s=%s", c.Runtime, c.Socket))
-	}
-
-	return flags
-}
-
-//
-// config flag
-//
-
-type CacheConfig struct {
-	Type string `mapstructure:"type"`
-	Size int    `mapstructure:"size"`
-}
-
-func (c *CacheConfig) flags() []string {
-	flags := make([]string, 0)
-
-	if c.Type != "" {
-		flags = append(flags, fmt.Sprintf("cache-type=%s", c.Type))
-	}
-	if c.Size != 0 {
-		flags = append(flags, fmt.Sprintf("mem-cache-size=%d", c.Size))
 	}
 
 	return flags

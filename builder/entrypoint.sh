@@ -28,8 +28,6 @@ run_tracee() {
         # default arguments
         $TRACEE_EXE \
         --metrics \
-        --cache cache-type=mem \
-        --cache mem-cache-size=512 \
         --capabilities bypass=$CAPABILITIES_BYPASS \
         --capabilities add=$CAPABILITIES_ADD \
         --capabilities drop=$CAPABILITIES_DROP \
