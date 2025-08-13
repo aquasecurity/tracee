@@ -103,8 +103,8 @@ func main() {
 				Usage: "dns cache options. run '--dnscache help' for more info",
 			},
 			&cli.StringSliceFlag{
-				Name:  "cri",
-				Usage: "define connected container runtimes",
+				Name:  flags.ContainersFlag,
+				Usage: "configure container enrichment and runtime sockets. run '--containers help' for more info.",
 				Value: cli.NewStringSlice(),
 			},
 			&cli.IntFlag{
@@ -152,10 +152,6 @@ func main() {
 				Name:  server.HTTPListenEndpointFlag,
 				Usage: "listening address of the metrics endpoint server",
 				Value: ":3366",
-			},
-			&cli.BoolFlag{
-				Name:  "no-containers",
-				Usage: "disable container info enrichment to events. safeguard option.",
 			},
 			&cli.StringSliceFlag{
 				Name:  "log",

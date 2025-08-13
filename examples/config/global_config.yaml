@@ -32,19 +32,21 @@ grpc-listen-addr: tcp:50051
 
 dnscache: enable
 
-cri:
-    # - runtime:
-    #     name: containerd
-    #     socket: /var/run/containerd/containerd.sock
-    # - runtime:
-    #     name: docker
-    #     socket: /var/run/docker.sock
+containers:
+    enrich: false
+    # enrich: true
+    # cgroupfs:
+    #     path: /host/sys/fs/cgroup
+    #     force: true
+    # sockets:
+    #     - runtime: containerd
+    #       socket: /var/run/containerd/containerd.sock
+    #     - runtime: docker
+    #       socket: /var/run/docker.sock
 
 events:
   #- open
   #- execve
-
-no-containers: true
 
 healthz: false
 
