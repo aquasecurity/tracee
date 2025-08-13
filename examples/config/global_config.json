@@ -7,7 +7,7 @@
         "none"
     ],
     "capabilities": [],
-    "cri": [],
+    "containers": [],
     "healthz": false,
     "install-path": "/tmp/tracee",
     "listen-addr": ":3366",

@@ -47,7 +47,15 @@ listen-addr: :3366
 
 # feature flags
 
-no-containers: false
+containers:
+    enrich: true
+    # cgroupfs:
+    #     path: /host/sys/fs/cgroup
+    #     force: true
+    # sockets:
+    #     - runtime: docker
+    #       socket: /var/run/docker.sock
+
 blob-perf-buffer-size: 1024
 
 # signatures
@@ -66,10 +74,6 @@ proctree:
     cache:
         process: 8192
         thread: 8192
-# cri:
-#     - runtime:
-#         name: docker
-#         socket: /var/run/docker.sock
 
 # logging
 

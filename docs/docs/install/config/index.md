@@ -82,23 +82,26 @@ A complete config file with all available options can be found [here](https://gi
     - level: debug
   ```
 
-### Container
+### Containers
 
-- **`--no-containers`**: Disables container information enrichment in events.
+- To disable container enrichment use: **`--containers enrich=false`**.
 
   YAML:
   ```yaml
-  no-containers: true
+  containers:
+    enrich: false
   ```
 
-  __NOTE__: You can view more in the [cri section](../../flags/containers.1.md).
+  __NOTE__: You can view more in the [containers section](../../flags/containers.1.md).
 
-- **`--cri`**: Defines connected container runtimes in the format `<runtime:socket>`.
+- **`--containers`**: Configures container enrichment and runtime sockets. For example, to configure runtime sockets:
 
   YAML:
   ```yaml
-  cri:
-    - docker:/var/run/docker.sock
+  containers:
+    sockets:
+      - runtime: docker
+        socket: /var/run/docker.sock
   ```
 
 ### DNS Cache
