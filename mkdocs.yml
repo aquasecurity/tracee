@@ -618,6 +618,7 @@ nav:
                 - output:  traceectl/flags/output.md
                 - format:  traceectl/flags/format.md
                 - server:  traceectl/flags/server.md    
+                - policy:  traceectl/flags/policy.md
     - Tutorials:
           - Overview: tutorials/overview.md
           - Cosign - verify Tracee signature: tutorials/verify-tracee-signature.md

@@ -69,7 +69,12 @@ For more info about the traceectl command please refer to the appoint command do
 
 ## Flags
 
-For more info about the traceectl flags please refer to the appoint [flags documentation](./flags)
+For more info about the traceectl flags see:
+
+- [output](./flags/output.md)
+- [format](./flags/format.md)
+- [server](./flags/server.md)
+- [policy](./flags/policy.md)
 
 ## Summary
 
