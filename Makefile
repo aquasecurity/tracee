@@ -1116,7 +1116,7 @@ protoc:
 #
 
 FLAGS_MARKDOWN_DIR ?= docs/docs/flags
-EVENTS_MARKDOWN_DIR ?= docs/docs/events-man
+EVENTS_MARKDOWN_DIR ?= docs/docs/events/builtin/man
 MAN_DIR ?= docs/man
 OUTPUT_MAN_DIR := $(OUTPUT_DIR)/$(MAN_DIR)
 FLAGS_MARKDOWN_FILES := $(shell find $(FLAGS_MARKDOWN_DIR) \
