@@ -12,6 +12,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/data"
 	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 )
 
@@ -203,7 +204,7 @@ func (pm *PolicyManager) updateEventsConfigMap(
 		}
 
 		// TODO: this should be saved in poicy manager as well, next to fMaps
-		scopeFiltersConfig := pm.computeScopeFiltersConfig(id)
+		scopeFiltersConfig := pm.computeBPFScopeFiltersConfig(id)
 
 		eventConfig := eventConfig{
 			rulesVersion:   ecfg.rulesVersion,
@@ -251,9 +252,37 @@ type scopeFiltersConfig struct {
 	BinPathFilterMatchIfKeyMissing  uint64
 }
 
-// computeScopeFiltersConfig computes the scope filters config for a specific event ID
-func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) scopeFiltersConfig {
-	cfg := scopeFiltersConfig{}
+// extendedScopeFiltersConfig supports overflow rules (ID > 64) using bitmap arrays
+type extendedScopeFiltersConfig struct {
+	UIDFilterEnabled      []uint64
+	PIDFilterEnabled      []uint64
+	MntNsFilterEnabled    []uint64
+	PidNsFilterEnabled    []uint64
+	UtsNsFilterEnabled    []uint64
+	CommFilterEnabled     []uint64
+	CgroupIdFilterEnabled []uint64
+	ContFilterEnabled     []uint64
+	NewContFilterEnabled  []uint64
+	NewPidFilterEnabled   []uint64
+	BinPathFilterEnabled  []uint64
+
+	UIDFilterMatchIfKeyMissing      []uint64
+	PIDFilterMatchIfKeyMissing      []uint64
+	MntNsFilterMatchIfKeyMissing    []uint64
+	PidNsFilterMatchIfKeyMissing    []uint64
+	UtsNsFilterMatchIfKeyMissing    []uint64
+	CommFilterMatchIfKeyMissing     []uint64
+	CgroupIdFilterMatchIfKeyMissing []uint64
+	ContFilterMatchIfKeyMissing     []uint64
+	NewContFilterMatchIfKeyMissing  []uint64
+	NewPidFilterMatchIfKeyMissing   []uint64
+	BinPathFilterMatchIfKeyMissing  []uint64
+}
+
+// computeScopeFiltersConfig computes scope filter configs for ALL rules (including overflow rules > 64)
+// This is used by userspace to determine which filters are enabled for overflow rules
+func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) extendedScopeFiltersConfig {
+	cfg := extendedScopeFiltersConfig{}
 
 	eventRules, ok := pm.rules[eventID]
 	if !ok {
@@ -264,87 +293,130 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) scopeFilte
 	// This can be done by accessing rule.Data.ScopeFilters
 	// We first need to update this in filters computation.
 
-	// Loop through rules for this event
+	// Loop through ALL rules for this event (including overflow rules)
 	for _, rule := range eventRules.Rules {
-		// TODO: compute configs for rules > 63 as well
-		if rule.Policy == nil || rule.ID >= 64 {
+		if rule.Policy == nil {
 			continue
 		}
 
-		offset := rule.ID // Use rule ID (0-63) for bitmap position
+		ruleID := rule.ID
 
-		// Enabled filters bitmap
+		// Enabled filters bitmap array
 		if rule.Policy.UIDFilter.Enabled() {
-			cfg.UIDFilterEnabled |= 1 << offset
+			utils.SetBitInArray(&cfg.UIDFilterEnabled, ruleID)
 		}
 		if rule.Policy.PIDFilter.Enabled() {
-			cfg.PIDFilterEnabled |= 1 << offset
+			utils.SetBitInArray(&cfg.PIDFilterEnabled, ruleID)
 		}
 		if rule.Policy.MntNSFilter.Enabled() {
-			cfg.MntNsFilterEnabled |= 1 << offset
+			utils.SetBitInArray(&cfg.MntNsFilterEnabled, ruleID)
 		}
 		if rule.Policy.PidNSFilter.Enabled() {
-			cfg.PidNsFilterEnabled |= 1 << offset
+			utils.SetBitInArray(&cfg.PidNsFilterEnabled, ruleID)
 		}
 		if rule.Policy.UTSFilter.Enabled() {
-			cfg.UtsNsFilterEnabled |= 1 << offset
+			utils.SetBitInArray(&cfg.UtsNsFilterEnabled, ruleID)
 		}
 		if rule.Policy.CommFilter.Enabled() {
-			cfg.CommFilterEnabled |= 1 << offset
+			utils.SetBitInArray(&cfg.CommFilterEnabled, ruleID)
 		}
 		if rule.Policy.ContIDFilter.Enabled() {
-			cfg.CgroupIdFilterEnabled |= 1 << offset
+			utils.SetBitInArray(&cfg.CgroupIdFilterEnabled, ruleID)
 		}
 		if rule.Policy.ContFilter.Enabled() {
-			cfg.ContFilterEnabled |= 1 << offset
+			utils.SetBitInArray(&cfg.ContFilterEnabled, ruleID)
 		}
 		if rule.Policy.NewContFilter.Enabled() {
-			cfg.NewContFilterEnabled |= 1 << offset
+			utils.SetBitInArray(&cfg.NewContFilterEnabled, ruleID)
 		}
 		if rule.Policy.NewPidFilter.Enabled() {
-			cfg.NewPidFilterEnabled |= 1 << offset
+			utils.SetBitInArray(&cfg.NewPidFilterEnabled, ruleID)
 		}
 		if rule.Policy.BinaryFilter.Enabled() {
-			cfg.BinPathFilterEnabled |= 1 << offset
+			utils.SetBitInArray(&cfg.BinPathFilterEnabled, ruleID)
 		}
 
-		// MatchIfKeyMissing filters bitmap
+		// MatchIfKeyMissing filters bitmap array
 		if rule.Policy.UIDFilter.MatchIfKeyMissing() {
-			cfg.UIDFilterMatchIfKeyMissing |= 1 << offset
+			utils.SetBitInArray(&cfg.UIDFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.PIDFilter.MatchIfKeyMissing() {
-			cfg.PIDFilterMatchIfKeyMissing |= 1 << offset
+			utils.SetBitInArray(&cfg.PIDFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.MntNSFilter.MatchIfKeyMissing() {
-			cfg.MntNsFilterMatchIfKeyMissing |= 1 << offset
+			utils.SetBitInArray(&cfg.MntNsFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.PidNSFilter.MatchIfKeyMissing() {
-			cfg.PidNsFilterMatchIfKeyMissing |= 1 << offset
+			utils.SetBitInArray(&cfg.PidNsFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.UTSFilter.MatchIfKeyMissing() {
-			cfg.UtsNsFilterMatchIfKeyMissing |= 1 << offset
+			utils.SetBitInArray(&cfg.UtsNsFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.CommFilter.MatchIfKeyMissing() {
-			cfg.CommFilterMatchIfKeyMissing |= 1 << offset
+			utils.SetBitInArray(&cfg.CommFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.ContIDFilter.MatchIfKeyMissing() {
-			cfg.CgroupIdFilterMatchIfKeyMissing |= 1 << offset
+			utils.SetBitInArray(&cfg.CgroupIdFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.ContFilter.MatchIfKeyMissing() {
-			cfg.ContFilterMatchIfKeyMissing |= 1 << offset
+			utils.SetBitInArray(&cfg.ContFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.NewContFilter.MatchIfKeyMissing() {
-			cfg.NewContFilterMatchIfKeyMissing |= 1 << offset
+			utils.SetBitInArray(&cfg.NewContFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.NewPidFilter.MatchIfKeyMissing() {
-			cfg.NewPidFilterMatchIfKeyMissing |= 1 << offset
+			utils.SetBitInArray(&cfg.NewPidFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.BinaryFilter.MatchIfKeyMissing() {
-			cfg.BinPathFilterMatchIfKeyMissing |= 1 << offset
+			utils.SetBitInArray(&cfg.BinPathFilterMatchIfKeyMissing, ruleID)
 		}
 	}
 
 	return cfg
+}
+
+// computeBPFScopeFiltersConfig computes the scope filters config for eBPF (rules 0-63 only)
+// by extracting the first 64 bits from the full scope config
+func (pm *PolicyManager) computeBPFScopeFiltersConfig(eventID events.ID) scopeFiltersConfig {
+	extendedCfg := pm.computeScopeFiltersConfig(eventID)
+
+	// Extract first 64 bits (index 0) from each bitmap array for eBPF
+	cfg := scopeFiltersConfig{
+		UIDFilterEnabled:      getFirstBitmap(extendedCfg.UIDFilterEnabled),
+		PIDFilterEnabled:      getFirstBitmap(extendedCfg.PIDFilterEnabled),
+		MntNsFilterEnabled:    getFirstBitmap(extendedCfg.MntNsFilterEnabled),
+		PidNsFilterEnabled:    getFirstBitmap(extendedCfg.PidNsFilterEnabled),
+		UtsNsFilterEnabled:    getFirstBitmap(extendedCfg.UtsNsFilterEnabled),
+		CommFilterEnabled:     getFirstBitmap(extendedCfg.CommFilterEnabled),
+		CgroupIdFilterEnabled: getFirstBitmap(extendedCfg.CgroupIdFilterEnabled),
+		ContFilterEnabled:     getFirstBitmap(extendedCfg.ContFilterEnabled),
+		NewContFilterEnabled:  getFirstBitmap(extendedCfg.NewContFilterEnabled),
+		NewPidFilterEnabled:   getFirstBitmap(extendedCfg.NewPidFilterEnabled),
+		BinPathFilterEnabled:  getFirstBitmap(extendedCfg.BinPathFilterEnabled),
+
+		UIDFilterMatchIfKeyMissing:      getFirstBitmap(extendedCfg.UIDFilterMatchIfKeyMissing),
+		PIDFilterMatchIfKeyMissing:      getFirstBitmap(extendedCfg.PIDFilterMatchIfKeyMissing),
+		MntNsFilterMatchIfKeyMissing:    getFirstBitmap(extendedCfg.MntNsFilterMatchIfKeyMissing),
+		PidNsFilterMatchIfKeyMissing:    getFirstBitmap(extendedCfg.PidNsFilterMatchIfKeyMissing),
+		UtsNsFilterMatchIfKeyMissing:    getFirstBitmap(extendedCfg.UtsNsFilterMatchIfKeyMissing),
+		CommFilterMatchIfKeyMissing:     getFirstBitmap(extendedCfg.CommFilterMatchIfKeyMissing),
+		CgroupIdFilterMatchIfKeyMissing: getFirstBitmap(extendedCfg.CgroupIdFilterMatchIfKeyMissing),
+		ContFilterMatchIfKeyMissing:     getFirstBitmap(extendedCfg.ContFilterMatchIfKeyMissing),
+		NewContFilterMatchIfKeyMissing:  getFirstBitmap(extendedCfg.NewContFilterMatchIfKeyMissing),
+		NewPidFilterMatchIfKeyMissing:   getFirstBitmap(extendedCfg.NewPidFilterMatchIfKeyMissing),
+		BinPathFilterMatchIfKeyMissing:  getFirstBitmap(extendedCfg.BinPathFilterMatchIfKeyMissing),
+	}
+
+	return cfg
+}
+
+// getFirstBitmap extracts the first uint64 from a bitmap array (rules 0-63)
+// Returns 0 if the array is empty
+func getFirstBitmap(bitmapArray []uint64) uint64 {
+	if len(bitmapArray) == 0 {
+		return 0
+	}
+	return bitmapArray[0]
 }
 
 // updateUIntFilterBPF updates the BPF maps for the given uint filter map.

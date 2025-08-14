@@ -1683,23 +1683,23 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 // userland process itself, and not from the kernel. These events usually serve as informational
 // events for the signatures engine/logic.
 func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
-	var matchedRules uint64
+	var matchedRules []uint64
 
-	setMatchedRules := func(event *trace.Event, matchedRules uint64) {
+	setMatchedRules := func(event *trace.Event, matchedRules []uint64) {
 		event.RulesVersion = 1 // version will be removed soon
 		event.MatchedRulesKernel = matchedRules
 		event.MatchedRulesUser = matchedRules
-		event.MatchedPolicies = t.policyManager.GetMatchedRulesInfo(events.ID(event.EventID), matchedRules)
+		event.MatchedPolicies = t.policyManager.GetMatchedRulesInfo(events.ID(event.EventID), event.MatchedRulesUser)
 	}
 
-	rulesMatch := func(id events.ID) uint64 {
+	rulesMatch := func(id events.ID) []uint64 {
 		return t.policyManager.GetAllMatchedRulesBitmap(id)
 	}
 
 	// Initial namespace events
 
 	matchedRules = rulesMatch(events.TraceeInfo)
-	if matchedRules > 0 {
+	if !utils.IsBitmapArrayEmpty(matchedRules) {
 		traceeDataEvent := events.TraceeInfoEvent(t.bootTime, t.startTime)
 		setMatchedRules(&traceeDataEvent, matchedRules)
 		out <- &traceeDataEvent
@@ -1707,7 +1707,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	}
 
 	matchedRules = rulesMatch(events.InitNamespaces)
-	if matchedRules > 0 {
+	if !utils.IsBitmapArrayEmpty(matchedRules) {
 		systemInfoEvent := events.InitNamespacesEvent()
 		setMatchedRules(&systemInfoEvent, matchedRules)
 		out <- &systemInfoEvent
@@ -1717,7 +1717,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	// Initial existing containers events (1 event per container)
 
 	matchedRules = rulesMatch(events.ExistingContainer)
-	if matchedRules > 0 {
+	if !utils.IsBitmapArrayEmpty(matchedRules) {
 		existingContainerEvents := events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich)
 		for i := range existingContainerEvents {
 			event := &(existingContainerEvents[i])
@@ -1730,7 +1730,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	// Ftrace hook event
 
 	matchedRules = rulesMatch(events.FtraceHook)
-	if matchedRules > 0 {
+	if !utils.IsBitmapArrayEmpty(matchedRules) {
 		ftraceBaseEvent := events.GetFtraceBaseEvent()
 		setMatchedRules(ftraceBaseEvent, matchedRules)
 		logger.Debugw("started ftraceHook goroutine")

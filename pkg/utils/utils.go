@@ -35,6 +35,69 @@ func SetBit(n *uint64, offset uint) {
 	*n |= (1 << offset)
 }
 
+// Bitmap array functions for handling rules with ID > 64
+
+// HasBitInArray checks if a bit is set in a bitmap array at the given ruleID
+func HasBitInArray(bitmaps []uint64, ruleID uint) bool {
+	bitmapIndex := ruleID / 64
+	bitOffset := ruleID % 64
+
+	if int(bitmapIndex) >= len(bitmaps) {
+		return false
+	}
+
+	return HasBit(bitmaps[bitmapIndex], bitOffset)
+}
+
+// SetBitInArray sets a bit in a bitmap array at the given ruleID
+func SetBitInArray(bitmaps *[]uint64, ruleID uint) {
+	bitmapIndex := ruleID / 64
+	bitOffset := ruleID % 64
+
+	// Ensure the bitmap array is large enough
+	for len(*bitmaps) <= int(bitmapIndex) {
+		*bitmaps = append(*bitmaps, 0)
+	}
+
+	SetBit(&(*bitmaps)[bitmapIndex], bitOffset)
+}
+
+// ClearBitInArray clears a bit in a bitmap array at the given ruleID
+func ClearBitInArray(bitmaps *[]uint64, ruleID uint) {
+	bitmapIndex := ruleID / 64
+	bitOffset := ruleID % 64
+
+	if int(bitmapIndex) >= len(*bitmaps) {
+		return // Bit is already "cleared" (doesn't exist)
+	}
+
+	ClearBit(&(*bitmaps)[bitmapIndex], bitOffset)
+}
+
+// OrBitmapArrays performs a bitwise OR operation between two bitmap arrays
+// and stores the result in the first array
+func OrBitmapArrays(dest *[]uint64, src []uint64) {
+	// Ensure dest is large enough to accommodate src
+	for len(*dest) < len(src) {
+		*dest = append(*dest, 0)
+	}
+
+	// Perform OR operation for each bitmap
+	for i := 0; i < len(src); i++ {
+		(*dest)[i] |= src[i]
+	}
+}
+
+// IsBitmapArrayEmpty checks if all bits in the bitmap array are zero
+func IsBitmapArrayEmpty(bitmaps []uint64) bool {
+	for _, bitmap := range bitmaps {
+		if bitmap != 0 {
+			return false
+		}
+	}
+	return true
+}
+
 func Min(x, y uint64) uint64 {
 	if x < y {
 		return x

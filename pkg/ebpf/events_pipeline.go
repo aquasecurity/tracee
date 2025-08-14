@@ -298,8 +298,13 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.EventID = int(eCtx.EventID)
 			evt.EventName = evtName
 			evt.RulesVersion = eCtx.RulesVersion
-			evt.MatchedRulesKernel = eCtx.MatchedRules
-			evt.MatchedRulesUser = 0
+			// Convert eBPF single bitmap to bitmap array
+			if eCtx.MatchedRules != 0 {
+				evt.MatchedRulesKernel = []uint64{eCtx.MatchedRules}
+			} else {
+				evt.MatchedRulesKernel = []uint64{}
+			}
+			evt.MatchedRulesUser = []uint64{}
 			evt.MatchedPolicies = []string{}
 			evt.ArgsNum = int(argnum)
 			evt.ReturnValue = int(eCtx.Retval)
@@ -352,7 +357,9 @@ func (t *Tracee) matchRules(event *trace.Event) bool {
 	// match scope filters for overflow rules that were not matched by the bpf code
 	t.matchOverflowRules(event)
 
-	bitmap := event.MatchedRulesKernel
+	// Create a copy of the kernel matched rules bitmap array to work with
+	bitmap := make([]uint64, len(event.MatchedRulesKernel))
+	copy(bitmap, event.MatchedRulesKernel)
 
 	// Cache frequently accessed event fields
 	eventUID := uint32(event.UserID)
@@ -361,12 +368,8 @@ func (t *Tracee) matchRules(event *trace.Event) bool {
 
 	// range through each userland filterable rule
 	for _, rule := range t.policyManager.GetUserlandRules(eventID) {
-		// Rule ID is the bit offset in the bitmap.
-		// TODO: we need to use bit index and bit offset since we have IDs > 64
-		// TODO: we need to add bitmap array to event pipeline struct instead of MatchedRulesKernel and MatchedRulesUser
-		bitOffset := uint(rule.ID)
-
-		if !utils.HasBit(bitmap, bitOffset) { // event does not match this rule
+		// Use proper bit index and bit offset for rules with ID > 64
+		if !utils.HasBitInArray(bitmap, rule.ID) { // event does not match this rule
 			continue
 		}
 
@@ -377,7 +380,7 @@ func (t *Tracee) matchRules(event *trace.Event) bool {
 		// 1. UID/PID range checks (very fast)
 		if rule.Policy.UIDFilter.Enabled() {
 			if !rule.Policy.UIDFilter.InMinMaxRange(eventUID) {
-				utils.ClearBit(&bitmap, bitOffset)
+				utils.ClearBitInArray(&bitmap, rule.ID)
 				continue
 			}
 		}
@@ -388,20 +391,20 @@ func (t *Tracee) matchRules(event *trace.Event) bool {
 			// the event PID is not in THIS rule PID min/max range.
 			//
 			if !rule.Policy.PIDFilter.InMinMaxRange(eventPID) {
-				utils.ClearBit(&bitmap, bitOffset)
+				utils.ClearBitInArray(&bitmap, rule.ID)
 				continue
 			}
 		}
 
 		// 2. event return value filters (fast)
 		if !rule.Data.RetFilter.Filter(eventRetVal) {
-			utils.ClearBit(&bitmap, bitOffset)
+			utils.ClearBitInArray(&bitmap, rule.ID)
 			continue
 		}
 
 		// 3. event scope filters (medium cost)
 		if !rule.Data.ScopeFilter.Filter(*event) {
-			utils.ClearBit(&bitmap, bitOffset)
+			utils.ClearBitInArray(&bitmap, rule.ID)
 			continue
 		}
 
@@ -412,29 +415,27 @@ func (t *Tracee) matchRules(event *trace.Event) bool {
 		// because it uses usermode applied filters as parameters for the event,
 		// which occurs after filtering
 		if eventID != events.PrintMemDump && !rule.Data.DataFilter.Filter(event.Args) {
-			utils.ClearBit(&bitmap, bitOffset)
+			utils.ClearBitInArray(&bitmap, rule.ID)
 			continue
 		}
 
-		// Early exit optimization: if bitmap becomes 0, no need to continue
-		if bitmap == 0 {
+		// Early exit optimization: if bitmap array becomes empty, no need to continue
+		if utils.IsBitmapArrayEmpty(bitmap) {
 			break
 		}
 	}
 
 	event.MatchedRulesUser = bitmap // store filtered bitmap to be used in sink stage
 
-	return bitmap > 0
+	return !utils.IsBitmapArrayEmpty(bitmap)
 }
 
-// matchOverflowRules apply policy scope filters for overflow rules
+// matchOverflowRules applies scope filters for overflow rules using the same logic as eBPF filtering
 func (t *Tracee) matchOverflowRules(event *trace.Event) {
 	// Skip if event doesn't have overflow
 	if !t.policyManager.HasOverflowRules(events.ID(event.EventID)) {
 		return
 	}
-
-	// TODO: perform lookup of the relevant context data like we do in bpf code
 
 	// Create filter version key
 	vKey := policy.FilterVersionKey{
@@ -444,111 +445,167 @@ func (t *Tracee) matchOverflowRules(event *trace.Event) {
 
 	// Get filter maps
 	fMaps := t.policyManager.GetFilterMaps()
+	if fMaps == nil {
+		return
+	}
 
-	// Check and apply each filter type
+	// Get extended scope filter configs to check which filters are enabled for overflow rules
+	extendedConfig, ok := fMaps.ExtendedScopeFilterConfigs[events.ID(event.EventID)]
+	if !ok {
+		return
+	}
 
-	// Filter by comm
-	if commFilters, ok := fMaps.CommFilters[vKey]; ok {
-		// TODO: don't use for loop, do a map lookup of comm instead
-		for comm, bitmaps := range commFilters {
-			if comm == event.ProcessName {
-				for i, bitmap := range bitmaps {
-					if i == 0 {
-						continue // Skip first bitmap (handled by BPF)
-					}
-					event.MatchedRulesKernel |= bitmap.EqualsInRules
-				}
+	// Following eBPF logic: start with all overflow rules enabled (~0ULL equivalent)
+	// We work only on overflow bitmaps (index 1 and above)
+	overflowStartIndex := 1
+	maxBitmapIndex := len(event.MatchedRulesKernel)
+
+	// Determine how many overflow bitmaps we need to work with
+	for _, enabledBitmaps := range [][]uint64{
+		extendedConfig.CommFilterEnabled,
+		extendedConfig.UIDFilterEnabled,
+		extendedConfig.PIDFilterEnabled,
+		extendedConfig.MntNsFilterEnabled,
+		extendedConfig.PidNsFilterEnabled,
+		extendedConfig.UtsNsFilterEnabled,
+		extendedConfig.CgroupIdFilterEnabled,
+		extendedConfig.ContFilterEnabled,
+	} {
+		if len(enabledBitmaps) > maxBitmapIndex {
+			maxBitmapIndex = len(enabledBitmaps)
+		}
+	}
+
+	// Ensure MatchedRulesKernel has enough space for overflow rules
+	for len(event.MatchedRulesKernel) < maxBitmapIndex {
+		event.MatchedRulesKernel = append(event.MatchedRulesKernel, 0)
+	}
+
+	// Initialize overflow bitmaps to all rules enabled (equivalent to res = ~0ULL in eBPF)
+	for i := overflowStartIndex; i < maxBitmapIndex; i++ {
+		event.MatchedRulesKernel[i] = ^uint64(0) // All bits set
+	}
+
+	// Apply each scope filter using the same logic as eBPF: res &= equality_filter_matches(...) | mask
+	t.applyOverflowScopeFilter(event, fMaps.CommFilters[vKey], event.ProcessName, extendedConfig.CommFilterEnabled, extendedConfig.CommFilterMatchIfKeyMissing)
+	t.applyOverflowScopeFilter(event, fMaps.UIDFilters[vKey], uint64(event.UserID), extendedConfig.UIDFilterEnabled, extendedConfig.UIDFilterMatchIfKeyMissing)
+	t.applyOverflowScopeFilter(event, fMaps.PIDFilters[vKey], uint64(event.HostProcessID), extendedConfig.PIDFilterEnabled, extendedConfig.PIDFilterMatchIfKeyMissing)
+	t.applyOverflowScopeFilter(event, fMaps.MntNsFilters[vKey], uint64(event.MountNS), extendedConfig.MntNsFilterEnabled, extendedConfig.MntNsFilterMatchIfKeyMissing)
+	t.applyOverflowScopeFilter(event, fMaps.PidNsFilters[vKey], uint64(event.PIDNS), extendedConfig.PidNsFilterEnabled, extendedConfig.PidNsFilterMatchIfKeyMissing)
+	t.applyOverflowScopeFilter(event, fMaps.UTSFilters[vKey], event.HostName, extendedConfig.UtsNsFilterEnabled, extendedConfig.UtsNsFilterMatchIfKeyMissing)
+	t.applyOverflowScopeFilter(event, fMaps.CgroupFilters[vKey], uint64(event.CgroupID), extendedConfig.CgroupIdFilterEnabled, extendedConfig.CgroupIdFilterMatchIfKeyMissing)
+
+	// Container filter: only apply if ContainerID is not empty
+	if event.ContainerID != "" {
+		t.applyOverflowScopeFilter(event, fMaps.ContainerFilters[vKey], event.ContainerID, extendedConfig.ContFilterEnabled, extendedConfig.ContFilterMatchIfKeyMissing)
+	} else {
+		// If no ContainerID, apply the mask logic for missing key behavior
+		t.applyOverflowScopeFilterMissingKey(event, extendedConfig.ContFilterEnabled, extendedConfig.ContFilterMatchIfKeyMissing)
+	}
+}
+
+// applyOverflowScopeFilter implements the same logic as equality_filter_matches in eBPF
+// res &= equality_filter_matches(match_if_key_missing, filter_map, &key) | mask
+func (t *Tracee) applyOverflowScopeFilter(event *trace.Event, filterMap interface{}, key interface{}, filterEnabled []uint64, matchIfKeyMissing []uint64) {
+	overflowStartIndex := 1
+
+	for i := overflowStartIndex; i < len(event.MatchedRulesKernel); i++ {
+		// Get the mask for rules that don't have this filter enabled (equivalent to ~filter_enabled in eBPF)
+		mask := ^uint64(0) // Default: all rules pass if filter not enabled
+		if i < len(filterEnabled) {
+			mask = ^filterEnabled[i]
+		}
+
+		// Get match_if_key_missing bitmap for this overflow bitmap
+		var matchIfMissing uint64
+		if i < len(matchIfKeyMissing) {
+			matchIfMissing = matchIfKeyMissing[i]
+		}
+
+		// Implement equality_filter_matches logic
+		equalsInRules := t.getEqualsInRulesForOverflow(filterMap, key, i)
+		keyUsedInRules := t.getKeyUsedInRulesForOverflow(filterMap, key, i)
+
+		// eBPF logic: equals_in_rules | (match_if_key_missing & ~key_used_in_rules)
+		filterMatches := equalsInRules | (matchIfMissing & ^keyUsedInRules)
+
+		// Apply filter: res &= equality_filter_matches(...) | mask
+		event.MatchedRulesKernel[i] &= filterMatches | mask
+	}
+}
+
+// applyOverflowScopeFilterMissingKey handles the case when a key is missing (e.g., empty ContainerID)
+func (t *Tracee) applyOverflowScopeFilterMissingKey(event *trace.Event, filterEnabled []uint64, matchIfKeyMissing []uint64) {
+	overflowStartIndex := 1
+
+	for i := overflowStartIndex; i < len(event.MatchedRulesKernel); i++ {
+		// Get the mask for rules that don't have this filter enabled
+		mask := ^uint64(0)
+		if i < len(filterEnabled) {
+			mask = ^filterEnabled[i]
+		}
+
+		// Get match_if_key_missing bitmap
+		var matchIfMissing uint64
+		if i < len(matchIfKeyMissing) {
+			matchIfMissing = matchIfKeyMissing[i]
+		}
+
+		// When key is missing: equals_in_rules = 0, key_used_in_rules = 0
+		// So result is: 0 | (match_if_key_missing & ~0) = match_if_key_missing
+		filterMatches := matchIfMissing
+
+		// Apply filter: res &= filterMatches | mask
+		event.MatchedRulesKernel[i] &= filterMatches | mask
+	}
+}
+
+// getEqualsInRulesForOverflow extracts the equals_in_rules bitmap for overflow rules from filter maps
+func (t *Tracee) getEqualsInRulesForOverflow(filterMap interface{}, key interface{}, bitmapIndex int) uint64 {
+	if filterMap == nil {
+		return 0
+	}
+
+	switch fm := filterMap.(type) {
+	case map[uint64][]policy.RuleBitmap:
+		if uint64Key, ok := key.(uint64); ok {
+			if bitmaps, exists := fm[uint64Key]; exists && bitmapIndex < len(bitmaps) {
+				return bitmaps[bitmapIndex].EqualsInRules
+			}
+		}
+	case map[string][]policy.RuleBitmap:
+		if stringKey, ok := key.(string); ok {
+			if bitmaps, exists := fm[stringKey]; exists && bitmapIndex < len(bitmaps) {
+				return bitmaps[bitmapIndex].EqualsInRules
 			}
 		}
 	}
 
-	// Filter by UID
-	if uidFilters, ok := fMaps.UIDFilters[vKey]; ok {
-		if bitmaps, exists := uidFilters[uint64(event.UserID)]; exists {
-			for i, bitmap := range bitmaps {
-				if i == 0 {
-					continue
-				}
-				event.MatchedRulesKernel |= bitmap.EqualsInRules
+	return 0
+}
+
+// getKeyUsedInRulesForOverflow extracts the key_used_in_rules bitmap for overflow rules from filter maps
+func (t *Tracee) getKeyUsedInRulesForOverflow(filterMap interface{}, key interface{}, bitmapIndex int) uint64 {
+	if filterMap == nil {
+		return 0
+	}
+
+	switch fm := filterMap.(type) {
+	case map[uint64][]policy.RuleBitmap:
+		if uint64Key, ok := key.(uint64); ok {
+			if bitmaps, exists := fm[uint64Key]; exists && bitmapIndex < len(bitmaps) {
+				return bitmaps[bitmapIndex].KeyUsedInRules
+			}
+		}
+	case map[string][]policy.RuleBitmap:
+		if stringKey, ok := key.(string); ok {
+			if bitmaps, exists := fm[stringKey]; exists && bitmapIndex < len(bitmaps) {
+				return bitmaps[bitmapIndex].KeyUsedInRules
 			}
 		}
 	}
 
-	// Filter by PID
-	if pidFilters, ok := fMaps.PIDFilters[vKey]; ok {
-		if bitmaps, exists := pidFilters[uint64(event.HostProcessID)]; exists {
-			for i, bitmap := range bitmaps {
-				if i == 0 {
-					continue
-				}
-				event.MatchedRulesKernel |= bitmap.EqualsInRules
-			}
-		}
-	}
-
-	// Filter by Mount NS
-	if mntNsFilters, ok := fMaps.MntNsFilters[vKey]; ok {
-		if bitmaps, exists := mntNsFilters[uint64(event.MountNS)]; exists {
-			for i, bitmap := range bitmaps {
-				if i == 0 {
-					continue
-				}
-				event.MatchedRulesKernel |= bitmap.EqualsInRules
-			}
-		}
-	}
-
-	// Filter by PID NS
-	if pidNsFilters, ok := fMaps.PidNsFilters[vKey]; ok {
-		if bitmaps, exists := pidNsFilters[uint64(event.PIDNS)]; exists {
-			for i, bitmap := range bitmaps {
-				if i == 0 {
-					continue
-				}
-				event.MatchedRulesKernel |= bitmap.EqualsInRules
-			}
-		}
-	}
-
-	// Filter by UTS namespace (hostname)
-	if utsFilters, ok := fMaps.UTSFilters[vKey]; ok {
-		for hostname, bitmaps := range utsFilters {
-			if hostname == event.HostName {
-				for i, bitmap := range bitmaps {
-					if i == 0 {
-						continue
-					}
-					event.MatchedRulesKernel |= bitmap.EqualsInRules
-				}
-			}
-		}
-	}
-
-	// Filter by CgroupID
-	if cgroupFilters, ok := fMaps.CgroupFilters[vKey]; ok {
-		if bitmaps, exists := cgroupFilters[uint64(event.CgroupID)]; exists {
-			for i, bitmap := range bitmaps {
-				if i == 0 {
-					continue
-				}
-				event.MatchedRulesKernel |= bitmap.EqualsInRules
-			}
-		}
-	}
-
-	// Filter by Container
-	if containerFilters, ok := fMaps.ContainerFilters[vKey]; ok {
-		if event.ContainerID != "" {
-			if bitmaps, exists := containerFilters[event.ContainerID]; exists {
-				for i, bitmap := range bitmaps {
-					if i == 0 {
-						continue
-					}
-					event.MatchedRulesKernel |= bitmap.EqualsInRules
-				}
-			}
-		}
-	}
+	return 0
 }
 
 func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
@@ -622,10 +679,14 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 					"eventId", eventId)
 
 				// remove event from rules with container filters
-				utils.ClearBits(&event.MatchedRulesKernel, containerFilteredRules[0])
-				utils.ClearBits(&event.MatchedRulesUser, containerFilteredRules[0])
+				if len(event.MatchedRulesKernel) > 0 {
+					utils.ClearBits(&event.MatchedRulesKernel[0], containerFilteredRules[0])
+				}
+				if len(event.MatchedRulesUser) > 0 {
+					utils.ClearBits(&event.MatchedRulesUser[0], containerFilteredRules[0])
+				}
 
-				if event.MatchedRulesKernel == 0 {
+				if utils.IsBitmapArrayEmpty(event.MatchedRulesKernel) {
 					t.eventsPool.Put(event)
 					continue
 				}

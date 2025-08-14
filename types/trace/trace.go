@@ -37,8 +37,8 @@ type Event struct {
 	EventID             int          `json:"eventId,string"`
 	EventName           string       `json:"eventName"`
 	RulesVersion        uint16       `json:"-"`
-	MatchedRulesKernel  uint64       `json:"-"`
-	MatchedRulesUser    uint64       `json:"-"`
+	MatchedRulesKernel  []uint64     `json:"-"` // Bitmap array supporting rules with ID > 64
+	MatchedRulesUser    []uint64     `json:"-"` // Bitmap array supporting rules with ID > 64
 	MatchedPolicies     []string     `json:"matchedPolicies,omitempty"`
 	ArgsNum             int          `json:"argsNum"`
 	ReturnValue         int          `json:"returnValue"`

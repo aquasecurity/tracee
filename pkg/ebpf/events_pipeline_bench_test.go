@@ -95,8 +95,8 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 				evt.EventID = int(ctx.EventID)
 				evt.EventName = eventDefinition.GetName()
 				evt.RulesVersion = ctx.RulesVersion
-				evt.MatchedRulesKernel = ctx.MatchedRules
-				evt.MatchedRulesUser = 0
+				evt.MatchedRulesKernel = []uint64{ctx.MatchedRules}
+				evt.MatchedRulesUser = []uint64{0}
 				evt.MatchedPolicies = []string{}
 				evt.ArgsNum = int(argnum)
 				evt.ReturnValue = int(ctx.Retval)
@@ -255,7 +255,7 @@ func BenchmarkNewEventObject(b *testing.B) {
 					EventID:             int(ctx.EventID),
 					EventName:           eventDefinition.GetName(),
 					RulesVersion:        ctx.RulesVersion,
-					MatchedRulesKernel:  ctx.MatchedRules,
+					MatchedRulesKernel:  []uint64{ctx.MatchedRules},
 					ArgsNum:             int(argnum),
 					ReturnValue:         int(ctx.Retval),
 					Args:                args,

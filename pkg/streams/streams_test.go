@@ -16,10 +16,10 @@ const (
 )
 
 var (
-	policy1Event     = trace.Event{MatchedRulesUser: 0b1}
-	policy2Event     = trace.Event{MatchedRulesUser: 0b10}
-	policy3Event     = trace.Event{MatchedRulesUser: 0b100}
-	policy1And2Event = trace.Event{MatchedRulesUser: 0b11}
+	policy1Event     = trace.Event{MatchedRulesUser: []uint64{0b1}}
+	policy2Event     = trace.Event{MatchedRulesUser: []uint64{0b10}}
+	policy3Event     = trace.Event{MatchedRulesUser: []uint64{0b100}}
+	policy1And2Event = trace.Event{MatchedRulesUser: []uint64{0b11}}
 )
 
 func TestStreamManager_PublishAndReceive(t *testing.T) {
@@ -71,20 +71,19 @@ func TestStreamManager_MultiplePolices(t *testing.T) {
 	sm := NewStreamsManager()
 	ctx := context.Background()
 
+	type streamTest struct {
+		policies []string
+		expect   bool
+	}
+
 	tests := []struct {
 		name    string
-		streams []struct {
-			policies []string
-			expect   bool
-		}
-		event trace.Event
+		streams []streamTest
+		event   trace.Event
 	}{
 		{
 			name: "multiple streams with different policies",
-			streams: []struct {
-				policies []string
-				expect   bool
-			}{
+			streams: []streamTest{
 				{policies: []string{"policy1", "policy2"}, expect: true},
 				{policies: []string{"policy3"}, expect: false},
 				{policies: []string{}, expect: true}, // all policies
@@ -95,10 +94,7 @@ func TestStreamManager_MultiplePolices(t *testing.T) {
 		},
 		{
 			name: "overlapping policies between streams",
-			streams: []struct {
-				policies []string
-				expect   bool
-			}{
+			streams: []streamTest{
 				{policies: []string{"policy1"}, expect: true},
 				{policies: []string{"policy1", "policy2"}, expect: true},
 				{policies: []string{"policy2", "policy3"}, expect: false},
@@ -109,10 +105,7 @@ func TestStreamManager_MultiplePolices(t *testing.T) {
 		},
 		{
 			name: "event matching multiple policies",
-			streams: []struct {
-				policies []string
-				expect   bool
-			}{
+			streams: []streamTest{
 				{policies: []string{"policy1"}, expect: true},
 				{policies: []string{"policy2"}, expect: true},
 				{policies: []string{"policy3"}, expect: false},

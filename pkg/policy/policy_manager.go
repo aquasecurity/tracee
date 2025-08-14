@@ -20,10 +20,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
-const (
-	maxFilterableRulesPerEvent = uint(64)
-)
-
 type ManagerConfig struct {
 	DNSCacheConfig dnscache.Config
 	ProcTreeConfig proctree.ProcTreeConfig
@@ -476,12 +472,6 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 			continue // This policy doesn't have rules for this event
 		}
 
-		// Check if ruleIDCounter exceeds maximum
-		if ruleIDCounter >= maxFilterableRulesPerEvent {
-			eventName := events.Core.GetDefinitionByID(eventID).GetName()
-			logger.Warnw("More than 64 rules per event. Only 64 rules will be filterable", "event", eventName)
-		}
-
 		rule := &EventRule{
 			ID:            ruleIDCounter,
 			Data:          &ruleData,
@@ -530,6 +520,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 	}
 
 	// Update hasOverflow flag if necessary
+	// Set overflow when the next rule would have ID >= 64 (more than 64 total rules)
 	if ruleIDCounter >= 64 {
 		hasOverflow = true
 	}
@@ -743,14 +734,15 @@ func (pm *PolicyManager) GetFilterMaps() *FilterMaps {
 
 	// Convert internal filterMaps to exported FilterMaps
 	exported := &FilterMaps{
-		UIDFilters:       make(map[FilterVersionKey]map[uint64][]RuleBitmap),
-		PIDFilters:       make(map[FilterVersionKey]map[uint64][]RuleBitmap),
-		MntNsFilters:     make(map[FilterVersionKey]map[uint64][]RuleBitmap),
-		PidNsFilters:     make(map[FilterVersionKey]map[uint64][]RuleBitmap),
-		CgroupFilters:    make(map[FilterVersionKey]map[uint64][]RuleBitmap),
-		UTSFilters:       make(map[FilterVersionKey]map[string][]RuleBitmap),
-		CommFilters:      make(map[FilterVersionKey]map[string][]RuleBitmap),
-		ContainerFilters: make(map[FilterVersionKey]map[string][]RuleBitmap),
+		UIDFilters:                 make(map[FilterVersionKey]map[uint64][]RuleBitmap),
+		PIDFilters:                 make(map[FilterVersionKey]map[uint64][]RuleBitmap),
+		MntNsFilters:               make(map[FilterVersionKey]map[uint64][]RuleBitmap),
+		PidNsFilters:               make(map[FilterVersionKey]map[uint64][]RuleBitmap),
+		CgroupFilters:              make(map[FilterVersionKey]map[uint64][]RuleBitmap),
+		UTSFilters:                 make(map[FilterVersionKey]map[string][]RuleBitmap),
+		CommFilters:                make(map[FilterVersionKey]map[string][]RuleBitmap),
+		ContainerFilters:           make(map[FilterVersionKey]map[string][]RuleBitmap),
+		ExtendedScopeFilterConfigs: make(map[events.ID]ExtendedScopeFiltersConfig),
 	}
 
 	// Convert UID filters
@@ -791,6 +783,11 @@ func (pm *PolicyManager) GetFilterMaps() *FilterMaps {
 	// Convert Container filters
 	for k, v := range pm.fMaps.containerFilters {
 		exported.ContainerFilters[FilterVersionKey(k)] = convertStringRuleBitmaps(v)
+	}
+
+	// Convert Extended Scope Filter Configs
+	for eventID, cfg := range pm.fMaps.extendedScopeFilterConfigs {
+		exported.ExtendedScopeFilterConfigs[eventID] = ExtendedScopeFiltersConfig(cfg)
 	}
 
 	return exported
@@ -841,10 +838,10 @@ func (pm *PolicyManager) GetContainerFilteredRulesBitmap(eventID events.ID) []ui
 	return eventRules.containerFilteredRules
 }
 
-// GetMatchedRulesInfo processes a bitmap of matched rule IDs for a given event and returns
+// GetMatchedRulesInfo processes a bitmap array of matched rule IDs for a given event and returns
 // a list of policy names corresponding to the matched rules that have the Emit flag set.
-// If the event has overflow (rules with ID > 64), the function will also return all their policy names as matched.
-func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBitmap uint64) []string {
+// Supports rules with ID > 64 through bitmap arrays.
+func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBitmap []uint64) []string {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
@@ -856,13 +853,8 @@ func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBi
 	}
 
 	for ruleID := uint(0); ruleID < eventRules.rulesCount; ruleID++ {
-		// For rules >= 64, only process if event has overflow
-		if ruleID >= 64 && !eventRules.hasOverflow {
-			continue
-		}
-
-		// For rules < 64, check the bitmap. For rules >= 64 with overflow, always match
-		if ruleID < 64 && matchedRuleIDsBitmap&(1<<ruleID) == 0 {
+		// Check if this rule is matched using bitmap array utilities
+		if !utils.HasBitInArray(matchedRuleIDsBitmap, ruleID) {
 			continue
 		}
 
@@ -873,8 +865,7 @@ func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBi
 			logger.Errorw("Inconsistency detected in GetMatchedRulesInfo",
 				"eventID", eventID,
 				"ruleID", ruleID,
-				"matchedRuleIDsBitmap", matchedRuleIDsBitmap,
-				"possibleCause", "Bitmap from BPF includes a ruleID not present in EventRules",
+				"possibleCause", "Bitmap includes a ruleID not present in EventRules",
 			)
 			continue
 		}
@@ -890,17 +881,17 @@ func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBi
 func (pm *PolicyManager) GetDerivedEventMatchedRules(
 	derivedEventID events.ID,
 	baseEventID events.ID,
-	baseMatchedRulesBitmap uint64,
-) uint64 {
+	baseMatchedRulesBitmap []uint64,
+) []uint64 {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
 	baseEventRules, ok := pm.rules[baseEventID]
 	if !ok {
-		return 0
+		return []uint64{}
 	}
 
-	var derivedMatchedRules uint64
+	var derivedMatchedRules []uint64
 
 	for ruleID := uint(0); ruleID < baseEventRules.rulesCount; ruleID++ {
 		// For rules >= 64, only process if event has overflow
@@ -908,8 +899,8 @@ func (pm *PolicyManager) GetDerivedEventMatchedRules(
 			continue
 		}
 
-		// For rules < 64, check base bitmap. For rules >= 64 with overflow, always match
-		if ruleID < 64 && baseMatchedRulesBitmap&(1<<ruleID) == 0 {
+		// Check if this rule is matched in the base event using bitmap array
+		if !utils.HasBitInArray(baseMatchedRulesBitmap, ruleID) {
 			continue
 		}
 
@@ -920,11 +911,8 @@ func (pm *PolicyManager) GetDerivedEventMatchedRules(
 
 		// Check if this dependency rule is for our derived event
 		if baseRule.Data.EventID == derivedEventID {
-			if baseRule.DerivedRuleID >= 64 {
-				// Derived event has overflow
-				continue
-			}
-			derivedMatchedRules |= 1 << baseRule.DerivedRuleID
+			// Set the bit for the derived rule using bitmap array utilities
+			utils.SetBitInArray(&derivedMatchedRules, baseRule.DerivedRuleID)
 		}
 	}
 
@@ -1023,21 +1011,21 @@ func (pm *PolicyManager) ShouldEmitEvent(eventID events.ID) bool {
 	return false // No rules were explicitly selected by the user
 }
 
-// GetAllMatchedRulesBitmap returns a bitmap where all bits corresponding to
+// GetAllMatchedRulesBitmap returns a bitmap array where all bits corresponding to
 // rules for the given event ID are set, indicating that all rules are considered
-// matched.
-func (pm *PolicyManager) GetAllMatchedRulesBitmap(eventID events.ID) uint64 {
+// matched. Supports overflow rules (ID > 64).
+func (pm *PolicyManager) GetAllMatchedRulesBitmap(eventID events.ID) []uint64 {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
 	eventRules, ok := pm.rules[eventID]
 	if !ok {
-		return 0 // No rules for this event, return an empty bitmap
+		return []uint64{} // No rules for this event, return an empty bitmap array
 	}
 
-	var allRulesBitmap uint64
+	var allRulesBitmap []uint64
 	for ruleID := uint(0); ruleID < eventRules.rulesCount; ruleID++ {
-		allRulesBitmap |= 1 << ruleID
+		utils.SetBitInArray(&allRulesBitmap, ruleID)
 	}
 
 	return allRulesBitmap

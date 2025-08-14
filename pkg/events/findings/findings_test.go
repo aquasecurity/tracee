@@ -43,8 +43,8 @@ func TestFindingToEvent(t *testing.T) {
 			PodUID:       "uid",
 		},
 		ReturnValue:        10,
-		MatchedRulesKernel: 1,
-		MatchedRulesUser:   1,
+		MatchedRulesKernel: []uint64{1},
+		MatchedRulesUser:   []uint64{1},
 		ArgsNum:            3,
 		Args: []trace.Argument{
 			{
@@ -189,8 +189,8 @@ func createFakeEventAndFinding() detect.Finding {
 					PodUID:       "uid",
 				},
 				ReturnValue:        10,
-				MatchedRulesKernel: 1,
-				MatchedRulesUser:   1,
+				MatchedRulesKernel: []uint64{1},
+				MatchedRulesUser:   []uint64{1},
 				ArgsNum:            1,
 				Args: []trace.Argument{
 					{

@@ -50,31 +50,60 @@ type FilterVersionKey = filterVersionKey
 // The outer map key is a combination of event ID and rules version (filterVersionKey),
 // while the inner map key varies by filter type (e.g., uint64, string) and the value is a ruleBitmap.
 type filterMaps struct {
-	uidFilters        map[filterVersionKey]map[uint64][]ruleBitmap
-	pidFilters        map[filterVersionKey]map[uint64][]ruleBitmap
-	mntNSFilters      map[filterVersionKey]map[uint64][]ruleBitmap
-	pidNSFilters      map[filterVersionKey]map[uint64][]ruleBitmap
-	cgroupIdFilters   map[filterVersionKey]map[uint64][]ruleBitmap
-	utsFilters        map[filterVersionKey]map[string][]ruleBitmap
-	commFilters       map[filterVersionKey]map[string][]ruleBitmap
-	containerFilters  map[filterVersionKey]map[string][]ruleBitmap
-	dataPrefixFilters map[filterVersionKey]map[string][]ruleBitmap
-	dataSuffixFilters map[filterVersionKey]map[string][]ruleBitmap
-	dataExactFilters  map[filterVersionKey]map[string][]ruleBitmap
-	binaryFilters     map[filterVersionKey]map[filters.NSBinary][]ruleBitmap
-	dataFilterConfigs map[events.ID]dataFilterConfig
+	uidFilters                 map[filterVersionKey]map[uint64][]ruleBitmap
+	pidFilters                 map[filterVersionKey]map[uint64][]ruleBitmap
+	mntNSFilters               map[filterVersionKey]map[uint64][]ruleBitmap
+	pidNSFilters               map[filterVersionKey]map[uint64][]ruleBitmap
+	cgroupIdFilters            map[filterVersionKey]map[uint64][]ruleBitmap
+	utsFilters                 map[filterVersionKey]map[string][]ruleBitmap
+	commFilters                map[filterVersionKey]map[string][]ruleBitmap
+	containerFilters           map[filterVersionKey]map[string][]ruleBitmap
+	dataPrefixFilters          map[filterVersionKey]map[string][]ruleBitmap
+	dataSuffixFilters          map[filterVersionKey]map[string][]ruleBitmap
+	dataExactFilters           map[filterVersionKey]map[string][]ruleBitmap
+	binaryFilters              map[filterVersionKey]map[filters.NSBinary][]ruleBitmap
+	dataFilterConfigs          map[events.ID]dataFilterConfig
+	extendedScopeFilterConfigs map[events.ID]extendedScopeFiltersConfig
+}
+
+// ExtendedScopeFiltersConfig is the exported version of extendedScopeFiltersConfig
+type ExtendedScopeFiltersConfig struct {
+	UIDFilterEnabled      []uint64
+	PIDFilterEnabled      []uint64
+	MntNsFilterEnabled    []uint64
+	PidNsFilterEnabled    []uint64
+	UtsNsFilterEnabled    []uint64
+	CommFilterEnabled     []uint64
+	CgroupIdFilterEnabled []uint64
+	ContFilterEnabled     []uint64
+	NewContFilterEnabled  []uint64
+	NewPidFilterEnabled   []uint64
+	BinPathFilterEnabled  []uint64
+
+	UIDFilterMatchIfKeyMissing      []uint64
+	PIDFilterMatchIfKeyMissing      []uint64
+	MntNsFilterMatchIfKeyMissing    []uint64
+	PidNsFilterMatchIfKeyMissing    []uint64
+	UtsNsFilterMatchIfKeyMissing    []uint64
+	CommFilterMatchIfKeyMissing     []uint64
+	CgroupIdFilterMatchIfKeyMissing []uint64
+	ContFilterMatchIfKeyMissing     []uint64
+	NewContFilterMatchIfKeyMissing  []uint64
+	NewPidFilterMatchIfKeyMissing   []uint64
+	BinPathFilterMatchIfKeyMissing  []uint64
 }
 
 // FilterMaps is the exported version of filterMaps for external access
 type FilterMaps struct {
-	UIDFilters       map[FilterVersionKey]map[uint64][]RuleBitmap
-	PIDFilters       map[FilterVersionKey]map[uint64][]RuleBitmap
-	MntNsFilters     map[FilterVersionKey]map[uint64][]RuleBitmap
-	PidNsFilters     map[FilterVersionKey]map[uint64][]RuleBitmap
-	CgroupFilters    map[FilterVersionKey]map[uint64][]RuleBitmap
-	UTSFilters       map[FilterVersionKey]map[string][]RuleBitmap
-	CommFilters      map[FilterVersionKey]map[string][]RuleBitmap
-	ContainerFilters map[FilterVersionKey]map[string][]RuleBitmap
+	UIDFilters                 map[FilterVersionKey]map[uint64][]RuleBitmap
+	PIDFilters                 map[FilterVersionKey]map[uint64][]RuleBitmap
+	MntNsFilters               map[FilterVersionKey]map[uint64][]RuleBitmap
+	PidNsFilters               map[FilterVersionKey]map[uint64][]RuleBitmap
+	CgroupFilters              map[FilterVersionKey]map[uint64][]RuleBitmap
+	UTSFilters                 map[FilterVersionKey]map[string][]RuleBitmap
+	CommFilters                map[FilterVersionKey]map[string][]RuleBitmap
+	ContainerFilters           map[FilterVersionKey]map[string][]RuleBitmap
+	ExtendedScopeFilterConfigs map[events.ID]ExtendedScopeFiltersConfig
 }
 
 type equalityType int
@@ -113,18 +142,19 @@ func (pm *PolicyManager) computeFilterMaps(
 	conts *containers.Manager,
 ) (maps *filterMaps, err error) {
 	maps = &filterMaps{
-		uidFilters:        make(map[filterVersionKey]map[uint64][]ruleBitmap),
-		pidFilters:        make(map[filterVersionKey]map[uint64][]ruleBitmap),
-		mntNSFilters:      make(map[filterVersionKey]map[uint64][]ruleBitmap),
-		pidNSFilters:      make(map[filterVersionKey]map[uint64][]ruleBitmap),
-		cgroupIdFilters:   make(map[filterVersionKey]map[uint64][]ruleBitmap),
-		utsFilters:        make(map[filterVersionKey]map[string][]ruleBitmap),
-		commFilters:       make(map[filterVersionKey]map[string][]ruleBitmap),
-		dataPrefixFilters: make(map[filterVersionKey]map[string][]ruleBitmap),
-		dataSuffixFilters: make(map[filterVersionKey]map[string][]ruleBitmap),
-		dataExactFilters:  make(map[filterVersionKey]map[string][]ruleBitmap),
-		binaryFilters:     make(map[filterVersionKey]map[filters.NSBinary][]ruleBitmap),
-		dataFilterConfigs: make(map[events.ID]dataFilterConfig),
+		uidFilters:                 make(map[filterVersionKey]map[uint64][]ruleBitmap),
+		pidFilters:                 make(map[filterVersionKey]map[uint64][]ruleBitmap),
+		mntNSFilters:               make(map[filterVersionKey]map[uint64][]ruleBitmap),
+		pidNSFilters:               make(map[filterVersionKey]map[uint64][]ruleBitmap),
+		cgroupIdFilters:            make(map[filterVersionKey]map[uint64][]ruleBitmap),
+		utsFilters:                 make(map[filterVersionKey]map[string][]ruleBitmap),
+		commFilters:                make(map[filterVersionKey]map[string][]ruleBitmap),
+		dataPrefixFilters:          make(map[filterVersionKey]map[string][]ruleBitmap),
+		dataSuffixFilters:          make(map[filterVersionKey]map[string][]ruleBitmap),
+		dataExactFilters:           make(map[filterVersionKey]map[string][]ruleBitmap),
+		binaryFilters:              make(map[filterVersionKey]map[filters.NSBinary][]ruleBitmap),
+		dataFilterConfigs:          make(map[events.ID]dataFilterConfig),
+		extendedScopeFilterConfigs: make(map[events.ID]extendedScopeFiltersConfig),
 	}
 
 	for eventID, eventRules := range pm.rules {
@@ -142,6 +172,9 @@ func (pm *PolicyManager) computeFilterMaps(
 				return nil, errfmt.WrapError(err)
 			}
 		}
+
+		// Compute extended scope filter configs for overflow rules
+		maps.extendedScopeFilterConfigs[eventID] = pm.computeScopeFiltersConfig(eventID)
 	}
 	return maps, nil
 }
