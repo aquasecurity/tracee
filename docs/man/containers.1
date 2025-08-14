@@ -6,21 +6,15 @@ tracee \f[B]\-\-containers\f[R] \- Configure container enrichment and
 runtime sockets for container events enrichment
 .SS SYNOPSIS
 tracee \f[B]\-\-containers\f[R]
-<[enrich=<true|false>|sockets.=|cgroupfs.path=|cgroupfs.force=<true|false>>]
+[enrich=\f[I]true|false\f[R]|sockets.\f[I]runtime\f[R]=\f[I]path\f[R]|cgroupfs.path=\f[I]path\f[R]|cgroupfs.force=\f[I]true|false\f[R]]
 [\f[B]\-\-containers\f[R] \&...]
 .SS DESCRIPTION
 The \f[CR]\-\-containers\f[R] flag allows you to configure container
 enrichment and runtime sockets for container events enrichment.
 .SS Flags
 .IP \[bu] 2
-\f[B]enrich=<true|false>\f[R]
-.PD 0
-.P
-.PD
-Enable or disable container enrichment.
-.PD 0
-.P
-.PD
+\f[B]enrich\f[R]=\f[I]true|false\f[R] Enable or disable container
+enrichment.
 Example:
 .RS 2
 .IP
@@ -29,28 +23,16 @@ Example:
 .EE
 .RE
 .IP \[bu] 2
-\f[B]sockets.=\f[R]
-.PD 0
-.P
-.PD
-Configure container runtime sockets for enrichment.
-\f[CR]<runtime>\f[R] must be one of the supported runtimes:
+\f[B]sockets\f[R].\f[I]runtime\f[R]=\f[I]path\f[R] Configure container
+runtime sockets for enrichment.
+\f[I]runtime\f[R] must be one of the supported runtimes:
 .RS 2
 .IP \[bu] 2
 CRI\-O (\f[CR]crio\f[R], \f[CR]cri\-o\f[R])
-.PD 0
-.P
-.PD
 .IP \[bu] 2
 Containerd (\f[CR]containerd\f[R])
-.PD 0
-.P
-.PD
 .IP \[bu] 2
 Docker (\f[CR]docker\f[R])
-.PD 0
-.P
-.PD
 .IP \[bu] 2
 Podman (\f[CR]podman\f[R])
 .PP
@@ -61,15 +43,9 @@ Example:
 .EE
 .RE
 .IP \[bu] 2
-\f[B]cgroupfs.path=\f[R]
-.PD 0
-.P
-.PD
-Configure the path to the cgroupfs where container cgroups are created.
+\f[B]cgroupfs.path\f[R]=\f[I]path\f[R] Configure the path to the
+cgroupfs where container cgroups are created.
 This is used as a hint for auto\-detection.
-.PD 0
-.P
-.PD
 Example:
 .RS 2
 .IP
@@ -78,15 +54,9 @@ Example:
 .EE
 .RE
 .IP \[bu] 2
-\f[B]cgroupfs.force=<true|false>\f[R]
-.PD 0
-.P
-.PD
-Force the usage of the provided mountpoint path and skip auto\-detection
-(only applies if cgroupfs.path is provided).
-.PD 0
-.P
-.PD
+\f[B]cgroupfs.force\f[R]=\f[I]true|false\f[R] Force the usage of the
+provided mountpoint path and skip auto\-detection (only applies if
+cgroupfs.path is provided).
 Example:
 .RS 2
 .IP
