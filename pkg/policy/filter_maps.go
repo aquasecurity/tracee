@@ -19,6 +19,12 @@ type ruleBitmap struct {
 	keyUsedInRules uint64
 }
 
+// RuleBitmap is the exported version of ruleBitmap for external access
+type RuleBitmap struct {
+	EqualsInRules  uint64
+	KeyUsedInRules uint64
+}
+
 const (
 	ruleBitmapSize = 16 // 8 bytes for equalsInRules and 8 bytes for keyUsedInRules
 )
@@ -30,6 +36,14 @@ type filterVersionKey struct {
 	EventID uint32
 }
 
+// FilterVersionKey is the exported version of filterVersionKey for external use
+type FilterVersionKey = filterVersionKey
+
+// FilterMaps contains maps that mirror the corresponding eBPF filter maps.
+// Each field corresponds to a specific eBPF map used for filtering events in kernel space.
+// The computed values in these maps are used to update their eBPF counterparts.
+// The outer map key is a combination of event ID and rules version (filterVersionKey),
+// while the inner map key varies by filter type (e.g., uint64, string) and the value is a ruleBitmap.
 // filterMaps contains maps that mirror the corresponding eBPF filter maps.
 // Each field corresponds to a specific eBPF map used for filtering events in kernel space.
 // The computed values in these maps are used to update their eBPF counterparts.
@@ -43,11 +57,24 @@ type filterMaps struct {
 	cgroupIdFilters   map[filterVersionKey]map[uint64][]ruleBitmap
 	utsFilters        map[filterVersionKey]map[string][]ruleBitmap
 	commFilters       map[filterVersionKey]map[string][]ruleBitmap
+	containerFilters  map[filterVersionKey]map[string][]ruleBitmap
 	dataPrefixFilters map[filterVersionKey]map[string][]ruleBitmap
 	dataSuffixFilters map[filterVersionKey]map[string][]ruleBitmap
 	dataExactFilters  map[filterVersionKey]map[string][]ruleBitmap
 	binaryFilters     map[filterVersionKey]map[filters.NSBinary][]ruleBitmap
 	dataFilterConfigs map[events.ID]dataFilterConfig
+}
+
+// FilterMaps is the exported version of filterMaps for external access
+type FilterMaps struct {
+	UIDFilters       map[FilterVersionKey]map[uint64][]RuleBitmap
+	PIDFilters       map[FilterVersionKey]map[uint64][]RuleBitmap
+	MntNsFilters     map[FilterVersionKey]map[uint64][]RuleBitmap
+	PidNsFilters     map[FilterVersionKey]map[uint64][]RuleBitmap
+	CgroupFilters    map[FilterVersionKey]map[uint64][]RuleBitmap
+	UTSFilters       map[FilterVersionKey]map[string][]RuleBitmap
+	CommFilters      map[FilterVersionKey]map[string][]RuleBitmap
+	ContainerFilters map[FilterVersionKey]map[string][]RuleBitmap
 }
 
 type equalityType int

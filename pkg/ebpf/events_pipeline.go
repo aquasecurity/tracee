@@ -13,6 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	traceetime "github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -347,6 +348,10 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 // pipeline (decode, derive, engine).
 func (t *Tracee) matchRules(event *trace.Event) bool {
 	eventID := events.ID(event.EventID)
+
+	// match scope filters for overflow rules that were not matched by the bpf code
+	t.matchOverflowRules(event)
+
 	bitmap := event.MatchedRulesKernel
 
 	// Cache frequently accessed event fields
@@ -356,11 +361,9 @@ func (t *Tracee) matchRules(event *trace.Event) bool {
 
 	// range through each userland filterable rule
 	for _, rule := range t.policyManager.GetUserlandRules(eventID) {
-		if rule.ID > 63 {
-			continue // we currently don't support filtering for rules with ID > 63
-		}
-
 		// Rule ID is the bit offset in the bitmap.
+		// TODO: we need to use bit index and bit offset since we have IDs > 64
+		// TODO: we need to add bitmap array to event pipeline struct instead of MatchedRulesKernel and MatchedRulesUser
 		bitOffset := uint(rule.ID)
 
 		if !utils.HasBit(bitmap, bitOffset) { // event does not match this rule
@@ -421,7 +424,131 @@ func (t *Tracee) matchRules(event *trace.Event) bool {
 
 	event.MatchedRulesUser = bitmap // store filtered bitmap to be used in sink stage
 
-	return bitmap > 0 || t.policyManager.HasOverflowRules(eventID)
+	return bitmap > 0
+}
+
+// matchOverflowRules apply policy scope filters for overflow rules
+func (t *Tracee) matchOverflowRules(event *trace.Event) {
+	// Skip if event doesn't have overflow
+	if !t.policyManager.HasOverflowRules(events.ID(event.EventID)) {
+		return
+	}
+
+	// TODO: perform lookup of the relevant context data like we do in bpf code
+
+	// Create filter version key
+	vKey := policy.FilterVersionKey{
+		Version: event.RulesVersion,
+		EventID: uint32(event.EventID),
+	}
+
+	// Get filter maps
+	fMaps := t.policyManager.GetFilterMaps()
+
+	// Check and apply each filter type
+
+	// Filter by comm
+	if commFilters, ok := fMaps.CommFilters[vKey]; ok {
+		// TODO: don't use for loop, do a map lookup of comm instead
+		for comm, bitmaps := range commFilters {
+			if comm == event.ProcessName {
+				for i, bitmap := range bitmaps {
+					if i == 0 {
+						continue // Skip first bitmap (handled by BPF)
+					}
+					event.MatchedRulesKernel |= bitmap.EqualsInRules
+				}
+			}
+		}
+	}
+
+	// Filter by UID
+	if uidFilters, ok := fMaps.UIDFilters[vKey]; ok {
+		if bitmaps, exists := uidFilters[uint64(event.UserID)]; exists {
+			for i, bitmap := range bitmaps {
+				if i == 0 {
+					continue
+				}
+				event.MatchedRulesKernel |= bitmap.EqualsInRules
+			}
+		}
+	}
+
+	// Filter by PID
+	if pidFilters, ok := fMaps.PIDFilters[vKey]; ok {
+		if bitmaps, exists := pidFilters[uint64(event.HostProcessID)]; exists {
+			for i, bitmap := range bitmaps {
+				if i == 0 {
+					continue
+				}
+				event.MatchedRulesKernel |= bitmap.EqualsInRules
+			}
+		}
+	}
+
+	// Filter by Mount NS
+	if mntNsFilters, ok := fMaps.MntNsFilters[vKey]; ok {
+		if bitmaps, exists := mntNsFilters[uint64(event.MountNS)]; exists {
+			for i, bitmap := range bitmaps {
+				if i == 0 {
+					continue
+				}
+				event.MatchedRulesKernel |= bitmap.EqualsInRules
+			}
+		}
+	}
+
+	// Filter by PID NS
+	if pidNsFilters, ok := fMaps.PidNsFilters[vKey]; ok {
+		if bitmaps, exists := pidNsFilters[uint64(event.PIDNS)]; exists {
+			for i, bitmap := range bitmaps {
+				if i == 0 {
+					continue
+				}
+				event.MatchedRulesKernel |= bitmap.EqualsInRules
+			}
+		}
+	}
+
+	// Filter by UTS namespace (hostname)
+	if utsFilters, ok := fMaps.UTSFilters[vKey]; ok {
+		for hostname, bitmaps := range utsFilters {
+			if hostname == event.HostName {
+				for i, bitmap := range bitmaps {
+					if i == 0 {
+						continue
+					}
+					event.MatchedRulesKernel |= bitmap.EqualsInRules
+				}
+			}
+		}
+	}
+
+	// Filter by CgroupID
+	if cgroupFilters, ok := fMaps.CgroupFilters[vKey]; ok {
+		if bitmaps, exists := cgroupFilters[uint64(event.CgroupID)]; exists {
+			for i, bitmap := range bitmaps {
+				if i == 0 {
+					continue
+				}
+				event.MatchedRulesKernel |= bitmap.EqualsInRules
+			}
+		}
+	}
+
+	// Filter by Container
+	if containerFilters, ok := fMaps.ContainerFilters[vKey]; ok {
+		if event.ContainerID != "" {
+			if bitmaps, exists := containerFilters[event.ContainerID]; exists {
+				for i, bitmap := range bitmaps {
+					if i == 0 {
+						continue
+					}
+					event.MatchedRulesKernel |= bitmap.EqualsInRules
+				}
+			}
+		}
+	}
 }
 
 func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {

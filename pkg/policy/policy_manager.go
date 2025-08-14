@@ -65,7 +65,7 @@ const (
 
 // EventRule represents a single rule within an event's rule set.
 type EventRule struct {
-	ID            uint              // Unique ID of the rule within the event (0-63) - used for bitmap position
+	ID            uint              // Unique ID of the rule within the event - used for bitmap position
 	Data          *RuleData         // Data associated with the rule
 	Policy        *Policy           // Reference to the policy where the rule was defined
 	SelectionType RuleSelectionType // How the rule was selected: by user, by dependency, or by bootstrap policy
@@ -650,6 +650,7 @@ func isRuleFilterableInUserland(rule *EventRule) bool {
 
 	// Check rule.Data and its filters
 	if rule.Data != nil {
+		// TODO: if kernel filter is enabled for the data filter, don't consider it filterable in userland
 		if (rule.Data.DataFilter != nil && rule.Data.DataFilter.Enabled()) ||
 			(rule.Data.RetFilter != nil && rule.Data.RetFilter.Enabled()) ||
 			(rule.Data.ScopeFilter != nil && rule.Data.ScopeFilter.Enabled()) {
@@ -729,6 +730,100 @@ func (pm *PolicyManager) GetUserlandRules(eventID events.ID) []*EventRule {
 	}
 
 	return eventRules.UserlandRules
+}
+
+// GetFilterMaps returns the computed filter maps for use by the overflow rules matcher.
+func (pm *PolicyManager) GetFilterMaps() *FilterMaps {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	if pm.fMaps == nil {
+		return nil
+	}
+
+	// Convert internal filterMaps to exported FilterMaps
+	exported := &FilterMaps{
+		UIDFilters:       make(map[FilterVersionKey]map[uint64][]RuleBitmap),
+		PIDFilters:       make(map[FilterVersionKey]map[uint64][]RuleBitmap),
+		MntNsFilters:     make(map[FilterVersionKey]map[uint64][]RuleBitmap),
+		PidNsFilters:     make(map[FilterVersionKey]map[uint64][]RuleBitmap),
+		CgroupFilters:    make(map[FilterVersionKey]map[uint64][]RuleBitmap),
+		UTSFilters:       make(map[FilterVersionKey]map[string][]RuleBitmap),
+		CommFilters:      make(map[FilterVersionKey]map[string][]RuleBitmap),
+		ContainerFilters: make(map[FilterVersionKey]map[string][]RuleBitmap),
+	}
+
+	// Convert UID filters
+	for k, v := range pm.fMaps.uidFilters {
+		exported.UIDFilters[FilterVersionKey(k)] = convertUint64RuleBitmaps(v)
+	}
+
+	// Convert PID filters
+	for k, v := range pm.fMaps.pidFilters {
+		exported.PIDFilters[FilterVersionKey(k)] = convertUint64RuleBitmaps(v)
+	}
+
+	// Convert Mount NS filters
+	for k, v := range pm.fMaps.mntNSFilters {
+		exported.MntNsFilters[FilterVersionKey(k)] = convertUint64RuleBitmaps(v)
+	}
+
+	// Convert PID NS filters
+	for k, v := range pm.fMaps.pidNSFilters {
+		exported.PidNsFilters[FilterVersionKey(k)] = convertUint64RuleBitmaps(v)
+	}
+
+	// Convert Cgroup filters
+	for k, v := range pm.fMaps.cgroupIdFilters {
+		exported.CgroupFilters[FilterVersionKey(k)] = convertUint64RuleBitmaps(v)
+	}
+
+	// Convert UTS filters
+	for k, v := range pm.fMaps.utsFilters {
+		exported.UTSFilters[FilterVersionKey(k)] = convertStringRuleBitmaps(v)
+	}
+
+	// Convert Comm filters
+	for k, v := range pm.fMaps.commFilters {
+		exported.CommFilters[FilterVersionKey(k)] = convertStringRuleBitmaps(v)
+	}
+
+	// Convert Container filters
+	for k, v := range pm.fMaps.containerFilters {
+		exported.ContainerFilters[FilterVersionKey(k)] = convertStringRuleBitmaps(v)
+	}
+
+	return exported
+}
+
+// Helper function to convert uint64 rule bitmaps
+func convertUint64RuleBitmaps(input map[uint64][]ruleBitmap) map[uint64][]RuleBitmap {
+	output := make(map[uint64][]RuleBitmap)
+	for k, v := range input {
+		output[k] = convertRuleBitmapSlice(v)
+	}
+	return output
+}
+
+// Helper function to convert string rule bitmaps
+func convertStringRuleBitmaps(input map[string][]ruleBitmap) map[string][]RuleBitmap {
+	output := make(map[string][]RuleBitmap)
+	for k, v := range input {
+		output[k] = convertRuleBitmapSlice(v)
+	}
+	return output
+}
+
+// Helper function to convert ruleBitmap slice to RuleBitmap slice
+func convertRuleBitmapSlice(input []ruleBitmap) []RuleBitmap {
+	output := make([]RuleBitmap, len(input))
+	for i, rb := range input {
+		output[i] = RuleBitmap{
+			EqualsInRules:  rb.equalsInRules,
+			KeyUsedInRules: rb.keyUsedInRules,
+		}
+	}
+	return output
 }
 
 // GetContainerFilteredRulesBitmap returns a bitmap where each bit represents a rule

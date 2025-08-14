@@ -202,12 +202,15 @@ func (pm *PolicyManager) updateEventsConfigMap(
 			overflowFlag = 1
 		}
 
+		// TODO: this should be saved in poicy manager as well, next to fMaps
+		scopeFiltersConfig := pm.computeScopeFiltersConfig(id)
+
 		eventConfig := eventConfig{
 			rulesVersion:   ecfg.rulesVersion,
 			hasOverflow:    overflowFlag,
 			submitForRules: submitForRules,
 			fieldTypes:     fieldTypes,
-			scopeFilters:   pm.computeScopeFiltersConfig(id),
+			scopeFilters:   scopeFiltersConfig,
 			dataFilter:     dataFilterCfg,
 		}
 
@@ -263,6 +266,7 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) scopeFilte
 
 	// Loop through rules for this event
 	for _, rule := range eventRules.Rules {
+		// TODO: compute configs for rules > 63 as well
 		if rule.Policy == nil || rule.ID >= 64 {
 			continue
 		}
