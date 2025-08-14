@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -695,6 +696,43 @@ func getProtoHTTPFromResponsePacket(packet gopacket.Packet) (*trace.ProtoHTTP, e
 	}, nil
 }
 
+// getProtoHTTPResponseFromPacket returns the ProtoHTTPResponse from the HTTP response packet.
+func getProtoHTTPResponseFromResponsePacket(packet gopacket.Packet) (*trace.ProtoHTTPResponse, error) {
+	layer7, err := getLayer7FromPacket(packet)
+	if err != nil {
+		return nil, err
+	}
+
+	layer7Payload := layer7.Payload()
+
+	if len(layer7Payload) < httpMinLen {
+		return nil, nil // regular tcp/ip packet without HTTP payload
+	}
+
+	reader := bufio.NewReader(bytes.NewReader(layer7Payload))
+
+	response, err := http.ReadResponse(reader, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	limitedReader := io.LimitReader(response.Body, 500)
+	data, err := io.ReadAll(limitedReader)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &trace.ProtoHTTPResponse{
+		Status:        response.Status,
+		StatusCode:    response.StatusCode,
+		Protocol:      response.Proto,
+		Headers:       response.Header,
+		ContentLength: response.ContentLength,
+		Body:          string(data),
+	}, nil
+}
+
 // getProtoHTTPRequestFromHTTP returns the ProtoHTTPRequest from the ProtoHTTP.
 func getProtoHTTPRequestFromHTTP(proto *trace.ProtoHTTP) trace.ProtoHTTPRequest {
 	return trace.ProtoHTTPRequest{
@@ -702,17 +740,6 @@ func getProtoHTTPRequestFromHTTP(proto *trace.ProtoHTTP) trace.ProtoHTTPRequest 
 		Protocol:      proto.Protocol,
 		Host:          proto.Host,
 		URIPath:       proto.URIPath,
-		Headers:       proto.Headers,
-		ContentLength: proto.ContentLength,
-	}
-}
-
-// getProtoHTTPResponseFromHTTP returns the ProtoHTTPResponse from the ProtoHTTP.
-func getProtoHTTPResponseFromHTTP(proto *trace.ProtoHTTP) trace.ProtoHTTPResponse {
-	return trace.ProtoHTTPResponse{
-		Status:        proto.Status,
-		StatusCode:    proto.StatusCode,
-		Protocol:      proto.Protocol,
 		Headers:       proto.Headers,
 		ContentLength: proto.ContentLength,
 	}
