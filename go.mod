@@ -21,7 +21,6 @@ require (
 	github.com/mennanov/fmutils v0.3.1
 	github.com/minio/sha256-simd v1.0.1
 	github.com/prometheus/client_golang v1.22.0
-	github.com/sashabaranov/go-gpt3 v1.4.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.0
 	github.com/stretchr/testify v1.10.0
