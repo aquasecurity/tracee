@@ -11,7 +11,7 @@ To switch on the `DNS Cache` feature, run the command:
 sudo tracee --output option:sort-events --output json --output option:parse-arguments --dnscache enable --events <event_type>
 ```
 
-The underlying structure is populated using the core [net_packet_dns](../../../events/builtin/network/net_packet_dns.md) event and its payload.
+The underlying structure is populated using the core [net_packet_dns](../../../events/builtin/man/network/net_packet_dns.md) event and its payload.
 
 ## Command Line Option
 

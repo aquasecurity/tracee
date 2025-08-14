@@ -99,7 +99,7 @@ if [ -n "$FETCH_DEPTH" ] || [ "$FORCE_FETCH" -eq 1 ]; then
 fi
 
 flags_md_files=$(git_changed_files "$BASE_REF" "$TARGET_REF" 'docs/docs/flags/*.1.md') || die "Failed to get flags md changed files"
-events_md_files=$(git_changed_files "$BASE_REF" "$TARGET_REF" 'docs/docs/events-man/**/*.md') || die "Failed to get events md changed files"
+events_md_files=$(git_changed_files "$BASE_REF" "$TARGET_REF" 'docs/docs/events/builtin/man/**/*.md') || die "Failed to get events md changed files"
 man_files=$(git_changed_files "$BASE_REF" "$TARGET_REF" 'docs/man/*.1') || die "Failed to get man changed files"
 
 # Combine flags and events md files
