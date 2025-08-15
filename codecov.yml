@@ -1,0 +1,56 @@
+# Codecov configuration for Tracee
+# This file configures how code coverage is measured and reported
+
+coverage:
+  status:
+    project:
+      default:
+        target: 75%           # Overall project coverage target
+        threshold: 1%         # Allow 1% decrease without failing
+        if_ci_failed: error   # Fail if CI failed
+    patch:
+      default:
+        target: 80%           # New code should have higher coverage
+        threshold: 5%         # Allow some flexibility for new features
+        if_ci_failed: error
+
+  ignore:
+    # Ignore generated files and vendor dependencies
+    - "3rdparty/**/*"
+    - "vendor/**/*"
+    - "**/*.pb.go"
+    - "**/mock_*.go"
+    - "**/*_mock.go"
+    - "**/testdata/**/*"
+    - "tests/**/*"
+    - "**/*_test.go"
+    # Ignore build and CI scripts
+    - "scripts/**/*"
+    - "builder/**/*"
+    - "deploy/**/*"
+    # Ignore documentation
+    - "docs/**/*"
+    - "examples/**/*"
+    - "brand/**/*"
+
+comment:
+  layout: "diff, flags, files"
+  behavior: default
+  require_changes: false
+  require_base: no
+  require_head: yes
+  show_carryforward_flags: true
+
+flags:
+  unit:
+    paths:
+      - cmd/
+      - pkg/
+      - signatures/
+  integration:
+    paths:
+      - cmd/
+      - pkg/
+
+github_checks:
+  annotations: true

@@ -871,6 +871,7 @@ test-unit: \
 		-failfast \
 		-v \
 		-coverprofile=coverage.txt \
+		-covermode=atomic \
 		./cmd/... \
 		./pkg/... \
 		./signatures/... \
@@ -885,7 +886,6 @@ test-types: \
 		-race \
 		-shuffle on \
 		-v \
-		-coverprofile=coverage.txt \
 		./...
 
 SCRIPTS_TEST_DIR = scripts
@@ -894,6 +894,23 @@ SCRIPTS_TEST_DIR = scripts
 run-scripts-test-unit:
 #
 	@$(SCRIPTS_TEST_DIR)/run_test_scripts.sh
+
+#
+# coverage targets
+#
+
+.PHONY: coverage
+coverage: test-unit
+#
+	@echo "Unit test coverage:"
+	@$(CMD_GO) tool cover -func=coverage.txt
+
+.PHONY: coverage-html
+coverage-html: test-unit
+#
+	@echo "Generating HTML coverage report..."
+	@$(CMD_GO) tool cover -html=coverage.txt -o coverage.html
+	@echo "Coverage report generated: coverage.html"
 
 #
 # integration tests
@@ -927,6 +944,8 @@ test-integration: \
 		-v \
 		-p 1 \
 		-count=1 \
+		-coverprofile=integration-coverage.txt \
+		-covermode=atomic \
 		./tests/integration/... \
 
 .PHONY: test-upstream-libbpfgo
