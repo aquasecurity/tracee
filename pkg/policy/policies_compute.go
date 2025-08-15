@@ -1,8 +1,8 @@
 package policy
 
 import (
+	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/pkg/filters"
-	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 // compute recalculates values, updates flags, fills the reduced userland map,
@@ -89,18 +89,18 @@ func (ps *policies) calculateGlobalMinMax() {
 	for _, p := range ps.allFromMap() {
 		if p.UIDFilter.Enabled() {
 			if !uidMinFilterableInUserland {
-				ps.uidFilterMin = utils.Min(ps.uidFilterMin, p.UIDFilter.Minimum())
+				ps.uidFilterMin = common.Min(ps.uidFilterMin, p.UIDFilter.Minimum())
 			}
 			if !uidMaxFilterableInUserland {
-				ps.uidFilterMax = utils.Max(ps.uidFilterMax, p.UIDFilter.Maximum())
+				ps.uidFilterMax = common.Max(ps.uidFilterMax, p.UIDFilter.Maximum())
 			}
 		}
 		if p.PIDFilter.Enabled() {
 			if !pidMinFilterableInUserland {
-				ps.pidFilterMin = utils.Min(ps.pidFilterMin, p.PIDFilter.Minimum())
+				ps.pidFilterMin = common.Min(ps.pidFilterMin, p.PIDFilter.Minimum())
 			}
 			if !pidMaxFilterableInUserland {
-				ps.pidFilterMax = utils.Max(ps.pidFilterMax, p.PIDFilter.Maximum())
+				ps.pidFilterMax = common.Max(ps.pidFilterMax, p.PIDFilter.Maximum())
 			}
 		}
 	}
@@ -111,7 +111,7 @@ func (ps *policies) updateContainerFilterEnabled() {
 
 	for _, p := range ps.allFromMap() {
 		if p.ContainerFilterEnabled() {
-			utils.SetBit(&ps.containerFiltersEnabled, uint(p.ID))
+			common.SetBit(&ps.containerFiltersEnabled, uint(p.ID))
 		}
 	}
 }

@@ -10,11 +10,11 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/data"
-	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -68,7 +68,7 @@ func NewTypeDecoder() TypeDecoder {
 				if !ok {
 					return nil, errfmt.Errorf("error presenting uint64 as time.Time, type received was %T", a)
 				}
-				return time.NsSinceEpochToTime(time.BootToEpochNS(argVal)), nil
+				return timeutil.NsSinceEpochToTime(timeutil.BootToEpochNS(argVal)), nil
 			},
 		},
 		data.U16_T:       {},

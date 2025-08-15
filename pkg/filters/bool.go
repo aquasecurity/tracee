@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/common"
 )
 
 type BoolFilter struct {
@@ -14,7 +14,7 @@ type BoolFilter struct {
 }
 
 // Compile-time check to ensure that BoolFilter implements the Cloner interface
-var _ utils.Cloner[*BoolFilter] = &BoolFilter{}
+var _ common.Cloner[*BoolFilter] = &BoolFilter{}
 
 func NewBoolFilter() *BoolFilter {
 	return &BoolFilter{}

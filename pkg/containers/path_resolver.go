@@ -10,10 +10,10 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 
-	"github.com/aquasecurity/tracee/pkg/bucketscache"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/utils/proc"
+	"github.com/aquasecurity/tracee/common/bucketcache"
+	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/common/proc"
 )
 
 // ContainerPathResolver generates an accessible absolute path from the root
@@ -22,14 +22,14 @@ import (
 // capability.
 type ContainerPathResolver struct {
 	fs               fs.FS
-	mountNSPIDsCache *bucketscache.BucketsCache
+	mountNSPIDsCache *bucketcache.BucketCache
 	// symlinkCache caches symlink resolution results to improve performance (LRU with size limit)
 	symlinkCache *lru.Cache[string, string]
 }
 
 // InitContainerPathResolver creates a resolver for paths from within
 // containers.
-func InitContainerPathResolver(mountNSPIDsCache *bucketscache.BucketsCache) *ContainerPathResolver {
+func InitContainerPathResolver(mountNSPIDsCache *bucketcache.BucketCache) *ContainerPathResolver {
 	// Create LRU cache for symlink resolutions (1024 entries should be sufficient for most workloads)
 	symlinkCache, err := lru.New[string, string](1024)
 	if err != nil {

@@ -1,6 +1,6 @@
 package policy
 
-import "github.com/aquasecurity/tracee/pkg/utils"
+import "github.com/aquasecurity/tracee/common"
 
 // eventFlags is a struct that holds the flags of an event.
 type eventFlags struct {
@@ -75,19 +75,19 @@ func newEventFlags(options ...eventFlagsOption) *eventFlags {
 //
 
 func (ef *eventFlags) enableSubmission(policyId int) {
-	utils.SetBit(&ef.policiesSubmit, uint(policyId))
+	common.SetBit(&ef.policiesSubmit, uint(policyId))
 }
 
 func (ef *eventFlags) enableEmission(policyId int) {
-	utils.SetBit(&ef.policiesEmit, uint(policyId))
+	common.SetBit(&ef.policiesEmit, uint(policyId))
 }
 
 func (ef *eventFlags) disableSubmission(policyId int) {
-	utils.ClearBit(&ef.policiesSubmit, uint(policyId))
+	common.ClearBit(&ef.policiesSubmit, uint(policyId))
 }
 
 func (ef *eventFlags) disableEmission(policyId int) {
-	utils.ClearBit(&ef.policiesEmit, uint(policyId))
+	common.ClearBit(&ef.policiesEmit, uint(policyId))
 }
 
 func (ef *eventFlags) enableEvent() {

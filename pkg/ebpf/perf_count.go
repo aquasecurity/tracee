@@ -6,8 +6,8 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // eventStatsValues mirrors the C struct event_stats_values (event_stats_values_t).
