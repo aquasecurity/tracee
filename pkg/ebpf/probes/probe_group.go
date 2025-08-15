@@ -64,6 +64,18 @@ func (p *ProbeGroup) GetProbeType(handle Handle) ProbeType {
 	return InvalidProbeType
 }
 
+// IsProbeCompatible checks if a probe is compatible with the given environment.
+func (p *ProbeGroup) IsProbeCompatible(handle Handle, env EnvironmentProvider) (bool, error) {
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
+
+	if probe, ok := p.probes[handle]; ok {
+		return probe.isCompatible(env)
+	}
+
+	return false, errfmt.Errorf("probe handle (%d) does not exist", handle)
+}
+
 // Attach attaches a probe's program to its hook, by given handle.
 func (p *ProbeGroup) Attach(handle Handle, args ...interface{}) error {
 	p.probesLock.Lock()
@@ -271,6 +283,9 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 		TestUnavailableHook: NewTraceProbe(KProbe, "non_existing_func", "empty_kprobe"),
 		ExecTest:            NewTraceProbe(RawTracepoint, "raw_syscalls:sched_process_exec", "tracepoint__exec_test"),
 		EmptyKprobe:         NewTraceProbe(KProbe, "security_bprm_check", "empty_kprobe"),
+		IncompatibleProbe: NewTraceProbeWithCompatibility(KProbe, "security_bprm_check", "empty_kprobe", NewProbeCompatibility(
+			NewKernelVersionRequirement("", "", "0.0.0"), // Requires kernel up to 0.0.0, so kernel version is always incompatible
+		)),
 	}
 
 	if !netEnabled {

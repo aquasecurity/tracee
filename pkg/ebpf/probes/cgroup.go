@@ -26,6 +26,7 @@ import (
 //     DetachAll()
 
 type CgroupProbe struct {
+	ProbeCompatibility
 	programName string
 	attachType  bpf.BPFAttachType
 	bpfLink     *bpf.BPFLink
@@ -36,6 +37,14 @@ func NewCgroupProbe(a bpf.BPFAttachType, progName string) *CgroupProbe {
 	return &CgroupProbe{
 		programName: progName,
 		attachType:  a,
+	}
+}
+
+func NewCgroupProbeWithCompatibility(a bpf.BPFAttachType, progName string, compatibility *ProbeCompatibility) *CgroupProbe {
+	return &CgroupProbe{
+		ProbeCompatibility: *compatibility,
+		programName:        progName,
+		attachType:         a,
 	}
 }
 

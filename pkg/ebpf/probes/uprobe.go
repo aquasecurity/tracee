@@ -15,6 +15,7 @@ import (
 //
 
 type Uprobe struct {
+	ProbeCompatibility
 	eventName   string
 	programName string // eBPF program to execute when uprobe triggered
 	binaryPath  string // ELF file path to attach uprobe to
@@ -29,6 +30,16 @@ func NewUprobe(evtName string, progName string, binPath string, symName string) 
 		eventName:   evtName,
 		binaryPath:  binPath,
 		symbolName:  symName,
+	}
+}
+
+func NewUprobeWithCompatibility(evtName string, progName string, binPath string, symName string, compatibility *ProbeCompatibility) *Uprobe {
+	return &Uprobe{
+		ProbeCompatibility: *compatibility,
+		eventName:          evtName,
+		programName:        progName,
+		binaryPath:         binPath,
+		symbolName:         symName,
 	}
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/tests/testutils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -84,6 +85,25 @@ func Test_EventsDependencies(t *testing.T) {
 			expectedEvents:   []events.ID{events.ExecTest},
 			expectedKprobes:  []string{"security_bprm_check"},
 		},
+		{
+			name:   "incompatible probe test",
+			events: []events.ID{events.IncompatibleProbeTest},
+			expectedLogs: []string{
+				"Event failed due to incompatible probe\",\"event\":\"incompatible_probe_test",
+			},
+			unexpectedEvents:  []events.ID{events.IncompatibleProbeTest},
+			unexpectedKprobes: []string{"security_bprm_check"},
+		},
+		{
+			name:   "incompatible probe with sanity",
+			events: []events.ID{events.IncompatibleProbeTest, events.ExecTest},
+			expectedLogs: []string{
+				"Event failed due to incompatible probe\",\"event\":\"incompatible_probe_test",
+			},
+			unexpectedEvents: []events.ID{events.IncompatibleProbeTest},
+			expectedEvents:   []events.ID{events.ExecTest},
+			expectedKprobes:  []string{"security_bprm_check"},
+		},
 	}
 
 	// Each test will run a test binary that triggers the "exec_test" event.
@@ -124,6 +144,13 @@ func Test_EventsDependencies(t *testing.T) {
 					BypassCaps: true,
 				},
 			}
+			// Initialize OSInfo to prevent nil pointer dereference in probes compatibility
+			osInfo, err := environment.GetOSInfo()
+			if err != nil {
+				t.Fatalf("Failed to get OS info: %v", err)
+			}
+			testConfig.OSInfo = osInfo
+
 			ps := testutils.BuildPoliciesFromEvents(testCaseInst.events)
 			initialPolicies := make([]interface{}, 0, len(ps))
 			for _, p := range ps {
