@@ -23,8 +23,8 @@ const (
 
 // filtersEqualities stores the equalities for each filter in the policies
 type filtersEqualities struct {
-	uidEqualities        map[uint64]equality
-	pidEqualities        map[uint64]equality
+	uidEqualities        map[uint32]equality
+	pidEqualities        map[uint32]equality
 	mntNSEqualities      map[uint64]equality
 	pidNSEqualities      map[uint64]equality
 	cgroupIdEqualities   map[uint64]equality
