@@ -16938,34 +16938,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../advanced/caching-events/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Caching Events
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../advanced/ordering-events/" class="md-nav__link">
         
   
@@ -17175,10 +17147,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7_8" >
         
           
-          <label class="md-nav__link" for="__nav_2_7_9" id="__nav_2_7_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_7_8" id="__nav_2_7_8_label" tabindex="0">
             
   
   
@@ -17196,8 +17168,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_7_9_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_7_9">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_7_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_7_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -17311,10 +17283,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7_9_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7_8_4" >
         
           
-          <label class="md-nav__link" for="__nav_2_7_9_4" id="__nav_2_7_9_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_7_8_4" id="__nav_2_7_8_4_label" tabindex="0">
             
   
   
@@ -17332,8 +17304,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_7_9_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_7_9_4">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_7_8_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_7_8_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -17661,34 +17633,6 @@
     
   
     containers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../flags/cache.1/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    cache
   
 
     
@@ -18935,9 +18879,12 @@
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tracee</span>
 <span class="nt">data</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">config.yaml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
-<span class="w">    </span><span class="no">cache:</span>
-<span class="w">      </span><span class="no">- cache-type=mem</span>
-<span class="w">      </span><span class="no">- mem-cache-size=512</span>
+<span class="w">    </span><span class="no">output:</span>
+<span class="w">      </span><span class="no">json:</span>
+<span class="w">        </span><span class="no">files:</span>
+<span class="w">          </span><span class="no">- /var/log/tracee.json</span>
+<span class="w">      </span><span class="no">options:</span>
+<span class="w">        </span><span class="no">parse-arguments: true</span>
 </code></pre></div>
 <h2 id="kubectl">Kubectl<a class="headerlink" href="#kubectl" title="Permanent link">&para;</a></h2>
 <p>You can use <code>kubectl</code> to interact with it:</p>

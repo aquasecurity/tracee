@@ -49,10 +49,6 @@
          <lastmod>2025-08-15</lastmod>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/caching-events/</loc>
-         <lastmod>2025-08-15</lastmod>
-    </url>
-    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/dropping-capabilities/</loc>
          <lastmod>2025-08-15</lastmod>
     </url>
@@ -2246,10 +2242,6 @@
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/events/custom/overview/</loc>
-         <lastmod>2025-08-15</lastmod>
-    </url>
-    <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/flags/cache.1/</loc>
          <lastmod>2025-08-15</lastmod>
     </url>
     <url>
