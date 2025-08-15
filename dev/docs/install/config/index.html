@@ -884,10 +884,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#container" class="md-nav__link">
+  <a href="#containers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Container
+        Containers
       
     </span>
   </a>
@@ -17754,7 +17754,7 @@
   <span class="md-ellipsis">
     
   
-    cri
+    containers
   
 
     
@@ -19046,10 +19046,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#container" class="md-nav__link">
+  <a href="#containers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Container
+        Containers
       
     </span>
   </a>
@@ -19168,20 +19168,23 @@
   <div class="highlight"><pre><span></span><code><span class="nt">log</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug</span>
 </code></pre></div></p>
-<h3 id="container">Container<a class="headerlink" href="#container" title="Permanent link">&para;</a></h3>
+<h3 id="containers">Containers<a class="headerlink" href="#containers" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>--no-containers</code></strong>: Disables container information enrichment in events.</li>
+<li>To disable container enrichment use: <strong><code>--containers enrich=false</code></strong>.</li>
 </ul>
 <p>YAML:
-  <div class="highlight"><pre><span></span><code><span class="nt">no-containers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+  <div class="highlight"><pre><span></span><code><span class="nt">containers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enrich</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 </code></pre></div></p>
-<p><strong>NOTE</strong>: You can view more in the <a href="../../flags/containers.1/">cri section</a>.</p>
+<p><strong>NOTE</strong>: You can view more in the <a href="../../flags/containers.1/">containers section</a>.</p>
 <ul>
-<li><strong><code>--cri</code></strong>: Defines connected container runtimes in the format <code>&lt;runtime:socket&gt;</code>.</li>
+<li><strong><code>--containers</code></strong>: Configures container enrichment and runtime sockets. For example, to configure runtime sockets:</li>
 </ul>
 <p>YAML:
-  <div class="highlight"><pre><span></span><code><span class="nt">cri</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker:/var/run/docker.sock</span>
+  <div class="highlight"><pre><span></span><code><span class="nt">containers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">sockets</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">runtime</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker</span>
+<span class="w">      </span><span class="nt">socket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/docker.sock</span>
 </code></pre></div></p>
 <h3 id="dns-cache">DNS Cache<a class="headerlink" href="#dns-cache" title="Permanent link">&para;</a></h3>
 <ul>

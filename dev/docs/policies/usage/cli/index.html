@@ -17699,7 +17699,7 @@
   <span class="md-ellipsis">
     
   
-    cri
+    containers
   
 
     
@@ -19031,7 +19031,15 @@
 
 <span class="c1"># feature flags</span>
 
-<span class="nt">no-containers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="nt">containers</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enrich</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="c1"># cgroupfs:</span>
+<span class="w">    </span><span class="c1">#     path: /host/sys/fs/cgroup</span>
+<span class="w">    </span><span class="c1">#     force: true</span>
+<span class="w">    </span><span class="c1"># sockets:</span>
+<span class="w">    </span><span class="c1">#     - runtime: docker</span>
+<span class="w">    </span><span class="c1">#       socket: /var/run/docker.sock</span>
+
 <span class="nt">blob-perf-buffer-size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1024</span>
 
 <span class="c1"># signatures</span>
@@ -19050,10 +19058,6 @@
 <span class="w">    </span><span class="nt">cache</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">process</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8192</span>
 <span class="w">        </span><span class="nt">thread</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8192</span>
-<span class="c1"># cri:</span>
-<span class="c1">#     - runtime:</span>
-<span class="c1">#         name: docker</span>
-<span class="c1">#         socket: /var/run/docker.sock</span>
 
 <span class="c1"># logging</span>
 
