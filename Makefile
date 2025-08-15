@@ -319,11 +319,12 @@ help:
 	@echo ""
 	@echo "# test"
 	@echo ""
-	@echo "    $$ make test-unit                        # run all unit tests"
-	@echo "    $$ make test-unit PKG=pkg/path          # run tests for specific package" 
-	@echo "    $$ make test-unit TEST=TestName         # run specific test in all packages"
+	@echo "    $$ make test-unit                # run all unit tests"
+	@echo "    $$ make test-unit PKG=pkg/path   # run tests for specific package" 
+	@echo "    $$ make test-unit TEST=TestName  # run specific test in all packages"
 	@echo "    $$ make test-unit PKG=pkg/path TEST=TestName  # run specific test in specific package"
 	@echo "    $$ make test-types               # run unit tests for types module"
+	@echo "    $$ make test-common              # run unit tests for common module"
 	@echo "    $$ make test-integration         # run integration tests"
 	@echo ""
 	@echo "# development"
@@ -820,7 +821,7 @@ clean-e2e-inst-signatures:
 .PHONY: test-unit
 test-unit: \
 	tracee-ebpf \
-	$(if $(or $(PKG),$(TEST)),,test-types) \
+	$(if $(or $(PKG),$(TEST)),,test-types test-common) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
 #
@@ -841,8 +842,20 @@ test-unit: \
 test-types: \
 	| .checkver_$(CMD_GO)
 #
-	# Note that we must changed the directory here because types is a standalone Go module.
+	@# Note that we must change the directory here because types is a standalone Go module.
 	@cd ./types && $(CMD_GO) test \
+		-short \
+		-race \
+		-shuffle on \
+		-v \
+		./...
+
+.PHONY: test-common
+test-common: \
+	| .checkver_$(CMD_GO)
+#
+	@# Note that we must change the directory here because common is a standalone Go module.
+	@cd ./common && $(CMD_GO) test \
 		-short \
 		-race \
 		-shuffle on \

@@ -1,8 +1,8 @@
 package policy
 
 import (
+	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/pkg/filters"
-	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 // compute recalculates values, updates flags, fills the reduced userland map,
@@ -89,18 +89,18 @@ func (ps *policies) calculateGlobalMinMax() {
 	for _, p := range ps.allFromMap() {
 		if p.UIDFilter.Enabled() {
 			if !uidMinFilterableInUserland && p.UIDFilter.Minimum() != filters.GetUnsetMin[uint32]() {
-				ps.uidFilterMin = utils.Min(ps.uidFilterMin, uint64(p.UIDFilter.Minimum()))
+				ps.uidFilterMin = common.Min(ps.uidFilterMin, uint64(p.UIDFilter.Minimum()))
 			}
 			if !uidMaxFilterableInUserland && p.UIDFilter.Maximum() != filters.GetUnsetMax[uint32]() {
-				ps.uidFilterMax = utils.Max(ps.uidFilterMax, uint64(p.UIDFilter.Maximum()))
+				ps.uidFilterMax = common.Max(ps.uidFilterMax, uint64(p.UIDFilter.Maximum()))
 			}
 		}
 		if p.PIDFilter.Enabled() {
 			if !pidMinFilterableInUserland && p.PIDFilter.Minimum() != filters.GetUnsetMin[uint32]() {
-				ps.pidFilterMin = utils.Min(ps.pidFilterMin, uint64(p.PIDFilter.Minimum()))
+				ps.pidFilterMin = common.Min(ps.pidFilterMin, uint64(p.PIDFilter.Minimum()))
 			}
 			if !pidMaxFilterableInUserland && p.PIDFilter.Maximum() != filters.GetUnsetMax[uint32]() {
-				ps.pidFilterMax = utils.Max(ps.pidFilterMax, uint64(p.PIDFilter.Maximum()))
+				ps.pidFilterMax = common.Max(ps.pidFilterMax, uint64(p.PIDFilter.Maximum()))
 			}
 		}
 	}
@@ -111,7 +111,7 @@ func (ps *policies) updateContainerFilterEnabled() {
 
 	for _, p := range ps.allFromMap() {
 		if p.ContainerFilterEnabled() {
-			utils.SetBit(&ps.containerFiltersEnabled, uint(p.ID))
+			common.SetBit(&ps.containerFiltersEnabled, uint(p.ID))
 		}
 	}
 }

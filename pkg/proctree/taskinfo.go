@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/changelog"
-	traceetime "github.com/aquasecurity/tracee/pkg/time"
 )
 
 // TaskInfoFeed allows external packages to set/get multiple values of a task at once.
@@ -126,7 +126,7 @@ func (ti *TaskInfo) SetExitTime(exitTime uint64) {
 	ti.mutex.Lock()
 	defer ti.mutex.Unlock()
 
-	exitTimestamp := traceetime.NsSinceEpochToTime(exitTime)
+	exitTimestamp := timeutil.NsSinceEpochToTime(exitTime)
 
 	feed := ti.getFeedAt(exitTimestamp)
 	feed.ExitTimeNS = exitTime
@@ -293,7 +293,7 @@ func (ti *TaskInfo) GetStartTime() time.Time {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
-	return traceetime.NsSinceEpochToTime(ti.getFeed().StartTimeNS)
+	return timeutil.NsSinceEpochToTime(ti.getFeed().StartTimeNS)
 }
 
 // GetExitTimeNS returns the exitTime of the task in nanoseconds since epoch
@@ -309,7 +309,7 @@ func (ti *TaskInfo) GetExitTime() time.Time {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
 
-	return traceetime.NsSinceEpochToTime(ti.getFeed().ExitTimeNS)
+	return timeutil.NsSinceEpochToTime(ti.getFeed().ExitTimeNS)
 }
 
 // IsAlive returns true if the task has exited.
@@ -329,14 +329,14 @@ func (ti *TaskInfo) IsAliveAt(targetTime time.Time) bool {
 	feed := ti.getFeedAt(targetTime)
 	exitTimeNS := feed.ExitTimeNS
 	if exitTimeNS != 0 {
-		if targetTime.After(traceetime.NsSinceEpochToTime(exitTimeNS)) {
+		if targetTime.After(timeutil.NsSinceEpochToTime(exitTimeNS)) {
 			return false
 		}
 	}
 
 	// If start time is not initialized it will count as 0 ns, meaning it will be before any
 	// query time given.
-	return !targetTime.Before(traceetime.NsSinceEpochToTime(feed.StartTimeNS))
+	return !targetTime.Before(timeutil.NsSinceEpochToTime(feed.StartTimeNS))
 }
 
 // private getters

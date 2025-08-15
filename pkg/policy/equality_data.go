@@ -1,9 +1,9 @@
 package policy
 
 import (
+	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
-	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type dataFilterConfig struct {
@@ -146,13 +146,13 @@ func (ps *policies) handlePrefixMatches(policyId int, eventID events.ID, filter 
 
 func (ps *policies) handleSuffixMatches(policyId int, eventID events.ID, filter *stringFilterConfig, equalities filters.StringFilterEqualities, combinedSuffixEqualities, combinedNotSuffixEqualities map[KernelDataFields]struct{}) {
 	for k := range equalities.SuffixEqual {
-		reversed := utils.ReverseString(k)
+		reversed := common.ReverseString(k)
 		combinedSuffixEqualities[KernelDataFields{eventID, reversed}] = struct{}{}
 
 		filter.EnableSuffix(policyId)
 	}
 	for k := range equalities.SuffixNotEqual {
-		reversed := utils.ReverseString(k)
+		reversed := common.ReverseString(k)
 		combinedNotSuffixEqualities[KernelDataFields{eventID, reversed}] = struct{}{}
 
 		filter.EnableSuffix(policyId)

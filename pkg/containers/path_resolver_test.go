@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/tracee/pkg/bucketscache"
-	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/common/bucketcache"
+	"github.com/aquasecurity/tracee/common/capabilities"
 )
 
 func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
@@ -83,7 +83,7 @@ func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
 
 				// Initialize a mock for the os.Stat function
 				mfs := fstest.MapFS{}
-				bucket := bucketscache.BucketsCache{}
+				bucket := bucketcache.BucketCache{}
 				bucket.Init(20)
 				for _, p := range testCase.nsProcesses {
 					if p.alive {
@@ -138,7 +138,7 @@ func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
 		}
 		testMntNS := 1
 		testPID := 1
-		bucket := bucketscache.BucketsCache{}
+		bucket := bucketcache.BucketCache{}
 		bucket.Init(20)
 		bucket.AddBucketItem(uint32(testMntNS), 1)
 		for _, testCase := range testCases {
@@ -169,7 +169,7 @@ func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
 func TestPathResolver_InputValidation(t *testing.T) {
 	t.Parallel()
 
-	bucket := bucketscache.BucketsCache{}
+	bucket := bucketcache.BucketCache{}
 	bucket.Init(20)
 	pres := InitContainerPathResolver(&bucket)
 
@@ -196,7 +196,7 @@ func TestPathResolver_ResolveLink(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("Input validation", func(t *testing.T) {
-		bucket := bucketscache.BucketsCache{}
+		bucket := bucketcache.BucketCache{}
 		bucket.Init(20)
 		pres := InitContainerPathResolver(&bucket)
 
@@ -212,7 +212,7 @@ func TestPathResolver_ResolveLink(t *testing.T) {
 	})
 
 	t.Run("Cache initialization and functionality", func(t *testing.T) {
-		bucket := bucketscache.BucketsCache{}
+		bucket := bucketcache.BucketCache{}
 		bucket.Init(20)
 		pres := InitContainerPathResolver(&bucket)
 
@@ -239,7 +239,7 @@ func TestPathResolver_ResolveLink(t *testing.T) {
 func TestPathResolver_ResolveAllLinks(t *testing.T) {
 	t.Parallel()
 
-	bucket := bucketscache.BucketsCache{}
+	bucket := bucketcache.BucketCache{}
 	bucket.Init(20)
 	pres := InitContainerPathResolver(&bucket)
 
@@ -256,7 +256,7 @@ func TestPathResolver_ResolveAllLinks(t *testing.T) {
 func TestPathResolver_GetProcMounts(t *testing.T) {
 	t.Parallel()
 
-	bucket := bucketscache.BucketsCache{}
+	bucket := bucketcache.BucketCache{}
 	bucket.Init(20)
 	pres := InitContainerPathResolver(&bucket)
 
@@ -269,7 +269,7 @@ func TestPathResolver_GetProcMounts(t *testing.T) {
 func TestPathResolver_isWithinMountNS(t *testing.T) {
 	t.Parallel()
 
-	bucket := bucketscache.BucketsCache{}
+	bucket := bucketcache.BucketCache{}
 	bucket.Init(20)
 	pres := InitContainerPathResolver(&bucket)
 
@@ -324,7 +324,7 @@ func TestPathResolver_isWithinMountNS(t *testing.T) {
 func TestPathResolver_isFileAccessible(t *testing.T) {
 	t.Parallel()
 
-	bucket := bucketscache.BucketsCache{}
+	bucket := bucketcache.BucketCache{}
 	bucket.Init(20)
 	pres := InitContainerPathResolver(&bucket)
 

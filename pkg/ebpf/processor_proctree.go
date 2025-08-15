@@ -4,10 +4,10 @@ import (
 	"errors"
 	"time"
 
+	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/logger"
-	traceetime "github.com/aquasecurity/tracee/pkg/time"
-	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -101,9 +101,9 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 	forkFeed.TimeStamp = uint64(event.Timestamp)
 
 	// Hashes
-	forkFeed.ParentHash = utils.HashTaskID(uint32(forkFeed.ParentTid), uint64(forkFeed.ParentStartTime))
-	forkFeed.LeaderHash = utils.HashTaskID(uint32(forkFeed.LeaderTid), uint64(forkFeed.LeaderStartTime))
-	forkFeed.ChildHash = utils.HashTaskID(uint32(forkFeed.ChildTid), uint64(forkFeed.ChildStartTime))
+	forkFeed.ParentHash = common.HashTaskID(uint32(forkFeed.ParentTid), uint64(forkFeed.ParentStartTime))
+	forkFeed.LeaderHash = common.HashTaskID(uint32(forkFeed.LeaderTid), uint64(forkFeed.LeaderStartTime))
+	forkFeed.ChildHash = common.HashTaskID(uint32(forkFeed.ChildTid), uint64(forkFeed.ChildStartTime))
 
 	return t.processTree.FeedFromFork(forkFeed)
 }
@@ -249,7 +249,7 @@ func (t *Tracee) procTreeAddBinInfo(event *trace.Event) error {
 	}
 
 	// Event timestamp is changed to relative (or not) at the end of all processors only.
-	eventTimestamp := traceetime.NsSinceEpochToTime(uint64(event.Timestamp))
+	eventTimestamp := timeutil.NsSinceEpochToTime(uint64(event.Timestamp))
 
 	executable := currentProcess.GetExecutable()
 

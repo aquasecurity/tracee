@@ -3,7 +3,7 @@ package changelog
 import (
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/common/logger"
 )
 
 // Changelog manages a list of changes (entries) for a single type.

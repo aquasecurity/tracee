@@ -10,8 +10,8 @@ import (
 	"github.com/grafana/pyroscope-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/ebpf/heartbeat"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // interval defines how often the heartbeat signal should be sent.

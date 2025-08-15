@@ -4,10 +4,10 @@ import (
 	gocontext "context"
 	"time"
 
+	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
-	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 // lkmSeekerRoutine handles the kernel module hiding check logic. The logic runs
@@ -84,7 +84,7 @@ func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
 			case <-ctx.Done():
 				return
 
-			case <-time.After(utils.GenerateRandomDuration(10, 300)):
+			case <-time.After(common.GenerateRandomDuration(10, 300)):
 				run = true // Run from time to time.
 
 			case scanReq := <-wakeupChan:

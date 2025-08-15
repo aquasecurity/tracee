@@ -9,6 +9,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/aquasecurity/libbpfgo v0.9.2-libbpf-1.5.1.0.20250826130354-1b9ce23ef29b
 	github.com/aquasecurity/tracee/api v0.0.0-20250423121028-213b81a1b8f5
+	github.com/aquasecurity/tracee/common v0.0.0
 	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20250423143044-dcfcaf219805
 	github.com/aquasecurity/tracee/types v0.0.0-20250624132442-3fa6c15acc67
 	github.com/containerd/containerd v1.7.27
@@ -19,15 +20,12 @@ require (
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/mennanov/fmutils v0.3.1
-	github.com/minio/sha256-simd v1.0.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.0
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.6
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.0
-	golang.org/x/arch v0.14.0
 	golang.org/x/sys v0.33.0
 	google.golang.org/grpc v1.72.0
 	google.golang.org/protobuf v1.36.6
@@ -74,6 +72,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
+	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/sys/atomicwriter v0.1.0 // indirect
 	github.com/moby/sys/sequential v0.6.0 // indirect
@@ -98,6 +97,8 @@ require (
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
+	golang.org/x/arch v0.19.0 // indirect
 	golang.org/x/oauth2 v0.26.0 // indirect
 	golang.org/x/term v0.31.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
@@ -162,10 +163,12 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
-	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
+	golang.org/x/exp v0.0.0-20250718183923-645b1fa84792
 	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/sync v0.13.0 // indirect
+	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.76 // indirect
 )
+
+replace github.com/aquasecurity/tracee/common => ./common

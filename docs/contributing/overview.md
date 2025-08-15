@@ -92,6 +92,7 @@ make fix-fmt               # Automatically fix code formatting
 # Testing workflows
 make test-unit             # Run unit tests with coverage
 make test-types            # Run tests for the types module
+make test-common           # Run tests for the common module
 make test-integration      # Run integration tests
 
 # Development builds

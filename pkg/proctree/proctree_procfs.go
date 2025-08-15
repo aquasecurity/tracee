@@ -6,15 +6,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
-	traceetime "github.com/aquasecurity/tracee/pkg/time"
-	"github.com/aquasecurity/tracee/pkg/utils"
-	"github.com/aquasecurity/tracee/pkg/utils/proc"
+	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/common/proc"
+	"github.com/aquasecurity/tracee/common/timeutil"
 )
 
-const debugMsgs = false                         // debug messages can be too verbose, so they are disabled by default
-const ProcfsClockId = traceetime.CLOCK_BOOTTIME // Procfs uses jiffies, which are based on boottime
+const debugMsgs = false                       // debug messages can be too verbose, so they are disabled by default
+const ProcfsClockId = timeutil.CLOCK_BOOTTIME // Procfs uses jiffies, which are based on boottime
 
 const (
 	AllPIDs = 0
@@ -108,10 +108,10 @@ func getProcessByPID(pt *ProcessTree, givenPid int32) (*Process, error) {
 	}
 
 	statStartTime := stat.GetStartTime()
-	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(statStartTime)
+	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(statStartTime)
 	// process hash (using epoch time for consistency with kernel signals)
-	epochTimeNs := traceetime.BootToEpochNS(startTimeNs)
-	hash := utils.HashTaskID(uint32(givenPid), epochTimeNs)
+	epochTimeNs := timeutil.BootToEpochNS(startTimeNs)
+	hash := common.HashTaskID(uint32(givenPid), epochTimeNs)
 
 	return pt.GetOrCreateProcessByHash(hash), nil
 }
@@ -159,10 +159,10 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 	}
 
 	// thread start time (monotonic boot)
-	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(start)
+	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(start)
 	// process hash (using epoch time for consistency with kernel signals)
-	epochTimeNs := traceetime.BootToEpochNS(startTimeNs)
-	hash := utils.HashTaskID(uint32(pid), epochTimeNs)
+	epochTimeNs := timeutil.BootToEpochNS(startTimeNs)
+	hash := common.HashTaskID(uint32(pid), epochTimeNs)
 
 	// update tree for the given process
 	process := pt.GetOrCreateProcessByHash(hash)
@@ -177,7 +177,7 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 		}
 	}
 
-	procfsTimeStamp := traceetime.BootToEpochNS(startTimeNs)
+	procfsTimeStamp := timeutil.BootToEpochNS(startTimeNs)
 
 	// NOTE: override all the fields of the taskInfoFeed, to avoid any previous data.
 	taskInfoFeed := pt.GetTaskInfoFeedFromPool()
@@ -196,7 +196,7 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 
 	procInfo.SetFeedAt(
 		taskInfoFeed,
-		traceetime.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
+		timeutil.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
 	)
 
 	// Release the feed back to the pool as soon as it is not needed anymore
@@ -252,10 +252,10 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 	}
 
 	// thread start time (monotonic boot)
-	startTimeNs := traceetime.ClockTicksToNsSinceBootTime(start)
+	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(start)
 	// thread hash (using epoch time for consistency with kernel signals)
-	epochTimeNs := traceetime.BootToEpochNS(startTimeNs)
-	hash := utils.HashTaskID(uint32(pid), epochTimeNs)
+	epochTimeNs := timeutil.BootToEpochNS(startTimeNs)
+	hash := common.HashTaskID(uint32(pid), epochTimeNs)
 
 	// update tree for the given thread
 	thread := pt.GetOrCreateThreadByHash(hash)
@@ -266,7 +266,7 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 		return nil
 	}
 
-	procfsTimeStamp := traceetime.BootToEpochNS(startTimeNs)
+	procfsTimeStamp := timeutil.BootToEpochNS(startTimeNs)
 
 	// NOTE: override all the fields of the taskInfoFeed, to avoid any previous data.
 	taskInfoFeed := pt.GetTaskInfoFeedFromPool()
@@ -285,7 +285,7 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 
 	threadInfo.SetFeedAt(
 		taskInfoFeed,
-		traceetime.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
+		timeutil.NsSinceEpochToTime(procfsTimeStamp), // try to be the first changelog entry
 	)
 
 	// Release the feed back to the pool as soon as it is not needed anymore

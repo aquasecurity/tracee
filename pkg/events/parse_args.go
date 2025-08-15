@@ -8,9 +8,9 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/events/parsers"
-	traceetime "github.com/aquasecurity/tracee/pkg/time"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -316,7 +316,7 @@ func NormalizeTimeArgs(args []trace.Argument, timeArgNames []string) error {
 				arg.Value,
 			)
 		}
-		arg.Value = traceetime.BootToEpochNS(argTime)
+		arg.Value = timeutil.BootToEpochNS(argTime)
 	}
 
 	return nil

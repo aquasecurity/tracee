@@ -76,6 +76,7 @@
 
         $ make test-unit                # run unit tests
         $ make test-types               # run unit tests for types module
+        $ make test-common              # run unit tests for common module
         $ make test-integration         # run integration tests
 
     # flags

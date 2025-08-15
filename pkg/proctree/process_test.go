@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/utils/tests"
+	"github.com/aquasecurity/tracee/common/tests"
 )
 
 // TestProcess_PrintSizes prints the sizes of the structs used in the Process type.

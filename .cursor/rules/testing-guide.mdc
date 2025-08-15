@@ -52,6 +52,11 @@ make test-integration  # Full system tests
 make test-types  # Or: cd types && go test ./...
 ```
 
+### Common Module (Standalone)
+```bash
+make test-common # Or: cd common && go test ./...
+```
+
 ## Troubleshooting
 
 ### "fatal error: bpf/bpf.h: No such file or directory"

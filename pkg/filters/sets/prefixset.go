@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/common"
 )
 
 type PrefixSet struct {
@@ -17,7 +17,7 @@ type PrefixSet struct {
 }
 
 // Compile-time check to ensure that PrefixSet implements the Cloner interface
-var _ utils.Cloner[*PrefixSet] = &PrefixSet{}
+var _ common.Cloner[*PrefixSet] = &PrefixSet{}
 
 func NewPrefixSet() PrefixSet {
 	return PrefixSet{

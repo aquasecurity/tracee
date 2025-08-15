@@ -46,6 +46,9 @@ sudo make test-integration  # Some tests skip without root
 
 # Types module testing
 make test-types             # Separate Go module testing
+
+# Common module testing
+make test-common            # Common module testing
 ```
 
 ### Validation & Linting
