@@ -3951,13 +3951,11 @@ int BPF_KPROBE(trace_security_bpf)
         events_perf_submit(&p, 0);
     }
 
-    if (!reset_event(p.event, BPF_ATTACH))
-        return 0;
-
     union bpf_attr *attr = (union bpf_attr *) PT_REGS_PARM2(ctx);
 
-    // send bpf_attach event if filters match
-    if (evaluate_scope_filters(&p))
+    // send bpf_attach event if event is selected and filters match
+    bool event_reset = reset_event(p.event, BPF_ATTACH);
+    if (event_reset && evaluate_scope_filters(&p))
         check_bpf_link(&p, attr, cmd);
 
     // Capture BPF object loaded
