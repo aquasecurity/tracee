@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 type NodeType string

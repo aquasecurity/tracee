@@ -3,7 +3,7 @@ package flags
 import (
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/common/errfmt"
 )
 
 func eventsHelp() string {

@@ -5,9 +5,9 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/pkg/filters/sets"
-	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 // ValueHandler is a function that can be passed to StringFilter to handle values when they are parsed
@@ -27,7 +27,7 @@ type StringFilter struct {
 }
 
 // Compile-time check to ensure that StringFilter implements the Cloner interface
-var _ utils.Cloner[*StringFilter] = &StringFilter{}
+var _ common.Cloner[*StringFilter] = &StringFilter{}
 
 func NewStringFilter(valHandler ValueHandler) *StringFilter {
 	return &StringFilter{

@@ -7,11 +7,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/analyze"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func init() {
