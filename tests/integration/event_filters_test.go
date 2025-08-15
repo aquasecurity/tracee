@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -38,9 +39,8 @@ func Test_EventFilters(t *testing.T) {
 		// events matched in single policies - detached workloads
 		{
 			name: "container: event: trace only events from new containers",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "container-event",
@@ -81,9 +81,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "mntns/pidns: trace events only from mount/pid namespace 0",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "mntns/pidns",
@@ -111,9 +110,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "mntns: trace events from all mount namespaces but current",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "mntns",
@@ -139,9 +137,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "pidns: trace events from all pid namespaces but current",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "pidns",
@@ -167,9 +164,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: mntns: pidns: event: trace events set in a single policy from current pid/mount namespaces",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm_mntns_pidns_event",
@@ -213,9 +209,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: trace events set in a single policy from ping command",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event",
@@ -257,9 +252,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: trace events set in a single policy from ping command",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 5,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event",
@@ -297,9 +291,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "event: data: trace event set in a specific policy with data pathname finishing with 'ls'",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "event-data",
@@ -339,9 +332,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "event: data: trace event set in a specific policy with data pathname starting with * wildcard",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "event-data",
@@ -375,9 +367,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: data: trace event set in a specific policy with data from ls command",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-data",
@@ -416,9 +407,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: trace events set in two specific policies from ls and uname commands",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 4,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-4",
@@ -438,7 +428,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 2,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-2",
@@ -482,9 +471,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "exec: event: trace events in separate policies from who and uname executable",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "exec-event-1",
@@ -504,7 +492,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 2,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "exec-event-2",
@@ -597,9 +584,8 @@ func Test_EventFilters(t *testing.T) {
 		// },
 		{
 			name: "pid: trace events from pid 1",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "pid-1",
@@ -636,9 +622,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "uid: comm: trace uid 0 from ls command",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "uid-0-comm",
@@ -671,9 +656,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "uid: comm: trace only uid>0 from ls command (should be empty)",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "uid-0-comm",
@@ -704,9 +688,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: trace filesystem events from ls command",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "event-fs",
@@ -743,9 +726,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "exec: event: trace only setns events from \"/usr/bin/dockerd\" executable",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "exec-event",
@@ -783,9 +765,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "pid: trace new (should be empty)",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "pid-new",
@@ -816,9 +797,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: trace events set in a specific policy from ls command",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 64,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-64",
@@ -850,9 +830,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: trace events set in a specific policy from ls command",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 64,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-64",
@@ -868,7 +847,6 @@ func Test_EventFilters(t *testing.T) {
 				},
 				{
 					// no events expected
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-42",
@@ -900,9 +878,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: trace events set in a specific policy from ls and who commands",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 64,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-64",
@@ -917,7 +894,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-42",
@@ -958,9 +934,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "event: data: context: only security_file_open from \"execve\" syscall",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "event-data-context",
@@ -1001,9 +976,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: do a file write",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event",
@@ -1044,9 +1018,8 @@ func Test_EventFilters(t *testing.T) {
 		// // created and an event like anti_debugging is not known in advance.
 		// {
 		// 	name: "comm: event: data: sign: trace sys events + signature events in separate policies",
-		// 	policyFiles: []testutils.PolicyFileWithID{
+		// 	policyFiles: []testutils.PolicyFile{
 		// 		{
-		// 			Id: 3,
 		// 			PolicyFile: v1beta1.PolicyFile{
 		// 				Name:          "comm-event",
 		// 				Scope:         []string{"comm=ping"},
@@ -1060,7 +1033,6 @@ func Test_EventFilters(t *testing.T) {
 		// 			},
 		// 		},
 		// 		{
-		// 			Id: 5,
 		// 			PolicyFile: v1beta1.PolicyFile{
 		// 				Name:          "event-data",
 		// 				Scope:         []string{},
@@ -1074,7 +1046,6 @@ func Test_EventFilters(t *testing.T) {
 		// 			},
 		// 		},
 		// 		{
-		// 			Id: 9,
 		// 			PolicyFile: v1beta1.PolicyFile{
 		// 				Name:          "signature",
 		// 				Scope:         []string{},
@@ -1115,9 +1086,8 @@ func Test_EventFilters(t *testing.T) {
 		// events matched in multiple policies - intertwined workloads
 		{
 			name: "comm: event: trace events from ping command in multiple policies",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 3,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-3",
@@ -1137,7 +1107,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 5,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-5",
@@ -1175,9 +1144,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: trace events from ping command in multiple policies",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 3,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-3",
@@ -1197,7 +1165,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 5,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-5",
@@ -1241,9 +1208,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: trace events from ping command in multiple policies",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 3,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-3",
@@ -1263,7 +1229,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 5,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-5",
@@ -1283,7 +1248,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 7,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-7",
@@ -1303,7 +1267,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 9,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-9",
@@ -1349,9 +1312,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: trace events from nc command for net_tcp_connect event",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "net-event-1",
@@ -1389,9 +1351,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: trace only events from from ls and who commands in multiple policies",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 64,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-64",
@@ -1406,7 +1367,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-42",
@@ -1448,9 +1408,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: trace at least one event in multiple policies from ls and who commands",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 64,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-64",
@@ -1465,7 +1424,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-42",
@@ -1512,9 +1470,8 @@ func Test_EventFilters(t *testing.T) {
 		// - emit read and write events, as defined in expected events
 		{
 			name: "comm: event: trace events read and write set in a single policy from fakeprog1 command",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event",
@@ -1556,9 +1513,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "event: trace execve event set in a specific policy from fakeprog1 command",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "event-pol-42",
@@ -1593,9 +1549,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: data: trace event set in a specific policy with data from fakeprog1 and fakeprog2 commands",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 64,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-data-64",
@@ -1619,7 +1574,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-data-42",
@@ -1675,9 +1629,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: retval: trace event set in a specific policy with retval from fakeprog1 and fakeprog2 commands",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 64,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-retval-64",
@@ -1700,7 +1653,6 @@ func Test_EventFilters(t *testing.T) {
 				},
 				{
 					// no events expected
-					Id: 42,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-retval-42",
@@ -1750,9 +1702,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: data: trace event security_file_open set in multiple policies using multiple filter types",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-pol-1",
@@ -1776,7 +1727,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 2,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-pol-2",
@@ -1800,7 +1750,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 3,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-pol-3",
@@ -1849,9 +1798,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: data: trace event security_file_open and magic_write using multiple filter types combined",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-mw-combined-pol-1",
@@ -1880,7 +1828,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 2,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-mw-combined-pol-2",
@@ -1934,9 +1881,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: data: trace event magic_write set in multiple policies using multiple filter types",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "mw-pol-1",
@@ -1958,7 +1904,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 2,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "mw-pol-2",
@@ -2000,9 +1945,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: data: trace event security_file_open set in multiple policies (with and without in-kernel filter)",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-pol-1",
@@ -2024,7 +1968,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 2,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-pol-2",
@@ -2072,9 +2015,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: data: trace event security_file_open set in multiple policies (with and without in-kernel filter) mixed in same policy",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-pol-1",
@@ -2097,7 +2039,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 2,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-pol-2",
@@ -2136,9 +2077,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: data: trace event security_mmap_file using multiple filter types",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "smf-pol-1",
@@ -2179,9 +2119,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: data: trace event security_file_open and magic_write using multiple filter types",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-mw-pol-1",
@@ -2229,9 +2168,8 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: data: trace event with pathname exceeding 255 characters",
-			policyFiles: []testutils.PolicyFileWithID{
+			policyFiles: []testutils.PolicyFile{
 				{
-					Id: 1,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-pol-1",
@@ -2253,7 +2191,6 @@ func Test_EventFilters(t *testing.T) {
 					},
 				},
 				{
-					Id: 2,
 					PolicyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
 							Name: "sfo-pol-2",
@@ -2393,13 +2330,16 @@ const (
 	anyEventID     = -1
 	anyPID         = -1
 	anyUID         = -1
-	anyPolicy      = 0
 	anyPolicyName  = ""
+)
+
+var (
+	anyPolicy = []uint64{0}
 )
 
 type testCase struct {
 	name         string
-	policyFiles  []testutils.PolicyFileWithID
+	policyFiles  []testutils.PolicyFile
 	cmdEvents    []cmdEvents
 	useSyscaller bool
 	coolDown     time.Duration // cool down before running the test case
@@ -2464,15 +2404,15 @@ func expectEvent(
 	args ...trace.Argument,
 ) trace.Event {
 	return trace.Event{
-		ProcessorID:         processorID,
-		ProcessID:           pid,
-		UserID:              uid,
-		ProcessName:         comm,
-		HostName:            host,
-		EventID:             int(eventID),
-		MatchedPolicies:     matchPolName,
-		MatchedPoliciesUser: matchPols,
-		Args:                args,
+		ProcessorID:      processorID,
+		ProcessID:        pid,
+		UserID:           uid,
+		ProcessName:      comm,
+		HostName:         host,
+		EventID:          int(eventID),
+		MatchedPolicies:  matchPolName,
+		MatchedRulesUser: []uint64{matchPols},
+		Args:             args,
 	}
 }
 
@@ -2701,7 +2641,7 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 			checkPID := expEvt.ProcessID != anyPID
 			checkUID := expEvt.UserID != anyUID
 			checkEventID := expEvt.EventID != anyEventID
-			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
+			checkPolicy := !reflect.DeepEqual(expEvt.MatchedRulesUser, anyPolicy)
 			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
 
 			for _, actEvt := range actEvtsCopy {
@@ -2730,7 +2670,7 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 				if checkEventID && actEvt.EventID != expEvt.EventID {
 					continue
 				}
-				if checkPolicy && actEvt.MatchedPoliciesUser != expEvt.MatchedPoliciesUser {
+				if checkPolicy && !reflect.DeepEqual(actEvt.MatchedRulesUser, expEvt.MatchedRulesUser) {
 					continue
 				}
 				if checkPolicyName {
@@ -2867,7 +2807,7 @@ func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 			checkPID := expEvt.ProcessID != anyPID
 			checkUID := expEvt.UserID != anyUID
 			checkEventID := expEvt.EventID != anyEventID
-			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
+			checkPolicy := !reflect.DeepEqual(expEvt.MatchedRulesUser, anyPolicy)
 			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
 
 			if len(cmd.expectedEvents) > 0 && proc.expectedEvts == 0 {
@@ -2900,7 +2840,7 @@ func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 				if checkEventID && actEvt.EventID != expEvt.EventID {
 					continue
 				}
-				if checkPolicy && actEvt.MatchedPoliciesUser != expEvt.MatchedPoliciesUser {
+				if checkPolicy && !reflect.DeepEqual(actEvt.MatchedRulesUser, expEvt.MatchedRulesUser) {
 					continue
 				}
 				if checkPolicyName {
@@ -3008,7 +2948,7 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 			checkPID := expEvt.ProcessID != anyPID
 			checkUID := expEvt.UserID != anyUID
 			checkEventID := expEvt.EventID != anyEventID
-			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
+			checkPolicy := !reflect.DeepEqual(expEvt.MatchedRulesUser, anyPolicy)
 			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
 
 			for _, actEvt := range actEvtsCopy {
@@ -3037,8 +2977,8 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 				if checkEventID && !assert.ObjectsAreEqual(expEvt.EventID, actEvt.EventID) {
 					return fmt.Errorf("Event %+v:\nevent Id mismatch: expected %d, got %d", expEvt, expEvt.EventID, actEvt.EventID)
 				}
-				if checkPolicy && !assert.ObjectsAreEqual(expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser) {
-					return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %d, got %d", expEvt, expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser)
+				if checkPolicy && !reflect.DeepEqual(expEvt.MatchedRulesUser, actEvt.MatchedRulesUser) {
+					return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %v, got %v", expEvt, expEvt.MatchedRulesUser, actEvt.MatchedRulesUser)
 				}
 				if checkPolicyName && !assertUnorderedStringSlicesEqual(expEvt.MatchedPolicies, actEvt.MatchedPolicies) {
 					return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %v, got %v", expEvt, expEvt.MatchedPolicies, actEvt.MatchedPolicies)
@@ -3121,7 +3061,7 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 			checkPID := expEvt.ProcessID != anyPID
 			checkUID := expEvt.UserID != anyUID
 			checkEventID := expEvt.EventID != anyEventID
-			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
+			checkPolicy := !reflect.DeepEqual(expEvt.MatchedRulesUser, anyPolicy)
 			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
 
 			if checkHost && !assert.ObjectsAreEqual(expEvt.HostName, actEvt.HostName) {
@@ -3145,8 +3085,8 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 			if checkEventID && !assert.ObjectsAreEqual(expEvt.EventID, actEvt.EventID) {
 				return fmt.Errorf("Event %+v:\nevent Id mismatch: expected %d, got %d", expEvt, expEvt.EventID, actEvt.EventID)
 			}
-			if checkPolicy && !assert.ObjectsAreEqual(expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser) {
-				return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %d, got %d", expEvt, expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser)
+			if checkPolicy && !assert.ObjectsAreEqual(expEvt.MatchedRulesUser, actEvt.MatchedRulesUser) {
+				return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %d, got %d", expEvt, expEvt.MatchedRulesUser, actEvt.MatchedRulesUser)
 			}
 			if checkPolicyName && !assertUnorderedStringSlicesEqual(expEvt.MatchedPolicies, actEvt.MatchedPolicies) {
 				return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %v, got %v", expEvt, expEvt.MatchedPolicies, actEvt.MatchedPolicies)

@@ -121,6 +121,7 @@ const (
 	OpenFileMount
 	SecuritySbUmount
 	SecurityTaskPrctl
+	PolicyScopes // TODO: make this an internal event
 	MaxCommonID
 )
 
