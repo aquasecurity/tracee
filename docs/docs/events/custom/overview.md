@@ -12,7 +12,7 @@ tracee --signatures-dir=/tmp/myevents
 
 !!! Tip
     Tracee also uses the custom events to add a few events, if you pass your own directory
-    for `signatures-dir` you will not load the tracee [signatures](../builtin/signatures/index.md),
+    for `signatures-dir` you will not load the tracee [signatures](../builtin/security-events.md),
     to avoid such problems, you can either place your own events under the same directory of the tracee custom events,
     or pass multiple directories for example:
     ```

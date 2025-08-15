@@ -30,7 +30,7 @@ func TestDefinitionGroup_Add(t *testing.T) {
 
 	id := ID(1)
 
-	def := NewDefinition(id, id+1000, "def", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+	def := NewDefinition(id, id+1000, "def", version, "", false, false, []string{}, Dependencies{}, nil, nil)
 
 	err := defGroup.Add(id, def)
 	require.NoError(t, err)
@@ -48,8 +48,8 @@ func TestDefinitionGroup_AddBatch(t *testing.T) {
 	id1 := ID(1)
 	id2 := ID(2)
 
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+	def1 := NewDefinition(id1, id1+1000, "def1", version, "", false, false, []string{}, Dependencies{}, nil, nil)
+	def2 := NewDefinition(id2, id2+1000, "def2", version, "", false, false, []string{}, Dependencies{}, nil, nil)
 
 	err := defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
 	require.NoError(t, err)
@@ -70,8 +70,8 @@ func TestDefinitionGroup_GetDefinitionIDByName(t *testing.T) {
 	id1 := ID(1)
 	id2 := ID(2)
 
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+	def1 := NewDefinition(id1, id1+1000, "def1", version, "", false, false, []string{}, Dependencies{}, nil, nil)
+	def2 := NewDefinition(id2, id2+1000, "def2", version, "", false, false, []string{}, Dependencies{}, nil, nil)
 
 	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
 
@@ -93,8 +93,8 @@ func TestDefinitionGroup_GetDefinitionByName(t *testing.T) {
 	id1 := ID(1)
 	id2 := ID(2)
 
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+	def1 := NewDefinition(id1, id1+1000, "def1", version, "", false, false, []string{}, Dependencies{}, nil, nil)
+	def2 := NewDefinition(id2, id2+1000, "def2", version, "", false, false, []string{}, Dependencies{}, nil, nil)
 
 	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
 
@@ -119,8 +119,8 @@ func TestDefinitionGroup_GetDefinitionByID(t *testing.T) {
 	id1 := ID(1)
 	id2 := ID(2)
 
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+	def1 := NewDefinition(id1, id1+1000, "def1", version, "", false, false, []string{}, Dependencies{}, nil, nil)
+	def2 := NewDefinition(id2, id2+1000, "def2", version, "", false, false, []string{}, Dependencies{}, nil, nil)
 
 	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
 
@@ -147,13 +147,13 @@ func TestDefinitionGroup_Length(t *testing.T) {
 
 	id := ID(1)
 
-	def := NewDefinition(id, id+1000, "def", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+	def := NewDefinition(id, id+1000, "def", version, "", false, false, []string{}, Dependencies{}, nil, nil)
 	defGroup.Add(id, def)
 
 	require.Equal(t, defGroup.Length(), 1) // definition group with one definition
 
 	id2 := ID(2)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+	def2 := NewDefinition(id2, id2+1000, "def2", version, "", false, false, []string{}, Dependencies{}, nil, nil)
 	defGroup.Add(id2, def2)
 
 	require.Equal(t, defGroup.Length(), 2) // definition group with two definitions
@@ -168,8 +168,8 @@ func TestDefinitionGroup_GetDefinitions(t *testing.T) {
 	id1 := ID(1)
 	id2 := ID(2)
 
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+	def1 := NewDefinition(id1, id1+1000, "def1", version, "", false, false, []string{}, Dependencies{}, nil, nil)
+	def2 := NewDefinition(id2, id2+1000, "def2", version, "", false, false, []string{}, Dependencies{}, nil, nil)
 
 	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
 
@@ -189,8 +189,8 @@ func TestDefinitionGroup_NamesToIDs(t *testing.T) {
 	id1 := ID(1)
 	id2 := ID(2)
 
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+	def1 := NewDefinition(id1, id1+1000, "def1", version, "", false, false, []string{}, Dependencies{}, nil, nil)
+	def2 := NewDefinition(id2, id2+1000, "def2", version, "", false, false, []string{}, Dependencies{}, nil, nil)
 
 	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
 
@@ -210,8 +210,8 @@ func TestDefinitionGroup_IDs32ToIDs(t *testing.T) {
 	id1 := ID(1)
 	id2 := ID(2)
 
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+	def1 := NewDefinition(id1, id1+1000, "def1", version, "", false, false, []string{}, Dependencies{}, nil, nil)
+	def2 := NewDefinition(id2, id2+1000, "def2", version, "", false, false, []string{}, Dependencies{}, nil, nil)
 
 	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
 
@@ -233,9 +233,9 @@ func TestDefinitionGroup_IsASet(t *testing.T) {
 	id3 := ID(3)
 
 	// Create definitions with different sets
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{"set1", "set2"}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{"set2", "set3"}, Dependencies{}, nil, nil)
-	def3 := NewDefinition(id3, id3+1000, "def3", version, "", "", false, false, []string{}, Dependencies{}, nil, nil) // no sets
+	def1 := NewDefinition(id1, id1+1000, "def1", version, "", false, false, []string{"set1", "set2"}, Dependencies{}, nil, nil)
+	def2 := NewDefinition(id2, id2+1000, "def2", version, "", false, false, []string{"set2", "set3"}, Dependencies{}, nil, nil)
+	def3 := NewDefinition(id3, id3+1000, "def3", version, "", false, false, []string{}, Dependencies{}, nil, nil) // no sets
 
 	err := defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2, id3: def3})
 	require.NoError(t, err)
@@ -272,7 +272,7 @@ func TestDefinitionGroup_AddBatch_MultipleThreads(t *testing.T) {
 	for name, id := range names {
 		wg.Add(1)
 		go func(name string, id ID) {
-			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+			def := NewDefinition(id, id+1000, name, version, "", false, false, []string{}, Dependencies{}, nil, nil)
 
 			err := defGroup.AddBatch(map[ID]Definition{id: def})
 			require.NoError(t, err)
@@ -304,7 +304,7 @@ func TestDefinitionGroup_Length_MultipleThreads(t *testing.T) {
 	for name, id := range names {
 		wg.Add(1)
 		go func(name string, id ID) {
-			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+			def := NewDefinition(id, id+1000, name, version, "", false, false, []string{}, Dependencies{}, nil, nil)
 			err := defGroup.AddBatch(map[ID]Definition{id: def})
 			require.NoError(t, err)
 			defGroup.Length() // concurrent calls
@@ -330,7 +330,7 @@ func TestDefinitionGroup_GetDefinitions_MultipleThread(t *testing.T) {
 	for name, id := range names {
 		wg.Add(1)
 		go func(name string, id ID) {
-			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+			def := NewDefinition(id, id+1000, name, version, "", false, false, []string{}, Dependencies{}, nil, nil)
 			err := defGroup.AddBatch(map[ID]Definition{id: def})
 			require.NoError(t, err)
 			defGroup.GetDefinitions() // concurrent calls
@@ -356,7 +356,7 @@ func TestDefinitionGroup_NamesToIDs_MultipleThreads(t *testing.T) {
 	for name, id := range names {
 		wg.Add(1)
 		go func(name string, id ID) {
-			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+			def := NewDefinition(id, id+1000, name, version, "", false, false, []string{}, Dependencies{}, nil, nil)
 
 			err := defGroup.Add(id, def)
 			require.NoError(t, err)
@@ -385,7 +385,7 @@ func TestDefinitionGroup_IDs32ToIDs_MultipleThreads(t *testing.T) {
 	for name, id := range names {
 		wg.Add(1)
 		go func(name string, id ID) {
-			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+			def := NewDefinition(id, id+1000, name, version, "", false, false, []string{}, Dependencies{}, nil, nil)
 
 			err := defGroup.Add(id, def)
 			require.NoError(t, err)
