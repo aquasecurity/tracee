@@ -1,9 +1,9 @@
 package policy
 
 import (
+	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
-	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type Policy struct {
@@ -33,7 +33,7 @@ type RuleData struct {
 }
 
 // Compile-time check to ensure that Policy implements the Cloner interface
-var _ utils.Cloner[*Policy] = &Policy{}
+var _ common.Cloner[*Policy] = &Policy{}
 
 func NewPolicy() *Policy {
 	return &Policy{

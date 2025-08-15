@@ -10,16 +10,15 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/capabilities"
+	"github.com/aquasecurity/tracee/common/environment"
+	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/filehash"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/filehash"
-	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/utils"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -126,7 +125,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	}
 
 	// capture executed files
-	if t.config.Capture.Exec || t.config.Output.CalcHashes != config.CalcHashesNone {
+	if t.config.Capture.Exec || t.config.Output.CalcHashes != filehash.CalcHashesNone {
 		filePath, err := parse.ArgVal[string](event.Args, "pathname")
 		if err != nil {
 			return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
@@ -156,7 +155,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 			// capture exec'ed files ?
 			if t.config.Capture.Exec {
 				destinationDirPath := containerId
-				if err := utils.MkdirAtExist(t.OutDir, destinationDirPath, 0755); err != nil {
+				if err := common.MkdirAtExist(t.OutDir, destinationDirPath, 0755); err != nil {
 					return errfmt.WrapError(err)
 				}
 				destinationFilePath := filepath.Join(
@@ -173,7 +172,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 					// capture (SchedProcessExec sets base capabilities to have cap.SYS_PTRACE set.
 					// This is needed at this point because raising and dropping capabilities too
 					// frequently would have a big performance impact)
-					err := utils.CopyRegularFileByRelativePath(
+					err := common.CopyRegularFileByRelativePath(
 						sourceFilePath,
 						t.OutDir,
 						destinationFilePath,
@@ -187,7 +186,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				}
 			}
 			// check exec'ed hash ?
-			if t.config.Output.CalcHashes != config.CalcHashesNone {
+			if t.config.Output.CalcHashes != filehash.CalcHashesNone {
 				dev, err := parse.ArgVal[uint32](event.Args, "dev")
 				if err != nil {
 					return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
@@ -333,7 +332,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	if err := unix.Uname(&utsName); err != nil {
 		return errfmt.WrapError(err)
 	}
-	arch = string(utils.TrimTrailingNUL(utsName.Machine[:]))
+	arch = string(common.TrimTrailingNUL(utsName.Machine[:]))
 	err = events.SetArgValue(event, "arch", arch)
 	if err != nil {
 		return err
@@ -408,7 +407,7 @@ func (t *Tracee) processSharedObjectLoaded(event *trace.Event) error {
 	if containerId == "" {
 		containerId = "host"
 	}
-	if t.config.Output.CalcHashes != config.CalcHashesNone {
+	if t.config.Output.CalcHashes != filehash.CalcHashesNone {
 		fileKey := filehash.NewKey(filePath, uint32(event.MountNS),
 			filehash.WithDevice(dev),
 			filehash.WithInode(ino, int64(fileCtime)),

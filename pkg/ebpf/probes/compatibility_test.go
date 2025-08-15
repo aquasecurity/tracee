@@ -10,7 +10,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
+	"github.com/aquasecurity/tracee/common/environment"
 )
 
 // mockOSInfo implements OSInfoProvider for testing

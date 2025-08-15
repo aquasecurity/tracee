@@ -12,9 +12,9 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
 )

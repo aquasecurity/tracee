@@ -8,7 +8,7 @@ import (
 	"plugin"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/types/detect"
 )
 

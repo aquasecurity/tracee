@@ -16,37 +16,36 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/bucketscache"
+	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/bucketcache"
+	"github.com/aquasecurity/tracee/common/capabilities"
+	"github.com/aquasecurity/tracee/common/cgroup"
+	"github.com/aquasecurity/tracee/common/environment"
+	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/filehash"
+	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/common/proc"
+	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
-	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/cgroup"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/ebpf/controlplane"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/data"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
-	"github.com/aquasecurity/tracee/pkg/filehash"
 	"github.com/aquasecurity/tracee/pkg/filters"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/streams"
-	traceetime "github.com/aquasecurity/tracee/pkg/time"
-	"github.com/aquasecurity/tracee/pkg/utils"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
-	"github.com/aquasecurity/tracee/pkg/utils/proc"
-	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/pkg/version"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -63,7 +62,7 @@ type Tracee struct {
 	startTime uint64
 	running   atomic.Bool
 	done      chan struct{} // signal to safely stop end-stage processing
-	OutDir    *os.File      // use utils.XXX functions to create or write to this file
+	OutDir    *os.File      // use common.XXX functions to create or write to this file
 	stats     *metrics.Stats
 	sigEngine *engine.Engine
 	// Events
@@ -79,7 +78,7 @@ type Tracee struct {
 	netCapturePcap *pcaps.Pcaps
 	// Internal Data
 	readFiles   map[string]string
-	pidsInMntns bucketscache.BucketsCache // first n PIDs in each mountns
+	pidsInMntns bucketcache.BucketCache // first n PIDs in each mountns
 	// eBPF
 	bpfModule       *bpf.Module
 	defaultProbes   *probes.ProbeGroup
@@ -107,7 +106,7 @@ type Tracee struct {
 	cgroups           *cgroup.Cgroups
 	containers        *containers.Manager
 	contPathResolver  *containers.ContainerPathResolver
-	contSymbolsLoader *sharedobjs.ContainersSymbolsLoader
+	contSymbolsLoader *containers.ContainersSymbolsLoader
 	// Control Plane
 	controlPlane *controlplane.Controller
 	// Process Tree
@@ -158,8 +157,8 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Initialize capabilities rings soon
 
-	useBaseEbpf := func(cfg config.Config) bool {
-		return cfg.Output.StackAddresses
+	useBaseEbpf := func(c config.Config) bool {
+		return c.Output.StackAddresses
 	}
 
 	err = capabilities.Initialize(
@@ -351,7 +350,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize containers related logic
 
 	t.contPathResolver = containers.InitContainerPathResolver(&t.pidsInMntns)
-	t.contSymbolsLoader = sharedobjs.InitContainersSymbolsLoader(t.contPathResolver, 1024)
+	t.contSymbolsLoader = containers.InitContainersSymbolsLoader(t.contPathResolver, 1024)
 
 	// Initialize eBPF probes
 
@@ -394,7 +393,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Checking the kernel symbol needs to happen after obtaining the capability;
 	// otherwise, we get a warning.
-	usedClockID := traceetime.CLOCK_BOOTTIME
+	usedClockID := timeutil.CLOCK_BOOTTIME
 	err = capabilities.GetInstance().EBPF(
 		func() error {
 			// Since this code is running with sufficient capabilities, we can safely trust the result of `BPFHelperIsSupported`.
@@ -408,7 +407,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 			// Use CLOCK_MONOTONIC only when the helper is explicitly unsupported
 			if !supported {
-				usedClockID = traceetime.CLOCK_MONOTONIC
+				usedClockID = timeutil.CLOCK_MONOTONIC
 			}
 
 			if innerErr != nil {
@@ -422,15 +421,15 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 
 	// init time functionalities
-	err = traceetime.Init(int32(usedClockID))
+	err = timeutil.Init(int32(usedClockID))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// elapsed time in nanoseconds since system start
-	t.startTime = uint64(traceetime.GetStartTimeNS())
+	t.startTime = uint64(timeutil.GetStartTimeNS())
 	// time in nanoseconds when the system was booted
-	t.bootTime = uint64(traceetime.GetBootTimeNS())
+	t.bootTime = uint64(timeutil.GetBootTimeNS())
 
 	// Initialize event derivation logic
 
@@ -456,7 +455,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		// As procfs use boot time to calculate process start time, we can use the procfs
 		// only if the times we get from the eBPF programs are based on the boot time (instead of monotonic).
 		proctreeConfig := t.config.ProcTree
-		if usedClockID == traceetime.CLOCK_MONOTONIC {
+		if usedClockID == timeutil.CLOCK_MONOTONIC {
 			proctreeConfig.ProcfsInitialization = false
 			proctreeConfig.ProcfsQuerying = false
 		}
@@ -493,7 +492,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.Errorf("error creating output path: %v", err)
 	}
 
-	t.OutDir, err = utils.OpenExistingDir(t.config.Capture.OutputPath)
+	t.OutDir, err = common.OpenExistingDir(t.config.Capture.OutputPath)
 	if err != nil {
 		t.Close()
 		return errfmt.Errorf("error opening out directory: %v", err)
@@ -1663,7 +1662,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 }
 
 func updateCaptureMapFile(fileDir *os.File, filePath string, capturedFiles map[string]string, cfg config.FileCaptureConfig) error {
-	f, err := utils.OpenAt(fileDir, filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := common.OpenAt(fileDir, filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return errfmt.Errorf("error logging captured files")
 	}
@@ -1740,7 +1739,7 @@ func (t *Tracee) Running() bool {
 }
 
 func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
-	f, err := utils.OpenAt(t.OutDir, fileName, os.O_RDONLY, 0)
+	f, err := common.OpenAt(t.OutDir, fileName, os.O_RDONLY, 0)
 	if err != nil {
 		return "", errfmt.WrapError(err)
 	}
@@ -2096,7 +2095,7 @@ func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
 		if err != nil {
 			return nil, err
 		}
-		utils.SetBit(&policyMask, uint(p.ID))
+		common.SetBit(&policyMask, uint(p.ID))
 	}
 
 	return t.subscribe(policyMask), nil

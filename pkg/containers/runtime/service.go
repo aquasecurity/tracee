@@ -3,7 +3,7 @@ package runtime
 import (
 	"context"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/common/errfmt"
 )
 
 type Service struct {

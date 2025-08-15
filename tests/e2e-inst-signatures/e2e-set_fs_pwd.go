@@ -6,8 +6,8 @@ import (
 
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
-	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
+	"github.com/aquasecurity/tracee/common/capabilities"
+	"github.com/aquasecurity/tracee/common/environment"
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"

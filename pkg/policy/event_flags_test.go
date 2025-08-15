@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/common"
 )
 
 // TestNewEventFlags tests the newEventFlags function.
@@ -38,7 +38,7 @@ func TestEnableSubmission(t *testing.T) {
 
 	ef := newEventFlags()
 	ef.enableSubmission(1)
-	assert.True(t, utils.HasBit(ef.policiesSubmit, 1))
+	assert.True(t, common.HasBit(ef.policiesSubmit, 1))
 }
 
 // TestEnableEmission tests the enableEmission function.
@@ -47,7 +47,7 @@ func TestEnableEmission(t *testing.T) {
 
 	ef := newEventFlags()
 	ef.enableEmission(1)
-	assert.True(t, utils.HasBit(ef.policiesEmit, 1))
+	assert.True(t, common.HasBit(ef.policiesEmit, 1))
 
 	ef.enableEmission(-1)
 }
@@ -59,7 +59,7 @@ func TestDisableSubmission(t *testing.T) {
 	ef := newEventFlags()
 	ef.enableSubmission(42)
 	ef.disableSubmission(42)
-	assert.False(t, utils.HasBit(ef.policiesSubmit, 42))
+	assert.False(t, common.HasBit(ef.policiesSubmit, 42))
 }
 
 // TestDisableEmission tests the disableEmission function.
@@ -69,7 +69,7 @@ func TestDisableEmission(t *testing.T) {
 	ef := newEventFlags()
 	ef.enableEmission(42)
 	ef.disableEmission(42)
-	assert.False(t, utils.HasBit(ef.policiesEmit, 42))
+	assert.False(t, common.HasBit(ef.policiesEmit, 42))
 }
 
 // TestEnableEvent tests the enableEvent function.

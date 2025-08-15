@@ -7,8 +7,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
 )
 
 func logHelp() string {
