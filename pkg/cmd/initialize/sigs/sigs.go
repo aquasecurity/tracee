@@ -3,9 +3,9 @@ package sigs
 import (
 	"strconv"
 
+	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/common/set"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/utils/set"
 	"github.com/aquasecurity/tracee/types/detect"
 )
 

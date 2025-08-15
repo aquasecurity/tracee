@@ -5,9 +5,9 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
+	"github.com/aquasecurity/tracee/common/environment"
+	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
 )
 
 // NOTE: thread-safety guaranteed by the ProbeGroup big lock.

@@ -5,18 +5,18 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/capabilities"
+	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/data"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/proctree"
-	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type ManagerConfig struct {
@@ -542,7 +542,7 @@ func (m *Manager) IsEventToSubmit(id events.ID) bool {
 // Some are transitive (tidying), some are not.
 //
 
-func (m *Manager) CreateUserlandIterator() utils.Iterator[*Policy] {
+func (m *Manager) CreateUserlandIterator() common.Iterator[*Policy] {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -552,7 +552,7 @@ func (m *Manager) CreateUserlandIterator() utils.Iterator[*Policy] {
 	return m.ps.createUserlandIterator()
 }
 
-func (m *Manager) CreateAllIterator() utils.Iterator[*Policy] {
+func (m *Manager) CreateAllIterator() common.Iterator[*Policy] {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 

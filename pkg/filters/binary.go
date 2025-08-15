@@ -7,9 +7,9 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/utils"
-	"github.com/aquasecurity/tracee/pkg/utils/proc"
+	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/proc"
 )
 
 type NSBinary struct {
@@ -24,7 +24,7 @@ type BinaryFilter struct {
 }
 
 // Compile-time check to ensure that BinaryFilter implements the Cloner interface
-var _ utils.Cloner[*BinaryFilter] = &BinaryFilter{}
+var _ common.Cloner[*BinaryFilter] = &BinaryFilter{}
 
 func getHostMntNS() (uint32, error) {
 	var ns uint32

@@ -1,6 +1,6 @@
 package policy
 
-import "github.com/aquasecurity/tracee/pkg/utils"
+import "github.com/aquasecurity/tracee/common"
 
 // policiesIterator is an iterator for Policies.
 type policiesIterator struct {
@@ -28,7 +28,7 @@ func (i *policiesIterator) Next() *Policy {
 // createUserlandIterator returns a new iterator for a reduced list of policies
 // which must be filtered in userland (ArgFilter, RetFilter, ScopeFilter,
 // UIDFilter and PIDFilter).
-func (ps *policies) createUserlandIterator() utils.Iterator[*Policy] {
+func (ps *policies) createUserlandIterator() common.Iterator[*Policy] {
 	return &policiesIterator{
 		policies: ps.userlandPolicies,
 		index:    0,
@@ -36,7 +36,7 @@ func (ps *policies) createUserlandIterator() utils.Iterator[*Policy] {
 }
 
 // createAllIterator returns a new iterator for all policies.
-func (ps *policies) createAllIterator() utils.Iterator[*Policy] {
+func (ps *policies) createAllIterator() common.Iterator[*Policy] {
 	return &policiesIterator{
 		policies: ps.policiesList,
 		index:    0,
