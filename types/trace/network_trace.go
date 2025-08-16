@@ -250,4 +250,5 @@ type ProtoHTTPResponse struct {
 	Protocol      string      `json:"protocol"`
 	Headers       http.Header `json:"headers"`
 	ContentLength int64       `json:"content_length"`
+	Body string `json:"body"`
 }
