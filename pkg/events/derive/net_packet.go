@@ -444,12 +444,12 @@ func NetPacketHTTPResponse() DeriveFunction {
 			if getPacketHTTPDirection(event) != protoHTTPResponse {
 				return nil, nil
 			}
-			protoHTTP, err := getProtoHTTPFromResponsePacket(packet)
+			protoHTTPResponse, err := getProtoHTTPResponseFromResponsePacket(packet)
 			if err != nil {
 				logger.Warnw("attempted to derive net_packet_http_response event from malformed packet, event will be skipped", "error", err)
 				return nil, nil // malformed packets shouldn't return an error
 			}
-			if protoHTTP == nil {
+			if protoHTTPResponse == nil {
 				return nil, nil // regular tcp/ip packet without HTTP payload
 			}
 
@@ -466,7 +466,7 @@ func NetPacketHTTPResponse() DeriveFunction {
 
 			return []interface{}{
 				meta,
-				getProtoHTTPResponseFromHTTP(protoHTTP),
+				protoHTTPResponse,
 			}, nil
 		},
 	)
