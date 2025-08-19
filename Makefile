@@ -929,6 +929,29 @@ test-integration: \
 		-count=1 \
 		./tests/integration/... \
 
+.PHONY: test-dependencies
+test-dependencies: \
+	$(OUTPUT_DIR)/syscaller \
+	tracee \
+	| .eval_goenv \
+	.checkver_$(CMD_GO)
+#
+	@$(GO_ENV_EBPF) \
+	$(CMD_GO) test \
+		-tags $(GO_TAGS_EBPF) \
+		-ldflags="$(GO_DEBUG_FLAG) \
+			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
+			-X main.version=\"$(VERSION)\" \
+			" \
+		-shuffle on \
+		-timeout 20m \
+		-race \
+		-v \
+		-p 1 \
+		-count=1 \
+		-run Test_EventsDependencies \
+		./tests/integration/... \
+
 .PHONY: test-upstream-libbpfgo
 test-upstream-libbpfgo: \
 	| .eval_goenv \
