@@ -11,12 +11,16 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
+type KernelSymbolProvider interface {
+	GetKernelSymbol(symbol string) ([]*environment.KernelSymbol, error)
+}
+
 // EnvironmentProvider defines the interface for OS and other environment information needed by probe compatibility checks.
 // It is used to mock the environment in tests.
 type EnvironmentProvider interface {
 	GetOSReleaseID() environment.OSReleaseID
 	CompareOSBaseKernelRelease(version string) (environment.KernelVersionComparison, error)
-	GetKernelSymbol(symbol string) ([]*environment.KernelSymbol, error)
+	KernelSymbolProvider
 }
 
 // ProbeCompatibility stores the requirements for a probe to be used.
@@ -101,10 +105,8 @@ func (k *KernelVersionRequirement) IsCompatible(envProvider EnvironmentProvider)
 	return true, nil
 }
 
-// In the Linux kernel, each BPF map type is associated with a corresponding map_ops structure that implements its operations.
-// These map_ops structures must be exported and present in the kernel symbol table, allowing the BPF_MAP_TYPE macro to link them to their respective map types.
-// The following map associates each BPF map type with the name of its map_ops structure.
-// By checking for the presence of a map_ops symbol in the kernel symbol table, we can determine if a given map type is supported by the kernel.
+// mapTypeToMapOperations maps libbpfgo MapType directly to their corresponding
+// kernel map_ops symbols for kernel symbol table lookups.
 var mapTypeToMapOperations = map[MapType]string{
 	HashMapType:                "htab_map_ops",
 	ArrayMapType:               "array_map_ops",
@@ -158,13 +160,19 @@ func NewBPFMapTypeRequirement(mapType MapType) *BPFMapTypeRequirement {
 }
 
 func (m *BPFMapTypeRequirement) IsCompatible(envProvider EnvironmentProvider) (bool, error) {
-	mapOperationSymbol, ok := mapTypeToMapOperations[m.mapType]
+	return IsBpfMapTypeSupported(m.mapType, envProvider)
+}
+
+// In the Linux kernel, each BPF map type is associated with a corresponding map_ops structure that implements its operations.
+// These map_ops structures must be exported and present in the kernel symbol table, allowing the BPF_MAP_TYPE macro to link them to their respective map types.
+// By checking for the presence of a map_ops symbol in the kernel symbol table, we can determine if a given map type is supported by the kernel.
+func IsBpfMapTypeSupported(mapType MapType, ksymsProvider KernelSymbolProvider) (bool, error) {
+	mapOperationSymbol, ok := mapTypeToMapOperations[mapType]
 	if !ok {
-		return false, fmt.Errorf("map type %s not found", m.mapType.String())
+		return false, fmt.Errorf("map type %d not supported", uint32(mapType))
 	}
 
-	// Get kernel symbols from the environment provider
-	mapOperationSymbols, err := envProvider.GetKernelSymbol(mapOperationSymbol)
+	mapOperationSymbols, err := ksymsProvider.GetKernelSymbol(mapOperationSymbol)
 	if err != nil {
 		if errors.Is(err, utils.ErrSymbolNotFound) {
 			return false, nil
