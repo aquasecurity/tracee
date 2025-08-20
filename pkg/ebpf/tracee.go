@@ -1067,6 +1067,62 @@ func (t *Tracee) setProgramsAutoload() {
 		})
 }
 
+// setMapsAutocreate configures the autocreate flag for all eBPF maps in the module.
+// By default, all maps are set to autocreate, which means they will be created automatically
+// when the eBPF object is loaded. This function checks each map's type (and its inner map type, if present)
+// for kernel support using the provided environment information. If a map or its inner map type is not
+// supported by the running kernel, the autocreate flag for that map is set to false, preventing its creation
+// and avoiding potential load failures due to unsupported map types.
+func (t *Tracee) setMapsAutocreate() {
+	iterator := t.bpfModule.Iterator()
+
+	for bpfMap := iterator.NextMap(); bpfMap != nil; bpfMap = iterator.NextMap() {
+		if err := validateMapSupport(bpfMap); err != nil {
+			if errors.Is(err, ErrUnsupportedMapType) {
+				logger.Debugw("Map type is not supported, cancelling autocreate", "map_name", bpfMap.Name(), "reason", err.Error())
+				err = bpfMap.SetAutocreate(false)
+				if err != nil {
+					logger.Warnw("Failed to cancel autocreate of map", "map_name", bpfMap.Name(), "error", err)
+				}
+			} else {
+				logger.Warnw("Failed to check map support", "map_name", bpfMap.Name(), "error", err)
+			}
+		}
+	}
+}
+
+// ErrUnsupportedMapType indicates a BPF map type is not supported by the kernel
+var ErrUnsupportedMapType = errors.New("unsupported map type")
+
+// validateMapSupport validates if the map and its inner map (if any) are supported.
+// It returns an error with a nested ErrUnsupportedMapType if the map is not supported.
+// Any other error suggest there was error in the validation itself.
+func validateMapSupport(bpfMap *bpf.BPFMap) error {
+	// Check main map
+	supported, err := bpf.BPFMapTypeIsSupported(bpfMap.Type())
+	if err != nil {
+		return err
+	}
+	if !supported {
+		return fmt.Errorf("%w: %s", ErrUnsupportedMapType, bpfMap.Type())
+	}
+
+	// Check inner map if exists
+	innerMap, err := bpfMap.InnerMapInfo()
+	if err != nil { // No inner map
+		return nil
+	}
+
+	supported, err = bpf.BPFMapTypeIsSupported(innerMap.Type)
+	if err != nil {
+		return err
+	}
+	if !supported {
+		return fmt.Errorf("%w: inner type %s", ErrUnsupportedMapType, innerMap.Type)
+	}
+	return nil
+}
+
 func (t *Tracee) populateBPFMaps() error {
 	// Prepare 32bit to 64bit syscall number mapping
 	sys32to64BPFMap, err := t.bpfModule.GetMap("sys_32_to_64_map") // u32, u32
@@ -1407,6 +1463,7 @@ func (t *Tracee) initBPF() error {
 	// Load the eBPF object into kernel
 
 	t.setProgramsAutoload()
+	t.setMapsAutocreate()
 
 	err = t.bpfModule.BPFLoadObject()
 	if err != nil {
