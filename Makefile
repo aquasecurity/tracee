@@ -1024,7 +1024,7 @@ check-err: \
 	.check_$(CMD_ERRCHECK)
 #
 	@$(CMD_ERRCHECK) \
-		-tags $(GO_TAGS_EBPF) \
+		-tags $(GO_TAGS_EBPF),static \
 		-ignoretests \
 		-ignore 'fmt:[FS]?[Pp]rint*|[wW]rite' \
 		-ignore '[rR]ead|[wW]rite' \

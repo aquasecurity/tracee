@@ -148,6 +148,31 @@ func (t *Tracee) setKernelSymbols(kernelSymbols *environment.KernelSymbolTable) 
 	t.kernelSymbols.Store(kernelSymbols)
 }
 
+// TraceeEnvironmentProvider wraps OSInfo and provides access to kernel symbols
+type TraceeEnvironmentProvider struct {
+	osInfo        *environment.OSInfo
+	kernelSymbols *environment.KernelSymbolTable
+}
+
+func NewTraceeEnvironmentProvider(osInfo *environment.OSInfo, kernelSymbols *environment.KernelSymbolTable) *TraceeEnvironmentProvider {
+	return &TraceeEnvironmentProvider{
+		osInfo:        osInfo,
+		kernelSymbols: kernelSymbols,
+	}
+}
+
+func (t *TraceeEnvironmentProvider) GetOSReleaseID() environment.OSReleaseID {
+	return t.osInfo.GetOSReleaseID()
+}
+
+func (t *TraceeEnvironmentProvider) CompareOSBaseKernelRelease(version string) (environment.KernelVersionComparison, error) {
+	return t.osInfo.CompareOSBaseKernelRelease(version)
+}
+
+func (t *TraceeEnvironmentProvider) GetKernelSymbol(symbol string) ([]*environment.KernelSymbol, error) {
+	return t.kernelSymbols.GetSymbolByName(symbol)
+}
+
 // New creates a new Tracee instance based on a given valid Config. It is expected that it won't
 // cause external system side effects (reads, writes, etc).
 func New(cfg config.Config) (*Tracee, error) {
@@ -389,6 +414,10 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 
 	t.validateKallsymsDependencies() // disable events w/ missing ksyms dependencies
+
+	if err := t.validateProbesCompatibility(); err != nil {
+		return errfmt.WrapError(err)
+	}
 
 	// Initialize time
 
@@ -925,6 +954,9 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 			}
 		}
 	}
+
+	t.requiredKsyms = append(t.requiredKsyms, probes.GetAllMapOperationSymbols()...)
+
 	return nil
 }
 
@@ -1319,7 +1351,8 @@ func (t *Tracee) validateProbesCompatibility() error {
 				logger.Errorw("Got node from type not requested")
 				return nil
 			}
-			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probeNode.GetHandle(), t.config.OSInfo)
+			envProvider := NewTraceeEnvironmentProvider(t.config.OSInfo, t.getKernelSymbols())
+			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probeNode.GetHandle(), envProvider)
 			if err != nil {
 				logger.Warnw("Failed to check probe compatibility", "error", err)
 				return nil
@@ -1343,7 +1376,8 @@ func (t *Tracee) validateProbesCompatibility() error {
 
 		shouldRemoveEvent := false
 		for _, probe := range depProbes {
-			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probe.GetHandle(), t.config.OSInfo)
+			envProvider := NewTraceeEnvironmentProvider(t.config.OSInfo, t.getKernelSymbols())
+			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probe.GetHandle(), envProvider)
 			if err != nil {
 				logger.Errorw("Failed to check probe compatibility", "error", err)
 				continue
@@ -1398,7 +1432,7 @@ func (t *Tracee) initBPFProbes() error {
 		return errfmt.WrapError(err)
 	}
 
-	return t.validateProbesCompatibility()
+	return nil
 }
 
 func (t *Tracee) initBPF() error {
