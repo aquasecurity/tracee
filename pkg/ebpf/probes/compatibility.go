@@ -3,6 +3,8 @@ package probes
 import (
 	"strings"
 
+	bpf "github.com/aquasecurity/libbpfgo"
+
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
@@ -93,4 +95,34 @@ func (k *KernelVersionRequirement) IsCompatible(envProvider EnvironmentProvider)
 	}
 
 	return true, nil
+}
+
+// MapTypeSupportChecker is a function type used for dependency injection to check BPF map type support.
+// This allows tests to inject mock implementations, making BPF compatibility logic testable and decoupled from the environment.
+type MapTypeSupportChecker func(mapType bpf.MapType) (bool, error)
+
+// BPFMapTypeRequirement specifies a requirement for kernel support of a particular BPF map type.
+type BPFMapTypeRequirement struct {
+	mapType bpf.MapType
+	checker MapTypeSupportChecker
+}
+
+func NewBPFMapTypeRequirement(mapType bpf.MapType) *BPFMapTypeRequirement {
+	return &BPFMapTypeRequirement{
+		mapType: mapType,
+		checker: bpf.BPFMapTypeIsSupported,
+	}
+}
+
+func NewBPFMapTypeRequirementWithChecker(mapType bpf.MapType, checker MapTypeSupportChecker) *BPFMapTypeRequirement {
+	return &BPFMapTypeRequirement{
+		mapType: mapType,
+		checker: checker,
+	}
+}
+
+// IsCompatible checks if the kernel supports the BPF map type.
+// This check is whether the kernel supports the BPF map type, both by implementation and configuration.
+func (m *BPFMapTypeRequirement) IsCompatible(_ EnvironmentProvider) (bool, error) {
+	return m.checker(m.mapType)
 }
