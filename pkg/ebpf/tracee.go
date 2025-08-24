@@ -148,6 +148,31 @@ func (t *Tracee) setKernelSymbols(kernelSymbols *environment.KernelSymbolTable) 
 	t.kernelSymbols.Store(kernelSymbols)
 }
 
+// TraceeEnvironmentProvider wraps OSInfo and provides access to kernel symbols
+type TraceeEnvironmentProvider struct {
+	osInfo        *environment.OSInfo
+	kernelSymbols *environment.KernelSymbolTable
+}
+
+func NewTraceeEnvironmentProvider(osInfo *environment.OSInfo, kernelSymbols *environment.KernelSymbolTable) *TraceeEnvironmentProvider {
+	return &TraceeEnvironmentProvider{
+		osInfo:        osInfo,
+		kernelSymbols: kernelSymbols,
+	}
+}
+
+func (t *TraceeEnvironmentProvider) GetOSReleaseID() environment.OSReleaseID {
+	return t.osInfo.GetOSReleaseID()
+}
+
+func (t *TraceeEnvironmentProvider) CompareOSBaseKernelRelease(version string) (environment.KernelVersionComparison, error) {
+	return t.osInfo.CompareOSBaseKernelRelease(version)
+}
+
+func (t *TraceeEnvironmentProvider) GetKernelSymbol(symbol string) ([]*environment.KernelSymbol, error) {
+	return t.kernelSymbols.GetSymbolByName(symbol)
+}
+
 // New creates a new Tracee instance based on a given valid Config. It is expected that it won't
 // cause external system side effects (reads, writes, etc).
 func New(cfg config.Config) (*Tracee, error) {
@@ -389,6 +414,10 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 
 	t.validateKallsymsDependencies() // disable events w/ missing ksyms dependencies
+
+	if err := t.validateProbesCompatibility(); err != nil {
+		return errfmt.WrapError(err)
+	}
 
 	// Initialize time
 
@@ -925,6 +954,9 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 			}
 		}
 	}
+
+	t.requiredKsyms = append(t.requiredKsyms, probes.GetAllMapOperationSymbols()...)
+
 	return nil
 }
 
@@ -1065,6 +1097,55 @@ func (t *Tracee) setProgramsAutoload() {
 			}
 			return nil
 		})
+}
+
+// setMapsAutocreate configures the autocreate flag for all eBPF maps in the module.
+// By default, all maps are set to autocreate, which means they will be created automatically
+// when the eBPF object is loaded. This function checks each map's type (and its inner map type, if present)
+// for kernel support using the provided environment information. If a map or its inner map type is not
+// supported by the running kernel, the autocreate flag for that map is set to false, preventing its creation
+// and avoiding potential load failures due to unsupported map types.
+func (t *Tracee) setMapsAutocreate() {
+	envProvider := NewTraceeEnvironmentProvider(t.config.OSInfo, t.getKernelSymbols())
+	iterator := t.bpfModule.Iterator()
+
+	for bpfMap := iterator.NextMap(); bpfMap != nil; bpfMap = iterator.NextMap() {
+		if err := isMapSupported(bpfMap, envProvider); err != nil {
+			if errors.Is(err, ErrUnsupportedMapType) {
+				logger.Infow("Map type is not supported, cancelling autocreate", "map_name", bpfMap.Name(), "reason", err.Error())
+				err = bpfMap.SetAutocreate(false)
+				if err != nil {
+					logger.Warnw("Failed to cancel autocreate of map", "map_name", bpfMap.Name(), "error", err)
+				}
+			} else {
+				logger.Warnw("Failed to check map support", "map_name", bpfMap.Name(), "error", err)
+			}
+		}
+	}
+}
+
+// ErrUnsupportedMapType indicates a BPF map type is not supported by the kernel
+var ErrUnsupportedMapType = errors.New("unsupported map type")
+
+// isMapSupported checks if the map and its inner map (if any) are supported.
+func isMapSupported(bpfMap *bpf.BPFMap, envProvider *TraceeEnvironmentProvider) error {
+	// Check main map
+	if supported, err := probes.IsBpfMapTypeSupported(bpfMap.Type(), envProvider); err != nil {
+		return err
+	} else if !supported {
+		return fmt.Errorf("%w: %s", ErrUnsupportedMapType, bpfMap.Type())
+	}
+
+	// Check inner map if exists
+	if innerMap, err := bpfMap.InnerMapInfo(); err == nil {
+		if supported, err := probes.IsBpfMapTypeSupported(innerMap.Type, envProvider); err != nil {
+			return err
+		} else if !supported {
+			return fmt.Errorf("%w: inner type %s", ErrUnsupportedMapType, innerMap.Type)
+		}
+	}
+
+	return nil
 }
 
 func (t *Tracee) populateBPFMaps() error {
@@ -1319,7 +1400,8 @@ func (t *Tracee) validateProbesCompatibility() error {
 				logger.Errorw("Got node from type not requested")
 				return nil
 			}
-			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probeNode.GetHandle(), t.config.OSInfo)
+			envProvider := NewTraceeEnvironmentProvider(t.config.OSInfo, t.getKernelSymbols())
+			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probeNode.GetHandle(), envProvider)
 			if err != nil {
 				logger.Warnw("Failed to check probe compatibility", "error", err)
 				return nil
@@ -1343,7 +1425,8 @@ func (t *Tracee) validateProbesCompatibility() error {
 
 		shouldRemoveEvent := false
 		for _, probe := range depProbes {
-			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probe.GetHandle(), t.config.OSInfo)
+			envProvider := NewTraceeEnvironmentProvider(t.config.OSInfo, t.getKernelSymbols())
+			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probe.GetHandle(), envProvider)
 			if err != nil {
 				logger.Errorw("Failed to check probe compatibility", "error", err)
 				continue
@@ -1398,7 +1481,7 @@ func (t *Tracee) initBPFProbes() error {
 		return errfmt.WrapError(err)
 	}
 
-	return t.validateProbesCompatibility()
+	return nil
 }
 
 func (t *Tracee) initBPF() error {
@@ -1407,6 +1490,7 @@ func (t *Tracee) initBPF() error {
 	// Load the eBPF object into kernel
 
 	t.setProgramsAutoload()
+	t.setMapsAutocreate()
 
 	err = t.bpfModule.BPFLoadObject()
 	if err != nil {

@@ -1,12 +1,14 @@
 package probes
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
@@ -43,6 +45,11 @@ func (m *mockOSInfo) GetOSReleaseID() environment.OSReleaseID {
 
 func (m *mockOSInfo) CompareOSBaseKernelRelease(version string) (environment.KernelVersionComparison, error) {
 	return environment.CompareKernelRelease(m.kernelRelease, version)
+}
+
+func (m *mockOSInfo) GetKernelSymbol(symbol string) ([]*environment.KernelSymbol, error) {
+	// Default implementation for compatibility - returns properly wrapped symbol not found error
+	return nil, fmt.Errorf("failed to get kernel symbol %s: %w", symbol, utils.ErrSymbolNotFound)
 }
 
 func TestKernelVersionRequirement_Basic(t *testing.T) {
@@ -393,6 +400,111 @@ func TestKernelVersionRequirement_EdgeCases(t *testing.T) {
 
 			result, err := req.IsCompatible(osInfo)
 			require.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+// mockOSInfoWithBPFSymbols extends mockOSInfo for BPF map type testing
+type mockOSInfoWithBPFSymbols struct {
+	*mockOSInfo
+	availableSymbols map[string]bool
+}
+
+func newMockOSInfoWithBPFSymbols(kernelRelease, osReleaseIDStr string, symbols map[string]bool) *mockOSInfoWithBPFSymbols {
+	return &mockOSInfoWithBPFSymbols{
+		mockOSInfo:       newMockOSInfo(kernelRelease, osReleaseIDStr),
+		availableSymbols: symbols,
+	}
+}
+
+func (m *mockOSInfoWithBPFSymbols) GetKernelSymbol(symbol string) ([]*environment.KernelSymbol, error) {
+	if m.availableSymbols != nil && m.availableSymbols[symbol] {
+		// Return a mock symbol if it's available
+		return []*environment.KernelSymbol{
+			{
+				Name:    symbol,
+				Address: 0xffffffff81234567,
+				Owner:   "system",
+			},
+		}, nil
+	}
+	// Return properly wrapped error to match real implementation
+	return nil, fmt.Errorf("failed to get kernel symbol %s: %w", symbol, utils.ErrSymbolNotFound)
+}
+
+func TestBPFMapTypeRequirement(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		mapType        MapType
+		hasSymbol      bool
+		expectedResult bool
+		expectedError  bool
+	}{
+		{
+			name:           "hash map with symbol present",
+			mapType:        HashMapType,
+			hasSymbol:      true,
+			expectedResult: true,
+			expectedError:  false,
+		},
+		{
+			name:           "array map with symbol missing",
+			mapType:        ArrayMapType,
+			hasSymbol:      false,
+			expectedResult: false,
+			expectedError:  false,
+		},
+		{
+			name:           "invalid map type",
+			mapType:        MapType(999), // Use an invalid numeric value instead
+			hasSymbol:      false,
+			expectedResult: false,
+			expectedError:  true,
+		},
+		{
+			name:           "LRU hash map with symbol present",
+			mapType:        LruHashMapType,
+			hasSymbol:      true,
+			expectedResult: true,
+			expectedError:  false,
+		},
+		{
+			name:           "prog array map with symbol missing",
+			mapType:        ProgArrayMapType,
+			hasSymbol:      false,
+			expectedResult: false,
+			expectedError:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create symbol availability map
+			var symbols map[string]bool
+			if tt.hasSymbol {
+				symbolName, exists := mapTypeToMapOperations[tt.mapType]
+				if exists {
+					symbols = map[string]bool{symbolName: true}
+				}
+			}
+
+			// Create mock environment provider
+			envProvider := newMockOSInfoWithBPFSymbols("5.4.0", "ubuntu", symbols)
+
+			// Create BPF map type requirement
+			req := NewBPFMapTypeRequirement(tt.mapType)
+			result, err := req.IsCompatible(envProvider)
+
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
