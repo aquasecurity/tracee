@@ -1,0 +1,63 @@
+---
+description: Comprehensive guide for running tests in the Tracee project
+globs:
+  - "**/Makefile"
+  - "**/*_test.go"
+alwaysApply: false
+---
+
+# Tracee Testing Guide
+
+## Unit Testing - ALWAYS Use make test-unit
+
+**CRITICAL: For any BPF-related packages, NEVER use `go test` directly.** Always use `make test-unit` which sets up the proper BPF environment.
+
+### Basic Usage
+```bash
+# Run all unit tests (recommended)
+make test-unit
+
+# Test specific package
+make test-unit PKG=pkg/ebpf/probes
+
+# Test specific function across all packages  
+make test-unit TEST=TestKernelVersionRequirement_Basic
+
+# Test specific function in specific package
+make test-unit PKG=pkg/ebpf/probes TEST=TestProbeCompatibility_Basic
+```
+
+### Why make test-unit?
+- Sets up proper BPF compilation environment (CGO flags, libbpf linking)
+- Includes correct build tags (`-tags ebpf`)
+- Handles cross-compilation for Linux targets
+- Enables race detection and other essential test flags
+
+### Test Environment Setup
+The `make test-unit` target automatically configures:
+- `GOOS=linux CC=clang GOARCH=amd64`
+- `CGO_CFLAGS` with BPF header paths
+- `CGO_LDFLAGS` with libbpf library paths
+- Test flags: `-race -shuffle on -failfast -v`
+
+## Other Test Types
+
+### Integration Tests
+```bash
+make test-integration  # Full system tests
+```
+
+### Types Module (Standalone)
+```bash
+make test-types  # Or: cd types && go test ./...
+```
+
+## Troubleshooting
+
+### "fatal error: bpf/bpf.h: No such file or directory"
+- **Solution**: Use `make test-unit` instead of `go test`
+- This error occurs when trying to compile libbpfgo without proper environment
+
+### Slow Test Execution
+- Use package targeting: `make test-unit PKG=specific/package`
+- Use function targeting: `make test-unit TEST=TestKernelVersionRequirement_Basic`
