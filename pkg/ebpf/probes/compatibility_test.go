@@ -2,7 +2,6 @@ package probes
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -11,7 +10,6 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
@@ -50,11 +48,6 @@ func (m *mockOSInfo) CompareOSBaseKernelRelease(version string) (environment.Ker
 	return environment.CompareKernelRelease(m.kernelRelease, version)
 }
 
-func (m *mockOSInfo) GetKernelSymbol(symbol string) ([]*environment.KernelSymbol, error) {
-	// Default implementation for compatibility - returns properly wrapped symbol not found error
-	return nil, fmt.Errorf("failed to get kernel symbol %s: %w", symbol, utils.ErrSymbolNotFound)
-}
-
 // mockMapTypeSupportChecker creates a mock function for testing map type support
 func mockMapTypeSupportChecker(supportedTypes map[bpf.MapType]bool, shouldError bool, errorMessage string) MapTypeSupportChecker {
 	return func(mapType bpf.MapType) (bool, error) {
@@ -71,6 +64,27 @@ func mockMapTypeSupportChecker(supportedTypes map[bpf.MapType]bool, shouldError 
 		supported, exists := supportedTypes[mapType]
 		if !exists {
 			return false, nil // Unknown map types default to not supported (realistic behavior)
+		}
+		return supported, nil
+	}
+}
+
+// mockProgramTypeChecker creates a mock function for testing program type support
+func mockProgramTypeChecker(supportedTypes map[bpf.BPFProgType]bool, shouldError bool, errorMessage string) ProgramTypeSupportChecker {
+	return func(progType bpf.BPFProgType) (bool, error) {
+		if shouldError {
+			message := errorMessage
+			if message == "" {
+				message = "mock error for testing"
+			}
+			return false, errors.New(message)
+		}
+		if supportedTypes == nil {
+			return false, errors.New("no BPF program type support configuration provided for testing")
+		}
+		supported, exists := supportedTypes[progType]
+		if !exists {
+			return false, nil // Unknown program types default to not supported (realistic behavior)
 		}
 		return supported, nil
 	}
@@ -501,6 +515,139 @@ func TestBPFMapTypeRequirement(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func TestBpfProgramRequirement(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		progType       bpf.BPFProgType
+		supportedTypes map[bpf.BPFProgType]bool
+		shouldError    bool
+		errorMessage   string
+		expectedResult bool
+		expectedError  bool
+	}{
+		{
+			name:           "program type supported",
+			progType:       bpf.BPFProgTypeKprobe,
+			supportedTypes: map[bpf.BPFProgType]bool{bpf.BPFProgTypeKprobe: true},
+			expectedResult: true,
+			expectedError:  false,
+		},
+		{
+			name:           "program type not supported",
+			progType:       bpf.BPFProgTypeTracepoint,
+			supportedTypes: map[bpf.BPFProgType]bool{bpf.BPFProgTypeTracepoint: false},
+			expectedResult: false,
+			expectedError:  false,
+		},
+		{
+			name:           "error checking program type support",
+			progType:       bpf.BPFProgTypeKprobe,
+			shouldError:    true,
+			errorMessage:   "failed to check BPF program type support",
+			expectedResult: false,
+			expectedError:  true,
+		},
+		{
+			name:           "unknown program type defaults to not supported",
+			progType:       bpf.BPFProgType(999), // Unknown type
+			supportedTypes: map[bpf.BPFProgType]bool{bpf.BPFProgTypeKprobe: true},
+			expectedResult: false,
+			expectedError:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create mock environment provider
+			envProvider := newMockOSInfo("5.4.0", "ubuntu")
+
+			// Create mock checker function
+			mockChecker := mockProgramTypeChecker(tt.supportedTypes, tt.shouldError, tt.errorMessage)
+
+			// Create BPF program type requirement with mock checker
+			req := NewBpfProgramRequirementWithChecker(tt.progType, mockChecker)
+			result, err := req.IsCompatible(envProvider)
+
+			if tt.expectedError {
+				assert.Error(t, err)
+				if tt.errorMessage != "" {
+					assert.Contains(t, err.Error(), tt.errorMessage)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func TestProbeCompatibility_WithBpfProgramRequirement(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                 string
+		kernelRequirement    *KernelVersionRequirement
+		programRequirement   *BpfProgramRequirement
+		currentKernel        string
+		currentDistro        string
+		programTypeSupported bool
+		expectedResult       bool
+	}{
+		{
+			name:                 "both kernel and program requirements compatible",
+			kernelRequirement:    NewKernelVersionRequirement("", "5.0.0", ""),
+			programRequirement:   nil, // will be set in test with mock
+			currentKernel:        "5.10.0",
+			currentDistro:        "ubuntu",
+			programTypeSupported: true,
+			expectedResult:       true,
+		},
+		{
+			name:                 "kernel compatible but program type not supported",
+			kernelRequirement:    NewKernelVersionRequirement("", "5.0.0", ""),
+			programRequirement:   nil, // will be set in test with mock
+			currentKernel:        "5.10.0",
+			currentDistro:        "ubuntu",
+			programTypeSupported: false,
+			expectedResult:       false,
+		},
+		{
+			name:                 "kernel not compatible but program type supported",
+			kernelRequirement:    NewKernelVersionRequirement("", "5.15.0", ""),
+			programRequirement:   nil, // will be set in test with mock
+			currentKernel:        "5.10.0",
+			currentDistro:        "ubuntu",
+			programTypeSupported: true,
+			expectedResult:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create mock BPF program support checker
+			supportedTypes := map[bpf.BPFProgType]bool{bpf.BPFProgTypeKprobe: tt.programTypeSupported}
+			mockChecker := mockProgramTypeChecker(supportedTypes, false, "")
+
+			// Create program requirement with mock checker
+			tt.programRequirement = NewBpfProgramRequirementWithChecker(bpf.BPFProgTypeKprobe, mockChecker)
+
+			// Create probe compatibility with both requirements
+			compatibility := NewProbeCompatibility(tt.kernelRequirement, tt.programRequirement)
+			envProvider := newMockOSInfo(tt.currentKernel, tt.currentDistro)
+
+			result, err := compatibility.isCompatible(envProvider)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
