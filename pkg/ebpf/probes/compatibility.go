@@ -126,3 +126,33 @@ func NewBPFMapTypeRequirementWithChecker(mapType bpf.MapType, checker MapTypeSup
 func (m *BPFMapTypeRequirement) IsCompatible(_ EnvironmentProvider) (bool, error) {
 	return m.checker(m.mapType)
 }
+
+// ProgramTypeSupportChecker is a function type used for dependency injection to check BPF program type support.
+// This allows tests to inject mock implementations, making BPF compatibility logic testable and decoupled from the environment.
+type ProgramTypeSupportChecker func(progType bpf.BPFProgType) (bool, error)
+
+// BpfProgramRequirement specifies a requirement for kernel support of a particular BPF program type.
+type BpfProgramRequirement struct {
+	bpfProgramType bpf.BPFProgType
+	checker        ProgramTypeSupportChecker
+}
+
+func NewBpfProgramRequirement(progType bpf.BPFProgType) *BpfProgramRequirement {
+	return &BpfProgramRequirement{
+		bpfProgramType: progType,
+		checker:        bpf.BPFProgramTypeIsSupported,
+	}
+}
+
+func NewBpfProgramRequirementWithChecker(progType bpf.BPFProgType, checker ProgramTypeSupportChecker) *BpfProgramRequirement {
+	return &BpfProgramRequirement{
+		bpfProgramType: progType,
+		checker:        checker,
+	}
+}
+
+// IsCompatible checks if the kernel supports the BPF program type.
+// This check is whether the kernel supports the BPF program type, both by implementation and configuration.
+func (b *BpfProgramRequirement) IsCompatible(_ EnvironmentProvider) (bool, error) {
+	return b.checker(b.bpfProgramType)
+}
