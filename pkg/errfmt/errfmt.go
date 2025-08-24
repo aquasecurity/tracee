@@ -25,6 +25,14 @@ func prefixFunc(msg string, skip int) error {
 	return fmt.Errorf("%v: %v", fName, msg)
 }
 
+// prefixFuncError prefixes a given error with the name of the function that
+// called it based on the skip value, preserving the error chain.
+func prefixFuncError(err error, skip int) error {
+	fName := funcName(skip + 1)
+
+	return fmt.Errorf("%v: %w", fName, err)
+}
+
 // Errorf returns an error prefixed by the current (caller) function name
 // and formatted with the given arguments.
 func Errorf(format string, a ...interface{}) error {
@@ -37,11 +45,11 @@ func Errorf(format string, a ...interface{}) error {
 }
 
 // WrapError returns the given error prefixed by the current (caller) function
-// name.
+// name while preserving the error chain.
 func WrapError(e error) error {
 	if e == nil {
 		return nil
 	}
 
-	return prefixFunc(e.Error(), 1)
+	return prefixFuncError(e, 1)
 }

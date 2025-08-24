@@ -1,12 +1,17 @@
 package probes
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	bpf "github.com/aquasecurity/libbpfgo"
+
+	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
@@ -43,6 +48,32 @@ func (m *mockOSInfo) GetOSReleaseID() environment.OSReleaseID {
 
 func (m *mockOSInfo) CompareOSBaseKernelRelease(version string) (environment.KernelVersionComparison, error) {
 	return environment.CompareKernelRelease(m.kernelRelease, version)
+}
+
+func (m *mockOSInfo) GetKernelSymbol(symbol string) ([]*environment.KernelSymbol, error) {
+	// Default implementation for compatibility - returns properly wrapped symbol not found error
+	return nil, fmt.Errorf("failed to get kernel symbol %s: %w", symbol, utils.ErrSymbolNotFound)
+}
+
+// mockMapTypeSupportChecker creates a mock function for testing map type support
+func mockMapTypeSupportChecker(supportedTypes map[bpf.MapType]bool, shouldError bool, errorMessage string) MapTypeSupportChecker {
+	return func(mapType bpf.MapType) (bool, error) {
+		if shouldError {
+			message := errorMessage
+			if message == "" {
+				message = "mock error for testing"
+			}
+			return false, errors.New(message)
+		}
+		if supportedTypes == nil {
+			return false, errors.New("no BPF support configuration provided for testing")
+		}
+		supported, exists := supportedTypes[mapType]
+		if !exists {
+			return false, nil // Unknown map types default to not supported (realistic behavior)
+		}
+		return supported, nil
+	}
 }
 
 func TestKernelVersionRequirement_Basic(t *testing.T) {
@@ -393,6 +424,83 @@ func TestKernelVersionRequirement_EdgeCases(t *testing.T) {
 
 			result, err := req.IsCompatible(osInfo)
 			require.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func TestBPFMapTypeRequirement(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		mapType        bpf.MapType
+		supportedTypes map[bpf.MapType]bool
+		shouldError    bool
+		errorMessage   string
+		expectedResult bool
+		expectedError  bool
+	}{
+		{
+			name:           "hash map type supported",
+			mapType:        bpf.MapTypeHash,
+			supportedTypes: map[bpf.MapType]bool{bpf.MapTypeHash: true},
+			expectedResult: true,
+			expectedError:  false,
+		},
+		{
+			name:           "array map type not supported",
+			mapType:        bpf.MapTypeArray,
+			supportedTypes: map[bpf.MapType]bool{bpf.MapTypeArray: false},
+			expectedResult: false,
+			expectedError:  false,
+		},
+		{
+			name:           "error checking map type support",
+			mapType:        bpf.MapTypeHash,
+			shouldError:    true,
+			errorMessage:   "failed to check BPF map type support",
+			expectedResult: false,
+			expectedError:  true,
+		},
+		{
+			name:           "unknown map type not in supportedTypes map",
+			mapType:        bpf.MapType(999),                            // Unknown type
+			supportedTypes: map[bpf.MapType]bool{bpf.MapTypeHash: true}, // 999 not included
+			expectedResult: false,
+			expectedError:  false,
+		},
+		{
+			name:    "nil supportedTypes map should error",
+			mapType: bpf.MapTypeHash,
+			// supportedTypes: nil - should trigger error
+			expectedResult: false,
+			expectedError:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create mock environment provider
+			envProvider := newMockOSInfo("5.4.0", "ubuntu")
+
+			// Create mock checker function
+			mockChecker := mockMapTypeSupportChecker(tt.supportedTypes, tt.shouldError, tt.errorMessage)
+
+			// Create BPF map type requirement with mock checker
+			req := NewBPFMapTypeRequirementWithChecker(tt.mapType, mockChecker)
+			result, err := req.IsCompatible(envProvider)
+
+			if tt.expectedError {
+				assert.Error(t, err)
+				if tt.errorMessage != "" {
+					assert.Contains(t, err.Error(), tt.errorMessage)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
