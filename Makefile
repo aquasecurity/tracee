@@ -323,7 +323,10 @@ help:
 	@echo ""
 	@echo "# test"
 	@echo ""
-	@echo "    $$ make test-unit                # run unit tests"
+	@echo "    $$ make test-unit                        # run all unit tests"
+	@echo "    $$ make test-unit PKG=pkg/path          # run tests for specific package" 
+	@echo "    $$ make test-unit TEST=TestName         # run specific test in all packages"
+	@echo "    $$ make test-unit PKG=pkg/path TEST=TestName  # run specific test in specific package"
 	@echo "    $$ make test-types               # run unit tests for types module"
 	@echo "    $$ make test-integration         # run integration tests"
 	@echo ""
@@ -858,7 +861,7 @@ clean-e2e-inst-signatures:
 .PHONY: test-unit
 test-unit: \
 	tracee-ebpf \
-	test-types \
+	$(if $(or $(PKG),$(TEST)),,test-types) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
 #
@@ -871,9 +874,8 @@ test-unit: \
 		-failfast \
 		-v \
 		-coverprofile=coverage.txt \
-		./cmd/... \
-		./pkg/... \
-		./signatures/... \
+		$(if $(TEST),-run $(TEST)) \
+		$(if $(PKG),./$(PKG)/...,./cmd/... ./pkg/... ./signatures/...)
 
 .PHONY: test-types
 test-types: \
@@ -1024,7 +1026,7 @@ check-err: \
 	.check_$(CMD_ERRCHECK)
 #
 	@$(CMD_ERRCHECK) \
-		-tags $(GO_TAGS_EBPF) \
+		-tags $(GO_TAGS_EBPF),static \
 		-ignoretests \
 		-ignore 'fmt:[FS]?[Pp]rint*|[wW]rite' \
 		-ignore '[rR]ead|[wW]rite' \
