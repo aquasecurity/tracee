@@ -34,8 +34,8 @@ typedef struct event_context {
     s64 retval;
     u32 stack_id;
     u16 processor_id; // ID of the processor that processed the event
-    u16 policies_version;
-    u64 matched_policies;
+    u16 rules_version;
+    u64 active_rules;
 } event_context_t;
 
 #define EVENT_ID_LIST_NET                                                                          \
@@ -138,6 +138,7 @@ typedef struct event_context {
     X(OPEN_FILE_MOUNT, )                                                                           \
     X(SECURITY_SB_UMOUNT, )                                                                        \
     X(SECURITY_TASK_PRCTL, )                                                                       \
+    X(POLICY_SCOPES, )                                                                             \
     // ...
 
 #define EVENT_ID_LIST_LAST                                                                         \
@@ -349,21 +350,21 @@ typedef struct ksym_name {
     char str[MAX_KSYM_NAME_SIZE];
 } ksym_name_t;
 
-typedef struct policy_key {
+typedef struct filter_version_key {
     u16 version;
     u16 __pad;
     u32 event_id;
-} policy_key_t;
+} filter_version_key_t;
 
 typedef struct equality {
-    // bitmap indicating which policies have a filter that uses the '=' operator (0 means '!=')
-    u64 equals_in_policies;
-    // bitmap indicating which policies have a filter that utilize the provided key
-    u64 key_used_in_policies;
+    // bitmap indicating which rules have a filter that uses the '=' operator (0 means '!=')
+    u64 equals_in_rules;
+    // bitmap indicating which rules have a filter that utilize the provided key
+    u64 key_used_in_rules;
 } eq_t;
 
-typedef struct policies_config {
-    // bitmap indicating which policies have the filter enabled
+typedef struct scope_filters_config {
+    // bitmap indicating which rules have the filter enabled
     u64 uid_filter_enabled;
     u64 pid_filter_enabled;
     u64 mnt_ns_filter_enabled;
@@ -374,9 +375,7 @@ typedef struct policies_config {
     u64 cont_filter_enabled;
     u64 new_cont_filter_enabled;
     u64 new_pid_filter_enabled;
-    u64 proc_tree_filter_enabled;
     u64 bin_path_filter_enabled;
-    u64 follow_filter_enabled;
     // bitmap indicating whether to match a rule if the key is missing from its filter map
     u64 uid_filter_match_if_key_missing;
     u64 pid_filter_match_if_key_missing;
@@ -388,25 +387,13 @@ typedef struct policies_config {
     u64 cont_filter_match_if_key_missing;
     u64 new_cont_filter_match_if_key_missing;
     u64 new_pid_filter_match_if_key_missing;
-    u64 proc_tree_filter_match_if_key_missing;
     u64 bin_path_filter_match_if_key_missing;
-    // bitmap with policies that have at least one filter enabled
-    u64 enabled_policies;
-
-    // global min max
-    u64 uid_max;
-    u64 uid_min;
-    u64 pid_max;
-    u64 pid_min;
-} policies_config_t;
+} scope_filters_config_t;
 
 typedef struct config_entry {
     u32 tracee_pid;
     u32 options;
     u32 cgroup_v1_hid;
-    u16 padding; // free for further use
-    u16 policies_version;
-    policies_config_t policies_config;
 } config_entry_t;
 
 typedef struct string_filter_config {
@@ -424,8 +411,12 @@ typedef struct data_filter_config {
 } data_filter_config_t;
 
 typedef struct event_config {
-    u64 submit_for_policies;
+    u16 rules_version;
+    u8 has_overflow;
+    u8 _padding[5];
+    u64 submit_for_rules;
     u64 field_types;
+    scope_filters_config_t scope_filters;
     data_filter_config_t data_filter;
 } event_config_t;
 
@@ -455,7 +446,6 @@ typedef struct event_data {
     args_buffer_t args_buf;
     struct task_struct *task;
     event_config_t config;
-    policies_config_t policies_config;
 } event_data_t;
 
 // A control plane signal - sent to indicate some critical event which should be processed

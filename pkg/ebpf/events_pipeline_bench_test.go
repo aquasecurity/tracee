@@ -94,9 +94,9 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 				evt.Kubernetes = kubernetesData
 				evt.EventID = int(ctx.EventID)
 				evt.EventName = eventDefinition.GetName()
-				evt.PoliciesVersion = ctx.PoliciesVersion
-				evt.MatchedPoliciesKernel = ctx.MatchedPolicies
-				evt.MatchedPoliciesUser = 0
+				evt.RulesVersion = ctx.RulesVersion
+				evt.MatchedRulesKernel = []uint64{ctx.MatchedRules}
+				evt.MatchedRulesUser = []uint64{0}
 				evt.MatchedPolicies = []string{}
 				evt.ArgsNum = int(argnum)
 				evt.ReturnValue = int(ctx.Retval)
@@ -234,37 +234,37 @@ func BenchmarkNewEventObject(b *testing.B) {
 				ctx := <-decodeChan
 
 				evt := trace.Event{
-					Timestamp:             int(ctx.Ts),
-					ThreadStartTime:       int(ctx.StartTime),
-					ProcessorID:           int(ctx.ProcessorId),
-					ProcessID:             int(ctx.Pid),
-					ThreadID:              int(ctx.Tid),
-					ParentProcessID:       int(ctx.Ppid),
-					HostProcessID:         int(ctx.HostPid),
-					HostThreadID:          int(ctx.HostTid),
-					HostParentProcessID:   int(ctx.HostPpid),
-					UserID:                int(ctx.Uid),
-					MountNS:               int(ctx.MntID),
-					PIDNS:                 int(ctx.PidID),
-					ProcessName:           string(utils.TrimTrailingNUL(ctx.Comm[:])),
-					HostName:              string(utils.TrimTrailingNUL(ctx.UtsName[:])),
-					CgroupID:              uint(ctx.CgroupID),
-					ContainerID:           containerData.ID,
-					Container:             containerData,
-					Kubernetes:            kubernetesData,
-					EventID:               int(ctx.EventID),
-					EventName:             eventDefinition.GetName(),
-					PoliciesVersion:       ctx.PoliciesVersion,
-					MatchedPoliciesKernel: ctx.MatchedPolicies,
-					ArgsNum:               int(argnum),
-					ReturnValue:           int(ctx.Retval),
-					Args:                  args,
-					StackAddresses:        stackAddresses,
-					ContextFlags:          flags,
-					Syscall:               syscall,
-					ThreadEntityId:        utils.HashTaskID(ctx.HostTid, ctx.StartTime),
-					ProcessEntityId:       utils.HashTaskID(ctx.HostPid, ctx.LeaderStartTime),
-					ParentEntityId:        utils.HashTaskID(ctx.HostPpid, ctx.ParentStartTime),
+					Timestamp:           int(ctx.Ts),
+					ThreadStartTime:     int(ctx.StartTime),
+					ProcessorID:         int(ctx.ProcessorId),
+					ProcessID:           int(ctx.Pid),
+					ThreadID:            int(ctx.Tid),
+					ParentProcessID:     int(ctx.Ppid),
+					HostProcessID:       int(ctx.HostPid),
+					HostThreadID:        int(ctx.HostTid),
+					HostParentProcessID: int(ctx.HostPpid),
+					UserID:              int(ctx.Uid),
+					MountNS:             int(ctx.MntID),
+					PIDNS:               int(ctx.PidID),
+					ProcessName:         string(utils.TrimTrailingNUL(ctx.Comm[:])),
+					HostName:            string(utils.TrimTrailingNUL(ctx.UtsName[:])),
+					CgroupID:            uint(ctx.CgroupID),
+					ContainerID:         containerData.ID,
+					Container:           containerData,
+					Kubernetes:          kubernetesData,
+					EventID:             int(ctx.EventID),
+					EventName:           eventDefinition.GetName(),
+					RulesVersion:        ctx.RulesVersion,
+					MatchedRulesKernel:  []uint64{ctx.MatchedRules},
+					ArgsNum:             int(argnum),
+					ReturnValue:         int(ctx.Retval),
+					Args:                args,
+					StackAddresses:      stackAddresses,
+					ContextFlags:        flags,
+					Syscall:             syscall,
+					ThreadEntityId:      utils.HashTaskID(ctx.HostTid, ctx.StartTime),
+					ProcessEntityId:     utils.HashTaskID(ctx.HostPid, ctx.LeaderStartTime),
+					ParentEntityId:      utils.HashTaskID(ctx.HostPpid, ctx.ParentStartTime),
 				}
 
 				processChan <- &evt

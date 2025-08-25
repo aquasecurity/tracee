@@ -2,10 +2,9 @@ package streams
 
 import (
 	"context"
-	"sync"
 	"testing"
 
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -17,150 +16,138 @@ const (
 )
 
 var (
-	policy1Event     = trace.Event{MatchedPoliciesUser: 0b1}
-	policy2Event     = trace.Event{MatchedPoliciesUser: 0b10}
-	policy3Event     = trace.Event{MatchedPoliciesUser: 0b100}
-	policy1And2Event = trace.Event{MatchedPoliciesUser: 0b11}
+	policy1Event     = trace.Event{MatchedRulesUser: []uint64{0b1}}
+	policy2Event     = trace.Event{MatchedRulesUser: []uint64{0b10}}
+	policy3Event     = trace.Event{MatchedRulesUser: []uint64{0b100}}
+	policy1And2Event = trace.Event{MatchedRulesUser: []uint64{0b11}}
 )
 
-func TestStreamManager(t *testing.T) {
-	t.Parallel()
-
-	var (
-		stream1Count int
-		stream2Count int
-		stream3Count int
-	)
-
+func TestStreamManager_PublishAndReceive(t *testing.T) {
+	sm := NewStreamsManager()
 	ctx := context.Background()
 
-	sm := NewStreamsManager()
+	event := trace.Event{
+		MatchedPolicies: []string{"policy1"},
+	}
 
-	// stream for policy1
-	stream1 := sm.Subscribe(policy1Mask, 0)
+	// Subscribe with matching policy
+	stream1 := sm.Subscribe([]string{"policy1"}, 1)
 
-	// stream for policy1 and policy2
-	stream2 := sm.Subscribe(policy1And2Mask, 0)
+	// Subscribe with non-matching policy
+	stream2 := sm.Subscribe([]string{"policy2"}, 1)
 
-	// stream for all policies
-	stream3 := sm.Subscribe(allPoliciesMask, 0)
+	// Subscribe to all policies
+	stream3 := sm.Subscribe([]string{}, 1)
 
-	// consumers
-	consumersWG := &sync.WaitGroup{}
-	consumersWG.Add(3)
+	// Publish event
+	sm.Publish(ctx, event)
 
-	go func() {
-		for range stream1.ReceiveEvents() {
-			stream1Count++
-		}
-		consumersWG.Done()
-	}()
+	// Check stream1 received event (matching policy)
+	select {
+	case receivedEvent := <-stream1.ReceiveEvents():
+		assert.Equal(t, event, receivedEvent)
+	default:
+		t.Error("Expected stream1 to receive event")
+	}
 
-	go func() {
-		for range stream2.ReceiveEvents() {
-			stream2Count++
-		}
-		consumersWG.Done()
-	}()
+	// Check stream2 did not receive event (non-matching policy)
+	select {
+	case <-stream2.ReceiveEvents():
+		t.Error("Stream2 should not receive event")
+	default:
+		// Expected - no event received
+	}
 
-	go func() {
-		for range stream3.ReceiveEvents() {
-			stream3Count++
-		}
-		consumersWG.Done()
-	}()
-
-	// publishers
-	publishersWG := &sync.WaitGroup{}
-	publishersWG.Add(3)
-
-	go func() {
-		for i := 0; i < 100; i++ {
-			sm.Publish(ctx, policy1Event)
-		}
-		publishersWG.Done()
-	}()
-
-	go func() {
-		for i := 0; i < 100; i++ {
-			sm.Publish(ctx, policy2Event)
-		}
-		publishersWG.Done()
-	}()
-
-	go func() {
-		for i := 0; i < 100; i++ {
-			sm.Publish(ctx, policy3Event)
-		}
-		publishersWG.Done()
-	}()
-
-	publishersWG.Wait()
-	sm.Close()
-	consumersWG.Wait()
-
-	assert.Equal(t, 100, stream1Count)
-	assert.Equal(t, 200, stream2Count)
-	assert.Equal(t, 300, stream3Count)
+	// Check stream3 received event (all policies)
+	select {
+	case receivedEvent := <-stream3.ReceiveEvents():
+		assert.Equal(t, event, receivedEvent)
+	default:
+		t.Error("Expected stream3 to receive event")
+	}
 }
 
-func Test_shouldIgnorePolicy(t *testing.T) {
-	t.Parallel()
-
+func TestStreamManager_MultiplePolices(t *testing.T) {
 	sm := NewStreamsManager()
+	ctx := context.Background()
+
+	type streamTest struct {
+		policies []string
+		expect   bool
+	}
 
 	tests := []struct {
-		name       string
-		policyMask uint64
-		event      trace.Event
-		expected   bool
+		name    string
+		streams []streamTest
+		event   trace.Event
 	}{
 		{
-			name:       "event matched policy 1, policy mask 1",
-			policyMask: 0b1,
-			event:      policy1Event,
-			expected:   false,
+			name: "multiple streams with different policies",
+			streams: []streamTest{
+				{policies: []string{"policy1", "policy2"}, expect: true},
+				{policies: []string{"policy3"}, expect: false},
+				{policies: []string{}, expect: true}, // all policies
+			},
+			event: trace.Event{
+				MatchedPolicies: []string{"policy1"},
+			},
 		},
 		{
-			name:       "event matched policy 1, policy mask 2",
-			policyMask: 0b10,
-			event:      policy1Event,
-			expected:   true,
+			name: "overlapping policies between streams",
+			streams: []streamTest{
+				{policies: []string{"policy1"}, expect: true},
+				{policies: []string{"policy1", "policy2"}, expect: true},
+				{policies: []string{"policy2", "policy3"}, expect: false},
+			},
+			event: trace.Event{
+				MatchedPolicies: []string{"policy1"},
+			},
 		},
 		{
-			name:       "event matched policy 1, catch all policy mask",
-			policyMask: 0xffffffffffffffff,
-			event:      policy1Event,
-			expected:   false,
-		},
-		{
-			name:       "event matched policy 1 and policy 2, policy mask 1",
-			policyMask: 0b1,
-			event:      policy1And2Event,
-			expected:   false,
-		},
-		{
-			name:       "event matched policy 1 and policy 2, policy mask 2",
-			policyMask: 0b10,
-			event:      policy1And2Event,
-			expected:   false,
-		},
-		{
-			name:       "event matched policy 1 and policy 2, catch all policy mask",
-			policyMask: 0xffffffffffffffff,
-			event:      policy1And2Event,
-			expected:   false,
+			name: "event matching multiple policies",
+			streams: []streamTest{
+				{policies: []string{"policy1"}, expect: true},
+				{policies: []string{"policy2"}, expect: true},
+				{policies: []string{"policy3"}, expect: false},
+			},
+			event: trace.Event{
+				MatchedPolicies: []string{"policy1", "policy2"},
+			},
 		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+			var streams []*Stream
 
-			stream := sm.Subscribe(tt.policyMask, 0)
-			assert.Equal(t, tt.expected, stream.shouldIgnorePolicy(tt.event))
+			// Create streams with different policies
+			for _, s := range tt.streams {
+				stream := sm.Subscribe(s.policies, 1)
+				streams = append(streams, stream)
+			}
+
+			// Publish event
+			sm.Publish(ctx, tt.event)
+
+			// Check each stream
+			for i, s := range tt.streams {
+				select {
+				case evt := <-streams[i].ReceiveEvents():
+					if !s.expect {
+						t.Errorf("Stream %d received unexpected event: %v", i, evt)
+					}
+					assert.Equal(t, tt.event, evt)
+				default:
+					if s.expect {
+						t.Errorf("Stream %d did not receive expected event", i)
+					}
+				}
+			}
+
+			// Cleanup
+			for _, stream := range streams {
+				sm.Unsubscribe(stream)
+			}
 		})
 	}
 }
