@@ -11,8 +11,8 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/utils"
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
+	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/environment"
 )
 
 // mockOSInfo implements OSInfoProvider for testing
@@ -52,7 +52,7 @@ func (m *mockOSInfo) CompareOSBaseKernelRelease(version string) (environment.Ker
 
 func (m *mockOSInfo) GetKernelSymbol(symbol string) ([]*environment.KernelSymbol, error) {
 	// Default implementation for compatibility - returns properly wrapped symbol not found error
-	return nil, fmt.Errorf("failed to get kernel symbol %s: %w", symbol, utils.ErrSymbolNotFound)
+	return nil, fmt.Errorf("failed to get kernel symbol %s: %w", symbol, common.ErrSymbolNotFound)
 }
 
 // mockMapTypeSupportChecker creates a mock function for testing map type support

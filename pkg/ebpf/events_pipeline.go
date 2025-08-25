@@ -8,14 +8,14 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/capabilities"
+	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
-	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
-	traceetime "github.com/aquasecurity/tracee/pkg/time"
-	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -156,8 +156,8 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 
 			_, containerInfo := t.containers.GetCgroupInfo(eCtx.CgroupID)
 
-			commStr := string(utils.TrimTrailingNUL(eCtx.Comm[:]))       // clean potential trailing null
-			utsNameStr := string(utils.TrimTrailingNUL(eCtx.UtsName[:])) // clean potential trailing null
+			commStr := string(common.TrimTrailingNUL(eCtx.Comm[:]))       // clean potential trailing null
+			utsNameStr := string(common.TrimTrailingNUL(eCtx.UtsName[:])) // clean potential trailing null
 
 			flags := parseContextFlags(containerInfo.ContainerId, eCtx.Flags)
 
@@ -196,8 +196,8 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 
 			// populate all the fields of the event used in this stage, and reset the rest
 
-			evt.Timestamp = int(traceetime.BootToEpochNS(eCtx.Ts))              // normalize time
-			evt.ThreadStartTime = int(traceetime.BootToEpochNS(eCtx.StartTime)) // normalize time
+			evt.Timestamp = int(timeutil.BootToEpochNS(eCtx.Ts))              // normalize time
+			evt.ThreadStartTime = int(timeutil.BootToEpochNS(eCtx.StartTime)) // normalize time
 			evt.ProcessorID = int(eCtx.ProcessorId)
 			evt.ProcessID = int(eCtx.Pid)
 			evt.ThreadID = int(eCtx.Tid)
@@ -237,15 +237,15 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.Syscall = syscall
 			evt.Metadata = nil
 			// compute hashes using normalized times
-			evt.ThreadEntityId = utils.HashTaskID(eCtx.HostTid, uint64(evt.ThreadStartTime))
+			evt.ThreadEntityId = common.HashTaskID(eCtx.HostTid, uint64(evt.ThreadStartTime))
 			if eCtx.HostTid == eCtx.HostPid && eCtx.StartTime == eCtx.LeaderStartTime {
 				// If the thread is the leader (i.e., HostTid == HostPid and StartTime == LeaderStartTime),
 				// then ProcessEntityId and ThreadEntityId are identical and can be shared.
 				evt.ProcessEntityId = evt.ThreadEntityId
 			} else {
-				evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, traceetime.BootToEpochNS(eCtx.LeaderStartTime))
+				evt.ProcessEntityId = common.HashTaskID(eCtx.HostPid, timeutil.BootToEpochNS(eCtx.LeaderStartTime))
 			}
-			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, traceetime.BootToEpochNS(eCtx.ParentStartTime))
+			evt.ParentEntityId = common.HashTaskID(eCtx.HostPpid, timeutil.BootToEpochNS(eCtx.ParentStartTime))
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.
@@ -303,7 +303,7 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		// Policy ID is the bit offset in the bitmap.
 		bitOffset := uint(p.ID)
 
-		if !utils.HasBit(bitmap, bitOffset) { // event does not match this policy
+		if !common.HasBit(bitmap, bitOffset) { // event does not match this policy
 			continue
 		}
 
@@ -323,27 +323,27 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		// 1. UID/PID range checks (very fast)
 		if p.UIDFilter.Enabled() {
 			if !p.UIDFilter.InMinMaxRange(eventUID) {
-				utils.ClearBit(&bitmap, bitOffset)
+				common.ClearBit(&bitmap, bitOffset)
 				continue
 			}
 		}
 
 		if p.PIDFilter.Enabled() {
 			if !p.PIDFilter.InMinMaxRange(eventPID) {
-				utils.ClearBit(&bitmap, bitOffset)
+				common.ClearBit(&bitmap, bitOffset)
 				continue
 			}
 		}
 
 		// 2. event return value filters (fast)
 		if !rule.RetFilter.Filter(eventRetVal) {
-			utils.ClearBit(&bitmap, bitOffset)
+			common.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
 		// 3. event scope filters (medium cost)
 		if !rule.ScopeFilter.Filter(*event) {
-			utils.ClearBit(&bitmap, bitOffset)
+			common.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
@@ -354,7 +354,7 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		// because it uses usermode applied filters as parameters for the event,
 		// which occurs after filtering
 		if eventID != events.PrintMemDump && !rule.DataFilter.Filter(event.Args) {
-			utils.ClearBit(&bitmap, bitOffset)
+			common.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
@@ -441,8 +441,8 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 					"eventId", eventId)
 
 				// remove event from the policies with container filters
-				utils.ClearBits(&event.MatchedPoliciesKernel, policiesWithContainerFilter)
-				utils.ClearBits(&event.MatchedPoliciesUser, policiesWithContainerFilter)
+				common.ClearBits(&event.MatchedPoliciesKernel, policiesWithContainerFilter)
+				common.ClearBits(&event.MatchedPoliciesUser, policiesWithContainerFilter)
 
 				if event.MatchedPoliciesKernel == 0 {
 					t.eventsPool.Put(event)

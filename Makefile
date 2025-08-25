@@ -788,17 +788,20 @@ E2E_NET_SRC := $(shell find $(E2E_NET_DIR) \
 #
 #	traceectl 
 #
+
 SUBDIR_TRACEECTL = cmd/traceectl
 .PHONY: traceectl
+.ONESHELL:
 traceectl: $(OUTPUT_DIR)
 	$(MAKE) -C $(SUBDIR_TRACEECTL) all
 	cp $(SUBDIR_TRACEECTL)/dist/traceectl $(OUTPUT_DIR)/
 	@echo "Moved traceectl binary to $(OUTPUT_DIR)"
 
 .PHONY: clean-traceectl
+.ONESHELL:
 clean-traceectl:
 	$(MAKE) -C $(SUBDIR_TRACEECTL) clean
-	 rm -f $(OUTPUT_DIR)/traceectl
+	rm -f $(OUTPUT_DIR)/traceectl
 
 
 .PHONY: e2e-net-signatures
@@ -973,6 +976,25 @@ bear: \
 	| .check_$(CMD_BEAR)
 #
 	$(CMD_BEAR) -- $(MAKE) tracee
+
+.PHONY: go-tidy
+.ONESHELL:
+go-tidy: \
+	| .checkver_$(CMD_GO)
+#
+	@echo "Running go mod tidy on all workspace modules..."
+	@# Process root module first
+	@if [ -f "./go.mod" ]; then \
+		echo "Tidying root module..."; \
+		$(CMD_GO) mod tidy; \
+	fi
+	@# Then process all subdirectory modules
+	@for mod_file in $$(find . -name "go.mod" -type f -not -path "./go.mod" | sort); do \
+		mod_dir=$$(dirname "$$mod_file"); \
+		echo "Tidying $$mod_dir..."; \
+		(cd "$$mod_dir" && $(CMD_GO) mod tidy); \
+	done
+	@echo "Workspace maintenance complete!"
 
 .PHONY: check-fmt
 check-fmt::

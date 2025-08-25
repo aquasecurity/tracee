@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/aquasecurity/tracee/pkg/utils/tests"
+	"github.com/aquasecurity/tracee/common/tests"
 )
 
 func getTimeFromSec(second int) time.Time {

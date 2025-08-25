@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/common"
 )
 
 type SuffixSet struct {
@@ -17,7 +17,7 @@ type SuffixSet struct {
 }
 
 // Compile-time check to ensure that SuffixSet implements the Cloner interface
-var _ utils.Cloner[*SuffixSet] = &SuffixSet{}
+var _ common.Cloner[*SuffixSet] = &SuffixSet{}
 
 func NewSuffixSet() SuffixSet {
 	return SuffixSet{

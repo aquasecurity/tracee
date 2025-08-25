@@ -5,7 +5,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/utils/environment"
+	"github.com/aquasecurity/tracee/common/environment"
 )
 
 // EnvironmentProvider defines the interface for OS and other environment information needed by probe compatibility checks

@@ -5,8 +5,8 @@ import (
 	"runtime"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/common/logger"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 )
 
