@@ -62,7 +62,8 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
 {
     struct task_struct *task;
 
-    // Use the bpf_task_pt_regs helper if possible
+    // Use the bpf_task_pt_regs helper if possible (>= 5.15)
+
     if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_current_task_btf) &&
         bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_task_pt_regs)) {
         task = bpf_get_current_task_btf();
@@ -70,15 +71,25 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     }
 
     // Helper not available, extract registers manually
-    task = (struct task_struct *) bpf_get_current_task();
 
-// THREAD_SIZE here is statistically defined and assumed to work for 4k page sizes.
+    task = (struct task_struct *) bpf_get_current_task();
+    void *stack_base = BPF_CORE_READ(task, stack);
+    // THREAD_SIZE here is statistically defined and assumed to work for 4k page sizes.
+    char *ptr = stack_base + THREAD_SIZE; // use char* for byte-wise pointer arithmetic
+
 #if defined(bpf_target_x86)
-    void *__ptr = BPF_CORE_READ(task, stack) + THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
-    return ((struct pt_regs *) __ptr) - 1;
-#elif defined(bpf_target_arm64)
-    return ((struct pt_regs *) (THREAD_SIZE + BPF_CORE_READ(task, stack)) - 1);
+    // CONFIG_X86_FRED was merged in 6.9, but it may be backported.
+    // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=720c857907530e6cdc86c9bc1102ea6b372fbfb6
+    // To maintain compatibility with older kernels that lack bpf_task_pt_regs(),
+    // we check for the presence of the struct fred_info instead.
+    int stack_padding = bpf_core_type_exists(struct fred_info___check)
+                            ? TOP_OF_KERNEL_STACK_PADDING_FRED
+                            : TOP_OF_KERNEL_STACK_PADDING;
+
+    ptr -= stack_padding;
 #endif
+
+    return ((struct pt_regs *) ptr) - 1;
 }
 
 #define UNDEFINED_SYSCALL 1000
