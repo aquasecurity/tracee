@@ -5,6 +5,8 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -698,6 +700,48 @@ func convertPacketMetadata(v *trace.PacketMetadata) (*pb.EventValue, error) {
 		}}, nil
 }
 
+// sanitizeStringForProtobuf removes invalid UTF-8 characters from a string
+// to prevent protobuf serialization errors
+func sanitizeStringForProtobuf(s string) string {
+	if utf8.ValidString(s) {
+		return s
+	}
+
+	// Build a new string with only valid UTF-8 characters
+	var builder strings.Builder
+	builder.Grow(len(s)) // Pre-allocate space for efficiency
+
+	for len(s) > 0 {
+		r, size := utf8.DecodeRuneInString(s)
+		if r != utf8.RuneError {
+			builder.WriteRune(r)
+		}
+		// Skip invalid bytes by advancing the position
+		s = s[size:]
+	}
+
+	return builder.String()
+}
+
+// sanitizeMapForProtobuf recursively sanitizes string values in a map
+// to ensure they contain only valid UTF-8 characters
+func sanitizeMapForProtobuf(m map[string]interface{}) map[string]interface{} {
+	sanitizedMap := make(map[string]interface{}, len(m))
+
+	for k, v := range m {
+		switch val := v.(type) {
+		case string:
+			sanitizedMap[k] = sanitizeStringForProtobuf(val)
+		case map[string]interface{}:
+			sanitizedMap[k] = sanitizeMapForProtobuf(val)
+		default:
+			sanitizedMap[k] = val
+		}
+	}
+
+	return sanitizedMap
+}
+
 func convertToStruct(arg trace.Argument) (*pb.EventValue, error) {
 	i, ok := arg.Value.(detect.FindingDataStruct)
 	if !ok {
@@ -705,7 +749,10 @@ func convertToStruct(arg trace.Argument) (*pb.EventValue, error) {
 	}
 
 	if m := i.ToMap(); m != nil {
-		structValue, err := structpb.NewStruct(m)
+		// Sanitize string values to ensure valid UTF-8 before protobuf conversion
+		sanitizedMap := sanitizeMapForProtobuf(m)
+
+		structValue, err := structpb.NewStruct(sanitizedMap)
 
 		if err != nil {
 			return nil, err
