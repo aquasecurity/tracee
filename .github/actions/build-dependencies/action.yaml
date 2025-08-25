@@ -11,6 +11,10 @@ runs:
         sudo apt-get install -y zlib1g-dev libelf-dev libzstd-dev
         sudo apt-get install -y software-properties-common
       shell: bash
+    - name: Install Packages for tests
+      run: |
+        sudo apt-get install -y inotify-tools bpftrace
+      shell: bash
     - name: Install Golang
       run: |
         sudo rm -f /usr/bin/go
