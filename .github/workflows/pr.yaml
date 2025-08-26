@@ -187,6 +187,7 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
+          fetch-depth: 0  # Fetch full history for codecov base comparison
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
       - name: Run Unit Tests
@@ -218,6 +219,7 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
+          fetch-depth: 0  # Fetch full history for codecov base comparison
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
       - name: Run Integration Tests
