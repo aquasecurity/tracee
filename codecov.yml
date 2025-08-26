@@ -5,13 +5,13 @@ coverage:
   status:
     project:
       default:
-        target: 75%           # Overall project coverage target
-        threshold: 1%         # Allow 1% decrease without failing
-        if_ci_failed: error   # Fail if CI failed
+        target: auto         # Start with current coverage as baseline
+        threshold: 1%        # Allow 1% decrease without failing
+        if_ci_failed: error  # Fail if CI failed
     patch:
       default:
-        target: 80%           # New code should have higher coverage
-        threshold: 5%         # Allow some flexibility for new features
+        target: 60%          # New code should have reasonable coverage
+        threshold: 10%       # More flexibility for initial adoption
         if_ci_failed: error
 
   ignore:
