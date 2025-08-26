@@ -29,7 +29,6 @@ CMD_RM ?= rm
 CMD_TAR ?= tar
 CMD_TOUCH ?= touch
 
-.ONESHELL:
 .check_%:
 #
 	@command -v $* >/dev/null
