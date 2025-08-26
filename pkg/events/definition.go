@@ -9,7 +9,7 @@ type Definition struct {
 	docPath      string // Relative to the 'doc/events' directory
 	internal     bool
 	syscall      bool
-	dependencies Dependencies
+	dependencies DependencyStrategy
 	sets         []string
 	fields       []DataField
 	properties   map[string]interface{}
@@ -25,7 +25,7 @@ func NewDefinition(
 	internal bool,
 	syscall bool,
 	sets []string,
-	deps Dependencies,
+	deps DependencyStrategy,
 	fields []DataField,
 	properties map[string]interface{},
 ) Definition {
@@ -79,7 +79,7 @@ func (d Definition) IsSyscall() bool {
 	return d.syscall
 }
 
-func (d Definition) GetDependencies() Dependencies {
+func (d Definition) GetDependencies() DependencyStrategy {
 	return d.dependencies
 }
 

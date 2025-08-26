@@ -1071,7 +1071,7 @@ func BenchmarkDecodeArguments(b *testing.B) {
 		false,
 		false,
 		[]string{},
-		events.Dependencies{},
+		events.DependencyStrategy{},
 		evtFields, // fields
 		nil,
 	)

@@ -14,7 +14,7 @@ func TestPolicyManagerEnableRule(t *testing.T) {
 	t.Parallel()
 
 	depsManager := dependencies.NewDependenciesManager(
-		func(id events.ID) events.Dependencies {
+		func(id events.ID) events.DependencyStrategy {
 			return events.Core.GetDefinitionByID(id).GetDependencies()
 		})
 
@@ -51,7 +51,7 @@ func TestPolicyManagerDisableRule(t *testing.T) {
 	t.Parallel()
 
 	depsManager := dependencies.NewDependenciesManager(
-		func(id events.ID) events.Dependencies {
+		func(id events.ID) events.DependencyStrategy {
 			return events.Core.GetDefinitionByID(id).GetDependencies()
 		})
 
@@ -100,7 +100,7 @@ func TestPolicyManagerEnableAndDisableRuleConcurrent(t *testing.T) {
 	}
 
 	depsManager := dependencies.NewDependenciesManager(
-		func(id events.ID) events.Dependencies {
+		func(id events.ID) events.DependencyStrategy {
 			return events.Core.GetDefinitionByID(id).GetDependencies()
 		})
 
@@ -145,7 +145,7 @@ func TestPolicyManagerEnableEvent(t *testing.T) {
 	t.Parallel()
 
 	depsManager := dependencies.NewDependenciesManager(
-		func(id events.ID) events.Dependencies {
+		func(id events.ID) events.DependencyStrategy {
 			return events.Core.GetDefinitionByID(id).GetDependencies()
 		})
 
@@ -169,7 +169,7 @@ func TestPolicyManagerDisableEvent(t *testing.T) {
 	t.Parallel()
 
 	depsManager := dependencies.NewDependenciesManager(
-		func(id events.ID) events.Dependencies {
+		func(id events.ID) events.DependencyStrategy {
 			return events.Core.GetDefinitionByID(id).GetDependencies()
 		})
 
@@ -212,7 +212,7 @@ func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 	}
 
 	depsManager := dependencies.NewDependenciesManager(
-		func(id events.ID) events.Dependencies {
+		func(id events.ID) events.DependencyStrategy {
 			return events.Core.GetDefinitionByID(id).GetDependencies()
 		})
 
@@ -262,7 +262,7 @@ func TestEnableRuleAlsoEnableEvent(t *testing.T) {
 	t.Parallel()
 
 	depsManager := dependencies.NewDependenciesManager(
-		func(id events.ID) events.Dependencies {
+		func(id events.ID) events.DependencyStrategy {
 			return events.Core.GetDefinitionByID(id).GetDependencies()
 		})
 
@@ -280,7 +280,7 @@ func TestDisableRuleAlsoEnableEvent(t *testing.T) {
 	t.Parallel()
 
 	depsManager := dependencies.NewDependenciesManager(
-		func(id events.ID) events.Dependencies {
+		func(id events.ID) events.DependencyStrategy {
 			return events.Core.GetDefinitionByID(id).GetDependencies()
 		})
 
@@ -298,7 +298,7 @@ func TestPolicyManagerIsEnabled(t *testing.T) {
 	t.Parallel()
 
 	depsManager := dependencies.NewDependenciesManager(
-		func(id events.ID) events.Dependencies {
+		func(id events.ID) events.DependencyStrategy {
 			return events.Core.GetDefinitionByID(id).GetDependencies()
 		})
 

@@ -149,6 +149,11 @@ typedef struct event_context {
     X(TEST_MISSING_KSYMBOLS, )                                                                     \
     X(TEST_FAILED_ATTACH, )                                                                        \
     X(INCOMPATIBLE_PROBE_TEST, )                                                                   \
+    X(INCOMPATIBLE_PROBE_WITH_FALLBACKS_TEST, )                                                    \
+    X(FAILED_EVENT_DEPENDENCY_TEST, )                                                              \
+    X(MULTIPLE_FALLBACKS_TEST, )                                                                   \
+    X(SHARED_PROBE_EVENT_A, )                                                                      \
+    X(SHARED_PROBE_EVENT_B, )                                                                      \
     // ...
 
 #ifndef EXTENDED_BUILD

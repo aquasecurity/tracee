@@ -11,13 +11,13 @@ func TestNewDefinition(t *testing.T) {
 
 	expectedDefinition := Definition{
 		name: "hooked_seq_ops2",
-		dependencies: Dependencies{
+		dependencies: NewDependencyStrategy(Dependencies{
 			ids:          []ID{PrintNetSeqOps, DoInitModule},
 			kSymbols:     []KSymbol{},
 			probes:       []Probe{},
 			tailCalls:    []TailCall{},
 			capabilities: Capabilities{},
-		},
+		}),
 		sets: []string{"signatures"},
 	}
 
@@ -31,13 +31,13 @@ func TestNewDefinition(t *testing.T) {
 		false,
 		false,
 		[]string{"signatures"},
-		NewDependencies(
+		NewDependencyStrategy(NewDependencies(
 			[]ID{PrintNetSeqOps, DoInitModule},
 			[]KSymbol{},
 			[]Probe{},
 			[]TailCall{},
 			Capabilities{},
-		),
+		)),
 		[]DataField{},
 		nil,
 	)
@@ -59,12 +59,12 @@ func TestAdd(t *testing.T) {
 			evt: Definition{
 				id32Bit: ID(6000),
 				name:    "new_event",
-				dependencies: Dependencies{
+				dependencies: NewDependencyStrategy(Dependencies{
 					ids: []ID{
 						PrintNetSeqOps,
 						DoInitModule,
 					},
-				},
+				}),
 				sets: []string{"signatures"},
 			},
 		},
@@ -73,12 +73,12 @@ func TestAdd(t *testing.T) {
 			evt: Definition{
 				id32Bit: ID(700),
 				name:    "new_event",
-				dependencies: Dependencies{
+				dependencies: NewDependencyStrategy(Dependencies{
 					ids: []ID{
 						PrintNetSeqOps,
 						DoInitModule,
 					},
-				},
+				}),
 				sets: []string{"signatures"},
 			},
 			err: "definition id already exists: 700",
@@ -88,12 +88,12 @@ func TestAdd(t *testing.T) {
 			evt: Definition{
 				id32Bit: ID(6001),
 				name:    "net_packet",
-				dependencies: Dependencies{
+				dependencies: NewDependencyStrategy(Dependencies{
 					ids: []ID{
 						PrintNetSeqOps,
 						DoInitModule,
 					},
-				},
+				}),
 				sets: []string{"signatures"},
 			},
 			err: "definition name already exists: net_packet",

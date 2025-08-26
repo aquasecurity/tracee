@@ -42,13 +42,13 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
-					events.NewDependencies(
+					events.NewDependencyStrategy(events.NewDependencies(
 						[]events.ID{events.HookedSyscall},
 						[]events.KSymbol{},
 						[]events.Probe{},
 						[]events.TailCall{},
 						events.Capabilities{},
-					),
+					)),
 					[]events.DataField{},
 					nil,
 				),
@@ -78,13 +78,13 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
-					events.NewDependencies(
+					events.NewDependencyStrategy(events.NewDependencies(
 						[]events.ID{events.Ptrace},
 						[]events.KSymbol{},
 						[]events.Probe{},
 						[]events.TailCall{},
 						events.Capabilities{},
-					),
+					)),
 					[]events.DataField{},
 					nil,
 				),
@@ -98,7 +98,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
-					events.NewDependencies(
+					events.NewDependencyStrategy(events.NewDependencies(
 						[]events.ID{
 							events.SecurityFileOpen,
 							events.SecurityInodeRename,
@@ -107,7 +107,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 						[]events.Probe{},
 						[]events.TailCall{},
 						events.Capabilities{},
-					),
+					)),
 					[]events.DataField{},
 					nil,
 				),
@@ -136,7 +136,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
-					events.NewDependencies(
+					events.NewDependencyStrategy(events.NewDependencies(
 						[]events.ID{
 							events.SchedProcessExec,
 							events.SecuritySocketConnect,
@@ -145,7 +145,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 						[]events.Probe{},
 						[]events.TailCall{},
 						events.Capabilities{},
-					),
+					)),
 					[]events.DataField{},
 					nil,
 				),
@@ -177,7 +177,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 
 				dependencies := eventDefinition.GetDependencies()
 				expDependencies := expected.GetDependencies()
-				assert.ElementsMatch(t, expDependencies.GetIDs(), dependencies.GetIDs())
+				assert.ElementsMatch(t, expDependencies.GetPrimaryDependencies().GetIDs(), dependencies.GetPrimaryDependencies().GetIDs())
 			}
 		})
 	}

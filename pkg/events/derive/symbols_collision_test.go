@@ -500,7 +500,7 @@ func TestSymbolsCollision(t *testing.T) {
 			}
 
 			depsManager := dependencies.NewDependenciesManager(
-				func(id events.ID) events.Dependencies {
+				func(id events.ID) events.DependencyStrategy {
 					return events.Core.GetDefinitionByID(id).GetDependencies()
 				})
 			pManager, err := policy.NewManager(policy.ManagerConfig{}, depsManager, p)
