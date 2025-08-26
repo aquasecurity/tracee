@@ -9,7 +9,7 @@ Tracee uses Go's built-in coverage tools combined with Codecov for comprehensive
 ## Coverage Types
 
 ### 1. Unit Tests Coverage
-- **Target**: 75% overall, 80% for new code
+- **Target**: Maintain current baseline, 60% for new code
 - **Scope**: Core Go logic, utilities, and non-eBPF components
 - **Files**: `cmd/`, `pkg/`, `signatures/`
 - **Command**: `make test-unit`
@@ -59,8 +59,8 @@ Coverage reports are uploaded to [Codecov](https://codecov.io) with the followin
 ### Coverage Configuration
 
 Coverage behavior is configured in `codecov.yml`:
-- Project coverage target: 75%
-- Patch coverage target: 80%
+- Project coverage target: Auto (maintains current baseline)
+- Patch coverage target: 60% for new code
 - Automatic PR comments with coverage diff
 - Excludes test files, generated code, and vendor dependencies
 
