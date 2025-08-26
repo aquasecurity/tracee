@@ -19283,7 +19283,7 @@
 <h2 id="coverage-types">Coverage Types<a class="headerlink" href="#coverage-types" title="Permanent link">&para;</a></h2>
 <h3 id="1-unit-tests-coverage">1. Unit Tests Coverage<a class="headerlink" href="#1-unit-tests-coverage" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Target</strong>: 75% overall, 80% for new code</li>
+<li><strong>Target</strong>: Maintain current baseline, 60% for new code</li>
 <li><strong>Scope</strong>: Core Go logic, utilities, and non-eBPF components</li>
 <li><strong>Files</strong>: <code>cmd/</code>, <code>pkg/</code>, <code>signatures/</code></li>
 <li><strong>Command</strong>: <code>make test-unit</code></li>
@@ -19322,8 +19322,8 @@ go<span class="w"> </span>tool<span class="w"> </span>cover<span class="w"> </sp
 - <code>integration</code>: Integration test coverage</p>
 <h3 id="coverage-configuration">Coverage Configuration<a class="headerlink" href="#coverage-configuration" title="Permanent link">&para;</a></h3>
 <p>Coverage behavior is configured in <code>codecov.yml</code>:
-- Project coverage target: 75%
-- Patch coverage target: 80%
+- Project coverage target: Auto (maintains current baseline)
+- Patch coverage target: 60% for new code
 - Automatic PR comments with coverage diff
 - Excludes test files, generated code, and vendor dependencies</p>
 <h2 id="coverage-files">Coverage Files<a class="headerlink" href="#coverage-files" title="Permanent link">&para;</a></h2>
