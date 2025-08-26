@@ -408,7 +408,6 @@ $(LIBBPF_OBJ): .build_libbpf .build_libbpf_fix
 
 LIBBPF_INCLUDE_UAPI = ./3rdparty/libbpf/include/uapi/linux
 
-.ONESHELL:
 .build_libbpf_fix: .build_libbpf
 # copy all uapi headers to the correct location, since libbpf does not install them fully
 # see: https://github.com/aquasecurity/tracee/pull/4186
@@ -424,7 +423,6 @@ LIBBPF_INCLUDE_UAPI = ./3rdparty/libbpf/include/uapi/linux
 
 TRACEE_EBPF_CFLAGS = $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(CMD_PKGCONFIG) $(PKG_CONFIG_FLAG) --cflags $(LIB_BPF))
 
-.ONESHELL:
 .eval_goenv: $(LIBBPF_OBJ)
 #
 	@{
@@ -1161,7 +1159,6 @@ man: clean-man $(MAN_FILES)
 #
 
 .PHONY: clean
-.ONESHELL:
 clean:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)
