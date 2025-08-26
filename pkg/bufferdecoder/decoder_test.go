@@ -40,8 +40,8 @@ func TestDecodeContext(t *testing.T) {
 		Retval:          0,
 		StackID:         0,
 		ProcessorId:     5,
-		PoliciesVersion: 11,
-		MatchedPolicies: 1917,
+		RulesVersion:    11,
+		MatchedRules:    1917,
 	}
 	err := binary.Write(buf, binary.LittleEndian, eCtxExpected)
 	assert.Equal(t, nil, err)

@@ -2161,7 +2161,6 @@ func TestCreateSinglePolicy(t *testing.T) {
 			},
 			wantPolicy: func() *policy.Policy {
 				p := policy.NewPolicy()
-				p.ID = 1
 				p.Name = "test-policy"
 				p.CommFilter = filters.NewStringFilter(nil)
 				_ = p.CommFilter.Parse("=bash")
@@ -2209,7 +2208,6 @@ func TestCreateSinglePolicy(t *testing.T) {
 			},
 			wantPolicy: func() *policy.Policy {
 				p := policy.NewPolicy()
-				p.ID = 2
 				p.Name = "multi-filter"
 				p.UIDFilter = filters.NewUInt32Filter()
 				_ = p.UIDFilter.Parse("=1000")
@@ -2239,7 +2237,7 @@ func TestCreateSinglePolicy(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := createSinglePolicy(tc.policyIdx, tc.scope, tc.events, tc.newBinary)
+			got, err := createSinglePolicy(tc.scope, tc.events, tc.newBinary)
 
 			if tc.wantErr != nil {
 				require.Error(t, err)

@@ -140,17 +140,26 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
 SEC("raw_tracepoint/sys_enter_submit")
 int sys_enter_submit(struct bpf_raw_tracepoint_args *ctx)
 {
+    uint id = ctx->args[1];
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    if (is_compat(task)) {
+        // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
+        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
+        if (id_64 == 0)
+            return 0;
+
+        id = *id_64;
+    }
+
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
-        return 0;
 
-    syscall_data_t *sys = &p.task_info->syscall_data;
-
-    if (!reset_event(p.event, sys->id))
+    if (!init_program_data(&p, ctx, id))
         return 0;
 
     if (!evaluate_scope_filters(&p))
         goto out;
+
+    syscall_data_t *sys = &p.task_info->syscall_data;
 
     if (p.config->options & OPT_TRANSLATE_FD_FILEPATH && has_syscall_fd_arg(sys->id)) {
         // Process filepath related to fd argument
@@ -265,19 +274,28 @@ int sys_exit_init(struct bpf_raw_tracepoint_args *ctx)
 SEC("raw_tracepoint/sys_exit_submit")
 int sys_exit_submit(struct bpf_raw_tracepoint_args *ctx)
 {
+    struct pt_regs *regs = (struct pt_regs *) ctx->args[0];
+    uint id = get_syscall_id_from_regs(regs);
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    if (is_compat(task)) {
+        // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
+        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
+        if (id_64 == 0)
+            return 0;
+
+        id = *id_64;
+    }
+
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+
+    if (!init_program_data(&p, ctx, id))
         return 0;
-
-    syscall_data_t *sys = &p.task_info->syscall_data;
-
-    if (!reset_event(p.event, sys->id))
-        return 0;
-
-    long ret = ctx->args[1];
 
     if (!evaluate_scope_filters(&p))
         goto out;
+
+    long ret = ctx->args[1];
+    syscall_data_t *sys = &p.task_info->syscall_data;
 
     // exec syscalls are different since the pointers are invalid after a successful exec.
     // we use a special handler (tail called) to only handle failed execs on syscall exit.
@@ -638,8 +656,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     task->context.start_time = child_start_time;
 
     // Track thread stack if needed
-    if (event_is_selected(SUSPICIOUS_SYSCALL_SOURCE, p.event->context.policies_version) ||
-        event_is_selected(STACK_PIVOT, p.event->context.policies_version))
+    if (event_is_selected(SUSPICIOUS_SYSCALL_SOURCE) || event_is_selected(STACK_PIVOT))
         update_thread_stack(ctx, task, child);
 
     // Update the proc_info_map with the new process's info (from parent)
@@ -664,27 +681,6 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 
         c_proc_info->follow_in_scopes = get_scopes_to_follow(&p); // follow task for matched scopes
         c_proc_info->new_proc = true; // started after tracee (new_pid filter)
-    }
-
-    // Update the process tree map (filter related) if the parent has an entry.
-
-    policies_config_t *policies_cfg = &p.event->policies_config;
-
-    if (policies_cfg->proc_tree_filter_enabled) {
-        u16 version = p.event->context.policies_version;
-        // Give the compiler a hint about the map type, otherwise libbpf will complain
-        // about missing type information. i.e.: "can't determine value size for type".
-        process_tree_map_t *inner_proc_tree_map = &process_tree_map;
-
-        inner_proc_tree_map = bpf_map_lookup_elem(&process_tree_map_version, &version);
-        if (inner_proc_tree_map != NULL) {
-            eq_t *tgid_filtered = bpf_map_lookup_elem(inner_proc_tree_map, &parent_pid);
-            if (tgid_filtered) {
-                ret = bpf_map_update_elem(inner_proc_tree_map, &child_pid, tgid_filtered, BPF_ANY);
-                if (ret < 0)
-                    tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_MAP_UPDATE_ELEM, ret);
-            }
-        }
     }
 
     if (!evaluate_scope_filters(&p))
@@ -1547,12 +1543,12 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
         (!(task_flags & PF_KTHREAD) && (p.event->context.syscall < 0)))
         p.event->context.syscall = NO_SYSCALL;
 
-    // evaluate matched_policies before removing this pid from the maps
+    // evaluate active_rules before removing this pid from the maps
     evaluate_scope_filters(&p);
 
     bpf_map_delete_elem(&task_info_map, &p.event->context.task.host_tid);
 
-    if (!policies_matched(p.event))
+    if (!rules_matched(p.event))
         return 0;
 
     bool group_dead = false;
@@ -1596,22 +1592,6 @@ int tracepoint__sched__sched_process_free(struct bpf_raw_tracepoint_args *ctx)
         // if tgid task is freed, we know for sure that the process exited
         // so we can safely remove it from the process map
         bpf_map_delete_elem(&proc_info_map, &tgid);
-
-        u32 zero = 0;
-        config_entry_t *cfg = bpf_map_lookup_elem(&config_map, &zero);
-        if (unlikely(cfg == NULL))
-            return 0;
-
-        // remove it only from the current policies version map
-        u16 version = cfg->policies_version;
-
-        // Give the compiler a hint about the map type, otherwise libbpf will complain
-        // about missing type information. i.e.: "can't determine value size for type".
-        process_tree_map_t *inner_proc_tree_map = &process_tree_map;
-
-        inner_proc_tree_map = bpf_map_lookup_elem(&process_tree_map_version, &version);
-        if (inner_proc_tree_map != NULL)
-            bpf_map_delete_elem(inner_proc_tree_map, &tgid);
     }
 
     return 0;
@@ -2904,7 +2884,7 @@ int BPF_KPROBE(trace_security_socket_accept)
 
     struct pt_regs *task_regs = get_current_task_pt_regs();
 
-    if (event_is_selected(SOCKET_ACCEPT, p.event->context.policies_version)) {
+    if (event_is_selected(SOCKET_ACCEPT)) {
         args_t args = {};
         args.args[0] = (unsigned long) sock;
         args.args[1] = (unsigned long) new_sock;
@@ -3322,7 +3302,7 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
     del_args(event_id);
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, POLICY_SCOPES))
         return 0;
 
     if (!evaluate_scope_filters(&p))
@@ -3386,7 +3366,7 @@ statfunc int capture_file_read(struct pt_regs *ctx, u32 event_id, bool is_buf)
     del_args(event_id);
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, POLICY_SCOPES))
         return 0;
 
     if ((p.config->options & OPT_CAPTURE_FILES_READ) == 0)
@@ -3857,7 +3837,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
             should_extract_code = true;
     }
 
-    if (should_alert && policies_matched(p.event))
+    if (should_alert && rules_matched(p.event))
         submit_mem_prot_alert_event(
             &p.event->args_buf, alert, addr, len, reqprot, prev_prot, file_info);
 
@@ -4083,7 +4063,7 @@ int BPF_KPROBE(trace_security_bpf_prog)
 
     bpf_map_delete_elem(&bpf_attach_tmp_map, &p.event->context.task.host_tid);
 
-    if (event_is_selected(BPF_ATTACH, p.event->context.policies_version))
+    if (event_is_selected(BPF_ATTACH))
         bpf_map_update_elem(&bpf_attach_map, &prog_id, &val, BPF_ANY);
 
     if (!evaluate_scope_filters(&p))
@@ -4267,8 +4247,8 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
     loff_t size = (loff_t) PT_REGS_PARM3(ctx);
     enum kernel_read_file_id type_id = (enum kernel_read_file_id) PT_REGS_PARM4(ctx);
 
-    // Send event if chosen
-    if (policies_matched(p.event)) {
+    // Send event if rules matched
+    if (rules_matched(p.event)) {
         void *file_path = get_path_str(&file->f_path);
         save_str_to_buf(&p.event->args_buf, file_path, 0);
         save_to_submit_buf(&p.event->args_buf, &size, sizeof(loff_t), 1);
@@ -4528,7 +4508,7 @@ int tracepoint__module__module_load(struct bpf_raw_tracepoint_args *ctx)
 
     struct module *mod = (struct module *) ctx->args[0];
 
-    if (event_is_selected(HIDDEN_KERNEL_MODULE_SEEKER, p.event->context.policies_version)) {
+    if (event_is_selected(HIDDEN_KERNEL_MODULE_SEEKER)) {
         u64 insert_time = get_current_time_in_ns();
         kernel_new_mod_t new_mod = {.insert_time = insert_time};
         u64 mod_addr = (u64) mod;
@@ -4576,7 +4556,7 @@ int tracepoint__module__module_free(struct bpf_raw_tracepoint_args *ctx)
 
     struct module *mod = (struct module *) ctx->args[0];
 
-    if (event_is_selected(HIDDEN_KERNEL_MODULE_SEEKER, p.event->context.policies_version)) {
+    if (event_is_selected(HIDDEN_KERNEL_MODULE_SEEKER)) {
         u64 mod_addr = (u64) mod;
         // We must delete before the actual deletion from modules list occurs, otherwise there's a
         // risk of race condition
@@ -5935,8 +5915,8 @@ statfunc u64 sizeof_net_event_context_t(void)
 statfunc void set_net_task_context(event_data_t *event, net_task_context_t *netctx)
 {
     netctx->task = event->task;
-    netctx->policies_version = event->context.policies_version;
-    netctx->matched_policies = event->context.matched_policies;
+    netctx->rules_version = event->context.rules_version; // rules_version is meaningless here since we don't know the event yet
+    netctx->active_rules = event->context.active_rules; // same here
     netctx->syscall = event->context.syscall;
     __builtin_memset(&netctx->taskctx, 0, sizeof(task_context_t));
     __builtin_memcpy(&netctx->taskctx, &event->context.task, sizeof(task_context_t));
@@ -5974,25 +5954,20 @@ statfunc enum event_id_e net_packet_to_net_event(net_packet_t packet_type)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Waddress-of-packed-member"
 
-// Return if a network event should to be sumitted: if any of the policies
-// matched, submit the network event. This means that if any of the policies
+// Return if a network event should to be sumitted: if any of the rules
+// matched, submit the network event. This means that if any of the rules
 // need a network event, kernel can submit the network base event and let
-// userland deal with it (derived events will match the appropriate policies).
+// userland deal with it (derived events will match the appropriate rules).
 statfunc u64 should_submit_net_event(net_event_context_t *neteventctx,
                                      net_packet_t packet_type)
 {
     enum event_id_e evt_id = net_packet_to_net_event(packet_type);
 
-    u16 version = neteventctx->eventctx.policies_version;
-    void *inner_events_map = bpf_map_lookup_elem(&events_map_version, &version);
-    if (inner_events_map == NULL)
-        return 0;
-
-    event_config_t *evt_config = bpf_map_lookup_elem(inner_events_map, &evt_id);
+    event_config_t *evt_config = bpf_map_lookup_elem(&events_config_map, &evt_id);
     if (evt_config == NULL)
         return 0;
 
-    return evt_config->submit_for_policies & neteventctx->eventctx.matched_policies;
+    return evt_config->submit_for_rules & neteventctx->eventctx.active_rules;
 }
 
 #pragma clang diagnostic pop // -Waddress-of-packed-member
@@ -6011,13 +5986,13 @@ statfunc bool should_submit_flow_event(net_event_context_t *neteventctx)
 
     u32 evt_id = NET_FLOW_BASE;
 
-    // Again, if any policy matched, submit the flow base event so other flow
-    // events can be derived in userland and their policies matched in userland.
-    event_config_t *evt_config = bpf_map_lookup_elem(&events_map, &evt_id);
+    // Again, if any rule matched, submit the flow base event so other flow
+    // events can be derived in userland and their rules matched in userland.
+    event_config_t *evt_config = bpf_map_lookup_elem(&events_config_map, &evt_id);
     if (evt_config == NULL)
         return 0;
 
-    u64 should = evt_config->submit_for_policies & neteventctx->eventctx.matched_policies;
+    u64 should = evt_config->submit_for_rules & neteventctx->eventctx.active_rules;
 
     // Cache the result so next time we don't need to check again.
     if (should)
@@ -6116,7 +6091,7 @@ statfunc u32 cgroup_skb_submit(void *map, struct __sk_buff *ctx,
 // Check if a flag is set in the retval.
 #define retval_hasflag(flag) (neteventctx->eventctx.retval & flag) == flag
 
-// Keep track of a flow event if they are enabled and if any policy matched.
+// Keep track of a flow event if they are enabled and if any rule matched.
 // Submit the flow base event so userland can derive the flow events.
 statfunc u32 cgroup_skb_submit_flow(struct __sk_buff *ctx,
                                     net_event_context_t *neteventctx,
@@ -6295,7 +6270,7 @@ int BPF_KRETPROBE(trace_ret_sock_alloc_file)
     // runs every time a socket is created (return)
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, POLICY_SCOPES))
         return 0;
 
     if (!evaluate_scope_filters(&p))
@@ -6440,7 +6415,7 @@ int BPF_KPROBE(trace_security_socket_recvmsg)
         return 0;
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, POLICY_SCOPES))
         return 0;
 
     if (!evaluate_scope_filters(&p))
@@ -6469,7 +6444,7 @@ int BPF_KPROBE(trace_security_socket_sendmsg)
         return 0;
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, POLICY_SCOPES))
         return 0;
 
     if (!evaluate_scope_filters(&p))
@@ -6537,7 +6512,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     program_data_t p = {};
     p.scratch_idx = 1;
     p.event = e;
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, POLICY_SCOPES))
         return 0;
 
     bool mightbecloned = false; // cloned sock structs come from accept()
@@ -6606,8 +6581,8 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     eventctx->eventid = NET_PACKET_IP;                      // will be changed in skb program
     eventctx->stack_id = 0;                                 // no stack trace
     eventctx->processor_id = p.event->context.processor_id; // copy from current ctx
-    eventctx->policies_version = netctx->policies_version;  // pick policies_version from net ctx
-    eventctx->matched_policies = netctx->matched_policies;  // pick matched_policies from net ctx
+    eventctx->rules_version = netctx->rules_version;        // pick rules_version from net ctx
+    eventctx->active_rules = netctx->active_rules;          // pick active_rules from net ctx
     eventctx->syscall = NO_SYSCALL;                         // ingress has no orig syscall
     if (type == BPF_CGROUP_INET_EGRESS)
         eventctx->syscall = netctx->syscall; // egress does have an orig syscall
@@ -7592,16 +7567,11 @@ int tracepoint__exec_test(struct bpf_raw_tracepoint_args *ctx)
     // Submit all test events
     int ret = 0;
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
+    if (!init_program_data(&p, ctx, EXEC_TEST))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
-        return 0;
-
-    if (reset_event(p.event, EXEC_TEST)) {
-        if (evaluate_scope_filters(&p))
-            ret |= events_perf_submit(&p, 0);
-    }
+    if (evaluate_scope_filters(&p))
+        ret |= events_perf_submit(&p, 0);
 
     if (reset_event(p.event, TEST_MISSING_KSYMBOLS)) {
         if (evaluate_scope_filters(&p))

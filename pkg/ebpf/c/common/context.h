@@ -15,7 +15,6 @@ statfunc void init_proc_info_scratch(u32, scratch_t *);
 statfunc proc_info_t *init_proc_info(u32, u32);
 statfunc void init_task_info_scratch(u32, scratch_t *);
 statfunc task_info_t *init_task_info(u32, u32);
-statfunc event_config_t *get_event_config(u32, u16);
 statfunc int init_program_data(program_data_t *, void *, u32);
 statfunc int init_tailcall_program_data(program_data_t *, void *);
 statfunc bool reset_event(event_data_t *, u32);
@@ -103,16 +102,6 @@ statfunc task_info_t *init_task_info(u32 tid, u32 scratch_idx)
     return bpf_map_lookup_elem(&task_info_map, &tid);
 }
 
-statfunc event_config_t *get_event_config(u32 event_id, u16 policies_version)
-{
-    // TODO: we can remove this extra lookup by moving to per event rules_version
-    void *inner_events_map = bpf_map_lookup_elem(&events_map_version, &policies_version);
-    if (inner_events_map == NULL)
-        return NULL;
-
-    return bpf_map_lookup_elem(inner_events_map, &event_id);
-}
-
 // clang-format off
 statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
 {
@@ -182,31 +171,20 @@ statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
         }
     }
 
-    if (unlikely(p->event->context.policies_version != p->config->policies_version)) {
-        // copy policies_config to event data
-        long ret = bpf_probe_read_kernel(
-            &p->event->policies_config, sizeof(policies_config_t), &p->config->policies_config);
-        if (unlikely(ret != 0))
-            return 0;
+    event_config_t *event_config = bpf_map_lookup_elem(&events_config_map, &event_id);
+    if (unlikely(event_config == NULL))
+        return 0;
 
-        p->event->context.policies_version = p->config->policies_version;
-    }
+    // copy event config to event data so we can have a constant event config across the program execution
+    // we do this since event configuration might be updated by userspace
+    long ret = bpf_probe_read_kernel(&p->event->config, sizeof(event_config_t), event_config);
+    if (unlikely(ret != 0))
+        return 0;
 
-    // default to match all policies until an event is selected
-    p->event->config.submit_for_policies = ~0ULL;
+    p->event->context.rules_version = p->event->config.rules_version;
 
-    if (event_id != NO_EVENT_SUBMIT) {
-        p->event->config.submit_for_policies = 0;
-        event_config_t *event_config = get_event_config(event_id, p->event->context.policies_version);
-        if (event_config != NULL) {
-            p->event->config.field_types = event_config->field_types;
-            p->event->config.submit_for_policies = event_config->submit_for_policies;
-            p->event->config.data_filter = event_config->data_filter;
-        }
-    }
-
-    // initialize matched_policies to the policies that actually requested this event
-    p->event->context.matched_policies = p->event->config.submit_for_policies;
+    // initialize active_rules to the rules that actually requested this event
+    p->event->context.active_rules = p->event->config.submit_for_rules;
 
     return 1;
 }
@@ -254,16 +232,17 @@ statfunc bool reset_event(event_data_t *event, u32 event_id)
 {
     event->context.eventid = event_id;
     reset_event_args_buf(event);
-    event->config.submit_for_policies = ~0ULL;
 
-    event_config_t *event_config = get_event_config(event_id, event->context.policies_version);
-    if (event_config == NULL)
+    event_config_t *event_config = bpf_map_lookup_elem(&events_config_map, &event_id);
+    if (unlikely(event_config == NULL))
         return false;
 
-    event->config.field_types = event_config->field_types;
-    event->config.submit_for_policies = event_config->submit_for_policies;
-    event->context.matched_policies = event_config->submit_for_policies;
-    event->config.data_filter = event_config->data_filter;
+    long ret = bpf_probe_read_kernel(&event->config, sizeof(event_config_t), event_config);
+    if (unlikely(ret != 0))
+        return false;
+
+    event->context.rules_version = event->config.rules_version;
+    event->context.active_rules = event->config.submit_for_rules;
 
     return true;
 }

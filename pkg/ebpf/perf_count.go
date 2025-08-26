@@ -29,7 +29,7 @@ func (t *Tracee) countPerfEventSubmissions(ctx context.Context) {
 	}
 
 	evtStatZero := eventStatsValues{}
-	for _, id := range t.policyManager.EventsToSubmit() {
+	for _, id := range t.policyManager.GetSelectedEvents() {
 		if id >= events.MaxCommonID {
 			continue
 		}

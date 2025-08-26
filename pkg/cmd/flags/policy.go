@@ -20,10 +20,6 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeM
 		return nil, nil, errfmt.Errorf("no policies provided")
 	}
 
-	if len(policies) > policy.PolicyMax {
-		return nil, nil, errfmt.Errorf("too many policies provided, there is a limit of %d policies", policy.PolicyMax)
-	}
-
 	policyNames := make(map[string]bool)
 
 	for pIdx, p := range policies {
@@ -111,7 +107,7 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 			return nil, InvalidFlagEmpty()
 		}
 
-		pol, err := createSinglePolicy(policyIdx, policyScope, policyEvents, newBinary)
+		pol, err := createSinglePolicy(policyScope, policyEvents, newBinary)
 		if err != nil {
 			return nil, err
 		}
@@ -121,9 +117,8 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 	return policies, nil
 }
 
-func createSinglePolicy(policyIdx int, policyScope policyScopes, policyEvents policyEvents, newBinary bool) (*policy.Policy, error) {
+func createSinglePolicy(policyScope policyScopes, policyEvents policyEvents, newBinary bool) (*policy.Policy, error) {
 	p := policy.NewPolicy()
-	p.ID = policyIdx
 	p.Name = policyScope.policyName
 
 	if err := parseScopeFilters(p, policyScope.scopeFlags, newBinary); err != nil {
