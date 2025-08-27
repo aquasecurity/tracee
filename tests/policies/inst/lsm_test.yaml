@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: lsm-test
+  annotations:
+    description: test tracee's LSM support
+spec:
+  scope: 
+    - comm=cat
+  rules:
+    - event: LSM_TEST
