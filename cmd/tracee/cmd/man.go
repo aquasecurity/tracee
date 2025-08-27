@@ -168,6 +168,8 @@ func runManForFlag(flagName string) error {
 	manPath, err := exec.LookPath("man")
 	if err != nil {
 		// Fallback: display content directly without man formatting
+		fmt.Println("Note: 'man' command not found - displaying unformatted documentation")
+		fmt.Println()
 		cleanContent := cleanGroffFormatting(string(manContent))
 		fmt.Print(cleanContent)
 		return nil
@@ -188,7 +190,10 @@ func showEventDocumentation(eventName string) error {
 	// Check if event exists first
 	eventID, found := events.Core.GetDefinitionIDByName(eventName)
 	if !found {
-		return errfmt.Errorf("event '%s' not found", eventName)
+		fmt.Printf("Event '%s' not found.\n\n", eventName)
+		fmt.Println("To see all available events, run:")
+		fmt.Println("  tracee list")
+		return nil
 	}
 
 	// Try to use embedded man page
@@ -204,14 +209,18 @@ func showEventDocumentation(eventName string) error {
 	fmt.Printf("ID: %d\n", definition.GetID())
 	if definition.IsSyscall() {
 		fmt.Println("Type: System call")
+		fmt.Printf("\nFor detailed documentation about the '%s' system call, run:\n", definition.GetName())
+		fmt.Printf("  man 2 %s\n", definition.GetName())
 	} else if definition.IsSignature() {
 		fmt.Println("Type: Security signature")
+		fmt.Println("\nNo detailed documentation available for this event.")
 	} else if definition.IsNetwork() {
 		fmt.Println("Type: Network event")
+		fmt.Println("\nNo detailed documentation available for this event.")
 	} else {
 		fmt.Println("Type: Built-in event")
+		fmt.Println("\nNo detailed documentation available for this event.")
 	}
-	fmt.Println("\nNo detailed documentation available for this event.")
 	return nil
 }
 
@@ -221,6 +230,8 @@ func displayManPage(manContent []byte, name string) error {
 	manPath, err := exec.LookPath("man")
 	if err != nil {
 		// Fallback: display content directly without man formatting
+		fmt.Println("Note: 'man' command not found - displaying unformatted documentation")
+		fmt.Println()
 		cleanContent := cleanGroffFormatting(string(manContent))
 		fmt.Print(cleanContent)
 		return nil

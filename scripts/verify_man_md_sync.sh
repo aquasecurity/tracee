@@ -102,18 +102,7 @@ flags_md_files=$(git_changed_files "$BASE_REF" "$TARGET_REF" 'docs/docs/flags/*.
 events_md_files=$(git_changed_files "$BASE_REF" "$TARGET_REF" 'docs/docs/events/builtin/man/**/*.md') || die "Failed to get events md changed files"
 man_files=$(git_changed_files "$BASE_REF" "$TARGET_REF" 'docs/man/*.1') || die "Failed to get man changed files"
 
-# Combine flags and events md files
-md_files="$flags_md_files"
-if [ -n "$events_md_files" ]; then
-    if [ -n "$md_files" ]; then
-        md_files="$md_files
-$events_md_files"
-    else
-        md_files="$events_md_files"
-    fi
-fi
-
-if [ -z "$md_files" ]; then
+if [ -z "$flags_md_files" ] && [ -z "$events_md_files" ]; then
     info "No changes in '.md' or '.1.md' files"
 else
     info "Found changes in '.md' or '.1.md' files"
@@ -128,16 +117,7 @@ else
         events_basenames=$(basename_strip_ext "$events_md_files" 'md') || die "Failed to get events basenames"
     fi
 
-    # Combine all basenames
-    md_basenames="$flags_basenames"
-    if [ -n "$events_basenames" ]; then
-        if [ -n "$md_basenames" ]; then
-            md_basenames="$md_basenames
-$events_basenames"
-        else
-            md_basenames="$events_basenames"
-        fi
-    fi
+    md_basenames="${flags_basenames}${flags_basenames:+ }${events_basenames}"
 fi
 
 if [ -z "$man_files" ]; then
