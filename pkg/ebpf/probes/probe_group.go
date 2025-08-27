@@ -59,6 +59,9 @@ func (p *ProbeGroup) GetProbeType(handle Handle) ProbeType {
 		if probe, ok := r.(*TraceProbe); ok {
 			return probe.probeType
 		}
+		if probe, ok := r.(*LsmProgramProbe); ok {
+			return probe.GetProbeType()
+		}
 	}
 
 	return InvalidProbeType

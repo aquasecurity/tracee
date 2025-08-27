@@ -7,7 +7,7 @@ toolchain go1.24.2
 require (
 	github.com/IBM/fluent-forward-go v0.3.0
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/aquasecurity/libbpfgo v0.9.2-libbpf-1.5.1.0.20250826130354-1b9ce23ef29b
+	github.com/aquasecurity/libbpfgo v0.9.2-libbpf-1.5.1.0.20250826165200-6296a7fa0a45
 	github.com/aquasecurity/tracee/api v0.0.0-20250423121028-213b81a1b8f5
 	github.com/aquasecurity/tracee/common v0.0.0-20250902170041-945d17d40601
 	github.com/aquasecurity/tracee/types v0.0.0-20250902170041-945d17d40601
@@ -22,7 +22,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	github.com/urfave/cli/v2 v2.27.6
 	go.uber.org/goleak v1.3.0
 	golang.org/x/sys v0.33.0
