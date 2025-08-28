@@ -9,7 +9,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/aquasecurity/libbpfgo v0.9.2-libbpf-1.5.1.0.20250826130354-1b9ce23ef29b
 	github.com/aquasecurity/tracee/api v0.0.0-20250423121028-213b81a1b8f5
-	github.com/aquasecurity/tracee/common v0.0.0
+	github.com/aquasecurity/tracee/common v0.0.0-20250828135752-e06d71e93c1d
 	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20250423143044-dcfcaf219805
 	github.com/aquasecurity/tracee/types v0.0.0-20250624132442-3fa6c15acc67
 	github.com/containerd/containerd v1.7.27
@@ -170,5 +170,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.76 // indirect
 )
-
-replace github.com/aquasecurity/tracee/common => ./common
