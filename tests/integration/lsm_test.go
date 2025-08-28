@@ -2,11 +2,13 @@ package integration
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
-	bpf "github.com/aquasecurity/libbpfgo"
 	"go.uber.org/goleak"
+
+	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -212,8 +214,34 @@ func createLsmTestConfig() (config.Config, error) {
 
 // isLsmSupported checks if the current kernel supports LSM BPF programs
 func isLsmSupported() bool {
-	// Use libbpf to directly check if BPF_PROG_TYPE_LSM is supported
+	// Check if BPF_PROG_TYPE_LSM is supported
 	supported, err := bpf.BPFProgramTypeIsSupported(bpf.BPFProgTypeLsm)
+	if err != nil {
+		return false
+	}
+	if !supported {
+		return false
+	}
+
+	// Check if LSM is supported
+	supported, err = environment.CheckLSMSupport(os.DirFS("/"), func(option environment.KernelConfigOption) (environment.KernelConfigOptionValue, string, error) {
+		kernelConfig, err := environment.InitKernelConfig()
+		if err != nil {
+			return environment.UNDEFINED, "", err
+		}
+		if err := kernelConfig.LoadKernelConfig(); err != nil {
+			return environment.UNDEFINED, "", err
+		}
+		value := kernelConfig.GetValue(option)
+		if value == environment.STRING {
+			strValue, err := kernelConfig.GetValueString(option)
+			if err != nil {
+				return environment.UNDEFINED, "", err
+			}
+			return environment.STRING, strValue, nil
+		}
+		return value, value.String(), nil
+	})
 	if err != nil {
 		return false
 	}

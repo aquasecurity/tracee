@@ -7623,15 +7623,12 @@ int tracepoint__exec_test(struct bpf_raw_tracepoint_args *ctx)
 
 SEC("lsm/file_open")
 int BPF_PROG(lsm_file_open_test, struct file *file, const struct cred *cred)
-{
-    program_data_t p = {};
+{    program_data_t p = {};
     if (!init_program_data(&p, ctx, LSM_TEST))
         return 0;
 
     if (!evaluate_scope_filters(&p))
         return 0;
-
-    bpf_printk("events_perf_submit\n");
 
     // Submit the event for monitoring but always allow the operation
     events_perf_submit(&p, 0);
