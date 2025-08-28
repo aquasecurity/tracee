@@ -3,7 +3,7 @@ package metrics
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/aquasecurity/tracee/pkg/counter"
+	"github.com/aquasecurity/tracee/common/counter"
 )
 
 // When updating this struct, please make sure to update the relevant exporting functions

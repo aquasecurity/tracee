@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aquasecurity/tracee/common/changelog"
 	"github.com/aquasecurity/tracee/common/timeutil"
-	"github.com/aquasecurity/tracee/pkg/changelog"
 )
 
 // TaskInfoFeed allows external packages to set/get multiple values of a task at once.

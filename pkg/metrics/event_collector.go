@@ -5,8 +5,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/aquasecurity/tracee/common/counter"
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/counter"
 	"github.com/aquasecurity/tracee/pkg/events"
 )
 

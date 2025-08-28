@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/aquasecurity/tracee/common/counter"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/counter"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/types/trace"
 )
