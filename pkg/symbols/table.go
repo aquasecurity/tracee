@@ -1,9 +1,11 @@
-package common
+package symbols
 
 import (
 	"errors"
 	"sort"
 	"sync"
+
+	"github.com/aquasecurity/tracee/common/interfaces"
 )
 
 // The Symbol interface defines what is needed from a symbol implementation in
@@ -18,7 +20,7 @@ type Symbol[T any] interface {
 	// Contains returns whether a given address belongs to the symbol's
 	// address range, which is defined by the symbol's implementation
 	Contains(address uint64) bool
-	Cloner[T]
+	interfaces.Cloner[T]
 }
 
 // SymbolTable is used to hold information about symbols (mapping from symbolic

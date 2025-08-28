@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/fileutil"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
@@ -69,7 +69,7 @@ func (r Runner) Run(ctx context.Context) error {
 	if err := os.MkdirAll(r.InstallPath, 0755); err != nil {
 		return errfmt.Errorf("could not create install path dir: %v", err)
 	}
-	installPathDir, err := common.OpenExistingDir(r.InstallPath)
+	installPathDir, err := fileutil.OpenExistingDir(r.InstallPath)
 	if err != nil {
 		return errfmt.Errorf("error initializing Tracee: error opening installation path: %v", err)
 	}
@@ -156,7 +156,7 @@ const pidFileName = "tracee.pid"
 
 // Initialize PID file
 func writePidFile(dir *os.File) error {
-	pidFile, err := common.OpenAt(dir, pidFileName, syscall.O_WRONLY|syscall.O_CREAT, 0640)
+	pidFile, err := fileutil.OpenAt(dir, pidFileName, syscall.O_WRONLY|syscall.O_CREAT, 0640)
 	if err != nil {
 		return errfmt.Errorf("error creating readiness file: %v", err)
 	}
@@ -171,7 +171,7 @@ func writePidFile(dir *os.File) error {
 
 // Remove PID file
 func removePidFile(dir *os.File) error {
-	if err := common.RemoveAt(dir, pidFileName, 0); err != nil {
+	if err := fileutil.RemoveAt(dir, pidFileName, 0); err != nil {
 		return errfmt.Errorf("%v", err)
 	}
 

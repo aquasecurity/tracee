@@ -11,10 +11,10 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/counter"
 	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -76,7 +76,7 @@ func FtraceHookEvent(eventsCounter *counter.Counter, out chan *trace.Event, base
 
 		select {
 		case <-FtraceWakeupChan:
-		case <-time.After(common.GenerateRandomDuration(10, 300)):
+		case <-time.After(timeutil.GenerateRandomDuration(10, 300)):
 		}
 	}
 }

@@ -4,8 +4,8 @@ import (
 	gocontext "context"
 	"time"
 
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
 )
@@ -84,7 +84,7 @@ func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
 			case <-ctx.Done():
 				return
 
-			case <-time.After(common.GenerateRandomDuration(10, 300)):
+			case <-time.After(timeutil.GenerateRandomDuration(10, 300)):
 				run = true // Run from time to time.
 
 			case scanReq := <-wakeupChan:

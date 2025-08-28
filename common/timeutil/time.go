@@ -6,6 +6,8 @@ package timeutil
 import "C"
 
 import (
+	"math"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -14,7 +16,6 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/logger"
 )
 
@@ -30,7 +31,7 @@ func GetSystemHZ() int {
 			time.Sleep(time.Second)
 			jiffiesEnd := getBootTimeInJiffies()
 			inferredHz := jiffiesEnd - jiffiesStart
-			configHZ = common.RoundToClosestN(int(inferredHz), 50) // round to closest 50Hz (100, 150,...)
+			configHZ = roundToClosestN(int(inferredHz), 50) // round to closest 50Hz (100, 150,...)
 		},
 	)
 	return configHZ // CONFIG_HZ
@@ -187,4 +188,14 @@ func NsSinceBootTimeToTime(ns uint64) time.Time {
 
 func NsSinceEpochToTime(ns uint64) time.Time {
 	return time.Unix(0, int64(ns))
+}
+
+// roundToClosestN rounds a number to the closest multiple of n.
+func roundToClosestN(val int, n int) int {
+	return int(math.Round(float64(val)/float64(n))) * n
+}
+
+// GenerateRandomDuration returns a random duration between min and max, inclusive
+func GenerateRandomDuration(min, max int) time.Duration {
+	return time.Duration(rand.Intn(max-min+1)+min) * time.Second
 }

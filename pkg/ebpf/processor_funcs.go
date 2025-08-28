@@ -10,15 +10,16 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/capabilities"
-	"github.com/aquasecurity/tracee/common/environment"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/filehash"
+	"github.com/aquasecurity/tracee/common/fileutil"
 	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/common/stringutil"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/symbols"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -155,7 +156,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 			// capture exec'ed files ?
 			if t.config.Capture.Exec {
 				destinationDirPath := containerId
-				if err := common.MkdirAtExist(t.OutDir, destinationDirPath, 0755); err != nil {
+				if err := fileutil.MkdirAtExist(t.OutDir, destinationDirPath, 0755); err != nil {
 					return errfmt.WrapError(err)
 				}
 				destinationFilePath := filepath.Join(
@@ -172,7 +173,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 					// capture (SchedProcessExec sets base capabilities to have cap.SYS_PTRACE set.
 					// This is needed at this point because raising and dropping capabilities too
 					// frequently would have a big performance impact)
-					err := common.CopyRegularFileByRelativePath(
+					err := fileutil.CopyRegularFileByRelativePath(
 						sourceFilePath,
 						t.OutDir,
 						destinationFilePath,
@@ -231,7 +232,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 
 	err := capabilities.GetInstance().EBPF(
 		func() error {
-			newKernelSymbols, err := environment.NewKernelSymbolTable(true, true, t.requiredKsyms...)
+			newKernelSymbols, err := symbols.NewKernelSymbolTable(true, true, t.requiredKsyms...)
 			if err != nil {
 				return errfmt.WrapError(err)
 			}
@@ -332,7 +333,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	if err := unix.Uname(&utsName); err != nil {
 		return errfmt.WrapError(err)
 	}
-	arch = string(common.TrimTrailingNUL(utsName.Machine[:]))
+	arch = string(stringutil.TrimTrailingNUL(utsName.Machine[:]))
 	err = events.SetArgValue(event, "arch", arch)
 	if err != nil {
 		return err

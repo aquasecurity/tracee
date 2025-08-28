@@ -16,13 +16,13 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/bitwise"
 	"github.com/aquasecurity/tracee/common/bucketcache"
 	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/cgroup"
-	"github.com/aquasecurity/tracee/common/environment"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/filehash"
+	"github.com/aquasecurity/tracee/common/fileutil"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/proc"
 	"github.com/aquasecurity/tracee/common/timeutil"
@@ -46,6 +46,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/streams"
+	"github.com/aquasecurity/tracee/pkg/symbols"
 	"github.com/aquasecurity/tracee/pkg/version"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -122,9 +123,9 @@ type Tracee struct {
 	policyManager *policy.Manager
 	// The dependencies of events used by Tracee
 	eventsDependencies *dependencies.Manager
-	// A reference to a environment.KernelSymbolTable that might change at runtime.
+	// A reference to a symbols.KernelSymbolTable that might change at runtime.
 	// This should only be accessed using t.getKernelSymbols() and t.setKernelSymbols()
-	kernelSymbols atomic.Pointer[environment.KernelSymbolTable]
+	kernelSymbols atomic.Pointer[symbols.KernelSymbolTable]
 	// Ksymbols needed to be kept alive in table.
 	// This does not mean they are required for tracee to function.
 	// TODO: remove this in favor of dependency manager nodes
@@ -139,11 +140,11 @@ func (t *Tracee) Engine() *engine.Engine {
 	return t.sigEngine
 }
 
-func (t *Tracee) getKernelSymbols() *environment.KernelSymbolTable {
+func (t *Tracee) getKernelSymbols() *symbols.KernelSymbolTable {
 	return t.kernelSymbols.Load()
 }
 
-func (t *Tracee) setKernelSymbols(kernelSymbols *environment.KernelSymbolTable) {
+func (t *Tracee) setKernelSymbols(kernelSymbols *symbols.KernelSymbolTable) {
 	t.kernelSymbols.Store(kernelSymbols)
 }
 
@@ -374,7 +375,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	err = capabilities.GetInstance().Specific(
 		func() error {
 			// t.requiredKsyms may contain non-data symbols, but it doesn't affect the validity of this call
-			kernelSymbols, err := environment.NewKernelSymbolTable(true, true, t.requiredKsyms...)
+			kernelSymbols, err := symbols.NewKernelSymbolTable(true, true, t.requiredKsyms...)
 			if err != nil {
 				return err
 			}
@@ -492,7 +493,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.Errorf("error creating output path: %v", err)
 	}
 
-	t.OutDir, err = common.OpenExistingDir(t.config.Capture.OutputPath)
+	t.OutDir, err = fileutil.OpenExistingDir(t.config.Capture.OutputPath)
 	if err != nil {
 		t.Close()
 		return errfmt.Errorf("error opening out directory: %v", err)
@@ -928,7 +929,7 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 }
 
 // getUnavailbaleKsymbols return all kernel symbols missing from given symbols
-func getUnavailbaleKsymbols(ksymbols []events.KSymbol, kernelSymbols *environment.KernelSymbolTable) []events.KSymbol {
+func getUnavailbaleKsymbols(ksymbols []events.KSymbol, kernelSymbols *symbols.KernelSymbolTable) []events.KSymbol {
 	var unavailableSymbols []events.KSymbol
 
 	for _, ksymbol := range ksymbols {
@@ -1662,7 +1663,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 }
 
 func updateCaptureMapFile(fileDir *os.File, filePath string, capturedFiles map[string]string, cfg config.FileCaptureConfig) error {
-	f, err := common.OpenAt(fileDir, filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := fileutil.OpenAt(fileDir, filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return errfmt.Errorf("error logging captured files")
 	}
@@ -1739,7 +1740,7 @@ func (t *Tracee) Running() bool {
 }
 
 func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
-	f, err := common.OpenAt(t.OutDir, fileName, os.O_RDONLY, 0)
+	f, err := fileutil.OpenAt(t.OutDir, fileName, os.O_RDONLY, 0)
 	if err != nil {
 		return "", errfmt.WrapError(err)
 	}
@@ -2095,7 +2096,7 @@ func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
 		if err != nil {
 			return nil, err
 		}
-		common.SetBit(&policyMask, uint(p.ID))
+		bitwise.SetBit(&policyMask, uint(p.ID))
 	}
 
 	return t.subscribe(policyMask), nil
