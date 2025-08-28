@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/changelog"
+	"github.com/aquasecurity/tracee/common/changelog"
 )
 
 // FileInfoFeed allows external packages to set/get multiple values of a task at once.

@@ -13,13 +13,14 @@ This module serves as a foundation layer that provides:
 ## Design Principles
 
 ### Self-Contained
-The common module should be completely self-contained and not depend on any external, non-standard packages. It should only import from Go's standard library.
+The common module should be self-contained and not depend on other Tracee modules or packages. External dependencies are limited to well-established, minimal libraries that provide essential functionality.
 
 ### No Business Logic
 This module **must not** contain any business logic specific to Tracee's core functionality. It should only provide generic utilities and types that could potentially be useful in other contexts.
 
 ### Minimal Dependencies
-- Only Go standard library packages are allowed as dependencies
+- Primarily uses Go standard library packages
+- External dependencies are limited to well-established, minimal libraries (e.g., optimized hashing, LRU caches, structured logging, system interfaces)
 - No dependencies on other Tracee modules or packages
 
 ## Usage
@@ -28,6 +29,33 @@ This module **must not** contain any business logic specific to Tracee's core fu
 ```go
 import "github.com/aquasecurity/tracee/common"
 ```
+
+## Packages
+
+### Data Structures & Utilities
+- **`bucketcache`** - Bucket-based caching system for efficient memory-aware data storage
+- **`changelog`** - Time-ordered generic changelog data structure for tracking changes over time
+- **`counter`** - Thread-safe atomic counter with overflow/underflow protection
+- **`set`** - Generic set data structures for efficient collection operations
+
+### System Integration
+- **`capabilities`** - Linux capabilities handling and management for process permissions
+- **`cgroup`** - Control group utilities for container and process resource management
+- **`environment`** - System environment detection (kernel version, OS info, CPU/memory details)
+- **`mount`** - Mount point utilities for filesystem and container mount management
+- **`proc`** - `/proc` filesystem utilities for process and system information extraction
+- **`system`** - System monitoring utilities for resource and performance tracking
+
+### File & Binary Analysis
+- **`elf`** - ELF file analysis and symbol extraction utilities
+- **`filehash`** - File hashing with caching for efficient content verification
+- **`sharedobjs`** - Shared object and library handling for dynamic loading and symbol resolution
+
+### I/O & Utilities
+- **`errfmt`** - Error formatting utilities for consistent error handling and display
+- **`logger`** - Structured logging interface with filtering and formatting capabilities
+- **`read`** - Protected file reading utilities with safety checks and error handling
+- **`timeutil`** - Time-related utilities for timestamp handling and time operations
 
 ## What Belongs Here
 
