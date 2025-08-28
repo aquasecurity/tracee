@@ -175,4 +175,5 @@ const (
 	ExecTest
 	EmptyKprobe
 	IncompatibleProbe
+	LsmTest
 )

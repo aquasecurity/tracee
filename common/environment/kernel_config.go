@@ -87,6 +87,7 @@ const (
 	CONFIG_BPF_LSM
 	CONFIG_BPF_PRELOAD
 	CONFIG_BPF_PRELOAD_UMD
+	CONFIG_LSM
 	CUSTOM_OPTION_START KernelConfigOption = 1000
 )
 
@@ -129,6 +130,7 @@ var kernelConfigKeyStringToID = map[string]KernelConfigOption{
 	"CONFIG_BPF_LSM":                  CONFIG_BPF_LSM,
 	"CONFIG_BPF_PRELOAD":              CONFIG_BPF_PRELOAD,
 	"CONFIG_BPF_PRELOAD_UMD":          CONFIG_BPF_PRELOAD_UMD,
+	"CONFIG_LSM":                      CONFIG_LSM,
 }
 
 var kernelConfigKeyIDToString = map[KernelConfigOption]string{
@@ -170,6 +172,7 @@ var kernelConfigKeyIDToString = map[KernelConfigOption]string{
 	CONFIG_BPF_LSM:                  "CONFIG_BPF_LSM",
 	CONFIG_BPF_PRELOAD:              "CONFIG_BPF_PRELOAD",
 	CONFIG_BPF_PRELOAD_UMD:          "CONFIG_BPF_PRELOAD_UMD",
+	CONFIG_LSM:                      "CONFIG_LSM",
 }
 
 // KernelConfig is a set of kernel configuration options (currently for running OS only)

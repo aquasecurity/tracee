@@ -59,6 +59,9 @@ func (p *ProbeGroup) GetProbeType(handle Handle) ProbeType {
 		if probe, ok := r.(*TraceProbe); ok {
 			return probe.probeType
 		}
+		if probe, ok := r.(*LsmProgramProbe); ok {
+			return probe.GetProbeType()
+		}
 	}
 
 	return InvalidProbeType
@@ -286,6 +289,7 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 		IncompatibleProbe: NewTraceProbeWithCompatibility(KProbe, "security_bprm_check", "empty_kprobe", NewProbeCompatibility(
 			NewKernelVersionRequirement("", "", "0.0.0"), // Requires kernel up to 0.0.0, so kernel version is always incompatible
 		)),
+		LsmTest: NewLsmProgramProbe("file_open", "lsm_file_open_test"),
 	}
 
 	if !netEnabled {
