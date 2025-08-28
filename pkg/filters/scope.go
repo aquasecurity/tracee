@@ -1,8 +1,8 @@
 package filters
 
 import (
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/interfaces"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -35,7 +35,7 @@ type ScopeFilter struct {
 }
 
 // Compile-time check to ensure that ScopeFilter implements the Cloner interface
-var _ common.Cloner[*ScopeFilter] = &ScopeFilter{}
+var _ interfaces.Cloner[*ScopeFilter] = &ScopeFilter{}
 
 func NewScopeFilter() *ScopeFilter {
 	return &ScopeFilter{

@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 
-	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/bitwise"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
@@ -2431,7 +2431,7 @@ func orPolIDs(policies ...uint) uint64 {
 	var res uint64
 
 	for _, pol := range policies {
-		common.SetBit(&res, pol-1)
+		bitwise.SetBit(&res, pol-1)
 	}
 
 	return res

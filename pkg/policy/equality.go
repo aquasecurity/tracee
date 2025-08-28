@@ -3,7 +3,7 @@ package policy
 import (
 	"strings"
 
-	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/bitwise"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/filters"
@@ -50,15 +50,15 @@ type equalityUpdater func(eq *equality, policyID uint)
 // notEqualUpdate updates the equality as not equal with the given policyID.
 func notEqualUpdate(eq *equality, policyID uint) {
 	// NotEqual == 0, so clear n bitmap bit
-	common.ClearBit(&eq.equalsInPolicies, policyID)
-	common.SetBit(&eq.keyUsedInPolicies, policyID)
+	bitwise.ClearBit(&eq.equalsInPolicies, policyID)
+	bitwise.SetBit(&eq.keyUsedInPolicies, policyID)
 }
 
 // equalUpdate updates the equality as equal with the given policyID.
 func equalUpdate(eq *equality, policyID uint) {
 	// Equal == 1, so set n bitmap bit
-	common.SetBit(&eq.equalsInPolicies, policyID)
-	common.SetBit(&eq.keyUsedInPolicies, policyID)
+	bitwise.SetBit(&eq.equalsInPolicies, policyID)
+	bitwise.SetBit(&eq.keyUsedInPolicies, policyID)
 }
 
 // updateEqualities updates the equalities map with the given filter equalities

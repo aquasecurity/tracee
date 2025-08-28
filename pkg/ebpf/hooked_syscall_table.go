@@ -10,10 +10,10 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/environment"
 	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
 )
@@ -66,7 +66,7 @@ func (t *Tracee) hookedSyscallTableRoutine(ctx gocontext.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(common.GenerateRandomDuration(10, 300)):
+		case <-time.After(timeutil.GenerateRandomDuration(10, 300)):
 			t.triggerSyscallTableIntegrityCheckCall()
 		}
 	}

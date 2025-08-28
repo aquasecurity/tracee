@@ -3,7 +3,8 @@ package policy
 import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/bitwise"
+	"github.com/aquasecurity/tracee/common/interfaces"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
@@ -59,7 +60,7 @@ func NewPolicies() *policies {
 }
 
 // Compile-time check to ensure that Policies implements the Cloner interface
-var _ common.Cloner[*policies] = &policies{}
+var _ interfaces.Cloner[*policies] = &policies{}
 
 func (ps *policies) count() int {
 	return len(ps.policiesMapByID)
@@ -184,7 +185,7 @@ func (ps *policies) matchedNames(matched uint64) []string {
 	names := []string{}
 
 	for _, p := range ps.allFromMap() {
-		if common.HasBit(matched, uint(p.ID)) {
+		if bitwise.HasBit(matched, uint(p.ID)) {
 			names = append(names, p.Name)
 		}
 	}

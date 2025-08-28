@@ -5,9 +5,9 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/interfaces"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/containers"
@@ -542,7 +542,7 @@ func (m *Manager) IsEventToSubmit(id events.ID) bool {
 // Some are transitive (tidying), some are not.
 //
 
-func (m *Manager) CreateUserlandIterator() common.Iterator[*Policy] {
+func (m *Manager) CreateUserlandIterator() interfaces.Iterator[*Policy] {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -552,7 +552,7 @@ func (m *Manager) CreateUserlandIterator() common.Iterator[*Policy] {
 	return m.ps.createUserlandIterator()
 }
 
-func (m *Manager) CreateAllIterator() common.Iterator[*Policy] {
+func (m *Manager) CreateAllIterator() interfaces.Iterator[*Policy] {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 

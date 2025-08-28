@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/hash"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/proc"
 	"github.com/aquasecurity/tracee/common/timeutil"
@@ -111,9 +111,9 @@ func getProcessByPID(pt *ProcessTree, givenPid int32) (*Process, error) {
 	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(statStartTime)
 	// process hash (using epoch time for consistency with kernel signals)
 	epochTimeNs := timeutil.BootToEpochNS(startTimeNs)
-	hash := common.HashTaskID(uint32(givenPid), epochTimeNs)
+	processHash := hash.HashTaskID(uint32(givenPid), epochTimeNs)
 
-	return pt.GetOrCreateProcessByHash(hash), nil
+	return pt.GetOrCreateProcessByHash(processHash), nil
 }
 
 // dealWithProc deals with a process from procfs.
@@ -162,10 +162,10 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(start)
 	// process hash (using epoch time for consistency with kernel signals)
 	epochTimeNs := timeutil.BootToEpochNS(startTimeNs)
-	hash := common.HashTaskID(uint32(pid), epochTimeNs)
+	processHash := hash.HashTaskID(uint32(pid), epochTimeNs)
 
 	// update tree for the given process
-	process := pt.GetOrCreateProcessByHash(hash)
+	process := pt.GetOrCreateProcessByHash(processHash)
 	procInfo := process.GetInfo()
 
 	// check if the process info was already set (proctree might miss ppid and name)
@@ -208,7 +208,7 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 	parent, err := getProcessByPID(pt, ppid)
 	if err == nil {
 		parentHash := parent.GetHash()
-		pt.AddChildToProcess(parentHash, hash)
+		pt.AddChildToProcess(parentHash, processHash)
 		process.SetParentHash(parentHash)
 	}
 
@@ -255,10 +255,10 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(start)
 	// thread hash (using epoch time for consistency with kernel signals)
 	epochTimeNs := timeutil.BootToEpochNS(startTimeNs)
-	hash := common.HashTaskID(uint32(pid), epochTimeNs)
+	threadHash := hash.HashTaskID(uint32(pid), epochTimeNs)
 
 	// update tree for the given thread
-	thread := pt.GetOrCreateThreadByHash(hash)
+	thread := pt.GetOrCreateThreadByHash(threadHash)
 	threadInfo := thread.GetInfo()
 
 	// check if the thread info was already set (proctree might miss ppid and name)
@@ -295,7 +295,7 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 
 	leader, err := getProcessByPID(pt, tgid)
 	if err == nil {
-		pt.AddThreadToProcess(leader.GetHash(), hash) // threads associated with the leader (not parent)
+		pt.AddThreadToProcess(leader.GetHash(), threadHash) // threads associated with the leader (not parent)
 		leaderHash := leader.GetHash()
 		thread.SetLeaderHash(leaderHash) // same
 	}

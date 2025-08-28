@@ -8,7 +8,7 @@ import (
 	"golang.org/x/exp/constraints"
 	"golang.org/x/exp/maps"
 
-	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/interfaces"
 )
 
 // NumericConstraint defines the constraint for numeric types that can be filtered
@@ -29,7 +29,7 @@ type NumericFilter[T NumericConstraint] struct {
 }
 
 // Compile-time check to ensure NumericFilter implements the Cloner interface
-var _ common.Cloner[*NumericFilter[int64]] = &NumericFilter[int64]{}
+var _ interfaces.Cloner[*NumericFilter[int64]] = &NumericFilter[int64]{}
 
 // GetUnsetMin returns the "unset" minimum value for numeric type T.
 // For unsigned types, this is the maximum value (indicating no minimum constraint).

@@ -5,7 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/hash"
+	"github.com/aquasecurity/tracee/common/stringutil"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -86,8 +87,8 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 				evt.UserID = int(ctx.Uid)
 				evt.MountNS = int(ctx.MntID)
 				evt.PIDNS = int(ctx.PidID)
-				evt.ProcessName = string(common.TrimTrailingNUL(ctx.Comm[:]))
-				evt.HostName = string(common.TrimTrailingNUL(ctx.UtsName[:]))
+				evt.ProcessName = string(stringutil.TrimTrailingNUL(ctx.Comm[:]))
+				evt.HostName = string(stringutil.TrimTrailingNUL(ctx.UtsName[:]))
 				evt.CgroupID = uint(ctx.CgroupID)
 				evt.ContainerID = containerData.ID
 				evt.Container = containerData
@@ -105,9 +106,9 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 				evt.ContextFlags = flags
 				evt.Syscall = syscall
 				evt.Metadata = nil
-				evt.ThreadEntityId = common.HashTaskID(ctx.HostTid, ctx.StartTime)
-				evt.ProcessEntityId = common.HashTaskID(ctx.HostPid, ctx.LeaderStartTime)
-				evt.ParentEntityId = common.HashTaskID(ctx.HostPpid, ctx.ParentStartTime)
+				evt.ThreadEntityId = hash.HashTaskID(ctx.HostTid, ctx.StartTime)
+				evt.ProcessEntityId = hash.HashTaskID(ctx.HostPid, ctx.LeaderStartTime)
+				evt.ParentEntityId = hash.HashTaskID(ctx.HostPpid, ctx.ParentStartTime)
 
 				processChan <- evt
 			}
@@ -246,8 +247,8 @@ func BenchmarkNewEventObject(b *testing.B) {
 					UserID:                int(ctx.Uid),
 					MountNS:               int(ctx.MntID),
 					PIDNS:                 int(ctx.PidID),
-					ProcessName:           string(common.TrimTrailingNUL(ctx.Comm[:])),
-					HostName:              string(common.TrimTrailingNUL(ctx.UtsName[:])),
+					ProcessName:           string(stringutil.TrimTrailingNUL(ctx.Comm[:])),
+					HostName:              string(stringutil.TrimTrailingNUL(ctx.UtsName[:])),
 					CgroupID:              uint(ctx.CgroupID),
 					ContainerID:           containerData.ID,
 					Container:             containerData,
@@ -262,9 +263,9 @@ func BenchmarkNewEventObject(b *testing.B) {
 					StackAddresses:        stackAddresses,
 					ContextFlags:          flags,
 					Syscall:               syscall,
-					ThreadEntityId:        common.HashTaskID(ctx.HostTid, ctx.StartTime),
-					ProcessEntityId:       common.HashTaskID(ctx.HostPid, ctx.LeaderStartTime),
-					ParentEntityId:        common.HashTaskID(ctx.HostPpid, ctx.ParentStartTime),
+					ThreadEntityId:        hash.HashTaskID(ctx.HostTid, ctx.StartTime),
+					ProcessEntityId:       hash.HashTaskID(ctx.HostPid, ctx.LeaderStartTime),
+					ParentEntityId:        hash.HashTaskID(ctx.HostPpid, ctx.ParentStartTime),
 				}
 
 				processChan <- &evt

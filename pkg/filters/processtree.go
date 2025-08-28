@@ -6,8 +6,8 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/interfaces"
 )
 
 type ProcessTreeFilter struct {
@@ -17,7 +17,7 @@ type ProcessTreeFilter struct {
 }
 
 // Compile-time check to ensure that ProcessTreeFilter implements the Cloner interface
-var _ common.Cloner[*ProcessTreeFilter] = &ProcessTreeFilter{}
+var _ interfaces.Cloner[*ProcessTreeFilter] = &ProcessTreeFilter{}
 
 func NewProcessTreeFilter() *ProcessTreeFilter {
 	return &ProcessTreeFilter{

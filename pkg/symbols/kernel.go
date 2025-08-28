@@ -1,4 +1,4 @@
-package environment
+package symbols
 
 import (
 	"bufio"
@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/errfmt"
 )
 
@@ -73,7 +72,7 @@ func (ks kernelSymbolInternal) Clone() kernelSymbolInternal {
 }
 
 type KernelSymbolTable struct {
-	symbols *common.SymbolTable[kernelSymbolInternal]
+	symbols *SymbolTable[kernelSymbolInternal]
 
 	// Used for memory efficient representation of symbol owners
 	idxToSymbolOwner []string
@@ -88,7 +87,7 @@ type KernelSymbolTable struct {
 // optional requiredDataSymbols argument will be added.
 func NewKernelSymbolTableFromReader(reader io.Reader, lazyNameLookup bool, requiredDataSymbolsOnly bool, requiredDataSymbols ...string) (*KernelSymbolTable, error) {
 	kst := &KernelSymbolTable{
-		symbols:          common.NewSymbolTable[kernelSymbolInternal](lazyNameLookup),
+		symbols:          NewSymbolTable[kernelSymbolInternal](lazyNameLookup),
 		idxToSymbolOwner: []string{"system"},
 		symbolOwnerToIdx: map[string]uint16{"system": 0},
 	}

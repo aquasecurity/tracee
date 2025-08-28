@@ -8,8 +8,8 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/interfaces"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -51,7 +51,7 @@ type DataFilter struct {
 }
 
 // Compile-time check to ensure that DataFilter implements the Cloner interface.
-var _ common.Cloner[*DataFilter] = &DataFilter{}
+var _ interfaces.Cloner[*DataFilter] = &DataFilter{}
 
 func NewDataFilter() *DataFilter {
 	return &DataFilter{

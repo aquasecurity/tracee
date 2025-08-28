@@ -5,8 +5,8 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/interfaces"
 	"github.com/aquasecurity/tracee/pkg/filters/sets"
 )
 
@@ -27,7 +27,7 @@ type StringFilter struct {
 }
 
 // Compile-time check to ensure that StringFilter implements the Cloner interface
-var _ common.Cloner[*StringFilter] = &StringFilter{}
+var _ interfaces.Cloner[*StringFilter] = &StringFilter{}
 
 func NewStringFilter(valHandler ValueHandler) *StringFilter {
 	return &StringFilter{

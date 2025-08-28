@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/gopacket/pcapgo"
 
-	"github.com/aquasecurity/tracee/common"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/fileutil"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -149,7 +149,7 @@ func mkdirForPcapType(o *os.File, c string, t PcapType) error {
 		return fmt.Errorf("invalid pcap type: %d", t)
 	}
 
-	err := common.MkdirAllAtExist(o, dirToCreate, os.ModePerm)
+	err := fileutil.MkdirAllAtExist(o, dirToCreate, os.ModePerm)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -169,7 +169,7 @@ func getPcapFileAndWriter(event *trace.Event, t PcapType) (
 		return nil, nil, errfmt.WrapError(err)
 	}
 
-	file, err := common.OpenAt(
+	file, err := fileutil.OpenAt(
 		outputDirectory,
 		pcapFilePath,
 		os.O_APPEND|os.O_WRONLY|os.O_CREATE,

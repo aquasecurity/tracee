@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/aquasecurity/tracee/common"
+	"github.com/aquasecurity/tracee/common/hash"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
@@ -101,9 +101,9 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 	forkFeed.TimeStamp = uint64(event.Timestamp)
 
 	// Hashes
-	forkFeed.ParentHash = common.HashTaskID(uint32(forkFeed.ParentTid), uint64(forkFeed.ParentStartTime))
-	forkFeed.LeaderHash = common.HashTaskID(uint32(forkFeed.LeaderTid), uint64(forkFeed.LeaderStartTime))
-	forkFeed.ChildHash = common.HashTaskID(uint32(forkFeed.ChildTid), uint64(forkFeed.ChildStartTime))
+	forkFeed.ParentHash = hash.HashTaskID(uint32(forkFeed.ParentTid), uint64(forkFeed.ParentStartTime))
+	forkFeed.LeaderHash = hash.HashTaskID(uint32(forkFeed.LeaderTid), uint64(forkFeed.LeaderStartTime))
+	forkFeed.ChildHash = hash.HashTaskID(uint32(forkFeed.ChildTid), uint64(forkFeed.ChildStartTime))
 
 	return t.processTree.FeedFromFork(forkFeed)
 }
