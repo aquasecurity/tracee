@@ -54,6 +54,7 @@ import "github.com/aquasecurity/tracee/common"
 ### I/O & Utilities
 - **`errfmt`** - Error formatting utilities for consistent error handling and display
 - **`logger`** - Structured logging interface with filtering and formatting capabilities
+- **`parsers`** - System call argument parsers for Linux syscalls (flags, capabilities, socket types, etc.)
 - **`read`** - Protected file reading utilities with safety checks and error handling
 - **`timeutil`** - Time-related utilities for timestamp handling and time operations
 

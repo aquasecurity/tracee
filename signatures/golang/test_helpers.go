@@ -1,6 +1,6 @@
 package main
 
-import "github.com/aquasecurity/tracee/pkg/events/parsers"
+import "github.com/aquasecurity/tracee/common/parsers"
 
 func buildFlagArgValue(flags ...parsers.SystemFunctionArgument) int32 {
 	var res int32
