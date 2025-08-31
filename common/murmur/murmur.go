@@ -1,4 +1,4 @@
-package hash
+package murmur
 
 import (
 	"encoding/binary"
@@ -6,12 +6,10 @@ import (
 )
 
 // MurMurHash 3 x86 32-bit (https://en.wikipedia.org/wiki/MurmurHash): Small (u32), simple (for C
-// and Go), high performant, optimized and collision resistant hashing function. This function is
-// used to hash a task unique identifier (task pid + task_start_time). Userland uses this unique
-// identifier to identify a task and construct the process tree.
+// and Go), high performant, optimized and collision resistant hashing function.
 
 const (
-	murmurSeed = 0x18273645 // same as in eBPF kernel code
+	seed = 0x18273645 // same as in eBPF kernel code
 )
 
 // Murmur32 is a Murmur3 32-bit hash function implementation.
@@ -19,7 +17,7 @@ func Murmur32(key []byte) uint32 {
 	data := key
 	nblocks := len(data) / 4
 
-	h1 := uint32(murmurSeed)
+	h1 := uint32(seed)
 	c1 := uint32(0xcc9e2d51)
 	c2 := uint32(0x1b873593)
 
@@ -68,22 +66,11 @@ func Murmur32(key []byte) uint32 {
 	return h1
 }
 
-// HashU32AndU64 is a wrapper around Murmur32 making sure network byte order is used.
+// HashU32AndU64 is a wrapper around Murmur32 ensuring network byte order is used.
+// This is useful for consistent hashing of two numeric values across different architectures.
 func HashU32AndU64(arg1 uint32, arg2 uint64) uint32 {
 	buffer := make([]byte, 4+8)                  // u32 + u64
 	binary.BigEndian.PutUint32(buffer, arg1)     // network byte order
 	binary.BigEndian.PutUint64(buffer[4:], arg2) // network byte order
 	return Murmur32(buffer)
-}
-
-// HashTaskID is a wrapper, around HashU32AndU64, that rounds up the timestamp argument to the
-// precision userland will obtain from the procfs (since start_time is measured in clock ticks).
-// This is needed so the process tree can be updated by procfs readings as well. The userland
-// precision is defined by USER_HZ, which is 100HZ in almost all cases (untrue for embedded systems
-// and custom kernels).
-
-func HashTaskID(arg1 uint32, arg2 uint64) uint32 {
-	round := arg2 / 100000000 // (1000000000 / USER_HZ) * 10 = 100000000
-	round *= 100000000
-	return HashU32AndU64(arg1, round)
 }

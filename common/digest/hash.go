@@ -1,4 +1,4 @@
-package filehash
+package digest
 
 import (
 	"encoding/hex"
