@@ -25,7 +25,7 @@ nav:
           - Events:
                 - Overview: docs/events/index.md
                 - Built-in Events:
-                      - Security Events:
+                      - Security:
                             - Overview: docs/events/builtin/security-events.md
                             - Anti Debugging: docs/events/builtin/man/security/anti_debugging.md
                             - ASLR Inspection: docs/events/builtin/man/security/aslr_inspection.md
@@ -58,7 +58,7 @@ nav:
                             - Sudoers Modification: docs/events/builtin/man/security/sudoers_modification.md
                             - Syscall Table Hooking: docs/events/builtin/man/security/syscall_table_hooking.md
                             - SysRQ Modification: docs/events/builtin/man/security/system_request_key_config_modification.md
-                      - Network Events:
+                      - Network:
                             - Overview: docs/events/builtin/network-events.md
                             - net_flow_tcp_begin: docs/events/builtin/man/network/net_flow_tcp_begin.md
                             - net_flow_tcp_end: docs/events/builtin/man/network/net_flow_tcp_end.md
@@ -74,7 +74,7 @@ nav:
                             - net_packet_http: docs/events/builtin/man/network/net_packet_http.md
                             - net_packet_http_request: docs/events/builtin/man/network/net_packet_http_request.md
                             - net_packet_http_response: docs/events/builtin/man/network/net_packet_http_response.md
-                      - LSM Events:
+                      - LSM:
                             - security_bpf_prog: docs/events/builtin/man/lsm/security_bpf_prog.md
                             - security_bprm_check: docs/events/builtin/man/lsm/security_bprm_check.md
                             - security_file_mprotect: docs/events/builtin/man/lsm/security_file_mprotect.md
@@ -88,7 +88,7 @@ nav:
                             - security_socket_connect: docs/events/builtin/man/lsm/security_socket_connect.md
                             - security_socket_setsockopt: docs/events/builtin/man/lsm/security_socket_setsockopt.md
                             - security_task_setrlimit: docs/events/builtin/man/lsm/security_task_setrlimit.md
-                      - Misc Events:
+                      - Misc:
                             - bpf_attach: docs/events/builtin/man/misc/bpf_attach.md
                             - cgroup_mkdir: docs/events/builtin/man/misc/cgroup_mkdir.md
                             - cgroup_rmdir: docs/events/builtin/man/misc/cgroup_rmdir.md
