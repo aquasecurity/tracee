@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -50,7 +49,7 @@ func (sig *ProcFopsHooking) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "hooked_proc_fops":
-		hookedSymbolSlice, err := helpers.GetTraceeHookedSymbolDataArgumentByName(eventObj, "hooked_fops_pointers")
+		hookedSymbolSlice, err := eventObj.GetHookedSymbolDataArgumentByName("hooked_fops_pointers")
 		if err != nil {
 			return err
 		}

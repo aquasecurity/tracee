@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -44,7 +43,7 @@ func (sig *e2eFileModification) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "file_modification":
-		filePath, err := helpers.GetTraceeStringArgumentByName(eventObj, "file_path")
+		filePath, err := eventObj.GetStringArgumentByName("file_path")
 		if err != nil {
 			return err
 		}

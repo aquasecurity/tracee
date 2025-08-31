@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
+	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -57,7 +57,7 @@ func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "sched_process_exec":
-		envVars, err := helpers.GetTraceeSliceStringArgumentByName(eventObj, "env")
+		envVars, err := eventObj.GetSliceStringArgumentByName("env")
 		if err != nil {
 			return nil
 		}
@@ -72,12 +72,12 @@ func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
 			return nil
 		}
 
-		remoteAddr, err := helpers.GetRawAddrArgumentByName(eventObj, "remote_addr")
+		remoteAddr, err := eventObj.GetRawAddrArgumentByName("remote_addr")
 		if err != nil {
 			return err
 		}
 
-		supportedFamily, err := helpers.IsInternetFamily(remoteAddr)
+		supportedFamily, err := parsers.IsInternetFamily(remoteAddr)
 		if err != nil {
 			return err
 		}
@@ -85,7 +85,7 @@ func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
 			return nil
 		}
 
-		ip, err := helpers.GetIPFromRawAddr(remoteAddr)
+		ip, err := parsers.GetIPFromRawAddr(remoteAddr)
 		if err != nil {
 			return err
 		}

@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -54,7 +53,7 @@ func (sig *IllegitimateShell) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "sched_process_exec":
-		prevComm, err := helpers.GetTraceeStringArgumentByName(eventObj, "prev_comm")
+		prevComm, err := eventObj.GetStringArgumentByName("prev_comm")
 		if err != nil {
 			return err
 		}

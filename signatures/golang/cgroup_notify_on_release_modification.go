@@ -4,7 +4,7 @@ import (
 	"errors"
 	"path"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
+	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -53,18 +53,18 @@ func (sig *CgroupNotifyOnReleaseModification) OnEvent(event protocol.Event) erro
 
 	switch eventObj.EventName {
 	case "security_file_open":
-		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		pathname, err := eventObj.GetStringArgumentByName("pathname")
 		if err != nil {
 			return err
 		}
 		basename := path.Base(pathname)
 
-		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
+		flags, err := eventObj.GetIntArgumentByName("flags")
 		if err != nil {
 			return err
 		}
 
-		if basename == sig.notifyFileName && helpers.IsFileWrite(flags) {
+		if basename == sig.notifyFileName && parsers.IsFileWrite(flags) {
 			metadata, err := sig.GetMetadata()
 			if err != nil {
 				return err

@@ -11,8 +11,8 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/aquasecurity/tracee/common/capabilities"
+	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/errfmt"
-	"github.com/aquasecurity/tracee/common/filehash"
 	"github.com/aquasecurity/tracee/common/fileutil"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/stringutil"
@@ -126,7 +126,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	}
 
 	// capture executed files
-	if t.config.Capture.Exec || t.config.Output.CalcHashes != filehash.CalcHashesNone {
+	if t.config.Capture.Exec || t.config.Output.CalcHashes != digest.CalcHashesNone {
 		filePath, err := parse.ArgVal[string](event.Args, "pathname")
 		if err != nil {
 			return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
@@ -187,7 +187,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				}
 			}
 			// check exec'ed hash ?
-			if t.config.Output.CalcHashes != filehash.CalcHashesNone {
+			if t.config.Output.CalcHashes != digest.CalcHashesNone {
 				dev, err := parse.ArgVal[uint32](event.Args, "dev")
 				if err != nil {
 					return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
@@ -197,10 +197,10 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 					return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
 				}
 
-				fileKey := filehash.NewKey(filePath, uint32(event.MountNS),
-					filehash.WithDevice(dev),
-					filehash.WithInode(ino, castedSourceFileCtime),
-					filehash.WithDigest(event.Container.ImageDigest),
+				fileKey := digest.NewKey(filePath, uint32(event.MountNS),
+					digest.WithDevice(dev),
+					digest.WithInode(ino, castedSourceFileCtime),
+					digest.WithDigest(event.Container.ImageDigest),
 				)
 
 				err = t.addHashArg(event, &fileKey)
@@ -354,7 +354,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 //
 
 // addHashArg calculate file hash (in a best-effort efficiency manner) and add it as an argument
-func (t *Tracee) addHashArg(event *trace.Event, fileKey *filehash.Key) error {
+func (t *Tracee) addHashArg(event *trace.Event, fileKey *digest.Key) error {
 	// Currently Tracee does not support hash calculation of memfd files
 	if strings.HasPrefix(fileKey.Pathname(), "memfd") {
 		return nil
@@ -408,11 +408,11 @@ func (t *Tracee) processSharedObjectLoaded(event *trace.Event) error {
 	if containerId == "" {
 		containerId = "host"
 	}
-	if t.config.Output.CalcHashes != filehash.CalcHashesNone {
-		fileKey := filehash.NewKey(filePath, uint32(event.MountNS),
-			filehash.WithDevice(dev),
-			filehash.WithInode(ino, int64(fileCtime)),
-			filehash.WithDigest(event.Container.ImageDigest),
+	if t.config.Output.CalcHashes != digest.CalcHashesNone {
+		fileKey := digest.NewKey(filePath, uint32(event.MountNS),
+			digest.WithDevice(dev),
+			digest.WithInode(ino, int64(fileCtime)),
+			digest.WithDigest(event.Container.ImageDigest),
 		)
 
 		return t.addHashArg(event, &fileKey)

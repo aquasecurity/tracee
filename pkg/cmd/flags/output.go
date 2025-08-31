@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/errfmt"
-	"github.com/aquasecurity/tracee/common/filehash"
 	"github.com/aquasecurity/tracee/pkg/config"
 )
 
@@ -125,18 +125,18 @@ func setOption(cfg *config.OutputConfig, option string) error {
 					goto invalidOption
 				}
 				// default
-				cfg.CalcHashes = filehash.CalcHashesDevInode
+				cfg.CalcHashes = digest.CalcHashesDevInode
 			} else if len(hashExecParts) == 2 {
 				hashExecOpt := hashExecParts[1]
 				switch hashExecOpt {
 				case "none":
-					cfg.CalcHashes = filehash.CalcHashesNone
+					cfg.CalcHashes = digest.CalcHashesNone
 				case "inode":
-					cfg.CalcHashes = filehash.CalcHashesInode
+					cfg.CalcHashes = digest.CalcHashesInode
 				case "dev-inode":
-					cfg.CalcHashes = filehash.CalcHashesDevInode
+					cfg.CalcHashes = digest.CalcHashesDevInode
 				case "digest-inode":
-					cfg.CalcHashes = filehash.CalcHashesDigestInode
+					cfg.CalcHashes = digest.CalcHashesDigestInode
 				default:
 					goto invalidOption
 				}

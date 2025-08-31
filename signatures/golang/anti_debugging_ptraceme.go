@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/aquasecurity/tracee/common/parsers"
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -53,7 +52,7 @@ func (sig *AntiDebuggingPtraceme) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "ptrace":
-		requestArg, err := helpers.GetTraceeIntArgumentByName(eventObj, "request")
+		requestArg, err := eventObj.GetIntArgumentByName("request")
 		if err != nil {
 			return err
 		}

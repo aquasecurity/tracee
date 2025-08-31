@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -48,17 +47,17 @@ func (sig *e2eUDP) OnEvent(event protocol.Event) error {
 			return nil
 		}
 
-		src, err := helpers.GetTraceeStringArgumentByName(eventObj, "src")
+		src, err := eventObj.GetStringArgumentByName("src")
 		if err != nil {
 			return err
 		}
 
-		dst, err := helpers.GetTraceeStringArgumentByName(eventObj, "dst")
+		dst, err := eventObj.GetStringArgumentByName("dst")
 		if err != nil {
 			return err
 		}
 
-		udp, err := helpers.GetProtoUDPByName(eventObj, "proto_udp")
+		udp, err := eventObj.GetProtoUDPByName("proto_udp")
 		if err != nil {
 			return err
 		}

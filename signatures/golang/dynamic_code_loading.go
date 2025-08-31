@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -52,7 +51,7 @@ func (sig *DynamicCodeLoading) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "mem_prot_alert":
-		alert, err := helpers.GetTraceeUintArgumentByName(eventObj, "alert")
+		alert, err := eventObj.GetUintArgumentByName("alert")
 		if err != nil {
 			return err
 		}

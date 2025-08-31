@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -43,11 +42,11 @@ func (sig *e2eHookedSyscall) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "hooked_syscall":
-		syscall, err := helpers.GetTraceeStringArgumentByName(eventObj, "syscall")
+		syscall, err := eventObj.GetStringArgumentByName("syscall")
 		if err != nil {
 			return err
 		}
-		owner, err := helpers.GetTraceeStringArgumentByName(eventObj, "owner")
+		owner, err := eventObj.GetStringArgumentByName("owner")
 		if err != nil {
 			return err
 		}

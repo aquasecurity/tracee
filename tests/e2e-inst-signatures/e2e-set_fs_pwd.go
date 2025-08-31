@@ -8,7 +8,6 @@ import (
 
 	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/pkg/symbols"
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -71,12 +70,12 @@ func (sig *e2eSetFsPwd) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "set_fs_pwd":
-		unresolvedPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "unresolved_path")
+		unresolvedPath, err := eventObj.GetStringArgumentByName("unresolved_path")
 		if sig.hasReadUser && err != nil {
 			return err
 		}
 
-		resolvedPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "resolved_path")
+		resolvedPath, err := eventObj.GetStringArgumentByName("resolved_path")
 		if err != nil {
 			return err
 		}

@@ -20,8 +20,8 @@ import (
 	"github.com/aquasecurity/tracee/common/bucketcache"
 	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/cgroup"
+	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/errfmt"
-	"github.com/aquasecurity/tracee/common/filehash"
 	"github.com/aquasecurity/tracee/common/fileutil"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/proc"
@@ -73,7 +73,7 @@ type Tracee struct {
 	eventProcessor   map[events.ID][]func(evt *trace.Event) error
 	eventDerivations derive.Table
 	// Artifacts
-	fileHashes     *filehash.Cache
+	fileHashes     *digest.Cache
 	capturedFiles  map[string]int64
 	writtenFiles   map[string]string
 	netCapturePcap *pcaps.Pcaps
@@ -480,7 +480,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize hashes for files
 
-	t.fileHashes, err = filehash.NewCache(t.config.Output.CalcHashes, t.contPathResolver)
+	t.fileHashes, err = digest.NewCache(t.config.Output.CalcHashes, t.contPathResolver)
 	if err != nil {
 		t.Close()
 		return errfmt.WrapError(err)
@@ -1749,7 +1749,7 @@ func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
 			logger.Errorw("Closing file", "error", err)
 		}
 	}()
-	return filehash.ComputeFileHash(f)
+	return digest.ComputeFileHash(f)
 }
 
 // getSelfLoadedPrograms returns a map of all programs loaded by tracee.

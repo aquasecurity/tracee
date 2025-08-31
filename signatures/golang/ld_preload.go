@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
+	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -57,7 +57,7 @@ func (sig *LdPreload) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "sched_process_exec":
-		envVars, err := helpers.GetTraceeSliceStringArgumentByName(eventObj, "env")
+		envVars, err := eventObj.GetSliceStringArgumentByName("env")
 		if err != nil {
 			return nil
 		}
@@ -80,17 +80,17 @@ func (sig *LdPreload) OnEvent(event protocol.Event) error {
 			}
 		}
 	case "security_file_open":
-		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		pathname, err := eventObj.GetStringArgumentByName("pathname")
 		if err != nil {
 			return err
 		}
 
-		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
+		flags, err := eventObj.GetIntArgumentByName("flags")
 		if err != nil {
 			return err
 		}
 
-		if strings.HasSuffix(pathname, sig.preloadPath) && helpers.IsFileWrite(flags) {
+		if strings.HasSuffix(pathname, sig.preloadPath) && parsers.IsFileWrite(flags) {
 			metadata, err := sig.GetMetadata()
 			if err != nil {
 				return err
@@ -102,7 +102,7 @@ func (sig *LdPreload) OnEvent(event protocol.Event) error {
 			})
 		}
 	case "security_inode_rename":
-		newPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "new_path")
+		newPath, err := eventObj.GetStringArgumentByName("new_path")
 		if err != nil {
 			return err
 		}

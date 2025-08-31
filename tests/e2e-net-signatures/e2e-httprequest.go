@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -61,7 +60,7 @@ func (sig *e2eHTTPRequest) OnEvent(event protocol.Event) error {
 			return nil
 		}
 
-		httpRequest, err := helpers.GetProtoHTTPRequestByName(eventObj, "http_request")
+		httpRequest, err := eventObj.GetProtoHTTPRequestByName("http_request")
 		if err != nil {
 			return err
 		}

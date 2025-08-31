@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -51,7 +50,7 @@ func (sig *ProcessVmWriteCodeInjection) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "process_vm_writev":
-		dstPid, err := helpers.GetTraceeIntArgumentByName(eventObj, "pid")
+		dstPid, err := eventObj.GetIntArgumentByName("pid")
 		if err != nil {
 			return err
 		}

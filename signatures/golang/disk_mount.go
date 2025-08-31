@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -57,7 +56,7 @@ func (sig *DiskMount) OnEvent(event protocol.Event) error {
 			return nil
 		}
 
-		deviceName, err := helpers.GetTraceeStringArgumentByName(eventObj, "dev_name")
+		deviceName, err := eventObj.GetStringArgumentByName("dev_name")
 		if err != nil {
 			return nil
 		}

@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -43,7 +42,7 @@ func (sig *e2eFtraceHook) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "ftrace_hook":
-		symbolName, err := helpers.GetTraceeStringArgumentByName(eventObj, "symbol")
+		symbolName, err := eventObj.GetStringArgumentByName("symbol")
 		if err != nil {
 			return err
 		}

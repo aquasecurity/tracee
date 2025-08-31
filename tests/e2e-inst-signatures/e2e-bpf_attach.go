@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/aquasecurity/tracee/common/parsers"
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -44,12 +43,12 @@ func (sig *e2eBpfAttach) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "bpf_attach":
-		symbolName, err := helpers.GetTraceeStringArgumentByName(eventObj, "symbol_name")
+		symbolName, err := eventObj.GetStringArgumentByName("symbol_name")
 		if err != nil {
 			return err
 		}
 
-		attachType, err := helpers.GetTraceeIntArgumentByName(eventObj, "attach_type")
+		attachType, err := eventObj.GetIntArgumentByName("attach_type")
 		if err != nil {
 			return err
 		}

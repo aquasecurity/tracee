@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
+	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -50,12 +50,12 @@ func (sig *FilelessExecution) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "sched_process_exec":
-		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		pathname, err := eventObj.GetStringArgumentByName("pathname")
 		if err != nil {
 			return err
 		}
 
-		if helpers.IsMemoryPath(pathname) {
+		if parsers.IsMemoryPath(pathname) {
 			metadata, err := sig.GetMetadata()
 			if err != nil {
 				return err

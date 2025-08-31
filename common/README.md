@@ -37,7 +37,7 @@ import "github.com/aquasecurity/tracee/common"
 - **`bucketcache`** - Bucket-based caching system for efficient memory-aware data storage
 - **`changelog`** - Time-ordered generic changelog data structure for tracking changes over time
 - **`counter`** - Thread-safe atomic counter with overflow/underflow protection
-- **`hash`** - Murmur hash functions for efficient hashing of task IDs and data structures
+- **`murmur`** - Generic MurMur hash functions for efficient hashing and data integrity verification
 - **`interfaces`** - Generic interfaces for common patterns (cloning, iteration)
 - **`set`** - Generic set data structures for efficient collection operations
 - **`stringutil`** - String manipulation utilities for trimming and processing text data
@@ -52,15 +52,18 @@ import "github.com/aquasecurity/tracee/common"
 - **`system`** - System monitoring utilities for resource and performance tracking
 
 ### File & Binary Analysis
-- **`elf`** - ELF file analysis and symbol extraction utilities
-- **`filehash`** - File hashing with caching for efficient content verification
+- **`digest`** - File content hashing (SHA256) with caching for efficient content verification and integrity checking
+- **`elf`** - ELF file analysis, magic number validation, and symbol extraction utilities
 - **`fileutil`** - File operation utilities with atomic operations, directory management, and protected memory-mapped file reading
 - **`sharedobjs`** - Shared object and library handling for dynamic loading and symbol resolution
 
 ### I/O & Utilities
 - **`errfmt`** - Error formatting utilities for consistent error handling and display
 - **`logger`** - Structured logging interface with filtering and formatting capabilities
-- **`parsers`** - System call argument parsers for Linux syscalls (flags, capabilities, socket types, etc.)
+- **`parsers`** - Comprehensive parsing utilities including:
+  - System call argument parsers for Linux syscalls (flags, capabilities, socket types, etc.)
+  - Network address parsers for sockaddr structures (IPv4, IPv6, Unix domain sockets)
+  - File operation parsers (read/write detection, memory path identification)
 - **`timeutil`** - Time-related utilities for timestamp handling and time operations
 
 ## What Belongs Here

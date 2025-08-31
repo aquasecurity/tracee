@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -49,7 +48,7 @@ func (sig *e2eSecurityPathNotify) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "security_path_notify":
-		pathName, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		pathName, err := eventObj.GetStringArgumentByName("pathname")
 		if err != nil {
 			return err
 		}
