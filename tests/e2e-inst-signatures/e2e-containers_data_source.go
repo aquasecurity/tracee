@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -53,7 +52,7 @@ func (sig *e2eContainersDataSource) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "sched_process_exec":
-		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		pathname, err := eventObj.GetStringArgumentByName("pathname")
 		if err != nil {
 			return err
 		}

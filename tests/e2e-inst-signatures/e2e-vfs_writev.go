@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -44,7 +43,7 @@ func (sig *e2eVfsWritev) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "vfs_writev":
-		filePath, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		filePath, err := eventObj.GetStringArgumentByName("pathname")
 		if err != nil {
 			return err
 		}

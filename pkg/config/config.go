@@ -3,9 +3,9 @@ package config
 import (
 	"io"
 
+	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/environment"
 	"github.com/aquasecurity/tracee/common/errfmt"
-	"github.com/aquasecurity/tracee/common/filehash"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/proctree"
@@ -142,7 +142,7 @@ type CapabilitiesConfig struct {
 type OutputConfig struct {
 	StackAddresses bool
 	ExecEnv        bool
-	CalcHashes     filehash.CalcHashesOption
+	CalcHashes     digest.CalcHashesOption
 
 	ParseArguments    bool
 	ParseArgumentsFDs bool

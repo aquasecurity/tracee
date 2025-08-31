@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
+	"github.com/aquasecurity/tracee/common/elf"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -53,17 +53,17 @@ func (sig *HiddenFileCreated) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "magic_write":
-		bytes, err := helpers.GetTraceeBytesSliceArgumentByName(eventObj, "bytes")
+		bytes, err := eventObj.GetBytesSliceArgumentByName("bytes")
 		if err != nil {
 			return err
 		}
 
-		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		pathname, err := eventObj.GetStringArgumentByName("pathname")
 		if err != nil {
 			return err
 		}
 
-		if helpers.IsElf(bytes) && strings.Contains(pathname, sig.hiddenPathPattern) {
+		if elf.IsElf(bytes) && strings.Contains(pathname, sig.hiddenPathPattern) {
 			metadata, err := sig.GetMetadata()
 			if err != nil {
 				return err

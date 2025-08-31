@@ -11,12 +11,12 @@ import (
 	"github.com/aquasecurity/tracee/common/bitwise"
 	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/errfmt"
-	"github.com/aquasecurity/tracee/common/hash"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/stringutil"
 	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -239,15 +239,15 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.Syscall = syscall
 			evt.Metadata = nil
 			// compute hashes using normalized times
-			evt.ThreadEntityId = hash.HashTaskID(eCtx.HostTid, uint64(evt.ThreadStartTime))
+			evt.ThreadEntityId = proctree.HashTaskID(eCtx.HostTid, uint64(evt.ThreadStartTime))
 			if eCtx.HostTid == eCtx.HostPid && eCtx.StartTime == eCtx.LeaderStartTime {
 				// If the thread is the leader (i.e., HostTid == HostPid and StartTime == LeaderStartTime),
 				// then ProcessEntityId and ThreadEntityId are identical and can be shared.
 				evt.ProcessEntityId = evt.ThreadEntityId
 			} else {
-				evt.ProcessEntityId = hash.HashTaskID(eCtx.HostPid, timeutil.BootToEpochNS(eCtx.LeaderStartTime))
+				evt.ProcessEntityId = proctree.HashTaskID(eCtx.HostPid, timeutil.BootToEpochNS(eCtx.LeaderStartTime))
 			}
-			evt.ParentEntityId = hash.HashTaskID(eCtx.HostPpid, timeutil.BootToEpochNS(eCtx.ParentStartTime))
+			evt.ParentEntityId = proctree.HashTaskID(eCtx.HostPpid, timeutil.BootToEpochNS(eCtx.ParentStartTime))
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.

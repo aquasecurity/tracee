@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
+	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -56,12 +56,12 @@ func (sig *StdioOverSocket) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "security_socket_connect":
-		sockfd, err = helpers.GetTraceeIntArgumentByName(eventObj, "sockfd")
+		sockfd, err = eventObj.GetIntArgumentByName("sockfd")
 		if err != nil {
 			return err
 		}
 	case "socket_dup":
-		sockfd, err = helpers.GetTraceeIntArgumentByName(eventObj, "newfd")
+		sockfd, err = eventObj.GetIntArgumentByName("newfd")
 		if err != nil {
 			return err
 		}
@@ -71,12 +71,12 @@ func (sig *StdioOverSocket) OnEvent(event protocol.Event) error {
 		return nil
 	}
 
-	remoteAddr, err := helpers.GetRawAddrArgumentByName(eventObj, "remote_addr")
+	remoteAddr, err := eventObj.GetRawAddrArgumentByName("remote_addr")
 	if err != nil {
 		return err
 	}
 
-	supportedFamily, err := helpers.IsInternetFamily(remoteAddr)
+	supportedFamily, err := parsers.IsInternetFamily(remoteAddr)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (sig *StdioOverSocket) OnEvent(event protocol.Event) error {
 		return nil
 	}
 
-	port, err := helpers.GetPortFromRawAddr(remoteAddr)
+	port, err := parsers.GetPortFromRawAddr(remoteAddr)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (sig *StdioOverSocket) OnEvent(event protocol.Event) error {
 		}
 	}
 
-	ip, err := helpers.GetIPFromRawAddr(remoteAddr)
+	ip, err := parsers.GetIPFromRawAddr(remoteAddr)
 	if err != nil {
 		return err
 	}

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
+	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -53,17 +53,17 @@ func (sig *ProcKcoreRead) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "security_file_open":
-		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		pathname, err := eventObj.GetStringArgumentByName("pathname")
 		if err != nil {
 			return err
 		}
 
-		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
+		flags, err := eventObj.GetIntArgumentByName("flags")
 		if err != nil {
 			return err
 		}
 
-		if strings.HasSuffix(pathname, sig.kcorePath) && helpers.IsFileRead(flags) {
+		if strings.HasSuffix(pathname, sig.kcorePath) && parsers.IsFileRead(flags) {
 			metadata, err := sig.GetMetadata()
 			if err != nil {
 				return err

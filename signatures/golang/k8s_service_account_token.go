@@ -4,7 +4,7 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
+	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -65,17 +65,17 @@ func (sig *K8SServiceAccountToken) OnEvent(event protocol.Event) error {
 			}
 		}
 
-		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		pathname, err := eventObj.GetStringArgumentByName("pathname")
 		if err != nil {
 			return err
 		}
 
-		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
+		flags, err := eventObj.GetIntArgumentByName("flags")
 		if err != nil {
 			return err
 		}
 
-		if helpers.IsFileRead(flags) && sig.compiledRegex.MatchString(pathname) {
+		if parsers.IsFileRead(flags) && sig.compiledRegex.MatchString(pathname) {
 			metadata, err := sig.GetMetadata()
 			if err != nil {
 				return err

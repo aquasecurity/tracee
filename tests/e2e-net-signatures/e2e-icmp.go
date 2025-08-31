@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -48,17 +47,17 @@ func (sig *e2eICMP) OnEvent(event protocol.Event) error {
 			return nil
 		}
 
-		src, err := helpers.GetTraceeStringArgumentByName(eventObj, "src")
+		src, err := eventObj.GetStringArgumentByName("src")
 		if err != nil {
 			return err
 		}
 
-		dst, err := helpers.GetTraceeStringArgumentByName(eventObj, "dst")
+		dst, err := eventObj.GetStringArgumentByName("dst")
 		if err != nil {
 			return err
 		}
 
-		icmp, err := helpers.GetProtoICMPByName(eventObj, "proto_icmp")
+		icmp, err := eventObj.GetProtoICMPByName("proto_icmp")
 		if err != nil {
 			return err
 		}

@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
+	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -52,13 +52,13 @@ func (sig *SystemRequestKeyConfigModification) OnEvent(event protocol.Event) err
 
 	switch eventObj.EventName {
 	case "security_file_open":
-		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
+		flags, err := eventObj.GetIntArgumentByName("flags")
 		if err != nil {
 			return err
 		}
 
-		if helpers.IsFileWrite(flags) {
-			pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		if parsers.IsFileWrite(flags) {
+			pathname, err := eventObj.GetStringArgumentByName("pathname")
 			if err != nil {
 				return err
 			}

@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/common/environment"
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -78,7 +77,7 @@ func (sig *e2eProcessExecuteFailed) OnEvent(event protocol.Event) error {
 			return err
 		}
 	case "process_execute_failed":
-		filePath, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		filePath, err := eventObj.GetStringArgumentByName("pathname")
 		if err != nil {
 			return err
 		}

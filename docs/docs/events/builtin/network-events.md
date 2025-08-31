@@ -70,7 +70,6 @@ import (
     "fmt"
     "strings"
 
-    "github.com/aquasecurity/tracee/signatures/helpers"
     "github.com/aquasecurity/tracee/types/detect"
     "github.com/aquasecurity/tracee/types/protocol"
     "github.com/aquasecurity/tracee/types/trace"
@@ -126,7 +125,7 @@ func (sig *e2eDNS) OnEvent(event protocol.Event) error {
     }
 
     if eventObj.EventName == "net_packet_dns" {
-        dns, err := helpers.GetProtoDNSByName(eventObj, "proto_dns")
+        dns, err := eventObj.GetProtoDNSByName("proto_dns")
         if err != nil {
             return err
         }

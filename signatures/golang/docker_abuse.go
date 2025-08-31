@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
+	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -56,26 +56,26 @@ func (sig *DockerAbuse) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "security_file_open":
-		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		pathname, err := eventObj.GetStringArgumentByName("pathname")
 		if err != nil {
 			return err
 		}
 
-		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
+		flags, err := eventObj.GetIntArgumentByName("flags")
 		if err != nil {
 			return err
 		}
 
-		if helpers.IsFileWrite(flags) {
+		if parsers.IsFileWrite(flags) {
 			path = pathname
 		}
 	case "security_socket_connect":
-		addr, err := helpers.GetRawAddrArgumentByName(eventObj, "remote_addr")
+		addr, err := eventObj.GetRawAddrArgumentByName("remote_addr")
 		if err != nil {
 			return err
 		}
 
-		supportedFamily, err := helpers.IsUnixFamily(addr)
+		supportedFamily, err := parsers.IsUnixFamily(addr)
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func (sig *DockerAbuse) OnEvent(event protocol.Event) error {
 			return nil
 		}
 
-		sunPath, err := helpers.GetPathFromRawAddr(addr)
+		sunPath, err := parsers.GetPathFromRawAddr(addr)
 		if err != nil {
 			return err
 		}

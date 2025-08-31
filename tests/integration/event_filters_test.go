@@ -19,7 +19,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/tests/testutils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -2754,10 +2753,9 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 
 				// check args
 				for _, expArg := range expEvt.Args {
-					actArg, err := helpers.GetTraceeArgumentByName(
-						actEvt,
+					actArg, err := actEvt.GetArgumentByName(
 						expArg.Name,
-						helpers.GetArgOps{DefaultArgs: false},
+						trace.GetArgOps{DefaultArgs: false},
 					)
 					if err != nil {
 						return false, err
@@ -2924,7 +2922,7 @@ func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 
 				// check args
 				for _, expArg := range expEvt.Args {
-					actArg, err := helpers.GetTraceeArgumentByName(actEvt, expArg.Name, helpers.GetArgOps{DefaultArgs: false})
+					actArg, err := actEvt.GetArgumentByName(expArg.Name, trace.GetArgOps{DefaultArgs: false})
 					if err != nil {
 						return err
 					}
@@ -3046,7 +3044,7 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 
 				// check args
 				for _, expArg := range expEvt.Args {
-					actArg, err := helpers.GetTraceeArgumentByName(actEvt, expArg.Name, helpers.GetArgOps{DefaultArgs: false})
+					actArg, err := actEvt.GetArgumentByName(expArg.Name, trace.GetArgOps{DefaultArgs: false})
 					if err != nil {
 						return err
 					}
@@ -3154,7 +3152,7 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 
 			// check args
 			for _, expArg := range expEvt.Args {
-				actArg, err := helpers.GetTraceeArgumentByName(actEvt, expArg.Name, helpers.GetArgOps{DefaultArgs: false})
+				actArg, err := actEvt.GetArgumentByName(expArg.Name, trace.GetArgOps{DefaultArgs: false})
 				if err != nil {
 					return err
 				}

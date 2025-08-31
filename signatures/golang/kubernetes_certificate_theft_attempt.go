@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
+	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -65,13 +65,13 @@ func (sig *KubernetesCertificateTheftAttempt) OnEvent(event protocol.Event) erro
 			}
 		}
 
-		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
+		flags, err := eventObj.GetIntArgumentByName("flags")
 		if err != nil {
 			return err
 		}
 
-		if helpers.IsFileRead(flags) {
-			pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		if parsers.IsFileRead(flags) {
+			pathname, err := eventObj.GetStringArgumentByName("pathname")
 			if err != nil {
 				return err
 			}
@@ -79,7 +79,7 @@ func (sig *KubernetesCertificateTheftAttempt) OnEvent(event protocol.Event) erro
 			path = pathname
 		}
 	case "security_inode_rename":
-		oldPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "old_path")
+		oldPath, err := eventObj.GetStringArgumentByName("old_path")
 		if err != nil {
 			return err
 		}

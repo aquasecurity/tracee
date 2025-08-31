@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
-	"github.com/aquasecurity/tracee/common/hash"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/proc"
 	"github.com/aquasecurity/tracee/common/timeutil"
@@ -111,7 +110,7 @@ func getProcessByPID(pt *ProcessTree, givenPid int32) (*Process, error) {
 	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(statStartTime)
 	// process hash (using epoch time for consistency with kernel signals)
 	epochTimeNs := timeutil.BootToEpochNS(startTimeNs)
-	processHash := hash.HashTaskID(uint32(givenPid), epochTimeNs)
+	processHash := HashTaskID(uint32(givenPid), epochTimeNs)
 
 	return pt.GetOrCreateProcessByHash(processHash), nil
 }
@@ -162,7 +161,7 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(start)
 	// process hash (using epoch time for consistency with kernel signals)
 	epochTimeNs := timeutil.BootToEpochNS(startTimeNs)
-	processHash := hash.HashTaskID(uint32(pid), epochTimeNs)
+	processHash := HashTaskID(uint32(pid), epochTimeNs)
 
 	// update tree for the given process
 	process := pt.GetOrCreateProcessByHash(processHash)
@@ -255,7 +254,7 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(start)
 	// thread hash (using epoch time for consistency with kernel signals)
 	epochTimeNs := timeutil.BootToEpochNS(startTimeNs)
-	threadHash := hash.HashTaskID(uint32(pid), epochTimeNs)
+	threadHash := HashTaskID(uint32(pid), epochTimeNs)
 
 	// update tree for the given thread
 	thread := pt.GetOrCreateThreadByHash(threadHash)

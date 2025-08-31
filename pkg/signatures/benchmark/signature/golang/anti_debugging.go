@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/aquasecurity/tracee/common/parsers"
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -56,7 +55,7 @@ func (sig *antiDebugging) OnEvent(event protocol.Event) error {
 	if ee.EventName != "ptrace" {
 		return nil
 	}
-	requestArg, err := helpers.GetTraceeIntArgumentByName(ee, "request")
+	requestArg, err := ee.GetIntArgumentByName("request")
 	if err != nil {
 		return err
 	}

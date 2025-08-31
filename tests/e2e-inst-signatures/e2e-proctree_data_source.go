@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/datasource"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -24,7 +23,7 @@ const (
 
 type e2eProcessTreeDataSource struct {
 	cb            detect.SignatureHandler
-	processTreeDS *helpers.ProcessTreeDS
+	processTreeDS *datasource.ProcessTreeDS
 }
 
 // Init is called once when the signature is loaded.
@@ -32,7 +31,7 @@ func (sig *e2eProcessTreeDataSource) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 
 	var err error
-	sig.processTreeDS, err = helpers.GetProcessTreeDataSource(ctx)
+	sig.processTreeDS, err = datasource.GetProcessTreeDataSource(ctx)
 	if err != nil {
 		return err
 	}
@@ -88,7 +87,7 @@ func (sig *e2eProcessTreeDataSource) OnEvent(event protocol.Event) error {
 		})
 
 		// Check that the event is from the tester
-		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		pathname, err := eventObj.GetStringArgumentByName("pathname")
 		if err != nil || !strings.HasSuffix(pathname, testerName) {
 			return err
 		}
@@ -239,7 +238,7 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
 	// procfs enrichment, but that requires raising privileges and, since our procfs enrichment is
 	// async, that might not be an option (due to cost of raising capabilities).
 	//
-	// pathname, err := helpers.GetTraceeStringArgumentByName(*eventObj, "pathname")
+	// pathname, err := eventObj.GetStringArgumentByName("pathname")
 	// if err != nil {
 	// 	return err
 	// }

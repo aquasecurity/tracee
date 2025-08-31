@@ -4,8 +4,6 @@ import (
 	"context"
 	"sync"
 	"testing"
-
-	"github.com/aquasecurity/tracee/common/hash"
 )
 
 // TestProcessTreeConcurrency tests the ProcessTree for concurrent access.
@@ -79,15 +77,15 @@ func TestHashCalculationConsistency(t *testing.T) {
 
 	// OLD approach (what procfs was doing WRONG)
 	// It was using boot time directly for hash calculation
-	oldProcfsHash := hash.HashTaskID(pid, processStartBootNsFromProcfs)
+	oldProcfsHash := HashTaskID(pid, processStartBootNsFromProcfs)
 
 	// NEW approach (what procfs does now CORRECTLY)
 	// Convert boot time to epoch time before hash calculation
-	newProcfsHash := hash.HashTaskID(pid, processStartEpochNsFromProcfs)
+	newProcfsHash := HashTaskID(pid, processStartEpochNsFromProcfs)
 
 	// Kernel signal approach (what kernel signals always did CORRECTLY)
 	// Kernel signals provide epoch time directly
-	kernelSignalHash := hash.HashTaskID(pid, processStartEpochNsFromSignal)
+	kernelSignalHash := HashTaskID(pid, processStartEpochNsFromSignal)
 
 	// Verify that the new procfs approach matches kernel signals (THE FIX)
 	if newProcfsHash != kernelSignalHash {

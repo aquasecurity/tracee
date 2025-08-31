@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
+	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -59,13 +59,13 @@ func (sig *SudoersModification) OnEvent(event protocol.Event) error {
 	switch eventObj.EventName {
 	case "security_file_open":
 
-		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
+		flags, err := eventObj.GetIntArgumentByName("flags")
 		if err != nil {
 			return err
 		}
 
-		if helpers.IsFileWrite(flags) {
-			pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
+		if parsers.IsFileWrite(flags) {
+			pathname, err := eventObj.GetStringArgumentByName("pathname")
 			if err != nil {
 				return err
 			}
@@ -73,7 +73,7 @@ func (sig *SudoersModification) OnEvent(event protocol.Event) error {
 			path = pathname
 		}
 	case "security_inode_rename":
-		newPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "new_path")
+		newPath, err := eventObj.GetStringArgumentByName("new_path")
 		if err != nil {
 			return err
 		}
