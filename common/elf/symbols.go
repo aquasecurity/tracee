@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"runtime"
 	"syscall"
 	"time"
 	"unsafe"
@@ -298,6 +299,10 @@ func madviseAligned(data []byte, advice int) error {
 		uintptr(alignedLen),
 		uintptr(advice),
 	)
+
+	// Since madvise arguments are derived from an uintptr, it's important
+	// to keep the original object alive until after the syscall.
+	runtime.KeepAlive(data)
 
 	if errno != 0 {
 		return errno
