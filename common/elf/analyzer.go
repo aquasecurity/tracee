@@ -43,6 +43,24 @@ type ElfAnalyzer struct {
 
 var ErrSymbolNotFound = errors.New("symbol not found")
 
+// HasElfMagic checks if the given bytes start with the ELF magic number (0x7F 'ELF').
+// This is a fast check that only validates the first 4 bytes.
+func HasElfMagic(bytesArray []byte) bool {
+	if len(bytesArray) >= 4 {
+		if bytesArray[0] == 127 && bytesArray[1] == 69 && bytesArray[2] == 76 && bytesArray[3] == 70 {
+			return true
+		}
+	}
+	return false
+}
+
+// IsElf checks if the given bytes represent a valid ELF file.
+// Currently this only checks the magic number, but can be expanded in the future
+// to include more comprehensive ELF validation.
+func IsElf(bytesArray []byte) bool {
+	return HasElfMagic(bytesArray)
+}
+
 func NewElfAnalyzer(filePath string, wantedSymbols []WantedSymbol) (*ElfAnalyzer, error) {
 	var err error
 	var data []byte

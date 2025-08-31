@@ -1,4 +1,4 @@
-package filehash_test
+package digest_test
 
 import (
 	"crypto/sha256"
@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"gotest.tools/assert"
 
+	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/errfmt"
-	"github.com/aquasecurity/tracee/common/filehash"
 )
 
 func computeFileHashOld(file *os.File) (string, error) {
@@ -38,7 +38,7 @@ func TestCurrentHashCompatibility(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		h1, err := filehash.ComputeFileHash(file)
+		h1, err := digest.ComputeFileHash(file)
 		require.NoError(t, err)
 		_, err = file.Seek(0, 0)
 		require.NoError(t, err)

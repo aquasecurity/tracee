@@ -1,10 +1,8 @@
 package parsers
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -1134,24 +1132,6 @@ func ParseMmapProt(rawValue uint64) MmapProtArgument {
 	}
 
 	return MmapProtArgument{stringValue: sb.String(), rawValue: rawValue}
-}
-
-// ParseUint32IP parses the IP address encoded as a uint32
-func ParseUint32IP(in uint32) string {
-	ip := make(net.IP, net.IPv4len)
-	binary.BigEndian.PutUint32(ip, in)
-
-	return ip.String()
-}
-
-// Parse16BytesSliceIP parses the IP address encoded as 16 bytes long
-// PrintBytesSliceIP. It would be more correct to accept a [16]byte instead of
-// variable lenth slice, but that would case unnecessary memory copying and
-// type conversions.
-func Parse16BytesSliceIP(in []byte) string {
-	ip := net.IP(in)
-
-	return ip.String()
 }
 
 type SocketLevelArgument uint64

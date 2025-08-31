@@ -1,10 +1,10 @@
-package filehash_test
+package digest_test
 
 import (
 	"os"
 	"testing"
 
-	"github.com/aquasecurity/tracee/common/filehash"
+	"github.com/aquasecurity/tracee/common/digest"
 )
 
 func BenchmarkComputeFileHashOld(b *testing.B) {
@@ -36,7 +36,7 @@ func BenchmarkComputeFileHashCurrent(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := filehash.ComputeFileHash(file)
+		_, err := digest.ComputeFileHash(file)
 		if err != nil {
 			b.Fatalf("Error computing file hash: %v", err)
 		}
