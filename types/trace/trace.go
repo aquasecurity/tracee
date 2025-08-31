@@ -3,6 +3,7 @@ package trace
 
 import (
 	"bytes"
+	b64 "encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1822,4 +1823,396 @@ func (readType KernelReadType) String() string {
 		return "x509-certificate"
 	}
 	return "unknown"
+}
+
+//
+// Argument Extraction Functions
+//
+
+// ArgVal extracts an argument value with generic type checking from a slice of Arguments
+func ArgVal[T any](args []Argument, argName string) (T, error) {
+	for _, arg := range args {
+		if arg.Name == argName {
+			val, ok := arg.Value.(T)
+			if !ok {
+				zeroVal := *new(T)
+				return zeroVal, fmt.Errorf(
+					"argument %s is not of type %T, is of type %T",
+					argName,
+					zeroVal,
+					arg.Value,
+				)
+			}
+			return val, nil
+		}
+	}
+	return *new(T), fmt.Errorf("argument %s not found", argName)
+}
+
+// GetArgOps represents options for arguments getters
+type GetArgOps struct {
+	DefaultArgs bool // Receive default args value (value equals 'nil'). If set to false, will return error if arg not initialized.
+}
+
+// GetArgumentByName fetches the argument in event with `Name` that matches argName
+func (e Event) GetArgumentByName(argName string, opts GetArgOps) (Argument, error) {
+	for _, arg := range e.Args {
+		if arg.Name == argName {
+			if !opts.DefaultArgs && arg.Value == nil {
+				return arg, fmt.Errorf("argument %s is not initialized", argName)
+			}
+			return arg, nil
+		}
+	}
+	return Argument{}, fmt.Errorf("argument %s not found", argName)
+}
+
+// GetStringArgumentByName retrieves the argument from the event's "Args" field
+// that matches the specified "argName". The argument value is returned cast as a string.
+func (e Event) GetStringArgumentByName(argName string) (string, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return "", err
+	}
+	argStr, ok := arg.Value.(string)
+	if ok {
+		return argStr, nil
+	}
+
+	return "", fmt.Errorf("can't convert argument %v to string", argName)
+}
+
+// GetIntArgumentByName retrieves the argument from the event's "Args" field
+// that matches the specified "argName". The argument value is returned cast as a int.
+func (e Event) GetIntArgumentByName(argName string) (int, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return 0, err
+	}
+
+	argInt32, ok := arg.Value.(int32)
+	if ok {
+		return int(argInt32), nil
+	}
+	argInt64, ok := arg.Value.(int64)
+	if ok {
+		return int(argInt64), nil
+	}
+	argInt, ok := arg.Value.(int)
+	if ok {
+		return argInt, nil
+	}
+
+	return 0, fmt.Errorf("can't convert argument %v to int (argument is of type %T)", argName, arg.Value)
+}
+
+// GetUintArgumentByName gets the argument matching the "argName" given from the event "Args" field, casted as uint.
+func (e Event) GetUintArgumentByName(argName string) (uint, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return 0, err
+	}
+
+	argUint32, ok := arg.Value.(uint32)
+	if ok {
+		return uint(argUint32), nil
+	}
+	argUint64, ok := arg.Value.(uint64)
+	if ok {
+		return uint(argUint64), nil
+	}
+	argUint, ok := arg.Value.(uint)
+	if ok {
+		return argUint, nil
+	}
+
+	return 0, fmt.Errorf("can't convert argument %v to uint (argument is of type %T)", argName, arg.Value)
+}
+
+// GetSliceStringArgumentByName retrieves the argument from the event's "Args" field
+// that matches the specified "argName". The argument value is returned cast as a []string.
+func (e Event) GetSliceStringArgumentByName(argName string) ([]string, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return nil, err
+	}
+	argStr, ok := arg.Value.([]string)
+	if ok {
+		return argStr, nil
+	}
+
+	return nil, fmt.Errorf("can't convert argument %v to slice of strings", argName)
+}
+
+// GetBytesSliceArgumentByName retrieves the argument from the event's "Args" field
+// that matches the specified "argName". The argument value is returned cast as a []byte.
+func (e Event) GetBytesSliceArgumentByName(argName string) ([]byte, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return nil, err
+	}
+	argBytes, ok := arg.Value.([]byte)
+	if ok {
+		return argBytes, nil
+	}
+
+	argBytesString, ok := arg.Value.(string)
+	if ok {
+		decodedBytes, err := b64.StdEncoding.DecodeString(argBytesString)
+		if err != nil {
+			return nil, fmt.Errorf("can't convert argument %v to []bytes", argName)
+		}
+		return decodedBytes, nil
+	}
+
+	return nil, fmt.Errorf("can't convert argument %v to []bytes", argName)
+}
+
+// GetRawAddrArgumentByName returns map[string]string of addr argument
+func (e Event) GetRawAddrArgumentByName(argName string) (map[string]string, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return nil, err
+	}
+	addr, isOk := arg.Value.(map[string]string)
+	if !isOk {
+		addr = make(map[string]string)
+		stringInterMap, isStringInterMap := arg.Value.(map[string]interface{})
+		if !isStringInterMap {
+			return addr, errors.New("couldn't convert arg to addr")
+		}
+		for k, v := range stringInterMap {
+			s, isString := v.(string)
+			if !isString {
+				return addr, errors.New("couldn't convert arg to addr")
+			}
+			addr[k] = s
+		}
+	}
+
+	return addr, nil
+}
+
+// GetHookedSymbolDataArgumentByName returns []HookedSymbolData of hooked symbols for arg
+func (e Event) GetHookedSymbolDataArgumentByName(argName string) ([]HookedSymbolData, error) {
+	hookedSymbolsPtr, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return []HookedSymbolData{}, err
+	}
+
+	var hookedSymbols []HookedSymbolData
+
+	hookedSymbols, ok := hookedSymbolsPtr.Value.([]HookedSymbolData)
+	if ok {
+		return hookedSymbols, nil
+	}
+
+	argSlice, ok := hookedSymbolsPtr.Value.([]interface{})
+	if ok {
+		for _, v := range argSlice {
+			hookedSymbol, err := parseHookedSymbolData(v)
+			if err != nil {
+				continue
+			}
+			hookedSymbols = append(hookedSymbols, hookedSymbol)
+		}
+		return hookedSymbols, nil
+	}
+
+	return hookedSymbols, fmt.Errorf("can't convert argument %v to []HookedSymbolData", argName)
+}
+
+// parseHookedSymbolData generates a HookedSymbolData from interface{} got from event arg
+func parseHookedSymbolData(v interface{}) (HookedSymbolData, error) {
+	symbol := HookedSymbolData{}
+
+	hookedSymbolMap, ok := v.(map[string]interface{})
+	if !ok {
+		return symbol, errors.New("can't convert hooked symbol to map[string]interface{}")
+	}
+
+	for key, value := range hookedSymbolMap {
+		strValue, ok := value.(string)
+		if !ok {
+			continue
+		}
+		switch key {
+		case "ModuleOwner":
+			symbol.ModuleOwner = strValue
+
+		case "SymbolName":
+			symbol.SymbolName = strValue
+		}
+	}
+
+	return symbol, nil
+}
+
+//
+// Protocol Extraction Functions
+//
+
+// GetPacketMetadata extracts PacketMetadata from an event argument
+func (e Event) GetPacketMetadata(argName string) (PacketMetadata, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return PacketMetadata{}, err
+	}
+
+	argPacketMetadata, ok := arg.Value.(PacketMetadata)
+	if ok {
+		return argPacketMetadata, nil
+	}
+
+	return PacketMetadata{}, fmt.Errorf("packet metadata: type error (should be PacketMetadata, is %T)", arg.Value)
+}
+
+// GetProtoIPv4ByName extracts ProtoIPv4 from an event argument
+func (e Event) GetProtoIPv4ByName(argName string) (ProtoIPv4, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return ProtoIPv4{}, err
+	}
+
+	argProtoIPv4, ok := arg.Value.(ProtoIPv4)
+	if ok {
+		return argProtoIPv4, nil
+	}
+
+	return ProtoIPv4{}, fmt.Errorf("protocol IPv4: type error (should be ProtoIPv4, is %T)", arg.Value)
+}
+
+// GetProtoIPv6ByName extracts ProtoIPv6 from an event argument
+func (e Event) GetProtoIPv6ByName(argName string) (ProtoIPv6, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return ProtoIPv6{}, err
+	}
+
+	argProtoIPv6, ok := arg.Value.(ProtoIPv6)
+	if ok {
+		return argProtoIPv6, nil
+	}
+
+	return ProtoIPv6{}, fmt.Errorf("protocol IPv6: type error (should be ProtoIPv6, is %T)", arg.Value)
+}
+
+// GetProtoUDPByName extracts ProtoUDP from an event argument
+func (e Event) GetProtoUDPByName(argName string) (ProtoUDP, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return ProtoUDP{}, err
+	}
+
+	argProtoUDP, ok := arg.Value.(ProtoUDP)
+	if ok {
+		return argProtoUDP, nil
+	}
+
+	return ProtoUDP{}, fmt.Errorf("protocol UDP: type error (should be ProtoUDP, is %T)", arg.Value)
+}
+
+// GetProtoTCPByName extracts ProtoTCP from an event argument
+func (e Event) GetProtoTCPByName(argName string) (ProtoTCP, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return ProtoTCP{}, err
+	}
+
+	argProtoTCP, ok := arg.Value.(ProtoTCP)
+	if ok {
+		return argProtoTCP, nil
+	}
+
+	return ProtoTCP{}, fmt.Errorf("protocol TCP: type error (should be ProtoTCP, is %T)", arg.Value)
+}
+
+// GetProtoICMPByName extracts ProtoICMP from an event argument
+func (e Event) GetProtoICMPByName(argName string) (ProtoICMP, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return ProtoICMP{}, err
+	}
+
+	argProtoICMP, ok := arg.Value.(ProtoICMP)
+	if ok {
+		return argProtoICMP, nil
+	}
+
+	return ProtoICMP{}, fmt.Errorf("protocol ICMP: type error (should be ProtoICMP, is %T)", arg.Value)
+}
+
+// GetProtoICMPv6ByName extracts ProtoICMPv6 from an event argument
+func (e Event) GetProtoICMPv6ByName(argName string) (ProtoICMPv6, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return ProtoICMPv6{}, err
+	}
+
+	argProtoICMPv6, ok := arg.Value.(ProtoICMPv6)
+	if ok {
+		return argProtoICMPv6, nil
+	}
+
+	return ProtoICMPv6{}, fmt.Errorf("protocol ICMPv6: type error (should be ProtoICMPv6, is %T)", arg.Value)
+}
+
+// GetProtoDNSByName extracts ProtoDNS from an event argument
+func (e Event) GetProtoDNSByName(argName string) (ProtoDNS, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return ProtoDNS{}, err
+	}
+
+	argProtoDNS, ok := arg.Value.(ProtoDNS)
+	if ok {
+		return argProtoDNS, nil
+	}
+
+	return ProtoDNS{}, fmt.Errorf("protocol DNS: type error (should be ProtoDNS, is %T)", arg.Value)
+}
+
+// GetProtoHTTPByName extracts ProtoHTTP from an event argument
+func (e Event) GetProtoHTTPByName(argName string) (ProtoHTTP, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return ProtoHTTP{}, err
+	}
+
+	argProtoHTTP, ok := arg.Value.(ProtoHTTP)
+	if ok {
+		return argProtoHTTP, nil
+	}
+
+	return ProtoHTTP{}, fmt.Errorf("protocol HTTP: type error (should be ProtoHTTP, is %T)", arg.Value)
+}
+
+// GetProtoHTTPRequestByName extracts ProtoHTTPRequest from an event argument
+func (e Event) GetProtoHTTPRequestByName(argName string) (ProtoHTTPRequest, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return ProtoHTTPRequest{}, err
+	}
+
+	argProtoHTTPRequest, ok := arg.Value.(ProtoHTTPRequest)
+	if ok {
+		return argProtoHTTPRequest, nil
+	}
+
+	return ProtoHTTPRequest{}, fmt.Errorf("protocol HTTP (request): type error (should be ProtoHTTPRequest, is %T)", arg.Value)
+}
+
+// GetProtoHTTPResponseByName extracts ProtoHTTPResponse from an event argument
+func (e Event) GetProtoHTTPResponseByName(argName string) (ProtoHTTPResponse, error) {
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return ProtoHTTPResponse{}, err
+	}
+
+	argProtoHTTPResponse, ok := arg.Value.(ProtoHTTPResponse)
+	if ok {
+		return argProtoHTTPResponse, nil
+	}
+
+	return ProtoHTTPResponse{}, fmt.Errorf("protocol HTTP (response): type error (should be ProtoHTTPResponse, is %T)", arg.Value)
 }
