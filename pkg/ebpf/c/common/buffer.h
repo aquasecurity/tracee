@@ -143,7 +143,7 @@ statfunc int save_bytes_to_buf(args_buffer_t *buf, void *ptr, u32 size, u8 index
     if (buf->offset > ARGS_BUF_SIZE - (MAX_BYTES_ARR_SIZE + 1 + sizeof(int)))
         return 0;
 
-    size_t read_size = size;
+    u32 read_size = size;
     if (read_size >= MAX_BYTES_ARR_SIZE)
         read_size = MAX_BYTES_ARR_SIZE - 1;
 
