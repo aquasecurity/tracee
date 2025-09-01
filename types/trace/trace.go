@@ -1829,7 +1829,16 @@ func (readType KernelReadType) String() string {
 // Argument Extraction Functions
 //
 
-// ArgVal extracts an argument value with generic type checking from a slice of Arguments
+// ArgVal extracts an argument value with generic type checking from a slice of Arguments.
+// It searches for an argument with the specified name and attempts to cast its value to type T.
+//
+// Parameters:
+//   - args: slice of Arguments to search through
+//   - argName: name of the argument to find
+//
+// Returns:
+//   - T: the argument value cast to the specified type
+//   - error: if argument not found or type assertion fails
 func ArgVal[T any](args []Argument, argName string) (T, error) {
 	for _, arg := range args {
 		if arg.Name == argName {
@@ -1867,81 +1876,67 @@ func (e Event) GetArgumentByName(argName string, opts GetArgOps) (Argument, erro
 	return Argument{}, fmt.Errorf("argument %s not found", argName)
 }
 
+// getTypedArgumentByName is a generic helper that retrieves and type-asserts an argument value
+func getTypedArgumentByName[T any](e Event, argName string) (T, error) {
+	var zero T
+	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return zero, err
+	}
+	val, ok := arg.Value.(T)
+	if ok {
+		return val, nil
+	}
+	return zero, fmt.Errorf("can't convert argument %v to %T (argument is of type %T)", argName, zero, arg.Value)
+}
+
 // GetStringArgumentByName retrieves the argument from the event's "Args" field
 // that matches the specified "argName". The argument value is returned cast as a string.
 func (e Event) GetStringArgumentByName(argName string) (string, error) {
-	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
-	if err != nil {
-		return "", err
-	}
-	argStr, ok := arg.Value.(string)
-	if ok {
-		return argStr, nil
-	}
-
-	return "", fmt.Errorf("can't convert argument %v to string", argName)
+	return getTypedArgumentByName[string](e, argName)
 }
 
 // GetIntArgumentByName retrieves the argument from the event's "Args" field
-// that matches the specified "argName". The argument value is returned cast as a int.
+// that matches the specified "argName". The argument value is returned cast as an int.
+// Supports int, int32, and int64 argument types.
 func (e Event) GetIntArgumentByName(argName string) (int, error) {
-	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
-	if err != nil {
-		return 0, err
+	// Try int, int32, int64 in order
+	if v, err := getTypedArgumentByName[int](e, argName); err == nil {
+		return v, nil
+	}
+	if v, err := getTypedArgumentByName[int32](e, argName); err == nil {
+		return int(v), nil
+	}
+	if v, err := getTypedArgumentByName[int64](e, argName); err == nil {
+		return int(v), nil
 	}
 
-	argInt32, ok := arg.Value.(int32)
-	if ok {
-		return int(argInt32), nil
-	}
-	argInt64, ok := arg.Value.(int64)
-	if ok {
-		return int(argInt64), nil
-	}
-	argInt, ok := arg.Value.(int)
-	if ok {
-		return argInt, nil
-	}
-
+	arg, _ := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
 	return 0, fmt.Errorf("can't convert argument %v to int (argument is of type %T)", argName, arg.Value)
 }
 
 // GetUintArgumentByName gets the argument matching the "argName" given from the event "Args" field, casted as uint.
+// Supports uint, uint32, and uint64 argument types.
 func (e Event) GetUintArgumentByName(argName string) (uint, error) {
-	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
-	if err != nil {
-		return 0, err
+	// Try uint, uint32, uint64 in order
+	if v, err := getTypedArgumentByName[uint](e, argName); err == nil {
+		return v, nil
+	}
+	if v, err := getTypedArgumentByName[uint32](e, argName); err == nil {
+		return uint(v), nil
+	}
+	if v, err := getTypedArgumentByName[uint64](e, argName); err == nil {
+		return uint(v), nil
 	}
 
-	argUint32, ok := arg.Value.(uint32)
-	if ok {
-		return uint(argUint32), nil
-	}
-	argUint64, ok := arg.Value.(uint64)
-	if ok {
-		return uint(argUint64), nil
-	}
-	argUint, ok := arg.Value.(uint)
-	if ok {
-		return argUint, nil
-	}
-
+	arg, _ := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
 	return 0, fmt.Errorf("can't convert argument %v to uint (argument is of type %T)", argName, arg.Value)
 }
 
 // GetSliceStringArgumentByName retrieves the argument from the event's "Args" field
 // that matches the specified "argName". The argument value is returned cast as a []string.
 func (e Event) GetSliceStringArgumentByName(argName string) ([]string, error) {
-	arg, err := e.GetArgumentByName(argName, GetArgOps{DefaultArgs: false})
-	if err != nil {
-		return nil, err
-	}
-	argStr, ok := arg.Value.([]string)
-	if ok {
-		return argStr, nil
-	}
-
-	return nil, fmt.Errorf("can't convert argument %v to slice of strings", argName)
+	return getTypedArgumentByName[[]string](e, argName)
 }
 
 // GetBytesSliceArgumentByName retrieves the argument from the event's "Args" field
