@@ -4,12 +4,14 @@ This guide walks you through the process of adding new event monitoring capabili
 
 ## Overview
 
-Adding a new event to Tracee requires changes in four main areas:
+Adding a new event to Tracee requires changes in several main areas:
 
 1. **eBPF Implementation** - Implement the actual event handling logic
 2. **Probe Configuration** - Configure how the event attaches to kernel functions
 3. **Event Definition** - Define the event and its metadata in Go code
-4. **Event Documentation** - Create documentation file for the event
+4. **Protobuf Schema** - Add event to protobuf definitions for gRPC API
+5. **gRPC Translation** - Map event to protobuf enums for external APIs
+6. **Event Documentation** - Create documentation file for the event
 
 ## Step-by-Step Process
 
@@ -115,9 +117,76 @@ YourNewEvent: {
 ```
 {% endraw %}
 
+### 4. Add Event to Protobuf Schema
+
+**Add event ID to protobuf enum** in `api/v1beta1/event.proto`:
+
+```proto
+enum EventId {
+    // ... existing events ...
+    your_new_event = 42;  // Must match the ID from Go/eBPF
+    // ... more events ...
+}
+```
+
+**Important notes:**
+- Event IDs in protobuf must match exactly with Go constants and eBPF defines
+- Follow the existing naming convention: lowercase with underscores
+- Add the event in the appropriate section (syscalls, common events, etc.)
+
+### 5. Add Event to gRPC Translation Table
+
+**Update the translation table** in `pkg/server/grpc/tracee.go`:
+
+```go
+// Add to EventTranslationTable map in appropriate section:
+events.YourNewEvent: pb.EventId_your_new_event,
+```
+
+This table maps internal Go event IDs to external protobuf event IDs for gRPC communication.
+
+### 6. Generate Protobuf Files
+
+**After modifying any `.proto` files, regenerate the Go code:**
+
+```bash
+# Generate protobuf Go files from proto definitions
+make protoc
+```
+
+This command uses `protoc` to generate:
+- Go structs from protobuf messages
+- gRPC service definitions
+- JSON marshaling/unmarshaling code
+
+**Verify the generated files:**
+- `api/v1beta1/*.pb.go` - Generated protobuf structs
+- `api/v1beta1/*_grpc.pb.go` - Generated gRPC service code
+
+### 7. Handle Complex Data Types (If Needed)
+
+**If your event uses complex data types**, you may need to add marshalling logic in `pkg/server/grpc/event_data.go`:
+
+```go
+// Add case in parseArgument function for custom types
+case *YourCustomType:
+    return &pb.EventValue{
+        Name: arg.Name,
+        Value: &pb.EventValue_YourCustomField{
+            YourCustomField: convertYourCustomType(v),
+        },
+    }, nil
+```
+
+**For new data types:**
+1. Add the type definition to `api/v1beta1/event_data.proto`
+2. Add the field to the `EventValue` oneof
+3. Implement conversion logic in `event_data.go`
+4. Run `make protoc` to regenerate files
+
 ## Testing Your New Event
 
-### 4. Build and Test Compilation
+### 8. Build and Test Compilation
 
 ```bash
 # Build Tracee with your changes
@@ -127,7 +196,7 @@ make tracee
 echo $?  # Should be 0
 ```
 
-### 5. Test Event Functionality
+### 9. Test Event Functionality
 
 ```bash
 # Test that your event can be selected
@@ -137,7 +206,7 @@ sudo ./dist/tracee --events your_event_name --output json
 sudo ./dist/tracee --config-file your_test_policy.yaml
 ```
 
-### 6. Unit Tests
+### 10. Unit Tests
 
 Add unit tests for your event definition and run them:
 
@@ -158,11 +227,11 @@ func TestYourNewEvent(t *testing.T) {
 }
 ```
 
-### 7. Integration Tests
+### 11. Integration Tests
 
 Consider adding integration tests that actually trigger your event and verify it's captured correctly.
 
-### 8. Create Event Documentation
+### 12. Create Event Documentation
 
 After everything is working, create a markdown file in the `docs/` directory to document your event.
 
@@ -204,6 +273,13 @@ After everything is working, create a markdown file in the `docs/` directory to 
 - Verify event IDs don't conflict
 - Check eBPF program section names match probe configuration
 - Ensure all required headers are included
+- Run `make protoc` after modifying proto files
+
+**Protobuf/gRPC Issues:**
+- Event ID mismatches between Go, eBPF, and protobuf
+- Missing entry in EventTranslationTable
+- Protobuf files not regenerated after schema changes
+- Complex data types not handled in event_data.go
 
 **Runtime Issues:**
 - Check kernel compatibility for attachment points
