@@ -157,10 +157,8 @@ Vagrant.configure("2") do |config|
         ln -s -f "$path" "${path%-*}"
       done
 
-      rm -f /usr/bin/clang-format-12
-      curl -L -o /tmp/clang-format-12 https://github.com/muttleyxd/clang-tools-static-binaries/releases/download/master-f4f85437/clang-format-12.0.1_linux-${ARCH}
-      sudo mv -f /tmp/clang-format-12 /usr/bin/clang-format-12
-      sudo chmod 755 /usr/bin/clang-format-12
+      apt-get install --yes clang-format-19
+      ln -s -f /usr/bin/clang-format-19 /usr/bin/clang-format
 
       apt-get install --yes zlib1g-dev libelf-dev libzstd-dev
       apt-get install --yes protobuf-compiler

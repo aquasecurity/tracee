@@ -114,11 +114,10 @@ remove_llvm_alternatives() {
 }
 
 update_llvm_alternatives() {
-    version=14
+    version=19
     update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${version} ${version}0 \
         --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${version} \
         --slave /usr/bin/clangd clangd /usr/bin/clangd-${version} \
-        --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-${version} \
         --slave /usr/bin/lld lld /usr/bin/lld-${version} \
         --slave /usr/bin/llc llc /usr/bin/llc-${version} \
         --slave /usr/bin/llvm-strip llvm-strip /usr/bin/llvm-strip-${version} \
@@ -131,6 +130,11 @@ update_llvm_alternatives() {
         --slave /usr/bin/llvm-readelf llvm-readelf /usr/bin/llvm-readelf-${version} \
         --slave /usr/bin/opt opt /usr/bin/opt-${version} \
         --slave /usr/bin/cc cc /usr/bin/clang-${version}
+
+    # Set up clang-format separately (handle independently)
+    if [ -f /usr/bin/clang-format-${version} ]; then
+        update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-${version} ${version}0
+    fi
 }
 
 remove_golang_alternatives() {
@@ -143,7 +147,6 @@ remove_llvm_usr_bin_files() {
     rm -f /usr/bin/clang++*
     rm -f /usr/bin/clangd*
     rm -f /usr/bin/clang-format*
-
     rm -f /usr/bin/lld*
     rm -f /usr/bin/llc*
     rm -f /usr/bin/llvm-strip*
@@ -166,50 +169,6 @@ remove_golang_usr_bin_files() {
 link_golang_usr_local_go() {
     ln -s /usr/local/go/bin/go /usr/bin/go
     ln -s /usr/local/go/bin/gofmt /usr/bin/gofmt
-}
-
-link_llvm_usr_local_clang() {
-    ln -s /usr/local/clang/bin/clang /usr/bin/clang
-    ln -s /usr/local/clang/bin/clang++ /usr/bin/clang++
-    ln -s /usr/local/clang/bin/clangd /usr/bin/clangd
-    ln -s /usr/local/clang/bin/clang-format /usr/bin/clang-format
-    ln -s /usr/local/clang/bin/lld /usr/bin/lld
-    ln -s /usr/local/clang/bin/llc /usr/bin/llc
-    ln -s /usr/local/clang/bin/llvm-strip /usr/bin/llvm-strip
-    ln -s /usr/local/clang/bin/llvm-config /usr/bin/llvm-config
-    ln -s /usr/local/clang/bin/ld.lld /usr/bin/ld.lld
-    ln -s /usr/local/clang/bin/llvm-ar /usr/bin/llvm-ar
-    ln -s /usr/local/clang/bin/llvm-nm /usr/bin/llvm-nm
-    ln -s /usr/local/clang/bin/llvm-objcopy /usr/bin/llvm-objcopy
-    ln -s /usr/local/clang/bin/llvm-objdump /usr/bin/llvm-objdump
-    ln -s /usr/local/clang/bin/llvm-readelf /usr/bin/llvm-readelf
-    ln -s /usr/local/clang/bin/opt /usr/bin/opt
-}
-
-install_clang_from_github() {
-    LLVM_URL="https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/"
-
-    if [[ $ARCH == x86_64 ]]; then
-        LLVM_URL=$LLVM_URL"clang+llvm-14.0.6-x86_64-linux-gnu-rhel-8.4.tar.xz"
-    else
-        LLVM_URL=$LLVM_URL"clang+llvm-14.0.6-aarch64-linux-gnu.tar.xz"
-    fi
-
-    LLVM_FILE=$(basename $LLVM_URL)
-    LLVM_DIR="${LLVM_FILE%.tar.xz}"
-
-    # Download
-    rm -f "/tmp/$LLVM_FILE"
-    curl -L -o "/tmp/$LLVM_FILE" "$LLVM_URL"
-
-    # Install
-    cd /usr/local
-    rm -rf ./clang
-    tar xfJ /tmp/"$LLVM_FILE"
-    mv "$LLVM_DIR" ./clang
-    cd -
-
-    link_llvm_usr_local_clang
 }
 
 install_golang_from_github() {
@@ -236,7 +195,9 @@ install_golang_from_github() {
 
 install_clang_os_packages() {
     wait_for_apt_locks
-    apt-get install -y llvm-14 clang-14 clangd-14 lld-14
+    apt-get install -y llvm-19 clang-19 clangd-19 lld-19
+    # Try to install clang-format-19 directly (might be a separate package)
+    apt-get install -y clang-format-19 || echo "clang-format-19 package not available"
     update_llvm_alternatives
 }
 
@@ -252,9 +213,10 @@ install_gcc12_os_packages() {
 
 remove_llvm_os_packages() {
     wait_for_apt_locks
-    apt-get remove -y clang-12 clangd-12 lld-12 llvm-12 || true
-    apt-get remove -y clang-13 clangd-13 lld-13 llvm-13 || true
+    # Remove previous clang versions to ensure clean installation
     apt-get remove -y clang-14 clangd-14 lld-14 llvm-14 || true
+    apt-get remove -y clang-18 clangd-18 lld-18 llvm-18 || true
+    apt-get remove -y clang-19 clangd-19 lld-19 llvm-19 || true
     apt-get --purge autoremove -y
 }
 
@@ -282,9 +244,6 @@ install_libzstd_os_packages() {
 
 # Main logic.
 
-# Note: I left commented out the commands that would (re)install clang-14. This
-# shows how an eventual upgrade to clang-15 (and on) would look like.
-
 KERNEL=$(uname -r)
 
 # shellcheck source=/dev/null
@@ -301,9 +260,9 @@ if [[ $ID == "ubuntu" ]]; then
     # apt-get dist-upgrade -y
     # apt-get --purge autoremove -y
 
-    # remove_llvm_alternatives
-    # remove_llvm_os_packages
-    # remove_llvm_usr_bin_files
+    remove_llvm_alternatives
+    remove_llvm_os_packages
+    remove_llvm_usr_bin_files
 
     remove_golang_alternatives
     remove_golang_os_packages
@@ -312,7 +271,7 @@ if [[ $ID == "ubuntu" ]]; then
     case $VERSION_CODENAME in
     "focal")
         # apt-get install -y libtinfo5
-        # install_clang_from_github
+        install_clang_os_packages
         install_golang_from_github
         ;;
     "jammy")
@@ -321,15 +280,15 @@ if [[ $ID == "ubuntu" ]]; then
             install_gcc11_os_packages
             install_gcc12_os_packages
         fi
-        #install_clang_os_packages
+        install_clang_os_packages
         install_golang_from_github
         ;;
     "lunar")
-        #install_clang_os_packages
+        install_clang_os_packages
         install_golang_from_github
         ;;
     "mantic")
-        #install_clang_os_packages
+        install_clang_os_packages
         install_golang_from_github
         ;;
     *)
