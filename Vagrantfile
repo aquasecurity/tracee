@@ -80,7 +80,7 @@ Vagrant.configure("2") do |config|
   # define the machine with the dynamically set vm_name
   config.vm.define vm_name do |vm_config|
     # virtualbox, parallels, vmware_desktop, qemu, libvirt
-    vm_config.vm.box = "bento/ubuntu-22.04"
+    vm_config.vm.box = "bento/ubuntu-24.04"
 
     case host_os
     when "Linux"
