@@ -19,40 +19,11 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
     apt-get install -y sudo coreutils findutils && \
     apt-get install -y bash git curl rsync && \
-    # Set clang version to use
-    CLANG_VERSION=19 && \
-    apt-get install -y llvm clang clangd clang-format golang make gcc && \
-    apt-get install -y llvm-$$CLANG_VERSION clang-$$CLANG_VERSION clangd-$$CLANG_VERSION && \
-    # Try to install clang-format-19 directly (might be a separate package)
-    (apt-get install -y clang-format-$$CLANG_VERSION || echo "clang-format-$$CLANG_VERSION package not available") && \
-    apt-get install -y linux-headers-generic && \
-    apt-get install -y libelf-dev && \
-    apt-get install -y zlib1g-dev && \
-    apt-get install -y libzstd-dev && \
-    # Check if default clang is already version 19, setup alternatives if needed
-    DEFAULT_CLANG_VERSION=$$(clang --version 2>/dev/null | head -n1 | grep -o "clang version [0-9]*" | grep -o "[0-9]*" || echo "0") && \
-    if [ "$$DEFAULT_CLANG_VERSION" != "$$CLANG_VERSION" ]; then \
-        echo "Setting up update-alternatives for clang-$$CLANG_VERSION" && \
-        # Remove existing alternatives that might conflict
-        (update-alternatives --remove-all cc || true) && \
-        (update-alternatives --remove-all clang || true) && \
-        (update-alternatives --remove-all clang++ || true) && \
-        (update-alternatives --remove-all clang-format || true) && \
-        # Set up clang alternative
-        update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$$CLANG_VERSION $${CLANG_VERSION}0 \
-            --slave /usr/bin/cc cc /usr/bin/clang-$$CLANG_VERSION && \
-        # Set up clang++ alternative
-        if [ -f /usr/bin/clang++-$$CLANG_VERSION ]; then \
-            update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-$$CLANG_VERSION $${CLANG_VERSION}0; \
-        fi && \
-        # Set up clang-format alternative
-        if [ -f /usr/bin/clang-format-$$CLANG_VERSION ]; then \
-            update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-$$CLANG_VERSION $${CLANG_VERSION}0; \
-        fi; \
-    else \
-        echo "Default clang is already version $$CLANG_VERSION"; \
-    fi && \
+    apt-get install -y llvm clang clangd clang-format golang make gcc linux-headers-generic libelf-dev zlib1g-dev libzstd-dev
 
+# Install Clang using centralized script
+COPY scripts/ /tmp/scripts/
+RUN /tmp/scripts/installation/install-clang.sh
 
 # install bpftool from btfhub
 
