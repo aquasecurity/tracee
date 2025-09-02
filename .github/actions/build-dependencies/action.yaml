@@ -20,49 +20,42 @@ runs:
         sudo ln -s /usr/local/go/bin/go /usr/bin/go
         sudo ln -s /usr/local/go/bin/gofmt /usr/bin/gofmt
       shell: bash
-    - name: Install Clang Format 12
+    - name: Install Clang 19
       run: |
-        sudo rm -f /usr/bin/clang-format-12
-        curl -L -o /tmp/clang-format-12 https://github.com/muttleyxd/clang-tools-static-binaries/releases/download/master-f4f85437/clang-format-12.0.1_linux-amd64
-        sudo mv /tmp/clang-format-12 /usr/bin/clang-format-12
-        sudo chmod 755 /usr/bin/clang-format-12
-      shell: bash
-    - name: Install Clang
-      run: |
-        sudo rm -f /usr/bin/cc
-        sudo rm -f /usr/bin/clang
-        sudo rm -f /usr/bin/clang++
-        sudo rm -f /usr/bin/llc
-        sudo rm -f /usr/bin/lld
-        sudo rm -f /usr/bin/clangd
-        sudo rm -f /usr/bin/clang-format
-        sudo rm -f /usr/bin/llvm-strip
-        sudo rm -f /usr/bin/llvm-config
-        sudo rm -f /usr/bin/ld.lld
-        sudo rm -f /usr/bin/llvm-ar
-        sudo rm -f /usr/bin/llvm-nm
-        sudo rm -f /usr/bin/llvm-objcopy
-        sudo rm -f /usr/bin/llvm-objdump
-        sudo rm -f /usr/bin/llvm-readelf
-        sudo rm -f /usr/bin/opt
-        curl -L -o /tmp/clang.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/clang+llvm-14.0.6-x86_64-linux-gnu-rhel-8.4.tar.xz
-        sudo tar -C /usr/local -xJf /tmp/clang.tar.xz
-        sudo mv "/usr/local/clang+llvm-14.0.6-x86_64-linux-gnu-rhel-8.4" /usr/local/clang
-        sudo ln -s /usr/local/clang/bin/clang /usr/bin/clang
-        sudo ln -s /usr/local/clang/bin/clang++ /usr/bin/clang++
-        sudo ln -s /usr/local/clang/bin/clangd /usr/bin/clangd
-        sudo ln -s /usr/local/clang/bin/clang-format /usr/bin/clang-format
-        sudo ln -s /usr/local/clang/bin/lld /usr/bin/lld
-        sudo ln -s /usr/local/clang/bin/llc /usr/bin/llc
-        sudo ln -s /usr/local/clang/bin/llvm-strip /usr/bin/llvm-strip
-        sudo ln -s /usr/local/clang/bin/llvm-config /usr/bin/llvm-config
-        sudo ln -s /usr/local/clang/bin/ld.lld /usr/bin/ld.lld
-        sudo ln -s /usr/local/clang/bin/llvm-ar /usr/bin/llvm-ar
-        sudo ln -s /usr/local/clang/bin/llvm-nm /usr/bin/llvm-nm
-        sudo ln -s /usr/local/clang/bin/llvm-objcopy /usr/bin/llvm-objcopy
-        sudo ln -s /usr/local/clang/bin/llvm-objdump /usr/bin/llvm-objdump
-        sudo ln -s /usr/local/clang/bin/llvm-readelf /usr/bin/llvm-readelf
-        sudo ln -s /usr/local/clang/bin/opt /usr/bin/opt
+        sudo apt-get install -y llvm-19 clang-19 clang-tools-19
+        # Try to install clang-format-19 directly (might be a separate package)
+        sudo apt-get install -y clang-format-19 || echo "clang-format-19 package not available"
+
+        # Check if default clang is already version 19
+        DEFAULT_CLANG_VERSION=$(clang --version 2>/dev/null | head -n1 | grep -o "clang version [0-9]*" | grep -o "[0-9]*" || echo "0")
+        echo "Default clang version: $DEFAULT_CLANG_VERSION"
+
+        if [ "$DEFAULT_CLANG_VERSION" != "19" ]; then
+          echo "Setting up update-alternatives to make clang-19 the default"
+          # Remove all existing LLVM alternatives that might conflict
+          sudo update-alternatives --remove-all cc || true
+          sudo update-alternatives --remove-all clang || true
+          sudo update-alternatives --remove-all clang++ || true
+          sudo update-alternatives --remove-all clang-format || true
+
+          # Set up clang alternative
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-19 190 \
+            --slave /usr/bin/cc cc /usr/bin/clang-19
+
+          # Set up clang++ alternative
+          if [ -f /usr/bin/clang++-19 ]; then
+            sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-19 190
+          fi
+
+          # Set up clang-format alternative
+          if [ -f /usr/bin/clang-format-19 ]; then
+            sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-19 190
+          else
+            echo "WARNING: clang-format-19 not found"
+          fi
+        else
+          echo "Default clang is already version 19, no setup needed"
+        fi
       shell: bash
     - name: Install staticchecker
       run: |

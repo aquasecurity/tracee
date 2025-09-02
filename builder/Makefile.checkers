@@ -23,7 +23,8 @@ CMD_SED ?= sed
 CMD_TR ?= tr
 CMD_FIND ?= find
 CMD_CLANG ?= clang
-CMD_CLANG_FMT ?= clang-format-12 # mandatory for now, incompatible with 13 and newer
+# Try clang-format-19 first, then fall back to generic clang-format
+CMD_CLANG_FMT ?= $(shell command -v clang-format-19 >/dev/null 2>&1 && echo clang-format-19 || echo clang-format)
 CMD_GOFMT ?= gofmt
 CMD_GOIMPORTS ?= goimports-reviser
 CMD_REVIVE ?= revive
@@ -35,6 +36,25 @@ CMD_REVIVE ?= revive
 		echo "missing required tool $*"
 		exit 1
 	else
+		touch $@ # avoid target rebuilds due to inexistent file
+	fi
+
+.check_clang-format:
+#
+	@command -v $(CMD_CLANG_FMT) >/dev/null
+	if [ $$? -ne 0 ]; then
+		echo "ERROR: $(CMD_CLANG_FMT) not found. Please install clang-format version 19"
+		exit 1
+	fi
+	@CLANG_FMT_VERSION=$$($(CMD_CLANG_FMT) --version 2>/dev/null | head -n1 | grep -o "clang-format version [0-9]*" | grep -o "[0-9]*" || echo "0")
+	if [ "$$CLANG_FMT_VERSION" != "19" ]; then
+		echo "ERROR: $(CMD_CLANG_FMT) version $$CLANG_FMT_VERSION found, but version 19 is required"
+		if [ "$(CMD_CLANG_FMT)" = "clang-format" ]; then
+			echo "Hint: Try installing clang-format-19 or ensure clang-format points to version 19"
+		fi
+		exit 1
+	else
+		echo "Using $(CMD_CLANG_FMT) version $$CLANG_FMT_VERSION"
 		touch $@ # avoid target rebuilds due to inexistent file
 	fi
 
@@ -58,7 +78,8 @@ help:
 	@echo "    $$ make -f builder/Makefile.checkers code-check"
 	@echo ""
 	@echo "Note: you should run fmt-fix before doing a git commmit."
-	@echo "Note: clang-format-12 is needed for eBPF code checks/fixes."
+	@echo "Note: clang-format version 19 is needed for eBPF code checks/fixes."
+	@echo "      The build will try clang-format-19 first, then fall back to clang-format."
 	@echo ""
 
 #

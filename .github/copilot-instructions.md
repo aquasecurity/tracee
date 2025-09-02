@@ -56,7 +56,7 @@ make test-common            # Common module testing
 **IMPORTANT**: Some validation commands require additional tools not installed by default:
 
 ```bash
-# Code formatting (NEEDS goimports-reviser, clang-format-12)
+# Code formatting (NEEDS goimports-reviser, clang-format-19)
 make check-fmt              # Will fail without proper tools
 make fix-fmt                # Auto-fix formatting issues
 
@@ -71,7 +71,7 @@ make check-pr               # Full PR validation suite
 - `goimports-reviser`: `go install github.com/incu6us/goimports-reviser/v3@v3.8.2`
 - `staticcheck`: `go install honnef.co/go/tools/cmd/staticcheck@2025.1`
 - `errcheck`: `go install github.com/kisielk/errcheck@v1.9.0`
-- `clang-format-12`: Use system package manager or download binary
+- `clang-format-19`: Use system package manager or download binary
 
 ### Build Flags & Options
 
@@ -148,7 +148,7 @@ The PR workflow runs these checks:
 5. **Multi-kernel testing** - Matrix of kernel versions and architectures
 
 ### Key Validation Steps
-- **Formatting**: gofmt, clang-format-12, goimports-reviser
+- **Formatting**: gofmt, clang-format-19, goimports-reviser
 - **Linting**: revive with comprehensive rules
 - **Static Analysis**: staticcheck with custom configuration
 - **Error Checking**: errcheck for unchecked errors
