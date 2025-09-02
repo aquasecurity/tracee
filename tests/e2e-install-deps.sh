@@ -233,6 +233,10 @@ if [[ $ID == "ubuntu" ]]; then
         install_clang_os_packages
         install_golang_from_github
         ;;
+    "noble")
+        install_clang_os_packages
+        install_golang_from_github
+        ;;
     "lunar")
         install_clang_os_packages
         install_golang_from_github
