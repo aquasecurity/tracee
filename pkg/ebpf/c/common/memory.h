@@ -5,8 +5,7 @@
 
 #include <common/common.h>
 
-enum vma_type
-{
+enum vma_type {
     VMA_FILE_BACKED,
     VMA_ANON,
     VMA_MAIN_STACK,

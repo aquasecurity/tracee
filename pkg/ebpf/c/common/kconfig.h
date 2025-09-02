@@ -7,8 +7,7 @@
 
 // TYPES
 
-enum kconfig_key_e
-{
+enum kconfig_key_e {
     ARCH_HAS_SYSCALL_WRAPPER = 1000U
 };
 

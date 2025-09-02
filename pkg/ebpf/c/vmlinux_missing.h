@@ -85,8 +85,7 @@
 #define _IOW(type, nr, size)   _IOC(_IOC_WRITE, (type), (nr), (_IOC_TYPECHECK(size)))
 #define PERF_EVENT_IOC_SET_BPF _IOW('$', 8, __u32)
 
-enum perf_type_id
-{
+enum perf_type_id {
     PERF_TYPE_HARDWARE = 0,
     PERF_TYPE_SOFTWARE = 1,
     PERF_TYPE_TRACEPOINT = 2,
@@ -122,7 +121,7 @@ enum perf_type_id
 
     // extern bool CONFIG_ARM64_PAGE_SHIFT __kconfig;
     //  arch/arm64/include/asm/page-def.h
-    //#define PAGE_SHIFT        CONFIG_ARM64_PAGE_SHIFT
+    // #define PAGE_SHIFT        CONFIG_ARM64_PAGE_SHIFT
     //  as a temporary workaround for failing builds, use the default value of PAGE_SHIFT
     #define PAGE_SHIFT       12
     #define PAGE_SIZE        (_AC(1, UL) << PAGE_SHIFT)
@@ -131,7 +130,7 @@ enum perf_type_id
     #define _TIF_32BIT       (1 << 22)
 
     // arch/arm64/include/asm/memory.h
-    //#define MIN_THREAD_SHIFT	(14 + KASAN_THREAD_SHIFT)
+    // #define MIN_THREAD_SHIFT	(14 + KASAN_THREAD_SHIFT)
     #define MIN_THREAD_SHIFT 14 // default value if KASAN is disabled (which it should be usually)
 
     // this can also be PAGE_SHIFT if (MIN_THREAD_SHIFT < PAGE_SHIFT) however here 14 > 12

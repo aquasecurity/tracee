@@ -7,8 +7,7 @@
 
 #include <types.h>
 
-enum tail_call_id_e
-{
+enum tail_call_id_e {
     TAIL_VFS_WRITE,
     TAIL_VFS_WRITEV,
     TAIL_SEND_BIN,

@@ -152,8 +152,7 @@ typedef struct event_context {
     // ...
 
 #ifndef EXTENDED_BUILD
-typedef enum event_id_e
-{
+typedef enum event_id_e {
     #define X(name, val) name val,
     // clang-format off
     EVENT_ID_LIST_NET
@@ -175,8 +174,7 @@ typedef enum event_id_e
     // ...
 
 #ifndef EXTENDED_BUILD
-typedef enum signal_event_id_e
-{
+typedef enum signal_event_id_e {
     #define X(name, val) name val,
     SIGNAL_EVENT_ID_LIST
     #undef X
@@ -190,8 +188,7 @@ typedef struct args {
 // NOTE: If any fields are added to argument_type_e, the array type_size_table
 // (and related defines) must be updated accordingly. Corresponds to the DecodeAs enum in
 // pkg/events/data/decode.go.
-enum argument_type_e
-{
+enum argument_type_e {
     NONE_T = 0UL, // Default value - the argument does not originate from a decodable buffer.
     INT_T,
     UINT_T,
@@ -218,16 +215,14 @@ enum argument_type_e
     // ...
 
 #ifndef EXTENDED_BUILD
-typedef enum internal_hook_e
-{
+typedef enum internal_hook_e {
     #define X(name, val) name val,
     INTERNAL_HOOK_LIST
     #undef X
 } internal_hook_e;
 #endif // #ifndef EXTENDED_BUILD
 
-enum mem_prot_alert_e
-{
+enum mem_prot_alert_e {
     ALERT_MMAP_W_X = 1,
     ALERT_MPROT_X_ADD,
     ALERT_MPROT_W_ADD,
@@ -248,14 +243,12 @@ typedef struct fd_arg_path {
 } fd_arg_path_t;
 
 // Flags in each task's context
-enum context_flags_e
-{
+enum context_flags_e {
     CONTAINER_STARTED_FLAG = (1 << 0), // mark the task's container have started
     IS_COMPAT_FLAG = (1 << 1)          // is the task running in compatible mode
 };
 
-enum container_state_e
-{
+enum container_state_e {
     CONTAINER_UNKNOWN = 0, // mark that container state is unknown
     CONTAINER_EXISTED,     // container existed before tracee was started
     CONTAINER_CREATED,     // new cgroup path created
@@ -429,8 +422,7 @@ typedef struct event_config {
     data_filter_config_t data_filter;
 } event_config_t;
 
-enum capture_options_e
-{
+enum capture_options_e {
     NET_CAP_OPT_FILTERED = (1 << 0), // pcap should obey event filters
 };
 
@@ -475,16 +467,14 @@ typedef struct controlplane_signal {
 
 #define BPF_MAX_LOG_FILE_LEN 72
 
-enum bpf_log_level
-{
+enum bpf_log_level {
     BPF_LOG_LVL_DEBUG = -1,
     BPF_LOG_LVL_INFO,
     BPF_LOG_LVL_WARN,
     BPF_LOG_LVL_ERROR,
 };
 
-enum bpf_log_id
-{
+enum bpf_log_id {
     BPF_LOG_ID_UNSPEC = 0U, // enforce enum to u32
 
     // tracee functions
@@ -630,8 +620,7 @@ typedef struct file_mod_key {
     unsigned long inode;
 } file_mod_key_t;
 
-enum file_modification_op
-{
+enum file_modification_op {
     FILE_MODIFICATION_SUBMIT = 0,
     FILE_MODIFICATION_DONE,
 };

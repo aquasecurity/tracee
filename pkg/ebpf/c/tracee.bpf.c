@@ -572,9 +572,9 @@ statfunc void update_thread_stack(void *ctx, task_info_t *task_info, struct task
 {
     // Kernel threads and group leaders are not relevant, reset their stack area
     if (get_task_flags(task) & PF_KTHREAD || BPF_CORE_READ(task, pid) == BPF_CORE_READ(task, tgid))
-        task_info->stack = (address_range_t){0};
+        task_info->stack = (address_range_t) {0};
 
-        // Get user SP of new thread
+    // Get user SP of new thread
 #if defined(bpf_target_x86)
     struct fork_frame *fork_frame = (struct fork_frame *) BPF_CORE_READ(task, thread.sp);
     u64 thread_sp = BPF_CORE_READ(fork_frame, regs.sp);
@@ -594,8 +594,8 @@ statfunc void update_thread_stack(void *ctx, task_info_t *task_info, struct task
         return;
 
     // Add the VMA address range to the task info
-    task_info->stack =
-        (address_range_t){.start = BPF_CORE_READ(vma, vm_start), .end = BPF_CORE_READ(vma, vm_end)};
+    task_info->stack = (address_range_t) {.start = BPF_CORE_READ(vma, vm_start),
+                                          .end = BPF_CORE_READ(vma, vm_end)};
 }
 
 // trace/events/sched.h: TP_PROTO(struct task_struct *parent, struct task_struct *child)
@@ -763,8 +763,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 #define HISTORY_SCAN_FAILURE     0
 #define HISTORY_SCAN_SUCCESSFUL  1
 
-enum
-{
+enum {
     PROC_MODULES = 1 << 0,
     KSET = 1 << 1,
     MOD_TREE = 1 << 2,
@@ -1889,9 +1888,9 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
     size = ctx->cx;          // 2nd arg
     caller_ctx_id = ctx->di; // 3rd arg
 #elif defined(bpf_target_arm64)
-    address = ctx->user_regs.regs[1];        // 1st arg
-    size = ctx->user_regs.regs[2];           // 2nd arg
-    caller_ctx_id = ctx->user_regs.regs[3];  // 3rd arg
+    address = ctx->user_regs.regs[1];       // 1st arg
+    size = ctx->user_regs.regs[2];          // 2nd arg
+    caller_ctx_id = ctx->user_regs.regs[3]; // 3rd arg
 #else
     return 0;
 #endif
@@ -1957,8 +1956,7 @@ statfunc void *get_trace_probe_from_trace_event_call(struct trace_event_call *ca
     return tracep_ptr;
 }
 
-enum bpf_attach_type_e
-{
+enum bpf_attach_type_e {
     BPF_RAW_TRACEPOINT,
     PERF_TRACEPOINT,
     PERF_KPROBE,
@@ -2022,7 +2020,7 @@ send_bpf_perf_attach(program_data_t *p, struct file *bpf_prog_file, struct file 
 
     // get perf event details
 
-// clang-format off
+    // clang-format off
 #define MAX_PERF_EVENT_NAME ((MAX_PATH_PREF_SIZE > MAX_KSYM_NAME_SIZE) ? MAX_PATH_PREF_SIZE : MAX_KSYM_NAME_SIZE)
 #define REQUIRED_SYSTEM_LENGTH 9
     // clang-format on
@@ -3063,8 +3061,7 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
     return events_perf_submit(&p, 0);
 }
 
-enum bin_type_e
-{
+enum bin_type_e {
     SEND_VFS_WRITE = 1,
     SEND_MPROTECT,
     SEND_KERNEL_MODULE,
@@ -4809,8 +4806,7 @@ int BPF_KPROBE(trace_ret_kallsyms_lookup_name)
     return events_perf_submit(&p, 0);
 }
 
-enum signal_handling_method_e
-{
+enum signal_handling_method_e {
     SIG_DFL,
     SIG_IGN,
     SIG_HND = 2 // Doesn't exist in the kernel, but signifies that the method is through
@@ -6935,7 +6931,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
     neteventctx->md.flow.proto = next_proto;
 
     if (!dest)
-        return 1; // satisfy verifier for clang-12 generated binaries
+        return 1; // satisfy verifier
 
     // fastpath: submit the raw packet and IP base events
 
