@@ -129,7 +129,6 @@ Vagrant.configure("2") do |config|
       ARCH="#{arch}"
       USER="#{vm_user}"
       HOME="/home/#{vm_user}"
-      LLVM_VERSION="14"
       GO_VERSION="1.24.0"
       KUBECTL_VERSION="v1.29"
       VM_TYPE="#{vm_type}"
@@ -150,15 +149,8 @@ Vagrant.configure("2") do |config|
       apt-get install --yes build-essential
       apt-get install --yes pkgconf
 
-      apt-get install --yes llvm-${LLVM_VERSION} clang-${LLVM_VERSION}
-      for tool in "clang" "llc" "llvm-strip"
-      do
-        path=$(which ${tool}-${LLVM_VERSION})
-        ln -s -f "$path" "${path%-*}"
-      done
-
-      apt-get install --yes clang-format-19
-      ln -s -f /usr/bin/clang-format-19 /usr/bin/clang-format
+      # Install Clang using centralized script
+      /vagrant/scripts/installation/install-clang.sh
 
       apt-get install --yes zlib1g-dev libelf-dev libzstd-dev
       apt-get install --yes protobuf-compiler

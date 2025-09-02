@@ -20,42 +20,9 @@ runs:
         sudo ln -s /usr/local/go/bin/go /usr/bin/go
         sudo ln -s /usr/local/go/bin/gofmt /usr/bin/gofmt
       shell: bash
-    - name: Install Clang 19
+    - name: Install Clang
       run: |
-        sudo apt-get install -y llvm-19 clang-19 clang-tools-19
-        # Try to install clang-format-19 directly (might be a separate package)
-        sudo apt-get install -y clang-format-19 || echo "clang-format-19 package not available"
-
-        # Check if default clang is already version 19
-        DEFAULT_CLANG_VERSION=$(clang --version 2>/dev/null | head -n1 | grep -o "clang version [0-9]*" | grep -o "[0-9]*" || echo "0")
-        echo "Default clang version: $DEFAULT_CLANG_VERSION"
-
-        if [ "$DEFAULT_CLANG_VERSION" != "19" ]; then
-          echo "Setting up update-alternatives to make clang-19 the default"
-          # Remove all existing LLVM alternatives that might conflict
-          sudo update-alternatives --remove-all cc || true
-          sudo update-alternatives --remove-all clang || true
-          sudo update-alternatives --remove-all clang++ || true
-          sudo update-alternatives --remove-all clang-format || true
-
-          # Set up clang alternative
-          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-19 190 \
-            --slave /usr/bin/cc cc /usr/bin/clang-19
-
-          # Set up clang++ alternative
-          if [ -f /usr/bin/clang++-19 ]; then
-            sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-19 190
-          fi
-
-          # Set up clang-format alternative
-          if [ -f /usr/bin/clang-format-19 ]; then
-            sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-19 190
-          else
-            echo "WARNING: clang-format-19 not found"
-          fi
-        else
-          echo "Default clang is already version 19, no setup needed"
-        fi
+        sudo ./scripts/installation/install-clang.sh
       shell: bash
     - name: Install staticchecker
       run: |

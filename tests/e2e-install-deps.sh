@@ -3,6 +3,17 @@
 set -e
 set -x # for debugging
 
+# Source lib.sh for consistent logging and utilities
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck disable=SC1091
+. "${SCRIPT_DIR}/../scripts/lib.sh"
+
+# Configuration - must match centralized install script
+CLANG_VERSION=19
+
+# Path to centralized Clang installation script
+INSTALL_SCRIPT="$SCRIPT_DIR/../scripts/installation/install-clang.sh"
+
 # This script installs the dependencies for compiling tracee and running the e2e
 # tests. Note that for llvm, binaries might be installed from the OS package
 # manager or from github, depending on the OS version. This happens because
@@ -94,71 +105,9 @@ disable_unattended_upgrades() {
     apt-get remove -y --purge ubuntu-advantage-tools || true
 }
 
-remove_llvm_alternatives() {
-    update-alternatives --remove-all cc || true
-    update-alternatives --remove-all clang || true
-    update-alternatives --remove-all clang++ || true
-    update-alternatives --remove-all llc || true
-    update-alternatives --remove-all lld || true
-    update-alternatives --remove-all clangd || true
-    update-alternatives --remove-all clang-format || true
-    update-alternatives --remove-all llvm-strip || true
-    update-alternatives --remove-all llvm-config || true
-    update-alternatives --remove-all ld.lld || true
-    update-alternatives --remove-all llvm-ar || true
-    update-alternatives --remove-all llvm-nm || true
-    update-alternatives --remove-all llvm-objcopy || true
-    update-alternatives --remove-all llvm-objdump || true
-    update-alternatives --remove-all llvm-readelf || true
-    update-alternatives --remove-all opt || true
-}
-
-update_llvm_alternatives() {
-    version=19
-    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${version} ${version}0 \
-        --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${version} \
-        --slave /usr/bin/clangd clangd /usr/bin/clangd-${version} \
-        --slave /usr/bin/lld lld /usr/bin/lld-${version} \
-        --slave /usr/bin/llc llc /usr/bin/llc-${version} \
-        --slave /usr/bin/llvm-strip llvm-strip /usr/bin/llvm-strip-${version} \
-        --slave /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-${version} \
-        --slave /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-${version} \
-        --slave /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-${version} \
-        --slave /usr/bin/llvm-nm llvm-nm /usr/bin/llvm-nm-${version} \
-        --slave /usr/bin/llvm-objcopy llvm-objcopy /usr/bin/llvm-objcopy-${version} \
-        --slave /usr/bin/llvm-objdump llvm-objdump /usr/bin/llvm-objdump-${version} \
-        --slave /usr/bin/llvm-readelf llvm-readelf /usr/bin/llvm-readelf-${version} \
-        --slave /usr/bin/opt opt /usr/bin/opt-${version} \
-        --slave /usr/bin/cc cc /usr/bin/clang-${version}
-
-    # Set up clang-format separately (handle independently)
-    if [ -f /usr/bin/clang-format-${version} ]; then
-        update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-${version} ${version}0
-    fi
-}
-
 remove_golang_alternatives() {
     update-alternatives --remove-all go || true
     update-alternatives --remove-all gofmt || true
-}
-
-remove_llvm_usr_bin_files() {
-    rm -f /usr/bin/clang*
-    rm -f /usr/bin/clang++*
-    rm -f /usr/bin/clangd*
-    rm -f /usr/bin/clang-format*
-    rm -f /usr/bin/lld*
-    rm -f /usr/bin/llc*
-    rm -f /usr/bin/llvm-strip*
-    rm -f /usr/bin/llvm-config*
-    rm -f /usr/bin/ld.lld*
-    rm -f /usr/bin/llvm-ar*
-    rm -f /usr/bin/llvm-nm*
-    rm -f /usr/bin/llvm-objcopy*
-    rm -f /usr/bin/llvm-objdump*
-    rm -f /usr/bin/llvm-readelf*
-    rm -f /usr/bin/opt
-    rm -f /usr/bin/cc
 }
 
 remove_golang_usr_bin_files() {
@@ -195,10 +144,12 @@ install_golang_from_github() {
 
 install_clang_os_packages() {
     wait_for_apt_locks
-    apt-get install -y llvm-19 clang-19 clangd-19 lld-19
-    # Try to install clang-format-19 directly (might be a separate package)
-    apt-get install -y clang-format-19 || echo "clang-format-19 package not available"
-    update_llvm_alternatives
+    # Use centralized Clang installation script
+    if [ -f "$INSTALL_SCRIPT" ]; then
+        bash "$INSTALL_SCRIPT"
+    else
+        die "Centralized Clang install script not found at: $INSTALL_SCRIPT"
+    fi
 }
 
 install_gcc11_os_packages() {
@@ -260,9 +211,8 @@ if [[ $ID == "ubuntu" ]]; then
     # apt-get dist-upgrade -y
     # apt-get --purge autoremove -y
 
-    remove_llvm_alternatives
+    # Clean up old LLVM packages before fresh installation
     remove_llvm_os_packages
-    remove_llvm_usr_bin_files
 
     remove_golang_alternatives
     remove_golang_os_packages
