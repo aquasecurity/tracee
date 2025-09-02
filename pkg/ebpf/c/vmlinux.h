@@ -58,8 +58,7 @@ typedef long unsigned int __kernel_ulong_t;
 
 typedef _Bool bool;
 
-enum
-{
+enum {
     false = 0,
     true = 1,
 };
@@ -217,26 +216,22 @@ struct pt_regs {
 
 // common to all architectures
 
-enum
-{
+enum {
     BPF_ANY = 0,
     BPF_NOEXIST = 1,
     BPF_EXIST = 2,
     BPF_F_LOCK = 4,
 };
 
-enum
-{
+enum {
     BPF_F_USER_STACK = 256,
 };
 
-enum
-{
+enum {
     BPF_F_CURRENT_CPU = 4294967295,
 };
 
-enum
-{
+enum {
     TCP_ESTABLISHED = 1,
     TCP_SYN_SENT = 2,
     TCP_SYN_RECV = 3,
@@ -252,8 +247,7 @@ enum
     TCP_MAX_STATES = 13,
 };
 
-enum sock_type
-{
+enum sock_type {
     SOCK_STREAM = 1,
     SOCK_DGRAM = 2,
     SOCK_RAW = 3,
@@ -263,8 +257,7 @@ enum sock_type
     SOCK_PACKET = 10,
 };
 
-enum
-{
+enum {
     IPPROTO_IP = 0,
     IPPROTO_ICMP = 1,
     IPPROTO_IGMP = 2,
@@ -295,8 +288,7 @@ enum
     IPPROTO_MAX = 263,
 };
 
-enum
-{
+enum {
     TCPF_ESTABLISHED = 2,
     TCPF_SYN_SENT = 4,
     TCPF_FIN_WAIT1 = 16,
@@ -568,8 +560,7 @@ typedef unsigned int fmode_t;
 struct dir_context {
 };
 
-enum iter_type
-{
+enum iter_type {
     /* iter types */
     ITER_UBUF,
     ITER_IOVEC,
@@ -643,8 +634,7 @@ struct public_key_signature {
     const void *data;
 };
 
-enum zone_type
-{
+enum zone_type {
     ZONE_DMA,
 };
 
@@ -908,8 +898,7 @@ struct dentry {
     struct inode *d_inode;
 };
 
-enum bpf_func_id
-{
+enum bpf_func_id {
     BPF_FUNC_probe_write_user = 36,
     BPF_FUNC_override_return = 58,
     BPF_FUNC_sk_storage_get = 107,
@@ -932,8 +921,7 @@ struct kset {
     struct list_head list;
 };
 
-enum mod_mem_type
-{
+enum mod_mem_type {
     MOD_TEXT = 0,
     MOD_DATA,
     MOD_RODATA,
@@ -1011,13 +999,11 @@ struct iovec {
     __kernel_size_t iov_len;
 };
 
-enum
-{
+enum {
     BPF_F_NO_PREALLOC = (1U << 0),
 };
 
-enum bpf_map_type
-{
+enum bpf_map_type {
     BPF_MAP_TYPE_UNSPEC = 0,
     BPF_MAP_TYPE_HASH = 1,
     BPF_MAP_TYPE_ARRAY = 2,
@@ -1106,8 +1092,7 @@ struct ethhdr {
 
 typedef __u16 __sum16;
 
-enum kernel_read_file_id
-{
+enum kernel_read_file_id {
     READING_UNKNOWN = 0,
     READING_FIRMWARE = 1,
     READING_MODULE = 2,
@@ -1149,14 +1134,12 @@ struct seq_operations {
     int (*show)(struct seq_file *m, void *v);
 };
 
-enum bpf_attach_type
-{
+enum bpf_attach_type {
     BPF_CGROUP_INET_INGRESS = 0,
     BPF_CGROUP_INET_EGRESS = 1,
 };
 
-enum bpf_hdr_start_off
-{
+enum bpf_hdr_start_off {
     BPF_HDR_START_MAC = 0,
     BPF_HDR_START_NET = 1,
 };
@@ -1183,8 +1166,7 @@ struct sighand_struct {
     struct k_sigaction action[_NSIG];
 };
 
-enum bpf_cmd
-{
+enum bpf_cmd {
     BPF_MAP_CREATE,
     BPF_MAP_LOOKUP_ELEM,
     BPF_MAP_UPDATE_ELEM,
@@ -1241,8 +1223,7 @@ union bpf_attr {
     } link_create;
 };
 
-enum bpf_prog_type
-{
+enum bpf_prog_type {
     BPF_PROG_TYPE_UNSPEC,
     BPF_PROG_TYPE_SOCKET_FILTER,
     BPF_PROG_TYPE_KPROBE,
@@ -1341,8 +1322,7 @@ struct perf_event {
 };
 
 // #if defined(CONFIG_KPROBE_EVENTS) || defined(CONFIG_UPROBE_EVENTS)
-enum perf_probe_config
-{
+enum perf_probe_config {
     PERF_PROBE_CONFIG_IS_RETPROBE = 1U << 0,
 };
 
