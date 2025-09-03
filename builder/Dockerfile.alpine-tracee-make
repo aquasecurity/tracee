@@ -8,13 +8,9 @@ FROM alpine:3.21 AS alpine-base
 LABEL AS=alpine-base
 USER root
 
-# install needed environment
-RUN apk --no-cache update && \
-    apk --no-cache add sudo coreutils findutils bash git curl rsync make gcc linux-headers elfutils-dev libelf-static zlib-static zstd-static
-
-# Install Clang using centralized script
+# Install base dependencies using centralized script  
 COPY scripts/ /tmp/scripts/
-RUN /tmp/scripts/installation/install-clang.sh
+RUN /tmp/scripts/installation/install-deps.sh
 
 # install bpftool from btfhub
 RUN cd /tmp && \
@@ -34,23 +30,14 @@ FROM alpine-base AS go-setup
 LABEL AS=go-setup
 USER root
 
-ARG GO_VERSION=1.24.0
+# Set up Go environment variables (Go and tools already installed by install-deps.sh)
 ENV GOPATH=/go
 ENV GOROOT=/usr/local/go
 ENV GOTOOLCHAIN="auto"
 ENV PATH=${GOPATH}/bin:${GOROOT}/bin:$PATH
 
-# install Go
-RUN TARGETARCH=$(uname -m | sed 's:x86_64:amd64:g' | sed 's:aarch64:arm64:g') && \
-    curl -L -o go${GO_VERSION}.linux-${TARGETARCH}.tar.gz https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz && \
-    tar -C /usr/local -xzf go${GO_VERSION}.linux-${TARGETARCH}.tar.gz && \
-    rm go${GO_VERSION}.linux-${TARGETARCH}.tar.gz
-
-# install Go tools
-RUN go install honnef.co/go/tools/cmd/staticcheck@2025.1 && \
-    go install github.com/incu6us/goimports-reviser/v3@v3.8.2 && \
-    go install github.com/mgechev/revive@v1.7.0 && \
-    go install github.com/kisielk/errcheck@v1.9.0
+# Create GOPATH directory
+RUN mkdir -p ${GOPATH}
 
 #
 # user-setup: configure user environment and permissions
