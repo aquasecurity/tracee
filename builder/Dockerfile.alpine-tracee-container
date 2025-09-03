@@ -38,7 +38,7 @@ USER root
 
 # Install all dependencies using centralized script
 COPY scripts/ /tmp/scripts/
-RUN /tmp/scripts/installation/install-deps.sh
+RUN /tmp/scripts/installation/install-deps-alpine.sh
 
 # Set up Go environment variables for container
 RUN echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile && \

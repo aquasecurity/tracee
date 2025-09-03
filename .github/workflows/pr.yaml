@@ -118,7 +118,7 @@ jobs:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
       - name: Install Dependencies
-        run: ./scripts/installation/install-deps.sh
+        run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
       - name: Lint
         run: |
@@ -161,7 +161,7 @@ jobs:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
       - name: Install Dependencies
-        run: ./scripts/installation/install-deps.sh
+        run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
       - name: Build Tracee Benchmark Tool
         run: |
@@ -193,7 +193,7 @@ jobs:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0  # Fetch full history for codecov base comparison
       - name: Install Dependencies
-        run: ./scripts/installation/install-deps.sh
+        run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
       - name: Run Unit Tests
         run: |
@@ -228,7 +228,7 @@ jobs:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0  # Fetch full history for codecov base comparison
       - name: Install Dependencies
-        run: ./scripts/installation/install-deps.sh
+        run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
       - name: Run Integration Tests
         run: |
@@ -258,7 +258,7 @@ jobs:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
       - name: Install Dependencies
-        run: ./scripts/installation/install-deps.sh
+        run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
       - name: Run Performance Tests
         run: |

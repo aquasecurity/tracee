@@ -20,7 +20,7 @@ jobs:
         with:
           submodules: true
       - name: Install Dependencies
-        run: ./scripts/installation/install-deps.sh
+        run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
       - name: Compile Tracee
         run: |

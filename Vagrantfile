@@ -129,7 +129,6 @@ Vagrant.configure("2") do |config|
       ARCH="#{arch}"
       USER="#{vm_user}"
       HOME="/home/#{vm_user}"
-      GO_VERSION="1.24.0"
       KUBECTL_VERSION="v1.29"
       VM_TYPE="#{vm_type}"
 
@@ -145,28 +144,16 @@ Vagrant.configure("2") do |config|
       #
 
       echo ">>> Installing build environment for tracee"
-      apt-get install --yes bsdutils
-      apt-get install --yes build-essential
-      apt-get install --yes pkgconf
+      # Install all Tracee dependencies using centralized script
+      /vagrant/scripts/installation/install-deps-ubuntu.sh
 
-      # Install Clang using centralized script
-      /vagrant/scripts/installation/install-clang.sh
-
-      apt-get install --yes zlib1g-dev libelf-dev libzstd-dev
-      apt-get install --yes protobuf-compiler
-
-      # golang
-      cd /tmp
-      wget --quiet https://golang.org/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz
-      tar -C /usr/local -xzf go${GO_VERSION}.linux-${ARCH}.tar.gz
+      # Set up Go paths for user environment
       GOBIN_PATH=/usr/local/go/bin
       echo "export PATH=${PATH}:${GOBIN_PATH}" >> ${HOME}/.profile
       # integration tests run as root, so go needs to be in root's path as well
       echo "export PATH=${PATH}:${GOBIN_PATH}" >> $HOME/.bashrc
       # sudo needs to be able to find go as well
       echo "Defaults secure_path=\"${PATH}:${GOBIN_PATH}\"" >> /etc/sudoers.d/${USER}
-      rm -f go${GO_VERSION}.linux-${ARCH}.tar.gz
-      cd -
 
       # other tools
       apt-get install --yes python3 pip jq
