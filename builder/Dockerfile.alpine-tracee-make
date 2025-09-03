@@ -10,7 +10,7 @@ USER root
 
 # Install base dependencies using centralized script  
 COPY scripts/ /tmp/scripts/
-RUN /tmp/scripts/installation/install-deps.sh
+RUN /tmp/scripts/installation/install-deps-alpine.sh
 
 # install bpftool from btfhub
 RUN cd /tmp && \
