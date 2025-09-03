@@ -109,6 +109,8 @@ jobs:
   verify-analyze-code:
     name: Verify and Analyze Code
     runs-on: ubuntu-latest
+    container:
+      image: alpine
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -116,7 +118,8 @@ jobs:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
       - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
+        run: ./scripts/installation/install-deps.sh
+        shell: sh
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then
@@ -149,6 +152,8 @@ jobs:
     needs:
       - verify-analyze-code
     runs-on: ubuntu-latest
+    container:
+      image: alpine
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -156,7 +161,8 @@ jobs:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
       - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
+        run: ./scripts/installation/install-deps.sh
+        shell: sh
       - name: Build Tracee Benchmark Tool
         run: |
           make clean
@@ -177,6 +183,8 @@ jobs:
     needs:
       - verify-analyze-code
     runs-on: ubuntu-latest
+    container:
+      image: alpine
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -185,7 +193,8 @@ jobs:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0  # Fetch full history for codecov base comparison
       - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
+        run: ./scripts/installation/install-deps.sh
+        shell: sh
       - name: Run Unit Tests
         run: |
           make test-unit
@@ -209,6 +218,8 @@ jobs:
     needs:
       - verify-analyze-code
     runs-on: ubuntu-latest
+    container:
+      image: alpine
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -217,7 +228,8 @@ jobs:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0  # Fetch full history for codecov base comparison
       - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
+        run: ./scripts/installation/install-deps.sh
+        shell: sh
       - name: Run Integration Tests
         run: |
           sudo env "PATH=$PATH" make test-integration
@@ -237,6 +249,8 @@ jobs:
     needs:
       - verify-analyze-code
     runs-on: ubuntu-latest
+    container:
+      image: alpine
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -244,7 +258,8 @@ jobs:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
       - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
+        run: ./scripts/installation/install-deps.sh
+        shell: sh
       - name: Run Performance Tests
         run: |
           sudo env "PATH=$PATH" make test-performance
