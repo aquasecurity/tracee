@@ -1,7 +1,6 @@
 #!/bin/sh
 
 # Comprehensive dependency installation script for Tracee (Alpine Linux)
-# Replaces .github/actions/build-dependencies for containerized workflows
 
 set -e
 
@@ -44,7 +43,12 @@ install_base_packages() {
         libc6-compat \
         tar \
         ca-certificates
-    
+
+    # Create symlinks for compatibility with tests expecting binaries in /usr/bin
+    # BusyBox applets - link directly to busybox so applet name is detected correctly
+    ln -sf /bin/busybox /usr/bin/uname
+    ln -sf /bin/busybox /usr/bin/date
+
     info "Base packages installed successfully"
 }
 
@@ -57,12 +61,12 @@ install_golang() {
     case "$ARCH" in
         x86_64) GOARCH="amd64" ;;
         aarch64) GOARCH="arm64" ;;
-        *) 
+        *)
             error "Unsupported architecture: $ARCH"
             exit 1
             ;;
     esac
-    
+
     # Remove any existing Go installation
     rm -f /usr/bin/go /usr/bin/gofmt
     rm -rf /usr/local/go
@@ -128,7 +132,7 @@ install_go_tools() {
     info "Go tools installed successfully"
 }
 
-install_docker() {
+check_docker() {
     info "Checking Docker availability"
     
     # In GitHub Actions containers, Docker is available from the host
@@ -170,7 +174,7 @@ main() {
     install_golang
     install_clang
     install_go_tools  
-    install_docker
+    check_docker
     verify_installation
     
     info "=== Tracee dependencies installation completed successfully! ==="
