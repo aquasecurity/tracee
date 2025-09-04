@@ -13,12 +13,15 @@ jobs:
     name: Test Latest libbpfgo
     runs-on: ubuntu-latest
     container:
-      image: alpine
+      image: alpine/git
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
+      - name: Fix Git ownership
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+        shell: sh
       - name: Install Dependencies
         run: ./scripts/installation/install-deps-alpine.sh
         shell: sh

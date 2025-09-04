@@ -110,13 +110,16 @@ jobs:
     name: Verify and Analyze Code
     runs-on: ubuntu-latest
     container:
-      image: alpine
+      image: alpine/git
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
+      - name: Fix Git ownership
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+        shell: sh
       - name: Install Dependencies
         run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
@@ -153,13 +156,16 @@ jobs:
       - verify-analyze-code
     runs-on: ubuntu-latest
     container:
-      image: alpine
+      image: alpine/git
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
+      - name: Fix Git ownership
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+        shell: sh
       - name: Install Dependencies
         run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
@@ -184,7 +190,7 @@ jobs:
       - verify-analyze-code
     runs-on: ubuntu-latest
     container:
-      image: alpine
+      image: alpine/git
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -192,6 +198,9 @@ jobs:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0  # Fetch full history for codecov base comparison
+      - name: Fix Git ownership
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+        shell: sh
       - name: Install Dependencies
         run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
@@ -219,20 +228,28 @@ jobs:
       - verify-analyze-code
     runs-on: ubuntu-latest
     container:
-      image: alpine
+      image: ubuntu:24.04
+      options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
     steps:
+      - name: Install Git
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y --no-install-recommends git-core ca-certificates
+          update-ca-certificates
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0  # Fetch full history for codecov base comparison
+      - name: Fix Git ownership
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Install Dependencies
-        run: ./scripts/installation/install-deps-alpine.sh
-        shell: sh
+        run: ./scripts/installation/install-deps-ubuntu.sh
       - name: Run Integration Tests
         run: |
-          sudo env "PATH=$PATH" make test-integration
+          env "PATH=$PATH" make test-integration
       - name: Upload Integration Test Coverage
         uses: codecov/codecov-action@v5
         with:
@@ -250,19 +267,23 @@ jobs:
       - verify-analyze-code
     runs-on: ubuntu-latest
     container:
-      image: alpine
+      image: alpine/git
+      options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
+      - name: Fix Git ownership
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+        shell: sh
       - name: Install Dependencies
         run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
       - name: Run Performance Tests
         run: |
-          sudo env "PATH=$PATH" make test-performance
+          make test-performance
   #
   # FUNCTIONAL TESTS AGAINST DIFFERENT KERNELS
   #
