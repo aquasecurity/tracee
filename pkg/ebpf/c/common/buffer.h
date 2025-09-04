@@ -15,6 +15,7 @@ statfunc data_filter_key_t *get_string_data_filter_buf(int);
 statfunc data_filter_lpm_key_t *get_string_data_filter_lpm_buf(int);
 statfunc int reverse_string(char *, char *, int, int);
 statfunc int save_to_submit_buf(args_buffer_t *, void *, u32, u8);
+statfunc int save_bytes_to_buf_max(args_buffer_t *, void *, u32, u32, u8);
 statfunc int save_bytes_to_buf(args_buffer_t *, void *, u32, u8);
 statfunc int save_str_to_buf(args_buffer_t *, void *, u8);
 statfunc int add_u64_elements_to_buf(args_buffer_t *, const u64 __user *, int, volatile u32);
@@ -119,10 +120,21 @@ statfunc int save_to_submit_buf(args_buffer_t *buf, void *ptr, u32 size, u8 inde
     return 1;
 }
 
-statfunc int save_bytes_to_buf(args_buffer_t *buf, void *ptr, u32 size, u8 index)
+// save_bytes_to_buf_max saves a byte array to the buffer for a specific argument
+// with a configurable maximum size limit.
+//
+// The data is saved to the submit buffer in the following format:
+// [index][size][ ... bytes ... ]
+//
+// Parameters:
+//   buf: buffer to save data to
+//   ptr: pointer to data to save
+//   size: actual size of data to save
+//   max_size: maximum allowed size (data will be truncated if larger)
+//   index: argument index for identification
+// Returns: 1 on success, 0 on failure
+statfunc int save_bytes_to_buf_max(args_buffer_t *buf, void *ptr, u32 size, u32 max_size, u8 index)
 {
-    // Data saved to submit buf: [index][size][ ... bytes ... ]
-
     if (size == 0)
         return 0;
 
@@ -140,12 +152,12 @@ statfunc int save_bytes_to_buf(args_buffer_t *buf, void *ptr, u32 size, u8 index
         return 0;
     }
 
-    if (buf->offset > ARGS_BUF_SIZE - (MAX_BYTES_ARR_SIZE + 1 + sizeof(int)))
+    if (buf->offset > ARGS_BUF_SIZE - (max_size + 1 + sizeof(int)))
         return 0;
 
     u32 read_size = size;
-    if (read_size >= MAX_BYTES_ARR_SIZE)
-        read_size = MAX_BYTES_ARR_SIZE - 1;
+    if (read_size >= max_size)
+        read_size = max_size - 1;
 
     // Read bytes into buffer
     if (bpf_probe_read(&(buf->args[buf->offset + 1 + sizeof(int)]), read_size, ptr) == 0) {
@@ -156,6 +168,12 @@ statfunc int save_bytes_to_buf(args_buffer_t *buf, void *ptr, u32 size, u8 index
     }
 
     return 0;
+}
+
+// save_bytes_to_buf wraps save_bytes_to_buf_max with MAX_BYTES_ARR_SIZE as the maximum size.
+statfunc int save_bytes_to_buf(args_buffer_t *buf, void *ptr, u32 size, u8 index)
+{
+    return save_bytes_to_buf_max(buf, ptr, size, MAX_BYTES_ARR_SIZE, index);
 }
 
 statfunc int load_str_from_buf(args_buffer_t *buf, char *str, u8 index, enum str_filter_type_e type)
