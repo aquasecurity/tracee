@@ -6429,7 +6429,6 @@ traced events.</p>
 <span class="w">    </span><span class="s">&quot;fmt&quot;</span>
 <span class="w">    </span><span class="s">&quot;strings&quot;</span>
 
-<span class="w">    </span><span class="s">&quot;github.com/aquasecurity/tracee/signatures/helpers&quot;</span>
 <span class="w">    </span><span class="s">&quot;github.com/aquasecurity/tracee/types/detect&quot;</span>
 <span class="w">    </span><span class="s">&quot;github.com/aquasecurity/tracee/types/protocol&quot;</span>
 <span class="w">    </span><span class="s">&quot;github.com/aquasecurity/tracee/types/trace&quot;</span>
@@ -6485,7 +6484,7 @@ traced events.</p>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">eventObj</span><span class="p">.</span><span class="nx">EventName</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;net_packet_dns&quot;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nx">dns</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">helpers</span><span class="p">.</span><span class="nx">GetProtoDNSByName</span><span class="p">(</span><span class="nx">eventObj</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;proto_dns&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="nx">dns</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">eventObj</span><span class="p">.</span><span class="nx">GetProtoDNSByName</span><span class="p">(</span><span class="s">&quot;proto_dns&quot;</span><span class="p">)</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span>
 <span class="w">        </span><span class="p">}</span>
