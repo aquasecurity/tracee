@@ -2,8 +2,11 @@ package probes
 
 import (
 	"errors"
+	"fmt"
+	"io/fs"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,10 +16,12 @@ import (
 	"github.com/aquasecurity/tracee/common/environment"
 )
 
-// mockOSInfo implements OSInfoProvider for testing
+// mockOSInfo implements EnvironmentProvider for testing
 type mockOSInfo struct {
-	kernelRelease string
-	osReleaseID   environment.OSReleaseID
+	kernelRelease      string
+	osReleaseID        environment.OSReleaseID
+	kernelConfigValues map[environment.KernelConfigOption]interface{}
+	filesystem         fs.FS
 }
 
 func newMockOSInfo(kernelRelease, osReleaseIDStr string) *mockOSInfo {
@@ -35,9 +40,30 @@ func newMockOSInfo(kernelRelease, osReleaseIDStr string) *mockOSInfo {
 	}
 
 	return &mockOSInfo{
-		kernelRelease: kernelRelease,
-		osReleaseID:   osReleaseID,
+		kernelRelease:      kernelRelease,
+		osReleaseID:        osReleaseID,
+		kernelConfigValues: make(map[environment.KernelConfigOption]interface{}),
+		filesystem:         fstest.MapFS{}, // Empty filesystem by default
 	}
+}
+
+func newMockOSInfoWithKernelConfig(kernelRelease, osReleaseIDStr string, kernelConfig map[environment.KernelConfigOption]interface{}) *mockOSInfo {
+	mock := newMockOSInfo(kernelRelease, osReleaseIDStr)
+	mock.kernelConfigValues = kernelConfig
+	return mock
+}
+
+func newMockOSInfoWithFS(kernelRelease, osReleaseIDStr string, filesystem fs.FS) *mockOSInfo {
+	mock := newMockOSInfo(kernelRelease, osReleaseIDStr)
+	mock.filesystem = filesystem
+	return mock
+}
+
+func newMockOSInfoWithKernelConfigAndFS(kernelRelease, osReleaseIDStr string, kernelConfig map[environment.KernelConfigOption]interface{}, filesystem fs.FS) *mockOSInfo {
+	mock := newMockOSInfo(kernelRelease, osReleaseIDStr)
+	mock.kernelConfigValues = kernelConfig
+	mock.filesystem = filesystem
+	return mock
 }
 
 func (m *mockOSInfo) GetOSReleaseID() environment.OSReleaseID {
@@ -46,6 +72,27 @@ func (m *mockOSInfo) GetOSReleaseID() environment.OSReleaseID {
 
 func (m *mockOSInfo) CompareOSBaseKernelRelease(version string) (environment.KernelVersionComparison, error) {
 	return environment.CompareKernelRelease(m.kernelRelease, version)
+}
+
+func (m *mockOSInfo) GetKernelConfigValue(option environment.KernelConfigOption) (environment.KernelConfigOptionValue, string, error) {
+	value, exists := m.kernelConfigValues[option]
+	if !exists {
+		return environment.UNDEFINED, "", errors.New("kernel config option not found")
+	}
+
+	// Determine the type and return string representation
+	switch v := value.(type) {
+	case environment.KernelConfigOptionValue:
+		return v, v.String(), nil
+	case string:
+		return environment.STRING, v, nil
+	default:
+		return environment.UNDEFINED, fmt.Sprintf("%v", value), nil
+	}
+}
+
+func (m *mockOSInfo) GetFilesystem() fs.FS {
+	return m.filesystem
 }
 
 // mockMapTypeSupportChecker creates a mock function for testing map type support
@@ -649,6 +696,121 @@ func TestProbeCompatibility_WithBpfProgramRequirement(t *testing.T) {
 			result, err := compatibility.isCompatible(envProvider)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+// Tests for LSM end-to-end compatibility checking (general scenarios that might happen)
+func TestBpfProgramRequirement_LSM_EndToEnd(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                 string
+		programTypeSupported bool
+		filesystem           fs.FS
+		kernelConfig         map[environment.KernelConfigOption]interface{}
+		expectedResult       bool
+		expectedError        bool
+		errorContains        string
+	}{
+		{
+			name:                 "Program type not supported",
+			programTypeSupported: false,
+			filesystem: fstest.MapFS{
+				"sys/kernel/security/lsm": &fstest.MapFile{
+					Data: []byte("lockdown,yama,apparmor,bpf"),
+				},
+			},
+			expectedResult: false,
+			expectedError:  false,
+		},
+		{
+			name:                 "Runtime LSM enabled - success",
+			programTypeSupported: true,
+			filesystem: fstest.MapFS{
+				"sys/kernel/security/lsm": &fstest.MapFile{
+					Data: []byte("lockdown,yama,apparmor,bpf"),
+				},
+			},
+			expectedResult: true,
+			expectedError:  false,
+		},
+		{
+			name:                 "Runtime LSM disabled - fail",
+			programTypeSupported: true,
+			filesystem: fstest.MapFS{
+				"sys/kernel/security/lsm": &fstest.MapFile{
+					Data: []byte("lockdown,yama,apparmor"),
+				},
+			},
+			expectedResult: false,
+			expectedError:  false,
+		},
+		{
+			name:                 "SecurityFS not mounted, kconfig fallback succeeds",
+			programTypeSupported: true,
+			filesystem:           fstest.MapFS{}, // No security directory
+			kernelConfig: map[environment.KernelConfigOption]interface{}{
+				environment.CONFIG_BPF_LSM: environment.BUILTIN,
+				environment.CONFIG_LSM:     "lockdown,yama,apparmor,bpf",
+			},
+			expectedResult: true,
+			expectedError:  false,
+		},
+		{
+			name:                 "SecurityFS not mounted, kconfig fallback fails",
+			programTypeSupported: true,
+			filesystem:           fstest.MapFS{}, // No security directory
+			kernelConfig: map[environment.KernelConfigOption]interface{}{
+				environment.CONFIG_BPF_LSM: environment.UNDEFINED,
+			},
+			expectedResult: false,
+			expectedError:  true,
+			errorContains:  "BPF_LSM is not builtin",
+		},
+		{
+			name:                 "LSM file missing - error",
+			programTypeSupported: true,
+			filesystem: fstest.MapFS{
+				"sys/kernel/security/some_file": &fstest.MapFile{Data: []byte("test")},
+			},
+			expectedResult: false,
+			expectedError:  true,
+			errorContains:  "LSM file not found: sys/kernel/security/lsm",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create mock BPF program support checker
+			supportedTypes := map[bpf.BPFProgType]bool{bpf.BPFProgTypeLsm: tt.programTypeSupported}
+			mockChecker := mockProgramTypeChecker(supportedTypes, false, "")
+
+			// Create program requirement with mock checker
+			requirement := NewBpfProgramRequirementWithChecker(bpf.BPFProgTypeLsm, mockChecker)
+
+			// Create environment provider
+			var envProvider EnvironmentProvider
+			if tt.kernelConfig != nil {
+				envProvider = newMockOSInfoWithKernelConfigAndFS("5.10.0", "ubuntu", tt.kernelConfig, tt.filesystem)
+			} else {
+				envProvider = newMockOSInfoWithFS("5.10.0", "ubuntu", tt.filesystem)
+			}
+
+			// Test the full compatibility check
+			result, err := requirement.IsCompatible(envProvider)
+
+			if tt.expectedError {
+				require.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedResult, result)
+			}
 		})
 	}
 }

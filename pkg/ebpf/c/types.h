@@ -149,6 +149,7 @@ typedef struct event_context {
     X(TEST_MISSING_KSYMBOLS, )                                                                     \
     X(TEST_FAILED_ATTACH, )                                                                        \
     X(INCOMPATIBLE_PROBE_TEST, )                                                                   \
+    X(LSM_TEST, )                                                                                  \
     // ...
 
 #ifndef EXTENDED_BUILD
