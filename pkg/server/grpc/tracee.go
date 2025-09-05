@@ -753,9 +753,9 @@ func convertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 
 	event := &pb.Event{
 		Id:   idExternal,
-		Name: e.EventName,
+		Name: sanitizeStringForProtobuf(e.EventName),
 		Policies: &pb.Policies{
-			Matched: e.MatchedPolicies,
+			Matched: sanitizeStringArrayForProtobuf(e.MatchedPolicies),
 		},
 		Workload:    eventWorkload,
 		Data:        eventData,
@@ -786,7 +786,7 @@ func getProcess(e trace.Event) *pb.Process {
 
 	var executable *pb.Executable
 	if e.Executable.Path != "" {
-		executable = &pb.Executable{Path: e.Executable.Path}
+		executable = &pb.Executable{Path: sanitizeStringForProtobuf(e.Executable.Path)}
 	}
 
 	ancestors := getAncestors(e)
@@ -801,11 +801,11 @@ func getProcess(e trace.Event) *pb.Process {
 		},
 		Thread: &pb.Thread{
 			StartTime:      threadStartTime,
-			Name:           e.ProcessName,
+			Name:           sanitizeStringForProtobuf(e.ProcessName),
 			UniqueId:       wrapperspb.UInt32(e.ThreadEntityId),
 			HostTid:        wrapperspb.UInt32(uint32(e.HostThreadID)),
 			Tid:            wrapperspb.UInt32(uint32(e.ThreadID)),
-			Syscall:        e.Syscall,
+			Syscall:        sanitizeStringForProtobuf(e.Syscall),
 			Compat:         e.ContextFlags.ContainerStarted,
 			UserStackTrace: userStackTrace,
 		},
@@ -831,18 +831,18 @@ func getContainer(e trace.Event) *pb.Container {
 	}
 
 	container := &pb.Container{
-		Id:   e.Container.ID,
-		Name: e.Container.Name,
+		Id:   sanitizeStringForProtobuf(e.Container.ID),
+		Name: sanitizeStringForProtobuf(e.Container.Name),
 	}
 
 	if e.Container.ImageName != "" {
 		var repoDigest []string
 		if e.Container.ImageDigest != "" {
-			repoDigest = []string{e.Container.ImageDigest}
+			repoDigest = []string{sanitizeStringForProtobuf(e.Container.ImageDigest)}
 		}
 
 		container.Image = &pb.ContainerImage{
-			Name:        e.Container.ImageName,
+			Name:        sanitizeStringForProtobuf(e.Container.ImageName),
 			RepoDigests: repoDigest,
 		}
 	}
@@ -859,7 +859,7 @@ func getK8s(e trace.Event) *pb.K8S {
 
 	return &pb.K8S{
 		Namespace: &pb.K8SNamespace{
-			Name: e.Kubernetes.PodNamespace,
+			Name: sanitizeStringForProtobuf(e.Kubernetes.PodNamespace),
 		},
 		Pod: &pb.Pod{
 			Name: e.Kubernetes.PodName,
@@ -923,22 +923,22 @@ func getThreat(description string, metadata map[string]interface{}) *pb.Threat {
 			continue
 		}
 
-		properties[k] = fmt.Sprint(v)
+		properties[k] = sanitizeStringForProtobuf(fmt.Sprint(v))
 	}
 
 	return &pb.Threat{
-		Description: description,
+		Description: sanitizeStringForProtobuf(description),
 		Mitre: &pb.Mitre{
 			Tactic: &pb.MitreTactic{
 				Name: mitreTactic,
 			},
 			Technique: &pb.MitreTechnique{
 				Id:   mitreTechniqueId,
-				Name: mitreTechniqueName,
+				Name: sanitizeStringForProtobuf(mitreTechniqueName),
 			},
 		},
 		Severity:   getSeverity(metadata),
-		Name:       name,
+		Name:       sanitizeStringForProtobuf(name),
 		Properties: properties,
 	}
 }
@@ -972,7 +972,7 @@ func getTriggerBy(args []trace.Argument) (*pb.TriggeredBy, error) {
 	if !ok {
 		return nil, errfmt.Errorf("error getting name of triggering event: %v", m)
 	}
-	triggerEvent.Name = name
+	triggerEvent.Name = sanitizeStringForProtobuf(name)
 
 	triggerEventArgs, ok := m["args"].([]trace.Argument)
 	if !ok {
@@ -987,7 +987,7 @@ func getTriggerBy(args []trace.Argument) (*pb.TriggeredBy, error) {
 			return nil, err
 		}
 
-		eventValue.Name = arg.ArgMeta.Name
+		eventValue.Name = sanitizeStringForProtobuf(arg.ArgMeta.Name)
 		data = append(data, eventValue)
 	}
 

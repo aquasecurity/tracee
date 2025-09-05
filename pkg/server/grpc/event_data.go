@@ -48,7 +48,7 @@ func getEventData(e trace.Event) ([]*pb.EventValue, error) {
 			continue
 		}
 
-		eventValue.Name = arg.ArgMeta.Name
+		eventValue.Name = sanitizeStringForProtobuf(arg.ArgMeta.Name)
 		data = append(data, eventValue)
 	}
 
@@ -134,14 +134,14 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 	case string:
 		return &pb.EventValue{
 			Value: &pb.EventValue_Str{
-				Str: v,
+				Str: sanitizeStringForProtobuf(v),
 			},
 		}, nil
 	case []string:
 		return &pb.EventValue{
 			Value: &pb.EventValue_StrArray{
 				StrArray: &pb.StringArray{
-					Value: v,
+					Value: sanitizeStringArrayForProtobuf(v),
 				},
 			},
 		}, nil
@@ -274,7 +274,7 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 		questions := make([]*pb.DnsQueryData, len(v))
 		for i, q := range v {
 			questions[i] = &pb.DnsQueryData{
-				Query:      q.Query,
+				Query:      sanitizeStringForProtobuf(q.Query),
 				QueryType:  q.QueryType,
 				QueryClass: q.QueryClass,
 			}
@@ -295,13 +295,13 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 				answer[j] = &pb.DnsAnswer{
 					Type:   a.Type,
 					Ttl:    a.Ttl,
-					Answer: a.Answer,
+					Answer: sanitizeStringForProtobuf(a.Answer),
 				}
 			}
 
 			responses[i] = &pb.DnsResponseData{
 				DnsQueryData: &pb.DnsQueryData{
-					Query:      r.QueryData.Query,
+					Query:      sanitizeStringForProtobuf(r.QueryData.Query),
 					QueryType:  r.QueryData.QueryType,
 					QueryClass: r.QueryData.QueryClass,
 				},
@@ -320,8 +320,8 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 		syscalls := make([]*pb.HookedSymbolData, len(v))
 		for i, s := range v {
 			syscalls[i] = &pb.HookedSymbolData{
-				SymbolName:  s.SymbolName,
-				ModuleOwner: s.ModuleOwner,
+				SymbolName:  sanitizeStringForProtobuf(s.SymbolName),
+				ModuleOwner: sanitizeStringForProtobuf(s.ModuleOwner),
 			}
 		}
 
@@ -336,8 +336,8 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 
 		for k, v := range v {
 			m[k] = &pb.HookedSymbolData{
-				SymbolName:  v.SymbolName,
-				ModuleOwner: v.ModuleOwner,
+				SymbolName:  sanitizeStringForProtobuf(v.SymbolName),
+				ModuleOwner: sanitizeStringForProtobuf(v.ModuleOwner),
 			}
 		}
 
@@ -438,18 +438,18 @@ func getDNSResourceRecord(source trace.ProtoDNSResourceRecord) *pb.DNSResourceRe
 	}
 
 	return &pb.DNSResourceRecord{
-		Name:  source.Name,
+		Name:  sanitizeStringForProtobuf(source.Name),
 		Type:  source.Type,
 		Class: source.Class,
 		Ttl:   uint32(source.TTL),
 		Ip:    source.IP,
-		Ns:    source.NS,
-		Cname: source.CNAME,
-		Ptr:   source.PTR,
-		Txts:  source.TXTs,
+		Ns:    sanitizeStringForProtobuf(source.NS),
+		Cname: sanitizeStringForProtobuf(source.CNAME),
+		Ptr:   sanitizeStringForProtobuf(source.PTR),
+		Txts:  sanitizeStringArrayForProtobuf(source.TXTs),
 		Soa: &pb.DNSSOA{
-			Mname:   source.SOA.MName,
-			Rname:   source.SOA.RName,
+			Mname:   sanitizeStringForProtobuf(source.SOA.MName),
+			Rname:   sanitizeStringForProtobuf(source.SOA.RName),
 			Serial:  source.SOA.Serial,
 			Refresh: source.SOA.Refresh,
 			Retry:   source.SOA.Retry,
@@ -460,19 +460,19 @@ func getDNSResourceRecord(source trace.ProtoDNSResourceRecord) *pb.DNSResourceRe
 			Priority: uint32(source.SRV.Priority),
 			Weight:   uint32(source.SRV.Weight),
 			Port:     uint32(source.SRV.Port),
-			Name:     source.SRV.Name,
+			Name:     sanitizeStringForProtobuf(source.SRV.Name),
 		},
 		Mx: &pb.DNSMX{
 			Preference: uint32(source.MX.Preference),
-			Name:       source.MX.Name,
+			Name:       sanitizeStringForProtobuf(source.MX.Name),
 		},
 		Opt: []*pb.DNSOPT{},
 		Uri: &pb.DNSURI{
 			Priority: uint32(source.URI.Priority),
 			Weight:   uint32(source.URI.Weight),
-			Target:   source.URI.Target,
+			Target:   sanitizeStringForProtobuf(source.URI.Target),
 		},
-		Txt: source.TXT,
+		Txt: sanitizeStringForProtobuf(source.TXT),
 	}
 }
 
@@ -481,7 +481,7 @@ func getHeaders(source http.Header) map[string]*pb.HttpHeader {
 
 	for k, v := range source {
 		headers[k] = &pb.HttpHeader{
-			Header: v,
+			Header: sanitizeStringArrayForProtobuf(v),
 		}
 	}
 
@@ -492,9 +492,9 @@ func converProtoHTTPResponse(v *trace.ProtoHTTPResponse) (*pb.EventValue, error)
 	return &pb.EventValue{
 		Value: &pb.EventValue_HttpResponse{
 			HttpResponse: &pb.HTTPResponse{
-				Status:        v.Status,
+				Status:        sanitizeStringForProtobuf(v.Status),
 				StatusCode:    int32(v.StatusCode),
-				Protocol:      v.Protocol,
+				Protocol:      sanitizeStringForProtobuf(v.Protocol),
 				Headers:       getHeaders(v.Headers),
 				ContentLength: v.ContentLength,
 			},
@@ -505,10 +505,10 @@ func converProtoHttpRequest(v *trace.ProtoHTTPRequest) (*pb.EventValue, error) {
 	return &pb.EventValue{
 		Value: &pb.EventValue_HttpRequest{
 			HttpRequest: &pb.HTTPRequest{
-				Method:        v.Method,
-				Protocol:      v.Protocol,
+				Method:        sanitizeStringForProtobuf(v.Method),
+				Protocol:      sanitizeStringForProtobuf(v.Protocol),
 				Host:          v.Host,
-				UriPath:       v.URIPath,
+				UriPath:       sanitizeStringForProtobuf(v.URIPath),
 				Headers:       getHeaders(v.Headers),
 				ContentLength: v.ContentLength,
 			},
@@ -520,11 +520,11 @@ func converProtoHttp(v *trace.ProtoHTTP) (*pb.EventValue, error) {
 		Value: &pb.EventValue_Http{
 			Http: &pb.HTTP{
 				Direction:     v.Direction,
-				Method:        v.Method,
-				Protocol:      v.Protocol,
-				Host:          v.Host,
-				UriPath:       v.URIPath,
-				Status:        v.Status,
+				Method:        sanitizeStringForProtobuf(v.Method),
+				Protocol:      sanitizeStringForProtobuf(v.Protocol),
+				Host:          sanitizeStringForProtobuf(v.Host),
+				UriPath:       sanitizeStringForProtobuf(v.URIPath),
+				Status:        sanitizeStringForProtobuf(v.Status),
 				StatusCode:    int32(v.StatusCode),
 				Headers:       getHeaders(v.Headers),
 				ContentLength: v.ContentLength,
@@ -544,10 +544,10 @@ func convertHttpIpv4(v *trace.ProtoIPv4) (*pb.EventValue, error) {
 				Flags:      uint32(v.Flags),
 				FragOffset: uint32(v.FragOffset),
 				Ttl:        uint32(v.TTL),
-				Protocol:   v.Protocol,
+				Protocol:   sanitizeStringForProtobuf(v.Protocol),
 				Checksum:   uint32(v.Checksum),
 				SrcIp:      v.SrcIP,
-				DstIp:      v.DstIP,
+				DstIp:      sanitizeStringForProtobuf(v.DstIP),
 			},
 		}}, nil
 }
@@ -560,10 +560,10 @@ func convertIpv6(v *trace.ProtoIPv6) (*pb.EventValue, error) {
 				TrafficClass: uint32(v.TrafficClass),
 				FlowLabel:    v.FlowLabel,
 				Length:       uint32(v.Length),
-				NextHeader:   v.NextHeader,
+				NextHeader:   sanitizeStringForProtobuf(v.NextHeader),
 				HopLimit:     uint32(v.HopLimit),
-				SrcIp:        v.SrcIP,
-				DstIp:        v.DstIP,
+				SrcIp:        sanitizeStringForProtobuf(v.SrcIP),
+				DstIp:        sanitizeStringForProtobuf(v.DstIP),
 			},
 		}}, nil
 }
@@ -609,7 +609,7 @@ func convertIcmp(v *trace.ProtoICMP) (*pb.EventValue, error) {
 	return &pb.EventValue{
 		Value: &pb.EventValue_Icmp{
 			Icmp: &pb.ICMP{
-				TypeCode: v.TypeCode,
+				TypeCode: sanitizeStringForProtobuf(v.TypeCode),
 				Checksum: uint32(v.Checksum),
 				Id:       uint32(v.Id),
 				Seq:      uint32(v.Seq),
@@ -621,7 +621,7 @@ func convertIcmpv6(v *trace.ProtoICMPv6) (*pb.EventValue, error) {
 	return &pb.EventValue{
 		Value: &pb.EventValue_Icmpv6{
 			Icmpv6: &pb.ICMPv6{
-				TypeCode: v.TypeCode,
+				TypeCode: sanitizeStringForProtobuf(v.TypeCode),
 				Checksum: uint32(v.Checksum),
 			},
 		}}, nil
@@ -631,7 +631,7 @@ func convertDns(v *trace.ProtoDNS) (*pb.EventValue, error) {
 	questions := make([]*pb.DNSQuestion, len(v.Questions))
 	for i, q := range v.Questions {
 		questions[i] = &pb.DNSQuestion{
-			Name:  q.Name,
+			Name:  sanitizeStringForProtobuf(q.Name),
 			Type:  q.Type,
 			Class: q.Class,
 		}
@@ -657,13 +657,13 @@ func convertDns(v *trace.ProtoDNS) (*pb.EventValue, error) {
 			Dns: &pb.DNS{
 				Id:           uint32(v.ID),
 				Qr:           uint32(v.QR),
-				OpCode:       v.OpCode,
+				OpCode:       sanitizeStringForProtobuf(v.OpCode),
 				Aa:           uint32(v.AA),
 				Tc:           uint32(v.TC),
 				Rd:           uint32(v.RD),
 				Ra:           uint32(v.RA),
 				Z:            uint32(v.Z),
-				ResponseCode: v.ResponseCode,
+				ResponseCode: sanitizeStringForProtobuf(v.ResponseCode),
 				QdCount:      uint32(v.QDCount),
 				AnCount:      uint32(v.ANCount),
 				NsCount:      uint32(v.NSCount),
@@ -680,13 +680,13 @@ func convertPktMeta(v *trace.PktMeta) (*pb.EventValue, error) {
 	return &pb.EventValue{
 		Value: &pb.EventValue_PacketMetadata{
 			PacketMetadata: &pb.PacketMetadata{
-				SrcIp:     v.SrcIP,
+				SrcIp:     sanitizeStringForProtobuf(v.SrcIP),
 				DstIp:     v.DstIP,
 				SrcPort:   uint32(v.SrcPort),
 				DstPort:   uint32(v.DstPort),
 				Protocol:  uint32(v.Protocol),
 				PacketLen: v.PacketLen,
-				Iface:     v.Iface,
+				Iface:     sanitizeStringForProtobuf(v.Iface),
 			},
 		}}, nil
 }
@@ -698,6 +698,15 @@ func convertPacketMetadata(v *trace.PacketMetadata) (*pb.EventValue, error) {
 				Direction: pb.PacketDirection(v.Direction),
 			},
 		}}, nil
+}
+
+// sanitizeStringArrayForProtobuf sanitizes all string elements in a slice
+// to ensure they contain only valid UTF-8 characters
+func sanitizeStringArrayForProtobuf(arr []string) []string {
+	for i, s := range arr {
+		arr[i] = sanitizeStringForProtobuf(s)
+	}
+	return arr
 }
 
 // sanitizeStringForProtobuf removes invalid UTF-8 characters from a string
