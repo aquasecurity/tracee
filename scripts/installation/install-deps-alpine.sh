@@ -42,7 +42,8 @@ install_base_packages() {
         zstd-static \
         libc6-compat \
         tar \
-        ca-certificates
+        ca-certificates \
+        binutils-gold
 
     # Create symlinks for compatibility with tests expecting binaries in /usr/bin
     # BusyBox applets - link directly to busybox so applet name is detected correctly
