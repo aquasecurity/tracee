@@ -6,15 +6,13 @@ header: Tracee Event Manual
 
 ## NAME
 
-**cgroup_rmdir** - Event triggered when a cgroup directory is removed
+**cgroup_rmdir** - cgroup directory removal monitoring
 
 ## DESCRIPTION
 
-The **cgroup_rmdir** event monitors the removal of directories within the cgroup filesystem. As containers are orchestrated and managed using control groups (cgroups), the removal of a directory often indicates the termination or scaling down of a container instance.
+Triggered when a cgroup directory is removed through the kernel's cgroup subsystem. This event captures the cleanup and removal of control groups, typically occurring during container termination, process cleanup, or resource group deallocation.
 
-By monitoring these directory removal events, operators can capture crucial insights into container terminations, resource deallocations, and other significant container lifecycle events within the system.
-
-This event is pivotal for administrators looking to scrutinize container lifecycle events and for understanding the orchestration dynamics in complex containerized environments.
+Cgroup removal is part of the container lifecycle and resource cleanup process, providing insight into container termination and resource deallocation patterns.
 
 ## EVENT SETS
 
@@ -23,26 +21,35 @@ This event is pivotal for administrators looking to scrutinize container lifecyc
 ## DATA FIELDS
 
 **cgroup_id** (*uint64*)
-: The unique identifier associated with the cgroup being removed
+: The unique identifier of the cgroup being removed
 
 **cgroup_path** (*string*)
-: The file system path pointing to the cgroup directory that's being removed
+: The filesystem path of the cgroup directory being removed
 
 **hierarchy_id** (*uint32*)
-: Denotes the hierarchy level of the cgroup that's being removed
+: The cgroup hierarchy identifier
 
 ## DEPENDENCIES
 
 **Kernel Tracepoint:**
 
-- cgroup_rmdir (required): Kernel tracepoint for cgroup directory removal
+- cgroup:cgroup_rmdir (required): Cgroup directory removal tracepoint
 
 ## USE CASES
 
-- **Container Termination Monitoring**: By tracing cgroup directory removals, the system can identify when containers are terminated, offering a perspective into system scaling dynamics and potential anomalies
+- **Container termination monitoring**: Track container cleanup and termination processes
 
-- **Resource Cleanup**: Keeping track of the removal of cgroups helps in understanding resource deallocations and ensuring efficient resource usage across the infrastructure
+- **Resource cleanup monitoring**: Monitor cgroup-based resource deallocation
+
+- **Container lifecycle tracking**: Track complete container lifecycle from creation to cleanup
+
+- **System resource management**: Monitor system resource group cleanup patterns
+
+- **Container debugging**: Debug container termination and cleanup issues
 
 ## RELATED EVENTS
 
-- **container_remove**: A derived event that focuses on providing detailed insights about the container corresponding to the removed cgroup directory
+- **cgroup_attach_task**: Cgroup task attachment events
+- **switch_task_ns**: Task namespace switching events
+- **existing_container**: Container detection events
+- **Process termination events**: Related process lifecycle monitoring

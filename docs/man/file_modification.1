@@ -14,18 +14,6 @@ and detecting ctime changes during the file\[cq]s lifetime.
 It uses kernel probes to efficiently capture file modification events
 without overwhelming the system with excessive events for frequently
 modified files.
-.PP
-This event is useful for:
-.IP \[bu] 2
-\f[B]File integrity monitoring\f[R]: Track unauthorized file
-modifications
-.IP \[bu] 2
-\f[B]Security monitoring\f[R]: Detect malicious file changes
-.IP \[bu] 2
-\f[B]Audit compliance\f[R]: Monitor file access and modification
-patterns
-.IP \[bu] 2
-\f[B]System monitoring\f[R]: Track application file I/O behavior
 .SS EVENT SETS
 \f[B]none\f[R]
 .SS DATA FIELDS

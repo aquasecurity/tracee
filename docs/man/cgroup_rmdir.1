@@ -2,51 +2,56 @@
 .\"
 .TH "TRACEE\-CGROUP\-RMDIR" "1" "" "" "Tracee Event Manual"
 .SS NAME
-\f[B]cgroup_rmdir\f[R] \- Event triggered when a cgroup directory is
-removed
+\f[B]cgroup_rmdir\f[R] \- cgroup directory removal monitoring
 .SS DESCRIPTION
-The \f[B]cgroup_rmdir\f[R] event monitors the removal of directories
-within the cgroup filesystem.
-As containers are orchestrated and managed using control groups
-(cgroups), the removal of a directory often indicates the termination or
-scaling down of a container instance.
+Triggered when a cgroup directory is removed through the kernel\[cq]s
+cgroup subsystem.
+This event captures the cleanup and removal of control groups, typically
+occurring during container termination, process cleanup, or resource
+group deallocation.
 .PP
-By monitoring these directory removal events, operators can capture
-crucial insights into container terminations, resource deallocations,
-and other significant container lifecycle events within the system.
-.PP
-This event is pivotal for administrators looking to scrutinize container
-lifecycle events and for understanding the orchestration dynamics in
-complex containerized environments.
+Cgroup removal is part of the container lifecycle and resource cleanup
+process, providing insight into container termination and resource
+deallocation patterns.
 .SS EVENT SETS
 \f[B]none\f[R]
 .SS DATA FIELDS
 .TP
 \f[B]cgroup_id\f[R] (\f[I]uint64\f[R])
-The unique identifier associated with the cgroup being removed
+The unique identifier of the cgroup being removed
 .TP
 \f[B]cgroup_path\f[R] (\f[I]string\f[R])
-The file system path pointing to the cgroup directory that\[cq]s being
-removed
+The filesystem path of the cgroup directory being removed
 .TP
 \f[B]hierarchy_id\f[R] (\f[I]uint32\f[R])
-Denotes the hierarchy level of the cgroup that\[cq]s being removed
+The cgroup hierarchy identifier
 .SS DEPENDENCIES
 \f[B]Kernel Tracepoint:\f[R]
 .IP \[bu] 2
-cgroup_rmdir (required): Kernel tracepoint for cgroup directory removal
+cgroup:cgroup_rmdir (required): Cgroup directory removal tracepoint
 .SS USE CASES
 .IP \[bu] 2
-\f[B]Container Termination Monitoring\f[R]: By tracing cgroup directory
-removals, the system can identify when containers are terminated,
-offering a perspective into system scaling dynamics and potential
-anomalies
+\f[B]Container termination monitoring\f[R]: Track container cleanup and
+termination processes
 .IP \[bu] 2
-\f[B]Resource Cleanup\f[R]: Keeping track of the removal of cgroups
-helps in understanding resource deallocations and ensuring efficient
-resource usage across the infrastructure
+\f[B]Resource cleanup monitoring\f[R]: Monitor cgroup\-based resource
+deallocation
+.IP \[bu] 2
+\f[B]Container lifecycle tracking\f[R]: Track complete container
+lifecycle from creation to cleanup
+.IP \[bu] 2
+\f[B]System resource management\f[R]: Monitor system resource group
+cleanup patterns
+.IP \[bu] 2
+\f[B]Container debugging\f[R]: Debug container termination and cleanup
+issues
 .SS RELATED EVENTS
 .IP \[bu] 2
-\f[B]container_remove\f[R]: A derived event that focuses on providing
-detailed insights about the container corresponding to the removed
-cgroup directory
+\f[B]cgroup_attach_task\f[R]: Cgroup task attachment events
+.IP \[bu] 2
+\f[B]switch_task_ns\f[R]: Task namespace switching events
+.IP \[bu] 2
+\f[B]existing_container\f[R]: Container detection events
+.IP \[bu] 2
+\f[B]Process termination events\f[R]: Related process lifecycle
+monitoring

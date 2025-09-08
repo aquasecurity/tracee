@@ -14,13 +14,6 @@ Triggered when a socket attempts to accept an incoming connection. This LSM (Lin
 
 The event provides information about the accepting socket and the local address details of the accepted connection. This visibility is crucial for security monitoring and network behavior analysis, as it helps identify potential threats or irregular connection patterns.
 
-This event is useful for:
-
-- **Connection monitoring**: Track incoming connection acceptances
-- **Security auditing**: Monitor network service activity
-- **Access control**: Verify connection acceptance permissions
-- **Service analysis**: Understand network service behavior
-
 ## EVENT SETS
 
 **none**

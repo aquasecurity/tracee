@@ -14,12 +14,6 @@ Triggered when a loaded but hidden kernel module is detected on the system. This
 
 The event periodically scans the system to identify kernel modules that are loaded in memory but hidden from standard module listing mechanisms.
 
-This event is useful for:
-
-- **Rootkit detection**: Identify hidden kernel modules used by rootkits
-- **System compromise detection**: Strong indicator of system compromise
-- **Security monitoring**: Continuous surveillance for stealth techniques
-
 ## EVENT SETS
 
 **none**

@@ -14,13 +14,6 @@ Triggered when a write operation occurs at offset 0 of a file, indicating either
 
 The event provides detailed information about the written file, including its path, initial content bytes, and filesystem metadata. This information is valuable for identifying potential threats through file type analysis and content inspection.
 
-This event is useful for:
-
-- **File integrity monitoring**: Track changes to file headers and content
-- **Malware detection**: Identify suspicious file modifications
-- **File type analysis**: Monitor file type changes through header modifications
-- **Security auditing**: Track file creation and modification patterns
-
 ## EVENT SETS
 
 **none**

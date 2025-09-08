@@ -14,13 +14,6 @@ Triggered when a filesystem unmount operation is attempted in the system. This L
 
 The event provides detailed information about the unmount operation, including the device being unmounted, mount point, filesystem type, and unmount flags. This visibility is crucial for both system administration and security monitoring, as unexpected unmount operations could indicate security breaches or system instability.
 
-This event is useful for:
-
-- **Unmount monitoring**: Track filesystem unmount operations
-- **Security auditing**: Detect unauthorized unmount attempts
-- **System stability**: Monitor storage configuration changes
-- **Resource management**: Track storage availability
-
 ## EVENT SETS
 
 **none**

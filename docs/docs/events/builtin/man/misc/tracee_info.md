@@ -14,13 +14,6 @@ This event is emitted during Tracee's initialization and is typically the first 
 
 The event is particularly useful when working with Tracee's File Source feature, as it provides information about how Tracee was configured during the original capture.
 
-This event is useful for:
-
-- **Timing analysis**: Calculate relative event timings
-- **Version tracking**: Identify Tracee version for compatibility
-- **Troubleshooting**: Understand runtime environment
-- **Event processing**: Provide context for other events
-
 ## EVENT SETS
 
 **none**

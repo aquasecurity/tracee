@@ -14,13 +14,6 @@ Triggered when the kernel performs a security check before generating and return
 
 The event provides detailed information about the BPF program, including its type, name, helper functions used, and loading status. This visibility is crucial for monitoring BPF program usage and ensuring security policies are enforced.
 
-This event is useful for:
-
-- **BPF monitoring**: Track BPF program loading and usage
-- **Security auditing**: Monitor BPF program permissions and capabilities
-- **Helper function analysis**: Track which BPF helpers are being used
-- **Program identification**: Monitor BPF program types and names
-
 ## EVENT SETS
 
 **none**

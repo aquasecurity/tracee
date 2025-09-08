@@ -14,12 +14,6 @@ Triggered when a new container is created in the system. This derived event moni
 
 The event leverages the `cgroup_mkdir` event and examines metadata within `cgroupfs` subdirectories to determine if a new directory corresponds to a freshly instantiated container, gathering detailed information about the container including runtime, image details, and pod data.
 
-This event is useful for:
-
-- **Security monitoring**: Detecting unexpected or malicious container creation
-- **Compliance audits**: Ensuring only approved container images are used
-- **Performance monitoring**: Identifying resource-intensive containers
-
 ## EVENT SETS
 
 **none**

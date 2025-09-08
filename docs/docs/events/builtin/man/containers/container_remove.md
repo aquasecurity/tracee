@@ -14,12 +14,6 @@ Triggered when an existing container is terminated. This derived event monitors 
 
 The event leverages the `cgroup_rmdir` event and examines metadata within `cgroupfs` subdirectories to determine if a directory's removal correlates with a container's termination, capturing vital information about the terminated container.
 
-This event is useful for:
-
-- **Security monitoring**: Scrutinize container terminations for potential security breaches
-- **Resource management**: Monitor container terminations to manage and reclaim system resources
-- **System reliability**: Track container terminations to ensure stable operations
-
 ## EVENT SETS
 
 **none**

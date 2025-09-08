@@ -15,17 +15,6 @@ When a process invokes \f[CR]ptrace\f[R] with \f[CR]PTRACE_TRACEME\f[R],
 it\[cq]s asking to be traced by its parent, which can be used to
 determine if it\[cq]s currently being debugged.
 This technique is often employed as a defense evasion mechanism.
-.PP
-This signature is useful for:
-.IP \[bu] 2
-\f[B]Malware detection\f[R]: Identify malware using anti\-debugging
-techniques
-.IP \[bu] 2
-\f[B]Security analysis\f[R]: Detect programs attempting to evade
-analysis
-.IP \[bu] 2
-\f[B]Reverse engineering protection\f[R]: Monitor anti\-analysis
-mechanisms
 .SS SIGNATURE METADATA
 .IP \[bu] 2
 \f[B]Severity\f[R]: 3 (Moderate to high threat level)
