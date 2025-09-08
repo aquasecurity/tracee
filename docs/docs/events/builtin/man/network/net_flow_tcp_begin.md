@@ -14,13 +14,6 @@ Triggered when a TCP connection is initiated, derived from raw network events ca
 
 The event leverages kernel-level packet capture to provide critical data for network monitoring and security analysis, offering visibility into TCP connection establishment patterns.
 
-This event is useful for:
-
-- **Network monitoring**: Track TCP connection initiation patterns
-- **Security analysis**: Detect unauthorized communication attempts
-- **Performance monitoring**: Analyze network flow characteristics
-- **Traffic analysis**: Monitor connection establishment patterns
-
 ## EVENT SETS
 
 **network_events**, **flows**

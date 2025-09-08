@@ -14,12 +14,6 @@ Triggered when code injection attempts are detected using the `ptrace` system ca
 
 Code injection through ptrace allows attackers to execute arbitrary code within the context of another process, evading detection and leveraging the permissions of the injected process. This technique is particularly dangerous as malicious operations appear to originate from legitimate processes.
 
-This signature is useful for:
-
-- **Code injection detection**: Identify attempts to inject code into other processes
-- **Process manipulation monitoring**: Detect unauthorized process memory modifications
-- **Advanced attack detection**: Identify sophisticated evasion techniques
-
 ## SIGNATURE METADATA
 
 - **ID**: TRC-103

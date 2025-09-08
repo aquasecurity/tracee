@@ -12,12 +12,6 @@ header: Tracee Event Manual
 
 Triggered when a BPF program is attached to a kernel instrumentation point (kprobe, uprobe, tracepoint, or raw_tracepoint). This event provides information about both the BPF program and the probe it's being attached to.
 
-This event is useful for:
-
-- Monitoring BPF program deployment
-- Security auditing of kernel instrumentation
-- Understanding system behavior changes
-
 ## EVENT SETS
 
 **none**

@@ -14,12 +14,6 @@ Triggered when a system call is invoked from an unusual code location that is no
 
 Normally, all legitimate code runs from dedicated code regions mapped from executable files. When syscalls are invoked from stack, heap, or anonymous memory regions, it often indicates malicious activity such as shellcode execution or code injection attacks.
 
-This event is useful for:
-
-- **Shellcode detection**: Identify code execution from stack, heap, or anonymous memory
-- **Code injection detection**: Detect various code injection techniques
-- **Exploit detection**: Identify exploitation attempts using unusual code execution
-
 ## EVENT SETS
 
 **derived**, **security_alert**

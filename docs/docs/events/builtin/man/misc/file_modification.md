@@ -14,13 +14,6 @@ Triggered when a file is modified by a process. This event is submitted once bet
 
 The event monitors file changes by tracking file open/close operations and detecting ctime changes during the file's lifetime. It uses kernel probes to efficiently capture file modification events without overwhelming the system with excessive events for frequently modified files.
 
-This event is useful for:
-
-- **File integrity monitoring**: Track unauthorized file modifications
-- **Security monitoring**: Detect malicious file changes
-- **Audit compliance**: Monitor file access and modification patterns
-- **System monitoring**: Track application file I/O behavior
-
 ## EVENT SETS
 
 **none**

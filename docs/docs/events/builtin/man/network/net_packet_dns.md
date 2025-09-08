@@ -14,13 +14,6 @@ Triggered for each DNS packet that reaches or leaves one of the processes being 
 
 The Domain Name System (DNS) is fundamental to Internet operations, translating human-readable domain names into IP addresses. This event captures the complete DNS protocol exchange for monitoring, security analysis, and troubleshooting.
 
-This event is useful for:
-
-- **DNS monitoring**: Track domain name resolution patterns
-- **Security analysis**: Detect DNS-based attacks and malicious domains
-- **Network troubleshooting**: Debug DNS resolution issues
-- **Traffic analysis**: Monitor DNS query patterns and performance
-
 ## EVENT SETS
 
 **network_events**

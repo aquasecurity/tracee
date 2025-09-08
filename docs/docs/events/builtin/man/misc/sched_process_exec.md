@@ -14,12 +14,6 @@ Triggered when a new process is executed, capturing detailed information about t
 
 This is a kernel-level tracepoint that fires whenever the scheduler handles process execution, providing more detailed information than the basic `execve` system call. It's particularly useful for understanding the complete execution context and metadata about executed programs.
 
-This event is useful for:
-
-- **Comprehensive process monitoring**: Track detailed execution information including file metadata
-- **Security analysis**: Monitor process execution with rich contextual information
-- **Binary analysis**: Understand interpreter usage and executable characteristics
-
 ## EVENT SETS
 
 **none**

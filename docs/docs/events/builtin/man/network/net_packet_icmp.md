@@ -14,13 +14,6 @@ Triggered for each ICMP (Internet Control Message Protocol) packet that reaches 
 
 ICMP is a network layer protocol primarily used for diagnostic and control purposes, enabling devices to communicate error and status information about network conditions. It's commonly used by networking utilities like ping and traceroute for network connectivity testing and troubleshooting.
 
-This event is useful for:
-
-- **Network diagnostics**: Monitor ping, traceroute, and other ICMP-based tools
-- **Error analysis**: Track network error conditions and unreachable destinations
-- **Security monitoring**: Detect ICMP-based attacks and reconnaissance
-- **Network troubleshooting**: Analyze connectivity and routing issues
-
 ## EVENT SETS
 
 **network_events**

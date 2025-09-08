@@ -14,12 +14,6 @@ Triggered when a socket attempts to establish a connection through the Linux Sec
 
 The event monitors socket connections for security, diagnostics, and compliance purposes by hooking into the kernel's `security_socket_connect` function.
 
-This event is useful for:
-
-- **Network security monitoring**: Track outbound connections and detect malicious communications
-- **Connection auditing**: Monitor network connections for compliance purposes
-- **Network diagnostics**: Debug network-related issues in applications
-
 ## EVENT SETS
 
 **none**

@@ -14,13 +14,6 @@ A high-level event that captures process execution failures, providing detailed 
 
 The event provides comprehensive visibility into execution failures, which is crucial for debugging application issues, detecting security problems, and monitoring system behavior. It captures both user-space and kernel-initiated execution attempts.
 
-This event is useful for:
-
-- **Execution debugging**: Track and analyze process execution failures
-- **Security monitoring**: Detect failed execution attempts that might indicate attacks
-- **System diagnostics**: Understand process execution issues
-- **Permission analysis**: Monitor access control failures
-
 ## EVENT SETS
 
 **none**

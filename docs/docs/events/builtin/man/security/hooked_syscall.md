@@ -14,12 +14,6 @@ Triggered when system call table hooking is detected in the Linux kernel. This e
 
 System call hooking is a common technique used by malware to intercept and modify system calls, enabling activities such as hiding processes, files, network connections, or escalating privileges while remaining undetected by traditional monitoring tools.
 
-This event is useful for:
-
-- **Rootkit detection**: Identify kernel-level rootkits that hook system calls
-- **System integrity monitoring**: Verify kernel code integrity
-- **Security incident response**: Detect unauthorized kernel modifications
-
 ## EVENT SETS
 
 **derived**, **security_alert**

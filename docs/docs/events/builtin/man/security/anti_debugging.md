@@ -14,12 +14,6 @@ Triggered when processes employ anti-debugging techniques to thwart or block deb
 
 When a process invokes `ptrace` with `PTRACE_TRACEME`, it's asking to be traced by its parent, which can be used to determine if it's currently being debugged. This technique is often employed as a defense evasion mechanism.
 
-This signature is useful for:
-
-- **Malware detection**: Identify malware using anti-debugging techniques
-- **Security analysis**: Detect programs attempting to evade analysis
-- **Reverse engineering protection**: Monitor anti-analysis mechanisms
-
 ## SIGNATURE METADATA
 
 - **Severity**: 3 (Moderate to high threat level)
