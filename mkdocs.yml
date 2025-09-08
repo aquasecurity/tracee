@@ -114,25 +114,49 @@ nav:
                             - security_socket_setsockopt: docs/events/builtin/man/lsm/security_socket_setsockopt.md
                             - security_task_setrlimit: docs/events/builtin/man/lsm/security_task_setrlimit.md
                       - Misc:
+                            - __kernel_write: docs/events/builtin/man/misc/__kernel_write.md
                             - bpf_attach: docs/events/builtin/man/misc/bpf_attach.md
+                            - call_usermodehelper: docs/events/builtin/man/misc/call_usermodehelper.md
                             - chmod_common: docs/events/builtin/man/misc/chmod_common.md
+                            - commit_creds: docs/events/builtin/man/misc/commit_creds.md
+                            - debugfs_create_dir: docs/events/builtin/man/misc/debugfs_create_dir.md
+                            - debugfs_create_file: docs/events/builtin/man/misc/debugfs_create_file.md
+                            - device_add: docs/events/builtin/man/misc/device_add.md
+                            - dirty_pipe_splice: docs/events/builtin/man/misc/dirty_pipe_splice.md
+                            - do_init_module: docs/events/builtin/man/misc/do_init_module.md
+                            - do_mmap: docs/events/builtin/man/misc/do_mmap.md
                             - do_sigaction: docs/events/builtin/man/misc/do_sigaction.md
+                            - do_truncate: docs/events/builtin/man/misc/do_truncate.md
                             - file_modification: docs/events/builtin/man/misc/file_modification.md
                             - ftrace_hook: docs/events/builtin/man/security/ftrace_hook.md
                             - hidden_kernel_module: docs/events/builtin/man/security/hidden_kernel_module.md
+                            - hooked_seq_ops: docs/events/builtin/man/misc/hooked_seq_ops.md
                             - hooked_syscall: docs/events/builtin/man/security/hooked_syscall.md
+                            - inotify_watch: docs/events/builtin/man/misc/inotify_watch.md
                             - kallsyms_lookup_name: docs/events/builtin/man/misc/kallsyms_lookup_name.md
+                            - kprobe_attach: docs/events/builtin/man/misc/kprobe_attach.md
+                            - load_elf_phdrs: docs/events/builtin/man/misc/load_elf_phdrs.md
                             - magic_write: docs/events/builtin/man/misc/magic_write.md
                             - mem_prot_alert: docs/events/builtin/man/security/mem_prot_alert.md
                             - net_tcp_connect: docs/events/builtin/man/misc/net_tcp_connect.md
+                            - print_mem_dump: docs/events/builtin/man/misc/print_mem_dump.md
+                            - proc_create: docs/events/builtin/man/misc/proc_create.md
                             - process_execute_failed: docs/events/builtin/man/misc/process_execute_failed.md
+                            - register_chrdev: docs/events/builtin/man/misc/register_chrdev.md
                             - set_fs_pwd: docs/events/builtin/man/misc/set_fs_pwd.md
+                            - shared_object_loaded: docs/events/builtin/man/misc/shared_object_loaded.md
+                            - socket_accept: docs/events/builtin/man/misc/socket_accept.md
+                            - socket_dup: docs/events/builtin/man/misc/socket_dup.md
                             - suspicious_syscall_source: docs/events/builtin/man/security/suspicious_syscall_source.md
                             - symbols_collision: docs/events/builtin/man/misc/symbols_collision.md
                             - symbols_loaded: docs/events/builtin/man/security/symbols_loaded.md
+                            - task_rename: docs/events/builtin/man/misc/task_rename.md
                             - tracee_info: docs/events/builtin/man/misc/tracee_info.md
                             - vfs_read: docs/events/builtin/man/misc/vfs_read.md
                             - vfs_readv: docs/events/builtin/man/misc/vfs_readv.md
+                            - vfs_utimes: docs/events/builtin/man/misc/vfs_utimes.md
+                            - vfs_write: docs/events/builtin/man/misc/vfs_write.md
+                            - vfs_writev: docs/events/builtin/man/misc/vfs_writev.md
                       - Syscalls:
                             - Overview: docs/events/builtin/syscall-events.md
                 - Custom Events:
