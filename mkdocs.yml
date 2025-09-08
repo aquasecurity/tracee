@@ -25,6 +25,20 @@ nav:
           - Events:
                 - Overview: docs/events/index.md
                 - Built-in Events:
+                      - Lifecycle:
+                            - sched_process_fork: docs/events/builtin/man/lifecycle/sched_process_fork.md
+                            - sched_process_exec: docs/events/builtin/man/lifecycle/sched_process_exec.md
+                            - sched_process_exit: docs/events/builtin/man/lifecycle/sched_process_exit.md
+                            - do_exit: docs/events/builtin/man/lifecycle/do_exit.md
+                            - sched_switch: docs/events/builtin/man/lifecycle/sched_switch.md
+                            - container_create: docs/events/builtin/man/lifecycle/container_create.md
+                            - container_remove: docs/events/builtin/man/lifecycle/container_remove.md
+                            - existing_container: docs/events/builtin/man/lifecycle/existing_container.md
+                            - init_namespaces: docs/events/builtin/man/lifecycle/init_namespaces.md
+                            - switch_task_ns: docs/events/builtin/man/lifecycle/switch_task_ns.md
+                            - cgroup_mkdir: docs/events/builtin/man/lifecycle/cgroup_mkdir.md
+                            - cgroup_rmdir: docs/events/builtin/man/lifecycle/cgroup_rmdir.md
+                            - cgroup_attach_task: docs/events/builtin/man/lifecycle/cgroup_attach_task.md
                       - Security:
                             - Overview: docs/events/builtin/security-events.md
                             - Anti Debugging: docs/events/builtin/man/security/anti_debugging.md
@@ -90,11 +104,7 @@ nav:
                             - security_task_setrlimit: docs/events/builtin/man/lsm/security_task_setrlimit.md
                       - Misc:
                             - bpf_attach: docs/events/builtin/man/misc/bpf_attach.md
-                            - cgroup_mkdir: docs/events/builtin/man/misc/cgroup_mkdir.md
-                            - cgroup_rmdir: docs/events/builtin/man/misc/cgroup_rmdir.md
                             - chmod_common: docs/events/builtin/man/misc/chmod_common.md
-                            - container_create: docs/events/builtin/man/containers/container_create.md
-                            - container_remove: docs/events/builtin/man/containers/container_remove.md
                             - do_sigaction: docs/events/builtin/man/misc/do_sigaction.md
                             - file_modification: docs/events/builtin/man/misc/file_modification.md
                             - ftrace_hook: docs/events/builtin/man/security/ftrace_hook.md
@@ -105,7 +115,6 @@ nav:
                             - mem_prot_alert: docs/events/builtin/man/security/mem_prot_alert.md
                             - net_tcp_connect: docs/events/builtin/man/misc/net_tcp_connect.md
                             - process_execute_failed: docs/events/builtin/man/misc/process_execute_failed.md
-                            - sched_process_exec: docs/events/builtin/man/misc/sched_process_exec.md
                             - set_fs_pwd: docs/events/builtin/man/misc/set_fs_pwd.md
                             - suspicious_syscall_source: docs/events/builtin/man/security/suspicious_syscall_source.md
                             - symbols_collision: docs/events/builtin/man/misc/symbols_collision.md
