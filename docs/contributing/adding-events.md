@@ -233,22 +233,11 @@ Consider adding integration tests that actually trigger your event and verify it
 
 ### 12. Create Event Documentation
 
-After everything is working, create a markdown file in the `docs/` directory to document your event.
+After everything is working, create proper documentation for your event to help users understand its purpose, usage, and configuration.
 
-**Required Documentation Sections:**
+**For comprehensive documentation standards and templates, see the [Event Documentation Guide](event-documentation-guide.md).**
 
-- **Description**: Explain what the event captures, when it triggers, and its purpose
-- **Event Sets**: Document which event sets this event belongs to (e.g., syscalls, fs, net)
-- **Data Fields**: List and describe all data fields returned by the event
-- **Dependencies**: Document kernel probes and any other requirements
-- **Use Cases**: Provide practical examples of when and why to use this event
-
-**Documentation Guidelines:**
-- Follow the existing format used by other event documentation files
-- Provide clear descriptions of all data fields with their types
-- Explain the security or operational significance
-- Include practical use cases and examples
-- Cross-reference related events when appropriate
+The documentation guide covers all formatting requirements, accuracy standards, and provides a complete template to ensure your documentation matches Tracee's quality standards.
 
 ## Common Patterns
 

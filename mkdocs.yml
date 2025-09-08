@@ -183,6 +183,7 @@ nav:
           - Guidelines: contributing/guidelines.md
           - PR Validation (Checkpatch): contributing/checkpatch.md
           - Adding New Events: contributing/adding-events.md
+          - Event Documentation Guide: contributing/event-documentation-guide.md
           - Code Coverage: contributing/testing-coverage.md
           - Performance: contributing/performance.md
           - Kubernetes: contributing/kubernetes.md
