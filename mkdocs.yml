@@ -159,6 +159,8 @@ nav:
                             - vfs_writev: docs/events/builtin/man/misc/vfs_writev.md
                       - Syscalls:
                             - Overview: docs/events/builtin/syscall-events.md
+                            - sys_enter: docs/events/builtin/man/syscalls/sys_enter.md
+                            - sys_exit: docs/events/builtin/man/syscalls/sys_exit.md
                 - Custom Events:
                       - Overview: docs/events/custom/overview.md
                       - Go: docs/events/custom/golang.md

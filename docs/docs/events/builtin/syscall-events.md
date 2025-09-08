@@ -1,8 +1,27 @@
 # Syscalls
 
-Tracee supports tracing all Linux system calls. Each system call is available as an event with the same name as the syscall. For example, to trace the `open` system call, use the `open` event name.
+Tracee provides two approaches for monitoring Linux system calls:
+
+## Specific Syscall Monitoring
+
+Each system call is available as an individual event with the same name as the syscall. For example, to trace the `open` system call, use the `open` event name. These events use dedicated kprobes for targeted, efficient monitoring of specific syscalls.
 
 The arguments of the system call are automatically captured as event data fields, with types properly mapped from kernel types to Go types (e.g., `const char*` becomes `string`).
+
+## Comprehensive Syscall Monitoring
+
+For broad syscall analysis, Tracee provides comprehensive monitoring events:
+
+- **sys_enter**: Captures all system call entries using raw tracepoints
+- **sys_exit**: Captures all system call exits using raw tracepoints
+
+These events are ideal for:
+- Security auditing across all syscalls
+- System-wide syscall pattern analysis
+- Performance monitoring of syscall frequency
+- Detecting anomalous syscall behavior
+
+**Note**: These comprehensive events generate high volumes of data since they capture every syscall. Use filtering or sampling for production environments.
 
 For detailed documentation about any specific system call, including its purpose, arguments, return values, and error conditions, please consult the standard Linux manual pages (man section 2). These can be accessed via:
 
