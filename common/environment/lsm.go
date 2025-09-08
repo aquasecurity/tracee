@@ -23,9 +23,13 @@ func CheckLSMSupport(filesystem fs.FS, getKernelConfigValue KernelConfigValueFun
 	if err != nil {
 		// If security fs is not mounted, fall back to kernel config check
 		if errors.Is(err, ErrSecurityFSNotMounted) {
+			logger.Debugw("SecurityFS not mounted, checking kernel config instead")
 			return CheckBPFLSMConfigSupport(getKernelConfigValue, filesystem)
 		}
-		return false, err
+		// Something is preventing our access to the securityfs LSM file
+		// Fallback to kernel config check for best effort
+		logger.Infow("Failed to check LSM support in securityfs", "error", err)
+		return CheckBPFLSMConfigSupport(getKernelConfigValue, filesystem)
 	}
 
 	return runtimeEnabled, nil
@@ -36,17 +40,20 @@ func CheckLSMSupport(filesystem fs.FS, getKernelConfigValue KernelConfigValueFun
 func IsLSMSupportedInSecurityFs(filesystem fs.FS) (bool, error) {
 	// First check if security filesystem is mounted
 	securityDir := "sys/kernel/security"
-	if _, err := fs.Stat(filesystem, securityDir); errors.Is(err, fs.ErrNotExist) {
+	if stat, err := fs.Stat(filesystem, securityDir); errors.Is(err, fs.ErrNotExist) {
 		return false, ErrSecurityFSNotMounted
 	} else if err != nil {
 		return false, fmt.Errorf("failed to access %s: %w", securityDir, err)
+	} else if !stat.IsDir() {
+		return false, fmt.Errorf("security directory %s is not a directory", securityDir)
 	}
 
 	// Check LSM file
 	lsmFile := "sys/kernel/security/lsm"
 	data, err := fs.ReadFile(filesystem, lsmFile)
 	if errors.Is(err, fs.ErrNotExist) {
-		return false, fmt.Errorf("LSM file not found: %s", lsmFile)
+		// If the LSM file is not found, it means LSM is not supported
+		return false, nil
 	} else if err != nil {
 		return false, fmt.Errorf("failed to read %s: %v", lsmFile, err)
 	}
