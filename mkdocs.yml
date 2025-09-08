@@ -89,10 +89,19 @@ nav:
                             - net_packet_http_request: docs/events/builtin/man/network/net_packet_http_request.md
                             - net_packet_http_response: docs/events/builtin/man/network/net_packet_http_response.md
                       - LSM:
+                            - cap_capable: docs/events/builtin/man/lsm/cap_capable.md
+                            - security_bpf: docs/events/builtin/man/lsm/security_bpf.md
+                            - security_bpf_map: docs/events/builtin/man/lsm/security_bpf_map.md
                             - security_bpf_prog: docs/events/builtin/man/lsm/security_bpf_prog.md
                             - security_bprm_check: docs/events/builtin/man/lsm/security_bprm_check.md
                             - security_file_mprotect: docs/events/builtin/man/lsm/security_file_mprotect.md
+                            - security_file_open: docs/events/builtin/man/lsm/security_file_open.md
+                            - security_inode_mknod: docs/events/builtin/man/lsm/security_inode_mknod.md
+                            - security_inode_rename: docs/events/builtin/man/lsm/security_inode_rename.md
                             - security_inode_unlink: docs/events/builtin/man/lsm/security_inode_unlink.md
+                            - security_kernel_post_read_file: docs/events/builtin/man/lsm/security_kernel_post_read_file.md
+                            - security_kernel_read_file: docs/events/builtin/man/lsm/security_kernel_read_file.md
+                            - security_mmap_file: docs/events/builtin/man/lsm/security_mmap_file.md
                             - security_path_notify: docs/events/builtin/man/lsm/security_path_notify.md
                             - security_sb_mount: docs/events/builtin/man/lsm/security_sb_mount.md
                             - security_sb_umount: docs/events/builtin/man/lsm/security_sb_umount.md
@@ -100,6 +109,8 @@ nav:
                             - security_socket_accept: docs/events/builtin/man/lsm/security_socket_accept.md
                             - security_socket_bind: docs/events/builtin/man/lsm/security_socket_bind.md
                             - security_socket_connect: docs/events/builtin/man/lsm/security_socket_connect.md
+                            - security_socket_create: docs/events/builtin/man/lsm/security_socket_create.md
+                            - security_socket_listen: docs/events/builtin/man/lsm/security_socket_listen.md
                             - security_socket_setsockopt: docs/events/builtin/man/lsm/security_socket_setsockopt.md
                             - security_task_setrlimit: docs/events/builtin/man/lsm/security_task_setrlimit.md
                       - Misc:
