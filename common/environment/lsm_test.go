@@ -1,7 +1,6 @@
 package environment
 
 import (
-	"errors"
 	"fmt"
 	"io/fs"
 	"testing"
@@ -11,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIsBPFEnabledInLSM(t *testing.T) {
+func TestIsLSMSupportedInSecurityFs(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -21,6 +20,60 @@ func TestIsBPFEnabledInLSM(t *testing.T) {
 		expectedError  error
 		errorContains  string
 	}{
+		{
+			name: "LSM file exists with BPF enabled",
+			filesystem: fstest.MapFS{
+				"sys/kernel/security/lsm": &fstest.MapFile{
+					Data: []byte("lockdown,yama,apparmor,bpf"),
+				},
+			},
+			expectedResult: true,
+		},
+		{
+			name: "LSM file exists with BPF only",
+			filesystem: fstest.MapFS{
+				"sys/kernel/security/lsm": &fstest.MapFile{
+					Data: []byte("bpf"),
+				},
+			},
+			expectedResult: true,
+		},
+		{
+			name: "LSM file exists without BPF",
+			filesystem: fstest.MapFS{
+				"sys/kernel/security/lsm": &fstest.MapFile{
+					Data: []byte("lockdown,yama,apparmor"),
+				},
+			},
+			expectedResult: false,
+		},
+		{
+			name: "LSM file exists with empty content",
+			filesystem: fstest.MapFS{
+				"sys/kernel/security/lsm": &fstest.MapFile{
+					Data: []byte(""),
+				},
+			},
+			expectedResult: false,
+		},
+		{
+			name: "LSM file with similar but not exact BPF",
+			filesystem: fstest.MapFS{
+				"sys/kernel/security/lsm": &fstest.MapFile{
+					Data: []byte("lockdown,yama,apparmor,bpf_test"),
+				},
+			},
+			expectedResult: false,
+		},
+		{
+			name: "LSM file with whitespace and formatting",
+			filesystem: fstest.MapFS{
+				"sys/kernel/security/lsm": &fstest.MapFile{
+					Data: []byte("  lockdown  ,  yama  ,  apparmor  ,  bpf  "),
+				},
+			},
+			expectedResult: true,
+		},
 		{
 			name:       "SecurityFS not mounted - directory missing",
 			filesystem: fstest.MapFS{
@@ -38,117 +91,7 @@ func TestIsBPFEnabledInLSM(t *testing.T) {
 				// security directory exists but no lsm file
 			},
 			expectedResult: false,
-			expectedError:  nil,
-			errorContains:  "LSM file not found",
 		},
-		{
-			name: "LSM file exists with BPF enabled",
-			filesystem: fstest.MapFS{
-				"sys/kernel/security/lsm": &fstest.MapFile{
-					Data: []byte("lockdown,yama,apparmor,bpf"),
-				},
-			},
-			expectedResult: true,
-			expectedError:  nil,
-		},
-
-		{
-			name: "LSM file exists with BPF only",
-			filesystem: fstest.MapFS{
-				"sys/kernel/security/lsm": &fstest.MapFile{
-					Data: []byte("bpf"),
-				},
-			},
-			expectedResult: true,
-			expectedError:  nil,
-		},
-		{
-			name: "LSM file exists without BPF",
-			filesystem: fstest.MapFS{
-				"sys/kernel/security/lsm": &fstest.MapFile{
-					Data: []byte("lockdown,yama,apparmor"),
-				},
-			},
-			expectedResult: false,
-			expectedError:  nil,
-		},
-		{
-			name: "LSM file exists with empty content",
-			filesystem: fstest.MapFS{
-				"sys/kernel/security/lsm": &fstest.MapFile{
-					Data: []byte(""),
-				},
-			},
-			expectedResult: false,
-			expectedError:  nil,
-		},
-
-		{
-			name: "LSM file with BPF at the beginning",
-			filesystem: fstest.MapFS{
-				"sys/kernel/security/lsm": &fstest.MapFile{
-					Data: []byte("bpf,lockdown,yama,apparmor"),
-				},
-			},
-			expectedResult: true,
-			expectedError:  nil,
-		},
-
-		{
-			name: "LSM file with similar but not exact BPF",
-			filesystem: fstest.MapFS{
-				"sys/kernel/security/lsm": &fstest.MapFile{
-					Data: []byte("lockdown,yama,apparmor,bpf_test"),
-				},
-			},
-			expectedResult: false,
-			expectedError:  nil,
-		},
-
-		{
-			name: "LSM file with whitespace and formatting",
-			filesystem: fstest.MapFS{
-				"sys/kernel/security/lsm": &fstest.MapFile{
-					Data: []byte("  lockdown  ,  yama  ,  apparmor  ,  bpf  "),
-				},
-			},
-			expectedResult: true,
-			expectedError:  nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result, err := IsLSMSupportedInSecurityFs(tt.filesystem)
-
-			assert.Equal(t, tt.expectedResult, result)
-
-			if tt.expectedError != nil {
-				require.Error(t, err)
-				assert.ErrorIs(t, err, tt.expectedError)
-			} else if tt.errorContains != "" {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorContains)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-// Test error scenarios with more complex filesystem setups
-func TestIsBPFEnabledInLSM_ErrorScenarios(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name           string
-		filesystem     fs.FS
-		expectedResult bool
-		expectedError  error
-		errorContains  string
-	}{
 		{
 			name: "Security directory is a file instead of directory",
 			filesystem: fstest.MapFS{
@@ -157,19 +100,7 @@ func TestIsBPFEnabledInLSM_ErrorScenarios(t *testing.T) {
 				},
 			},
 			expectedResult: false,
-			expectedError:  nil,
-			errorContains:  "LSM file not found", // Cannot read lsm file inside a file
-		},
-		{
-			name: "Nested security path missing intermediate directories",
-			filesystem: fstest.MapFS{
-				"sys/other/path": &fstest.MapFile{
-					Data: []byte("test"),
-				},
-				// Missing sys/kernel directory
-			},
-			expectedResult: false,
-			expectedError:  ErrSecurityFSNotMounted,
+			errorContains:  "security directory sys/kernel/security is not a directory",
 		},
 	}
 
@@ -194,52 +125,136 @@ func TestIsBPFEnabledInLSM_ErrorScenarios(t *testing.T) {
 	}
 }
 
-// Tests for CheckBPFLSMSupport function
-func TestCheckBPFLSMSupport(t *testing.T) {
+func TestCheckLSMSupport(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name                  string
+		filesystem            fs.FS
 		kernelConfig          map[KernelConfigOption]interface{}
 		expectedResult        bool
-		expectedError         bool
 		expectedErrorContains string
 	}{
 		{
-			name: "CONFIG_BPF_LSM=y and CONFIG_LSM contains bpf",
+			name: "SecurityFS shows BPF is supported",
+			filesystem: fstest.MapFS{
+				"sys/kernel/security/lsm": &fstest.MapFile{
+					Data: []byte("lockdown,yama,apparmor,bpf"),
+				},
+			},
+			kernelConfig: map[KernelConfigOption]interface{}{
+				CONFIG_BPF_LSM: BUILTIN,
+			},
+			expectedResult: true,
+		},
+		{
+			name: "SecurityFS shows BPF is not supported",
+			filesystem: fstest.MapFS{
+				"sys/kernel/security/lsm": &fstest.MapFile{
+					Data: []byte("lockdown,yama,apparmor"),
+				},
+			},
+			kernelConfig: map[KernelConfigOption]interface{}{
+				CONFIG_BPF_LSM: BUILTIN,
+			},
+			expectedResult: false,
+		},
+		{
+			name: "LSM file not found - should return false without error",
+			filesystem: fstest.MapFS{
+				"sys/kernel/security/some_other_file": &fstest.MapFile{
+					Data: []byte("test"),
+				},
+			},
+			kernelConfig: map[KernelConfigOption]interface{}{
+				CONFIG_BPF_LSM: BUILTIN,
+			},
+			expectedResult: false,
+		},
+		{
+			name: "SecurityFS not mounted - fallback to kernel config with BPF enabled",
+			filesystem: fstest.MapFS{
+				// No sys/kernel/security directory
+				"proc/cmdline": &fstest.MapFile{
+					Data: []byte("root=/dev/sda1 lsm=lockdown,bpf"),
+				},
+			},
 			kernelConfig: map[KernelConfigOption]interface{}{
 				CONFIG_BPF_LSM: BUILTIN,
 				CONFIG_LSM:     "lockdown,yama,apparmor,bpf",
 			},
 			expectedResult: true,
-			expectedError:  false,
+		},
+		{
+			name: "SecurityFS access error - fallback to kernel config",
+			filesystem: fstest.MapFS{
+				"sys/kernel/security": &fstest.MapFile{
+					Data: []byte("not a directory"),
+				},
+				"proc/cmdline": &fstest.MapFile{
+					Data: []byte("root=/dev/sda1 lsm=lockdown,bpf"),
+				},
+			},
+			kernelConfig: map[KernelConfigOption]interface{}{
+				CONFIG_BPF_LSM: BUILTIN,
+				CONFIG_LSM:     "lockdown,yama,apparmor,bpf",
+			},
+			expectedResult: true,
+		},
+		{
+			name: "CONFIG_BPF_LSM=y and CONFIG_LSM contains bpf",
+			filesystem: fstest.MapFS{
+				// No securityfs - will fallback to kernel config
+				"proc/cmdline": &fstest.MapFile{
+					Data: []byte("root=/dev/sda1"),
+				},
+			},
+			kernelConfig: map[KernelConfigOption]interface{}{
+				CONFIG_BPF_LSM: BUILTIN,
+				CONFIG_LSM:     "lockdown,yama,apparmor,bpf",
+			},
+			expectedResult: true,
 		},
 		{
 			name: "CONFIG_BPF_LSM=y but CONFIG_LSM missing bpf",
+			filesystem: fstest.MapFS{
+				// No securityfs - will fallback to kernel config
+				"proc/cmdline": &fstest.MapFile{
+					Data: []byte("root=/dev/sda1"),
+				},
+			},
 			kernelConfig: map[KernelConfigOption]interface{}{
 				CONFIG_BPF_LSM: BUILTIN,
 				CONFIG_LSM:     "lockdown,yama,apparmor",
 			},
-			expectedResult: false, // CONFIG_LSM set but no bpf, no boot params
-			expectedError:  false, // No longer an error - just returns false
+			expectedResult: false,
 		},
 		{
 			name: "CONFIG_BPF_LSM not enabled",
+			filesystem: fstest.MapFS{
+				"proc/cmdline": &fstest.MapFile{
+					Data: []byte("root=/dev/sda1"),
+				},
+			},
 			kernelConfig: map[KernelConfigOption]interface{}{
 				CONFIG_BPF_LSM: UNDEFINED,
 			},
 			expectedResult:        false,
-			expectedError:         true,
 			expectedErrorContains: "BPF_LSM is not builtin",
 		},
 		{
 			name: "CONFIG_BPF_LSM=y but no CONFIG_LSM (depends on boot params)",
+			filesystem: fstest.MapFS{
+				// No securityfs - will fallback to kernel config
+				"proc/cmdline": &fstest.MapFile{
+					Data: []byte("root=/dev/sda1"),
+				},
+			},
 			kernelConfig: map[KernelConfigOption]interface{}{
 				CONFIG_BPF_LSM: BUILTIN,
 				// CONFIG_LSM not set - should fallback to boot params check
 			},
-			expectedResult: false, // No boot params in test, so false
-			expectedError:  false, // No longer an error - depends on boot params
+			expectedResult: false,
 		},
 	}
 
@@ -251,33 +266,28 @@ func TestCheckBPFLSMSupport(t *testing.T) {
 			getKernelConfigValue := func(option KernelConfigOption) (KernelConfigOptionValue, string, error) {
 				value, exists := tt.kernelConfig[option]
 				if !exists {
-					return UNDEFINED, "", errors.New("kernel config option not found")
+					return UNDEFINED, "", nil
 				}
 
-				// Determine the type and return string representation
 				switch v := value.(type) {
 				case KernelConfigOptionValue:
 					return v, v.String(), nil
 				case string:
 					return STRING, v, nil
 				default:
-					return UNDEFINED, fmt.Sprintf("%v", value), nil
+					return UNDEFINED, "", fmt.Errorf("unknown type: %T", v)
 				}
 			}
 
-			// Test the standalone kconfig function directly
-			// Create empty filesystem for test
-			mockFS := fstest.MapFS{}
-			result, err := CheckBPFLSMConfigSupport(getKernelConfigValue, mockFS)
+			result, err := CheckLSMSupport(tt.filesystem, getKernelConfigValue)
 
-			if tt.expectedError {
+			assert.Equal(t, tt.expectedResult, result)
+
+			if tt.expectedErrorContains != "" {
 				require.Error(t, err)
-				if tt.expectedErrorContains != "" {
-					assert.Contains(t, err.Error(), tt.expectedErrorContains)
-				}
+				assert.Contains(t, err.Error(), tt.expectedErrorContains)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, tt.expectedResult, result)
 			}
 		})
 	}
@@ -341,11 +351,13 @@ func TestCheckBPFLSMInKernelConfig(t *testing.T) {
 				case KernelConfigOptionValue:
 					return v, v.String(), nil
 				default:
-					return UNDEFINED, "", nil
+					return UNDEFINED, "", fmt.Errorf("unknown type: %T", v)
 				}
 			}
 
 			result, err := CheckBPFLSMInKernelConfig(getKernelConfigValue)
+
+			assert.Equal(t, tt.expectedResult, result)
 
 			if tt.expectedError {
 				require.Error(t, err)
@@ -354,7 +366,6 @@ func TestCheckBPFLSMInKernelConfig(t *testing.T) {
 				}
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, tt.expectedResult, result)
 			}
 		})
 	}
@@ -433,7 +444,7 @@ func TestCheckBPFInKernelConfigLSM(t *testing.T) {
 				case string:
 					return STRING, v, nil
 				default:
-					return UNDEFINED, "", nil
+					return UNDEFINED, "", fmt.Errorf("unknown type: %T", v)
 				}
 			}
 
@@ -459,6 +470,7 @@ func TestCheckBPFInBootParams(t *testing.T) {
 	tests := []struct {
 		name               string
 		bootCmdline        string
+		filesystem         fs.FS // For error cases with custom filesystem
 		expectedBPFEnabled bool
 		expectedParamFound bool
 		expectedError      bool
@@ -528,15 +540,39 @@ func TestCheckBPFInBootParams(t *testing.T) {
 			expectedParamFound: false,
 			expectedError:      false,
 		},
+		{
+			name:       "Missing proc/cmdline",
+			filesystem: fstest.MapFS{
+				// No proc/cmdline file
+			},
+			expectedBPFEnabled: false,
+			expectedParamFound: false,
+			expectedError:      true,
+			errorContains:      "proc filesystem not available",
+		},
+		{
+			name: "Proc directory missing",
+			filesystem: fstest.MapFS{
+				"other/file": &fstest.MapFile{
+					Data: []byte("test"),
+				},
+			},
+			expectedBPFEnabled: false,
+			expectedParamFound: false,
+			expectedError:      true,
+			errorContains:      "proc filesystem not available",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Create filesystem with cmdline
+			// Create filesystem - use custom filesystem if provided, otherwise create from bootCmdline
 			var mockFS fs.FS
-			if tt.bootCmdline == "" {
+			if tt.filesystem != nil {
+				mockFS = tt.filesystem
+			} else if tt.bootCmdline == "" {
 				// Empty cmdline case
 				mockFS = fstest.MapFS{
 					"proc/cmdline": &fstest.MapFile{
@@ -558,6 +594,8 @@ func TestCheckBPFInBootParams(t *testing.T) {
 				if tt.errorContains != "" {
 					assert.Contains(t, err.Error(), tt.errorContains)
 				}
+				// Check that error result is zero value
+				assert.Equal(t, LSMBootResult{}, result)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tt.expectedBPFEnabled, result.BPFEnabled, "BPFEnabled mismatch")
@@ -567,58 +605,8 @@ func TestCheckBPFInBootParams(t *testing.T) {
 	}
 }
 
-// Test error scenarios for CheckBPFInBootParams
-func TestCheckBPFInBootParams_ErrorScenarios(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name          string
-		filesystem    fs.FS
-		expectedError bool
-		errorContains string
-	}{
-		{
-			name:       "Missing proc/cmdline",
-			filesystem: fstest.MapFS{
-				// No proc/cmdline file
-			},
-			expectedError: true,
-			errorContains: "proc filesystem not available",
-		},
-		{
-			name: "Proc directory missing",
-			filesystem: fstest.MapFS{
-				"other/file": &fstest.MapFile{
-					Data: []byte("test"),
-				},
-			},
-			expectedError: true,
-			errorContains: "proc filesystem not available",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result, err := CheckBPFInBootParams(tt.filesystem)
-
-			if tt.expectedError {
-				require.Error(t, err)
-				if tt.errorContains != "" {
-					assert.Contains(t, err.Error(), tt.errorContains)
-				}
-				// Check that error result is zero value
-				assert.Equal(t, LSMBootResult{}, result)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-// Integration tests for CheckBPFLSMSupport with boot parameter precedence
-func TestCheckBPFLSMSupport_BootParamPrecedence(t *testing.T) {
+// Tests for CheckBPFLSMConfigSupport function
+func TestCheckBPFLSMConfigSupport(t *testing.T) {
 	tests := []struct {
 		name           string
 		kernelConfig   map[KernelConfigOption]interface{}
@@ -716,7 +704,7 @@ func TestCheckBPFLSMSupport_BootParamPrecedence(t *testing.T) {
 				case string:
 					return STRING, v, nil
 				default:
-					return UNDEFINED, "", nil
+					return UNDEFINED, "", fmt.Errorf("unknown type: %T", v)
 				}
 			}
 
