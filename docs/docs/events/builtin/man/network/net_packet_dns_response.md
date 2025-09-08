@@ -12,12 +12,6 @@ header: Tracee Event Manual
 
 This event captures DNS response packets in the network traffic. DNS (Domain Name System) responses contain answers to DNS queries, providing information like IP addresses, mail server records, or other DNS resource records. The event provides detailed information about both the network metadata and the DNS response content.
 
-The event is particularly useful for:
-- Network traffic monitoring
-- DNS resolution tracking
-- Security analysis
-- Protocol debugging
-
 ## EVENT SETS
 
 **default**, **network_events**

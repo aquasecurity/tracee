@@ -14,12 +14,6 @@ Triggered when memory region protection changes are detected that are suspicious
 
 Memory protection changes are critical security indicators as they can indicate exploitation attempts, code injection, or evasion techniques. This event provides detailed alerts about specific suspicious patterns in memory protection modifications.
 
-This signature is useful for:
-
-- **Code injection detection**: Identify attempts to make data pages executable
-- **Exploit prevention**: Detect memory manipulation techniques used in attacks
-- **Dynamic analysis**: Monitor suspicious memory operations during runtime
-
 ## SIGNATURE METADATA
 
 - **ID**: TRC-1019

@@ -14,12 +14,6 @@ Triggered when the `kallsyms_lookup_name()` kernel function is called to look up
 
 Monitoring symbol lookups can reveal potentially suspicious activity, such as rootkits or malicious kernel modules attempting to locate and hook kernel functions, or legitimate kernel extensions resolving symbol addresses for their operations.
 
-This event is useful for:
-
-- **Kernel security monitoring**: Detect attempts to locate sensitive kernel symbols
-- **Rootkit detection**: Identify malicious modules looking up symbols for hooking
-- **Kernel extension monitoring**: Track legitimate kernel module symbol resolution
-
 ## EVENT SETS
 
 **none**

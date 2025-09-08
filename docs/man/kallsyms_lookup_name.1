@@ -14,17 +14,6 @@ Monitoring symbol lookups can reveal potentially suspicious activity,
 such as rootkits or malicious kernel modules attempting to locate and
 hook kernel functions, or legitimate kernel extensions resolving symbol
 addresses for their operations.
-.PP
-This event is useful for:
-.IP \[bu] 2
-\f[B]Kernel security monitoring\f[R]: Detect attempts to locate
-sensitive kernel symbols
-.IP \[bu] 2
-\f[B]Rootkit detection\f[R]: Identify malicious modules looking up
-symbols for hooking
-.IP \[bu] 2
-\f[B]Kernel extension monitoring\f[R]: Track legitimate kernel module
-symbol resolution
 .SS EVENT SETS
 \f[B]none\f[R]
 .SS DATA FIELDS

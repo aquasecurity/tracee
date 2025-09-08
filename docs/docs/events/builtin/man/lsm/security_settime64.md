@@ -14,13 +14,6 @@ Triggered when a process attempts to modify the system time. This LSM (Linux Sec
 
 The event provides detailed information about the requested time change, including both seconds and nanoseconds components, as well as timezone adjustments. This visibility is crucial for security monitoring as system time modifications can affect logging, authentication, and other time-dependent security mechanisms.
 
-This event is useful for:
-
-- **Time change monitoring**: Track system time modifications
-- **Security auditing**: Detect unauthorized time changes
-- **Compliance verification**: Monitor time synchronization
-- **System integrity**: Track time-based security controls
-
 ## EVENT SETS
 
 **none**

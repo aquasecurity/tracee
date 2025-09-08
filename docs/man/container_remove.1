@@ -13,17 +13,6 @@ The event leverages the \f[CR]cgroup_rmdir\f[R] event and examines
 metadata within \f[CR]cgroupfs\f[R] subdirectories to determine if a
 directory\[cq]s removal correlates with a container\[cq]s termination,
 capturing vital information about the terminated container.
-.PP
-This event is useful for:
-.IP \[bu] 2
-\f[B]Security monitoring\f[R]: Scrutinize container terminations for
-potential security breaches
-.IP \[bu] 2
-\f[B]Resource management\f[R]: Monitor container terminations to manage
-and reclaim system resources
-.IP \[bu] 2
-\f[B]System reliability\f[R]: Track container terminations to ensure
-stable operations
 .SS EVENT SETS
 \f[B]none\f[R]
 .SS DATA FIELDS
