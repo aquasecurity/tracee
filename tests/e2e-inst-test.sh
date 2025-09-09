@@ -155,7 +155,7 @@ for TEST in $TESTS; do
     LSM_TEST)
         # Test LSM BPF support using Tracee's Go-based LSM detection
         info "testing LSM BPF support using Tracee's detection logic..."
-        if go run ./scripts/check-lsm-support.go -q 2>/dev/null; then
+        if go run ./scripts/check-lsm-support.go -v; then
             info "LSM BPF support confirmed - test will run normally"
         else
             info "skip lsm_test on kernel $(uname -r) (LSM BPF not supported)"
