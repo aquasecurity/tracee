@@ -182,10 +182,98 @@ jobs:
           make clean
           make e2e-inst-signatures
   #
+  # MODULE TESTS (CONDITIONAL)
+  #
+  test-modules:
+    name: Test Go Modules (Conditional)
+    runs-on: ubuntu-latest
+    container:
+      image: alpine/git
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ env.TRACEE_REF }}
+          fetch-depth: 0
+      - name: Fix Git ownership
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+        shell: sh
+      - name: Install Dependencies
+        run: ./scripts/installation/install-deps-alpine.sh
+        shell: sh
+      - name: Detect Changes
+        id: detect-changes
+        run: |
+          # Get changed files using git (conventional approach)
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          # Check if main module changed (anything outside types/, common/, api/)
+          if echo "$CHANGED_FILES" | grep -qvE '^(types|common|api)/'; then
+            echo "main=true" >> $GITHUB_OUTPUT
+            echo "Main module changed"
+          else
+            echo "main=false" >> $GITHUB_OUTPUT
+            echo "No main module changes"
+          fi
+          # Check individual modules
+          if echo "$CHANGED_FILES" | grep -q "^types/"; then
+            echo "types=true" >> $GITHUB_OUTPUT
+            echo "Types module changed"
+          else
+            echo "types=false" >> $GITHUB_OUTPUT
+          fi
+          if echo "$CHANGED_FILES" | grep -q "^common/"; then
+            echo "common=true" >> $GITHUB_OUTPUT
+            echo "Common module changed"
+          else
+            echo "common=false" >> $GITHUB_OUTPUT
+          fi
+          if echo "$CHANGED_FILES" | grep -q "^api/"; then
+            echo "api=true" >> $GITHUB_OUTPUT
+            echo "API module changed"
+          else
+            echo "api=false" >> $GITHUB_OUTPUT
+          fi
+        shell: sh
+      - name: Test Types Module
+        if: steps.detect-changes.outputs.types == 'true' && steps.detect-changes.outputs.main != 'true'
+        working-directory: ./types
+        run: |
+          echo "Testing types module..."
+          go test -short -race -shuffle on -failfast -v ./...
+          go mod verify
+          go mod tidy -diff
+          go build ./...
+        shell: sh
+
+      - name: Test Common Module
+        if: steps.detect-changes.outputs.common == 'true' && steps.detect-changes.outputs.main != 'true'
+        working-directory: ./common
+        run: |
+          echo "Testing common module..."
+          go test -short -race -shuffle on -failfast -v ./...
+          go mod verify
+          go mod tidy -diff
+          go build ./...
+        shell: sh
+
+      - name: Test API Module
+        if: steps.detect-changes.outputs.api == 'true' && steps.detect-changes.outputs.main != 'true'
+        working-directory: ./api
+        run: |
+          echo "Testing API module..."
+          go test -short -race -shuffle on -failfast -v ./...
+          go mod verify
+          go mod tidy -diff
+          go build ./...
+        shell: sh
+
+  #
   # CODE TESTS
   #
   unit-tests:
-    name: Unit Tests
+    name: Main Module Unit Tests
     needs:
       - verify-analyze-code
     runs-on: ubuntu-latest
@@ -201,13 +289,33 @@ jobs:
       - name: Fix Git ownership
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
         shell: sh
+      - name: Detect Changes
+        id: detect-changes
+        run: |
+          # Get changed files using git (conventional approach)
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          # Check if main module changed (anything outside types/, common/, api/)
+          if echo "$CHANGED_FILES" | grep -qvE '^(types|common|api)/'; then
+            echo "main=true" >> $GITHUB_OUTPUT
+            echo "Main module changed"
+          else
+            echo "main=false" >> $GITHUB_OUTPUT
+            echo "No main module changes"
+          fi
+        shell: sh
       - name: Install Dependencies
+        if: steps.detect-changes.outputs.main == 'true'
         run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
-      - name: Run Unit Tests
+      - name: Run Full Unit Test Suite
+        if: steps.detect-changes.outputs.main == 'true'
         run: |
+          # Run full test suite including all modules (since main changed)
           make test-unit
       - name: Upload Unit Test Coverage
+        if: steps.detect-changes.outputs.main == 'true'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -216,6 +324,7 @@ jobs:
           name: unit-tests
           fail_ci_if_error: false
       - name: Run Scripts Unit Tests
+        if: steps.detect-changes.outputs.main == 'true'
         run: |
           make run-scripts-test-unit
 
