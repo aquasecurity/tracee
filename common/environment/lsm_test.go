@@ -389,6 +389,14 @@ func TestCheckBPFInKernelConfigLSM(t *testing.T) {
 			expectedError:  false,
 		},
 		{
+			name: "CONFIG_LSM contains bpf with quotes",
+			kernelConfig: map[KernelConfigOption]interface{}{
+				CONFIG_LSM: "\"lockdown,yama,apparmor,bpf\"",
+			},
+			expectedResult: true,
+			expectedError:  false,
+		},
+		{
 			name: "CONFIG_LSM does not contain bpf",
 			kernelConfig: map[KernelConfigOption]interface{}{
 				CONFIG_LSM: "lockdown,yama,apparmor",
@@ -528,6 +536,13 @@ func TestCheckBPFInBootParams(t *testing.T) {
 		{
 			name:               "LSM parameter with BPF in middle",
 			bootCmdline:        "root=/dev/sda1 lsm=lockdown,bpf,yama quiet",
+			expectedBPFEnabled: true,
+			expectedParamFound: true,
+			expectedError:      false,
+		},
+		{
+			name:               "LSM parameter with BPF and quotes",
+			bootCmdline:        "root=/dev/sda1 lsm=\"lockdown,yama,bpf\" quiet",
 			expectedBPFEnabled: true,
 			expectedParamFound: true,
 			expectedError:      false,
