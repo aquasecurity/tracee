@@ -6,6 +6,7 @@ import (
 	"math"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -125,6 +126,31 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 			json:        `{ "name":"test", "type":"err", "value": 0}`,
 			expectError: true,
 		},
+		{
+			name:   "time.Time with integer seconds",
+			json:   `{ "name":"timeout", "type":"time.Time", "value": 1609459200}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "timeout", Type: "time.Time"}, Value: time.Unix(1609459200, 0)},
+		},
+		{
+			name:   "time.Time with fractional seconds",
+			json:   `{ "name":"timeout", "type":"time.Time", "value": 1609459200.5}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "timeout", Type: "time.Time"}, Value: time.Unix(1609459200, 500000000)},
+		},
+		{
+			name:   "time.Time with zero value",
+			json:   `{ "name":"timeout", "type":"time.Time", "value": 0}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "timeout", Type: "time.Time"}, Value: time.Unix(0, 0)},
+		},
+		{
+			name:   "time.Time with quarter second",
+			json:   `{ "name":"timeout", "type":"time.Time", "value": 1609459200.25}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "timeout", Type: "time.Time"}, Value: time.Unix(1609459200, 250000000)},
+		},
+		{
+			name:   "time.Time with challenging decimal",
+			json:   `{ "name":"timeout", "type":"time.Time", "value": 1609459200.123456789}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "timeout", Type: "time.Time"}, Value: time.Unix(1609459200, 123456789)},
+		},
 	}
 	for _, tc := range testCases {
 		tc := tc
@@ -140,11 +166,60 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 				}
 				t.Error(err)
 			}
+
+			// Special handling for time.Time comparisons to account for floating point precision
+			if tc.expect.Type == "time.Time" && res.Type == "time.Time" {
+				expectedTime, expectedOk := tc.expect.Value.(time.Time)
+				actualTime, actualOk := res.Value.(time.Time)
+				if expectedOk && actualOk {
+					// Allow small tolerance for floating point precision (~100 nanoseconds)
+					tolerance := 100 * time.Nanosecond
+					diff := expectedTime.Sub(actualTime).Abs()
+					if diff <= tolerance {
+						// Times are close enough, check other fields
+						if tc.expect.Name != res.Name || tc.expect.Type != res.Type {
+							t.Errorf("metadata mismatch: want {%s %s}, have {%s %s}", tc.expect.Name, tc.expect.Type, res.Name, res.Type)
+						}
+						return
+					}
+				}
+			}
+
 			if !reflect.DeepEqual(tc.expect, res) {
 				t.Errorf("want %v (Value type %T), have %v (Value type %T)", tc.expect, tc.expect.Value, res, res.Value)
 			}
 		})
 	}
+}
+
+// TestTimeSpecTypeConsistency verifies that TIMESPEC_T arguments are properly handled
+func TestTimeSpecTypeConsistency(t *testing.T) {
+	t.Parallel()
+
+	// Test case that simulates how timespec arguments would be received from JSON
+	testJSON := `{
+		"name": "clock_nanosleep_timeout",
+		"type": "time.Time",
+		"value": 1609459200.5
+	}`
+
+	var arg Argument
+	err := json.Unmarshal([]byte(testJSON), &arg)
+	assert.NoError(t, err, "Should unmarshal time.Time argument without error")
+
+	// Verify the type and value are correct
+	assert.Equal(t, "clock_nanosleep_timeout", arg.Name)
+	assert.Equal(t, "time.Time", arg.Type)
+
+	// Verify it's actually a time.Time value
+	timeValue, ok := arg.Value.(time.Time)
+	assert.True(t, ok, "Value should be of type time.Time")
+
+	// Verify the time is correctly parsed (Jan 1, 2021 00:00:00.5 UTC)
+	expected := time.Unix(1609459200, 500000000)
+	diff := timeValue.Sub(expected).Abs()
+	assert.True(t, diff <= 100*time.Nanosecond,
+		"Time should be within 100 nanoseconds of expected value")
 }
 
 func TestEvent_Origin(t *testing.T) {
