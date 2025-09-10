@@ -318,12 +318,20 @@ func (k *KernelConfig) readConfigFromScanner(reader io.Reader) {
 
 // GetValue will return a KernelConfigOptionValue for a given KernelConfigOption when this is a BUILTIN or a MODULE
 func (k *KernelConfig) GetValue(option KernelConfigOption) KernelConfigOptionValue {
-	value, ok := k.configs[KernelConfigOption(option)].(KernelConfigOptionValue)
-	if ok {
-		return value
+	value, ok := k.configs[KernelConfigOption(option)]
+	if !ok {
+		return UNDEFINED // not an error as the config option might not exist in kconfig file
 	}
 
-	return UNDEFINED // not an error as the config option might not exist in kconfig file
+	switch v := value.(type) {
+	case KernelConfigOptionValue:
+		return v
+	case string:
+		return STRING
+	}
+
+	// unsupported type - should not happen
+	return UNDEFINED
 }
 
 // GetValueString will return a KernelConfigOptionValue for a given KernelConfigOption when this is actually a string
