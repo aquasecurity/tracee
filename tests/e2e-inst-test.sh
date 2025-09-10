@@ -193,6 +193,7 @@ done
 
 if [[ $timedout -eq 1 ]]; then
     info
+    info "$TEST: timed out"
     info "$TEST: FAILED. ERRORS:"
     info
     cat $logfile
