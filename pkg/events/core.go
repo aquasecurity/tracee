@@ -1068,8 +1068,8 @@ var CoreEvents = map[ID]Definition{
 		syscall: true,
 		sets:    []string{"syscalls", "time", "time_timer"},
 		fields: []DataField{
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "req"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "rem"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "req"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "rem"}},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -3305,7 +3305,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "set"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "info"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "timeout"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
 		},
 		dependencies: Dependencies{
@@ -3784,7 +3784,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_sched"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "tp"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "tp"}},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5061,7 +5061,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uaddr"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "futex_op"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "val"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "timeout"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uaddr2"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "val3"}},
 		},
@@ -5210,7 +5210,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "min_nr"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "nr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "events"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "timeout"}},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5495,7 +5495,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "semid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sops"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "nsops"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "timeout"}},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5666,7 +5666,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_clock"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "tp"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "tp"}},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5690,7 +5690,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_clock"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "tp"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "tp"}},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5714,7 +5714,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_clock"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "res"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "res"}},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -5739,8 +5739,8 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "request"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "remain"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "request"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "remain"}},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6041,7 +6041,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "msg_ptr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "msg_len"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "msg_prio"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "abs_timeout"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "abs_timeout"}},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6068,7 +6068,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "msg_ptr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "msg_len"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "msg_prio"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "abs_timeout"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "abs_timeout"}},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -6758,7 +6758,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "readfds"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "writefds"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "exceptfds"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "timeout"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sigmask"}},
 		},
 		dependencies: Dependencies{
@@ -6784,7 +6784,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "fds"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "nfds"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "tmo_p"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "tmo_p"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sigmask"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
 		},
@@ -7017,7 +7017,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dirfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "times"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "times"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 		},
 		dependencies: Dependencies{
@@ -7494,7 +7494,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "msgvec"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "vlen"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "timeout"}},
 		},
 		dependencies: Dependencies{
 			probes: []Probe{
@@ -8363,7 +8363,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "min_nr"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "nr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "events"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "timeout"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "usig"}},
 		},
 		dependencies: Dependencies{
@@ -8848,7 +8848,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "events"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "maxevents"}},
-			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
+			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "time.Time", Name: "timeout"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sigset"}},
 		},
 		dependencies: Dependencies{

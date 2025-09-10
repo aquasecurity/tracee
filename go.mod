@@ -38,6 +38,9 @@ require (
 	sigs.k8s.io/controller-runtime v0.20.4
 )
 
+// TODO: remove after merging types module changes
+replace github.com/aquasecurity/tracee/types => ./types
+
 require (
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
