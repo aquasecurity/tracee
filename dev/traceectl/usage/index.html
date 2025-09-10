@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18+insiders-4.53.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19+insiders-4.53.17">
     
     
       
@@ -5062,6 +5062,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/flags/server.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6591,7 +6619,7 @@
 <p>To use traceectl effectively, you need to configure Tracee so that it can communicate with traceectl over a Unix socket. This can be done by running Tracee with the correct gRPC settings:</p>
 <h3 id="1-run-tracee-with-grpc-unix-socket">1. <strong>Run Tracee with gRPC Unix Socket</strong><a class="headerlink" href="#1-run-tracee-with-grpc-unix-socket" title="Permanent link">&para;</a></h3>
 <p>Use the following command to start Tracee with gRPC support over a Unix socket:</p>
-<div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--grpc-listen-addr<span class="w"> </span>unix:/var/run/tracee.sock
+<div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--server<span class="w"> </span>grpc-address<span class="o">=</span>unix:/var/run/tracee.sock
 </code></pre></div>
 <p>This command sets up Tracee to listen for incoming connections from traceectl at the specified Unix socket path (<code>/var/run/tracee.sock</code>). Ensure that this socket path is accessible and not blocked by permissions or other constraints.</p>
 <h3 id="2-output-flag-configuration">2. <strong>Output Flag Configuration</strong><a class="headerlink" href="#2-output-flag-configuration" title="Permanent link">&para;</a></h3>

@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18+insiders-4.53.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19+insiders-4.53.17">
     
     
       
@@ -5062,6 +5062,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/flags/server.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6510,7 +6538,7 @@ dashboard which tracks the tracee instance performance and outputs.</p>
 <p><img alt="Dashboard Image" src="../../images/tracee-grafana-dashboard.png" /></p>
 <h2 id="tracee-docker-container-image">Tracee Docker Container Image<a class="headerlink" href="#tracee-docker-container-image" title="Permanent link">&para;</a></h2>
 <p>These metrics exports are enabled by default in all docker images and can be
-enabled using the <code>--metrics</code> flag.</p>
+enabled using the <code>--server metrics</code> flag.</p>
 <h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h3>
 <p>The following tools must be available for use, they can all be installed either
 through docker or installed/built on your machine. Note that you need to be on a Linux machine to follow the Docker tutorial.
@@ -6530,7 +6558,7 @@ forwarded through the following commands:</p>
 <span class="w">  </span>-v<span class="w"> </span>/var/run:/var/run:ro<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-p<span class="w"> </span><span class="m">3366</span>:3366<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>aquasec/tracee:latest<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--metrics<span class="w"> </span>
+<span class="w">  </span>--server<span class="w"> </span>metrics
 </code></pre></div>
 <p>Of course, the forwarded metrics ports can be changed, but you should note that
 some of the later instructions depend on these ports.</p>

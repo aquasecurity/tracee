@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18+insiders-4.53.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19+insiders-4.53.17">
     
     
       
@@ -5252,6 +5252,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../flags/server.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6586,17 +6614,24 @@
 </code></pre></div></p>
 <h3 id="server">Server<a class="headerlink" href="#server" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>--metrics-endpoint</code></strong>: Enables the metrics endpoint.</li>
+<li><strong><code>--server</code></strong>: Sets options for the HTTP and/or gRPC servers.</li>
 </ul>
-<p><strong>NOTE</strong>: You can view more in the <a href="../prometheus/">Prometheus section</a>.</p>
-<p>YAML:
-  <div class="highlight"><pre><span></span><code><span class="nt">metrics-endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<p>CLI Examples:
+  <div class="highlight"><pre><span></span><code><span class="c1"># Address configuration</span>
+tracee<span class="w"> </span>--server<span class="w"> </span>http-address<span class="o">=</span>:3366
+tracee<span class="w"> </span>--server<span class="w"> </span>grpc-address<span class="o">=</span>unix:/var/run/tracee.sock
+
+<span class="c1"># HTTP features (boolean flags)</span>
+tracee<span class="w"> </span>--server<span class="w"> </span>metrics<span class="w"> </span>--server<span class="w"> </span>healthz<span class="w"> </span>--server<span class="w"> </span>pprof
 </code></pre></div></p>
-<ul>
-<li><strong><code>--grpc-listen-addr</code></strong>: Specifies the address for the gRPC server.</li>
-</ul>
 <p>YAML:
-  <div class="highlight"><pre><span></span><code><span class="nt">grpc-listen-addr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tcp:50051</span>
+  <div class="highlight"><pre><span></span><code><span class="nt">server</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">http-address</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;:3366&quot;</span>
+<span class="w">  </span><span class="nt">grpc-address</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;unix:/var/run/tracee.sock&quot;</span>
+<span class="w">  </span><span class="nt">metrics</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">healthz</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">pprof</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">pyroscope</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div></p>
 <h3 id="process-tree">Process Tree<a class="headerlink" href="#process-tree" title="Permanent link">&para;</a></h3>
 <ul>
