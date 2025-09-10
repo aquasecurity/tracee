@@ -66,7 +66,7 @@ var decodeAsStringDict = map[DecodeAs]string{
 	STR_ARR_T:    "[]string",
 	SOCK_ADDR_T:  "SockAddr",
 	CRED_T:       "trace.SlimCred",
-	TIMESPEC_T:   "time.Time",
+	TIMESPEC_T:   "float64",
 	ARGS_ARR_T:   "[]string",
 	BOOL_T:       "bool",
 	FLOAT_T:      "float",
