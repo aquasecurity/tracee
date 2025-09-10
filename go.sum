@@ -407,8 +407,6 @@ github.com/aquasecurity/tracee/api v0.0.0-20250423121028-213b81a1b8f5 h1:zseTkmE
 github.com/aquasecurity/tracee/api v0.0.0-20250423121028-213b81a1b8f5/go.mod h1:fCLvZ7yle7SJoMNFSUCNVZo6Qf6xWXUmP0isGvRrIL8=
 github.com/aquasecurity/tracee/common v0.0.0-20250902170041-945d17d40601 h1:MNICZTArUHlqBuWbdsdHCu8/fZsTmpnA9ls2FJKrdZY=
 github.com/aquasecurity/tracee/common v0.0.0-20250902170041-945d17d40601/go.mod h1:U21mnx78I0v2g1VVrCi1ZGSlvx2YbmYcfz/cMQsEIc0=
-github.com/aquasecurity/tracee/types v0.0.0-20250902170041-945d17d40601 h1:kh3aJSemoJakSVgZI1/dv49zU5WgSPyMB43vzEpl8k8=
-github.com/aquasecurity/tracee/types v0.0.0-20250902170041-945d17d40601/go.mod h1:Garhl9pem8cnEgD0iHHwGcHn2HD5dteENk3YcOBPYU4=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
