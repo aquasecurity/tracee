@@ -99,8 +99,7 @@ func CheckBPFLSMInKernelConfig(getKernelConfigValue KernelConfigValueFunc) (bool
 func CheckBPFInKernelConfigLSM(getKernelConfigValue KernelConfigValueFunc) (bool, error) {
 	lsmType, lsmString, err := getKernelConfigValue(CONFIG_LSM)
 	if err != nil {
-		// CONFIG_LSM not set - not an error, just means no default
-		return false, nil
+		return false, err
 	}
 
 	// If CONFIG_LSM is UNDEFINED (not set), that's fine
@@ -113,11 +112,8 @@ func CheckBPFInKernelConfigLSM(getKernelConfigValue KernelConfigValueFunc) (bool
 		return false, errors.New("CONFIG_LSM is not a string")
 	}
 
-	lsmModules := strings.Split(lsmString, ",")
-	for _, module := range lsmModules {
-		if strings.TrimSpace(module) == "bpf" {
-			return true, nil
-		}
+	if checkForItemInConfigList(BpfLsmModule, lsmString) {
+		return true, nil
 	}
 
 	return false, nil
@@ -233,16 +229,9 @@ func CheckBPFInBootParams(filesystem fs.FS) (LSMBootResult, error) {
 	}
 
 	// Parse LSM list (comma-separated)
-	lsmModules := strings.Split(lsmValue, ",")
-
-	for _, module := range lsmModules {
-		cleaned := strings.TrimSpace(module)
-		if cleaned != "" {
-			if cleaned == BpfLsmModule {
-				result.BPFEnabled = true
-				return result, nil
-			}
-		}
+	if checkForItemInConfigList(BpfLsmModule, lsmValue) {
+		result.BPFEnabled = true
+		return result, nil
 	}
 
 	result.BPFEnabled = false
@@ -266,4 +255,15 @@ func CheckBPFInBootParamsOS() (LSMBootResult, error) {
 func CheckBPFInBootParamsEnabled() (bool, error) {
 	result, err := CheckBPFInBootParams(os.DirFS("/"))
 	return result.BPFEnabled, err
+}
+
+func checkForItemInConfigList(item string, list string) bool {
+	list = strings.Trim(list, "\" \t")
+	listItems := strings.Split(list, ",")
+	for _, listItem := range listItems {
+		if strings.TrimSpace(listItem) == item {
+			return true
+		}
+	}
+	return false
 }
