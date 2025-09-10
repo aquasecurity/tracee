@@ -1375,7 +1375,8 @@ func (t *Tracee) validateProbesCompatibility() error {
 				logger.Errorw("Got node from type not requested")
 				return nil
 			}
-			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probeNode.GetHandle(), t.config.OSInfo)
+			envProvider := probes.NewEnvironmentProviderAdapter(t.config.OSInfo, t.config.KernelConfig)
+			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probeNode.GetHandle(), envProvider)
 			if err != nil {
 				logger.Warnw("Failed to check probe compatibility", "error", err)
 				return nil
@@ -1399,7 +1400,8 @@ func (t *Tracee) validateProbesCompatibility() error {
 
 		shouldRemoveEvent := false
 		for _, probe := range depProbes {
-			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probe.GetHandle(), t.config.OSInfo)
+			envProvider := probes.NewEnvironmentProviderAdapter(t.config.OSInfo, t.config.KernelConfig)
+			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probe.GetHandle(), envProvider)
 			if err != nil {
 				logger.Errorw("Failed to check probe compatibility", "error", err)
 				continue

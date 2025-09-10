@@ -1,6 +1,7 @@
 package probes
 
 import (
+	"io/fs"
 	"strings"
 
 	bpf "github.com/aquasecurity/libbpfgo"
@@ -8,11 +9,13 @@ import (
 	"github.com/aquasecurity/tracee/common/environment"
 )
 
-// EnvironmentProvider defines the interface for OS and other environment information needed by probe compatibility checks
-// For now, it is a wrapper around environment.OsInfo object to allow easier mocking in tests
+// EnvironmentProvider defines the interface for OS and environment information needed by probe compatibility checks.
+// It abstracts access to kernel version, OS details, kernel config, and filesystem for testing.
 type EnvironmentProvider interface {
 	GetOSReleaseID() environment.OSReleaseID
 	CompareOSBaseKernelRelease(version string) (environment.KernelVersionComparison, error)
+	GetKernelConfigValue(option environment.KernelConfigOption) (environment.KernelConfigOptionValue, string, error)
+	GetFilesystem() fs.FS
 }
 
 // ProbeCompatibility stores the requirements for a probe to be used.
@@ -97,8 +100,8 @@ func (k *KernelVersionRequirement) IsCompatible(envProvider EnvironmentProvider)
 	return true, nil
 }
 
-// MapTypeSupportChecker is a function type used for dependency injection to check BPF map type support.
-// This allows tests to inject mock implementations, making BPF compatibility logic testable and decoupled from the environment.
+// MapTypeSupportChecker is a function type for checking BPF map type support.
+// This allows dependency injection for testing purposes.
 type MapTypeSupportChecker func(mapType bpf.MapType) (bool, error)
 
 // BPFMapTypeRequirement specifies a requirement for kernel support of a particular BPF map type.
@@ -122,13 +125,12 @@ func NewBPFMapTypeRequirementWithChecker(mapType bpf.MapType, checker MapTypeSup
 }
 
 // IsCompatible checks if the kernel supports the BPF map type.
-// This check is whether the kernel supports the BPF map type, both by implementation and configuration.
 func (m *BPFMapTypeRequirement) IsCompatible(_ EnvironmentProvider) (bool, error) {
 	return m.checker(m.mapType)
 }
 
-// ProgramTypeSupportChecker is a function type used for dependency injection to check BPF program type support.
-// This allows tests to inject mock implementations, making BPF compatibility logic testable and decoupled from the environment.
+// ProgramTypeSupportChecker is a function type for checking BPF program type support.
+// This allows dependency injection for testing purposes.
 type ProgramTypeSupportChecker func(progType bpf.BPFProgType) (bool, error)
 
 // BpfProgramRequirement specifies a requirement for kernel support of a particular BPF program type.
@@ -152,7 +154,21 @@ func NewBpfProgramRequirementWithChecker(progType bpf.BPFProgType, checker Progr
 }
 
 // IsCompatible checks if the kernel supports the BPF program type.
-// This check is whether the kernel supports the BPF program type, both by implementation and configuration.
-func (b *BpfProgramRequirement) IsCompatible(_ EnvironmentProvider) (bool, error) {
-	return b.checker(b.bpfProgramType)
+// For BPF_PROG_TYPE_LSM, it performs additional LSM-specific checks.
+func (b *BpfProgramRequirement) IsCompatible(envProvider EnvironmentProvider) (bool, error) {
+	// First check if the BPF program type is supported
+	progTypeSupported, err := b.checker(b.bpfProgramType)
+	if err != nil {
+		return false, err
+	}
+	if !progTypeSupported {
+		return false, nil
+	}
+
+	// Special case for LSM program type - perform additional LSM checks
+	if b.bpfProgramType == bpf.BPFProgTypeLsm {
+		return environment.CheckLSMSupport(envProvider.GetFilesystem(), envProvider.GetKernelConfigValue)
+	}
+
+	return true, nil
 }

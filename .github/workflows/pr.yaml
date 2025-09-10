@@ -73,6 +73,7 @@ env:
     HTTPRequest
     HTTPResponse
   INSTTESTS: >
+    LSM_TEST
     PROCESS_EXECUTE_FAILED
     VFS_WRITE
     FILE_MODIFICATION
