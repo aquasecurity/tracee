@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aquasecurity/tracee/types/protocol"
 )
@@ -218,6 +220,16 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 				return err
 			}
 			arg.Value = tmp
+		case "time.Time":
+			// Parse time.Time from float64 seconds since epoch
+			tmp, err := num.Float64()
+			if err != nil {
+				return err
+			}
+			// Extract seconds and nanoseconds with proper precision using math.Modf
+			seconds, frac := math.Modf(tmp)
+			nanoseconds := int64(frac * 1e9)
+			arg.Value = time.Unix(int64(seconds), nanoseconds)
 		case "uint16":
 			tmp, err := strconv.ParseUint(num.String(), 10, 16)
 			if err != nil {
