@@ -78,6 +78,16 @@ statfunc int strncmp(char *str1, char *str2, int n)
         })
 #endif
 
+#ifndef min
+    #define min(x, y)                                                                              \
+        ({                                                                                         \
+            typeof(x) _min1 = (x);                                                                 \
+            typeof(y) _min2 = (y);                                                                 \
+            (void) (&_min1 == &_min2);                                                             \
+            _min1 < _min2 ? _min1 : _min2;                                                         \
+        })
+#endif
+
 statfunc u64 get_current_time_in_ns(void)
 {
     if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_ktime_get_boot_ns))
