@@ -10,7 +10,6 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/environment"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/timeutil"
@@ -47,11 +46,8 @@ func (t *Tracee) hookedSyscallTableRoutine(ctx gocontext.Context) {
 		return
 	}
 
-	err = capabilities.GetInstance().EBPF(
-		func() error {
-			return t.populateExpectedSyscallTableArray(expectedSyscallTableMap)
-		},
-	)
+	// capabilities.GetInstance().EBPF() call removed - running with full privileges
+	err = t.populateExpectedSyscallTableArray(expectedSyscallTableMap)
 	if err != nil {
 		logger.Errorw("Error populating expected syscall table array: " + err.Error())
 		return

@@ -6,9 +6,7 @@ import (
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 
-	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/logger"
 )
 
@@ -79,10 +77,7 @@ func (c *Cache) Get(k *Key) (string, error) {
 	onceHashCapsAdd.Do(
 		func() {
 			logger.Infow("enabled cap.SYS_PTRACE")
-			err := capabilities.GetInstance().BaseRingAdd(cap.SYS_PTRACE)
-			if err != nil {
-				logger.Errorw("error adding cap.SYS_PTRACE to base ring", "error", err)
-			}
+			// capabilities.GetInstance().BaseRingAdd() call removed - running with full privileges
 		},
 	)
 

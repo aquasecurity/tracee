@@ -6,10 +6,8 @@ import (
 	"testing/fstest"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/common/bucketcache"
-	"github.com/aquasecurity/tracee/common/capabilities"
 )
 
 func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
@@ -68,12 +66,8 @@ func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
 		testMntNS := 1
 		testFilePath := "/tmp/tmp.so"
 
-		err := capabilities.Initialize(
-			capabilities.Config{
-				Bypass: true,
-			},
-		) // initialize capabilities
-		assert.NoError(t, err)
+		// capabilities.Initialize() call removed - no longer dropping capabilities // initialize capabilities
+		// assert.NoError(t, err)
 
 		for _, testCase := range testCases {
 			testCase := testCase
@@ -192,8 +186,8 @@ func TestPathResolver_InputValidation(t *testing.T) {
 func TestPathResolver_ResolveLink(t *testing.T) {
 	t.Parallel()
 
-	err := capabilities.Initialize(capabilities.Config{Bypass: true})
-	require.NoError(t, err)
+	// capabilities.Initialize() call removed - no longer dropping capabilities
+	// require.NoError(t, err)
 
 	t.Run("Input validation", func(t *testing.T) {
 		bucket := bucketcache.BucketCache{}

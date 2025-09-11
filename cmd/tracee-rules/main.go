@@ -12,9 +12,7 @@ import (
 	"syscall"
 
 	"github.com/urfave/cli/v2"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 
-	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
@@ -57,33 +55,19 @@ func main() {
 			// be done in the single binary case (capabilities initialization
 			// happens after Find() is called) in that case.
 
+			// capabilities.Initialize() call removed - no longer dropping capabilities
 			bypass := c.Bool("allcaps") || !isRoot()
-			err = capabilities.Initialize(
-				capabilities.Config{
-					Bypass: bypass,
-				},
-			)
-			if err != nil {
-				return err
-			}
+			_ = bypass // avoid unused variable warning
 
+			// capabilities.GetInstance().Specific() call removed - running with full privileges
 			var loadedSigIDs []string
-			err = capabilities.GetInstance().Specific(
-				func() error {
-					for _, s := range sigs {
-						m, err := s.GetMetadata()
-						if err != nil {
-							logger.Errorw("Failed to load signature", "error", err)
-							continue
-						}
-						loadedSigIDs = append(loadedSigIDs, m.ID)
-					}
-					return nil
-				},
-				cap.DAC_OVERRIDE,
-			)
-			if err != nil {
-				logger.Errorw("Requested capabilities", "error", err)
+			for _, s := range sigs {
+				m, err := s.GetMetadata()
+				if err != nil {
+					logger.Errorw("Failed to load signature", "error", err)
+					continue
+				}
+				loadedSigIDs = append(loadedSigIDs, m.ID)
 			}
 
 			if c.Bool("list-events") {

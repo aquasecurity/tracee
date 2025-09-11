@@ -12,8 +12,6 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"kernel.org/pub/linux/libs/security/libcap/cap"
-
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/common/bitwise"
@@ -158,20 +156,9 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Initialize capabilities rings soon
 
-	useBaseEbpf := func(c config.Config) bool {
-		return c.Output.StackAddresses
-	}
+	// useBaseEbpf function removed - no longer used without capabilities
 
-	err = capabilities.Initialize(
-		capabilities.Config{
-			Bypass:   cfg.Capabilities.BypassCaps,
-			BaseEbpf: useBaseEbpf(cfg),
-		},
-	)
-	if err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-	caps := capabilities.GetInstance()
+	// capabilities.Initialize() call removed - no longer dropping capabilities
 
 	// Initialize Dependencies Manager
 
@@ -253,25 +240,7 @@ func New(cfg config.Config) (*Tracee, error) {
 	initialPolicies = nil
 	t.config.InitialPolicies = nil
 
-	// Add/Drop capabilities to/from the Base ring (always effective)
-
-	capsToAdd, err := capabilities.ReqByString(t.config.Capabilities.AddCaps...)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
-	err = caps.BaseRingAdd(capsToAdd...)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
-
-	capsToDrop, err := capabilities.ReqByString(t.config.Capabilities.DropCaps...)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
-	err = caps.BaseRingRemove(capsToDrop...)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
+	// Add/Drop capabilities calls removed - no longer managing capabilities
 
 	// Register default event processors
 
@@ -301,14 +270,8 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	t.pidsInMntns.Init(t.config.MaxPidsCache)
 
-	err = capabilities.GetInstance().Specific(
-		func() error {
-			mntNSProcs, err = proc.GetMountNSFirstProcesses()
-			return err
-		},
-		cap.DAC_OVERRIDE,
-		cap.SYS_PTRACE,
-	)
+	// capabilities.GetInstance().Specific() call removed - running with full privileges
+	mntNSProcs, err = proc.GetMountNSFirstProcesses()
 	if err == nil {
 		for mountNS, pid := range mntNSProcs {
 			t.pidsInMntns.AddBucketItem(mountNS, uint32(pid))
@@ -355,11 +318,8 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize eBPF probes
 
-	err = capabilities.GetInstance().EBPF(
-		func() error {
-			return t.initBPFProbes()
-		},
-	)
+	// capabilities.GetInstance().EBPF() call removed - running with full privileges
+	err = t.initBPFProbes()
 	if err != nil {
 		t.Close()
 		return errfmt.WrapError(err)
@@ -372,21 +332,13 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return err
 	}
 
-	err = capabilities.GetInstance().Specific(
-		func() error {
-			// t.requiredKsyms may contain non-data symbols, but it doesn't affect the validity of this call
-			kernelSymbols, err := symbols.NewKernelSymbolTable(true, true, t.requiredKsyms...)
-			if err != nil {
-				return err
-			}
-			t.setKernelSymbols(kernelSymbols)
-			return nil
-		},
-		cap.SYSLOG,
-	)
+	// capabilities.GetInstance().Specific() call removed - running with full privileges
+	// t.requiredKsyms may contain non-data symbols, but it doesn't affect the validity of this call
+	kernelSymbols, err := symbols.NewKernelSymbolTable(true, true, t.requiredKsyms...)
 	if err != nil {
-		return errfmt.WrapError(err)
+		return err
 	}
+	t.setKernelSymbols(kernelSymbols)
 
 	t.validateKallsymsDependencies() // disable events w/ missing ksyms dependencies
 
@@ -468,11 +420,8 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize eBPF programs and maps
 
-	err = capabilities.GetInstance().EBPF(
-		func() error {
-			return t.initBPF()
-		},
-	)
+	// capabilities.GetInstance().EBPF() call removed - running with full privileges
+	err = t.initBPF()
 	if err != nil {
 		t.Close()
 		return errfmt.WrapError(err)
@@ -543,11 +492,8 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 
 	// Perform extra initializtion steps required by specific events according to their arguments
-	err = capabilities.GetInstance().EBPF(
-		func() error {
-			return t.handleEventParameters()
-		},
-	)
+	// capabilities.GetInstance().EBPF() call removed - running with full privileges
+	err = t.handleEventParameters()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

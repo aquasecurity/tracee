@@ -11,11 +11,9 @@ import (
 	"unsafe"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
@@ -219,42 +217,41 @@ func newModsCheckForHidden(startScanTime uint64, flags uint32) error {
 	// sends it back to userspace, this time with flags that will cause it to
 	// get submitted to the user as an event,
 	//
-	return capabilities.GetInstance().EBPF(
-		func() error {
-			var iter = newModuleOnlyMap.Iterator()
-			for iter.Next() {
-				addr := binary.LittleEndian.Uint64(iter.Key())
-				curVal, err := newModuleOnlyMap.GetValue(unsafe.Pointer(&addr))
-				if err != nil {
-					return err
-				}
-				insertTime := binary.LittleEndian.Uint64(curVal[0:8])
-				lastSeenTime := binary.LittleEndian.Uint64(curVal[8:16])
-				if insertTime <= startScanTime && lastSeenTime < startScanTime {
-					// It was inserted before the current scan, and we did not
-					// see it in the scan: it is hidden. The receiving end will
-					// receive the message, trigger the lkm seeker submitter
-					// with a specific hidden module
-					//
-					// Note that we haven't really checked if the module is in
-					// the cache before, as we only have the address now.
-					//
-					if _, found := foundHiddenKernModsCache.Get(addr); !found {
-						// It's hidden, and not reported before, report
-						wakeupChannel <- ScanRequest{Address: addr, Flags: flags}
-					}
-				}
-			}
-
-			err := iter.Err()
+	// capabilities.GetInstance().EBPF() call removed - running with full privileges
+	{
+		var iter = newModuleOnlyMap.Iterator()
+		for iter.Next() {
+			addr := binary.LittleEndian.Uint64(iter.Key())
+			curVal, err := newModuleOnlyMap.GetValue(unsafe.Pointer(&addr))
 			if err != nil {
-				logger.Errorw("clearMap iterator received an error", "error", err.Error())
 				return err
 			}
+			insertTime := binary.LittleEndian.Uint64(curVal[0:8])
+			lastSeenTime := binary.LittleEndian.Uint64(curVal[8:16])
+			if insertTime <= startScanTime && lastSeenTime < startScanTime {
+				// It was inserted before the current scan, and we did not
+				// see it in the scan: it is hidden. The receiving end will
+				// receive the message, trigger the lkm seeker submitter
+				// with a specific hidden module
+				//
+				// Note that we haven't really checked if the module is in
+				// the cache before, as we only have the address now.
+				//
+				if _, found := foundHiddenKernModsCache.Get(addr); !found {
+					// It's hidden, and not reported before, report
+					wakeupChannel <- ScanRequest{Address: addr, Flags: flags}
+				}
+			}
+		}
 
-			return nil
-		},
-	)
+		err := iter.Err()
+		if err != nil {
+			logger.Errorw("clearMap iterator received an error", "error", err.Error())
+			return err
+		}
+
+		return nil
+	}
 }
 
 // clearMap a utility to clear a map.
@@ -286,71 +283,60 @@ func GetWakeupChannelRead() <-chan ScanRequest {
 
 // ClearModulesState clears the map (while not scanning)
 func ClearModulesState() error {
-	return capabilities.GetInstance().EBPF(
-		func() error {
-			_ = clearMap(allModsMap)
-			_ = clearMap(recentDeletedModulesMap) // only care for modules deleted in the midst of a scan.
-			return nil
-		},
-	)
+	// capabilities.GetInstance().EBPF() call removed - running with full privileges
+	{
+		_ = clearMap(allModsMap)
+		_ = clearMap(recentDeletedModulesMap) // only care for modules deleted in the midst of a scan.
+		return nil
+	}
 }
 
 // FillModulesFromProcFs fills a map with modules from /proc/modules, to be
 // checked in kernel-space for inconsistencies.
 func FillModulesFromProcFs() error {
 	var procModulesBytes []byte
-	err := capabilities.GetInstance().Specific(
-		func() error {
-			var err error
-			procModulesBytes, err = os.ReadFile("/proc/modules")
-			if err != nil {
-				return err
-			}
-
-			return nil
-		},
-		cap.SYSLOG) // Required to get the base addresses of the modules (core_layout.base)
+	// capabilities.GetInstance().Specific() call removed - running with full privileges
+	procModulesBytes, err := os.ReadFile("/proc/modules")
 	if err != nil {
 		return err
 	}
 
-	return capabilities.GetInstance().EBPF(
-		func() error {
-			for _, line := range strings.Split(string(procModulesBytes), "\n") {
-				if len(line) == 0 {
-					continue
-				}
-				lineSplit := strings.Split(line, " ")
-				lineLen := len(lineSplit)
-				if lineLen < 3 {
-					logger.Warnw("Unexpected format in /proc/modules", lineSplit)
-					return errors.New("unexpected format in /proc/modules")
-				}
-
-				var addr uint64
-				candOne := lineSplit[len(lineSplit)-1]
-				var finalCand string
-				if strings.HasPrefix(candOne, "0x") {
-					finalCand = candOne[2:]
-				} else {
-					candTwo := lineSplit[len(lineSplit)-2]
-					finalCand = candTwo[2:]
-				}
-
-				addr, parseErr := strconv.ParseUint(finalCand, 16, 64)
-				if parseErr != nil {
-					logger.Warnw("Unable to parse address from /proc/modules", parseErr)
-					return errors.New("unable to parse address from /proc/modules")
-				}
-
-				unused := false
-				err = allModsMap.Update(unsafe.Pointer(&addr), unsafe.Pointer(&unused))
-				if err != nil {
-					logger.Errorw("Failed updating allModsMap", err)
-					return errors.New("failed updating allModsMap")
-				}
+	// capabilities.GetInstance().EBPF() call removed - running with full privileges
+	{
+		for _, line := range strings.Split(string(procModulesBytes), "\n") {
+			if len(line) == 0 {
+				continue
 			}
-			return nil
-		},
-	)
+			lineSplit := strings.Split(line, " ")
+			lineLen := len(lineSplit)
+			if lineLen < 3 {
+				logger.Warnw("Unexpected format in /proc/modules", lineSplit)
+				return errors.New("unexpected format in /proc/modules")
+			}
+
+			var addr uint64
+			candOne := lineSplit[len(lineSplit)-1]
+			var finalCand string
+			if strings.HasPrefix(candOne, "0x") {
+				finalCand = candOne[2:]
+			} else {
+				candTwo := lineSplit[len(lineSplit)-2]
+				finalCand = candTwo[2:]
+			}
+
+			addr, parseErr := strconv.ParseUint(finalCand, 16, 64)
+			if parseErr != nil {
+				logger.Warnw("Unable to parse address from /proc/modules", parseErr)
+				return errors.New("unable to parse address from /proc/modules")
+			}
+
+			unused := false
+			err = allModsMap.Update(unsafe.Pointer(&addr), unsafe.Pointer(&unused))
+			if err != nil {
+				logger.Errorw("Failed updating allModsMap", err)
+				return errors.New("failed updating allModsMap")
+			}
+		}
+		return nil
+	}
 }

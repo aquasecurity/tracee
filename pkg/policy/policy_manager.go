@@ -5,7 +5,6 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/interfaces"
 	"github.com/aquasecurity/tracee/common/logger"
@@ -272,27 +271,7 @@ func (m *Manager) selectUserEvents() {
 }
 
 func (m *Manager) updateCapsForSelectedEvents() error {
-	// Update capabilities rings with all events dependencies
-
-	caps := capabilities.GetInstance()
-	for id := range m.rules {
-		if !events.Core.IsDefined(id) {
-			return errfmt.Errorf("event %d is not defined", id)
-		}
-		depsNode, err := m.evtsDepsManager.GetEvent(id)
-		if err == nil {
-			deps := depsNode.GetDependencies()
-			evtCaps := deps.GetCapabilities()
-			err = caps.BaseRingAdd(evtCaps.GetBase()...)
-			if err != nil {
-				return errfmt.WrapError(err)
-			}
-			err = caps.BaseRingAdd(evtCaps.GetEBPF()...)
-			if err != nil {
-				return errfmt.WrapError(err)
-			}
-		}
-	}
+	// capabilities management removed - no longer updating capability rings
 
 	return nil
 }

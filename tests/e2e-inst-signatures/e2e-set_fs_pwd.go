@@ -4,9 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"kernel.org/pub/linux/libs/security/libcap/cap"
-
-	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/pkg/symbols"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -24,14 +21,8 @@ func (sig *e2eSetFsPwd) Init(ctx detect.SignatureContext) error {
 	// Find if this system has the bpf_probe_read_user_str helper.
 	// If it doesn't we won't expect the unresolved path to contain anything
 	var ksyms *symbols.KernelSymbolTable
-	err := capabilities.GetInstance().Specific(
-		func() error {
-			var err error
-			ksyms, err = symbols.NewKernelSymbolTable(false, false)
-			return err
-		},
-		cap.SYSLOG,
-	)
+	// capabilities.GetInstance().Specific() call removed - running with full privileges
+	ksyms, err := symbols.NewKernelSymbolTable(false, false)
 	if err != nil {
 		return err
 	}

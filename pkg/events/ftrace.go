@@ -9,9 +9,7 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 
-	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/counter"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/timeutil"
@@ -85,21 +83,14 @@ func FtraceHookEvent(eventsCounter *counter.Counter, out chan *trace.Event, base
 // the path with /sys/kernel/debug for older kernels.
 // Assumes debugfs is mounted under /sys/kernel/debug
 func readSysKernelFile(path string) ([]byte, error) {
-	var data []byte
-	err := capabilities.GetInstance().Specific(
-		func() error {
-			var innerErr error
-			data, innerErr = os.ReadFile(sysKernelPrefix + path)
-			if innerErr != nil {
-				data, innerErr = os.ReadFile(sysKernelDebugPrefix + path)
-				if innerErr != nil {
-					return innerErr
-				}
-			}
-			return nil
-		},
-		cap.SYSLOG,
-	)
+	// capabilities.GetInstance().Specific() call removed - running with full privileges
+	data, err := os.ReadFile(sysKernelPrefix + path)
+	if err != nil {
+		data, err = os.ReadFile(sysKernelDebugPrefix + path)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	if err != nil {
 		return nil, err

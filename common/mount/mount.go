@@ -8,9 +8,6 @@ import (
 	"strings"
 	"syscall"
 
-	"kernel.org/pub/linux/libs/security/libcap/cap"
-
-	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/fileutil"
 	"github.com/aquasecurity/tracee/common/logger"
@@ -112,12 +109,8 @@ func (m *MountHostOnce) Mount() error {
 
 	// mount the filesystem to the target dir
 
-	err = capabilities.GetInstance().Specific(
-		func() error {
-			return syscall.Mount(m.fsType, m.target, m.fsType, 0, m.data)
-		},
-		cap.SYS_ADMIN,
-	)
+	// capabilities.GetInstance().Specific() call removed - running with full privileges
+	err = syscall.Mount(m.fsType, m.target, m.fsType, 0, m.data)
 	if err != nil {
 		// remove created target directory on errors
 		empty, _ := fileutil.IsDirEmpty(m.target)
@@ -136,12 +129,8 @@ func (m *MountHostOnce) Umount() error {
 	if m.managed && m.mounted {
 		// umount the filesystem from the target dir
 
-		err := capabilities.GetInstance().Specific(
-			func() error {
-				return syscall.Unmount(m.target, 0)
-			},
-			cap.SYS_ADMIN,
-		)
+		// capabilities.GetInstance().Specific() call removed - running with full privileges
+		err := syscall.Unmount(m.target, 0)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}

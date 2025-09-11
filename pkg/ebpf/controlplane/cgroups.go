@@ -1,7 +1,6 @@
 package controlplane
 
 import (
-	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
@@ -33,11 +32,8 @@ func (ctrl *Controller) processCgroupMkdir(args []trace.Argument) error {
 	if info.ContainerId == "" && !info.Dead {
 		// If cgroupId is from a regular cgroup directory, and not a container related directory
 		// (from known runtimes), it should be removed from the containers bpf map.
-		err := capabilities.GetInstance().EBPF(
-			func() error {
-				return ctrl.cgroupManager.RemoveFromBPFMap(ctrl.bpfModule, cgroupId, hId)
-			},
-		)
+		// capabilities.GetInstance().EBPF() call removed - running with full privileges
+		err := ctrl.cgroupManager.RemoveFromBPFMap(ctrl.bpfModule, cgroupId, hId)
 		if err != nil {
 			// If the cgroupId was not found in bpf map, this could mean that it is not a container
 			// cgroup and, as a systemd cgroup, could have been created and removed very quickly. In

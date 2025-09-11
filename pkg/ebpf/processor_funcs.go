@@ -10,7 +10,6 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/fileutil"
@@ -230,16 +229,13 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 		return nil
 	}
 
-	err := capabilities.GetInstance().EBPF(
-		func() error {
-			newKernelSymbols, err := symbols.NewKernelSymbolTable(true, true, t.requiredKsyms...)
-			if err != nil {
-				return errfmt.WrapError(err)
-			}
-			t.setKernelSymbols(newKernelSymbols)
-			return t.UpdateKallsyms()
-		},
-	)
+	// capabilities.GetInstance().EBPF() call removed - running with full privileges
+	newKernelSymbols, err := symbols.NewKernelSymbolTable(true, true, t.requiredKsyms...)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	t.setKernelSymbols(newKernelSymbols)
+	err = t.UpdateKallsyms()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
