@@ -14,12 +14,6 @@ Triggered when a shared object that exports watched symbols is loaded into the c
 
 The event uses data filtering to configure which symbols to watch and which library paths to monitor, providing flexible control over symbol monitoring.
 
-This event is useful for:
-
-- **Library hijacking detection**: Identify attempts to override legitimate library symbols
-- **Shared object monitoring**: Track loading of specific libraries and symbols
-- **Security analysis**: Detect malicious library injection or symbol manipulation
-
 ## EVENT SETS
 
 **derived**, **fs**, **security_alert**

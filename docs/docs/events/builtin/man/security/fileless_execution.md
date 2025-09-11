@@ -14,12 +14,6 @@ Triggered when fileless execution is detected - running processes directly from 
 
 Fileless execution allows malicious actors to operate without leaving traditional file artifacts on disk, making detection more challenging through conventional security tools that focus on file system monitoring.
 
-This signature is useful for:
-
-- **Advanced threat detection**: Identify sophisticated evasion techniques
-- **Memory-based attack detection**: Monitor execution from memory locations
-- **Defense evasion monitoring**: Detect attempts to bypass file-based security controls
-
 ## SIGNATURE METADATA
 
 - **ID**: TRC-105

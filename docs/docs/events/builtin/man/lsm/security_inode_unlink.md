@@ -14,13 +14,6 @@ Triggered when an inode is about to be unlinked, representing file or directory 
 
 The event provides critical visibility into file deletion operations, which is essential for security monitoring, system auditing, and tracking changes to sensitive files or directories. It captures the state of the file or directory before it is removed from the filesystem.
 
-This event is useful for:
-
-- **File deletion monitoring**: Track removal of files and directories
-- **Security auditing**: Monitor deletion of sensitive files
-- **System integrity**: Detect unauthorized file removal operations
-- **Compliance monitoring**: Track file deletions for audit requirements
-
 ## EVENT SETS
 
 **none**

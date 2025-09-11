@@ -14,12 +14,6 @@ Triggered when kernel module loading is detected. This security signature monito
 
 Kernel modules operate with elevated privileges and can directly interact with the operating system core. While legitimate modules extend kernel functionality, malicious modules can enable rootkits, hide processes, intercept system calls, and evade detection by operating within kernel space.
 
-This signature is useful for:
-
-- **Persistence detection**: Identify attempts to maintain persistent access through kernel modules
-- **Privilege escalation monitoring**: Detect kernel-level privilege escalation attempts
-- **System integrity monitoring**: Track unauthorized kernel modifications
-
 ## SIGNATURE METADATA
 
 - **ID**: TRC-1017

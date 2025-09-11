@@ -14,12 +14,6 @@ Triggered when a process has its standard input/output redirected to a socket, w
 
 Standard I/O redirection to sockets is a fundamental technique used in reverse shells, where the attacker gains interactive control over a compromised system. This behavior is highly suspicious in normal operations and typically indicates malicious activity.
 
-This signature is useful for:
-
-- **Reverse shell detection**: Identify active reverse shell connections
-- **Command and control monitoring**: Detect interactive malicious sessions
-- **Post-exploitation activity**: Identify attacker interaction with compromised systems
-
 ## SIGNATURE METADATA
 
 - **ID**: TRC-101

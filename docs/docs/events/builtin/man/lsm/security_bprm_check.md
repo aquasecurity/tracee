@@ -14,13 +14,6 @@ Triggered during the execution of a binary via execve or execveat, just before t
 
 This event is particularly valuable when the pre-execution context is significant, as it provides resolved path and binary details. While it offers less comprehensive information than sched_process_exec, it captures the execution state at a unique point in the process lifecycle.
 
-This event is useful for:
-
-- **Permission verification**: Monitor execution permission checks
-- **Binary execution tracking**: Track program execution with resolved paths
-- **Pre-execution analysis**: Examine process state before context change
-- **Security monitoring**: Verify execution permissions and context
-
 ## EVENT SETS
 
 **none**

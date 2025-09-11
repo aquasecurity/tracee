@@ -14,13 +14,6 @@ Triggered for each HTTP request packet that reaches or leaves one of the process
 
 HTTP requests are fundamental to web communications, sent by clients (browsers, applications) to servers to retrieve resources, submit data, or interact with web services. Monitoring these requests provides insights into application behavior, security threats, and network performance.
 
-This event is useful for:
-
-- **Web security monitoring**: Detect malicious HTTP requests and attacks
-- **Application monitoring**: Track web application behavior and API usage
-- **Network analysis**: Monitor HTTP traffic patterns and performance
-- **Compliance auditing**: Monitor web traffic for policy compliance
-
 ## EVENT SETS
 
 **network_events**

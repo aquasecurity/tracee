@@ -10,8 +10,6 @@ The **net_flow_tcp_end** event is derived from base network raw events and is de
 
 The event utilizes cgroup skb eBPF programs to intercept and analyze raw network events at the kernel level, with a particular emphasis on the TCP protocol's termination phase. It processes IP and TCP headers to pinpoint the conclusion of TCP communication flows. The event identifies the termination of TCP connections by analyzing the status of TCP flags, primarily focusing on the FIN and RST flags.
 
-By examining these flags, the event provides valuable insights into the end of TCP connections, a critical component for comprehensive network monitoring and security analysis.
-
 ## EVENT SETS
 
 **network_events**, **flows**

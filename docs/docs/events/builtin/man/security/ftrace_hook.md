@@ -14,12 +14,6 @@ Triggered when an ftrace function hook is detected on the system. Ftrace hooks a
 
 This event monitors the function tracing infrastructure to detect when functions are hooked, providing visibility into both legitimate kernel tracing activities and potential security threats.
 
-This event is useful for:
-
-- **Rootkit detection**: Identify malicious function hooks used by rootkits
-- **Security monitoring**: Detect unauthorized kernel function interception
-- **System analysis**: Monitor legitimate kernel tracing activities
-
 ## EVENT SETS
 
 **none**

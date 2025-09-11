@@ -12,13 +12,6 @@ header: Tracee Event Manual
 
 This event captures changes to the current working directory (typically through `chdir` and `fchdir` syscalls). It provides both the user-supplied path and the fully resolved filesystem path, helping track directory traversal and potential path manipulation attempts.
 
-This event is useful for:
-
-- **Process monitoring**: Track directory changes of processes
-- **Security auditing**: Monitor for suspicious directory access
-- **Debugging**: Troubleshoot path-related issues
-- **Compliance**: Track file system access patterns
-
 ## EVENT SETS
 
 **none**

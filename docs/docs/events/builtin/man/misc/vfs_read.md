@@ -14,13 +14,6 @@ Triggered when a read operation from a file to a buffer is performed through the
 
 The event hooks into the inner implementation of `read` and other buffer read syscalls after file descriptor resolution, offering detailed information about file access patterns and data consumption.
 
-This event is useful for:
-
-- **File access monitoring**: Track file read operations across all filesystems
-- **Security analysis**: Monitor sensitive file access patterns
-- **Performance analysis**: Analyze I/O patterns and performance characteristics
-- **Data flow tracking**: Understand how applications consume file data
-
 ## EVENT SETS
 
 **none**
@@ -44,9 +37,9 @@ This event is useful for:
 
 ## DEPENDENCIES
 
-**Kernel Probes:**
+**Kernel Probe:**
 
-- vfs_read (kprobe + kretprobe, required): VFS layer read implementation hook
+- vfs_read (kprobe + kretprobe, required): VFS layer read function
 
 ## USE CASES
 

@@ -14,12 +14,6 @@ Triggered when there is an attempt to change the access protection of a memory r
 
 Memory protection changes are critical security events as they can indicate code injection, exploitation attempts, or legitimate application behavior like JIT compilation. The event provides detailed information about the memory addresses, protection changes, and associated files.
 
-This event is useful for:
-
-- **Exploit detection**: Identify code injection and ROP/JOP attack preparations
-- **JIT monitoring**: Track just-in-time compilation memory operations
-- **Security analysis**: Monitor memory protection modifications for malicious patterns
-
 ## EVENT SETS
 
 **lsm_hooks**

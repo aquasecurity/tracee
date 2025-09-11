@@ -14,13 +14,6 @@ Triggered when a filesystem mount operation is attempted in the system. This LSM
 
 The event provides detailed information about the mount operation, including the device being mounted, mount point, filesystem type, and mount flags. This visibility is crucial for both system administration and security monitoring, as unexpected mount operations could indicate security breaches or misconfigurations.
 
-This event is useful for:
-
-- **Mount monitoring**: Track filesystem mount operations
-- **Security auditing**: Detect unauthorized mount attempts
-- **System configuration**: Monitor storage setup changes
-- **Compliance verification**: Track storage access patterns
-
 ## EVENT SETS
 
 **none**

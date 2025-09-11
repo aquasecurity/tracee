@@ -14,13 +14,6 @@ This event captures read operations from files using the vectored I/O interface 
 
 The event provides information about the file being read, including its path and location in the filesystem, as well as details about the read operation such as the number of buffers and read position.
 
-This event is useful for:
-
-- **I/O monitoring**: Track file read patterns
-- **Performance analysis**: Understand vectored I/O usage
-- **Security monitoring**: Audit file access
-- **Debugging**: Troubleshoot I/O issues
-
 ## EVENT SETS
 
 **none**

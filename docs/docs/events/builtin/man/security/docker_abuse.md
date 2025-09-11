@@ -14,12 +14,6 @@ Triggered when malicious activities targeting the Docker UNIX socket are detecte
 
 Docker socket abuse represents a critical security risk as it provides a potential pathway for attackers to execute commands directly on the host system or manipulate other containers, effectively breaking container isolation boundaries.
 
-This signature is useful for:
-
-- **Container escape detection**: Identify attempts to break out of container isolation
-- **Privilege escalation monitoring**: Detect unauthorized access to host resources
-- **Docker security**: Monitor for Docker API abuse and unauthorized container operations
-
 ## SIGNATURE METADATA
 
 - **ID**: TRC-1019

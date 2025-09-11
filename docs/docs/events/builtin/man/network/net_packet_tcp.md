@@ -14,13 +14,6 @@ Triggered for each TCP packet that reaches or leaves one of the processes being 
 
 The Transmission Control Protocol (TCP) is a core protocol in the Internet protocol suite, responsible for reliable and connection-oriented data communication between devices over a network. This event captures the complete TCP header information for network analysis and monitoring.
 
-This event is useful for:
-
-- **Network monitoring**: Track TCP network communications
-- **Security analysis**: Monitor suspicious network connections
-- **Performance debugging**: Analyze network traffic patterns
-- **Protocol analysis**: Examine TCP header fields and flow control
-
 ## EVENT SETS
 
 **network_events**

@@ -14,13 +14,6 @@ A high-level event derived from the security_socket_connect LSM (Linux Security 
 
 Unlike direct kernel probes, this LSM-based approach avoids Time-Of-Check to Time-Of-Use (TOCTOU) race conditions, making it a reliable source for connection monitoring. The event combines low-level connection details with high-level DNS context for comprehensive network visibility.
 
-This event is useful for:
-
-- **Network monitoring**: Track outbound connection patterns
-- **Security analysis**: Detect connections to suspicious endpoints
-- **DNS tracking**: Monitor domain name resolution patterns
-- **Behavioral analysis**: Understand application network usage
-
 ## EVENT SETS
 
 **none**

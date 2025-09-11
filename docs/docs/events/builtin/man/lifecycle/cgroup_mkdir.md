@@ -14,12 +14,6 @@ Triggered when a new cgroup directory is created in the cgroup filesystem. This 
 
 Since containers utilize control groups (cgroups) for resource management and isolation, monitoring cgroup directory creation provides valuable insights into container operations, resource allocations, and overall system container activity.
 
-This event is useful for:
-
-- **Container lifecycle monitoring**: Track container creation and resource allocation
-- **Resource management**: Monitor cgroup-based resource control mechanisms
-- **System activity analysis**: Understand process grouping and isolation patterns
-
 ## EVENT SETS
 
 **none**

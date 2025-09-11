@@ -14,13 +14,6 @@ Triggered for each UDP (User Datagram Protocol) packet that reaches or leaves on
 
 UDP is a connectionless, minimalistic transport layer protocol designed for simplicity and speed. It offers best-effort delivery service, making it suitable for applications where low overhead and minimal delay are more critical than guaranteed data delivery. UDP is commonly used for DNS, DHCP, streaming media, online gaming, and other real-time applications.
 
-This event is useful for:
-
-- **Network monitoring**: Track UDP-based application traffic and communication patterns
-- **DNS analysis**: Monitor DNS queries and responses
-- **Real-time applications**: Analyze streaming, gaming, and VoIP traffic
-- **Network troubleshooting**: Debug UDP connectivity and performance issues
-
 ## EVENT SETS
 
 **network_events**

@@ -14,13 +14,6 @@ This event is triggered when a shared object is loaded into a process and has sy
 
 The event helps identify cases where a shared object might override symbols from another library, which could be either legitimate (e.g., symbol versioning) or malicious (e.g., library hijacking).
 
-This event is useful for:
-
-- **Library conflict detection**: Identify symbol naming conflicts
-- **Security monitoring**: Detect potential library hijacking
-- **Debugging**: Troubleshoot symbol resolution issues
-- **Quality assurance**: Verify library compatibility
-
 ## EVENT SETS
 
 **lsm_hooks**, **fs**, **fs_file_ops**, **proc**, **proc_mem**

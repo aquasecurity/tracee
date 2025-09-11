@@ -25,6 +25,20 @@ nav:
           - Events:
                 - Overview: docs/events/index.md
                 - Built-in Events:
+                      - Lifecycle:
+                            - sched_process_fork: docs/events/builtin/man/lifecycle/sched_process_fork.md
+                            - sched_process_exec: docs/events/builtin/man/lifecycle/sched_process_exec.md
+                            - sched_process_exit: docs/events/builtin/man/lifecycle/sched_process_exit.md
+                            - do_exit: docs/events/builtin/man/lifecycle/do_exit.md
+                            - sched_switch: docs/events/builtin/man/lifecycle/sched_switch.md
+                            - container_create: docs/events/builtin/man/lifecycle/container_create.md
+                            - container_remove: docs/events/builtin/man/lifecycle/container_remove.md
+                            - existing_container: docs/events/builtin/man/lifecycle/existing_container.md
+                            - init_namespaces: docs/events/builtin/man/lifecycle/init_namespaces.md
+                            - switch_task_ns: docs/events/builtin/man/lifecycle/switch_task_ns.md
+                            - cgroup_mkdir: docs/events/builtin/man/lifecycle/cgroup_mkdir.md
+                            - cgroup_rmdir: docs/events/builtin/man/lifecycle/cgroup_rmdir.md
+                            - cgroup_attach_task: docs/events/builtin/man/lifecycle/cgroup_attach_task.md
                       - Security:
                             - Overview: docs/events/builtin/security-events.md
                             - Anti Debugging: docs/events/builtin/man/security/anti_debugging.md
@@ -75,10 +89,19 @@ nav:
                             - net_packet_http_request: docs/events/builtin/man/network/net_packet_http_request.md
                             - net_packet_http_response: docs/events/builtin/man/network/net_packet_http_response.md
                       - LSM:
+                            - cap_capable: docs/events/builtin/man/lsm/cap_capable.md
+                            - security_bpf: docs/events/builtin/man/lsm/security_bpf.md
+                            - security_bpf_map: docs/events/builtin/man/lsm/security_bpf_map.md
                             - security_bpf_prog: docs/events/builtin/man/lsm/security_bpf_prog.md
                             - security_bprm_check: docs/events/builtin/man/lsm/security_bprm_check.md
                             - security_file_mprotect: docs/events/builtin/man/lsm/security_file_mprotect.md
+                            - security_file_open: docs/events/builtin/man/lsm/security_file_open.md
+                            - security_inode_mknod: docs/events/builtin/man/lsm/security_inode_mknod.md
+                            - security_inode_rename: docs/events/builtin/man/lsm/security_inode_rename.md
                             - security_inode_unlink: docs/events/builtin/man/lsm/security_inode_unlink.md
+                            - security_kernel_post_read_file: docs/events/builtin/man/lsm/security_kernel_post_read_file.md
+                            - security_kernel_read_file: docs/events/builtin/man/lsm/security_kernel_read_file.md
+                            - security_mmap_file: docs/events/builtin/man/lsm/security_mmap_file.md
                             - security_path_notify: docs/events/builtin/man/lsm/security_path_notify.md
                             - security_sb_mount: docs/events/builtin/man/lsm/security_sb_mount.md
                             - security_sb_umount: docs/events/builtin/man/lsm/security_sb_umount.md
@@ -86,35 +109,58 @@ nav:
                             - security_socket_accept: docs/events/builtin/man/lsm/security_socket_accept.md
                             - security_socket_bind: docs/events/builtin/man/lsm/security_socket_bind.md
                             - security_socket_connect: docs/events/builtin/man/lsm/security_socket_connect.md
+                            - security_socket_create: docs/events/builtin/man/lsm/security_socket_create.md
+                            - security_socket_listen: docs/events/builtin/man/lsm/security_socket_listen.md
                             - security_socket_setsockopt: docs/events/builtin/man/lsm/security_socket_setsockopt.md
                             - security_task_setrlimit: docs/events/builtin/man/lsm/security_task_setrlimit.md
                       - Misc:
+                            - __kernel_write: docs/events/builtin/man/misc/__kernel_write.md
                             - bpf_attach: docs/events/builtin/man/misc/bpf_attach.md
-                            - cgroup_mkdir: docs/events/builtin/man/misc/cgroup_mkdir.md
-                            - cgroup_rmdir: docs/events/builtin/man/misc/cgroup_rmdir.md
+                            - call_usermodehelper: docs/events/builtin/man/misc/call_usermodehelper.md
                             - chmod_common: docs/events/builtin/man/misc/chmod_common.md
-                            - container_create: docs/events/builtin/man/containers/container_create.md
-                            - container_remove: docs/events/builtin/man/containers/container_remove.md
+                            - commit_creds: docs/events/builtin/man/misc/commit_creds.md
+                            - debugfs_create_dir: docs/events/builtin/man/misc/debugfs_create_dir.md
+                            - debugfs_create_file: docs/events/builtin/man/misc/debugfs_create_file.md
+                            - device_add: docs/events/builtin/man/misc/device_add.md
+                            - dirty_pipe_splice: docs/events/builtin/man/misc/dirty_pipe_splice.md
+                            - do_init_module: docs/events/builtin/man/misc/do_init_module.md
+                            - do_mmap: docs/events/builtin/man/misc/do_mmap.md
                             - do_sigaction: docs/events/builtin/man/misc/do_sigaction.md
+                            - do_truncate: docs/events/builtin/man/misc/do_truncate.md
                             - file_modification: docs/events/builtin/man/misc/file_modification.md
                             - ftrace_hook: docs/events/builtin/man/security/ftrace_hook.md
                             - hidden_kernel_module: docs/events/builtin/man/security/hidden_kernel_module.md
+                            - hooked_seq_ops: docs/events/builtin/man/misc/hooked_seq_ops.md
                             - hooked_syscall: docs/events/builtin/man/security/hooked_syscall.md
+                            - inotify_watch: docs/events/builtin/man/misc/inotify_watch.md
                             - kallsyms_lookup_name: docs/events/builtin/man/misc/kallsyms_lookup_name.md
+                            - kprobe_attach: docs/events/builtin/man/misc/kprobe_attach.md
+                            - load_elf_phdrs: docs/events/builtin/man/misc/load_elf_phdrs.md
                             - magic_write: docs/events/builtin/man/misc/magic_write.md
                             - mem_prot_alert: docs/events/builtin/man/security/mem_prot_alert.md
                             - net_tcp_connect: docs/events/builtin/man/misc/net_tcp_connect.md
+                            - print_mem_dump: docs/events/builtin/man/misc/print_mem_dump.md
+                            - proc_create: docs/events/builtin/man/misc/proc_create.md
                             - process_execute_failed: docs/events/builtin/man/misc/process_execute_failed.md
-                            - sched_process_exec: docs/events/builtin/man/misc/sched_process_exec.md
+                            - register_chrdev: docs/events/builtin/man/misc/register_chrdev.md
                             - set_fs_pwd: docs/events/builtin/man/misc/set_fs_pwd.md
+                            - shared_object_loaded: docs/events/builtin/man/misc/shared_object_loaded.md
+                            - socket_accept: docs/events/builtin/man/misc/socket_accept.md
+                            - socket_dup: docs/events/builtin/man/misc/socket_dup.md
                             - suspicious_syscall_source: docs/events/builtin/man/security/suspicious_syscall_source.md
                             - symbols_collision: docs/events/builtin/man/misc/symbols_collision.md
                             - symbols_loaded: docs/events/builtin/man/security/symbols_loaded.md
+                            - task_rename: docs/events/builtin/man/misc/task_rename.md
                             - tracee_info: docs/events/builtin/man/misc/tracee_info.md
                             - vfs_read: docs/events/builtin/man/misc/vfs_read.md
                             - vfs_readv: docs/events/builtin/man/misc/vfs_readv.md
+                            - vfs_utimes: docs/events/builtin/man/misc/vfs_utimes.md
+                            - vfs_write: docs/events/builtin/man/misc/vfs_write.md
+                            - vfs_writev: docs/events/builtin/man/misc/vfs_writev.md
                       - Syscalls:
                             - Overview: docs/events/builtin/syscall-events.md
+                            - sys_enter: docs/events/builtin/man/syscalls/sys_enter.md
+                            - sys_exit: docs/events/builtin/man/syscalls/sys_exit.md
                 - Custom Events:
                       - Overview: docs/events/custom/overview.md
                       - Go: docs/events/custom/golang.md
@@ -183,6 +229,7 @@ nav:
           - Guidelines: contributing/guidelines.md
           - PR Validation (Checkpatch): contributing/checkpatch.md
           - Adding New Events: contributing/adding-events.md
+          - Event Documentation Guide: contributing/event-documentation-guide.md
           - Code Coverage: contributing/testing-coverage.md
           - Performance: contributing/performance.md
           - Kubernetes: contributing/kubernetes.md

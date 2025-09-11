@@ -14,13 +14,6 @@ Triggered when a process attempts to register a filesystem notification through 
 
 The event provides detailed information about the filesystem object being watched and the types of events being monitored. This is particularly important for security monitoring as filesystem notifications can be used for both legitimate monitoring and potential malicious activities.
 
-This event is useful for:
-
-- **Filesystem monitoring**: Track who's watching filesystem changes
-- **Security auditing**: Monitor filesystem notification setup
-- **Access control**: Verify notification registration permissions
-- **Behavior analysis**: Understand application monitoring patterns
-
 ## EVENT SETS
 
 **none**
