@@ -9,32 +9,30 @@
 
 statfunc int save_args(args_t *, u32);
 statfunc int load_args(args_t *, u32);
-statfunc int del_args(u32);
+statfunc long del_args(u32);
 
 // FUNCTIONS
 
+statfunc u64 get_args_id(u32 event_id)
+{
+    return ((u64) event_id << 32) | (u32) bpf_get_current_pid_tgid();
+}
+
 statfunc int save_args(args_t *args, u32 event_id)
 {
-    u64 id = event_id;
-    u32 tid = bpf_get_current_pid_tgid();
-    id = id << 32 | tid;
-    bpf_map_update_elem(&args_map, &id, args, BPF_ANY);
+    u64 args_id = get_args_id(event_id);
+    bpf_map_update_elem(&args_map, &args_id, args, BPF_ANY);
 
     return 0;
 }
 
 statfunc int load_args(args_t *args, u32 event_id)
 {
-    args_t *saved_args;
-    u32 tid = bpf_get_current_pid_tgid();
-    u64 id = event_id;
-    id = id << 32 | tid;
+    u64 args_id = get_args_id(event_id);
 
-    saved_args = bpf_map_lookup_elem(&args_map, &id);
-    if (saved_args == 0) {
-        // missed entry or not a container
-        return -1;
-    }
+    args_t *saved_args = bpf_map_lookup_elem(&args_map, &args_id);
+    if (!saved_args)
+        return -1; // missed entry or not a container
 
     args->args[0] = saved_args->args[0];
     args->args[1] = saved_args->args[1];
@@ -46,15 +44,11 @@ statfunc int load_args(args_t *args, u32 event_id)
     return 0;
 }
 
-statfunc int del_args(u32 event_id)
+statfunc long del_args(u32 event_id)
 {
-    u32 tid = bpf_get_current_pid_tgid();
-    u64 id = event_id;
-    id = id << 32 | tid;
+    u64 args_id = get_args_id(event_id);
 
-    bpf_map_delete_elem(&args_map, &id);
-
-    return 0;
+    return bpf_map_delete_elem(&args_map, &args_id);
 }
 
 #endif
