@@ -130,6 +130,10 @@ type Tracee struct {
 	// This does not mean they are required for tracee to function.
 	// TODO: remove this in favor of dependency manager nodes
 	requiredKsyms []string
+	// Extensions
+	extensions []Extension
+	// Extension callbacks
+	extensionCallbacks ExtensionCallbacks
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -291,6 +295,14 @@ func New(cfg config.Config) (*Tracee, error) {
 func (t *Tracee) Init(ctx gocontext.Context) error {
 	var err error
 
+	// Load all registered extensions
+	t.loadExtensions()
+
+	// Initialize extensions phase
+	if err := t.initExtensionsWithPhase(ctx, INIT_START); err != nil {
+		return err
+	}
+
 	// Initialize buckets cache
 
 	var mntNSProcs map[uint32]int32 // map[mntns]pid
@@ -324,6 +336,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
+	// Initialize cgroups filesystems extensions phase
+	if err := t.initExtensionsWithPhase(ctx, INIT_CGROUPS); err != nil {
+		return err
+	}
+
 	// Initialize containers enrichment logic
 
 	t.containers, err = containers.New(
@@ -353,6 +370,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	t.contPathResolver = containers.InitContainerPathResolver(&t.pidsInMntns)
 	t.contSymbolsLoader = containers.InitContainersSymbolsLoader(t.contPathResolver, 1024)
 
+	// Initialize containers related extensions phase
+	if err := t.initExtensionsWithPhase(ctx, INIT_CONTAINERS); err != nil {
+		return err
+	}
+
 	// Initialize eBPF probes
 
 	err = capabilities.GetInstance().EBPF(
@@ -363,6 +385,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	if err != nil {
 		t.Close()
 		return errfmt.WrapError(err)
+	}
+
+	// Initialize eBPF probes extensions phase
+	if err := t.initExtensionsWithPhase(ctx, INIT_BPF_PROBES); err != nil {
+		return err
 	}
 
 	// Init kernel symbols map
@@ -389,6 +416,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 
 	t.validateKallsymsDependencies() // disable events w/ missing ksyms dependencies
+
+	// Initialize kernel symbols extensions phase
+	if err := t.initExtensionsWithPhase(ctx, INIT_KERNEL_SYMBOLS); err != nil {
+		return err
+	}
 
 	// Initialize time
 
@@ -478,6 +510,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
+	// Initialize eBPF programs and maps extensions phase
+	if err := t.initExtensionsWithPhase(ctx, INIT_BPF_PROGRAMS); err != nil {
+		return err
+	}
+
 	// Initialize hashes for files
 
 	t.fileHashes, err = digest.NewCache(t.config.Output.CalcHashes, t.contPathResolver)
@@ -552,7 +589,8 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
-	return nil
+	// Initialize extensions - Final Phase: Initialization complete
+	return t.initExtensionsWithPhase(ctx, INIT_COMPLETE)
 }
 
 // initTailCall initializes a given tailcall.
@@ -1567,6 +1605,11 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.controlPlane.Start()
 	go t.controlPlane.Run(ctx)
 
+	// Run Extensions
+	if err := t.runExtensions(ctx); err != nil {
+		return errfmt.Errorf("error running extensions: %v", err)
+	}
+
 	// Measure event perf buffer write attempts (METRICS build only)
 
 	if version.MetricsBuild() {
@@ -1706,6 +1749,11 @@ func (t *Tracee) Close() {
 	}
 	if err := t.cgroups.Destroy(); err != nil {
 		logger.Errorw("Cgroups destroy", "error", err)
+	}
+
+	// Close Extensions
+	if err := t.closeExtensions(); err != nil {
+		logger.Errorw("failed to close extensions", "error", err)
 	}
 
 	// set 'running' to false and close 'done' channel only after attempting to close all resources
@@ -1882,6 +1930,13 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		selfLoadedFtraceProgs := t.getSelfLoadedPrograms(true)
 
 		go events.FtraceHookEvent(t.stats.EventCount, out, ftraceBaseEvent, selfLoadedFtraceProgs)
+	}
+
+	// Register initialization events from extensions
+	for _, ext := range t.extensions {
+		if err := ext.RegisterInitEvents(t, out); err != nil {
+			logger.Errorw("failed to register extension init events", "error", err, "extension", ext)
+		}
 	}
 }
 
