@@ -15,6 +15,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/ebpf/heartbeat"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/proctree"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // TODO: With the introduction of signal events, the control plane can now have a generic argument
@@ -22,6 +23,9 @@ import (
 // called.
 
 const pollTimeout int = 300 // from tracee.go (move to a consts package?)
+
+// SignalHandler defines a function that can process control plane signals
+type SignalHandler func(signalID events.ID, args []trace.Argument) error
 
 type Controller struct {
 	ctx            context.Context
@@ -34,6 +38,7 @@ type Controller struct {
 	processTree    *proctree.ProcessTree
 	enrichDisabled bool
 	dataPresentor  bufferdecoder.TypeDecoder
+	signalHandlers map[events.ID]SignalHandler
 }
 
 // NewController creates a new controller.
@@ -59,6 +64,7 @@ func NewController(
 		processTree:    procTree,
 		enrichDisabled: enrichDisabled,
 		dataPresentor:  dataPresentor,
+		signalHandlers: make(map[events.ID]SignalHandler),
 	}
 
 	p.signalBuffer, err = bpfModule.InitPerfBuf("signals", p.signalChan, p.lostSignalChan, 1024)
@@ -172,6 +178,10 @@ func (ctrl *Controller) processSignal(signal *signal) error {
 		return ctrl.procTreeExitProcessor(signal.args)
 	case events.SignalHeartbeat:
 		heartbeat.SendPulse()
+	default:
+		// Handle remaining signals via registered external signal handlers
+		// This allows extensions to process signals via their own handlers
+		return ctrl.processExternalSignal(signal)
 	}
 
 	return nil
@@ -190,6 +200,22 @@ func (ctrl *Controller) getSignalFromPool() *signal {
 // putSignalInPool puts a signal back in the pool.
 func (ctrl *Controller) putSignalInPool(sig *signal) {
 	ctrl.signalPool.Put(sig)
+}
+
+// RegisterExternalSignal registers a signal handler for the given signal ID
+func (ctrl *Controller) RegisterExternalSignal(signalID events.ID, handler SignalHandler) {
+	ctrl.signalHandlers[signalID] = handler
+}
+
+// processExternalSignal processes signals using registered external handlers
+func (ctrl *Controller) processExternalSignal(signal *signal) error {
+	handler, exists := ctrl.signalHandlers[signal.id]
+	if !exists {
+		// No registered handler for this signal
+		return nil
+	}
+
+	return handler(signal.id, signal.args)
 }
 
 // debug prints the process tree every 5 seconds (for debugging purposes).
