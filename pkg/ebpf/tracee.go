@@ -130,6 +130,10 @@ type Tracee struct {
 	// This does not mean they are required for tracee to function.
 	// TODO: remove this in favor of dependency manager nodes
 	requiredKsyms []string
+	// Extensions
+	extensions []Extension
+	// Extension callbacks
+	extensionCallbacks ExtensionCallbacks
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -363,6 +367,18 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	if err != nil {
 		t.Close()
 		return errfmt.WrapError(err)
+	}
+
+	// Initialize extensions
+	// Is required to execute this logic here after loading the eBPF probes
+	if len(t.extensions) == 0 {
+		t.loadExtensions() // Load all registered extensions
+	}
+
+	for _, ext := range t.extensions {
+		if err := ext.Init(t); err != nil {
+			return errfmt.Errorf("error to initialize extension: %v", err)
+		}
 	}
 
 	// Init kernel symbols map
@@ -1588,6 +1604,13 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.controlPlane.Start()
 	go t.controlPlane.Run(ctx)
 
+	// Start Extensions
+	for _, ext := range t.extensions {
+		if err := ext.Run(ctx, t); err != nil {
+			return errfmt.Errorf("error to run extension: %v", err)
+		}
+	}
+
 	// Measure event perf buffer write attempts (METRICS build only)
 
 	if version.MetricsBuild() {
@@ -1727,6 +1750,13 @@ func (t *Tracee) Close() {
 	}
 	if err := t.cgroups.Destroy(); err != nil {
 		logger.Errorw("Cgroups destroy", "error", err)
+	}
+
+	// Close Extensions
+	for _, ext := range t.extensions {
+		if err := ext.Close(); err != nil {
+			logger.Errorw("failed to close extension", "error", err)
+		}
 	}
 
 	// set 'running' to false and close 'done' channel only after attempting to close all resources
@@ -1898,6 +1928,13 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		selfLoadedFtraceProgs := t.getSelfLoadedPrograms(true)
 
 		go events.FtraceHookEvent(t.stats.EventCount, out, ftraceBaseEvent, selfLoadedFtraceProgs)
+	}
+
+	// Register initialization events from extensions
+	for _, ext := range t.extensions {
+		if err := ext.RegisterInitEvents(t, out); err != nil {
+			logger.Errorw("failed to register extension init events", "error", err, "extension", ext)
+		}
 	}
 }
 
