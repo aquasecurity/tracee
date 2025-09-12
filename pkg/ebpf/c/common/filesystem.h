@@ -23,6 +23,8 @@ statfunc struct path get_path_from_file(struct file *);
 statfunc struct file *get_struct_file_from_fd(u64);
 statfunc unsigned short get_inode_mode_from_fd(u64);
 statfunc int check_fd_type(u64, u16);
+statfunc int is_file_type(struct file *, u16);
+statfunc int is_socket_file(struct file *);
 statfunc unsigned long get_inode_nr_from_dentry(struct dentry *);
 statfunc dev_t get_dev_from_dentry(struct dentry *);
 statfunc u64 get_ctime_nanosec_from_dentry(struct dentry *);
@@ -157,6 +159,21 @@ statfunc int check_fd_type(u64 fd, u16 type)
     }
 
     return 0;
+}
+
+statfunc int is_file_type(struct file *file, u16 type)
+{
+    unsigned short i_mode = get_inode_mode_from_file(file);
+
+    if ((i_mode & S_IFMT) == type)
+        return 1;
+
+    return 0;
+}
+
+statfunc int is_socket_file(struct file *file)
+{
+    return is_file_type(file, S_IFSOCK);
 }
 
 statfunc unsigned long get_inode_nr_from_dentry(struct dentry *dentry)

@@ -1,11 +1,11 @@
 #ifndef __COMMON_NETWORK_H__
 #define __COMMON_NETWORK_H__
 
-#include "types.h"
 #include <vmlinux.h>
 #include <vmlinux_flavors.h>
 
 #include <bpf/bpf_endian.h>
+#include <types.h>
 
 #include <common/common.h>
 
@@ -246,6 +246,7 @@ statfunc u32 get_inet_daddr(struct inet_sock *);
 statfunc u16 get_inet_sport(struct inet_sock *);
 statfunc u16 get_inet_num(struct inet_sock *);
 statfunc u16 get_inet_dport(struct inet_sock *);
+statfunc struct socket *get_socket_from_fd(int fd);
 statfunc struct sock *get_socket_sock(struct socket *);
 statfunc u16 get_sock_family(struct sock *);
 statfunc u16 get_sock_protocol(struct sock *);
@@ -265,6 +266,10 @@ statfunc int get_local_sockaddr_in6_from_network_details(struct sockaddr_in6 *, 
 statfunc int get_remote_sockaddr_in6_from_network_details(struct sockaddr_in6 *, net_conn_v6_t *, u16);
 statfunc int get_local_net_id_from_network_details_v4(struct sock *, net_id_t *, net_conn_v4_t *, u16);
 statfunc int get_local_net_id_from_network_details_v6(struct sock *, net_id_t *, net_conn_v6_t *, u16);
+
+// forward declaration (avoid circular dependency)
+statfunc struct file *get_struct_file_from_fd(u64); // from filesystem.h
+statfunc int is_socket_file(struct file *); // from filesystem.h
 
 // clang-format on
 
@@ -302,6 +307,22 @@ statfunc u16 get_inet_num(struct inet_sock *inet)
 statfunc u16 get_inet_dport(struct inet_sock *inet)
 {
     return BPF_CORE_READ(inet, inet_dport);
+}
+
+statfunc struct socket *get_socket_from_fd(int fd)
+{
+    struct file *f = get_struct_file_from_fd(fd);
+    if (f == NULL)
+        return NULL;
+
+    if (!is_socket_file(f))
+        return NULL;
+
+    struct socket *socket = (struct socket *) BPF_CORE_READ(f, private_data);
+    if (socket == NULL)
+        return NULL;
+
+    return socket;
 }
 
 statfunc struct sock *get_socket_sock(struct socket *socket)
