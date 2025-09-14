@@ -1,9 +1,9 @@
 # Performance Considerations
 
-1. **Profiling Tracee for Performance test** - Tracee integrates with Pyroscope and Pprof for continuous profiling. When running Tracee locally for development or testing, use the `--pyroscope --pprof` command-line option.
+1. **Profiling Tracee for Performance test** - Tracee integrates with Pyroscope and Pprof for continuous profiling. When running Tracee locally for development or testing, use the `--server pyroscope --server pprof` command-line options.
 
     ```bash
-    sudo ./dist/tracee --pyroscope --pprof
+    sudo ./dist/tracee --server pyroscope --server pprof
     ```
 
     This enables profiling data to be sent to a local server. The Tracee repository includes a convenient way to deploy a performance dashboard for analyzing this data. Run the following for more details:
