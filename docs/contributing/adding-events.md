@@ -151,7 +151,7 @@ This table maps internal Go event IDs to external protobuf event IDs for gRPC co
 
 ```bash
 # Generate protobuf Go files from proto definitions
-make protoc
+make -f builder/Makefile.protoc
 ```
 
 This command uses `protoc` to generate:
@@ -182,7 +182,7 @@ case *YourCustomType:
 1. Add the type definition to `api/v1beta1/event_data.proto`
 2. Add the field to the `EventValue` oneof
 3. Implement conversion logic in `event_data.go`
-4. Run `make protoc` to regenerate files
+4. Run `make -f builder/Makefile.protoc` to regenerate files
 
 ## Testing Your New Event
 
@@ -273,7 +273,7 @@ After everything is working, create a markdown file in the `docs/` directory to 
 - Verify event IDs don't conflict
 - Check eBPF program section names match probe configuration
 - Ensure all required headers are included
-- Run `make protoc` after modifying proto files
+- Run `make -f builder/Makefile.protoc` after modifying proto files
 
 **Protobuf/gRPC Issues:**
 - Event ID mismatches between Go, eBPF, and protobuf

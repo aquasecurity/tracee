@@ -59,7 +59,7 @@ Tracee relies on several generated files and has strict formatting requirements.
 2. Protocol Buffer Compilation: If your changes involve modifications to protocol buffer (`.proto`) files, run:
 
     ```bash
-    make -f builder/Makefile.man
+    make -f builder/Makefile.protoc
     ```
 
     This regenerates the corresponding Go code.
