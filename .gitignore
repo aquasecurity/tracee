@@ -41,6 +41,7 @@ goenv.mk
 
 # binaries and build files
 dist
+*.o
 
 # release files
 release_notes.txt

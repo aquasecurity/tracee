@@ -310,6 +310,7 @@ help::
 	@echo "    $$ make e2e-inst-signatures      # build ./dist/e2e-inst-signatures"
 	@echo "    $$ make tracee                   # build ./dist/tracee"
 	@echo "    $$ make tracee-operator          # build ./dist/tracee-operator"
+	@echo "    $$ make lsm_check                # build ./dist/lsm_check"
 	@echo ""
 	@echo "# clean"
 	@echo ""
@@ -321,6 +322,7 @@ help::
 	@echo "    $$ make clean-signatures         # wipe ./dist/signatures"
 	@echo "    $$ make clean-tracee             # wipe ./dist/tracee"
 	@echo "    $$ make clean-tracee-operator    # wipe ./dist/tracee-operator"
+	@echo "    $$ make clean-lsm_check          # wipe ./dist/lsm_check"
 	@echo ""
 	@echo "# test"
 	@echo ""
@@ -470,7 +472,44 @@ MULTIARCH_INCLUDE := $(shell multiarch_dir=$$( $(CMD_CLANG) -print-multiarch 2> 
     fi)
 
 .PHONY: bpf
-bpf:: $(OUTPUT_DIR)/tracee.bpf.o
+bpf:: $(OUTPUT_DIR)/tracee.bpf.o lsmsupport-bpf
+
+# LSM support BPF objects
+.PHONY: lsmsupport-bpf
+lsmsupport-bpf: $(OUTPUT_DIR)/lsm_support/lsm_check.bpf.o $(OUTPUT_DIR)/lsm_support/kprobe_check.bpf.o
+
+# LSM support BPF objects
+$(OUTPUT_DIR)/lsm_support/lsm_check.bpf.o: $(LIBBPF_OBJ) pkg/ebpf/c/lsmsupport/lsm_check.bpf.c pkg/ebpf/c/lsmsupport/lsm_check_common.h | $(OUTPUT_DIR)/lsm_support
+	$(CMD_CLANG) \
+		$(BPF_DEBUG_FLAG) \
+		-D__TARGET_ARCH_$(LINUX_ARCH) \
+		-D__BPF_TRACING__ \
+		$(TRACEE_EBPF_CFLAGS) \
+		$(MULTIARCH_INCLUDE) \
+		-I./pkg/ebpf/c/ \
+		-target bpf \
+		-O2 -g \
+		-mcpu=$(BPF_VCPU) \
+		-c pkg/ebpf/c/lsmsupport/lsm_check.bpf.c \
+		-o $@
+
+$(OUTPUT_DIR)/lsm_support/kprobe_check.bpf.o: $(LIBBPF_OBJ) pkg/ebpf/c/lsmsupport/kprobe_check.bpf.c pkg/ebpf/c/lsmsupport/lsm_check_common.h | $(OUTPUT_DIR)/lsm_support
+	$(CMD_CLANG) \
+		$(BPF_DEBUG_FLAG) \
+		-D__TARGET_ARCH_$(LINUX_ARCH) \
+		-D__BPF_TRACING__ \
+		$(TRACEE_EBPF_CFLAGS) \
+		$(MULTIARCH_INCLUDE) \
+		-I./pkg/ebpf/c/ \
+		-target bpf \
+		-O2 -g \
+		-mcpu=$(BPF_VCPU) \
+		-c pkg/ebpf/c/lsmsupport/kprobe_check.bpf.c \
+		-o $@
+
+# Create lsm_support directory
+$(OUTPUT_DIR)/lsm_support:
+	$(CMD_MKDIR) -p $@
 
 $(OUTPUT_DIR)/tracee.bpf.o:: \
 	$(LIBBPF_OBJ) \
@@ -496,9 +535,35 @@ ifeq ($(STRIP_BPF_DEBUG),1)
 endif
 
 .PHONY: clean-bpf
-clean-bpf::
+clean-bpf:: clean-lsmsupport-bpf clean-lsm_check
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.o
+
+# LSM check CLI
+.PHONY: lsm_check
+lsm_check:: $(OUTPUT_DIR)/lsm_check
+
+$(OUTPUT_DIR)/lsm_check:: \
+	lsmsupport-bpf \
+	cmd/lsm_support_check/lsm_check.go \
+	| .eval_goenv \
+	.checkver_$(CMD_GO) \
+	.checklib_$(LIB_BPF)
+#
+	$(GO_ENV_EBPF) $(CMD_GO) build \
+		-tags lsmsupport \
+		-o $@ \
+		./cmd/lsm_support_check
+
+.PHONY: clean-lsm_check
+clean-lsm_check::
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/lsm_check
+
+.PHONY: clean-lsmsupport-bpf
+clean-lsmsupport-bpf:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/lsm_support/
 
 #
 # common variables
@@ -507,7 +572,7 @@ clean-bpf::
 STATIC ?= 0
 TRACEE_SRC_DIRS = ./cmd/ ./pkg/ ./signatures/
 TRACEE_SRC = $(shell find $(TRACEE_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
-GO_TAGS_EBPF = core,ebpf
+GO_TAGS_EBPF = core,ebpf,lsmsupport
 CGO_EXT_LDFLAGS_EBPF =
 PKG_CONFIG_PATH = $(LIBBPF_OBJDIR)
 PKG_CONFIG_FLAG =
@@ -545,7 +610,7 @@ endif
 tracee:: $(OUTPUT_DIR)/tracee
 
 $(OUTPUT_DIR)/tracee:: \
-	$(OUTPUT_DIR)/tracee.bpf.o \
+	bpf \
 	$(TRACEE_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
@@ -579,7 +644,7 @@ clean-tracee::
 tracee-ebpf:: $(OUTPUT_DIR)/tracee-ebpf
 
 $(OUTPUT_DIR)/tracee-ebpf:: \
-	$(OUTPUT_DIR)/tracee.bpf.o \
+	bpf \
 	$(TRACEE_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
@@ -827,7 +892,7 @@ test-unit:: \
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
-		-tags ebpf \
+		-tags $(GO_TAGS_EBPF) \
 		-short \
 		-race \
 		-shuffle on \
@@ -1199,7 +1264,7 @@ man:: clean-man $(MAN_FILES)
 #
 
 .PHONY: clean
-clean::
+clean:: clean-lsm_check
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)
 	$(CMD_RM) -f $(GOENV_MK)
