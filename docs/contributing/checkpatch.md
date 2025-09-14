@@ -1,6 +1,6 @@
-# Checkpatch Script
+# Code Quality Guide
 
-The checkpatch script (`scripts/checkpatch.sh`) is the **comprehensive PR verification tool** for Tracee development. It has been integrated with the existing `make check-pr` command to provide a unified, enhanced experience for all developers.
+This guide covers all code quality tools and checks for Tracee development. The checkpatch script (`scripts/checkpatch.sh`) powers the `make check-pr` command and provides comprehensive PR verification for all developers.
 
 ## Purpose
 
@@ -30,12 +30,30 @@ make check-pr-skip-tests        # Skip unit tests
 ./scripts/checkpatch.sh --help            # Show all options
 ```
 
-### Detailed Usage
+### All Available Commands
 
-The script can be run from the repository root using:
-- **Make targets** (recommended): `make check-pr`, `make check-pr-fast`, etc.
-- **Direct script**: `./scripts/checkpatch.sh [OPTIONS] [commit-ref]`
-- **ARGS approach**: `make check-pr ARGS="--fast --skip-docs HEAD~1"`
+**Primary Make Targets (Recommended):**
+```bash
+make check-pr                   # Full comprehensive checks (recommended for PR submission)
+make check-pr-fast              # Quick checks (skip static analysis + unit tests)
+make check-pr-skip-docs         # Skip documentation verification
+make check-pr-skip-tests        # Skip unit tests
+make format-pr                  # Show what formatting changes are needed
+make fix-fmt                   # Automatically fix code formatting issues
+```
+
+**Individual Check Commands:**
+```bash
+make -f builder/Makefile.checkers fmt-check     # Check code formatting only
+make -f builder/Makefile.checkers fmt-fix       # Fix code formatting automatically
+make -f builder/Makefile.checkers code-check    # Static code analysis only
+```
+
+**Direct Script Usage (Advanced):**
+```bash
+./scripts/checkpatch.sh [OPTIONS] [commit-ref]  # Direct script access
+make check-pr ARGS="--fast --skip-docs HEAD~1"  # Pass arguments through make
+```
 
 ## Test Categories
 
@@ -107,12 +125,17 @@ make check-pr-fast || exit 1
 ### IDE Integration
 Many IDEs can be configured to run external scripts. Configure your IDE to run `make check-pr-fast` or `./scripts/checkpatch.sh` as a build or test step.
 
-### Development Workflow
-Recommended workflow:
-1. Make your changes
-2. Run `make check-pr-fast` for quick validation (or `make check-pr` for full checks)
-3. Fix any issues found
-4. Commit and push with confidence
+### Recommended Development Workflow
+
+1. **Make your changes**
+2. **Quick validation**: Run `make check-pr-fast` for immediate feedback
+3. **Fix any issues**: Use `make fix-fmt` for formatting or address other issues manually
+4. **Full validation**: Run `make check-pr` before PR submission
+5. **Commit and push** with confidence
+
+**Integration Options:**
+- **Pre-commit hook**: Add `make check-pr-fast || exit 1` to `.git/hooks/pre-commit`
+- **IDE integration**: Configure your IDE to run `make check-pr-fast` as a build step
 
 ## Troubleshooting
 
@@ -129,13 +152,19 @@ Recommended workflow:
 ✗ Documentation verification failed
 - tracee.1.md change requires corresponding tracee.1 change
 ```
-*Solution*: Run `make -f builder/Makefile.man man-run` to regenerate man pages.
+*Solution*: Run `make -f builder/Makefile.man` to regenerate man pages.
 
 **Formatting Issues**
 ```
 ✗ Go formatting issues found:
 ```
-*Solution*: Run `gofmt -w .` to fix formatting automatically.
+*Solution*: Run `make fix-fmt` or `make -f builder/Makefile.checkers fmt-fix` to fix formatting automatically.
+
+**Protocol Buffer Issues**
+```
+✗ Protobuf files need regeneration
+```
+*Solution*: Run `make -f builder/Makefile.protoc` to regenerate Go code from `.proto` files.
 
 ### Performance Tips
 

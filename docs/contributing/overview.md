@@ -81,31 +81,6 @@ Development images are built daily from the `main` branch and include the latest
 
 ### Development Workflows
 
-Tracee provides several `make` targets to streamline development:
-
-```bash
-# Quick development checks before committing
-make check-pr              # Run all code quality checks for PR submission
-make format-pr             # Show what formatting changes are needed
-make fix-fmt               # Automatically fix code formatting
-
-# Testing workflows
-make test-unit             # Run unit tests with coverage
-make test-types            # Run tests for the types module
-make test-common           # Run tests for the common module
-make test-integration      # Run integration tests
-
-# Development builds
-make all                   # Build all components (tracee-ebpf, tracee-rules, signatures)
-make tracee                # Build the main tracee binary
-make bpf                   # Build just the eBPF object
-
-# Code analysis and debugging
-make bear                  # Generate compile_commands.json for IDE integration
-DEBUG=1 make              # Build with debug symbols
-METRICS=1 make            # Build with BPF metrics enabled
-```
-
 **Quick Start for Development:**
 ```bash
 # 1. Check your environment
@@ -121,7 +96,21 @@ make test-unit
 make check-pr
 ```
 
-For a complete list of available targets, run `make help`.
+**Common Development Tasks:**
+```bash
+# Development builds
+make tracee                # Build the main tracee binary
+make bpf                   # Build just the eBPF object
+make all                   # Build all components
+
+# Testing
+make test-unit             # Run unit tests with coverage
+make test-integration      # Run integration tests
+```
+
+For detailed information about code quality checks, dependencies, and troubleshooting, see our [Code Quality Guide](checkpatch.md).
+
+For complete build options and development environment setup, run `make help` or see [Building Documentation](building/building.md).
 
 ## Code
 
