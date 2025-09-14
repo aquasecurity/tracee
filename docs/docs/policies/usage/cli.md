@@ -67,9 +67,6 @@ signatures-dir: ""
 
 capabilities:
     bypass: false
-cache:
-    type: mem
-    size: 512
 proctree:
     source: both
     cache:

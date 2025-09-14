@@ -99,7 +99,7 @@ capabilities and justifications:
     - `CAP_BPF`+`CAP_PERFMON` for recent kernels (>=5.8) where the kernel perf paranoid value in `/proc/sys/kernel/perf_event_paranoid` is equal to 2 or less
     - or `CAP_SYS_ADMIN` otherwise
 - `CAP_SYS_PTRACE` (to collect information about processes)
-- `CAP_NET_ADMIN` (to use tc for packets capture)
+- `CAP_NET_ADMIN` (to load cgroup_skb BPF programs for network packet capture)
 - `CAP_SETPCAP` (if given - used to reduce bounding set capabilities)
 - `CAP_SYSLOG` (to access kernel symbols through /proc/kallsyms)
 - On some environments (e.g. Ubuntu) `CAP_IPC_LOCK` might be required as well.
