@@ -5,11 +5,14 @@ Tracee can expose a `/healthz` endpoint that returns `OK` if the everything is h
 Health monitoring endpoint is disabled by default, and can be enabled with the configuration:
 
 ```yaml
-healthz: true
+server:
+  healthz: true
 ```
 
 By default port `3366` is used. It can be customized with the configuration:
 
 ```yaml
-listen-addr: 1234
+server:
+  http-address: :1234
+  healthz: true
 ```

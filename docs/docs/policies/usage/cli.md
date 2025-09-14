@@ -37,13 +37,14 @@ tracee --config ./config.yaml --policy ./policy.yaml && cat /tmp/debug.json
 ```yaml
 install-path: /tmp/tracee
 
-# debugging
+# server configuration
 
-healthz: true
-metrics: false
-pprof: false
-pyroscope: false
-listen-addr: :3366
+server:
+    http-address: ":3366"
+    healthz: true
+    metrics: false
+    pprof: false
+    pyroscope: false
 
 # feature flags
 
