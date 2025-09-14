@@ -44,61 +44,22 @@ To contribute to the code:
 
 ### Before You Commit
 
-Tracee relies on several generated files and has strict formatting requirements. Ensure you run the following commands before committing:
+Before submitting code changes, ensure you follow these essential steps:
 
-**`NOTE:`** In order to not depend on the host's library versions, we recommend that you always run make and other project dependencies in a virtual environment so the formatting will be aligned with Tracee guidelines
+1. **Generated Files**: If you've modified certain types of files, regenerate the corresponding outputs:
+   - **Man pages**: Run `make -f builder/Makefile.man` if you changed core code or documentation
+   - **Protocol buffers**: Run `make -f builder/Makefile.protoc` if you modified `.proto` files
 
-1. Man Pages Generation: If you've modified core code or documentation that impacts the man pages, run:
+2. **Code Quality**: Run comprehensive code quality checks:
+   ```bash
+   make check-pr
+   ```
 
-    ```bash
-    make -f builder/Makefile.man
-    ```
+   This verifies formatting, runs linting, performs static analysis, and validates your changes meet project standards.
 
-    This regenerates the man pages to reflect your changes.
+3. **Development Environment**: For consistent results, use a supported [development environment](./building/environment.md) when running checks.
 
-2. Protocol Buffer Compilation: If your changes involve modifications to protocol buffer (`.proto`) files, run:
-
-    ```bash
-    make -f builder/Makefile.protoc
-    ```
-
-    This regenerates the corresponding Go code.
-
-3. Pre-commit checks: Every time you're about to create a pull request, execute:
-
-    **`NOTE:`**  If your host machine dependencies don't align with Tracee dependencies, this command has to run on a supported [environment](./building/environment.md)
-
-    ```bash
-    make check-pr
-    ```
-
-    This command performs essential checks:
-    - `check-fmt`: Verifies code formatting adheres to project standards.
-    - `check-lint`: Runs linting tools (e.g., `golangci-lint`) to catch potential issues.
-    - `check-code`: Performs static code analysis for both Go and C code.
-    - `format-pr`: Displays the commits in your PR in a standardized format.
-
-    **Note:** `check-fmt`,`check-lint`,`check-code`,`format-pr` are individual make command combined under `check-pr`. You can run the following command without any vm using Makefile
-
-    - For `check-fmt`:
-
-        ```bash
-        make -f builder/Makefile.checkers fmt-check
-        ```
-
-    - For `check-code`:
-
-        ```bash
-        make -f builder/Makefile.checkers code-check
-        ```
-
-4. Fixing Code Formatting: If `check-fmt` reports issues, use:
-
-    ```bash
-    make -f builder/Makefile.checkers fmt-fix
-    ```
-
-    This automatically formats your Go and C code to meet project standards. Review the changes with `git status -s` before committing.
+For detailed information about these tools, troubleshooting, and advanced options, see our comprehensive [Code Quality Guide](checkpatch.md).
 
 ### Performance Considerations
 
