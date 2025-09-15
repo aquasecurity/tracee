@@ -1,5 +1,5 @@
 .PHONY: all | env
-all: tracee-ebpf tracee-rules signatures tracee evt traceectl
+all:: tracee-ebpf tracee-rules signatures tracee evt traceectl
 
 #
 # make
@@ -7,6 +7,11 @@ all: tracee-ebpf tracee-rules signatures tracee evt traceectl
 
 .ONESHELL:
 SHELL = /bin/sh
+
+BUILD_TYPE_FLAG := COMMON_BUILD
+
+# load extended-pre Makefile, if exists
+-include Makefile.extended-pre
 
 PARALLEL = $(shell $(CMD_GREP) -c ^processor /proc/cpuinfo)
 MAKE = make
@@ -51,7 +56,7 @@ CMD_PROTOC ?= protoc
 CMD_PANDOC ?= pandoc
 CMD_CONTROLLER_GEN ?= controller-gen
 
-.check_%:
+.check_%::
 #
 	@command -v $* >/dev/null
 	if [ $$? -ne 0 ]; then
@@ -122,7 +127,7 @@ get_all_priv_reqs $$1
 CLANG_VERSION = $(shell $(CMD_CLANG) --version 2>/dev/null | \
 	head -1 | $(CMD_TR) -d '[:alpha:]' | $(CMD_TR) -d '[:space:]' | $(CMD_CUT) -d'.' -f1)
 
-.checkver_$(CMD_CLANG): \
+.checkver_$(CMD_CLANG):: \
 	| .check_$(CMD_CLANG)
 #
 	@if [ ${CLANG_VERSION} -lt 12 ]; then
@@ -136,7 +141,7 @@ GO_VERSION = $(shell $(CMD_GO) version 2>/dev/null | $(CMD_AWK) '{print $$3}' | 
 GO_VERSION_MAJ = $(shell echo $(GO_VERSION) | $(CMD_CUT) -d'.' -f1)
 GO_VERSION_MIN = $(shell echo $(GO_VERSION) | $(CMD_CUT) -d'.' -f2)
 
-.checkver_$(CMD_GO): \
+.checkver_$(CMD_GO):: \
 	| .check_$(CMD_GO)
 #
 	@if [ ${GO_VERSION_MAJ} -eq 1 ]; then
@@ -190,7 +195,7 @@ ifeq ($(UNAME_M),aarch64)
 endif
 
 .PHONY: env
-env:
+env::
 	@echo ---------------------------------------
 	@echo "Makefile Environment:"
 	@echo ---------------------------------------
@@ -287,7 +292,7 @@ env:
 #
 
 .PHONY: help
-help:
+help::
 	@echo ""
 	@echo "# environment"
 	@echo ""
@@ -356,7 +361,7 @@ BPF_VCPU = v2
 
 OUTPUT_DIR = ./dist
 
-$(OUTPUT_DIR):
+$(OUTPUT_DIR)::
 #
 	@$(CMD_MKDIR) -p $@
 	$(CMD_MKDIR) -p $@/libbpf
@@ -366,7 +371,7 @@ $(OUTPUT_DIR):
 # embedded btfhub
 #
 
-$(OUTPUT_DIR)/btfhub:
+$(OUTPUT_DIR)/btfhub::
 #
 	@$(CMD_MKDIR) -p $@
 	$(CMD_TOUCH) $@/.place-holder
@@ -382,9 +387,9 @@ LIBBPF_DESTDIR = $(OUTPUT_DIR)/libbpf
 LIBBPF_OBJDIR = $(LIBBPF_DESTDIR)/obj
 LIBBPF_OBJ = $(LIBBPF_OBJDIR)/libbpf.a
 
-$(LIBBPF_OBJ): .build_libbpf .build_libbpf_fix
+$(LIBBPF_OBJ):: .build_libbpf .build_libbpf_fix
 
-.build_libbpf: \
+.build_libbpf:: \
 	$(LIBBPF_SRC) \
 	$(wildcard $(LIBBPF_SRC)/*.[ch]) \
 	| .checkver_$(CMD_CLANG) $(OUTPUT_DIR)
@@ -407,7 +412,7 @@ $(LIBBPF_OBJ): .build_libbpf .build_libbpf_fix
 
 LIBBPF_INCLUDE_UAPI = ./3rdparty/libbpf/include/uapi/linux
 
-.build_libbpf_fix: .build_libbpf
+.build_libbpf_fix:: .build_libbpf
 # copy all uapi headers to the correct location, since libbpf does not install them fully
 # see: https://github.com/aquasecurity/tracee/pull/4186
 	@$(CMD_CP) $(LIBBPF_INCLUDE_UAPI)/*.h $(LIBBPF_DESTDIR)/include/linux/
@@ -422,7 +427,7 @@ LIBBPF_INCLUDE_UAPI = ./3rdparty/libbpf/include/uapi/linux
 
 TRACEE_EBPF_CFLAGS = $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(CMD_PKGCONFIG) $(PKG_CONFIG_FLAG) --cflags $(LIB_BPF))
 
-.eval_goenv: $(LIBBPF_OBJ)
+.eval_goenv:: $(LIBBPF_OBJ)
 #
 	@{
 ifeq ($(STATIC), 1)
@@ -443,7 +448,7 @@ endif
 		$(CMD_TOUCH) $@
 	}
 
-$(LIBBPF_SRC): \
+$(LIBBPF_SRC):: \
 	| .check_$(CMD_GIT)
 #
 ifeq ($(wildcard $@), )
@@ -457,13 +462,6 @@ endif
 TRACEE_EBPF_OBJ_SRC = ./pkg/ebpf/c/tracee.bpf.c
 TRACEE_EBPF_OBJ_HEADERS = $(shell find pkg/ebpf/c -name *.h) $(wildcard ./pkg/ebpf/c/tracee.bpf*.c)
 
-EXTENDED_BUILD_EXISTS := $(shell [ -f .extended-build ] && echo yes)
-ifeq ($(EXTENDED_BUILD_EXISTS),yes)
-    BUILD_TYPE_FLAG := EXTENDED_BUILD
-else
-    BUILD_TYPE_FLAG := COMMON_BUILD
-endif
-
 # Consider only the first multiarch include directory
 MULTIARCH_INCLUDE := $(shell multiarch_dir=$$( $(CMD_CLANG) -print-multiarch 2> /dev/null | head -n1 ); \
     include_dir="/usr/include/$${multiarch_dir}"; \
@@ -472,9 +470,9 @@ MULTIARCH_INCLUDE := $(shell multiarch_dir=$$( $(CMD_CLANG) -print-multiarch 2> 
     fi)
 
 .PHONY: bpf
-bpf: $(OUTPUT_DIR)/tracee.bpf.o
+bpf:: $(OUTPUT_DIR)/tracee.bpf.o
 
-$(OUTPUT_DIR)/tracee.bpf.o: \
+$(OUTPUT_DIR)/tracee.bpf.o:: \
 	$(LIBBPF_OBJ) \
 	$(TRACEE_EBPF_OBJ_SRC) \
 	$(TRACEE_EBPF_OBJ_HEADERS)
@@ -498,7 +496,7 @@ ifeq ($(STRIP_BPF_DEBUG),1)
 endif
 
 .PHONY: clean-bpf
-clean-bpf:
+clean-bpf::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.o
 
@@ -523,7 +521,7 @@ TRACEE_PROTOS = ./api/v1beta1/*.proto
 SH_BTFHUB = ./3rdparty/btfhub.sh
 
 .PHONY: btfhub
-btfhub: \
+btfhub:: \
 	$(OUTPUT_DIR)/tracee.bpf.o \
 	| .check_$(CMD_MD5)
 #
@@ -544,9 +542,9 @@ endif
 #
 
 .PHONY: tracee
-tracee: $(OUTPUT_DIR)/tracee
+tracee:: $(OUTPUT_DIR)/tracee
 
-$(OUTPUT_DIR)/tracee: \
+$(OUTPUT_DIR)/tracee:: \
 	$(OUTPUT_DIR)/tracee.bpf.o \
 	$(TRACEE_SRC) \
 	| .eval_goenv \
@@ -568,7 +566,7 @@ $(OUTPUT_DIR)/tracee: \
 		./cmd/tracee
 
 .PHONY: clean-tracee
-clean-tracee:
+clean-tracee::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee
 	$(CMD_RM) -rf .*.md5
@@ -578,9 +576,9 @@ clean-tracee:
 #
 
 .PHONY: tracee-ebpf
-tracee-ebpf: $(OUTPUT_DIR)/tracee-ebpf
+tracee-ebpf:: $(OUTPUT_DIR)/tracee-ebpf
 
-$(OUTPUT_DIR)/tracee-ebpf: \
+$(OUTPUT_DIR)/tracee-ebpf:: \
 	$(OUTPUT_DIR)/tracee.bpf.o \
 	$(TRACEE_SRC) \
 	| .eval_goenv \
@@ -600,7 +598,7 @@ $(OUTPUT_DIR)/tracee-ebpf: \
 		./cmd/tracee-ebpf
 
 .PHONY: clean-tracee-ebpf
-clean-tracee-ebpf:
+clean-tracee-ebpf::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-ebpf
 	$(CMD_RM) -rf .*.md5
@@ -613,9 +611,9 @@ TRACEE_RULES_SRC_DIRS = ./cmd/tracee-rules/ ./pkg/signatures/
 TRACEE_RULES_SRC=$(shell find $(TRACEE_RULES_SRC_DIRS) -type f -name '*.go')
 
 .PHONY: tracee-rules
-tracee-rules: $(OUTPUT_DIR)/tracee-rules
+tracee-rules:: $(OUTPUT_DIR)/tracee-rules
 
-$(OUTPUT_DIR)/tracee-rules: \
+$(OUTPUT_DIR)/tracee-rules:: \
 	$(TRACEE_RULES_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
@@ -631,7 +629,7 @@ $(OUTPUT_DIR)/tracee-rules: \
 		./cmd/tracee-rules
 
 .PHONY: clean-tracee-rules
-clean-tracee-rules:
+clean-tracee-rules::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-rules
 
@@ -650,9 +648,9 @@ GOSIGNATURES_SRC :=	$(shell find $(GOSIGNATURES_DIR) \
 GO_TAGS_SIGNATURES ?=
 
 .PHONY: signatures
-signatures: $(OUTPUT_DIR)/signatures
+signatures:: $(OUTPUT_DIR)/signatures
 
-$(OUTPUT_DIR)/signatures: \
+$(OUTPUT_DIR)/signatures:: \
 	$(GOSIGNATURES_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
@@ -667,7 +665,7 @@ $(OUTPUT_DIR)/signatures: \
 		$(GOSIGNATURES_SRC)
 
 .PHONY: clean-signatures
-clean-signatures:
+clean-signatures::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/signatures
 
@@ -686,9 +684,9 @@ EVT_SRC = $(shell find $(EVT_SRC_DIRS) \
 EVT_TRIGGERS_DIR = $(EVT_SRC_DIRS)/cmd/trigger/triggers
 
 .PHONY: evt
-evt: $(OUTPUT_DIR)/evt
+evt:: $(OUTPUT_DIR)/evt
 
-$(OUTPUT_DIR)/evt: \
+$(OUTPUT_DIR)/evt:: \
 	$(EVT_SRC) \
 	$(OUTPUT_DIR)/tracee \
 	| .eval_goenv \
@@ -703,7 +701,7 @@ $(OUTPUT_DIR)/evt: \
 
 
 .PHONY: clean-evt
-clean-evt:
+clean-evt::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/evt
 	$(CMD_RM) -rf $(OUTPUT_DIR)/evt-triggers
@@ -718,9 +716,9 @@ TRACEE_BENCH_SRC = $(shell find $(TRACEE_BENCH_SRC_DIRS) \
 			)
 
 .PHONY: tracee-bench
-tracee-bench: $(OUTPUT_DIR)/tracee-bench
+tracee-bench:: $(OUTPUT_DIR)/tracee-bench
 
-$(OUTPUT_DIR)/tracee-bench: \
+$(OUTPUT_DIR)/tracee-bench:: \
 	$(TRACEE_BENCH_SRC) \
 	| .checkver_$(CMD_GO) \
 	$(OUTPUT_DIR)
@@ -730,7 +728,7 @@ $(OUTPUT_DIR)/tracee-bench: \
 		./cmd/tracee-bench
 
 .PHONY: clean-tracee-bench
-clean-tracee-bench:
+clean-tracee-bench::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-bench
 
@@ -752,21 +750,21 @@ E2E_NET_SRC := $(shell find $(E2E_NET_DIR) \
 #
 SUBDIR_TRACEECTL = cmd/traceectl
 .PHONY: traceectl
-traceectl: $(OUTPUT_DIR)
+traceectl:: $(OUTPUT_DIR)
 	$(MAKE) -C $(SUBDIR_TRACEECTL) all
 	cp $(SUBDIR_TRACEECTL)/dist/traceectl $(OUTPUT_DIR)/
 	@echo "Moved traceectl binary to $(OUTPUT_DIR)"
 
 .PHONY: clean-traceectl
-clean-traceectl:
+clean-traceectl::
 	$(MAKE) -C $(SUBDIR_TRACEECTL) clean
 	 rm -f $(OUTPUT_DIR)/traceectl
 
 
 .PHONY: e2e-net-signatures
-e2e-net-signatures: $(OUTPUT_DIR)/e2e-net-signatures
+e2e-net-signatures:: $(OUTPUT_DIR)/e2e-net-signatures
 
-$(OUTPUT_DIR)/e2e-net-signatures: \
+$(OUTPUT_DIR)/e2e-net-signatures:: \
 	$(E2E_NET_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
@@ -780,7 +778,7 @@ $(OUTPUT_DIR)/e2e-net-signatures: \
 		$(E2E_NET_SRC)
 
 .PHONY: clean-e2e-net-signatures
-clean-e2e-net-signatures:
+clean-e2e-net-signatures::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-net-signatures
 
@@ -796,9 +794,9 @@ E2E_INST_SRC := $(shell find $(E2E_INST_DIR) \
 		)
 
 .PHONY: e2e-inst-signatures
-e2e-inst-signatures: $(OUTPUT_DIR)/e2e-inst-signatures
+e2e-inst-signatures:: $(OUTPUT_DIR)/e2e-inst-signatures
 
-$(OUTPUT_DIR)/e2e-inst-signatures: \
+$(OUTPUT_DIR)/e2e-inst-signatures:: \
 	$(E2E_INST_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
@@ -812,7 +810,7 @@ $(OUTPUT_DIR)/e2e-inst-signatures: \
 		$(E2E_INST_SRC)
 
 .PHONY: clean-e2e-inst-signatures
-clean-e2e-inst-signatures:
+clean-e2e-inst-signatures::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-inst-signatures
 
@@ -821,7 +819,7 @@ clean-e2e-inst-signatures:
 #
 
 .PHONY: test-unit
-test-unit: \
+test-unit:: \
 	tracee-ebpf \
 	$(if $(or $(PKG),$(TEST)),,test-types test-common) \
 	| .eval_goenv \
@@ -841,7 +839,7 @@ test-unit: \
 		$(if $(PKG),./$(PKG)/...,./cmd/... ./pkg/... ./signatures/...)
 
 .PHONY: test-types
-test-types: \
+test-types:: \
 	| .checkver_$(CMD_GO)
 #
 	@# Note that we must change the directory here because types is a standalone Go module.
@@ -853,7 +851,7 @@ test-types: \
 		./...
 
 .PHONY: test-common
-test-common: \
+test-common:: \
 	| .checkver_$(CMD_GO)
 #
 	@# Note that we must change the directory here because common is a standalone Go module.
@@ -867,7 +865,7 @@ test-common: \
 SCRIPTS_TEST_DIR = scripts
 
 .PHONY: run-scripts-test-unit
-run-scripts-test-unit:
+run-scripts-test-unit::
 #
 	@$(SCRIPTS_TEST_DIR)/run_test_scripts.sh
 
@@ -876,13 +874,13 @@ run-scripts-test-unit:
 #
 
 .PHONY: coverage
-coverage: test-unit
+coverage:: test-unit
 #
 	@echo "Unit test coverage:"
 	@$(CMD_GO) tool cover -func=coverage.txt
 
 .PHONY: coverage-html
-coverage-html: test-unit
+coverage-html:: test-unit
 #
 	@echo "Generating HTML coverage report..."
 	@$(CMD_GO) tool cover -html=coverage.txt -o coverage.html
@@ -893,7 +891,7 @@ coverage-html: test-unit
 #
 
 .PHONY: $(OUTPUT_DIR)/syscaller
-$(OUTPUT_DIR)/syscaller: \
+$(OUTPUT_DIR)/syscaller:: \
 	| .eval_goenv \
 	.check_$(CMD_GO) \
 #
@@ -901,7 +899,7 @@ $(OUTPUT_DIR)/syscaller: \
 	$(CMD_GO) build -o $(OUTPUT_DIR)/syscaller ./tests/integration/syscaller/cmd
 
 .PHONY: test-integration
-test-integration: \
+test-integration:: \
 	$(OUTPUT_DIR)/syscaller \
 	tracee \
 	| .eval_goenv \
@@ -925,7 +923,7 @@ test-integration: \
 		./tests/integration/... \
 
 .PHONY: test-upstream-libbpfgo
-test-upstream-libbpfgo: \
+test-upstream-libbpfgo:: \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
 #
@@ -936,7 +934,7 @@ test-upstream-libbpfgo: \
 #
 
 .PHONY: test-performance
-test-performance: \
+test-performance:: \
 	tracee \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
@@ -960,7 +958,7 @@ test-performance: \
 #
 
 .PHONY: bear
-bear: \
+bear:: \
 	clean \
 	$(LIBBPF_OBJ) \
 	| .check_$(CMD_BEAR)
@@ -968,7 +966,7 @@ bear: \
 	$(CMD_BEAR) -- $(MAKE) tracee
 
 .PHONY: go-tidy
-go-tidy: \
+go-tidy:: \
 	| .checkver_$(CMD_GO)
 #
 	@echo "Running go mod tidy on all workspace modules..."
@@ -1008,7 +1006,7 @@ check-code:: \
 
 
 .PHONY: check-vet
-check-vet: \
+check-vet:: \
 	tracee \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
@@ -1019,7 +1017,7 @@ check-vet: \
 		./...
 
 .PHONY: check-staticcheck
-check-staticcheck: \
+check-staticcheck:: \
 	tracee \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
@@ -1031,7 +1029,7 @@ check-staticcheck: \
 		./...
 
 .PHONY: check-err
-check-err: \
+check-err:: \
 	tracee \
 	| .checkver_$(CMD_GO) \
 	.check_$(CMD_ERRCHECK)
@@ -1051,7 +1049,7 @@ check-err: \
 LOGFROM ?= main
 
 .PHONY: format-pr
-format-pr: \
+format-pr:: \
 	| .check_$(CMD_GIT)
 #
 	@echo
@@ -1085,7 +1083,7 @@ format-pr: \
 	@echo
 
 .PHONY: check-pr
-check-pr:
+check-pr::
 #	Enhanced to use comprehensive checkpatch script that includes:
 #	- Code analysis (formatting, linting, static analysis)
 #	- Unit tests (Go and script tests)
@@ -1100,15 +1098,15 @@ check-pr:
 
 # Convenience targets for common use cases
 .PHONY: check-pr-fast
-check-pr-fast:
+check-pr-fast::
 	@./scripts/checkpatch.sh --fast HEAD
 
 .PHONY: check-pr-skip-docs
-check-pr-skip-docs:
+check-pr-skip-docs::
 	@./scripts/checkpatch.sh --skip-docs HEAD
 
 .PHONY: check-pr-skip-tests
-check-pr-skip-tests:
+check-pr-skip-tests::
 	@./scripts/checkpatch.sh --skip-unit-tests HEAD
 
 #
@@ -1116,7 +1114,7 @@ check-pr-skip-tests:
 #
 
 .PHONY: protoc
-protoc:
+protoc::
 #
 	$(CMD_PROTOC) \
 		--go_out=. \
@@ -1162,12 +1160,12 @@ $(MAN_DIR)/$(notdir $(patsubst %.md,%.1,$(1))): $(1) \
 	$(CMD_CP) $$@ $(OUTPUT_MAN_DIR)
 endef
 
-$(OUTPUT_MAN_DIR): \
+$(OUTPUT_MAN_DIR):: \
 	| .check_$(CMD_MKDIR)
 #
 	$(CMD_MKDIR) -p $@
 
-$(MAN_DIR)/%: $(FLAGS_MARKDOWN_DIR)/%.md \
+$(MAN_DIR)/%:: $(FLAGS_MARKDOWN_DIR)/%.md \
 	| .check_$(CMD_PANDOC) \
 	$(OUTPUT_MAN_DIR)
 #
@@ -1185,14 +1183,14 @@ $(MAN_DIR)/%: $(FLAGS_MARKDOWN_DIR)/%.md \
 $(foreach src,$(EVENTS_MARKDOWN_FILES),$(eval $(call EVENT_MAN_RULE,$(src))))
 
 .PHONY: clean-man
-clean-man:
+clean-man::
 	@echo Cleaning $(MAN_DIR) && \
 	$(CMD_RM) -f $(MAN_DIR)/* && \
 	echo Cleaning $(OUTPUT_MAN_DIR) && \
 	$(CMD_RM) -rf $(OUTPUT_MAN_DIR)
 
 .PHONY: man
-man: clean-man $(MAN_FILES)
+man:: clean-man $(MAN_FILES)
 
 
 #
@@ -1200,7 +1198,7 @@ man: clean-man $(MAN_FILES)
 #
 
 .PHONY: clean
-clean:
+clean::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)
 	$(CMD_RM) -f $(GOENV_MK)
@@ -1213,9 +1211,9 @@ clean:
 # tracee-operator
 
 .PHONY: tracee-operator
-tracee-operator: $(OUTPUT_DIR)/tracee-operator
+tracee-operator:: $(OUTPUT_DIR)/tracee-operator
 
-$(OUTPUT_DIR)/tracee-operator: \
+$(OUTPUT_DIR)/tracee-operator:: \
 	| .checkver_$(CMD_GO) \
 	$(OUTPUT_DIR)
 #
@@ -1224,21 +1222,24 @@ $(OUTPUT_DIR)/tracee-operator: \
 		./cmd/tracee-operator
 
 .PHONY: clean-tracee-operator
-clean-tracee-operator:
+clean-tracee-operator::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-operator
 
 # kubernetes operator
 
 .PHONY: k8s-manifests
-k8s-manifests: ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+k8s-manifests:: ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CMD_CONTROLLER_GEN) rbac:roleName=tracee crd webhook paths="./pkg/k8s/..." output:crd:artifacts:config=deploy/helm/tracee/crds output:rbac:artifacts:config=deploy/helm/tracee/templates/
 
 .PHONY: k8s-generate
-k8s-generate: ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+k8s-generate:: ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CMD_CONTROLLER_GEN) object:headerFile="deploy/boilerplate.go.txt" paths="./pkg/k8s/..."
 
 # benchmarks
 .PHONY: bench-network
-bench-network:
+bench-network::
 	./performance/benchmark/network/bench.sh $(IMAGE) $(OUTPUT) $(TIME)
+
+# load extended-post Makefile, if exists
+-include Makefile.extended-post
