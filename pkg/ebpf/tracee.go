@@ -834,7 +834,7 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 	// Get all required symbols needed in the table
 	// 1. all event ksym dependencies
 	// 2. specific cases (hooked_seq_ops, hooked_symbols, print_mem_dump)
-	for _, id := range t.policyManager.EventsSelected() {
+	for _, id := range t.eventsDependencies.GetEvents() {
 		if !events.Core.IsDefined(id) {
 			return errfmt.Errorf("event %d is not defined", id)
 		}
@@ -870,12 +870,12 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 	}
 
 	// Specific cases
-	if t.policyManager.IsEventSelected(events.HookedSeqOps) {
+	if _, err := t.eventsDependencies.GetEvent(events.HookedSeqOps); err == nil {
 		for _, seqName := range derive.NetSeqOps {
 			t.requiredKsyms = append(t.requiredKsyms, seqName)
 		}
 	}
-	if t.policyManager.IsEventSelected(events.HookedSyscall) {
+	if _, err := t.eventsDependencies.GetEvent(events.HookedSyscall); err == nil {
 		t.requiredKsyms = append(t.requiredKsyms, events.SyscallPrefix+"ni_syscall", "sys_ni_syscall")
 		for i, kernelRestrictionArr := range events.SyscallSymbolNames {
 			syscallName := t.getSyscallNameByKerVer(kernelRestrictionArr)
@@ -887,7 +887,7 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 			t.requiredKsyms = append(t.requiredKsyms, events.SyscallPrefix+syscallName)
 		}
 	}
-	if t.policyManager.IsEventSelected(events.PrintMemDump) {
+	if _, err := t.eventsDependencies.GetEvent(events.PrintMemDump); err == nil {
 		for it := t.policyManager.CreateAllIterator(); it.HasNext(); {
 			p := it.Next()
 			// This might break in the future if PrintMemDump will become a dependency of another event.
@@ -995,7 +995,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 			return nil
 		})
 
-	for _, eventId := range t.policyManager.EventsSelected() {
+	for _, eventId := range t.eventsDependencies.GetEvents() {
 		// Continuously validate the event and mark it as failed if required ksymbols are missing,
 		// until all necessary ksymbols become available or the event is removed.
 		// This process enables the event to attempt fallbacks as needed, potentially resulting in different ksymbol dependencies each time.
@@ -1021,24 +1021,10 @@ func (t *Tracee) validateKallsymsDependencies() {
 // when events are added or removed. This approach guarantees that only the necessary programs are loaded,
 // supporting kernels where some programs may not be available.
 func (t *Tracee) setProgramsAutoload() {
-	evtDefProgHandlesDeps := func(id events.ID) []probes.Handle {
-		depsNode, _ := t.eventsDependencies.GetEvent(id)
-		deps := depsNode.GetDependencies()
-		probeDeps := deps.GetProbes()
-		var progHandles []probes.Handle
-		for _, probeDep := range probeDeps {
-			progHandles = append(progHandles, probeDep.GetHandle())
-		}
-		return progHandles
-	}
-
-	for _, eventId := range t.policyManager.EventsSelected() {
-		progHandles := evtDefProgHandlesDeps(eventId)
-		for _, progHandle := range progHandles {
-			err := t.defaultProbes.Autoload(progHandle, true)
-			if err != nil {
-				logger.Debugw("Failed to autoload program", "handle", progHandle, "error", err)
-			}
+	for _, probeHandle := range t.eventsDependencies.GetProbes() {
+		err := t.defaultProbes.Autoload(probeHandle, true)
+		if err != nil {
+			logger.Debugw("Failed to autoload program", "handle", probeHandle, "error", err)
 		}
 	}
 
@@ -1254,12 +1240,18 @@ func (t *Tracee) populateBPFMaps() error {
 	// TODO: Tail calls are not updated upon events changes in the dependency manager.
 	//       Hence, upon events addition, fallbacks or removal, tail calls will not be updated.
 	//       This should be fixed dynamically in the future.
-	eventsToSubmit := t.policyManager.EventsToSubmit()
-	tailCalls := events.Core.GetTailCalls(eventsToSubmit)
-	for _, tailCall := range tailCalls {
-		err := t.initTailCall(tailCall)
+	for _, eventID := range t.eventsDependencies.GetEvents() {
+		depsNode, err := t.eventsDependencies.GetEvent(eventID)
 		if err != nil {
-			return errfmt.Errorf("failed to initialize tail call: %v", err)
+			return errfmt.Errorf("failed to get event dependencies: %v", err)
+		}
+		deps := depsNode.GetDependencies()
+		tailCalls := deps.GetTailCalls()
+		for _, tailCall := range tailCalls {
+			err := t.initTailCall(tailCall)
+			if err != nil {
+				return errfmt.Errorf("failed to initialize tail call: %v", err)
+			}
 		}
 	}
 
@@ -1286,39 +1278,6 @@ func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
 		return errfmt.WrapError(err)
 	}
 
-	return nil
-}
-
-// attachEvent attaches the probes of the given event to their respective eBPF programs.
-// Calling attachment of probes if a supported behavior, and will do nothing
-// if it has been attached already.
-// Return whether the event was successfully attached or not.
-func (t *Tracee) attachEvent(id events.ID) error {
-	evtName := events.Core.GetDefinitionByID(id).GetName()
-	depsNode, err := t.eventsDependencies.GetEvent(id)
-	if err != nil {
-		logger.Errorw("Missing event in dependencies", "event", evtName)
-		return err
-	}
-	for _, probe := range depsNode.GetDependencies().GetProbes() {
-		err := t.defaultProbes.Attach(probe.GetHandle(), t.cgroups, t.getKernelSymbols())
-		if err == nil {
-			continue
-		}
-		if probe.IsRequired() {
-			logger.Warnw(
-				"Cancelling event and its dependencies because of a missing probe",
-				"missing probe", probe.GetHandle(), "event", evtName,
-				"error", err,
-			)
-			return err
-		}
-		logger.Debugw(
-			"Failed to attach non-required probe for event",
-			"event", evtName,
-			"probe", probe.GetHandle(), "error", err,
-		)
-	}
 	return nil
 }
 
@@ -1358,15 +1317,18 @@ func (t *Tracee) attachProbes() error {
 			return nil
 		})
 
-	// Attach probes to their respective eBPF programs or cancel events if a required probe is missing.
-	for _, eventID := range t.policyManager.EventsSelected() {
-		err := t.attachEvent(eventID)
+	// Attach probes to their respective eBPF programs or fail probes (and dependent events) if a required probe is missing.
+	for _, probeHandle := range t.eventsDependencies.GetProbes() {
+		// Calling attachment of probes more than once is a supported behavior, and will do nothing
+		// if it has been attached already.
+		err := t.defaultProbes.Attach(probeHandle, t.cgroups, t.getKernelSymbols())
 		if err != nil {
-			// TODO: Consider implementing fallback logic here.
-			// At this stage, only the probes currently in use are loaded, which prevents transitioning to fallbacks.
-			err := t.eventsDependencies.RemoveEvent(eventID)
-			if err != nil {
-				logger.Warnw("Failed to remove event from dependencies manager", "remove reason", "failed probes attachment", "error", err)
+			// Mark the probe as failed, which will also fail all dependent events as needed.
+			// TODO: Support probes loading with fallbacks during runtime.
+			//       At this stage, only the probes currently in use are loaded, which prevents successfully transitioning to fallbacks if needed.
+			failErr := t.eventsDependencies.FailProbe(probeHandle)
+			if failErr != nil {
+				logger.Warnw("Failed to fail probe in dependencies manager", "probe", probeHandle, "attach error", err, "fail error", failErr)
 			}
 		}
 	}
@@ -1399,37 +1361,18 @@ func (t *Tracee) validateProbesCompatibility() error {
 			return nil
 		})
 
-	// Check all existing events for incompatible probes and fail them
-	incompatibleProbes := make(map[probes.Handle]struct{})
-	for _, eventID := range t.policyManager.EventsSelected() {
-		depsNode, err := t.eventsDependencies.GetEvent(eventID)
+	for _, probeHandle := range t.eventsDependencies.GetProbes() {
+		probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probeHandle, t.config.OSInfo)
 		if err != nil {
+			logger.Errorw("Failed to check probe compatibility", "error", err)
 			continue
 		}
-
-		deps := depsNode.GetDependencies()
-		depProbes := deps.GetProbes()
-
-		for _, probe := range depProbes {
-			probeCompatibility, err := t.defaultProbes.IsProbeCompatible(probe.GetHandle(), t.config.OSInfo)
+		if !probeCompatibility {
+			logger.Debugw("Probe failed due to incompatible probe", "probe", probeHandle)
+			err := t.eventsDependencies.FailProbe(probeHandle)
 			if err != nil {
-				logger.Errorw("Failed to check probe compatibility", "error", err)
-				continue
+				logger.Warnw("Failed to fail incompatible probe", "probe", probeHandle, "error", err)
 			}
-			if !probeCompatibility {
-				eventName := events.Core.GetDefinitionByID(eventID).GetName()
-				logger.Debugw("Event failed due to incompatible probe", "event", eventName, "probe", probe.GetHandle())
-				incompatibleProbes[probe.GetHandle()] = struct{}{}
-			}
-		}
-	}
-
-	// Fail incompatible probes, which will automatically fail all dependent events
-	for probeHandle := range incompatibleProbes {
-		logger.Debugw("Failing incompatible probe", "probe", probeHandle)
-		err := t.eventsDependencies.FailProbe(probeHandle)
-		if err != nil {
-			logger.Warnw("Failed to fail incompatible probe", "probe", probeHandle, "error", err)
 		}
 	}
 
@@ -1784,12 +1727,12 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 	// The symbol is do_init_module: kprobe with the program trace_do_init_module, kretprobe with the program trace_ret_do_init_module
 	uniqueHooksMap := map[probeMapKey]struct{}{}
 
-	for _, tr := range t.policyManager.EventsSelected() {
+	for _, tr := range t.eventsDependencies.GetEvents() {
 		definition := events.Core.GetDefinitionByID(tr)
 		if definition.NotValid() {
 			continue
 		}
-
+		eventName := definition.GetName()
 		eventNode, err := t.eventsDependencies.GetEvent(tr)
 		if err != nil {
 			continue
@@ -1825,13 +1768,13 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 
 				uniqueHooksMap[key] = struct{}{}
 
-				log(definition.GetName(), p.GetProgramName())
+				log(eventName, p.GetProgramName())
 				name = p.GetEventName()
 			case *probes.Uprobe:
-				log(definition.GetName(), p.GetProgramName())
+				log(eventName, p.GetProgramName())
 				continue
 			case *probes.CgroupProbe:
-				log(definition.GetName(), p.GetProgramName())
+				log(eventName, p.GetProgramName())
 				continue
 			default:
 				continue
