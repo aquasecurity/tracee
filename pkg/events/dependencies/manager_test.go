@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"errors"
+	"maps"
 	"slices"
 	"testing"
 
@@ -113,6 +114,7 @@ func TestManager_AddEvent(t *testing.T) {
 						dep := evtNode.GetDependencies()
 						assert.ElementsMatch(t, expDep.GetPrimaryDependencies().GetIDs(), dep.GetIDs())
 
+						// Verify probe dependencies are correctly set up
 						for _, probe := range dep.GetProbes() {
 							depProbes[probe.GetHandle()] = append(
 								depProbes[probe.GetHandle()],
@@ -131,11 +133,21 @@ func TestManager_AddEvent(t *testing.T) {
 						// Test addition watcher logic
 						assert.Contains(t, eventsAdditions, id)
 					}
+
+					// Verify probe nodes are created and have correct dependents
 					for handle, ids := range depProbes {
 						probeNode, err := m.GetProbe(handle)
-						require.NoError(t, err, handle)
-						assert.ElementsMatch(t, ids, probeNode.GetDependents())
+						require.NoError(t, err, "Probe %v should exist", handle)
+						assert.ElementsMatch(t, ids, probeNode.GetDependents(), "Probe %v should have correct dependents", handle)
 					}
+
+					// Verify that no extra probes exist beyond what's expected
+					allProbes := m.GetProbes()
+					expectedProbeHandles := make([]probes.Handle, 0, len(depProbes))
+					for handle := range depProbes {
+						expectedProbeHandles = append(expectedProbeHandles, handle)
+					}
+					assert.ElementsMatch(t, expectedProbeHandles, allProbes, "Manager should only contain expected probes")
 				}
 			},
 			)
@@ -192,14 +204,25 @@ func TestManager_AddEvent(t *testing.T) {
 
 				// Check that all the dependencies were cancelled
 				depProbes := make(map[probes.Handle][]events.ID)
-				for id := range testCase.deps {
+				for id, expDep := range testCase.deps {
 					_, err := m.GetEvent(id)
 					assert.ErrorIs(t, err, ErrNodeNotFound, id)
+
+					// Collect expected probes for verification
+					for _, probe := range expDep.GetPrimaryDependencies().GetProbes() {
+						depProbes[probe.GetHandle()] = append(depProbes[probe.GetHandle()], id)
+					}
 				}
+
+				// Verify all expected probes were also removed
 				for handle := range depProbes {
 					_, err := m.GetProbe(handle)
-					assert.ErrorIs(t, err, ErrNodeNotFound, handle)
+					assert.ErrorIs(t, err, ErrNodeNotFound, "Probe %v should be removed after cancellation", handle)
 				}
+
+				// Verify no probes remain in the manager
+				allProbes := m.GetProbes()
+				assert.Empty(t, allProbes, "No probes should remain after event cancellation")
 				_, err = m.GetEvent(testCase.eventToAdd)
 				assert.ErrorIs(t, err, ErrNodeNotFound, testCase.eventToAdd)
 				assert.Len(t, eventsAdditions, len(testCase.deps))
@@ -380,12 +403,25 @@ func TestManager_RemoveEvent(t *testing.T) {
 			require.NoError(t, err)
 
 			expectedDepProbes := make(map[probes.Handle][]events.ID)
+			removedProbes := make(map[probes.Handle]struct{})
+
+			// Calculate expected remaining probes and removed probes
 			for id, expDep := range testCase.deps {
-				if slices.Contains(testCase.expectedRemovedEvents, id) {
-					continue
-				}
 				for _, probe := range expDep.GetPrimaryDependencies().GetProbes() {
-					expectedDepProbes[probe.GetHandle()] = append(expectedDepProbes[probe.GetHandle()], id)
+					if slices.Contains(testCase.expectedRemovedEvents, id) {
+						// This probe dependency is being removed
+						removedProbes[probe.GetHandle()] = struct{}{}
+					} else {
+						// This probe dependency should remain
+						expectedDepProbes[probe.GetHandle()] = append(expectedDepProbes[probe.GetHandle()], id)
+					}
+				}
+			}
+
+			// Remove probes that still have dependents from the removed list
+			for handle, ids := range expectedDepProbes {
+				if len(ids) > 0 {
+					delete(removedProbes, handle)
 				}
 			}
 
@@ -398,19 +434,32 @@ func TestManager_RemoveEvent(t *testing.T) {
 					assert.ErrorIs(t, err, ErrNodeNotFound, testCase.name)
 				}
 
+				// Verify expected events are removed
 				for _, id := range testCase.expectedRemovedEvents {
 					_, err := m.GetEvent(id)
-					assert.Error(t, err)
+					assert.Error(t, err, "Event %d should be removed", id)
 
 					// Test indirect addition watcher logic
 					assert.Contains(t, eventsRemoved, id)
 				}
 
+				// Verify expected probes still exist with correct dependents
 				for handle, ids := range expectedDepProbes {
 					probeNode, err := m.GetProbe(handle)
-					require.NoError(t, err, handle)
-					assert.ElementsMatch(t, ids, probeNode.GetDependents())
+					require.NoError(t, err, "Probe %v should still exist", handle)
+					assert.ElementsMatch(t, ids, probeNode.GetDependents(), "Probe %v should have correct remaining dependents", handle)
 				}
+
+				// Verify removed probes no longer exist
+				for handle := range removedProbes {
+					_, err := m.GetProbe(handle)
+					assert.ErrorIs(t, err, ErrNodeNotFound, "Probe %v should be removed", handle)
+				}
+
+				// Verify manager contains only expected probes
+				allProbes := m.GetProbes()
+				expectedProbeHandles := slices.Collect(maps.Keys(expectedDepProbes))
+				assert.ElementsMatch(t, expectedProbeHandles, allProbes, "Manager should only contain expected probes after removal")
 			}
 		})
 	}
@@ -572,17 +621,59 @@ func TestManager_UnselectEvent(t *testing.T) {
 			_, err := m.SelectEvent(testCase.eventToAdd)
 			require.NoError(t, err)
 
+			// Calculate expected remaining and removed probes
+			expectedDepProbes := make(map[probes.Handle][]events.ID)
+			removedProbes := make(map[probes.Handle]struct{})
+
+			for id, expDep := range testCase.deps {
+				for _, probe := range expDep.GetPrimaryDependencies().GetProbes() {
+					if slices.Contains(testCase.expectedRemovedEvents, id) {
+						// This probe dependency will be removed
+						removedProbes[probe.GetHandle()] = struct{}{}
+					} else {
+						// This probe dependency should remain
+						expectedDepProbes[probe.GetHandle()] = append(expectedDepProbes[probe.GetHandle()], id)
+					}
+				}
+			}
+
+			// Remove probes that still have dependents from the removed list
+			for handle, ids := range expectedDepProbes {
+				if len(ids) > 0 {
+					delete(removedProbes, handle)
+				}
+			}
+
 			// Check that multiple unselects are not causing any issues
 			for i := 0; i < 3; i++ {
 				m.UnselectEvent(testCase.eventToAdd)
 
+				// Verify expected events are removed
 				for _, id := range testCase.expectedRemovedEvents {
 					_, err := m.GetEvent(id)
-					assert.Error(t, err)
+					assert.Error(t, err, "Event %d should be removed after unselect", id)
 
 					// Test indirect addition watcher logic
 					assert.Contains(t, eventsRemoved, id)
 				}
+
+				// Verify expected probes still exist with correct dependents
+				for handle, ids := range expectedDepProbes {
+					probeNode, err := m.GetProbe(handle)
+					require.NoError(t, err, "Probe %v should still exist after unselect", handle)
+					assert.ElementsMatch(t, ids, probeNode.GetDependents(), "Probe %v should have correct remaining dependents", handle)
+				}
+
+				// Verify removed probes no longer exist
+				for handle := range removedProbes {
+					_, err := m.GetProbe(handle)
+					assert.ErrorIs(t, err, ErrNodeNotFound, "Probe %v should be removed after unselect", handle)
+				}
+
+				// Verify manager contains only expected probes
+				allProbes := m.GetProbes()
+				expectedProbeHandles := slices.Collect(maps.Keys(expectedDepProbes))
+				assert.ElementsMatch(t, expectedProbeHandles, allProbes, "Manager should only contain expected probes after unselect")
 			}
 		})
 	}
@@ -919,7 +1010,11 @@ func TestManager_FailEvent(t *testing.T) {
 				assert.Contains(t, eventsRemove, events.ID(id), "Event %d should be in removed list", id)
 			}
 
-			// Verify existing events and their dependencies
+			// Calculate expected probe state after failure
+			expectedActiveProbes := make(map[probes.Handle][]events.ID)
+			removedProbes := make(map[probes.Handle]struct{})
+
+			// Collect probes from existing events (those using current dependencies)
 			for id, expectedDeps := range testCase.expectedExistingEvents {
 				node, err := m.GetEvent(events.ID(id))
 				require.NoError(t, err, "Event %d should exist", id)
@@ -927,9 +1022,49 @@ func TestManager_FailEvent(t *testing.T) {
 				actualDeps := node.GetDependencies().GetIDs()
 				assert.ElementsMatch(t, expectedDeps, actualDeps, "Event %d dependencies mismatch", id)
 
+				// Collect probes from current (possibly fallback) dependencies
+				for _, probe := range node.GetDependencies().GetProbes() {
+					expectedActiveProbes[probe.GetHandle()] = append(expectedActiveProbes[probe.GetHandle()], events.ID(id))
+				}
+
 				// Verify it's not in removed list
 				assert.NotContains(t, eventsRemove, events.ID(id), "Event %d should not be removed", id)
 			}
+
+			// Collect probes from removed events (should be cleaned up if no other dependents)
+			for _, id := range testCase.expectedRemovedEvents {
+				if dep, exists := testCase.deps[events.ID(id)]; exists {
+					for _, probe := range dep.GetPrimaryDependencies().GetProbes() {
+						// Mark as potentially removed (will be filtered out if still has dependents)
+						removedProbes[probe.GetHandle()] = struct{}{}
+					}
+				}
+			}
+
+			// Remove probes that still have active dependents
+			for handle, deps := range expectedActiveProbes {
+				if len(deps) > 0 {
+					delete(removedProbes, handle)
+				}
+			}
+
+			// Verify expected probes exist with correct dependents
+			for handle, expectedDeps := range expectedActiveProbes {
+				probeNode, err := m.GetProbe(handle)
+				require.NoError(t, err, "Probe %v should exist after event failure", handle)
+				assert.ElementsMatch(t, expectedDeps, probeNode.GetDependents(), "Probe %v should have correct dependents", handle)
+			}
+
+			// Verify removed probes no longer exist
+			for handle := range removedProbes {
+				_, err := m.GetProbe(handle)
+				assert.ErrorIs(t, err, ErrNodeNotFound, "Probe %v should be removed after event failure", handle)
+			}
+
+			// Verify manager contains only expected probes
+			allProbes := m.GetProbes()
+			expectedProbeHandles := slices.Collect(maps.Keys(expectedActiveProbes))
+			assert.ElementsMatch(t, expectedProbeHandles, allProbes, "Manager should only contain expected probes after event failure")
 		})
 	}
 }
@@ -1017,6 +1152,15 @@ func TestManager_FailEvent_MultipleFallbacks(t *testing.T) {
 
 	// Verify original dependency (event 2) was removed
 	assert.Contains(t, eventsRemove, events.ID(2))
+
+	// Verify probe state after fallback switch
+	// Event 1 should no longer have any probe dependencies (second fallback has no probes)
+	currentProbes := node.GetDependencies().GetProbes()
+	assert.Empty(t, currentProbes, "Event 1 should have no probe dependencies after using second fallback")
+
+	// Verify no probes remain in the manager (since original probes should be cleaned up)
+	allProbes := m.GetProbes()
+	assert.Empty(t, allProbes, "All probes should be removed after fallback switch")
 }
 
 func TestManager_FailureVsCancellation(t *testing.T) {
@@ -1063,9 +1207,16 @@ func TestManager_FailureVsCancellation(t *testing.T) {
 		// Verify event 1 uses fallback (empty dependencies)
 		assert.Empty(t, eventNode.GetDependencies().GetIDs())
 
+		// Verify event 1 has no probe dependencies in fallback
+		assert.Empty(t, eventNode.GetDependencies().GetProbes())
+
 		// Verify event 2 was not added
 		_, err = m.GetEvent(events.ID(2))
 		assert.ErrorIs(t, err, ErrNodeNotFound)
+
+		// Verify no probes were added since fallback has no dependencies
+		allProbes := m.GetProbes()
+		assert.Empty(t, allProbes, "No probes should exist when using empty fallback")
 	})
 
 	t.Run("CancelNodeAddAction causes immediate removal", func(t *testing.T) {
@@ -1173,6 +1324,9 @@ func TestManager_FailureVsCancellation(t *testing.T) {
 		// Verify event 1 uses fallback (depends on event 3)
 		assert.Equal(t, []events.ID{events.ID(3)}, eventNode.GetDependencies().GetIDs())
 
+		// Verify event 1 has no probe dependencies in fallback
+		assert.Empty(t, eventNode.GetDependencies().GetProbes(), "Fallback should have no probe dependencies")
+
 		// Verify event 3 was added
 		_, err = m.GetEvent(events.ID(3))
 		assert.NoError(t, err)
@@ -1180,6 +1334,10 @@ func TestManager_FailureVsCancellation(t *testing.T) {
 		// Verify event 2 was not added
 		_, err = m.GetEvent(events.ID(2))
 		assert.ErrorIs(t, err, ErrNodeNotFound)
+
+		// Verify no probes exist since fallback has no probe dependencies
+		allProbes := m.GetProbes()
+		assert.Empty(t, allProbes, "No probes should exist when fallback has no probe dependencies")
 	})
 
 	t.Run("Direct event cancellation removes event instead of using fallbacks", func(t *testing.T) {
@@ -1246,6 +1404,10 @@ func TestManager_FailureVsCancellation(t *testing.T) {
 		// Verify event 2 was also not added (since event 1 was cancelled before dependencies were built)
 		_, err = m.GetEvent(events.ID(2))
 		assert.ErrorIs(t, err, ErrNodeNotFound)
+
+		// Verify no probes were added since event was cancelled before dependencies were built
+		allProbes := m.GetProbes()
+		assert.Empty(t, allProbes, "No probes should exist after direct event cancellation")
 	})
 }
 
