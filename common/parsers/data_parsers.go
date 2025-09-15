@@ -165,14 +165,11 @@ var (
 	O_DSYNC    = SystemFunctionArgument{rawValue: 00010000, stringValue: "O_DSYNC"}
 	O_SYNC     = SystemFunctionArgument{rawValue: 04010000, stringValue: "O_SYNC"}
 	FASYNC     = SystemFunctionArgument{rawValue: 00020000, stringValue: "FASYNC"}
-	O_DIRECT   = SystemFunctionArgument{rawValue: 00040000, stringValue: "O_DIRECT"}
 	// gap
-	O_DIRECTORY = SystemFunctionArgument{rawValue: 00200000, stringValue: "O_DIRECTORY"}
-	O_NOFOLLOW  = SystemFunctionArgument{rawValue: 00400000, stringValue: "O_NOFOLLOW"}
-	O_NOATIME   = SystemFunctionArgument{rawValue: 01000000, stringValue: "O_NOATIME"}
-	O_CLOEXEC   = SystemFunctionArgument{rawValue: 02000000, stringValue: "O_CLOEXEC"}
-	O_PATH      = SystemFunctionArgument{rawValue: 040000000, stringValue: "O_PATH"}
-	O_TMPFILE   = SystemFunctionArgument{rawValue: 020000000, stringValue: "O_TMPFILE"}
+	O_NOATIME = SystemFunctionArgument{rawValue: 01000000, stringValue: "O_NOATIME"}
+	O_CLOEXEC = SystemFunctionArgument{rawValue: 02000000, stringValue: "O_CLOEXEC"}
+	O_PATH    = SystemFunctionArgument{rawValue: 040000000, stringValue: "O_PATH"}
+	O_TMPFILE = SystemFunctionArgument{rawValue: 020000000, stringValue: "O_TMPFILE"}
 )
 
 // ParseOpenFlagArgument parses the `flags` bitmask argument of the `open` syscall.

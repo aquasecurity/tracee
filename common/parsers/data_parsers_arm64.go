@@ -3,9 +3,12 @@
 package parsers
 
 var (
-	// from asm/fcntl.h
+	// from arm64/include/uapi/asm/fcntl.h
 	// NOT sequential values
 	// gap
+	O_DIRECTORY = SystemFunctionArgument{rawValue: 040000, stringValue: "O_DIRECTORY"}
+	O_NOFOLLOW  = SystemFunctionArgument{rawValue: 0100000, stringValue: "O_NOFOLLOW"}
+	O_DIRECT    = SystemFunctionArgument{rawValue: 0200000, stringValue: "O_DIRECT"}
 	O_LARGEFILE = SystemFunctionArgument{rawValue: 0400000, stringValue: "O_LARGEFILE"}
 )
 
@@ -25,10 +28,10 @@ var openFlagsValues = []SystemFunctionArgument{
 	O_DSYNC,
 	O_SYNC,
 	FASYNC,
-	O_DIRECT,
 	O_LARGEFILE,
 	O_DIRECTORY,
 	O_NOFOLLOW,
+	O_DIRECT,
 	O_NOATIME,
 	O_CLOEXEC,
 	O_PATH,
