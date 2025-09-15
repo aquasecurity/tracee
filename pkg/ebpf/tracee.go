@@ -853,6 +853,18 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 		}
 		t.requiredKsyms = append(t.requiredKsyms, ksymNames...)
 
+		// Add fallback ksym dependencies so they will be available for fallbacks (as they have to be requested upon initialization)
+		def := events.Core.GetDefinitionByID(id)
+		fallbacks := def.GetDependencies().GetFallbacks()
+		for _, fallback := range fallbacks {
+			ksyms := fallback.GetKSymbols()
+			ksymNames := make([]string, 0, len(ksyms))
+			for _, sym := range ksyms {
+				ksymNames = append(ksymNames, sym.GetSymbolName())
+			}
+			t.requiredKsyms = append(t.requiredKsyms, ksymNames...)
+		}
+
 		// If kprobe/kretprobe, the event name itself is a required symbol
 		depsProbes := deps.GetProbes()
 		for _, probeDep := range depsProbes {
@@ -865,6 +877,24 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 			switch probeType {
 			case probes.KProbe, probes.KretProbe:
 				t.requiredKsyms = append(t.requiredKsyms, traceProbe.GetEventName())
+			}
+		}
+
+		// Add fallback kprobe/kretprobe dependencies so they will be available for fallbacks
+		// (as they have to be requested upon initialization)
+		for _, fallback := range fallbacks {
+			depsProbes := fallback.GetProbes()
+			for _, probeDep := range depsProbes {
+				probe := t.defaultProbes.GetProbeByHandle(probeDep.GetHandle())
+				traceProbe, ok := probe.(*probes.TraceProbe)
+				if !ok {
+					continue
+				}
+				probeType := traceProbe.GetProbeType()
+				switch probeType {
+				case probes.KProbe, probes.KretProbe:
+					t.requiredKsyms = append(t.requiredKsyms, traceProbe.GetEventName())
+				}
 			}
 		}
 	}

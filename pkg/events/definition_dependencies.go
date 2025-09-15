@@ -12,8 +12,8 @@ import (
 // Fallbacks are attempted sequentially in the order they appear until one succeeds
 // or all options are exhausted, providing graceful degradation of functionality.
 //
-// Currently, fallbacks are not supporting tail calls, kernel symbols and capabilities in the dependencies.
-// Event dependencies with these dependencies are not supported in fallbacks as well.
+// Currently, fallbacks are not supporting tail calls and capabilities in the dependencies.
+// Event dependencies with these dependencies and kernel symbol dependencies are not supported in fallbacks as well.
 type DependencyStrategy struct {
 	primary   Dependencies
 	fallbacks []Dependencies
