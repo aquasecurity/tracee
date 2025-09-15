@@ -3,7 +3,9 @@ package dependencies
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
+	"slices"
 	"sync"
 
 	"github.com/aquasecurity/tracee/common/logger"
@@ -627,4 +629,16 @@ func (m *Manager) removeProbe(handle probes.Handle) {
 			}
 		}
 	}
+}
+
+func (m *Manager) GetEvents() []events.ID {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return slices.Collect(maps.Keys(m.events))
+}
+
+func (m *Manager) GetProbes() []probes.Handle {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return slices.Collect(maps.Keys(m.probes))
 }
