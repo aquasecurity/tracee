@@ -108,6 +108,29 @@ capabilities and justifications:
 For more information and help about process capabilities, please see
 [here](../advanced/dropping-capabilities.md).
 
+## LSM BPF Support
+
+Certain Tracee features might depend on Linux Security Module (LSM) BPF support, which allows attaching BPF programs to LSM hooks for enhanced security monitoring.
+
+To check if LSM BPF is supported in your environment, build and use the provided check tool:
+```bash
+# Build the LSM check tool
+make lsm_check
+
+# Check LSM support (requires root privileges)
+sudo ./dist/lsm_check
+
+# Quiet mode (just exit code)
+sudo ./dist/lsm_check --quiet
+```
+
+Exit codes:
+- `0`: LSM BPF is supported ✅
+- `1`: LSM BPF is not supported (expected on most systems) ⚠️  
+- `2`: Check failed due to insufficient privileges or other errors ❌
+
+Note: LSM BPF requires specific kernel configuration and is not available on all systems. Tracee will function normally without LSM BPF support, but some advanced security features may be limited.
+
 !!! tip "Having Issues?"
     If you encounter problems during installation or setup, check our [Troubleshooting Guide](../troubleshooting.md) for common solutions.
 
