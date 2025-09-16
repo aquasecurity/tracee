@@ -2,6 +2,7 @@ package filters
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -13,6 +14,10 @@ import (
 	"github.com/aquasecurity/tracee/pkg/filters/sets"
 	"github.com/aquasecurity/tracee/types/trace"
 )
+
+func getOpenatSyscallID() int {
+	return int(events.Openat)
+}
 
 func TestDataFilterClone(t *testing.T) {
 	t.Parallel()
@@ -128,9 +133,9 @@ func TestDatasFilter_Filter(t *testing.T) {
 			name:                   "Matching 'syscall' data value of sys_enter as string",
 			eventID:                events.SysEnter,
 			fieldName:              "syscall",
-			parseOperatorAndValues: "=open",
+			parseOperatorAndValues: "=openat",
 			args: []trace.Argument{
-				newArgument("syscall", "int", 2),
+				newArgument("syscall", "int", getOpenatSyscallID()),
 			},
 			expected: true,
 		},
@@ -138,9 +143,9 @@ func TestDatasFilter_Filter(t *testing.T) {
 			name:                   "Matching 'syscall' data value of sys_exit as string",
 			eventID:                events.SysExit,
 			fieldName:              "syscall",
-			parseOperatorAndValues: "=2",
+			parseOperatorAndValues: fmt.Sprintf("=%d", getOpenatSyscallID()),
 			args: []trace.Argument{
-				newArgument("syscall", "int", 2),
+				newArgument("syscall", "int", getOpenatSyscallID()),
 			},
 			expected: true,
 		},
@@ -148,7 +153,7 @@ func TestDatasFilter_Filter(t *testing.T) {
 			name:                   "Non-matching 'syscall' data value of sys_enter as int",
 			eventID:                events.SysExit,
 			fieldName:              "syscall",
-			parseOperatorAndValues: "=2",
+			parseOperatorAndValues: fmt.Sprintf("=%d", getOpenatSyscallID()),
 			args: []trace.Argument{
 				newArgument("syscall", "int", 1),
 			},
@@ -158,7 +163,7 @@ func TestDatasFilter_Filter(t *testing.T) {
 			name:                   "Non-matching 'syscall' data value of sys_enter as string",
 			eventID:                events.SysExit,
 			fieldName:              "syscall",
-			parseOperatorAndValues: "=open",
+			parseOperatorAndValues: "=openat",
 			args: []trace.Argument{
 				newArgument("syscall", "int", 1),
 			},
@@ -168,9 +173,9 @@ func TestDatasFilter_Filter(t *testing.T) {
 			name:                   "Matching 'syscall' data value of hooked_syscall as string",
 			eventID:                events.HookedSyscall,
 			fieldName:              "syscall",
-			parseOperatorAndValues: "=open",
+			parseOperatorAndValues: "=openat",
 			args: []trace.Argument{
-				newArgument("syscall", "string", "open"),
+				newArgument("syscall", "string", "openat"),
 			},
 			expected: true,
 		},
@@ -178,9 +183,9 @@ func TestDatasFilter_Filter(t *testing.T) {
 			name:                   "Matching 'syscall' data value of hooked_syscall as int",
 			eventID:                events.HookedSyscall,
 			fieldName:              "syscall",
-			parseOperatorAndValues: "=2",
+			parseOperatorAndValues: fmt.Sprintf("=%d", getOpenatSyscallID()),
 			args: []trace.Argument{
-				newArgument("syscall", "string", "open"),
+				newArgument("syscall", "string", "openat"),
 			},
 			expected: true,
 		},
@@ -188,7 +193,7 @@ func TestDatasFilter_Filter(t *testing.T) {
 			name:                   "Non-matching 'syscall' data value of hooked_syscall as string",
 			eventID:                events.HookedSyscall,
 			fieldName:              "syscall",
-			parseOperatorAndValues: "=open",
+			parseOperatorAndValues: "=openat",
 			args: []trace.Argument{
 				newArgument("syscall", "string", "close"),
 			},
@@ -198,7 +203,7 @@ func TestDatasFilter_Filter(t *testing.T) {
 			name:                   "Non-matching 'syscall' data value of hooked_syscall as int",
 			eventID:                events.HookedSyscall,
 			fieldName:              "syscall",
-			parseOperatorAndValues: "=2",
+			parseOperatorAndValues: fmt.Sprintf("=%d", getOpenatSyscallID()),
 			args: []trace.Argument{
 				newArgument("syscall", "string", "close"),
 			},
