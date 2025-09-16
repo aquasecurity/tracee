@@ -1,6 +1,8 @@
 package stringutil
 
-// ReverseString returns a reversed copy of the input string.
+// ReverseString returns a reversed copy of the input string using byte-level reversal.
+// This function performs byte-level reversal for compatibility with BPF LPM trie maps
+// used in suffix matching. It does NOT handle UTF-8 characters properly.
 func ReverseString(s string) string {
 	n := len(s)
 	bytes := make([]byte, n)
