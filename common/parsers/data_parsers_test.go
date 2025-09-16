@@ -1,6 +1,7 @@
 package parsers
 
 import (
+	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -666,6 +667,460 @@ func TestParseMmapProt(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			flags := ParseMmapProt(testCase.parseValue)
 			assert.Equal(t, testCase.expectedSting, flags.String())
+		})
+	}
+}
+
+// Test file parser functions
+func TestIsFileWrite(t *testing.T) {
+	tests := []struct {
+		name     string
+		flags    int
+		expected bool
+	}{
+		{"O_RDONLY", syscall.O_RDONLY, false},
+		{"O_WRONLY", syscall.O_WRONLY, true},
+		{"O_RDWR", syscall.O_RDWR, true},
+		{"O_CREAT", syscall.O_CREAT, false},
+		{"O_WRONLY | O_CREAT", syscall.O_WRONLY | syscall.O_CREAT, true},
+		{"O_RDWR | O_CREAT", syscall.O_RDWR | syscall.O_CREAT, true},
+		{"O_RDONLY | O_CREAT", syscall.O_RDONLY | syscall.O_CREAT, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsFileWrite(tt.flags)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestIsFileRead(t *testing.T) {
+	tests := []struct {
+		name     string
+		flags    int
+		expected bool
+	}{
+		{"O_RDONLY", syscall.O_RDONLY, true},
+		{"O_WRONLY", syscall.O_WRONLY, false},
+		{"O_RDWR", syscall.O_RDWR, true},
+		{"O_CREAT", syscall.O_CREAT, true}, // O_CREAT doesn't affect access mode, defaults to O_RDONLY
+		{"O_WRONLY | O_CREAT", syscall.O_WRONLY | syscall.O_CREAT, false},
+		{"O_RDWR | O_CREAT", syscall.O_RDWR | syscall.O_CREAT, true},
+		{"O_RDONLY | O_CREAT", syscall.O_RDONLY | syscall.O_CREAT, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsFileRead(tt.flags)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestIsMemoryPath(t *testing.T) {
+	tests := []struct {
+		name     string
+		pathname string
+		expected bool
+	}{
+		{"memfd prefix", "memfd:test", true},
+		{"memfd prefix with args", "memfd:myfile (deleted)", true},
+		{"/run/shm/ prefix", "/run/shm/test", true},
+		{"/dev/shm/ prefix", "/dev/shm/test", true},
+		{"regular file", "/tmp/test", false},
+		{"home directory", "/home/user/file", false},
+		{"root path", "/", false},
+		{"empty string", "", false},
+		{"contains but not prefix /dev/shm", "/some/path/to/dev/shm/file", false},
+		{"contains but not prefix memfd", "/some/memfd:path", false},
+		{"similar but different prefix", "memfx:test", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsMemoryPath(tt.pathname)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// Test network parser functions
+func TestParseUint32IP(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    uint32
+		expected string
+	}{
+		{"localhost", 0x7f000001, "127.0.0.1"},
+		{"zero IP", 0x00000000, "0.0.0.0"},
+		{"all ones", 0xffffffff, "255.255.255.255"},
+		{"Google DNS", 0x08080808, "8.8.8.8"},
+		{"arbitrary IP", 0xc0a80101, "192.168.1.1"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ParseUint32IP(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestParse16BytesSliceIP(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []byte
+		expected string
+	}{
+		{
+			"IPv4 mapped IPv6",
+			[]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 127, 0, 0, 1},
+			"127.0.0.1", // Go simplifies IPv4-mapped IPv6 to IPv4
+		},
+		{
+			"IPv6 localhost",
+			[]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+			"::1",
+		},
+		{
+			"IPv6 zero",
+			[]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			"::",
+		},
+		{
+			"Regular IPv6",
+			[]byte{0x20, 0x01, 0x0d, 0xb8, 0x85, 0xa3, 0x00, 0x00, 0x00, 0x00, 0x8a, 0x2e, 0x03, 0x70, 0x73, 0x34},
+			"2001:db8:85a3::8a2e:370:7334",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Parse16BytesSliceIP(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestGetFamilyFromRawAddr(t *testing.T) {
+	tests := []struct {
+		name        string
+		addr        map[string]string
+		expected    string
+		expectError bool
+	}{
+		{
+			"AF_INET family",
+			map[string]string{"sa_family": "AF_INET"},
+			"AF_INET",
+			false,
+		},
+		{
+			"AF_INET6 family",
+			map[string]string{"sa_family": "AF_INET6"},
+			"AF_INET6",
+			false,
+		},
+		{
+			"AF_UNIX family",
+			map[string]string{"sa_family": "AF_UNIX"},
+			"AF_UNIX",
+			false,
+		},
+		{
+			"missing family",
+			map[string]string{"sin_addr": "127.0.0.1"},
+			"",
+			true,
+		},
+		{
+			"empty map",
+			map[string]string{},
+			"",
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := GetFamilyFromRawAddr(tt.addr)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Equal(t, "", result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestIsInternetFamily(t *testing.T) {
+	tests := []struct {
+		name        string
+		addr        map[string]string
+		expected    bool
+		expectError bool
+	}{
+		{
+			"AF_INET is internet family",
+			map[string]string{"sa_family": "AF_INET"},
+			true,
+			false,
+		},
+		{
+			"AF_INET6 is internet family",
+			map[string]string{"sa_family": "AF_INET6"},
+			true,
+			false,
+		},
+		{
+			"AF_UNIX is not internet family",
+			map[string]string{"sa_family": "AF_UNIX"},
+			false,
+			false,
+		},
+		{
+			"missing family causes error",
+			map[string]string{"sin_addr": "127.0.0.1"},
+			false,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := IsInternetFamily(tt.addr)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestIsUnixFamily(t *testing.T) {
+	tests := []struct {
+		name        string
+		addr        map[string]string
+		expected    bool
+		expectError bool
+	}{
+		{
+			"AF_UNIX is unix family",
+			map[string]string{"sa_family": "AF_UNIX"},
+			true,
+			false,
+		},
+		{
+			"AF_INET is not unix family",
+			map[string]string{"sa_family": "AF_INET"},
+			false,
+			false,
+		},
+		{
+			"AF_INET6 is not unix family",
+			map[string]string{"sa_family": "AF_INET6"},
+			false,
+			false,
+		},
+		{
+			"missing family causes error",
+			map[string]string{"sin_addr": "127.0.0.1"},
+			false,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := IsUnixFamily(tt.addr)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestGetIPFromRawAddr(t *testing.T) {
+	tests := []struct {
+		name        string
+		addr        map[string]string
+		expected    string
+		expectError bool
+	}{
+		{
+			"AF_INET with sin_addr",
+			map[string]string{"sa_family": "AF_INET", "sin_addr": "127.0.0.1"},
+			"127.0.0.1",
+			false,
+		},
+		{
+			"AF_INET6 with sin6_addr",
+			map[string]string{"sa_family": "AF_INET6", "sin6_addr": "::1"},
+			"::1",
+			false,
+		},
+		{
+			"AF_INET missing sin_addr",
+			map[string]string{"sa_family": "AF_INET", "sin_port": "80"},
+			"",
+			true,
+		},
+		{
+			"AF_INET6 missing sin6_addr",
+			map[string]string{"sa_family": "AF_INET6", "sin6_port": "80"},
+			"",
+			true,
+		},
+		{
+			"AF_UNIX not supported",
+			map[string]string{"sa_family": "AF_UNIX", "sun_path": "/tmp/socket"},
+			"",
+			true,
+		},
+		{
+			"missing family",
+			map[string]string{"sin_addr": "127.0.0.1"},
+			"",
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := GetIPFromRawAddr(tt.addr)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Equal(t, "", result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestGetPortFromRawAddr(t *testing.T) {
+	tests := []struct {
+		name        string
+		addr        map[string]string
+		expected    string
+		expectError bool
+	}{
+		{
+			"AF_INET with sin_port",
+			map[string]string{"sa_family": "AF_INET", "sin_port": "80"},
+			"80",
+			false,
+		},
+		{
+			"AF_INET6 with sin6_port",
+			map[string]string{"sa_family": "AF_INET6", "sin6_port": "443"},
+			"443",
+			false,
+		},
+		{
+			"AF_INET missing sin_port",
+			map[string]string{"sa_family": "AF_INET", "sin_addr": "127.0.0.1"},
+			"",
+			true,
+		},
+		{
+			"AF_INET6 missing sin6_port",
+			map[string]string{"sa_family": "AF_INET6", "sin6_addr": "::1"},
+			"",
+			true,
+		},
+		{
+			"AF_UNIX not supported",
+			map[string]string{"sa_family": "AF_UNIX", "sun_path": "/tmp/socket"},
+			"",
+			true,
+		},
+		{
+			"missing family",
+			map[string]string{"sin_port": "80"},
+			"",
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := GetPortFromRawAddr(tt.addr)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Equal(t, "", result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestGetPathFromRawAddr(t *testing.T) {
+	tests := []struct {
+		name        string
+		addr        map[string]string
+		expected    string
+		expectError bool
+	}{
+		{
+			"AF_UNIX with sun_path",
+			map[string]string{"sa_family": "AF_UNIX", "sun_path": "/tmp/socket"},
+			"/tmp/socket",
+			false,
+		},
+		{
+			"AF_UNIX with abstract socket",
+			map[string]string{"sa_family": "AF_UNIX", "sun_path": "@abstract_socket"},
+			"@abstract_socket",
+			false,
+		},
+		{
+			"AF_UNIX missing sun_path",
+			map[string]string{"sa_family": "AF_UNIX"},
+			"",
+			true,
+		},
+		{
+			"AF_INET not supported",
+			map[string]string{"sa_family": "AF_INET", "sin_addr": "127.0.0.1"},
+			"",
+			true,
+		},
+		{
+			"AF_INET6 not supported",
+			map[string]string{"sa_family": "AF_INET6", "sin6_addr": "::1"},
+			"",
+			true,
+		},
+		{
+			"missing family",
+			map[string]string{"sun_path": "/tmp/socket"},
+			"",
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := GetPathFromRawAddr(tt.addr)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Equal(t, "", result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
 		})
 	}
 }
