@@ -1630,10 +1630,11 @@ func Test_EventFilters(t *testing.T) {
 							DefaultActions: []string{"log"},
 							Rules: []k8s.Rule{
 								{
-									Event: "open",
+									Event: "read",
 									Filters: []string{
-										"data.flags=0",
-										"data.mode=0",
+										"data.fd=0",
+										"data.buf=0",
+										"data.count=0",
 									},
 								},
 							},
@@ -1660,9 +1661,10 @@ func Test_EventFilters(t *testing.T) {
 					0,
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "fakeprog2", testutils.CPUForTests, anyPID, 0, events.Open, orPolNames("comm-event-data-42"), orPolIDs(42),
-							expectArg("flags", int32(0)),
-							expectArg("mode", uint16(0)),
+						expectEvent(anyHost, "fakeprog2", testutils.CPUForTests, anyPID, 0, events.Read, orPolNames("comm-event-data-42"), orPolIDs(42),
+							expectArg("fd", int32(0)),
+							expectArg("buf", trace.Pointer(0)),
+							expectArg("count", uint64(0)),
 						),
 					},
 					[]string{},
@@ -1711,7 +1713,7 @@ func Test_EventFilters(t *testing.T) {
 							DefaultActions: []string{"log"},
 							Rules: []k8s.Rule{
 								{
-									Event: "open",
+									Event: "openat",
 									Filters: []string{
 										"retval>=0",
 									},
