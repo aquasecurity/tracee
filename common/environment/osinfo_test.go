@@ -177,3 +177,172 @@ func TestOSInfo_CompareOSBaseKernelRelease(t *testing.T) {
 		})
 	}
 }
+
+// Test OSReleaseID String method
+func TestOSReleaseID_String(t *testing.T) {
+	tests := []struct {
+		name     string
+		id       OSReleaseID
+		expected string
+	}{
+		{"Ubuntu", UBUNTU, "ubuntu"},
+		{"Fedora", FEDORA, "fedora"},
+		{"Arch", ARCH, "arch"},
+		{"Debian", DEBIAN, "debian"},
+		{"CentOS", CENTOS, "centos"},
+		{"Stream", STREAM, "stream"},
+		{"Alma", ALMA, "alma"},
+		{"RHEL", RHEL, "rhel"},
+		{"Unknown ID", OSReleaseID(999), ""}, // Unknown ID should return empty string
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.id.String()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// Test OSReleaseField String method
+func TestOSReleaseField_String(t *testing.T) {
+	tests := []struct {
+		name     string
+		field    OSReleaseField
+		expected string
+	}{
+		{"OS Kernel Release", OS_KERNEL_RELEASE, "KERNEL_RELEASE"},
+		{"OS ID", OS_ID, "ID"},
+		{"OS Version ID", OS_VERSION_ID, "VERSION_ID"},
+		{"OS Name", OS_NAME, "NAME"},
+		{"Unknown field", OSReleaseField(999), ""}, // Unknown field should return empty string
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.field.String()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// Test OSBTFEnabled function
+func TestOSBTFEnabled(t *testing.T) {
+	t.Run("real system call", func(t *testing.T) {
+		// Test the actual function - this will check the real system
+		result := OSBTFEnabled()
+
+		// We can't predict the result, but it should not panic
+		// and should return a boolean
+		assert.IsType(t, false, result)
+		t.Logf("System BTF enabled: %v", result)
+	})
+}
+
+// Test OSInfo methods with mock data
+func TestOSInfo_GetOSReleaseFieldValue(t *testing.T) {
+	osInfo := &OSInfo{
+		osReleaseFieldValues: map[OSReleaseField]string{
+			OS_ID:         `"ubuntu"`,
+			OS_VERSION_ID: `"20.04"`,
+			OS_NAME:       `"Ubuntu"`,
+		},
+	}
+
+	tests := []struct {
+		name     string
+		field    OSReleaseField
+		expected string
+	}{
+		{"get ID", OS_ID, "ubuntu"},                // Should trim quotes
+		{"get VERSION_ID", OS_VERSION_ID, "20.04"}, // Should trim quotes
+		{"get NAME", OS_NAME, "Ubuntu"},            // Should trim quotes
+		{"get non-existent", OS_ARCH, ""},          // Should return empty for non-existent
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := osInfo.GetOSReleaseFieldValue(tt.field)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// Test OSInfo_GetOSReleaseAllFieldValues
+func TestOSInfo_GetOSReleaseAllFieldValues(t *testing.T) {
+	originalValues := map[OSReleaseField]string{
+		OS_ID:         "ubuntu",
+		OS_VERSION_ID: "20.04",
+		OS_NAME:       "Ubuntu",
+	}
+
+	osInfo := &OSInfo{
+		osReleaseFieldValues: originalValues,
+	}
+
+	result := osInfo.GetOSReleaseAllFieldValues()
+
+	assert.NotNil(t, result)
+	assert.Equal(t, originalValues[OS_ID], result[OS_ID])
+	assert.Equal(t, originalValues[OS_VERSION_ID], result[OS_VERSION_ID])
+	assert.Equal(t, originalValues[OS_NAME], result[OS_NAME])
+
+	// Verify it's a copy (modifying result shouldn't affect original)
+	result[OS_ID] = "modified"
+	assert.Equal(t, "ubuntu", osInfo.osReleaseFieldValues[OS_ID])
+}
+
+// Test FtraceEnabled function
+func TestFtraceEnabled(t *testing.T) {
+	t.Run("real system call", func(t *testing.T) {
+		// Test the actual function - this will check the real system
+		result, err := FtraceEnabled()
+
+		// We can't predict the result, but it should not panic
+		if err == nil {
+			assert.IsType(t, false, result)
+			t.Logf("System ftrace enabled: %v", result)
+		} else {
+			// On some systems the ftrace file might not exist or be inaccessible
+			t.Logf("FtraceEnabled check failed (expected on some systems): %v", err)
+		}
+	})
+}
+
+// Test LockdownMode String method
+func TestLockdownMode_String(t *testing.T) {
+	tests := []struct {
+		name     string
+		lockdown LockdownMode
+		expected string
+	}{
+		{"None", NONE, "none"},
+		{"Integrity", INTEGRITY, "integrity"},
+		{"Confidentiality", CONFIDENTIALITY, "confidentiality"},
+		{"Unknown", LockdownMode(999), ""}, // Unknown value should return empty string
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.lockdown.String()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// Test Lockdown function
+func TestLockdown(t *testing.T) {
+	t.Run("real system call", func(t *testing.T) {
+		// Test the actual function - this will check the real system
+		result, err := Lockdown()
+
+		// We can't predict the result, but it should not panic
+		if err == nil {
+			assert.IsType(t, NONE, result)
+			t.Logf("System lockdown: %v", result)
+		} else {
+			// On some systems the lockdown file might not exist
+			t.Logf("Lockdown check failed (expected on some systems): %v", err)
+		}
+	})
+}
