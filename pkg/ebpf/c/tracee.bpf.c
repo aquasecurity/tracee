@@ -7641,3 +7641,21 @@ int tracepoint__exec_test(struct bpf_raw_tracepoint_args *ctx)
 
     return 0;
 }
+
+SEC("lsm/file_open")
+int BPF_PROG(lsm_file_open_test, struct file *file, const struct cred *cred)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, LSM_TEST))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    // Submit the event for monitoring but always allow the operation
+    events_perf_submit(&p, 0);
+
+    // LSM programs must return 0 (allow) or negative error code (deny)
+    // We're only monitoring, so always allow the file open operation
+    return 0;
+}
