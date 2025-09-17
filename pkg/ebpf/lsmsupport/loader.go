@@ -1,3 +1,6 @@
+//go:build lsmsupport
+// +build lsmsupport
+
 package lsmsupport
 
 import (
