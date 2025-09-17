@@ -1,5 +1,5 @@
 .PHONY: all | env
-all:: tracee-ebpf tracee-rules signatures tracee evt traceectl
+all:: tracee-ebpf tracee-rules signatures tracee evt traceectl lsm-check
 
 #
 # make
@@ -310,7 +310,7 @@ help::
 	@echo "    $$ make e2e-inst-signatures      # build ./dist/e2e-inst-signatures"
 	@echo "    $$ make tracee                   # build ./dist/tracee"
 	@echo "    $$ make tracee-operator          # build ./dist/tracee-operator"
-	@echo "    $$ make lsm_check                # build ./dist/lsm_check"
+	@echo "    $$ make lsm-check                # build ./dist/lsm-check"
 	@echo ""
 	@echo "# clean"
 	@echo ""
@@ -322,7 +322,7 @@ help::
 	@echo "    $$ make clean-signatures         # wipe ./dist/signatures"
 	@echo "    $$ make clean-tracee             # wipe ./dist/tracee"
 	@echo "    $$ make clean-tracee-operator    # wipe ./dist/tracee-operator"
-	@echo "    $$ make clean-lsm_check          # wipe ./dist/lsm_check"
+	@echo "    $$ make clean-lsm-check          # wipe ./dist/lsm-check"
 	@echo ""
 	@echo "# test"
 	@echo ""
@@ -535,15 +535,15 @@ ifeq ($(STRIP_BPF_DEBUG),1)
 endif
 
 .PHONY: clean-bpf
-clean-bpf:: clean-lsmsupport-bpf clean-lsm_check
+clean-bpf:: clean-lsmsupport-bpf
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.o
 
 # LSM check CLI
-.PHONY: lsm_check
-lsm_check:: $(OUTPUT_DIR)/lsm_check
+.PHONY: lsm-check
+lsm-check:: $(OUTPUT_DIR)/lsm-check
 
-$(OUTPUT_DIR)/lsm_check:: \
+$(OUTPUT_DIR)/lsm-check:: \
 	lsmsupport-bpf \
 	cmd/lsm_support_check/lsm_check.go \
 	| .eval_goenv \
@@ -555,10 +555,10 @@ $(OUTPUT_DIR)/lsm_check:: \
 		-o $@ \
 		./cmd/lsm_support_check
 
-.PHONY: clean-lsm_check
-clean-lsm_check::
+.PHONY: clean-lsm-check
+clean-lsm-check::
 #
-	$(CMD_RM) -rf $(OUTPUT_DIR)/lsm_check
+	$(CMD_RM) -rf $(OUTPUT_DIR)/lsm-check
 
 .PHONY: clean-lsmsupport-bpf
 clean-lsmsupport-bpf:
@@ -1264,7 +1264,7 @@ man:: clean-man $(MAN_FILES)
 #
 
 .PHONY: clean
-clean:: clean-lsm_check
+clean:: clean-lsm-check
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)
 	$(CMD_RM) -f $(GOENV_MK)

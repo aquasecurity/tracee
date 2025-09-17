@@ -115,7 +115,7 @@ Certain Tracee features might depend on Linux Security Module (LSM) BPF support,
 To check if LSM BPF is supported in your environment, build and use the provided check tool:
 ```bash
 # Build the LSM check tool
-make lsm_check
+make lsm-check
 
 # Check LSM support (requires root privileges)
 sudo ./dist/lsm_check

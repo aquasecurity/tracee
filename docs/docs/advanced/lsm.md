@@ -8,7 +8,7 @@ Check if your system supports LSM BPF:
 
 ```bash
 # Build the LSM check tool
-make lsm_check
+make lsm-check
 
 # Check LSM support (requires root)
 sudo ./dist/lsm_check
