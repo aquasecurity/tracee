@@ -201,6 +201,7 @@ typedef enum signal_event_id_e {
     X(TAIL_HIDDEN_KERNEL_MODULE_MOD_TREE, )                                                        \
     X(TAIL_HIDDEN_KERNEL_MODULE_NEW_MOD_ONLY, )                                                    \
     X(TAIL_HIDDEN_KERNEL_MODULE_MODTREE_LOOP, )                                                    \
+    X(TAIL_FEATURES_FALLBACK, )                                                                    \
     // ...
 
 #ifndef EXTENDED_BUILD

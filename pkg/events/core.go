@@ -15217,6 +15217,9 @@ var CoreEvents = map[ID]Definition{
 				probes: []Probe{
 					{handle: probes.FeaturesFallbackArena, required: true},
 				},
+				tailCalls: []TailCall{
+					{mapName: "prog_array", progName: "uprobe__features_fallback_arena_tailcall", indexes: []uint32{TailFeaturesFallback}},
+				},
 			},
 			// Define fallback strategy from newest features to oldest
 			fallbacks: []Dependencies{
@@ -15225,11 +15228,17 @@ var CoreEvents = map[ID]Definition{
 					probes: []Probe{
 						{handle: probes.FeaturesFallbackHelper, required: true},
 					},
+					tailCalls: []TailCall{
+						{mapName: "prog_array", progName: "uprobe__features_fallback_helper_tailcall", indexes: []uint32{TailFeaturesFallback}},
+					},
 				},
 				// Level 3: basic uprobe (universal fallback)
 				{
 					probes: []Probe{
 						{handle: probes.FeaturesFallbackMinimal, required: true},
+					},
+					tailCalls: []TailCall{
+						{mapName: "prog_array", progName: "uprobe__features_fallback_minimal_tailcall", indexes: []uint32{TailFeaturesFallback}},
 					},
 				},
 			},

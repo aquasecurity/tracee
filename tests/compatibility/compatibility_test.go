@@ -20,6 +20,12 @@ import (
 	"github.com/aquasecurity/tracee/tests/testutils"
 )
 
+// TestCompatibility tests the compatibility of the features fallback test event
+// It tests the three levels of features fallback:
+// 1. ARENA map + bpf_get_current_task_btf helper
+// 2. bpf_get_current_task_btf helper
+// 3. basic uprobe
+// It also tests that tailcalls are properly set up based on the dependency set chosen.
 func TestCompatibility(t *testing.T) {
 	defer goleak.VerifyNone(t)
 

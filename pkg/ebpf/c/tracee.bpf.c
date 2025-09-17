@@ -7571,6 +7571,11 @@ int BPF_PROG(lsm_file_open_test, struct file *file, const struct cred *cred)
 // Level 2: uprobe + helpers (Linux 5.11+)
 // Level 3: basic uprobe (universal fallback)
 //
+// All levels test the same event, but with different dependencies.
+// The argument passed to the event is used to indicate the level of the test.
+// The argument and events are submitted in a tailcall to ensure that tailcall switching works
+// properly.
+//
 
 // Level 1: uprobe + ARENA map (Linux 6.9+)
 SEC("uprobe/features_fallback_test")
@@ -7588,6 +7593,18 @@ int uprobe__features_fallback_arena(struct pt_regs *ctx)
     // Use bpf_get_current_task_btf helper (5.11+)
     struct task_struct *task = (struct task_struct *) bpf_get_current_task_btf();
     (void) task; // Use the helper to test functionality
+
+    bpf_tail_call(ctx, &prog_array, TAIL_FEATURES_FALLBACK);
+    return 0;
+}
+
+// Level 1: confirm dependency set with tailcall
+SEC("uprobe/features_fallback_arena_tailcall")
+int uprobe__features_fallback_arena_tailcall(struct pt_regs *ctx)
+{
+    program_data_t p = {};
+    if (!init_tailcall_program_data(&p, ctx))
+        return 0;
 
     // Add argument to indicate this was probe_used_id 1
     u32 probe_used_id = 1;
@@ -7609,6 +7626,18 @@ int uprobe__features_fallback_helper(struct pt_regs *ctx)
     struct task_struct *task = (struct task_struct *) bpf_get_current_task_btf();
     (void) task; // Use the helper to test functionality
 
+    bpf_tail_call(ctx, &prog_array, TAIL_FEATURES_FALLBACK);
+    return 0;
+}
+
+// Level 2: confirm dependency set with tailcall
+SEC("uprobe/features_fallback_helper_tailcall")
+int uprobe__features_fallback_helper_tailcall(struct pt_regs *ctx)
+{
+    program_data_t p = {};
+    if (!init_tailcall_program_data(&p, ctx))
+        return 0;
+
     // Add argument to indicate this was probe_used_id 2
     u32 probe_used_id = 2;
     save_to_submit_buf(&p.event->args_buf, (void *) &probe_used_id, sizeof(u32), 0);
@@ -7623,6 +7652,18 @@ int uprobe__features_fallback_minimal(struct pt_regs *ctx)
 {
     program_data_t p = {};
     if (!init_program_data(&p, ctx, FEATURES_FALLBACK_TEST))
+        return 0;
+
+    bpf_tail_call(ctx, &prog_array, TAIL_FEATURES_FALLBACK);
+    return 0;
+}
+
+// Level 3: confirm dependency set with tailcall
+SEC("uprobe/features_fallback_minimal_tailcall")
+int uprobe__features_fallback_minimal_tailcall(struct pt_regs *ctx)
+{
+    program_data_t p = {};
+    if (!init_tailcall_program_data(&p, ctx))
         return 0;
 
     // No special features used - minimal uprobe, no special maps, no special helpers
