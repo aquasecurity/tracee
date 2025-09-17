@@ -752,6 +752,7 @@ struct sockaddr_in6 {
 
 struct msghdr {
     void *msg_name;
+    int msg_namelen;
     struct iov_iter msg_iter;
 };
 

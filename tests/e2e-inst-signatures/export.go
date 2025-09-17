@@ -24,6 +24,7 @@ var ExportedSignatures = []detect.Signature{
 	&e2eFtraceHook{},
 	&e2eSuspiciousSyscallSource{},
 	&e2eStackPivot{},
+	&e2eDnsRequestKernel{},
 }
 
 var ExportedDataSources = []detect.DataSource{

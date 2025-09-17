@@ -12,6 +12,7 @@ activity in common protocols.
 - [net_packet_dns](man/network/net_packet_dns.md)
 - [net_packet_dns_request](man/network/net_packet_dns_request.md)
 - [net_packet_dns_response](man/network/net_packet_dns_response.md)
+- [dns_request_kernel](man/network/dns_request_kernel.md)
 - [net_packet_http](man/network/net_packet_http.md)
 - [net_packet_http_request](man/network/net_packet_http_request.md)
 - [net_packet_http_response](man/network/net_packet_http_response.md)

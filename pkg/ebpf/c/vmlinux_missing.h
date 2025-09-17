@@ -96,6 +96,9 @@ enum perf_type_id {
     PERF_TYPE_MAX, /* non-ABI */
 };
 
+#define READ  0
+#define WRITE 1
+
 /*=============================== ARCH SPECIFIC ===========================*/
 #if defined(__TARGET_ARCH_x86)
 
