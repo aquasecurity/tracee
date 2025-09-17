@@ -60,7 +60,7 @@ func (en *EventNode) fallback() bool {
 }
 
 func (en *EventNode) GetDependents() []events.ID {
-	return slices.Clone[[]events.ID](en.dependents)
+	return slices.Clone(en.dependents)
 }
 
 func (en *EventNode) IsDependencyOf(dependent events.ID) bool {

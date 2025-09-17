@@ -79,6 +79,25 @@ func TestManager_AddEvent(t *testing.T) {
 				events.ID(3): {},
 			},
 		},
+		{
+			name:       "dependency event with tailcall",
+			eventToAdd: events.ID(1),
+			deps: map[events.ID]events.DependencyStrategy{
+				events.ID(1): events.NewDependencyStrategy(
+					events.NewDependencies(
+						[]events.ID{events.ID(2)},
+						nil,
+						[]events.Probe{
+							events.NewProbe(probes.SchedProcessExec, true),
+						},
+						[]events.TailCall{
+							events.NewTailCall("vfs_write", "vfs_write", []uint32{2, 3}),
+						},
+						events.Capabilities{},
+					)),
+				events.ID(2): {},
+			},
+		},
 	}
 
 	t.Run("Sanity", func(t *testing.T) {
@@ -108,6 +127,7 @@ func TestManager_AddEvent(t *testing.T) {
 					require.NoError(t, err)
 
 					depProbes := make(map[probes.Handle][]events.ID)
+					depTailCalls := make(map[string]events.TailCall)
 					for id, expDep := range testCase.deps {
 						evtNode, err := m.GetEvent(id)
 						assert.NoError(t, err)
@@ -120,6 +140,11 @@ func TestManager_AddEvent(t *testing.T) {
 								depProbes[probe.GetHandle()],
 								id,
 							)
+						}
+
+						// Verify tailcall dependencies are correctly set up
+						for _, tailCall := range dep.GetTailCalls() {
+							depTailCalls[GetTCKey(tailCall)] = tailCall
 						}
 
 						// Test dependencies building
@@ -139,6 +164,14 @@ func TestManager_AddEvent(t *testing.T) {
 						probeNode, err := m.GetProbe(handle)
 						require.NoError(t, err, "Probe %v should exist", handle)
 						assert.ElementsMatch(t, ids, probeNode.GetDependents(), "Probe %v should have correct dependents", handle)
+					}
+
+					// Verify tailcall nodes are created and have correct dependents
+					for key, tailCall := range depTailCalls {
+						tailCallNode, err := m.GetTailCall(GetTCKey(tailCall))
+						require.NoError(t, err, "Tailcall %v should exist", key)
+						assert.Equal(t, key, GetTCKey(tailCallNode.GetTailCall()))
+						assert.ElementsMatch(t, tailCall.GetIndexes(), tailCallNode.GetTailCall().GetIndexes(), "Tailcall %v should have correct indexes", key)
 					}
 
 					// Verify that no extra probes exist beyond what's expected
@@ -968,6 +1001,59 @@ func TestManager_FailEvent(t *testing.T) {
 			},
 			expectEventRemoved: false,
 		},
+		{
+			name:       "event with tailcall dependency without fallback",
+			eventToAdd: events.ID(1),
+			deps: map[events.ID]events.DependencyStrategy{
+				events.ID(1): events.NewDependencyStrategy(
+					events.NewDependencies(
+						[]events.ID{},
+						nil,
+						[]events.Probe{},
+						[]events.TailCall{
+							events.NewTailCall("prog_array", "failing_handler", []uint32{1}),
+						},
+						events.Capabilities{},
+					),
+				),
+			},
+			expectedRemovedEvents:  []events.ID{events.ID(1)},
+			expectedExistingEvents: map[events.ID][]events.ID{},
+			expectEventRemoved:     true,
+		},
+		{
+			name:       "event with tailcall dependency with fallback",
+			eventToAdd: events.ID(1),
+			deps: map[events.ID]events.DependencyStrategy{
+				events.ID(1): events.NewDependencyStrategyWithFallbacks(
+					events.NewDependencies(
+						[]events.ID{},
+						nil,
+						[]events.Probe{},
+						[]events.TailCall{
+							events.NewTailCall("prog_array", "failing_handler", []uint32{1}),
+						},
+						events.Capabilities{},
+					),
+					[]events.Dependencies{
+						events.NewDependencies( // Fallback with different tailcall
+							[]events.ID{},
+							nil,
+							[]events.Probe{},
+							[]events.TailCall{
+								events.NewTailCall("prog_array", "fallback_handler", []uint32{2}),
+							},
+							events.Capabilities{},
+						),
+					},
+				),
+			},
+			expectedRemovedEvents: []events.ID{},
+			expectedExistingEvents: map[events.ID][]events.ID{
+				1: {}, // Event preserved using fallback
+			},
+			expectEventRemoved: false,
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -1013,6 +1099,7 @@ func TestManager_FailEvent(t *testing.T) {
 			// Calculate expected probe state after failure
 			expectedActiveProbes := make(map[probes.Handle][]events.ID)
 			removedProbes := make(map[probes.Handle]struct{})
+			expectedActiveTailcalls := make(map[string][]events.ID)
 
 			// Collect probes from existing events (those using current dependencies)
 			for id, expectedDeps := range testCase.expectedExistingEvents {
@@ -1025,6 +1112,12 @@ func TestManager_FailEvent(t *testing.T) {
 				// Collect probes from current (possibly fallback) dependencies
 				for _, probe := range node.GetDependencies().GetProbes() {
 					expectedActiveProbes[probe.GetHandle()] = append(expectedActiveProbes[probe.GetHandle()], events.ID(id))
+				}
+
+				// Collect tailcalls from current (possibly fallback) dependencies
+				for _, tailcall := range node.GetDependencies().GetTailCalls() {
+					tcKey := GetTCKey(tailcall)
+					expectedActiveTailcalls[tcKey] = append(expectedActiveTailcalls[tcKey], events.ID(id))
 				}
 
 				// Verify it's not in removed list
@@ -1783,4 +1876,308 @@ func TestManager_FailProbe(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestManager_FailTailCall(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name                    string
+		preAddedEvents          []events.ID
+		deps                    map[events.ID]events.DependencyStrategy
+		tailCallToFail          events.TailCall
+		expectedRemovedEvents   []events.ID
+		expectedPreservedEvents []events.ID
+		expectedError           bool
+	}{
+		{
+			name: "tailcall failure fails event (tailcalls always required)",
+			deps: map[events.ID]events.DependencyStrategy{
+				events.ID(1): events.NewDependencyStrategy(
+					events.NewDependencies(
+						[]events.ID{},
+						nil,
+						[]events.Probe{},
+						[]events.TailCall{
+							events.NewTailCall("prog_array", "handler_a", []uint32{1}),
+						},
+						events.Capabilities{},
+					)),
+			},
+			preAddedEvents:          []events.ID{events.ID(1)},
+			tailCallToFail:          events.NewTailCall("prog_array", "handler_a", []uint32{1}),
+			expectedRemovedEvents:   []events.ID{events.ID(1)},
+			expectedPreservedEvents: []events.ID{},
+			expectedError:           false,
+		},
+		{
+			name: "tailcall with multiple dependent events",
+			deps: map[events.ID]events.DependencyStrategy{
+				events.ID(1): events.NewDependencyStrategy(
+					events.NewDependencies(
+						[]events.ID{},
+						nil,
+						[]events.Probe{},
+						[]events.TailCall{
+							events.NewTailCall("prog_array", "shared_handler", []uint32{1}),
+						},
+						events.Capabilities{},
+					)),
+				events.ID(2): events.NewDependencyStrategy(
+					events.NewDependencies(
+						[]events.ID{},
+						nil,
+						[]events.Probe{},
+						[]events.TailCall{
+							events.NewTailCall("prog_array", "shared_handler", []uint32{2}),
+						},
+						events.Capabilities{},
+					)),
+			},
+			preAddedEvents:          []events.ID{events.ID(1), events.ID(2)},
+			tailCallToFail:          events.NewTailCall("prog_array", "shared_handler", []uint32{}), // Key doesn't include indexes
+			expectedRemovedEvents:   []events.ID{events.ID(1), events.ID(2)},                        // Both fail since tailcall is required
+			expectedPreservedEvents: []events.ID{},
+			expectedError:           false,
+		},
+		{
+			name: "tailcall failure with event having fallbacks",
+			deps: map[events.ID]events.DependencyStrategy{
+				events.ID(1): events.NewDependencyStrategyWithFallbacks(
+					events.NewDependencies(
+						[]events.ID{},
+						nil,
+						[]events.Probe{},
+						[]events.TailCall{
+							events.NewTailCall("prog_array", "primary_handler", []uint32{1}),
+						},
+						events.Capabilities{},
+					),
+					[]events.Dependencies{
+						events.NewDependencies( // Fallback with different tailcall
+							[]events.ID{},
+							nil,
+							[]events.Probe{},
+							[]events.TailCall{
+								events.NewTailCall("prog_array", "fallback_handler", []uint32{2}),
+							},
+							events.Capabilities{},
+						),
+					},
+				),
+			},
+			preAddedEvents:          []events.ID{events.ID(1)},
+			tailCallToFail:          events.NewTailCall("prog_array", "primary_handler", []uint32{}),
+			expectedRemovedEvents:   []events.ID{},
+			expectedPreservedEvents: []events.ID{events.ID(1)}, // Event preserved using fallback
+			expectedError:           false,
+		},
+		{
+			name: "tailcall failure with event having no usable fallbacks",
+			deps: map[events.ID]events.DependencyStrategy{
+				events.ID(1): events.NewDependencyStrategy(
+					events.NewDependencies(
+						[]events.ID{events.ID(2)},
+						nil,
+						[]events.Probe{},
+						[]events.TailCall{
+							events.NewTailCall("prog_array", "handler", []uint32{1}),
+						},
+						events.Capabilities{},
+					)),
+				events.ID(2): {},
+			},
+			preAddedEvents:          []events.ID{events.ID(1)},
+			tailCallToFail:          events.NewTailCall("prog_array", "handler", []uint32{}),
+			expectedRemovedEvents:   []events.ID{events.ID(1), events.ID(2)}, // Event and dependencies removed
+			expectedPreservedEvents: []events.ID{},
+			expectedError:           false,
+		},
+		{
+			name: "cascading failures from tailcall failure",
+			deps: map[events.ID]events.DependencyStrategy{
+				events.ID(1): events.NewDependencyStrategy(
+					events.NewDependencies(
+						[]events.ID{events.ID(2)},
+						nil,
+						[]events.Probe{},
+						[]events.TailCall{
+							events.NewTailCall("prog_array", "handler_a", []uint32{1}),
+						},
+						events.Capabilities{},
+					)),
+				events.ID(2): events.NewDependencyStrategy(
+					events.NewDependencies(
+						[]events.ID{},
+						nil,
+						[]events.Probe{},
+						[]events.TailCall{
+							events.NewTailCall("prog_array", "handler_b", []uint32{2}), // Different tailcall
+						},
+						events.Capabilities{},
+					)),
+				events.ID(3): events.NewDependencyStrategy(
+					events.NewDependencies(
+						[]events.ID{events.ID(1)}, // Depends on event 1
+						nil,
+						[]events.Probe{},
+						nil,
+						events.Capabilities{},
+					)),
+			},
+			preAddedEvents:          []events.ID{events.ID(1), events.ID(3)},
+			tailCallToFail:          events.NewTailCall("prog_array", "handler_a", []uint32{}),
+			expectedRemovedEvents:   []events.ID{events.ID(1), events.ID(2), events.ID(3)}, // Cascading removal
+			expectedPreservedEvents: []events.ID{},
+			expectedError:           false,
+		},
+		{
+			name: "mixed dependencies - tailcall and probe failures",
+			deps: map[events.ID]events.DependencyStrategy{
+				events.ID(1): events.NewDependencyStrategy(
+					events.NewDependencies(
+						[]events.ID{},
+						nil,
+						[]events.Probe{
+							events.NewProbe(probes.SchedProcessExec, true),
+						},
+						[]events.TailCall{
+							events.NewTailCall("prog_array", "handler", []uint32{1}),
+						},
+						events.Capabilities{},
+					)),
+			},
+			preAddedEvents:          []events.ID{events.ID(1)},
+			tailCallToFail:          events.NewTailCall("prog_array", "handler", []uint32{}),
+			expectedRemovedEvents:   []events.ID{events.ID(1)},
+			expectedPreservedEvents: []events.ID{},
+			expectedError:           false,
+		},
+		{
+			name:                    "non-existent tailcall failure",
+			deps:                    map[events.ID]events.DependencyStrategy{},
+			preAddedEvents:          []events.ID{},
+			tailCallToFail:          events.NewTailCall("prog_array", "nonexistent", []uint32{}),
+			expectedRemovedEvents:   []events.ID{},
+			expectedPreservedEvents: []events.ID{},
+			expectedError:           false, // Should handle gracefully
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create a new Manager instance
+			m := NewDependenciesManager(getTestDependenciesFunc(testCase.deps))
+
+			var eventsRemoved []events.ID
+			m.SubscribeRemove(
+				EventNodeType,
+				func(node interface{}) []Action {
+					removedEventNode, ok := node.(*EventNode)
+					require.True(t, ok)
+					eventsRemoved = append(eventsRemoved, removedEventNode.GetID())
+					return nil
+				})
+
+			// Add pre-existing events
+			for _, eventID := range testCase.preAddedEvents {
+				_, err := m.SelectEvent(eventID)
+				require.NoError(t, err, "Failed to add pre-existing event %d", eventID)
+			}
+
+			// Verify all events exist before tailcall failure
+			for _, eventID := range testCase.preAddedEvents {
+				_, err := m.GetEvent(eventID)
+				require.NoError(t, err, "Event %d should exist before tailcall failure", eventID)
+			}
+
+			// Fail the tailcall
+			err := m.FailTailCall(testCase.tailCallToFail)
+			if testCase.expectedError {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			// Check removed events
+			for _, expectedRemovedEvent := range testCase.expectedRemovedEvents {
+				_, err := m.GetEvent(expectedRemovedEvent)
+				assert.ErrorIs(t, err, ErrNodeNotFound, "Event %d should be removed", expectedRemovedEvent)
+				assert.Contains(t, eventsRemoved, expectedRemovedEvent, "Event %d should be in removed list", expectedRemovedEvent)
+			}
+
+			// Check preserved events
+			for _, expectedPreservedEvent := range testCase.expectedPreservedEvents {
+				_, err := m.GetEvent(expectedPreservedEvent)
+				assert.NoError(t, err, "Event %d should be preserved", expectedPreservedEvent)
+				assert.NotContains(t, eventsRemoved, expectedPreservedEvent, "Event %d should not be in removed list", expectedPreservedEvent)
+			}
+
+			// Verify tailcalls are cleaned up properly
+			allTailCalls := m.GetTailCalls()
+			for _, key := range allTailCalls {
+				tailCallNode, err := m.GetTailCall(key)
+				require.NoError(t, err)
+				// Verify each remaining tailcall has at least one dependent
+				assert.NotEmpty(t, tailCallNode.GetDependents(), "Tailcall %s should have dependents", key)
+			}
+
+			// Test multiple failures of the same tailcall (should be idempotent)
+			err = m.FailTailCall(testCase.tailCallToFail)
+			require.NoError(t, err, "Multiple tailcall failures should be handled gracefully")
+
+			// State should remain the same after second failure
+			for _, expectedRemovedEvent := range testCase.expectedRemovedEvents {
+				_, err := m.GetEvent(expectedRemovedEvent)
+				assert.ErrorIs(t, err, ErrNodeNotFound, "Event %d should still be removed after second tailcall failure", expectedRemovedEvent)
+			}
+
+			for _, expectedPreservedEvent := range testCase.expectedPreservedEvents {
+				_, err := m.GetEvent(expectedPreservedEvent)
+				assert.NoError(t, err, "Event %d should still be preserved after second tailcall failure", expectedPreservedEvent)
+			}
+		})
+	}
+}
+
+func TestManager_StateChangeWatcher_TailcallMerge(t *testing.T) {
+	deps := map[events.ID]events.DependencyStrategy{
+		events.ID(1): events.NewDependencyStrategy(
+			events.NewDependencies(
+				[]events.ID{},
+				nil,
+				[]events.Probe{},
+				[]events.TailCall{
+					events.NewTailCall("prog_array", "handler", []uint32{1, 2}),
+				},
+				events.Capabilities{},
+			)),
+		events.ID(2): events.NewDependencyStrategy(
+			events.NewDependencies(
+				[]events.ID{},
+				nil,
+				[]events.Probe{},
+				[]events.TailCall{
+					events.NewTailCall("prog_array", "handler", []uint32{3, 4}),
+				},
+				events.Capabilities{},
+			)),
+	}
+
+	m := NewDependenciesManager(getTestDependenciesFunc(deps))
+
+	// Add first event
+	_, err := m.SelectEvent(events.ID(1))
+	require.NoError(t, err)
+
+	// Add second event with same tailcall map+prog but different indexes
+	_, err = m.SelectEvent(events.ID(2))
+	require.NoError(t, err)
+
+	// Verify merged indexes
+	tailCallNode, err := m.GetTailCall(GetTCKey(events.NewTailCall("prog_array", "handler", []uint32{})))
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []uint32{1, 2, 3, 4}, tailCallNode.GetTailCall().GetIndexes())
 }
