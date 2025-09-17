@@ -15,6 +15,7 @@ import (
 	"go.uber.org/goleak"
 
 	"github.com/aquasecurity/tracee/common/bitwise"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
@@ -31,6 +32,10 @@ func Test_EventFilters(t *testing.T) {
 	// Make sure we don't leak any goroutines since we run Tracee many times in this test.
 	// If a test case fails, ignore the leak since it's probably caused by the aborted test.
 	defer goleak.VerifyNone(t)
+
+	// Setup test logger
+	teardown := testutils.EnableTestLogger(t, logger.InfoLevel)
+	defer teardown()
 
 	// test table
 	tt := []testCase{
