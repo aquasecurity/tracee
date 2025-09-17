@@ -32,6 +32,7 @@ type Manager struct {
 	probes             map[probes.Handle]*ProbeNode
 	onAdd              map[NodeType][]func(node interface{}) []Action
 	onRemove           map[NodeType][]func(node interface{}) []Action
+	onStateChanged     []func() // Watchers called when manager state changes
 	dependenciesGetter func(events.ID) events.DependencyStrategy
 	// Track failed probes and events to prevent issues such as incorrect fallback handling,
 	// duplicate processing, or inconsistent state when dependencies are shared between events.
@@ -48,6 +49,7 @@ func NewDependenciesManager(dependenciesGetter func(events.ID) events.Dependency
 		probes:             make(map[probes.Handle]*ProbeNode),
 		onAdd:              make(map[NodeType][]func(node interface{}) []Action),
 		onRemove:           make(map[NodeType][]func(node interface{}) []Action),
+		onStateChanged:     make([]func(), 0),
 		dependenciesGetter: dependenciesGetter,
 		failedProbes:       make(map[probes.Handle]struct{}),
 		failedEvents:       make(map[events.ID]struct{}),
@@ -71,6 +73,17 @@ func (m *Manager) SubscribeRemove(subscribeType NodeType, onRemove func(node int
 	defer m.mu.Unlock()
 
 	m.onRemove[subscribeType] = append([]func(node interface{}) []Action{onRemove}, m.onRemove[subscribeType]...)
+}
+
+// SubscribeStateChange adds a watcher function called when the manager's dependency tree changes.
+// State change watchers are called in the order of their subscription.
+// They are invoked only when nodes are actually added/removed from the tree or when fallbacks are applied.
+// Changes to the "explicitly selected" status of existing nodes do not trigger these watchers.
+func (m *Manager) SubscribeStateChange(onStateChanged func()) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.onStateChanged = append(m.onStateChanged, onStateChanged)
 }
 
 // GetEvent returns the dependencies of the given event.
@@ -105,7 +118,19 @@ func (m *Manager) SelectEvent(id events.ID) (*EventNode, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	return m.buildEvent(id, nil)
+	existingNode := m.getEventNode(id)
+
+	node, err := m.buildEvent(id, nil)
+	if err != nil {
+		return node, err
+	}
+
+	// Only trigger state change if this was a new node added to the tree
+	if existingNode == nil {
+		m.triggerStateChanged()
+	}
+
+	return node, err
 }
 
 // UnselectEvent marks the event as not explicitly selected.
@@ -120,8 +145,15 @@ func (m *Manager) UnselectEvent(id events.ID) bool {
 	if node == nil {
 		return false
 	}
+
 	node.unmarkAsExplicitlySelected()
 	removed := m.cleanUnreferencedEventNode(node)
+
+	// Only trigger state change if the node was actually removed from the tree
+	if removed {
+		m.triggerStateChanged()
+	}
+
 	return removed
 }
 
@@ -136,7 +168,12 @@ func (m *Manager) RemoveEvent(id events.ID) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	return m.removeEvent(id)
+	err := m.removeEvent(id)
+	if err == nil {
+		m.triggerStateChanged()
+	}
+
+	return err
 }
 
 // removeEvent removes the given event from the tree.
@@ -398,6 +435,14 @@ func (m *Manager) triggerOnRemove(node interface{}) {
 	}
 }
 
+// triggerStateChanged triggers all state change watchers.
+// This is called when the manager's state has actually changed.
+func (m *Manager) triggerStateChanged() {
+	for _, onStateChanged := range m.onStateChanged {
+		onStateChanged()
+	}
+}
+
 func getNodeType(node interface{}) (NodeType, error) {
 	switch node.(type) {
 	case *EventNode:
@@ -500,7 +545,15 @@ func (m *Manager) FailEvent(id events.ID) (bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	return m.failEvent(id)
+	removed, err := m.failEvent(id)
+	// Always trigger state change on successful FailEvent since either:
+	// 1. Event was removed (state changed), or
+	// 2. Fallback was applied (dependencies changed, state changed)
+	if err == nil {
+		m.triggerStateChanged()
+	}
+
+	return removed, err
 }
 
 // failEvent attempts to switch the given event dependencies to its next available fallback ones.
@@ -589,6 +642,7 @@ func (m *Manager) FailProbe(handle probes.Handle) error {
 	m.failedProbes[handle] = struct{}{}
 
 	m.removeProbe(handle)
+	m.triggerStateChanged()
 
 	return nil
 }
