@@ -6980,7 +6980,7 @@
 <h3 id="6-generate-protobuf-files">6. Generate Protobuf Files<a class="headerlink" href="#6-generate-protobuf-files" title="Permanent link">&para;</a></h3>
 <p><strong>After modifying any <code>.proto</code> files, regenerate the Go code:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Generate protobuf Go files from proto definitions</span>
-make<span class="w"> </span>protoc
+make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.protoc
 </code></pre></div>
 <p>This command uses <code>protoc</code> to generate:
 - Go structs from protobuf messages
@@ -7004,7 +7004,7 @@ make<span class="w"> </span>protoc
 1. Add the type definition to <code>api/v1beta1/event_data.proto</code>
 2. Add the field to the <code>EventValue</code> oneof
 3. Implement conversion logic in <code>event_data.go</code>
-4. Run <code>make protoc</code> to regenerate files</p>
+4. Run <code>make -f builder/Makefile.protoc</code> to regenerate files</p>
 <h2 id="testing-your-new-event">Testing Your New Event<a class="headerlink" href="#testing-your-new-event" title="Permanent link">&para;</a></h2>
 <h3 id="8-build-and-test-compilation">8. Build and Test Compilation<a class="headerlink" href="#8-build-and-test-compilation" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Build Tracee with your changes</span>
@@ -7074,7 +7074,7 @@ make<span class="w"> </span>test-integration
 - Verify event IDs don't conflict
 - Check eBPF program section names match probe configuration
 - Ensure all required headers are included
-- Run <code>make protoc</code> after modifying proto files</p>
+- Run <code>make -f builder/Makefile.protoc</code> after modifying proto files</p>
 <p><strong>Protobuf/gRPC Issues:</strong>
 - Event ID mismatches between Go, eBPF, and protobuf
 - Missing entry in EventTranslationTable

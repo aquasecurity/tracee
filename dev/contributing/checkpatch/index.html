@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#checkpatch-script" class="md-skip">
+        <a href="#code-quality-guide" class="md-skip">
           Skip to content
         </a>
       
@@ -6033,10 +6033,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#detailed-usage" class="md-nav__link">
+  <a href="#all-available-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Detailed Usage
+        All Available Commands
       
     </span>
   </a>
@@ -6205,10 +6205,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#development-workflow" class="md-nav__link">
+  <a href="#recommended-development-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Development Workflow
+        Recommended Development Workflow
       
     </span>
   </a>
@@ -6645,10 +6645,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#detailed-usage" class="md-nav__link">
+  <a href="#all-available-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Detailed Usage
+        All Available Commands
       
     </span>
   </a>
@@ -6817,10 +6817,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#development-workflow" class="md-nav__link">
+  <a href="#recommended-development-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Development Workflow
+        Recommended Development Workflow
       
     </span>
   </a>
@@ -6910,8 +6910,8 @@
 
 
 
-<h1 id="checkpatch-script">Checkpatch Script<a class="headerlink" href="#checkpatch-script" title="Permanent link">&para;</a></h1>
-<p>The checkpatch script (<code>scripts/checkpatch.sh</code>) is the <strong>comprehensive PR verification tool</strong> for Tracee development. It has been integrated with the existing <code>make check-pr</code> command to provide a unified, enhanced experience for all developers.</p>
+<h1 id="code-quality-guide">Code Quality Guide<a class="headerlink" href="#code-quality-guide" title="Permanent link">&para;</a></h1>
+<p>This guide covers all code quality tools and checks for Tracee development. The checkpatch script (<code>scripts/checkpatch.sh</code>) powers the <code>make check-pr</code> command and provides comprehensive PR verification for all developers.</p>
 <h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
 <p>This script now <strong>powers the official <code>make check-pr</code> command</strong> and includes all necessary checks for PR submission:
 - <strong>Documentation verification</strong>: Man page synchronization checks
@@ -6934,11 +6934,24 @@ make<span class="w"> </span>check-pr-skip-tests<span class="w">        </span><s
 ./scripts/checkpatch.sh<span class="w"> </span>--skip-unit-tests<span class="w"> </span><span class="c1"># Skip time-consuming tests</span>
 ./scripts/checkpatch.sh<span class="w"> </span>--help<span class="w">            </span><span class="c1"># Show all options</span>
 </code></pre></div>
-<h3 id="detailed-usage">Detailed Usage<a class="headerlink" href="#detailed-usage" title="Permanent link">&para;</a></h3>
-<p>The script can be run from the repository root using:
-- <strong>Make targets</strong> (recommended): <code>make check-pr</code>, <code>make check-pr-fast</code>, etc.
-- <strong>Direct script</strong>: <code>./scripts/checkpatch.sh [OPTIONS] [commit-ref]</code>
-- <strong>ARGS approach</strong>: <code>make check-pr ARGS="--fast --skip-docs HEAD~1"</code></p>
+<h3 id="all-available-commands">All Available Commands<a class="headerlink" href="#all-available-commands" title="Permanent link">&para;</a></h3>
+<p><strong>Primary Make Targets (Recommended):</strong>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>check-pr<span class="w">                   </span><span class="c1"># Full comprehensive checks (recommended for PR submission)</span>
+make<span class="w"> </span>check-pr-fast<span class="w">              </span><span class="c1"># Quick checks (skip static analysis + unit tests)</span>
+make<span class="w"> </span>check-pr-skip-docs<span class="w">         </span><span class="c1"># Skip documentation verification</span>
+make<span class="w"> </span>check-pr-skip-tests<span class="w">        </span><span class="c1"># Skip unit tests</span>
+make<span class="w"> </span>format-pr<span class="w">                  </span><span class="c1"># Show what formatting changes are needed</span>
+make<span class="w"> </span>fix-fmt<span class="w">                   </span><span class="c1"># Automatically fix code formatting issues</span>
+</code></pre></div></p>
+<p><strong>Individual Check Commands:</strong>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.checkers<span class="w"> </span>fmt-check<span class="w">     </span><span class="c1"># Check code formatting only</span>
+make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.checkers<span class="w"> </span>fmt-fix<span class="w">       </span><span class="c1"># Fix code formatting automatically</span>
+make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.checkers<span class="w"> </span>code-check<span class="w">    </span><span class="c1"># Static code analysis only</span>
+</code></pre></div></p>
+<p><strong>Direct Script Usage (Advanced):</strong>
+<div class="highlight"><pre><span></span><code>./scripts/checkpatch.sh<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>commit-ref<span class="o">]</span><span class="w">  </span><span class="c1"># Direct script access</span>
+make<span class="w"> </span>check-pr<span class="w"> </span><span class="nv">ARGS</span><span class="o">=</span><span class="s2">&quot;--fast --skip-docs HEAD~1&quot;</span><span class="w">  </span><span class="c1"># Pass arguments through make</span>
+</code></pre></div></p>
 <h2 id="test-categories">Test Categories<a class="headerlink" href="#test-categories" title="Permanent link">&para;</a></h2>
 <h3 id="1-documentation-verification">1. Documentation Verification<a class="headerlink" href="#1-documentation-verification" title="Permanent link">&para;</a></h3>
 <ul>
@@ -7003,12 +7016,17 @@ make<span class="w"> </span>check-pr-fast<span class="w"> </span><span class="o"
 </code></pre></div>
 <h3 id="ide-integration">IDE Integration<a class="headerlink" href="#ide-integration" title="Permanent link">&para;</a></h3>
 <p>Many IDEs can be configured to run external scripts. Configure your IDE to run <code>make check-pr-fast</code> or <code>./scripts/checkpatch.sh</code> as a build or test step.</p>
-<h3 id="development-workflow">Development Workflow<a class="headerlink" href="#development-workflow" title="Permanent link">&para;</a></h3>
-<p>Recommended workflow:
-1. Make your changes
-2. Run <code>make check-pr-fast</code> for quick validation (or <code>make check-pr</code> for full checks)
-3. Fix any issues found
-4. Commit and push with confidence</p>
+<h3 id="recommended-development-workflow">Recommended Development Workflow<a class="headerlink" href="#recommended-development-workflow" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Make your changes</strong></li>
+<li><strong>Quick validation</strong>: Run <code>make check-pr-fast</code> for immediate feedback</li>
+<li><strong>Fix any issues</strong>: Use <code>make fix-fmt</code> for formatting or address other issues manually</li>
+<li><strong>Full validation</strong>: Run <code>make check-pr</code> before PR submission</li>
+<li><strong>Commit and push</strong> with confidence</li>
+</ol>
+<p><strong>Integration Options:</strong>
+- <strong>Pre-commit hook</strong>: Add <code>make check-pr-fast || exit 1</code> to <code>.git/hooks/pre-commit</code>
+- <strong>IDE integration</strong>: Configure your IDE to run <code>make check-pr-fast</code> as a build step</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
 <p><strong>Missing Tools Warning</strong>
@@ -7019,11 +7037,15 @@ make<span class="w"> </span>check-pr-fast<span class="w"> </span><span class="o"
 <div class="highlight"><pre><span></span><code>✗ Documentation verification failed
 - tracee.1.md change requires corresponding tracee.1 change
 </code></pre></div>
-<em>Solution</em>: Run <code>make -f builder/Makefile.man man-run</code> to regenerate man pages.</p>
+<em>Solution</em>: Run <code>make -f builder/Makefile.man</code> to regenerate man pages.</p>
 <p><strong>Formatting Issues</strong>
 <div class="highlight"><pre><span></span><code>✗ Go formatting issues found:
 </code></pre></div>
-<em>Solution</em>: Run <code>gofmt -w .</code> to fix formatting automatically.</p>
+<em>Solution</em>: Run <code>make fix-fmt</code> or <code>make -f builder/Makefile.checkers fmt-fix</code> to fix formatting automatically.</p>
+<p><strong>Protocol Buffer Issues</strong>
+<div class="highlight"><pre><span></span><code>✗ Protobuf files need regeneration
+</code></pre></div>
+<em>Solution</em>: Run <code>make -f builder/Makefile.protoc</code> to regenerate Go code from <code>.proto</code> files.</p>
 <h3 id="performance-tips">Performance Tips<a class="headerlink" href="#performance-tips" title="Permanent link">&para;</a></h3>
 <ul>
 <li>The script fetches <code>origin/main</code> with <code>--depth=1</code> for efficiency</li>

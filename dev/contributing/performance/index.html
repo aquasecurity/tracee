@@ -6302,8 +6302,8 @@
 <h1 id="performance-considerations">Performance Considerations<a class="headerlink" href="#performance-considerations" title="Permanent link">&para;</a></h1>
 <ol>
 <li>
-<p><strong>Profiling Tracee for Performance test</strong> - Tracee integrates with Pyroscope and Pprof for continuous profiling. When running Tracee locally for development or testing, use the <code>--pyroscope --pprof</code> command-line option.</p>
-<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--pyroscope<span class="w"> </span>--pprof
+<p><strong>Profiling Tracee for Performance test</strong> - Tracee integrates with Pyroscope and Pprof for continuous profiling. When running Tracee locally for development or testing, use the <code>--server pyroscope --server pprof</code> command-line options.</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--server<span class="w"> </span>pyroscope<span class="w"> </span>--server<span class="w"> </span>pprof
 </code></pre></div>
 <p>This enables profiling data to be sent to a local server. The Tracee repository includes a convenient way to deploy a performance dashboard for analyzing this data. Run the following for more details:</p>
 <div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.performance<span class="w"> </span><span class="nb">help</span>

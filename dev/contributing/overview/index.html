@@ -6671,28 +6671,6 @@ docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </
 </code></pre></div>
 <p>Development images are built daily from the <code>main</code> branch and include the latest features and fixes. See <a href="../building/building/#development-images">Building Documentation</a> for complete details.</p>
 <h3 id="development-workflows">Development Workflows<a class="headerlink" href="#development-workflows" title="Permanent link">&para;</a></h3>
-<p>Tracee provides several <code>make</code> targets to streamline development:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Quick development checks before committing</span>
-make<span class="w"> </span>check-pr<span class="w">              </span><span class="c1"># Run all code quality checks for PR submission</span>
-make<span class="w"> </span>format-pr<span class="w">             </span><span class="c1"># Show what formatting changes are needed</span>
-make<span class="w"> </span>fix-fmt<span class="w">               </span><span class="c1"># Automatically fix code formatting</span>
-
-<span class="c1"># Testing workflows</span>
-make<span class="w"> </span>test-unit<span class="w">             </span><span class="c1"># Run unit tests with coverage</span>
-make<span class="w"> </span>test-types<span class="w">            </span><span class="c1"># Run tests for the types module</span>
-make<span class="w"> </span>test-common<span class="w">           </span><span class="c1"># Run tests for the common module</span>
-make<span class="w"> </span>test-integration<span class="w">      </span><span class="c1"># Run integration tests</span>
-
-<span class="c1"># Development builds</span>
-make<span class="w"> </span>all<span class="w">                   </span><span class="c1"># Build all components (tracee-ebpf, tracee-rules, signatures)</span>
-make<span class="w"> </span>tracee<span class="w">                </span><span class="c1"># Build the main tracee binary</span>
-make<span class="w"> </span>bpf<span class="w">                   </span><span class="c1"># Build just the eBPF object</span>
-
-<span class="c1"># Code analysis and debugging</span>
-make<span class="w"> </span>bear<span class="w">                  </span><span class="c1"># Generate compile_commands.json for IDE integration</span>
-<span class="nv">DEBUG</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>make<span class="w">              </span><span class="c1"># Build with debug symbols</span>
-<span class="nv">METRICS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>make<span class="w">            </span><span class="c1"># Build with BPF metrics enabled</span>
-</code></pre></div>
 <p><strong>Quick Start for Development:</strong>
 <div class="highlight"><pre><span></span><code><span class="c1"># 1. Check your environment</span>
 make<span class="w"> </span>env
@@ -6706,7 +6684,18 @@ make<span class="w"> </span>test-unit
 <span class="c1"># 4. Check code quality before submitting PR</span>
 make<span class="w"> </span>check-pr
 </code></pre></div></p>
-<p>For a complete list of available targets, run <code>make help</code>.</p>
+<p><strong>Common Development Tasks:</strong>
+<div class="highlight"><pre><span></span><code><span class="c1"># Development builds</span>
+make<span class="w"> </span>tracee<span class="w">                </span><span class="c1"># Build the main tracee binary</span>
+make<span class="w"> </span>bpf<span class="w">                   </span><span class="c1"># Build just the eBPF object</span>
+make<span class="w"> </span>all<span class="w">                   </span><span class="c1"># Build all components</span>
+
+<span class="c1"># Testing</span>
+make<span class="w"> </span>test-unit<span class="w">             </span><span class="c1"># Run unit tests with coverage</span>
+make<span class="w"> </span>test-integration<span class="w">      </span><span class="c1"># Run integration tests</span>
+</code></pre></div></p>
+<p>For detailed information about code quality checks, dependencies, and troubleshooting, see our <a href="../checkpatch/">Code Quality Guide</a>.</p>
+<p>For complete build options and development environment setup, run <code>make help</code> or see <a href="../building/building/">Building Documentation</a>.</p>
 <h2 id="code">Code<a class="headerlink" href="#code" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Follow Golang's code review standards: <a href="https://github.com/golang/go/wiki/CodeReviewComments">https://github.com/golang/go/wiki/CodeReviewComments</a></li>

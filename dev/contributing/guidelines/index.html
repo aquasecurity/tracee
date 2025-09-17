@@ -6529,52 +6529,24 @@ Check that everything is as you intended.</p>
 <p>We welcome contributions to Tracee's codebase! Before submitting your changes, please familiarize yourself with these guidelines.
 To contribute to the code:</p>
 <h3 id="before-you-commit">Before You Commit<a class="headerlink" href="#before-you-commit" title="Permanent link">&para;</a></h3>
-<p>Tracee relies on several generated files and has strict formatting requirements. Ensure you run the following commands before committing:</p>
-<p><strong><code>NOTE:</code></strong> In order to not depend on the host's library versions, we recommend that you always run make and other project dependencies in a virtual environment so the formatting will be aligned with Tracee guidelines</p>
+<p>Before submitting code changes, ensure you follow these essential steps:</p>
 <ol>
+<li><strong>Generated Files</strong>: If you've modified certain types of files, regenerate the corresponding outputs:</li>
+<li><strong>Man pages</strong>: Run <code>make -f builder/Makefile.man</code> if you changed core code or documentation</li>
 <li>
-<p>Man Pages Generation: If you've modified core code or documentation that impacts the man pages, run:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.man
-</code></pre></div>
-<p>This regenerates the man pages to reflect your changes.</p>
+<p><strong>Protocol buffers</strong>: Run <code>make -f builder/Makefile.protoc</code> if you modified <code>.proto</code> files</p>
 </li>
 <li>
-<p>Protocol Buffer Compilation: If your changes involve modifications to protocol buffer (<code>.proto</code>) files, run:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.man
-</code></pre></div>
-<p>This regenerates the corresponding Go code.</p>
-</li>
-<li>
-<p>Pre-commit checks: Every time you're about to create a pull request, execute:</p>
-<p><strong><code>NOTE:</code></strong>  If your host machine dependencies don't align with Tracee dependencies, this command has to run on a supported <a href="../building/environment/">environment</a></p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>check-pr
-</code></pre></div>
-<p>This command performs essential checks:
-- <code>check-fmt</code>: Verifies code formatting adheres to project standards.
-- <code>check-lint</code>: Runs linting tools (e.g., <code>golangci-lint</code>) to catch potential issues.
-- <code>check-code</code>: Performs static code analysis for both Go and C code.
-- <code>format-pr</code>: Displays the commits in your PR in a standardized format.</p>
-<p><strong>Note:</strong> <code>check-fmt</code>,<code>check-lint</code>,<code>check-code</code>,<code>format-pr</code> are individual make command combined under <code>check-pr</code>. You can run the following command without any vm using Makefile</p>
-<ul>
-<li>
-<p>For <code>check-fmt</code>:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.checkers<span class="w"> </span>fmt-check
-</code></pre></div>
-</li>
-<li>
-<p>For <code>check-code</code>:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.checkers<span class="w"> </span>code-check
-</code></pre></div>
-</li>
-</ul>
-</li>
-<li>
-<p>Fixing Code Formatting: If <code>check-fmt</code> reports issues, use:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>builder/Makefile.checkers<span class="w"> </span>fmt-fix
-</code></pre></div>
-<p>This automatically formats your Go and C code to meet project standards. Review the changes with <code>git status -s</code> before committing.</p>
+<p><strong>Code Quality</strong>: Run comprehensive code quality checks:
+   <div class="highlight"><pre><span></span><code>make<span class="w"> </span>check-pr
+</code></pre></div></p>
 </li>
 </ol>
+<p>This verifies formatting, runs linting, performs static analysis, and validates your changes meet project standards.</p>
+<ol>
+<li><strong>Development Environment</strong>: For consistent results, use a supported <a href="../building/environment/">development environment</a> when running checks.</li>
+</ol>
+<p>For detailed information about these tools, troubleshooting, and advanced options, see our comprehensive <a href="../checkpatch/">Code Quality Guide</a>.</p>
 <h3 id="performance-considerations">Performance Considerations<a class="headerlink" href="#performance-considerations" title="Permanent link">&para;</a></h3>
 <p>Performance is a critical aspect of Tracee.</p>
 <p>To ensure your contributions maintain optimal performance, follow the guidelines in <a href="../performance/">Performance Considerations</a> page.</p>

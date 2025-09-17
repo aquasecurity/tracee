@@ -6319,10 +6319,13 @@
 <h1 id="health-monitoring">Health Monitoring<a class="headerlink" href="#health-monitoring" title="Permanent link">&para;</a></h1>
 <p>Tracee can expose a <code>/healthz</code> endpoint that returns <code>OK</code> if the everything is healthy. This is a <a href="https://kubernetes.io/docs/reference/using-api/health-checks/">common pattern</a> in Cloud Native and Kubernetes applications.  </p>
 <p>Health monitoring endpoint is disabled by default, and can be enabled with the configuration:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">healthz</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<div class="highlight"><pre><span></span><code><span class="nt">server</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">healthz</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
 <p>By default port <code>3366</code> is used. It can be customized with the configuration:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">listen-addr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1234</span>
+<div class="highlight"><pre><span></span><code><span class="nt">server</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">http-address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">:1234</span>
+<span class="w">  </span><span class="nt">healthz</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
 
 
