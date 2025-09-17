@@ -154,6 +154,7 @@ typedef struct event_context {
     X(MULTIPLE_FALLBACKS_TEST, )                                                                   \
     X(SHARED_PROBE_EVENT_A, )                                                                      \
     X(SHARED_PROBE_EVENT_B, )                                                                      \
+    X(LSM_TEST, )                                                                                  \
     // ...
 
 #ifndef EXTENDED_BUILD

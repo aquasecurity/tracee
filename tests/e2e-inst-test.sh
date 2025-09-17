@@ -13,7 +13,7 @@ SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
 
 # Default test to run if no other is given
-TESTS=${INSTTESTS:=VFS_WRITE CONTAINERS_DATA_SOURCE WRITABLE_DATA_SOURCE DNS_DATA_SOURCE PROCTREE_DATA_SOURCE PROCESS_EXECUTE_FAILED}
+TESTS=${INSTTESTS:=VFS_WRITE CONTAINERS_DATA_SOURCE WRITABLE_DATA_SOURCE DNS_DATA_SOURCE PROCTREE_DATA_SOURCE PROCESS_EXECUTE_FAILED LSM_TEST}
 
 info_exit() {
     echo -n "INFO: "
@@ -92,6 +92,7 @@ skip_ftrace_hook=0
 skip_security_path_notify=0
 skip_suspicious_syscall_source=0
 skip_stack_pivot=0
+lsm_test_not_supported=0
 
 # Setup tests and skips
 # Some tests might need special setup (like running before tracee)
@@ -151,6 +152,17 @@ for TEST in $TESTS; do
             continue
         fi
         ;;
+    LSM_TEST)
+        # Test LSM BPF support using Tracee's actual BPF loading test
+        info "testing LSM BPF support using actual BPF loading..."
+        if ./dist/lsm-check -q; then
+            info "LSM BPF support confirmed - test will run normally"
+        else
+            info "skip lsm_test on kernel $(uname -r) (LSM BPF not supported)"
+            lsm_test_not_supported=1
+            continue
+        fi
+        ;;
     esac
 done
 
@@ -160,6 +172,7 @@ tracee_command="./dist/tracee \
                     --output option:sort-events \
                     --output option:parse-arguments \
                     --output json:$outputfile \
+                    --log debug \
                     --log file:$logfile \
                     --signatures-dir "$SIG_DIR" \
                     --dnscache enable \
@@ -196,7 +209,7 @@ if [[ $timedout -eq 1 ]]; then
     info "$TEST: timed out"
     info "$TEST: FAILED. ERRORS:"
     info
-    cat $logfile
+    grep -E 'L":"(ERROR|WARN|FATAL)' "$logfile"
 
     anyerror="${anyerror}$TEST,"
     exit 1
@@ -250,6 +263,7 @@ info "= CHECKING TESTS RESULTS ======================================"
 info
 # Check if the test has failed or not
 for TEST in $TESTS; do
+    found=0  # Initialize for each test iteration
 
     if [[ $skip_hooked_syscall -eq 1 && $TEST == "HOOKED_SYSCALL" ]]; then
         info "skipped $TEST test"
@@ -271,9 +285,26 @@ for TEST in $TESTS; do
         info "skipped $TEST test"
         continue
     fi
-
-    found=0
-    cat $outputfile | jq .eventName | grep -q "$TEST" && found=1
+    if [[ $lsm_test_not_supported -eq 1 && $TEST == "LSM_TEST" ]]; then
+        # LSM not supported - check for probe cancellation instead of events
+        found=0
+        if grep -q "Probe failed due to incompatible probe" $logfile && \
+           grep -q 'Failing event.*lsm_test' $logfile; then
+            # Verify event is not present in output (should not be)
+            if ! cat $outputfile | jq .eventName | grep -q "$TEST"; then
+                found=1
+                info "LSM not supported: verified probe cancellation and event not present"
+            else
+                info "LSM not supported: probe cancellation found, but event present in output (unexpected)"
+            fi
+        else
+            info "LSM not supported: probe cancellation message not found"
+        fi
+    else
+        # Normal test: look for events in output
+        cat $outputfile | jq .eventName | grep -q "$TEST" && found=1
+    fi
+    
     errors=$(cat $logfile | wc -l 2>/dev/null)
 
     if [[ $TEST == "BPF_ATTACH" ]]; then
@@ -287,7 +318,7 @@ for TEST in $TESTS; do
         anyerror="${anyerror}$TEST,"
 
         info "$TEST: FAILED, stderr from tracee:"
-        cat $logfile
+        grep -E 'L":"(ERROR|WARN|FATAL)' "$logfile"
 
         info "$TEST: FAILED, events from tracee:"
         cat $outputfile

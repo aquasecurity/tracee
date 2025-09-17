@@ -197,6 +197,7 @@ const (
 	MultipleFallbacksTest
 	SharedProbeEventA
 	SharedProbeEventB
+	LsmTest
 )
 
 //
@@ -15187,5 +15188,21 @@ var CoreEvents = map[ID]Definition{
 				},
 			},
 		},
+	},
+	LsmTest: {
+		id:      LsmTest,
+		id32Bit: Sys32Undefined,
+		name:    "lsm_test",
+		version: NewVersion(1, 0, 0),
+		syscall: false,
+		sets:    []string{"tests", "lsm"},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.LsmTest, required: true},
+				},
+			},
+		},
+		fields: []DataField{},
 	},
 }
