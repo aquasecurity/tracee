@@ -1,0 +1,24 @@
+name: Test Go Module
+description: |
+  Run comprehensive tests for a Go module including unit tests, verification, and build
+inputs:
+  module-name:
+    description: 'Name of the module being tested (for logging purposes)'
+    required: true
+  working-directory:
+    description: 'Working directory for the module'
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Run Go Module Test Suite
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "Testing ${{ inputs.module-name }} module..."
+        # Standard Go module test suite
+        go test -short -race -shuffle on -failfast -v ./...
+        go mod verify
+        go mod tidy -diff
+        go build ./...
+        echo "${{ inputs.module-name }} testing completed successfully"
+      shell: sh

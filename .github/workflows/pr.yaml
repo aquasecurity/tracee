@@ -182,13 +182,16 @@ jobs:
           make clean
           make e2e-inst-signatures
   #
-  # MODULE TESTS (CONDITIONAL)
+  # CHANGE DETECTION (CENTRALIZED)
   #
-  test-modules:
-    name: Test Go Modules (Conditional)
+  detect-changes:
+    name: Detect Changes
     runs-on: ubuntu-latest
-    container:
-      image: alpine/git
+    outputs:
+      main: ${{ steps.detect.outputs.main }}
+      types: ${{ steps.detect.outputs.types }}
+      common: ${{ steps.detect.outputs.common }}
+      api: ${{ steps.detect.outputs.api }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -197,12 +200,8 @@ jobs:
           fetch-depth: 0
       - name: Fix Git ownership
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
-        shell: sh
-      - name: Install Dependencies
-        run: ./scripts/installation/install-deps-alpine.sh
-        shell: sh
       - name: Detect Changes
-        id: detect-changes
+        id: detect
         run: |
           # Get changed files using git (conventional approach)
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
@@ -235,47 +234,114 @@ jobs:
           else
             echo "api=false" >> $GITHUB_OUTPUT
           fi
+  #
+  # MODULE TESTS
+  #
+  test-modules:
+    name: Go Modules Unit Tests (x86_64)
+    needs:
+      - detect-changes
+    if: needs.detect-changes.outputs.main != 'true'
+    runs-on: ubuntu-latest
+    container:
+      image: alpine/git
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ env.TRACEE_REF }}
+          fetch-depth: 0
+      - name: Fix Git ownership
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+        shell: sh
+      - name: Install Dependencies
+        run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
       - name: Test Types Module
-        if: steps.detect-changes.outputs.types == 'true' && steps.detect-changes.outputs.main != 'true'
-        working-directory: ./types
-        run: |
-          echo "Testing types module..."
-          go test -short -race -shuffle on -failfast -v ./...
-          go mod verify
-          go mod tidy -diff
-          go build ./...
-        shell: sh
+        if: needs.detect-changes.outputs.types == 'true'
+        uses: ./.github/actions/test-go-module
+        with:
+          module-name: 'types'
+          working-directory: './types'
 
       - name: Test Common Module
-        if: steps.detect-changes.outputs.common == 'true' && steps.detect-changes.outputs.main != 'true'
-        working-directory: ./common
-        run: |
-          echo "Testing common module..."
-          go test -short -race -shuffle on -failfast -v ./...
-          go mod verify
-          go mod tidy -diff
-          go build ./...
-        shell: sh
+        if: needs.detect-changes.outputs.common == 'true'
+        uses: ./.github/actions/test-go-module
+        with:
+          module-name: 'common'
+          working-directory: './common'
 
       - name: Test API Module
-        if: steps.detect-changes.outputs.api == 'true' && steps.detect-changes.outputs.main != 'true'
-        working-directory: ./api
+        if: needs.detect-changes.outputs.api == 'true'
+        uses: ./.github/actions/test-go-module
+        with:
+          module-name: 'api'
+          working-directory: './api'
+
+  test-modules-arm64:
+    name: Go Modules Unit Tests (ARM64)
+    needs:
+      - detect-changes
+    if: needs.detect-changes.outputs.main != 'true'
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: alpine/git
+      volumes:
+        - /opt:/opt:rw,rshared
+        # The following volume mount is a workaround for GitHub Actions runner limitations.
+        # Some GitHub-hosted runners expect Node.js to be available at /__e/node20, which is not present in the base container.
+        # This mapping provides Node.js from the host's /opt directory to the expected location in the container.
+        # WARNING: This creates a fragile dependency on the runner's internal filesystem layout.
+        # If the runner environment changes, this workflow may break. Consider updating this step if a more robust solution becomes available.
+        - /opt:/__e/node20:ro,rshared
+    steps:
+      - name: Allow Linux musl containers on ARM64 runners
         run: |
-          echo "Testing API module..."
-          go test -short -race -shuffle on -failfast -v ./...
-          go mod verify
-          go mod tidy -diff
-          go build ./...
+          sed -i "/^ID=/s/alpine/NotpineForGHA/" /etc/os-release
+          apk add nodejs --update-cache
+          mkdir /opt/bin
+          ln -s /usr/bin/node /opt/bin/node
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ env.TRACEE_REF }}
+          fetch-depth: 0
+      - name: Fix Git ownership
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
         shell: sh
+      - name: Install Dependencies
+        run: ./scripts/installation/install-deps-alpine.sh
+        shell: sh
+      - name: Test Types Module
+        if: needs.detect-changes.outputs.types == 'true'
+        uses: ./.github/actions/test-go-module
+        with:
+          module-name: 'types (ARM64)'
+          working-directory: './types'
+
+      - name: Test Common Module
+        if: needs.detect-changes.outputs.common == 'true'
+        uses: ./.github/actions/test-go-module
+        with:
+          module-name: 'common (ARM64)'
+          working-directory: './common'
+
+      - name: Test API Module
+        if: needs.detect-changes.outputs.api == 'true'
+        uses: ./.github/actions/test-go-module
+        with:
+          module-name: 'api (ARM64)'
+          working-directory: './api'
 
   #
   # CODE TESTS
   #
   unit-tests:
-    name: Main Module Unit Tests
+    name: Full Unit Tests (x86_64)
     needs:
       - verify-analyze-code
+      - detect-changes
+    if: needs.detect-changes.outputs.main == 'true'
     runs-on: ubuntu-latest
     container:
       image: alpine/git
@@ -289,33 +355,14 @@ jobs:
       - name: Fix Git ownership
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
         shell: sh
-      - name: Detect Changes
-        id: detect-changes
-        run: |
-          # Get changed files using git (conventional approach)
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          echo "Changed files:"
-          echo "$CHANGED_FILES"
-          # Check if main module changed (anything outside types/, common/, api/)
-          if echo "$CHANGED_FILES" | grep -qvE '^(types|common|api)/'; then
-            echo "main=true" >> $GITHUB_OUTPUT
-            echo "Main module changed"
-          else
-            echo "main=false" >> $GITHUB_OUTPUT
-            echo "No main module changes"
-          fi
-        shell: sh
       - name: Install Dependencies
-        if: steps.detect-changes.outputs.main == 'true'
         run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
       - name: Run Full Unit Test Suite
-        if: steps.detect-changes.outputs.main == 'true'
         run: |
-          # Run full test suite including all modules (since main changed)
+          # Run comprehensive test suite for all modules (main + types + common + api)
           make test-unit
       - name: Upload Unit Test Coverage
-        if: steps.detect-changes.outputs.main == 'true'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -324,19 +371,25 @@ jobs:
           name: unit-tests
           fail_ci_if_error: false
       - name: Run Scripts Unit Tests
-        if: steps.detect-changes.outputs.main == 'true'
         run: |
           make run-scripts-test-unit
 
   unit-tests-arm64:
-    name: Unit Tests (ARM64)
+    name: Full Unit Tests (ARM64)
     needs:
       - verify-analyze-code
+      - detect-changes
+    if: needs.detect-changes.outputs.main == 'true'
     runs-on: ubuntu-24.04-arm
     container:
       image: alpine/git
       volumes:
         - /opt:/opt:rw,rshared
+        # The following volume mount is a workaround for GitHub Actions runner limitations.
+        # Some GitHub-hosted runners expect Node.js to be available at /__e/node20, which is not present in the base container.
+        # This mapping provides Node.js from the host's /opt directory to the expected location in the container.
+        # WARNING: This creates a fragile dependency on the runner's internal filesystem layout.
+        # If the runner environment changes, this workflow may break. Consider updating this step if a more robust solution becomes available.
         - /opt:/__e/node20:ro,rshared
     steps:
       - name: Allow Linux musl containers on ARM64 runners
@@ -375,9 +428,11 @@ jobs:
   # INTEGRATION TESTS
   #
   integration-tests:
-    name: Integration Tests
+    name: Integration Tests (x86_64)
     needs:
       - verify-analyze-code
+      - detect-changes
+    if: needs.detect-changes.outputs.main == 'true'
     runs-on: ubuntu-latest
     container:
       image: ubuntu:24.04
@@ -414,6 +469,8 @@ jobs:
     name: Integration Tests (ARM64)
     needs:
       - verify-analyze-code
+      - detect-changes
+    if: needs.detect-changes.outputs.main == 'true'
     runs-on: ubuntu-24.04-arm
     container:
       image: ubuntu:24.04
@@ -453,6 +510,8 @@ jobs:
     name: Performance Tests
     needs:
       - verify-analyze-code
+      - detect-changes
+    if: needs.detect-changes.outputs.main == 'true'
     runs-on: ubuntu-latest
     container:
       image: alpine/git
@@ -477,10 +536,10 @@ jobs:
   #
   generate-matrix:
     name: Generate Test Matrix
-    #needs:
-    #  - verify-signatures
-    #  - verify-tools
+    needs:
+      - detect-changes
     runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.main == 'true'
     outputs:
       matrix01: ${{ steps.set-matrix.outputs.matrix01 }}
     steps:
