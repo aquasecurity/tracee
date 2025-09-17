@@ -26,6 +26,7 @@ const (
 	SyscallEnter
 	SyscallExit
 	Fentry
+	LSM
 	InvalidProbeType
 )
 
@@ -45,6 +46,8 @@ func (t ProbeType) String() string {
 		return "syscall_exit"
 	case Fentry:
 		return "fentry"
+	case LSM:
+		return "lsm"
 	}
 
 	return "invalid"
