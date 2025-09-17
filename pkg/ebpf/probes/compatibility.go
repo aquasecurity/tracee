@@ -6,6 +6,7 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/common/environment"
+	"github.com/aquasecurity/tracee/pkg/ebpf/lsmsupport"
 )
 
 // EnvironmentProvider defines the interface for OS and other environment information needed by probe compatibility checks
@@ -152,7 +153,22 @@ func NewBpfProgramRequirementWithChecker(progType bpf.BPFProgType, checker Progr
 }
 
 // IsCompatible checks if the kernel supports the BPF program type.
-// This check is whether the kernel supports the BPF program type, both by implementation and configuration.
+// For BPF_PROG_TYPE_LSM, it performs additional LSM-specific checks.
 func (b *BpfProgramRequirement) IsCompatible(_ EnvironmentProvider) (bool, error) {
-	return b.checker(b.bpfProgramType)
+	// First check if the BPF program type is supported
+	progTypeSupported, err := b.checker(b.bpfProgramType)
+	if err != nil {
+		return false, err
+	}
+	if !progTypeSupported {
+		return false, nil
+	}
+
+	// Special case for LSM program type - perform additional LSM checks
+	// Use actual BPF LSM loading test for definitive support detection
+	if b.bpfProgramType == bpf.BPFProgTypeLsm {
+		return lsmsupport.IsLsmBpfSupported()
+	}
+
+	return true, nil
 }
