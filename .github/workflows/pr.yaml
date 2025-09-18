@@ -633,7 +633,41 @@ jobs:
             echo "TESTS=${{ env.ARM64_TESTS }}" >> $GITHUB_ENV
           fi
       - name: "Instrumentation Test"
-        run: ./tests/e2e-inst-test.sh
+        run: ./tests/e2e-inst-test.sh --keep-artifacts
+      - name: "Upload E2E Instrumentation Test Artifacts"
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-inst-test-artifacts-${{ matrix.job_name }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            /tmp/tracee-log-*
+            /tmp/output-*
+          retention-days: 7
+          if-no-files-found: warn
+      - name: "Notify About Available Artifacts"
+        if: failure()
+        run: |
+          echo "::notice title=Debug Artifacts Available::E2E Instrumentation test failed. Debug artifacts have been uploaded and can be downloaded from the Summary tab. Look for: e2e-inst-test-artifacts-${{ matrix.job_name }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          echo ""
+          echo "📋 **E2E Instrumentation Test Failed - Debug Information Available**"
+          echo ""
+          echo "🔍 **How to access debug artifacts:**"
+          echo "1. Click on the 'Summary' tab above the jobs list"
+          echo "2. Scroll to the bottom of the Summary page"
+          echo "3. Look for the 'Artifacts' section"
+          echo "4. Download: \`e2e-inst-test-artifacts-${{ matrix.job_name }}-${{ github.run_id }}-${{ github.run_attempt }}\`"
+          echo ""
+          echo "📁 **What's included in the artifacts:**"
+          echo "- **Log file**: Full debug-level logs from Tracee (tracee-log-*)"
+          echo "- **Output file**: JSON events captured during the test (output-*)"
+          echo ""
+          echo "⚠️ **Note**: Artifacts are available for 7 days from upload"
+      - name: "Cleanup E2E Instrumentation Test Artifacts"
+        if: always()
+        run: |
+          # Clean up artifact files from runner filesystem
+          rm -f /tmp/tracee-log-* /tmp/output-* 2>/dev/null || true
+          echo "Cleaned up local artifact files"
       - name: "Network Test"
         run: ./tests/e2e-net-test.sh
       - name: "Kernel Test"
