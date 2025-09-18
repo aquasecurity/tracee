@@ -2,6 +2,7 @@ package probes
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -85,6 +86,29 @@ func mockProgramTypeChecker(supportedTypes map[bpf.BPFProgType]bool, shouldError
 		supported, exists := supportedTypes[progType]
 		if !exists {
 			return false, nil // Unknown program types default to not supported (realistic behavior)
+		}
+		return supported, nil
+	}
+}
+
+// mockHelperSupportChecker creates a mock function for testing helper function support
+func mockHelperSupportChecker(supportedHelpers map[string]bool, shouldError bool, errorMessage string) HelperSupportChecker {
+	return func(progType bpf.BPFProgType, funcID bpf.BPFFunc) (bool, error) {
+		if shouldError {
+			message := errorMessage
+			if message == "" {
+				message = "mock error for testing"
+			}
+			return false, errors.New(message)
+		}
+		if supportedHelpers == nil {
+			return false, errors.New("no BPF helper support configuration provided for testing")
+		}
+		// Create a unique key for the progType + funcID combination
+		key := fmt.Sprintf("%d:%d", progType, funcID)
+		supported, exists := supportedHelpers[key]
+		if !exists {
+			return false, nil // Unknown helpers default to not supported (realistic behavior)
 		}
 		return supported, nil
 	}
@@ -588,6 +612,112 @@ func TestBpfProgramRequirement(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
+}
+
+func TestBPFHelperRequirement(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name            string
+		progType        bpf.BPFProgType
+		funcID          bpf.BPFFunc
+		supportedHelper bool
+		shouldError     bool
+		errorMessage    string
+		expectedResult  bool
+		expectedError   bool
+	}{
+		{
+			name:            "helper function supported",
+			progType:        bpf.BPFProgTypeKprobe,
+			funcID:          bpf.BPFFuncMapLookupElem,
+			supportedHelper: true,
+			expectedResult:  true,
+			expectedError:   false,
+		},
+		{
+			name:            "helper function not supported",
+			progType:        bpf.BPFProgTypeKprobe,
+			funcID:          bpf.BPFFuncMapLookupElem,
+			supportedHelper: false,
+			expectedResult:  false,
+			expectedError:   false,
+		},
+		{
+			name:           "error checking helper function support",
+			progType:       bpf.BPFProgTypeKprobe,
+			funcID:         bpf.BPFFuncMapLookupElem,
+			shouldError:    true,
+			errorMessage:   "failed to check BPF helper function support",
+			expectedResult: false,
+			expectedError:  true,
+		},
+		{
+			name:     "nil supportedHelpers map should error",
+			progType: bpf.BPFProgTypeKprobe,
+			funcID:   bpf.BPFFuncMapLookupElem,
+			// supportedHelpers: nil - should trigger error
+			expectedResult: false,
+			expectedError:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create mock environment provider
+			envProvider := newMockOSInfo("5.4.0", "ubuntu")
+
+			// Create supported helpers map for this test
+			var supportedHelpers map[string]bool
+			if !tt.shouldError && tt.name != "nil supportedHelpers map should error" {
+				key := fmt.Sprintf("%d:%d", tt.progType, tt.funcID)
+				supportedHelpers = map[string]bool{key: tt.supportedHelper}
+			}
+
+			// Create mock checker function
+			mockChecker := mockHelperSupportChecker(supportedHelpers, tt.shouldError, tt.errorMessage)
+
+			// Create BPF helper requirement with mock checker
+			req := NewBPFHelperRequirementWithChecker(tt.progType, tt.funcID, mockChecker)
+			result, err := req.IsCompatible(envProvider)
+
+			if tt.expectedError {
+				assert.Error(t, err)
+				if tt.errorMessage != "" {
+					assert.Contains(t, err.Error(), tt.errorMessage)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func TestBPFHelperRequirement_Constructor(t *testing.T) {
+	t.Parallel()
+
+	progType := bpf.BPFProgTypeKprobe
+	funcID := bpf.BPFFuncMapLookupElem
+
+	// Test basic constructor
+	req := NewBPFHelperRequirement(progType, funcID)
+	assert.NotNil(t, req)
+	assert.Equal(t, progType, req.progType)
+	assert.Equal(t, funcID, req.funcID)
+	assert.NotNil(t, req.checker)
+
+	// Test constructor with custom checker
+	customChecker := func(pt bpf.BPFProgType, fid bpf.BPFFunc) (bool, error) {
+		return true, nil
+	}
+	reqWithChecker := NewBPFHelperRequirementWithChecker(progType, funcID, customChecker)
+	assert.NotNil(t, reqWithChecker)
+	assert.Equal(t, progType, reqWithChecker.progType)
+	assert.Equal(t, funcID, reqWithChecker.funcID)
+	assert.NotNil(t, reqWithChecker.checker)
 }
 
 func TestProbeCompatibility_WithBpfProgramRequirement(t *testing.T) {
