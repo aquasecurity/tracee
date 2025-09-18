@@ -37,7 +37,7 @@ func (c CalcHashesOption) String() string {
 	case CalcHashesNone:
 		return "none"
 	case CalcHashesInode:
-		return "pathname"
+		return "inode"
 	case CalcHashesDevInode:
 		return "dev-inode"
 	case CalcHashesDigestInode:
