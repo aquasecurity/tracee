@@ -6,6 +6,7 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/common/environment"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/ebpf/lsmsupport"
 )
 
@@ -132,6 +133,10 @@ func (m *BPFMapTypeRequirement) IsCompatible(_ EnvironmentProvider) (bool, error
 // This allows tests to inject mock implementations, making BPF compatibility logic testable and decoupled from the environment.
 type ProgramTypeSupportChecker func(progType bpf.BPFProgType) (bool, error)
 
+// HelperSupportChecker is a function type used for dependency injection to check BPF helper function support.
+// This allows tests to inject mock implementations, making BPF compatibility logic testable and decoupled from the environment.
+type HelperSupportChecker func(progType bpf.BPFProgType, funcID bpf.BPFFunc) (bool, error)
+
 // BpfProgramRequirement specifies a requirement for kernel support of a particular BPF program type.
 type BpfProgramRequirement struct {
 	bpfProgramType bpf.BPFProgType
@@ -171,4 +176,46 @@ func (b *BpfProgramRequirement) IsCompatible(_ EnvironmentProvider) (bool, error
 	}
 
 	return true, nil
+}
+
+// BPFHelperRequirement is a requirement that checks if a specific BPF helper function is supported.
+type BPFHelperRequirement struct {
+	progType bpf.BPFProgType
+	funcID   bpf.BPFFunc
+	checker  HelperSupportChecker
+}
+
+// CheckBPFHelperSupportLibbpfgo is a wrapper around BPFHelperIsSupported.
+// BPFHelperIsSupported is expected to reliably indicate whether the helper is supported,
+// provided the process has sufficient privileges. Any error returned provides additional
+// context about issues encountered during the check, but does not affect the support result.
+// Therefore, the error can be safely ignored when determining support.
+func CheckBPFHelperSupportLibbpfgo(progType bpf.BPFProgType, funcID bpf.BPFFunc) (bool, error) {
+	supported, err := bpf.BPFHelperIsSupported(progType, funcID)
+	if err != nil {
+		logger.Debugw("CheckBPFHelperSupportLibbpfgo received error from the kernel (probably expected)", "error", err, "supported", supported)
+	}
+	return supported, nil
+}
+
+// NewBPFHelperRequirement creates a new BPFHelperRequirement.
+func NewBPFHelperRequirement(progType bpf.BPFProgType, funcID bpf.BPFFunc) *BPFHelperRequirement {
+	return &BPFHelperRequirement{
+		progType: progType,
+		funcID:   funcID,
+		checker:  CheckBPFHelperSupportLibbpfgo,
+	}
+}
+
+func NewBPFHelperRequirementWithChecker(progType bpf.BPFProgType, funcID bpf.BPFFunc, checker HelperSupportChecker) *BPFHelperRequirement {
+	return &BPFHelperRequirement{
+		progType: progType,
+		funcID:   funcID,
+		checker:  checker,
+	}
+}
+
+// IsCompatible checks if the BPF helper function is supported.
+func (b *BPFHelperRequirement) IsCompatible(_ EnvironmentProvider) (bool, error) {
+	return b.checker(b.progType, b.funcID)
 }
