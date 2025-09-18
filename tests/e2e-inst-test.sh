@@ -15,6 +15,30 @@ TRACEE_TMP_DIR=/tmp/tracee
 # Default test to run if no other is given
 TESTS=${INSTTESTS:=VFS_WRITE CONTAINERS_DATA_SOURCE WRITABLE_DATA_SOURCE DNS_DATA_SOURCE PROCTREE_DATA_SOURCE PROCESS_EXECUTE_FAILED LSM_TEST}
 
+# Command line options
+KEEP_ARTIFACTS=0
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --keep-artifacts)
+            KEEP_ARTIFACTS=1
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [--keep-artifacts] [--help]"
+            echo "  --keep-artifacts    Don't delete test artifacts (logs and output files) after completion"
+            echo "  --help              Show this help message"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
 info_exit() {
     echo -n "INFO: "
     echo "$@"
@@ -30,6 +54,16 @@ error_exit() {
     echo -n "ERROR: "
     echo "$@"
     exit 1
+}
+
+# Function to filter logs and show only WARN, ERROR, FATAL levels
+filter_critical_logs() {
+    local logfile="$1"
+    if [[ -f "$logfile" ]]; then
+        grep -E "(WARN|ERROR|FATAL)" "$logfile" || echo "No WARN, ERROR, or FATAL logs found"
+    else
+        echo "Log file not found: $logfile"
+    fi
 }
 
 if [[ $UID -ne 0 ]]; then
@@ -209,9 +243,9 @@ if [[ $timedout -eq 1 ]]; then
     info "$TEST: timed out"
     info "$TEST: FAILED. ERRORS:"
     info
-    grep -E 'L":"(ERROR|WARN|FATAL)' "$logfile"
-
     anyerror="${anyerror}$TEST,"
+    filter_critical_logs "$logfile"
+
     exit 1
 fi
 
@@ -317,8 +351,8 @@ for TEST in $TESTS; do
     else
         anyerror="${anyerror}$TEST,"
 
-        info "$TEST: FAILED, stderr from tracee:"
-        grep -E 'L":"(ERROR|WARN|FATAL)' "$logfile"
+        info "$TEST: FAILED, critical logs from tracee:"
+        filter_critical_logs "$logfile"
 
         info "$TEST: FAILED, events from tracee:"
         cat $outputfile
@@ -341,8 +375,14 @@ for TEST in $TESTS; do
 done
 
 # Cleanup leftovers
-rm -f $outputfile
-rm -f $logfile
+if [[ $KEEP_ARTIFACTS -eq 0 ]]; then
+    rm -f $outputfile
+    rm -f $logfile
+else
+    info "Test artifacts preserved:"
+    info "  Output file: $outputfile"
+    info "  Log file: $logfile"
+fi
 rm -rf $TRACEE_TMP_DIR
 
 # Print summary and exit with error if any test failed
