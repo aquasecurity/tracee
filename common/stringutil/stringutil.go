@@ -5,12 +5,12 @@ package stringutil
 // used in suffix matching. It does NOT handle UTF-8 characters properly.
 func ReverseString(s string) string {
 	n := len(s)
-	bytes := make([]byte, n)
+	buf := make([]byte, n)
 
 	for i := 0; i < n; i++ {
-		bytes[n-i-1] = s[i]
+		buf[n-i-1] = s[i]
 	}
-	return string(bytes)
+	return string(buf)
 }
 
 // TrimTrailingNUL returns a subslice of the input with all trailing NUL bytes (0x00) removed.
