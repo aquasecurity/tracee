@@ -653,6 +653,14 @@ func TestBPFHelperRequirement(t *testing.T) {
 			expectedError:  true,
 		},
 		{
+			name:            "unknown helper function defaults to not supported",
+			progType:        bpf.BPFProgType(999), // Unknown program type
+			funcID:          bpf.BPFFunc(999),     // Unknown function ID
+			supportedHelper: false,                // Not in map, should default to false
+			expectedResult:  false,
+			expectedError:   false,
+		},
+		{
 			name:     "nil supportedHelpers map should error",
 			progType: bpf.BPFProgTypeKprobe,
 			funcID:   bpf.BPFFuncMapLookupElem,
