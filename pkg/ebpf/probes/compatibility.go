@@ -132,6 +132,10 @@ func (m *BPFMapTypeRequirement) IsCompatible(_ EnvironmentProvider) (bool, error
 // This allows tests to inject mock implementations, making BPF compatibility logic testable and decoupled from the environment.
 type ProgramTypeSupportChecker func(progType bpf.BPFProgType) (bool, error)
 
+// HelperSupportChecker is a function type used for dependency injection to check BPF helper function support.
+// This allows tests to inject mock implementations, making BPF compatibility logic testable and decoupled from the environment.
+type HelperSupportChecker func(progType bpf.BPFProgType, funcID bpf.BPFFunc) (bool, error)
+
 // BpfProgramRequirement specifies a requirement for kernel support of a particular BPF program type.
 type BpfProgramRequirement struct {
 	bpfProgramType bpf.BPFProgType
@@ -171,4 +175,40 @@ func (b *BpfProgramRequirement) IsCompatible(_ EnvironmentProvider) (bool, error
 	}
 
 	return true, nil
+}
+
+// BPFHelperRequirement is a requirement that checks if a specific BPF helper function is supported.
+type BPFHelperRequirement struct {
+	progType bpf.BPFProgType
+	funcID   bpf.BPFFunc
+	checker  HelperSupportChecker
+}
+
+// NewBPFHelperRequirement creates a new BPFHelperRequirement.
+func NewBPFHelperRequirement(progType bpf.BPFProgType, funcID bpf.BPFFunc) *BPFHelperRequirement {
+	return &BPFHelperRequirement{
+		progType: progType,
+		funcID:   funcID,
+		// Since this code is running with sufficient capabilities, we can safely trust the result of `BPFHelperIsSupported`.
+		// If the helper is reported as supported (`supported == true`), it is assumed to be reliable for use.
+		// If `supported == false`, it indicates that the helper is not available.
+		// The `innerErr` provides information about errors that occurred during the check, regardless of whether `supported`
+		// is true or false.
+		// For a full explanation of the caveats and behavior, refer to:
+		// https://github.com/aquasecurity/libbpfgo/blob/eb576c71ece75930a693b8b0687c5d052a5dbd56/libbpfgo.go#L99-L119
+		checker: bpf.BPFHelperIsSupported,
+	}
+}
+
+func NewBPFHelperRequirementWithChecker(progType bpf.BPFProgType, funcID bpf.BPFFunc, checker HelperSupportChecker) *BPFHelperRequirement {
+	return &BPFHelperRequirement{
+		progType: progType,
+		funcID:   funcID,
+		checker:  checker,
+	}
+}
+
+// IsCompatible checks if the BPF helper function is supported.
+func (b *BPFHelperRequirement) IsCompatible(_ EnvironmentProvider) (bool, error) {
+	return b.checker(b.progType, b.funcID)
 }
