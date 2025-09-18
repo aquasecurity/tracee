@@ -203,7 +203,14 @@ func NewBPFHelperRequirement(progType bpf.BPFProgType, funcID bpf.BPFFunc) *BPFH
 	return &BPFHelperRequirement{
 		progType: progType,
 		funcID:   funcID,
-		checker:  CheckBPFHelperSupportLibbpfgo,
+		// Since this code is running with sufficient capabilities, we can safely trust the result of `BPFHelperIsSupported`.
+		// If the helper is reported as supported (`supported == true`), it is assumed to be reliable for use.
+		// If `supported == false`, it indicates that the helper is not available.
+		// The `innerErr` provides information about errors that occurred during the check, regardless of whether `supported`
+		// is true or false.
+		// For a full explanation of the caveats and behavior, refer to:
+		// https://github.com/aquasecurity/libbpfgo/blob/eb576c71ece75930a693b8b0687c5d052a5dbd56/libbpfgo.go#L99-L119
+		checker: CheckBPFHelperSupportLibbpfgo,
 	}
 }
 
