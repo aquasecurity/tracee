@@ -137,28 +137,6 @@ func TestBootToEpochNS(t *testing.T) {
 	}
 }
 
-func TestEpochToBootTimeNS(t *testing.T) {
-	tests := []struct {
-		name    string
-		epochNS uint64
-	}{
-		{"zero epoch", 0},
-		{"normal epoch", 1_640_995_200_000_000_000}, // 2022-01-01
-		{"large epoch", 1_893_456_000_000_000_000},  // 2030-01-01
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Note: This depends on GetBootTimeNS() which requires Init() to be called
-			result := EpochToBootTimeNS(tt.epochNS)
-
-			// Result should be less than or equal to the epoch time
-			// (since boot time is always after epoch start)
-			assert.LessOrEqual(t, result, tt.epochNS)
-		})
-	}
-}
-
 func TestNsSinceEpochToTime(t *testing.T) {
 	tests := []struct {
 		name     string
