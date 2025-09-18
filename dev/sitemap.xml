@@ -13,6 +13,10 @@
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/contributing/event-documentation-guide/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/guidelines/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
@@ -129,11 +133,67 @@
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/containers/container_create/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lifecycle/cgroup_attach_task/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/containers/container_remove/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lifecycle/cgroup_mkdir/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lifecycle/cgroup_rmdir/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lifecycle/container_create/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lifecycle/container_remove/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lifecycle/do_exit/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lifecycle/existing_container/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lifecycle/init_namespaces/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lifecycle/sched_process_exec/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lifecycle/sched_process_exit/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lifecycle/sched_process_fork/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lifecycle/sched_switch/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lifecycle/switch_task_ns/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/cap_capable/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/security_bpf/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/security_bpf_map/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
@@ -149,7 +209,31 @@
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/security_file_open/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/security_inode_mknod/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/security_inode_rename/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/security_inode_unlink/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/security_kernel_post_read_file/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/security_kernel_read_file/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/security_mmap_file/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
@@ -181,6 +265,14 @@
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/security_socket_create/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/security_socket_listen/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/security_socket_setsockopt/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
@@ -189,15 +281,15 @@
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/__kernel_write/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/bpf_attach/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/cgroup_mkdir/</loc>
-         <lastmod>2025-09-18</lastmod>
-    </url>
-    <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/cgroup_rmdir/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/call_usermodehelper/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
@@ -205,7 +297,39 @@
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/commit_creds/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/debugfs_create_dir/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/debugfs_create_file/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/device_add/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/dirty_pipe_splice/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/do_init_module/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/do_mmap/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/do_sigaction/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/do_truncate/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
@@ -213,7 +337,23 @@
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/hooked_seq_ops/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/inotify_watch/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/kallsyms_lookup_name/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/kprobe_attach/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/load_elf_phdrs/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
@@ -225,11 +365,19 @@
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/print_mem_dump/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/proc_create/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/process_execute_failed/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/sched_process_exec/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/register_chrdev/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
@@ -237,7 +385,23 @@
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/shared_object_loaded/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/socket_accept/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/socket_dup/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/symbols_collision/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/task_rename/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
@@ -250,6 +414,18 @@
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/vfs_readv/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/vfs_utimes/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/vfs_write/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/misc/vfs_writev/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>
@@ -454,6 +630,14 @@
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/security/system_request_key_config_modification/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/syscalls/sys_enter/</loc>
+         <lastmod>2025-09-18</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/syscalls/sys_exit/</loc>
          <lastmod>2025-09-18</lastmod>
     </url>
     <url>

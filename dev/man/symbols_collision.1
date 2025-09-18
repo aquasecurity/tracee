@@ -13,16 +13,6 @@ name, potentially leading to unexpected behavior or security issues.
 The event helps identify cases where a shared object might override
 symbols from another library, which could be either legitimate (e.g.,
 symbol versioning) or malicious (e.g., library hijacking).
-.PP
-This event is useful for:
-.IP \[bu] 2
-\f[B]Library conflict detection\f[R]: Identify symbol naming conflicts
-.IP \[bu] 2
-\f[B]Security monitoring\f[R]: Detect potential library hijacking
-.IP \[bu] 2
-\f[B]Debugging\f[R]: Troubleshoot symbol resolution issues
-.IP \[bu] 2
-\f[B]Quality assurance\f[R]: Verify library compatibility
 .SS EVENT SETS
 \f[B]lsm_hooks\f[R], \f[B]fs\f[R], \f[B]fs_file_ops\f[R],
 \f[B]proc\f[R], \f[B]proc_mem\f[R]
