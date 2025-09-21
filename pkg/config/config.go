@@ -28,6 +28,7 @@ type Config struct {
 	MaxPidsCache        int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BTFObjPath          string
 	BPFObjBytes         []byte
+	BPFObjPath          string // path to the BPF object binary for uprobe attachment (defaults to /proc/self/exe)
 	KernelConfig        *environment.KernelConfig
 	OSInfo              *environment.OSInfo
 	Sockets             runtime.Sockets

@@ -176,4 +176,7 @@ const (
 	EmptyKprobe
 	IncompatibleProbe
 	LsmTest
+	FeaturesFallbackArena
+	FeaturesFallbackHelper
+	FeaturesFallbackMinimal
 )
