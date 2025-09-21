@@ -46,6 +46,7 @@ type Engine struct {
 	stats            metrics.Stats
 	dataSources      map[string]map[string]detect.DataSource
 	dataSourcesMutex sync.RWMutex
+	ctx              context.Context
 }
 
 // EventSources is a bundle of input sources used to configure the Engine
@@ -111,8 +112,9 @@ func (engine *Engine) Init() error {
 // note that the input and output channels are created by the consumer and therefore are not closed
 func (engine *Engine) Start(ctx context.Context) {
 	defer engine.unloadAllSignatures()
+	engine.ctx = ctx
 	logger.Debugw("Starting signature engine")
-	engine.consumeSources(ctx)
+	engine.consumeSources()
 }
 
 func (engine *Engine) unloadAllSignatures() {
@@ -128,7 +130,13 @@ func (engine *Engine) unloadAllSignatures() {
 // matchHandler is a function that runs when a signature is matched
 func (engine *Engine) matchHandler(res *detect.Finding) {
 	_ = engine.stats.Detections.Increment()
-	engine.output <- res
+
+	select {
+	case engine.output <- res:
+	case <-engine.ctx.Done():
+		return
+	}
+
 	// TODO: the feedback here is enabled only in analyze, as it was causing a deadlock in the pipeline
 	//       when the engine was blocked on sending a new event to the feedbacking signature.
 	//       This is because the engine would eventually block on trying to to send
@@ -145,7 +153,12 @@ func (engine *Engine) matchHandler(res *detect.Finding) {
 		return
 	}
 	prot := e.ToProtocol()
-	engine.inputs.Tracee <- prot
+
+	select {
+	case engine.inputs.Tracee <- prot:
+	case <-engine.ctx.Done():
+		return
+	}
 }
 
 // checkCompletion is a function that runs at the end of each input source
@@ -190,7 +203,7 @@ func (engine *Engine) processEvent(event protocol.Event) {
 
 // consumeSources starts consuming the input sources
 // it runs continuously until stopped by the done channel
-func (engine *Engine) consumeSources(ctx context.Context) {
+func (engine *Engine) consumeSources() {
 	for {
 		select {
 		case event, ok := <-engine.inputs.Tracee:
@@ -222,7 +235,7 @@ func (engine *Engine) consumeSources(ctx context.Context) {
 			}
 			engine.processEvent(event)
 
-		case <-ctx.Done():
+		case <-engine.ctx.Done():
 			goto drain
 		}
 	}
