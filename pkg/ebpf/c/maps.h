@@ -743,4 +743,19 @@ struct signals {
 
 typedef struct signals signals_t;
 
+//
+// Test maps for features fallback test
+//
+
+// ARENA map for Level 1 (fentry + ARENA + bpf_get_current_task_btf) - Linux 6.9+
+struct features_test_arena {
+    __uint(type, BPF_MAP_TYPE_ARENA);
+    __uint(max_entries, 1);            // in pages
+    __uint(map_flags, BPF_F_MMAPABLE); // required for ARENA maps
+} features_test_arena SEC(".maps");
+
+typedef struct features_test_arena features_test_arena_t;
+
+// No additional maps needed - testing ARENA only for Level 1
+
 #endif /* __MAPS_H__ */

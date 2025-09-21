@@ -180,10 +180,13 @@ func (p *ProbeGroup) GetProbeByHandle(handle Handle) Probe {
 //   - module: the eBPF module containing the loaded BPF object file.
 //   - netEnabled: set to true to enable network-related probes; set to false to disable them (avoids requiring CAP_NET_ADMIN if not needed).
 //   - defaultAutoload: set to false to disable autoload for all probes by default; probes must then be explicitly enabled.
+//   - binaryPath: path to the binary for uprobe attachment (empty string defaults to /proc/self/exe).
 //
 // Returns the initialized ProbeGroup and any error encountered during initialization.
-func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload bool) (*ProbeGroup, error) {
-	binaryPath := "/proc/self/exe"
+func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload bool, binaryPath string) (*ProbeGroup, error) {
+	if binaryPath == "" {
+		binaryPath = "/proc/self/exe"
+	}
 
 	allProbes := map[Handle]Probe{
 		SysEnter:                   NewTraceProbe(RawTracepoint, "raw_syscalls:sys_enter", "trace_sys_enter"),
@@ -335,6 +338,21 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 			NewKernelVersionRequirement("", "", "0.0.0"), // Requires kernel up to 0.0.0, so kernel version is always incompatible
 		)),
 		LsmTest: NewLsmProgramProbe("file_open", "lsm_file_open_test"),
+
+		// Features fallback test probes - simple 3-level test using self-triggering uprobes
+		// Level 1: uprobe + ARENA map (Linux 6.9+)
+		FeaturesFallbackArena: NewFixedUprobeWithCompatibility(Uprobe, "uprobe__features_fallback_arena", binaryPath, UprobeEventSymbol("github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerFeaturesFallbackTestCall"), NewProbeCompatibility(
+			NewBPFMapTypeRequirement(bpf.MapTypeArena),
+			NewBPFHelperRequirement(bpf.BPFProgTypeKprobe, bpf.BPFFuncGetCurrentTaskBtf),
+		)),
+
+		// Level 2: uprobe + helper (Linux 5.11+)
+		FeaturesFallbackHelper: NewFixedUprobeWithCompatibility(Uprobe, "uprobe__features_fallback_helper", binaryPath, UprobeEventSymbol("github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerFeaturesFallbackTestCall"), NewProbeCompatibility(
+			NewBPFHelperRequirement(bpf.BPFProgTypeKprobe, bpf.BPFFuncGetCurrentTaskBtf),
+		)),
+
+		// Level 3: basic uprobe (universal fallback)
+		FeaturesFallbackMinimal: NewFixedUprobe(Uprobe, "uprobe__features_fallback_minimal", binaryPath, UprobeEventSymbol("github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerFeaturesFallbackTestCall")),
 	}
 
 	// Add extension probes

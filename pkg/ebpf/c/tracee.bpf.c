@@ -7564,3 +7564,75 @@ int BPF_PROG(lsm_file_open_test, struct file *file, const struct cred *cred)
     // We're only monitoring, so always allow the file open operation
     return 0;
 }
+
+//
+// Features Fallback Test Programs
+//
+// Simple 3-level test using uprobe programs (self-triggering):
+//
+// Level 1: uprobe + ARENA map (Linux 6.9+)
+// Level 2: uprobe + helpers (Linux 5.11+)
+// Level 3: basic uprobe (universal fallback)
+//
+
+// Level 1: uprobe + ARENA map (Linux 6.9+)
+SEC("uprobe/features_fallback_test")
+int uprobe__features_fallback_arena(struct pt_regs *ctx)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, FEATURES_FALLBACK_TEST))
+        return 0;
+
+    // Use ARENA map - shared memory between BPF and userspace (6.9+)
+    // The presence of this map in a loadable program indicates ARENA support
+    volatile void *arena_test = (void *) &features_test_arena;
+    (void) arena_test; // Use it to prevent optimization
+
+    // Use bpf_get_current_task_btf helper (5.11+)
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task_btf();
+    (void) task; // Use the helper to test functionality
+
+    // Add argument to indicate this was probe_used_id 1
+    u32 probe_used_id = 1;
+    save_to_submit_buf(&p.event->args_buf, (void *) &probe_used_id, sizeof(u32), 0);
+
+    events_perf_submit(&p, 0);
+    return 0;
+}
+
+// Level 2: uprobe + bpf_get_current_task_btf helper (Linux 5.11+)
+SEC("uprobe/features_fallback_test")
+int uprobe__features_fallback_helper(struct pt_regs *ctx)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, FEATURES_FALLBACK_TEST))
+        return 0;
+
+    // Use bpf_get_current_task_btf helper (5.11+)
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task_btf();
+    (void) task; // Use the helper to test functionality
+
+    // Add argument to indicate this was probe_used_id 2
+    u32 probe_used_id = 2;
+    save_to_submit_buf(&p.event->args_buf, (void *) &probe_used_id, sizeof(u32), 0);
+
+    events_perf_submit(&p, 0);
+    return 0;
+}
+
+// Level 3: basic uprobe (universal fallback)
+SEC("uprobe/features_fallback_test")
+int uprobe__features_fallback_minimal(struct pt_regs *ctx)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, FEATURES_FALLBACK_TEST))
+        return 0;
+
+    // No special features used - minimal uprobe, no special maps, no special helpers
+    // Add argument to indicate this was probe_used_id 3 (minimal fallback)
+    u32 probe_used_id = 3;
+    save_to_submit_buf(&p.event->args_buf, (void *) &probe_used_id, sizeof(u32), 0);
+
+    events_perf_submit(&p, 0);
+    return 0;
+}

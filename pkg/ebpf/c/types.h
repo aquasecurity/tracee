@@ -153,6 +153,7 @@ typedef struct event_context {
     X(SHARED_PROBE_EVENT_A, )                                                                      \
     X(SHARED_PROBE_EVENT_B, )                                                                      \
     X(LSM_TEST, )                                                                                  \
+    X(FEATURES_FALLBACK_TEST, )                                                                    \
     // ...
 
 #ifndef EXTENDED_BUILD

@@ -345,6 +345,7 @@ help::
 	@echo "    $$ make test-types               # run unit tests for types module"
 	@echo "    $$ make test-common              # run unit tests for common module"
 	@echo "    $$ make test-integration         # run integration tests"
+	@echo "    $$ make test-compatibility       # run compatibility and fallback feature tests"
 	@echo ""
 	@echo "# development"
 	@echo ""
@@ -1000,6 +1001,31 @@ test-integration:: \
 		-covermode=atomic \
 		$(if $(TEST),-run $(TEST)) \
 		./tests/integration/... \
+
+
+.PHONY: test-compatibility
+test-compatibility:: \
+	tracee \
+	| .eval_goenv \
+	.checkver_$(CMD_GO)
+#
+	@$(GO_ENV_EBPF) \
+	$(CMD_GO) test \
+		-tags $(GO_TAGS_EBPF) \
+		-ldflags="$(GO_DEBUG_FLAG) \
+			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
+			-X main.version=\"$(VERSION)\" \
+			-s=false -w=false \
+			" \
+		-shuffle on \
+		-timeout 20m \
+		-race \
+		-v \
+		-p 1 \
+		-count=1 \
+		-coverprofile=compatibility-coverage.txt \
+		-covermode=atomic \
+		./tests/compatibility/... \
 
 .PHONY: test-upstream-libbpfgo
 test-upstream-libbpfgo:: \
