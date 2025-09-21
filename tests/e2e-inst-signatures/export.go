@@ -25,6 +25,7 @@ var ExportedSignatures = []detect.Signature{
 	&e2eSuspiciousSyscallSource{},
 	&e2eStackPivot{},
 	&e2eLsm{},
+	&e2eFeaturesFallback{},
 }
 
 var ExportedDataSources = []detect.DataSource{
