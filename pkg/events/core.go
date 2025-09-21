@@ -198,6 +198,7 @@ const (
 	SharedProbeEventA
 	SharedProbeEventB
 	LsmTest
+	FeaturesFallbackTest
 )
 
 //
@@ -15204,5 +15205,39 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		fields: []DataField{},
+	},
+	FeaturesFallbackTest: {
+		id:      FeaturesFallbackTest,
+		id32Bit: Sys32Undefined,
+		name:    "features_fallback_test",
+		version: NewVersion(1, 0, 0),
+		syscall: false,
+		sets:    []string{"tests", "features", "fallback"},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				// Level 1: kprobe + ARENA map (Linux 6.9+)
+				probes: []Probe{
+					{handle: probes.FeaturesFallbackArena, required: true},
+				},
+			},
+			// Define fallback strategy from newest features to oldest
+			fallbacks: []Dependencies{
+				// Level 2: kprobe + helper (Linux 5.11+)
+				{
+					probes: []Probe{
+						{handle: probes.FeaturesFallbackHelper, required: true},
+					},
+				},
+				// Level 3: basic kprobe (universal fallback)
+				{
+					probes: []Probe{
+						{handle: probes.FeaturesFallbackMinimal, required: true},
+					},
+				},
+			},
+		},
+		fields: []DataField{
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "probe_used_id"}},
+		},
 	},
 }

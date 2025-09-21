@@ -290,6 +290,21 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 			NewKernelVersionRequirement("", "", "0.0.0"), // Requires kernel up to 0.0.0, so kernel version is always incompatible
 		)),
 		LsmTest: NewLsmProgramProbe("file_open", "lsm_file_open_test"),
+
+		// Features fallback test probes - simple 3-level test
+		// Level 1: kprobe + ARENA map (Linux 6.9+)
+		FeaturesFallbackArena: NewTraceProbeWithCompatibility(KProbe, "vfs_open", "kprobe__features_fallback_arena", NewProbeCompatibility(
+			NewBPFMapTypeRequirement(bpf.MapTypeArena),
+			NewBPFHelperRequirement(bpf.BPFProgTypeKprobe, bpf.BPFFuncGetCurrentTaskBtf),
+		)),
+
+		// Level 2: kprobe + helper (Linux 5.11+)
+		FeaturesFallbackHelper: NewTraceProbeWithCompatibility(KProbe, "vfs_open", "kprobe__features_fallback_helper", NewProbeCompatibility(
+			NewBPFHelperRequirement(bpf.BPFProgTypeKprobe, bpf.BPFFuncGetCurrentTaskBtf),
+		)),
+
+		// Level 3: basic kprobe (universal fallback)
+		FeaturesFallbackMinimal: NewTraceProbe(KProbe, "vfs_open", "kprobe__features_fallback_minimal"),
 	}
 
 	if !netEnabled {

@@ -7659,3 +7659,81 @@ int BPF_PROG(lsm_file_open_test, struct file *file, const struct cred *cred)
     // We're only monitoring, so always allow the file open operation
     return 0;
 }
+
+//
+// Features Fallback Test Programs
+//
+// Simple 3-level test using kprobe programs on vfs_open:
+//
+// Level 1: kprobe + ARENA map (Linux 6.9+)
+// Level 2: kprobe + helpers (Linux 5.11+)
+// Level 3: basic kprobe (universal fallback)
+//
+
+// Level 1: kprobe + ARENA map (Linux 6.9+)
+SEC("kprobe/vfs_open")
+int kprobe__features_fallback_arena(struct pt_regs *ctx)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, FEATURES_FALLBACK_TEST))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    // Use ARENA map - shared memory between BPF and userspace (6.9+)
+    u32 key = 0;
+    u32 value = 1; // Level 1 indicator
+    bpf_map_update_elem(&features_test_arena, &key, &value, BPF_ANY);
+
+    // Use bpf_get_current_task_btf helper (5.11+)
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task_btf();
+    (void) task; // Use the helper to test functionality
+
+    // Add argument to indicate this was probe_used_id 1
+    save_to_submit_buf(&p.event->args_buf, (void *) &(u32) {1}, sizeof(u32), 0);
+
+    events_perf_submit(&p, 0);
+    return 0;
+}
+
+// Level 2: kprobe + bpf_get_current_task_btf helper (Linux 5.11+)
+SEC("kprobe/vfs_open")
+int kprobe__features_fallback_helper(struct pt_regs *ctx)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, FEATURES_FALLBACK_TEST))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    // Use bpf_get_current_task_btf helper (5.11+)
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task_btf();
+    (void) task; // Use the helper to test functionality
+
+    // Add argument to indicate this was probe_used_id 2
+    save_to_submit_buf(&p.event->args_buf, (void *) &(u32) {2}, sizeof(u32), 0);
+
+    events_perf_submit(&p, 0);
+    return 0;
+}
+
+// Level 3: basic kprobe (universal fallback)
+SEC("kprobe/vfs_open")
+int kprobe__features_fallback_minimal(struct pt_regs *ctx)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, FEATURES_FALLBACK_TEST))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    // No special features used - minimal kprobe, no special maps, no special helpers
+    // Add argument to indicate this was probe_used_id 3 (minimal fallback)
+    save_to_submit_buf(&p.event->args_buf, (void *) &(u32) {3}, sizeof(u32), 0);
+
+    events_perf_submit(&p, 0);
+    return 0;
+}

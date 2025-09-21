@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: features-fallback-test
+  annotations:
+    description: test tracee's BPF features fallback mechanism
+spec:
+  scope: 
+    - comm=cat
+  rules:
+    - event: FEATURES_FALLBACK_TEST
