@@ -1386,7 +1386,7 @@ func (t *Tracee) validateProbesCompatibility() error {
 				return nil
 			}
 			if !probeCompatibility {
-				return []dependencies.Action{dependencies.CancelNodeAddAction{Reason: errors.New("probe is not compatible with the current environment")}}
+				return []dependencies.Action{dependencies.NewFailNodeAddAction(errors.New("probe is not compatible with the current environment"))}
 			}
 			return nil
 		})
