@@ -8,6 +8,8 @@ coverage:
         target: auto         # Start with current coverage as baseline
         threshold: 1%        # Allow 1% decrease without failing
         if_ci_failed: error  # Fail if CI failed
+        # Allow pseudo-comparisons when base commit is missing
+        allow_pseudo_compare: true
     patch:
       default:
         target: 60%          # New code should have reasonable coverage
