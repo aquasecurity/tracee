@@ -27,10 +27,6 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
-      # - name: Install Cosign
-      #   uses: sigstore/cosign-installer@main
-      #   with:
-      #     cosign-release: 'v2.2.4'
       - name: Login to docker.io registry
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
@@ -70,10 +66,6 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
-      # - name: Install Cosign
-      #   uses: sigstore/cosign-installer@main
-      #   with:
-      #     cosign-release: 'v2.2.4'
       - name: Login to docker.io registry
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
@@ -101,7 +93,7 @@ jobs:
   release-snapshot:
     name: Release Snapshot
     needs: [release-snapshot-x86_64, release-snapshot-aarch64]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -112,10 +104,6 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
-      # - name: Install Cosign
-      #   uses: sigstore/cosign-installer@main
-      #   with:
-      #     cosign-release: 'v2.2.4'
       - name: Login to docker.io registry
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
