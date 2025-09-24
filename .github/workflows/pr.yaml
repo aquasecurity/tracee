@@ -95,7 +95,7 @@ jobs:
   #
   verify-docs:
     name: Verify Documentation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -109,9 +109,9 @@ jobs:
   #
   verify-analyze-code:
     name: Verify and Analyze Code
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
-      image: alpine/git
+      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -155,9 +155,9 @@ jobs:
     name: Verify Other Tools
     needs:
       - verify-analyze-code
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
-      image: alpine/git
+      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -187,7 +187,7 @@ jobs:
   #
   detect-changes:
     name: Detect Changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       main: ${{ steps.detect.outputs.main }}
       types: ${{ steps.detect.outputs.types }}
@@ -243,9 +243,9 @@ jobs:
     needs:
       - detect-changes
     if: needs.detect-changes.outputs.main != 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
-      image: alpine/git
+      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -286,7 +286,7 @@ jobs:
     if: needs.detect-changes.outputs.main != 'true'
     runs-on: ubuntu-24.04-arm
     container:
-      image: alpine/git
+      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       volumes:
         - /opt:/opt:rw,rshared
         # The following volume mount is a workaround for GitHub Actions runner limitations.
@@ -343,9 +343,9 @@ jobs:
       - verify-analyze-code
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
-      image: alpine/git
+      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -364,7 +364,7 @@ jobs:
           # Run comprehensive test suite for all modules (main + types + common + api)
           make test-unit
       - name: Upload Unit Test Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
@@ -383,7 +383,7 @@ jobs:
     if: needs.detect-changes.outputs.main == 'true'
     runs-on: ubuntu-24.04-arm
     container:
-      image: alpine/git
+      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       volumes:
         - /opt:/opt:rw,rshared
         # The following volume mount is a workaround for GitHub Actions runner limitations.
@@ -415,7 +415,7 @@ jobs:
         run: |
           make test-unit
       - name: Upload Unit Test Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
@@ -434,9 +434,9 @@ jobs:
       - verify-analyze-code
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
-      image: ubuntu:24.04
+      image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
       options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
     steps:
       - name: Install Git
@@ -459,7 +459,7 @@ jobs:
         run: |
           env "PATH=$PATH" make test-integration
       - name: Upload Integration Test Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./integration-coverage.txt
@@ -474,7 +474,7 @@ jobs:
     if: needs.detect-changes.outputs.main == 'true'
     runs-on: ubuntu-24.04-arm
     container:
-      image: ubuntu:24.04
+      image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
       options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
     steps:
       - name: Install Git
@@ -497,7 +497,7 @@ jobs:
         run: |
           env "PATH=$PATH" make test-integration
       - name: Upload Integration Test Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./integration-coverage.txt
@@ -513,9 +513,9 @@ jobs:
       - verify-analyze-code
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
-      image: alpine/git
+      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro
     steps:
       - name: Checkout Code
@@ -539,7 +539,7 @@ jobs:
     name: Generate Test Matrix
     needs:
       - detect-changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: needs.detect-changes.outputs.main == 'true'
     outputs:
       matrix01: ${{ steps.set-matrix.outputs.matrix01 }}

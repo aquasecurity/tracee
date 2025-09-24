@@ -51,7 +51,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: gcr.io/google-samples/microservices-demo/emailservice:v0.9.0
+        image: gcr.io/google-samples/microservices-demo/emailservice@sha256:93e25b258931d3148b1de07dc147a557af08153b75c2f1184bcc505cbf20060d # v0.9.0
         ports:
         - containerPort: 8080
         env:
@@ -121,7 +121,7 @@ spec:
                 - ALL
             privileged: false
             readOnlyRootFilesystem: true
-          image: gcr.io/google-samples/microservices-demo/checkoutservice:v0.9.0
+          image: gcr.io/google-samples/microservices-demo/checkoutservice@sha256:b660e1a48bfd95854fb769113dd453811bb8470b7b58b420efead6fad5b5df61 # v0.9.0
           ports:
           - containerPort: 5050
           readinessProbe:
@@ -200,7 +200,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: gcr.io/google-samples/microservices-demo/recommendationservice:v0.9.0
+        image: gcr.io/google-samples/microservices-demo/recommendationservice@sha256:200c10a2f26d77c98e6c6aa32ada517b91de8e75188e66cafc13f7421dd4c408 # v0.9.0
         ports:
         - containerPort: 8080
         readinessProbe:
@@ -274,7 +274,7 @@ spec:
                 - ALL
             privileged: false
             readOnlyRootFilesystem: true
-          image: gcr.io/google-samples/microservices-demo/frontend:v0.9.0
+          image: gcr.io/google-samples/microservices-demo/frontend@sha256:68f72fd525591c4879fb28fa9f81740ccfb7b1303e965f6dbc0ea43dbf2023fc # v0.9.0
           ports:
           - containerPort: 8080
           readinessProbe:
@@ -392,7 +392,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: gcr.io/google-samples/microservices-demo/paymentservice:v0.9.0
+        image: gcr.io/google-samples/microservices-demo/paymentservice@sha256:ddbec6dd0efd0d34c8d8a6de3c52aad299ec6848fdd43d46cc6d6032ef1ff7c7 # v0.9.0
         ports:
         - containerPort: 50051
         env:
@@ -461,7 +461,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: gcr.io/google-samples/microservices-demo/productcatalogservice:v0.9.0
+        image: gcr.io/google-samples/microservices-demo/productcatalogservice@sha256:1d51f9e5aa923ff9c338b1b155b39da737306c0ebc230e62ec6271f2b0cb7bef # v0.9.0
         ports:
         - containerPort: 3550
         env:
@@ -530,7 +530,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: gcr.io/google-samples/microservices-demo/cartservice:v0.9.0
+        image: gcr.io/google-samples/microservices-demo/cartservice@sha256:b0cf3662e60750e9a449fe14f5bc29f9150db0c553e52795569c477ec783974b # v0.9.0
         ports:
         - containerPort: 7070
         env:
@@ -600,7 +600,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: gcr.io/google-samples/microservices-demo/currencyservice:v0.9.0
+        image: gcr.io/google-samples/microservices-demo/currencyservice@sha256:16d16968f90aff24d4170ca7c4c0ff97303612b98c509052d5c3618f6e75937a # v0.9.0
         ports:
         - name: grpc
           containerPort: 7000
@@ -669,7 +669,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: gcr.io/google-samples/microservices-demo/shippingservice:v0.9.0
+        image: gcr.io/google-samples/microservices-demo/shippingservice@sha256:c906f4bdba49226494bdf3461ab790f878e53329ba3f9e2edde95a14581268b1 # v0.9.0
         ports:
         - containerPort: 50051
         env:
@@ -737,7 +737,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: redis:alpine
+        image: redis@sha256:987c376c727652f99625c7d205a1cba3cb2c53b92b0b62aade2bd48ee1593232 # alpine
         ports:
         - containerPort: 6379
         readinessProbe:
@@ -809,7 +809,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: gcr.io/google-samples/microservices-demo/adservice:v0.9.0
+        image: gcr.io/google-samples/microservices-demo/adservice@sha256:7a62fd95ef19b9379fbb4f8e3523ca2aa417a4039d336ef3246dca91624c60f9 # v0.9.0
         ports:
         - containerPort: 9555
         env:

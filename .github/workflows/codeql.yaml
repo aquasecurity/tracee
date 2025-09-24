@@ -16,7 +16,7 @@ on:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       security-events: write
       packages: read
@@ -57,7 +57,7 @@ jobs:
         run: git submodule update --init --recursive
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@528ca598d956c91826bd742262cdfc5d02b77710 # v3
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
@@ -68,6 +68,6 @@ jobs:
           make
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@528ca598d956c91826bd742262cdfc5d02b77710 # v3
         with:
           category: "/language:${{ matrix.language }}"
