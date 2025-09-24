@@ -12,7 +12,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 info "Starting Tracee dependency installation on Alpine Linux"
 
 # Configuration
-GOLANG_VERSION="1.24.0"
+GOLANG_VERSION="1.24.7"
 STATICCHECK_VERSION="2025.1"
 REVIVE_VERSION="v1.7.0"
 GOIMPORTS_REVISER_VERSION="v3.8.2"
