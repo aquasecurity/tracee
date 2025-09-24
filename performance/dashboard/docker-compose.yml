@@ -3,7 +3,7 @@ volumes:
 
 services:
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter@sha256:4032c6d5bfd752342c3e631c2f1de93ba6b86c41db6b167b9a35372c139e7706 # v1.8.2
     container_name: tracee-node
     restart: unless-stopped
     volumes:
@@ -34,7 +34,7 @@ services:
     network_mode: "host"
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus@sha256:2659f4c2ebb718e7695cb9b25ffa7d6be64db013daba13e05c875451cf51b0d3 # v2.55.1
     container_name: tracee-prometheus
     restart: unless-stopped
     volumes:
@@ -51,7 +51,7 @@ services:
     network_mode: "host"
 
   grafana:
-    image: grafana/grafana:main
+    image: grafana/grafana@sha256:413503f21b7e854811d74ef68ae1d3dce4c4814aef5daf4424c4a7ef6d42c31d # 11.4.1
     container_name: tracee-grafana
     restart: unless-stopped
     volumes:
@@ -72,7 +72,7 @@ services:
     network_mode: "host"
 
   pyroscope:
-    image: pyroscope/pyroscope:latest
+    image: pyroscope/pyroscope@sha256:dbca95a15bc1af46b25eb85f417934dcd78f2e0bbe2037aa52b92cb3b0d391ff # 0.37.2
     container_name: tracee-pyroscope
     restart: unless-stopped
     environment:

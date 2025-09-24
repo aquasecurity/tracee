@@ -11,9 +11,9 @@ on:
 jobs:
   compile-tracee:
     name: Test Latest libbpfgo
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
-      image: alpine/git
+      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
