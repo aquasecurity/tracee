@@ -122,9 +122,9 @@ link_golang_usr_local_go() {
 
 install_golang_from_github() {
     if [[ $ARCH == x86_64 ]]; then
-        GO_URL="https://go.dev/dl/go1.24.0.linux-amd64.tar.gz"
+        GO_URL="https://go.dev/dl/go1.24.7.linux-amd64.tar.gz"
     else
-        GO_URL="https://go.dev/dl/go1.24.0.linux-arm64.tar.gz"
+        GO_URL="https://go.dev/dl/go1.24.7.linux-arm64.tar.gz"
     fi
 
     GO_FILE=$(basename $GO_URL)
