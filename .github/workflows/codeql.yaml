@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Install dependencies
         run: |
@@ -44,7 +44,7 @@ jobs:
           sudo apt-get install -y libelf-dev clang make gcc pkg-config file
 
       - name: Set up Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version: "1.24"
 
@@ -57,7 +57,7 @@ jobs:
         run: git submodule update --init --recursive
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@528ca598d956c91826bd742262cdfc5d02b77710 # v3
+        uses: github/codeql-action/init@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
@@ -68,6 +68,6 @@ jobs:
           make
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@528ca598d956c91826bd742262cdfc5d02b77710 # v3
+        uses: github/codeql-action/analyze@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
         with:
           category: "/language:${{ matrix.language }}"
