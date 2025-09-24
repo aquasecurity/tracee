@@ -2,7 +2,7 @@ module github.com/aquasecurity/tracee/cmd/traceectl
 
 go 1.24
 
-toolchain go1.24.2
+toolchain go1.24.7
 
 require (
 	github.com/aquasecurity/table v1.10.0
