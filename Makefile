@@ -583,7 +583,7 @@ TRACEE_PROTOS = ./api/v1beta1/*.proto
 # btfhub (expensive: only run if ebpf obj changed)
 #
 
-SH_BTFHUB = ./3rdparty/btfhub.sh
+SH_BTFHUB = ./scripts/btfhub.sh
 
 .PHONY: btfhub
 btfhub:: \
