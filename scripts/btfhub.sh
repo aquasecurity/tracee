@@ -13,11 +13,11 @@
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 # shellcheck disable=SC1091
-. "${SCRIPT_DIR}/../scripts/lib.sh"
+. "${SCRIPT_DIR}/lib.sh"
 
 require_cmds git
 
-BASEDIR="${SCRIPT_DIR}/../"
+BASEDIR=$(cd "${SCRIPT_DIR}/../" && pwd)
 cd "${BASEDIR}"
 
 TRACEE_BPF_CORE="${BASEDIR}/dist/tracee.bpf.o"
