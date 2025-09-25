@@ -2872,19 +2872,15 @@ int BPF_KPROBE(trace_security_socket_connect)
             break;
     }
 
-#if defined(bpf_target_x86)
     if (need_workaround) {
-        // Workaround for sockaddr_un struct length (issue: #1129).
         struct sockaddr_un sockaddr = {0};
         bpf_probe_read(&sockaddr, (u32) addr_len, (void *) address);
         // NOTE(nadav.str): stack allocated, so runtime core size check is avoided
         stsb(args_buf, (void *) &sockaddr, sizeof(struct sockaddr_un), 2);
-    }
-#endif
-
-    // Save the sockaddr struct argument to the event.
-    if (!need_workaround)
+    } else {
+        // Save the sockaddr struct argument to the event.
         stsb(args_buf, (void *) address, sockaddr_len, 2);
+    }
 
     // Submit the event.
     return events_perf_submit(&p, 0);
