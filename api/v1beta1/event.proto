@@ -551,9 +551,7 @@ enum EventId {
     security_task_set_rlimit = 1086;
     security_settime64 = 1087;
     chmod_common = 1088;
-    open_file_ns = 1089;
-    open_file_mount = 1090;
-    security_task_prctl = 1091;
+    security_task_prctl = 1089;
 
     // Events originated from user-space
     net_packet_ipv4 = 2000;

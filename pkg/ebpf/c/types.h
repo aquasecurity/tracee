@@ -134,8 +134,6 @@ typedef struct event_context {
     X(SECURITY_TASK_SETRLIMIT, )                                                                   \
     X(SECURITY_SETTIME64, )                                                                        \
     X(CHMOD_COMMON, )                                                                              \
-    X(OPEN_FILE_NS, )                                                                              \
-    X(OPEN_FILE_MOUNT, )                                                                           \
     X(SECURITY_SB_UMOUNT, )                                                                        \
     X(SECURITY_TASK_PRCTL, )                                                                       \
     // ...
