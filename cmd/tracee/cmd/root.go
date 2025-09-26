@@ -18,6 +18,9 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/version"
+
+	// Import extensions to trigger their init() functions
+	_ "github.com/aquasecurity/tracee/pkg/extensions"
 )
 
 var (
