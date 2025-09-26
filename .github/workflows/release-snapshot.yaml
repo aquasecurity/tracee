@@ -23,16 +23,12 @@ jobs:
       id-token: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           submodules: true
           fetch-depth: 0
-      # - name: Install Cosign
-      #   uses: sigstore/cosign-installer@main
-      #   with:
-      #     cosign-release: 'v2.2.4'
       - name: Login to docker.io registry
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -40,7 +36,7 @@ jobs:
         run: |
           make -f builder/Makefile.release snapshot
       - name: Scan Docker Image for Vulnerabilities
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
         with:
           image-ref: "tracee:dev"
           severity: "CRITICAL"
@@ -66,16 +62,12 @@ jobs:
       id-token: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           submodules: true
           fetch-depth: 0
-      # - name: Install Cosign
-      #   uses: sigstore/cosign-installer@main
-      #   with:
-      #     cosign-release: 'v2.2.4'
       - name: Login to docker.io registry
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -83,7 +75,7 @@ jobs:
         run: |
           make -f builder/Makefile.release snapshot
       - name: Scan Docker Image for Vulnerabilities
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
         with:
           image-ref: "tracee:dev"
           severity: "CRITICAL"
@@ -101,23 +93,19 @@ jobs:
   release-snapshot:
     name: Release Snapshot
     needs: [release-snapshot-x86_64, release-snapshot-aarch64]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
       id-token: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           submodules: true
           fetch-depth: 0
-      # - name: Install Cosign
-      #   uses: sigstore/cosign-installer@main
-      #   with:
-      #     cosign-release: 'v2.2.4'
       - name: Login to docker.io registry
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}

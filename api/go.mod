@@ -2,7 +2,7 @@ module github.com/aquasecurity/tracee/api
 
 go 1.24
 
-toolchain go1.24.2
+toolchain go1.24.7
 
 require (
 	google.golang.org/grpc v1.72.0
