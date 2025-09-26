@@ -44,6 +44,8 @@ statfunc void fill_vfs_file_bin_args_io_data(io_data_t, bin_args_t *);
 statfunc void fill_file_header(u8[FILE_MAGIC_HDR_SIZE], io_data_t);
 statfunc void
 fill_vfs_file_bin_args(u32, struct file *, loff_t *, io_data_t, size_t, int, bin_args_t *);
+statfunc bool check_file_ns(struct task_struct *, struct file *, void *);
+statfunc bool check_file_mount(struct file *);
 
 // FUNCTIONS
 
@@ -532,4 +534,54 @@ statfunc void fill_file_header(u8 header[FILE_MAGIC_HDR_SIZE], io_data_t io_data
     }
 }
 
-#endif
+statfunc bool check_file_ns(struct task_struct *task, struct file *file, void *syscall_pathname)
+{
+    struct path path = get_path_from_file(file);
+    struct mount *mount = real_mount(path.mnt);
+    u32 file_mnt_ns = BPF_CORE_READ(mount, mnt_ns, ns.inum);
+    u32 task_mnt_ns = get_task_mnt_ns_id(task);
+
+    if (file_mnt_ns == 0 || file_mnt_ns == task_mnt_ns)
+        return false;
+
+    struct pid_namespace *pid_ns = get_task_pid_ns(task);
+    struct task_struct *pid_ns_leader = BPF_CORE_READ(pid_ns, child_reaper);
+
+    char unresolved_path[7] = {0};
+    bpf_probe_read_str(unresolved_path, 7, syscall_pathname);
+    if (file_mnt_ns == get_task_mnt_ns_id(pid_ns_leader) &&
+        strncmp(unresolved_path, "/proc/", 6) == 0)
+        return false;
+
+    return true;
+}
+
+statfunc bool check_file_mount(struct file *file)
+{
+    struct path path = get_path_from_file(file);
+    struct mount *mount = real_mount(path.mnt);
+
+    if (BPF_CORE_READ(mount, mnt_ns, ns.inum) == 0)
+        return false;
+
+    struct dentry *dentry = path.dentry;
+    struct dentry *root = BPF_CORE_READ(path.mnt, mnt_root);
+
+    int i;
+    for (i = 0; i < MAX_PATH_COMPONENTS; i++) {
+        struct dentry *parent = BPF_CORE_READ(dentry, d_parent);
+        if (dentry == root || dentry == parent)
+            break;
+        dentry = parent;
+    }
+
+    if (i == MAX_PATH_COMPONENTS)
+        return false;
+
+    if (dentry != root)
+        return true;
+
+    return false;
+}
+
+#endif // __COMMON_FILESYSTEM_H__

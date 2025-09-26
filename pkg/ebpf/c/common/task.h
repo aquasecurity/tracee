@@ -216,4 +216,4 @@ statfunc const struct cred *get_task_real_cred(struct task_struct *task)
     return BPF_CORE_READ(task, real_cred);
 }
 
-#endif
+#endif // __COMMON_TASK_H__
