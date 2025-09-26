@@ -552,6 +552,8 @@ var EventTranslationTable = [events.MaxBuiltinID]pb.EventId{
 	events.ProcessExecuteFailed:         pb.EventId_process_execute_failed,
 	events.SecurityPathNotify:           pb.EventId_security_path_notify,
 	events.SetFsPwd:                     pb.EventId_set_fs_pwd,
+	events.SuspiciousSyscallSource:      pb.EventId_suspicious_syscall_source,
+	events.StackPivot:                   pb.EventId_stack_pivot,
 	events.HiddenKernelModuleSeeker:     pb.EventId_hidden_kernel_module_seeker,
 	events.ModuleLoad:                   pb.EventId_module_load,
 	events.ModuleFree:                   pb.EventId_module_free,
@@ -560,6 +562,7 @@ var EventTranslationTable = [events.MaxBuiltinID]pb.EventId{
 	events.SecurityTaskSetrlimit:        pb.EventId_security_task_set_rlimit,
 	events.SecuritySettime64:            pb.EventId_security_settime64,
 	events.ChmodCommon:                  pb.EventId_chmod_common,
+	events.SecuritySbUmount:             pb.EventId_security_sb_umount,
 	events.SecurityTaskPrctl:            pb.EventId_security_task_prctl,
 
 	// Events from user-space translation section

@@ -543,15 +543,18 @@ enum EventId {
     process_execute_failed = 1078;
     security_path_notify = 1079;
     set_fs_pwd = 1080;
-    hidden_kernel_module_seeker = 1081;
-    module_load = 1082;
-    module_free = 1083;
-    execute_finished = 1084;
-    process_execute_failed_internal = 1085;
-    security_task_set_rlimit = 1086;
-    security_settime64 = 1087;
-    chmod_common = 1088;
-    security_task_prctl = 1089;
+    suspicious_syscall_source = 1081;
+    stack_pivot = 1082;
+    hidden_kernel_module_seeker = 1083;
+    module_load = 1084;
+    module_free = 1085;
+    execute_finished = 1086;
+    process_execute_failed_internal = 1087;
+    security_task_set_rlimit = 1088;
+    security_settime64 = 1089;
+    chmod_common = 1090;
+    security_sb_umount = 1091;
+    security_task_prctl = 1092;
 
     // Events originated from user-space
     net_packet_ipv4 = 2000;
