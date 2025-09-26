@@ -15,7 +15,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 # shellcheck disable=SC1091
 . "${SCRIPT_DIR}/lib.sh"
 
-require_cmds git
+require_cmds git grep # optional: nproc
 
 BASEDIR=$(cd "${SCRIPT_DIR}/../" && pwd)
 cd "${BASEDIR}"
@@ -135,14 +135,38 @@ info "Sparse checkout completed - downloaded only supported kernels for ${ARCH}"
 # Change to btfhub directory to run btfgen.sh
 cd "${BTFHUB_DIR}"
 
+btfgen="./tools/btfgen.sh"
+
 # Generate tailored BTFs
-[ ! -f ./tools/btfgen.sh ] && die "could not find btfgen.sh"
+[ ! -f "${btfgen}" ] && die "could not find ${btfgen}"
 
 # Create custom-archive directory to comply with btfgen.sh
 mkdir -p ./custom-archive
 
-info "Generating tailored BTFs..."
-./tools/btfgen.sh -a "${ARCH}" -o "${TRACEE_BPF_CORE}"
+# Get number of CPUs
+if command -v nproc >/dev/null 2>&1; then
+    NPROC=$(nproc)
+elif [ -f /proc/cpuinfo ]; then
+    NPROC=$(grep -c ^processor /proc/cpuinfo)
+else
+    NPROC=1
+fi
+# Fallback to 1 if detection failed or result is empty/non-numeric
+if ! [ "${NPROC}" -ge 1 ] 2>/dev/null; then
+    NPROC=1
+fi
+
+# Calculate optimal number of parallel jobs
+if [ "${NPROC}" -le 2 ]; then
+    JOBS="${NPROC}"      # Use all cores on small systems - prioritize BTF tailoring completion
+elif [ "${NPROC}" -le 4 ]; then
+    JOBS=$((NPROC - 1))  # Reserve 1 core on medium systems
+else
+    JOBS=$((NPROC - 2))  # Reserve 2 cores on larger systems
+fi
+
+info "Generating tailored BTFs using ${JOBS} parallel jobs..."
+${btfgen} -a "${ARCH}" -o "${TRACEE_BPF_CORE}" -j "${JOBS}"
 
 # Move tailored BTFs to dist
 [ ! -d "${BASEDIR}/dist" ] && die "could not find dist directory"
