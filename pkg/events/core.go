@@ -117,8 +117,6 @@ const (
 	SecurityTaskSetrlimit
 	SecuritySettime64
 	ChmodCommon
-	OpenFileNS
-	OpenFileMount
 	SecuritySbUmount
 	SecurityTaskPrctl
 	MaxCommonID
@@ -14212,47 +14210,6 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "vma_start"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "vma_size"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "vma_flags"}},
-		},
-	},
-	OpenFileNS: {
-		id:      OpenFileNS,
-		id32Bit: Sys32Undefined,
-		name:    "open_file_ns",
-		version: NewVersion(1, 0, 0),
-		dependencies: DependencyStrategy{
-			primary: Dependencies{
-				probes: []Probe{
-					{handle: probes.SecurityFileOpen, required: true},
-				},
-			},
-		},
-		sets: []string{},
-		fields: []DataField{
-			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
-			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
-			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "syscall_pathname"}},
-			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "mount_ns"}},
-		},
-	},
-	OpenFileMount: {
-		id:      OpenFileMount,
-		id32Bit: Sys32Undefined,
-		name:    "open_file_mount",
-		version: NewVersion(1, 0, 0),
-		dependencies: DependencyStrategy{
-			primary: Dependencies{
-				probes: []Probe{
-					{handle: probes.SecurityFileOpen, required: true},
-				},
-			},
-		},
-		sets: []string{},
-		fields: []DataField{
-			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
-			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
-			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "syscall_pathname"}},
-			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "mount_src"}},
-			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "mount_dst"}},
 		},
 	},
 	SecurityTaskPrctl: {
