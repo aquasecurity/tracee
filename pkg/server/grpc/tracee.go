@@ -560,8 +560,6 @@ var EventTranslationTable = [events.MaxBuiltinID]pb.EventId{
 	events.SecurityTaskSetrlimit:        pb.EventId_security_task_set_rlimit,
 	events.SecuritySettime64:            pb.EventId_security_settime64,
 	events.ChmodCommon:                  pb.EventId_chmod_common,
-	events.OpenFileNS:                   pb.EventId_open_file_ns,
-	events.OpenFileMount:                pb.EventId_open_file_mount,
 	events.SecurityTaskPrctl:            pb.EventId_security_task_prctl,
 
 	// Events from user-space translation section
