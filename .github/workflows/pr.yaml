@@ -363,13 +363,16 @@ jobs:
         run: |
           # Run comprehensive test suite for all modules (main + types + common + api)
           make test-unit
+      - name: Generate XML Coverage Report
+        run: |
+          make coverage-xml
       - name: Upload Unit Test Coverage
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.txt
+          files: ./coverage.xml,./coverage.txt
           flags: unit
-          name: unit-tests
+          name: unit-tests-x86_64
           fail_ci_if_error: false
       - name: Run Scripts Unit Tests
         run: |
@@ -414,13 +417,16 @@ jobs:
       - name: Run Unit Tests
         run: |
           make test-unit
+      - name: Generate XML Coverage Report
+        run: |
+          make coverage-xml
       - name: Upload Unit Test Coverage
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.txt
+          files: ./coverage.xml,./coverage.txt
           flags: unit
-          name: unit-tests
+          name: unit-tests-arm64
           fail_ci_if_error: false
       - name: Run Scripts Unit Tests
         run: |
@@ -464,7 +470,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./integration-coverage.txt
           flags: integration
-          name: integration-tests
+          name: integration-tests-x86_64
           fail_ci_if_error: false
   integration-tests-arm64:
     name: Integration Tests (ARM64)
@@ -502,7 +508,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./integration-coverage.txt
           flags: integration
-          name: integration-tests
+          name: integration-tests-arm64
           fail_ci_if_error: false
   #
   # PERFORMANCE TESTS

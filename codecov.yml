@@ -10,11 +10,18 @@ coverage:
         if_ci_failed: error  # Fail if CI failed
         # Allow pseudo-comparisons when base commit is missing
         allow_pseudo_compare: true
+        # Additional settings to handle missing base commits
+        if_no_uploads: error
+        if_not_found: success
+        only_pulls: false
     patch:
       default:
         target: 60%          # New code should have reasonable coverage
         threshold: 10%       # More flexibility for initial adoption
         if_ci_failed: error
+        if_no_uploads: error
+        if_not_found: success
+        only_pulls: false
 
   ignore:
     # Ignore generated files and vendor dependencies

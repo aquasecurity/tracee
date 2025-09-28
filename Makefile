@@ -2,7 +2,7 @@
 all:: tracee-ebpf tracee-rules signatures tracee evt traceectl lsm-check
 
 #
-# make - trigger codecov test
+# make - trigger codecov XML test
 #
 
 .ONESHELL:
@@ -950,6 +950,22 @@ coverage-html:: test-unit
 	@echo "Generating HTML coverage report..."
 	@$(CMD_GO) tool cover -html=coverage.txt -o coverage.html
 	@echo "Coverage report generated: coverage.html"
+
+.PHONY: coverage-xml
+coverage-xml:: test-unit
+#
+	@echo "Generating XML coverage report for Codecov..."
+	@if ! command -v gocov >/dev/null 2>&1; then \
+		echo "Installing gocov..."; \
+		$(CMD_GO) install github.com/axw/gocov/gocov@latest; \
+	fi
+	@if ! command -v gocov-xml >/dev/null 2>&1; then \
+		echo "Installing gocov-xml..."; \
+		$(CMD_GO) install github.com/AlekSi/gocov-xml@latest; \
+	fi
+	@$(CMD_GO) tool cover -func=coverage.txt | head -1 | grep -q "mode: " || (echo "Error: coverage.txt not found or invalid" && exit 1)
+	@gocov convert coverage.txt | gocov-xml > coverage.xml
+	@echo "XML coverage report generated: coverage.xml"
 
 #
 # integration tests
