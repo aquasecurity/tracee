@@ -2,7 +2,7 @@
 all:: tracee-ebpf tracee-rules signatures tracee evt traceectl lsm-check
 
 #
-# make
+# make - trigger codecov test
 #
 
 .ONESHELL:
