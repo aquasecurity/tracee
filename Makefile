@@ -166,6 +166,7 @@ VERSION ?= $(if $(RELEASE_VERSION),$(RELEASE_VERSION),$(LAST_GIT))
 #
 
 DEBUG ?= 0
+FIPS ?= 0
 UNAME_M := $(shell uname -m)
 UNAME_R := $(shell uname -r)
 
@@ -177,6 +178,13 @@ endif
 
 ifeq ($(METRICS),1)
 	BPF_DEBUG_FLAG += -DMETRICS
+endif
+
+# FIPS 140-3 compliance
+ifeq ($(FIPS),1)
+	GOFIPS140 = v1.0.0
+else
+	GOFIPS140 = off
 endif
 
 # Strip debug symbols from BPF object
@@ -257,6 +265,9 @@ env::
 	@echo "DEBUG                    $(DEBUG)"
 	@echo "GO_DEBUG_FLAG            $(GO_DEBUG_FLAG)"
 	@echo "STRIP_BPF_DEBUG          $(STRIP_BPF_DEBUG)"
+	@echo ---------------------------------------
+	@echo "FIPS                     $(FIPS)"
+	@echo "GOFIPS140                $(GOFIPS140)"
 	@echo ---------------------------------------
 	@echo "CUSTOM_CGO_CFLAGS        $(CUSTOM_CGO_CFLAGS)"
 	@echo "CUSTOM_CGO_LDFLAGS       $(CUSTOM_CGO_LDFLAGS)"
@@ -349,6 +360,7 @@ help::
 	@echo "    $$ BTFHUB=1 STATIC=1 make ...    # build static binaries, embed BTF"
 	@echo "    $$ DEBUG=1 make ...              # build binaries with debug symbols"
 	@echo "    $$ METRICS=1 make ...            # build enabling BPF metrics"
+	@echo "    $$ FIPS=1 make ...               # build FIPS 140-3 compliant binaries"
 	@echo ""
 
 #
@@ -441,6 +453,7 @@ endif
 		$(eval GO_ENV_EBPF += GOOS=linux)
 		$(eval GO_ENV_EBPF += CC=$(CMD_CLANG))
 		$(eval GO_ENV_EBPF += GOARCH=$(GO_ARCH))
+		$(eval GO_ENV_EBPF += GOFIPS140=$(GOFIPS140))
 		$(eval CUSTOM_CGO_CFLAGS := "$(TRACEE_EBPF_CFLAGS)")
 		$(eval GO_ENV_EBPF += CGO_CFLAGS=$(CUSTOM_CGO_CFLAGS))
 		$(eval CUSTOM_CGO_LDFLAGS := "$(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(CMD_PKGCONFIG) $(PKG_CONFIG_FLAG) --libs $(LIB_BPF))")
