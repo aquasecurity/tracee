@@ -3028,31 +3028,31 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 				}
 
 				if checkHost && !assert.ObjectsAreEqual(expEvt.HostName, actEvt.HostName) {
-					return fmt.Errorf("Event %+v:\nhost name mismatch: expected %s, got %s", expEvt, expEvt.HostName, actEvt.HostName)
+					return fmt.Errorf("Event %+v:\nhost name mismatch: expected %s, got %s", actEvt, expEvt.HostName, actEvt.HostName)
 				}
 				if checkComm && !assert.ObjectsAreEqual(expEvt.ProcessName, actEvt.ProcessName) {
-					return fmt.Errorf("Event %+v:\ncomm mismatch: expected %s, got %s", expEvt, expEvt.ProcessName, actEvt.ProcessName)
+					return fmt.Errorf("Event %+v:\ncomm mismatch: expected %s, got %s", actEvt, expEvt.ProcessName, actEvt.ProcessName)
 				}
 				if checkProcessorID && !assert.ObjectsAreEqual(expEvt.ProcessorID, actEvt.ProcessorID) {
-					return fmt.Errorf("Event %+v:\nprocessor Id mismatch: expected %d, got %d", expEvt, expEvt.ProcessorID, actEvt.ProcessorID)
+					return fmt.Errorf("Event %+v:\nprocessor Id mismatch: expected %d, got %d", actEvt, expEvt.ProcessorID, actEvt.ProcessorID)
 				}
 				if checkPID {
 					actPID := pidToCheck(cmd.runCmd, actEvt, expectedPID)
 					if !assert.ObjectsAreEqual(expectedPID, actPID) {
-						return fmt.Errorf("Event %+v:\npid mismatch: expected %d, got %d", expEvt, expectedPID, actPID)
+						return fmt.Errorf("Event %+v:\npid mismatch: expected %d, got %d", actEvt, expectedPID, actPID)
 					}
 				}
 				if checkUID && !assert.ObjectsAreEqual(expEvt.UserID, actEvt.UserID) {
-					return fmt.Errorf("Event %+v:\nuser Id mismatch: expected %d, got %d", expEvt, expEvt.UserID, actEvt.UserID)
+					return fmt.Errorf("Event %+v:\nuser Id mismatch: expected %d, got %d", actEvt, expEvt.UserID, actEvt.UserID)
 				}
 				if checkEventID && !assert.ObjectsAreEqual(expEvt.EventID, actEvt.EventID) {
-					return fmt.Errorf("Event %+v:\nevent Id mismatch: expected %d, got %d", expEvt, expEvt.EventID, actEvt.EventID)
+					return fmt.Errorf("Event %+v:\nevent Id mismatch: expected %d, got %d", actEvt, expEvt.EventID, actEvt.EventID)
 				}
 				if checkPolicy && !assert.ObjectsAreEqual(expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser) {
-					return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %d, got %d", expEvt, expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser)
+					return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %d, got %d", actEvt, expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser)
 				}
 				if checkPolicyName && !assertUnorderedStringSlicesEqual(expEvt.MatchedPolicies, actEvt.MatchedPolicies) {
-					return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %v, got %v", expEvt, expEvt.MatchedPolicies, actEvt.MatchedPolicies)
+					return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %v, got %v", actEvt, expEvt.MatchedPolicies, actEvt.MatchedPolicies)
 				}
 
 				// check args
@@ -3070,16 +3070,16 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 						if strings.Contains(v, "*") {
 							v = strings.ReplaceAll(v, "*", "")
 							if !strings.Contains(actVal, v) {
-								return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", expEvt, v, v, actVal, actVal)
+								return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", actEvt, v, v, actVal, actVal)
 							}
 						} else {
 							if !assert.ObjectsAreEqual(v, actVal) {
-								return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", expEvt, v, v, actVal, actVal)
+								return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", actEvt, v, v, actVal, actVal)
 							}
 						}
 					default:
 						if !assert.ObjectsAreEqual(v, actArg.Value) {
-							return fmt.Errorf("Event %+v:\narg value mismatch: expected %v (type %T), got %v (type %T)", expEvt, v, v, actArg.Value, actArg.Value)
+							return fmt.Errorf("Event %+v:\narg value mismatch: expected %v (type %T), got %v (type %T)", actEvt, v, v, actArg.Value, actArg.Value)
 						}
 					}
 				}
@@ -3136,31 +3136,31 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
 
 			if checkHost && !assert.ObjectsAreEqual(expEvt.HostName, actEvt.HostName) {
-				return fmt.Errorf("Event %+v:\nhost name mismatch: expected %s, got %s", expEvt, expEvt.HostName, actEvt.HostName)
+				return fmt.Errorf("Event %+v:\nhost name mismatch: expected %s, got %s", actEvt, expEvt.HostName, actEvt.HostName)
 			}
 			if checkComm && !assert.ObjectsAreEqual(expEvt.ProcessName, actEvt.ProcessName) {
-				return fmt.Errorf("Event %+v:\ncomm mismatch: expected %s, got %s", expEvt, expEvt.ProcessName, actEvt.ProcessName)
+				return fmt.Errorf("Event %+v:\ncomm mismatch: expected %s, got %s", actEvt, expEvt.ProcessName, actEvt.ProcessName)
 			}
 			if checkProcessorID && !assert.ObjectsAreEqual(expEvt.ProcessorID, actEvt.ProcessorID) {
-				return fmt.Errorf("Event %+v:\nprocessor Id mismatch: expected %d, got %d", expEvt, expEvt.ProcessorID, actEvt.ProcessorID)
+				return fmt.Errorf("Event %+v:\nprocessor Id mismatch: expected %d, got %d", actEvt, expEvt.ProcessorID, actEvt.ProcessorID)
 			}
 			if checkPID {
 				actPID := pidToCheck(cmd.runCmd, actEvt, expEvt.ProcessID)
 				if !assert.ObjectsAreEqual(expEvt.ProcessID, actPID) {
-					return fmt.Errorf("Event %+v:\npid mismatch: expected %d, got %d", expEvt, expEvt.ProcessID, actPID)
+					return fmt.Errorf("Event %+v:\npid mismatch: expected %d, got %d", actEvt, expEvt.ProcessID, actPID)
 				}
 			}
 			if checkUID && !assert.ObjectsAreEqual(expEvt.UserID, actEvt.UserID) {
-				return fmt.Errorf("Event %+v:\nuser Id mismatch: expected %d, got %d", expEvt, expEvt.UserID, actEvt.UserID)
+				return fmt.Errorf("Event %+v:\nuser Id mismatch: expected %d, got %d", actEvt, expEvt.UserID, actEvt.UserID)
 			}
 			if checkEventID && !assert.ObjectsAreEqual(expEvt.EventID, actEvt.EventID) {
-				return fmt.Errorf("Event %+v:\nevent Id mismatch: expected %d, got %d", expEvt, expEvt.EventID, actEvt.EventID)
+				return fmt.Errorf("Event %+v:\nevent Id mismatch: expected %d, got %d", actEvt, expEvt.EventID, actEvt.EventID)
 			}
 			if checkPolicy && !assert.ObjectsAreEqual(expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser) {
-				return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %d, got %d", expEvt, expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser)
+				return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %d, got %d", actEvt, expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser)
 			}
 			if checkPolicyName && !assertUnorderedStringSlicesEqual(expEvt.MatchedPolicies, actEvt.MatchedPolicies) {
-				return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %v, got %v", expEvt, expEvt.MatchedPolicies, actEvt.MatchedPolicies)
+				return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %v, got %v", actEvt, expEvt.MatchedPolicies, actEvt.MatchedPolicies)
 			}
 
 			// check args
@@ -3178,17 +3178,17 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 					if strings.Contains(v, "*") {
 						v = strings.ReplaceAll(v, "*", "")
 						if !strings.Contains(actVal, v) {
-							return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", expEvt, v, v, actVal, actVal)
+							return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", actEvt, v, v, actVal, actVal)
 						}
 					} else {
 						if !assert.ObjectsAreEqual(v, actArg.Value) {
-							return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", expEvt, v, v, actVal, actVal)
+							return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", actEvt, v, v, actVal, actVal)
 						}
 					}
 
 				default:
 					if !assert.ObjectsAreEqual(v, actArg.Value) {
-						return fmt.Errorf("Event %+v:\narg value mismatch: expected %v (type %T), got %v (type %T)", expEvt, v, v, actArg.Value, actArg.Value)
+						return fmt.Errorf("Event %+v:\narg value mismatch: expected %v (type %T), got %v (type %T)", actEvt, v, v, actArg.Value, actArg.Value)
 					}
 				}
 			}
