@@ -40,8 +40,9 @@ type Config struct {
 	BaseEbpf bool
 }
 
-// Initialize initializes the "caps" instance (singleton).
-func Initialize(cfg Config) error {
+// initializeOnce performs the actual singleton initialization without external locking.
+// This function should only be called while holding capsMutex.
+func initializeOnce(cfg Config) error {
 	var err error
 
 	once.Do(func() {
@@ -57,6 +58,14 @@ func Initialize(cfg Config) error {
 	return errfmt.WrapError(err)
 }
 
+// Initialize initializes the "caps" instance (singleton).
+func Initialize(cfg Config) error {
+	capsMutex.Lock()
+	defer capsMutex.Unlock()
+
+	return initializeOnce(cfg)
+}
+
 // GetInstance returns current "caps" instance. It initializes capabilities if
 // needed, bypassing the privilege dropping by default, and not adding eBPF to the base.
 func GetInstance() *Capabilities {
@@ -64,7 +73,7 @@ func GetInstance() *Capabilities {
 	defer capsMutex.Unlock()
 
 	if caps == nil {
-		err := Initialize(Config{
+		err := initializeOnce(Config{
 			Bypass:   true,
 			BaseEbpf: false,
 		})
