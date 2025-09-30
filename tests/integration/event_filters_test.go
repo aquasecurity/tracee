@@ -312,7 +312,7 @@ func Test_EventFilters(t *testing.T) {
 								{
 									Event: "execve",
 									Filters: []string{
-										"data.pathname=*ls",
+										"data.pathname=*/ls",
 									},
 								},
 							},
@@ -327,7 +327,7 @@ func Test_EventFilters(t *testing.T) {
 					1*time.Second,
 					[]trace.Event{
 						expectEvent(anyHost, "integration.tes", // note that comm name is from the go test binary that runs the command
-							testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event-data"), orPolIDs(42), expectArg("pathname", "*ls")),
+							testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event-data"), orPolIDs(42), expectArg("pathname", "*/ls")),
 					},
 					[]string{},
 				),
@@ -974,7 +974,7 @@ func Test_EventFilters(t *testing.T) {
 									Event: "security_file_open",
 									Filters: []string{
 										"syscall=execve", // context
-										"data.pathname=*ls",
+										"data.pathname=*/ls",
 									},
 								},
 							},
@@ -989,7 +989,7 @@ func Test_EventFilters(t *testing.T) {
 					1*time.Second,
 					[]trace.Event{
 						expectEvent(anyHost, "bash", // note that comm name is from the runner
-							testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("event-data-context"), orPolIDs(42), expectArg("pathname", "*ls")),
+							testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("event-data-context"), orPolIDs(42), expectArg("pathname", "*/ls")),
 					},
 					[]string{},
 				),
