@@ -2632,6 +2632,11 @@ func pidToCheck(cmd string, actEvt trace.Event, expectedPid int) int {
 	}
 
 	if isCmdAShellRunner(cmd) {
+		// For shell commands, try to match the expected PID directly first
+		if actEvt.ProcessID == expectedPid {
+			return actEvt.ProcessID
+		}
+		// Otherwise, use parent PID (for child processes or fallback)
 		return actEvt.ParentProcessID
 	}
 
@@ -3003,17 +3008,15 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 		// second stage: validate events
 		for _, expEvt := range cmd.expectedEvents {
 			// Fix race condition: when anyPID is used, replace it with actual PID from launched process
-			// However, skip this fix for shell commands as they have complex parent/child relationships
 			expectedPID := expEvt.ProcessID
-			checkPID := expectedPID != anyPID
-			if expectedPID == anyPID && !isCmdAShellRunner(cmd.runCmd) {
+			if expectedPID == anyPID {
 				expectedPID = proc.pid
-				checkPID = true
 			}
 
 			checkHost := expEvt.HostName != anyHost
 			checkComm := expEvt.ProcessName != anyComm
 			checkProcessorID := expEvt.ProcessorID != anyProcessorID
+			checkPID := expEvt.ProcessID != anyPID // Always check PID now that anyPID has been replaced
 			checkUID := expEvt.UserID != anyUID
 			checkEventID := expEvt.EventID != anyEventID
 			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
@@ -3033,7 +3036,6 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 				if checkProcessorID && !assert.ObjectsAreEqual(expEvt.ProcessorID, actEvt.ProcessorID) {
 					return fmt.Errorf("Event %+v:\nprocessor Id mismatch: expected %d, got %d", expEvt, expEvt.ProcessorID, actEvt.ProcessorID)
 				}
-				// Check PID (either original specific PID or replaced anyPID with actual process PID for non-shell commands)
 				if checkPID {
 					actPID := pidToCheck(cmd.runCmd, actEvt, expectedPID)
 					if !assert.ObjectsAreEqual(expectedPID, actPID) {
