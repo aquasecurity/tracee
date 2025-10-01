@@ -10,6 +10,51 @@ import (
 )
 
 //
+// Extension ProbeGroup
+//
+
+var (
+	extensionProbeGroup   = make(map[Handle]Probe)
+	extensionProbeGroupMu sync.RWMutex
+)
+
+// RegisterExtensionProbeGroup registers an extension probe group
+func RegisterExtensionProbeGroup(probes map[Handle]Probe) error {
+	extensionProbeGroupMu.Lock()
+	defer extensionProbeGroupMu.Unlock()
+
+	// Validate all probes before making any changes
+	for handle, probe := range probes {
+		if probe == nil {
+			return errfmt.Errorf("probe for handle %d cannot be nil", handle)
+		}
+		if _, exists := extensionProbeGroup[handle]; exists {
+			return errfmt.Errorf("probe handle %d already exists", handle)
+		}
+	}
+
+	// All validations passed, now add each probe individually
+	for handle, probe := range probes {
+		extensionProbeGroup[handle] = probe
+	}
+
+	return nil
+}
+
+// getExtensionProbeGroup returns a copy of all registered extension probe group
+func getExtensionProbeGroup() map[Handle]Probe {
+	extensionProbeGroupMu.RLock()
+	defer extensionProbeGroupMu.RUnlock()
+
+	// Return a defensive copy to prevent external modification
+	result := make(map[Handle]Probe, len(extensionProbeGroup))
+	for handle, probe := range extensionProbeGroup {
+		result[handle] = probe
+	}
+	return result
+}
+
+//
 // ProbeGroup
 //
 
@@ -290,6 +335,16 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 			NewKernelVersionRequirement("", "", "0.0.0"), // Requires kernel up to 0.0.0, so kernel version is always incompatible
 		)),
 		LsmTest: NewLsmProgramProbe("file_open", "lsm_file_open_test"),
+	}
+
+	// Add extension probes
+	extensionProbeGroup := getExtensionProbeGroup()
+	for handle, extProbes := range extensionProbeGroup {
+		if _, exists := allProbes[handle]; exists {
+			logger.Errorw("probe handle already exists, skipping", "handle", handle)
+			continue
+		}
+		allProbes[handle] = extProbes
 	}
 
 	if !netEnabled {
