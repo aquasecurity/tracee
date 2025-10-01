@@ -608,7 +608,7 @@ func (t *Tracee) initDerivationTable() error {
 		return nil
 	}
 
-	t.eventDerivations = derive.Table{
+	coreDerivations := derive.Table{
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
 				Enabled:        shouldSubmit(events.ContainerCreate),
@@ -761,6 +761,9 @@ func (t *Tracee) initDerivationTable() error {
 			},
 		},
 	}
+
+	// Register core derivations using the registration function
+	t.RegisterEventDerivations(coreDerivations)
 
 	return nil
 }
@@ -2213,4 +2216,23 @@ func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
 	}
 
 	return nil
+}
+
+// RegisterEventDerivations allows additional event derivations to be registered
+func (t *Tracee) RegisterEventDerivations(eventDerivations derive.Table) {
+	if t.eventDerivations == nil {
+		t.eventDerivations = make(derive.Table)
+	}
+	// Merge event derivations into existing ones
+	for deriveFrom, derivations := range eventDerivations {
+		if t.eventDerivations[deriveFrom] == nil {
+			t.eventDerivations[deriveFrom] = make(map[events.ID]struct {
+				DeriveFunction derive.DeriveFunction
+				Enabled        func() bool
+			})
+		}
+		for deriveTo, derivation := range derivations {
+			t.eventDerivations[deriveFrom][deriveTo] = derivation
+		}
+	}
 }
