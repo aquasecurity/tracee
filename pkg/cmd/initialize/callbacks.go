@@ -44,6 +44,15 @@ var (
 	// 7. %s = prog_array_tp
 	// 8. %s = prog_array
 	libbpfgoBpfCreateMapXattrRegexp = regexp.MustCompile(`libbpf:.*bpf_create_map_xattr\((sys_enter_init_tail|sys_enter_submit_tail|sys_enter_tails|sys_exit_init_tail|sys_exit_submit_tail|sys_exit_tails|prog_array_tp|prog_array)\)`)
+
+	// triggered by: libbpf/src/libbpf.c->bpf_program__attach_uprobe_opts()
+	// "libbpf: prog '%s': failed to create %s '%s:0x%zx' perf event: %s\n"
+	// 1. %s = program name (ignored)
+	// 2. %s = uprobe or uretprobe
+	// 3. %s = file path (ignored)
+	// 4. %zx = offset (ignored)
+	// 5. %s = No such file or directory
+	libbpfgoCreateUprobeRegexp = regexp.MustCompile(`libbpf: prog '.*': failed to create (uprobe|uretprobe) '.*' perf event: No such file or directory`)
 )
 
 // SetLibbpfgoCallbacks sets libbpfgo logger callbacks
@@ -99,6 +108,11 @@ func SetLibbpfgoCallbacks() {
 
 				// BUG: https://github.com/aquasecurity/tracee/issues/1602
 				if libbpfgoBpfCreateMapXattrRegexp.MatchString(msg) {
+					return true
+				}
+
+				// Ignore warnings about inaccessible files in uprobe attachments
+				if libbpfgoCreateUprobeRegexp.MatchString(msg) {
 					return true
 				}
 
