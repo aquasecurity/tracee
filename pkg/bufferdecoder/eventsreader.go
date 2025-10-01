@@ -14,6 +14,10 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+// defines the maximum allowed size (32KB) for byte arrays
+// in non-network events to prevent excessive memory allocation
+const maxNonNetworkByteArraySize = 32 * 1024 // 32KB
+
 // readArgFromBuff read the next argument from the buffer.
 // Return the index of the argument and the parsed argument.
 func readArgFromBuff(
@@ -130,7 +134,7 @@ func readArgFromBuff(
 			return uint(argIdx), arg, errfmt.Errorf("error reading byte array size: %v", err)
 		}
 		// error if byte buffer is too big (and not a network event)
-		if size > 4096 && (id < events.NetPacketBase || id > events.MaxNetID) {
+		if size > maxNonNetworkByteArraySize && (id < events.NetPacketBase || id > events.MaxNetID) {
 			return uint(argIdx), arg, errfmt.Errorf("byte array size too big: %d", size)
 		}
 		decodedValue, err = ebpfMsgDecoder.ReadBytesLen(int(size))
