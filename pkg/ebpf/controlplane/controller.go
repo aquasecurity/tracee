@@ -15,6 +15,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/ebpf/heartbeat"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/proctree"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // TODO: With the introduction of signal events, the control plane can now have a generic argument
@@ -22,6 +23,9 @@ import (
 // called.
 
 const pollTimeout int = 300 // from tracee.go (move to a consts package?)
+
+// SignalHandler defines a function that can process control plane signals
+type SignalHandler func(signalID events.ID, args []trace.Argument) error
 
 type Controller struct {
 	ctx            context.Context
@@ -34,6 +38,7 @@ type Controller struct {
 	processTree    *proctree.ProcessTree
 	enrichDisabled bool
 	dataPresentor  bufferdecoder.TypeDecoder
+	signalHandlers map[events.ID]SignalHandler
 }
 
 // NewController creates a new controller.
@@ -59,11 +64,17 @@ func NewController(
 		processTree:    procTree,
 		enrichDisabled: enrichDisabled,
 		dataPresentor:  dataPresentor,
+		signalHandlers: make(map[events.ID]SignalHandler),
 	}
 
 	p.signalBuffer, err = bpfModule.InitPerfBuf("signals", p.signalChan, p.lostSignalChan, 1024)
 	if err != nil {
 		return nil, err
+	}
+
+	err = p.registerSignalHandlers()
+	if err != nil {
+		return nil, errfmt.Errorf("failed to register signal handlers: %v", err)
 	}
 
 	return p, nil
@@ -112,69 +123,108 @@ func (ctrl *Controller) Stop() error {
 	return nil
 }
 
-// Private
-
-// processSignal processes a signal from the control plane.
-func (ctrl *Controller) processSignal(signal *signal) error {
-	switch signal.id {
-	case events.SignalCgroupMkdir:
-		return ctrl.processCgroupMkdir(signal.args)
-	case events.SignalCgroupRmdir:
-		return ctrl.processCgroupRmdir(signal.args)
-	case events.SignalSchedProcessFork:
-		// Not normalized at decode - normalize here.
-		err := events.NormalizeTimeArgs(
-			signal.args,
-			[]string{
-				"timestamp",
-				"parent_process_start_time",
-				"leader_start_time",
-				"start_time",
-			},
-		)
-		if err != nil {
-			signalName := events.Core.GetDefinitionByID(signal.id).GetName()
-			return errfmt.Errorf("error normalizing time args for signal %s: %v", signalName, err)
+// RegisterSignal registers multiple signal handlers at once
+func (ctrl *Controller) RegisterSignal(handlers map[events.ID]SignalHandler) error {
+	// Validate all handlers before making any changes (atomic operation)
+	for signalID, handler := range handlers {
+		if handler == nil {
+			return errfmt.Errorf("signal handler for signal ID %d cannot be nil", signalID)
 		}
-
-		return ctrl.procTreeForkProcessor(signal.args)
-	case events.SignalSchedProcessExec:
-		// Not normalized at decode - normalize here.
-		err := events.NormalizeTimeArgs(
-			signal.args,
-			[]string{
-				"timestamp",
-				"task_start_time",
-				"parent_start_time",
-				"leader_start_time",
-			},
-		)
-		if err != nil {
-			signalName := events.Core.GetDefinitionByID(signal.id).GetName()
-			return errfmt.Errorf("error normalizing time args for signal %s: %v", signalName, err)
+		if _, exists := ctrl.signalHandlers[signalID]; exists {
+			return errfmt.Errorf("signal handler for signal ID %d already exists", signalID)
 		}
+	}
 
-		return ctrl.procTreeExecProcessor(signal.args)
-	case events.SignalSchedProcessExit:
-		// Not normalized at decode - normalize here.
-		err := events.NormalizeTimeArgs(
-			signal.args,
-			[]string{
-				"timestamp",
-				"task_start_time",
-			},
-		)
-		if err != nil {
-			signalName := events.Core.GetDefinitionByID(signal.id).GetName()
-			return errfmt.Errorf("error normalizing time args for signal %s: %v", signalName, err)
-		}
-
-		return ctrl.procTreeExitProcessor(signal.args)
-	case events.SignalHeartbeat:
-		heartbeat.SendPulse()
+	// All validations passed, now register each handler
+	for signalID, handler := range handlers {
+		ctrl.signalHandlers[signalID] = handler
 	}
 
 	return nil
+}
+
+// Private
+
+// registerSignalHandlers registers all default signal handlers
+func (ctrl *Controller) registerSignalHandlers() error {
+	// Define all signal handlers in a map for batch registration
+	signalHandlers := map[events.ID]SignalHandler{
+		events.SignalCgroupMkdir: func(signalID events.ID, args []trace.Argument) error {
+			return ctrl.processCgroupMkdir(args)
+		},
+		events.SignalCgroupRmdir: func(signalID events.ID, args []trace.Argument) error {
+			return ctrl.processCgroupRmdir(args)
+		},
+		events.SignalSchedProcessFork: func(signalID events.ID, args []trace.Argument) error {
+			// Not normalized at decode - normalize here.
+			err := events.NormalizeTimeArgs(
+				args,
+				[]string{
+					"timestamp",
+					"parent_process_start_time",
+					"leader_start_time",
+					"start_time",
+				},
+			)
+			if err != nil {
+				signalName := events.Core.GetDefinitionByID(signalID).GetName()
+				return errfmt.Errorf("error normalizing time args for signal %s: %v", signalName, err)
+			}
+
+			return ctrl.procTreeForkProcessor(args)
+		},
+		events.SignalSchedProcessExec: func(signalID events.ID, args []trace.Argument) error {
+			// Not normalized at decode - normalize here.
+			err := events.NormalizeTimeArgs(
+				args,
+				[]string{
+					"timestamp",
+					"task_start_time",
+					"parent_start_time",
+					"leader_start_time",
+				},
+			)
+			if err != nil {
+				signalName := events.Core.GetDefinitionByID(signalID).GetName()
+				return errfmt.Errorf("error normalizing time args for signal %s: %v", signalName, err)
+			}
+
+			return ctrl.procTreeExecProcessor(args)
+		},
+		events.SignalSchedProcessExit: func(signalID events.ID, args []trace.Argument) error {
+			// Not normalized at decode - normalize here.
+			err := events.NormalizeTimeArgs(
+				args,
+				[]string{
+					"timestamp",
+					"task_start_time",
+				},
+			)
+			if err != nil {
+				signalName := events.Core.GetDefinitionByID(signalID).GetName()
+				return errfmt.Errorf("error normalizing time args for signal %s: %v", signalName, err)
+			}
+
+			return ctrl.procTreeExitProcessor(args)
+		},
+		events.SignalHeartbeat: func(signalID events.ID, args []trace.Argument) error {
+			heartbeat.SendPulse()
+			return nil
+		},
+	}
+
+	// Register all handlers
+	return ctrl.RegisterSignal(signalHandlers)
+}
+
+// processSignal processes a signal from the control plane.
+func (ctrl *Controller) processSignal(signal *signal) error {
+	handler, exists := ctrl.signalHandlers[signal.id]
+	if !exists {
+		return errfmt.Errorf("no registered handler for signal %d", signal.id)
+	}
+
+	return handler(signal.id, signal.args)
 }
 
 // getSignalFromPool gets a signal from the pool.
