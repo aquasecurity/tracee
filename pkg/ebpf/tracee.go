@@ -1771,44 +1771,44 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 		for _, depProbes := range eventNode.GetDependencies().GetProbes() {
 			currProbe := t.defaultProbes.GetProbeByHandle(depProbes.GetHandle())
 			name := ""
-			switch p := currProbe.(type) {
-			case *probes.TraceProbe:
-				// Only k[ret]probes may use ftrace
-				if kprobesOnly {
-					switch p.GetProbeType() {
-					case probes.KProbe, probes.KretProbe:
-					default:
-						continue
-					}
-				}
-				if !p.IsAttached() {
-					// Don't fill the map with entries that didn't get hook (missing symbol etc)
-					continue
-				}
-				key := probeMapKey{
-					programName: p.GetProgramName(),
-					probeType:   p.GetProbeType(),
-					eventName:   p.GetEventName(),
-				}
 
-				_, found := uniqueHooksMap[key]
-				if found { // Already counted this hook
-					continue
+			// Only log all other probe types except TraceProbe
+			p, ok := currProbe.(*probes.TraceProbe)
+			if !ok {
+				// Log all other probe types using interface assertion
+				if p, ok := currProbe.(interface{ GetProgramName() string }); ok {
+					log(eventName, p.GetProgramName())
 				}
-
-				uniqueHooksMap[key] = struct{}{}
-
-				log(eventName, p.GetProgramName())
-				name = p.GetEventName()
-			case *probes.Uprobe:
-				log(eventName, p.GetProgramName())
-				continue
-			case *probes.CgroupProbe:
-				log(eventName, p.GetProgramName())
-				continue
-			default:
 				continue
 			}
+			// Perform the rest of the logic for TraceProbe
+			// Only k[ret]probes may use ftrace
+			if kprobesOnly {
+				switch p.GetProbeType() {
+				case probes.KProbe, probes.KretProbe:
+				default:
+					continue
+				}
+			}
+			if !p.IsAttached() {
+				// Don't fill the map with entries that didn't get hook (missing symbol etc)
+				continue
+			}
+			key := probeMapKey{
+				programName: p.GetProgramName(),
+				probeType:   p.GetProbeType(),
+				eventName:   p.GetEventName(),
+			}
+
+			_, found := uniqueHooksMap[key]
+			if found { // Already counted this hook
+				continue
+			}
+
+			uniqueHooksMap[key] = struct{}{}
+
+			log(eventName, p.GetProgramName())
+			name = p.GetEventName()
 
 			selfLoadedPrograms[name]++
 		}
