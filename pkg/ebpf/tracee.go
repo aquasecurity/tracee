@@ -130,6 +130,8 @@ type Tracee struct {
 	// This does not mean they are required for tracee to function.
 	// TODO: remove this in favor of dependency manager nodes
 	requiredKsyms []string
+	// Extensions manager
+	extensions *Extensions
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -247,6 +249,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		requiredKsyms:      []string{},
 		extraProbes:        make(map[string]*probes.ProbeGroup),
 		dataTypeDecoder:    bufferdecoder.NewTypeDecoder(),
+		extensions:         NewExtensions(),
 	}
 
 	// clear initial policies to avoid wrong references
@@ -291,6 +294,11 @@ func New(cfg config.Config) (*Tracee, error) {
 func (t *Tracee) Init(ctx gocontext.Context) error {
 	var err error
 
+	// Initialize extensions phase
+	if err := t.extensions.InitExtensionsForPhase(ctx, t, InitPhaseStart); err != nil {
+		return err
+	}
+
 	// Initialize buckets cache
 
 	var mntNSProcs map[uint32]int32 // map[mntns]pid
@@ -324,6 +332,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
+	// Initialize cgroups filesystems extensions phase
+	if err := t.extensions.InitExtensionsForPhase(ctx, t, InitPhaseCGroups); err != nil {
+		return err
+	}
+
 	// Initialize containers enrichment logic
 
 	t.containers, err = containers.New(
@@ -353,6 +366,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	t.contPathResolver = containers.InitContainerPathResolver(&t.pidsInMntns)
 	t.contSymbolsLoader = containers.InitContainersSymbolsLoader(t.contPathResolver, 1024)
 
+	// Initialize containers related extensions phase
+	if err := t.extensions.InitExtensionsForPhase(ctx, t, InitPhaseContainers); err != nil {
+		return err
+	}
+
 	// Initialize eBPF probes
 
 	err = capabilities.GetInstance().EBPF(
@@ -363,6 +381,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	if err != nil {
 		t.Close()
 		return errfmt.WrapError(err)
+	}
+
+	// Initialize eBPF probes extensions phase
+	if err := t.extensions.InitExtensionsForPhase(ctx, t, InitPhaseBPFProbes); err != nil {
+		return err
 	}
 
 	// Init kernel symbols map
@@ -389,6 +412,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 
 	t.validateKallsymsDependencies() // disable events w/ missing ksyms dependencies
+
+	// Initialize kernel symbols extensions phase
+	if err := t.extensions.InitExtensionsForPhase(ctx, t, InitPhaseKernelSymbols); err != nil {
+		return err
+	}
 
 	// Initialize time
 
@@ -478,6 +506,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
+	// Initialize eBPF programs and maps extensions phase
+	if err := t.extensions.InitExtensionsForPhase(ctx, t, InitPhaseBPFPrograms); err != nil {
+		return err
+	}
+
 	// Initialize hashes for files
 
 	t.fileHashes, err = digest.NewCache(t.config.Output.CalcHashes, t.contPathResolver)
@@ -552,7 +585,8 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
-	return nil
+	// Initialize extensions complete
+	return t.extensions.InitExtensionsForPhase(ctx, t, InitPhaseComplete)
 }
 
 // initTailCall initializes a given tailcall.
@@ -1570,6 +1604,11 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.controlPlane.Start()
 	go t.controlPlane.Run(ctx)
 
+	// Run Extensions
+	if err := t.extensions.RunExtensions(ctx, t); err != nil {
+		return errfmt.Errorf("error running extensions: %v", err)
+	}
+
 	// Measure event perf buffer write attempts (METRICS build only)
 
 	if version.MetricsBuild() {
@@ -1709,6 +1748,11 @@ func (t *Tracee) Close() {
 	}
 	if err := t.cgroups.Destroy(); err != nil {
 		logger.Errorw("Cgroups destroy", "error", err)
+	}
+
+	// Close Extensions
+	if err := t.extensions.CloseExtensions(t); err != nil {
+		logger.Errorw("failed to close extensions", "error", err)
 	}
 
 	// set 'running' to false and close 'done' channel only after attempting to close all resources
