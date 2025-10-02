@@ -1,6 +1,9 @@
 package probes
 
 import (
+	"errors"
+	"fmt"
+
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/common/elf"
@@ -8,118 +11,176 @@ import (
 	"github.com/aquasecurity/tracee/common/logger"
 )
 
-// NOTE: thread-safety guaranteed by the ProbeGroup big lock.
+var (
+	ErrFileAccess   = errors.New("error accessing file")
+	ErrFileAnalysis = errors.New("error analyzing file")
+)
 
-//
-// uProbe
-//
+type UprobeType uint8
 
-type Uprobe struct {
-	ProbeCompatibility
-	eventName   string
-	programName string // eBPF program to execute when uprobe triggered
-	binaryPath  string // ELF file path to attach uprobe to
-	symbolName  string // ELF binary symbol to attach uprobe to
-	bpfLink     *bpf.BPFLink
+const (
+	Uprobe UprobeType = iota
+	Uretprobe
+)
+
+var uprobeTypeNames = map[UprobeType]string{
+	Uprobe:    "Uprobe",
+	Uretprobe: "Uretprobe",
 }
 
-// NewUprobe creates a new uprobe.
-func NewUprobe(evtName string, progName string, binPath string, symName string) *Uprobe {
-	return &Uprobe{
+func (t UprobeType) String() string {
+	if name, ok := uprobeTypeNames[t]; ok {
+		return name
+	}
+
+	return fmt.Sprintf("Invalid uprobe type %d", t)
+}
+
+type GenericUprobe interface {
+	GetProbeType() UprobeType
+	GetEvent() UprobeEvent
+	GetProgramName() string
+}
+
+// FixedUprobe represents a uprobe attached to a specific binary at a fixed location.
+type FixedUprobe struct {
+	ProbeCompatibility
+	probeType   UprobeType
+	programName string         // eBPF program to execute when uprobe triggered
+	binaryPath  string         // ELF file path to attach uprobe to
+	event       UprobeEvent    // ELF binary symbol to attach uprobe to
+	bpfLinks    []*bpf.BPFLink // attach/detach thread-safety guaranteed by the ProbeGroup big lock
+}
+
+// NewFixedUprobe creates a new fixed uprobe that will be attached to a single binary.
+func NewFixedUprobe(probeType UprobeType, progName string, binPath string, event UprobeEvent) *FixedUprobe {
+	return &FixedUprobe{
+		probeType:   probeType,
 		programName: progName,
-		eventName:   evtName,
 		binaryPath:  binPath,
-		symbolName:  symName,
+		event:       event,
 	}
 }
 
-func NewUprobeWithCompatibility(evtName string, progName string, binPath string, symName string, compatibility *ProbeCompatibility) *Uprobe {
-	return &Uprobe{
+// NewFixedUprobeWithCompatibility creates a new fixed uprobe with compatibility.
+func NewFixedUprobeWithCompatibility(probeType UprobeType, progName string, binPath string, event UprobeEvent, compatibility *ProbeCompatibility) *FixedUprobe {
+	return &FixedUprobe{
 		ProbeCompatibility: *compatibility,
-		eventName:          evtName,
+		probeType:          probeType,
 		programName:        progName,
 		binaryPath:         binPath,
-		symbolName:         symName,
+		event:              event,
 	}
 }
 
-func (p *Uprobe) GetEventName() string {
-	return p.eventName
+func (p *FixedUprobe) GetProbeType() UprobeType {
+	return p.probeType
 }
 
-func (p *Uprobe) GetProgramName() string {
+func (p *FixedUprobe) GetEvent() UprobeEvent {
+	return p.event
+}
+
+func (p *FixedUprobe) GetProgramName() string {
 	return p.programName
 }
 
-func (p *Uprobe) GetBinaryPath() string {
-	return p.binaryPath
+// IsAttached returns true if the uprobe is currently attached.
+func (p *FixedUprobe) IsAttached() bool {
+	return len(p.bpfLinks) > 0
 }
 
-func (p *Uprobe) GetSymbolName() string {
-	return p.symbolName
-}
-
-func (p *Uprobe) attach(module *bpf.Module, args ...interface{}) error {
-	var link *bpf.BPFLink
-
-	if p.bpfLink != nil {
+func (p *FixedUprobe) attach(module *bpf.Module, args ...interface{}) error {
+	if p.IsAttached() {
 		return nil // already attached, it is ok to call attach again
 	}
 
 	if module == nil {
-		return errfmt.Errorf("incorrect arguments for event: %s", p.eventName)
+		return errfmt.Errorf("incorrect arguments for event: %s", p.event)
 	}
 
-	prog, err := module.GetProgram(p.programName)
+	links, err := attachToFileFixed(p, module, p.binaryPath)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
-	// Create ELF analyzer to get symbol offset
-	wantedSymbols := []elf.WantedSymbol{elf.NewPlainSymbolName(p.symbolName)}
-	ea, err := elf.NewElfAnalyzer(p.binaryPath, wantedSymbols)
-	if err != nil {
-		return errfmt.Errorf("error creating ELF analyzer for %s: %v", p.binaryPath, err)
-	}
-	defer func() {
-		if closeErr := ea.Close(); closeErr != nil {
-			// Log the error but don't override the main error
-			logger.Warnw("error closing file", "path", p.binaryPath, "error", closeErr)
-		}
-	}()
-
-	offset, err := ea.GetSymbolOffset(p.symbolName)
-	if err != nil {
-		return errfmt.Errorf("error finding %s function offset: %v", p.symbolName, err)
-	}
-
-	link, err = prog.AttachUprobe(-1, p.binaryPath, offset)
-	if err != nil {
-		return errfmt.Errorf("error attaching uprobe on %s: %v", p.symbolName, err)
-	}
-
-	p.bpfLink = link
+	p.bpfLinks = links
 
 	return nil
 }
 
-func (p *Uprobe) detach(args ...interface{}) error {
-	var err error
-
-	if p.bpfLink == nil {
+func (p *FixedUprobe) detach(args ...interface{}) error {
+	if !p.IsAttached() {
 		return nil // already detached, it is ok to call detach again
 	}
 
-	err = p.bpfLink.Destroy()
-	if err != nil {
-		return errfmt.Errorf("failed to detach event: %s (%v)", p.eventName, err)
+	var allErrors []error
+	for _, link := range p.bpfLinks {
+		if err := link.Destroy(); err != nil {
+			allErrors = append(allErrors, err)
+		}
 	}
 
-	p.bpfLink = nil // NOTE: needed so a new call to bpf_link__destroy() works
+	if len(allErrors) > 0 {
+		return errfmt.Errorf("failed to detach %d link(s) for event %s: %v",
+			len(allErrors), p.event, allErrors)
+	}
+
+	p.bpfLinks = nil // NOTE: needed so a new call to detach() works
 
 	return nil
 }
 
-func (p *Uprobe) autoload(module *bpf.Module, autoload bool) error {
+func (p *FixedUprobe) autoload(module *bpf.Module, autoload bool) error {
 	return enableDisableAutoload(module, p.programName, autoload)
+}
+
+// attachToFileFixed attaches a FixedUprobe to a file - only supports UprobeEventSymbol
+func attachToFileFixed(p *FixedUprobe, module *bpf.Module, binaryPath string) ([]*bpf.BPFLink, error) {
+	prog, err := module.GetProgram(p.GetProgramName())
+	if err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
+	// FixedUprobe only supports UprobeEventSymbol
+	event, ok := p.GetEvent().(UprobeEventSymbol)
+	if !ok {
+		return nil, errfmt.Errorf("FixedUprobe only supports UprobeEventSymbol, got %T", p.GetEvent())
+	}
+
+	// Create ELF analyzer for symbol lookup
+	wantedSymbols := []elf.WantedSymbol{elf.NewPlainSymbolName(string(event))}
+	ea, err := elf.NewElfAnalyzer(binaryPath, wantedSymbols)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ELF analyzer for %s: %w: %w", binaryPath, ErrFileAccess, err)
+	}
+	defer func() {
+		if err := ea.Close(); err != nil {
+			logger.Warnw("error closing file", "path", binaryPath, "error", err)
+		}
+	}()
+
+	switch p.GetProbeType() {
+	case Uprobe, Uretprobe:
+		// Get attachment offset for symbol
+		offset, err := ea.GetSymbolOffset(string(event))
+		if err != nil {
+			return nil, fmt.Errorf("%w: error finding %s function offset: %w", ErrFileAnalysis, p.GetEvent().String(), err)
+		}
+
+		// Perform the attachment
+		var link *bpf.BPFLink
+		if p.GetProbeType() == Uprobe {
+			link, err = prog.AttachUprobe(-1, binaryPath, offset)
+		} else {
+			link, err = prog.AttachURetprobe(-1, binaryPath, offset)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("error attaching uprobe on %s (0x%x): %w", p.GetEvent().String(), offset, err)
+		}
+		return []*bpf.BPFLink{link}, nil
+
+	default:
+		return nil, errfmt.Errorf("FixedUprobe only supports Uprobe and Uretprobe probe types, got %s", p.GetProbeType().String())
+	}
 }
