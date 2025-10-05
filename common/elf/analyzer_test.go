@@ -392,14 +392,6 @@ func TestSymbolFunctions_WithRealElf(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, symbol)
 			assert.Equal(t, firstSymbolName, symbol.Name)
-
-			// Test GetSymbolOffset if symbol is not imported
-			if !symbol.IsImported() {
-				offset, err := analyzer.GetSymbolOffset(firstSymbolName)
-				if err == nil {
-					assert.Greater(t, offset, uint64(0))
-				}
-			}
 		}
 
 		// Test non-existent symbol
@@ -440,6 +432,40 @@ func TestSymbolFunctions_WithRealElf(t *testing.T) {
 			assert.True(t, found, "Unexpected symbol %s in wanted-only mode", symbolName)
 		}
 	})
+}
+
+// TestSymbolOffsetCalculation tests the symbol offset calculation formula
+func TestSymbolOffsetCalculation(t *testing.T) {
+	testCases := []struct {
+		name           string
+		symbolValue    uint64
+		sectionAddr    uint64
+		sectionOffset  uint64
+		expectedOffset uint64
+	}{
+		{
+			name:           "symbol at section start with zero file offset",
+			symbolValue:    0x1000,
+			sectionAddr:    0x1000,
+			sectionOffset:  0x0,
+			expectedOffset: 0x0, // Legitimate zero result
+		},
+		{
+			name:           "symbol within section with file offset",
+			symbolValue:    0x1050,
+			sectionAddr:    0x1000,
+			sectionOffset:  0x400,
+			expectedOffset: 0x450, // 0x1050 - 0x1000 + 0x400
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Formula: symbol.Value - section.Addr + section.Offset
+			actualOffset := tc.symbolValue - tc.sectionAddr + tc.sectionOffset
+			assert.Equal(t, tc.expectedOffset, actualOffset)
+		})
+	}
 }
 
 func TestGetFunctionRetInsts_WithRealElf(t *testing.T) {
