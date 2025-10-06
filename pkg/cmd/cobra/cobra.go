@@ -336,6 +336,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	runner.HTTP = serverRunner.HTTP
 	runner.GRPC = serverRunner.GRPC
+	cfg.MetricsEnabled = runner.HTTP.MetricsEndpointEnabled()
 	runner.TraceeConfig = cfg
 	runner.Printer = p
 	runner.InstallPath = traceeInstallPath
