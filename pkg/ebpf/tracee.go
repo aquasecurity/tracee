@@ -2236,3 +2236,7 @@ func (t *Tracee) RegisterEventDerivations(eventDerivations derive.Table) {
 		}
 	}
 }
+
+func (t *Tracee) MetricsEnabled() bool {
+	return t.config.MetricsEnabled
+}

@@ -34,7 +34,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	}
 	t.sigEngine = sigEngine
 
-	if t.config.MetricsEnabled {
+	if t.MetricsEnabled() {
 		err := t.sigEngine.Stats().RegisterPrometheus()
 		if err != nil {
 			logger.Errorw("Registering signature engine prometheus metrics", "error", err)

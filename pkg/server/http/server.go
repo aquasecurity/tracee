@@ -122,6 +122,10 @@ func (s *Server) EnablePyroAgent() error {
 
 // MetricsEndpointEnabled returns true if metrics endpoint is enabled
 func (s *Server) MetricsEndpointEnabled() bool {
+	if s == nil {
+		return false
+	}
+
 	return s.metricsEnabled
 }
 
