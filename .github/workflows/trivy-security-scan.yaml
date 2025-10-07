@@ -1,0 +1,273 @@
+name: Trivy Security Scan
+
+on:
+  # Run daily at 2 AM UTC
+  schedule:
+    - cron: '0 2 * * *'
+  # Manual trigger
+  workflow_dispatch:
+  # Test trigger for use-trivy-action branch (to be removed before merging)
+  push:
+    branches:
+      - use-trivy-action
+  # Run on PRs that modify Dockerfiles
+  pull_request:
+    paths:
+      - 'builder/Dockerfile*'
+      - 'performance/dashboard/docker-compose.yml'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  scan-dockerfiles:
+    name: Scan Custom Docker Images
+    runs-on: ubuntu-24.04
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files and build/scan images
+        run: |
+          # Get changed files for PRs
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            CHANGED_FILES=$(git diff --name-only ${BASE_SHA} HEAD | grep "^builder/Dockerfile" || true)
+            echo "Changed Dockerfiles: ${CHANGED_FILES}"
+          else
+            echo "Running scheduled/manual scan - processing all Dockerfiles"
+            CHANGED_FILES="all"
+          fi
+          
+          # Function to build and scan an image
+          build_and_scan() {
+            local dockerfile="$1"
+            local build_command="$2"
+            local image_name="$3"
+            
+            echo "=== Processing ${dockerfile} ==="
+            
+            # Check if we should process this dockerfile
+            if [ "${CHANGED_FILES}" = "all" ] || echo "${CHANGED_FILES}" | grep -q "${dockerfile}"; then
+              echo "Building and scanning ${image_name}"
+              
+              # Build the image
+              echo "Building with: ${build_command}"
+              ${build_command}
+              
+              # Clean name for file output
+              CLEAN_NAME=$(echo "${image_name}" | sed 's/:/-/g')
+              
+              # Run Trivy SARIF scan
+              echo "Running Trivy SARIF scan..."
+              docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                -v $(pwd):/workspace \
+                aquasecurity/trivy:latest image \
+                --format sarif \
+                --output /workspace/trivy-results-${CLEAN_NAME}.sarif \
+                --severity CRITICAL,HIGH,MEDIUM \
+                --ignore-unfixed \
+                --vuln-type os,library \
+                ${image_name}
+              
+              # Run Trivy table scan for logs
+              echo "Running Trivy table scan..."
+              docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                aquasecurity/trivy:latest image \
+                --format table \
+                --severity CRITICAL,HIGH \
+                --ignore-unfixed \
+                --vuln-type os,library \
+                ${image_name}
+              
+              echo "Completed scanning ${image_name}"
+            else
+              echo "Skipping ${dockerfile} (not changed)"
+            fi
+            echo ""
+          }
+          
+          # Process all Dockerfiles
+          build_and_scan "builder/Dockerfile.alpine-tracee-container" \
+                        "make -f builder/Makefile.tracee-container build-tracee TRACEE_CONT_NAME=tracee-container:scan" \
+                        "tracee-container:scan"
+          
+          build_and_scan "builder/Dockerfile.alpine-tracee-make" \
+                        "make -f builder/Makefile.tracee-make alpine-prepare ALPINE_MAKE_CONTNAME=alpine-tracee-make:scan" \
+                        "alpine-tracee-make:scan"
+          
+          build_and_scan "builder/Dockerfile.ubuntu-tracee-make" \
+                        "make -f builder/Makefile.tracee-make ubuntu-prepare UBUNTU_MAKE_CONTNAME=ubuntu-tracee-make:scan" \
+                        "ubuntu-tracee-make:scan"
+          
+          build_and_scan "builder/Dockerfile.mkdocs" \
+                        "make -f builder/Makefile.mkdocs mkdocs-build MKDOCS_CONTNAME=tracee-mkdocs:scan" \
+                        "tracee-mkdocs:scan"
+          
+          build_and_scan "builder/Dockerfile.protoc" \
+                        "make -f builder/Makefile.protoc protoc-build PROTOC_CONTNAME=tracee-protoc:scan" \
+                        "tracee-protoc:scan"
+          
+          build_and_scan "builder/Dockerfile.man" \
+                        "make -f builder/Makefile.man build MAN_CONTNAME=tracee-man:scan" \
+                        "tracee-man:scan"
+          
+          build_and_scan "builder/Dockerfile.k8s" \
+                        "make -f builder/Makefile.k8s build K8S_CONTNAME=tracee-k8s:scan" \
+                        "tracee-k8s:scan"
+
+      - name: Upload all SARIF results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
+        if: always()
+        with:
+          sarif_file: 'trivy-results-*.sarif'
+
+  scan-compose-images:
+    name: Scan Docker Compose Images
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: node-exporter
+            image: prom/node-exporter
+          - service: prometheus
+            image: prom/prometheus
+          - service: grafana
+            image: grafana/grafana
+          - service: pyroscope
+            image: pyroscope/pyroscope
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Pull Docker Compose images and get image info
+        id: image_info
+        working-directory: performance/dashboard
+        run: |
+          docker-compose pull ${{ matrix.service }}
+          
+          # Get the local image that was pulled
+          LOCAL_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "^${{ matrix.image }}" | head -1)
+          
+          echo "ref=${LOCAL_IMAGE}" >> ${GITHUB_OUTPUT}
+          echo "name=${{ matrix.service }}" >> ${GITHUB_OUTPUT}
+          echo "Local image that will be scanned: ${LOCAL_IMAGE}"
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.image_info.outputs.ref }}
+          format: 'sarif'
+          output: 'trivy-results-${{ steps.image_info.outputs.name }}.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'  # Don't fail the build, just report
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
+        if: always()
+        with:
+          sarif_file: 'trivy-results-${{ steps.image_info.outputs.name }}.sarif'
+
+      - name: Run Trivy scanner for table output
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.image_info.outputs.ref }}
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+  scan-filesystem:
+    name: Scan Repository for Secrets and Misconfigurations
+    runs-on: ubuntu-24.04
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+          scanners: 'vuln,secret,misconfig'
+          skip-dirs: 'dist,3rdparty'
+
+      - name: Upload filesystem scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
+        if: always()
+        with:
+          sarif_file: 'trivy-fs-results.sarif'
+
+      - name: Run Trivy filesystem scan for table output
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          scanners: 'secret,misconfig'
+          skip-dirs: 'dist,3rdparty'
+
+  generate-sbom:
+    name: Generate Software Bill of Materials
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Generate SBOM for repository
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'spdx-json'
+          output: 'tracee-sbom.spdx.json'
+          scanners: 'vuln'
+
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: tracee-sbom
+          path: tracee-sbom.spdx.json
+          retention-days: 30
+
+  summary:
+    name: Security Scan Summary
+    runs-on: ubuntu-24.04
+    needs: [scan-dockerfiles, scan-compose-images, scan-filesystem]
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 🔒 Trivy Security Scan Summary" >> ${GITHUB_STEP_SUMMARY}
+          echo "" >> ${GITHUB_STEP_SUMMARY}
+          echo "### Scan Results:" >> ${GITHUB_STEP_SUMMARY}
+          echo "- **Custom Docker Images**: ${{ needs.scan-dockerfiles.result }}" >> ${GITHUB_STEP_SUMMARY}
+          echo "- **Third-party Images**: ${{ needs.scan-compose-images.result }}" >> ${GITHUB_STEP_SUMMARY}
+          echo "- **Repository Filesystem**: ${{ needs.scan-filesystem.result }}" >> ${GITHUB_STEP_SUMMARY}
+          echo "" >> ${GITHUB_STEP_SUMMARY}
+          echo "### 📊 View Results:" >> ${GITHUB_STEP_SUMMARY}
+          echo "- Check the **Security** tab for detailed vulnerability reports" >> ${GITHUB_STEP_SUMMARY}
+          echo "- Review the individual job logs for table-formatted output" >> ${GITHUB_STEP_SUMMARY}
+          echo "" >> ${GITHUB_STEP_SUMMARY}
+          echo "### 🕐 Next Scheduled Scan:" >> ${GITHUB_STEP_SUMMARY}
+          echo "Daily at 2:00 AM UTC" >> ${GITHUB_STEP_SUMMARY}
