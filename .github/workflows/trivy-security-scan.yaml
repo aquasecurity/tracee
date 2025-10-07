@@ -22,175 +22,107 @@ permissions:
   actions: read
 
 jobs:
-  scan-dockerfiles:
-    name: Scan Custom Docker Images
+  generate-matrix-custom-docker-images:
+    name: Generate Custom Docker Images Matrix
     runs-on: ubuntu-24.04
-    
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has-changes: ${{ steps.set-matrix.outputs.has-changes }}
     steps:
       - name: Checkout code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           fetch-depth: 0
 
-      - name: Get changed files and build/scan images
+      - name: Generate matrix based on changed files
+        id: set-matrix
         run: |
-          # Get changed files for PRs
+          # Define all possible Dockerfiles and their build configs
+          declare -A dockerfiles=(
+            ["builder/Dockerfile.alpine-tracee-container"]="make -f builder/Makefile.tracee-container build-tracee TRACEE_CONT_NAME=tracee-container:scan|tracee-container:scan"
+            ["builder/Dockerfile.alpine-tracee-make"]="make -f builder/Makefile.tracee-make alpine-prepare ALPINE_MAKE_CONTNAME=alpine-tracee-make:scan|alpine-tracee-make:scan"
+            ["builder/Dockerfile.ubuntu-tracee-make"]="make -f builder/Makefile.tracee-make ubuntu-prepare UBUNTU_MAKE_CONTNAME=ubuntu-tracee-make:scan|ubuntu-tracee-make:scan"
+            ["builder/Dockerfile.mkdocs"]="make -f builder/Makefile.mkdocs mkdocs-build MKDOCS_CONTNAME=tracee-mkdocs:scan|tracee-mkdocs:scan"
+            ["builder/Dockerfile.protoc"]="make -f builder/Makefile.protoc protoc-build PROTOC_CONTNAME=tracee-protoc:scan|tracee-protoc:scan"
+            ["builder/Dockerfile.man"]="make -f builder/Makefile.man man-build MAN_CONTNAME=tracee-man:scan|tracee-man:scan"
+            ["builder/Dockerfile.k8s"]="make -f builder/Makefile.k8s build K8S_CONTNAME=tracee-k8s:scan|tracee-k8s:scan"
+          )
+          
+          # Get changed files for PRs, or all files for scheduled/manual runs
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
             CHANGED_FILES=$(git diff --name-only ${BASE_SHA} HEAD | grep "^builder/Dockerfile" || true)
             echo "Changed Dockerfiles: ${CHANGED_FILES}"
           else
-            echo "Running scheduled/manual scan - processing all Dockerfiles"
-            CHANGED_FILES="all"
+            echo "Running scheduled/manual scan - including all Dockerfiles"
+            CHANGED_FILES=$(printf '%s\n' "${!dockerfiles[@]}")
           fi
           
-          # Function to build and scan an image
-          build_and_scan() {
-            local dockerfile="$1"
-            local build_command="$2"
-            local image_name="$3"
-            
-            echo "=== Processing ${dockerfile} ==="
-            
-            # Check if we should process this dockerfile
-            if [ "${CHANGED_FILES}" = "all" ] || echo "${CHANGED_FILES}" | grep -q "${dockerfile}"; then
-              echo "Building and scanning ${image_name}"
+          # Build matrix JSON
+          matrix_json="["
+          first=true
+          has_changes=false
+          
+          for dockerfile in "${!dockerfiles[@]}"; do
+            if [ "${{ github.event_name }}" != "pull_request" ] || echo "${CHANGED_FILES}" | grep -q "${dockerfile}"; then
+              IFS='|' read -r build_command image_name <<< "${dockerfiles[$dockerfile]}"
+              clean_name=$(echo "${image_name}" | sed 's/:/-/g')
               
-              # Build the image
-              echo "Building with: ${build_command}"
-              ${build_command}
+              if [ "${first}" = false ]; then
+                matrix_json+=","
+              fi
               
-              # Clean name for file output
-              CLEAN_NAME=$(echo "${image_name}" | sed 's/:/-/g')
-              
-              echo "Completed building ${image_name}"
-            else
-              echo "Skipping ${dockerfile} (not changed)"
+              matrix_json+="{\"dockerfile\":\"${dockerfile}\",\"build_command\":\"${build_command}\",\"image_name\":\"${image_name}\",\"clean_name\":\"${clean_name}\"}"
+              first=false
+              has_changes=true
             fi
-            echo ""
-          }
+          done
           
-          # Process all Dockerfiles
-          build_and_scan "builder/Dockerfile.alpine-tracee-container" \
-                        "make -f builder/Makefile.tracee-container build-tracee TRACEE_CONT_NAME=tracee-container:scan" \
-                        "tracee-container:scan"
+          matrix_json+="]"
           
-          build_and_scan "builder/Dockerfile.alpine-tracee-make" \
-                        "make -f builder/Makefile.tracee-make alpine-prepare ALPINE_MAKE_CONTNAME=alpine-tracee-make:scan" \
-                        "alpine-tracee-make:scan"
-          
-          build_and_scan "builder/Dockerfile.ubuntu-tracee-make" \
-                        "make -f builder/Makefile.tracee-make ubuntu-prepare UBUNTU_MAKE_CONTNAME=ubuntu-tracee-make:scan" \
-                        "ubuntu-tracee-make:scan"
-          
-          build_and_scan "builder/Dockerfile.mkdocs" \
-                        "make -f builder/Makefile.mkdocs mkdocs-build MKDOCS_CONTNAME=tracee-mkdocs:scan" \
-                        "tracee-mkdocs:scan"
-          
-          build_and_scan "builder/Dockerfile.protoc" \
-                        "make -f builder/Makefile.protoc protoc-build PROTOC_CONTNAME=tracee-protoc:scan" \
-                        "tracee-protoc:scan"
-          
-          build_and_scan "builder/Dockerfile.man" \
-                        "make -f builder/Makefile.man build MAN_CONTNAME=tracee-man:scan" \
-                        "tracee-man:scan"
-          
-          build_and_scan "builder/Dockerfile.k8s" \
-                        "make -f builder/Makefile.k8s build K8S_CONTNAME=tracee-k8s:scan" \
-                        "tracee-k8s:scan"
+          echo "Generated matrix: ${matrix_json}"
+          echo "matrix=${matrix_json}" >> ${GITHUB_OUTPUT}
+          echo "has-changes=${has_changes}" >> ${GITHUB_OUTPUT}
 
-      - name: Scan tracee-container image
-        continue-on-error: true
+  scan-dockerfiles:
+    name: Scan Custom Docker Images
+    runs-on: ubuntu-24.04
+    needs: generate-matrix-custom-docker-images
+    if: needs.generate-matrix-custom-docker-images.outputs.has-changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.generate-matrix-custom-docker-images.outputs.matrix) }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Build Docker image
+        run: |
+          echo "Building ${{ matrix.image_name }} from ${{ matrix.dockerfile }}"
+          echo "Build command: ${{ matrix.build_command }}"
+          ${{ matrix.build_command }}
+
+      - name: Scan Docker image
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'tracee-container:scan'
+          image-ref: ${{ matrix.image_name }}
           format: 'sarif'
-          output: 'trivy-results-tracee-container-scan.sarif'
+          output: 'trivy-results-${{ matrix.clean_name }}.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
           exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
 
-      - name: Scan alpine-tracee-make image
-        continue-on-error: true
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'alpine-tracee-make:scan'
-          format: 'sarif'
-          output: 'trivy-results-alpine-tracee-make-scan.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-
-      - name: Scan ubuntu-tracee-make image
-        continue-on-error: true
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'ubuntu-tracee-make:scan'
-          format: 'sarif'
-          output: 'trivy-results-ubuntu-tracee-make-scan.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-
-      - name: Scan tracee-mkdocs image
-        continue-on-error: true
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'tracee-mkdocs:scan'
-          format: 'sarif'
-          output: 'trivy-results-tracee-mkdocs-scan.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-
-      - name: Scan tracee-protoc image
-        continue-on-error: true
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'tracee-protoc:scan'
-          format: 'sarif'
-          output: 'trivy-results-tracee-protoc-scan.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-
-      - name: Scan tracee-man image
-        continue-on-error: true
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'tracee-man:scan'
-          format: 'sarif'
-          output: 'trivy-results-tracee-man-scan.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-
-      - name: Scan tracee-k8s image
-        continue-on-error: true
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'tracee-k8s:scan'
-          format: 'sarif'
-          output: 'trivy-results-tracee-k8s-scan.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-
-      - name: Upload all SARIF results to GitHub Security tab
+      - name: Upload SARIF results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
         if: always()
         with:
-          sarif_file: 'trivy-results-*.sarif'
+          sarif_file: 'trivy-results-${{ matrix.clean_name }}.sarif'
 
-  scan-compose-images:
-    name: Scan Docker Compose Images
+  scan-performance-dashboard-images:
+    name: Scan Perf. Dashboard Images
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -213,7 +145,7 @@ jobs:
         id: image_info
         working-directory: performance/dashboard
         run: |
-          docker-compose pull ${{ matrix.service }}
+          docker compose pull ${{ matrix.service }}
           
           # Get the local image that was pulled
           LOCAL_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "^${{ matrix.image }}" | head -1)
@@ -314,7 +246,7 @@ jobs:
   summary:
     name: Security Scan Summary
     runs-on: ubuntu-24.04
-    needs: [scan-dockerfiles, scan-compose-images, scan-filesystem]
+    needs: [scan-dockerfiles, scan-performance-dashboard-images, scan-filesystem]
     if: always()
     
     steps:
