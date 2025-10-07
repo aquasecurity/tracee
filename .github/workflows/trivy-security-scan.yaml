@@ -63,29 +63,7 @@ jobs:
               # Clean name for file output
               CLEAN_NAME=$(echo "${image_name}" | sed 's/:/-/g')
               
-              # Run Trivy SARIF scan
-              echo "Running Trivy SARIF scan..."
-              docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                -v $(pwd):/workspace \
-                aquasecurity/trivy:latest image \
-                --format sarif \
-                --output /workspace/trivy-results-${CLEAN_NAME}.sarif \
-                --severity CRITICAL,HIGH,MEDIUM \
-                --ignore-unfixed \
-                --vuln-type os,library \
-                ${image_name}
-              
-              # Run Trivy table scan for logs
-              echo "Running Trivy table scan..."
-              docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                aquasecurity/trivy:latest image \
-                --format table \
-                --severity CRITICAL,HIGH \
-                --ignore-unfixed \
-                --vuln-type os,library \
-                ${image_name}
-              
-              echo "Completed scanning ${image_name}"
+              echo "Completed building ${image_name}"
             else
               echo "Skipping ${dockerfile} (not changed)"
             fi
@@ -120,6 +98,90 @@ jobs:
           build_and_scan "builder/Dockerfile.k8s" \
                         "make -f builder/Makefile.k8s build K8S_CONTNAME=tracee-k8s:scan" \
                         "tracee-k8s:scan"
+
+      - name: Scan tracee-container image
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'tracee-container:scan'
+          format: 'sarif'
+          output: 'trivy-results-tracee-container-scan.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      - name: Scan alpine-tracee-make image
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'alpine-tracee-make:scan'
+          format: 'sarif'
+          output: 'trivy-results-alpine-tracee-make-scan.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      - name: Scan ubuntu-tracee-make image
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ubuntu-tracee-make:scan'
+          format: 'sarif'
+          output: 'trivy-results-ubuntu-tracee-make-scan.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      - name: Scan tracee-mkdocs image
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'tracee-mkdocs:scan'
+          format: 'sarif'
+          output: 'trivy-results-tracee-mkdocs-scan.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      - name: Scan tracee-protoc image
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'tracee-protoc:scan'
+          format: 'sarif'
+          output: 'trivy-results-tracee-protoc-scan.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      - name: Scan tracee-man image
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'tracee-man:scan'
+          format: 'sarif'
+          output: 'trivy-results-tracee-man-scan.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      - name: Scan tracee-k8s image
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'tracee-k8s:scan'
+          format: 'sarif'
+          output: 'trivy-results-tracee-k8s-scan.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
 
       - name: Upload all SARIF results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
