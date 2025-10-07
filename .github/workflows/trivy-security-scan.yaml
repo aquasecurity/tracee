@@ -37,15 +37,15 @@ jobs:
       - name: Generate matrix based on changed files
         id: set-matrix
         run: |
-          # Define all possible Dockerfiles and their build configs
+          # Define all possible Dockerfiles and their build configs (relative to builder/ directory)
           declare -A dockerfiles=(
-            ["builder/Dockerfile.alpine-tracee-container"]="make -f builder/Makefile.tracee-container build-tracee TRACEE_CONT_NAME=tracee-container:scan|tracee-container:scan"
-            ["builder/Dockerfile.alpine-tracee-make"]="make -f builder/Makefile.tracee-make alpine-prepare ALPINE_MAKE_CONTNAME=alpine-tracee-make:scan|alpine-tracee-make:scan"
-            ["builder/Dockerfile.ubuntu-tracee-make"]="make -f builder/Makefile.tracee-make ubuntu-prepare UBUNTU_MAKE_CONTNAME=ubuntu-tracee-make:scan|ubuntu-tracee-make:scan"
-            ["builder/Dockerfile.mkdocs"]="make -f builder/Makefile.mkdocs mkdocs-build MKDOCS_CONTNAME=tracee-mkdocs:scan|tracee-mkdocs:scan"
-            ["builder/Dockerfile.protoc"]="make -f builder/Makefile.protoc protoc-build PROTOC_CONTNAME=tracee-protoc:scan|tracee-protoc:scan"
-            ["builder/Dockerfile.man"]="make -f builder/Makefile.man man-build MAN_CONTNAME=tracee-man:scan|tracee-man:scan"
-            ["builder/Dockerfile.k8s"]="make -f builder/Makefile.k8s build K8S_CONTNAME=tracee-k8s:scan|tracee-k8s:scan"
+            ["Dockerfile.alpine-tracee-container"]="make -f Makefile.tracee-container build-tracee TRACEE_CONT_NAME=tracee-container:scan|tracee-container:scan"
+            ["Dockerfile.alpine-tracee-make"]="make -f Makefile.tracee-make alpine-prepare ALPINE_MAKE_CONTNAME=alpine-tracee-make:scan|alpine-tracee-make:scan"
+            ["Dockerfile.ubuntu-tracee-make"]="make -f Makefile.tracee-make ubuntu-prepare UBUNTU_MAKE_CONTNAME=ubuntu-tracee-make:scan|ubuntu-tracee-make:scan"
+            ["Dockerfile.mkdocs"]="make -f Makefile.mkdocs mkdocs-build MKDOCS_CONTNAME=tracee-mkdocs:scan|tracee-mkdocs:scan"
+            ["Dockerfile.protoc"]="make -f Makefile.protoc protoc-build PROTOC_CONTNAME=tracee-protoc:scan|tracee-protoc:scan"
+            ["Dockerfile.man"]="make -f Makefile.man man-build MAN_CONTNAME=tracee-man:scan|tracee-man:scan"
+            ["Dockerfile.k8s"]="make -f Makefile.k8s build K8S_CONTNAME=tracee-k8s:scan|tracee-k8s:scan"
           )
           
           # Get changed files for PRs, or all files for scheduled/manual runs
@@ -64,7 +64,9 @@ jobs:
           has_changes=false
           
           for dockerfile in "${!dockerfiles[@]}"; do
-            if [ "${{ github.event_name }}" != "pull_request" ] || echo "${CHANGED_FILES}" | grep -q "${dockerfile}"; then
+            # For PRs, check if the full path (builder/Dockerfile.xxx) changed
+            full_path="builder/${dockerfile}"
+            if [ "${{ github.event_name }}" != "pull_request" ] || echo "${CHANGED_FILES}" | grep -q "${full_path}"; then
               IFS='|' read -r build_command image_name <<< "${dockerfiles[$dockerfile]}"
               clean_name=$(echo "${image_name}" | sed 's/:/-/g')
               
@@ -84,6 +86,64 @@ jobs:
           echo "matrix=${matrix_json}" >> ${GITHUB_OUTPUT}
           echo "has-changes=${has_changes}" >> ${GITHUB_OUTPUT}
 
+  generate-matrix-dashboard-images:
+    name: Generate Dashboard Images Matrix
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has-changes: ${{ steps.set-matrix.outputs.has-changes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0
+
+      - name: Generate matrix based on docker-compose changes
+        id: set-matrix
+        run: |
+          # Define dashboard images
+          declare -A dashboard_images=(
+            ["node-exporter"]="prom/node-exporter"
+            ["prometheus"]="prom/prometheus"
+            ["grafana"]="grafana/grafana"
+            ["pyroscope"]="pyroscope/pyroscope"
+          )
+          
+          # Check if docker-compose file changed for PRs, or include all for scheduled/manual runs
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            COMPOSE_CHANGED=$(git diff --name-only ${BASE_SHA} HEAD | grep "^performance/dashboard/docker-compose.yml" || true)
+            echo "Docker-compose file changed: ${COMPOSE_CHANGED:-false}"
+          else
+            echo "Running scheduled/manual scan - including all dashboard images"
+            COMPOSE_CHANGED="performance/dashboard/docker-compose.yml"
+          fi
+          
+          # Build matrix JSON
+          matrix_json="["
+          first=true
+          has_changes=false
+          
+          if [ -n "${COMPOSE_CHANGED}" ]; then
+            for service in "${!dashboard_images[@]}"; do
+              image="${dashboard_images[$service]}"
+              
+              if [ "${first}" = false ]; then
+                matrix_json+=","
+              fi
+              
+              matrix_json+="{\"service\":\"${service}\",\"image\":\"${image}\"}"
+              first=false
+              has_changes=true
+            done
+          fi
+          
+          matrix_json+="]"
+          
+          echo "Generated dashboard matrix: ${matrix_json}"
+          echo "matrix=${matrix_json}" >> ${GITHUB_OUTPUT}
+          echo "has-changes=${has_changes}" >> ${GITHUB_OUTPUT}
+
   scan-dockerfiles:
     name: Scan Image (${{ matrix.dockerfile }})
     runs-on: ubuntu-24.04
@@ -99,6 +159,7 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Build Docker image
+        working-directory: builder
         run: |
           echo "Building ${{ matrix.image_name }} from ${{ matrix.dockerfile }}"
           echo "Build command: ${{ matrix.build_command }}"
@@ -124,18 +185,12 @@ jobs:
   scan-performance-dashboard-images:
     name: Scan Image (${{ matrix.service }})
     runs-on: ubuntu-24.04
+    needs: generate-matrix-dashboard-images
+    if: needs.generate-matrix-dashboard-images.outputs.has-changes == 'true'
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - service: node-exporter
-            image: prom/node-exporter
-          - service: prometheus
-            image: prom/prometheus
-          - service: grafana
-            image: grafana/grafana
-          - service: pyroscope
-            image: pyroscope/pyroscope
+        include: ${{ fromJson(needs.generate-matrix-dashboard-images.outputs.matrix) }}
 
     steps:
       - name: Checkout code
@@ -246,17 +301,38 @@ jobs:
   summary:
     name: Security Scan Summary
     runs-on: ubuntu-24.04
-    needs: [scan-dockerfiles, scan-performance-dashboard-images, scan-filesystem]
+    needs: [generate-matrix-custom-docker-images, generate-matrix-dashboard-images, scan-dockerfiles, scan-performance-dashboard-images, scan-filesystem]
     if: always()
     
     steps:
       - name: Generate summary
         run: |
+          set +x  # Disable command echoing for cleaner logs
+          
+          echo "Generating security scan summary..."
           echo "## 🔒 Trivy Security Scan Summary" >> ${GITHUB_STEP_SUMMARY}
           echo "" >> ${GITHUB_STEP_SUMMARY}
           echo "### Scan Results:" >> ${GITHUB_STEP_SUMMARY}
-          echo "- **Custom Docker Images**: ${{ needs.scan-dockerfiles.result }}" >> ${GITHUB_STEP_SUMMARY}
-          echo "- **Third-party Images**: ${{ needs.scan-compose-images.result }}" >> ${GITHUB_STEP_SUMMARY}
+          
+          # Custom Docker Images
+          if [ "${{ needs.generate-matrix-custom-docker-images.outputs.has-changes }}" = "true" ]; then
+            echo "Custom Docker Images: ${{ needs.scan-dockerfiles.result }}"
+            echo "- **Custom Docker Images**: ${{ needs.scan-dockerfiles.result }}" >> ${GITHUB_STEP_SUMMARY}
+          else
+            echo "Custom Docker Images: skipped (no changes)"
+            echo "- **Custom Docker Images**: skipped (no changes)" >> ${GITHUB_STEP_SUMMARY}
+          fi
+          
+          # Dashboard Images  
+          if [ "${{ needs.generate-matrix-dashboard-images.outputs.has-changes }}" = "true" ]; then
+            echo "Dashboard Images: ${{ needs.scan-performance-dashboard-images.result }}"
+            echo "- **Dashboard Images**: ${{ needs.scan-performance-dashboard-images.result }}" >> ${GITHUB_STEP_SUMMARY}
+          else
+            echo "Dashboard Images: skipped (no changes)"
+            echo "- **Dashboard Images**: skipped (no changes)" >> ${GITHUB_STEP_SUMMARY}
+          fi
+          
+          echo "Repository Filesystem: ${{ needs.scan-filesystem.result }}"
           echo "- **Repository Filesystem**: ${{ needs.scan-filesystem.result }}" >> ${GITHUB_STEP_SUMMARY}
           echo "" >> ${GITHUB_STEP_SUMMARY}
           echo "### 📊 View Results:" >> ${GITHUB_STEP_SUMMARY}
@@ -265,3 +341,5 @@ jobs:
           echo "" >> ${GITHUB_STEP_SUMMARY}
           echo "### 🕐 Next Scheduled Scan:" >> ${GITHUB_STEP_SUMMARY}
           echo "Daily at 2:00 AM UTC" >> ${GITHUB_STEP_SUMMARY}
+          
+          echo "Summary generated successfully!"
