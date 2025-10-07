@@ -285,7 +285,8 @@ jobs:
   generate-sbom:
     name: Generate Software Bill of Materials
     runs-on: ubuntu-24.04
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: [generate-matrix-custom-docker-images, generate-matrix-dashboard-images, scan-dockerfiles, scan-performance-dashboard-images, scan-filesystem]
+    if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     
     steps:
       - name: Checkout code
@@ -316,39 +317,30 @@ jobs:
     steps:
       - name: Generate summary
         run: |
-          set +x  # Disable command echoing for cleaner logs
+          set +x
           
-          echo "Generating security scan summary..."
           echo "## 🔒 Trivy Security Scan Summary" >> ${GITHUB_STEP_SUMMARY}
           echo "" >> ${GITHUB_STEP_SUMMARY}
           echo "### Scan Results:" >> ${GITHUB_STEP_SUMMARY}
           
           # Custom Docker Images
           if [ "${{ needs.generate-matrix-custom-docker-images.outputs.has-changes }}" = "true" ]; then
-            echo "Custom Docker Images: ${{ needs.scan-dockerfiles.result }}"
             echo "- **Custom Docker Images**: ${{ needs.scan-dockerfiles.result }}" >> ${GITHUB_STEP_SUMMARY}
           else
-            echo "Custom Docker Images: skipped (no changes)"
             echo "- **Custom Docker Images**: skipped (no changes)" >> ${GITHUB_STEP_SUMMARY}
           fi
           
           # Dashboard Images  
           if [ "${{ needs.generate-matrix-dashboard-images.outputs.has-changes }}" = "true" ]; then
-            echo "Dashboard Images: ${{ needs.scan-performance-dashboard-images.result }}"
             echo "- **Dashboard Images**: ${{ needs.scan-performance-dashboard-images.result }}" >> ${GITHUB_STEP_SUMMARY}
           else
-            echo "Dashboard Images: skipped (no changes)"
             echo "- **Dashboard Images**: skipped (no changes)" >> ${GITHUB_STEP_SUMMARY}
           fi
           
           echo "Repository Filesystem: ${{ needs.scan-filesystem.result }}"
           echo "- **Repository Filesystem**: ${{ needs.scan-filesystem.result }}" >> ${GITHUB_STEP_SUMMARY}
           echo "" >> ${GITHUB_STEP_SUMMARY}
-          echo "### 📊 View Results:" >> ${GITHUB_STEP_SUMMARY}
+          echo "### 📊 View Results:" >> ${GITHUB_STEP_SUMMARY} >> ${GITHUB_STEP_SUMMARY}
           echo "- Check the **Security** tab for detailed vulnerability reports" >> ${GITHUB_STEP_SUMMARY}
           echo "- Review the individual job logs for table-formatted output" >> ${GITHUB_STEP_SUMMARY}
-          echo "" >> ${GITHUB_STEP_SUMMARY}
-          echo "### 🕐 Next Scheduled Scan:" >> ${GITHUB_STEP_SUMMARY}
-          echo "Daily at 2:00 AM UTC" >> ${GITHUB_STEP_SUMMARY}
           
-          echo "Summary generated successfully!"
