@@ -165,16 +165,16 @@ jobs:
           echo "Build command: ${{ matrix.build_command }}"
           ${{ matrix.build_command }}
 
-      - name: Scan Docker image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ matrix.image_name }}
-          format: "sarif"
-          output: "trivy-results-${{ matrix.clean_name }}.sarif"
-          severity: "CRITICAL,HIGH,MEDIUM"
-          exit-code: "0"
-          ignore-unfixed: true
-          vuln-type: "os,library"
+        - name: Scan Docker image
+          uses: aquasecurity/trivy-action@master
+          with:
+            image-ref: ${{ matrix.image_name }}
+            format: "sarif"
+            output: "trivy-results-${{ matrix.clean_name }}.sarif"
+            severity: "CRITICAL,HIGH,MEDIUM"
+            exit-code: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+            ignore-unfixed: true
+            vuln-type: "os,library"
 
       - name: Upload SARIF results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
@@ -182,15 +182,16 @@ jobs:
         with:
           sarif_file: "trivy-results-${{ matrix.clean_name }}.sarif"
 
-      - name: Run Trivy scanner for table output
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ matrix.image_name }}
-          format: "table"
-          severity: "CRITICAL,HIGH"
-          exit-code: "0"
-          ignore-unfixed: true
-          vuln-type: "os,library"
+        - name: Run Trivy scanner for table output
+          if: always()
+          uses: aquasecurity/trivy-action@master
+          with:
+            image-ref: ${{ matrix.image_name }}
+            format: "table"
+            severity: "CRITICAL,HIGH"
+            exit-code: "0"
+            ignore-unfixed: true
+            vuln-type: "os,library"
 
   scan-performance-dashboard-images:
     name: Scan Image (${{ matrix.service }})
@@ -219,16 +220,16 @@ jobs:
           echo "name=${{ matrix.service }}" >> ${GITHUB_OUTPUT}
           echo "Image reference that will be scanned: ${IMAGE_REF}"
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ steps.image_info.outputs.ref }}
-          format: "sarif"
-          output: "trivy-results-${{ steps.image_info.outputs.name }}.sarif"
-          severity: "CRITICAL,HIGH,MEDIUM"
-          exit-code: "0" # Don't fail the build, just report
-          ignore-unfixed: true
-          vuln-type: "os,library"
+        - name: Run Trivy vulnerability scanner
+          uses: aquasecurity/trivy-action@master
+          with:
+            image-ref: ${{ steps.image_info.outputs.ref }}
+            format: "sarif"
+            output: "trivy-results-${{ steps.image_info.outputs.name }}.sarif"
+            severity: "CRITICAL,HIGH,MEDIUM"
+            exit-code: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+            ignore-unfixed: true
+            vuln-type: "os,library"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
@@ -236,15 +237,16 @@ jobs:
         with:
           sarif_file: "trivy-results-${{ steps.image_info.outputs.name }}.sarif"
 
-      - name: Run Trivy scanner for table output
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ steps.image_info.outputs.ref }}
-          format: "table"
-          severity: "CRITICAL,HIGH"
-          exit-code: "0"
-          ignore-unfixed: true
-          vuln-type: "os,library"
+        - name: Run Trivy scanner for table output
+          if: always()
+          uses: aquasecurity/trivy-action@master
+          with:
+            image-ref: ${{ steps.image_info.outputs.ref }}
+            format: "table"
+            severity: "CRITICAL,HIGH"
+            exit-code: "0"
+            ignore-unfixed: true
+            vuln-type: "os,library"
 
   scan-filesystem:
     name: Scan Repository for Secrets and Misconfigurations
@@ -254,17 +256,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
-      - name: Run Trivy filesystem scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "sarif"
-          output: "trivy-fs-results.sarif"
-          severity: "CRITICAL,HIGH,MEDIUM"
-          exit-code: "0"
-          scanners: "vuln,secret,misconfig"
-          skip-dirs: "dist,3rdparty"
+        - name: Run Trivy filesystem scan
+          uses: aquasecurity/trivy-action@master
+          with:
+            scan-type: "fs"
+            scan-ref: "."
+            format: "sarif"
+            output: "trivy-fs-results.sarif"
+            severity: "CRITICAL,HIGH,MEDIUM"
+            exit-code: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+            scanners: "vuln,secret,misconfig"
+            skip-dirs: "dist,3rdparty"
 
       - name: Upload filesystem scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
@@ -272,16 +274,17 @@ jobs:
         with:
           sarif_file: "trivy-fs-results.sarif"
 
-      - name: Run Trivy filesystem scan for table output
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "table"
-          severity: "CRITICAL,HIGH"
-          exit-code: "0"
-          scanners: "secret,misconfig"
-          skip-dirs: "dist,3rdparty"
+        - name: Run Trivy filesystem scan for table output
+          if: always()
+          uses: aquasecurity/trivy-action@master
+          with:
+            scan-type: "fs"
+            scan-ref: "."
+            format: "table"
+            severity: "CRITICAL,HIGH"
+            exit-code: "0"
+            scanners: "secret,misconfig"
+            skip-dirs: "dist,3rdparty"
 
   generate-sbom:
     name: Generate Software Bill of Materials
