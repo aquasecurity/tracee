@@ -22,8 +22,8 @@ permissions:
   actions: read
 
 jobs:
-  generate-matrix-custom-docker-images:
-    name: Generate Custom Docker Images Matrix
+  generate-matrix-custom-images:
+    name: Generate Custom Images Matrix
     runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -69,12 +69,13 @@ jobs:
             if [ "${{ github.event_name }}" != "pull_request" ] || echo "${CHANGED_FILES}" | grep -q "${full_path}"; then
               IFS='|' read -r build_command image_name <<< "${dockerfiles[$dockerfile]}"
               clean_name=$(echo "${image_name}" | sed 's/:/-/g')
+              display_name=$(echo "${image_name}" | sed 's/:scan$//')
               
               if [ "${first}" = false ]; then
                 matrix_json+=","
               fi
               
-              matrix_json+="{\"dockerfile\":\"${dockerfile}\",\"build_command\":\"${build_command}\",\"image_name\":\"${image_name}\",\"clean_name\":\"${clean_name}\"}"
+              matrix_json+="{\"dockerfile\":\"${dockerfile}\",\"build_command\":\"${build_command}\",\"image_name\":\"${image_name}\",\"clean_name\":\"${clean_name}\",\"display_name\":\"${display_name}\"}"
               first=false
               has_changes=true
             fi
@@ -145,14 +146,14 @@ jobs:
           echo "has-changes=${has_changes}" >> ${GITHUB_OUTPUT}
 
   scan-dockerfiles:
-    name: Scan Image (${{ matrix.dockerfile }})
+    name: Scan Image (${{ matrix.display_name }})
     runs-on: ubuntu-24.04
-    needs: generate-matrix-custom-docker-images
-    if: needs.generate-matrix-custom-docker-images.outputs.has-changes == 'true'
+    needs: generate-matrix-custom-images
+    if: needs.generate-matrix-custom-images.outputs.has-changes == 'true'
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.generate-matrix-custom-docker-images.outputs.matrix) }}
+        include: ${{ fromJson(needs.generate-matrix-custom-images.outputs.matrix) }}
     
     steps:
       - name: Checkout code
@@ -285,7 +286,7 @@ jobs:
   generate-sbom:
     name: Generate Software Bill of Materials
     runs-on: ubuntu-24.04
-    needs: [generate-matrix-custom-docker-images, generate-matrix-dashboard-images, scan-dockerfiles, scan-performance-dashboard-images, scan-filesystem]
+    needs: [generate-matrix-custom-images, generate-matrix-dashboard-images, scan-dockerfiles, scan-performance-dashboard-images, scan-filesystem]
     if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     
     steps:
@@ -311,7 +312,7 @@ jobs:
   summary:
     name: Security Scan Summary
     runs-on: ubuntu-24.04
-    needs: [generate-matrix-custom-docker-images, generate-matrix-dashboard-images, scan-dockerfiles, scan-performance-dashboard-images, scan-filesystem]
+    needs: [generate-matrix-custom-images, generate-matrix-dashboard-images, scan-dockerfiles, scan-performance-dashboard-images, scan-filesystem]
     if: always()
     
     steps:
@@ -319,28 +320,31 @@ jobs:
         run: |
           set +x
           
-          echo "## 🔒 Trivy Security Scan Summary" >> ${GITHUB_STEP_SUMMARY}
+          echo "Trivy Security Scan Summary" >> ${GITHUB_STEP_SUMMARY}
           echo "" >> ${GITHUB_STEP_SUMMARY}
-          echo "### Scan Results:" >> ${GITHUB_STEP_SUMMARY}
+          echo "Scan Results:" >> ${GITHUB_STEP_SUMMARY}
           
-          # Custom Docker Images
-          if [ "${{ needs.generate-matrix-custom-docker-images.outputs.has-changes }}" = "true" ]; then
-            echo "- **Custom Docker Images**: ${{ needs.scan-dockerfiles.result }}" >> ${GITHUB_STEP_SUMMARY}
+          # Custom Images
+          if [ "${{ needs.generate-matrix-custom-images.outputs.has-changes }}" = "true" ]; then
+            echo '- Custom Images: ${{ needs.scan-dockerfiles.result }}' >> ${GITHUB_STEP_SUMMARY}
           else
-            echo "- **Custom Docker Images**: skipped (no changes)" >> ${GITHUB_STEP_SUMMARY}
+            echo '- Custom Images: skipped (no changes)' >> ${GITHUB_STEP_SUMMARY}
           fi
           
           # Dashboard Images  
           if [ "${{ needs.generate-matrix-dashboard-images.outputs.has-changes }}" = "true" ]; then
-            echo "- **Dashboard Images**: ${{ needs.scan-performance-dashboard-images.result }}" >> ${GITHUB_STEP_SUMMARY}
+            echo '- Dashboard Images: ${{ needs.scan-performance-dashboard-images.result }}' >> ${GITHUB_STEP_SUMMARY}
           else
-            echo "- **Dashboard Images**: skipped (no changes)" >> ${GITHUB_STEP_SUMMARY}
+            echo '- Dashboard Images: skipped (no changes)' >> ${GITHUB_STEP_SUMMARY}
           fi
           
           echo "Repository Filesystem: ${{ needs.scan-filesystem.result }}"
-          echo "- **Repository Filesystem**: ${{ needs.scan-filesystem.result }}" >> ${GITHUB_STEP_SUMMARY}
+          echo '- Repository Filesystem: ${{ needs.scan-filesystem.result }}' >> ${GITHUB_STEP_SUMMARY}
           echo "" >> ${GITHUB_STEP_SUMMARY}
-          echo "### 📊 View Results:" >> ${GITHUB_STEP_SUMMARY} >> ${GITHUB_STEP_SUMMARY}
-          echo "- Check the **Security** tab for detailed vulnerability reports" >> ${GITHUB_STEP_SUMMARY}
-          echo "- Review the individual job logs for table-formatted output" >> ${GITHUB_STEP_SUMMARY}
+          echo 'View Results:' >> ${GITHUB_STEP_SUMMARY}
+          echo '- Check the Security tab for detailed vulnerability reports' >> ${GITHUB_STEP_SUMMARY}
+          echo '- Review the individual job logs for table-formatted output' >> ${GITHUB_STEP_SUMMARY}
+          
+          echo "Generated summary:"
+          cat ${GITHUB_STEP_SUMMARY}
           
