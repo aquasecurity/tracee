@@ -61,7 +61,7 @@ help:
 		exit 1
 	fi
 
-MAN_CONTNAME = tracee-man:latest
+MAN_CONTNAME ?= tracee-man:latest
 
 .PHONY: man-build
 man-build: \
