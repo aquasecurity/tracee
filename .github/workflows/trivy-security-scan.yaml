@@ -3,7 +3,7 @@ name: Trivy Security Scan
 on:
   # Run daily at 2 AM UTC
   schedule:
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
   # Manual trigger
   workflow_dispatch:
   # Test trigger for use-trivy-action branch (to be removed before merging)
@@ -13,8 +13,8 @@ on:
   # Run on PRs that modify Dockerfiles
   pull_request:
     paths:
-      - 'builder/Dockerfile*'
-      - 'performance/dashboard/docker-compose.yml'
+      - "builder/Dockerfile*"
+      - "performance/dashboard/docker-compose.yml"
 
 permissions:
   contents: read
@@ -47,7 +47,7 @@ jobs:
             ["Dockerfile.man"]="make -f builder/Makefile.man man-build MAN_CONTNAME=tracee-man:scan|tracee-man:scan"
             ["Dockerfile.k8s"]="make -f builder/Makefile.k8s build K8S_CONTNAME=tracee-k8s:scan|tracee-k8s:scan"
           )
-          
+
           # Get changed files for PRs, or all files for scheduled/manual runs
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
@@ -57,12 +57,12 @@ jobs:
             echo "Running scheduled/manual scan - including all Dockerfiles"
             CHANGED_FILES=$(printf '%s\n' "${!dockerfiles[@]}")
           fi
-          
+
           # Build matrix JSON
           matrix_json="["
           first=true
           has_changes=false
-          
+
           for dockerfile in "${!dockerfiles[@]}"; do
             # For PRs, check if the full path (builder/Dockerfile.xxx) changed
             full_path="builder/${dockerfile}"
@@ -80,9 +80,9 @@ jobs:
               has_changes=true
             fi
           done
-          
+
           matrix_json+="]"
-          
+
           echo "Generated matrix: ${matrix_json}"
           echo "matrix=${matrix_json}" >> ${GITHUB_OUTPUT}
           echo "has-changes=${has_changes}" >> ${GITHUB_OUTPUT}
@@ -109,7 +109,7 @@ jobs:
             ["grafana"]="grafana/grafana"
             ["pyroscope"]="pyroscope/pyroscope"
           )
-          
+
           # Check if docker-compose file changed for PRs, or include all for scheduled/manual runs
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
@@ -119,12 +119,12 @@ jobs:
             echo "Running scheduled/manual scan - including all dashboard images"
             COMPOSE_CHANGED="performance/dashboard/docker-compose.yml"
           fi
-          
+
           # Build matrix JSON
           matrix_json="["
           first=true
           has_changes=false
-          
+
           if [ -n "${COMPOSE_CHANGED}" ]; then
             for service in "${!dashboard_images[@]}"; do
               image="${dashboard_images[$service]}"
@@ -138,9 +138,9 @@ jobs:
               has_changes=true
             done
           fi
-          
+
           matrix_json+="]"
-          
+
           echo "Generated dashboard matrix: ${matrix_json}"
           echo "matrix=${matrix_json}" >> ${GITHUB_OUTPUT}
           echo "has-changes=${has_changes}" >> ${GITHUB_OUTPUT}
@@ -154,7 +154,7 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.generate-matrix-custom-images.outputs.matrix) }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -169,28 +169,28 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ matrix.image_name }}
-          format: 'sarif'
-          output: 'trivy-results-${{ matrix.clean_name }}.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'
+          format: "sarif"
+          output: "trivy-results-${{ matrix.clean_name }}.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
+          exit-code: "0"
           ignore-unfixed: true
-          vuln-type: 'os,library'
+          vuln-type: "os,library"
 
       - name: Upload SARIF results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
         if: always()
         with:
-          sarif_file: 'trivy-results-${{ matrix.clean_name }}.sarif'
+          sarif_file: "trivy-results-${{ matrix.clean_name }}.sarif"
 
       - name: Run Trivy scanner for table output
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ matrix.image_name }}
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '0'
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
           ignore-unfixed: true
-          vuln-type: 'os,library'
+          vuln-type: "os,library"
 
   scan-performance-dashboard-images:
     name: Scan Image (${{ matrix.service }})
@@ -211,10 +211,10 @@ jobs:
         working-directory: performance/dashboard
         run: |
           docker compose pull ${{ matrix.service }}
-          
+
           # Get the actual image reference from docker-compose config
           IMAGE_REF=$(docker compose config | grep -A 30 "${{ matrix.service }}:" | grep "image:" | head -1 | sed 's/.*image: //' | tr -d '"')
-          
+
           echo "ref=${IMAGE_REF}" >> ${GITHUB_OUTPUT}
           echo "name=${{ matrix.service }}" >> ${GITHUB_OUTPUT}
           echo "Image reference that will be scanned: ${IMAGE_REF}"
@@ -223,33 +223,33 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ steps.image_info.outputs.ref }}
-          format: 'sarif'
-          output: 'trivy-results-${{ steps.image_info.outputs.name }}.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'  # Don't fail the build, just report
+          format: "sarif"
+          output: "trivy-results-${{ steps.image_info.outputs.name }}.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
+          exit-code: "0" # Don't fail the build, just report
           ignore-unfixed: true
-          vuln-type: 'os,library'
+          vuln-type: "os,library"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
         if: always()
         with:
-          sarif_file: 'trivy-results-${{ steps.image_info.outputs.name }}.sarif'
+          sarif_file: "trivy-results-${{ steps.image_info.outputs.name }}.sarif"
 
       - name: Run Trivy scanner for table output
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ steps.image_info.outputs.ref }}
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '0'
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
           ignore-unfixed: true
-          vuln-type: 'os,library'
+          vuln-type: "os,library"
 
   scan-filesystem:
     name: Scan Repository for Secrets and Misconfigurations
     runs-on: ubuntu-24.04
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -257,38 +257,45 @@ jobs:
       - name: Run Trivy filesystem scan
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-fs-results.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'
-          scanners: 'vuln,secret,misconfig'
-          skip-dirs: 'dist,3rdparty'
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-fs-results.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
+          exit-code: "0"
+          scanners: "vuln,secret,misconfig"
+          skip-dirs: "dist,3rdparty"
 
       - name: Upload filesystem scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
         if: always()
         with:
-          sarif_file: 'trivy-fs-results.sarif'
+          sarif_file: "trivy-fs-results.sarif"
 
       - name: Run Trivy filesystem scan for table output
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '0'
-          scanners: 'secret,misconfig'
-          skip-dirs: 'dist,3rdparty'
+          scan-type: "fs"
+          scan-ref: "."
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+          scanners: "secret,misconfig"
+          skip-dirs: "dist,3rdparty"
 
   generate-sbom:
     name: Generate Software Bill of Materials
     runs-on: ubuntu-24.04
-    needs: [generate-matrix-custom-images, generate-matrix-dashboard-images, scan-dockerfiles, scan-performance-dashboard-images, scan-filesystem]
+    needs:
+      [
+        generate-matrix-custom-images,
+        generate-matrix-dashboard-images,
+        scan-dockerfiles,
+        scan-performance-dashboard-images,
+        scan-filesystem,
+      ]
     if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -296,11 +303,11 @@ jobs:
       - name: Generate SBOM for repository
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'spdx-json'
-          output: 'tracee-sbom.spdx.json'
-          scanners: 'vuln'
+          scan-type: "fs"
+          scan-ref: "."
+          format: "spdx-json"
+          output: "tracee-sbom.spdx.json"
+          scanners: "vuln"
 
       - name: Upload SBOM as artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -312,39 +319,51 @@ jobs:
   summary:
     name: Security Scan Summary
     runs-on: ubuntu-24.04
-    needs: [generate-matrix-custom-images, generate-matrix-dashboard-images, scan-dockerfiles, scan-performance-dashboard-images, scan-filesystem]
+    needs:
+      [
+        generate-matrix-custom-images,
+        generate-matrix-dashboard-images,
+        scan-dockerfiles,
+        scan-performance-dashboard-images,
+        scan-filesystem,
+      ]
     if: always()
-    
+
     steps:
       - name: Generate summary
         run: |
           set +x
-          
-          echo "Trivy Security Scan Summary" >> ${GITHUB_STEP_SUMMARY}
-          echo "" >> ${GITHUB_STEP_SUMMARY}
-          echo "Scan Results:" >> ${GITHUB_STEP_SUMMARY}
-          
-          # Custom Images
+
+          # Create temporary file for summary
+          TEMP_SUMMARY=$(mktemp)
+
+          # Build summary content in temp file
+          echo "## 🔒 Trivy Security Scan Summary" >> ${TEMP_SUMMARY}
+          echo "" >> ${TEMP_SUMMARY}
+          echo "### 📊 Scan Results:" >> ${TEMP_SUMMARY}
+
+          # Add scan results
           if [ "${{ needs.generate-matrix-custom-images.outputs.has-changes }}" = "true" ]; then
-            echo '- Custom Images: ${{ needs.scan-dockerfiles.result }}' >> ${GITHUB_STEP_SUMMARY}
+            echo "- **Custom Images**: ${{ needs.scan-dockerfiles.result }}" >> ${TEMP_SUMMARY}
           else
-            echo '- Custom Images: skipped (no changes)' >> ${GITHUB_STEP_SUMMARY}
+            echo "- **Custom Images**: skipped (no changes)" >> ${TEMP_SUMMARY}
           fi
-          
-          # Dashboard Images  
+
           if [ "${{ needs.generate-matrix-dashboard-images.outputs.has-changes }}" = "true" ]; then
-            echo '- Dashboard Images: ${{ needs.scan-performance-dashboard-images.result }}' >> ${GITHUB_STEP_SUMMARY}
+            echo "- **Dashboard Images**: ${{ needs.scan-performance-dashboard-images.result }}" >> ${TEMP_SUMMARY}
           else
-            echo '- Dashboard Images: skipped (no changes)' >> ${GITHUB_STEP_SUMMARY}
+            echo "- **Dashboard Images**: skipped (no changes)" >> ${TEMP_SUMMARY}
           fi
-          
-          echo "Repository Filesystem: ${{ needs.scan-filesystem.result }}"
-          echo '- Repository Filesystem: ${{ needs.scan-filesystem.result }}' >> ${GITHUB_STEP_SUMMARY}
-          echo "" >> ${GITHUB_STEP_SUMMARY}
-          echo 'View Results:' >> ${GITHUB_STEP_SUMMARY}
-          echo '- Check the Security tab for detailed vulnerability reports' >> ${GITHUB_STEP_SUMMARY}
-          echo '- Review the individual job logs for table-formatted output' >> ${GITHUB_STEP_SUMMARY}
-          
+
+          echo "- **Repository Filesystem**: ${{ needs.scan-filesystem.result }}" >> ${TEMP_SUMMARY}
+          echo "" >> ${TEMP_SUMMARY}
+          echo "### 🔍 View Results:" >> ${TEMP_SUMMARY}
+          echo "- Check the **Security** tab for detailed vulnerability reports" >> ${TEMP_SUMMARY}
+          echo "- Review the individual job logs for table-formatted output" >> ${TEMP_SUMMARY}
+          echo "" >> ${TEMP_SUMMARY}
+
           echo "Generated summary:"
-          cat ${GITHUB_STEP_SUMMARY}
-          
+          cat ${TEMP_SUMMARY}
+
+          # Clean up
+          rm ${TEMP_SUMMARY}
