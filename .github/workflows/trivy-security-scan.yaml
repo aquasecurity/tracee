@@ -85,7 +85,7 @@ jobs:
           echo "has-changes=${has_changes}" >> ${GITHUB_OUTPUT}
 
   scan-dockerfiles:
-    name: Scan Custom Docker Images
+    name: Scan Image (${{ matrix.dockerfile }})
     runs-on: ubuntu-24.04
     needs: generate-matrix-custom-docker-images
     if: needs.generate-matrix-custom-docker-images.outputs.has-changes == 'true'
@@ -122,7 +122,7 @@ jobs:
           sarif_file: 'trivy-results-${{ matrix.clean_name }}.sarif'
 
   scan-performance-dashboard-images:
-    name: Scan Perf. Dashboard Images
+    name: Scan Image (${{ matrix.service }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -147,12 +147,12 @@ jobs:
         run: |
           docker compose pull ${{ matrix.service }}
           
-          # Get the local image that was pulled
-          LOCAL_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "^${{ matrix.image }}" | head -1)
+          # Get the actual image reference from docker-compose config
+          IMAGE_REF=$(docker compose config | grep -A 30 "${{ matrix.service }}:" | grep "image:" | head -1 | sed 's/.*image: //' | tr -d '"')
           
-          echo "ref=${LOCAL_IMAGE}" >> ${GITHUB_OUTPUT}
+          echo "ref=${IMAGE_REF}" >> ${GITHUB_OUTPUT}
           echo "name=${{ matrix.service }}" >> ${GITHUB_OUTPUT}
-          echo "Local image that will be scanned: ${LOCAL_IMAGE}"
+          echo "Image reference that will be scanned: ${IMAGE_REF}"
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
