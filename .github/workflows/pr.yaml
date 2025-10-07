@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           ref: ${{ env.TRACEE_REF }}
       - name: Ensure updates of *.1.md and *.1 pairs
@@ -114,7 +114,7 @@ jobs:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -160,7 +160,7 @@ jobs:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -195,7 +195,7 @@ jobs:
       api: ${{ steps.detect.outputs.api }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
@@ -248,7 +248,7 @@ jobs:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
@@ -303,7 +303,7 @@ jobs:
           mkdir /opt/bin
           ln -s /usr/bin/node /opt/bin/node
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
@@ -348,7 +348,7 @@ jobs:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -364,7 +364,7 @@ jobs:
           # Run comprehensive test suite for all modules (main + types + common + api)
           make test-unit
       - name: Upload Unit Test Coverage
-        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
@@ -400,7 +400,7 @@ jobs:
           mkdir /opt/bin
           ln -s /usr/bin/node /opt/bin/node
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -415,7 +415,7 @@ jobs:
         run: |
           make test-unit
       - name: Upload Unit Test Coverage
-        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
@@ -446,7 +446,7 @@ jobs:
           apt-get install -y --no-install-recommends git-core ca-certificates
           update-ca-certificates
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -459,7 +459,7 @@ jobs:
         run: |
           env "PATH=$PATH" make test-integration
       - name: Upload Integration Test Coverage
-        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./integration-coverage.txt
@@ -484,7 +484,7 @@ jobs:
           apt-get install -y --no-install-recommends git-core ca-certificates
           update-ca-certificates
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -497,7 +497,7 @@ jobs:
         run: |
           env "PATH=$PATH" make test-integration
       - name: Upload Integration Test Coverage
-        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./integration-coverage.txt
@@ -519,7 +519,7 @@ jobs:
       options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro
     steps:
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -621,7 +621,7 @@ jobs:
       GOROOT: "/usr/local/go"
     steps:
       - name: "Checkout"
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
