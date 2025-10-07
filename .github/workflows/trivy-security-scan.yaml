@@ -37,15 +37,15 @@ jobs:
       - name: Generate matrix based on changed files
         id: set-matrix
         run: |
-          # Define all possible Dockerfiles and their build configs (relative to builder/ directory)
+          # Define all possible Dockerfiles and their build configs (run from root directory)
           declare -A dockerfiles=(
-            ["Dockerfile.alpine-tracee-container"]="make -f Makefile.tracee-container build-tracee TRACEE_CONT_NAME=tracee-container:scan|tracee-container:scan"
-            ["Dockerfile.alpine-tracee-make"]="make -f Makefile.tracee-make alpine-prepare ALPINE_MAKE_CONTNAME=alpine-tracee-make:scan|alpine-tracee-make:scan"
-            ["Dockerfile.ubuntu-tracee-make"]="make -f Makefile.tracee-make ubuntu-prepare UBUNTU_MAKE_CONTNAME=ubuntu-tracee-make:scan|ubuntu-tracee-make:scan"
-            ["Dockerfile.mkdocs"]="make -f Makefile.mkdocs mkdocs-build MKDOCS_CONTNAME=tracee-mkdocs:scan|tracee-mkdocs:scan"
-            ["Dockerfile.protoc"]="make -f Makefile.protoc protoc-build PROTOC_CONTNAME=tracee-protoc:scan|tracee-protoc:scan"
-            ["Dockerfile.man"]="make -f Makefile.man man-build MAN_CONTNAME=tracee-man:scan|tracee-man:scan"
-            ["Dockerfile.k8s"]="make -f Makefile.k8s build K8S_CONTNAME=tracee-k8s:scan|tracee-k8s:scan"
+            ["Dockerfile.alpine-tracee-container"]="make -f builder/Makefile.tracee-container build-tracee TRACEE_CONT_NAME=tracee-container:scan|tracee-container:scan"
+            ["Dockerfile.alpine-tracee-make"]="make -f builder/Makefile.tracee-make alpine-prepare ALPINE_MAKE_CONTNAME=alpine-tracee-make:scan|alpine-tracee-make:scan"
+            ["Dockerfile.ubuntu-tracee-make"]="make -f builder/Makefile.tracee-make ubuntu-prepare UBUNTU_MAKE_CONTNAME=ubuntu-tracee-make:scan|ubuntu-tracee-make:scan"
+            ["Dockerfile.mkdocs"]="make -f builder/Makefile.mkdocs mkdocs-build MKDOCS_CONTNAME=tracee-mkdocs:scan|tracee-mkdocs:scan"
+            ["Dockerfile.protoc"]="make -f builder/Makefile.protoc protoc-build PROTOC_CONTNAME=tracee-protoc:scan|tracee-protoc:scan"
+            ["Dockerfile.man"]="make -f builder/Makefile.man man-build MAN_CONTNAME=tracee-man:scan|tracee-man:scan"
+            ["Dockerfile.k8s"]="make -f builder/Makefile.k8s build K8S_CONTNAME=tracee-k8s:scan|tracee-k8s:scan"
           )
           
           # Get changed files for PRs, or all files for scheduled/manual runs
@@ -159,7 +159,6 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Build Docker image
-        working-directory: builder
         run: |
           echo "Building ${{ matrix.image_name }} from ${{ matrix.dockerfile }}"
           echo "Build command: ${{ matrix.build_command }}"
@@ -181,6 +180,16 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results-${{ matrix.clean_name }}.sarif'
+
+      - name: Run Trivy scanner for table output
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ matrix.image_name }}
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
 
   scan-performance-dashboard-images:
     name: Scan Image (${{ matrix.service }})
