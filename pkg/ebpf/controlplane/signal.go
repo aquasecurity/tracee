@@ -7,12 +7,12 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-type signal struct {
-	id   events.ID
-	args []trace.Argument
+type Signal struct {
+	ID   events.ID
+	Data []trace.Argument
 }
 
-func (sig *signal) Unmarshal(buffer []byte, dataPresentor bufferdecoder.TypeDecoder) error {
+func (sig *Signal) Unmarshal(buffer []byte, dataPresentor bufferdecoder.TypeDecoder) error {
 	ebpfDecoder := bufferdecoder.New(buffer, dataPresentor)
 	var eventIdUint32 uint32
 	err := ebpfDecoder.DecodeUint32(&eventIdUint32)
@@ -20,7 +20,7 @@ func (sig *signal) Unmarshal(buffer []byte, dataPresentor bufferdecoder.TypeDeco
 		return errfmt.Errorf("failed to decode signal event ID: %v", err)
 	}
 
-	sig.id = events.ID(eventIdUint32)
+	sig.ID = events.ID(eventIdUint32)
 
 	var argnum uint8
 	err = ebpfDecoder.DecodeUint8(&argnum)
@@ -28,17 +28,17 @@ func (sig *signal) Unmarshal(buffer []byte, dataPresentor bufferdecoder.TypeDeco
 		return errfmt.Errorf("failed to decode signal argnum: %v", err)
 	}
 
-	eventDefinition := events.Core.GetDefinitionByID(sig.id)
+	eventDefinition := events.Core.GetDefinitionByID(sig.ID)
 	if eventDefinition.NotValid() {
-		return errfmt.Errorf("%d is not a valid event id", sig.id)
+		return errfmt.Errorf("%d is not a valid event id", sig.ID)
 	}
 
 	evtFields := eventDefinition.GetFields()
 	evtName := eventDefinition.GetName()
 
-	sig.args = make([]trace.Argument, len(evtFields))
+	sig.Data = make([]trace.Argument, len(evtFields))
 
-	err = ebpfDecoder.DecodeArguments(sig.args, int(argnum), evtFields, evtName, sig.id)
+	err = ebpfDecoder.DecodeArguments(sig.Data, int(argnum), evtFields, evtName, sig.ID)
 	if err != nil {
 		return errfmt.Errorf("failed to decode signal arguments: %v", err)
 	}
