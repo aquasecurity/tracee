@@ -23,7 +23,7 @@ var (
 	initErr                error
 )
 
-// InitHookedSyscall initialize lru
+// InitHookedSyscall initialize lru (thread-safe, only runs once)
 func InitHookedSyscall() error {
 	initOnce.Do(func() {
 		reportedHookedSyscalls, initErr = lru.New[int32, uint64](maxSysCallTableSize)

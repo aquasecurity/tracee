@@ -191,10 +191,8 @@ ffffffffc0004000 t fake_close	rootkit2`,
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			// Initialize the LRU cache for each test
-			err := InitHookedSyscall()
+			err := resetHookedSyscallForTesting()
 			require.NoError(t, err)
 
 			// Create kernel symbol table from test data
@@ -237,7 +235,7 @@ ffffffffc0004000 t fake_close	rootkit2`,
 					assert.Equal(t, expectedEvent.EventName, actualEvent.EventName)
 					require.Len(t, actualEvent.Args, len(expectedEvent.Args))
 					for j, expectedArg := range expectedEvent.Args {
-						assert.Equal(t, expectedArg.Value, actualEvent.Args[j])
+						assert.Equal(t, expectedArg.Value, actualEvent.Args[j].Value)
 					}
 				}
 			} else {
@@ -249,7 +247,7 @@ ffffffffc0004000 t fake_close	rootkit2`,
 
 func Test_DetectHookedSyscall_CacheBehavior(t *testing.T) {
 	// Initialize the LRU cache
-	err := InitHookedSyscall()
+	err := resetHookedSyscallForTesting()
 	require.NoError(t, err)
 
 	// Create a test symbol table
@@ -296,7 +294,7 @@ func Test_DetectHookedSyscall_CacheBehavior(t *testing.T) {
 
 func Test_DetectHookedSyscall_CacheUpdate(t *testing.T) {
 	// Initialize the LRU cache
-	err := InitHookedSyscall()
+	err := resetHookedSyscallForTesting()
 	require.NoError(t, err)
 
 	// Create a test symbol table
@@ -375,7 +373,7 @@ func Test_DetectHookedSyscall_ConvertToSyscallName(t *testing.T) {
 
 func Test_DetectHookedSyscall_MultipleSymbolsAtSameAddress(t *testing.T) {
 	// Initialize the LRU cache
-	err := InitHookedSyscall()
+	err := resetHookedSyscallForTesting()
 	require.NoError(t, err)
 
 	// Create a symbol table with multiple symbols at the same address (aliasing)
@@ -401,7 +399,7 @@ ffffffffc0001000 t fake_read_alias2	rootkit`
 	assert.Len(t, derivedEvents, 2, "Should report all symbols at the same address")
 }
 
-func Test_DetectHookedSyscall_Init(t *testing.T) {
+func TestInitHookedSyscall(t *testing.T) {
 	// Test that initialization succeeds
 	err := InitHookedSyscall()
 	assert.NoError(t, err)
