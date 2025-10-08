@@ -2311,6 +2311,7 @@ func Test_EventFilters(t *testing.T) {
 				Capabilities: &config.CapabilitiesConfig{
 					BypassCaps: true,
 				},
+				NoContainersEnrich: true,
 			}
 			ps := testutils.NewPolicies(tc.policyFiles)
 			initialPolicies := make([]interface{}, 0, len(ps))
