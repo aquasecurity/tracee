@@ -47,6 +47,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	containerEvents := []events.ID{
 		events.ContainerCreate, // Derived from cgroup_mkdir
 		events.ContainerRemove, // Derived from cgroup_rmdir
+		events.CgroupMkdir,     // Debugging
 	}
 
 	// Create policies using testutils to ensure proper initialization
@@ -104,6 +105,8 @@ func Test_ContainerCreateRemove(t *testing.T) {
 
 	for _, evt := range capturedEvents {
 		switch evt.EventID {
+		case int(events.CgroupMkdir):
+			t.Logf("CgroupMkdir event: %+v", evt)
 		case int(events.ContainerCreate):
 			foundCreate = true
 			t.Logf("Found ContainerCreate event")
