@@ -1499,14 +1499,14 @@ func (t *Tracee) initBPF() error {
 
 	// Initialize Control Plane
 
-	t.controlPlane, err = controlplane.NewController(
+	t.controlPlane = controlplane.NewController(
 		t.bpfModule,
 		t.containers,
 		t.config.NoContainersEnrich,
 		t.processTree,
 		t.dataTypeDecoder,
 	)
-	if err != nil {
+	if err := t.controlPlane.Init(); err != nil {
 		return errfmt.WrapError(err)
 	}
 
