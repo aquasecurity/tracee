@@ -13,8 +13,6 @@ import (
 )
 
 func TestDetectHookedSyscall(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name               string
 		inputEvents        []trace.Event
@@ -193,10 +191,8 @@ ffffffffc0004000 t fake_close	rootkit2`,
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			// Initialize the LRU cache for each test
-			err := InitHookedSyscall()
+			err := resetHookedSyscallForTesting()
 			require.NoError(t, err)
 
 			// Create kernel symbol table from test data
@@ -239,7 +235,7 @@ ffffffffc0004000 t fake_close	rootkit2`,
 					assert.Equal(t, expectedEvent.EventName, actualEvent.EventName)
 					require.Len(t, actualEvent.Args, len(expectedEvent.Args))
 					for j, expectedArg := range expectedEvent.Args {
-						assert.Equal(t, expectedArg.Value, actualEvent.Args[j])
+						assert.Equal(t, expectedArg.Value, actualEvent.Args[j].Value)
 					}
 				}
 			} else {
@@ -250,10 +246,8 @@ ffffffffc0004000 t fake_close	rootkit2`,
 }
 
 func TestHookedSyscallCacheBehavior(t *testing.T) {
-	t.Parallel()
-
 	// Initialize the LRU cache
-	err := InitHookedSyscall()
+	err := resetHookedSyscallForTesting()
 	require.NoError(t, err)
 
 	// Create a test symbol table
@@ -299,10 +293,8 @@ func TestHookedSyscallCacheBehavior(t *testing.T) {
 }
 
 func TestHookedSyscallCacheUpdate(t *testing.T) {
-	t.Parallel()
-
 	// Initialize the LRU cache
-	err := InitHookedSyscall()
+	err := resetHookedSyscallForTesting()
 	require.NoError(t, err)
 
 	// Create a test symbol table
@@ -380,10 +372,8 @@ func TestConvertToSyscallName(t *testing.T) {
 }
 
 func TestHookedSyscallMultipleSymbolsAtSameAddress(t *testing.T) {
-	t.Parallel()
-
 	// Initialize the LRU cache
-	err := InitHookedSyscall()
+	err := resetHookedSyscallForTesting()
 	require.NoError(t, err)
 
 	// Create a symbol table with multiple symbols at the same address (aliasing)
@@ -410,8 +400,6 @@ ffffffffc0001000 t fake_read_alias2	rootkit`
 }
 
 func TestInitHookedSyscall(t *testing.T) {
-	t.Parallel()
-
 	// Test that initialization succeeds
 	err := InitHookedSyscall()
 	assert.NoError(t, err)

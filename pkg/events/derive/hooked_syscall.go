@@ -2,6 +2,7 @@ package derive
 
 import (
 	"fmt"
+	"sync"
 
 	lru "github.com/hashicorp/golang-lru/v2"
 
@@ -18,13 +19,30 @@ const (
 
 var (
 	reportedHookedSyscalls *lru.Cache[int32, uint64]
+	initOnce               sync.Once
+	initErr                error
+	initMutex              sync.Mutex
 )
 
-// InitHookedSyscall initialize lru
+// InitHookedSyscall initialize lru (thread-safe, only runs once)
 func InitHookedSyscall() error {
-	var err error
-	reportedHookedSyscalls, err = lru.New[int32, uint64](maxSysCallTableSize)
-	return err
+	initOnce.Do(func() {
+		reportedHookedSyscalls, initErr = lru.New[int32, uint64](maxSysCallTableSize)
+	})
+	return initErr
+}
+
+// resetHookedSyscallForTesting resets the cache and initialization state for testing purposes only
+func resetHookedSyscallForTesting() error {
+	initMutex.Lock()
+	defer initMutex.Unlock()
+
+	// Reset the sync.Once so we can reinitialize
+	initOnce = sync.Once{}
+	reportedHookedSyscalls = nil
+	initErr = nil
+
+	return InitHookedSyscall()
 }
 
 func DetectHookedSyscall(kernelSymbols *symbols.KernelSymbolTable) DeriveFunction {
