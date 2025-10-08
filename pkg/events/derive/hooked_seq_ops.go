@@ -2,6 +2,7 @@ package derive
 
 import (
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/symbols"
@@ -43,11 +44,27 @@ func deriveHookedSeqOpsArgs(kernelSymbols *symbols.KernelSymbolTable) deriveArgs
 				continue
 			}
 			hookingFunction := kernelSymbols.GetPotentiallyHiddenSymbolByAddr(addr)[0]
-			seqOpsStruct := NetSeqOps[i/4]
-			seqOpsFunc := NetSeqOpsFuncs[i%4]
+			// Indexing logic is as follows:
+			// For an address at index i:
+			//   - seqOpsStruct = NetSeqOps[i/4]
+			//   - seqOpsFunc = NetSeqOpsFuncs[i%4]
+			seqOpsStruct, seqOpsFunc := getSeqOpsSymbols(i)
+			if seqOpsStruct == "" || seqOpsFunc == "" {
+				logger.Errorw("failed to get seq ops symbols - this should not happen", "index", i)
+				continue
+			}
 			hookedSeqOps[seqOpsStruct+"_"+seqOpsFunc] =
 				trace.HookedSymbolData{SymbolName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner}
 		}
 		return []interface{}{hookedSeqOps}, nil
 	}
+}
+
+func getSeqOpsSymbols(index int) (seqOpsStruct string, seqOpsFunc string) {
+	seqOpsStruct = NetSeqOps[index/4]
+	seqOpsFunc = NetSeqOpsFuncs[index%4]
+	if seqOpsStruct == "" || seqOpsFunc == "" {
+		return "", ""
+	}
+	return seqOpsStruct, seqOpsFunc
 }

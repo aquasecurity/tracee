@@ -2,6 +2,7 @@ package derive
 
 import (
 	"fmt"
+	"sync"
 
 	lru "github.com/hashicorp/golang-lru/v2"
 
@@ -18,13 +19,26 @@ const (
 
 var (
 	reportedHookedSyscalls *lru.Cache[int32, uint64]
+	initOnce               sync.Once
+	initErr                error
 )
 
 // InitHookedSyscall initialize lru
 func InitHookedSyscall() error {
-	var err error
-	reportedHookedSyscalls, err = lru.New[int32, uint64](maxSysCallTableSize)
-	return err
+	initOnce.Do(func() {
+		reportedHookedSyscalls, initErr = lru.New[int32, uint64](maxSysCallTableSize)
+	})
+	return initErr
+}
+
+// resetHookedSyscallForTesting resets the cache and initialization state for testing purposes only
+func resetHookedSyscallForTesting() error {
+	// No mutex is needed since the tests run sequentially (critical assumption)
+	initOnce = sync.Once{}
+	reportedHookedSyscalls = nil
+	initErr = nil
+
+	return InitHookedSyscall()
 }
 
 func DetectHookedSyscall(kernelSymbols *symbols.KernelSymbolTable) DeriveFunction {
@@ -43,12 +57,13 @@ func deriveDetectHookedSyscallArgs(kernelSymbols *symbols.KernelSymbolTable) mul
 			return nil, []error{errfmt.Errorf("error parsing syscall_address arg: %v", err)}
 		}
 
+		// Cache hit: don't report the same syscall_id and address again
 		alreadyReportedAddress, found := reportedHookedSyscalls.Get(syscallId)
 		if found && alreadyReportedAddress == address {
 			return nil, nil
 		}
 
-		reportedHookedSyscalls.Add(syscallId, address) // Upsert
+		reportedHookedSyscalls.Add(syscallId, address) // Upsert: if the key already exists, the value is updated
 
 		syscallName := convertToSyscallName(syscallId)
 		hexAddress := fmt.Sprintf("%x", address)
