@@ -126,7 +126,6 @@ func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 	}
 
 	cfg.Output = output
-	cfg.NoContainersEnrich = true
 
 	trc, err := tracee.New(cfg)
 	if err != nil {
