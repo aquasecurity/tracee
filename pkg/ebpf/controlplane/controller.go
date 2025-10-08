@@ -48,10 +48,8 @@ func NewController(
 	enrichDisabled bool,
 	procTree *proctree.ProcessTree,
 	dataPresentor bufferdecoder.TypeDecoder,
-) (*Controller, error) {
-	var err error
-
-	p := &Controller{
+) *Controller {
+	return &Controller{
 		signalChan:     make(chan []byte, 100),
 		lostSignalChan: make(chan uint64),
 		bpfModule:      bpfModule,
@@ -66,18 +64,21 @@ func NewController(
 		dataPresentor:  dataPresentor,
 		signalHandlers: make(map[events.ID]SignalHandler),
 	}
+}
 
-	p.signalBuffer, err = bpfModule.InitPerfBuf("signals", p.signalChan, p.lostSignalChan, 1024)
+func (ctrl *Controller) Init() error {
+	var err error
+	ctrl.signalBuffer, err = ctrl.bpfModule.InitPerfBuf("signals", ctrl.signalChan, ctrl.lostSignalChan, 1024)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err = p.registerSignalHandlers()
+	err = ctrl.registerBuiltinSignals()
 	if err != nil {
-		return nil, errfmt.Errorf("failed to register signal handlers: %v", err)
+		return errfmt.Errorf("failed to register signal handlers: %v", err)
 	}
 
-	return p, nil
+	return nil
 }
 
 // Start starts the controller.
@@ -145,8 +146,8 @@ func (ctrl *Controller) RegisterSignal(handlers map[events.ID]SignalHandler) err
 
 // Private
 
-// registerSignalHandlers registers all default signal handlers
-func (ctrl *Controller) registerSignalHandlers() error {
+// registerBuiltinSignals registers all default signal handlers
+func (ctrl *Controller) registerBuiltinSignals() error {
 	// Define all signal handlers in a map for batch registration
 	signalHandlers := map[events.ID]SignalHandler{
 		events.SignalCgroupMkdir: func(signalID events.ID, args []trace.Argument) error {
