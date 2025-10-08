@@ -55,7 +55,7 @@ func NewController(
 		bpfModule:      bpfModule,
 		signalPool: &sync.Pool{
 			New: func() interface{} {
-				return &signal{}
+				return &Signal{}
 			},
 		},
 		cgroupManager:  cgroupManager,
@@ -104,7 +104,7 @@ func (ctrl *Controller) Run(ctx context.Context) {
 				continue
 			}
 
-			err = ctrl.processSignal(signal)
+			err = ctrl.ProcessSignal(signal)
 			if err != nil {
 				logger.Errorw("error processing control plane signal", "error", err)
 			}
@@ -142,6 +142,21 @@ func (ctrl *Controller) RegisterSignal(handlers map[events.ID]SignalHandler) err
 	}
 
 	return nil
+}
+
+// ProcessSignal processes a signal from the control plane.
+func (ctrl *Controller) ProcessSignal(signal *Signal) error {
+	handler, exists := ctrl.signalHandlers[signal.ID]
+	if !exists {
+		return errfmt.Errorf("no registered handler for signal %d", signal.ID)
+	}
+
+	return handler(signal.ID, signal.Data)
+}
+
+func (ctrl *Controller) HasSignalHandler(signalID events.ID) bool {
+	_, exists := ctrl.signalHandlers[signalID]
+	return exists
 }
 
 // Private
@@ -218,28 +233,18 @@ func (ctrl *Controller) registerBuiltinSignals() error {
 	return ctrl.RegisterSignal(signalHandlers)
 }
 
-// processSignal processes a signal from the control plane.
-func (ctrl *Controller) processSignal(signal *signal) error {
-	handler, exists := ctrl.signalHandlers[signal.id]
-	if !exists {
-		return errfmt.Errorf("no registered handler for signal %d", signal.id)
-	}
-
-	return handler(signal.id, signal.args)
-}
-
 // getSignalFromPool gets a signal from the pool.
 // signal certainly contains old data, so it must be updated before use.
-func (ctrl *Controller) getSignalFromPool() *signal {
+func (ctrl *Controller) getSignalFromPool() *Signal {
 	// revive:disable:unchecked-type-assertion
-	sig := ctrl.signalPool.Get().(*signal)
+	sig := ctrl.signalPool.Get().(*Signal)
 	// revive:enable:unchecked-type-assertion
 
 	return sig
 }
 
 // putSignalInPool puts a signal back in the pool.
-func (ctrl *Controller) putSignalInPool(sig *signal) {
+func (ctrl *Controller) putSignalInPool(sig *Signal) {
 	ctrl.signalPool.Put(sig)
 }
 
