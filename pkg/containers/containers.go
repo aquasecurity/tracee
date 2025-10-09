@@ -245,6 +245,8 @@ func (c *Manager) EnrichCgroupInfo(cgroupId uint64) (Container, error) {
 	if ok {
 		container = Container{
 			ContainerId: containerId,
+			Runtime:     container.Runtime,
+			CreatedAt:   container.CreatedAt,
 			Name:        enrichRes.ContName,
 			Image:       enrichRes.Image,
 			ImageDigest: enrichRes.ImageDigest,
