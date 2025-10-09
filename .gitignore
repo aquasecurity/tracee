@@ -45,3 +45,6 @@ dist
 
 # release files
 release_notes.txt
+
+# Cursor rules - personal development configurations
+.cursor/rules/

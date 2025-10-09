@@ -42,19 +42,31 @@ The `make test-unit` target automatically configures:
 
 ## Other Test Types
 
-### Integration Tests
+### Integration Tests (Requires Root)
 ```bash
-make test-integration  # Full system tests
+make test-integration  # Full system tests with real eBPF programs
+```
+**Note**: Integration tests require root privileges and kernel eBPF support.
+
+### E2E Tests
+```bash
+# Network signature tests
+make e2e-net-signatures
+# Instrumentation signature tests
+make e2e-inst-signatures
 ```
 
-### Types Module (Standalone)
+### Coverage Reports
 ```bash
-make test-types  # Or: cd types && go test ./...
+make coverage           # View coverage summary
+make coverage-html      # Generate HTML coverage report
 ```
+**Target**: 60% coverage for new code, maintain current baseline for existing code.
 
-### Common Module (Standalone)
+### Module-Specific Tests
 ```bash
-make test-common # Or: cd common && go test ./...
+make test-types        # Types module (standalone)
+make test-common       # Common module (standalone)
 ```
 
 ## Troubleshooting
@@ -66,3 +78,37 @@ make test-common # Or: cd common && go test ./...
 ### Slow Test Execution
 - Use package targeting: `make test-unit PKG=specific/package`
 - Use function targeting: `make test-unit TEST=TestKernelVersionRequirement_Basic`
+
+### Test Timeouts or Failures
+- Check kernel eBPF support: `cat /sys/kernel/debug/tracing/available_events`
+- Verify root privileges for integration tests
+- Check for conflicting processes using eBPF resources
+
+## Writing Tests
+
+### Test Conventions
+- Use `testify/assert` and `testify/require` for assertions
+- Place `*_test.go` files alongside source files
+- Use `testutils.SetTestLogger()` for log capture
+- Always clean up with `defer` statements
+- Check for goroutine leaks with `go.uber.org/goleak`
+- Pay attention to privileges: avoid using code introducing new privileges to test suites
+
+### Integration Test Patterns
+```go
+// Standard integration test lifecycle
+ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+defer cancel()
+
+trc, err := startTracee(ctx, t, config, nil, nil)
+defer waitForTraceeStop(trc)
+
+stream := trc.SubscribeAll()
+defer trc.Unsubscribe(stream)
+```
+
+### Test File Organization
+- Unit tests: Alongside source files (`pkg/*/`)
+- Integration tests: `tests/integration/`
+- E2E tests: `tests/e2e-*/`
+- Test utilities: `tests/testutils/`
