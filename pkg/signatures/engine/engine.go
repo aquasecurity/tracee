@@ -309,7 +309,7 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 
 	signatureCtx := detect.SignatureContext{
 		Callback: engine.matchHandler,
-		Logger:   logger.Current(),
+		Logger:   logger.GetLogger(),
 		GetDataSource: func(namespace, id string) (detect.DataSource, bool) {
 			return engine.GetDataSource(namespace, id)
 		},

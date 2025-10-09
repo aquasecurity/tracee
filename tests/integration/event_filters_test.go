@@ -2333,7 +2333,7 @@ func Test_EventFilters(t *testing.T) {
 			}()
 
 			// start tracee
-			trc, err := startTracee(ctx, t, config, nil, nil)
+			trc, err := startTracee(ctx, t, config, nil, nil, true)
 			if err != nil {
 				t.Fatal(err)
 			}

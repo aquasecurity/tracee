@@ -267,7 +267,7 @@ func Test_EventsDependencies(t *testing.T) {
 			defer closeLogsDone()
 
 			// start tracee
-			trc, err := startTracee(ctx, t, testConfig, nil, nil)
+			trc, err := startTracee(ctx, t, testConfig, nil, nil, true)
 			if err != nil {
 				cancel()
 				t.Fatal(err)

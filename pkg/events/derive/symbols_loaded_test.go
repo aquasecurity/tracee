@@ -165,7 +165,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 		},
 	}
 	pid := 1
-	baseLogger := logger.Current()
+	baseLogger := logger.GetLogger()
 
 	t.Run("Happy flow", func(t *testing.T) {
 		for _, testCase := range happyFlowTestCases {

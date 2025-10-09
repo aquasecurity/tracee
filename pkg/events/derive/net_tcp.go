@@ -18,7 +18,7 @@ import (
 func NetTCPConnect(cache *dnscache.DNSCache) DeriveFunction {
 	return deriveSingleEvent(events.NetTCPConnect,
 		func(event *trace.Event) ([]interface{}, error) {
-			dstIP, dstPort, err := pickIpAndPort(*event, "remote_addr")
+			dstIP, dstPort, err := pickIpAndPort(event, "remote_addr")
 			if err != nil {
 				logger.Debugw("error picking address", "error", err)
 				return nil, nil
@@ -54,7 +54,7 @@ func NetTCPConnect(cache *dnscache.DNSCache) DeriveFunction {
 }
 
 // pickIpAndPort returns the IP address and port from the event's sockaddr field.
-func pickIpAndPort(event trace.Event, fieldName string) (string, int, error) {
+func pickIpAndPort(event *trace.Event, fieldName string) (string, int, error) {
 	var err error
 	// e.g: sockaddr: map[sa_family:AF_INET sin_addr:10.10.11.2 sin_port:1234]
 
