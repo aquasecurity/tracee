@@ -6,13 +6,45 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/spf13/cobra"
 
 	"github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/signatures/signature"
+	"github.com/aquasecurity/tracee/types/detect"
 )
+
+var (
+	// signaturesOnce ensures signatures are loaded only once
+	signaturesOnce sync.Once
+	// loadedSignatures stores the loaded signatures for reuse
+	loadedSignatures []detect.Signature
+	// signaturesLoaded indicates whether signature loading was attempted and successful
+	signaturesLoaded bool
+)
+
+// ensureSignaturesLoaded loads signatures if not already loaded
+func ensureSignaturesLoaded() {
+	signaturesOnce.Do(func() {
+		signatures, _, err := signature.Find([]string{}, nil)
+		if err != nil {
+			logger.Debugw("Failed to find signatures", "err", err)
+			return
+		}
+		if len(signatures) == 0 {
+			logger.Debugw("No signatures found")
+			return
+		}
+		sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
+		loadedSignatures = signatures
+		signaturesLoaded = true
+	})
+}
 
 func init() {
 	rootCmd.AddCommand(manCmd)
@@ -197,6 +229,9 @@ func runManForFlag(flagName string) error {
 
 // showEventDocumentation displays documentation for a specific event
 func showEventDocumentation(eventName string) error {
+	// Ensure signatures are loaded (will only load once)
+	ensureSignaturesLoaded()
+
 	// Check if event exists first
 	eventID, found := events.Core.GetDefinitionIDByName(eventName)
 	if !found {
