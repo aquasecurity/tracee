@@ -15,7 +15,7 @@ type GoVersion struct {
 	Major, Minor, Patch int
 }
 
-var goVersionRegex = regexp.MustCompile(`^go(\d+)\.(\d+)(?:\.(\d+))?$`)
+var goVersionRegex = regexp.MustCompile(`^go(\d+)\.(\d+)(?:\.(\d+))?(?:\s.*)?$`)
 
 //go:linkname errNotGoExe debug/buildinfo.errNotGoExe
 var errNotGoExe error
