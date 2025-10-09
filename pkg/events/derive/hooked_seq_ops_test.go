@@ -18,8 +18,6 @@ func createTestKernelSymbolTable(symbolData string) (*symbols.KernelSymbolTable,
 }
 
 func TestHookedSeqOps(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name           string
 		inputEvent     trace.Event
@@ -334,8 +332,6 @@ ffffffffc0000018 t hooked_func	malicious`,
 }
 
 func TestGetSeqOpsSymbols(t *testing.T) {
-	t.Parallel()
-
 	// Test that the indexing math works correctly
 	// For an address at index i:
 	//   - seqOpsStruct = NetSeqOps[i/4]

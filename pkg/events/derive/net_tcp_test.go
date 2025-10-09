@@ -11,8 +11,6 @@ import (
 )
 
 func TestNetTCPConnect(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name           string
 		inputEvent     trace.Event
@@ -221,8 +219,6 @@ func TestNetTCPConnect(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			// Test without DNS cache (nil cache)
 			deriveFunction := NetTCPConnect(nil)
 			events, errs := deriveFunction(&tt.inputEvent)
@@ -256,8 +252,6 @@ func TestNetTCPConnect(t *testing.T) {
 }
 
 func TestPickIpAndPort(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name         string
 		event        trace.Event
@@ -350,9 +344,7 @@ func TestPickIpAndPort(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			ip, port, err := pickIpAndPort(tt.event, tt.fieldName)
+			ip, port, err := pickIpAndPort(&tt.event, tt.fieldName)
 
 			if tt.shouldError {
 				assert.Error(t, err)

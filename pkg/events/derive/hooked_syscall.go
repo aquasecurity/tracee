@@ -21,7 +21,6 @@ var (
 	reportedHookedSyscalls *lru.Cache[int32, uint64]
 	initOnce               sync.Once
 	initErr                error
-	initMutex              sync.Mutex
 )
 
 // InitHookedSyscall initialize lru (thread-safe, only runs once)
@@ -34,10 +33,7 @@ func InitHookedSyscall() error {
 
 // resetHookedSyscallForTesting resets the cache and initialization state for testing purposes only
 func resetHookedSyscallForTesting() error {
-	initMutex.Lock()
-	defer initMutex.Unlock()
-
-	// Reset the sync.Once so we can reinitialize
+	// No mutex is needed since the tests run sequentially (critical assumption)
 	initOnce = sync.Once{}
 	reportedHookedSyscalls = nil
 	initErr = nil
