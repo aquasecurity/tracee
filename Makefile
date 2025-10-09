@@ -898,7 +898,7 @@ clean-e2e-inst-signatures::
 
 .PHONY: test-unit
 test-unit:: \
-	tracee-ebpf \
+	tracee \
 	$(if $(or $(PKG),$(TEST)),,test-types test-common) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
