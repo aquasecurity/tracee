@@ -896,6 +896,11 @@ clean-e2e-inst-signatures::
 # unit tests
 #
 
+# SHORT controls whether to run tests in short mode (skips expensive tests)
+# Set SHORT=0 to run full test suite including stress tests
+# Default: 1 (short mode enabled for CI speed)
+SHORT ?= 1
+
 .PHONY: test-unit
 test-unit:: \
 	tracee \
@@ -906,7 +911,7 @@ test-unit:: \
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
 		-tags $(GO_TAGS_EBPF) \
-		-short \
+		$(if $(filter 1,$(SHORT)),-short) \
 		-race \
 		-shuffle on \
 		-failfast \
@@ -922,7 +927,7 @@ test-types:: \
 #
 	@# Note that we must change the directory here because types is a standalone Go module.
 	@cd ./types && $(CMD_GO) test \
-		-short \
+		$(if $(filter 1,$(SHORT)),-short) \
 		-race \
 		-shuffle on \
 		-v \
@@ -934,7 +939,7 @@ test-common:: \
 #
 	@# Note that we must change the directory here because common is a standalone Go module.
 	@cd ./common && $(CMD_GO) test \
-		-short \
+		$(if $(filter 1,$(SHORT)),-short) \
 		-race \
 		-shuffle on \
 		-v \
