@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"net"
+	"os"
 	"time"
 
 	"google.golang.org/grpc"
@@ -36,6 +37,17 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 		logger.Errorw("Failed to start GRPC server", "protocol", s.protocol, "address", s.listenAddr, "error", err)
 		return
 	}
+
+	// Set restrictive permissions on Unix socket
+	if s.protocol == "unix" {
+		err = os.Chmod(s.listenAddr, 0600)
+		if err != nil {
+			logger.Errorw("Failed to set permissions on Unix socket. This may leave the socket with insecure permissions and allow unauthorized access.", "path", s.listenAddr, "error", err)
+			_ = lis.Close()
+			return
+		}
+	}
+
 	s.listener = lis
 
 	srvCtx, srvCancel := context.WithCancel(ctx)
