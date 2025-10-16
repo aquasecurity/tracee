@@ -80,10 +80,20 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	queueReady := make(chan uint64, queueReadySize)
 	queueClean := make(chan *trace.Event, queueReadySize)
 
+	// wg tracks all goroutines that send to 'out' channel
+	var wg sync.WaitGroup
+
+	// Name function for symbolic reference
+	cleanupRoutine := func(out chan *trace.Event, errc chan error, wg *sync.WaitGroup) {
+		wg.Wait()
+		close(out)
+		close(errc)
+	}
+
 	// queues map writer
+	wg.Add(1)
 	go func() {
-		defer close(out)
-		defer close(errc)
+		defer wg.Done()
 		for { // enqueue events
 			select {
 			case event := <-in:
@@ -151,7 +161,9 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	}()
 
 	// queues map reader
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for { // de-queue events
 			select {
 			case cgroupId := <-queueReady: // queue for received cgroupId is ready
@@ -199,7 +211,9 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	}()
 
 	// queues cleaner
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for {
 			select {
 			case event := <-queueClean:
@@ -233,6 +247,9 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 			}
 		}
 	}()
+
+	// Wait for all sender goroutines to finish before closing channels
+	go cleanupRoutine(out, errc, &wg)
 
 	return out, errc
 }
