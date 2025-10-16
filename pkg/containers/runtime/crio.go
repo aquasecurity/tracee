@@ -12,6 +12,7 @@ import (
 )
 
 type crioEnricher struct {
+	conn   *grpc.ClientConn
 	client cri.RuntimeServiceClient
 }
 
@@ -24,6 +25,7 @@ func CrioEnricher(socket string) (ContainerEnricher, error) {
 	client := cri.NewRuntimeServiceClient(conn)
 
 	enricher := &crioEnricher{
+		conn:   conn,
 		client: client,
 	}
 
@@ -60,4 +62,8 @@ func (e *crioEnricher) Get(ctx context.Context, containerId string) (EnrichResul
 
 func (e *crioEnricher) isSandbox(annotations map[string]string) bool {
 	return annotations[ContainerTypeCrioAnnotation] == "sandbox"
+}
+
+func (e *crioEnricher) Close() error {
+	return e.conn.Close()
 }

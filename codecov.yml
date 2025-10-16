@@ -32,6 +32,10 @@ coverage:
     - "docs/**/*"
     - "examples/**/*"
     - "brand/**/*"
+    # Runtime enrichers cleanup is tested via integration tests
+    - "pkg/containers/runtime/docker.go"
+    - "pkg/containers/runtime/containerd.go"
+    - "pkg/containers/runtime/crio.go"
 
 comment:
   layout: "diff, flags, files"

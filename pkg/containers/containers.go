@@ -109,6 +109,10 @@ func New(
 
 // Close executes cleanup logic for Containers object.
 func (c *Manager) Close() error {
+	err := c.enricher.Close()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
 	return nil
 }
 
