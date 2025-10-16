@@ -17,6 +17,7 @@ import (
 )
 
 type containerdEnricher struct {
+	client     *containerd.Client
 	containers containers.Store
 	images     images.Store
 	images_cri cri.ImageServiceClient
@@ -42,6 +43,7 @@ func ContainerdEnricher(socket string) (ContainerEnricher, error) {
 		return nil, errfmt.WrapError(err)
 	}
 
+	enricher.client = client
 	enricher.images_cri = cri.NewImageServiceClient(conn)
 	enricher.containers = client.ContainerService()
 	enricher.namespaces = client.NamespaceService()
@@ -165,3 +167,7 @@ func (e *containerdEnricher) getImageInfoCri(ctx context.Context, image string) 
 }
 
 // revive:enable:confusing-results
+
+func (e *containerdEnricher) Close() error {
+	return e.client.Close()
+}

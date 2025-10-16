@@ -29,6 +29,7 @@ type EnrichResult struct {
 
 type ContainerEnricher interface {
 	Get(ctx context.Context, containerId string) (EnrichResult, error)
+	Close() error
 }
 
 // Represents the internal ID of a container runtime

@@ -77,3 +77,7 @@ func (e *dockerEnricher) Get(ctx context.Context, containerId string) (EnrichRes
 func (e *dockerEnricher) isSandbox(labels map[string]string) bool {
 	return labels[ContainerTypeDockerLabel] == "sandbox"
 }
+
+func (e *dockerEnricher) Close() error {
+	return e.client.Close()
+}

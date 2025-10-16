@@ -64,3 +64,14 @@ func (e *Service) getFromUnknownRuntime(ctx context.Context, containerId string)
 
 	return EnrichResult{}, errfmt.Errorf("no runtime found for container")
 }
+
+// Close closes the service and all its enrichers
+func (e *Service) Close() error {
+	for _, enricher := range e.enrichers {
+		err := enricher.Close()
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+	return nil
+}
