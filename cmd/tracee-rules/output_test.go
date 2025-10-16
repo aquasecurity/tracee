@@ -100,7 +100,8 @@ HostName: foobar.local
 				SigMetadata: sm,
 			}
 
-			time.Sleep(time.Millisecond)
+			// Give the goroutine enough time to execute the template and write output
+			time.Sleep(100 * time.Millisecond)
 			checkOutput(t, tc.name, actualOutput, tc.expectedOutput)
 		})
 	}
@@ -111,7 +112,10 @@ func checkOutput(t *testing.T, testName string, actualOutput *SyncBuffer, expect
 	for _, g := range got {
 		switch {
 		case strings.Contains(g, "Time"):
-			_, err := time.Parse("2006-01-02T15:04:05Z", strings.Split(g, " ")[1])
+			parts := strings.Split(g, " ")
+			require.GreaterOrEqual(t, len(parts), 2, "Line with 'Time' should have at least 2 parts: %q", g)
+			require.NotEmpty(t, parts[1], "Timestamp should not be empty in line: %q", g)
+			_, err := time.Parse("2006-01-02T15:04:05Z", parts[1])
 			assert.NoError(t, err, testName) // check if time is parsable
 		case strings.Contains(g, "time"):
 			var gotPayload struct {
