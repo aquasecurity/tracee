@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"syscall"
 	"time"
 	"unsafe"
@@ -245,10 +246,31 @@ var errStrtabRead = errors.New("error reading from string table section")
 // scanning it from start to finish in one go.
 // This allows us to use madvise to free memory that we already processed,
 // preventing very large string tables from inflating the tracee process' RSS.
+//
+// ELF String Table Compression Handling:
+// The function handles ELF linker string table optimizations:
+//   - Duplicate strings: Reduced to a single copy
+//   - Tail strings (suffix sharing): Multiple symbols share storage by referencing
+//     different offsets within the same string
+//     Example: "bigdog" at offset 0, "dog" references offset 3
+//
+// Matching Strategy:
+//  1. Exact matches: When a wanted symbol exactly matches a string at a null-terminated boundary
+//  2. Tail matches: When a wanted symbol (PlainSymbolName only) is a suffix of another string
+//  3. Priority: Exact matches are preferred; tail matches are only returned if no exact match exists
+//
+// The returned map contains string table offsets (keys) of all matched wanted symbols.
+//
+// Reference: https://docs.oracle.com/cd/E23824_01/html/819-0690/ggdlu.html
 func findWantedSymbolNames(strtab []byte, wantedSymbols []WantedSymbol) (map[uint32]struct{}, error) {
 	const chunkSize = 4096 * 128 // 512KB
 
-	wantedStrings := make(map[uint32]struct{})
+	// Track exact matches
+	exactMatches := make(map[uint32]struct{})
+	// Track which wanted symbols have exact matches
+	hasExactMatch := make(map[string]struct{})
+	// Track tail string matches: offset -> wanted symbol name
+	tailMatches := make(map[uint32]string)
 
 	currChunk := 0
 	currString := 0
@@ -262,23 +284,50 @@ func findWantedSymbolNames(strtab []byte, wantedSymbols []WantedSymbol) (map[uin
 			currChunk += chunkSize
 		}
 
-		if c == 0 && i != currString {
-			// NULL terminator - check the current string
-			str := string(strtab[currString:i])
-			// Check all wanted symbols using the interface
-			for _, wantedSymbol := range wantedSymbols {
-				if wantedSymbol.Matches(str) {
-					wantedStrings[uint32(currString)] = struct{}{}
-					break // Found a match, no need to check other patterns
+		if c == 0 {
+			// NULL terminator - process if not empty string and update currString
+			if i > currString {
+				// Non-empty string - check for exact matches or tail strings
+				str := string(strtab[currString:i])
+
+				// Check all wanted symbols - either exact match or tail string
+				for _, wantedSymbol := range wantedSymbols {
+					wantedStr := wantedSymbol.String()
+
+					// Check for exact match at this offset
+					if wantedSymbol.Matches(str) {
+						exactMatches[uint32(currString)] = struct{}{}
+						hasExactMatch[wantedStr] = struct{}{}
+					} else if _, isPlain := wantedSymbol.(PlainSymbolName); isPlain {
+						// Check for tail string match (suffix) - only for PlainSymbolName
+						// Tail string optimization is an ELF linker feature for plain string names,
+						// not applicable to other WantedSymbol types.
+						if len(str) > len(wantedStr) && strings.HasSuffix(str, wantedStr) {
+							offset := uint32(currString + len(str) - len(wantedStr))
+							tailMatches[offset] = wantedStr
+						}
+					}
 				}
 			}
 
-			// Update current string
+			// Update current string position after each null terminator
 			currString = i + 1
 		}
 	}
 
-	return wantedStrings, nil
+	// Build final result: exact matches + substring matches for symbols without exact matches
+	result := make(map[uint32]struct{}, len(exactMatches))
+	for offset := range exactMatches {
+		result[offset] = struct{}{}
+	}
+	for offset, wantedStr := range tailMatches {
+		if _, found := hasExactMatch[wantedStr]; !found {
+			// No exact match was found for this wanted symbol, include the substring match
+			result[offset] = struct{}{}
+		}
+	}
+
+	return result, nil
 }
 
 func madviseAligned(data []byte, advice int) error {
