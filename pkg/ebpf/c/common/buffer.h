@@ -120,54 +120,81 @@ statfunc int save_to_submit_buf(args_buffer_t *buf, void *ptr, u32 size, u8 inde
     return 1;
 }
 
+// Arguments buffer layout
+// [index:1 byte][size:4 bytes][data:N bytes]
+// |<-------- Header -------->||<-- Data -->|
+// where:
+// - Header:
+//   index: 1 byte - argument index for identification (u8)
+//   size:  4 bytes - size of the data that follows, may be truncated (u32)
+// - Data:  N bytes - the actual data to save, truncated to max_size-1 if needed (u8[N])
+//
+#define ARGS_BUFFER_INDEX_FIELD_SIZE  sizeof(u8)
+#define ARGS_BUFFER_HEADER_SIZE       (ARGS_BUFFER_INDEX_FIELD_SIZE + sizeof(u32))
+#define ARGS_BUFFER_SIZE_FIELD_OFFSET ARGS_BUFFER_INDEX_FIELD_SIZE
+#define ARGS_BUFFER_DATA_FIELD_OFFSET ARGS_BUFFER_HEADER_SIZE
+
+// ENSURE_ARGS_BUFFER_SPACE checks if buffer has space for header + data.
+// Must be called before each buffer write as verifier loses bounds tracking after memory
+// operations.
+// Uses max_size (not actual size) so BPF verifier can prove worst-case bounds.
+#define ENSURE_ARGS_BUFFER_SPACE(_buf, _data_size)                                                 \
+    ({                                                                                             \
+        if ((_buf)->offset > ARGS_BUF_SIZE - (ARGS_BUFFER_HEADER_SIZE + (_data_size)))             \
+            return 0;                                                                              \
+    })
+
 // save_bytes_to_buf_max saves a byte array to the buffer for a specific argument
 // with a configurable maximum size limit.
 //
-// The data is saved to the submit buffer in the following format:
-// [index][size][ ... bytes ... ]
+// The data is saved using the arguments buffer layout (see above).
 //
 // Parameters:
 //   buf: buffer to save data to
 //   ptr: pointer to data to save
 //   size: actual size of data to save
-//   max_size: maximum allowed size (data will be truncated if larger)
+//   max_size: maximum allowed size (data will be truncated to max_size-1 if larger)
 //   index: argument index for identification
 // Returns: 1 on success, 0 on failure
 statfunc int save_bytes_to_buf_max(args_buffer_t *buf, void *ptr, u32 size, u32 max_size, u8 index)
 {
     if (size == 0)
         return 0;
-
-    if (buf->offset > ARGS_BUF_SIZE - 1)
+    if (max_size == 0)
         return 0;
+
+    u32 rsize = size;
+    if (rsize >= max_size) {
+        if (max_size <= 1)
+            return 0; // avoid underflow/zero-length data (should never happen)
+        rsize = max_size - 1;
+    }
 
     // Save argument index
+    ENSURE_ARGS_BUFFER_SPACE(buf, max_size);
     buf->args[buf->offset] = index;
 
-    if (buf->offset > ARGS_BUF_SIZE - (sizeof(int) + 1))
+    // Save size field
+    ENSURE_ARGS_BUFFER_SPACE(buf, max_size);
+    if (bpf_probe_read(
+            &(buf->args[buf->offset + ARGS_BUFFER_SIZE_FIELD_OFFSET]), sizeof(u32), &rsize) != 0)
         return 0;
 
-    // Save size to buffer
-    if (bpf_probe_read(&(buf->args[buf->offset + 1]), sizeof(int), &size) != 0) {
+    // Save data
+    ENSURE_ARGS_BUFFER_SPACE(buf, max_size);
+    if (rsize >= max_size) {
+        // Help older verifiers (kernel 5.4) to prove bounds correctly by checking it again.
+        // TODO: remove this additional check once older kernels are no longer supported.
         return 0;
     }
-
-    if (buf->offset > ARGS_BUF_SIZE - (max_size + 1 + sizeof(int)))
+    if (bpf_probe_read(&(buf->args[buf->offset + ARGS_BUFFER_DATA_FIELD_OFFSET]), rsize, ptr) != 0)
         return 0;
 
-    u32 read_size = size;
-    if (read_size >= max_size)
-        read_size = max_size - 1;
+    // Update offset
+    buf->offset += ARGS_BUFFER_HEADER_SIZE + rsize;
+    buf->argnum++;
 
-    // Read bytes into buffer
-    if (bpf_probe_read(&(buf->args[buf->offset + 1 + sizeof(int)]), read_size, ptr) == 0) {
-        // We update offset only if all writes were successful
-        buf->offset += read_size + 1 + sizeof(int);
-        buf->argnum++;
-        return 1;
-    }
-
-    return 0;
+    return 1;
 }
 
 // save_bytes_to_buf wraps save_bytes_to_buf_max with MAX_BYTES_ARR_SIZE as the maximum size.
