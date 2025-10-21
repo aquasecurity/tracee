@@ -1,4 +1,4 @@
-package integration
+package testutils
 
 import (
 	"context"
@@ -21,36 +21,36 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-// eventBuffer is a thread-safe buffer for tracee events
-type eventBuffer struct {
+// EventBuffer is a thread-safe buffer for tracee events
+type EventBuffer struct {
 	mu     sync.RWMutex
 	events []trace.Event
 }
 
-func newEventBuffer() *eventBuffer {
-	return &eventBuffer{
+func NewEventBuffer() *EventBuffer {
+	return &EventBuffer{
 		events: make([]trace.Event, 0),
 	}
 }
 
-// addEvent adds an event to the eventBuffer
-func (b *eventBuffer) addEvent(evt trace.Event) {
+// AddEvent adds an event to the EventBuffer
+func (b *EventBuffer) AddEvent(evt trace.Event) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	b.events = append(b.events, evt)
 }
 
-// clear clears the eventBuffer
-func (b *eventBuffer) clear() {
+// Clear clears the EventBuffer
+func (b *EventBuffer) Clear() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	b.events = make([]trace.Event, 0)
 }
 
-// len returns the number of events in the eventBuffer
-func (b *eventBuffer) len() int {
+// len returns the number of events in the EventBuffer
+func (b *EventBuffer) len() int {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -58,7 +58,7 @@ func (b *eventBuffer) len() int {
 }
 
 // getCopy returns a copy of the eventBuffer events
-func (b *eventBuffer) getCopy() []trace.Event {
+func (b *EventBuffer) GetCopy() []trace.Event {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -69,7 +69,7 @@ func (b *eventBuffer) getCopy() []trace.Event {
 }
 
 // load tracee into memory with args
-func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *config.OutputConfig, capture *config.CaptureConfig) (*tracee.Tracee, error) {
+func StartTracee(ctx context.Context, t *testing.T, cfg config.Config, output *config.OutputConfig, capture *config.CaptureConfig) (*tracee.Tracee, error) {
 	initialize.SetLibbpfgoCallbacks()
 
 	kernelConfig, err := initialize.KernelConfig()
@@ -90,7 +90,7 @@ func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 	}
 
 	if capture == nil {
-		capture = prepareCapture()
+		capture = PrepareCapture()
 	}
 
 	cfg.Capture = capture
@@ -148,7 +148,7 @@ func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 }
 
 // prepareCapture prepares a capture config for tracee
-func prepareCapture() *config.CaptureConfig {
+func PrepareCapture() *config.CaptureConfig {
 	// taken from tracee-rule github project, might have to adjust...
 	// prepareCapture is called with nil input
 	return &config.CaptureConfig{
@@ -161,7 +161,7 @@ func prepareCapture() *config.CaptureConfig {
 
 // wait for tracee to start (or timeout)
 // in case of timeout, the test will fail
-func waitForTraceeStart(trc *tracee.Tracee) error {
+func WaitForTraceeStart(trc *tracee.Tracee) error {
 	const timeout = 10 * time.Second
 
 	statusCheckTicker := time.NewTicker(1 * time.Second)
@@ -183,7 +183,7 @@ func waitForTraceeStart(trc *tracee.Tracee) error {
 
 // wait for tracee to stop (or timeout)
 // in case of timeout, the test will continue since all tests already passed
-func waitForTraceeStop(trc *tracee.Tracee) error {
+func WaitForTraceeStop(trc *tracee.Tracee) error {
 	const timeout = 10 * time.Second
 
 	statusCheckTicker := time.NewTicker(1 * time.Second)
@@ -205,7 +205,7 @@ func waitForTraceeStop(trc *tracee.Tracee) error {
 
 // wait for tracee buffer to fill up with expected number of events (or timeout)
 // in case of timeout, the test will fail
-func waitForTraceeOutputEvents(t *testing.T, waitFor time.Duration, actual *eventBuffer, expectedEvts int, failOnTimeout bool) error {
+func WaitForTraceeOutputEvents(t *testing.T, waitFor time.Duration, actual *EventBuffer, expectedEvts int, failOnTimeout bool) error {
 	if waitFor > 0 {
 		t.Logf("  . waiting events collection for %s", waitFor.String())
 		time.Sleep(waitFor)
@@ -238,14 +238,14 @@ func waitForTraceeOutputEvents(t *testing.T, waitFor time.Duration, actual *even
 	}
 }
 
-// assureIsRoot skips the test if it is not run as root
-func assureIsRoot(t *testing.T) {
+// AssureIsRoot skips the test if it is not run as root
+func AssureIsRoot(t *testing.T) {
 	if syscall.Geteuid() != 0 {
 		t.Skipf("***** %s must be run as ROOT *****", t.Name())
 	}
 }
 
-func getProcNS(nsName string) string {
+func GetProcNS(nsName string) string {
 	pidInt := syscall.Getpid()
 	pid := int32(pidInt)
 	nsID, err := uproc.GetProcNS(pid, nsName)

@@ -21,7 +21,7 @@ import (
 )
 
 func Test_EventsDependencies(t *testing.T) {
-	assureIsRoot(t)
+	testutils.AssureIsRoot(t)
 
 	// Make sure we don't leak any goroutines since we run Tracee many times in this test.
 	// If a test case fails, ignore the leak since it's probably caused by the aborted test.
@@ -268,13 +268,13 @@ func Test_EventsDependencies(t *testing.T) {
 			defer closeLogsDone()
 
 			// start tracee
-			trc, err := startTracee(ctx, t, testConfig, nil, nil)
+			trc, err := testutils.StartTracee(ctx, t, testConfig, nil, nil)
 			if err != nil {
 				cancel()
 				t.Fatal(err)
 			}
 			t.Logf("  --- started tracee ---")
-			err = waitForTraceeStart(trc)
+			err = testutils.WaitForTraceeStart(trc)
 			if err != nil {
 				cancel()
 				t.Fatal(err)
@@ -284,14 +284,14 @@ func Test_EventsDependencies(t *testing.T) {
 			defer trc.Unsubscribe(stream)
 
 			// start a goroutine to read events from the channel into the buffer
-			buf := newEventBuffer()
-			go func(ctx context.Context, buf *eventBuffer) {
+			buf := testutils.NewEventBuffer()
+			go func(ctx context.Context, buf *testutils.EventBuffer) {
 				for {
 					select {
 					case <-ctx.Done():
 						return
 					case evt := <-stream.ReceiveEvents():
-						buf.addEvent(evt)
+						buf.AddEvent(evt)
 					}
 				}
 			}(ctx, buf)
@@ -327,7 +327,7 @@ func Test_EventsDependencies(t *testing.T) {
 			}
 			restoreLogger()
 			cancel()
-			errStop := waitForTraceeStop(trc)
+			errStop := testutils.WaitForTraceeStop(trc)
 			if errStop != nil {
 				t.Log(errStop)
 				failed = true

@@ -22,7 +22,7 @@ import (
 func Test_ContainerCreateRemove(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	assureIsRoot(t)
+	testutils.AssureIsRoot(t)
 	failed := false
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -34,7 +34,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	require.NoError(t, err, "Failed to pull busybox image")
 
 	// Create event buffer
-	eventBuffer := newEventBuffer()
+	eventBuffer := testutils.NewEventBuffer()
 
 	// Configure Tracee
 	cfg := config.Config{
@@ -64,10 +64,10 @@ func Test_ContainerCreateRemove(t *testing.T) {
 
 	// Start Tracee
 	t.Logf("  --- started tracee ---")
-	traceeInstance, err := startTracee(ctx, t, cfg, nil, nil)
+	traceeInstance, err := testutils.StartTracee(ctx, t, cfg, nil, nil)
 	require.NoError(t, err, "Failed to start Tracee")
 
-	err = waitForTraceeStart(traceeInstance)
+	err = testutils.WaitForTraceeStart(traceeInstance)
 	require.NoError(t, err, "Tracee failed to start")
 
 	// Subscribe to events
@@ -79,7 +79,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 		for {
 			select {
 			case event := <-eventStream.ReceiveEvents():
-				eventBuffer.addEvent(event)
+				eventBuffer.AddEvent(event)
 			case <-ctx.Done():
 				return
 			}
@@ -98,11 +98,11 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	_ = removeCmd.Run()
 
 	// Wait for events
-	err = waitForTraceeOutputEvents(t, 10*time.Second, eventBuffer, 1, true)
+	err = testutils.WaitForTraceeOutputEvents(t, 10*time.Second, eventBuffer, 1, true)
 	require.NoError(t, err, "Failed waiting for events")
 
 	// Verify container events
-	capturedEvents := eventBuffer.getCopy()
+	capturedEvents := eventBuffer.GetCopy()
 	assert.Greater(t, len(capturedEvents), 0, "No container events captured")
 
 	foundCreate := false
@@ -174,7 +174,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 
 	// Stop tracee and wait for clean shutdown
 	cancel()
-	errStop := waitForTraceeStop(traceeInstance)
+	errStop := testutils.WaitForTraceeStop(traceeInstance)
 	if errStop != nil {
 		t.Log(errStop)
 		failed = true
@@ -192,7 +192,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 func Test_ExistingContainers(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	assureIsRoot(t)
+	testutils.AssureIsRoot(t)
 	failed := false
 
 	// Start by pulling the busybox image
@@ -225,7 +225,7 @@ func Test_ExistingContainers(t *testing.T) {
 	defer cancel()
 
 	// Create event buffer
-	eventBuffer := newEventBuffer()
+	eventBuffer := testutils.NewEventBuffer()
 
 	// Configure Tracee
 	cfg := config.Config{
@@ -254,7 +254,7 @@ func Test_ExistingContainers(t *testing.T) {
 
 	// Start Tracee AFTER the container is already running
 	t.Logf("  --- started tracee ---")
-	traceeInstance, err := startTracee(ctx, t, cfg, nil, nil)
+	traceeInstance, err := testutils.StartTracee(ctx, t, cfg, nil, nil)
 	require.NoError(t, err, "Failed to start Tracee")
 
 	// Subscribe to events BEFORE waiting for Tracee to start
@@ -267,25 +267,25 @@ func Test_ExistingContainers(t *testing.T) {
 		for {
 			select {
 			case event := <-eventStream.ReceiveEvents():
-				eventBuffer.addEvent(event)
+				eventBuffer.AddEvent(event)
 			case <-ctx.Done():
 				return
 			}
 		}
 	}()
 
-	err = waitForTraceeStart(traceeInstance)
+	err = testutils.WaitForTraceeStart(traceeInstance)
 	require.NoError(t, err, "Tracee failed to start")
 
 	// Wait for events to be captured (ExistingContainer events are emitted during startup)
 	time.Sleep(3 * time.Second)
 
 	// Wait for at least one event
-	err = waitForTraceeOutputEvents(t, 10*time.Second, eventBuffer, 1, true)
+	err = testutils.WaitForTraceeOutputEvents(t, 10*time.Second, eventBuffer, 1, true)
 	require.NoError(t, err, "Failed waiting for events")
 
 	// Verify ExistingContainer event
-	capturedEvents := eventBuffer.getCopy()
+	capturedEvents := eventBuffer.GetCopy()
 	assert.Greater(t, len(capturedEvents), 0, "No events captured")
 
 	foundExisting := false
@@ -348,7 +348,7 @@ func Test_ExistingContainers(t *testing.T) {
 
 	// Stop tracee and wait for clean shutdown
 	cancel()
-	errStop := waitForTraceeStop(traceeInstance)
+	errStop := testutils.WaitForTraceeStop(traceeInstance)
 	if errStop != nil {
 		t.Log(errStop)
 		failed = true

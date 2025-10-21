@@ -7,12 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/tests/testutils"
 )
 
 func Test_InitNamespacesEvent(t *testing.T) {
 	t.Parallel()
 
-	assureIsRoot(t)
+	testutils.AssureIsRoot(t)
 
 	procNamespaces := [...]string{"mnt", "cgroup", "pid", "pid_for_children", "time", "time_for_children", "user", "ipc", "net", "uts"}
 	evts := events.InitNamespacesEvent()
