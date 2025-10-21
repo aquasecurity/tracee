@@ -26,7 +26,7 @@ import (
 // Test_EventFilters tests a variety of trace event filters
 // with different combinations of policies
 func Test_EventFilters(t *testing.T) {
-	assureIsRoot(t)
+	testutils.AssureIsRoot(t)
 
 	// Make sure we don't leak any goroutines since we run Tracee many times in this test.
 	// If a test case fails, ignore the leak since it's probably caused by the aborted test.
@@ -119,7 +119,7 @@ func Test_EventFilters(t *testing.T) {
 						},
 						Spec: k8s.PolicySpec{
 							Scope: []string{
-								"mntns!=" + getProcNS("mnt"), // no events expected
+								"mntns!=" + testutils.GetProcNS("mnt"), // no events expected
 							},
 							DefaultActions: []string{"log"},
 							Rules:          []k8s.Rule{},
@@ -147,7 +147,7 @@ func Test_EventFilters(t *testing.T) {
 						},
 						Spec: k8s.PolicySpec{
 							Scope: []string{
-								"pidns!=" + getProcNS("pid"), // no events expected
+								"pidns!=" + testutils.GetProcNS("pid"), // no events expected
 							},
 							DefaultActions: []string{"log"},
 							Rules:          []k8s.Rule{},
@@ -176,8 +176,8 @@ func Test_EventFilters(t *testing.T) {
 						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ping",
-								"mntns=" + getProcNS("mnt"),
-								"pidns=" + getProcNS("pid"),
+								"mntns=" + testutils.GetProcNS("mnt"),
+								"pidns=" + testutils.GetProcNS("pid"),
 							},
 							DefaultActions: []string{"log"},
 							Rules: []k8s.Rule{
@@ -2334,13 +2334,13 @@ func Test_EventFilters(t *testing.T) {
 			}()
 
 			// start tracee
-			trc, err := startTracee(ctx, t, config, nil, nil)
+			trc, err := testutils.StartTracee(ctx, t, config, nil, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			t.Logf("  --- started tracee ---")
-			err = waitForTraceeStart(trc)
+			err = testutils.WaitForTraceeStart(trc)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -2349,14 +2349,14 @@ func Test_EventFilters(t *testing.T) {
 			defer trc.Unsubscribe(stream)
 
 			// start a goroutine to read events from the channel into the buffer
-			buf := newEventBuffer()
-			go func(ctx context.Context, buf *eventBuffer) {
+			buf := testutils.NewEventBuffer()
+			go func(ctx context.Context, buf *testutils.EventBuffer) {
 				for {
 					select {
 					case <-ctx.Done():
 						return
 					case evt := <-stream.ReceiveEvents():
-						buf.addEvent(evt)
+						buf.AddEvent(evt)
 					}
 				}
 			}(ctx, buf)
@@ -2370,7 +2370,7 @@ func Test_EventFilters(t *testing.T) {
 			}
 
 			cancel()
-			errStop := waitForTraceeStop(trc)
+			errStop := testutils.WaitForTraceeStop(trc)
 			if errStop != nil {
 				t.Log(errStop)
 				failed = true
@@ -2405,7 +2405,7 @@ type testCase struct {
 	cmdEvents    []cmdEvents
 	useSyscaller bool
 	coolDown     time.Duration // cool down before running the test case
-	test         func(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) error
+	test         func(t *testing.T, cmdEvents []cmdEvents, actual *testutils.EventBuffer, useSyscaller bool) error
 }
 
 type cmdEvents struct {
@@ -2492,7 +2492,7 @@ type proc struct {
 }
 
 // runCmd runs a command and returns a process
-func runCmd(t *testing.T, cmd cmdEvents, expectedEvts int, actual *eventBuffer, useSyscaller, failOnTimeout bool) (proc, error) {
+func runCmd(t *testing.T, cmd cmdEvents, expectedEvts int, actual *testutils.EventBuffer, useSyscaller, failOnTimeout bool) (proc, error) {
 	var (
 		pid int
 		err error
@@ -2514,7 +2514,7 @@ func runCmd(t *testing.T, cmd cmdEvents, expectedEvts int, actual *eventBuffer, 
 		}
 	}
 
-	err = waitForTraceeOutputEvents(t, cmd.waitFor, actual, expectedEvts, failOnTimeout)
+	err = testutils.WaitForTraceeOutputEvents(t, cmd.waitFor, actual, expectedEvts, failOnTimeout)
 	if err != nil {
 		return proc{}, err
 	}
@@ -2527,7 +2527,7 @@ func runCmd(t *testing.T, cmd cmdEvents, expectedEvts int, actual *eventBuffer, 
 
 // runCmds runs a list of commands and returns a list of processes
 // It also returns the number of expected events from all processes
-func runCmds(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller, failOnTimeout bool) ([]proc, int, error) {
+func runCmds(t *testing.T, cmdEvents []cmdEvents, actual *testutils.EventBuffer, useSyscaller, failOnTimeout bool) ([]proc, int, error) {
 	var (
 		procs          = make([]proc, 0)
 		expectedEvts   int
@@ -2558,7 +2558,7 @@ func runCmds(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscal
 		waitForAverage /= time.Duration(len(cmdEvents))
 	}
 
-	err := waitForTraceeOutputEvents(t, waitForAverage, actual, expectedEvts, failOnTimeout)
+	err := testutils.WaitForTraceeOutputEvents(t, waitForAverage, actual, expectedEvts, failOnTimeout)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -2677,7 +2677,7 @@ func assertUnorderedStringSlicesEqual(expNames []string, actNames []string) bool
 // This function is suitable when you want to ensure that each command has at
 // least one event in the actual events, regardless of the number of expected
 // events for each command.
-func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) error {
+func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *testutils.EventBuffer, useSyscaller bool) error {
 	for _, cmd := range cmdEvents {
 		syscallsInSets := []string{}
 		checkSets := len(cmd.sets) > 0
@@ -2685,7 +2685,7 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 			syscallsInSets = getAllSyscallsInSets(cmd.sets)
 		}
 
-		actual.clear()
+		actual.Clear()
 		// first stage: run commands
 		proc, err := runCmd(t, cmd, len(cmd.expectedEvents), actual, useSyscaller, true)
 		if err != nil {
@@ -2699,7 +2699,7 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 			)
 		}
 
-		actEvtsCopy := actual.getCopy()
+		actEvtsCopy := actual.GetCopy()
 
 		findEventInResults := func(expEvt trace.Event) (bool, error) {
 			checkHost := expEvt.HostName != anyHost
@@ -2843,7 +2843,7 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 //
 // This function is suitable when you expect any of a set of events to occur
 // and want to confirm that at least one of them happened.
-func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) error {
+func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *testutils.EventBuffer, useSyscaller bool) error {
 	for _, cmd := range cmdEvents {
 		if len(cmd.expectedEvents) <= 1 {
 			return fmt.Errorf("ExpectAnyOfEvts test requires at least 2 expected events for command %s", cmd.runCmd)
@@ -2855,14 +2855,14 @@ func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 			syscallsInSets = getAllSyscallsInSets(cmd.sets)
 		}
 
-		actual.clear()
+		actual.Clear()
 		// first stage: run commands
 		proc, err := runCmd(t, cmd, 1, actual, useSyscaller, true)
 		if err != nil {
 			return err
 		}
 
-		actEvtsCopy := actual.getCopy()
+		actEvtsCopy := actual.GetCopy()
 
 		// second stage: validate events
 		found := false
@@ -2982,20 +2982,20 @@ func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 //
 // This function is suitable for cases where each command should produce one
 // specific event, and all commands should match their respective events.
-func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) error {
+func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *testutils.EventBuffer, useSyscaller bool) error {
 	for _, cmd := range cmdEvents {
 		if len(cmd.expectedEvents) != 1 {
 			return fmt.Errorf("ExpectAllEvtsEqualToOne test requires exactly one event per command, but got %d events for command %s", len(cmd.expectedEvents), cmd.runCmd)
 		}
 
-		actual.clear()
+		actual.Clear()
 		// first stage: run commands
 		proc, err := runCmd(t, cmd, len(cmd.expectedEvents), actual, useSyscaller, true)
 		if err != nil {
 			return err
 		}
 
-		actEvtsCopy := actual.getCopy()
+		actEvtsCopy := actual.GetCopy()
 
 		if proc.expectedEvts == 0 {
 			return fmt.Errorf("expected one event for command %s, but got none", cmd.runCmd)
@@ -3094,9 +3094,9 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventB
 // ExpectAllInOrderSequentially validates that the actual events match the
 // expected events for each command, with events appearing in the same order of the
 // expected events.
-func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) error {
+func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *testutils.EventBuffer, useSyscaller bool) error {
 	// first stage: run commands
-	actual.clear()
+	actual.Clear()
 	procs, _, err := runCmds(t, cmdEvents, actual, useSyscaller, true)
 	if err != nil {
 		return err
@@ -3105,7 +3105,7 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *e
 		return fmt.Errorf("expected %d commands, but got %d", len(cmdEvents), len(procs))
 	}
 
-	actEvtsCopy := actual.getCopy()
+	actEvtsCopy := actual.GetCopy()
 
 	actEvtIdx := 0
 	// second stage: check events

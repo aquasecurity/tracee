@@ -972,12 +972,14 @@ $(OUTPUT_DIR)/syscaller:: \
 	.check_$(CMD_GO) \
 #
 	$(GO_ENV_EBPF) \
-	$(CMD_GO) build -o $(OUTPUT_DIR)/syscaller ./tests/integration/syscaller/cmd
+	$(CMD_GO) build \
+	-tags $(GO_TAGS_EBPF) \
+	-o $(OUTPUT_DIR)/syscaller ./tests/integration/syscaller/cmd
 
 .PHONY: test-integration
 test-integration:: \
-	$(OUTPUT_DIR)/syscaller \
 	tracee \
+	$(OUTPUT_DIR)/syscaller \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
 #
