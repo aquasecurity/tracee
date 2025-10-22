@@ -6,6 +6,11 @@ package tracee.v1beta1;
 
 import "api/v1beta1/threat.proto";
 
+message EventField {
+	string name = 1;
+	string type = 2;
+}
+
 message EventDefinition {
 	int32 id = 1;
 	string name = 2;
@@ -13,6 +18,7 @@ message EventDefinition {
 	string description = 4 ;
 	repeated string tags = 5;
 	optional Threat threat = 6;
+	repeated EventField fields = 7;
 }
 
 message Version {
