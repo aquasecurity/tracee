@@ -702,6 +702,15 @@ func convertDefinitionToProto(d events.Definition) *pb.EventDefinition {
 		Patch: d.GetVersion().Patch(),
 	}
 
+	// Convert DataFields to protobuf EventFields
+	fields := make([]*pb.EventField, 0, len(d.GetFields()))
+	for _, f := range d.GetFields() {
+		fields = append(fields, &pb.EventField{
+			Name: f.Name,
+			Type: f.DecodeAs.String(),
+		})
+	}
+
 	return &pb.EventDefinition{
 		Id:          int32(d.GetID()),
 		Name:        d.GetName(),
@@ -710,6 +719,7 @@ func convertDefinitionToProto(d events.Definition) *pb.EventDefinition {
 		Tags:        d.GetSets(),
 		// threat description is empty because it is the same as the event definition description
 		Threat: getThreat("", d.GetProperties()),
+		Fields: fields,
 	}
 }
 
