@@ -63,7 +63,7 @@ func TestFindingToEvent(t *testing.T) {
 			},
 			{
 				ArgMeta: trace.ArgMeta{
-					Name: "triggeredBy",
+					Name: "detectedFrom",
 					Type: "unknown",
 				},
 				Value: map[string]interface{}{

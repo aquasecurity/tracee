@@ -23,10 +23,10 @@ func getEventData(e trace.Event) ([]*pb.EventValue, error) {
 	data := make([]*pb.EventValue, 0)
 
 	for _, arg := range e.Args {
-		if arg.ArgMeta.Name == "triggeredBy" {
-			// Do NOT parse triggeredBy argument as pb.EventValue here since
-			// it is parsed as pb.TriggeredBy (a proper pb.Event level field)
-			// by getTriggerBy helper.
+		if arg.ArgMeta.Name == "detectedFrom" {
+			// Do NOT parse detectedFrom argument as pb.EventValue here since
+			// it is parsed as pb.DetectedFrom (a proper pb.Event level field)
+			// by getDetectedFrom helper.
 			continue
 		}
 

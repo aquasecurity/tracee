@@ -755,7 +755,7 @@ func convertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 		threat = getThreat(e.Metadata.Description, e.Metadata.Properties)
 	}
 
-	triggerEvent, err := getTriggerBy(e.Args)
+	detectedFrom, err := getDetectedFrom(e.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -766,10 +766,10 @@ func convertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 		Policies: &pb.Policies{
 			Matched: sanitizeStringArrayForProtobuf(e.MatchedPolicies),
 		},
-		Workload:    eventWorkload,
-		Data:        eventData,
-		Threat:      threat,
-		TriggeredBy: triggerEvent,
+		Workload:     eventWorkload,
+		Data:         eventData,
+		Threat:       threat,
+		DetectedFrom: detectedFrom,
 	}
 
 	if e.Timestamp != 0 {
@@ -952,45 +952,45 @@ func getThreat(description string, metadata map[string]interface{}) *pb.Threat {
 	}
 }
 
-func getTriggerBy(args []trace.Argument) (*pb.TriggeredBy, error) {
-	var triggeredByArg *trace.Argument
-	triggerEvent := &pb.TriggeredBy{}
+func getDetectedFrom(args []trace.Argument) (*pb.DetectedFrom, error) {
+	var detectedFromArg *trace.Argument
+	detectedFromEvent := &pb.DetectedFrom{}
 
 	for i := range args {
-		if args[i].ArgMeta.Name == "triggeredBy" {
-			triggeredByArg = &args[i]
+		if args[i].ArgMeta.Name == "detectedFrom" {
+			detectedFromArg = &args[i]
 			break
 		}
 	}
-	if triggeredByArg == nil {
-		return triggerEvent, nil
+	if detectedFromArg == nil {
+		return detectedFromEvent, nil
 	}
 
-	m, ok := triggeredByArg.Value.(map[string]interface{})
+	m, ok := detectedFromArg.Value.(map[string]interface{})
 	if !ok {
-		return nil, errfmt.Errorf("error getting triggering event: %v", triggeredByArg.Value)
+		return nil, errfmt.Errorf("error getting triggering event: %v", detectedFromArg.Value)
 	}
 
 	id, ok := m["id"].(int)
 	if !ok {
 		return nil, errfmt.Errorf("error getting id of triggering event: %v", m)
 	}
-	triggerEvent.Id = uint32(id)
+	detectedFromEvent.Id = uint32(id)
 
 	name, ok := m["name"].(string)
 	if !ok {
 		return nil, errfmt.Errorf("error getting name of triggering event: %v", m)
 	}
-	triggerEvent.Name = sanitizeStringForProtobuf(name)
+	detectedFromEvent.Name = sanitizeStringForProtobuf(name)
 
-	triggerEventArgs, ok := m["args"].([]trace.Argument)
+	sourceEventArgs, ok := m["args"].([]trace.Argument)
 	if !ok {
 		return nil, errfmt.Errorf("error getting args of triggering event: %v", m)
 	}
 
 	data := make([]*pb.EventValue, 0)
 
-	for _, arg := range triggerEventArgs {
+	for _, arg := range sourceEventArgs {
 		eventValue, err := getEventValue(arg)
 		if err != nil {
 			return nil, err
@@ -1009,9 +1009,9 @@ func getTriggerBy(args []trace.Argument) (*pb.TriggeredBy, error) {
 		})
 	}
 
-	triggerEvent.Data = data
+	detectedFromEvent.Data = data
 
-	return triggerEvent, nil
+	return detectedFromEvent, nil
 }
 
 func getSeverity(metadata map[string]interface{}) pb.Severity {
