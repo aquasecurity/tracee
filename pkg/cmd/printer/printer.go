@@ -322,9 +322,9 @@ func (p tableEventPrinter) Print(event trace.Event) {
 		name := arg.Name
 		value := arg.Value
 
-		// triggeredBy from pkg/ebpf/finding.go breaks the table output,
+		// detectedFrom argument from pkg/ebpf/finding.go breaks the table output,
 		// so we simplify it
-		if name == "triggeredBy" {
+		if name == "detectedFrom" {
 			value = fmt.Sprintf("%s", value.(map[string]interface{})["name"])
 		}
 

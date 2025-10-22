@@ -728,7 +728,7 @@ func TestEventTrigger(t *testing.T) {
 			},
 			{
 				ArgMeta: trace.ArgMeta{
-					Name: "triggeredBy",
+					Name: "detectedFrom",
 					Type: "unknown",
 				},
 				Value: map[string]interface{}{
@@ -749,7 +749,7 @@ func TestEventTrigger(t *testing.T) {
 		},
 	}
 
-	expectedTriggerEvent, err := getTriggerBy(event.Args)
+	expectedTriggerEvent, err := getDetectedFrom(event.Args)
 	assert.NoError(t, err)
 
 	actualTriggerId, ok := event.Args[1].Value.(map[string]interface{})["id"].(int)

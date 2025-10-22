@@ -232,7 +232,7 @@ func (msg *K8SNamespace) UnmarshalJSON(b []byte) error {
 }
 
 // MarshalJSON implements json.Marshaler
-func (msg *TriggeredBy) MarshalJSON() ([]byte, error) {
+func (msg *DetectedFrom) MarshalJSON() ([]byte, error) {
 	return protojson.MarshalOptions{
 		UseEnumNumbers:  false,
 		EmitUnpopulated: false,
@@ -241,7 +241,7 @@ func (msg *TriggeredBy) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements json.Unmarshaler
-func (msg *TriggeredBy) UnmarshalJSON(b []byte) error {
+func (msg *DetectedFrom) UnmarshalJSON(b []byte) error {
 	return protojson.UnmarshalOptions{
 		DiscardUnknown: false,
 	}.Unmarshal(b, msg)

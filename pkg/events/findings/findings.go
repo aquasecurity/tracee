@@ -68,7 +68,7 @@ func newEvent(id int, f *detect.Finding, e trace.Event) *trace.Event {
 	}
 }
 
-func getArguments(f *detect.Finding, triggerEvent trace.Event) []trace.Argument {
+func getArguments(f *detect.Finding, sourceEvent trace.Event) []trace.Argument {
 	findingData := f.GetData()
 	arguments := make([]trace.Argument, 0, len(findingData))
 
@@ -84,17 +84,17 @@ func getArguments(f *detect.Finding, triggerEvent trace.Event) []trace.Argument 
 		arguments = append(arguments, arg)
 	}
 
-	if len(triggerEvent.Args) > 0 {
+	if len(sourceEvent.Args) > 0 {
 		arg := trace.Argument{
 			ArgMeta: trace.ArgMeta{
-				Name: "triggeredBy",
+				Name: "detectedFrom",
 				Type: "unknown",
 			},
 			Value: map[string]interface{}{
-				"id":          triggerEvent.EventID,
-				"name":        triggerEvent.EventName,
-				"args":        triggerEvent.Args,
-				"returnValue": triggerEvent.ReturnValue,
+				"id":          sourceEvent.EventID,
+				"name":        sourceEvent.EventName,
+				"args":        sourceEvent.Args,
+				"returnValue": sourceEvent.ReturnValue,
 			},
 		}
 

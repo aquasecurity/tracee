@@ -594,7 +594,7 @@ message Event {
     Workload workload = 5;
     repeated EventValue data = 6;
     optional Threat threat = 7;
-    optional TriggeredBy triggered_by = 8;
+    optional DetectedFrom detected_from = 8;
 }
 
 message Policies {
@@ -673,7 +673,7 @@ message K8sNamespace {
     string name = 1;
 }
 
-message TriggeredBy {
+message DetectedFrom {
     uint32 id = 1;
     string name = 2;
     repeated EventValue data = 3;
