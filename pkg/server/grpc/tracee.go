@@ -717,9 +717,7 @@ func convertDefinitionToProto(d events.Definition) *pb.EventDefinition {
 		Version:     v,
 		Description: d.GetDescription(),
 		Tags:        d.GetSets(),
-		// threat description is empty because it is the same as the event definition description
-		Threat: getThreat("", d.GetProperties()),
-		Fields: fields,
+		Fields:      fields,
 	}
 }
 
