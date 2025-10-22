@@ -9,6 +9,7 @@ all:: tracee-ebpf tracee-rules signatures tracee evt traceectl lsm-check
 SHELL = /bin/sh
 
 BUILD_TYPE_FLAG := COMMON_BUILD
+EXCLUDED_MODULES :=
 
 # load extended-pre Makefile, if exists
 -include Makefile.extended-pre
@@ -1052,7 +1053,7 @@ go-tidy:: \
 		$(CMD_GO) mod tidy; \
 	fi
 	@# Then process all subdirectory modules
-	@for mod_file in $$(find . -name "go.mod" -type f -not -path "./go.mod" | sort); do \
+	@for mod_file in $$(find . -name "go.mod" -type f -not -path "./go.mod" $(foreach path,$(EXCLUDED_MODULES),-not -path "$(path)") | sort); do \
 		mod_dir=$$(dirname "$$mod_file"); \
 		echo "Tidying $$mod_dir..."; \
 		(cd "$$mod_dir" && $(CMD_GO) mod tidy); \
