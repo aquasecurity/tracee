@@ -136,6 +136,7 @@ typedef struct event_context {
     X(CHMOD_COMMON, )                                                                              \
     X(SECURITY_SB_UMOUNT, )                                                                        \
     X(SECURITY_TASK_PRCTL, )                                                                       \
+    X(NEW_NET_PACKET_IPv4, )                                                                       \
     // ...
 
 #define EVENT_ID_LIST_LAST                                                                         \
@@ -647,5 +648,11 @@ typedef struct {
     u64 tgid_start_time;
     u64 vma_addr;
 } syscall_source_key_t;
+
+typedef struct socket_storage {
+    u32 host_tid;
+    u16 policies_version;
+    u64 matched_policies;
+} socket_storage_t;
 
 #endif

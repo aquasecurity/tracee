@@ -7564,3 +7564,237 @@ int BPF_PROG(lsm_file_open_test, struct file *file, const struct cred *cred)
     // We're only monitoring, so always allow the file open operation
     return 0;
 }
+
+
+// New Network Events POC
+
+statfunc int handle_socket_msg(void *ctx, struct socket *sock, u32 event_id)
+{
+    if (sock == NULL)
+        return 0;
+    if (!is_family_supported(sock))
+        return 0;
+    if (!is_socket_supported(sock))
+        return 0;
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, event_id))
+        return 0;
+
+    struct sock *sk = sock->sk;
+    if (sk == NULL)
+        return 0;
+
+    socket_storage_t *socket_storage;
+    socket_storage = bpf_sk_storage_get(&socket_local_storage, sk, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
+
+    if (!socket_storage)
+        return 0;
+
+    socket_storage->host_tid = p.event->context.task.host_tid;
+
+    return 0;
+}
+
+SEC("fentry/security_socket_recvmsg")
+int BPF_PROG(fentry_security_socket_recvmsg, struct socket *sock)
+{
+    return handle_socket_msg(ctx, sock, NEW_NET_PACKET_IPv4);
+}
+
+SEC("fentry/security_socket_sendmsg")
+int BPF_PROG(fentry_security_socket_sendmsg, struct socket *sock)
+{
+    return handle_socket_msg(ctx, sock, NEW_NET_PACKET_IPv4);
+}
+
+statfunc int netevent_perf_submit(void *ctx, event_data_t *event)
+{
+    // need to recompute here
+
+    u32 size = sizeof(event_context_t) + sizeof(u8) +
+               event->args_buf.offset; // context + argnum + arg buffer size
+
+    // inline bounds check to force compiler to use the register of size
+    asm volatile("if %[size] < %[max_size] goto +1;\n"
+                 "%[size] = %[max_size];\n"
+                 :
+                 : [size] "r"(size), [max_size] "i"(MAX_SIGNAL_SIZE));
+
+    return bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, event, size);
+}
+
+statfunc int cgroup_save_arg_to_buf(args_buffer_t *buf, void *ptr, u32 size, u8 index)
+{
+    // Bounds check - prevent buffer overflow
+    if (size == 0 || size > MAX_ELEMENT_SIZE)
+        return 0;
+
+    if (buf->offset >= ARGS_BUF_SIZE)
+        return 0;
+
+    u32 buffer_index_offset = buf->offset + 1;
+    if (buffer_index_offset > ARGS_BUF_SIZE)
+        return 0;
+
+    u32 buffer_arg_offset = buffer_index_offset + size;
+    if (buffer_arg_offset > ARGS_BUF_SIZE)
+        return 0;
+
+    // Save index
+    buf->args[buf->offset] = index;
+
+    // Force verifier to compare size register with a bound maximum
+    asm volatile("if %[size] < %[max_size] goto +1;\n"
+                 "%[size] = %[max_size];\n"
+                 :
+                 : [size] "r"(size), [max_size] "i"(MAX_ELEMENT_SIZE));
+
+    __builtin_memcpy(&(buf->args[buffer_index_offset]), ptr, size);
+
+    // Update buffer only if all operations succeeded
+    buf->offset = buffer_arg_offset;
+    buf->argnum++;
+
+    return 1;
+}
+
+statfunc u32 new_cgroup_skb_generic(struct __sk_buff *ctx)
+{
+    // IMPORTANT: runs for EVERY packet of tasks belonging to root cgroup
+    switch (ctx->family) {
+        case PF_INET:
+        case PF_INET6:
+            break;
+        default:
+            return 1; // PF_INET and PF_INET6 only
+    }
+
+    struct bpf_sock *sk = ctx->sk;
+    if (!sk)
+        return 1;
+
+    socket_storage_t *socket_storage = bpf_sk_storage_get(&socket_local_storage, sk, 0, 0);
+    if (!socket_storage) {
+        return 1;
+    }
+
+    task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &socket_storage->host_tid);
+    if (unlikely(task_info == NULL)) {
+        return 1;
+    }
+
+    sk = bpf_sk_fullsock(sk);
+    if (!sk)
+        return 1;
+
+    nethdrs hdrs = {0}, *nethdrs = &hdrs;
+
+    void *dest = NULL;
+
+    // HANDLE SOCKET FAMILY
+    u32 size = 0;
+    u32 family = ctx->family;
+
+    switch (family) {
+        case PF_INET:
+            dest = &nethdrs->iphdrs.iphdr;
+            size = bpf_core_type_size(struct iphdr);
+            break;
+        case PF_INET6:
+            dest = &nethdrs->iphdrs.ipv6hdr;
+            size = bpf_core_type_size(struct ipv6hdr);
+            break;
+        default:
+            return 1; // verifier
+    }
+
+    // load layer 3 headers
+    if (bpf_skb_load_bytes_relative(ctx, 0, dest, size, 1))
+        return 1;
+
+    int zero = 0;
+    event_data_t *netevent;
+    netevent = bpf_map_lookup_elem(&event_data_map, &zero);
+    if (unlikely(netevent == NULL))
+        return 0;
+
+    reset_event_args_buf(netevent);
+
+    event_context_t *eventctx = &(netevent->context);
+    __builtin_memcpy(&eventctx->task, &task_info->context, sizeof(task_context_t));
+
+    eventctx->eventid = NEW_NET_PACKET_IPv4;
+
+    if (family == PF_INET) {
+        struct iphdr *iph = &nethdrs->iphdrs.iphdr;
+        args_buffer_t *buf = &netevent->args_buf;
+        u8 arg_idx = 0;
+
+        // Version
+        u8 version = iph->version;
+        cgroup_save_arg_to_buf(buf, &version, sizeof(u8), arg_idx++);
+
+        // IHL
+        u8 ihl = iph->ihl;
+        cgroup_save_arg_to_buf(buf, &ihl, sizeof(u8), arg_idx++);
+
+        // TOS
+        u8 tos = iph->tos;
+        cgroup_save_arg_to_buf(buf, &tos, sizeof(u8), arg_idx++);
+
+        // Total length
+        u16 tot_len = bpf_ntohs(iph->tot_len);
+        cgroup_save_arg_to_buf(buf, &tot_len, sizeof(u16), arg_idx++);
+
+        // ID
+        u16 id = bpf_ntohs(iph->id);
+        cgroup_save_arg_to_buf(buf, &id, sizeof(u16), arg_idx++);
+
+        // Flags and Fragment offset
+        u16 frag_off_raw = bpf_ntohs(iph->frag_off);
+        u8 flags = (frag_off_raw >> 13) & 0x07;
+        cgroup_save_arg_to_buf(buf, &flags, sizeof(u8), arg_idx++);
+
+        u16 frag_offset = frag_off_raw & 0x1FFF;
+        cgroup_save_arg_to_buf(buf, &frag_offset, sizeof(u16), arg_idx++);
+
+        // TTL
+        u8 ttl = iph->ttl;
+        cgroup_save_arg_to_buf(buf, &ttl, sizeof(u8), arg_idx++);
+
+        // Protocol
+        u8 protocol = iph->protocol;
+        cgroup_save_arg_to_buf(buf, &protocol, sizeof(u8), arg_idx++);
+
+        // Checksum
+        u16 checksum = bpf_ntohs(iph->check);
+        cgroup_save_arg_to_buf(buf, &checksum, sizeof(u16), arg_idx++);
+
+        // Source address
+        u32 saddr = iph->saddr;
+        cgroup_save_arg_to_buf(buf, &saddr, sizeof(u32), arg_idx++);
+
+        // Destination address
+        u32 daddr = iph->daddr;
+        cgroup_save_arg_to_buf(buf, &daddr, sizeof(u32), arg_idx++);
+    } else if (family == PF_INET6) {
+        // TODO: implement IPv6
+    }
+
+    netevent_perf_submit(ctx, netevent);
+
+    return 1; // important for network blocking
+}
+
+SEC("cgroup_skb/ingress")
+int new_cgroup_skb_ingress(struct __sk_buff *ctx)
+{
+    return new_cgroup_skb_generic(ctx);
+}
+
+SEC("cgroup_skb/egress")
+int new_cgroup_skb_egress(struct __sk_buff *ctx)
+{
+    return new_cgroup_skb_generic(ctx);
+}

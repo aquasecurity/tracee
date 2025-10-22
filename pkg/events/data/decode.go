@@ -27,6 +27,7 @@ const (
 	SOCK_ADDR_T
 	CRED_T
 	TIMESPEC_T
+	IPV4_T
 )
 
 // These types are in a separate section since they are not defined as enums in the ebpf code.
@@ -71,6 +72,7 @@ var decodeAsStringDict = map[DecodeAs]string{
 	BOOL_T:       "bool",
 	FLOAT_T:      "float",
 	FLOAT64_T:    "float64",
+	IPV4_T:       "string",
 }
 
 func (d DecodeAs) String() string {

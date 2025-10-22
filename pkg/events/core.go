@@ -119,6 +119,10 @@ const (
 	ChmodCommon
 	SecuritySbUmount
 	SecurityTaskPrctl
+
+	// TODO: consider using NetPacketIPv4, and renaming
+	// user-space one into UserNetPacketIPv4 or LegacyNetPacketIPv4
+	NewNetPacketIPv4
 	MaxCommonID
 )
 
@@ -14520,6 +14524,43 @@ var CoreEvents = map[ID]Definition{
 			{ArgMeta: trace.ArgMeta{Type: "string", Name: "dst"}}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{ArgMeta: trace.ArgMeta{Type: "trace.PacketMetadata", Name: "metadata"}},
 			{ArgMeta: trace.ArgMeta{Type: "trace.ProtoIPv4", Name: "proto_ipv4"}},
+		},
+	},
+	NewNetPacketIPv4: {
+		id:      NewNetPacketIPv4,
+		id32Bit: Sys32Undefined,
+		name:    "new_net_packet_ipv4",
+		version: NewVersion(1, 1, 0),
+
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				capabilities: Capabilities{
+					ebpf: []cap.Value{
+						cap.NET_ADMIN, // needed for BPF_PROG_TYPE_CGROUP_SKB
+					},
+				},
+				probes: []Probe{
+					{handle: probes.FentrySecuritySocketRecvmsg, required: true},
+					{handle: probes.FentrySecuritySocketSendmsg, required: true},
+					{handle: probes.NewCgroupSKBIngress, required: true},
+					{handle: probes.NewCgroupSKBEgress, required: true},
+				},
+			},
+		},
+		sets: []string{"network_events"},
+		fields: []DataField{
+			{DecodeAs: data.U8_T, ArgMeta: trace.ArgMeta{Type: "uint8", Name: "version"}},
+			{DecodeAs: data.U8_T, ArgMeta: trace.ArgMeta{Type: "uint8", Name: "IHL"}},
+			{DecodeAs: data.U8_T, ArgMeta: trace.ArgMeta{Type: "uint8", Name: "TOS"}},
+			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "length"}},
+			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "id"}},
+			{DecodeAs: data.U8_T, ArgMeta: trace.ArgMeta{Type: "uint8", Name: "flags"}},
+			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "fragOffset"}},
+			{DecodeAs: data.U8_T, ArgMeta: trace.ArgMeta{Type: "uint8", Name: "TTL"}},
+			{DecodeAs: data.U8_T, ArgMeta: trace.ArgMeta{Type: "uint8", Name: "protocol"}},
+			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "checksum"}},
+			{DecodeAs: data.IPV4_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "src"}},
+			{DecodeAs: data.IPV4_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "dst"}},
 		},
 	},
 	NetPacketIPv6: {

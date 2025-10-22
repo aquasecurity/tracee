@@ -310,4 +310,12 @@ static inline struct inet_sock *inet_sk(const struct sock *sk)
 #define PR_SET_VMA            0x53564d41
 #define PR_SET_VMA_ANON_NAME  0
 
+enum {
+	BPF_LOCAL_STORAGE_GET_F_CREATE	= (1ULL << 0),
+	/* BPF_SK_STORAGE_GET_F_CREATE is only kept for backward compatibility
+	 * and BPF_LOCAL_STORAGE_GET_F_CREATE must be used instead.
+	 */
+	BPF_SK_STORAGE_GET_F_CREATE  = BPF_LOCAL_STORAGE_GET_F_CREATE,
+};
+
 #endif
