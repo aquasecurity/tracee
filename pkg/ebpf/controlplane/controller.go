@@ -124,6 +124,12 @@ func (ctrl *Controller) Stop() error {
 	return nil
 }
 
+// Close closes the controller.
+func (ctrl *Controller) Close() error {
+	ctrl.signalBuffer.Close()
+	return nil
+}
+
 // RegisterSignal registers multiple signal handlers at once
 func (ctrl *Controller) RegisterSignal(handlers map[events.ID]SignalHandler) error {
 	// Validate all handlers before making any changes (atomic operation)
