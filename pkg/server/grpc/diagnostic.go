@@ -7,6 +7,7 @@ import (
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/logger"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 )
 
@@ -19,17 +20,16 @@ func (s *DiagnosticService) GetMetrics(ctx context.Context, in *pb.GetMetricsReq
 	stats := s.tracee.Stats()
 
 	return &pb.GetMetricsResponse{
-		EventCount:                 stats.EventCount.Get(),
-		EventsFiltered:             stats.EventsFiltered.Get(),
-		NetCapCount:                stats.NetCapCount.Get(),
-		BPFLogsCount:               stats.BPFLogsCount.Get(),
-		ErrorCount:                 stats.ErrorCount.Get(),
-		LostEvCount:                stats.LostEvCount.Get(),
-		LostWrCount:                stats.LostWrCount.Get(),
-		LostNtCapCount:             stats.LostNtCapCount.Get(),
-		LostBPFLogsCount:           stats.LostBPFLogsCount.Get(),
-		BPFPerfEventSubmitAttempts: eventCountProto(stats.BPFPerfEventSubmitAttemptsCount),
-		BPFPerfEventSubmitFailures: eventCountProto(stats.BPFPerfEventSubmitFailuresCount),
+		EventCount:       stats.EventCount.Get(),
+		EventsFiltered:   stats.EventsFiltered.Get(),
+		NetCapCount:      stats.NetCapCount.Get(),
+		BPFLogsCount:     stats.BPFLogsCount.Get(),
+		ErrorCount:       stats.ErrorCount.Get(),
+		LostEvCount:      stats.LostEvCount.Get(),
+		LostWrCount:      stats.LostWrCount.Get(),
+		LostNtCapCount:   stats.LostNtCapCount.Get(),
+		LostBPFLogsCount: stats.LostBPFLogsCount.Get(),
+		BPFEventStats:    bpfPerfEventStatsToProto(stats.GetBPFPerfEventStats()),
 	}, nil
 }
 
@@ -76,17 +76,29 @@ func stack() []byte {
 	}
 }
 
-// eventCountProto converts an EventCollector to a slice of pb.EventCount
-func eventCountProto(collector *metrics.EventCollector) []*pb.EventCount {
-	if collector == nil {
-		return nil
+// bpfPerfEventStatsToProto converts BPFPerfEventStats to a slice of pb.BPFEventStats
+func bpfPerfEventStatsToProto(stats metrics.BPFPerfEventStats) []*pb.BPFEventStats {
+	var result []*pb.BPFEventStats
+
+	eventIDs := make(map[events.ID]struct{})
+	for id := range stats.Attempts {
+		eventIDs[id] = struct{}{}
+	}
+	for id := range stats.Failures {
+		eventIDs[id] = struct{}{}
 	}
 
-	var result []*pb.EventCount
-	for id, count := range collector.Values() {
-		result = append(result, &pb.EventCount{
-			Id:    pb.EventId(id),
-			Count: count,
+	for id := range eventIDs {
+		evtDef := events.Core.GetDefinitionByID(id)
+		attempts := stats.Attempts[id] // defaults to 0 if not present
+		failures := stats.Failures[id] // defaults to 0 if not present
+
+		result = append(result, &pb.BPFEventStats{
+			Id:       pb.EventId(id),
+			Name:     evtDef.GetName(),
+			Internal: evtDef.IsInternal(),
+			Attempts: attempts,
+			Failures: failures,
 		})
 	}
 

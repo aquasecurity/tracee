@@ -663,6 +663,20 @@ struct events_stats {
 typedef struct events_stats events_stats_t;
 #endif
 
+// update_event_stats updates the statistics for an event submission
+statfunc void update_event_stats(u32 event_id, long perf_ret)
+{
+#ifdef METRICS
+    event_stats_values_t *evt_stat = bpf_map_lookup_elem(&events_stats, &event_id);
+    if (unlikely(evt_stat == NULL))
+        return;
+
+    __sync_fetch_and_add(&evt_stat->attempts, 1);
+    if (perf_ret < 0)
+        __sync_fetch_and_add(&evt_stat->failures, 1);
+#endif
+}
+
 statfunc int events_perf_submit(program_data_t *p, long ret)
 {
     p->event->context.retval = ret;
@@ -691,16 +705,7 @@ statfunc int events_perf_submit(program_data_t *p, long ret)
 
     long perf_ret = bpf_perf_event_output(p->ctx, &events, BPF_F_CURRENT_CPU, p->event, size);
 
-#ifdef METRICS
-    // update event stats
-    event_stats_values_t *evt_stat = bpf_map_lookup_elem(&events_stats, &p->event->context.eventid);
-    if (unlikely(evt_stat == NULL))
-        return perf_ret;
-
-    __sync_fetch_and_add(&evt_stat->attempts, 1);
-    if (perf_ret < 0)
-        __sync_fetch_and_add(&evt_stat->failures, 1);
-#endif
+    update_event_stats(p->event->context.eventid, perf_ret);
 
     return perf_ret;
 }
@@ -716,7 +721,11 @@ statfunc int signal_perf_submit(void *ctx, controlplane_signal_t *sig)
                  :
                  : [size] "r"(size), [max_size] "i"(MAX_SIGNAL_SIZE));
 
-    return bpf_perf_event_output(ctx, &signals, BPF_F_CURRENT_CPU, sig, size);
+    long perf_ret = bpf_perf_event_output(ctx, &signals, BPF_F_CURRENT_CPU, sig, size);
+
+    update_event_stats(sig->event_id, perf_ret);
+
+    return perf_ret;
 }
 
 #endif

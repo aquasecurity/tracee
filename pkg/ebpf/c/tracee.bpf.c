@@ -5994,19 +5994,8 @@ statfunc u32 cgroup_skb_submit(void *map, struct __sk_buff *ctx,
     // Submit the event.
     long perf_ret = bpf_perf_event_output(ctx, map, flags, neteventctx, sizeof_net_event_context_t());
 
-#ifdef METRICS
-    if (map != &events)
-        return perf_ret;
-
-    // update event stats
-    event_stats_values_t *evt_stat = bpf_map_lookup_elem(&events_stats, &neteventctx->eventctx.eventid);
-    if (unlikely(evt_stat == NULL))
-        return perf_ret;
-
-    __sync_fetch_and_add(&evt_stat->attempts, 1);
-    if (perf_ret < 0)
-        __sync_fetch_and_add(&evt_stat->failures, 1);
-#endif
+    if (map == &events)
+        update_event_stats(neteventctx->eventctx.eventid, perf_ret);
 
     return perf_ret;
 }

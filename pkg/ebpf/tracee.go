@@ -137,6 +137,40 @@ func (t *Tracee) Stats() *metrics.Stats {
 	return t.stats
 }
 
+// initializeBPFEventsStatsMap initializes the events_stats BPF map with zero values
+// and sets it for metrics collection
+func (t *Tracee) initializeBPFEventsStatsMap() error {
+	evtsStatsBPFMap, err := t.bpfModule.GetMap("events_stats")
+	if err != nil {
+		return errfmt.Errorf("failed to get events_stats map: %v", err)
+	}
+
+	// Set the map for metrics collection
+	t.stats.SetPerfEventStatsMap(evtsStatsBPFMap)
+
+	// eventStatsValues mirrors the C struct event_stats_values (event_stats_values_t)
+	type eventStatsValues struct {
+		submitAttempts uint64
+		submitFailures uint64
+	}
+
+	evtStatZero := eventStatsValues{}
+	for _, id := range t.policyManager.EventsToSubmit() {
+		// Only initialize events that we want to track
+		if !t.stats.ShouldTrackEventForBPFStats(id) {
+			continue
+		}
+
+		key := uint32(id)
+		err := evtsStatsBPFMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&evtStatZero))
+		if err != nil {
+			return errfmt.Errorf("failed to update events_stats map for event %d: %v", id, err)
+		}
+	}
+
+	return nil
+}
+
 func (t *Tracee) Engine() *engine.Engine {
 	return t.sigEngine
 }
@@ -1608,10 +1642,12 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		return errfmt.Errorf("error running extensions: %v", err)
 	}
 
-	// Measure event perf buffer write attempts (METRICS build only)
+	// Set up on-demand BPF metrics collection (METRICS build only)
 
 	if version.MetricsBuild() {
-		go t.countPerfEventSubmissions(ctx)
+		if err := t.initializeBPFEventsStatsMap(); err != nil {
+			return errfmt.WrapError(err)
+		}
 	}
 
 	// Main event loop (polling events perf buffer)
