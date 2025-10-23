@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"bytes"
 	"io"
 	"slices"
 	"strings"
@@ -39,6 +40,78 @@ func SetTestLogger(t *testing.T, l logger.Level) (loggerOutput <-chan []byte, re
 	}
 	logger.SetLogger(chanLogger)
 	return logChan, restoreLogger
+}
+
+// EnableTestLogger configures the logger to output directly to the test's log output.
+// This is useful for debugging tests as all logger output will be visible in test results.
+// Call the returned function to restore the original logger.
+//
+// Example usage:
+//
+//	func TestSomething(t *testing.T) {
+//	    defer testutils.EnableTestLogger(t, logger.DebugLevel)()
+//	    // ... your test code ...
+//	}
+func EnableTestLogger(t *testing.T, level logger.Level) func() {
+	t.Helper()
+
+	currentLogger := logger.GetLogger()
+	testWriter := newTestWriter(t)
+
+	testLogger := logger.NewLogger(
+		logger.LoggerConfig{
+			Writer:  testWriter,
+			Level:   logger.NewAtomicLevelAt(level),
+			Encoder: logger.NewConsoleEncoder(logger.NewDevelopmentEncoderConfig()),
+		},
+	)
+
+	logger.SetLogger(testLogger)
+
+	return func() {
+		t.Helper()
+		_ = testLogger.Sync()
+		logger.SetLogger(currentLogger)
+	}
+}
+
+// testWriter is an io.Writer that writes to testing.T's log output
+type testWriter struct {
+	t      *testing.T
+	mu     sync.Mutex
+	buffer bytes.Buffer
+}
+
+func newTestWriter(t *testing.T) *testWriter {
+	return &testWriter{t: t}
+}
+
+// Write implements io.Writer. It buffers lines and logs them via testing.T
+func (tw *testWriter) Write(p []byte) (n int, err error) {
+	tw.mu.Lock()
+	defer tw.mu.Unlock()
+
+	// Write to buffer
+	n, err = tw.buffer.Write(p)
+	if err != nil {
+		return n, err
+	}
+
+	// Flush complete lines
+	for {
+		line, err := tw.buffer.ReadString('\n')
+		if err != nil {
+			// No complete line yet, put back what we read
+			if line != "" {
+				tw.buffer.WriteString(line)
+			}
+			break
+		}
+		// Log the line (without the trailing newline as t.Log adds its own)
+		tw.t.Log(strings.TrimSuffix(line, "\n"))
+	}
+
+	return n, nil
 }
 
 // channelWriter is an io.WriterCloser implementation that writes into a channel.
