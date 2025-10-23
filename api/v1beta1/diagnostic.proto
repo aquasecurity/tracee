@@ -19,13 +19,15 @@ message GetMetricsResponse {
 	uint64 LostWrCount = 7; 
 	uint64 LostNtCapCount = 8; 
 	uint64 LostBPFLogsCount = 9;
-	repeated EventCount BPFPerfEventSubmitAttempts = 10;
-	repeated EventCount BPFPerfEventSubmitFailures = 11;
+	repeated BPFEventStats BPFEventStats = 10;
 }
 
-message EventCount {
+message BPFEventStats {
 	EventId id = 1;
-	uint64 count = 2;
+	string name = 2;
+	bool internal = 3;
+	uint64 attempts = 4;
+	uint64 failures = 5;
 }
 
 enum LogLevel {

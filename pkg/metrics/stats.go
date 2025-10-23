@@ -1,15 +1,95 @@
 package metrics
 
 import (
+	"encoding/binary"
 	"encoding/json"
+	"unsafe"
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	bpf "github.com/aquasecurity/libbpfgo"
+
 	"github.com/aquasecurity/tracee/common/counter"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/version"
 	"github.com/aquasecurity/tracee/types/trace"
 )
+
+// BPFPerfEventCollector is a custom Prometheus collector that reads from BPF maps on-demand
+type BPFPerfEventCollector struct {
+	attemptsDesc      *prometheus.Desc
+	failuresDesc      *prometheus.Desc
+	perfEventStatsMap *bpf.BPFMap
+}
+
+// NewBPFPerfEventCollector creates a new on-demand BPF perf event collector
+func NewBPFPerfEventCollector(perfEventStatsMap *bpf.BPFMap) *BPFPerfEventCollector {
+	return &BPFPerfEventCollector{
+		attemptsDesc: prometheus.NewDesc(
+			"tracee_ebpf_bpf_perf_event_submit_attempts",
+			"calls to submit to the event perf buffer",
+			[]string{"event_name", "internal"},
+			nil,
+		),
+		failuresDesc: prometheus.NewDesc(
+			"tracee_ebpf_bpf_perf_event_submit_failures",
+			"failed calls to submit to the event perf buffer",
+			[]string{"event_name", "internal"},
+			nil,
+		),
+		perfEventStatsMap: perfEventStatsMap,
+	}
+}
+
+// Describe implements prometheus.Collector
+func (c *BPFPerfEventCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.attemptsDesc
+	ch <- c.failuresDesc
+}
+
+// Collect implements prometheus.Collector - this is called when Prometheus scrapes
+func (c *BPFPerfEventCollector) Collect(ch chan<- prometheus.Metric) {
+	if c.perfEventStatsMap == nil {
+		return // No metrics if map unavailable
+	}
+
+	// Iterate through the BPF map and collect metrics
+	iter := c.perfEventStatsMap.Iterator()
+	for iter.Next() {
+		key := binary.LittleEndian.Uint32(iter.Key())
+		value, err := c.perfEventStatsMap.GetValue(unsafe.Pointer(&key))
+		if err != nil {
+			continue
+		}
+
+		id := events.ID(key)
+		attempts := binary.LittleEndian.Uint64(value[0:8])
+		failures := binary.LittleEndian.Uint64(value[8:16])
+
+		evtDef := events.Core.GetDefinitionByID(id)
+		evtName := evtDef.GetName()
+		isInternal := "false"
+		if evtDef.IsInternal() {
+			isInternal = "true"
+		}
+
+		// Create and send metrics
+		ch <- prometheus.MustNewConstMetric(
+			c.attemptsDesc,
+			prometheus.GaugeValue,
+			float64(attempts),
+			evtName, isInternal,
+		)
+		ch <- prometheus.MustNewConstMetric(
+			c.failuresDesc,
+			prometheus.GaugeValue,
+			float64(failures),
+			evtName, isInternal,
+		)
+	}
+}
 
 // When updating this struct, please make sure to update the relevant exporting functions
 type Stats struct {
@@ -23,15 +103,8 @@ type Stats struct {
 	LostNtCapCount   *counter.Counter `json:"LostNtCapCount"` // lost network capture events
 	LostBPFLogsCount *counter.Counter `json:"LostBPFLogsCount"`
 
-	// NOTE: BPFPerfEventSubmit* metrics are periodically collected from the 'events_stats'
-	// BPF map, while userspace metrics are continuously updated within the application
-	// based on varying logic. Due to differences in data sources and collection timing,
-	// the two sets of metrics are not directly synchronized. As a result, the total event
-	// counts fetched from 'events_stats' may not align with those reported by userspace metrics.
-	// Each metric set is designed to provide distinct insights and should be analyzed
-	// independently, without direct comparison.
-	BPFPerfEventSubmitAttemptsCount *EventCollector `json:"BPFPerfEventSubmitAttemptsCount,omitempty"`
-	BPFPerfEventSubmitFailuresCount *EventCollector `json:"BPFPerfEventSubmitFailuresCount,omitempty"`
+	// BPF map for on-demand perf event stats collection (METRICS build only)
+	perfEventStatsMap *bpf.BPFMap
 
 	Channels ChannelMetrics[*trace.Event] `json:"ChannelMetrics"`
 }
@@ -50,32 +123,46 @@ func NewStats() *Stats {
 		Channels:         make(ChannelMetrics[*trace.Event]),
 	}
 
-	if version.MetricsBuild() {
-		stats.BPFPerfEventSubmitAttemptsCount = NewEventCollector(
-			"Event submit attempts",
-			prometheus.NewGaugeVec(
-				prometheus.GaugeOpts{
-					Namespace: "tracee_ebpf",
-					Name:      "bpf_perf_event_submit_attempts",
-					Help:      "calls to submit to the event perf buffer",
-				},
-				[]string{"event_name"},
-			),
-		)
-		stats.BPFPerfEventSubmitFailuresCount = NewEventCollector(
-			"Event submit failures",
-			prometheus.NewGaugeVec(
-				prometheus.GaugeOpts{
-					Namespace: "tracee_ebpf",
-					Name:      "bpf_perf_event_submit_failures",
-					Help:      "failed calls to submit to the event perf buffer",
-				},
-				[]string{"event_name"},
-			),
-		)
+	return stats
+}
+
+// SetPerfEventStatsMap sets the BPF map for on-demand perf event stats collection
+func (s *Stats) SetPerfEventStatsMap(perfEventStatsMap *bpf.BPFMap) {
+	s.perfEventStatsMap = perfEventStatsMap
+}
+
+// BPFPerfEventStats holds the BPF perf event stats
+type BPFPerfEventStats struct {
+	Attempts map[events.ID]uint64
+	Failures map[events.ID]uint64
+}
+
+// GetBPFPerfEventStats returns the BPF perf event stats
+func (s *Stats) GetBPFPerfEventStats() BPFPerfEventStats {
+	result := BPFPerfEventStats{
+		Attempts: make(map[events.ID]uint64),
+		Failures: make(map[events.ID]uint64),
 	}
 
-	return stats
+	if s.perfEventStatsMap == nil {
+		return result // needed for grpc server
+	}
+
+	iter := s.perfEventStatsMap.Iterator()
+	for iter.Next() {
+		key := binary.LittleEndian.Uint32(iter.Key())
+		value, err := s.perfEventStatsMap.GetValue(unsafe.Pointer(&key))
+		if err != nil {
+			logger.Errorw("failed to get value from perf event stats map", "error", err)
+			continue
+		}
+
+		id := events.ID(key)
+		result.Attempts[id] = binary.LittleEndian.Uint64(value[0:8])  // attempts
+		result.Failures[id] = binary.LittleEndian.Uint64(value[8:16]) // failures
+	}
+
+	return result
 }
 
 // Register Stats to prometheus metrics exporter
@@ -116,15 +203,10 @@ func (s *Stats) RegisterPrometheus() error {
 		return errfmt.WrapError(err)
 	}
 
-	if version.MetricsBuild() {
-		// Updated by countPerfEventSubmissions() goroutine
-		err = prometheus.Register(s.BPFPerfEventSubmitAttemptsCount.GaugeVec())
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-
-		// Updated by countPerfEventSubmissions() goroutine
-		err = prometheus.Register(s.BPFPerfEventSubmitFailuresCount.GaugeVec())
+	if version.MetricsBuild() && s.perfEventStatsMap != nil {
+		// Register custom collector for on-demand BPF perf event metrics
+		collector := NewBPFPerfEventCollector(s.perfEventStatsMap)
+		err = prometheus.Register(collector)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -172,6 +254,28 @@ func (s *Stats) RegisterPrometheus() error {
 	}
 
 	return nil
+}
+
+// ShouldTrackEventForBPFStats determines if an event should be tracked for BPF stats collection.
+func (s *Stats) ShouldTrackEventForBPFStats(id events.ID) bool {
+	// Track common events (core and extended)
+	if id >= events.StartCommonID && id <= events.MaxCommonExtendedID {
+		return true
+	}
+	// Track signal events (core and extended)
+	if id >= events.StartSignalID && id <= events.MaxSignalExtendedID {
+		return true
+	}
+	// Track test events
+	if id >= events.StartTestID && id <= events.MaxTestID {
+		return true
+	}
+
+	// Exclude everything else:
+	// - Userspace-derived events (core and extended)
+	// - Capture events
+	// - Signature events (core and extended)
+	return false
 }
 
 // JSON marshaler interface

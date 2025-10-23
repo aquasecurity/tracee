@@ -23,9 +23,53 @@ type ID int32
 
 // NOTE: Events should match defined values in ebpf code.
 
+// Event ID range markers
+// These constants define the boundaries of different event categories.
+const (
+	// Common events
+	StartCommonID ID = 700
+	MaxCommonID   ID = 1499
+
+	// Common events (extended) - defined in extended builds
+	StartCommonExtendedID ID = 1500
+	MaxCommonExtendedID   ID = 1999
+
+	// Userspace-derived events
+	StartUserSpaceID ID = 2000
+	MaxUserSpaceID   ID = 2999
+
+	// Userspace-derived events (extended) - defined in extended builds
+	StartUserSpaceExtendedID ID = 3000
+	MaxUserSpaceExtendedID   ID = 3999
+
+	// Capture events
+	StartCaptureID ID = 4000
+	MaxCaptureID   ID = 4999
+
+	// Signal events
+	StartSignalID ID = 5000
+	MaxSignalID   ID = 5499
+
+	// Signal events (extended) - defined in extended builds
+	StartSignalExtendedID ID = 5500
+	MaxSignalExtendedID   ID = 5999
+
+	// Signature events
+	StartSignatureID ID = 6000
+	MaxSignatureID   ID = 6999
+
+	// Signature events (extended) - defined in extended builds
+	StartSignatureExtendedID ID = 7000
+	MaxSignatureExtendedID   ID = 7999
+
+	// Test events
+	StartTestID ID = 8000
+	MaxTestID   ID = 8999
+)
+
 // Common events (used by all architectures).
 const (
-	NetPacketBase ID = iota + 700
+	NetPacketBase ID = iota + StartCommonID
 	NetPacketRaw
 	NetPacketIPBase
 	NetPacketTCPBase
@@ -119,12 +163,12 @@ const (
 	ChmodCommon
 	SecuritySbUmount
 	SecurityTaskPrctl
-	MaxCommonID
+	// MaxCommonID (1499)
 )
 
 // Events originated from user-space
 const (
-	NetPacketIPv4 ID = iota + 2000
+	NetPacketIPv4 ID = iota + StartUserSpaceID
 	NetPacketIPv6
 	NetPacketTCP
 	NetPacketUDP
@@ -152,12 +196,12 @@ const (
 	HiddenKernelModule
 	FtraceHook
 	TraceeInfo
-	MaxUserSpace
+	// MaxUserSpaceID (2999)
 )
 
 // Capture meta-events
 const (
-	CaptureFileWrite ID = iota + 4000
+	CaptureFileWrite ID = iota + StartCaptureID
 	CaptureExec
 	CaptureModule
 	CaptureMem
@@ -165,28 +209,24 @@ const (
 	CaptureNetPacket
 	CaptureBpf
 	CaptureFileRead
+	// MaxCaptureID (4999)
 )
 
 // Signal meta-events
 
 const (
-	SignalCgroupMkdir ID = iota + 5000
+	SignalCgroupMkdir ID = iota + StartSignalID
 	SignalCgroupRmdir
 	SignalSchedProcessFork
 	SignalSchedProcessExec
 	SignalSchedProcessExit
 	SignalHeartbeat
-)
-
-// Signature events
-const (
-	StartSignatureID ID = 6000
-	MaxSignatureID   ID = 6999
+	// MaxSignalID (5499)
 )
 
 // Test events
 const (
-	ExecTest ID = 8000 + iota
+	ExecTest ID = iota + StartTestID
 	MissingKsymbol
 	FailedAttach
 	IncompatibleProbeTest
@@ -197,6 +237,7 @@ const (
 	SharedProbeEventB
 	LsmTest
 	FeaturesFallbackTest
+	// MaxTestID (8999)
 )
 
 //
