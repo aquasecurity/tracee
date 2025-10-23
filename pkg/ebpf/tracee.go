@@ -1649,16 +1649,20 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.ready(ctx)          // executes ready callback, non blocking
 	<-ctx.Done()          // block until ctx is cancelled elsewhere
 
-	// Close perf buffers
+	// Stop perf buffers (close them when no more events are being processed)
 
-	t.eventsPerfMap.Close()
+	t.eventsPerfMap.Stop()
+	err := t.controlPlane.Stop()
+	if err != nil {
+		return errfmt.Errorf("error stopping control plane: %v", err)
+	}
 	if t.config.BlobPerfBufferSize > 0 {
-		t.fileWrPerfMap.Close()
+		t.fileWrPerfMap.Stop()
 	}
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
-		t.netCapPerfMap.Close()
+		t.netCapPerfMap.Stop()
 	}
-	t.bpfLogsPerfMap.Close()
+	t.bpfLogsPerfMap.Stop()
 
 	// TODO: move logic below somewhere else (related to file writes)
 
@@ -1719,12 +1723,29 @@ func (t *Tracee) Close() {
 	if t.streamsManager != nil {
 		t.streamsManager.Close()
 	}
+
+	// Close all the perf buffers
+	if t.eventsPerfMap != nil {
+		t.eventsPerfMap.Close()
+	}
+	if t.fileWrPerfMap != nil {
+		t.fileWrPerfMap.Close()
+	}
+	if t.netCapPerfMap != nil {
+		t.netCapPerfMap.Close()
+	}
+	if t.bpfLogsPerfMap != nil {
+		t.bpfLogsPerfMap.Close()
+	}
+
+	// Close the control plane
 	if t.controlPlane != nil {
-		err := t.controlPlane.Stop()
+		err := t.controlPlane.Close()
 		if err != nil {
-			logger.Errorw("failed to stop control plane when closing tracee", "err", err)
+			logger.Errorw("failed to close control plane when closing tracee", "err", err)
 		}
 	}
+
 	if t.defaultProbes != nil {
 		err := t.defaultProbes.DetachAll()
 		if err != nil {
