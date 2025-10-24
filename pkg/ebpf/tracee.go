@@ -716,12 +716,12 @@ func (t *Tracee) initDerivationTable() error {
 		// Network Packet Derivations
 		//
 		events.NetPacketIPBase: {
-			events.NetPacketIPv4: {
-				Enabled:        shouldSubmit(events.NetPacketIPv4),
+			events.LegacyNetPacketIPv4: {
+				Enabled:        shouldSubmit(events.LegacyNetPacketIPv4),
 				DeriveFunction: derive.NetPacketIPv4(),
 			},
-			events.NetPacketIPv6: {
-				Enabled:        shouldSubmit(events.NetPacketIPv6),
+			events.LegacyNetPacketIPv6: {
+				Enabled:        shouldSubmit(events.LegacyNetPacketIPv6),
 				DeriveFunction: derive.NetPacketIPv6(),
 			},
 		},

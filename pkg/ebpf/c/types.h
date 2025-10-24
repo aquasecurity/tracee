@@ -136,7 +136,8 @@ typedef struct event_context {
     X(CHMOD_COMMON, )                                                                              \
     X(SECURITY_SB_UMOUNT, )                                                                        \
     X(SECURITY_TASK_PRCTL, )                                                                       \
-    X(NEW_NET_PACKET_IPv4, )                                                                       \
+    X(NET_PACKET_IPv4, )                                                                           \
+    X(NET_PACKET_IPv6, )                                                                           \
     // ...
 
 #define EVENT_ID_LIST_LAST                                                                         \

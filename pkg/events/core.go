@@ -119,17 +119,15 @@ const (
 	ChmodCommon
 	SecuritySbUmount
 	SecurityTaskPrctl
-
-	// TODO: consider using NetPacketIPv4, and renaming
-	// user-space one into UserNetPacketIPv4 or LegacyNetPacketIPv4
-	NewNetPacketIPv4
+	NetPacketIPv4
+	NetPacketIPv6
 	MaxCommonID
 )
 
 // Events originated from user-space
 const (
-	NetPacketIPv4 ID = iota + 2000
-	NetPacketIPv6
+	LegacyNetPacketIPv4 ID = iota + 2000
+	LegacyNetPacketIPv6
 	NetPacketTCP
 	NetPacketUDP
 	NetPacketICMP
@@ -14506,10 +14504,10 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "payload"}},
 		},
 	},
-	NetPacketIPv4: {
-		id:      NetPacketIPv4,
+	LegacyNetPacketIPv4: {
+		id:      LegacyNetPacketIPv4,
 		id32Bit: Sys32Undefined,
-		name:    "net_packet_ipv4",
+		name:    "legacy_net_packet_ipv4",
 		version: NewVersion(1, 1, 0),
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -14526,10 +14524,10 @@ var CoreEvents = map[ID]Definition{
 			{ArgMeta: trace.ArgMeta{Type: "trace.ProtoIPv4", Name: "proto_ipv4"}},
 		},
 	},
-	NewNetPacketIPv4: {
-		id:      NewNetPacketIPv4,
+	NetPacketIPv4: {
+		id:      NetPacketIPv4,
 		id32Bit: Sys32Undefined,
-		name:    "new_net_packet_ipv4",
+		name:    "net_packet_ipv4",
 		version: NewVersion(1, 1, 0),
 
 		dependencies: DependencyStrategy{
@@ -14563,10 +14561,10 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.IPV4_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "dst"}},
 		},
 	},
-	NetPacketIPv6: {
-		id:      NetPacketIPv6,
+	LegacyNetPacketIPv6: {
+		id:      LegacyNetPacketIPv6,
 		id32Bit: Sys32Undefined,
-		name:    "net_packet_ipv6",
+		name:    "legacy_net_packet_ipv6",
 		version: NewVersion(1, 1, 0),
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -14581,6 +14579,38 @@ var CoreEvents = map[ID]Definition{
 			{ArgMeta: trace.ArgMeta{Type: "string", Name: "dst"}}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
 			{ArgMeta: trace.ArgMeta{Type: "trace.PacketMetadata", Name: "metadata"}},
 			{ArgMeta: trace.ArgMeta{Type: "trace.ProtoIPv6", Name: "proto_ipv6"}},
+		},
+	},
+	NetPacketIPv6: {
+		id:      NetPacketIPv6,
+		id32Bit: Sys32Undefined,
+		name:    "net_packet_ipv6",
+		version: NewVersion(1, 1, 0),
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				capabilities: Capabilities{
+					ebpf: []cap.Value{
+						cap.NET_ADMIN, // needed for BPF_PROG_TYPE_CGROUP_SKB
+					},
+				},
+				probes: []Probe{
+					{handle: probes.FentrySecuritySocketRecvmsg, required: true},
+					{handle: probes.FentrySecuritySocketSendmsg, required: true},
+					{handle: probes.NewCgroupSKBIngress, required: true},
+					{handle: probes.NewCgroupSKBEgress, required: true},
+				},
+			},
+		},
+		sets: []string{"network_events"},
+		fields: []DataField{
+			{DecodeAs: data.U8_T, ArgMeta: trace.ArgMeta{Type: "uint8", Name: "version"}},
+			{DecodeAs: data.U8_T, ArgMeta: trace.ArgMeta{Type: "uint8", Name: "trafficClass"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flowLabel"}},
+			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "length"}},
+			{DecodeAs: data.U8_T, ArgMeta: trace.ArgMeta{Type: "uint8", Name: "nextHeader"}},
+			{DecodeAs: data.U8_T, ArgMeta: trace.ArgMeta{Type: "uint8", Name: "hopLimit"}},
+			{DecodeAs: data.IPV6_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "src"}},
+			{DecodeAs: data.IPV6_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "dst"}},
 		},
 	},
 	NetPacketTCPBase: {

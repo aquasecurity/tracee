@@ -566,8 +566,9 @@ var EventTranslationTable = [events.MaxBuiltinID]pb.EventId{
 	events.SecurityTaskPrctl:            pb.EventId_security_task_prctl,
 
 	// Events from user-space translation section
-	events.NetPacketIPv4:         pb.EventId_net_packet_ipv4,
-	events.NetPacketIPv6:         pb.EventId_net_packet_ipv6,
+	// TODO need to add new network events
+	events.LegacyNetPacketIPv4:         pb.EventId_net_packet_ipv4,
+	events.LegacyNetPacketIPv6:         pb.EventId_net_packet_ipv6,
 	events.NetPacketTCP:          pb.EventId_net_packet_tcp,
 	events.NetPacketUDP:          pb.EventId_net_packet_udp,
 	events.NetPacketICMP:         pb.EventId_net_packet_icmp,

@@ -169,6 +169,13 @@ func readArgFromBuff(
 			return uint(argIdx), arg, errfmt.Errorf("error reading ip address: %v", err)
 		}
 		decodedValue = PrintUint32IP(ip)
+	case data.IPV6_T:
+		var ip []byte
+		ip, err = ebpfMsgDecoder.ReadBytesLen(16)
+		if err != nil {
+			return uint(argIdx), arg, errfmt.Errorf("error reading ip address: %v", err)
+		}
+		decodedValue = Print16BytesSliceIP(ip)
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
 		return uint(argIdx), arg, errfmt.Errorf("error unknown arg type %v", decodeType)

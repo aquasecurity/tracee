@@ -7568,7 +7568,7 @@ int BPF_PROG(lsm_file_open_test, struct file *file, const struct cred *cred)
 
 // New Network Events POC
 
-statfunc int handle_socket_msg(void *ctx, struct socket *sock, u32 event_id)
+statfunc int handle_socket_msg(void *ctx, struct socket *sock)
 {
     if (sock == NULL)
         return 0;
@@ -7577,12 +7577,23 @@ statfunc int handle_socket_msg(void *ctx, struct socket *sock, u32 event_id)
     if (!is_socket_supported(sock))
         return 0;
 
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx, event_id))
-        return 0;
-
     struct sock *sk = sock->sk;
     if (sk == NULL)
+        return 0;
+
+    u16 family = BPF_CORE_READ(sk, sk_family);
+    u32 event_id;
+    
+    if (family == AF_INET) {
+        event_id = NET_PACKET_IPv4;
+    } else if (family == AF_INET6) {
+        event_id = NET_PACKET_IPv6;
+    } else {
+        return 0; // error?
+    }
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, event_id))
         return 0;
 
     socket_storage_t *socket_storage;
@@ -7599,13 +7610,13 @@ statfunc int handle_socket_msg(void *ctx, struct socket *sock, u32 event_id)
 SEC("fentry/security_socket_recvmsg")
 int BPF_PROG(fentry_security_socket_recvmsg, struct socket *sock)
 {
-    return handle_socket_msg(ctx, sock, NEW_NET_PACKET_IPv4);
+    return handle_socket_msg(ctx, sock);
 }
 
 SEC("fentry/security_socket_sendmsg")
 int BPF_PROG(fentry_security_socket_sendmsg, struct socket *sock)
 {
-    return handle_socket_msg(ctx, sock, NEW_NET_PACKET_IPv4);
+    return handle_socket_msg(ctx, sock);
 }
 
 statfunc int netevent_perf_submit(void *ctx, event_data_t *event)
@@ -7724,9 +7735,8 @@ statfunc u32 new_cgroup_skb_generic(struct __sk_buff *ctx)
     event_context_t *eventctx = &(netevent->context);
     __builtin_memcpy(&eventctx->task, &task_info->context, sizeof(task_context_t));
 
-    eventctx->eventid = NEW_NET_PACKET_IPv4;
-
     if (family == PF_INET) {
+        eventctx->eventid = NET_PACKET_IPv4;
         struct iphdr *iph = &nethdrs->iphdrs.iphdr;
         args_buffer_t *buf = &netevent->args_buf;
         u8 arg_idx = 0;
@@ -7779,7 +7789,42 @@ statfunc u32 new_cgroup_skb_generic(struct __sk_buff *ctx)
         u32 daddr = iph->daddr;
         cgroup_save_arg_to_buf(buf, &daddr, sizeof(u32), arg_idx++);
     } else if (family == PF_INET6) {
-        // TODO: implement IPv6
+
+        eventctx->eventid = NET_PACKET_IPv6;
+        args_buffer_t *buf = &netevent->args_buf;
+        u8 arg_idx = 0;
+        
+        // Create a local copy of the IPv6 header to avoid verifier issues
+        struct ipv6hdr local_ip6h;
+        __builtin_memcpy(&local_ip6h, &nethdrs->iphdrs.ipv6hdr, sizeof(struct ipv6hdr));
+        
+        u8 version, traffic_class, nexthdr, hop_limit;
+        u32 flow_label;
+        u16 payload_len;
+        struct in6_addr src_addr, dst_addr;
+        
+        // Cast to byte array for packed fields
+        u8 *hdr = (u8 *)&local_ip6h;
+        
+        // Extract version, traffic class, and flow label from first 4 bytes
+        version = (hdr[0] >> 4) & 0x0F;
+        traffic_class = ((hdr[0] & 0x0F) << 4) | ((hdr[1] >> 4) & 0x0F);
+        flow_label = ((hdr[1] & 0x0F) << 16) | (hdr[2] << 8) | hdr[3];
+        
+        payload_len = bpf_ntohs(local_ip6h.payload_len);
+        nexthdr = local_ip6h.nexthdr;
+        hop_limit = local_ip6h.hop_limit;
+        __builtin_memcpy(&src_addr, &local_ip6h.saddr, sizeof(struct in6_addr));
+        __builtin_memcpy(&dst_addr, &local_ip6h.daddr, sizeof(struct in6_addr));
+        
+        cgroup_save_arg_to_buf(buf, &version, sizeof(u8), arg_idx++);
+        cgroup_save_arg_to_buf(buf, &traffic_class, sizeof(u8), arg_idx++);
+        cgroup_save_arg_to_buf(buf, &flow_label, sizeof(u32), arg_idx++);
+        cgroup_save_arg_to_buf(buf, &payload_len, sizeof(u16), arg_idx++);
+        cgroup_save_arg_to_buf(buf, &nexthdr, sizeof(u8), arg_idx++);
+        cgroup_save_arg_to_buf(buf, &hop_limit, sizeof(u8), arg_idx++);
+        cgroup_save_arg_to_buf(buf, &src_addr, sizeof(struct in6_addr), arg_idx++);
+        cgroup_save_arg_to_buf(buf, &dst_addr, sizeof(struct in6_addr), arg_idx++);
     }
 
     netevent_perf_submit(ctx, netevent);
