@@ -131,6 +131,7 @@ lsm_test_not_supported=0
 # Setup tests and skips
 # Some tests might need special setup (like running before tracee)
 
+info "= SETUP TESTS AND SKIPS ======================================"
 for TEST in $TESTS; do
     case $TEST in
     HOOKED_SYSCALL)
@@ -249,40 +250,52 @@ if [[ $timedout -eq 1 ]]; then
     exit 1
 fi
 
-# Allow tracee to start processing events
-
-sleep 3
+# Give tracee time to start processing events and initialize data sources
+sleep 5
 
 info "= RUNNING TESTS ================================================"
 info
 # Run tests, one by one
 
 for TEST in $TESTS; do
-
     info
     info "= TEST: $TEST =============================================="
     info
 
-    case $TEST in
-    HOOKED_SYSCALL)
-        # wait for tracee hooked event to be processed
-        info "waiting for tracee hooked event to be processed"
-        sleep 15
-        ;;
-    FTRACE_HOOK)
-        info "waiting for tracee ftrace hook event to be processed"
-        sleep 15
-        ;;
-    *)
-        info "running test $TEST"
-        timeout --preserve-status $TRACEE_RUN_TIMEOUT "${TESTS_DIR}"/"${TEST,,}".sh
-        ;;
-    esac
+    # Check if test should be skipped during execution
+    if [[ $skip_hooked_syscall -eq 1 && $TEST == "HOOKED_SYSCALL" ]]; then
+        info "skipping $TEST"
+        continue
+    fi
+    if [[ $skip_ftrace_hook -eq 1 && $TEST == "FTRACE_HOOK" ]]; then
+        info "skipping $TEST"
+        continue
+    fi
+    if [[ $skip_security_path_notify -eq 1 && $TEST == "SECURITY_PATH_NOTIFY" ]]; then
+        info "skipping $TEST"
+        continue
+    fi
+    if [[ $skip_suspicious_syscall_source -eq 1 && $TEST == "SUSPICIOUS_SYSCALL_SOURCE" ]]; then
+        info "skipping $TEST"
+        continue
+    fi
+    if [[ $skip_stack_pivot -eq 1 && $TEST == "STACK_PIVOT" ]]; then
+        info "skipping $TEST"
+        continue
+    fi
+    if [[ $lsm_test_not_supported -eq 1 && $TEST == "LSM_TEST" ]]; then
+        info "skipping $TEST"
+        continue
+    fi
+
+    info "running test $TEST"
+    timeout --preserve-status $TRACEE_RUN_TIMEOUT "${TESTS_DIR}"/"${TEST,,}".sh
 done
 
-
-# So events can finish processing
-sleep 5
+# Wait for all events to be processed and signatures to complete.
+# PROCTREE_DATA_SOURCE signature has an internal 15-second sleep on first event
+# (see e2e-proctree_data_source.go:86) to allow process tree lineage to populate.
+sleep 20
 
 # Stop tracee
 # Make sure we exit tracee before checking output and log files
