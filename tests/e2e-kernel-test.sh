@@ -82,9 +82,6 @@ tracee_command="./dist/tracee \
 
 eval "$tracee_command &"
 
-# give some time for tracee to settle
-sleep 5
-
 # wait tracee to be started (30 sec most)
 times=0
 timedout=0
@@ -113,6 +110,9 @@ if [[ $timedout -eq 1 ]]; then
 
     exit 1
 fi
+
+# Give tracee time to start processing events
+sleep 15
 
 # run tests
 info "= RUNNING TESTS ================================================"
