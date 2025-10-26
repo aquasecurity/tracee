@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -349,6 +350,10 @@ func (p tableEventPrinter) Epilogue(stats metrics.Stats) {
 }
 
 func (p tableEventPrinter) Close() {
+	// Sync flushes buffered data, ensuring events aren't lost on process exit
+	if f, ok := p.out.(*os.File); ok {
+		_ = f.Sync()
+	}
 }
 
 type templateEventPrinter struct {
@@ -389,6 +394,10 @@ func (p templateEventPrinter) Print(event trace.Event) {
 func (p templateEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p templateEventPrinter) Close() {
+	// Sync flushes buffered data, ensuring events aren't lost on process exit
+	if f, ok := p.out.(*os.File); ok {
+		_ = f.Sync()
+	}
 }
 
 type jsonEventPrinter struct {
@@ -410,6 +419,10 @@ func (p jsonEventPrinter) Print(event trace.Event) {
 func (p jsonEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p jsonEventPrinter) Close() {
+	// Sync flushes buffered data, ensuring events aren't lost on process exit
+	if f, ok := p.out.(*os.File); ok {
+		_ = f.Sync()
+	}
 }
 
 // ignoreEventPrinter ignores events
