@@ -6,8 +6,8 @@ import (
 
 	"github.com/aquasecurity/tracee/common/environment"
 	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -84,13 +84,13 @@ func (t *Tracee) registerEventProcessors() {
 
 	// Processors registered when proctree source "events" is enabled.
 	switch t.config.ProcTree.Source {
-	case proctree.SourceEvents, proctree.SourceBoth:
+	case process.SourceEvents, process.SourceBoth:
 		t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkProcessor)
 		t.RegisterEventProcessor(events.SchedProcessExec, t.procTreeExecProcessor)
 		t.RegisterEventProcessor(events.SchedProcessExit, t.procTreeExitProcessor)
 	}
 	// Processors enriching process tree with regular pipeline events.
-	if t.config.ProcTree.Source != proctree.SourceNone {
+	if t.config.ProcTree.Source != process.SourceNone {
 		t.RegisterEventProcessor(events.All, t.procTreeAddBinInfo)
 	}
 

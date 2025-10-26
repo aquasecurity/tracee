@@ -10,18 +10,18 @@ import (
 	"github.com/aquasecurity/tracee/common/interfaces"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
-	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/dnscache"
+	"github.com/aquasecurity/tracee/pkg/datastores/container"
+	"github.com/aquasecurity/tracee/pkg/datastores/dns"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/data"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
-	"github.com/aquasecurity/tracee/pkg/proctree"
 )
 
 type ManagerConfig struct {
-	DNSCacheConfig dnscache.Config
-	ProcTreeConfig proctree.ProcTreeConfig
+	DNSCacheConfig dns.Config
+	ProcTreeConfig process.ProcTreeConfig
 	CaptureConfig  config.CaptureConfig
 }
 
@@ -194,12 +194,12 @@ func (m *Manager) selectConfiguredEvents() {
 	}
 
 	switch m.cfg.ProcTreeConfig.Source {
-	case proctree.SourceBoth:
+	case process.SourceBoth:
 		pipeEvts()
 		signalEvts()
-	case proctree.SourceSignals:
+	case process.SourceSignals:
 		signalEvts()
-	case proctree.SourceEvents:
+	case process.SourceEvents:
 		pipeEvts()
 	}
 
@@ -592,7 +592,7 @@ func (m *Manager) LookupByName(name string) (*Policy, error) {
 
 func (m *Manager) UpdateBPF(
 	bpfModule *bpf.Module,
-	cts *containers.Manager,
+	cts *container.Manager,
 	eventsFields map[events.ID][]data.DecodeAs,
 	createNewMaps bool,
 	updateProcTree bool,

@@ -7,8 +7,8 @@ import (
 
 	"github.com/aquasecurity/tracee/common/stringutil"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -106,9 +106,9 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 				evt.ContextFlags = flags
 				evt.Syscall = syscall
 				evt.Metadata = nil
-				evt.ThreadEntityId = proctree.HashTaskID(ctx.HostTid, ctx.StartTime)
-				evt.ProcessEntityId = proctree.HashTaskID(ctx.HostPid, ctx.LeaderStartTime)
-				evt.ParentEntityId = proctree.HashTaskID(ctx.HostPpid, ctx.ParentStartTime)
+				evt.ThreadEntityId = process.HashTaskID(ctx.HostTid, ctx.StartTime)
+				evt.ProcessEntityId = process.HashTaskID(ctx.HostPid, ctx.LeaderStartTime)
+				evt.ParentEntityId = process.HashTaskID(ctx.HostPpid, ctx.ParentStartTime)
 
 				processChan <- evt
 			}
@@ -263,9 +263,9 @@ func BenchmarkNewEventObject(b *testing.B) {
 					StackAddresses:        stackAddresses,
 					ContextFlags:          flags,
 					Syscall:               syscall,
-					ThreadEntityId:        proctree.HashTaskID(ctx.HostTid, ctx.StartTime),
-					ProcessEntityId:       proctree.HashTaskID(ctx.HostPid, ctx.LeaderStartTime),
-					ParentEntityId:        proctree.HashTaskID(ctx.HostPpid, ctx.ParentStartTime),
+					ThreadEntityId:        process.HashTaskID(ctx.HostTid, ctx.StartTime),
+					ProcessEntityId:       process.HashTaskID(ctx.HostPid, ctx.LeaderStartTime),
+					ParentEntityId:        process.HashTaskID(ctx.HostPpid, ctx.ParentStartTime),
 				}
 
 				processChan <- &evt

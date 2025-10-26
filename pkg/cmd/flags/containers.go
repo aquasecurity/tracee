@@ -5,7 +5,7 @@ import (
 
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/containers/runtime"
+	"github.com/aquasecurity/tracee/pkg/datastores/container/runtime"
 )
 
 const ContainersFlag = "containers"

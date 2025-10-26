@@ -3,9 +3,9 @@ package derive
 import (
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/pkg/datastores/symbol"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/symbols"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -27,11 +27,11 @@ var NetSeqOpsFuncs = [4]string{
 	"stop",
 }
 
-func HookedSeqOps(kernelSymbols *symbols.KernelSymbolTable) DeriveFunction {
+func HookedSeqOps(kernelSymbols *symbol.KernelSymbolTable) DeriveFunction {
 	return deriveSingleEvent(events.HookedSeqOps, deriveHookedSeqOpsArgs(kernelSymbols))
 }
 
-func deriveHookedSeqOpsArgs(kernelSymbols *symbols.KernelSymbolTable) deriveArgsFunction {
+func deriveHookedSeqOpsArgs(kernelSymbols *symbol.KernelSymbolTable) deriveArgsFunction {
 	return func(event *trace.Event) ([]interface{}, error) {
 		seqOpsArr, err := parse.ArgVal[[]uint64](event.Args, "net_seq_ops")
 		if err != nil || len(seqOpsArr) < 1 {

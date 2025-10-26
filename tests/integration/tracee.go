@@ -16,8 +16,8 @@ import (
 	uproc "github.com/aquasecurity/tracee/common/proc"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
-	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -101,8 +101,8 @@ func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 	cfg.PipelineChannelSize = 10000
 
 	// No process tree in the integration tests
-	cfg.ProcTree = proctree.ProcTreeConfig{
-		Source: proctree.SourceNone,
+	cfg.ProcTree = process.ProcTreeConfig{
+		Source: process.SourceNone,
 	}
 
 	errChan := make(chan error)

@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/datastores/symbol"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/symbols"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -379,7 +379,7 @@ func Test_DetectHookedSyscall_MultipleSymbolsAtSameAddress(t *testing.T) {
 	// Create a symbol table with multiple symbols at the same address (aliasing)
 	symbolData := `ffffffffc0001000 t fake_read_alias1	rootkit
 ffffffffc0001000 t fake_read_alias2	rootkit`
-	symbolTable, err := symbols.NewKernelSymbolTableFromReader(strings.NewReader(symbolData), false, false)
+	symbolTable, err := symbol.NewKernelSymbolTableFromReader(strings.NewReader(symbolData), false, false)
 	require.NoError(t, err)
 
 	deriveFunction := DetectHookedSyscall(symbolTable)

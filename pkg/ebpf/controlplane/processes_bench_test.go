@@ -4,18 +4,18 @@ import (
 	"context"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/proctree"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func Benchmark_procTreeForkProcessor(b *testing.B) {
 	ctrl := &Controller{}
-	ctrl.processTree, _ = proctree.NewProcessTree(
+	ctrl.processTree, _ = process.NewProcessTree(
 		context.Background(),
-		proctree.ProcTreeConfig{
-			Source:           proctree.SourceBoth,
-			ProcessCacheSize: proctree.DefaultProcessCacheSize,
-			ThreadCacheSize:  proctree.DefaultThreadCacheSize,
+		process.ProcTreeConfig{
+			Source:           process.SourceBoth,
+			ProcessCacheSize: process.DefaultProcessCacheSize,
+			ThreadCacheSize:  process.DefaultThreadCacheSize,
 		},
 	)
 
@@ -46,12 +46,12 @@ func Benchmark_procTreeForkProcessor(b *testing.B) {
 
 func Benchmark_procTreeExecProcessor(b *testing.B) {
 	ctrl := &Controller{}
-	ctrl.processTree, _ = proctree.NewProcessTree(
+	ctrl.processTree, _ = process.NewProcessTree(
 		context.Background(),
-		proctree.ProcTreeConfig{
-			Source:           proctree.SourceBoth,
-			ProcessCacheSize: proctree.DefaultProcessCacheSize,
-			ThreadCacheSize:  proctree.DefaultThreadCacheSize,
+		process.ProcTreeConfig{
+			Source:           process.SourceBoth,
+			ProcessCacheSize: process.DefaultProcessCacheSize,
+			ThreadCacheSize:  process.DefaultThreadCacheSize,
 		},
 	)
 
@@ -84,12 +84,12 @@ func Benchmark_procTreeExecProcessor(b *testing.B) {
 
 func Benchmark_procTreeExitProcessor(b *testing.B) {
 	ctrl := &Controller{}
-	ctrl.processTree, _ = proctree.NewProcessTree(
+	ctrl.processTree, _ = process.NewProcessTree(
 		context.Background(),
-		proctree.ProcTreeConfig{
-			Source:           proctree.SourceBoth,
-			ProcessCacheSize: proctree.DefaultProcessCacheSize,
-			ThreadCacheSize:  proctree.DefaultThreadCacheSize,
+		process.ProcTreeConfig{
+			Source:           process.SourceBoth,
+			ProcessCacheSize: process.DefaultProcessCacheSize,
+			ThreadCacheSize:  process.DefaultThreadCacheSize,
 		},
 	)
 

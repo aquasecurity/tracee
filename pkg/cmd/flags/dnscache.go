@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/dnscache"
+	"github.com/aquasecurity/tracee/pkg/datastores/dns"
 )
 
 func dnsCacheHelp() string {
@@ -22,12 +22,12 @@ Use comma OR use the flag multiple times to choose multiple options:
 `
 }
 
-func PrepareDnsCache(cacheSlice []string) (dnscache.Config, error) {
+func PrepareDnsCache(cacheSlice []string) (dns.Config, error) {
 	var err error
 
-	config := dnscache.Config{
+	config := dns.Config{
 		Enable:    true, // assume enabled and return disabled if no flag given
-		CacheSize: dnscache.DefaultCacheSize,
+		CacheSize: dns.DefaultCacheSize,
 	}
 
 	for _, slice := range cacheSlice {

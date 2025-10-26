@@ -6,9 +6,9 @@ import (
 	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/environment"
 	"github.com/aquasecurity/tracee/common/errfmt"
-	"github.com/aquasecurity/tracee/pkg/containers/runtime"
-	"github.com/aquasecurity/tracee/pkg/dnscache"
-	"github.com/aquasecurity/tracee/pkg/proctree"
+	"github.com/aquasecurity/tracee/pkg/datastores/container/runtime"
+	"github.com/aquasecurity/tracee/pkg/datastores/dns"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 )
 
@@ -21,7 +21,7 @@ type Config struct {
 	Capture             *CaptureConfig
 	Capabilities        *CapabilitiesConfig
 	Output              *OutputConfig
-	ProcTree            proctree.ProcTreeConfig
+	ProcTree            process.ProcTreeConfig
 	PerfBufferSize      int
 	BlobPerfBufferSize  int
 	PipelineChannelSize int
@@ -36,7 +36,7 @@ type Config struct {
 	CgroupFSForce       bool
 	EngineConfig        engine.Config
 	MetricsEnabled      bool
-	DNSCacheConfig      dnscache.Config
+	DNSCacheConfig      dns.Config
 }
 
 // Validate does static validation of the configuration

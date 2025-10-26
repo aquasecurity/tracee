@@ -5,7 +5,7 @@ import (
 
 	"github.com/aquasecurity/tracee/common/bitwise"
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/datastores/container"
 	"github.com/aquasecurity/tracee/pkg/filters"
 )
 
@@ -163,7 +163,7 @@ func updateAffixEqualities[T comparable](
 // updating the provided filtersEqualities struct.
 func (ps *policies) computeFilterEqualities(
 	fEqs *filtersEqualities,
-	cts *containers.Manager,
+	cts *container.Manager,
 ) error {
 	for _, p := range ps.allFromMap() {
 		policyID := uint(p.ID)
