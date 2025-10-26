@@ -135,3 +135,121 @@ func TestTemplateEventPrinterSprigFunctions(t *testing.T) {
 	// Should contain timestamp
 	assert.Contains(t, output, `1234567890`, "timestamp should be included")
 }
+
+// TestPrinterCloseFlushesData tests that Close() calls Sync() to flush buffered data to disk
+func TestPrinterCloseFlushesData(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name        string
+		printerKind string
+	}{
+		{
+			name:        "json printer",
+			printerKind: "json",
+		},
+		{
+			name:        "table printer",
+			printerKind: "table",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create a temporary file
+			tempDir := t.TempDir()
+			outputPath := filepath.Join(tempDir, "test_output.txt")
+
+			// Create the output file
+			file, err := flags.CreateOutputFile(outputPath)
+			require.NoError(t, err)
+			defer file.Close() // We close it since we created it
+
+			// Create printer config
+			cfg := config.PrinterConfig{
+				Kind:    tc.printerKind,
+				OutFile: file,
+			}
+
+			// Create and initialize the printer
+			p, err := printer.New(cfg)
+			require.NoError(t, err)
+
+			// Create a sample event
+			sampleEvent := trace.Event{
+				ProcessName: "test_process",
+				EventID:     1,
+				EventName:   "test_event",
+				Timestamp:   1234567890,
+				Args: []trace.Argument{
+					{ArgMeta: trace.ArgMeta{Name: "arg1", Type: "string"}, Value: "value1"},
+				},
+			}
+
+			// Print an event
+			p.Preamble()
+			p.Print(sampleEvent)
+			p.Close() // This should flush the buffer via Sync()
+
+			// Read the file content (file is still open, but Sync() should have flushed data to disk)
+			content, err := os.ReadFile(outputPath)
+			require.NoError(t, err, "Should be able to read flushed data while file is still open")
+
+			// Verify data was written and flushed
+			assert.NotEmpty(t, content, "File should contain data after Sync()")
+			assert.Contains(t, string(content), "test_process", "File should contain event data")
+		})
+	}
+}
+
+// TestTemplateEventPrinterCloseFlushesData tests that template printer Close() calls Sync() to flush data
+func TestTemplateEventPrinterCloseFlushesData(t *testing.T) {
+	t.Parallel()
+
+	// Create a temporary template file
+	templateContent := `{"event": "{{ .EventName }}", "process": "{{ .ProcessName }}"}`
+	tempDir := t.TempDir()
+	templatePath := filepath.Join(tempDir, "test.tmpl")
+	outputPath := filepath.Join(tempDir, "test_output.txt")
+
+	err := os.WriteFile(templatePath, []byte(templateContent), 0644)
+	require.NoError(t, err)
+
+	// Create the output file
+	file, err := flags.CreateOutputFile(outputPath)
+	require.NoError(t, err)
+	defer file.Close() // We close it since we created it
+
+	// Create printer config
+	cfg := config.PrinterConfig{
+		Kind:    "gotemplate=" + templatePath,
+		OutFile: file,
+	}
+
+	// Create and initialize the printer
+	p, err := printer.New(cfg)
+	require.NoError(t, err)
+
+	// Create a sample event
+	sampleEvent := trace.Event{
+		ProcessName: "test_process",
+		EventName:   "test_event",
+	}
+
+	// Print an event
+	p.Preamble()
+	p.Print(sampleEvent)
+	p.Close() // This should flush the buffer via Sync()
+
+	// Read the file content (file is still open, but Sync() should have flushed data to disk)
+	content, err := os.ReadFile(outputPath)
+	require.NoError(t, err, "Should be able to read flushed data while file is still open")
+
+	// Verify data was written and flushed
+	assert.NotEmpty(t, content, "File should contain data after Sync()")
+	assert.Contains(t, string(content), "test_process", "File should contain event data")
+	assert.Contains(t, string(content), "test_event", "File should contain event name")
+}
