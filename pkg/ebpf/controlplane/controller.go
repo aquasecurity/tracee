@@ -11,10 +11,10 @@ import (
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
-	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/datastores/container"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/ebpf/heartbeat"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -34,8 +34,8 @@ type Controller struct {
 	bpfModule      *libbpfgo.Module
 	signalBuffer   *libbpfgo.PerfBuffer
 	signalPool     *sync.Pool
-	cgroupManager  *containers.Manager
-	processTree    *proctree.ProcessTree
+	cgroupManager  *container.Manager
+	processTree    *process.ProcessTree
 	enrichDisabled bool
 	dataPresentor  bufferdecoder.TypeDecoder
 	signalHandlers map[events.ID]SignalHandler
@@ -44,9 +44,9 @@ type Controller struct {
 // NewController creates a new controller.
 func NewController(
 	bpfModule *libbpfgo.Module,
-	cgroupManager *containers.Manager,
+	cgroupManager *container.Manager,
 	enrichDisabled bool,
-	procTree *proctree.ProcessTree,
+	procTree *process.ProcessTree,
 	dataPresentor bufferdecoder.TypeDecoder,
 ) *Controller {
 	return &Controller{

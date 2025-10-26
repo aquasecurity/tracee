@@ -7,7 +7,7 @@ import (
 
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/symbols"
+	"github.com/aquasecurity/tracee/pkg/datastores/symbol"
 )
 
 // NOTE: thread-safety guaranteed by the ProbeGroup big lock.
@@ -127,7 +127,7 @@ func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 		var err error
 		var link *bpf.BPFLink
 		var attachFunc func(uint64) (*bpf.BPFLink, error)
-		var syms []*symbols.KernelSymbol
+		var syms []*symbol.KernelSymbol
 		// https://github.com/aquasecurity/tracee/issues/3653#issuecomment-1832642225
 		//
 		// After commit b022f0c7e404 ('tracing/kprobes: Return EADDRNOTAVAIL
@@ -139,11 +139,11 @@ func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 		// multiple addresses.
 		//
 
-		var ksyms *symbols.KernelSymbolTable
+		var ksyms *symbol.KernelSymbolTable
 
 		for _, arg := range args {
 			switch a := arg.(type) {
-			case *symbols.KernelSymbolTable:
+			case *symbol.KernelSymbolTable:
 				ksyms = a
 			}
 		}

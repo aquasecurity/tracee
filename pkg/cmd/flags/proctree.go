@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/proctree"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 )
 
 func procTreeHelp() string {
@@ -30,13 +30,13 @@ Use comma OR use the flag multiple times to choose multiple options:
 `
 }
 
-func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
+func PrepareProcTree(cacheSlice []string) (process.ProcTreeConfig, error) {
 	var err error
 
-	config := proctree.ProcTreeConfig{
-		Source:               proctree.SourceNone, // disabled by default
-		ProcessCacheSize:     proctree.DefaultProcessCacheSize,
-		ThreadCacheSize:      proctree.DefaultThreadCacheSize,
+	config := process.ProcTreeConfig{
+		Source:               process.SourceNone, // disabled by default
+		ProcessCacheSize:     process.DefaultProcessCacheSize,
+		ThreadCacheSize:      process.DefaultThreadCacheSize,
 		ProcfsInitialization: true,
 		ProcfsQuerying:       true,
 	}
@@ -58,17 +58,17 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 				option := strings.TrimPrefix(value, "source=")
 				switch option {
 				case "none":
-					config.Source = proctree.SourceNone
+					config.Source = process.SourceNone
 				case "events":
-					config.Source = proctree.SourceEvents
+					config.Source = process.SourceEvents
 				case "signals":
-					config.Source = proctree.SourceSignals
+					config.Source = process.SourceSignals
 				case "both":
-					config.Source = proctree.SourceBoth
+					config.Source = process.SourceBoth
 				default:
 					return config, fmt.Errorf("unrecognized proctree source option: %v", option)
 				}
-				if config.Source != proctree.SourceNone {
+				if config.Source != process.SourceNone {
 					cacheSet = true // at least the default ones
 				}
 				continue
@@ -110,11 +110,11 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 		}
 	}
 
-	if cacheSet && config.Source == proctree.SourceNone {
+	if cacheSet && config.Source == process.SourceNone {
 		return config, errors.New("proctree cache was set but no source was given")
 	}
 
-	if config.Source != proctree.SourceNone {
+	if config.Source != process.SourceNone {
 		logger.Debugw("proctree is enabled and it source is set to", "source", config.Source.String())
 		logger.Debugw("proctree cache size", "process", config.ProcessCacheSize, "thread", config.ThreadCacheSize)
 	}

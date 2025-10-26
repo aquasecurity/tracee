@@ -7,7 +7,7 @@ import (
 	"github.com/aquasecurity/tracee/common/cgroup"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/datastores/container"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -62,7 +62,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	)
 
 	type enrichResult struct {
-		result containers.Container
+		result container.Container
 		err    error
 	}
 
@@ -112,7 +112,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				// CgroupMkdir: pick EventID from the event itself
 				if eventID == events.CgroupMkdir {
 					// avoid sending irrelevant cgroups
-					isHid, err := isCgroupEventInHid(event, t.containers)
+					isHid, err := isCgroupEventInHid(event, t.container)
 					if err != nil {
 						logger.Errorw("cgroup_mkdir event skipped enrichment: couldn't get cgroup hid", "error", err)
 						out <- event
@@ -140,7 +140,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 					queues[cgroupId] = make(chan *trace.Event, contQueueSize)
 
 					go func(cgroupId uint64) {
-						metadata, err := t.containers.EnrichCgroupInfo(cgroupId)
+						metadata, err := t.container.EnrichCgroupInfo(cgroupId)
 						bLock.Lock()
 						enrichInfo[cgroupId] = &enrichResult{metadata, err}
 						enrichDone[cgroupId] = true
@@ -254,7 +254,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	return out, errc
 }
 
-func enrichEvent(evt *trace.Event, cont containers.Container) {
+func enrichEvent(evt *trace.Event, cont container.Container) {
 	evt.Container = trace.Container{
 		ID:          cont.ContainerId,
 		ImageName:   cont.Image,
@@ -271,7 +271,7 @@ func enrichEvent(evt *trace.Event, cont containers.Container) {
 // isCgroupEventInHid checks if cgroup event is relevant for deriving container event in its hierarchy id.
 // in tracee we only care about containers inside the cpuset controller, as such other hierarchy ids will lead
 // to a failed query.
-func isCgroupEventInHid(event *trace.Event, cts *containers.Manager) (bool, error) {
+func isCgroupEventInHid(event *trace.Event, cts *container.Manager) (bool, error) {
 	if cts.GetCgroupVersion() == cgroup.CgroupVersion2 {
 		return true, nil
 	}

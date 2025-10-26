@@ -13,7 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/proc"
-	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/datastores/container"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/data"
 	"github.com/aquasecurity/tracee/pkg/filters"
@@ -691,7 +691,7 @@ func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBina
 // updateProcTree indicates whether the process tree map should be updated or not.
 func (ps *policies) updateBPF(
 	bpfModule *bpf.Module,
-	cts *containers.Manager,
+	cts *container.Manager,
 	rules map[events.ID]*eventFlags,
 	eventsFields map[events.ID][]data.DecodeAs,
 	createNewMaps bool,

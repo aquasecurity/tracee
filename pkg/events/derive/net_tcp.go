@@ -7,7 +7,7 @@ import (
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/parsers"
-	"github.com/aquasecurity/tracee/pkg/dnscache"
+	"github.com/aquasecurity/tracee/pkg/datastores/dns"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -15,7 +15,7 @@ import (
 
 // NOTE: Derived from security_socket_XXX events, not from net_packet_XXX ones.
 
-func NetTCPConnect(cache *dnscache.DNSCache) DeriveFunction {
+func NetTCPConnect(cache *dns.DNSCache) DeriveFunction {
 	return deriveSingleEvent(events.NetTCPConnect,
 		func(event *trace.Event) ([]interface{}, error) {
 			dstIP, dstPort, err := pickIpAndPort(event, "remote_addr")
@@ -33,7 +33,7 @@ func NetTCPConnect(cache *dnscache.DNSCache) DeriveFunction {
 				query, err := cache.Get(dstIP)
 				if err != nil {
 					switch err {
-					case dnscache.ErrDNSRecordNotFound, dnscache.ErrDNSRecordExpired:
+					case dns.ErrDNSRecordNotFound, dns.ErrDNSRecordExpired:
 						results = []string{}
 						goto allGood
 					}

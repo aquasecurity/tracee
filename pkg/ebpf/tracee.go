@@ -28,8 +28,10 @@ import (
 	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/config"
-	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/dnscache"
+	"github.com/aquasecurity/tracee/pkg/datastores/container"
+	"github.com/aquasecurity/tracee/pkg/datastores/dns"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
+	"github.com/aquasecurity/tracee/pkg/datastores/symbol"
 	"github.com/aquasecurity/tracee/pkg/ebpf/controlplane"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
@@ -43,10 +45,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/policy"
-	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/streams"
-	"github.com/aquasecurity/tracee/pkg/symbols"
 	"github.com/aquasecurity/tracee/pkg/version"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -105,15 +105,15 @@ type Tracee struct {
 	lostBPFLogChannel   chan uint64 // channel for lost bpf logs
 	// Containers
 	cgroups           *cgroup.Cgroups
-	containers        *containers.Manager
-	contPathResolver  *containers.ContainerPathResolver
-	contSymbolsLoader *containers.ContainersSymbolsLoader
+	container         *container.Manager
+	contPathResolver  *container.ContainerPathResolver
+	contSymbolsLoader *container.ContainersSymbolsLoader
 	// Control Plane
 	controlPlane *controlplane.Controller
 	// Process Tree
-	processTree *proctree.ProcessTree
+	processTree *process.ProcessTree
 	// DNS Cache
-	dnsCache *dnscache.DNSCache
+	dnsCache *dns.DNSCache
 	// Specific Events Needs
 	triggerContexts trigger.Context
 	readyCallback   func(gocontext.Context)
@@ -123,9 +123,9 @@ type Tracee struct {
 	policyManager *policy.Manager
 	// The dependencies of events used by Tracee
 	eventsDependencies *dependencies.Manager
-	// A reference to a symbols.KernelSymbolTable that might change at runtime.
+	// A reference to a symbol.KernelSymbolTable that might change at runtime.
 	// This should only be accessed using t.getKernelSymbols() and t.setKernelSymbols()
-	kernelSymbols atomic.Pointer[symbols.KernelSymbolTable]
+	kernelSymbols atomic.Pointer[symbol.KernelSymbolTable]
 	// Ksymbols needed to be kept alive in table.
 	// This does not mean they are required for tracee to function.
 	// TODO: remove this in favor of dependency manager nodes
@@ -142,11 +142,11 @@ func (t *Tracee) Engine() *engine.Engine {
 	return t.sigEngine
 }
 
-func (t *Tracee) getKernelSymbols() *symbols.KernelSymbolTable {
+func (t *Tracee) getKernelSymbols() *symbol.KernelSymbolTable {
 	return t.kernelSymbols.Load()
 }
 
-func (t *Tracee) setKernelSymbols(kernelSymbols *symbols.KernelSymbolTable) {
+func (t *Tracee) setKernelSymbols(kernelSymbols *symbol.KernelSymbolTable) {
 	t.kernelSymbols.Store(kernelSymbols)
 }
 
@@ -339,7 +339,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize containers enrichment logic
 
-	t.containers, err = containers.New(
+	t.container, err = container.New(
 		t.config.NoContainersEnrich,
 		t.cgroups,
 		t.config.Sockets,
@@ -348,14 +348,14 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	if err != nil {
 		return errfmt.Errorf("error initializing containers: %v", err)
 	}
-	if err := t.containers.Populate(); err != nil {
+	if err := t.container.Populate(); err != nil {
 		return errfmt.Errorf("error populating containers: %v", err)
 	}
 
 	// Initialize DNS Cache
 
 	if t.config.DNSCacheConfig.Enable {
-		t.dnsCache, err = dnscache.New(t.config.DNSCacheConfig)
+		t.dnsCache, err = dns.New(t.config.DNSCacheConfig)
 		if err != nil {
 			return errfmt.Errorf("error initializing dns cache: %v", err)
 		}
@@ -363,8 +363,8 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize containers related logic
 
-	t.contPathResolver = containers.InitContainerPathResolver(&t.pidsInMntns)
-	t.contSymbolsLoader = containers.InitContainersSymbolsLoader(t.contPathResolver, 1024)
+	t.contPathResolver = container.InitContainerPathResolver(&t.pidsInMntns)
+	t.contSymbolsLoader = container.InitContainersSymbolsLoader(t.contPathResolver, 1024)
 
 	// Initialize containers related extensions phase
 	if err := t.extensions.InitExtensionsForPhase(ctx, t, InitPhaseContainers); err != nil {
@@ -398,7 +398,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	err = capabilities.GetInstance().Specific(
 		func() error {
 			// t.requiredKsyms may contain non-data symbols, but it doesn't affect the validity of this call
-			kernelSymbols, err := symbols.NewKernelSymbolTable(true, true, t.requiredKsyms...)
+			kernelSymbols, err := symbol.NewKernelSymbolTable(true, true, t.requiredKsyms...)
 			if err != nil {
 				return err
 			}
@@ -480,7 +480,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize Process Tree (if enabled)
 
-	if t.config.ProcTree.Source != proctree.SourceNone {
+	if t.config.ProcTree.Source != process.SourceNone {
 		// As procfs use boot time to calculate process start time, we can use the procfs
 		// only if the times we get from the eBPF programs are based on the boot time (instead of monotonic).
 		proctreeConfig := t.config.ProcTree
@@ -488,7 +488,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 			proctreeConfig.ProcfsInitialization = false
 			proctreeConfig.ProcfsQuerying = false
 		}
-		t.processTree, err = proctree.NewProcessTree(ctx, proctreeConfig)
+		t.processTree, err = process.NewProcessTree(ctx, proctreeConfig)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -646,13 +646,13 @@ func (t *Tracee) initDerivationTable() error {
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
 				Enabled:        shouldSubmit(events.ContainerCreate),
-				DeriveFunction: derive.ContainerCreate(t.containers),
+				DeriveFunction: derive.ContainerCreate(t.container),
 			},
 		},
 		events.CgroupRmdir: {
 			events.ContainerRemove: {
 				Enabled:        shouldSubmit(events.ContainerRemove),
-				DeriveFunction: derive.ContainerRemove(t.containers),
+				DeriveFunction: derive.ContainerRemove(t.container),
 			},
 		},
 		events.SyscallTableCheck: {
@@ -848,7 +848,7 @@ func (t *Tracee) getOptionsConfig() uint32 {
 		cOptVal = cOptVal | optTranslateFDFilePath
 	}
 	switch t.config.ProcTree.Source {
-	case proctree.SourceBoth, proctree.SourceEvents:
+	case process.SourceBoth, process.SourceEvents:
 		cOptVal = cOptVal | optForkProcTree // tell sched_process_fork to be prolix
 	}
 
@@ -996,7 +996,7 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 }
 
 // getUnavailbaleKsymbols return all kernel symbols missing from given symbols
-func getUnavailbaleKsymbols(ksymbols []events.KSymbol, kernelSymbols *symbols.KernelSymbolTable) []events.KSymbol {
+func getUnavailbaleKsymbols(ksymbols []events.KSymbol, kernelSymbols *symbol.KernelSymbolTable) []events.KSymbol {
 	var unavailableSymbols []events.KSymbol
 
 	for _, ksymbol := range ksymbols {
@@ -1250,7 +1250,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Populate containers map with existing containers
-	err = t.containers.PopulateBpfMap(t.bpfModule)
+	err = t.container.PopulateBpfMap(t.bpfModule)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1329,7 +1329,7 @@ func (t *Tracee) populateBPFMaps() error {
 func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
 	polCfg, err := t.policyManager.UpdateBPF(
 		t.bpfModule,
-		t.containers,
+		t.container,
 		t.eventDecodeTypes,
 		true,
 		updateProcTree,
@@ -1501,7 +1501,7 @@ func (t *Tracee) initBPF() error {
 
 	t.controlPlane = controlplane.NewController(
 		t.bpfModule,
-		t.containers,
+		t.container,
 		t.config.NoContainersEnrich,
 		t.processTree,
 		t.dataTypeDecoder,
@@ -1511,7 +1511,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
-	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.containers, t.eventDecodeTypes, false, true)
+	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.container, t.eventDecodeTypes, false, true)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1740,8 +1740,8 @@ func (t *Tracee) Close() {
 	if t.bpfModule != nil {
 		t.bpfModule.Close()
 	}
-	if t.containers != nil {
-		err := t.containers.Close()
+	if t.container != nil {
+		err := t.container.Close()
 		if err != nil {
 			logger.Errorw("failed to clean containers module when closing tracee", "err", err)
 		}
@@ -1903,7 +1903,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	matchedPolicies = policiesMatch(events.ExistingContainer)
 	if matchedPolicies > 0 {
-		existingContainerEvents := events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich)
+		existingContainerEvents := events.ExistingContainersEvents(t.container, t.config.NoContainersEnrich)
 		for i := range existingContainerEvents {
 			event := &(existingContainerEvents[i])
 			setMatchedPolicies(event, matchedPolicies)
@@ -2050,7 +2050,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 
 					continue
 				}
-				symbol, err := t.getKernelSymbols().GetSymbolByOwnerAndName(owner, name)
+				sym, err := t.getKernelSymbols().GetSymbolByOwnerAndName(owner, name)
 				if err != nil {
 					if owner != "system" {
 						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - %v", p.ID, field, err))
@@ -2062,7 +2062,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 					prefixes := []string{"sys_", "__x64_sys_", "__arm64_sys_"}
 					var errSyscall error
 					for _, prefix := range prefixes {
-						symbol, errSyscall = t.getKernelSymbols().GetSymbolByOwnerAndName(owner, prefix+name)
+						sym, errSyscall = t.getKernelSymbols().GetSymbolByOwnerAndName(owner, prefix+name)
 						if errSyscall == nil {
 							err = nil
 							break
@@ -2086,7 +2086,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 					}
 				}
 				eventHandle := t.triggerContexts.Store(event)
-				_ = t.triggerMemDumpCall(symbol[0].Address, length, uint64(eventHandle))
+				_ = t.triggerMemDumpCall(sym[0].Address, length, uint64(eventHandle))
 			}
 		}
 	}

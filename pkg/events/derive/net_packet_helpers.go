@@ -12,7 +12,7 @@ import (
 	"github.com/google/gopacket/layers"
 
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/dnscache"
+	"github.com/aquasecurity/tracee/pkg/datastores/dns"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -172,13 +172,13 @@ func createPacketFromEvent(event *trace.Event) (gopacket.Packet, error) {
 }
 
 // getDomainsFromCache returns the domain names of an IP address from the DNS cache.
-func getDomainsFromCache(ip net.IP, cache *dnscache.DNSCache) []string {
+func getDomainsFromCache(ip net.IP, cache *dns.DNSCache) []string {
 	domains := []string{}
 	if cache != nil {
 		query, err := cache.Get(ip.String())
 		if err != nil {
 			switch err {
-			case dnscache.ErrDNSRecordNotFound, dnscache.ErrDNSRecordExpired:
+			case dns.ErrDNSRecordNotFound, dns.ErrDNSRecordExpired:
 				domains = []string{}
 			default:
 				logger.Debugw("ip lookup error", "ip", ip, "error", err)
@@ -520,42 +520,42 @@ func getProtoICMPv6(icmpv6 *layers.ICMPv6) trace.ProtoICMPv6 {
 }
 
 // getProtoDNS returns the ProtoDNS from the DNS.
-func getProtoDNS(dns *layers.DNS) trace.ProtoDNS {
+func getProtoDNS(dnsLayer *layers.DNS) trace.ProtoDNS {
 	proto := trace.ProtoDNS{
-		ID:           dns.ID,
-		QR:           boolToUint8(dns.QR),
-		OpCode:       strToLower(dns.OpCode.String()),
-		AA:           boolToUint8(dns.AA),
-		TC:           boolToUint8(dns.TC),
-		RD:           boolToUint8(dns.RD),
-		RA:           boolToUint8(dns.RA),
-		Z:            dns.Z,
-		ResponseCode: strToLower(dns.ResponseCode.String()),
-		QDCount:      dns.QDCount,
-		ANCount:      dns.ANCount,
-		NSCount:      dns.NSCount,
-		ARCount:      dns.ARCount,
+		ID:           dnsLayer.ID,
+		QR:           boolToUint8(dnsLayer.QR),
+		OpCode:       strToLower(dnsLayer.OpCode.String()),
+		AA:           boolToUint8(dnsLayer.AA),
+		TC:           boolToUint8(dnsLayer.TC),
+		RD:           boolToUint8(dnsLayer.RD),
+		RA:           boolToUint8(dnsLayer.RA),
+		Z:            dnsLayer.Z,
+		ResponseCode: strToLower(dnsLayer.ResponseCode.String()),
+		QDCount:      dnsLayer.QDCount,
+		ANCount:      dnsLayer.ANCount,
+		NSCount:      dnsLayer.NSCount,
+		ARCount:      dnsLayer.ARCount,
 	}
 
 	// Process all existing questions (if any).
-	proto.Questions = make([]trace.ProtoDNSQuestion, 0, len(dns.Questions))
-	proto.Answers = make([]trace.ProtoDNSResourceRecord, 0, len(dns.Answers))
-	proto.Authorities = make([]trace.ProtoDNSResourceRecord, 0, len(dns.Authorities))
-	proto.Additionals = make([]trace.ProtoDNSResourceRecord, 0, len(dns.Additionals))
+	proto.Questions = make([]trace.ProtoDNSQuestion, 0, len(dnsLayer.Questions))
+	proto.Answers = make([]trace.ProtoDNSResourceRecord, 0, len(dnsLayer.Answers))
+	proto.Authorities = make([]trace.ProtoDNSResourceRecord, 0, len(dnsLayer.Authorities))
+	proto.Additionals = make([]trace.ProtoDNSResourceRecord, 0, len(dnsLayer.Additionals))
 
-	for _, question := range dns.Questions {
+	for _, question := range dnsLayer.Questions {
 		proto.Questions = append(proto.Questions, getProtoDNSQuestion(question))
 	}
 
-	for _, answer := range dns.Answers {
+	for _, answer := range dnsLayer.Answers {
 		proto.Answers = append(proto.Answers, getProtoDNSResourceRecord(answer))
 	}
 
-	for _, auth := range dns.Authorities {
+	for _, auth := range dnsLayer.Authorities {
 		proto.Authorities = append(proto.Authorities, getProtoDNSResourceRecord(auth))
 	}
 
-	for _, add := range dns.Additionals {
+	for _, add := range dnsLayer.Additionals {
 		proto.Additionals = append(proto.Additionals, getProtoDNSResourceRecord(add))
 	}
 

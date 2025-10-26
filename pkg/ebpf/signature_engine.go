@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/dnscache"
+	"github.com/aquasecurity/tracee/pkg/datastores/container"
+	"github.com/aquasecurity/tracee/pkg/datastores/dns"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/findings"
-	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -139,18 +139,18 @@ func (t *Tracee) PrepareBuiltinDataSources() []detect.DataSource {
 	datasources := []detect.DataSource{}
 
 	// Containers Data Source
-	datasources = append(datasources, containers.NewDataSource(t.containers))
+	datasources = append(datasources, container.NewDataSource(t.container))
 
 	// DNS Data Source
 	if t.config.DNSCacheConfig.Enable {
-		datasources = append(datasources, dnscache.NewDataSource(t.dnsCache))
+		datasources = append(datasources, dns.NewDataSource(t.dnsCache))
 	}
 
 	// Process Tree Data Source
 	switch t.config.ProcTree.Source {
-	case proctree.SourceNone:
+	case process.SourceNone:
 	default:
-		datasources = append(datasources, proctree.NewDataSource(t.processTree))
+		datasources = append(datasources, process.NewDataSource(t.processTree))
 	}
 
 	return datasources

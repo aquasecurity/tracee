@@ -1,8 +1,8 @@
 package controlplane
 
 import (
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -95,9 +95,9 @@ func (ctrl *Controller) procTreeForkProcessor(args []trace.Argument) error {
 	}
 
 	// Hashes
-	forkFeed.ParentHash = proctree.HashTaskID(uint32(forkFeed.ParentTid), forkFeed.ParentStartTime)
-	forkFeed.LeaderHash = proctree.HashTaskID(uint32(forkFeed.LeaderTid), forkFeed.LeaderStartTime)
-	forkFeed.ChildHash = proctree.HashTaskID(uint32(forkFeed.ChildTid), forkFeed.ChildStartTime)
+	forkFeed.ParentHash = process.HashTaskID(uint32(forkFeed.ParentTid), forkFeed.ParentStartTime)
+	forkFeed.LeaderHash = process.HashTaskID(uint32(forkFeed.LeaderTid), forkFeed.LeaderStartTime)
+	forkFeed.ChildHash = process.HashTaskID(uint32(forkFeed.ChildTid), forkFeed.ChildStartTime)
 
 	return ctrl.processTree.FeedFromFork(forkFeed)
 }
@@ -202,9 +202,9 @@ func (ctrl *Controller) procTreeExecProcessor(args []trace.Argument) error {
 	}
 
 	// Hashes
-	execFeed.TaskHash = proctree.HashTaskID(uint32(execFeed.HostTid), execFeed.StartTime)
-	execFeed.ParentHash = proctree.HashTaskID(uint32(execFeed.HostPPid), parentStartTime)
-	execFeed.LeaderHash = proctree.HashTaskID(uint32(execFeed.HostPid), leaderStartTime)
+	execFeed.TaskHash = process.HashTaskID(uint32(execFeed.HostTid), execFeed.StartTime)
+	execFeed.ParentHash = process.HashTaskID(uint32(execFeed.HostPPid), parentStartTime)
+	execFeed.LeaderHash = process.HashTaskID(uint32(execFeed.HostPid), leaderStartTime)
 
 	return ctrl.processTree.FeedFromExec(execFeed)
 }
@@ -254,7 +254,7 @@ func (ctrl *Controller) procTreeExitProcessor(args []trace.Argument) error {
 	// }
 
 	// Hash
-	exitFeed.TaskHash = proctree.HashTaskID(uint32(taskPid), startTime)
+	exitFeed.TaskHash = process.HashTaskID(uint32(taskPid), startTime)
 
 	return ctrl.processTree.FeedFromExit(exitFeed)
 }

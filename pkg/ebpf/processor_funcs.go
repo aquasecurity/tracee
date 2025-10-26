@@ -16,10 +16,10 @@ import (
 	"github.com/aquasecurity/tracee/common/fileutil"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/stringutil"
-	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/datastores/container"
+	"github.com/aquasecurity/tracee/pkg/datastores/symbol"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/symbols"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -232,7 +232,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 
 	err := capabilities.GetInstance().EBPF(
 		func() error {
-			newKernelSymbols, err := symbols.NewKernelSymbolTable(true, true, t.requiredKsyms...)
+			newKernelSymbols, err := symbol.NewKernelSymbolTable(true, true, t.requiredKsyms...)
 			if err != nil {
 				return errfmt.WrapError(err)
 			}
@@ -327,7 +327,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	}
 
 	addressUint64 := uint64(address)
-	symbol := t.getKernelSymbols().GetPotentiallyHiddenSymbolByAddr(addressUint64)[0]
+	sym := t.getKernelSymbols().GetPotentiallyHiddenSymbolByAddr(addressUint64)[0]
 	var utsName unix.Utsname
 	arch := ""
 	if err := unix.Uname(&utsName); err != nil {
@@ -338,11 +338,11 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	if err != nil {
 		return err
 	}
-	err = events.SetArgValue(event, "symbol_name", symbol.Name)
+	err = events.SetArgValue(event, "symbol_name", sym.Name)
 	if err != nil {
 		return err
 	}
-	err = events.SetArgValue(event, "symbol_owner", symbol.Owner)
+	err = events.SetArgValue(event, "symbol_owner", sym.Owner)
 	if err != nil {
 		return err
 	}
@@ -376,7 +376,7 @@ func (t *Tracee) addHashArg(event *trace.Event, fileKey *digest.Key) error {
 
 	// Container FS unreachable can happen because of race condition on any system,
 	// so there is no reason to return an error on it
-	if errors.Is(err, containers.ErrContainerFSUnreachable) {
+	if errors.Is(err, container.ErrContainerFSUnreachable) {
 		logger.Debugw("failed to calculate hash", "error", err, "mount NS", event.MountNS)
 		err = nil
 	}

@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/datastores/container"
 	traceeversion "github.com/aquasecurity/tracee/pkg/version"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -113,32 +113,32 @@ func fetchInitNamespaces() map[string]uint32 {
 }
 
 // ExistingContainersEvents returns a list of events for each existing container
-func ExistingContainersEvents(cts *containers.Manager, enrichDisabled bool) []trace.Event {
+func ExistingContainersEvents(cts *container.Manager, enrichDisabled bool) []trace.Event {
 	var events []trace.Event
 
 	def := Core.GetDefinitionByID(ExistingContainer)
 	existingContainers := cts.GetLiveContainers()
-	for id, container := range existingContainers {
+	for id, containerInfo := range existingContainers {
 		cgroupId := uint64(id)
-		cRuntime := container.Runtime.String()
-		containerId := container.ContainerId
-		ctime := container.CreatedAt.UnixNano()
-		container := containers.Container{}
+		cRuntime := containerInfo.Runtime.String()
+		containerId := containerInfo.ContainerId
+		ctime := containerInfo.CreatedAt.UnixNano()
+		enrichedContainer := container.Container{}
 		if !enrichDisabled {
-			container, _ = cts.EnrichCgroupInfo(cgroupId)
+			enrichedContainer, _ = cts.EnrichCgroupInfo(cgroupId)
 		}
 		fields := def.GetFields()
 		args := []trace.Argument{
 			{ArgMeta: fields[0].ArgMeta, Value: cRuntime},
 			{ArgMeta: fields[1].ArgMeta, Value: containerId},
 			{ArgMeta: fields[2].ArgMeta, Value: ctime},
-			{ArgMeta: fields[3].ArgMeta, Value: container.Image},
-			{ArgMeta: fields[4].ArgMeta, Value: container.ImageDigest},
-			{ArgMeta: fields[5].ArgMeta, Value: container.Name},
-			{ArgMeta: fields[6].ArgMeta, Value: container.Pod.Name},
-			{ArgMeta: fields[7].ArgMeta, Value: container.Pod.Namespace},
-			{ArgMeta: fields[8].ArgMeta, Value: container.Pod.UID},
-			{ArgMeta: fields[9].ArgMeta, Value: container.Pod.Sandbox},
+			{ArgMeta: fields[3].ArgMeta, Value: enrichedContainer.Image},
+			{ArgMeta: fields[4].ArgMeta, Value: enrichedContainer.ImageDigest},
+			{ArgMeta: fields[5].ArgMeta, Value: enrichedContainer.Name},
+			{ArgMeta: fields[6].ArgMeta, Value: enrichedContainer.Pod.Name},
+			{ArgMeta: fields[7].ArgMeta, Value: enrichedContainer.Pod.Namespace},
+			{ArgMeta: fields[8].ArgMeta, Value: enrichedContainer.Pod.UID},
+			{ArgMeta: fields[9].ArgMeta, Value: enrichedContainer.Pod.Sandbox},
 		}
 		existingContainerEvent := trace.Event{
 			Timestamp:   int(time.Now().UnixNano()),

@@ -7,9 +7,9 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/datastores/symbol"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/symbols"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -41,11 +41,11 @@ func resetHookedSyscallForTesting() error {
 	return InitHookedSyscall()
 }
 
-func DetectHookedSyscall(kernelSymbols *symbols.KernelSymbolTable) DeriveFunction {
+func DetectHookedSyscall(kernelSymbols *symbol.KernelSymbolTable) DeriveFunction {
 	return deriveMultipleEvents(events.HookedSyscall, deriveDetectHookedSyscallArgs(kernelSymbols))
 }
 
-func deriveDetectHookedSyscallArgs(kernelSymbols *symbols.KernelSymbolTable) multiDeriveArgsFunction {
+func deriveDetectHookedSyscallArgs(kernelSymbols *symbol.KernelSymbolTable) multiDeriveArgsFunction {
 	return func(event *trace.Event) ([][]interface{}, []error) {
 		syscallId, err := parse.ArgVal[int32](event.Args, "syscall_id")
 		if err != nil {

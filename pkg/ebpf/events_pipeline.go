@@ -15,8 +15,8 @@ import (
 	"github.com/aquasecurity/tracee/common/stringutil"
 	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -156,7 +156,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				stackAddresses = t.getStackAddresses(eCtx.StackID)
 			}
 
-			_, containerInfo := t.containers.GetCgroupInfo(eCtx.CgroupID)
+			_, containerInfo := t.container.GetCgroupInfo(eCtx.CgroupID)
 
 			commStr := string(stringutil.TrimTrailingNUL(eCtx.Comm[:]))       // clean potential trailing null
 			utsNameStr := string(stringutil.TrimTrailingNUL(eCtx.UtsName[:])) // clean potential trailing null
@@ -239,15 +239,15 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.Syscall = syscall
 			evt.Metadata = nil
 			// compute hashes using normalized times
-			evt.ThreadEntityId = proctree.HashTaskID(eCtx.HostTid, uint64(evt.ThreadStartTime))
+			evt.ThreadEntityId = process.HashTaskID(eCtx.HostTid, uint64(evt.ThreadStartTime))
 			if eCtx.HostTid == eCtx.HostPid && eCtx.StartTime == eCtx.LeaderStartTime {
 				// If the thread is the leader (i.e., HostTid == HostPid and StartTime == LeaderStartTime),
 				// then ProcessEntityId and ThreadEntityId are identical and can be shared.
 				evt.ProcessEntityId = evt.ThreadEntityId
 			} else {
-				evt.ProcessEntityId = proctree.HashTaskID(eCtx.HostPid, timeutil.BootToEpochNS(eCtx.LeaderStartTime))
+				evt.ProcessEntityId = process.HashTaskID(eCtx.HostPid, timeutil.BootToEpochNS(eCtx.LeaderStartTime))
 			}
-			evt.ParentEntityId = proctree.HashTaskID(eCtx.HostPpid, timeutil.BootToEpochNS(eCtx.ParentStartTime))
+			evt.ParentEntityId = process.HashTaskID(eCtx.HostPpid, timeutil.BootToEpochNS(eCtx.ParentStartTime))
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.

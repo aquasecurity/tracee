@@ -7,14 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/datastores/symbol"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/symbols"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // createTestKernelSymbolTable creates a KernelSymbolTable from a string for testing
-func createTestKernelSymbolTable(symbolData string) (*symbols.KernelSymbolTable, error) {
-	return symbols.NewKernelSymbolTableFromReader(strings.NewReader(symbolData), false, false)
+func createTestKernelSymbolTable(symbolData string) (*symbol.KernelSymbolTable, error) {
+	return symbol.NewKernelSymbolTableFromReader(strings.NewReader(symbolData), false, false)
 }
 
 func Test_HookedSeqOps_Derive(t *testing.T) {
