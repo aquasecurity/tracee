@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -25,7 +26,8 @@ type DNSCache struct {
 	queryRoots   *lru.Cache[string, *dnsNode]
 	queryIndices map[string]*dnsNode
 
-	lock *sync.RWMutex
+	lock           *sync.RWMutex
+	lastAccessNano atomic.Int64 // last datastore access time (Unix nano)
 }
 
 type Config struct {

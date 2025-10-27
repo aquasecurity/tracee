@@ -3,6 +3,7 @@ package process
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -80,6 +81,7 @@ type ProcessTree struct {
 	procfsOnce        *sync.Once                     // busy loop debug message throttling
 	ctx               context.Context                // context for the process tree
 	procfsQuery       bool
+	lastAccessNano    atomic.Int64 // last datastore access time (Unix nano)
 
 	// mutexes
 	processesThreadsMtx  sync.RWMutex
