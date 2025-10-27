@@ -10,4 +10,4 @@ sudo lsmod | grep -q hooker && {
     exit 0
 }
 
-insmod ./hooker.ko "commit_creds"
+insmod ./hooker.ko symbol="commit_creds"

@@ -150,8 +150,7 @@ for TEST in $TESTS; do
             skip_hooked_syscall=1
             continue
         fi
-        info "setting up hooked_syscall test"
-        "${TESTS_DIR}"/hooked_syscall.sh
+        ./tests/e2e-inst-signatures/scripts/hooked_syscall.sh --build --install
         ;;
     FTRACE_HOOK)
         if [[ ! -d /lib/modules/${KERNEL}/build ]]; then
@@ -169,8 +168,7 @@ for TEST in $TESTS; do
             skip_ftrace_hook=1
             continue
         fi
-        info "setting up ftrace_hook test"
-        "${TESTS_DIR}"/ftrace_hook.sh
+        ./tests/e2e-inst-signatures/scripts/ftrace_hook.sh --build
         ;;
     SECURITY_PATH_NOTIFY)
         if ! grep -qw "security_path_notify" /proc/kallsyms; then
@@ -213,7 +211,6 @@ tracee_command="./dist/tracee \
                     --dnscache enable \
                     --server grpc-address=unix:/tmp/tracee.sock \
                     --policy ./tests/policies/inst/"
-
 
 eval "$tracee_command &"
 
@@ -288,14 +285,35 @@ for TEST in $TESTS; do
         continue
     fi
 
-    info "running test $TEST"
-    timeout --preserve-status $TRACEE_RUN_TIMEOUT "${TESTS_DIR}"/"${TEST,,}".sh
+    case $TEST in
+        HOOKED_SYSCALL)
+            info "unloading hijack module that was loaded before Tracee started"
+            test_args="--uninstall"
+            ;;
+         FTRACE_HOOK)
+            info "loading and unloading ftrace hook module"
+            test_args="--install --uninstall"
+            ;;
+         *)
+            info "running test $TEST"
+            test_args=""
+            ;;
+    esac
+
+    timeout --preserve-status $TRACEE_RUN_TIMEOUT "${TESTS_DIR}"/"${TEST,,}".sh ${test_args}
 done
 
 # Wait for all events to be processed and signatures to complete.
-# PROCTREE_DATA_SOURCE signature has an internal 15-second sleep on first event
-# (see e2e-proctree_data_source.go:86) to allow process tree lineage to populate.
-sleep 20
+# - PROCTREE_DATA_SOURCE signature has an internal 15-second sleep on first event
+#   (see e2e-proctree_data_source.go) to allow process tree lineage to populate.
+WAITFOR=5
+if [[ "$TESTS" == *"PROCTREE_DATA_SOURCE"* ]]; then
+    WAITFOR=$(( WAITFOR + 15 ))
+    info "PROCTREE_DATA_SOURCE detected, waiting ${WAITFOR} seconds for process tree population"
+else
+    info "waiting ${WAITFOR} seconds for event processing"
+fi
+sleep "${WAITFOR}"
 
 # Stop tracee
 # Make sure we exit tracee before checking output and log files
@@ -347,16 +365,57 @@ for TEST in $TESTS; do
         else
             info "LSM not supported: probe cancellation message not found"
         fi
-    else
-        # Normal test: look for events in output
-        cat $outputfile | jq .eventName | grep -q "$TEST" && found=1
     fi
-    
-    errors=$(cat $logfile | wc -l 2>/dev/null)
 
-    if [[ $TEST == "BPF_ATTACH" ]]; then
-        errors=0
-    fi
+    # Normal test: look for events in output with specific criteria
+    case "${TEST}" in
+        "FTRACE_HOOK")
+            # Check for FTRACE_HOOK event with symbol="commit_creds"
+            if cat ${outputfile} | jq -s '
+                any(
+                    .eventName == "FTRACE_HOOK" and 
+                    (
+                        .args[] | 
+                        select(.name == "detectedFrom").value.args[] | 
+                        select(.name == "symbol").value == "commit_creds"
+                    )
+                )
+            ' | grep -q true; then
+                found=1
+            fi
+            ;;
+        "HOOKED_SYSCALL")
+            # Check for HOOKED_SYSCALL event with syscall="uname"
+            if cat ${outputfile} | jq -s '
+                any(
+                    .eventName == "HOOKED_SYSCALL" and 
+                    (
+                        .args[] | 
+                        select(.name == "detectedFrom").value.args[] | 
+                        select(.name == "syscall").value == "uname"
+                    )
+                )
+            ' | grep -q true; then
+                found=1
+            fi
+            ;;
+        *)
+            # Default check: just look for event name
+            #
+            # This is not robust since other test triggers might be emitting events
+            # expected by unrelated detections.
+            #
+            # TODO:
+            # A more reliable approach would be to modify the tested signatures to
+            # only detect events from our controlled test triggers, for example by
+            # filtering based on process name or command line arguments.
+            if cat ${outputfile} | jq -s '
+                any(.eventName == "'"${TEST}"'")
+            ' | grep -q true; then
+                found=1
+            fi
+            ;;
+        esac
 
     info
     if [[ $found -eq 1 ]]; then
