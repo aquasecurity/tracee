@@ -74,7 +74,7 @@ if [[ "$INSTALL" == "true" ]]; then
             exit 0
         fi
 
-        echo "ftrace hooke module already loaded, unloading to install new version..."
+        echo "ftrace hook module already loaded, unloading to install new version..."
         ./unload.sh || exit_err "could not unload module"
     fi
 

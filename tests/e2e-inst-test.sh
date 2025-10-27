@@ -178,7 +178,7 @@ for TEST in $TESTS; do
         fi
         ;;
     SUSPICIOUS_SYSCALL_SOURCE|STACK_PIVOT)
-        if cat /proc/kallsyms | grep -qP "trace.*vma_store"; then
+        if grep -qP "trace.*vma_store" /proc/kallsyms; then
             info "skip $TEST test on kernel $(uname -r) (VMAs stored in maple tree)"
             skip_suspicious_syscall_source=1
             skip_stack_pivot=1
@@ -199,53 +199,20 @@ for TEST in $TESTS; do
     esac
 done
 
-tracee_command="./dist/tracee \
-                    --install-path $TRACEE_TMP_DIR \
-                    --proctree source=both \
-                    --output option:sort-events \
-                    --output option:parse-arguments \
-                    --output json:$outputfile \
-                    --log debug \
-                    --log file:$logfile \
-                    --signatures-dir "$SIG_DIR" \
-                    --dnscache enable \
-                    --server grpc-address=unix:/tmp/tracee.sock \
-                    --policy ./tests/policies/inst/"
-
-eval "$tracee_command &"
-
-# Wait tracee to start
-
-times=0
-timedout=0
-while true; do
-    times=$((times + 1))
-    sleep 1
-    if [[ -f $TRACEE_TMP_DIR/tracee.pid ]]; then
-        info
-        info "UP AND RUNNING"
-        info
-        break
-    fi
-
-    if [[ $times -gt $TRACEE_STARTUP_TIMEOUT ]]; then
-        timedout=1
-        break
-    fi
-done
-
-# Tracee failed to start
-
-if [[ $timedout -eq 1 ]]; then
-    info
-    info "$TEST: timed out"
-    info "$TEST: FAILED. ERRORS:"
-    info
-    anyerror="${anyerror}$TEST,"
-    filter_critical_logs "$logfile"
-
-    exit 1
-fi
+./scripts/tracee_start.sh \
+    -i "${TRACEE_TMP_DIR}" \
+    -o "${outputfile}" \
+    -l "${logfile}" \
+    -L debug \
+    -t "${TRACEE_STARTUP_TIMEOUT}" \
+    -- \
+    --signatures-dir "${SIG_DIR}" \
+    --output option:sort-events \
+    --output option:parse-arguments \
+    --proctree source=both \
+    --dnscache enable \
+    --server grpc-address=unix:/tmp/tracee.sock \
+    --policy ./tests/policies/inst/
 
 # Give tracee time to start processing events and initialize data sources
 sleep 5
@@ -318,10 +285,9 @@ sleep "${WAITFOR}"
 # Stop tracee
 # Make sure we exit tracee before checking output and log files
 
-mapfile -t tracee_pids < <(pgrep -x tracee)
-kill -SIGINT "${tracee_pids[@]}"
-sleep $TRACEE_SHUTDOWN_TIMEOUT
-kill -SIGKILL "${tracee_pids[@]}" >/dev/null 2>&1
+./scripts/tracee_stop.sh \
+    -i "${TRACEE_TMP_DIR}" \
+    -t "${TRACEE_SHUTDOWN_TIMEOUT}"
 
 anyerror=""
 info "= CHECKING TESTS RESULTS ======================================"
@@ -356,7 +322,7 @@ for TEST in $TESTS; do
         if grep -q "Probe failed due to incompatible probe" $logfile && \
            grep -q 'Failing event.*lsm_test' $logfile; then
             # Verify event is not present in output (should not be)
-            if ! cat $outputfile | jq .eventName | grep -q "$TEST"; then
+            if ! jq -s 'any(.eventName == "'"${TEST}"'")' "${outputfile}" | grep -q true; then
                 found=1
                 info "LSM not supported: verified probe cancellation and event not present"
             else
@@ -371,7 +337,7 @@ for TEST in $TESTS; do
     case "${TEST}" in
         "FTRACE_HOOK")
             # Check for FTRACE_HOOK event with symbol="commit_creds"
-            if cat ${outputfile} | jq -s '
+            if jq -s '
                 any(
                     .eventName == "FTRACE_HOOK" and 
                     (
@@ -380,13 +346,13 @@ for TEST in $TESTS; do
                         select(.name == "symbol").value == "commit_creds"
                     )
                 )
-            ' | grep -q true; then
+            ' "${outputfile}" | grep -q true; then
                 found=1
             fi
             ;;
         "HOOKED_SYSCALL")
             # Check for HOOKED_SYSCALL event with syscall="uname"
-            if cat ${outputfile} | jq -s '
+            if jq -s '
                 any(
                     .eventName == "HOOKED_SYSCALL" and 
                     (
@@ -395,7 +361,7 @@ for TEST in $TESTS; do
                         select(.name == "syscall").value == "uname"
                     )
                 )
-            ' | grep -q true; then
+            ' "${outputfile}" | grep -q true; then
                 found=1
             fi
             ;;
@@ -409,9 +375,7 @@ for TEST in $TESTS; do
             # A more reliable approach would be to modify the tested signatures to
             # only detect events from our controlled test triggers, for example by
             # filtering based on process name or command line arguments.
-            if cat ${outputfile} | jq -s '
-                any(.eventName == "'"${TEST}"'")
-            ' | grep -q true; then
+            if jq -s 'any(.eventName == "'"${TEST}"'")' "${outputfile}" | grep -q true; then
                 found=1
             fi
             ;;
