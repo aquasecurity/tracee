@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 	"unsafe"
@@ -40,13 +41,14 @@ type Pod struct {
 
 // Manager contains information about running containers in the host.
 type Manager struct {
-	cgroups      *cgroup.Cgroups
-	cgroupsMap   map[uint32]CgroupDir
-	containerMap map[string]Container
-	deleted      []uint64
-	lock         sync.RWMutex // protecting both cgroups and deleted fields
-	enricher     runtime.Service
-	bpfMapName   string
+	cgroups        *cgroup.Cgroups
+	cgroupsMap     map[uint32]CgroupDir
+	containerMap   map[string]Container
+	deleted        []uint64
+	lock           sync.RWMutex // protecting both cgroups and deleted fields
+	enricher       runtime.Service
+	bpfMapName     string
+	lastAccessNano atomic.Int64 // last datastore access time (Unix nano)
 }
 
 // CgroupDir represents a cgroup dir (which may be a container cgroup dir).
@@ -579,7 +581,7 @@ func (c *Manager) RemoveContainer(cont Container) error {
 	return nil
 }
 
-func (c *Manager) GetContainer(containerId string) (Container, error) {
+func (c *Manager) LookupContainer(containerId string) (Container, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	cont, ok := c.containerMap[containerId]
