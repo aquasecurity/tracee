@@ -31,7 +31,7 @@ static int __init hooker_init(void)
 
     ret = register_kprobe(&kp);
     if (ret < 0) {
-        pr_err("hooker:register_kprobe failed, returned %d\n", ret);
+        pr_err("hooker: register_kprobe failed, returned %d\n", ret);
         return ret;
     }
     pr_info("hooker: Planted kprobe at %p\n", kp.addr);

@@ -2,10 +2,11 @@
 
 exit_err() {
     echo -n "ERROR: "
-    echo $@
+    echo "$@"
     exit 1
 }
 
-touch vfs_write.txt
+file_path="vfs_write.txt"
+touch "${file_path}"
 
-`which echo` write content >> vfs_write.txt || exit_err "failed writing to file"
+$(which echo) "write content" >> "${file_path}" || exit_err "failed writing to ${file_path}"

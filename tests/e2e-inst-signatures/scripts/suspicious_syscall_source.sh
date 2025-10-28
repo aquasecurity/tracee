@@ -6,10 +6,47 @@ exit_err() {
     exit 1
 }
 
+info() {
+    echo -n "INFO: "
+    echo "$@"
+}
+
 prog=sys_src_tester
 dir=tests/e2e-inst-signatures/scripts
-gcc $dir/$prog.c -pthread -o $dir/$prog -z execstack || exit_err "could not compile $prog.c"
-./$dir/$prog stack 2>&1 > /tmp/$prog.log || exit_err "could not run $prog"
-./$dir/$prog heap 2>&1 > /tmp/$prog.log || exit_err "could not run $prog"
-./$dir/$prog mmap 2>&1 > /tmp/$prog.log || exit_err "could not run $prog"
-./$dir/$prog thread-stack 2>&1 > /tmp/$prog.log || exit_err "could not run $prog"
+
+# Parse command line arguments
+BUILD=false
+RUN=true
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --build)
+            BUILD=true
+            RUN=false
+            shift
+            ;;
+        --run)
+            RUN=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--build] [--run]"
+            exit 1
+            ;;
+    esac
+done
+
+# Build phase: compile the program
+if [[ "${BUILD}" == "true" ]]; then
+    info "compiling ${prog}..."
+    gcc "${dir}/${prog}.c" -pthread -o "${dir}/${prog}" -z execstack || exit_err "could not compile ${prog}.c"
+fi
+
+# Run phase: execute the program with different arguments
+if [[ "$RUN" == "true" ]]; then
+    "./${dir}/${prog}" stack || exit_err "could not run ${prog}"
+    "./${dir}/${prog}" heap || exit_err "could not run ${prog}"
+    "./${dir}/${prog}" mmap || exit_err "could not run ${prog}"
+    "./${dir}/${prog}" thread-stack || exit_err "could not run ${prog}"
+fi

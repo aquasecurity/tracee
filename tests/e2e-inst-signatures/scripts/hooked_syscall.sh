@@ -1,11 +1,14 @@
 #!/usr/bin/bash -e
 
-KERNEL_VERSION=$(uname -r)
-
 exit_err() {
     echo -n "ERROR: "
     echo "$@"
     exit 1
+}
+
+info() {
+    echo -n "INFO: "
+    echo "$@"
 }
 
 usage() {
@@ -57,37 +60,33 @@ else
     done
 fi
 
-. /etc/os-release
-
 dir="tests/e2e-inst-signatures/scripts/hijack"
 cd $dir || exit_err "could not cd to $dir"
 
 if [[ "$BUILD" == "true" ]]; then
-    echo "Building syscall hijack module..."
+    info "building syscall hijack module..."
     make clean && make || exit_err "could not build module"
 fi
 
 if [[ "$INSTALL" == "true" ]]; then
     if lsmod | grep -q hijack; then
         if [[ "${BUILD}" == "false" ]]; then
-            echo "hijack module already loaded, skipping installation"
+            info "hijack module already loaded, skipping installation"
             exit 0
         fi
 
-        echo "hijack module already loaded, unloading to install new version..."
-        ./unload.sh || exit_err "could not unload module"
+        info "hijack module already loaded, unloading to install new version..."
+        ./unload.sh || exit_err "could not unload hijack module"
     fi
 
-    echo "Installing syscall hijack module..."
     ./load.sh || exit_err "could not load module"
-    
+
     # Sleep a bit to allow module to load
-    sleep 5
-    lsmod | grep hijack || exit_err "module not loaded"
-    echo "Module loaded and triggered successfully"
+    sleep_time=${E2E_INST_TEST_SLEEP:-5}
+    sleep "${sleep_time}"
+    lsmod | grep -q hijack > /dev/null || exit_err "hijack module not loaded"
 fi
 
-if [[ "$UNINSTALL" == "true" ]]; then
-    echo "Uninstalling syscall hijack module..."
-    ./unload.sh || exit_err "could not unload module"
+if [[ "${UNINSTALL}" == "true" ]]; then
+    ./unload.sh || exit_err "could not unload hijack module"
 fi

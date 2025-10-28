@@ -57,7 +57,7 @@ func (sig *e2eContainersDataSource) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		if pathname != "/usr/bin/ls" {
+		if pathname != "/bin/ls" {
 			return nil
 		}
 
