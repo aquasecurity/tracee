@@ -28,6 +28,7 @@ import (
 	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/pkg/datastores"
 	"github.com/aquasecurity/tracee/pkg/datastores/container"
 	"github.com/aquasecurity/tracee/pkg/datastores/dns"
 	"github.com/aquasecurity/tracee/pkg/datastores/process"
@@ -114,6 +115,8 @@ type Tracee struct {
 	processTree *process.ProcessTree
 	// DNS Cache
 	dnsCache *dns.DNSCache
+	// DataStore Registry
+	dataStoreRegistry *datastores.Registry
 	// Specific Events Needs
 	triggerContexts trigger.Context
 	readyCallback   func(gocontext.Context)
@@ -148,6 +151,11 @@ func (t *Tracee) getKernelSymbols() *symbol.KernelSymbolTable {
 
 func (t *Tracee) setKernelSymbols(kernelSymbols *symbol.KernelSymbolTable) {
 	t.kernelSymbols.Store(kernelSymbols)
+}
+
+// DataStores returns the datastore registry for accessing system state information
+func (t *Tracee) DataStores() *datastores.Registry {
+	return t.dataStoreRegistry
 }
 
 // New creates a new Tracee instance based on a given valid Config. It is expected that it won't
@@ -416,6 +424,31 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize kernel symbols extensions phase
 	if err := t.extensions.InitExtensionsForPhase(ctx, t, InitPhaseKernelSymbols); err != nil {
 		return err
+	}
+
+	// Initialize DataStore Registry
+
+	t.dataStoreRegistry = datastores.NewRegistry()
+
+	// Register core datastores
+	if err := t.dataStoreRegistry.RegisterStore("process", t.processTree, true); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	if err := t.dataStoreRegistry.RegisterStore("container", t.container, true); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// DNS cache is optional (only initialized if DNSCacheConfig.Enable is true)
+	if err := t.dataStoreRegistry.RegisterStore("dns", t.dnsCache, false); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Kernel symbols can be hot-reloaded at runtime, so we use an adapter
+	// that always fetches the current symbol table
+	kernelSymbolAdapter := symbol.NewAdapter(t.getKernelSymbols)
+	if err := t.dataStoreRegistry.RegisterStore("symbol", kernelSymbolAdapter, true); err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	// Initialize time
