@@ -167,6 +167,10 @@ const (
 	ChmodCommon
 	SecuritySbUmount
 	SecurityTaskPrctl
+	FentrySecuritySocketRecvmsg
+	FentrySecuritySocketSendmsg
+	NewCgroupSKBIngress
+	NewCgroupSKBEgress
 )
 
 // Test probe handles

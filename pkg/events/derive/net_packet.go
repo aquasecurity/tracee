@@ -12,7 +12,7 @@ import (
 //
 
 func NetPacketIPv4() DeriveFunction {
-	return deriveSingleEvent(events.NetPacketIPv4,
+	return deriveSingleEvent(events.LegacyNetPacketIPv4,
 		func(event *trace.Event) ([]interface{}, error) {
 			layer3TypeFlag, _ := getLayer3TypeFlagFromEvent(event)
 			if layer3TypeFlag != familyIPv4 {

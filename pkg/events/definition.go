@@ -93,6 +93,7 @@ func (d Definition) IsSignature() bool {
 }
 
 func (d Definition) IsNetwork() bool {
+	// TODO: fix this logic
 	if d.id >= NetPacketIPv4 && d.id <= MaxUserNetID {
 		return true
 	}

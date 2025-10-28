@@ -97,6 +97,7 @@ func NewTypeDecoder() TypeDecoder {
 		data.BOOL_T:     {},
 		data.FLOAT_T:    {},
 		data.FLOAT64_T:  {},
+		data.IPV4_T:     {},
 	}
 
 	return typeDecoder

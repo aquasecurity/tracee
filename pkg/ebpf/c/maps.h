@@ -743,4 +743,14 @@ struct signals {
 
 typedef struct signals signals_t;
 
+// socket-local storage
+struct {
+    __uint(type, BPF_MAP_TYPE_SK_STORAGE);
+    __uint(map_flags, BPF_F_NO_PREALLOC);
+    __type(key, u32);
+    __type(value, socket_storage_t);
+} socket_local_storage SEC(".maps");
+
+typedef struct socket_local_storage socket_local_storage_t;
+
 #endif /* __MAPS_H__ */
