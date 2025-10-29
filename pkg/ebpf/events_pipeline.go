@@ -8,6 +8,7 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/bitwise"
 	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/errfmt"
@@ -68,6 +69,12 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 
 	eventsChan, errc = t.deriveEvents(ctx, eventsChan)
 	t.stats.Channels["derive"] = eventsChan
+	errcList = append(errcList, errc)
+
+	// Detect events stage: events go through the detector engine for detection.
+
+	eventsChan, errc = t.detectEvents(ctx, eventsChan)
+	t.stats.Channels["detect"] = eventsChan
 	errcList = append(errcList, errc)
 
 	// Engine events stage: events go through the signatures engine for detection.
@@ -522,6 +529,90 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					t.processEvent(event)
 					out <- event
 				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return out, errc
+}
+
+// detectEvents is the detector dispatch pipeline stage. For each received event, it dispatches
+// the event to registered detectors that are interested in it. Detectors can produce new events
+// (derived or threat events) that flow through the pipeline. Supports detector chains with
+// breadth-first processing up to a maximum depth to prevent infinite loops.
+func (t *Tracee) detectEvents(ctx context.Context, in <-chan *trace.Event) (
+	<-chan *trace.Event, <-chan error,
+) {
+	out := make(chan *trace.Event, t.config.PipelineChannelSize)
+	errc := make(chan error, 1)
+
+	// Maximum depth for detector chains (prevents infinite loops)
+	// Expected: raw event → derived event → threat event → threat event (depth 4)
+	const maxDetectorChainDepth = 5
+
+	go func() {
+		defer close(out)
+		defer close(errc)
+
+		for {
+			select {
+			case event := <-in:
+				if event == nil {
+					continue
+				}
+
+				// Send original event down the pipeline first
+				out <- event
+
+				// Convert trace.Event to v1beta1.Event for detector API
+				v1Event := events.ConvertToProto(*event)
+
+				// Process event through detector chain using breadth-first traversal
+				queue := []*v1beta1.Event{v1Event}
+
+				for depth := 0; depth < maxDetectorChainDepth && len(queue) > 0; depth++ {
+					var nextDepth []*v1beta1.Event
+
+					// Process all events at current depth
+					for _, evt := range queue {
+						// Dispatch to detectors
+						outputs, err := t.detectorEngine.DispatchToDetectors(ctx, evt)
+						if err != nil {
+							t.handleError(err)
+							continue
+						}
+
+						// Filter and route outputs
+						for _, output := range outputs {
+							// Convert v1beta1.Event back to trace.Event
+							traceEvent := events.ConvertFromProto(output)
+
+							// Apply policy filtering to detector outputs
+							if t.matchPolicies(traceEvent) == 0 {
+								continue // Skip events not matching policy
+							}
+
+							// Send to output
+							out <- traceEvent
+
+							// Queue for next depth - any detector output might be consumed by other detectors
+							nextDepth = append(nextDepth, output)
+						}
+					}
+
+					queue = nextDepth
+				}
+
+				// Safety check - log if max depth exceeded
+				if len(queue) > 0 {
+					_ = t.stats.ErrorCount.Increment()
+					logger.Errorw("Exceeded max detector chain depth",
+						"max_depth", maxDetectorChainDepth,
+						"remaining_events", len(queue))
+				}
+
 			case <-ctx.Done():
 				return
 			}
