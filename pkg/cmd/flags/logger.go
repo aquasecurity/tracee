@@ -37,7 +37,7 @@ func logHelp() string {
 Possible options:
   --log aggregate.enable            			    | turns log aggregation on
   --log aggregate.flush-interval    				| delaying output with an optional interval (s, m) (default: 3s)
-  --log level=<debug|info|warn|error|panic> 		| set log level, info is the default
+  --log level=<debug|info|warn|error|fatal> 		| set log level, info is the default
   --log file=/path/to/file            				| write the logs to a specified file. create/trim the file if exists (default: stderr)
   --log filter.include.<option;...>          		| Filters in logs that match the specified option values.
   --log filter.exclude.<option;...>       			| Filters out logs that match the specified option values.
@@ -122,6 +122,12 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 		if len(logParts) < 2 {
 			// split log flag by "=" for level and file
 			logParts = strings.SplitN(opt, "=", 2)
+		} else {
+			// check if the first part is a known option that uses "=" syntax
+			if strings.HasPrefix(logParts[0], LogLevel+"=") || strings.HasPrefix(logParts[0], LogFile+"=") {
+				// re-split by "=" for level and file options
+				logParts = strings.SplitN(opt, "=", 2)
+			}
 		}
 
 		switch logParts[0] {

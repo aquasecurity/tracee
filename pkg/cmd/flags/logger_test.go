@@ -177,6 +177,39 @@ func TestPrepareLogger(t *testing.T) {
 			expectedReturn: logger.LoggingConfig{},
 			expectedError:  invalidLogOptionValue(nil, "file:", false),
 		},
+		// valid log file with dots in path (regression test for parsing bug)
+		{
+			testName:   "valid log file with dots in path",
+			logOptions: []string{"file=/tmp/test.log"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "valid log file with multiple dots in path",
+			logOptions: []string{"file=/tmp/tracee.2024.01.15.log"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "valid log file with dots in directory path",
+			logOptions: []string{"file=/tmp/.tracee/logs/tracee.log"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "valid log file with complex path",
+			logOptions: []string{"file=/tmp/tracee-2024.01.15-14.30.45.log"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
 
 		// valid exclude filter options
 		{
