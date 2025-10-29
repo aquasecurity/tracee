@@ -224,6 +224,23 @@ const (
 	// MaxSignalID (5499)
 )
 
+// Detector events (new detector system)
+const (
+	StartDetectorID ID = 7000
+	MaxDetectorID   ID = 7999
+)
+
+// LookupPredefinedEventID looks up an event name in the event definitions
+// Returns the predefined ID if found, or 0 if not found
+// This is used by the detector registry to check if an event is predefined
+func LookupPredefinedEventID(eventName string) ID {
+	id, found := Core.GetDefinitionIDByName(eventName)
+	if !found {
+		return 0
+	}
+	return id
+}
+
 // Test events
 const (
 	ExecTest ID = iota + StartTestID
