@@ -11,7 +11,7 @@ tracee **\-\-log** - Control logger options - aggregation and level priority
 
 ## SYNOPSIS
 
-tracee **\-\-log** aggregate.flush-interval=<time\>| aggregate.enable=<true|false\> | level=<debug|info|warn|error|panic\> | file=/path/to/file | filter.include.[msg=<value,...\>] | filter.include.[regex=<value,...\>] | filter.include.[pkg=<value,...\>] | filter.include.[file=<value,...\>] | filter.include.[lvl=<value,...\>] | filter.include.[libbpf] | filter.exclude.[msg=<value,...\>] | filter.exclude.[regex=<value,...\>] | filter.exclude.[pkg=<value,...\>] | filter.exclude.[file=<value,...\>] | filter.exclude.[lvl=<value,...\>] | filter.exclude.[libbpf]
+tracee **\-\-log** aggregate.flush-interval=<time\>| aggregate.enable=<true|false\> | level=<debug|info|warn|error|fatal\> | file=/path/to/file | filter.include.[msg=<value,...\>] | filter.include.[regex=<value,...\>] | filter.include.[pkg=<value,...\>] | filter.include.[file=<value,...\>] | filter.include.[lvl=<value,...\>] | filter.include.[libbpf] | filter.exclude.[msg=<value,...\>] | filter.exclude.[regex=<value,...\>] | filter.exclude.[pkg=<value,...\>] | filter.exclude.[file=<value,...\>] | filter.exclude.[lvl=<value,...\>] | filter.exclude.[libbpf]
 
 
 ## DESCRIPTION
@@ -22,7 +22,7 @@ Possible log options:
 
 - **aggregate.flush-interval=[time] | aggregate.enable=[true|false]**: Turns log aggregation on, delaying output with an optional interval (default: 3s). The flush-interval can be specified in seconds (s) or minutes (m).
 
-- **level=<debug|info|warn|error|panic\>**: Sets the log level. The default log level is 'info'.
+- **level=<debug|info|warn|error|fatal\>**: Sets the log level. The default log level is 'info'.
 
 - **file=/path/to/file**: Writes the logs to the specified file. If the file exists, it will be created or trimmed.
 

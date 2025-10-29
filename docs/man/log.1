@@ -6,7 +6,7 @@ tracee \f[B]\-\-log\f[R] \- Control logger options \- aggregation and
 level priority
 .SS SYNOPSIS
 tracee \f[B]\-\-log\f[R] aggregate.flush\-interval=<time>|
-aggregate.enable=<true|false> | level=<debug|info|warn|error|panic> |
+aggregate.enable=<true|false> | level=<debug|info|warn|error|fatal> |
 file=/path/to/file | filter.include.[msg=<value,\&...>] |
 filter.include.[regex=<value,\&...>] |
 filter.include.[pkg=<value,\&...>] | filter.include.[file=<value,\&...>]
@@ -26,7 +26,7 @@ aggregate.enable=[true|false]\f[R]: Turns log aggregation on, delaying
 output with an optional interval (default: 3s).
 The flush\-interval can be specified in seconds (s) or minutes (m).
 .IP \[bu] 2
-\f[B]level=<debug|info|warn|error|panic>\f[R]: Sets the log level.
+\f[B]level=<debug|info|warn|error|fatal>\f[R]: Sets the log level.
 The default log level is `info'.
 .IP \[bu] 2
 \f[B]file=/path/to/file\f[R]: Writes the logs to the specified file.
