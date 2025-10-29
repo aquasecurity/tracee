@@ -80,7 +80,7 @@ log:
 log:
     filter: 
         include: 
-            level: 
+            lvl:
                 - error
 ```
 
@@ -102,6 +102,6 @@ For instance, the following configuration would exclude all logs with the severi
 log:
     filter: 
         exclude:
-            level: 
+            lvl:
                 - error
 ```
