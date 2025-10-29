@@ -106,11 +106,100 @@ func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta
 				Workload:  inputEvent.Workload,
 			}
 
-			// TODO: Apply auto-population (Threat, DetectedFrom, Policies) based on detector definition
+			// Apply auto-population based on detector definition
+			d.autoPopulateFields(event, inputEvent, detector)
 
 			outputEvents = append(outputEvents, event)
 		}
 	}
 
 	return outputEvents, nil
+}
+
+// autoPopulateFields applies declarative field population from detector definition.
+// This enriches detector outputs based on AutoPopulateFields configuration.
+func (d *dispatcher) autoPopulateFields(output, input *v1beta1.Event, detector *entry) {
+	autoPop := detector.definition.AutoPopulate
+
+	// Threat field - copy from ThreatMetadata (immutable)
+	// Always copied as-is, never customized at runtime
+	if autoPop.Threat && detector.definition.ThreatMetadata != nil {
+		// Clone to prevent shared references
+		output.Threat = cloneThreat(detector.definition.ThreatMetadata)
+	}
+
+	// DetectedFrom field - reference to input event
+	// Only populate if detector hasn't set it (rare override case)
+	if autoPop.DetectedFrom && output.DetectedFrom == nil {
+		output.DetectedFrom = &v1beta1.DetectedFrom{
+			Id:   uint32(input.Id),
+			Name: input.Name,
+		}
+		// Copy input event data for audit trail
+		if len(input.Data) > 0 {
+			output.DetectedFrom.Data = make([]*v1beta1.EventValue, len(input.Data))
+			copy(output.DetectedFrom.Data, input.Data)
+		}
+	}
+
+	// ProcessAncestry - populate from data store (expensive, opt-in)
+	// TODO: Implement when ProcessStore has GetAncestry() method
+	// if autoPop.ProcessAncestry && output.Workload != nil && output.Workload.Process != nil {
+	//     if len(output.Workload.Process.Ancestors) == 0 {
+	//         // Query process store for ancestry (depth: 5)
+	//         // output.Workload.Process.Ancestors = ...
+	//     }
+	// }
+}
+
+// cloneThreat creates a deep copy of Threat metadata
+func cloneThreat(t *v1beta1.Threat) *v1beta1.Threat {
+	if t == nil {
+		return nil
+	}
+
+	clone := &v1beta1.Threat{
+		Name:        t.Name,
+		Description: t.Description,
+		Severity:    t.Severity,
+	}
+
+	// Clone MITRE ATT&CK data
+	if t.Mitre != nil {
+		clone.Mitre = &v1beta1.Mitre{
+			Tactic:    cloneMitreTactic(t.Mitre.Tactic),
+			Technique: cloneMitreTechnique(t.Mitre.Technique),
+		}
+	}
+
+	// Clone properties map
+	if len(t.Properties) > 0 {
+		clone.Properties = make(map[string]string, len(t.Properties))
+		for k, v := range t.Properties {
+			clone.Properties[k] = v
+		}
+	}
+
+	return clone
+}
+
+// cloneMitreTactic clones a MITRE tactic
+func cloneMitreTactic(t *v1beta1.MitreTactic) *v1beta1.MitreTactic {
+	if t == nil {
+		return nil
+	}
+	return &v1beta1.MitreTactic{
+		Name: t.Name,
+	}
+}
+
+// cloneMitreTechnique clones a MITRE technique
+func cloneMitreTechnique(t *v1beta1.MitreTechnique) *v1beta1.MitreTechnique {
+	if t == nil {
+		return nil
+	}
+	return &v1beta1.MitreTechnique{
+		Id:   t.Id,
+		Name: t.Name,
+	}
 }
