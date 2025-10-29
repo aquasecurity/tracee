@@ -31,7 +31,7 @@ func Test_convertEventWithProcessWorkload(t *testing.T) {
 		EventName:           "eventTest",
 		MatchedPolicies:     []string{"policyTest"},
 		Syscall:             "syscall",
-		ContextFlags:        trace.ContextFlags{ContainerStarted: true},
+		ContextFlags:        trace.ContextFlags{ContainerStarted: true, IsCompat: true},
 		ThreadEntityId:      9,
 		ProcessEntityId:     10,
 		ParentEntityId:      11,
