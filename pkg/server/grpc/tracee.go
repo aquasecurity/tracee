@@ -815,7 +815,7 @@ func getProcess(e trace.Event) *pb.Process {
 			HostTid:        wrapperspb.UInt32(uint32(e.HostThreadID)),
 			Tid:            wrapperspb.UInt32(uint32(e.ThreadID)),
 			Syscall:        sanitizeStringForProtobuf(e.Syscall),
-			Compat:         e.ContextFlags.ContainerStarted,
+			Compat:         e.ContextFlags.IsCompat,
 			UserStackTrace: userStackTrace,
 		},
 		Ancestors: ancestors,
@@ -840,8 +840,9 @@ func getContainer(e trace.Event) *pb.Container {
 	}
 
 	container := &pb.Container{
-		Id:   sanitizeStringForProtobuf(e.Container.ID),
-		Name: sanitizeStringForProtobuf(e.Container.Name),
+		Id:        sanitizeStringForProtobuf(e.Container.ID),
+		Name:      sanitizeStringForProtobuf(e.Container.Name),
+		IsRunning: e.ContextFlags.ContainerStarted,
 	}
 
 	if e.Container.ImageName != "" {
