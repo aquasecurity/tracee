@@ -117,69 +117,80 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 	)
 
 	for _, opt := range logOptions {
-		// split log flag by "." for filter and aggregation
+		// Check if this is a level or file option first (they use "=" syntax)
+		if strings.HasPrefix(opt, LogLevel+"=") || strings.HasPrefix(opt, LogFile+"=") {
+			// split by "=" for level and file options
+			logParts := strings.SplitN(opt, "=", 2)
+			if len(logParts) != 2 {
+				return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
+			}
+
+			switch logParts[0] {
+			case LogLevel:
+				lvl, err = parseLevel(logParts[1])
+				if err != nil {
+					return logger.LoggingConfig{}, invalidLogOptionValue(err, opt, newBinary)
+				}
+			case LogFile:
+				if logParts[1] == "" {
+					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
+				}
+				w, err = CreateOutputFile(logParts[1])
+				if err != nil {
+					return logger.LoggingConfig{}, err
+				}
+			}
+			continue
+		}
+
+		// For other options, split by "." for filter and aggregation
 		logParts := strings.SplitN(opt, ".", 2)
 		if len(logParts) < 2 {
-			// split log flag by "=" for level and file
-			logParts = strings.SplitN(opt, "=", 2)
-		} else {
-			// check if the first part is a known option that uses "=" syntax
-			if strings.HasPrefix(logParts[0], LogLevel+"=") || strings.HasPrefix(logParts[0], LogFile+"=") {
-				// re-split by "=" for level and file options
-				logParts = strings.SplitN(opt, "=", 2)
-			}
+			return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
 		}
 
 		switch logParts[0] {
-		case LogLevel:
-			lvl, err = parseLevel(logParts[1])
-			if err != nil {
-				return logger.LoggingConfig{}, invalidLogOptionValue(err, opt, newBinary)
-			}
-		case LogFile:
-			if len(logParts[1]) == 1 || logParts[1] == "" {
-				return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
-			}
-
-			w, err = CreateOutputFile(logParts[1])
-			if err != nil {
-				return logger.LoggingConfig{}, err
-			}
-
 		case LogAggregation:
 			aggregationParts := strings.SplitN(logParts[1], "=", 2)
+			if len(aggregationParts) != 2 {
+				return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
+			}
+
 			switch aggregationParts[0] {
 			case LogAggregationFlushInterval:
-				vals := strings.SplitN(opt, "=", 2)
-				if len(vals) != 2 || len(vals[1]) <= 1 {
+				if len(aggregationParts[1]) <= 1 {
 					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
 				}
 
 				// handle only seconds and minutes
-				timeSuffix := vals[1][len(vals[1])-1:][0]
+				timeSuffix := aggregationParts[1][len(aggregationParts[1])-1:][0]
 				if timeSuffix != 's' && timeSuffix != 'm' {
 					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
 				}
-				prevByte := vals[1][len(vals[1])-2:][0]
+				prevByte := aggregationParts[1][len(aggregationParts[1])-2:][0]
 				if timeSuffix == 's' && !unicode.IsDigit(rune(prevByte)) {
 					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
 				}
 
-				flushInterval, err = time.ParseDuration(vals[1])
+				flushInterval, err = time.ParseDuration(aggregationParts[1])
 				if err != nil {
 					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
 				}
 				agg = true
 
 			case LogAggregationEnabled:
-				if len(aggregationParts) == 1 || strings.Compare(aggregationParts[1], "true") == 0 {
+				if aggregationParts[1] == "true" {
 					agg = true
+				} else if aggregationParts[1] != "false" {
+					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
 				}
+			default:
+				return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
 			}
 
 		case LogFilter:
 			filterParts := strings.SplitN(logParts[1], ".", 2)
-			if len(filterParts) < 2 {
+			if len(filterParts) != 2 {
 				return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
 			}
 			var filterKind logger.FilterKind
@@ -193,14 +204,14 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 			}
 
 			filterOpt := filterParts[1]
-			if filterOpt != "" {
-				filter, err = processLogFilter(opt, newBinary, filterKind, filterOpt)
-				if err != nil {
-					return logger.LoggingConfig{}, err
-				}
-				continue
+			if filterOpt == "" {
+				return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
 			}
-			return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
+
+			filter, err = processLogFilter(opt, newBinary, filterKind, filterOpt)
+			if err != nil {
+				return logger.LoggingConfig{}, err
+			}
 		default:
 			return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
 		}
@@ -216,9 +227,8 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 		loggerCfg.Encoder = logger.NewJSONEncoder(logger.NewProductionEncoderConfig())
 	}
 
-	traceeLogger := logger.NewLogger(loggerCfg)
 	return logger.LoggingConfig{
-		Logger:        traceeLogger,
+		Logger:        logger.NewLogger(loggerCfg),
 		LoggerConfig:  loggerCfg,
 		Filter:        filter,
 		Aggregate:     agg,
@@ -306,6 +316,7 @@ func processLogFilter(opt string, newBinary bool, filterKind logger.FilterKind, 
 		if err := filter.AddMsgRegex("^libbpf:", filterKind); err != nil {
 			if errors.Is(err, logger.ErrFilterOutExistsForKey) {
 				logger.Warnw(err.Error(), "regex", "^libbpf:")
+				return filter, nil
 			}
 			return filter, invalidLogOptionValue(err, opt, newBinary)
 		}

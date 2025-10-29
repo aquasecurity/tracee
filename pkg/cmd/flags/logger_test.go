@@ -390,6 +390,243 @@ func TestPrepareLogger(t *testing.T) {
 			expectedReturn: logger.LoggingConfig{},
 			expectedError:  invalidLogOptionValue(nil, "filter.include.lvl=invalid", false),
 		},
+
+		// Additional comprehensive test cases
+		{
+			testName:   "multiple log options combined",
+			logOptions: []string{"level=debug", "file=/tmp/test.log", "aggregate.enabled=true"},
+			expectedReturn: logger.LoggingConfig{
+				Aggregate:     true,
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "aggregate with custom flush interval",
+			logOptions: []string{"aggregate.flush-interval=10s"},
+			expectedReturn: logger.LoggingConfig{
+				Aggregate:     true,
+				FlushInterval: 10 * time.Second,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "aggregate with minutes flush interval",
+			logOptions: []string{"aggregate.flush-interval=2m"},
+			expectedReturn: logger.LoggingConfig{
+				Aggregate:     true,
+				FlushInterval: 2 * time.Minute,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:       "invalid aggregate option",
+			logOptions:     []string{"aggregate.invalid=value"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOption(nil, "aggregate.invalid=value", false),
+		},
+		{
+			testName:       "invalid aggregate enabled value",
+			logOptions:     []string{"aggregate.enabled=maybe"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "aggregate.enabled=maybe", false),
+		},
+		{
+			testName:       "invalid aggregate flush interval format",
+			logOptions:     []string{"aggregate.flush-interval=invalid"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "aggregate.flush-interval=invalid", false),
+		},
+		{
+			testName:       "invalid aggregate flush interval suffix",
+			logOptions:     []string{"aggregate.flush-interval=5h"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "aggregate.flush-interval=5h", false),
+		},
+		{
+			testName:       "invalid aggregate flush interval empty",
+			logOptions:     []string{"aggregate.flush-interval="},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "aggregate.flush-interval=", false),
+		},
+		{
+			testName:   "filter with multiple values",
+			logOptions: []string{"filter.include.msg=error,warning,info"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "filter with multiple packages",
+			logOptions: []string{"filter.include.pkg=core,ebpf,logger"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "filter with multiple files",
+			logOptions: []string{"filter.include.file=logger.go,flags.go,main.go"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "filter with multiple levels",
+			logOptions: []string{"filter.include.lvl=error,warn"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "filter with multiple regex patterns",
+			logOptions: []string{"filter.include.regex=^error,^warn,^debug"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "multiple filter options",
+			logOptions: []string{"filter.include.msg=error", "filter.include.pkg=core", "filter.exclude.lvl=debug"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "complex file path with multiple dots",
+			logOptions: []string{"file=/tmp/tracee.2024.01.15-14.30.45.log"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "file path with dots in directory",
+			logOptions: []string{"file=/tmp/.tracee/logs/tracee.log"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "empty log options",
+			logOptions: []string{},
+			expectedReturn: logger.LoggingConfig{
+				Aggregate:     false,
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:       "invalid filter type",
+			logOptions:     []string{"filter.include.invalidtype=value"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOption(nil, "filter.include.invalidtype=value", false),
+		},
+		{
+			testName:       "invalid filter direction",
+			logOptions:     []string{"filter.invalid.msg=value"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "filter.invalid.msg=value", false),
+		},
+		{
+			testName:       "malformed filter option",
+			logOptions:     []string{"filter"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOption(nil, "filter", false),
+		},
+		{
+			testName:       "malformed aggregate option",
+			logOptions:     []string{"aggregate"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOption(nil, "aggregate", false),
+		},
+		{
+			testName:       "empty level value",
+			logOptions:     []string{"level="},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "level=", false),
+		},
+		{
+			testName:       "empty file value",
+			logOptions:     []string{"file="},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "file=", false),
+		},
+		{
+			testName:   "aggregate enabled false",
+			logOptions: []string{"aggregate.enabled=false"},
+			expectedReturn: logger.LoggingConfig{
+				Aggregate:     false,
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "filter exclude libbpf",
+			logOptions: []string{"filter.exclude.libbpf"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "all log levels",
+			logOptions: []string{"level=fatal"},
+			expectedReturn: logger.LoggingConfig{
+				Aggregate:     false,
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:       "invalid log level case",
+			logOptions:     []string{"level=DEBUG"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "level=DEBUG", false),
+		},
+		{
+			testName:       "invalid log level number",
+			logOptions:     []string{"level=5"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "level=5", false),
+		},
+		{
+			testName:   "edge case: single character file path",
+			logOptions: []string{"file=a"},
+			expectedReturn: logger.LoggingConfig{
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:       "edge case: empty file path",
+			logOptions:     []string{"file="},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "file=", false),
+		},
+		{
+			testName: "comprehensive example",
+			logOptions: []string{
+				"level=debug",
+				"file=/tmp/tracee.log",
+				"aggregate.enabled=true",
+				"filter.include.msg=error,warning",
+				"filter.include.pkg=core",
+				"filter.exclude.lvl=debug",
+				"filter.exclude.file=test.go",
+			},
+			expectedReturn: logger.LoggingConfig{
+				Aggregate:     true,
+				FlushInterval: logger.DefaultFlushInterval,
+			},
+			expectedError: nil,
+		},
 	}
 
 	for _, tc := range testCases {
