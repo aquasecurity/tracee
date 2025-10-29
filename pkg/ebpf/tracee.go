@@ -32,6 +32,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/datastores/dns"
 	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/datastores/symbol"
+	"github.com/aquasecurity/tracee/pkg/detectors"
 	"github.com/aquasecurity/tracee/pkg/ebpf/controlplane"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
@@ -116,6 +117,8 @@ type Tracee struct {
 	dnsCache *dns.DNSCache
 	// DataStore Registry
 	dataStoreRegistry *datastores.Registry
+	// Detector Engine
+	detectorEngine *detectors.Engine
 	// Specific Events Needs
 	triggerContexts trigger.Context
 	readyCallback   func(gocontext.Context)
@@ -459,6 +462,9 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	if err := t.extensions.InitExtensionsForPhase(ctx, t, InitPhaseKernelSymbols); err != nil {
 		return err
 	}
+
+	// Initialize Detector Engine
+	t.detectorEngine = detectors.NewEngine()
 
 	// Initialize time
 
