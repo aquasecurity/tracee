@@ -184,8 +184,8 @@ rm -rf "${TRACEE_INSTALL_PATH}" || die "Failed to remove ${TRACEE_INSTALL_PATH}"
 
 # Build tracee command based on configuration
 output_flag="-o json:${EVENT_OUTPUT_FILE}"
-log_flag="-l file:${LOG_OUTPUT_FILE}"
-log_level_flag="-l ${LOG_LEVEL}"
+log_flag="--log file=${LOG_OUTPUT_FILE}"
+log_level_flag="--log level=${LOG_LEVEL}"
 install_flag="--install-path ${TRACEE_INSTALL_PATH}"
 
 tracee_cmd="${TRACEE_BIN} \
