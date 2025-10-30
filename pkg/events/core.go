@@ -230,6 +230,14 @@ const (
 	MaxDetectorID   ID = 7999
 )
 
+// PredefinedDetectorEvents maps detector event names to reserved (predefined) event IDs
+// These are "empty slots" without schemas that detectors can claim
+// Detectors provide the schema via their ProducedEvent definition
+var PredefinedDetectorEvents = map[string]ID{
+	// TODO: Add predefined detector event IDs here as needed
+	// Example: "hooked_syscall": ID(2021),
+}
+
 // LookupPredefinedEventID looks up an event name in the event definitions
 // Returns the predefined ID if found, or 0 if not found
 // This is used by the detector registry to check if an event is predefined
