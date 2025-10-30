@@ -256,8 +256,14 @@ func (sig *e2eProcessTreeDataSource) appendToFile(message string) {
 	if err != nil {
 		return // Silently ignore file errors to not break the test
 	}
-	defer file.Close()
-	file.WriteString(message)
+	defer func() {
+		_ = file.Close()
+	}()
+
+	_, err = file.WriteString(message)
+	if err != nil {
+		fmt.Printf("Error writing to %s file %s: %v\n", message, sig.retryLogFile, err)
+	}
 }
 
 func (sig *e2eProcessTreeDataSource) checkLineage(eventObj *trace.Event) error {

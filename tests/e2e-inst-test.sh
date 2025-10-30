@@ -499,7 +499,7 @@ for test_name in "${!test_pids_map[@]}"; do
             info "    ${line}"
         done < "${PROCTREE_RETRY_LOG_FILE}"
         rm -f "${PROCTREE_RETRY_LOG_FILE}"
-    fi 
+    fi
 done
 print_end_separator
 

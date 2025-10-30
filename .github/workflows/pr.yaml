@@ -632,11 +632,14 @@ jobs:
           if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
             echo "TESTS=${{ env.ARM64_TESTS }}" >> $GITHUB_ENV
           fi
+          LINUX_ID=$(grep -Pom1 '^ID=\K.*' /etc/os-release)
+          echo "LINUX_ID=${LINUX_ID}" >> ${GITHUB_ENV}
       - name: "Build Tracee"
         run: make tracee
       - name: "Compatibility Test"
         run: env "PATH=$PATH" make test-compatibility
       - name: "Disable Unattended Upgrades (Ubuntu only)"
+        if: ${{ env.LINUX_ID == 'ubuntu' }}
         run: ./scripts/disable-unattended-upgrades.sh --timeout 5
       - name: "Instrumentation Test"
         id: e2e-inst-test

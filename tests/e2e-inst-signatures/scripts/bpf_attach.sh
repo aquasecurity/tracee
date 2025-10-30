@@ -48,8 +48,7 @@ if [[ "$INSTALL" == "true" ]]; then
     info "installing bpftrace..."
 
     # Detect distribution and install bpftrace
-    # TODO: extract this logic of installing a package to a script
-    # TODO: install bpftrace in the AMIs
+    # TODO: install bpftrace in the AMIs and remove this logic
     if [[ -f /etc/os-release ]]; then
         . /etc/os-release
         case "${ID}" in
@@ -59,7 +58,6 @@ if [[ "$INSTALL" == "true" ]]; then
                     && [[ "${VERSION_CODENAME}" == "mantic" || "${VERSION_CODENAME}" == "lunar" ]]; then
                     #
                     info "detected EOL Ubuntu ${VERSION_CODENAME}, switching to old-releases repository..."
-                    cat /etc/apt/sources.list
                     # Architecture-specific repository replacement
                     if [[ "$(uname -m)" == "aarch64" ]] || [[ "$(uname -m)" == "arm64" ]]; then
                         # For aarch64/arm64: ports repositories → old-releases ubuntu (not ubuntu-ports)
@@ -73,9 +71,8 @@ if [[ "$INSTALL" == "true" ]]; then
                     fi
                 fi
 
-                # "${disable_unattended_upgrades}" --timeout 5 || exit_err "failed to disable unattended upgrades"
-                apt-get update 2>/dev/null || exit_err "failed to update apt repositories"
-                apt-get install -y bpftrace 2>/dev/null || exit_err "failed to install bpftrace"
+                apt-get update > /dev/null 2>&1 || exit_err "failed to update apt repositories"
+                apt-get install -y bpftrace > /dev/null 2>&1 || exit_err "failed to install bpftrace"
 
                 ;;
             rhel | centos | fedora | almalinux | rocky)
