@@ -520,8 +520,45 @@ func TestPrepareLogger(t *testing.T) {
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
 				},
 				FlushInterval: logger.DefaultFlushInterval,
-				// Only the last filter option gets applied due to a bug in PrepareLogger
-				Filter: createExpectedFilter(t, "lvl", "debug", logger.FilterOut),
+				Filter: createExpectedMultiFilter(t, []filterTest{
+					{"msg", "error", logger.FilterIn},
+					{"pkg", "core", logger.FilterIn},
+					{"lvl", "debug", logger.FilterOut},
+				}),
+			},
+			expectedError: nil,
+		},
+		{
+			testName: "comprehensive filter options",
+			logOptions: []string{
+				"filter.include.msg=error,warning",
+				"filter.include.pkg=core,ebpf",
+				"filter.include.lvl=info,warn",
+				"filter.include.regex=^debug,^trace",
+				"filter.include.libbpf",
+				"filter.exclude.msg=spam,noise",
+				"filter.exclude.pkg=test,example",
+				"filter.exclude.lvl=debug",
+				"filter.exclude.regex=^verbose,^debug",
+			},
+			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
+				FlushInterval: logger.DefaultFlushInterval,
+				Filter: createExpectedMultiFilter(t, []filterTest{
+					// Include filters
+					{"msg", "error,warning", logger.FilterIn},
+					{"pkg", "core,ebpf", logger.FilterIn},
+					{"lvl", "info,warn", logger.FilterIn},
+					{"regex", "^debug,^trace", logger.FilterIn},
+					{"regex", "^libbpf:", logger.FilterIn}, // libbpf creates a regex filter
+					// Exclude filters
+					{"msg", "spam,noise", logger.FilterOut},
+					{"pkg", "test,example", logger.FilterOut},
+					{"lvl", "debug", logger.FilterOut},
+					{"regex", "^verbose,^debug", logger.FilterOut},
+				}),
 			},
 			expectedError: nil,
 		},

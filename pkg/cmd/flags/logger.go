@@ -208,7 +208,7 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 				return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
 			}
 
-			filter, err = processLogFilter(opt, newBinary, filterKind, filterOpt)
+			err = processLogFilter(&filter, opt, newBinary, filterKind, filterOpt)
 			if err != nil {
 				return logger.LoggingConfig{}, err
 			}
@@ -236,17 +236,16 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 	}, nil
 }
 
-func processLogFilter(opt string, newBinary bool, filterKind logger.FilterKind, filterOpt string) (logger.LoggerFilter, error) {
-	var filter = logger.NewLoggerFilter()
+func processLogFilter(filter *logger.LoggerFilter, opt string, newBinary bool, filterKind logger.FilterKind, filterOpt string) error {
 	optTypeParts := strings.SplitN(filterOpt, "=", 2)
 	optType := optTypeParts[0]
 	optVals := []string{}
 	if len(optTypeParts) == 1 && optType != "libbpf" {
-		return filter, invalidLogOption(nil, opt, newBinary)
+		return invalidLogOption(nil, opt, newBinary)
 	}
 	if len(optTypeParts) == 2 {
 		if optTypeParts[1] == "" {
-			return filter, invalidLogOptionValue(nil, opt, newBinary)
+			return invalidLogOptionValue(nil, opt, newBinary)
 		}
 		optVals = strings.Split(optTypeParts[1], ",")
 	}
@@ -260,7 +259,7 @@ func processLogFilter(opt string, newBinary bool, filterKind logger.FilterKind, 
 					continue
 				}
 
-				return filter, invalidLogOption(err, opt, newBinary)
+				return invalidLogOption(err, opt, newBinary)
 			}
 		}
 	case "pkg":
@@ -271,7 +270,7 @@ func processLogFilter(opt string, newBinary bool, filterKind logger.FilterKind, 
 					continue
 				}
 
-				return filter, invalidLogOption(err, opt, newBinary)
+				return invalidLogOption(err, opt, newBinary)
 			}
 		}
 	case "file":
@@ -282,14 +281,14 @@ func processLogFilter(opt string, newBinary bool, filterKind logger.FilterKind, 
 					continue
 				}
 
-				return filter, invalidLogOption(err, opt, newBinary)
+				return invalidLogOption(err, opt, newBinary)
 			}
 		}
 	case "lvl":
 		for _, val := range optVals {
 			filterLvl, err := parseLevel(val)
 			if err != nil {
-				return filter, invalidLogOptionValue(err, opt, newBinary)
+				return invalidLogOptionValue(err, opt, newBinary)
 			}
 
 			if err := filter.AddLvl(int(filterLvl), filterKind); err != nil {
@@ -298,7 +297,7 @@ func processLogFilter(opt string, newBinary bool, filterKind logger.FilterKind, 
 					continue
 				}
 
-				return filter, invalidLogOptionValue(err, opt, newBinary)
+				return invalidLogOptionValue(err, opt, newBinary)
 			}
 		}
 	case "regex":
@@ -309,19 +308,19 @@ func processLogFilter(opt string, newBinary bool, filterKind logger.FilterKind, 
 					continue
 				}
 
-				return filter, invalidLogOptionValue(err, opt, newBinary)
+				return invalidLogOptionValue(err, opt, newBinary)
 			}
 		}
 	case "libbpf":
 		if err := filter.AddMsgRegex("^libbpf:", filterKind); err != nil {
 			if errors.Is(err, logger.ErrFilterOutExistsForKey) {
 				logger.Warnw(err.Error(), "regex", "^libbpf:")
-				return filter, nil
+				return nil
 			}
-			return filter, invalidLogOptionValue(err, opt, newBinary)
+			return invalidLogOptionValue(err, opt, newBinary)
 		}
 	default:
-		return filter, invalidLogOption(nil, opt, newBinary)
+		return invalidLogOption(nil, opt, newBinary)
 	}
-	return filter, nil
+	return nil
 }
