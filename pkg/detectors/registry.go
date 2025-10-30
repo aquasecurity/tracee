@@ -18,7 +18,8 @@ type entry struct {
 	definition *detection.DetectorDefinition // Cached at registration (GetDefinition() result)
 	eventID    v1beta1.EventId
 	eventName  string
-	enabled    bool // Runtime state for enable/disable
+	enabled    bool                     // Runtime state for enable/disable
+	params     detection.DetectorParams // Stored for re-initialization on enable
 }
 
 // registry manages all registered detectors
@@ -92,7 +93,8 @@ func (r *registry) RegisterDetector(
 		definition: &definition,
 		eventID:    v1beta1.EventId(eventID),
 		eventName:  eventName,
-		enabled:    enabled,
+		enabled:    enabled, // enabled = initialized
+		params:     params,  // Store for potential re-initialization
 	}
 
 	// Store detector entry (registered regardless of selection for future runtime changes)
@@ -113,10 +115,12 @@ func (r *registry) UnregisterDetector(detectorID string) error {
 		return fmt.Errorf("detector %s not registered", detectorID)
 	}
 
-	// Clean up detector resources if it implements Close()
-	if closer, ok := detector.detector.(detection.DetectorCloser); ok {
-		if err := closer.Close(); err != nil {
-			return fmt.Errorf("failed to close detector %s: %w", detectorID, err)
+	// Clean up detector resources if enabled (initialized) and implements Close()
+	if detector.enabled {
+		if closer, ok := detector.detector.(detection.DetectorCloser); ok {
+			if err := closer.Close(); err != nil {
+				return fmt.Errorf("failed to close detector %s: %w", detectorID, err)
+			}
 		}
 	}
 
@@ -153,6 +157,7 @@ func (r *registry) GetDetector(detectorID string) (detection.EventDetector, erro
 }
 
 // EnableDetector enables a registered detector (runtime operation)
+// Calls Init() if detector was never initialized or was previously disabled
 func (r *registry) EnableDetector(detectorID string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -162,11 +167,26 @@ func (r *registry) EnableDetector(detectorID string) error {
 		return fmt.Errorf("detector %s not registered", detectorID)
 	}
 
+	// Already enabled
+	if detector.enabled {
+		return nil
+	}
+
+	// Initialize detector
+	if err := detector.detector.Init(detector.params); err != nil {
+		return fmt.Errorf("failed to initialize detector %s: %w", detectorID, err)
+	}
+
 	detector.enabled = true
+	logger.Debugw("Detector enabled",
+		"detector", detectorID,
+		"event", detector.eventName)
+
 	return nil
 }
 
 // DisableDetector disables a registered detector (runtime operation)
+// Calls Close() to release resources if detector implements DetectorCloser
 func (r *registry) DisableDetector(detectorID string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -176,7 +196,23 @@ func (r *registry) DisableDetector(detectorID string) error {
 		return fmt.Errorf("detector %s not registered", detectorID)
 	}
 
+	// Already disabled
+	if !detector.enabled {
+		return nil
+	}
+
+	// Call Close() if detector implements it
+	if closer, ok := detector.detector.(detection.DetectorCloser); ok {
+		if err := closer.Close(); err != nil {
+			return fmt.Errorf("failed to close detector %s: %w", detectorID, err)
+		}
+	}
+
 	detector.enabled = false
+	logger.Debugw("Detector disabled",
+		"detector", detectorID,
+		"event", detector.eventName)
+
 	return nil
 }
 
