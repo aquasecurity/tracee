@@ -64,6 +64,14 @@ func PrintEventList(includeSigs bool, wideOutput bool) {
 	}
 	table = tableRender(table, "Signature Events")
 
+	// Detector Events
+	for _, evtDef := range allDefinitions {
+		if evtDef.IsDetector() {
+			table.AppendBulk([][]string{getRow(evtDef)})
+		}
+	}
+	table = tableRender(table, "Detector Events")
+
 	// Syscall Events
 	for _, evtDef := range allDefinitions {
 		if evtDef.IsSyscall() {
@@ -75,7 +83,7 @@ func PrintEventList(includeSigs bool, wideOutput bool) {
 	// Other Events
 	for _, evtDef := range allDefinitions {
 		if !evtDef.IsInternal() && !evtDef.IsSyscall() &&
-			!evtDef.IsSignature() && !evtDef.IsNetwork() {
+			!evtDef.IsSignature() && !evtDef.IsDetector() && !evtDef.IsNetwork() {
 			table.AppendBulk([][]string{getRow(evtDef)})
 		}
 	}
