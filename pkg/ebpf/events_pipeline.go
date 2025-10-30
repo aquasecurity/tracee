@@ -568,41 +568,50 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *trace.Event) (
 
 				// Convert trace.Event to v1beta1.Event for detector API
 				v1Event := events.ConvertToProto(*event)
+				outputs, err := t.detectorEngine.DispatchToDetectors(ctx, v1Event)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+				if len(outputs) == 0 {
+					continue
+				}
 
-				// Process event through detector chain using breadth-first traversal
-				queue := []*v1beta1.Event{v1Event}
+				// All detector outputs in the chain inherit policy context from the original event
+				// since they're all derived from this single kernel event
+				matchedPoliciesKernel := event.MatchedPoliciesKernel
+				policiesVersion := event.PoliciesVersion
+
+				// Process detector outputs through breadth-first chain traversal
+				queue := outputs
 
 				for depth := 0; depth < maxDetectorChainDepth && len(queue) > 0; depth++ {
-					var nextDepth []*v1beta1.Event
+					var nextQueue []*v1beta1.Event
 
-					// Process all events at current depth
-					for _, evt := range queue {
-						// Dispatch to detectors
-						outputs, err := t.detectorEngine.DispatchToDetectors(ctx, evt)
+					for _, protoEvent := range queue {
+						// Convert to trace.Event and inherit policy context
+						traceEvent := events.ConvertFromProto(protoEvent)
+						traceEvent.MatchedPoliciesKernel = matchedPoliciesKernel
+						traceEvent.PoliciesVersion = policiesVersion
+
+						// Apply policy filtering
+						if t.matchPolicies(traceEvent) == 0 {
+							continue
+						}
+
+						// Send to output
+						out <- traceEvent
+
+						// Dispatch to next level of detectors
+						nextOutputs, err := t.detectorEngine.DispatchToDetectors(ctx, protoEvent)
 						if err != nil {
 							t.handleError(err)
 							continue
 						}
-
-						// Filter and route outputs
-						for _, output := range outputs {
-							// Convert v1beta1.Event back to trace.Event
-							traceEvent := events.ConvertFromProto(output)
-
-							// Apply policy filtering to detector outputs
-							if t.matchPolicies(traceEvent) == 0 {
-								continue // Skip events not matching policy
-							}
-
-							// Send to output
-							out <- traceEvent
-
-							// Queue for next depth - any detector output might be consumed by other detectors
-							nextDepth = append(nextDepth, output)
-						}
+						nextQueue = append(nextQueue, nextOutputs...)
 					}
 
-					queue = nextDepth
+					queue = nextQueue
 				}
 
 				// Safety check - log if max depth exceeded

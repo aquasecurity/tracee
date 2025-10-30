@@ -92,6 +92,20 @@ func (d Definition) IsSignature() bool {
 	return false
 }
 
+func (d Definition) IsDetector() bool {
+	// Check if event is in the predefined detector ID range
+	if d.id >= StartPredefinedDetectorID && d.id <= MaxPredefinedDetectorID {
+		return true
+	}
+
+	// Check if event is in the dynamic detector ID range
+	if d.id >= StartDetectorID && d.id <= MaxDetectorID {
+		return true
+	}
+
+	return false
+}
+
 func (d Definition) IsNetwork() bool {
 	if d.id >= NetPacketIPv4 && d.id <= MaxUserNetID {
 		return true
