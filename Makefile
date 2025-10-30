@@ -701,6 +701,12 @@ clean-tracee::
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee
 	$(CMD_RM) -rf .*.md5
 
+# Convenience target for building tracee with example detectors
+.PHONY: tracee-with-examples
+tracee-with-examples::
+#
+	$(MAKE) tracee GO_TAGS_EBPF="$(GO_TAGS_EBPF),detectorexamples"
+
 #
 # signatures
 #

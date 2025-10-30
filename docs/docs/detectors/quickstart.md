@@ -554,5 +554,31 @@ sudo ./dist/tracee --logging debug
 
 ---
 
+## Next Steps
+
+### Learn More Advanced Patterns
+
+For a comprehensive example demonstrating all detector API features, see `detectors/example_detector.go`:
+
+- DataStore API usage (ContainerStore, SystemStore)
+- Event filtering patterns (scope, data, version constraints)
+- Conditional field population
+- Advanced error handling
+- Proper enrichment patterns
+
+To build and test it:
+
+```bash
+# Build Tracee with example detectors
+make tracee-with-examples
+
+# Run tracee and filter for the example detection
+sudo ./dist/tracee -e example_detection --output json
+```
+
+**Note**: The example detector is excluded from default builds (via build tag) to prevent noise in production environments.
+
+---
+
 **Ready for more?** Continue to the [API Reference](api-reference.md) for comprehensive documentation, including migration guides and troubleshooting.
 
