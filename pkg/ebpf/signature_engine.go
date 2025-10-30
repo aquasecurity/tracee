@@ -71,8 +71,15 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *events.PipelineEve
 
 		// feedEngine feeds an event to the rules engine
 		feedEngine := func(event *events.PipelineEvent) {
-			if event == nil || event.Event == nil {
+			if event == nil {
 				return // might happen during initialization (ctrl+c seg faults)
+			}
+
+			// Proto-native events (from detectors/derivers) bypass the signature engine
+			// They don't have a trace.Event, only ProtoEvent
+			if event.Event == nil {
+				out <- event
+				return
 			}
 
 			id := event.EventID

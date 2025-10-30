@@ -101,13 +101,16 @@ func (m *Manager) subscribeDependencyHandlers() {
 // The difference from chosen events is that it doesn't affect its eviction.
 func (m *Manager) addDependencyEventToRules(evtID events.ID, dependentEvts []events.ID) {
 	var newSubmit uint64
-	var reqBySig bool
+	var reqByDependent bool
 
 	for _, dependentEvent := range dependentEvts {
 		currentFlags, ok := m.rules[dependentEvent]
 		if ok {
 			newSubmit |= currentFlags.policiesSubmit
-			reqBySig = reqBySig || events.Core.GetDefinitionByID(dependentEvent).IsSignature()
+			// Mark as required if dependent is a signature or detector event
+			// This ensures the dependency flows through the pipeline even if not explicitly selected
+			defn := events.Core.GetDefinitionByID(dependentEvent)
+			reqByDependent = reqByDependent || defn.IsSignature() || defn.IsDetector()
 		}
 	}
 
@@ -115,7 +118,7 @@ func (m *Manager) addDependencyEventToRules(evtID events.ID, dependentEvts []eve
 		evtID,
 		newEventFlags(
 			eventFlagsWithSubmit(newSubmit),
-			eventFlagsWithRequiredBySignature(reqBySig),
+			eventFlagsWithRequiredBySignature(reqByDependent),
 			eventFlagsWithEnabled(true),
 		),
 	)

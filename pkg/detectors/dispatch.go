@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/policy"
 )
@@ -42,7 +43,15 @@ func (d *dispatcher) rebuild() {
 
 	for detectorID, detectorEntry := range d.registry.detectors {
 		// Policy filtering: Only add detector to dispatch map if its output event is selected
-		if d.policyManager != nil && !d.policyManager.IsEventSelected(events.ID(detectorEntry.eventID)) {
+		isSelected := d.policyManager != nil && d.policyManager.IsEventSelected(events.ID(detectorEntry.eventID))
+
+		logger.Debugw("Checking detector for dispatch",
+			"detector", detectorID,
+			"output_event", detectorEntry.eventName,
+			"event_id", detectorEntry.eventID,
+			"is_selected", isSelected)
+
+		if !isSelected {
 			continue
 		}
 
@@ -61,12 +70,21 @@ func (d *dispatcher) rebuild() {
 				}
 			}
 
+			logger.Debugw("Adding detector to dispatch map",
+				"detector", detectorID,
+				"input_event", req.Name,
+				"input_event_id", eventID)
+
 			// Add detector to dispatch list for this event
 			if eventID != 0 {
 				d.dispatchMap[eventID] = append(d.dispatchMap[eventID], detectorID)
 			}
 		}
 	}
+
+	logger.Debugw("Dispatcher rebuild complete",
+		"dispatch_map_size", len(d.dispatchMap),
+		"dispatch_map", d.dispatchMap)
 }
 
 // dispatchToDetectors dispatches an event to all registered detectors that are interested in it
