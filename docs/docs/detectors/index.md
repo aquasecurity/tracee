@@ -144,6 +144,7 @@ func (d *SensitiveFileAccess) OnEvent(ctx context.Context, event *v1beta1.Event)
 
 ### Code Examples
 - **Quick Start Example**: [Quick Start Guide](quickstart.md) - complete annotated walkthrough
+- **Comprehensive Example**: `detectors/example_detector.go` - demonstrates all detector API features including DataStore usage, filtering patterns, and enrichment (build with `make tracee-with-examples`)
 - **Real Detectors**: Browse `detectors/` directory for production implementations
 - **Migration Examples**: [API Reference](api-reference.md#migration-from-signatures) - signature → detector
 

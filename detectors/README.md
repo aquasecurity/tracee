@@ -25,8 +25,8 @@ No manual registration list is needed - detectors are automatically discovered d
 ## Module Structure
 
 - `registry.go` - Auto-registration system
-- `example.go` - Example detector template and documentation
-- Individual detector files (to be added)
+- `example_detector.go` - Comprehensive example demonstrating all API features (build tag: `detectorexamples`)
+- Individual detector files
 
 ## Usage
 
@@ -37,6 +37,30 @@ import "github.com/aquasecurity/tracee/detectors"
 
 allDetectors := detectors.GetAllDetectors()
 // Register detectors with the detector engine
+```
+
+## Example Detectors
+
+### Comprehensive Example: `example_detector.go`
+
+A fully-featured example demonstrating all detector API capabilities:
+
+- DataStore API usage (ContainerStore, SystemStore)
+- Event filtering patterns (scope filters, data filters, version constraints)
+- Conditional field population and enrichment
+- Proper error handling with sentinel errors
+- Auto-population features (Threat, DetectedFrom, ProcessAncestry)
+
+**Note**: This detector is excluded from default builds using the `detectorexamples` build tag to prevent noise (triggers on all `execve` events).
+
+To build with example detectors:
+
+```bash
+# Build Tracee with example detectors included (convenience target)
+make tracee-with-examples
+
+# Or manually override GO_TAGS_EBPF
+make tracee GO_TAGS_EBPF="core,ebpf,lsmsupport,detectorexamples"
 ```
 
 ## Adding a New Detector
