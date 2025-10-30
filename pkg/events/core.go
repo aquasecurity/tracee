@@ -3,6 +3,7 @@ package events
 import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
+	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events/data"
@@ -226,6 +227,15 @@ const (
 
 // Detector events (new detector system)
 const (
+	// Predefined detector event IDs (reserved slots for specific detector events)
+	// These IDs are used for detector events that need stable, well-known IDs
+	// Examples: events being migrated from derived events, or events that need
+	// to be referenced by name in policies or other systems
+	StartPredefinedDetectorID ID = 3000
+	MaxPredefinedDetectorID   ID = 3999
+
+	// Dynamic detector event IDs (allocated at runtime for new detector events)
+	// These IDs are allocated automatically when detectors are registered
 	StartDetectorID ID = 7000
 	MaxDetectorID   ID = 7999
 )
@@ -233,9 +243,23 @@ const (
 // PredefinedDetectorEvents maps detector event names to reserved (predefined) event IDs
 // These are "empty slots" without schemas that detectors can claim
 // Detectors provide the schema via their ProducedEvent definition
+// All IDs MUST be in the range [StartPredefinedDetectorID, MaxPredefinedDetectorID]
 var PredefinedDetectorEvents = map[string]ID{
 	// TODO: Add predefined detector event IDs here as needed
-	// Example: "hooked_syscall": ID(2021),
+	// Example: "hooked_syscall": ID(3001),
+	// Example: "symbols_collision": ID(3002),
+}
+
+// validatePredefinedDetectorEvents ensures all predefined detector event IDs are in the correct range
+// This is called during initialization to catch configuration errors early
+func validatePredefinedDetectorEvents() error {
+	for name, id := range PredefinedDetectorEvents {
+		if id < StartPredefinedDetectorID || id > MaxPredefinedDetectorID {
+			return errfmt.Errorf("predefined detector event '%s' has ID %d, must be in range [%d, %d]",
+				name, id, StartPredefinedDetectorID, MaxPredefinedDetectorID)
+		}
+	}
+	return nil
 }
 
 // LookupPredefinedEventID looks up an event name in the event definitions
@@ -276,6 +300,12 @@ func init() {
 	err := Core.AddBatch(CoreEvents)
 	if err != nil {
 		logger.Errorw("failed to initialize event definitions", "err", err)
+	}
+
+	// Validate predefined detector event IDs are in the correct range
+	err = validatePredefinedDetectorEvents()
+	if err != nil {
+		logger.Fatalw("invalid predefined detector event configuration", "err", err)
 	}
 }
 
