@@ -5,6 +5,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
 // Engine is the main detector engine that orchestrates registration and dispatch
@@ -14,10 +15,11 @@ type Engine struct {
 }
 
 // NewEngine creates a new detector engine
-func NewEngine() *Engine {
+func NewEngine(policyManager *policy.Manager) *Engine {
+	registry := newRegistry(policyManager)
 	return &Engine{
-		registry:   newRegistry(),
-		dispatcher: newDispatcher(),
+		registry:   registry,
+		dispatcher: newDispatcher(registry, policyManager),
 	}
 }
 
@@ -32,7 +34,7 @@ func (e *Engine) RegisterDetector(
 	}
 
 	// Rebuild dispatch map after registration
-	e.dispatcher.rebuild(e.registry)
+	e.dispatcher.rebuild()
 
 	return nil
 }
@@ -45,7 +47,7 @@ func (e *Engine) UnregisterDetector(detectorID string) error {
 	}
 
 	// Rebuild dispatch map after unregistration
-	e.dispatcher.rebuild(e.registry)
+	e.dispatcher.rebuild()
 
 	return nil
 }
@@ -73,5 +75,5 @@ func (e *Engine) DisableDetector(detectorID string) error {
 // DispatchToDetectors dispatches an event to all registered detectors that are interested in it
 // Returns the output events produced by detectors
 func (e *Engine) DispatchToDetectors(ctx context.Context, inputEvent *v1beta1.Event) ([]*v1beta1.Event, error) {
-	return e.dispatcher.dispatchToDetectors(ctx, inputEvent, e.registry)
+	return e.dispatcher.dispatchToDetectors(ctx, inputEvent)
 }

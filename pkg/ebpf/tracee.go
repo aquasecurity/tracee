@@ -16,6 +16,7 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	dsapi "github.com/aquasecurity/tracee/api/v1beta1/datastores"
+	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/bitwise"
 	"github.com/aquasecurity/tracee/common/bucketcache"
 	"github.com/aquasecurity/tracee/common/capabilities"
@@ -467,7 +468,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 
 	// Initialize Detector Engine
-	t.detectorEngine = detectors.NewEngine()
+	t.detectorEngine = detectors.NewEngine(t.policyManager)
 
 	// Initialize time
 
@@ -582,6 +583,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Syscall information datastore provides syscall ID <-> name mapping
 	syscallStore := syscall.New(events.Core)
 	if err := t.dataStoreRegistry.RegisterStore(dsapi.Syscall, syscallStore, true); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Register detectors from config (after datastores are registered)
+	if err := t.registerAllDetectors(t.config.DetectorConfig.Detectors); err != nil {
 		return errfmt.WrapError(err)
 	}
 
@@ -2259,6 +2265,44 @@ func (t *Tracee) DisableEvent(eventName string) error {
 			}
 		}
 	}
+
+	return nil
+}
+
+// registerAllDetectors registers detectors with the engine.
+// Event IDs must be pre-registered in events.Core before calling this function.
+func (t *Tracee) registerAllDetectors(detectorList []detection.EventDetector) error {
+	logger.Debugw("Registering detectors", "count", len(detectorList))
+
+	// Build detector parameters
+	params := detection.DetectorParams{
+		Logger:     logger.Current(),
+		DataStores: t.dataStoreRegistry,
+		Config:     detection.NewEmptyDetectorConfig(), // Empty config for now
+	}
+
+	// Register all detectors
+	registered := 0
+	for _, detector := range detectorList {
+		definition := detector.GetDefinition()
+
+		if err := t.detectorEngine.RegisterDetector(detector, params); err != nil {
+			logger.Errorw("Failed to register detector",
+				"detector", definition.ID,
+				"error", err)
+			// Continue with other detectors - don't fail startup for one detector
+			continue
+		}
+
+		logger.Debugw("Registered detector",
+			"detector", definition.ID,
+			"event", definition.ProducedEvent.Name)
+		registered++
+	}
+
+	logger.Debugw("Detector registration complete",
+		"total", len(detectorList),
+		"registered", registered)
 
 	return nil
 }

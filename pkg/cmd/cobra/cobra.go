@@ -2,6 +2,7 @@ package cobra
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -16,6 +17,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/pkg/detectors"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/k8s"
 	"github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
@@ -100,6 +102,14 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 
 	sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
+
+	// Pre-register detector events in events.Core before policy initialization
+	// This allows the policy manager to select detector events just like regular events
+	allDetectors := detectors.CollectAllDetectors()
+	_, err = detectors.CreateEventsFromDetectors(events.StartDetectorID, allDetectors)
+	if err != nil {
+		return runner, fmt.Errorf("failed to create detector events: %w", err)
+	}
 
 	// Initialize a tracee config structure
 
@@ -353,6 +363,10 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		AvailableSignatures: signatures,
 		SelectedSignatures:  selectSignaturesBasedOnPolicies(signatures, initialPolicies),
 		DataSources:         dataSources,
+	}
+
+	runner.TraceeConfig.DetectorConfig = config.DetectorConfig{
+		Detectors: allDetectors,
 	}
 
 	return runner, nil
