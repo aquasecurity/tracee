@@ -595,41 +595,52 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 				// Convert to v1beta1.Event for detector API (uses cached conversion)
 				pbEvent := event.ToProto()
 
-				// Process event through detector chain using breadth-first traversal
-				queue := []*pb.Event{pbEvent}
+				// Dispatch original event to detectors to get initial outputs
+				outputs, err := t.detectorEngine.DispatchToDetectors(ctx, pbEvent)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+				if len(outputs) == 0 {
+					continue
+				}
+
+				// Process detector outputs through breadth-first chain traversal
+				// Start queue with initial detector outputs (not the original event)
+				queue := outputs
 
 				for depth := 0; depth < maxDetectorChainDepth && len(queue) > 0; depth++ {
 					var nextDepth []*pb.Event
 
 					// Process all events at current depth
-					for _, evt := range queue {
-						// Dispatch to detectors
-						outputs, err := t.detectorEngine.DispatchToDetectors(ctx, evt)
+					for _, protoEvent := range queue {
+						// Convert v1beta1.Event back to trace.Event
+						traceEvent := events.ConvertFromProto(protoEvent)
+
+						// Wrap in PipelineEvent and inherit policy context from input event
+						pipelineEvent := events.NewPipelineEvent(traceEvent)
+						pipelineEvent.MatchedPoliciesBitmap = event.MatchedPoliciesBitmap
+						pipelineEvent.Event.PoliciesVersion = event.Event.PoliciesVersion
+
+						// Apply policy filtering to detector outputs
+						if t.matchPolicies(pipelineEvent) == 0 {
+							continue // Skip events not matching policy
+						}
+
+						// Dispatch to next level detectors FIRST (before sending to sink)
+						// This allows detectors to clone the proto before sink mutates it
+						nextOutputs, err := t.detectorEngine.DispatchToDetectors(ctx, protoEvent)
 						if err != nil {
 							t.handleError(err)
-							continue
+							// Still send current event even if dispatch fails
 						}
 
-						// Filter and route outputs
-						for _, output := range outputs {
-							// Convert v1beta1.Event back to trace.Event
-							traceEvent := events.ConvertFromProto(output)
+						// Now send to output (sink stage)
+						// Sink may mutate proto, but dispatch already completed its clone
+						out <- pipelineEvent
 
-							// Wrap in PipelineEvent and inherit policy bitmap from input event
-							pipelineEvent := events.NewPipelineEvent(traceEvent)
-							pipelineEvent.MatchedPoliciesBitmap = event.MatchedPoliciesBitmap
-
-							// Apply policy filtering to detector outputs
-							if t.matchPolicies(pipelineEvent) == 0 {
-								continue // Skip events not matching policy
-							}
-
-							// Send to output
-							out <- pipelineEvent
-
-							// Queue for next depth - any detector output might be consumed by other detectors
-							nextDepth = append(nextDepth, output)
-						}
+						// Collect all outputs for next depth level
+						nextDepth = append(nextDepth, nextOutputs...)
 					}
 
 					queue = nextDepth
