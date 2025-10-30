@@ -66,12 +66,11 @@ type Tracee struct {
 	stats     *metrics.Stats
 	sigEngine *engine.Engine
 	// Events
-	eventsSorter        *sorting.EventsChronologicalSorter
-	eventsPool          *sync.Pool
-	eventDecodeTypes    map[events.ID][]data.DecodeAs
-	eventProcessor      map[events.ID][]func(evt *trace.Event) error
-	eventDerivations    derive.Table
-	allTailCallMapNames map[string]struct{} // all possible tailcall map names from all Core events (computed once at startup)
+	eventsSorter     *sorting.EventsChronologicalSorter
+	eventsPool       *sync.Pool
+	eventDecodeTypes map[events.ID][]data.DecodeAs
+	eventProcessor   map[events.ID][]func(evt *trace.Event) error
+	eventDerivations derive.Table
 	// Artifacts
 	fileHashes     *digest.Cache
 	capturedFiles  map[string]int64
@@ -237,28 +236,24 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Create Tracee
 
 	t := &Tracee{
-		config:              cfg,
-		done:                make(chan struct{}),
-		stats:               metrics.NewStats(),
-		writtenFiles:        make(map[string]string),
-		readFiles:           make(map[string]string),
-		capturedFiles:       make(map[string]int64),
-		streamsManager:      streams.NewStreamsManager(),
-		policyManager:       pm,
-		eventsDependencies:  depsManager,
-		requiredKsyms:       []string{},
-		extraProbes:         make(map[string]*probes.ProbeGroup),
-		dataTypeDecoder:     bufferdecoder.NewTypeDecoder(),
-		extensions:          NewExtensions(),
-		allTailCallMapNames: make(map[string]struct{}),
+		config:             cfg,
+		done:               make(chan struct{}),
+		stats:              metrics.NewStats(),
+		writtenFiles:       make(map[string]string),
+		readFiles:          make(map[string]string),
+		capturedFiles:      make(map[string]int64),
+		streamsManager:     streams.NewStreamsManager(),
+		policyManager:      pm,
+		eventsDependencies: depsManager,
+		requiredKsyms:      []string{},
+		extraProbes:        make(map[string]*probes.ProbeGroup),
+		dataTypeDecoder:    bufferdecoder.NewTypeDecoder(),
+		extensions:         NewExtensions(),
 	}
 
 	// clear initial policies to avoid wrong references
 	initialPolicies = nil
 	t.config.InitialPolicies = nil
-
-	// Initialize list of all possible tailcall map names from Core events
-	t.initAllTailCallMapNames()
 
 	// Add/Drop capabilities to/from the Base ring (always effective)
 
@@ -593,7 +588,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	return t.extensions.InitExtensionsForPhase(ctx, t, InitPhaseComplete)
 }
 
-// initTailCall initializes a given tailcall.
+// initTailCall initializes a given tailcall by updating the BPF map with the program FD.
 func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 	tailCallMapName := tailCall.GetMapName()
 	tailCallProgName := tailCall.GetProgName()
@@ -631,108 +626,31 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 	return nil
 }
 
-// initAllTailCallMapNames initializes the list of all possible tailcall map names
-// by iterating through all Core event definitions and extracting their tailcall dependencies.
-// This is called once during Tracee initialization to avoid repeated computation.
-func (t *Tracee) initAllTailCallMapNames() {
-	for _, eventDefinition := range events.Core.GetDefinitions() {
-		deps := eventDefinition.GetDependencies()
-		primaryDeps := deps.GetPrimaryDependencies()
-		tailCalls := primaryDeps.GetTailCalls()
-		for _, tailCall := range tailCalls {
-			t.allTailCallMapNames[tailCall.GetMapName()] = struct{}{}
-		}
+// uninitTailCall removes a given tailcall by deleting its entries from the BPF map.
+func (t *Tracee) uninitTailCall(tailCall events.TailCall) error {
+	tailCallMapName := tailCall.GetMapName()
+	tailCallIndexes := tailCall.GetIndexes()
 
-		// Also check fallback dependencies for their tailcalls
-		fallbackDeps := deps.GetFallbackDependencies()
-		for _, fallback := range fallbackDeps {
-			tailCalls := fallback.GetTailCalls()
-			for _, tailCall := range tailCalls {
-				t.allTailCallMapNames[tailCall.GetMapName()] = struct{}{}
-			}
-		}
-	}
-}
-
-// rebuildAllTailCalls rebuilds all tailcall mappings based on the current dependency state.
-// This method clears existing tailcall maps and then repopulates them with current dependencies.
-// It's called during initial setup and whenever the dependency state changes (fallbacks, event additions/removals).
-func (t *Tracee) rebuildAllTailCalls() error {
-	err := t.clearAllTailCallMaps()
+	// Pick eBPF map by name.
+	bpfMap, err := t.bpfModule.GetMap(tailCallMapName)
 	if err != nil {
-		return errfmt.Errorf("failed to clear tailcall maps: %v", err)
+		return errfmt.WrapError(err)
 	}
 
-	err = t.buildAllTailCallMaps()
-	if err != nil {
-		return errfmt.Errorf("failed to build tailcall maps: %v", err)
-	}
-
-	return nil
-}
-
-// clearAllTailCallMaps clears all BPF maps that are used for tailcalls.
-// It iterates through all BPF maps using the module iterator and clears any that are used for tailcalls.
-func (t *Tracee) clearAllTailCallMaps() error {
-	// Iterate through all BPF maps and clear the ones used for tailcalls
-	iterator := t.bpfModule.Iterator()
-	for bpfMap := iterator.NextMap(); bpfMap != nil; bpfMap = iterator.NextMap() {
-		mapName := bpfMap.Name()
-
-		// Check if this map is used for tailcalls (using pre-computed list from all Core events)
-		if _, isTailCallMap := t.allTailCallMapNames[mapName]; isTailCallMap {
-			err := t.clearTailCallMap(bpfMap)
-			if err != nil {
-				return errfmt.Errorf("failed to clear tailcall map %s: %v", mapName, err)
-			}
+	// Remove all indexes for this tailcall
+	for _, index := range tailCallIndexes {
+		// Workaround: Do not try to remove unsupported syscalls (arm64, e.g.)
+		if index >= uint32(events.Unsupported) {
+			continue
 		}
-	}
-
-	return nil
-}
-
-// buildAllTailCallMaps builds all tailcall mappings based on current event dependencies.
-func (t *Tracee) buildAllTailCallMaps() error {
-	for _, eventID := range t.eventsDependencies.GetEvents() {
-		depsNode, err := t.eventsDependencies.GetEvent(eventID)
-		if err != nil {
-			return errfmt.Errorf("failed to get event dependencies for %v: %v", eventID, err)
-		}
-		deps := depsNode.GetDependencies()
-		tailCalls := deps.GetTailCalls()
-		for _, tailCall := range tailCalls {
-			err := t.initTailCall(tailCall)
-			if err != nil {
-				return errfmt.Errorf("failed to initialize tail call: %v", err)
-			}
-		}
-	}
-
-	return nil
-}
-
-// clearTailCallMap clears all entries in the specified tailcall map.
-// It uses map key iteration to only clear existing entries, which is more efficient
-// than clearing all possible indexes.
-func (t *Tracee) clearTailCallMap(bpfMap *bpf.BPFMap) error {
-	iterator := bpfMap.Iterator()
-
-	// Collect all keys first to avoid iterator invalidation during deletion
-	var keysToDelete []uint32
-	for iterator.Next() {
-		keyBytes := iterator.Key()
-		if len(keyBytes) >= 4 { // uint32 is 4 bytes
-			key := *(*uint32)(unsafe.Pointer(&keyBytes[0]))
-			keysToDelete = append(keysToDelete, key)
-		}
-	}
-
-	// Now delete all the collected keys
-	for _, key := range keysToDelete {
-		err := bpfMap.DeleteKey(unsafe.Pointer(&key))
+		// Delete the entry from the BPF map
+		err := bpfMap.DeleteKey(unsafe.Pointer(&index))
 		if err != nil {
 			// Log but don't fail on individual delete errors
-			logger.Debugw("Failed to delete tailcall map entry", "map", bpfMap.Name(), "key", key, "error", err)
+			logger.Debugw("Failed to uninit tailcall index",
+				"map", tailCallMapName,
+				"index", index,
+				"error", err)
 		}
 	}
 
@@ -1415,12 +1333,6 @@ func (t *Tracee) populateBPFMaps() error {
 		return errfmt.WrapError(err)
 	}
 
-	// Initialize tail call dependencies
-	err = t.buildAllTailCallMaps()
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
 	return nil
 }
 
@@ -1499,6 +1411,72 @@ func (t *Tracee) attachProbes() error {
 		}
 	}
 	// TODO: Update the eBPF maps according to events state after failure of attachments
+	return nil
+}
+
+// attachTailCalls initializes selected tailcalls by updating their BPF maps.
+func (t *Tracee) attachTailCalls() error {
+	// Subscribe to watchers on the dependencies to initialize and/or uninitialize
+	// tailcalls upon changes
+	t.eventsDependencies.SubscribeAdd(
+		dependencies.TailCallNodeType,
+		func(node interface{}) []dependencies.Action {
+			tailCallNode, ok := node.(*dependencies.TailCallNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested", "type", fmt.Sprintf("%T", node))
+				return nil
+			}
+			tailCall := tailCallNode.GetTailCall()
+			err := t.initTailCall(tailCall)
+			if err != nil {
+				// Cancel adding this tailcall node if initialization fails
+				return []dependencies.Action{dependencies.NewCancelNodeAddAction(err)}
+			}
+			return nil
+		})
+
+	t.eventsDependencies.SubscribeRemove(
+		dependencies.TailCallNodeType,
+		func(node interface{}) []dependencies.Action {
+			tailCallNode, ok := node.(*dependencies.TailCallNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested", "type", fmt.Sprintf("%T", node))
+				return nil
+			}
+			tailCall := tailCallNode.GetTailCall()
+			err := t.uninitTailCall(tailCall)
+			if err != nil {
+				logger.Debugw("Failed to uninit tailcall",
+					"map", tailCall.GetMapName(),
+					"program", tailCall.GetProgName(),
+					"error", err)
+			}
+			return nil
+		})
+
+	// Initialize all current tailcalls or fail them (and dependent events) if initialization fails.
+	for _, tailCallKey := range t.eventsDependencies.GetTailCalls() {
+		tailCallNode, err := t.eventsDependencies.GetTailCall(tailCallKey)
+		if err != nil {
+			logger.Debugw("Failed to get tailcall from dependencies manager", "key", tailCallKey, "error", err)
+			continue
+		}
+		tailCall := tailCallNode.GetTailCall()
+
+		// Initialize this specific tailcall
+		err = t.initTailCall(tailCall)
+		if err != nil {
+			// Mark this specific tailcall as failed, which will also fail all dependent events as needed.
+			failErr := t.eventsDependencies.FailTailCall(tailCall)
+			if failErr != nil {
+				logger.Warnw("Failed to fail tailcall in dependencies manager",
+					"tailcall", tailCallKey,
+					"init error", err,
+					"fail error", failErr)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -1588,17 +1566,6 @@ func (t *Tracee) initBPF() error {
 	// Need to force nil to allow the garbage
 	// collector to free the BPF object
 	t.config.BPFObjBytes = nil
-
-	// Register state change watcher for tailcall rebuilding
-	// This ensures tailcalls are updated whenever the dependency tree changes
-	t.eventsDependencies.SubscribeStateChange(func() {
-		// Note: This is called within the dependency manager's mutex,
-		// so we should avoid any operations that might deadlock
-		err := t.rebuildAllTailCalls()
-		if err != nil {
-			logger.Errorw("Failed to rebuild tailcalls after dependency change", "error", err)
-		}
-	})
 
 	// Populate eBPF maps with initial data
 
@@ -1690,6 +1657,12 @@ func (t *Tracee) initBPF() error {
 	// iteration on procfs to fill in any missing data.
 
 	err = t.attachProbes()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Initialize tailcalls for selected events
+	err = t.attachTailCalls()
 
 	return errfmt.WrapError(err)
 }
