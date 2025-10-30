@@ -3,6 +3,7 @@ package config
 import (
 	"io"
 
+	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/environment"
 	"github.com/aquasecurity/tracee/common/errfmt"
@@ -37,6 +38,7 @@ type Config struct {
 	EngineConfig        engine.Config
 	MetricsEnabled      bool
 	DNSCacheConfig      dns.Config
+	DetectorConfig      DetectorConfig
 }
 
 // Validate does static validation of the configuration
@@ -162,4 +164,9 @@ type PrinterConfig struct {
 	OutPath       string
 	OutFile       io.WriteCloser
 	ContainerMode ContainerMode
+}
+
+// DetectorConfig manages detector lifecycle
+type DetectorConfig struct {
+	Detectors []detection.EventDetector // All detectors (built-in + extensions)
 }
