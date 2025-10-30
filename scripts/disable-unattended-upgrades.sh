@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -t | --timeout)
             if [[ -z "$2" ]] || [[ "$2" =~ ^- ]] || ! [[ "$2" =~ ^[0-9]+$ ]]; then
-                die "--timeout requires a positive integer (seconds)"
+                die "timeout requires a positive integer (seconds)"
             fi
             TIMEOUT="$2"
             shift 2
@@ -57,6 +57,15 @@ done
 
 TIMEOUT="${TIMEOUT:-$DEFAULT_TIMEOUT}"
 export DEBIAN_FRONTEND=noninteractive
+
+if [[ -f /etc/os-release ]]; then
+    # shellcheck source=/dev/null
+    . /etc/os-release
+    if [[ ! "${ID}" == "ubuntu" ]]; then
+        info "Not running on Ubuntu, exiting"
+        exit 0
+    fi
+fi
 
 require_cmds apt-get fuser pgrep pkill systemctl rm sleep
 
@@ -71,17 +80,20 @@ wait_for_apt_locks() {
     local timeout=${1:-$DEFAULT_TIMEOUT}
     local elapsed=0
     local wait_interval=2
+    local unattended_bin
+    unattended_bin=$(which unattended-upgrade) || true
+    unattended_bin=${unattended_bin:-/usr/bin/unattended-upgrade}
 
     info "Checking for unattended-upgrades (timeout: ${timeout} seconds)..."
-    while pgrep -f unattended-upgrades > /dev/null; do
+    while pgrep -f "${unattended_bin}" > /dev/null 2>&1; do
         if ((elapsed >= timeout)); then
             info "Timed out waiting for unattended-upgrades to finish. Attempting to kill..."
-            pkill -SIGQUIT -f unattended-upgrades || true
-            pkill -SIGKILL -f unattended-upgrades || true
+            pkill -SIGKILL -f "${unattended_bin}" || true
             break
         fi
 
         info "unattended-upgrades is still running. Waiting... (${elapsed}s/${timeout}s)"
+        pkill -SIGTERM -f "${unattended_bin}" || true
         sleep $wait_interval
         ((elapsed += wait_interval))
     done
@@ -112,7 +124,7 @@ wait_for_apt_locks() {
 
         info "Timed out waiting for apt locks to be released. Attempting to kill locking processes."
         for lock in "${locked_files[@]}"; do
-            fuser -k -SIGQUIT "${lock}" > /dev/null 2>&1 || true
+            fuser -k -SIGTERM "${lock}" > /dev/null 2>&1 || true
         done
 
         sleep 2 # give some time for processes to terminate gracefully

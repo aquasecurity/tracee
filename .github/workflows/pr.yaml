@@ -636,6 +636,8 @@ jobs:
         run: make tracee
       - name: "Compatibility Test"
         run: env "PATH=$PATH" make test-compatibility
+      - name: "Disable Unattended Upgrades (Ubuntu only)"
+        run: ./scripts/disable-unattended-upgrades.sh --timeout 5
       - name: "Instrumentation Test"
         id: e2e-inst-test
         run: ./tests/e2e-inst-test.sh --keep-artifacts

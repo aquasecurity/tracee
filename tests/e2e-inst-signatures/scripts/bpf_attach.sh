@@ -11,9 +11,9 @@ info() {
     echo "$@"
 }
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+# SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
-disable_unattended_upgrades="${SCRIPT_DIR}/../../../scripts/disable-unattended-upgrades.sh"
+# disable_unattended_upgrades="${SCRIPT_DIR}/../../../scripts/disable-unattended-upgrades.sh"
 
 # Parse command line arguments
 INSTALL=false
@@ -73,9 +73,10 @@ if [[ "$INSTALL" == "true" ]]; then
                     fi
                 fi
 
-                "${disable_unattended_upgrades}" || exit_err "failed to disable unattended upgrades"
+                # "${disable_unattended_upgrades}" --timeout 5 || exit_err "failed to disable unattended upgrades"
                 apt-get update 2>/dev/null || exit_err "failed to update apt repositories"
                 apt-get install -y bpftrace 2>/dev/null || exit_err "failed to install bpftrace"
+
                 ;;
             rhel | centos | fedora | almalinux | rocky)
                 if command -v dnf > /dev/null 2>&1; then
@@ -94,6 +95,7 @@ if [[ "$INSTALL" == "true" ]]; then
                     exit_err "no package manager found for RHEL/CentOS/AlmaLinux/Rocky"
                 fi
                 ;;
+
             *)
                 exit_err "unsupported distribution: $ID (supported: ubuntu, debian, rhel, centos, fedora, almalinux, rocky)"
                 ;;
