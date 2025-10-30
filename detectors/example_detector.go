@@ -2,8 +2,10 @@ package detectors
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 )
 
@@ -13,9 +15,13 @@ func init() {
 
 // ExampleDetector is a demonstration detector that shows the detector API patterns.
 // It detects all execve events and produces an example_detection event.
-// This detector is for testing and documentation purposes only.
+// This detector demonstrates:
+// - How to use the DataStore API (ProcessStore and ContainerStore)
+// - How to enrich detections with contextual information
+// - Best practices for detector implementation
 type ExampleDetector struct {
-	logger detection.Logger
+	logger     detection.Logger
+	dataStores datastores.Registry
 }
 
 func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
@@ -31,7 +37,7 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 		},
 		ProducedEvent: v1beta1.EventDefinition{
 			Name:        "example_detection",
-			Description: "Example detection demonstrating the detector API",
+			Description: "Example detection demonstrating the detector API and DataStore usage",
 			Version: &v1beta1.Version{
 				Major: 1,
 				Minor: 0,
@@ -40,6 +46,18 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 			Fields: []*v1beta1.EventField{
 				{
 					Name: "binary_path",
+					Type: "const char*",
+				},
+				{
+					Name: "parent_process",
+					Type: "const char*",
+				},
+				{
+					Name: "container_id",
+					Type: "const char*",
+				},
+				{
+					Name: "container_name",
 					Type: "const char*",
 				},
 				{
@@ -75,7 +93,9 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 
 func (d *ExampleDetector) Init(params detection.DetectorParams) error {
 	d.logger = params.Logger
-	d.logger.Debugw("ExampleDetector initialized")
+	d.dataStores = params.DataStores
+	d.logger.Debugw("ExampleDetector initialized",
+		"has_datastores", d.dataStores != nil)
 	return nil
 }
 
@@ -86,17 +106,75 @@ func (d *ExampleDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]
 		return nil, nil
 	}
 
-	// Get the binary path from the event
+	// Get basic process information from the event
 	binaryPath := ""
-	if event.Workload != nil && event.Workload.Process != nil && event.Workload.Process.Executable != nil {
-		binaryPath = event.Workload.Process.Executable.Path
+	var pid, entityID uint32
+	if event.Workload != nil && event.Workload.Process != nil {
+		if event.Workload.Process.Executable != nil {
+			binaryPath = event.Workload.Process.Executable.Path
+		}
+		if event.Workload.Process.Pid != nil {
+			pid = event.Workload.Process.Pid.Value
+		}
+		if event.Workload.Process.UniqueId != nil {
+			entityID = event.Workload.Process.UniqueId.Value
+		}
+	}
+
+	// Enrich with parent process information using ProcessStore
+	parentPath := ""
+	if d.dataStores != nil && entityID != 0 {
+		processStore := d.dataStores.Processes()
+		// Check if ProcessStore is available (it may be disabled in config)
+		if processStore != nil {
+			// Get current process to find parent
+			procInfo, found := processStore.GetProcess(uint64(entityID))
+			if found && procInfo.PPID != 0 {
+				// Try to get parent process information
+				// Note: We need to construct parent entityID from PPID
+				// For now, we'll just show the PPID - a real detector would
+				// use GetChildProcesses() or walk the process tree
+				parentPath = fmt.Sprintf("ppid:%d", procInfo.PPID)
+
+				d.logger.Debugw("Enriched with process info",
+					"pid", pid,
+					"entity_id", entityID,
+					"ppid", procInfo.PPID,
+					"process_name", procInfo.Name)
+			}
+		}
+	}
+
+	// Enrich with container information using ContainerStore
+	containerID := ""
+	containerName := ""
+	if event.Workload != nil && event.Workload.Container != nil {
+		containerID = event.Workload.Container.Id
+
+		// Get additional container details from ContainerStore
+		if d.dataStores != nil && containerID != "" {
+			containerStore := d.dataStores.Containers()
+			if containerStore != nil {
+				containerInfo, found := containerStore.GetContainer(containerID)
+				if found {
+					containerName = containerInfo.Name
+					d.logger.Debugw("Enriched with container info",
+						"container_id", containerID,
+						"container_name", containerName,
+						"image_name", containerInfo.Image)
+				}
+			}
+		}
 	}
 
 	d.logger.Debugw("ExampleDetector triggered",
 		"event_name", event.Name,
-		"binary_path", binaryPath)
+		"binary_path", binaryPath,
+		"parent_path", parentPath,
+		"container_id", containerID,
+		"container_name", containerName)
 
-	// Create output event with field data
+	// Create output event with enriched field data
 	outputEvent := v1beta1.CreateEventFromBase(event)
 	outputEvent.Data = []*v1beta1.EventValue{
 		{
@@ -104,8 +182,20 @@ func (d *ExampleDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]
 			Value: &v1beta1.EventValue_Str{Str: binaryPath},
 		},
 		{
+			Name:  "parent_process",
+			Value: &v1beta1.EventValue_Str{Str: parentPath},
+		},
+		{
+			Name:  "container_id",
+			Value: &v1beta1.EventValue_Str{Str: containerID},
+		},
+		{
+			Name:  "container_name",
+			Value: &v1beta1.EventValue_Str{Str: containerName},
+		},
+		{
 			Name:  "detection_reason",
-			Value: &v1beta1.EventValue_Str{Str: "Example detection - all execve events"},
+			Value: &v1beta1.EventValue_Str{Str: "Example detection - all execve events with DataStore enrichment"},
 		},
 		{
 			Name:  "confidence",
