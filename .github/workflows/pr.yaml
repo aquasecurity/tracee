@@ -632,6 +632,8 @@ jobs:
           if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
             echo "TESTS=${{ env.ARM64_TESTS }}" >> $GITHUB_ENV
           fi
+      - name: "Build Tracee"
+        run: make tracee
       - name: "Compatibility Test"
         run: env "PATH=$PATH" make test-compatibility
       - name: "Instrumentation Test"
