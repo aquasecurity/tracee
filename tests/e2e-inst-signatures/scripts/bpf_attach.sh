@@ -11,6 +11,10 @@ info() {
     echo "$@"
 }
 
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+
+disable_unattended_upgrades="${SCRIPT_DIR}/../../../scripts/disable-unattended-upgrades.sh"
+
 # Parse command line arguments
 INSTALL=false
 RUN=true
@@ -69,32 +73,9 @@ if [[ "$INSTALL" == "true" ]]; then
                     fi
                 fi
 
-                # # Handle Ubuntu Noble ARM64 specific issues with kernels 6.11/6.12
-                # if [[ "${ID}" == "ubuntu" ]] && [[ "${VERSION_CODENAME}" == "noble" ]] \
-                #     && [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
-                #     kernel_version=$(uname -r | cut -d. -f1,2)
-                #     if [[ "${kernel_version}" == "6.11" ]] || [[ "${kernel_version}" == "6.12" ]]; then
-                #         info "detected Ubuntu Noble ARM64 with kernel ${kernel_version}, applying repository fixes..."
-                        
-                #         # Check if using deb822 format and fix ARM64 repository issues
-                #         if [[ -f "/etc/apt/sources.list.d/ubuntu.sources" ]]; then
-                #             # Ensure universe component is available for bpftrace
-                #             if ! grep -q "Components:.*universe" /etc/apt/sources.list.d/ubuntu.sources; then
-                #                 info "adding universe component to ubuntu.sources..."
-                #                 sed -i 's/Components: main/Components: main universe/' /etc/apt/sources.list.d/ubuntu.sources
-                #             fi
-                            
-                #             # Fix ARM64 repository URLs that might be causing issues
-                #             if grep -q "us-east-2.ec2.ports.ubuntu.com" /etc/apt/sources.list.d/ubuntu.sources; then
-                #                 info "fixing ARM64 repository URLs for better reliability..."
-                #                 sed -i 's|http://us-east-2.ec2.ports.ubuntu.com/ubuntu-ports/|http://ports.ubuntu.com/ubuntu-ports/|g' /etc/apt/sources.list.d/ubuntu.sources
-                #             fi
-                #         fi
-                #     fi
-                # fi
-
-                apt-get update 2>&1 || exit_err "failed to update apt repositories"
-                apt-get install -y bpftrace 2>&1 || exit_err "failed to install bpftrace"
+                "${disable_unattended_upgrades}" || exit_err "failed to disable unattended upgrades"
+                apt-get update 2>/dev/null || exit_err "failed to update apt repositories"
+                apt-get install -y bpftrace 2>/dev/null || exit_err "failed to install bpftrace"
                 ;;
             rhel | centos | fedora | almalinux | rocky)
                 if command -v dnf > /dev/null 2>&1; then

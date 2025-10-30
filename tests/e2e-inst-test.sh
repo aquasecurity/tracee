@@ -210,8 +210,7 @@ print_end_separator
 print_test_header "COMPILING TRACEE"
 # make clean # if you want to be extra cautious
 set -e
-make -j"$(nproc)" all
-make e2e-inst-signatures
+make -j"$(nproc)" tracee e2e-inst-signatures
 set +e
 print_end_separator
 
