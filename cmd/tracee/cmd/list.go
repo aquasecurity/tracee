@@ -8,6 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
+	"github.com/aquasecurity/tracee/pkg/detectors"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 )
@@ -47,6 +48,14 @@ var listCmd = &cobra.Command{
 		}
 
 		sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
+
+		// Collect and register detector events
+		allDetectors := detectors.CollectAllDetectors()
+		_, err = detectors.CreateEventsFromDetectors(events.StartDetectorID, allDetectors)
+		if err != nil {
+			logger.Fatalw("Failed to register detector events", "err", err)
+			os.Exit(1)
+		}
 
 		includeSigs := true
 		wideOutput := c.Flags().Lookup("wide").Value.String() == "true"
