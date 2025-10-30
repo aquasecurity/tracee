@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 )
 
@@ -13,9 +14,13 @@ func init() {
 
 // ExampleDetector is a demonstration detector that shows the detector API patterns.
 // It detects all execve events and produces an example_detection event.
-// This detector is for testing and documentation purposes only.
+// This detector demonstrates:
+// - How to use the DataStore API (ProcessStore and ContainerStore)
+// - How to enrich detections with contextual information
+// - Best practices for detector implementation
 type ExampleDetector struct {
-	logger detection.Logger
+	logger     detection.Logger
+	dataStores datastores.Registry
 }
 
 func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
@@ -28,10 +33,16 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 					Dependency: detection.DependencyRequired,
 				},
 			},
+			DataStores: []detection.DataStoreRequirement{
+				{
+					Name:       "container",
+					Dependency: detection.DependencyRequired,
+				},
+			},
 		},
 		ProducedEvent: v1beta1.EventDefinition{
 			Name:        "example_detection",
-			Description: "Example detection demonstrating the detector API",
+			Description: "Example detection demonstrating the detector API and DataStore usage",
 			Version: &v1beta1.Version{
 				Major: 1,
 				Minor: 0,
@@ -40,6 +51,18 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 			Fields: []*v1beta1.EventField{
 				{
 					Name: "binary_path",
+					Type: "const char*",
+				},
+				{
+					Name: "container_id",
+					Type: "const char*",
+				},
+				{
+					Name: "container_name",
+					Type: "const char*",
+				},
+				{
+					Name: "container_image",
 					Type: "const char*",
 				},
 				{
@@ -75,7 +98,9 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 
 func (d *ExampleDetector) Init(params detection.DetectorParams) error {
 	d.logger = params.Logger
-	d.logger.Debugw("ExampleDetector initialized")
+	d.dataStores = params.DataStores
+	d.logger.Debugw("ExampleDetector initialized",
+		"has_datastores", d.dataStores != nil)
 	return nil
 }
 
@@ -86,17 +111,50 @@ func (d *ExampleDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]
 		return nil, nil
 	}
 
-	// Get the binary path from the event
+	// Get basic process information from the event
 	binaryPath := ""
-	if event.Workload != nil && event.Workload.Process != nil && event.Workload.Process.Executable != nil {
-		binaryPath = event.Workload.Process.Executable.Path
+	var pid uint32
+	if event.Workload != nil && event.Workload.Process != nil {
+		if event.Workload.Process.Executable != nil {
+			binaryPath = event.Workload.Process.Executable.Path
+		}
+		if event.Workload.Process.Pid != nil {
+			pid = event.Workload.Process.Pid.Value
+		}
+	}
+
+	// Enrich with container information using ContainerStore
+	containerID := ""
+	containerName := ""
+	containerImage := ""
+	if event.Workload != nil && event.Workload.Container != nil {
+		containerID = event.Workload.Container.Id
+
+		// Get additional container details from ContainerStore
+		if d.dataStores != nil && containerID != "" {
+			containerStore := d.dataStores.Containers()
+			if containerStore != nil {
+				containerInfo, found := containerStore.GetContainer(containerID)
+				if found {
+					containerName = containerInfo.Name
+					containerImage = containerInfo.Image
+					d.logger.Debugw("Enriched with container info",
+						"container_id", containerID,
+						"container_name", containerName,
+						"image_name", containerImage)
+				}
+			}
+		}
 	}
 
 	d.logger.Debugw("ExampleDetector triggered",
 		"event_name", event.Name,
-		"binary_path", binaryPath)
+		"binary_path", binaryPath,
+		"pid", pid,
+		"container_id", containerID,
+		"container_name", containerName)
 
-	// Create output event with field data
+	// Create output event with enriched field data
 	outputEvent := v1beta1.CreateEventFromBase(event)
 	outputEvent.Data = []*v1beta1.EventValue{
 		{
@@ -104,8 +162,20 @@ func (d *ExampleDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]
 			Value: &v1beta1.EventValue_Str{Str: binaryPath},
 		},
 		{
+			Name:  "container_id",
+			Value: &v1beta1.EventValue_Str{Str: containerID},
+		},
+		{
+			Name:  "container_name",
+			Value: &v1beta1.EventValue_Str{Str: containerName},
+		},
+		{
+			Name:  "container_image",
+			Value: &v1beta1.EventValue_Str{Str: containerImage},
+		},
+		{
 			Name:  "detection_reason",
-			Value: &v1beta1.EventValue_Str{Str: "Example detection - all execve events"},
+			Value: &v1beta1.EventValue_Str{Str: "Example detection - all execve events with DataStore enrichment"},
 		},
 		{
 			Name:  "confidence",
