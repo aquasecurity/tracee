@@ -7,7 +7,9 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
 // entry holds detector metadata for dispatch
@@ -24,15 +26,15 @@ type registry struct {
 	mu             sync.RWMutex
 	detectors      map[string]*entry // Detector ID -> entry
 	eventNameIndex map[string]string // Event name -> Detector ID (for collision detection)
-	nextDynamicID  v1beta1.EventId   // Next dynamic event ID to allocate (starts at 7000)
+	policyManager  *policy.Manager   // For policy checking during registration
 }
 
 // newRegistry creates a new detector registry
-func newRegistry() *registry {
+func newRegistry(policyManager *policy.Manager) *registry {
 	return &registry{
 		detectors:      make(map[string]*entry),
 		eventNameIndex: make(map[string]string),
-		nextDynamicID:  v1beta1.EventId(events.StartDetectorID), // Dynamic detector IDs start at 7000
+		policyManager:  policyManager,
 	}
 }
 
@@ -62,28 +64,38 @@ func (r *registry) RegisterDetector(
 		return fmt.Errorf("detector %s has invalid requirements: %w", detectorID, err)
 	}
 
-	// Allocate event ID - enforces unique event names for all detectors
-	eventID, err := r.allocateEventID(eventName, detectorID)
-	if err != nil {
-		return fmt.Errorf("detector %s: %w", detectorID, err)
+	// Lookup pre-allocated event ID from events.Core
+	eventID, found := events.Core.GetDefinitionIDByName(eventName)
+	if !found {
+		return fmt.Errorf("detector %s: event '%s' was not pre-registered in events.Core", detectorID, eventName)
+	}
+	r.eventNameIndex[eventName] = detectorID
+
+	// Check if detector's output event is selected by policy
+	enabled := r.policyManager != nil && r.policyManager.IsEventSelected(eventID)
+
+	// Only initialize if selected to avoid resource waste
+	if enabled {
+		// Initialize detector before adding to registry
+		if err := detector.Init(params); err != nil {
+			return fmt.Errorf("failed to initialize detector %s: %w", detectorID, err)
+		}
+	} else {
+		logger.Debugw("Skipping detector initialization (not selected by policy)",
+			"detector", detectorID,
+			"event", eventName)
 	}
 
-	// Initialize detector before adding to registry
-	// If Init fails, detector is never registered (atomic operation)
-	if err := detector.Init(params); err != nil {
-		return fmt.Errorf("failed to initialize detector %s: %w", detectorID, err)
-	}
-
-	// Store detector entry with cached definition
-	// Definition cached at registration to avoid repeated GetDefinition() calls
-	// Detectors MUST ensure GetDefinition() is idempotent and returns constant data
+	// Create detector entry after initialization check
 	detectorEntry := &entry{
 		detector:   detector,
-		definition: &definition, // Cache definition
-		eventID:    eventID,
+		definition: &definition,
+		eventID:    v1beta1.EventId(eventID),
 		eventName:  eventName,
-		enabled:    true, // Detectors start enabled by default
+		enabled:    enabled,
 	}
+
+	// Store detector entry (registered regardless of selection for future runtime changes)
 	r.detectors[detectorID] = detectorEntry
 
 	return nil
@@ -166,41 +178,6 @@ func (r *registry) DisableDetector(detectorID string) error {
 
 	detector.enabled = false
 	return nil
-}
-
-// allocateEventID is an engine-internal helper for event ID allocation
-// Implements two-phase lookup: predefined events first, then dynamic allocation
-// Enforces global uniqueness of event names across all detector types
-//
-// Why enforce uniqueness?
-//  1. Event Identity: Each event name must map to exactly one event ID and schema
-//  2. Detector Chains: Detectors can depend on events from other detectors (e.g., threat detector
-//     consuming derived events). Unique event names ensure unambiguous dependency resolution and
-//     correct dispatch routing through detector chains.
-//  3. Consistency: Users expect one canonical source/definition per event name (e.g., in 'tracee list')
-//  4. Security: Prevents event name spoofing and ensures engine control over event identity
-func (r *registry) allocateEventID(
-	eventName string,
-	detectorID string,
-) (v1beta1.EventId, error) {
-	// Check if another detector already produces this event name
-	if existingDetectorID, exists := r.eventNameIndex[eventName]; exists {
-		return 0, fmt.Errorf("event name '%s' already produced by detector %s",
-			eventName, existingDetectorID)
-	}
-
-	// Phase 1: Check if this is a predefined event (lookup in event definitions)
-	if predefinedID := events.LookupPredefinedEventID(eventName); predefinedID != 0 {
-		// Found in enum - use predefined ID (e.g., "hooked_syscall" → 2021)
-		r.eventNameIndex[eventName] = detectorID
-		return v1beta1.EventId(predefinedID), nil
-	}
-
-	// Phase 2: Allocate new dynamic ID (starting from 7000)
-	newID := r.nextDynamicID
-	r.nextDynamicID++
-	r.eventNameIndex[eventName] = detectorID
-	return newID, nil
 }
 
 // validateEventRequirements validates event requirements

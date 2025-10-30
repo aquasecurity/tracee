@@ -6,24 +6,30 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
 // dispatcher manages event routing to detectors based on their requirements
 type dispatcher struct {
-	mu          sync.RWMutex
-	dispatchMap map[v1beta1.EventId][]string // Event ID -> Detector IDs
+	mu            sync.RWMutex
+	dispatchMap   map[v1beta1.EventId][]string // Event ID -> Detector IDs
+	registry      *registry
+	policyManager *policy.Manager
 }
 
 // newDispatcher creates a new event dispatcher
-func newDispatcher() *dispatcher {
+func newDispatcher(registry *registry, policyManager *policy.Manager) *dispatcher {
 	return &dispatcher{
-		dispatchMap: make(map[v1beta1.EventId][]string),
+		dispatchMap:   make(map[v1beta1.EventId][]string),
+		registry:      registry,
+		policyManager: policyManager,
 	}
 }
 
 // rebuild reconstructs the dispatch mapping from registered detectors
 // Called by the registry after Register/Unregister operations
-func (d *dispatcher) rebuild(registry *registry) {
+// Only includes detectors whose output events are selected by policy
+func (d *dispatcher) rebuild() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -31,10 +37,15 @@ func (d *dispatcher) rebuild(registry *registry) {
 	d.dispatchMap = make(map[v1beta1.EventId][]string)
 
 	// Build mapping from detector requirements
-	registry.mu.RLock()
-	defer registry.mu.RUnlock()
+	d.registry.mu.RLock()
+	defer d.registry.mu.RUnlock()
 
-	for detectorID, detectorEntry := range registry.detectors {
+	for detectorID, detectorEntry := range d.registry.detectors {
+		// Policy filtering: Only add detector to dispatch map if its output event is selected
+		if d.policyManager != nil && !d.policyManager.IsEventSelected(events.ID(detectorEntry.eventID)) {
+			continue
+		}
+
 		for _, req := range detectorEntry.definition.Requirements.Events {
 			// Lookup event ID by name (check predefined events first)
 			var eventID v1beta1.EventId
@@ -43,8 +54,8 @@ func (d *dispatcher) rebuild(registry *registry) {
 			} else {
 				// If not predefined, check if it's a detector-produced event
 				// Look up in event name index to see if another detector produces it
-				if producerID, exists := registry.eventNameIndex[req.Name]; exists {
-					if producerEntry, ok := registry.detectors[producerID]; ok {
+				if producerID, exists := d.registry.eventNameIndex[req.Name]; exists {
+					if producerEntry, ok := d.registry.detectors[producerID]; ok {
 						eventID = producerEntry.eventID
 					}
 				}
@@ -60,7 +71,7 @@ func (d *dispatcher) rebuild(registry *registry) {
 
 // dispatchToDetectors dispatches an event to all registered detectors that are interested in it
 // Returns the output events produced by detectors
-func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta1.Event, registry *registry) ([]*v1beta1.Event, error) {
+func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta1.Event) ([]*v1beta1.Event, error) {
 	var outputEvents []*v1beta1.Event
 
 	// Stage 1: Event ID → Detector IDs (dispatch mapping)
@@ -69,11 +80,11 @@ func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta
 	d.mu.RUnlock()
 
 	// Stage 2: For each detector ID, get detector entry and process
-	registry.mu.RLock()
-	defer registry.mu.RUnlock()
+	d.registry.mu.RLock()
+	defer d.registry.mu.RUnlock()
 
 	for _, detectorID := range detectorIDs {
-		detector := registry.detectors[detectorID]
+		detector := d.registry.detectors[detectorID]
 		if detector == nil {
 			continue // Should never happen, but be defensive
 		}
