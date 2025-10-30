@@ -430,38 +430,8 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return err
 	}
 
-	// Initialize DataStore Registry
-
-	t.dataStoreRegistry = datastores.NewRegistry()
-
-	// Register core datastores
-	if err := t.dataStoreRegistry.RegisterStore("process", t.processTree, true); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	if err := t.dataStoreRegistry.RegisterStore("container", t.container, true); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// DNS cache is optional (only initialized if DNSCacheConfig.Enable is true)
-	if err := t.dataStoreRegistry.RegisterStore("dns", t.dnsCache, false); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Kernel symbols can be hot-reloaded at runtime, so we use an adapter
-	// that always fetches the current symbol table
-	kernelSymbolAdapter := symbol.NewAdapter(t.getKernelSymbols)
-	if err := t.dataStoreRegistry.RegisterStore("symbol", kernelSymbolAdapter, true); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Initialize Detector Engine
+	// Initialize Detector Engine (before detectors are registered)
 	t.detectorEngine = detectors.NewEngine(t.policyManager)
-
-	// Register detectors from config
-	if err := t.registerAllDetectors(t.config.DetectorConfig.Detectors); err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	// Initialize time
 
@@ -537,6 +507,37 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
+	}
+
+	// Initialize DataStore Registry (after datastores are created)
+
+	t.dataStoreRegistry = datastores.NewRegistry()
+
+	// Register core datastores
+	// ProcessTree is optional (may be nil if Source == SourceNone)
+	if err := t.dataStoreRegistry.RegisterStore("process", t.processTree, false); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	if err := t.dataStoreRegistry.RegisterStore("container", t.container, true); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// DNS cache is optional (may be nil if DNSCacheConfig.Enable is false)
+	if err := t.dataStoreRegistry.RegisterStore("dns", t.dnsCache, false); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Kernel symbols can be hot-reloaded at runtime, so we use an adapter
+	// that always fetches the current symbol table
+	kernelSymbolAdapter := symbol.NewAdapter(t.getKernelSymbols)
+	if err := t.dataStoreRegistry.RegisterStore("symbol", kernelSymbolAdapter, true); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Register detectors from config (after datastores are registered)
+	if err := t.registerAllDetectors(t.config.DetectorConfig.Detectors); err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	// Initialize eBPF programs and maps
