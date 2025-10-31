@@ -490,11 +490,22 @@ MULTIARCH_INCLUDE := $(shell multiarch_dir=$$( $(CMD_CLANG) -print-multiarch 2> 
 bpf:: $(OUTPUT_DIR)/tracee.bpf.o lsmsupport-bpf
 
 # LSM support BPF objects
+LSM_SUPPORT_DIR := pkg/ebpf/c/lsmsupport
+LSM_SUPPORT_SRCS := $(patsubst %.bpf.c,%,$(notdir $(wildcard $(LSM_SUPPORT_DIR)/*.bpf.c)))
+LSM_SUPPORT_HEADERS := $(shell find $(LSM_SUPPORT_DIR) -name *.h)
+LSM_SUPPORT_OBJS := $(addprefix $(OUTPUT_DIR)/lsm_support/,$(addsuffix .bpf.o,$(LSM_SUPPORT_SRCS)))
+
 .PHONY: lsmsupport-bpf
-lsmsupport-bpf: $(OUTPUT_DIR)/lsm_support/lsm_check.bpf.o $(OUTPUT_DIR)/lsm_support/kprobe_check.bpf.o
+lsmsupport-bpf: $(LSM_SUPPORT_OBJS)
 
 # LSM support BPF objects
-$(OUTPUT_DIR)/lsm_support/lsm_check.bpf.o: $(LIBBPF_OBJ) pkg/ebpf/c/lsmsupport/lsm_check.bpf.c pkg/ebpf/c/lsmsupport/lsm_check_common.h | $(OUTPUT_DIR)/lsm_support
+# keep the source first so $< expands to the .bpf.c file
+$(OUTPUT_DIR)/lsm_support/%.bpf.o: \
+	$(LSM_SUPPORT_DIR)/%.bpf.c \
+	$(LSM_SUPPORT_HEADERS) \
+	$(LIBBPF_OBJ) \
+	| $(OUTPUT_DIR)/lsm_support
+#
 	$(CMD_CLANG) \
 		$(BPF_DEBUG_FLAG) \
 		-D__TARGET_ARCH_$(LINUX_ARCH) \
@@ -505,21 +516,7 @@ $(OUTPUT_DIR)/lsm_support/lsm_check.bpf.o: $(LIBBPF_OBJ) pkg/ebpf/c/lsmsupport/l
 		-target bpf \
 		-O2 -g \
 		-mcpu=$(BPF_VCPU) \
-		-c pkg/ebpf/c/lsmsupport/lsm_check.bpf.c \
-		-o $@
-
-$(OUTPUT_DIR)/lsm_support/kprobe_check.bpf.o: $(LIBBPF_OBJ) pkg/ebpf/c/lsmsupport/kprobe_check.bpf.c pkg/ebpf/c/lsmsupport/lsm_check_common.h | $(OUTPUT_DIR)/lsm_support
-	$(CMD_CLANG) \
-		$(BPF_DEBUG_FLAG) \
-		-D__TARGET_ARCH_$(LINUX_ARCH) \
-		-D__BPF_TRACING__ \
-		$(TRACEE_EBPF_CFLAGS) \
-		$(MULTIARCH_INCLUDE) \
-		-I./pkg/ebpf/c/ \
-		-target bpf \
-		-O2 -g \
-		-mcpu=$(BPF_VCPU) \
-		-c pkg/ebpf/c/lsmsupport/kprobe_check.bpf.c \
+		-c $< \
 		-o $@
 
 # Create lsm_support directory
@@ -558,9 +555,11 @@ clean-bpf:: clean-lsmsupport-bpf
 .PHONY: lsm-check
 lsm-check:: $(OUTPUT_DIR)/lsm-check
 
+LSM_CHECK_SRC := $(shell find cmd/lsm_support_check -type f -name '*.go')
+
 $(OUTPUT_DIR)/lsm-check:: \
-	lsmsupport-bpf \
-	cmd/lsm_support_check/lsm_check.go \
+	$(LSM_SUPPORT_OBJS) \
+	$(LSM_CHECK_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
 	.checklib_$(LIB_BPF)
@@ -625,7 +624,8 @@ endif
 tracee:: $(OUTPUT_DIR)/tracee
 
 $(OUTPUT_DIR)/tracee:: \
-	bpf \
+	$(OUTPUT_DIR)/tracee.bpf.o \
+	$(LSM_SUPPORT_OBJS) \
 	$(TRACEE_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
@@ -659,7 +659,8 @@ clean-tracee::
 tracee-ebpf:: $(OUTPUT_DIR)/tracee-ebpf
 
 $(OUTPUT_DIR)/tracee-ebpf:: \
-	bpf \
+	$(OUTPUT_DIR)/tracee.bpf.o \
+	$(LSM_SUPPORT_OBJS) \
 	$(TRACEE_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
@@ -825,18 +826,22 @@ E2E_NET_SRC := $(shell find $(E2E_NET_DIR) \
 #
 #	traceectl 
 #
+
 SUBDIR_TRACEECTL = cmd/traceectl
+
 .PHONY: traceectl
-traceectl:: $(OUTPUT_DIR)
-	$(MAKE) -C $(SUBDIR_TRACEECTL) all
-	cp $(SUBDIR_TRACEECTL)/dist/traceectl $(OUTPUT_DIR)/
-	@echo "Moved traceectl binary to $(OUTPUT_DIR)"
+traceectl:: $(OUTPUT_DIR)/traceectl
+
+$(OUTPUT_DIR)/traceectl:: \
+	| $(OUTPUT_DIR)
+#
+	$(MAKE) -C $(SUBDIR_TRACEECTL)
+	$(CMD_CP) $(SUBDIR_TRACEECTL)/dist/traceectl $(OUTPUT_DIR)/
 
 .PHONY: clean-traceectl
 clean-traceectl::
 	$(MAKE) -C $(SUBDIR_TRACEECTL) clean
-	 rm -f $(OUTPUT_DIR)/traceectl
-
+	$(CMD_RM) -f $(OUTPUT_DIR)/traceectl
 
 .PHONY: e2e-net-signatures
 e2e-net-signatures:: $(OUTPUT_DIR)/e2e-net-signatures
