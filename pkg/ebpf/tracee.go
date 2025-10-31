@@ -15,6 +15,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
+	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/bitwise"
 	"github.com/aquasecurity/tracee/common/bucketcache"
 	"github.com/aquasecurity/tracee/common/capabilities"
@@ -27,10 +28,12 @@ import (
 	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/pkg/datastores"
 	"github.com/aquasecurity/tracee/pkg/datastores/container"
 	"github.com/aquasecurity/tracee/pkg/datastores/dns"
 	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/datastores/symbol"
+	"github.com/aquasecurity/tracee/pkg/detectors"
 	"github.com/aquasecurity/tracee/pkg/ebpf/controlplane"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
@@ -113,6 +116,10 @@ type Tracee struct {
 	processTree *process.ProcessTree
 	// DNS Cache
 	dnsCache *dns.DNSCache
+	// DataStore Registry
+	dataStoreRegistry *datastores.Registry
+	// Detector Engine
+	detectorEngine *detectors.Engine
 	// Specific Events Needs
 	triggerContexts trigger.Context
 	readyCallback   func(gocontext.Context)
@@ -181,6 +188,11 @@ func (t *Tracee) getKernelSymbols() *symbol.KernelSymbolTable {
 
 func (t *Tracee) setKernelSymbols(kernelSymbols *symbol.KernelSymbolTable) {
 	t.kernelSymbols.Store(kernelSymbols)
+}
+
+// DataStores returns the datastore registry for accessing system state information
+func (t *Tracee) DataStores() *datastores.Registry {
+	return t.dataStoreRegistry
 }
 
 // New creates a new Tracee instance based on a given valid Config. It is expected that it won't
@@ -451,6 +463,9 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return err
 	}
 
+	// Initialize Detector Engine (before detectors are registered)
+	t.detectorEngine = detectors.NewEngine(t.policyManager)
+
 	// Initialize time
 
 	// Checking the kernel symbol needs to happen after obtaining the capability;
@@ -525,6 +540,37 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
+	}
+
+	// Initialize DataStore Registry (after datastores are created)
+
+	t.dataStoreRegistry = datastores.NewRegistry()
+
+	// Register core datastores
+	// ProcessTree is optional (may be nil if Source == SourceNone)
+	if err := t.dataStoreRegistry.RegisterStore("process", t.processTree, false); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	if err := t.dataStoreRegistry.RegisterStore("container", t.container, true); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// DNS cache is optional (may be nil if DNSCacheConfig.Enable is false)
+	if err := t.dataStoreRegistry.RegisterStore("dns", t.dnsCache, false); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Kernel symbols can be hot-reloaded at runtime, so we use an adapter
+	// that always fetches the current symbol table
+	kernelSymbolAdapter := symbol.NewAdapter(t.getKernelSymbols)
+	if err := t.dataStoreRegistry.RegisterStore("symbol", kernelSymbolAdapter, true); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Register detectors from config (after datastores are registered)
+	if err := t.registerAllDetectors(t.config.DetectorConfig.Detectors); err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	// Initialize eBPF programs and maps
@@ -2115,6 +2161,44 @@ func (t *Tracee) DisableEvent(eventName string) error {
 			}
 		}
 	}
+
+	return nil
+}
+
+// registerAllDetectors registers detectors with the engine.
+// Event IDs must be pre-registered in events.Core before calling this function.
+func (t *Tracee) registerAllDetectors(detectorList []detection.EventDetector) error {
+	logger.Debugw("Registering detectors", "count", len(detectorList))
+
+	// Build detector parameters
+	params := detection.DetectorParams{
+		Logger:     logger.Current(),
+		DataStores: t.dataStoreRegistry,
+		Config:     detection.NewDetectorConfig(make(map[string]any)), // Empty config for now
+	}
+
+	// Register all detectors
+	registered := 0
+	for _, detector := range detectorList {
+		definition := detector.GetDefinition()
+
+		if err := t.detectorEngine.RegisterDetector(detector, params); err != nil {
+			logger.Errorw("Failed to register detector",
+				"detector", definition.ID,
+				"error", err)
+			// Continue with other detectors - don't fail startup for one detector
+			continue
+		}
+
+		logger.Debugw("Registered detector",
+			"detector", definition.ID,
+			"event", definition.ProducedEvent.Name)
+		registered++
+	}
+
+	logger.Debugw("Detector registration complete",
+		"total", len(detectorList),
+		"registered", registered)
 
 	return nil
 }
