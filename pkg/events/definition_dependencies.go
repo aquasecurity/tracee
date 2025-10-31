@@ -217,3 +217,7 @@ func (tc TailCall) GetMapName() string {
 func (tc TailCall) GetProgName() string {
 	return tc.progName
 }
+
+func (tc TailCall) IsRequired() bool {
+	return true // tailcalls are always required
+}
