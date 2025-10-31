@@ -408,7 +408,7 @@ $(LIBBPF_OBJ):: .build_libbpf .build_libbpf_fix
 .build_libbpf:: \
 	$(LIBBPF_SRC) \
 	$(wildcard $(LIBBPF_SRC)/*.[ch]) \
-	| .checkver_$(CMD_CLANG) $(OUTPUT_DIR)
+	| .checkver_$(CMD_CLANG)
 #
 	CC="$(CMD_CLANG)" \
 		CFLAGS="$(LIBBPF_CFLAGS)" \
@@ -490,11 +490,22 @@ MULTIARCH_INCLUDE := $(shell multiarch_dir=$$( $(CMD_CLANG) -print-multiarch 2> 
 bpf:: $(OUTPUT_DIR)/tracee.bpf.o lsmsupport-bpf
 
 # LSM support BPF objects
+LSM_SUPPORT_DIR := pkg/ebpf/c/lsmsupport
+LSM_SUPPORT_SRCS := $(patsubst %.bpf.c,%,$(notdir $(wildcard $(LSM_SUPPORT_DIR)/*.bpf.c)))
+LSM_SUPPORT_HEADERS := $(shell find $(LSM_SUPPORT_DIR) -name *.h)
+LSM_SUPPORT_OBJS := $(addprefix $(OUTPUT_DIR)/lsm_support/,$(addsuffix .bpf.o,$(LSM_SUPPORT_SRCS)))
+
 .PHONY: lsmsupport-bpf
-lsmsupport-bpf: $(OUTPUT_DIR)/lsm_support/lsm_check.bpf.o $(OUTPUT_DIR)/lsm_support/kprobe_check.bpf.o
+lsmsupport-bpf: $(LSM_SUPPORT_OBJS)
 
 # LSM support BPF objects
-$(OUTPUT_DIR)/lsm_support/lsm_check.bpf.o: $(LIBBPF_OBJ) pkg/ebpf/c/lsmsupport/lsm_check.bpf.c pkg/ebpf/c/lsmsupport/lsm_check_common.h | $(OUTPUT_DIR)/lsm_support
+# keep the source first so $< expands to the .bpf.c file
+$(OUTPUT_DIR)/lsm_support/%.bpf.o: \
+	$(LSM_SUPPORT_DIR)/%.bpf.c \
+	$(LSM_SUPPORT_HEADERS) \
+	$(LIBBPF_OBJ) \
+	| $(OUTPUT_DIR)/lsm_support
+#
 	$(CMD_CLANG) \
 		$(BPF_DEBUG_FLAG) \
 		-D__TARGET_ARCH_$(LINUX_ARCH) \
@@ -505,21 +516,7 @@ $(OUTPUT_DIR)/lsm_support/lsm_check.bpf.o: $(LIBBPF_OBJ) pkg/ebpf/c/lsmsupport/l
 		-target bpf \
 		-O2 -g \
 		-mcpu=$(BPF_VCPU) \
-		-c pkg/ebpf/c/lsmsupport/lsm_check.bpf.c \
-		-o $@
-
-$(OUTPUT_DIR)/lsm_support/kprobe_check.bpf.o: $(LIBBPF_OBJ) pkg/ebpf/c/lsmsupport/kprobe_check.bpf.c pkg/ebpf/c/lsmsupport/lsm_check_common.h | $(OUTPUT_DIR)/lsm_support
-	$(CMD_CLANG) \
-		$(BPF_DEBUG_FLAG) \
-		-D__TARGET_ARCH_$(LINUX_ARCH) \
-		-D__BPF_TRACING__ \
-		$(TRACEE_EBPF_CFLAGS) \
-		$(MULTIARCH_INCLUDE) \
-		-I./pkg/ebpf/c/ \
-		-target bpf \
-		-O2 -g \
-		-mcpu=$(BPF_VCPU) \
-		-c pkg/ebpf/c/lsmsupport/kprobe_check.bpf.c \
+		-c $< \
 		-o $@
 
 # Create lsm_support directory
@@ -558,9 +555,11 @@ clean-bpf:: clean-lsmsupport-bpf
 .PHONY: lsm-check
 lsm-check:: $(OUTPUT_DIR)/lsm-check
 
+LSM_CHECK_SRC := $(shell find cmd/lsm_support_check -type f -name '*.go')
+
 $(OUTPUT_DIR)/lsm-check:: \
-	lsmsupport-bpf \
-	cmd/lsm_support_check/lsm_check.go \
+	$(LSM_SUPPORT_OBJS) \
+	$(LSM_CHECK_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
 	.checklib_$(LIB_BPF)
@@ -601,19 +600,24 @@ TRACEE_PROTOS = ./api/v1beta1/*.proto
 SH_BTFHUB = ./scripts/btfhub.sh
 
 .PHONY: btfhub
-btfhub:: \
+btfhub:: .tracee.bpf.o.md5
+
+.tracee.bpf.o.md5: \
 	$(OUTPUT_DIR)/tracee.bpf.o \
 	| .check_$(CMD_MD5)
 #
 ifeq ($(BTFHUB), 1)
-	@new=$($(CMD_MD5) -b $< | cut -d' ' -f1)
-	@if [ -f ".$(notdir $<).md5" ]; then
-		old=$($(CMD_CAT) .$(notdir $<).md5)
-		if [ "$$old" != "$$new" ]; then
-			$(SH_BTFHUB) && echo $$new > .$(notdir $<).md5
-		fi
-	else
-		$(SH_BTFHUB) && echo $$new > .$(notdir $<).md5
+	@input="$<"; \
+	new="$$(md5sum -b $${input} | cut -d' ' -f1)"; \
+	if [ -f $@ ]; then \
+		old="$$(cat $@)"; \
+		if [ "$${old}" != "$${new}" ]; then \
+			echo "[btfhub] hash changed: $${old} => $${new}"; \
+			$(SH_BTFHUB) && echo "$${new}" > $@; \
+		fi; \
+	else \
+		echo "[btfhub] no previous hash, running..."; \
+		$(SH_BTFHUB) && echo "$${new}" > $@; \
 	fi
 endif
 
@@ -625,7 +629,8 @@ endif
 tracee:: $(OUTPUT_DIR)/tracee
 
 $(OUTPUT_DIR)/tracee:: \
-	bpf \
+	$(OUTPUT_DIR)/tracee.bpf.o \
+	$(LSM_SUPPORT_OBJS) \
 	$(TRACEE_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
@@ -659,7 +664,8 @@ clean-tracee::
 tracee-ebpf:: $(OUTPUT_DIR)/tracee-ebpf
 
 $(OUTPUT_DIR)/tracee-ebpf:: \
-	bpf \
+	$(OUTPUT_DIR)/tracee.bpf.o \
+	$(LSM_SUPPORT_OBJS) \
 	$(TRACEE_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
@@ -697,7 +703,6 @@ $(OUTPUT_DIR)/tracee-rules:: \
 	$(TRACEE_RULES_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
-	$(OUTPUT_DIR) \
 	signatures
 #
 	$(GO_ENV_EBPF) $(CMD_GO) build \
@@ -725,20 +730,23 @@ GOSIGNATURES_SRC :=	$(shell find $(GOSIGNATURES_DIR) \
 			! -path '$(GOSIGNATURES_DIR)/examples/*' \
 			)
 
-.PHONY: signatures
-signatures:: $(OUTPUT_DIR)/signatures
-
 $(OUTPUT_DIR)/signatures:: \
-	$(GOSIGNATURES_SRC) \
-	| .eval_goenv \
-	.checkver_$(CMD_GO) \
-	.check_$(CMD_INSTALL) \
-	$(OUTPUT_DIR)
+	| $(OUTPUT_DIR)
 #
 	$(CMD_MKDIR) -p $@
+
+.PHONY: signatures
+signatures:: \
+	$(OUTPUT_DIR)/signatures/builtin.so
+
+$(OUTPUT_DIR)/signatures/builtin.so:: \
+	$(GOSIGNATURES_SRC) \
+	| .eval_goenv \
+	.checkver_$(CMD_GO)
+#
 	$(GO_ENV_EBPF) $(CMD_GO) build \
 		--buildmode=plugin \
-		-o $@/builtin.so \
+		-o $@ \
 		$(GOSIGNATURES_SRC)
 
 .PHONY: clean-signatures
@@ -825,33 +833,53 @@ E2E_NET_SRC := $(shell find $(E2E_NET_DIR) \
 #
 #	traceectl 
 #
+
 SUBDIR_TRACEECTL = cmd/traceectl
+SUBDIR_TRACEECTL_BINARY = $(SUBDIR_TRACEECTL)/dist/traceectl
+
+TRACEECTL_SRC = $(shell find $(SUBDIR_TRACEECTL) \
+		-type f \
+		-name '*.go' \
+		! -name '*_test.go' \
+)
+
+
 .PHONY: traceectl
-traceectl:: $(OUTPUT_DIR)
-	$(MAKE) -C $(SUBDIR_TRACEECTL) all
-	cp $(SUBDIR_TRACEECTL)/dist/traceectl $(OUTPUT_DIR)/
-	@echo "Moved traceectl binary to $(OUTPUT_DIR)"
+traceectl:: $(OUTPUT_DIR)/traceectl
+
+$(OUTPUT_DIR)/traceectl:: \
+	$(TRACEECTL_SRC)
+#
+	$(MAKE) -C $(SUBDIR_TRACEECTL)
+	$(CMD_MKDIR) -p $(dir $@)
+	$(CMD_CP) $(SUBDIR_TRACEECTL_BINARY) $@
 
 .PHONY: clean-traceectl
 clean-traceectl::
 	$(MAKE) -C $(SUBDIR_TRACEECTL) clean
-	 rm -f $(OUTPUT_DIR)/traceectl
+	$(CMD_RM) -f $(OUTPUT_DIR)/traceectl
 
+
+#
+# e2e signatures
+#
+
+# e2e network signatures
 
 .PHONY: e2e-net-signatures
-e2e-net-signatures:: $(OUTPUT_DIR)/e2e-net-signatures
+e2e-net-signatures:: \
+	$(OUTPUT_DIR)/e2e-net-signatures/builtin.so
 
-$(OUTPUT_DIR)/e2e-net-signatures:: \
+$(OUTPUT_DIR)/e2e-net-signatures/builtin.so:: \
 	$(E2E_NET_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
-	.check_$(CMD_INSTALL) \
-	$(OUTPUT_DIR)
+	.check_$(CMD_INSTALL)
 #
 	$(CMD_MKDIR) -p $@
 	$(GO_ENV_EBPF) $(CMD_GO) build \
 		--buildmode=plugin \
-		-o $@/builtin.so \
+		-o $@ \
 		$(E2E_NET_SRC)
 
 .PHONY: clean-e2e-net-signatures
@@ -871,19 +899,19 @@ E2E_INST_SRC := $(shell find $(E2E_INST_DIR) \
 		)
 
 .PHONY: e2e-inst-signatures
-e2e-inst-signatures:: $(OUTPUT_DIR)/e2e-inst-signatures
+e2e-inst-signatures:: \
+	$(OUTPUT_DIR)/e2e-inst-signatures/builtin.so
 
-$(OUTPUT_DIR)/e2e-inst-signatures:: \
+$(OUTPUT_DIR)/e2e-inst-signatures/builtin.so:: \
 	$(E2E_INST_SRC) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
-	.check_$(CMD_INSTALL) \
-	$(OUTPUT_DIR)
+	.check_$(CMD_INSTALL)
 #
 	$(CMD_MKDIR) -p $@
 	$(GO_ENV_EBPF) $(CMD_GO) build \
 		--buildmode=plugin \
-		-o $@/builtin.so \
+		-o $@ \
 		$(E2E_INST_SRC)
 
 .PHONY: clean-e2e-inst-signatures
