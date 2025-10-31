@@ -241,7 +241,7 @@ func TestPrepareLogger(t *testing.T) {
 		// valid exclude filter options
 		{
 			testName:   "valid exclude filter option",
-			logOptions: []string{"filter.exclude.msg=whatever"},
+			logOptions: []string{"filters.exclude.msg=whatever"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -253,7 +253,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid exclude filter option",
-			logOptions: []string{"filter.exclude.regex=^whatever$"},
+			logOptions: []string{"filters.exclude.regex=^whatever$"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -265,7 +265,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid exclude filter option",
-			logOptions: []string{"filter.exclude.pkg=whatever"},
+			logOptions: []string{"filters.exclude.pkg=whatever"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -277,7 +277,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid exclude filter option",
-			logOptions: []string{"filter.exclude.file=whatever"},
+			logOptions: []string{"filters.exclude.file=whatever"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -289,7 +289,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid exclude filter option",
-			logOptions: []string{"filter.exclude.lvl=info"},
+			logOptions: []string{"filters.exclude.lvl=info"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -301,7 +301,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid exclude filter option",
-			logOptions: []string{"filter.exclude.libbpf"},
+			logOptions: []string{"filters.exclude.libbpf"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -314,44 +314,44 @@ func TestPrepareLogger(t *testing.T) {
 		// invalid exclude filter options
 		{
 			testName:       "invalid exclude filter option",
-			logOptions:     []string{"filter.exclude."},
+			logOptions:     []string{"filters.exclude."},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter.exclude.", false),
+			expectedError:  invalidLogOption(nil, "filters.exclude.", false),
 		},
 		{
 			testName:       "invalid exclude filter option",
-			logOptions:     []string{"filter.exclude.invalid"},
+			logOptions:     []string{"filters.exclude.invalid"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter.exclude.invalid", false),
+			expectedError:  invalidLogOption(nil, "filters.exclude.invalid", false),
 		},
 		{
 			testName:       "invalid exclude filter option",
-			logOptions:     []string{"filter.exclude.msg"},
+			logOptions:     []string{"filters.exclude.msg"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter.exclude.msg", false),
+			expectedError:  invalidLogOption(nil, "filters.exclude.msg", false),
 		},
 		{
 			testName:       "invalid exclude filter option",
-			logOptions:     []string{"filter.exclude.msg="},
+			logOptions:     []string{"filters.exclude.msg="},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter.exclude.msg=", false),
+			expectedError:  invalidLogOptionValue(nil, "filters.exclude.msg=", false),
 		},
 		{
 			testName:       "invalid exclude filter option",
-			logOptions:     []string{"filter.exclude.regex=[whatever"},
+			logOptions:     []string{"filters.exclude.regex=[whatever"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter.exclude.regex=[whatever", false),
+			expectedError:  invalidLogOptionValue(nil, "filters.exclude.regex=[whatever", false),
 		},
 		{
 			testName:       "invalid exclude filter option",
-			logOptions:     []string{"filter.exclude.lvl=invalid"},
+			logOptions:     []string{"filters.exclude.lvl=invalid"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter.exclude.lvl=invalid", false),
+			expectedError:  invalidLogOptionValue(nil, "filters.exclude.lvl=invalid", false),
 		},
 		// valid include filter options
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter.include.msg=whatever"},
+			logOptions: []string{"filters.include.msg=whatever"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -363,7 +363,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter.include.regex=^whatever$"},
+			logOptions: []string{"filters.include.regex=^whatever$"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -375,7 +375,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter.include.pkg=whatever"},
+			logOptions: []string{"filters.include.pkg=whatever"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -387,7 +387,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter.include.file=whatever"},
+			logOptions: []string{"filters.include.file=whatever"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -399,7 +399,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter.include.lvl=info"},
+			logOptions: []string{"filters.include.lvl=info"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -411,7 +411,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter.include.libbpf"},
+			logOptions: []string{"filters.include.libbpf"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -424,49 +424,49 @@ func TestPrepareLogger(t *testing.T) {
 		// invalid include filter options
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter.include"},
+			logOptions:     []string{"filters.include"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter.include", false),
+			expectedError:  invalidLogOption(nil, "filters.include", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter.include."},
+			logOptions:     []string{"filters.include."},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter.include.", false),
+			expectedError:  invalidLogOption(nil, "filters.include.", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter.include.invalid"},
+			logOptions:     []string{"filters.include.invalid"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter.include.invalid", false),
+			expectedError:  invalidLogOption(nil, "filters.include.invalid", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter.include.msg"},
+			logOptions:     []string{"filters.include.msg"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter.include.msg", false),
+			expectedError:  invalidLogOption(nil, "filters.include.msg", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter.include.msg="},
+			logOptions:     []string{"filters.include.msg="},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter.include.msg=", false),
+			expectedError:  invalidLogOption(nil, "filters.include.msg=", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter.include.regex=[whatever"},
+			logOptions:     []string{"filters.include.regex=[whatever"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter.include.regex=[whatever", false),
+			expectedError:  invalidLogOption(nil, "filters.include.regex=[whatever", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter.include.lvl=invalid"},
+			logOptions:     []string{"filters.include.lvl=invalid"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter.include.lvl=invalid", false),
+			expectedError:  invalidLogOptionValue(nil, "filters.include.lvl=invalid", false),
 		},
 		{
 			testName:   "filter with multiple values",
-			logOptions: []string{"filter.include.msg=error,warning,info"},
+			logOptions: []string{"filters.include.msg=error,warning,info"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -478,7 +478,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "filter with multiple packages",
-			logOptions: []string{"filter.include.pkg=core,ebpf,logger"},
+			logOptions: []string{"filters.include.pkg=core,ebpf,logger"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -490,7 +490,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "filter with multiple files",
-			logOptions: []string{"filter.include.file=logger.go,flags.go,main.go"},
+			logOptions: []string{"filters.include.file=logger.go,flags.go,main.go"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -502,7 +502,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "filter with multiple regex patterns",
-			logOptions: []string{"filter.include.regex=^error,^warn,^debug"},
+			logOptions: []string{"filters.include.regex=^error,^warn,^debug"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -514,7 +514,7 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "multiple filter options",
-			logOptions: []string{"filter.include.msg=error", "filter.include.pkg=core", "filter.exclude.lvl=debug"},
+			logOptions: []string{"filters.include.msg=error", "filters.include.pkg=core", "filters.exclude.lvl=debug"},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
 					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
@@ -531,15 +531,15 @@ func TestPrepareLogger(t *testing.T) {
 		{
 			testName: "comprehensive filter options",
 			logOptions: []string{
-				"filter.include.msg=error,warning",
-				"filter.include.pkg=core,ebpf",
-				"filter.include.lvl=info,warn",
-				"filter.include.regex=^debug,^trace",
-				"filter.include.libbpf",
-				"filter.exclude.msg=spam,noise",
-				"filter.exclude.pkg=test,example",
-				"filter.exclude.lvl=debug",
-				"filter.exclude.regex=^verbose,^debug",
+				"filters.include.msg=error,warning",
+				"filters.include.pkg=core,ebpf",
+				"filters.include.lvl=info,warn",
+				"filters.include.regex=^debug,^trace",
+				"filters.include.libbpf",
+				"filters.exclude.msg=spam,noise",
+				"filters.exclude.pkg=test,example",
+				"filters.exclude.lvl=debug",
+				"filters.exclude.regex=^verbose,^debug",
 			},
 			expectedReturn: logger.LoggingConfig{
 				LoggerConfig: logger.LoggerConfig{
@@ -605,7 +605,7 @@ type filterTest struct {
 // hasFilterOptions checks if any filter options are present in logOptions
 func hasFilterOptions(logOptions []string) bool {
 	for _, option := range logOptions {
-		if strings.HasPrefix(option, "filter.") {
+		if strings.HasPrefix(option, "filters.") {
 			return true
 		}
 	}

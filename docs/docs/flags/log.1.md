@@ -11,7 +11,7 @@ tracee **\-\-log** - Control logger options - aggregation and level priority
 
 ## SYNOPSIS
 
-tracee **\-\-log** aggregate.flush-interval=<time\>| aggregate.enable=<true|false\> | level=<debug|info|warn|error|fatal\> | file=/path/to/file | filter.include.[msg=<value,...\>] | filter.include.[regex=<value,...\>] | filter.include.[pkg=<value,...\>] | filter.include.[file=<value,...\>] | filter.include.[lvl=<value,...\>] | filter.include.[libbpf] | filter.exclude.[msg=<value,...\>] | filter.exclude.[regex=<value,...\>] | filter.exclude.[pkg=<value,...\>] | filter.exclude.[file=<value,...\>] | filter.exclude.[lvl=<value,...\>] | filter.exclude.[libbpf]
+tracee **\-\-log** aggregate.flush-interval=<time\>| aggregate.enable=<true|false\> | level=<debug|info|warn|error|fatal\> | file=/path/to/file | filters.include.[msg=<value,...\>] | filters.include.[regex=<value,...\>] | filters.include.[pkg=<value,...\>] | filters.include.[file=<value,...\>] | filters.include.[lvl=<value,...\>] | filters.include.[libbpf] | filters.exclude.[msg=<value,...\>] | filters.exclude.[regex=<value,...\>] | filters.exclude.[pkg=<value,...\>] | filters.exclude.[file=<value,...\>] | filters.exclude.[lvl=<value,...\>] | filters.exclude.[libbpf]
 
 
 ## DESCRIPTION
@@ -26,9 +26,9 @@ Possible log options:
 
 - **file=/path/to/file**: Writes the logs to the specified file. If the file exists, it will be created or trimmed.
 
-- **filter.include.**<option;...\>: Filters in logs that match the specified option values. Multiple filter options can be provided, separated by semicolons.
+- **filters.include.**<option;...\>: Filters in logs that match the specified option values. Multiple filter options can be provided, separated by semicolons.
 
-- **filter.exclude.**<option;...\>: Filters out logs that match the specified option values. Multiple filter options can be provided, separated by semicolons.
+- **filters.exclude.**<option;...\>: Filters out logs that match the specified option values. Multiple filter options can be provided, separated by semicolons.
 
 Filter options:
 
@@ -73,35 +73,35 @@ Filter options:
 - To filter in logs that have either 'foo' or 'bar' in the message, are from the 'core' package, and are of 'error' level, use the following flag:
 
   ```console
-  --log filter.include.msg=foo,bar --log filter.include.pkg=core --log filter.include.lvl=error
+  --log filters.include.msg=foo,bar --log filters.include.pkg=core --log filters.include.lvl=error
   ```
 
 - To filter out logs that have either 'foo' or 'bar' in the message, are from the 'core' package, and are of 'error' level, use the following flag:
 
   ```console
-  --log filter.exclude.msg=foo,bar --log filter.exclude.pkg=core --log filter.exclude.lvl=error
+  --log filters.exclude.msg=foo,bar --log filters.exclude.pkg=core --log filters.exclude.lvl=error
   ```
 
 - To filter in logs that have either 'foo' or 'bar' in the message and, based on that result, filter out logs that are from the 'core' package, use the following flag:
 
   ```console
-  --log filter.include.msg=foo,bar --log filter.exclude.pkg=core
+  --log filters.include.msg=foo,bar --log filters.exclude.pkg=core
   ```
 
 - To filter out logs that originate from the '/pkg/cmd/flags/logger.go' file, use the following flag:
 
   ```console
-  --log filter.exclude.file=/pkg/cmd/flags/logger.go
+  --log filters.exclude.file=/pkg/cmd/flags/logger.go
   ```
 
 - To filter in logs that have messages matching the regex '^foo', use the following flag:
 
   ```console
-  --log filter.include.regex='^foo'
+  --log filters.include.regex='^foo'
   ```
 
 - To filter in logs that originate from libbpf, use the following flag:
 
   ```console
-  --log filter.include.libbpf
+  --log filters.include.libbpf
   ```

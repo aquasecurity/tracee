@@ -21,7 +21,7 @@ const (
 	LogLevelError               = "error"
 	LogLevelFatal               = "fatal"
 	LogFile                     = "file"
-	LogFilter                   = "filter"
+	LogFilter                   = "filters"
 	LogFilterInclude            = "include"
 	LogFilterExclude            = "exclude"
 	LogFilterLibbpf             = "libbpf"
@@ -39,8 +39,8 @@ Possible options:
   --log aggregate.flush-interval    				| delaying output with an optional interval (s, m) (default: 3s)
   --log level=<debug|info|warn|error|fatal> 		| set log level, info is the default
   --log file=/path/to/file            				| write the logs to a specified file. create/trim the file if exists (default: stderr)
-  --log filter.include.<option;...>          		| Filters in logs that match the specified option values.
-  --log filter.exclude.<option;...>       			| Filters out logs that match the specified option values.
+  --log filters.include.<option;...>          		| Filters in logs that match the specified option values.
+  --log filters.exclude.<option;...>       			| Filters out logs that match the specified option values.
 
 Filter options:
   msg=<value,...> 				       | Filters logs that message contains a value.
@@ -55,12 +55,12 @@ Examples:
   --log level=debug --log aggregate.enable=true                      | outputs aggregated debug level logs every 3 seconds (default)
   --log aggregate.flush-interval=5s                                  | outputs aggregated logs every 5 seconds
   --log level=debug --log file=/tmp/tracee.log            			 | outputs debug level logs to /tmp/tracee.log
-  --log filter.include.msg=foo,bar --log filter.include.pkg=core  	 | Filters in logs that have either 'foo' or 'bar' in the message, and are from the 'core' packag.
-  --log filter.exclude.msg=foo,bar --log filter.exclude.pkg=core  	 | Filters out logs that have either 'foo' or 'bar' in the message, and are from the 'core' package.
-  --log filter.exclude.file=/pkg/cmd/flags/logger.go	 			 | Filters out logs that are from the '/pkg/cmd/flags/logger.go' file.
-  --log filter.include.regex='^foo'                         		 | Filters in logs that messages match the regex '^foo'.
-  --log filter.include.libbpf                              			 | Filters in logs that originate from libbpf.
-  --log filter.exclude.libbpf                              			 | Filters out logs that originate from libbpf.
+  --log filters.include.msg=foo,bar --log filters.include.pkg=core  	 | Filters in logs that have either 'foo' or 'bar' in the message, and are from the 'core' packag.
+  --log filters.exclude.msg=foo,bar --log filters.exclude.pkg=core  	 | Filters out logs that have either 'foo' or 'bar' in the message, and are from the 'core' package.
+  --log filters.exclude.file=/pkg/cmd/flags/logger.go	 			 | Filters out logs that are from the '/pkg/cmd/flags/logger.go' file.
+  --log filters.include.regex='^foo'                         		 | Filters in logs that messages match the regex '^foo'.
+  --log filters.include.libbpf                              			 | Filters in logs that originate from libbpf.
+  --log filters.exclude.libbpf                              			 | Filters out logs that originate from libbpf.
 `
 }
 

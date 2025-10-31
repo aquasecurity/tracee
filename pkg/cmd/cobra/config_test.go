@@ -123,38 +123,38 @@ log:
     - debug
     - file:/var/log/test.log
     - aggregate:5s
-    - filter.include.libbpf
-    - filter.include.msg=msg1
-    - filter.include.pkg=pkg1
-    - filter.include.pkg=pkg2
-    - filter.include.file=file1
-    - filter.include.lvl=info
-    - filter.include.regex=^regex.*
-    - filter.exclude.msg=msg1
-    - filter.exclude.pkg=pkg1
-    - filter.exclude.file=file1
-    - filter.exclude.file=file2
-    - filter.exclude.lvl=info
-    - filter.exclude.regex=^regex.*
+    - filters.include.libbpf
+    - filters.include.msg=msg1
+    - filters.include.pkg=pkg1
+    - filters.include.pkg=pkg2
+    - filters.include.file=file1
+    - filters.include.lvl=info
+    - filters.include.regex=^regex.*
+    - filters.exclude.msg=msg1
+    - filters.exclude.pkg=pkg1
+    - filters.exclude.file=file1
+    - filters.exclude.file=file2
+    - filters.exclude.lvl=info
+    - filters.exclude.regex=^regex.*
 `,
 			key: "log",
 			expectedFlags: []string{
 				"debug",
 				"file:/var/log/test.log",
 				"aggregate:5s",
-				"filter.include.libbpf",
-				"filter.include.msg=msg1",
-				"filter.include.pkg=pkg1",
-				"filter.include.pkg=pkg2",
-				"filter.include.file=file1",
-				"filter.include.lvl=info",
-				"filter.include.regex=^regex.*",
-				"filter.exclude.msg=msg1",
-				"filter.exclude.pkg=pkg1",
-				"filter.exclude.file=file1",
-				"filter.exclude.file=file2",
-				"filter.exclude.lvl=info",
-				"filter.exclude.regex=^regex.*",
+				"filters.include.libbpf",
+				"filters.include.msg=msg1",
+				"filters.include.pkg=pkg1",
+				"filters.include.pkg=pkg2",
+				"filters.include.file=file1",
+				"filters.include.lvl=info",
+				"filters.include.regex=^regex.*",
+				"filters.exclude.msg=msg1",
+				"filters.exclude.pkg=pkg1",
+				"filters.exclude.file=file1",
+				"filters.exclude.file=file2",
+				"filters.exclude.lvl=info",
+				"filters.exclude.regex=^regex.*",
 			},
 		},
 		{
@@ -199,19 +199,19 @@ log:
 				"file=/var/log/test.log",
 				"aggregate.enabled=true",
 				"aggregate.flush-interval=5s",
-				"filter.include.libbpf",
-				"filter.include.msg=msg1",
-				"filter.include.pkg=pkg1",
-				"filter.include.pkg=pkg2",
-				"filter.include.file=file1",
-				"filter.include.lvl=info",
-				"filter.include.regex=^regex.*",
-				"filter.exclude.msg=msg1",
-				"filter.exclude.pkg=pkg1",
-				"filter.exclude.file=file1",
-				"filter.exclude.file=file2",
-				"filter.exclude.lvl=info",
-				"filter.exclude.regex=^regex.*",
+				"filters.include.libbpf",
+				"filters.include.msg=msg1",
+				"filters.include.pkg=pkg1",
+				"filters.include.pkg=pkg2",
+				"filters.include.file=file1",
+				"filters.include.lvl=info",
+				"filters.include.regex=^regex.*",
+				"filters.exclude.msg=msg1",
+				"filters.exclude.pkg=pkg1",
+				"filters.exclude.file=file1",
+				"filters.exclude.file=file2",
+				"filters.exclude.lvl=info",
+				"filters.exclude.regex=^regex.*",
 			},
 		},
 		{
@@ -761,7 +761,7 @@ func TestLogConfigFlags(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"filter.include.libbpf",
+				"filters.include.libbpf",
 			},
 		},
 		{
@@ -790,13 +790,13 @@ func TestLogConfigFlags(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"filter.include.msg=msg1",
-				"filter.include.msg=msg2",
-				"filter.include.pkg=pkg1",
-				"filter.include.file=file1",
-				"filter.include.file=file2",
-				"filter.include.lvl=lvl1",
-				"filter.include.regex=^test.*",
+				"filters.include.msg=msg1",
+				"filters.include.msg=msg2",
+				"filters.include.pkg=pkg1",
+				"filters.include.file=file1",
+				"filters.include.file=file2",
+				"filters.include.lvl=lvl1",
+				"filters.include.regex=^test.*",
 			},
 		},
 		{
@@ -831,20 +831,20 @@ func TestLogConfigFlags(t *testing.T) {
 				"file=/var/log/test.log",
 				"aggregate.flush-interval=10s",
 				"aggregate.enabled=true",
-				"filter.include.libbpf",
-				"filter.include.msg=msg1",
-				"filter.include.pkg=pkg1",
-				"filter.include.pkg=pkg2",
-				"filter.include.file=file1",
-				"filter.include.lvl=lvl1",
-				"filter.include.lvl=lvl2",
-				"filter.include.regex=^regex.*",
-				"filter.exclude.msg=msg1",
-				"filter.exclude.pkg=pkg1",
-				"filter.exclude.file=file1",
-				"filter.exclude.file=file2",
-				"filter.exclude.lvl=lvl1",
-				"filter.exclude.regex=^regex.*",
+				"filters.include.libbpf",
+				"filters.include.msg=msg1",
+				"filters.include.pkg=pkg1",
+				"filters.include.pkg=pkg2",
+				"filters.include.file=file1",
+				"filters.include.lvl=lvl1",
+				"filters.include.lvl=lvl2",
+				"filters.include.regex=^regex.*",
+				"filters.exclude.msg=msg1",
+				"filters.exclude.pkg=pkg1",
+				"filters.exclude.file=file1",
+				"filters.exclude.file=file2",
+				"filters.exclude.lvl=lvl1",
+				"filters.exclude.regex=^regex.*",
 			},
 		},
 	}
