@@ -11,7 +11,6 @@ import (
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
-	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/cmd/urfave"
 )
@@ -123,7 +122,7 @@ func main() {
 				Usage: "path where tracee will install or lookup it's resources",
 			},
 			&cli.StringSliceFlag{
-				Name:  server.ServerFlag,
+				Name:  flags.ServerFlag,
 				Usage: "Configure server endpoints. Examples: http-address=:3366, metrics, healthz, pprof, pyroscope",
 			},
 			&cli.StringSliceFlag{

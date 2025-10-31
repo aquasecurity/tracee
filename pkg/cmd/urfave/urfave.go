@@ -8,7 +8,6 @@ import (
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
-	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
@@ -175,7 +174,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	}
 
 	// Prepare HTTP server using unified server flags
-	serverRunner, err := server.PrepareServer(c.StringSlice(server.ServerFlag))
+	serverRunner, err := flags.PrepareServer(c.StringSlice(flags.ServerFlag))
 	if err != nil {
 		return runner, err
 	}

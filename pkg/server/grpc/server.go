@@ -2,8 +2,10 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc"
@@ -81,6 +83,18 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 	case <-srvCtx.Done():
 		s.cleanup()
 	}
+}
+
+// Address returns the address of the server
+func (s *Server) Address() string {
+	// For TCP, listenAddr already has a colon prefix (e.g., ":4466")
+	// For Unix, listenAddr is just the path (e.g., "/var/run/tracee.sock")
+	// We want to return format "protocol:address" so remove leading colon for TCP
+	addr := s.listenAddr
+	if s.protocol == "tcp" && strings.HasPrefix(addr, ":") {
+		addr = addr[1:] // Remove leading colon
+	}
+	return fmt.Sprintf("%s:%s", s.protocol, addr)
 }
 
 func (s *Server) cleanup() {
