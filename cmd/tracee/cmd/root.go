@@ -15,7 +15,6 @@ import (
 	"github.com/aquasecurity/tracee/common/logger"
 	cmdcobra "github.com/aquasecurity/tracee/pkg/cmd/cobra"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
-	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/version"
 )
@@ -246,11 +245,11 @@ func initCmd() error {
 	// Server flags
 
 	rootCmd.Flags().StringArray(
-		server.ServerFlag,
-		[]string{server.DefaultServerFlagValue},
-		`Configure server options and endpoints. Examples: http-address=:3366, grpc-address=unix:/var/run/tracee.sock, grpc (defaults to unix:/var/run/tracee.sock), metrics, healthz, pprof, pyroscope`)
+		flags.ServerFlag,
+		[]string{},
+		"[http-address|grpc-address...]\tConfigure server options and endpoints")
 
-	err = viper.BindPFlag(server.ServerFlag, rootCmd.Flags().Lookup(server.ServerFlag))
+	err = viper.BindPFlag(flags.ServerFlag, rootCmd.Flags().Lookup(flags.ServerFlag))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
