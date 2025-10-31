@@ -27,6 +27,11 @@ error_exit() {
     exit 1
 }
 
+get_test_output_file() {
+    local test_name="$1"
+    echo "${SCRIPT_TMP_DIR}/output-${test_name}-$$"
+}
+
 if [[ $UID -ne 0 ]]; then
     error_exit "need root privileges for docker caps config"
 fi
@@ -50,10 +55,12 @@ info
 info "KERNEL: $(uname -r)"
 info "CLANG: $(clang --version)"
 info "GO: $(go version)"
+
 info
 info "= PULLING CONTAINER IMAGE ====================================="
 info
 docker image pull $DOCKER_IMAGE
+
 info
 info "= COMPILING TRACEE ============================================"
 info
@@ -81,9 +88,6 @@ tracee_command="./dist/tracee \
     | tee $SCRIPT_TMP_DIR/build-$$"
 
 eval "$tracee_command &"
-
-# give some time for tracee to settle
-sleep 5
 
 # wait tracee to be started (30 sec most)
 times=0
@@ -114,6 +118,9 @@ if [[ $timedout -eq 1 ]]; then
     exit 1
 fi
 
+# Give tracee time to start processing events
+sleep 15
+
 # run tests
 info "= RUNNING TESTS ================================================"
 info
@@ -133,11 +140,32 @@ for TEST in $TESTS; do
     *) ;;
     esac
 
+    # Truncate output file before each test to isolate events
+    #
+    # This approach is only safe because the policy scope is "container=new"
+    # and no other containers are running in the test environment. However,
+    # this is not a robust practice since the test environment might change
+    # and other containers might be running.
+    #
+    # TODO:
+    # A more reliable approach would be to modify the tested signatures to
+    # only detect events from our controlled test triggers, for example by
+    # filtering based on process name or command line arguments.
+    true > "${outputfile}"
+
     # run tracee-tester (triggering the signature)
-    docker run $docker_extra_arg --rm $DOCKER_IMAGE $TEST >/dev/null 2>&1
+    docker run "${docker_extra_arg}" --rm ${DOCKER_IMAGE} ${TEST} >/dev/null 2>&1
 
     # so event can be processed and detected
     sleep 5
+
+    # copy output to test-specific file for isolated checking
+    test_outputfile=$(get_test_output_file "${TEST}")
+    cp "${outputfile}" "${test_outputfile}"
+
+    # show how many events were captured for this test
+    event_count=$(wc -l < "${test_outputfile}" 2>/dev/null || echo 0)
+    info "Captured ${event_count} events for test ${TEST}"
 done
 
 sleep 5
@@ -152,8 +180,24 @@ kill -SIGKILL "${tracee_pids[@]}" >/dev/null 2>&1
 info "= CHECKING TESTS RESULTS ======================================"
 info
 for TEST in $TESTS; do
-found=0
-    cat $outputfile | grep "\"signatureID\":\"$TEST\"" -B2 && found=1
+    found=0
+    test_outputfile=$(get_test_output_file "${TEST}")
+    
+    if [[ -f "${test_outputfile}" ]]; then
+        signature_pattern="\"signatureID\":\"${TEST}\""
+        match_count=$(grep -ac "${signature_pattern}" "${test_outputfile}" 2>/dev/null || echo 0)
+        total_events=$(wc -l < "${test_outputfile}" 2>/dev/null || echo 0)
+
+        if [[ ${match_count} -gt 0 ]]; then
+            found=1
+            info "Found ${match_count} signature event(s) for ${TEST} (out of ${total_events} total events)"
+        else
+            info "No signature events found for ${TEST} (but ${total_events} total events captured)"
+        fi
+    else
+        info "Test output file not found: ${test_outputfile}"
+    fi
+    
     info
     if [[ $found -eq 1 ]]; then
         info "$TEST: SUCCESS"
@@ -161,8 +205,12 @@ found=0
         anyerror="${anyerror}$TEST,"
         info "$TEST: FAILED, stderr from tracee:"
         cat $logfile
-        info "$TEST: FAILED, stdout from tracee:"
-        cat $outputfile
+        info "${TEST}: FAILED, test-specific stdout from tracee:"
+        if [[ -f "${test_outputfile}" ]]; then
+            cat "${test_outputfile}"
+        else
+            info "No test-specific output file found"
+        fi
 
         info "Tracee command:"
         echo "$tracee_command" | tr -s ' '
@@ -186,6 +234,10 @@ done
 # Cleanup leftovers
 rm -f $outputfile
 rm -f $logfile
+for TEST in ${TESTS}; do
+    test_outputfile=$(get_test_output_file "${TEST}")
+    rm -f "${test_outputfile}"
+done
 rm -rf $TRACEE_TMP_DIR
 
 info

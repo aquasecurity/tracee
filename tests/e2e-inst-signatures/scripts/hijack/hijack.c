@@ -11,10 +11,11 @@ ulong table;
 module_param(table, ulong, 0);
 
 asmlinkage u64 (*orig_uname)(struct old_utsname *);
+asmlinkage u64 hooked_uname(struct old_utsname *name);
 
 asmlinkage u64 hooked_uname(struct old_utsname *name)
 {
-    printk(KERN_INFO "uname() intercepted!\n");
+    printk(KERN_INFO "hijack: uname() intercepted!\n");
     return orig_uname(name);
 }
 

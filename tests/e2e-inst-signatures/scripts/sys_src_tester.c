@@ -10,17 +10,17 @@
 
 // exit(0);
 #if defined(__x86_64__)
-#define SHELLCODE \
-    "\x48\x31\xFF"                 /* xor rdi, rdi */ \
-    "\x48\xC7\xC0\x3C\x00\x00\x00" /* mov rax, 60 ; __NR_exit */ \
-    "\x0F\x05"                     /* syscall */
+    #define SHELLCODE                                                                              \
+        "\x48\x31\xFF"                 /* xor rdi, rdi */                                          \
+        "\x48\xC7\xC0\x3C\x00\x00\x00" /* mov rax, 60 ; __NR_exit */                               \
+        "\x0F\x05"                     /* syscall */
 #elif defined(__aarch64__)
-#define SHELLCODE \
-    "\x00\x00\x80\xD2" /* mov x0, 0 */ \
-    "\xA8\x0B\x80\xD2" /* mov x8, #93 ; __NR_exit */ \
-    "\x01\x00\x00\xD4" /* svc #0 */
+    #define SHELLCODE                                                                              \
+        "\x00\x00\x80\xD2" /* mov x0, 0 */                                                         \
+        "\xA8\x0B\x80\xD2" /* mov x8, #93 ; __NR_exit */                                           \
+        "\x01\x00\x00\xD4" /* svc #0 */
 #else
-#error Invalid architecture
+    #error Invalid architecture
 #endif
 
 char shellcode[] = SHELLCODE;
@@ -31,13 +31,13 @@ int main(int argc, char *argv[])
 {
     if (argc != 2)
         goto usage;
-    
+
     if (strcmp(argv[1], "stack") == 0) {
         char shellcode_stack[] = SHELLCODE;
 #if defined(__aarch64__)
-        __builtin___clear_cache (&shellcode_stack, &shellcode_stack + sizeof(shellcode));
+        __builtin___clear_cache(&shellcode_stack, &shellcode_stack + sizeof(shellcode));
 #endif
-        ((void (*)(void))shellcode_stack)();
+        ((void (*)(void)) shellcode_stack)();
         // cannot be reached
         goto fail;
     }
@@ -52,16 +52,18 @@ int main(int argc, char *argv[])
         memcpy(shellcode_heap, shellcode, sizeof(shellcode));
 
         // set the heap memory as executable
-        if (mprotect((void *)((unsigned long long)shellcode_heap & ~(sysconf(_SC_PAGE_SIZE) - 1)), 2 * sysconf(_SC_PAGE_SIZE), PROT_READ | PROT_WRITE | PROT_EXEC) == -1) {
+        if (mprotect((void *) ((unsigned long long) shellcode_heap & ~(sysconf(_SC_PAGE_SIZE) - 1)),
+                     2 * sysconf(_SC_PAGE_SIZE),
+                     PROT_READ | PROT_WRITE | PROT_EXEC) == -1) {
             perror("mprotect failed");
             goto fail;
         }
 
         // jump to the shellcode
 #if defined(__aarch64__)
-        __builtin___clear_cache (&shellcode_heap, &shellcode_heap + sizeof(shellcode));
+        __builtin___clear_cache(&shellcode_heap, &shellcode_heap + sizeof(shellcode));
 #endif
-        ((void (*)(void))shellcode_heap)();
+        ((void (*)(void)) shellcode_heap)();
 
         // cannot be reached
         goto fail;
@@ -69,7 +71,12 @@ int main(int argc, char *argv[])
 
     if (strcmp(argv[1], "mmap") == 0) {
         // create an anonymous mapping for the shellcode
-        void *shellcode_mmap = mmap(NULL, sizeof(shellcode), PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        void *shellcode_mmap = mmap(NULL,
+                                    sizeof(shellcode),
+                                    PROT_READ | PROT_WRITE | PROT_EXEC,
+                                    MAP_PRIVATE | MAP_ANONYMOUS,
+                                    -1,
+                                    0);
         if (shellcode_mmap == MAP_FAILED) {
             perror("mmap failed");
             goto fail;
@@ -81,7 +88,7 @@ int main(int argc, char *argv[])
 #if defined(__aarch64__)
         __builtin___clear_cache(&shellcode_mmap, &shellcode_mmap + sizeof(shellcode));
 #endif
-        ((void (*)(void))shellcode_mmap)();
+        ((void (*)(void)) shellcode_mmap)();
 
         // cannot be reached
         goto fail;
@@ -116,16 +123,18 @@ void *thread_func(void *arg)
     char shellcode_stack[] = SHELLCODE;
 
     // set the stack memory as executable
-    if (mprotect((void *)((unsigned long long)shellcode_stack & ~(sysconf(_SC_PAGE_SIZE) - 1)), 2 * sysconf(_SC_PAGE_SIZE), PROT_READ | PROT_WRITE | PROT_EXEC) == -1) {
+    if (mprotect((void *) ((unsigned long long) shellcode_stack & ~(sysconf(_SC_PAGE_SIZE) - 1)),
+                 2 * sysconf(_SC_PAGE_SIZE),
+                 PROT_READ | PROT_WRITE | PROT_EXEC) == -1) {
         perror("mprotect failed");
         return NULL;
     }
 
     // jump to the shellcode
 #if defined(__aarch64__)
-    __builtin___clear_cache (&shellcode_stack, &shellcode_stack + sizeof(shellcode));
+    __builtin___clear_cache(&shellcode_stack, &shellcode_stack + sizeof(shellcode));
 #endif
-    ((void (*)(void))shellcode_stack)();
+    ((void (*)(void)) shellcode_stack)();
 
     // cannot be reached
     return NULL;
