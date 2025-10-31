@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
-	serverflag "github.com/aquasecurity/tracee/pkg/cmd/flags/server"
+	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 )
 
 type cliFlagger interface {
@@ -22,7 +22,7 @@ func GetFlagsFromViper(key string) ([]string, error) {
 	rawValue := viper.Get(key)
 
 	switch key {
-	case serverflag.ServerFlag:
+	case flags.ServerFlag:
 		flagger = &ServerConfig{}
 	case "proctree":
 		flagger = &ProcTreeConfig{}
@@ -94,27 +94,27 @@ type ServerConfig struct {
 }
 
 func (s *ServerConfig) flags() []string {
-	flags := make([]string, 0)
+	f := make([]string, 0)
 
 	if s.GrpcAddress != "" {
-		flags = append(flags, fmt.Sprintf("%s=%s", serverflag.GRPCAddressFlag, s.GrpcAddress))
+		f = append(f, fmt.Sprintf("%s=%s", flags.GRPCAddressFlag, s.GrpcAddress))
 	}
 	if s.HttpAddress != "" {
-		flags = append(flags, fmt.Sprintf("%s=%s", serverflag.HTTPAddressFlag, s.HttpAddress))
+		f = append(f, fmt.Sprintf("%s=%s", flags.HTTPAddressFlag, s.HttpAddress))
 	}
 	if s.Metrics {
-		flags = append(flags, serverflag.MetricsEndpointFlag)
+		f = append(f, flags.MetricsEndpointFlag)
 	}
 	if s.Pprof {
-		flags = append(flags, serverflag.PProfEndpointFlag)
+		f = append(f, flags.PProfEndpointFlag)
 	}
 	if s.Healthz {
-		flags = append(flags, serverflag.HealthzEndpointFlag)
+		f = append(f, flags.HealthzEndpointFlag)
 	}
 	if s.Pyroscope {
-		flags = append(flags, serverflag.PyroscopeAgentEndpointFlag)
+		f = append(f, flags.PyroscopeAgentEndpointFlag)
 	}
-	return flags
+	return f
 }
 
 type SocketConfig struct {
