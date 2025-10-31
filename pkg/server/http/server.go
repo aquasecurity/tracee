@@ -22,11 +22,14 @@ const heartbeatAckTimeout = time.Duration(2 * time.Second)
 
 // Server represents a http server
 type Server struct {
-	hs             *http.Server
-	mux            *http.ServeMux // just an exposed copy of hs.Handler
-	pyroProfiler   *pyroscope.Profiler
-	metricsEnabled bool
-	healthzEnabled bool
+	hs               *http.Server
+	mux              *http.ServeMux // just an exposed copy of hs.Handler
+	pyroProfiler     *pyroscope.Profiler
+	address          string
+	metricsEnabled   bool
+	healthzEnabled   bool
+	pprofEnabled     bool
+	pyroscopeEnabled bool
 }
 
 // New creates a new server
@@ -34,6 +37,7 @@ func New(listenAddr string) *Server {
 	mux := http.NewServeMux()
 
 	return &Server{
+		address: listenAddr,
 		hs: &http.Server{
 			Addr:    listenAddr,
 			Handler: mux,
@@ -106,6 +110,7 @@ func (s *Server) EnablePProfEndpoint() {
 	s.mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
 	s.mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	s.mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	s.pprofEnabled = true
 }
 
 // EnablePyroAgent enables pyroscope agent in golang push mode
@@ -118,12 +123,17 @@ func (s *Server) EnablePyroAgent() error {
 		},
 	)
 	s.pyroProfiler = p
+	if err != nil {
+		return err
+	}
 
-	return err
+	s.pyroscopeEnabled = true
+
+	return nil
 }
 
-// MetricsEndpointEnabled returns true if metrics endpoint is enabled
-func (s *Server) MetricsEndpointEnabled() bool {
+// IsMetricsEnabled returns true if metrics endpoint is enabled
+func (s *Server) IsMetricsEnabled() bool {
 	if s == nil {
 		return false
 	}
@@ -131,13 +141,24 @@ func (s *Server) MetricsEndpointEnabled() bool {
 	return s.metricsEnabled
 }
 
-// HealthzEnabled returns true if healthz endpoint is enabled
-func (s *Server) HealthzEnabled() bool {
-	if s == nil {
-		return false
-	}
-
+// IsHealthzEnabled returns true if healthz endpoint is enabled
+func (s *Server) IsHealthzEnabled() bool {
 	return s.healthzEnabled
+}
+
+// IsPProfEnabled returns true if pprof endpoint is enabled
+func (s *Server) IsPProfEnabled() bool {
+	return s.pprofEnabled
+}
+
+// IsPyroscopeEnabled returns true if pyroscope agent is enabled
+func (s *Server) IsPyroscopeEnabled() bool {
+	return s.pyroscopeEnabled
+}
+
+// Address returns the address of the server
+func (s *Server) Address() string {
+	return s.address
 }
 
 //go:noinline

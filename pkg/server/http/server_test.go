@@ -42,37 +42,31 @@ func TestServer(t *testing.T) {
 	}
 }
 
-func TestHealthzEnabled(t *testing.T) {
+func TestServer_EndpointFlags(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name           string
-		server         *Server
-		enableHealthz  bool
-		expectedResult bool
-	}{
-		{
-			name:           "server without healthz enabled returns false",
-			server:         New(""),
-			enableHealthz:  false,
-			expectedResult: false,
-		},
-		{
-			name:           "server with healthz enabled returns true",
-			server:         New(""),
-			enableHealthz:  true,
-			expectedResult: true,
-		},
-	}
+	t.Run("all flags disabled by default", func(t *testing.T) {
+		s := New("")
+		assert.False(t, s.IsMetricsEnabled())
+		assert.False(t, s.IsHealthzEnabled())
+		assert.False(t, s.IsPProfEnabled())
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.enableHealthz && tt.server != nil {
-				tt.server.EnableHealthzEndpoint()
-			}
+	t.Run("metrics enabled", func(t *testing.T) {
+		s := New("")
+		s.EnableMetricsEndpoint()
+		assert.True(t, s.IsMetricsEnabled())
+	})
 
-			result := tt.server.HealthzEnabled()
-			assert.Equal(t, tt.expectedResult, result)
-		})
-	}
+	t.Run("healthz enabled", func(t *testing.T) {
+		s := New("")
+		s.EnableHealthzEndpoint()
+		assert.True(t, s.IsHealthzEnabled())
+	})
+
+	t.Run("pprof enabled", func(t *testing.T) {
+		s := New("")
+		s.EnablePProfEndpoint()
+		assert.True(t, s.IsPProfEnabled())
+	})
 }
