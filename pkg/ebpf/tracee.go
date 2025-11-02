@@ -32,6 +32,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/datastores/dns"
 	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/datastores/symbol"
+	"github.com/aquasecurity/tracee/pkg/datastores/system"
 	"github.com/aquasecurity/tracee/pkg/ebpf/controlplane"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
@@ -555,6 +556,18 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// that always fetches the current symbol table
 	kernelSymbolAdapter := symbol.NewAdapter(t.getKernelSymbols)
 	if err := t.dataStoreRegistry.RegisterStore("symbol", kernelSymbolAdapter, true); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// System information is collected once at startup and is immutable
+	systemInfo, err := system.CollectSystemInfo()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	// Set Tracee's start time (in nanoseconds since epoch)
+	systemInfo.TraceeStartTime = timeutil.NsSinceEpochToTime(t.startTime)
+	systemStore := system.New(systemInfo)
+	if err := t.dataStoreRegistry.RegisterStore("system", systemStore, false); err != nil {
 		return errfmt.WrapError(err)
 	}
 

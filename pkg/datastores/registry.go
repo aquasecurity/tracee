@@ -19,6 +19,7 @@ type Registry struct {
 	containerStore    datastores.ContainerStore
 	kernelSymbolStore datastores.KernelSymbolStore
 	dnsStore          datastores.DNSStore
+	systemStore       datastores.SystemStore
 }
 
 // NewRegistry creates a new datastore registry
@@ -79,6 +80,10 @@ func (r *Registry) RegisterStore(name string, store datastores.DataStore, requir
 		if ds, ok := store.(datastores.DNSStore); ok {
 			r.dnsStore = ds
 		}
+	case "system":
+		if ss, ok := store.(datastores.SystemStore); ok {
+			r.systemStore = ss
+		}
 	}
 
 	r.stores[name] = store
@@ -104,6 +109,11 @@ func (r *Registry) KernelSymbols() datastores.KernelSymbolStore {
 // DNS returns the DNS cache datastore
 func (r *Registry) DNS() datastores.DNSStore {
 	return r.dnsStore
+}
+
+// System returns the system information datastore
+func (r *Registry) System() datastores.SystemStore {
+	return r.systemStore
 }
 
 // GetCustom returns a custom datastore by name with type safety
