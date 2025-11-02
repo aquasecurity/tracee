@@ -2274,7 +2274,6 @@ func (t *Tracee) registerAllDetectors(detectorList []detection.EventDetector) er
 	}
 
 	// Register all detectors
-	registered := 0
 	for _, detector := range detectorList {
 		definition := detector.GetDefinition()
 
@@ -2285,16 +2284,11 @@ func (t *Tracee) registerAllDetectors(detectorList []detection.EventDetector) er
 			// Continue with other detectors - don't fail startup for one detector
 			continue
 		}
-
-		logger.Debugw("Registered detector",
-			"detector", definition.ID,
-			"event", definition.ProducedEvent.Name)
-		registered++
 	}
 
 	logger.Debugw("Detector registration complete",
 		"total", len(detectorList),
-		"registered", registered)
+		"registered", t.detectorEngine.GetDetectorCount())
 
 	return nil
 }

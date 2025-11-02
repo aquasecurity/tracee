@@ -3,6 +3,7 @@ package detectors
 import (
 	"errors"
 	"fmt"
+	"runtime"
 	"sync"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
@@ -37,6 +38,22 @@ func newRegistry(policyManager *policy.Manager) *registry {
 		eventNameIndex: make(map[string]string),
 		policyManager:  policyManager,
 	}
+}
+
+// isArchitectureSupported checks if the detector supports the current system architecture
+// Empty requirements.Architectures means all architectures are supported
+func isArchitectureSupported(requirements detection.DetectorRequirements, systemArch string) bool {
+	if len(requirements.Architectures) == 0 {
+		return true // No restriction = all architectures supported
+	}
+
+	for _, arch := range requirements.Architectures {
+		if arch == systemArch {
+			return true
+		}
+	}
+
+	return false
 }
 
 // RegisterDetector adds a detector to the engine registry
@@ -79,6 +96,15 @@ func (r *registry) RegisterDetector(
 		}
 	}
 
+	// Check architecture compatibility using runtime.GOARCH
+	if !isArchitectureSupported(definition.Requirements, runtime.GOARCH) {
+		logger.Debugw("Skipping detector - architecture not supported",
+			"detector", detectorID,
+			"required", definition.Requirements.Architectures,
+			"current", runtime.GOARCH)
+		return nil // Skip registration, not an error
+	}
+
 	// Lookup pre-allocated event ID from events.Core
 	eventID, found := events.Core.GetDefinitionIDByName(eventName)
 	if !found {
@@ -114,7 +140,18 @@ func (r *registry) RegisterDetector(
 	// Store detector entry (registered regardless of selection for future runtime changes)
 	r.detectors[detectorID] = detectorEntry
 
+	logger.Debugw("Registered detector",
+		"detector", detectorID,
+		"event", eventName)
+
 	return nil
+}
+
+// GetDetectorCount returns the number of registered detectors
+func (r *registry) GetDetectorCount() int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return len(r.detectors)
 }
 
 // UnregisterDetector removes a detector from the registry
