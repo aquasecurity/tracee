@@ -621,6 +621,7 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *trace.Event) (
 
 				// Safety check - log if max depth exceeded
 				if len(queue) > 0 {
+					t.detectorEngine.GetMetrics().ChainDepthExceeded.Inc()
 					_ = t.stats.ErrorCount.Increment()
 					logger.Errorw("Exceeded max detector chain depth",
 						"max_depth", maxDetectorChainDepth,
