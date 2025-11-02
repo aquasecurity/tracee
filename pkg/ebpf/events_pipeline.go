@@ -46,7 +46,7 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 	// Sort stage: events go through a sorting function.
 
 	if t.config.Output.EventsSorting {
-		eventsChan, errc = t.eventsSorter.StartPipeline(ctx, eventsChan, t.config.BlobPerfBufferSize)
+		eventsChan, errc = t.eventsSorter.StartPipeline(ctx, eventsChan, t.config.ArtifactsPerfBufferSize)
 		t.stats.Channels["sort"] = eventsChan
 		errcList = append(errcList, errc)
 	}

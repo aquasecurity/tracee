@@ -51,10 +51,12 @@ func init() {
 
 	// add subcommands to manCmd
 	manCmd.AddCommand(
+		buffersCmd,
 		capabilitiesCmd,
 		captureCmd,
 		configCmd,
 		containersCmd,
+		eventCmd,
 		eventsCmd,
 		logCmd,
 		outputCmd,
@@ -184,6 +186,15 @@ var storesCmd = &cobra.Command{
 	Short:   "Show manual page for the --stores flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("stores")
+	},
+}
+
+var buffersCmd = &cobra.Command{
+	Use:     "buffers",
+	Aliases: []string{"b"},
+	Short:   "Show manual page for the --buffers flag",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runManForFlag("buffers")
 	},
 }
 

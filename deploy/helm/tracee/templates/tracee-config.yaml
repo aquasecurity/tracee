@@ -11,7 +11,24 @@ data:
     {{- toYaml .Values.configFile | nindent 4 }}
   {{- else }}
   config.yaml: |-
-    perf-buffer-size: {{ .Values.config.perfBufferSize }}
+    {{- if or .Values.config.kernelEvents .Values.config.kernelArtifacts .Values.config.kernelControlPlane .Values.config.pipeline }}
+    buffers:
+        {{- if or .Values.config.kernelEvents .Values.config.kernelArtifacts .Values.config.kernelControlPlane }}
+        kernel:
+            {{- if .Values.config.kernelEvents }}
+            events: {{ .Values.config.kernelEvents }}
+            {{- end }}
+            {{- if .Values.config.kernelArtifacts }}
+            artifacts: {{ .Values.config.kernelArtifacts }}
+            {{- end }}
+            {{- if .Values.config.kernelControlPlane }}
+            control-plane: {{ .Values.config.kernelControlPlane }}
+            {{- end }}
+        {{- end }}
+        {{- if .Values.config.pipeline }}
+        pipeline: {{ .Values.config.pipeline }}
+        {{- end }}
+    {{- end }}
     healthz: {{ .Values.config.healthz }}
     metrics: {{ .Values.config.metrics }}
     pprof: {{ .Values.config.pprof }}
@@ -50,9 +67,6 @@ data:
                 content-type: {{ .contentType }}
                 {{- end }}
         {{- end }}
-    {{- if .Values.config.blobPerfBufferSize }}
-    blob-perf-buffer-size: {{ .Values.config.blobPerfBufferSize}}
-    {{- end }}
     {{- if or .Values.config.stores.dns.enabled .Values.config.stores.dns.maxEntries .Values.config.stores.process.enabled .Values.config.stores.process.maxProcesses .Values.config.stores.process.maxThreads .Values.config.stores.process.source .Values.config.stores.process.useProcfs }}
     stores:
         {{- if or .Values.config.stores.dns.enabled .Values.config.stores.dns.maxEntries }}

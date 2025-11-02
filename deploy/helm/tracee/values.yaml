@@ -79,8 +79,10 @@ configFile: {}
 # This config field holds default values for Tracee configuration and each field
 # can be changed individually via CLI command, using --set config.field=value
 config:
-  blobPerfBufferSize: ""
-  perfBufferSize: 1024
+  kernelEvents: ""
+  kernelArtifacts: ""
+  kernelControlPlane: ""
+  pipeline: ""
   healthz: true
   metrics: true
   pprof: false

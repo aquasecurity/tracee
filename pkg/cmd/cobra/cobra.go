@@ -110,12 +110,22 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, fmt.Errorf("failed to create detector events: %w", err)
 	}
 
+	buffersFlags, err := flags.GetFlagsFromViper(flags.BuffersFlag)
+	if err != nil {
+		return runner, err
+	}
+	buffers, err := flags.PrepareBuffers(buffersFlags)
+	if err != nil {
+		return runner, err
+	}
+
 	// Initialize a tracee config structure
 
 	cfg := config.Config{
-		PerfBufferSize:      viper.GetInt("perf-buffer-size"),
-		BlobPerfBufferSize:  viper.GetInt("blob-perf-buffer-size"),
-		PipelineChannelSize: viper.GetInt("pipeline-channel-size"),
+		EventsPerfBufferSize:       buffers.Kernel.Events,
+		ArtifactsPerfBufferSize:    buffers.Kernel.Artifacts,
+		ControlPlanePerfBufferSize: buffers.Kernel.ControlPlane,
+		PipelineChannelSize:        buffers.Pipeline,
 	}
 
 	// OS release information

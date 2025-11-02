@@ -35,6 +35,8 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &RuntimeConfig{}
 	case StoresFlag:
 		flagger = &StoresConfig{}
+	case BuffersFlag:
+		flagger = &BuffersConfig{}
 	default:
 		return nil, errfmt.Errorf("unrecognized key: %s", key)
 	}

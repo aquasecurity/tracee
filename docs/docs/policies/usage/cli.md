@@ -58,7 +58,11 @@ containers:
     #     - runtime: docker
     #       socket: /var/run/docker.sock
 
-blob-perf-buffer-size: 1024
+buffers:
+    kernel:
+        artifacts: 1024
+        control-plane: 1024
+    pipeline: 1000
 
 # signatures
 
