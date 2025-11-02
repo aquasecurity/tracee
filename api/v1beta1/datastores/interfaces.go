@@ -92,3 +92,12 @@ type DNSStore interface {
 	// Returns nil, false if no cached response is found
 	GetDNSResponse(query string) (*DNSResponse, bool)
 }
+
+// SystemStore provides access to immutable system information
+type SystemStore interface {
+	DataStore
+
+	// GetSystemInfo returns complete system information collected at startup
+	// This data is immutable and never changes during the Tracee process lifetime
+	GetSystemInfo() *SystemInfo
+}
