@@ -3,6 +3,7 @@ package detectors
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/logger"
@@ -16,14 +17,16 @@ type dispatcher struct {
 	dispatchMap   map[v1beta1.EventId][]string // Event ID -> Detector IDs
 	registry      *registry
 	policyManager *policy.Manager
+	metrics       *Metrics
 }
 
 // newDispatcher creates a new event dispatcher
-func newDispatcher(registry *registry, policyManager *policy.Manager) *dispatcher {
+func newDispatcher(registry *registry, policyManager *policy.Manager, metrics *Metrics) *dispatcher {
 	return &dispatcher{
 		dispatchMap:   make(map[v1beta1.EventId][]string),
 		registry:      registry,
 		policyManager: policyManager,
+		metrics:       metrics,
 	}
 }
 
@@ -112,15 +115,28 @@ func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta
 			continue
 		}
 
+		// Track event processing (per-detector)
+		d.metrics.EventsProcessed.WithLabelValues(detectorID).Inc()
+
 		// TODO: Apply data and scope filters before calling OnEvent()
 		// Filtering ensures only matching events reach OnEvent() based on detector requirements
 
-		// Call detector with event
+		// Call detector with timing
+		start := time.Now()
 		detectorOutputs, err := detector.detector.OnEvent(ctx, inputEvent)
+		duration := time.Since(start)
+
+		// Record execution time (per-detector)
+		d.metrics.ExecutionDuration.WithLabelValues(detectorID).Observe(duration.Seconds())
+
 		if err != nil {
-			// Log error but continue processing other detectors
+			// Log error and track metric, but continue processing other detectors
 			// Errors are never fatal - detectors must be resilient
-			// TODO: Add logging and metrics when available
+			d.metrics.Errors.WithLabelValues(detectorID).Inc()
+			logger.Debugw("Detector error",
+				"detector", detectorID,
+				"event", inputEvent.Name,
+				"error", err)
 			continue
 		}
 
@@ -139,6 +155,9 @@ func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta
 			d.autoPopulateFields(event, inputEvent, detector)
 
 			outputEvents = append(outputEvents, event)
+
+			// Track produced event (per-detector)
+			d.metrics.EventsProduced.WithLabelValues(detectorID).Inc()
 		}
 	}
 
