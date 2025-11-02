@@ -39,6 +39,11 @@ func (e *Engine) RegisterDetector(
 	return nil
 }
 
+// GetDetectorCount returns the number of registered detectors
+func (e *Engine) GetDetectorCount() int {
+	return e.registry.GetDetectorCount()
+}
+
 // UnregisterDetector unregisters a detector from the engine
 func (e *Engine) UnregisterDetector(detectorID string) error {
 	// Unregister from registry
