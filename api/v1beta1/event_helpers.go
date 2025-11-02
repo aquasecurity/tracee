@@ -228,3 +228,149 @@ func CreateEventFromBase(baseEvent *Event) *Event {
 
 	return newEvent
 }
+
+// EventValue constructors for common types
+// These helpers simplify creating EventValue instances for detector output data.
+// For basic types (string, int32, etc.), use these specific helpers for best clarity.
+// For specialized types (TCP, DNS, etc.), use NewValue() with runtime type checking.
+
+// NewStringValue creates an EventValue for a string field
+func NewStringValue(name, value string) *EventValue {
+	return &EventValue{
+		Name:  name,
+		Value: &EventValue_Str{Str: value},
+	}
+}
+
+// NewInt32Value creates an EventValue for an int32 field
+func NewInt32Value(name string, value int32) *EventValue {
+	return &EventValue{
+		Name:  name,
+		Value: &EventValue_Int32{Int32: value},
+	}
+}
+
+// NewInt64Value creates an EventValue for an int64 field
+func NewInt64Value(name string, value int64) *EventValue {
+	return &EventValue{
+		Name:  name,
+		Value: &EventValue_Int64{Int64: value},
+	}
+}
+
+// NewUInt32Value creates an EventValue for a uint32 field
+func NewUInt32Value(name string, value uint32) *EventValue {
+	return &EventValue{
+		Name:  name,
+		Value: &EventValue_UInt32{UInt32: value},
+	}
+}
+
+// NewUInt64Value creates an EventValue for a uint64 field
+func NewUInt64Value(name string, value uint64) *EventValue {
+	return &EventValue{
+		Name:  name,
+		Value: &EventValue_UInt64{UInt64: value},
+	}
+}
+
+// NewBoolValue creates an EventValue for a boolean field
+func NewBoolValue(name string, value bool) *EventValue {
+	return &EventValue{
+		Name:  name,
+		Value: &EventValue_Bool{Bool: value},
+	}
+}
+
+// NewBytesValue creates an EventValue for a bytes field
+func NewBytesValue(name string, value []byte) *EventValue {
+	return &EventValue{
+		Name:  name,
+		Value: &EventValue_Bytes{Bytes: value},
+	}
+}
+
+// NewValue creates an EventValue for any supported type using runtime type checking.
+// This is a generic fallback for specialized types (arrays, network types, credentials, etc.).
+// For common basic types (string, int32, etc.), prefer the specific helpers above for better clarity.
+//
+// Supported types include: StringArray, Int32Array, UInt64Array, SockAddr, Credentials,
+// Timespec, IPv4, IPv6, TCP, UDP, ICMP, ICMPv6, DNS, PacketMetadata, HTTP, and more.
+//
+// Returns error if the value type is not supported by EventValue.
+func NewValue(name string, value any) (*EventValue, error) {
+	ev := &EventValue{Name: name}
+
+	switch v := value.(type) {
+	// Basic types (also covered by specific helpers, but supported here for completeness)
+	case string:
+		ev.Value = &EventValue_Str{Str: v}
+	case int32:
+		ev.Value = &EventValue_Int32{Int32: v}
+	case int64:
+		ev.Value = &EventValue_Int64{Int64: v}
+	case uint32:
+		ev.Value = &EventValue_UInt32{UInt32: v}
+	case uint64:
+		ev.Value = &EventValue_UInt64{UInt64: v}
+	case bool:
+		ev.Value = &EventValue_Bool{Bool: v}
+	case []byte:
+		ev.Value = &EventValue_Bytes{Bytes: v}
+
+	// Array types
+	case *StringArray:
+		ev.Value = &EventValue_StrArray{StrArray: v}
+	case *Int32Array:
+		ev.Value = &EventValue_Int32Array{Int32Array: v}
+	case *UInt64Array:
+		ev.Value = &EventValue_UInt64Array{UInt64Array: v}
+
+	// Network and protocol types
+	case *SockAddr:
+		ev.Value = &EventValue_Sockaddr{Sockaddr: v}
+	case *IPv4:
+		ev.Value = &EventValue_Ipv4{Ipv4: v}
+	case *IPv6:
+		ev.Value = &EventValue_Ipv6{Ipv6: v}
+	case *TCP:
+		ev.Value = &EventValue_Tcp{Tcp: v}
+	case *UDP:
+		ev.Value = &EventValue_Udp{Udp: v}
+	case *ICMP:
+		ev.Value = &EventValue_Icmp{Icmp: v}
+	case *ICMPv6:
+		ev.Value = &EventValue_Icmpv6{Icmpv6: v}
+	case *DNS:
+		ev.Value = &EventValue_Dns{Dns: v}
+	case *DnsQuestions:
+		ev.Value = &EventValue_DnsQuestions{DnsQuestions: v}
+	case *DnsResponses:
+		ev.Value = &EventValue_DnsResponses{DnsResponses: v}
+	case *PacketMetadata:
+		ev.Value = &EventValue_PacketMetadata{PacketMetadata: v}
+
+	// HTTP types
+	case *HTTP:
+		ev.Value = &EventValue_Http{Http: v}
+	case *HTTPRequest:
+		ev.Value = &EventValue_HttpRequest{HttpRequest: v}
+	case *HTTPResponse:
+		ev.Value = &EventValue_HttpResponse{HttpResponse: v}
+
+	// Other specialized types
+	case *Credentials:
+		ev.Value = &EventValue_Credentials{Credentials: v}
+	case *Timespec:
+		ev.Value = &EventValue_Timespec{Timespec: v}
+	case *HookedSyscalls:
+		ev.Value = &EventValue_HookedSyscalls{HookedSyscalls: v}
+	case *HookedSeqOps:
+		ev.Value = &EventValue_HookedSeqOps{HookedSeqOps: v}
+
+	default:
+		return nil, fmt.Errorf("unsupported type %T for EventValue", value)
+	}
+
+	return ev, nil
+}
