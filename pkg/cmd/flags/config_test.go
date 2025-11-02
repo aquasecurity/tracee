@@ -397,6 +397,41 @@ output:
 			},
 		},
 		{
+			name: "Test buffers configuration (cli flags)",
+			yamlContent: `
+buffers:
+    - kernel.events=2048
+    - kernel.artifacts=512
+    - kernel.control-plane=256
+    - pipeline=4000
+`,
+			key: "buffers",
+			expectedFlags: []string{
+				"kernel.events=2048",
+				"kernel.artifacts=512",
+				"kernel.control-plane=256",
+				"pipeline=4000",
+			},
+		},
+		{
+			name: "Test buffers configuration (structured flags)",
+			yamlContent: `
+buffers:
+    kernel:
+        events: 2048
+        artifacts: 512
+        control-plane: 256
+    pipeline: 4000
+`,
+			key: "buffers",
+			expectedFlags: []string{
+				"kernel.events=2048",
+				"kernel.artifacts=512",
+				"kernel.control-plane=256",
+				"pipeline=4000",
+			},
+		},
+		{
 			name: "Test server configuration (cli flags)",
 			yamlContent: `
 server:

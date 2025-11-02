@@ -198,34 +198,18 @@ func initCmd() error {
 
 	// Buffer flags
 
-	defaultBufferPages := (4096 * 1024) / os.Getpagesize() // 4 MB of contiguous pages
-	rootCmd.Flags().IntP(
-		"perf-buffer-size",
+	rootCmd.Flags().StringArrayP(
+		flags.BuffersFlag,
 		"b",
-		defaultBufferPages,
-		"<size>\t\t\t\tSize, in pages, of the internal perf ring buffer used to submit events from the kernel",
+		[]string{
+			fmt.Sprintf("kernel.events=%d", flags.GetDefaultPerfBufferSize()),
+			fmt.Sprintf("kernel.control-plane=%d", flags.GetDefaultPerfBufferSize()),
+			fmt.Sprintf("kernel.artifacts=%d", flags.GetDefaultPerfBufferSize()),
+			"pipeline=1000",
+		},
+		"[kernel.events|kernel.artifacts|...]\tSize for kernel and user buffers",
 	)
-	err = viper.BindPFlag("perf-buffer-size", rootCmd.Flags().Lookup("perf-buffer-size"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	rootCmd.Flags().Int(
-		"blob-perf-buffer-size",
-		defaultBufferPages,
-		"<size>\t\t\t\tSize, in pages, of the internal perf ring buffer used to send blobs from the kernel",
-	)
-	err = viper.BindPFlag("blob-perf-buffer-size", rootCmd.Flags().Lookup("blob-perf-buffer-size"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	rootCmd.Flags().Int(
-		"pipeline-channel-size",
-		1000,
-		"<size>\t\t\t\tSize, in event objects, of each pipeline stage's output channel",
-	)
-	err = viper.BindPFlag("pipeline-channel-size", rootCmd.Flags().Lookup("pipeline-channel-size"))
+	err = viper.BindPFlag(flags.BuffersFlag, rootCmd.Flags().Lookup(flags.BuffersFlag))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
