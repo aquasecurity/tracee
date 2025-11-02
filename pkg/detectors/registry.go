@@ -65,6 +65,20 @@ func (r *registry) RegisterDetector(
 		return fmt.Errorf("detector %s has invalid requirements: %w", detectorID, err)
 	}
 
+	// Validate datastore requirements (check all required datastores are available)
+	for _, dsReq := range definition.Requirements.DataStores {
+		if !params.DataStores.IsAvailable(dsReq.Name) {
+			// Only fail registration if the datastore is required
+			if dsReq.Dependency == detection.DependencyRequired {
+				return fmt.Errorf("detector %s requires datastore %q but it is not available", detectorID, dsReq.Name)
+			}
+			// Log warning for optional datastores
+			logger.Debugw("Optional datastore not available for detector",
+				"detector", detectorID,
+				"datastore", dsReq.Name)
+		}
+	}
+
 	// Lookup pre-allocated event ID from events.Core
 	eventID, found := events.Core.GetDefinitionIDByName(eventName)
 	if !found {
