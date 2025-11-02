@@ -12,14 +12,17 @@ import (
 type Engine struct {
 	registry   *registry
 	dispatcher *dispatcher
+	metrics    *Metrics
 }
 
 // NewEngine creates a new detector engine
 func NewEngine(policyManager *policy.Manager) *Engine {
 	registry := newRegistry(policyManager)
+	metrics := NewMetrics()
 	return &Engine{
 		registry:   registry,
-		dispatcher: newDispatcher(registry, policyManager),
+		dispatcher: newDispatcher(registry, policyManager, metrics),
+		metrics:    metrics,
 	}
 }
 
@@ -81,4 +84,14 @@ func (e *Engine) DisableDetector(detectorID string) error {
 // Returns the output events produced by detectors
 func (e *Engine) DispatchToDetectors(ctx context.Context, inputEvent *v1beta1.Event) ([]*v1beta1.Event, error) {
 	return e.dispatcher.dispatchToDetectors(ctx, inputEvent)
+}
+
+// GetMetrics returns the detector metrics instance
+func (e *Engine) GetMetrics() *Metrics {
+	return e.metrics
+}
+
+// RegisterPrometheusMetrics registers detector metrics with Prometheus
+func (e *Engine) RegisterPrometheusMetrics() error {
+	return e.metrics.RegisterPrometheus()
 }

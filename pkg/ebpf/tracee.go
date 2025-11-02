@@ -470,6 +470,13 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize Detector Engine
 	t.detectorEngine = detectors.NewEngine(t.policyManager)
 
+	// Register detector metrics if metrics are enabled
+	if t.MetricsEnabled() {
+		if err := t.detectorEngine.RegisterPrometheusMetrics(); err != nil {
+			logger.Errorw("Registering detector prometheus metrics", "error", err)
+		}
+	}
+
 	// Initialize time
 
 	// Checking the kernel symbol needs to happen after obtaining the capability;
