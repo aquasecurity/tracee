@@ -15,7 +15,7 @@ func init() {
 // ExampleDetector is a demonstration detector that shows the detector API patterns.
 // It detects all execve events and produces an example_detection event.
 // This detector demonstrates:
-// - How to use the DataStore API (ProcessStore and ContainerStore)
+// - How to use the DataStore API (ContainerStore and SystemStore)
 // - How to enrich detections with contextual information
 // - Best practices for detector implementation
 type ExampleDetector struct {
@@ -37,6 +37,10 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 				{
 					Name:       "container",
 					Dependency: detection.DependencyRequired,
+				},
+				{
+					Name:       "system",
+					Dependency: detection.DependencyOptional,
 				},
 			},
 		},
@@ -73,6 +77,14 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 					Name: "confidence",
 					Type: "int",
 				},
+				{
+					Name: "system_arch",
+					Type: "const char*",
+				},
+				{
+					Name: "kernel_version",
+					Type: "const char*",
+				},
 			},
 		},
 		ThreatMetadata: &v1beta1.Threat{
@@ -99,6 +111,20 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 func (d *ExampleDetector) Init(params detection.DetectorParams) error {
 	d.logger = params.Logger
 	d.dataStores = params.DataStores
+
+	// Log system info if available
+	if d.dataStores != nil {
+		if systemStore := d.dataStores.System(); systemStore != nil {
+			sysInfo := systemStore.GetSystemInfo()
+			d.logger.Debugw("ExampleDetector initialized with system info",
+				"arch", sysInfo.Architecture,
+				"kernel", sysInfo.KernelRelease,
+				"os", sysInfo.OSPrettyName,
+				"hostname", sysInfo.Hostname,
+				"tracee_version", sysInfo.TraceeVersion)
+		}
+	}
+
 	d.logger.Debugw("ExampleDetector initialized",
 		"has_datastores", d.dataStores != nil)
 	return nil
@@ -172,6 +198,17 @@ func (d *ExampleDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]
 		v1beta1.NewStringValue("detection_reason", "Example detection - all execve events with DataStore enrichment"),
 		v1beta1.NewInt32Value("confidence", 100),
 	)
+
+	// Add system information if available
+	if d.dataStores != nil {
+		if systemStore := d.dataStores.System(); systemStore != nil {
+			sysInfo := systemStore.GetSystemInfo()
+			outputEvent.Data = append(outputEvent.Data,
+				v1beta1.NewStringValue("system_arch", sysInfo.Architecture),
+				v1beta1.NewStringValue("kernel_version", sysInfo.KernelRelease),
+			)
+		}
+	}
 
 	return []*v1beta1.Event{outputEvent}, nil
 }
