@@ -14,6 +14,9 @@ type Registry interface {
 	// DNS returns the DNS cache datastore
 	DNS() DNSStore
 
+	// System returns the system information datastore
+	System() SystemStore
+
 	// GetCustom retrieves a custom datastore by name
 	// Returns ErrNotFound if the datastore is not registered
 	GetCustom(name string) (DataStore, error)
