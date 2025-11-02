@@ -27,6 +27,7 @@ func createTestController() *controlplane.Controller {
 		false,
 		nil,
 		dataPresentor,
+		1024,
 	)
 
 	return ctrl

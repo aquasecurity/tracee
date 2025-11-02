@@ -44,7 +44,7 @@ You can customize specific options with the helm installation:
 ```
 helm install tracee aqua/tracee \
         --namespace tracee --create-namespace \
-        --set config.blobPerfBufferSize=1024
+        --set config.kernelBlob=1024
 ```
 
 or after installation:

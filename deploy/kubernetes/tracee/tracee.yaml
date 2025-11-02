@@ -39,7 +39,10 @@ data:
     cache:
         type: mem
         size: 512
-    perf-buffer-size: 1024
+    buffers:
+        kernel:
+            events: 1024
+            control-plane: 1024
     healthz: true
     metrics: true
     pprof: false

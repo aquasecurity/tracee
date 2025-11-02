@@ -11,7 +11,24 @@ data:
     {{- toYaml .Values.configFile | nindent 4 }}
   {{- else }}
   config.yaml: |-
-    perf-buffer-size: {{ .Values.config.perfBufferSize }}
+    {{- if or .Values.config.kernelEvents .Values.config.kernelBlobs .Values.config.kernelControlPlane .Values.config.pipeline }}
+    buffers:
+        {{- if or .Values.config.kernelEvents .Values.config.kernelBlobs .Values.config.kernelControlPlane }}
+        kernel:
+            {{- if .Values.config.kernelEvents }}
+            events: {{ .Values.config.kernelEvents }}
+            {{- end }}
+            {{- if .Values.config.kernelBlobs }}
+            blobs: {{ .Values.config.kernelBlobs }}
+            {{- end }}
+            {{- if .Values.config.kernelControlPlane }}
+            control-plane: {{ .Values.config.kernelControlPlane }}
+            {{- end }}
+        {{- end }}
+        {{- if .Values.config.pipeline }}
+        pipeline: {{ .Values.config.pipeline }}
+        {{- end }}
+    {{- end }}
     healthz: {{ .Values.config.healthz }}
     metrics: {{ .Values.config.metrics }}
     pprof: {{ .Values.config.pprof }}
@@ -49,7 +66,4 @@ data:
                 content-type: {{ .contentType }}
                 {{- end }}
         {{- end }}
-    {{- if .Values.config.blobPerfBufferSize }}
-    blob-perf-buffer-size: {{ .Values.config.blobPerfBufferSize}}
-    {{- end }}
   {{- end }}

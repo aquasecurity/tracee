@@ -1615,6 +1615,7 @@ func (t *Tracee) initBPF() error {
 		t.config.NoContainersEnrich,
 		t.processTree,
 		t.dataTypeDecoder,
+		t.config.ControlPlanePerfBufferSize,
 	)
 	if err := t.controlPlane.Init(); err != nil {
 		return errfmt.WrapError(err)
@@ -1630,27 +1631,27 @@ func (t *Tracee) initBPF() error {
 
 	t.eventsChannel = make(chan []byte, 1000)
 	t.lostEvChannel = make(chan uint64)
-	if t.config.PerfBufferSize < 1 {
-		return errfmt.Errorf("invalid perf buffer size: %d", t.config.PerfBufferSize)
+	if t.config.EventsPerfBufferSize < 1 {
+		return errfmt.Errorf("invalid perf buffer size: %d", t.config.EventsPerfBufferSize)
 	}
 	t.eventsPerfMap, err = t.bpfModule.InitPerfBuf(
 		"events",
 		t.eventsChannel,
 		t.lostEvChannel,
-		t.config.PerfBufferSize,
+		t.config.EventsPerfBufferSize,
 	)
 	if err != nil {
 		return errfmt.Errorf("error initializing events perf map: %v", err)
 	}
 
-	if t.config.BlobPerfBufferSize > 0 {
+	if t.config.BlobsPerfBufferSize > 0 {
 		t.fileCapturesChannel = make(chan []byte, 1000)
 		t.lostCapturesChannel = make(chan uint64)
 		t.fileWrPerfMap, err = t.bpfModule.InitPerfBuf(
 			"file_writes",
 			t.fileCapturesChannel,
 			t.lostCapturesChannel,
-			t.config.BlobPerfBufferSize,
+			t.config.BlobsPerfBufferSize,
 		)
 		if err != nil {
 			return errfmt.Errorf("error initializing file_writes perf map: %v", err)
@@ -1664,7 +1665,7 @@ func (t *Tracee) initBPF() error {
 			"net_cap_events",
 			t.netCapChannel,
 			t.lostNetCapChannel,
-			t.config.PerfBufferSize,
+			t.config.EventsPerfBufferSize,
 		)
 		if err != nil {
 			return errfmt.Errorf("error initializing net capture perf map: %v", err)
@@ -1677,7 +1678,7 @@ func (t *Tracee) initBPF() error {
 		"logs",
 		t.bpfLogsChannel,
 		t.lostBPFLogChannel,
-		t.config.PerfBufferSize,
+		t.config.EventsPerfBufferSize,
 	)
 	if err != nil {
 		return errfmt.Errorf("error initializing logs perf map: %v", err)
@@ -1743,7 +1744,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 	// Parallel perf buffer with file writes events
 
-	if t.config.BlobPerfBufferSize > 0 {
+	if t.config.BlobsPerfBufferSize > 0 {
 		t.fileWrPerfMap.Poll(pollTimeout)
 		go t.handleFileCaptures(ctx)
 	}
@@ -1774,7 +1775,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	if err != nil {
 		return errfmt.Errorf("error stopping control plane: %v", err)
 	}
-	if t.config.BlobPerfBufferSize > 0 {
+	if t.config.BlobsPerfBufferSize > 0 {
 		t.fileWrPerfMap.Stop()
 	}
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
