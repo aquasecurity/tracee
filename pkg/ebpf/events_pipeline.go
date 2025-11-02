@@ -589,21 +589,35 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 					continue
 				}
 
-				// Send original event down the pipeline first
-				out <- event
+				// Capture policy context BEFORE sending event downstream to avoid race conditions
+				// The event may be modified or returned to pool by downstream stages
+				matchedPoliciesBitmap := event.MatchedPoliciesBitmap
+				policiesVersion := event.Event.PoliciesVersion
 
-				// Convert to v1beta1.Event for detector API (uses cached conversion)
+				// Convert to v1beta1.Event for detector API BEFORE sending downstream
+				// (uses cached conversion, but we get the pointer before potential race)
 				pbEvent := event.ToProto()
 
-				// Dispatch original event to detectors to get initial outputs
+				// Dispatch to detectors FIRST (before sending downstream)
+				// This prevents race condition where sink stage might modify the cached proto
+				// while detectors are still reading from it
 				outputs, err := t.detectorEngine.DispatchToDetectors(ctx, pbEvent)
+
+				// Send original event down the pipeline after dispatch completes
+				// (regardless of whether dispatch succeeded or failed)
+				out <- event
+
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
+
 				if len(outputs) == 0 {
 					continue
 				}
+
+				// All detector outputs in the chain inherit policy context from the original event
+				// since they're all derived from this single kernel event
 
 				// Process detector outputs through breadth-first chain traversal
 				// Start queue with initial detector outputs (not the original event)
@@ -617,10 +631,10 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 						// Convert v1beta1.Event back to trace.Event
 						traceEvent := events.ConvertFromProto(protoEvent)
 
-						// Wrap in PipelineEvent and inherit policy context from input event
+						// Wrap in PipelineEvent and inherit policy context from captured values
 						pipelineEvent := events.NewPipelineEvent(traceEvent)
-						pipelineEvent.MatchedPoliciesBitmap = event.MatchedPoliciesBitmap
-						pipelineEvent.Event.PoliciesVersion = event.Event.PoliciesVersion
+						pipelineEvent.MatchedPoliciesBitmap = matchedPoliciesBitmap
+						pipelineEvent.Event.PoliciesVersion = policiesVersion
 
 						// Apply policy filtering to detector outputs
 						if t.matchPolicies(pipelineEvent) == 0 {
