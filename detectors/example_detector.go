@@ -156,32 +156,22 @@ func (d *ExampleDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]
 
 	// Create output event with enriched field data
 	outputEvent := v1beta1.CreateEventFromBase(event)
-	outputEvent.Data = []*v1beta1.EventValue{
-		{
-			Name:  "binary_path",
-			Value: &v1beta1.EventValue_Str{Str: binaryPath},
-		},
-		{
-			Name:  "container_id",
-			Value: &v1beta1.EventValue_Str{Str: containerID},
-		},
-		{
-			Name:  "container_name",
-			Value: &v1beta1.EventValue_Str{Str: containerName},
-		},
-		{
-			Name:  "container_image",
-			Value: &v1beta1.EventValue_Str{Str: containerImage},
-		},
-		{
-			Name:  "detection_reason",
-			Value: &v1beta1.EventValue_Str{Str: "Example detection - all execve events with DataStore enrichment"},
-		},
-		{
-			Name:  "confidence",
-			Value: &v1beta1.EventValue_Int32{Int32: 100},
-		},
+
+	// Always include binary path if available
+	if binaryPath != "" {
+		outputEvent.Data = append(outputEvent.Data, v1beta1.NewStringValue("binary_path", binaryPath))
 	}
+
+	// Add container information if event is from a container
+	if containerID != "" {
+		outputEvent.Data = append(outputEvent.Data, v1beta1.NewStringValue("container_id", containerID))
+	}
+
+	// Add detection metadata
+	outputEvent.Data = append(outputEvent.Data,
+		v1beta1.NewStringValue("detection_reason", "Example detection - all execve events with DataStore enrichment"),
+		v1beta1.NewInt32Value("confidence", 100),
+	)
 
 	return []*v1beta1.Event{outputEvent}, nil
 }
