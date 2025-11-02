@@ -92,3 +92,17 @@ type DataStoreMetadata struct {
 	Description string         // What this store provides
 	Config      map[string]any // Store-specific configuration
 }
+
+// SystemInfo contains immutable system-level information collected at startup
+type SystemInfo struct {
+	Architecture    string            // CPU architecture (e.g., "x86_64", "aarch64")
+	KernelRelease   string            // Kernel version (e.g., "5.15.0-generic")
+	Hostname        string            // System hostname
+	BootTime        time.Time         // System boot time
+	TraceeStartTime time.Time         // Time when Tracee started
+	OSName          string            // OS name (e.g., "Ubuntu")
+	OSVersion       string            // OS version (e.g., "22.04")
+	OSPrettyName    string            // Human-readable full OS name (e.g., "Ubuntu 22.04 LTS")
+	TraceeVersion   string            // Tracee version string
+	InitNamespaces  map[string]uint32 // Init process namespaces (cgroup, ipc, mnt, net, pid, etc.)
+}
