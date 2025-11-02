@@ -43,6 +43,7 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 					Dependency: detection.DependencyOptional,
 				},
 			},
+			// Architectures: []string{"amd64"}, // Uncomment to restrict to amd64 (x86-64) only
 		},
 		ProducedEvent: v1beta1.EventDefinition{
 			Name:        "example_detection",
