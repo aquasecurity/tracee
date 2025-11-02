@@ -1504,6 +1504,7 @@ func (t *Tracee) initBPF() error {
 		t.config.NoContainersEnrich,
 		t.processTree,
 		t.dataTypeDecoder,
+		t.config.ControlPlanePerfBufferSize,
 	)
 	if err := t.controlPlane.Init(); err != nil {
 		return errfmt.WrapError(err)

@@ -1,4 +1,7 @@
-blob-perf-buffer-size: 1024
+buffers:
+    kernel-events: 1024
+    kernel-blob: 1024
+    control-plane-events: 1024
 cache:
     type: none
     # size: 1024
@@ -171,7 +174,6 @@ output:
     #     parse-arguments: true
     #     sort-events: false
 
-perf-buffer-size: 1024
 
 pprof: false
 

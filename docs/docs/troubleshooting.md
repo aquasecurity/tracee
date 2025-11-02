@@ -137,7 +137,7 @@ WARN events dropped due to buffer overflow
 **Solutions**:
 1. **Increase buffer size**:
    ```bash
-   tracee --perf-buffer-size 1024
+   tracee --buffers kernel-events=1024
    ```
 
 2. **Reduce event frequency**:

@@ -142,29 +142,22 @@ A complete config file with all available options can be found [here](https://gi
 
 ### Buffer and Cache
 
-- **`--perf-buffer-size` (`-b`)**: Specifies the size of the internal perf ring buffer in pages.
+- **`--buffers`**: Configures the buffer sizes for kernel and user buffers.
 
-  Default: `1024` (4 MB)
-
-  YAML:
-  ```yaml
-  perf-buffer-size: 2048
-  ```
-
-- **`--blob-perf-buffer-size`**: Specifies the size of the internal perf ring buffer used to send blobs from the kernel.
-
-  Default: `1024` (4 MB)
+  Buffer sizes for perf ring buffers (kernel-events, kernel-blob, control-plane-events) are specified in pages. The pipeline buffer size is specified in event objects. The default size for perf ring buffers is 1024 pages. The default size for the pipeline buffer is 10000 event objects.
 
   YAML:
   ```yaml
-  blob-perf-buffer-size: 2048
+  buffers:
+      kernel-events: 2048
+      kernel-blob: 1024
+      control-plane-events: 512
+      pipeline: 20000
   ```
 
-- **`--pipeline-channel-size`**: Specifies the size of each pipeline stage's output channel.
-
-  Default: `1000`
-
-  YAML:
-  ```yaml
-  pipeline-channel-size: 2048
+  CLI:
+  ```bash
+  --buffers kernel-events=2048 --buffers kernel-blob=1024 --buffers control-plane-events=512 --buffers pipeline=20000
   ```
+
+  __NOTE__: You can view more in the [buffers section](../../flags/buffers.1.md).

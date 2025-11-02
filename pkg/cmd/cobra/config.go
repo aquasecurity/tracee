@@ -36,6 +36,8 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &OutputConfig{}
 	case "dnscache":
 		flagger = &DnsCacheConfig{}
+	case "buffers":
+		flagger = &BuffersConfig{}
 	default:
 		return nil, errfmt.Errorf("unrecognized key: %s", key)
 	}
@@ -479,4 +481,33 @@ type OutputWebhookConfig struct {
 	Timeout     string `mapstructure:"timeout"`
 	GoTemplate  string `mapstructure:"gotemplate"`
 	ContentType string `mapstructure:"content-type"`
+}
+
+// Buffers flag
+
+type BuffersConfig struct {
+	EventsSize       int `mapstructure:"kernel-events"`
+	BlobSize         int `mapstructure:"kernel-blob"`
+	ControlPlaneSize int `mapstructure:"control-plane-events"`
+	PipelineSize     int `mapstructure:"pipeline"`
+}
+
+func (c *BuffersConfig) flags() []string {
+	flags := []string{}
+
+	if c.EventsSize != 0 {
+		flags = append(flags, fmt.Sprintf("kernel-events=%d", c.EventsSize))
+	}
+	if c.BlobSize != 0 {
+		flags = append(flags, fmt.Sprintf("kernel-blob=%d", c.BlobSize))
+	}
+	if c.ControlPlaneSize != 0 {
+		flags = append(flags, fmt.Sprintf("control-plane-events=%d", c.ControlPlaneSize))
+	}
+
+	if c.PipelineSize != 0 {
+		flags = append(flags, fmt.Sprintf("pipeline=%d", c.PipelineSize))
+	}
+
+	return flags
 }
