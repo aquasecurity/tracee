@@ -81,14 +81,16 @@ type DetectorRequirements struct {
 	// DataStores lists required datastores with their dependency types
 	DataStores []DataStoreRequirement `yaml:"datastores,omitempty"`
 
+	// Architectures lists supported CPU architectures (e.g., "amd64", "arm64")
+	// Empty slice means the detector supports all architectures
+	// Values should use Go's GOARCH format: "amd64" (x86-64), "arm64" (AArch64), etc.
+	Architectures []string `yaml:"architectures,omitempty"`
+
 	// MinTraceeVersion specifies minimum Tracee version (optional, inclusive)
 	MinTraceeVersion *v1beta1.Version `yaml:"min_tracee_version,omitempty"`
 
 	// MaxTraceeVersion specifies maximum Tracee version (optional, exclusive)
 	MaxTraceeVersion *v1beta1.Version `yaml:"max_tracee_version,omitempty"`
-
-	// Future extensibility:
-	// Arch    []string         // Supported architectures
 }
 
 // DependencyType specifies how a detector depends on an event
