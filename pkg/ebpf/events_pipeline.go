@@ -563,11 +563,18 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *trace.Event) (
 					continue
 				}
 
+				// Capture policy context BEFORE sending event downstream to avoid race conditions
+				// The event may be modified or returned to pool by downstream stages
+				matchedPoliciesKernel := event.MatchedPoliciesKernel
+				policiesVersion := event.PoliciesVersion
+
+				// Convert trace.Event to v1beta1.Event for detector API before sending downstream
+				v1Event := events.ConvertToProto(*event)
+
 				// Send original event down the pipeline first
 				out <- event
 
-				// Convert trace.Event to v1beta1.Event for detector API
-				v1Event := events.ConvertToProto(*event)
+				// Dispatch to detectors
 				outputs, err := t.detectorEngine.DispatchToDetectors(ctx, v1Event)
 				if err != nil {
 					t.handleError(err)
@@ -579,8 +586,6 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *trace.Event) (
 
 				// All detector outputs in the chain inherit policy context from the original event
 				// since they're all derived from this single kernel event
-				matchedPoliciesKernel := event.MatchedPoliciesKernel
-				policiesVersion := event.PoliciesVersion
 
 				// Process detector outputs through breadth-first chain traversal
 				queue := outputs
