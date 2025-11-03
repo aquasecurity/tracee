@@ -44,6 +44,10 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 				},
 			},
 			// Architectures: []string{"amd64"}, // Uncomment to restrict to amd64 (x86-64) only
+			// Example: Only load on Tracee 0.20.0+
+			// MinTraceeVersion: &v1beta1.Version{Major: 0, Minor: 20, Patch: 0},
+			// Example: Only load on Tracee < 1.0.0
+			// MaxTraceeVersion: &v1beta1.Version{Major: 1, Minor: 0, Patch: 0},
 		},
 		ProducedEvent: v1beta1.EventDefinition{
 			Name:        "example_detection",
