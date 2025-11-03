@@ -840,9 +840,9 @@ func getContainer(e trace.Event) *pb.Container {
 	}
 
 	container := &pb.Container{
-		Id:        sanitizeStringForProtobuf(e.Container.ID),
-		Name:      sanitizeStringForProtobuf(e.Container.Name),
-		IsRunning: e.ContextFlags.ContainerStarted,
+		Id:      sanitizeStringForProtobuf(e.Container.ID),
+		Name:    sanitizeStringForProtobuf(e.Container.Name),
+		Started: e.ContextFlags.ContainerStarted,
 	}
 
 	if e.Container.ImageName != "" {
