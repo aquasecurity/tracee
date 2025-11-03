@@ -21,36 +21,40 @@ func TestTraceeEbpfPrepareOutputPrinterConfig(t *testing.T) {
 	testCases := []struct {
 		testName        string
 		outputSlice     []string
-		expectedPrinter config.PrinterConfig
+		expectedPrinter config.Destination
 		expectedError   error
 	}{
 		{
 			testName:        "invalid format",
 			outputSlice:     []string{"notaformat"},
-			expectedPrinter: config.PrinterConfig{},
+			expectedPrinter: config.Destination{},
 			expectedError:   flags.UnrecognizedOutputFormatError("notaformat"),
 		},
 		{
 			testName:        "invalid format with format prefix",
 			outputSlice:     []string{"format:notaformat2"},
-			expectedPrinter: config.PrinterConfig{},
+			expectedPrinter: config.Destination{},
 			expectedError:   flags.UnrecognizedOutputFormatError("notaformat2"),
 		},
 		{
 			testName:    "default",
 			outputSlice: []string{},
-			expectedPrinter: config.PrinterConfig{
-				Kind:    "table",
-				OutFile: os.Stdout,
+			expectedPrinter: config.Destination{
+				Name:   "stdouttable",
+				Type:   "file",
+				Format: "table",
+				File:   os.Stdout,
 			},
 			expectedError: nil,
 		},
 		{
 			testName:    "format: json",
 			outputSlice: []string{"format:json"},
-			expectedPrinter: config.PrinterConfig{
-				Kind:    "json",
-				OutFile: os.Stdout,
+			expectedPrinter: config.Destination{
+				Name:   "stdoutjson",
+				Type:   "file",
+				Format: "json",
+				File:   os.Stdout,
 			},
 			expectedError: nil,
 		},
@@ -65,7 +69,7 @@ func TestTraceeEbpfPrepareOutputPrinterConfig(t *testing.T) {
 			if err != nil {
 				assert.ErrorContains(t, err, testcase.expectedError.Error())
 			} else {
-				assert.Equal(t, testcase.expectedPrinter, outputConfig.PrinterConfigs[0])
+				assert.Equal(t, testcase.expectedPrinter, outputConfig.DestinationConfigs[0])
 			}
 		})
 	}
@@ -94,9 +98,10 @@ func TestTemplateEventPrinterSprigFunctions(t *testing.T) {
 	buf := &bufferWriteCloser{Buffer: &bytes.Buffer{}}
 
 	// Create printer config
-	cfg := config.PrinterConfig{
-		Kind:    "gotemplate=" + templatePath,
-		OutFile: buf,
+	cfg := config.Destination{
+		Type:   "file",
+		Format: "gotemplate=" + templatePath,
+		File:   buf,
 	}
 
 	// Create and initialize the printer
@@ -141,16 +146,19 @@ func TestPrinterCloseFlushesData(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		name        string
-		printerKind string
+		name   string
+		format string
+		typ    string
 	}{
 		{
-			name:        "json printer",
-			printerKind: "json",
+			name:   "json printer",
+			format: "json",
+			typ:    "file",
 		},
 		{
-			name:        "table printer",
-			printerKind: "table",
+			name:   "table printer",
+			format: "table",
+			typ:    "file",
 		},
 	}
 
@@ -169,9 +177,10 @@ func TestPrinterCloseFlushesData(t *testing.T) {
 			defer file.Close() // We close it since we created it
 
 			// Create printer config
-			cfg := config.PrinterConfig{
-				Kind:    tc.printerKind,
-				OutFile: file,
+			cfg := config.Destination{
+				Type:   tc.typ,
+				Format: tc.format,
+				File:   file,
 			}
 
 			// Create and initialize the printer
@@ -224,9 +233,10 @@ func TestTemplateEventPrinterCloseFlushesData(t *testing.T) {
 	defer file.Close() // We close it since we created it
 
 	// Create printer config
-	cfg := config.PrinterConfig{
-		Kind:    "gotemplate=" + templatePath,
-		OutFile: file,
+	cfg := config.Destination{
+		Type:   "file",
+		Format: "gotemplate=" + templatePath,
+		File:   file,
 	}
 
 	// Create and initialize the printer

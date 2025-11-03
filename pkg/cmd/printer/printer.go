@@ -2,6 +2,7 @@ package printer
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -21,6 +22,7 @@ import (
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/metrics"
+	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -33,51 +35,58 @@ type EventPrinter interface {
 	Epilogue(stats metrics.Stats)
 	// Print prints a single event
 	Print(event trace.Event)
+	// Receive events from stram
+	FromStream(ctx context.Context, stream *streams.Stream)
 	// dispose of resources
 	Close()
 }
 
-func New(cfg config.PrinterConfig) (EventPrinter, error) {
+func New(cfg config.Destination) (EventPrinter, error) {
 	var res EventPrinter
-	kind := cfg.Kind
+	kind := cfg.Type
+	format := cfg.Format
 
-	if cfg.OutFile == nil {
+	if cfg.Type == "file" && cfg.File == nil {
 		return res, errfmt.Errorf("out file is not set")
 	}
 
 	switch {
 	case kind == "ignore":
 		res = &ignoreEventPrinter{}
-	case kind == "table":
-		res = &tableEventPrinter{
-			out:           cfg.OutFile,
-			verbose:       false,
-			containerMode: cfg.ContainerMode,
-		}
-	case kind == "table-verbose":
-		res = &tableEventPrinter{
-			out:           cfg.OutFile,
-			verbose:       true,
-			containerMode: cfg.ContainerMode,
-		}
-	case kind == "json":
-		res = &jsonEventPrinter{
-			out: cfg.OutFile,
+	case kind == "file":
+		switch {
+		case format == "table":
+			res = &tableEventPrinter{
+				out:           cfg.File,
+				verbose:       false,
+				containerMode: cfg.ContainerMode,
+			}
+		case format == "table-verbose":
+			res = &tableEventPrinter{
+				out:           cfg.File,
+				verbose:       true,
+				containerMode: cfg.ContainerMode,
+			}
+		case format == "json":
+			res = &jsonEventPrinter{
+				out: cfg.File,
+			}
+		case strings.HasPrefix(format, "gotemplate="):
+			res = &templateEventPrinter{
+				out:          cfg.File,
+				templatePath: strings.Split(format, "=")[1],
+			}
 		}
 	case kind == "forward":
 		res = &forwardEventPrinter{
-			outPath: cfg.OutPath,
+			outPath: cfg.Url,
 		}
 	case kind == "webhook":
 		res = &webhookEventPrinter{
-			outPath: cfg.OutPath,
-		}
-	case strings.HasPrefix(kind, "gotemplate="):
-		res = &templateEventPrinter{
-			out:          cfg.OutFile,
-			templatePath: strings.Split(kind, "=")[1],
+			outPath: cfg.Url,
 		}
 	}
+
 	err := res.Init()
 	if err != nil {
 		return nil, err
@@ -92,7 +101,9 @@ type tableEventPrinter struct {
 	relativeTS    bool
 }
 
-func (p tableEventPrinter) Init() error { return nil }
+func (p tableEventPrinter) Init() error {
+	return nil
+}
 
 func (p tableEventPrinter) Preamble() {
 	if p.verbose {
@@ -349,6 +360,19 @@ func (p tableEventPrinter) Epilogue(stats metrics.Stats) {
 	fmt.Fprintf(p.out, "%s\n", string(jsonStats))
 }
 
+func (p *tableEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
+	eventChan := stream.ReceiveEvents()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case e := <-eventChan:
+			p.Print(e)
+		}
+	}
+}
+
 func (p tableEventPrinter) Close() {
 	// Sync flushes buffered data, ensuring events aren't lost on process exit
 	if f, ok := p.out.(*os.File); ok {
@@ -393,6 +417,19 @@ func (p templateEventPrinter) Print(event trace.Event) {
 
 func (p templateEventPrinter) Epilogue(stats metrics.Stats) {}
 
+func (p *templateEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
+	eventChan := stream.ReceiveEvents()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case e := <-eventChan:
+			p.Print(e)
+		}
+	}
+}
+
 func (p templateEventPrinter) Close() {
 	// Sync flushes buffered data, ensuring events aren't lost on process exit
 	if f, ok := p.out.(*os.File); ok {
@@ -404,7 +441,9 @@ type jsonEventPrinter struct {
 	out io.WriteCloser
 }
 
-func (p jsonEventPrinter) Init() error { return nil }
+func (p jsonEventPrinter) Init() error {
+	return nil
+}
 
 func (p jsonEventPrinter) Preamble() {}
 
@@ -417,6 +456,19 @@ func (p jsonEventPrinter) Print(event trace.Event) {
 }
 
 func (p jsonEventPrinter) Epilogue(stats metrics.Stats) {}
+
+func (p jsonEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
+	eventChan := stream.ReceiveEvents()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case e := <-eventChan:
+			p.Print(e)
+		}
+	}
+}
 
 func (p jsonEventPrinter) Close() {
 	// Sync flushes buffered data, ensuring events aren't lost on process exit
@@ -437,6 +489,8 @@ func (p *ignoreEventPrinter) Preamble() {}
 func (p *ignoreEventPrinter) Print(event trace.Event) {}
 
 func (p *ignoreEventPrinter) Epilogue(stats metrics.Stats) {}
+
+func (p *ignoreEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {}
 
 func (p ignoreEventPrinter) Close() {}
 
@@ -530,6 +584,7 @@ func (p *forwardEventPrinter) Init() error {
 		// The destination may not be available but may appear later so do not return an error here and just connect later.
 		logger.Errorw("Error connecting to Forward destination", "url", p.url.String(), "error", err)
 	}
+
 	return nil
 }
 
@@ -572,6 +627,19 @@ func (p *forwardEventPrinter) Print(event trace.Event) {
 }
 
 func (p *forwardEventPrinter) Epilogue(stats metrics.Stats) {}
+
+func (p *forwardEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
+	eventChan := stream.ReceiveEvents()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case e := <-eventChan:
+			p.Print(e)
+		}
+	}
+}
 
 func (p forwardEventPrinter) Close() {
 	if p.client != nil {
@@ -672,5 +740,17 @@ func (ws *webhookEventPrinter) Print(event trace.Event) {
 
 func (ws *webhookEventPrinter) Epilogue(stats metrics.Stats) {}
 
-func (ws *webhookEventPrinter) Close() {
+func (ws *webhookEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
+	eventChan := stream.ReceiveEvents()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case e := <-eventChan:
+			ws.Print(e)
+		}
+	}
 }
+
+func (ws *webhookEventPrinter) Close() {}

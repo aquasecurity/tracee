@@ -2015,12 +2015,12 @@ func (t *Tracee) ready(ctx gocontext.Context) {
 }
 
 // SubscribeAll returns a stream subscribed to all policies
-func (t *Tracee) SubscribeAll() *streams.Stream {
-	return t.subscribe(policy.PolicyAll)
+func (t *Tracee) SubscribeAll(bufferConfig config.StreamBuffer) *streams.Stream {
+	return t.subscribe(policy.PolicyAll, bufferConfig)
 }
 
 // Subscribe returns a stream subscribed to selected policies
-func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
+func (t *Tracee) Subscribe(policyNames []string, bufferConfig config.StreamBuffer) (*streams.Stream, error) {
 	var policyMask uint64
 
 	for _, policyName := range policyNames {
@@ -2031,13 +2031,16 @@ func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
 		bitwise.SetBit(&policyMask, uint(p.ID))
 	}
 
-	return t.subscribe(policyMask), nil
+	return t.subscribe(policyMask, bufferConfig), nil
 }
 
-func (t *Tracee) subscribe(policyMask uint64) *streams.Stream {
-	// TODO: the channel size matches the pipeline channel size,
-	// but we should make it configurable in the future.
-	return t.streamsManager.Subscribe(policyMask, t.config.PipelineChannelSize)
+func (t *Tracee) subscribe(policyMask uint64, bufferConfig config.StreamBuffer) *streams.Stream {
+	// To keep old behavior in case of streams created from GRPC server
+	if bufferConfig.Size <= 0 {
+		bufferConfig.Size = t.config.PipelineChannelSize
+	}
+
+	return t.streamsManager.Subscribe(policyMask, bufferConfig)
 }
 
 // Unsubscribe unsubscribes stream

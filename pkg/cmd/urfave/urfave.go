@@ -10,7 +10,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
-	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
 )
 
@@ -34,6 +33,16 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	if err != nil {
 		return runner, err
 	}
+
+	streams := []config.Stream{}
+	for _, destination := range output.DestinationConfigs {
+		streams = append(streams, config.Stream{
+			Name:         destination.Name + "-stream",
+			Destinations: []config.Destination{destination},
+		})
+	}
+
+	output.TraceeConfig.Streams = streams
 	cfg.Output = output.TraceeConfig
 
 	// Log command line flags
@@ -129,14 +138,17 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		return false
 	}
 
-	broadcast, err := printer.NewBroadcast(
-		output.PrinterConfigs,
-		cmd.GetContainerMode(containerFilterEnabled(), cfg.NoContainersEnrich),
-	)
-	if err != nil {
-		return runner, err
+	streamAll := config.Stream{
+		Name: "stream-all",
+		Destinations: []config.Destination{
+			{
+				Name:          "broadcast",
+				ContainerMode: cmd.GetContainerMode(containerFilterEnabled(), cfg.NoContainersEnrich),
+			},
+		},
 	}
 
+	cfg.Output.Streams = []config.Stream{streamAll}
 	// Check kernel lockdown
 
 	lockdown, err := environment.Lockdown()
@@ -182,7 +194,6 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	runner.HTTP = serverRunner.HTTP
 	runner.TraceeConfig = cfg
-	runner.Printer = broadcast
 	runner.InstallPath = traceeInstallPath
 
 	return runner, nil

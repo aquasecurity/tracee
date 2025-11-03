@@ -1,37 +1,33 @@
 package printer
 
 import (
-	"sync"
+	"context"
 
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/metrics"
+	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // Broadcast is a printer that broadcasts events to multiple printers
 type Broadcast struct {
-	PrinterConfigs []config.PrinterConfig
-	printers       []EventPrinter
-	wg             *sync.WaitGroup
-	eventsChan     []chan trace.Event
-	done           chan struct{}
-	containerMode  config.ContainerMode
+	DestinationConfigs []config.Destination
+	printers           []EventPrinter
+	eventsChan         []chan trace.Event
+	containerMode      config.ContainerMode
 }
 
 // NewBroadcast creates a new Broadcast printer
-func NewBroadcast(printerConfigs []config.PrinterConfig, containerMode config.ContainerMode) (*Broadcast, error) {
-	b := &Broadcast{PrinterConfigs: printerConfigs, containerMode: containerMode}
+func NewBroadcast(destinationConfigs []config.Destination) (*Broadcast, error) {
+	b := &Broadcast{DestinationConfigs: destinationConfigs}
 	return b, b.Init()
 }
 
 func (b *Broadcast) Init() error {
-	printers := make([]EventPrinter, 0, len(b.PrinterConfigs))
-	wg := &sync.WaitGroup{}
+	printers := make([]EventPrinter, 0, len(b.DestinationConfigs))
 
-	for _, pConfig := range b.PrinterConfigs {
-		pConfig.ContainerMode = b.containerMode
-
-		p, err := New(pConfig)
+	for _, dConfig := range b.DestinationConfigs {
+		p, err := New(dConfig)
 		if err != nil {
 			return err
 		}
@@ -39,23 +35,7 @@ func (b *Broadcast) Init() error {
 		printers = append(printers, p)
 	}
 
-	eventsChan := make([]chan trace.Event, 0, len(printers))
-	done := make(chan struct{})
-
-	for _, printer := range printers {
-		// we use a buffered channel to avoid blocking the event channel,
-		// we match the size of ChanEvents buffer
-		eventChan := make(chan trace.Event, 1000)
-		eventsChan = append(eventsChan, eventChan)
-
-		wg.Add(1)
-		go startPrinter(wg, done, eventChan, printer)
-	}
-
 	b.printers = printers
-	b.eventsChan = eventsChan
-	b.wg = wg
-	b.done = done
 
 	return nil
 }
@@ -68,21 +48,26 @@ func (b *Broadcast) Preamble() {
 
 // Print broadcasts the event to all printers
 func (b *Broadcast) Print(event trace.Event) {
-	for _, c := range b.eventsChan {
+	for _, p := range b.printers {
 		// we are blocking here if the printer is not consuming events fast enough
-		c <- event
+		p.Print(event)
 	}
 }
 
 func (b *Broadcast) Epilogue(stats metrics.Stats) {
-	// if you execute epilogue no other events should be sent to the printers,
-	// so we finish the events goroutines
-	close(b.done)
-
-	b.wg.Wait()
-
 	for _, p := range b.printers {
 		p.Epilogue(stats)
+	}
+}
+
+func (b *Broadcast) FromStream(ctx context.Context, stream *streams.Stream) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case e := <-stream.ReceiveEvents():
+			b.Print(e)
+		}
 	}
 }
 
@@ -90,45 +75,5 @@ func (b *Broadcast) Epilogue(stats metrics.Stats) {
 func (b *Broadcast) Close() {
 	for _, p := range b.printers {
 		p.Close()
-	}
-}
-
-// Active reports whether the broadcast has meaningful kinds to process.
-//
-// It returns true if there is at least one printer kind and it's not solely "ignore".
-// If no printer configurations are present or if the only kind is "ignore",
-// the broadcast is considered inactive.
-func (b *Broadcast) Active() bool {
-	kinds := b.Kinds()
-
-	if len(kinds) == 0 || (len(kinds) == 1 && kinds[0] == "ignore") {
-		return false
-	}
-
-	return true
-}
-
-// Kinds returns a list of all printer kinds configured in the broadcast.
-//
-// Each kind corresponds to a specific printer configuration.
-func (b *Broadcast) Kinds() []string {
-	kinds := make([]string, 0, len(b.PrinterConfigs))
-
-	for _, p := range b.PrinterConfigs {
-		kinds = append(kinds, p.Kind)
-	}
-
-	return kinds
-}
-
-func startPrinter(wg *sync.WaitGroup, done chan struct{}, c chan trace.Event, p EventPrinter) {
-	for {
-		select {
-		case <-done:
-			wg.Done()
-			return
-		case event := <-c:
-			p.Print(event)
-		}
 	}
 }

@@ -2,12 +2,17 @@ package cobra
 
 import (
 	"log"
+	"path"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/common/digest"
+	"github.com/aquasecurity/tracee/pkg/config"
 )
 
 // TestGetFlagsFromViper tests the GetFlagsFromViper function using a global
@@ -240,81 +245,6 @@ output:
 				"table:file1",
 				"json:file2",
 				"gotemplate=template1:file3,file4",
-			},
-		},
-		{
-			name: "Test output configuration (structured flags)",
-			yamlContent: `
-output:
-    options:
-        none: false
-        stack-addresses: true
-        exec-env: true
-        exec-hash: dev-inode
-        parse-arguments: true
-        parse-arguments-fds: true
-        sort-events: true
-    table:
-        files:
-            - file1
-    table-verbose:
-        files:
-            - stdout
-    json:
-        files:
-            - /path/to/json1.out
-    gotemplate:
-        template: template1
-        files:
-            - file3
-            - file4
-    forward:
-        - forward1:
-            protocol: tcp
-            user: user
-            password: pass
-            host: 127.0.0.1
-            port: 24224
-            tag: tracee1
-        - forward2:
-            protocol: udp
-            user: user
-            password: pass
-            host: 127.0.0.1
-            port: 24225
-            tag: tracee2
-    webhook:
-        - webhook1:
-            protocol: http
-            host: localhost
-            port: 8000
-            timeout: 5s
-            gotemplate: /path/to/template1
-            content-type: application/json
-        - webhook2:
-            protocol: http
-            host: localhost
-            port: 9000
-            timeout: 3s
-            gotemplate: /path/to/template2
-            content-type: application/ld+json
-`,
-			key: "output",
-			expectedFlags: []string{
-				"option:stack-addresses",
-				"option:exec-env",
-				"option:exec-hash=dev-inode",
-				"option:parse-arguments",
-				"option:parse-arguments-fds",
-				"option:sort-events",
-				"table:file1",
-				"table-verbose:stdout",
-				"json:/path/to/json1.out",
-				"gotemplate=template1:file3,file4",
-				"forward:tcp://user:pass@127.0.0.1:24224?tag=tracee1",
-				"forward:udp://user:pass@127.0.0.1:24225?tag=tracee2",
-				"webhook:http://localhost:8000?timeout=5s&gotemplate=/path/to/template1&contentType=application/json",
-				"webhook:http://localhost:9000?timeout=3s&gotemplate=/path/to/template2&contentType=application/ld+json",
 			},
 		},
 		{
@@ -863,18 +793,19 @@ func TestLogConfigFlags(t *testing.T) {
 // output
 //
 
-func TestOutputConfigFlags(t *testing.T) {
+func TestOutputConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
-		config   OutputConfig
-		expected []string
+		name        string
+		config      OutputConfig
+		expected    config.OutputConfig
+		shouldError bool
 	}{
 		{
 			name:     "empty config",
 			config:   OutputConfig{},
-			expected: []string{},
+			expected: config.OutputConfig{},
 		},
 		{
 			name: "options set",
@@ -889,124 +820,393 @@ func TestOutputConfigFlags(t *testing.T) {
 					SortEvents:        true,
 				},
 			},
-			expected: []string{
-				"none",
-				"option:stack-addresses",
-				"option:exec-env",
-				"option:exec-hash=dev-inode",
-				"option:parse-arguments",
-				"option:parse-arguments-fds",
-				"option:sort-events",
+			expected: config.OutputConfig{
+				StackAddresses:    true,
+				ExecEnv:           true,
+				CalcHashes:        digest.CalcHashesDevInode,
+				ParseArguments:    true,
+				ParseArgumentsFDs: true,
+				EventsSorting:     true,
+				Streams:           []config.Stream{},
 			},
 		},
 		{
 			name: "formats set",
 			config: OutputConfig{
-				Table: OutputFormatConfig{
-					Files: []string{"file1"},
-				},
-				JSON: OutputFormatConfig{
-					Files: []string{"file2"},
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "table",
+						Type:   "file",
+						Format: "table",
+						Path:   path.Join(t.TempDir(), "file-1"),
+					},
+					{
+						Name:   "json",
+						Type:   "file",
+						Format: "json",
+						Path:   path.Join(t.TempDir(), "file-2"),
+					},
 				},
 			},
-			expected: []string{
-				"table:file1",
-				"json:file2",
+			expected: config.OutputConfig{
+				Streams: []config.Stream{
+					{
+						Name: "table-stream",
+						Destinations: []config.Destination{
+							{
+								Name:   "table",
+								Type:   "file",
+								Format: "table",
+								Path:   path.Join(t.TempDir(), "file-1"),
+							},
+						},
+					},
+					{
+						Name: "json-stream",
+						Destinations: []config.Destination{
+							{
+								Name:   "json",
+								Type:   "file",
+								Format: "table",
+								Path:   path.Join(t.TempDir(), "file-1"),
+							},
+						},
+					},
+				},
 			},
 		},
 		{
 			name: "gotemplate set",
 			config: OutputConfig{
-				GoTemplate: OutputGoTemplateConfig{
-					Template: "template1",
-					Files:    []string{"file3", "file4"},
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "template",
+						Type:   "file",
+						Format: "gotemplate=template1",
+						Path:   path.Join(t.TempDir(), "file-1"),
+					},
 				},
 			},
-			expected: []string{
-				"gotemplate=template1:file3,file4",
+			expected: config.OutputConfig{
+				Streams: []config.Stream{
+					{
+						Name: "template-stream",
+						Destinations: []config.Destination{
+							{
+								Name:   "template",
+								Type:   "file",
+								Format: "gotemplate=template1",
+								Path:   path.Join(t.TempDir(), "file-1"),
+							},
+						},
+					},
+				},
 			},
 		},
 		{
 			name: "test forward with tag",
 			config: OutputConfig{
-				Forwards: map[string]OutputForwardConfig{
-					"example1": {
-						Protocol: "tcp",
-						User:     "",
-						Password: "",
-						Host:     "example.com",
-						Port:     8080,
-						Tag:      "sample",
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "forward",
+						Type:   "forward",
+						Format: "json",
+						Url:    "tcp://example.com:8080?tag=sample",
 					},
 				},
 			},
-			expected: []string{
-				"forward:tcp://example.com:8080?tag=sample",
+			expected: config.OutputConfig{
+				Streams: []config.Stream{
+					{
+						Name: "forward-stream",
+						Destinations: []config.Destination{
+							{
+								Name:   "forward",
+								Type:   "forward",
+								Format: "json",
+								Url:    "tcp://example.com:8080?tag=sample",
+							},
+						},
+					},
+				},
 			},
 		},
 		{
-			name: "test forward with user and password",
+			name: "test forward with template",
 			config: OutputConfig{
-				Forwards: map[string]OutputForwardConfig{
-					"example2": {
-						Protocol: "tcp",
-						User:     "user123",
-						Password: "pass123",
-						Host:     "secure.com",
-						Port:     443,
-						Tag:      "",
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "forward",
+						Type:   "forward",
+						Format: "gotemplate=template1",
+						Url:    "tcp://example.com:8080",
 					},
 				},
 			},
-			expected: []string{
-				"forward:tcp://user123:pass123@secure.com:443",
+			expected: config.OutputConfig{
+				Streams: []config.Stream{
+					{
+						Name: "forward-stream",
+						Destinations: []config.Destination{
+							{
+								Name:   "forward",
+								Type:   "forward",
+								Format: "gotemplate=template1",
+								Url:    "tcp://example.com:8080",
+							},
+						},
+					},
+				},
 			},
 		},
 		{
 			name: "test webhook with all fields",
 			config: OutputConfig{
-				Webhooks: map[string]OutputWebhookConfig{
-					"example3": {
-						Protocol:    "http",
-						Host:        "webhook.com",
-						Port:        9090,
-						Timeout:     "5s",
-						GoTemplate:  "/path/to/template1",
-						ContentType: "application/json",
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "webhook",
+						Type:   "webhook",
+						Format: "json",
+						Url:    "http://webhook.com:9090?timeout=5s",
 					},
 				},
 			},
-			expected: []string{
-				"webhook:http://webhook.com:9090?timeout=5s&gotemplate=/path/to/template1&contentType=application/json",
+			expected: config.OutputConfig{
+				Streams: []config.Stream{
+					{
+						Name: "webhook-stream",
+						Destinations: []config.Destination{
+							{
+								Name:   "webhook",
+								Type:   "webhook",
+								Format: "gotemplate=template1",
+								Url:    "http://webhook.com:9090?timeout=5s",
+							},
+						},
+					},
+				},
 			},
 		},
 		{
 			name: "test combined forward and webhook",
 			config: OutputConfig{
-				Forwards: map[string]OutputForwardConfig{
-					"example4": {
-						Protocol: "http",
-						User:     "",
-						Password: "",
-						Host:     "combined.com",
-						Port:     8000,
-						Tag:      "taggy",
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "forward",
+						Type:   "forward",
+						Format: "json",
+						Url:    "tcp://example.com:8080?tag=sample",
 					},
-				},
-				Webhooks: map[string]OutputWebhookConfig{
-					"example5": {
-						Protocol: "http",
-						Host:     "hooky.com",
-						Port:     8088,
-						Timeout:  "10s",
+					{
+						Name:   "webhook",
+						Type:   "webhook",
+						Format: "json",
+						Url:    "http://webhook.com:9090?timeout=5s",
 					},
 				},
 			},
-			expected: []string{
-				"forward:http://combined.com:8000?tag=taggy",
-				"webhook:http://hooky.com:8088?timeout=10s",
+			expected: config.OutputConfig{
+				Streams: []config.Stream{
+					{
+						Name: "forward-stream",
+						Destinations: []config.Destination{
+							{
+								Name:   "forward",
+								Type:   "forward",
+								Format: "json",
+								Url:    "tcp://example.com:8080?tag=sample",
+							},
+						},
+					},
+					{
+						Name: "webhook-stream",
+						Destinations: []config.Destination{
+							{
+								Name:   "webhook",
+								Type:   "webhook",
+								Format: "gotemplate=template1",
+								Url:    "http://webhook.com:9090?timeout=5s",
+							},
+						},
+					},
+				},
 			},
 		},
+		{
+			name: "single stream with a single file destination",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "destination-1",
+						Type:   "file",
+						Format: "json",
+					},
+				},
+				Streams: []StreamConfig{
+					{
+						Name:         "stream-forward-1",
+						Destinations: []string{"destination-1"},
+					},
+				},
+			},
+			expected: config.OutputConfig{
+				Streams: []config.Stream{
+					{
+						Name: "stream-forward-1",
+						Destinations: []config.Destination{
+							{
+								Name:   "destination-1",
+								Type:   "file",
+								Format: "json",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "single stream with multiple destinations",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "destination-1",
+						Type:   "file",
+						Format: "json",
+					},
+					{
+						Name:   "destination-2",
+						Type:   "file",
+						Format: "json",
+						Path:   path.Join(t.TempDir(), "file-destination-2"),
+					},
+				},
+				Streams: []StreamConfig{
+					{
+						Name:         "stream-forward-1",
+						Destinations: []string{"destination-1", "destination-2"},
+					},
+				},
+			},
+			expected: config.OutputConfig{
+				Streams: []config.Stream{
+					{
+						Name: "stream-forward-1",
+						Destinations: []config.Destination{
+							{
+								Name:   "destination-1",
+								Type:   "file",
+								Format: "json",
+								Path:   "stdout",
+							},
+							{
+								Name:   "destination-2",
+								Type:   "file",
+								Format: "json",
+								Path:   path.Join(t.TempDir(), "file-destination-2"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "synthetic stream for unused destination",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "destination-1",
+						Type:   "file",
+						Format: "json",
+					},
+					{
+						Name:   "destination-2",
+						Type:   "file",
+						Format: "json",
+						Path:   path.Join(t.TempDir(), "file-destination-2"),
+					},
+				},
+				Streams: []StreamConfig{
+					{
+						Name:         "stream-forward-1",
+						Destinations: []string{"destination-1"},
+					},
+				},
+			},
+			expected: config.OutputConfig{
+				Streams: []config.Stream{
+					{
+						Name: "stream-forward-1",
+						Destinations: []config.Destination{
+							{
+								Name:   "destination-1",
+								Type:   "file",
+								Format: "json",
+								Path:   "stdout",
+							},
+						},
+					},
+					{
+						Name: "destination-2-stream",
+						Destinations: []config.Destination{
+							{
+								Name:   "destination-2",
+								Type:   "file",
+								Format: "json",
+								Path:   path.Join(t.TempDir(), "file-destination-2"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "used destination not defined",
+			config: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name:         "stream-forward-1",
+						Destinations: []string{"not-existing-destination"},
+					},
+				},
+			},
+			shouldError: true,
+		},
+		{
+			name: "same destination reused two times",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "forward",
+						Type:   "forward",
+						Format: "json",
+						Url:    "tcp://example.com:8080?tag=sample",
+					},
+				},
+				Streams: []StreamConfig{
+					{
+						Name:         "stream-forward-1",
+						Destinations: []string{"forward"},
+					},
+					{
+						Name:         "stream-forward-2",
+						Destinations: []string{"forward"},
+					},
+				},
+			},
+			shouldError: true,
+		},
+	}
+
+	streamSorter := func(array []config.Stream) func(int, int) bool {
+		return func(i, j int) bool {
+			return strings.Compare(array[i].Name, array[j].Name) > 0
+		}
+	}
+
+	destinationSorter := func(array []config.Destination) func(int, int) bool {
+		return func(i, j int) bool {
+			return strings.Compare(array[i].Name, array[j].Name) > 0
+		}
 	}
 
 	for _, tt := range tests {
@@ -1015,13 +1215,52 @@ func TestOutputConfigFlags(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := tt.config.flags()
-			if !slicesEqualIgnoreOrder(got, tt.expected) {
-				t.Errorf("flags() = %v, want %v", got, tt.expected)
+			got, err := prepareTraceeConfig(tt.config, config.ContainerModeEnriched)
+			if tt.shouldError {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			assert.Equal(t, got.CalcHashes, tt.expected.CalcHashes)
+			assert.Equal(t, got.EventsSorting, tt.expected.EventsSorting)
+			assert.Equal(t, got.ExecEnv, tt.expected.ExecEnv)
+			assert.Equal(t, got.ParseArguments, tt.expected.ParseArguments)
+			assert.Equal(t, got.ParseArgumentsFDs, tt.expected.ParseArgumentsFDs)
+			assert.Equal(t, got.StackAddresses, tt.expected.StackAddresses)
+			assert.Equal(t, len(got.Streams), len(tt.expected.Streams))
+
+			sort.Slice(got.Streams, streamSorter(got.Streams))
+			sort.Slice(tt.expected.Streams, streamSorter(tt.expected.Streams))
+
+			for sIdx, stream := range got.Streams {
+				assert.Equal(t, stream.Name, tt.expected.Streams[sIdx].Name)
+
+				slicesEqualIgnoreOrder(stream.Filters.Events, tt.expected.Streams[sIdx].Filters.Events)
+				slicesEqualIgnoreOrder(stream.Filters.Policies, tt.expected.Streams[sIdx].Filters.Policies)
+
+				assert.Equal(t, stream.Buffer.Size, tt.expected.Streams[sIdx].Buffer.Size)
+				assert.Equal(t, stream.Buffer.Mode, tt.expected.Streams[sIdx].Buffer.Mode)
+
+				sort.Slice(stream.Destinations, destinationSorter(stream.Destinations))
+				sort.Slice(tt.expected.Streams[sIdx].Destinations, destinationSorter(tt.expected.Streams[sIdx].Destinations))
+
+				for dIdx, destination := range stream.Destinations {
+					assert.Equal(t, destination.Name, stream.Destinations[dIdx].Name)
+					assert.Equal(t, destination.Path, stream.Destinations[dIdx].Path)
+					assert.Equal(t, destination.Url, stream.Destinations[dIdx].Url)
+					assert.Equal(t, destination.Type, stream.Destinations[dIdx].Type)
+					assert.Equal(t, destination.Format, stream.Destinations[dIdx].Format)
+
+					if destination.Path != "stdout" && destination.Path != "" {
+						assert.NotNil(t, destination.File)
+					}
+				}
 			}
 		})
 	}
 }
+
 func TestServerConfigFlags(t *testing.T) {
 	t.Parallel()
 
@@ -1122,6 +1361,20 @@ func slicesEqualIgnoreOrder(a, b []string) bool {
 
 	sort.Strings(a)
 	sort.Strings(b)
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func destinationsEqualIgnoreOrder(a, b []config.Destination) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
 	for i := range a {
 		if a[i] != b[i] {
 			return false

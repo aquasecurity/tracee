@@ -14,11 +14,11 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/server/grpc"
 	"github.com/aquasecurity/tracee/pkg/server/http"
+	"github.com/aquasecurity/tracee/pkg/streams"
 )
 
 type Runner struct {
 	TraceeConfig config.Config
-	Printer      *printer.Broadcast
 	InstallPath  string
 	HTTP         *http.Server
 	GRPC         *grpc.Server
@@ -89,7 +89,7 @@ func (r Runner) Run(ctx context.Context) error {
 
 	// Run Tracee
 
-	if r.Printer.Active() {
+	if len(r.TraceeConfig.Output.Streams) > 0 {
 		// Run Tracee with event subscription and printing.
 		return r.runWithPrinter(ctx, t) // blocks until ctx is done
 	}
@@ -105,34 +105,53 @@ func (r Runner) Run(ctx context.Context) error {
 //
 // NOTE: This should only be called if a printer is active.
 func (r Runner) runWithPrinter(ctx context.Context, t *tracee.Tracee) error {
-	stream := t.SubscribeAll()
-	defer t.Unsubscribe(stream)
+	streamList := make([]*streams.Stream, 0)
+	printers := []printer.EventPrinter{}
 
-	r.Printer.Preamble()
+	for _, s := range r.TraceeConfig.Output.Streams {
+		var p printer.EventPrinter
+		var err error
 
-	// Start goroutine to print incoming events
-	go func() {
-		for {
-			select {
-			case event := <-stream.ReceiveEvents():
-				r.Printer.Print(event)
-			case <-ctx.Done():
-				return
+		if len(s.Destinations) > 1 {
+			p, err = printer.NewBroadcast(s.Destinations)
+		} else {
+			p, err = printer.New(s.Destinations[0])
+		}
+		if err != nil {
+			return err
+		}
+		printers = append(printers, p)
+
+		var stream *streams.Stream
+		if len(s.Filters.Policies) == 0 {
+			stream = t.SubscribeAll(s.Buffer)
+		} else {
+			stream, err = t.Subscribe(s.Filters.Policies, s.Buffer)
+			if err != nil {
+				return err
 			}
 		}
-	}()
+
+		go func() {
+			// blocks
+			p.FromStream(ctx, stream)
+		}()
+
+		streamList = append(streamList, stream)
+	}
 
 	// Blocks until ctx is done
 	err := t.Run(ctx)
 
-	// Drain remaining channel events (sent during shutdown)
-	for event := range stream.ReceiveEvents() {
-		r.Printer.Print(event)
+	for _, s := range streamList {
+		t.Unsubscribe(s)
 	}
 
 	stats := t.Stats()
-	r.Printer.Epilogue(*stats)
-	r.Printer.Close()
+	for _, p := range printers {
+		p.Epilogue(*stats)
+		p.Close()
+	}
 
 	return err
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -12,7 +14,8 @@ type Stream struct {
 	// policy mask is a bitmap of policies that this stream is interested in
 	policyMask uint64
 	// events is a channel that is used to receive events from the stream
-	events chan trace.Event
+	events  chan trace.Event
+	publish func(context.Context, trace.Event)
 }
 
 // ReceiveEvents returns a read-only channel for receiving events from the stream
@@ -23,22 +26,30 @@ func (s *Stream) ReceiveEvents() <-chan trace.Event {
 // Publish publishes an event to the stream,
 // but first check if this stream is interested in this event,
 // by checking the event's policy mask against the stream's policy mask.
-func (s *Stream) publish(ctx context.Context, event trace.Event) {
+func (s *Stream) blockPublish(ctx context.Context, event trace.Event) {
 	if s.shouldIgnorePolicy(event) {
 		return
 	}
 
-	// Currently, the behavior is to block when the channel is full.
-	// However, there is a consideration to modify this behavior to drop events instead.
-	// This change is based on the notion that with multiple streams, one stream's events
-	// should not impede another stream's event reception if they aren't processed rapidly.
-	// It is worth noting that there are scenarios where blocking may be preferred.
-	// To accommodate both scenarios, the plan is to introduce configurability for this behavior in the future.
-	// TODO: allow this to be configurable (drop/block) (josedonizetti)
 	select {
 	case s.events <- event:
 	case <-ctx.Done():
 		return
+	}
+}
+
+func (s *Stream) dropPublish(ctx context.Context, event trace.Event) {
+	if s.shouldIgnorePolicy(event) {
+		return
+	}
+
+	select {
+	case s.events <- event:
+	case <-ctx.Done():
+		return
+	default:
+		// Probably this is too verbose
+		logger.Debugw("stream channel full, dropping message")
 	}
 }
 
@@ -67,13 +78,19 @@ func NewStreamsManager() *StreamsManager {
 }
 
 // Subscribe adds a stream to the manager
-func (sm *StreamsManager) Subscribe(policyMask uint64, chanSize int) *Stream {
+func (sm *StreamsManager) Subscribe(policyMask uint64, bufferConfig config.StreamBuffer) *Stream {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 
 	stream := &Stream{
 		policyMask: policyMask,
-		events:     make(chan trace.Event, chanSize),
+		events:     make(chan trace.Event, bufferConfig.Size),
+	}
+
+	if bufferConfig.Mode == "" || bufferConfig.Mode == config.StreamBufferBlock {
+		stream.publish = stream.blockPublish
+	} else {
+		stream.publish = stream.dropPublish
 	}
 
 	sm.subscribers[stream] = struct{}{}

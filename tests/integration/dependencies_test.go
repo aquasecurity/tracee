@@ -280,7 +280,7 @@ func Test_EventsDependencies(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			stream := trc.SubscribeAll()
+			stream := trc.SubscribeAll(config.StreamBuffer{})
 			defer trc.Unsubscribe(stream)
 
 			// start a goroutine to read events from the channel into the buffer

@@ -72,7 +72,7 @@ func TestCompatibility(t *testing.T) {
 	debugProbeAttachments(t, traceeInstance)
 	debugEventDependencies(t, traceeInstance)
 
-	eventStream := traceeInstance.SubscribeAll()
+	eventStream := traceeInstance.SubscribeAll(config.StreamBuffer{})
 	defer traceeInstance.Unsubscribe(eventStream)
 
 	go func() {

@@ -60,7 +60,7 @@ func TraceeEbpfPrepareOutput(outputSlice []string, newBinary bool) (PrepareOutpu
 		case "out-file":
 			outPath = outputParts[1]
 		case "option":
-			err := setOption(traceeConfig, outputParts[1])
+			err := SetOption(traceeConfig, outputParts[1])
 			if err != nil {
 				return outConfig, err
 			}
@@ -69,18 +69,20 @@ func TraceeEbpfPrepareOutput(outputSlice []string, newBinary bool) (PrepareOutpu
 		}
 	}
 
-	printerConfigs := make([]config.PrinterConfig, 0)
+	printerConfigs := make([]config.Destination, 0)
 
 	if printerKind == "table" {
-		if err := setOption(traceeConfig, "parse-arguments"); err != nil {
+		if err := SetOption(traceeConfig, "parse-arguments"); err != nil {
 			return outConfig, err
 		}
 	}
 
 	if outPath == "" {
-		stdoutConfig := config.PrinterConfig{
-			Kind:    printerKind,
-			OutFile: os.Stdout,
+		stdoutConfig := config.Destination{
+			Name:   "stdout" + printerKind,
+			Type:   "file",
+			Format: printerKind,
+			File:   os.Stdout,
 		}
 
 		printerConfigs = append(printerConfigs, stdoutConfig)
@@ -90,17 +92,19 @@ func TraceeEbpfPrepareOutput(outputSlice []string, newBinary bool) (PrepareOutpu
 			return outConfig, err
 		}
 
-		printerConfig := config.PrinterConfig{
-			Kind:    printerKind,
-			OutPath: outPath,
-			OutFile: file,
+		printerConfig := config.Destination{
+			Name:   outPath + printerKind,
+			Type:   "file",
+			Format: printerKind,
+			Path:   outPath,
+			File:   file,
 		}
 
 		printerConfigs = append(printerConfigs, printerConfig)
 	}
 
 	outConfig.TraceeConfig = traceeConfig
-	outConfig.PrinterConfigs = printerConfigs
+	outConfig.DestinationConfigs = printerConfigs
 
 	return outConfig, nil
 }
