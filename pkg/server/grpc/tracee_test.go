@@ -89,6 +89,7 @@ func Test_convertEventWithContainerWorkload(t *testing.T) {
 			ImageName:   "imageName",
 			ImageDigest: "imageDigest",
 		},
+		ContextFlags: trace.ContextFlags{ContainerStarted: true},
 	}
 
 	protoEvent, err := convertTraceeEventToProto(traceEvent)
@@ -98,6 +99,28 @@ func Test_convertEventWithContainerWorkload(t *testing.T) {
 	assert.Equal(t, "containerName", protoEvent.Workload.Container.Name)
 	assert.Equal(t, "imageName", protoEvent.Workload.Container.Image.Name)
 	assert.Equal(t, []string{"imageDigest"}, protoEvent.Workload.Container.Image.RepoDigests)
+	assert.Equal(t, true, protoEvent.Workload.Container.Started)
+}
+
+func Test_convertEventWithContainerNotStarted(t *testing.T) {
+	t.Parallel()
+
+	traceEvent := trace.Event{
+		Container: trace.Container{
+			ID:          "containerID",
+			Name:        "containerName",
+			ImageName:   "imageName",
+			ImageDigest: "imageDigest",
+		},
+		ContextFlags: trace.ContextFlags{ContainerStarted: false},
+	}
+
+	protoEvent, err := convertTraceeEventToProto(traceEvent)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "containerID", protoEvent.Workload.Container.Id)
+	assert.Equal(t, "containerName", protoEvent.Workload.Container.Name)
+	assert.Equal(t, false, protoEvent.Workload.Container.Started)
 }
 
 func Test_convertEventWithK8sWorkload(t *testing.T) {
