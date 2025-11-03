@@ -841,32 +841,34 @@ func (ps *policies) createNewPoliciesConfigMap(bpfModule *bpf.Module) error {
 // Order of fields is important, as it is used as a value for
 // the PoliciesConfigMap BPF map.
 type PoliciesConfig struct {
-	UIDFilterEnabled      uint64
-	PIDFilterEnabled      uint64
-	MntNsFilterEnabled    uint64
-	PidNsFilterEnabled    uint64
-	UtsNsFilterEnabled    uint64
-	CommFilterEnabled     uint64
-	CgroupIdFilterEnabled uint64
-	ContFilterEnabled     uint64
-	NewContFilterEnabled  uint64
-	NewPidFilterEnabled   uint64
-	ProcTreeFilterEnabled uint64
-	BinPathFilterEnabled  uint64
-	FollowFilterEnabled   uint64
+	UIDFilterEnabled         uint64
+	PIDFilterEnabled         uint64
+	MntNsFilterEnabled       uint64
+	PidNsFilterEnabled       uint64
+	UtsNsFilterEnabled       uint64
+	CommFilterEnabled        uint64
+	CgroupIdFilterEnabled    uint64
+	ContFilterEnabled        uint64
+	NewContFilterEnabled     uint64
+	ContStartedFilterEnabled uint64
+	NewPidFilterEnabled      uint64
+	ProcTreeFilterEnabled    uint64
+	BinPathFilterEnabled     uint64
+	FollowFilterEnabled      uint64
 
-	UIDFilterMatchIfKeyMissing      uint64
-	PIDFilterMatchIfKeyMissing      uint64
-	MntNsFilterMatchIfKeyMissing    uint64
-	PidNsFilterMatchIfKeyMissing    uint64
-	UtsNsFilterMatchIfKeyMissing    uint64
-	CommFilterMatchIfKeyMissing     uint64
-	CgroupIdFilterMatchIfKeyMissing uint64
-	ContFilterMatchIfKeyMissing     uint64
-	NewContFilterMatchIfKeyMissing  uint64
-	NewPidFilterMatchIfKeyMissing   uint64
-	ProcTreeFilterMatchIfKeyMissing uint64
-	BinPathFilterMatchIfKeyMissing  uint64
+	UIDFilterMatchIfKeyMissing         uint64
+	PIDFilterMatchIfKeyMissing         uint64
+	MntNsFilterMatchIfKeyMissing       uint64
+	PidNsFilterMatchIfKeyMissing       uint64
+	UtsNsFilterMatchIfKeyMissing       uint64
+	CommFilterMatchIfKeyMissing        uint64
+	CgroupIdFilterMatchIfKeyMissing    uint64
+	ContFilterMatchIfKeyMissing        uint64
+	NewContFilterMatchIfKeyMissing     uint64
+	ContStartedFilterMatchIfKeyMissing uint64
+	NewPidFilterMatchIfKeyMissing      uint64
+	ProcTreeFilterMatchIfKeyMissing    uint64
+	BinPathFilterMatchIfKeyMissing     uint64
 
 	EnabledPolicies uint64
 
@@ -924,6 +926,9 @@ func (ps *policies) computePoliciesConfig() *PoliciesConfig {
 		if p.NewContFilter.Enabled() {
 			cfg.NewContFilterEnabled |= 1 << offset
 		}
+		if p.ContStartedFilter.Enabled() {
+			cfg.ContStartedFilterEnabled |= 1 << offset
+		}
 		if p.NewPidFilter.Enabled() {
 			cfg.NewPidFilterEnabled |= 1 << offset
 		}
@@ -963,6 +968,9 @@ func (ps *policies) computePoliciesConfig() *PoliciesConfig {
 		}
 		if p.NewContFilter.MatchIfKeyMissing() {
 			cfg.NewContFilterMatchIfKeyMissing |= 1 << offset
+		}
+		if p.ContStartedFilter.MatchIfKeyMissing() {
+			cfg.ContStartedFilterMatchIfKeyMissing |= 1 << offset
 		}
 		if p.NewPidFilter.MatchIfKeyMissing() {
 			cfg.NewPidFilterMatchIfKeyMissing |= 1 << offset

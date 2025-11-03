@@ -400,6 +400,7 @@ typedef struct policies_config {
     u64 cgroup_id_filter_enabled;
     u64 cont_filter_enabled;
     u64 new_cont_filter_enabled;
+    u64 cont_started_filter_enabled;
     u64 new_pid_filter_enabled;
     u64 proc_tree_filter_enabled;
     u64 bin_path_filter_enabled;
@@ -414,6 +415,7 @@ typedef struct policies_config {
     u64 cgroup_id_filter_match_if_key_missing;
     u64 cont_filter_match_if_key_missing;
     u64 new_cont_filter_match_if_key_missing;
+    u64 cont_started_filter_match_if_key_missing;
     u64 new_pid_filter_match_if_key_missing;
     u64 proc_tree_filter_match_if_key_missing;
     u64 bin_path_filter_match_if_key_missing;
