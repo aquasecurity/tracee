@@ -2297,6 +2297,38 @@ func TestParseScopeFilters(t *testing.T) {
 			},
 		},
 		{
+			name:   "container!=new should set NewContFilter to not-new",
+			policy: policy.NewPolicy(),
+			scopeFlags: []scopeFlag{{
+				full:              "container!=new",
+				scopeName:         "container",
+				operator:          "!=",
+				operatorAndValues: "!=new",
+			}},
+			validate: func(t *testing.T, p *policy.Policy) {
+				assert.NotNil(t, p.NewContFilter)
+				assert.True(t, p.NewContFilter.Enabled())
+				// With the fix, Value() should return false (filter out new containers)
+				assert.False(t, p.NewContFilter.Value(), "NewContFilter should be false to exclude new containers")
+			},
+		},
+		{
+			name:   "pid!=new should set NewPidFilter to not-new",
+			policy: policy.NewPolicy(),
+			scopeFlags: []scopeFlag{{
+				full:              "pid!=new",
+				scopeName:         "pid",
+				operator:          "!=",
+				operatorAndValues: "!=new",
+			}},
+			validate: func(t *testing.T, p *policy.Policy) {
+				assert.NotNil(t, p.NewPidFilter)
+				assert.True(t, p.NewPidFilter.Enabled())
+				// With the fix, Value() should return false (filter out new pids)
+				assert.False(t, p.NewPidFilter.Value(), "NewPidFilter should be false to exclude new pids")
+			},
+		},
+		{
 			name:   "invalid scope filter",
 			policy: policy.NewPolicy(),
 			scopeFlags: []scopeFlag{{
