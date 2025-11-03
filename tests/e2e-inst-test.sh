@@ -202,14 +202,14 @@ done
 
 tracee_command="./dist/tracee \
                     --install-path $TRACEE_TMP_DIR \
-                    --proctree source=both \
+                    --stores process.enabled=true --stores process.source=both \
                     --output option:sort-events \
                     --output option:parse-arguments \
                     --output json:$outputfile \
                     --log debug \
                     --log file:$logfile \
                     --signatures-dir "$SIG_DIR" \
-                    --dnscache enable \
+                    --stores dns.enabled=true \
                     --server grpc-address=unix:/tmp/tracee.sock \
                     --policy ./tests/policies/inst/"
 

@@ -29,8 +29,8 @@ type DNSCache struct {
 }
 
 type Config struct {
-	CacheSize int
 	Enable    bool
+	CacheSize int
 }
 
 func New(config Config) (*DNSCache, error) {

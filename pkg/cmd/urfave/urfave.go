@@ -71,11 +71,12 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	cfg.CgroupFSPath = res.CgroupfsPath
 	cfg.CgroupFSForce = res.CgroupfsForce
 
-	procTree, err := flags.PrepareProcTree(c.StringSlice("proctree"))
+	stores, err := flags.PrepareStores(c.StringSlice("stores"))
 	if err != nil {
 		return runner, err
 	}
-	cfg.ProcTree = procTree
+	cfg.DNSCacheConfig = stores.DNS
+	cfg.ProcTree = stores.Process
 
 	// Capture command line flags
 
