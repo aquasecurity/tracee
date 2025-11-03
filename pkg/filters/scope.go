@@ -23,6 +23,7 @@ type ScopeFilter struct {
 	hostNameFilter             *StringFilter
 	cgroupIDFilter             *NumericFilter[uint64]
 	containerFilter            *BoolFilter
+	containerStartedFilter     *BoolFilter
 	containerIDFilter          *StringFilter
 	containerImageFilter       *StringFilter
 	containerImageDigestFilter *StringFilter
@@ -55,6 +56,7 @@ func NewScopeFilter() *ScopeFilter {
 		hostNameFilter:             NewStringFilter(nil),
 		cgroupIDFilter:             NewUIntFilter(),
 		containerFilter:            NewBoolFilter(),
+		containerStartedFilter:     NewBoolFilter(),
 		containerIDFilter:          NewStringFilter(nil),
 		containerImageFilter:       NewStringFilter(nil),
 		containerImageDigestFilter: NewStringFilter(nil),
@@ -88,6 +90,7 @@ func (f *ScopeFilter) Filter(evt trace.Event) bool {
 	// if we order this by most to least likely filter to be set
 	// we can short circuit this logic.
 	return f.containerFilter.Filter(evt.Container.ID != "") &&
+		f.containerStartedFilter.Filter(evt.ContextFlags.ContainerStarted) &&
 		f.processNameFilter.Filter(evt.ProcessName) &&
 		f.timestampFilter.Filter(int64(evt.Timestamp)) &&
 		f.cgroupIDFilter.Filter(uint64(evt.CgroupID)) &&
@@ -160,9 +163,26 @@ func (f *ScopeFilter) Parse(field string, operatorAndValues string) error {
 		filter.Enable()
 		return filter.add(false, Equal)
 	case "container":
-		filter := f.containerFilter
-		filter.Enable()
-		return filter.add(true, Equal)
+		// Handle container state filtering: container, container=started
+		// All container filters require containerFilter to be enabled
+		f.containerFilter.Enable()
+		if err := f.containerFilter.add(true, Equal); err != nil {
+			return errfmt.WrapError(err)
+		}
+
+		if operatorAndValues == "" {
+			// Just "container" - any container (ID != "")
+			return nil
+		}
+
+		// Parse container=started
+		if operatorAndValues == "=started" {
+			// Only started containers (ContainerStarted == true)
+			f.containerStartedFilter.Enable()
+			return f.containerStartedFilter.add(true, Equal)
+		}
+
+		return InvalidExpression(operatorAndValues)
 	// TODO: change this and below container filters to the format
 	// eventname.scope.container.id and so on...
 	case "containerId":
@@ -233,6 +253,7 @@ func (f *ScopeFilter) Clone() *ScopeFilter {
 	n.hostNameFilter = f.hostNameFilter.Clone()
 	n.cgroupIDFilter = f.cgroupIDFilter.Clone()
 	n.containerFilter = f.containerFilter.Clone()
+	n.containerStartedFilter = f.containerStartedFilter.Clone()
 	n.containerIDFilter = f.containerIDFilter.Clone()
 	n.containerImageFilter = f.containerImageFilter.Clone()
 	n.containerImageDigestFilter = f.containerImageDigestFilter.Clone()
