@@ -68,6 +68,7 @@ Available for the following boolean field:
 The following special filters can be used within the scope filter expressions:
 
 - new: Select newly created containers or process IDs.
+- started: Select events from containers that have completed initialization and started running (post-entrypoint execution). Only available for container scope (e.g., `container=started`). Note: The negation `container!=started` is not supported due to race conditions with early container event recognition.
 - follow: Select events from the processes that match the criteria and their descendants.
 
 ## EXAMPLES
@@ -94,6 +95,12 @@ The following special filters can be used within the scope filter expressions:
 
   ```console
   --scope container=new
+  ```
+
+- To trace only events from containers that have started running (post-entrypoint execution), use the following flag:
+
+  ```console
+  --scope container=started
   ```
 
 - To trace only events from the container with ID 'ab356bc4dd554', use the following flag:

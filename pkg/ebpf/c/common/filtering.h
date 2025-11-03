@@ -220,6 +220,16 @@ statfunc u64 match_scope_filters(program_data_t *p)
         res &= bool_filter_matches(match_bitmap, is_new_container) | mask;
     }
 
+    if (policies_cfg->cont_started_filter_enabled) {
+        bool is_started = false;
+        if (p->event->context.task.flags & CONTAINER_STARTED_FLAG)
+            is_started = true;
+        u64 match_bitmap = policies_cfg->cont_started_filter_match_if_key_missing;
+        u64 mask = ~policies_cfg->cont_started_filter_enabled;
+
+        res &= bool_filter_matches(match_bitmap, is_started) | mask;
+    }
+
     if (policies_cfg->new_pid_filter_enabled) {
         u64 match_bitmap = policies_cfg->new_pid_filter_match_if_key_missing;
         u64 mask = ~policies_cfg->new_pid_filter_enabled;

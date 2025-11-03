@@ -117,6 +117,24 @@ scope:
     - container
 ```
 
+You can also filter for containers based on their state:
+
+- **container=new**: Events are collected only from newly created containers (during container initialization):
+
+```yaml
+scope:
+    - container=new
+```
+
+- **container=started**: Events are collected only from containers that have completed initialization and started running (post-entrypoint execution):
+
+```yaml
+scope:
+    - container=started
+```
+
+Note: The negation `container!=started` is not supported due to race conditions with early container event recognition.
+
 ### not-container
 
 Events are collected from everything but containers:
