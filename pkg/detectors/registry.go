@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
@@ -11,6 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/policy"
+	"github.com/aquasecurity/tracee/pkg/version"
 )
 
 // entry holds detector metadata for dispatch
@@ -54,6 +57,98 @@ func isArchitectureSupported(requirements detection.DetectorRequirements, system
 	}
 
 	return false
+}
+
+// isTraceeVersionCompatible checks if the detector supports the current Tracee version
+// Empty version constraints means all versions are supported
+// MinTraceeVersion is inclusive, MaxTraceeVersion is exclusive
+func isTraceeVersionCompatible(requirements detection.DetectorRequirements, currentVersion string) (bool, error) {
+	// No constraints = all versions supported
+	if requirements.MinTraceeVersion == nil && requirements.MaxTraceeVersion == nil {
+		return true, nil
+	}
+
+	// Parse current Tracee version string to v1beta1.Version
+	current, err := parseTraceeVersion(currentVersion)
+	if err != nil {
+		// If we can't parse version (e.g., dev build), allow detector
+		return true, nil
+	}
+
+	// Check minimum version (inclusive)
+	if requirements.MinTraceeVersion != nil {
+		if compareVersions(current, requirements.MinTraceeVersion) < 0 {
+			return false, nil
+		}
+	}
+
+	// Check maximum version (exclusive)
+	if requirements.MaxTraceeVersion != nil {
+		if compareVersions(current, requirements.MaxTraceeVersion) >= 0 {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// compareVersions returns -1 if a < b, 0 if a == b, 1 if a > b
+func compareVersions(a, b *v1beta1.Version) int {
+	if a.Major != b.Major {
+		if a.Major < b.Major {
+			return -1
+		}
+		return 1
+	}
+	if a.Minor != b.Minor {
+		if a.Minor < b.Minor {
+			return -1
+		}
+		return 1
+	}
+	if a.Patch != b.Patch {
+		if a.Patch < b.Patch {
+			return -1
+		}
+		return 1
+	}
+	return 0
+}
+
+// parseTraceeVersion parses Tracee version string to v1beta1.Version
+// Handles formats like "v0.20.0", "0.20.0", "0.20.0-dev"
+func parseTraceeVersion(versionStr string) (*v1beta1.Version, error) {
+	// Remove leading 'v' if present
+	versionStr = strings.TrimPrefix(versionStr, "v")
+
+	// Split on '-' to remove suffixes like "-dev"
+	parts := strings.Split(versionStr, "-")
+	versionParts := strings.Split(parts[0], ".")
+
+	if len(versionParts) < 3 {
+		return nil, fmt.Errorf("invalid version format: %s", versionStr)
+	}
+
+	major, err := strconv.ParseUint(versionParts[0], 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid major version: %w", err)
+	}
+
+	minor, err := strconv.ParseUint(versionParts[1], 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid minor version: %w", err)
+	}
+
+	patch, err := strconv.ParseUint(versionParts[2], 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid patch version: %w", err)
+	}
+
+	return &v1beta1.Version{
+		Major: major,
+		Minor: minor,
+		Patch: patch,
+	}, nil
 }
 
 // RegisterDetector adds a detector to the engine registry
@@ -102,6 +197,23 @@ func (r *registry) RegisterDetector(
 			"detector", detectorID,
 			"required", definition.Requirements.Architectures,
 			"current", runtime.GOARCH)
+		return nil // Skip registration, not an error
+	}
+
+	// Check Tracee version compatibility
+	compatible, err := isTraceeVersionCompatible(definition.Requirements, version.GetVersion())
+	if err != nil {
+		logger.Debugw("Failed to parse Tracee version for detector compatibility check",
+			"detector", detectorID,
+			"error", err)
+		// Continue registration on parse error (e.g., dev builds)
+	}
+	if !compatible {
+		logger.Debugw("Skipping detector - Tracee version not compatible",
+			"detector", detectorID,
+			"min_version", definition.Requirements.MinTraceeVersion,
+			"max_version", definition.Requirements.MaxTraceeVersion,
+			"current", version.GetVersion())
 		return nil // Skip registration, not an error
 	}
 
