@@ -8,7 +8,7 @@ These relations can be queried in signatures through a data source.
 To switch on the `DNS Cache` feature, run the command:
 
 ```bash
-sudo tracee --output option:sort-events --output json --output option:parse-arguments --dnscache enable --events <event_type>
+sudo tracee --output option:sort-events --output json --output option:parse-arguments --stores dns.enabled --events <event_type>
 ```
 
 The underlying structure is populated using the core [net_packet_dns](../../../events/builtin/man/network/net_packet_dns.md) event and its payload.
@@ -16,16 +16,12 @@ The underlying structure is populated using the core [net_packet_dns](../../../e
 ## Command Line Option
 
 ```bash
-$ tracee --dnscache help
-Select different options for the DNS cache.
-
 Example:
-  --dnscache enable  | enable with default values (see below).
-  --dnscache size=X  | will cache up to X dns query trees - further queries may be cached regardless (default: 5000).
+  --stores dns.enabled  | enable the DNS cache.
+  --stores dns.max-entries=X   | will cache up to X dns query trees - further queries may be cached regardless (default: 5000).
 
-Use comma OR use the flag multiple times to choose multiple options:
-  --dnscache size=A
-  --dnscache enable
+Use the flag multiple times to choose multiple options:
+  --stores dns.enabled --stores dns.max-entries=5000
 ```
 
 Consider for your usecase, how many query trees would you like to store? If you will frequently check only a few addresses, consider lowering the size.

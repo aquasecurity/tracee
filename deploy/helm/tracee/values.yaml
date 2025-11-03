@@ -108,6 +108,16 @@ config:
     #   port: "8080"
     #   protocol: http
     #   timeout: 3s
+  stores:
+    dns:
+      enabled: ""
+      maxEntries: ""
+    process:
+      enabled: ""
+      maxProcesses: ""
+      maxThreads: ""
+      source: ""
+      useProcfs: ""
 
 defaultPolicy: true
 

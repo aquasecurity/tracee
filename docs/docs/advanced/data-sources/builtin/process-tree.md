@@ -7,7 +7,7 @@ The `Process Tree` feature offers a structured view of processes and threads act
 To switch on the `Process Tree` feature, run the command:
 
 ```bash
-sudo tracee --output option:sort-events --output json --output option:parse-arguments --proctree source=both --events <event_type>
+sudo tracee --output option:sort-events --output json --output option:parse-arguments --stores process.enabled --stores process.source=both --events <event_type>
 ```
 
 The underlying structure is populated using the core `sched_process_fork`, `sched_process_exec`, and `sched_process_exit` events and their data. There's also an option to bootstrap the process tree through a secondary route using internal signal events.
@@ -27,19 +27,18 @@ The process tree query the procfs upon initialization and during runtime to fill
 
 ```bash
 Example:
-  --proctree source=[none|events|signals|both]
-      none         | process tree is disabled (default).
+  --stores process.enabled        | enable the process tree.
+  --stores process.source=[none|events|signals|both]
+      none         | process tree source is disabled (default).
       events       | process tree is built from events.
       signals      | process tree is built from signals.
       both         | process tree is built from both events and signals.
-  --proctree process-cache=8192   | will cache up to 8192 processes in the tree (LRU cache).
-  --proctree thread-cache=16384   | will cache up to 16384 threads in the tree (LRU cache).
-  --proctree disable-procfs       | will disable procfs entirely.
-  --proctree disable-procfs-query | will disable procfs quering during runtime.
+  --stores process.max-processes=8192 | will cache up to 8192 processes in the tree (LRU cache).
+  --stores process.max-threads=16384  | will cache up to 16384 threads in the tree (LRU cache).
+  --stores process.use-procfs     | will enable procfs initialization and querying.
 
-Use comma OR use the flag multiple times to choose multiple options:
-  --proctree source=A,process-cache=B,thread-cache=C
-  --proctree process-cache=X --proctree thread-cache=Y
+Use the flag multiple times to choose multiple options:
+  --stores process.enabled --stores process.source=both --stores process.max-processes=8192
 ```
 
 ## Internal Data Organization
