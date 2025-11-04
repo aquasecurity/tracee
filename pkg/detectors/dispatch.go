@@ -16,6 +16,7 @@ import (
 type detectorSubscription struct {
 	detectorID  string
 	scopeFilter *filters.ScopeFilter // Scope filter for this subscription (nil = no filter)
+	dataFilter  *filters.DataFilter  // Data filter for this subscription (nil = no filter)
 }
 
 // dispatcher manages event routing to detectors based on their requirements
@@ -85,11 +86,12 @@ func (d *dispatcher) rebuild() {
 				"input_event", req.Name,
 				"input_event_id", eventID)
 
-			// Create subscription with scope filter (if any)
+			// Create subscription with filters (if any)
 			if eventID != 0 {
 				subscription := detectorSubscription{
 					detectorID:  detectorID,
 					scopeFilter: detectorEntry.scopeFilters[eventID], // Will be nil if no filter
+					dataFilter:  detectorEntry.dataFilters[eventID],  // Will be nil if no filter
 				}
 				d.dispatchMap[eventID] = append(d.dispatchMap[eventID], subscription)
 			}
@@ -125,10 +127,24 @@ func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta
 			continue
 		}
 
-		// Apply scope filter for this subscription
-		if sub.scopeFilter != nil {
-			if !applyScopeFilters(inputEvent, sub.scopeFilter) {
-				continue // Skip if scope filter doesn't match
+		// Apply filters if any are present
+		// Convert once and apply both scope and data filters
+		if sub.scopeFilter != nil || sub.dataFilter != nil {
+			// Convert v1beta1.Event to trace.Event for filter compatibility
+			traceEvent := events.ConvertFromProto(inputEvent)
+
+			// Apply scope filter
+			if sub.scopeFilter != nil && sub.scopeFilter.Enabled() {
+				if !sub.scopeFilter.Filter(*traceEvent) {
+					continue // Skip if scope filter doesn't match
+				}
+			}
+
+			// Apply data filter
+			if sub.dataFilter != nil && sub.dataFilter.Enabled() {
+				if !sub.dataFilter.Filter(traceEvent.Args) {
+					continue // Skip if data filter doesn't match
+				}
 			}
 		}
 
