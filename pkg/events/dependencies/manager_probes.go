@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
@@ -17,7 +18,12 @@ func (m *Manager) GetProbe(handle probes.Handle) (*ProbeNode, error) {
 	if probeNode == nil {
 		return nil, ErrNodeNotFound
 	}
-	return probeNode, nil
+
+	// Return a defensive copy to prevent callers from accessing internal state outside lock
+	return &ProbeNode{
+		handle:     probeNode.GetHandle(),
+		dependents: slices.Clone(probeNode.dependents),
+	}, nil
 }
 
 func (m *Manager) getProbe(handle probes.Handle) *ProbeNode {

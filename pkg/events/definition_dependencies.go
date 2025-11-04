@@ -1,6 +1,8 @@
 package events
 
 import (
+	"slices"
+
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
@@ -244,6 +246,9 @@ func NewTailCallWithMergedIndexes(base TailCall, additionalIndexes []uint32) Tai
 	for idx := range indexSet {
 		mergedIndexes = append(mergedIndexes, idx)
 	}
+
+	// Sort indexes so order is deterministic
+	slices.Sort(mergedIndexes)
 
 	return TailCall{
 		mapName:  base.mapName,

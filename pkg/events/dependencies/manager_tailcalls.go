@@ -7,7 +7,9 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 )
 
-// GetTailCall returns the given tailcall node managed by the Manager
+// GetTailCall returns a snapshot of the given tailcall node managed by the Manager.
+// The returned node is a defensive copy and safe to access without holding the lock.
+// However, modifications to the returned node will not affect the Manager's internal state.
 func (m *Manager) GetTailCall(key string) (*TailCallNode, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -16,15 +18,23 @@ func (m *Manager) GetTailCall(key string) (*TailCallNode, error) {
 	if tailCallNode == nil {
 		return nil, ErrNodeNotFound
 	}
-	return tailCallNode, nil
+
+	// Return a defensive copy to prevent callers from accessing internal state outside lock
+	return &TailCallNode{
+		tailCall:   tailCallNode.GetTailCall(),
+		dependents: tailCallNode.GetDependents(), // GetDependents() already clones
+	}, nil
 }
 
+// getTailCall is a private helper that returns the tailcall node without locking.
+// Caller MUST hold m.mu (either RLock or Lock).
 func (m *Manager) getTailCall(key string) *TailCallNode {
 	return m.tailCalls[key]
 }
 
 // buildTailCall adds the tailcall dependent to the tailcall node.
 // It also creates the tailcall node if it does not exist in the tree.
+// This is a private method - caller MUST hold m.mu.Lock().
 func (m *Manager) buildTailCall(tailCall events.TailCall, dependent events.ID) error {
 	if _, failed := m.failedTailCalls[GetTCKey(tailCall)]; failed {
 		return fmt.Errorf("tailcall %v previously failed to add", GetTCKey(tailCall))
@@ -55,11 +65,14 @@ func (m *Manager) buildTailCall(tailCall events.TailCall, dependent events.ID) e
 	return nil
 }
 
+// addTailCallNodeToTree adds the node to the tree.
+// This is a private method - caller MUST hold m.mu.Lock().
 func (m *Manager) addTailCallNodeToTree(tailCallNode *TailCallNode) {
 	m.tailCalls[GetTCKey(tailCallNode.GetTailCall())] = tailCallNode
 }
 
 // removeTailCallNodeFromTree removes the node from the tree.
+// This is a private method - caller MUST hold m.mu.Lock().
 func (m *Manager) removeTailCallNodeFromTree(tailCallNode *TailCallNode) {
 	delete(m.tailCalls, GetTCKey(tailCallNode.GetTailCall()))
 }
@@ -78,6 +91,7 @@ func (m *Manager) FailTailCall(tailCall events.TailCall) error {
 }
 
 // removeTailCall removes the tailcall from the tree and fails all dependent events.
+// This is a private method - caller MUST hold m.mu.Lock().
 func (m *Manager) removeTailCall(tailCall events.TailCall) {
 	tailCallNode := m.getTailCall(GetTCKey(tailCall))
 	if tailCallNode == nil {

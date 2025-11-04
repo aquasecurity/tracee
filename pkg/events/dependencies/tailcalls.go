@@ -44,13 +44,16 @@ func (tn *TailCallNode) addDependent(dependent events.ID) {
 	tn.dependents = append(tn.dependents, dependent)
 }
 
-func (tn *TailCallNode) removeDependent(dependent events.ID) {
+// removeDependent removes the given dependent from the node.
+// Returns true if the node has no more dependents after removal, false otherwise.
+func (tn *TailCallNode) removeDependent(dependent events.ID) bool {
 	for i, d := range tn.dependents {
 		if d == dependent {
 			tn.dependents = append(tn.dependents[:i], tn.dependents[i+1:]...)
 			break
 		}
 	}
+	return len(tn.dependents) == 0
 }
 
 // GetTCKey returns a unique identifier for this tailcall based on map name and program name.
