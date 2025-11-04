@@ -118,6 +118,50 @@ func compareVersions(a, b *v1beta1.Version) int {
 	return 0
 }
 
+// compareEventVersions compares events.Version with v1beta1.Version
+// Returns -1 if a < b, 0 if a == b, 1 if a > b
+func compareEventVersions(a events.Version, b *v1beta1.Version) int {
+	if a.Major() != b.Major {
+		if a.Major() < b.Major {
+			return -1
+		}
+		return 1
+	}
+	if a.Minor() != b.Minor {
+		if a.Minor() < b.Minor {
+			return -1
+		}
+		return 1
+	}
+	if a.Patch() != b.Patch {
+		if a.Patch() < b.Patch {
+			return -1
+		}
+		return 1
+	}
+	return 0
+}
+
+// isEventVersionCompatible checks if an event version satisfies the requirements
+// Returns (compatible, error)
+func isEventVersionCompatible(eventVersion events.Version, req detection.EventRequirement) (bool, error) {
+	// Check minimum version (inclusive)
+	if req.MinVersion != nil {
+		if compareEventVersions(eventVersion, req.MinVersion) < 0 {
+			return false, nil
+		}
+	}
+
+	// Check maximum version (exclusive)
+	if req.MaxVersion != nil {
+		if compareEventVersions(eventVersion, req.MaxVersion) >= 0 {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
 // parseTraceeVersion parses Tracee version string to v1beta1.Version
 // Handles formats like "v0.20.0", "0.20.0", "0.20.0-dev"
 func parseTraceeVersion(versionStr string) (*v1beta1.Version, error) {
@@ -238,19 +282,67 @@ func (r *registry) RegisterDetector(
 	for _, req := range definition.Requirements.Events {
 		// Lookup event ID by name
 		var reqEventID v1beta1.EventId
+		var eventName string
+		var eventVersion events.Version
+		var hasVersion bool
+
 		if predefinedID := events.LookupPredefinedEventID(req.Name); predefinedID != 0 {
 			reqEventID = v1beta1.EventId(predefinedID)
+			eventDef := events.Core.GetDefinitionByID(predefinedID)
+			eventName = eventDef.GetName()
+			eventVersion = eventDef.GetVersion()
+			hasVersion = true
 		} else {
 			// Check if it's a detector-produced event
 			if producerID, exists := r.eventNameIndex[req.Name]; exists {
 				if producerEntry, ok := r.detectors[producerID]; ok {
 					reqEventID = producerEntry.eventID
+					eventName = producerEntry.definition.ProducedEvent.Name
+					// Get version from the producer detector's ProducedEvent definition
+					if producerEntry.definition.ProducedEvent.Version != nil {
+						eventVersion = events.NewVersion(
+							producerEntry.definition.ProducedEvent.Version.Major,
+							producerEntry.definition.ProducedEvent.Version.Minor,
+							producerEntry.definition.ProducedEvent.Version.Patch,
+						)
+						hasVersion = true
+					}
 				}
 			}
 		}
 
 		if reqEventID == 0 {
-			continue // Event not found, skip (will be caught by dependency validation)
+			// Event not found
+			if req.Dependency == detection.DependencyRequired {
+				return fmt.Errorf("detector %s: required event '%s' not found", detectorID, req.Name)
+			}
+			logger.Debugw("Optional event not found for detector",
+				"detector", detectorID,
+				"event", req.Name)
+			continue
+		}
+
+		// Check event version compatibility (unified for both predefined and detector events)
+		if hasVersion && (req.MinVersion != nil || req.MaxVersion != nil) {
+			compatible, err := isEventVersionCompatible(eventVersion, req)
+			if err != nil {
+				return fmt.Errorf("detector %s, event %s: version validation error: %w",
+					detectorID, eventName, err)
+			}
+			if !compatible {
+				if req.Dependency == detection.DependencyRequired {
+					return fmt.Errorf("detector %s: required event '%s' version incompatible (available: %s, required: min=%v max=%v)",
+						detectorID, eventName, eventVersion,
+						req.MinVersion, req.MaxVersion)
+				}
+				logger.Debugw("Skipping optional event - version incompatible",
+					"detector", detectorID,
+					"event", eventName,
+					"available_version", eventVersion,
+					"required_min", req.MinVersion,
+					"required_max", req.MaxVersion)
+				continue
+			}
 		}
 
 		// Parse scope filters
