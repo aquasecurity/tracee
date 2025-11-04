@@ -681,7 +681,7 @@ func (t *Tracee) uninitTailCall(tailCall events.TailCall) error {
 		err := bpfMap.DeleteKey(unsafe.Pointer(&index))
 		if err != nil {
 			// Log but don't fail on individual delete errors
-			logger.Debugw("Failed to uninit tailcall index",
+			logger.Errorw("Failed to uninit tailcall index",
 				"map", tailCallMapName,
 				"index", index,
 				"error", err)
@@ -1106,7 +1106,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 	validateEvent := func(eventId events.ID) bool {
 		depsNode, err := t.eventsDependencies.GetEvent(eventId)
 		if err != nil {
-			logger.Debugw("Failed to get dependencies for event", "event", events.Core.GetDefinitionByID(eventId).GetName(), "error", err)
+			logger.Errorw("Failed to get dependencies for event", "event", events.Core.GetDefinitionByID(eventId).GetName(), "error", err)
 			return false
 		}
 		return validateNode(depsNode)
@@ -1155,7 +1155,7 @@ func (t *Tracee) setProgramsAutoload() {
 	for _, probeHandle := range t.eventsDependencies.GetProbes() {
 		err := t.defaultProbes.Autoload(probeHandle, true)
 		if err != nil {
-			logger.Debugw("Failed to autoload program", "handle", probeHandle, "error", err)
+			logger.Errorw("Failed to autoload program", "handle", probeHandle, "error", err)
 		}
 	}
 
@@ -1170,7 +1170,7 @@ func (t *Tracee) setProgramsAutoload() {
 			}
 			err := t.defaultProbes.Autoload(probeNode.GetHandle(), true)
 			if err != nil {
-				logger.Debugw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
+				logger.Errorw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
 			}
 			return nil
 		})
@@ -1186,7 +1186,7 @@ func (t *Tracee) setProgramsAutoload() {
 			}
 			err := t.defaultProbes.Autoload(probeNode.GetHandle(), false)
 			if err != nil {
-				logger.Debugw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
+				logger.Errorw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
 			}
 			return nil
 		})
@@ -1422,7 +1422,7 @@ func (t *Tracee) attachProbes() error {
 			}
 			err := t.defaultProbes.Detach(probeNode.GetHandle())
 			if err != nil {
-				logger.Debugw("Failed to detach probe",
+				logger.Errorw("Failed to detach probe",
 					"probe", probeNode.GetHandle(),
 					"error", err)
 			}
@@ -1480,7 +1480,7 @@ func (t *Tracee) attachTailCalls() error {
 			tailCall := tailCallNode.GetTailCall()
 			err := t.uninitTailCall(tailCall)
 			if err != nil {
-				logger.Debugw("Failed to uninit tailcall",
+				logger.Errorw("Failed to uninit tailcall",
 					"map", tailCall.GetMapName(),
 					"program", tailCall.GetProgName(),
 					"error", err)
