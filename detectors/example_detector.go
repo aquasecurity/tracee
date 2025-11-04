@@ -40,6 +40,10 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 					// DataFilters: []string{"pathname=/bin/bash"},        // Only execve of /bin/bash
 					// DataFilters: []string{"pathname=/usr/bin/python*"}, // Only execve of python binaries
 					// DataFilters: []string{"pathname!=/usr/*"},          // Exclude execve from /usr/
+
+					// Example event version constraints (uncomment to use):
+					// MinVersion: &v1beta1.Version{Major: 1, Minor: 2, Patch: 0}, // Requires execve v1.2.0+
+					// MaxVersion: &v1beta1.Version{Major: 2, Minor: 0, Patch: 0}, // Works up to execve v2.0.0 (exclusive)
 				},
 			},
 			DataStores: []detection.DataStoreRequirement{
