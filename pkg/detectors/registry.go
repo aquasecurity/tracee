@@ -26,6 +26,7 @@ type entry struct {
 	enabled      bool                                     // Runtime state for enable/disable
 	params       detection.DetectorParams                 // Stored for re-initialization on enable
 	scopeFilters map[v1beta1.EventId]*filters.ScopeFilter // Scope filters per subscribed event
+	dataFilters  map[v1beta1.EventId]*filters.DataFilter  // Data filters per subscribed event
 }
 
 // registry manages all registered detectors
@@ -229,14 +230,12 @@ func (r *registry) RegisterDetector(
 	// Check if detector's output event is selected by policy
 	enabled := r.policyManager != nil && r.policyManager.IsEventSelected(eventID)
 
-	// Parse scope filters for all event requirements
-	// Use map for O(1) lookup and to handle multiple requirements for same event
+	// Parse scope and data filters for all event requirements
+	// Use maps for O(1) lookup and to handle multiple requirements for same event
 	scopeFilters := make(map[v1beta1.EventId]*filters.ScopeFilter)
-	for _, req := range definition.Requirements.Events {
-		if len(req.ScopeFilters) == 0 {
-			continue // No filters for this requirement
-		}
+	dataFilters := make(map[v1beta1.EventId]*filters.DataFilter)
 
+	for _, req := range definition.Requirements.Events {
 		// Lookup event ID by name
 		var reqEventID v1beta1.EventId
 		if predefinedID := events.LookupPredefinedEventID(req.Name); predefinedID != 0 {
@@ -254,19 +253,41 @@ func (r *registry) RegisterDetector(
 			continue // Event not found, skip (will be caught by dependency validation)
 		}
 
-		// Get or create scope filter for this event ID
-		scopeFilter, exists := scopeFilters[reqEventID]
-		if !exists {
-			scopeFilter = filters.NewScopeFilter()
-			scopeFilters[reqEventID] = scopeFilter
+		// Parse scope filters
+		if len(req.ScopeFilters) > 0 {
+			// Get or create scope filter for this event ID
+			scopeFilter, exists := scopeFilters[reqEventID]
+			if !exists {
+				scopeFilter = filters.NewScopeFilter()
+				scopeFilters[reqEventID] = scopeFilter
+			}
+
+			// Parse and add scope filters for this requirement
+			for _, filterStr := range req.ScopeFilters {
+				field, operatorAndValues := parseFilterString(filterStr)
+				if err := scopeFilter.Parse(field, operatorAndValues); err != nil {
+					return fmt.Errorf("detector %s, event %s: invalid scope filter '%s': %w",
+						detectorID, req.Name, filterStr, err)
+				}
+			}
 		}
 
-		// Parse and add scope filters for this requirement
-		for _, filterStr := range req.ScopeFilters {
-			field, operatorAndValues := parseScopeFilterString(filterStr)
-			if err := scopeFilter.Parse(field, operatorAndValues); err != nil {
-				return fmt.Errorf("detector %s, event %s: invalid scope filter '%s': %w",
-					detectorID, req.Name, filterStr, err)
+		// Parse data filters
+		if len(req.DataFilters) > 0 {
+			// Get or create data filter for this event ID
+			dataFilter, exists := dataFilters[reqEventID]
+			if !exists {
+				dataFilter = filters.NewDataFilter()
+				dataFilters[reqEventID] = dataFilter
+			}
+
+			// Parse and add data filters for this requirement
+			for _, filterStr := range req.DataFilters {
+				fieldName, operatorAndValues := parseFilterString(filterStr)
+				if err := dataFilter.Parse(events.ID(reqEventID), fieldName, operatorAndValues); err != nil {
+					return fmt.Errorf("detector %s, event %s: invalid data filter '%s': %w",
+						detectorID, req.Name, filterStr, err)
+				}
 			}
 		}
 	}
@@ -292,6 +313,7 @@ func (r *registry) RegisterDetector(
 		enabled:      enabled, // enabled = initialized
 		params:       params,  // Store for potential re-initialization
 		scopeFilters: scopeFilters,
+		dataFilters:  dataFilters,
 	}
 
 	// Store detector entry (registered regardless of selection for future runtime changes)
@@ -450,7 +472,14 @@ func validateEventRequirements(requirements []detection.EventRequirement) error 
 			return err
 		}
 
-		// TODO: Validate data filter syntax
+		// Validate data filter syntax
+		// We validate syntax only here, not field names (which require event ID)
+		for _, dataFilterStr := range req.DataFilters {
+			fieldName, operatorAndValues := parseFilterString(dataFilterStr)
+			if fieldName == "" || operatorAndValues == "" {
+				return fmt.Errorf("event %s: invalid data filter '%s' (missing field or operator)", req.Name, dataFilterStr)
+			}
+		}
 	}
 
 	return nil
@@ -466,7 +495,7 @@ func parseScopeFilters(filterStrings []string, contextMsg string) (*filters.Scop
 
 	scopeFilter := filters.NewScopeFilter()
 	for _, filterStr := range filterStrings {
-		field, operatorAndValues := parseScopeFilterString(filterStr)
+		field, operatorAndValues := parseFilterString(filterStr)
 		if err := scopeFilter.Parse(field, operatorAndValues); err != nil {
 			return nil, fmt.Errorf("%s: invalid scope filter '%s': %w", contextMsg, filterStr, err)
 		}
@@ -474,15 +503,15 @@ func parseScopeFilters(filterStrings []string, contextMsg string) (*filters.Scop
 	return scopeFilter, nil
 }
 
-// parseScopeFilterString splits a scope filter string into field and operatorAndValues
-// Examples: "container" -> ("container", ""), "container=started" -> ("container", "=started")
-func parseScopeFilterString(filterStr string) (string, string) {
+// parseFilterString splits a filter string into field and operatorAndValues
+// Examples: "container" -> ("container", ""), "pathname=/tmp/*" -> ("pathname", "=/tmp/*")
+func parseFilterString(filterStr string) (field string, operatorAndValues string) {
 	operators := []string{"!=", "<=", ">=", "=", "<", ">"}
 	for _, op := range operators {
 		if idx := strings.Index(filterStr, op); idx != -1 {
 			return filterStr[:idx], filterStr[idx:]
 		}
 	}
-	// No operator found, return whole string as field
+	// No operator found, return whole string as field (valid for scope filters)
 	return filterStr, ""
 }
