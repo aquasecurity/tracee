@@ -31,6 +31,15 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 				{
 					Name:       "execve",
 					Dependency: detection.DependencyRequired,
+					// Example scope filters (uncomment to use):
+					// ScopeFilters: []string{"container=started"}, // Only events from started containers
+					// ScopeFilters: []string{"host"},              // Only events from host (not containers)
+					// ScopeFilters: []string{"container"},         // Any container (started or not)
+
+					// Example data filters (uncomment to use):
+					// DataFilters: []string{"pathname=/bin/bash"},        // Only execve of /bin/bash
+					// DataFilters: []string{"pathname=/usr/bin/python*"}, // Only execve of python binaries
+					// DataFilters: []string{"pathname!=/usr/*"},          // Exclude execve from /usr/
 				},
 			},
 			DataStores: []detection.DataStoreRequirement{
