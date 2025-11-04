@@ -12,18 +12,20 @@ import (
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/version"
 )
 
 // entry holds detector metadata for dispatch
 type entry struct {
-	detector   detection.EventDetector
-	definition *detection.DetectorDefinition // Cached at registration (GetDefinition() result)
-	eventID    v1beta1.EventId
-	eventName  string
-	enabled    bool                     // Runtime state for enable/disable
-	params     detection.DetectorParams // Stored for re-initialization on enable
+	detector     detection.EventDetector
+	definition   *detection.DetectorDefinition // Cached at registration (GetDefinition() result)
+	eventID      v1beta1.EventId
+	eventName    string
+	enabled      bool                                     // Runtime state for enable/disable
+	params       detection.DetectorParams                 // Stored for re-initialization on enable
+	scopeFilters map[v1beta1.EventId]*filters.ScopeFilter // Scope filters per subscribed event
 }
 
 // registry manages all registered detectors
@@ -227,6 +229,48 @@ func (r *registry) RegisterDetector(
 	// Check if detector's output event is selected by policy
 	enabled := r.policyManager != nil && r.policyManager.IsEventSelected(eventID)
 
+	// Parse scope filters for all event requirements
+	// Use map for O(1) lookup and to handle multiple requirements for same event
+	scopeFilters := make(map[v1beta1.EventId]*filters.ScopeFilter)
+	for _, req := range definition.Requirements.Events {
+		if len(req.ScopeFilters) == 0 {
+			continue // No filters for this requirement
+		}
+
+		// Lookup event ID by name
+		var reqEventID v1beta1.EventId
+		if predefinedID := events.LookupPredefinedEventID(req.Name); predefinedID != 0 {
+			reqEventID = v1beta1.EventId(predefinedID)
+		} else {
+			// Check if it's a detector-produced event
+			if producerID, exists := r.eventNameIndex[req.Name]; exists {
+				if producerEntry, ok := r.detectors[producerID]; ok {
+					reqEventID = producerEntry.eventID
+				}
+			}
+		}
+
+		if reqEventID == 0 {
+			continue // Event not found, skip (will be caught by dependency validation)
+		}
+
+		// Get or create scope filter for this event ID
+		scopeFilter, exists := scopeFilters[reqEventID]
+		if !exists {
+			scopeFilter = filters.NewScopeFilter()
+			scopeFilters[reqEventID] = scopeFilter
+		}
+
+		// Parse and add scope filters for this requirement
+		for _, filterStr := range req.ScopeFilters {
+			field, operatorAndValues := parseScopeFilterString(filterStr)
+			if err := scopeFilter.Parse(field, operatorAndValues); err != nil {
+				return fmt.Errorf("detector %s, event %s: invalid scope filter '%s': %w",
+					detectorID, req.Name, filterStr, err)
+			}
+		}
+	}
+
 	// Only initialize if selected to avoid resource waste
 	if enabled {
 		// Initialize detector before adding to registry
@@ -241,12 +285,13 @@ func (r *registry) RegisterDetector(
 
 	// Create detector entry after initialization check
 	detectorEntry := &entry{
-		detector:   detector,
-		definition: &definition,
-		eventID:    v1beta1.EventId(eventID),
-		eventName:  eventName,
-		enabled:    enabled, // enabled = initialized
-		params:     params,  // Store for potential re-initialization
+		detector:     detector,
+		definition:   &definition,
+		eventID:      v1beta1.EventId(eventID),
+		eventName:    eventName,
+		enabled:      enabled, // enabled = initialized
+		params:       params,  // Store for potential re-initialization
+		scopeFilters: scopeFilters,
 	}
 
 	// Store detector entry (registered regardless of selection for future runtime changes)
@@ -400,9 +445,44 @@ func validateEventRequirements(requirements []detection.EventRequirement) error 
 			}
 		}
 
-		// TODO: Validate filter syntax using existing policy filter parsers
-		// This would parse DataFilters and ScopeFilters to ensure they're valid
+		// Validate scope filter syntax
+		if _, err := parseScopeFilters(req.ScopeFilters, fmt.Sprintf("event %s", req.Name)); err != nil {
+			return err
+		}
+
+		// TODO: Validate data filter syntax
 	}
 
 	return nil
+}
+
+// parseScopeFilters parses a list of scope filter strings into a ScopeFilter
+// Returns nil if filterStrings is empty
+// Returns error if any filter string is invalid
+func parseScopeFilters(filterStrings []string, contextMsg string) (*filters.ScopeFilter, error) {
+	if len(filterStrings) == 0 {
+		return nil, nil
+	}
+
+	scopeFilter := filters.NewScopeFilter()
+	for _, filterStr := range filterStrings {
+		field, operatorAndValues := parseScopeFilterString(filterStr)
+		if err := scopeFilter.Parse(field, operatorAndValues); err != nil {
+			return nil, fmt.Errorf("%s: invalid scope filter '%s': %w", contextMsg, filterStr, err)
+		}
+	}
+	return scopeFilter, nil
+}
+
+// parseScopeFilterString splits a scope filter string into field and operatorAndValues
+// Examples: "container" -> ("container", ""), "container=started" -> ("container", "=started")
+func parseScopeFilterString(filterStr string) (string, string) {
+	operators := []string{"!=", "<=", ">=", "=", "<", ">"}
+	for _, op := range operators {
+		if idx := strings.Index(filterStr, op); idx != -1 {
+			return filterStr[:idx], filterStr[idx:]
+		}
+	}
+	// No operator found, return whole string as field
+	return filterStr, ""
 }

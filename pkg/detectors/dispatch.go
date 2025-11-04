@@ -8,13 +8,20 @@ import (
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/policy"
 )
+
+// detectorSubscription represents a detector's subscription to an event with its filters
+type detectorSubscription struct {
+	detectorID  string
+	scopeFilter *filters.ScopeFilter // Scope filter for this subscription (nil = no filter)
+}
 
 // dispatcher manages event routing to detectors based on their requirements
 type dispatcher struct {
 	mu            sync.RWMutex
-	dispatchMap   map[v1beta1.EventId][]string // Event ID -> Detector IDs
+	dispatchMap   map[v1beta1.EventId][]detectorSubscription // Event ID -> Detector subscriptions
 	registry      *registry
 	policyManager *policy.Manager
 	metrics       *Metrics
@@ -23,7 +30,7 @@ type dispatcher struct {
 // newDispatcher creates a new event dispatcher
 func newDispatcher(registry *registry, policyManager *policy.Manager, metrics *Metrics) *dispatcher {
 	return &dispatcher{
-		dispatchMap:   make(map[v1beta1.EventId][]string),
+		dispatchMap:   make(map[v1beta1.EventId][]detectorSubscription),
 		registry:      registry,
 		policyManager: policyManager,
 		metrics:       metrics,
@@ -38,7 +45,7 @@ func (d *dispatcher) rebuild() {
 	defer d.mu.Unlock()
 
 	// Clear existing map
-	d.dispatchMap = make(map[v1beta1.EventId][]string)
+	d.dispatchMap = make(map[v1beta1.EventId][]detectorSubscription)
 
 	// Build mapping from detector requirements
 	d.registry.mu.RLock()
@@ -78,16 +85,19 @@ func (d *dispatcher) rebuild() {
 				"input_event", req.Name,
 				"input_event_id", eventID)
 
-			// Add detector to dispatch list for this event
+			// Create subscription with scope filter (if any)
 			if eventID != 0 {
-				d.dispatchMap[eventID] = append(d.dispatchMap[eventID], detectorID)
+				subscription := detectorSubscription{
+					detectorID:  detectorID,
+					scopeFilter: detectorEntry.scopeFilters[eventID], // Will be nil if no filter
+				}
+				d.dispatchMap[eventID] = append(d.dispatchMap[eventID], subscription)
 			}
 		}
 	}
 
 	logger.Debugw("Dispatcher rebuild complete",
-		"dispatch_map_size", len(d.dispatchMap),
-		"dispatch_map", d.dispatchMap)
+		"dispatch_map_size", len(d.dispatchMap))
 }
 
 // dispatchToDetectors dispatches an event to all registered detectors that are interested in it
@@ -95,17 +105,17 @@ func (d *dispatcher) rebuild() {
 func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta1.Event) ([]*v1beta1.Event, error) {
 	var outputEvents []*v1beta1.Event
 
-	// Stage 1: Event ID → Detector IDs (dispatch mapping)
+	// Stage 1: Event ID → Detector Subscriptions (dispatch mapping)
 	d.mu.RLock()
-	detectorIDs := d.dispatchMap[inputEvent.Id]
+	subscriptions := d.dispatchMap[inputEvent.Id]
 	d.mu.RUnlock()
 
-	// Stage 2: For each detector ID, get detector entry and process
+	// Stage 2: For each subscription, get detector entry and process
 	d.registry.mu.RLock()
 	defer d.registry.mu.RUnlock()
 
-	for _, detectorID := range detectorIDs {
-		detector := d.registry.detectors[detectorID]
+	for _, sub := range subscriptions {
+		detector := d.registry.detectors[sub.detectorID]
 		if detector == nil {
 			continue // Should never happen, but be defensive
 		}
@@ -115,11 +125,15 @@ func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta
 			continue
 		}
 
-		// Track event processing (per-detector)
-		d.metrics.EventsProcessed.WithLabelValues(detectorID).Inc()
+		// Apply scope filter for this subscription
+		if sub.scopeFilter != nil {
+			if !applyScopeFilters(inputEvent, sub.scopeFilter) {
+				continue // Skip if scope filter doesn't match
+			}
+		}
 
-		// TODO: Apply data and scope filters before calling OnEvent()
-		// Filtering ensures only matching events reach OnEvent() based on detector requirements
+		// Track event processing (per-detector)
+		d.metrics.EventsProcessed.WithLabelValues(sub.detectorID).Inc()
 
 		// Call detector with timing
 		start := time.Now()
@@ -127,14 +141,14 @@ func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta
 		duration := time.Since(start)
 
 		// Record execution time (per-detector)
-		d.metrics.ExecutionDuration.WithLabelValues(detectorID).Observe(duration.Seconds())
+		d.metrics.ExecutionDuration.WithLabelValues(sub.detectorID).Observe(duration.Seconds())
 
 		if err != nil {
 			// Log error and track metric, but continue processing other detectors
 			// Errors are never fatal - detectors must be resilient
-			d.metrics.Errors.WithLabelValues(detectorID).Inc()
+			d.metrics.Errors.WithLabelValues(sub.detectorID).Inc()
 			logger.Debugw("Detector error",
-				"detector", detectorID,
+				"detector", sub.detectorID,
 				"event", inputEvent.Name,
 				"error", err)
 			continue
@@ -157,7 +171,7 @@ func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta
 			outputEvents = append(outputEvents, event)
 
 			// Track produced event (per-detector)
-			d.metrics.EventsProduced.WithLabelValues(detectorID).Inc()
+			d.metrics.EventsProduced.WithLabelValues(sub.detectorID).Inc()
 		}
 	}
 
