@@ -3,6 +3,7 @@ package dependencies
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -17,7 +18,16 @@ func (m *Manager) GetEvent(id events.ID) (*EventNode, error) {
 	if node == nil {
 		return nil, ErrNodeNotFound
 	}
-	return node, nil
+
+	// Return a defensive copy to prevent callers from accessing internal state outside lock
+	strategyShallowCopy := *node.dependencyStrategy
+	return &EventNode{
+		id:                   node.GetID(),
+		explicitlySelected:   node.isExplicitlySelected(),
+		dependencyStrategy:   &strategyShallowCopy,
+		currentFallbackIndex: node.currentFallbackIndex,
+		dependents:           slices.Clone(node.dependents),
+	}, nil
 }
 
 // SelectEvent adds the given event to the management tree with default dependencies
@@ -241,7 +251,7 @@ func (m *Manager) removeEventNodeFromTree(eventNode *EventNode) {
 // It also removes all of its dependencies if they are not required anymore without it.
 // Returns whether it was removed or not.
 func (m *Manager) cleanUnreferencedEventNode(eventNode *EventNode) bool {
-	if len(eventNode.GetDependents()) > 0 || eventNode.isExplicitlySelected() {
+	if eventNode.HasDependents() || eventNode.isExplicitlySelected() {
 		return false
 	}
 	m.removeNode(eventNode)
@@ -259,8 +269,8 @@ func (m *Manager) removeEventNodeFromDependencies(eventNode *EventNode) {
 		if probe == nil {
 			continue
 		}
-		probe.removeDependent(eventNode.GetID())
-		if len(probe.GetDependents()) == 0 {
+		// removeDependent returns true if the node now has no dependents
+		if probe.removeDependent(eventNode.GetID()) {
 			m.removeNode(probe)
 		}
 	}
@@ -271,8 +281,8 @@ func (m *Manager) removeEventNodeFromDependencies(eventNode *EventNode) {
 		if tailCall == nil {
 			continue
 		}
-		tailCall.removeDependent(eventNode.GetID())
-		if len(tailCall.GetDependents()) == 0 {
+		// removeDependent returns true if the node now has no dependents
+		if tailCall.removeDependent(eventNode.GetID()) {
 			m.removeNode(tailCall)
 		}
 	}
@@ -282,8 +292,9 @@ func (m *Manager) removeEventNodeFromDependencies(eventNode *EventNode) {
 		if dependencyNode == nil {
 			continue
 		}
-		dependencyNode.removeDependent(eventNode.GetID())
-		m.cleanUnreferencedEventNode(dependencyNode)
+		if dependencyNode.removeDependent(eventNode.GetID()) {
+			m.cleanUnreferencedEventNode(dependencyNode)
+		}
 	}
 }
 

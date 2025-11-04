@@ -33,11 +33,14 @@ func (hn *ProbeNode) addDependent(dependent events.ID) {
 	}
 }
 
-func (hn *ProbeNode) removeDependent(dependent events.ID) {
+// removeDependent removes the given dependent from the node.
+// Returns true if the node has no more dependents after removal, false otherwise.
+func (hn *ProbeNode) removeDependent(dependent events.ID) bool {
 	for i, d := range hn.dependents {
 		if d == dependent {
 			hn.dependents = append(hn.dependents[:i], hn.dependents[i+1:]...)
 			break
 		}
 	}
+	return len(hn.dependents) == 0
 }
