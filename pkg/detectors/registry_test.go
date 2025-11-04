@@ -7,6 +7,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/pkg/events"
 )
 
 func TestIsArchitectureSupported(t *testing.T) {
@@ -231,6 +232,129 @@ func TestParseTraceeVersion(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, result)
 			}
+		})
+	}
+}
+
+func TestCompareEventVersions(t *testing.T) {
+	tests := []struct {
+		name string
+		a    events.Version
+		b    *v1beta1.Version
+		want int
+	}{
+		{"equal", events.NewVersion(1, 2, 3), &v1beta1.Version{Major: 1, Minor: 2, Patch: 3}, 0},
+		{"major less", events.NewVersion(0, 5, 0), &v1beta1.Version{Major: 1, Minor: 0, Patch: 0}, -1},
+		{"major greater", events.NewVersion(2, 0, 0), &v1beta1.Version{Major: 1, Minor: 5, Patch: 0}, 1},
+		{"minor less", events.NewVersion(1, 1, 0), &v1beta1.Version{Major: 1, Minor: 2, Patch: 0}, -1},
+		{"minor greater", events.NewVersion(1, 3, 0), &v1beta1.Version{Major: 1, Minor: 2, Patch: 0}, 1},
+		{"patch less", events.NewVersion(1, 2, 1), &v1beta1.Version{Major: 1, Minor: 2, Patch: 2}, -1},
+		{"patch greater", events.NewVersion(1, 2, 4), &v1beta1.Version{Major: 1, Minor: 2, Patch: 3}, 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := compareEventVersions(tt.a, tt.b)
+			assert.Equal(t, tt.want, result)
+		})
+	}
+}
+
+func TestIsEventVersionCompatible(t *testing.T) {
+	tests := []struct {
+		name         string
+		eventVersion events.Version
+		requirement  detection.EventRequirement
+		wantCompat   bool
+	}{
+		{
+			name:         "no constraints - always compatible",
+			eventVersion: events.NewVersion(1, 2, 3),
+			requirement:  detection.EventRequirement{},
+			wantCompat:   true,
+		},
+		{
+			name:         "min version - compatible",
+			eventVersion: events.NewVersion(1, 5, 0),
+			requirement: detection.EventRequirement{
+				MinVersion: &v1beta1.Version{Major: 1, Minor: 2, Patch: 0},
+			},
+			wantCompat: true,
+		},
+		{
+			name:         "min version - equal (inclusive)",
+			eventVersion: events.NewVersion(1, 2, 0),
+			requirement: detection.EventRequirement{
+				MinVersion: &v1beta1.Version{Major: 1, Minor: 2, Patch: 0},
+			},
+			wantCompat: true,
+		},
+		{
+			name:         "min version - incompatible",
+			eventVersion: events.NewVersion(1, 1, 0),
+			requirement: detection.EventRequirement{
+				MinVersion: &v1beta1.Version{Major: 1, Minor: 2, Patch: 0},
+			},
+			wantCompat: false,
+		},
+		{
+			name:         "max version - compatible",
+			eventVersion: events.NewVersion(1, 5, 0),
+			requirement: detection.EventRequirement{
+				MaxVersion: &v1beta1.Version{Major: 2, Minor: 0, Patch: 0},
+			},
+			wantCompat: true,
+		},
+		{
+			name:         "max version - equal (exclusive)",
+			eventVersion: events.NewVersion(2, 0, 0),
+			requirement: detection.EventRequirement{
+				MaxVersion: &v1beta1.Version{Major: 2, Minor: 0, Patch: 0},
+			},
+			wantCompat: false,
+		},
+		{
+			name:         "max version - incompatible",
+			eventVersion: events.NewVersion(2, 1, 0),
+			requirement: detection.EventRequirement{
+				MaxVersion: &v1beta1.Version{Major: 2, Minor: 0, Patch: 0},
+			},
+			wantCompat: false,
+		},
+		{
+			name:         "min and max - compatible",
+			eventVersion: events.NewVersion(1, 5, 0),
+			requirement: detection.EventRequirement{
+				MinVersion: &v1beta1.Version{Major: 1, Minor: 0, Patch: 0},
+				MaxVersion: &v1beta1.Version{Major: 2, Minor: 0, Patch: 0},
+			},
+			wantCompat: true,
+		},
+		{
+			name:         "min and max - below min",
+			eventVersion: events.NewVersion(0, 9, 0),
+			requirement: detection.EventRequirement{
+				MinVersion: &v1beta1.Version{Major: 1, Minor: 0, Patch: 0},
+				MaxVersion: &v1beta1.Version{Major: 2, Minor: 0, Patch: 0},
+			},
+			wantCompat: false,
+		},
+		{
+			name:         "min and max - above max",
+			eventVersion: events.NewVersion(2, 1, 0),
+			requirement: detection.EventRequirement{
+				MinVersion: &v1beta1.Version{Major: 1, Minor: 0, Patch: 0},
+				MaxVersion: &v1beta1.Version{Major: 2, Minor: 0, Patch: 0},
+			},
+			wantCompat: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			compat, err := isEventVersionCompatible(tt.eventVersion, tt.requirement)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantCompat, compat)
 		})
 	}
 }
