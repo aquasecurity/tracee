@@ -45,7 +45,7 @@ This script mimics the tests that run when pushing a PR to the tracee repo.
 It runs the same checks as the GitHub Actions workflow to catch issues early.
 
 Arguments:
-  commit-ref    Git commit reference to check (default: HEAD)
+  git-ref       Git reference to check (default: HEAD)
                 Can be a commit hash, branch name, or tag
 
 Options:
@@ -58,6 +58,9 @@ Options:
   --ignore-missing-tools  Continue even if optional tools are missing
   --fast                  Skip slow checks (static analysis + unit tests), run formatting and linting only
 
+Environment Variables:
+  BASE_REF                Git reference to compare against (default: origin/main)
+
 Test Categories:
   1. Documentation Verification - Ensures .1.md and .1 man page files are synchronized
   2. Code Analysis - Runs formatting, linting, vet, staticcheck, and errcheck
@@ -65,7 +68,7 @@ Test Categories:
   4. PR Formatting - Displays commit messages in PR-ready format
 
 Examples:
-  $0                              # Check HEAD commit
+  $0                             # Check HEAD (default)
   $0 HEAD~1                      # Check previous commit
   $0 main                        # Check main branch
   $0 abc123def                   # Check specific commit hash
@@ -73,6 +76,7 @@ Examples:
   $0 --skip-docs                 # Skip documentation verification
   $0 --skip-code-analysis        # Skip code analysis if tools missing
   $0 --ignore-missing-tools      # Continue despite missing tools
+  BASE_REF=v1.0.0 $0             # Compare against v1.0.0 instead of origin/main
   $0 --help                      # Show this help
 
 Dependencies:
@@ -125,20 +129,21 @@ while [[ $# -gt 0 ]]; do
             exit 1
             ;;
         *)
-            COMMIT_REF="$1"
+            GIT_REF="$1"
             break
             ;;
     esac
     shift
 done
 
-# Get the commit to check (default to HEAD)
-COMMIT_REF=${COMMIT_REF:-HEAD}
-BASE_REF="origin/main"
+# Get the git reference to check (default to HEAD)
+GIT_REF=${GIT_REF:-HEAD}
+# Get the base reference (from environment variable or default)
+BASE_REF="${BASE_REF:-origin/main}"
 
 print_info "Tracee Checkpatch Script"
-print_info "Checking commit: $COMMIT_REF"
-print_info "Base reference: $BASE_REF"
+print_info "Checking: ${GIT_REF}"
+print_info "Comparing against: ${BASE_REF}"
 
 # Check if we're in a git repository
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
@@ -146,9 +151,9 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
     exit 1
 fi
 
-# Check if commit exists
-if ! git rev-parse --verify "$COMMIT_REF" > /dev/null 2>&1; then
-    print_error "Commit '$COMMIT_REF' does not exist!"
+# Check if git reference exists
+if ! git rev-parse --verify "${GIT_REF}" > /dev/null 2>&1; then
+    print_error "Git reference '${GIT_REF}' does not exist!"
     exit 1
 fi
 
@@ -183,7 +188,7 @@ verify_docs() {
     fi
 
     # Run the documentation verification script
-    if ! bash scripts/verify_man_md_sync.sh; then
+    if ! bash scripts/verify_man_md_sync.sh --base-ref "${BASE_REF}" --target-ref "${GIT_REF}"; then
         print_error "Documentation verification failed"
         print_error "- .1.md changes require corresponding .1 changes"
         print_info "Run 'make -f builder/Makefile.man man-run' to regenerate man pages"
