@@ -9,6 +9,8 @@ all:: tracee-ebpf tracee-rules signatures tracee evt traceectl lsm-check
 SHELL = /bin/sh
 
 BUILD_TYPE_FLAG := COMMON_BUILD
+GO_TAGS_EBPF := core,ebpf,lsmsupport
+
 EXCLUDED_MODULES :=
 
 # load extended-pre Makefile, if exists
@@ -630,7 +632,6 @@ clean-lsmsupport-bpf:
 STATIC ?= 0
 TRACEE_SRC_DIRS = ./cmd/ ./pkg/ ./signatures/
 TRACEE_SRC = $(shell find $(TRACEE_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
-GO_TAGS_EBPF = core,ebpf,lsmsupport
 CGO_EXT_LDFLAGS_EBPF =
 PKG_CONFIG_PATH = $(LIBBPF_OBJDIR)
 PKG_CONFIG_FLAG =
@@ -789,6 +790,7 @@ $(OUTPUT_DIR)/signatures/builtin.so:: \
 	.checkver_$(CMD_GO)
 #
 	$(GO_ENV_EBPF) $(CMD_GO) build \
+		-tags $(GO_TAGS_EBPF) \
 		--buildmode=plugin \
 		-o $@ \
 		$(GOSIGNATURES_SRC)
@@ -922,6 +924,7 @@ $(OUTPUT_DIR)/e2e-net-signatures/builtin.so:: \
 #
 	$(CMD_MKDIR) -p $@
 	$(GO_ENV_EBPF) $(CMD_GO) build \
+		-tags $(GO_TAGS_EBPF) \
 		--buildmode=plugin \
 		-o $@ \
 		$(E2E_NET_SRC)
@@ -954,6 +957,7 @@ $(OUTPUT_DIR)/e2e-inst-signatures/builtin.so:: \
 #
 	$(CMD_MKDIR) -p $@
 	$(GO_ENV_EBPF) $(CMD_GO) build \
+		-tags $(GO_TAGS_EBPF) \
 		--buildmode=plugin \
 		-o $@ \
 		$(E2E_INST_SRC)
