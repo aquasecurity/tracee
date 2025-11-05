@@ -9,7 +9,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/aquasecurity/libbpfgo v0.9.2-libbpf-1.5.1.0.20250826165200-6296a7fa0a45
 	github.com/aquasecurity/tracee/api v0.0.0
-	github.com/aquasecurity/tracee/common v0.0.0-20251021142419-a5944135ac44
+	github.com/aquasecurity/tracee/common v0.0.0-20251102122705-e4492f4ec372
 	github.com/aquasecurity/tracee/detectors v0.0.0-00010101000000-000000000000
 	github.com/aquasecurity/tracee/types v0.0.0-20250902170041-945d17d40601
 	github.com/containerd/containerd v1.7.29
