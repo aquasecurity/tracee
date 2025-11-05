@@ -171,3 +171,5 @@ require (
 )
 
 replace github.com/aquasecurity/tracee/api => ./api
+
+replace github.com/aquasecurity/tracee/common => ./common
