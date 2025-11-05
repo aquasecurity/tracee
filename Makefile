@@ -384,6 +384,14 @@ $(OUTPUT_DIR)::
 	$(CMD_MKDIR) -p $@/libbpf
 	$(CMD_MKDIR) -p $@/libbpf/obj
 
+
+#
+# embedded directories required by different targets
+#
+
+.PHONY: embedded-dirs
+embedded-dirs:: $(OUTPUT_DIR)/btfhub $(OUTPUT_DIR)/lsm_support
+
 #
 # embedded btfhub
 #
@@ -526,6 +534,7 @@ $(OUTPUT_DIR)/lsm_support/%.bpf.o: \
 # Create lsm_support directory
 $(OUTPUT_DIR)/lsm_support:
 	$(CMD_MKDIR) -p $@
+	$(CMD_TOUCH) $@/.place-holder
 
 $(OUTPUT_DIR)/tracee.bpf.o:: \
 	$(LIBBPF_OBJ) \
@@ -642,7 +651,7 @@ $(OUTPUT_DIR)/tracee:: \
 	btfhub \
 	signatures
 #
-	$(MAKE) $(OUTPUT_DIR)/btfhub
+	$(MAKE) embedded-dirs
 	$(MAKE) btfhub
 	$(GO_ENV_EBPF) $(CMD_GO) build \
 		-tags $(GO_TAGS_EBPF) \
@@ -676,7 +685,7 @@ $(OUTPUT_DIR)/tracee-ebpf:: \
 	.checklib_$(LIB_BPF) \
 	btfhub
 #
-	$(MAKE) $(OUTPUT_DIR)/btfhub
+	$(MAKE) embedded-dirs
 	$(MAKE) btfhub
 	$(GO_ENV_EBPF) $(CMD_GO) build \
 		-tags $(GO_TAGS_EBPF) \
@@ -929,12 +938,13 @@ clean-e2e-inst-signatures::
 
 .PHONY: test-unit
 test-unit:: \
-	tracee \
 	$(if $(or $(PKG),$(TEST)),,test-types test-common) \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
 #
-	@$(GO_ENV_EBPF) \
+	@$(MAKE) embedded-dirs
+	$(MAKE) $(OUTPUT_DIR)/tracee.bpf.o
+	$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
 		-tags $(GO_TAGS_EBPF) \
 		-short \
@@ -999,19 +1009,19 @@ coverage-html:: test-unit
 # integration tests
 #
 
-.PHONY: $(OUTPUT_DIR)/syscaller
 $(OUTPUT_DIR)/syscaller:: \
 	| .eval_goenv \
 	.check_$(CMD_GO) \
 #
+	$(MAKE) embedded-dirs
+	$(MAKE) $(OUTPUT_DIR)/tracee.bpf.o
 	$(GO_ENV_EBPF) \
 	$(CMD_GO) build \
-	-tags $(GO_TAGS_EBPF) \
-	-o $(OUTPUT_DIR)/syscaller ./tests/integration/syscaller/cmd
+		-tags $(GO_TAGS_EBPF) \
+		-o $(OUTPUT_DIR)/syscaller ./tests/integration/syscaller/cmd
 
 .PHONY: test-integration
 test-integration:: \
-	tracee \
 	$(OUTPUT_DIR)/syscaller \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
@@ -1032,16 +1042,17 @@ test-integration:: \
 		-coverprofile=integration-coverage.txt \
 		-covermode=atomic \
 		$(if $(TEST),-run $(TEST)) \
-		./tests/integration/... \
+		./tests/integration/...
 
 
 .PHONY: test-compatibility
 test-compatibility:: \
-	tracee \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
 #
-	@$(GO_ENV_EBPF) \
+	@$(MAKE) embedded-dirs
+	$(MAKE) $(OUTPUT_DIR)/tracee.bpf.o
+	$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
 		-tags $(GO_TAGS_EBPF) \
 		-ldflags="$(GO_DEBUG_FLAG) \
@@ -1072,11 +1083,11 @@ test-upstream-libbpfgo:: \
 
 .PHONY: test-performance
 test-performance:: \
-	tracee \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
 #
-	@$(GO_ENV_EBPF) \
+	@$(MAKE) tracee
+	$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
 		-tags $(GO_TAGS_EBPF) \
 		-ldflags="$(GO_DEBUG_FLAG) \
@@ -1144,34 +1155,37 @@ check-code:: \
 
 .PHONY: check-vet
 check-vet:: \
-	tracee \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
 #
-	@$(GO_ENV_EBPF) \
+	@$(MAKE) embedded-dirs
+	$(MAKE) $(OUTPUT_DIR)/tracee.bpf.o
+	$(GO_ENV_EBPF) \
 	$(CMD_GO) vet \
 		-tags $(GO_TAGS_EBPF) \
 		./...
 
 .PHONY: check-staticcheck
 check-staticcheck:: \
-	tracee \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
 	.check_$(CMD_STATICCHECK)
 #
-	@$(GO_ENV_EBPF) \
+	@$(MAKE) embedded-dirs
+	$(MAKE) $(OUTPUT_DIR)/tracee.bpf.o
+	$(GO_ENV_EBPF) \
 	$(CMD_STATICCHECK) -f stylish \
 		-tags $(GO_TAGS_EBPF) \
 		./...
 
 .PHONY: check-err
 check-err:: \
-	tracee \
 	| .checkver_$(CMD_GO) \
 	.check_$(CMD_ERRCHECK)
 #
-	@$(CMD_ERRCHECK) \
+	@$(MAKE) embedded-dirs
+	$(MAKE) $(OUTPUT_DIR)/tracee.bpf.o
+	$(CMD_ERRCHECK) \
 		-tags $(GO_TAGS_EBPF),static \
 		-ignoretests \
 		-ignore 'fmt:[FS]?[Pp]rint*|[wW]rite' \
