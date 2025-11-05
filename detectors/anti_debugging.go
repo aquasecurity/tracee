@@ -30,7 +30,7 @@ func (d *AntiDebugging) GetDefinition() detection.DetectorDefinition {
 			},
 		},
 		ProducedEvent: v1beta1.EventDefinition{
-			Name:        "anti_debugging_detector",
+			Name:        "anti_debugging",
 			Description: "A process used anti-debugging techniques to block a debugger",
 			Version: &v1beta1.Version{
 				Major: 1,
