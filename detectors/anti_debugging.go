@@ -30,7 +30,7 @@ func (d *AntiDebugging) GetDefinition() detection.DetectorDefinition {
 			},
 		},
 		ProducedEvent: v1beta1.EventDefinition{
-			Name:        "anti_debugging_detector",
+			Name:        "anti_debugging",
 			Description: "A process used anti-debugging techniques to block a debugger",
 			Version: &v1beta1.Version{
 				Major: 1,
@@ -71,7 +71,7 @@ func (d *AntiDebugging) Init(params detection.DetectorParams) error {
 func (d *AntiDebugging) OnEvent(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
 	// If we received this event, it means the data filter matched (request=0/PTRACE_TRACEME)
 	// No data to extract - detection is the presence of the event itself
-	return []detection.DetectorOutput{{Data: nil}}, nil
+	return detection.Detected(), nil
 }
 
 func (d *AntiDebugging) Close() error {
