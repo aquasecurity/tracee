@@ -38,6 +38,7 @@ CMD_CLANG ?= clang
 CMD_CP ?= cp
 CMD_CUT ?= cut
 CMD_ERRCHECK ?= errcheck
+CMD_GCC ?= gcc
 CMD_GIT ?= git
 CMD_GO ?= go
 CMD_GREP ?= grep
@@ -480,9 +481,12 @@ TRACEE_EBPF_OBJ_SRC = ./pkg/ebpf/c/tracee.bpf.c
 TRACEE_EBPF_OBJ_HEADERS = $(shell find pkg/ebpf/c -name *.h) $(wildcard ./pkg/ebpf/c/tracee.bpf*.c)
 
 # Consider only the first multiarch include directory
-MULTIARCH_INCLUDE := $(shell multiarch_dir=$$( $(CMD_CLANG) -print-multiarch 2> /dev/null | head -n1 ); \
+# Use gcc -print-multiarch (clang dropped support for this option from LLVM 16)
+# See: https://reviews.llvm.org/D133170
+MULTIARCH_INCLUDE := $(shell \
+    multiarch_dir=$$($(CMD_GCC) -print-multiarch 2> /dev/null | head -n1); \
     include_dir="/usr/include/$${multiarch_dir}"; \
-    if [ -n "$${multiarch_dir}" ] && [ -d "$${include_dir}" ]; then \
+    if [ -d "$${include_dir}" ]; then \
         echo "-I$${include_dir}"; \
     fi)
 
