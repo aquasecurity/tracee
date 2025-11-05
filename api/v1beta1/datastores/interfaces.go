@@ -101,3 +101,18 @@ type SystemStore interface {
 	// This data is immutable and never changes during the Tracee process lifetime
 	GetSystemInfo() *SystemInfo
 }
+
+// SyscallStore provides access to syscall metadata for the current architecture
+type SyscallStore interface {
+	DataStore
+
+	// GetSyscallName returns the syscall name for a given ID
+	// Returns empty string and false if the syscall ID is not found
+	// Note: Syscall IDs are architecture-specific (x86 vs ARM)
+	GetSyscallName(id int32) (string, bool)
+
+	// GetSyscallID returns the syscall ID for a given name
+	// Returns 0 and false if the syscall name is not found
+	// Note: Syscall IDs are architecture-specific (x86 vs ARM)
+	GetSyscallID(name string) (int32, bool)
+}

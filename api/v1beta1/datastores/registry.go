@@ -17,6 +17,9 @@ type Registry interface {
 	// System returns the system information datastore
 	System() SystemStore
 
+	// Syscalls returns the syscall information datastore
+	Syscalls() SyscallStore
+
 	// GetCustom retrieves a custom datastore by name
 	// Returns ErrNotFound if the datastore is not registered
 	GetCustom(name string) (DataStore, error)
