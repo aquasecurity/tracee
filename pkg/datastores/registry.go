@@ -20,6 +20,7 @@ type Registry struct {
 	kernelSymbolStore datastores.KernelSymbolStore
 	dnsStore          datastores.DNSStore
 	systemStore       datastores.SystemStore
+	syscallStore      datastores.SyscallStore
 }
 
 // NewRegistry creates a new datastore registry
@@ -84,6 +85,10 @@ func (r *Registry) RegisterStore(name string, store datastores.DataStore, requir
 		if ss, ok := store.(datastores.SystemStore); ok {
 			r.systemStore = ss
 		}
+	case "syscall":
+		if sc, ok := store.(datastores.SyscallStore); ok {
+			r.syscallStore = sc
+		}
 	}
 
 	r.stores[name] = store
@@ -114,6 +119,11 @@ func (r *Registry) DNS() datastores.DNSStore {
 // System returns the system information datastore
 func (r *Registry) System() datastores.SystemStore {
 	return r.systemStore
+}
+
+// Syscalls returns the syscall information datastore
+func (r *Registry) Syscalls() datastores.SyscallStore {
+	return r.syscallStore
 }
 
 // GetCustom returns a custom datastore by name with type safety
