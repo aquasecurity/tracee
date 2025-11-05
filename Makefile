@@ -393,6 +393,37 @@ $(OUTPUT_DIR)::
 embedded-dirs:: $(OUTPUT_DIR)/btfhub $(OUTPUT_DIR)/lsm_support
 
 #
+# dummy BPF object helpers (for tests that don't need real BPF)
+#
+
+# Creates a dummy BPF object if one doesn't exist
+# Sets DUMMY_BPF_CREATED=1 in environment if dummy was created
+# NOTE: Do NOT use this in parallel make calls.
+define setup_dummy_bpf
+if [ ! -f $(OUTPUT_DIR)/tracee.bpf.o ]; then \
+	echo "[$(1)] Creating dummy BPF object..."; \
+	$(CMD_MKDIR) -p $(OUTPUT_DIR); \
+	$(CMD_TOUCH) $(OUTPUT_DIR)/tracee.bpf.o; \
+	echo "DUMMY_BPF_CREATED=1" > $(OUTPUT_DIR)/.dummy-bpf-flag; \
+else \
+	echo "[$(1)] Using existing BPF object..."; \
+	echo "DUMMY_BPF_CREATED=0" > $(OUTPUT_DIR)/.dummy-bpf-flag; \
+fi
+endef
+
+# Removes dummy BPF object if it was created by setup_dummy_bpf
+define cleanup_dummy_bpf
+if [ -f $(OUTPUT_DIR)/.dummy-bpf-flag ]; then \
+	DUMMY_BPF_CREATED=$$(cat $(OUTPUT_DIR)/.dummy-bpf-flag | cut -d'=' -f2); \
+	if [ "$$DUMMY_BPF_CREATED" = "1" ]; then \
+		echo "[$(1)] Removing dummy BPF object..."; \
+		$(CMD_RM) -f $(OUTPUT_DIR)/tracee.bpf.o; \
+	fi; \
+	$(CMD_RM) -f $(OUTPUT_DIR)/.dummy-bpf-flag; \
+fi
+endef
+
+#
 # embedded btfhub
 #
 
@@ -533,7 +564,7 @@ $(OUTPUT_DIR)/lsm_support/%.bpf.o: \
 
 # Create lsm_support directory
 $(OUTPUT_DIR)/lsm_support:
-	$(CMD_MKDIR) -p $@
+	@$(CMD_MKDIR) -p $@
 	$(CMD_TOUCH) $@/.place-holder
 
 $(OUTPUT_DIR)/tracee.bpf.o:: \
@@ -943,7 +974,7 @@ test-unit:: \
 	.checkver_$(CMD_GO)
 #
 	@$(MAKE) embedded-dirs
-	$(MAKE) $(OUTPUT_DIR)/tracee.bpf.o
+	@$(call setup_dummy_bpf,$@)
 	$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
 		-tags $(GO_TAGS_EBPF) \
@@ -955,7 +986,10 @@ test-unit:: \
 		-coverprofile=coverage.txt \
 		-covermode=atomic \
 		$(if $(TEST),-run $(TEST)) \
-		$(if $(PKG),./$(PKG)/...,./cmd/... ./pkg/... ./signatures/...)
+		$(if $(PKG),./$(PKG)/...,./cmd/... ./pkg/... ./signatures/...) \
+	|| EXIT_CODE=$$?
+	$(call cleanup_dummy_bpf,$@)
+	exit $${EXIT_CODE:-0}
 
 .PHONY: test-types
 test-types:: \
@@ -1068,7 +1102,7 @@ test-compatibility:: \
 		-count=1 \
 		-coverprofile=compatibility-coverage.txt \
 		-covermode=atomic \
-		./tests/compatibility/... \
+		./tests/compatibility/...
 
 .PHONY: test-upstream-libbpfgo
 test-upstream-libbpfgo:: \
@@ -1147,8 +1181,7 @@ check-lint::
 	@$(MAKE) -f builder/Makefile.checkers lint-check
 
 .PHONY: check-code
-check-code:: \
-	tracee
+check-code::
 #
 	@$(MAKE) -f builder/Makefile.checkers code-check
 
@@ -1156,42 +1189,56 @@ check-code:: \
 .PHONY: check-vet
 check-vet:: \
 	| .eval_goenv \
-	.checkver_$(CMD_GO)
+	.checkver_$(CMD_GO) \
+	.checklib_$(LIB_BPF)
 #
 	@$(MAKE) embedded-dirs
-	$(MAKE) $(OUTPUT_DIR)/tracee.bpf.o
+	$(call setup_dummy_bpf,$@)
 	$(GO_ENV_EBPF) \
 	$(CMD_GO) vet \
 		-tags $(GO_TAGS_EBPF) \
-		./...
+		./... \
+	|| EXIT_CODE=$$?
+	$(call cleanup_dummy_bpf,$@)
+	exit $${EXIT_CODE:-0}
 
 .PHONY: check-staticcheck
 check-staticcheck:: \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
+	.checklib_$(LIB_BPF) \
 	.check_$(CMD_STATICCHECK)
 #
 	@$(MAKE) embedded-dirs
-	$(MAKE) $(OUTPUT_DIR)/tracee.bpf.o
+	$(call setup_dummy_bpf,$@)
 	$(GO_ENV_EBPF) \
 	$(CMD_STATICCHECK) -f stylish \
 		-tags $(GO_TAGS_EBPF) \
-		./...
+		./... \
+	|| EXIT_CODE=$$?
+	$(call cleanup_dummy_bpf,$@)
+	exit $${EXIT_CODE:-0}
 
 .PHONY: check-err
 check-err:: \
-	| .checkver_$(CMD_GO) \
+	| .eval_goenv \
+	.checkver_$(CMD_GO) \
+	.checklib_$(LIB_BPF) \
 	.check_$(CMD_ERRCHECK)
 #
 	@$(MAKE) embedded-dirs
-	$(MAKE) $(OUTPUT_DIR)/tracee.bpf.o
+	$(call setup_dummy_bpf,$@)
+	$(GO_ENV_EBPF) \
 	$(CMD_ERRCHECK) \
 		-tags $(GO_TAGS_EBPF),static \
 		-ignoretests \
 		-ignore 'fmt:[FS]?[Pp]rint*|[wW]rite' \
 		-ignore '[rR]ead|[wW]rite' \
 		-ignore 'RegisterEventProcessor' \
-		./...
+		./... \
+	|| EXIT_CODE=$$?
+	$(call cleanup_dummy_bpf,$@)
+	exit $${EXIT_CODE:-0}
 
 #
 # pull request verifier
