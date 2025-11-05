@@ -1287,12 +1287,14 @@ check-pr::
 #	- Unit tests (Go and script tests)
 #	- PR formatting
 #	Examples:
-#	  make check-pr                     # Check HEAD (default)
-#	  make check-pr-fast                # Quick checks only
-#	  make check-pr-skip-docs           # Skip documentation verification
-#	  make check-pr-skip-tests          # Skip unit tests
-#	  make check-pr ARGS="--fast HEAD~1"  # Custom options + commit
-	@./scripts/checkpatch.sh $(if $(ARGS),$(ARGS),HEAD)
+#	  make check-pr                                # Check HEAD (default)
+#	  make check-pr-fast                           # Quick checks only
+#	  make check-pr-skip-docs                      # Skip documentation verification
+#	  make check-pr-skip-tests                     # Skip unit tests
+#	  make check-pr BASE_REF=v1.0.0                # Compare against v1.0.0
+#	  make check-pr ARGS="--fast HEAD~1"           # Custom options + git ref
+#	  BASE_REF=origin/release make check-pr        # Set base ref via env
+	@$(if $(BASE_REF),BASE_REF=$(BASE_REF)) ./scripts/checkpatch.sh $(if $(ARGS),$(ARGS),HEAD)
 
 # Convenience targets for common use cases
 .PHONY: check-pr-fast
