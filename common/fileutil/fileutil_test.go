@@ -820,6 +820,77 @@ func TestCopyRegularFileByRelativePath(t *testing.T) {
 	})
 }
 
+func TestIsRegularFile(t *testing.T) {
+	// Create a temporary directory for testing
+	tempDir := t.TempDir()
+
+	// Create a regular file
+	regularFile := filepath.Join(tempDir, "regular.txt")
+	if err := os.WriteFile(regularFile, []byte("test content"), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	// Create a directory
+	testDir := filepath.Join(tempDir, "testdir")
+	if err := os.Mkdir(testDir, 0755); err != nil {
+		t.Fatalf("Failed to create test directory: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		path        string
+		expectedRes bool
+		expectError bool
+	}{
+		{
+			name:        "regular file",
+			path:        regularFile,
+			expectedRes: true,
+			expectError: false,
+		},
+		{
+			name:        "directory",
+			path:        testDir,
+			expectedRes: false,
+			expectError: false,
+		},
+		{
+			name:        "non-existent file",
+			path:        filepath.Join(tempDir, "nonexistent.txt"),
+			expectedRes: false,
+			expectError: false,
+		},
+		{
+			name:        "empty path (stats current directory)",
+			path:        "",
+			expectedRes: false,
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := IsRegularFile(tt.path)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("IsRegularFile(%q) expected error but got none", tt.path)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("IsRegularFile(%q) unexpected error: %v", tt.path, err)
+				return
+			}
+
+			if result != tt.expectedRes {
+				t.Errorf("IsRegularFile(%q) = %v, want %v", tt.path, result, tt.expectedRes)
+			}
+		})
+	}
+}
+
 // Test IsDirEmpty
 func TestIsDirEmpty(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "test_isdirempty_*")

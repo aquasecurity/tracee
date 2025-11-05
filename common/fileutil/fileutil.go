@@ -178,6 +178,20 @@ func CopyRegularFileByRelativePath(srcName string, dstDir *os.File, dstName stri
 	return nil
 }
 
+// IsRegularFile checks if the given file name points to a regular file
+func IsRegularFile(name string) (bool, error) {
+	info, err := os.Stat(name)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		}
+
+		return false, errfmt.WrapError(err)
+	}
+
+	return info.Mode().IsRegular(), nil
+}
+
 // IsDirEmpty returns true if directory contains no files
 func IsDirEmpty(pathname string) (bool, error) {
 	dir, err := os.Open(pathname)
