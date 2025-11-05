@@ -33,6 +33,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/datastores/dns"
 	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/datastores/symbol"
+	"github.com/aquasecurity/tracee/pkg/datastores/syscall"
 	"github.com/aquasecurity/tracee/pkg/datastores/system"
 	"github.com/aquasecurity/tracee/pkg/detectors"
 	"github.com/aquasecurity/tracee/pkg/ebpf/controlplane"
@@ -582,6 +583,12 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	systemInfo.TraceeStartTime = timeutil.NsSinceEpochToTime(t.startTime)
 	systemStore := system.New(systemInfo)
 	if err := t.dataStoreRegistry.RegisterStore("system", systemStore, false); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Syscall information datastore provides syscall ID <-> name mapping
+	syscallStore := syscall.New(events.Core)
+	if err := t.dataStoreRegistry.RegisterStore("syscall", syscallStore, true); err != nil {
 		return errfmt.WrapError(err)
 	}
 
