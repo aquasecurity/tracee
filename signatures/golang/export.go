@@ -23,7 +23,6 @@ var ExportedSignatures = []detect.Signature{
 	&ProcKcoreRead{},
 	&ProcMemAccess{},
 	&HiddenFileCreated{},
-	&AntiDebuggingPtraceme{},
 	&PtraceCodeInjection{},
 	&ProcessVmWriteCodeInjection{},
 	&DiskMount{},
