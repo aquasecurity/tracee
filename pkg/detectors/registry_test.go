@@ -1,6 +1,7 @@
 package detectors
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -357,4 +358,316 @@ func TestIsEventVersionCompatible(t *testing.T) {
 			assert.Equal(t, tt.wantCompat, compat)
 		})
 	}
+}
+
+func TestRegisterDetector_ScopeFilters(t *testing.T) {
+	tests := []struct {
+		name        string
+		requirement detection.EventRequirement
+		expectErr   bool
+	}{
+		{
+			name: "valid scope filter - container",
+			requirement: detection.EventRequirement{
+				Name:         "execve",
+				Dependency:   detection.DependencyRequired,
+				ScopeFilters: []string{"container"},
+			},
+			expectErr: false,
+		},
+		{
+			name: "valid scope filter - container=started",
+			requirement: detection.EventRequirement{
+				Name:         "execve",
+				Dependency:   detection.DependencyRequired,
+				ScopeFilters: []string{"container=started"},
+			},
+			expectErr: false,
+		},
+		{
+			name: "valid scope filter - host",
+			requirement: detection.EventRequirement{
+				Name:         "execve",
+				Dependency:   detection.DependencyRequired,
+				ScopeFilters: []string{"host"},
+			},
+			expectErr: false,
+		},
+		{
+			name: "valid scope filter - pid",
+			requirement: detection.EventRequirement{
+				Name:         "execve",
+				Dependency:   detection.DependencyRequired,
+				ScopeFilters: []string{"pid=1"},
+			},
+			expectErr: false,
+		},
+		{
+			name: "multiple valid scope filters",
+			requirement: detection.EventRequirement{
+				Name:         "execve",
+				Dependency:   detection.DependencyRequired,
+				ScopeFilters: []string{"container=started", "pid>100"},
+			},
+			expectErr: false,
+		},
+		{
+			name: "invalid scope filter - bad syntax",
+			requirement: detection.EventRequirement{
+				Name:         "execve",
+				Dependency:   detection.DependencyRequired,
+				ScopeFilters: []string{"invalid_filter==="},
+			},
+			expectErr: true,
+		},
+		{
+			name: "invalid scope filter - unsupported field",
+			requirement: detection.EventRequirement{
+				Name:         "execve",
+				Dependency:   detection.DependencyRequired,
+				ScopeFilters: []string{"nonexistent=value"},
+			},
+			expectErr: true,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Pre-register this test's detector event before creating the detector
+			testDetectorID := "test_scope_filter_" + tt.name
+			mockDetectors := []detection.EventDetector{
+				&mockDetector{
+					id:        testDetectorID,
+					eventName: testDetectorID + "_event",
+					requirements: detection.DetectorRequirements{
+						Events: []detection.EventRequirement{tt.requirement},
+					},
+				},
+			}
+			_, err := CreateEventsFromDetectors(events.StartDetectorID+events.ID(i+100), mockDetectors)
+			assert.NoError(t, err, "Failed to pre-register detector event")
+
+			registry := newRegistry(nil) // Pass nil policy manager for test
+			detector := &mockDetector{
+				id:        testDetectorID,
+				eventName: testDetectorID + "_event",
+				requirements: detection.DetectorRequirements{
+					Events: []detection.EventRequirement{tt.requirement},
+				},
+			}
+
+			err = registry.RegisterDetector(detector, detection.DetectorParams{})
+			if tt.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestRegisterDetector_DataFilters(t *testing.T) {
+	tests := []struct {
+		name        string
+		requirement detection.EventRequirement
+		expectErr   bool
+	}{
+		{
+			name: "valid data filter - equal",
+			requirement: detection.EventRequirement{
+				Name:        "execve",
+				Dependency:  detection.DependencyRequired,
+				DataFilters: []string{"pathname=/bin/bash"},
+			},
+			expectErr: false,
+		},
+		{
+			name: "valid data filter - not equal",
+			requirement: detection.EventRequirement{
+				Name:        "execve",
+				Dependency:  detection.DependencyRequired,
+				DataFilters: []string{"pathname!=/usr/bin"},
+			},
+			expectErr: false,
+		},
+		{
+			name: "valid data filter - wildcard",
+			requirement: detection.EventRequirement{
+				Name:        "execve",
+				Dependency:  detection.DependencyRequired,
+				DataFilters: []string{"pathname=/usr/bin/python*"},
+			},
+			expectErr: false,
+		},
+		{
+			name: "multiple valid data filters",
+			requirement: detection.EventRequirement{
+				Name:        "execve",
+				Dependency:  detection.DependencyRequired,
+				DataFilters: []string{"pathname=/bin/bash", "pathname!=/tmp/*"},
+			},
+			expectErr: false,
+		},
+		{
+			name: "invalid data filter - bad syntax",
+			requirement: detection.EventRequirement{
+				Name:        "execve",
+				Dependency:  detection.DependencyRequired,
+				DataFilters: []string{"invalid===filter"},
+			},
+			expectErr: true,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Pre-register this test's detector event before creating the detector
+			testDetectorID := "test_data_filter_" + tt.name
+			mockDetectors := []detection.EventDetector{
+				&mockDetector{
+					id:        testDetectorID,
+					eventName: testDetectorID + "_event",
+					requirements: detection.DetectorRequirements{
+						Events: []detection.EventRequirement{tt.requirement},
+					},
+				},
+			}
+			_, err := CreateEventsFromDetectors(events.StartDetectorID+events.ID(i+200), mockDetectors)
+			assert.NoError(t, err, "Failed to pre-register detector event")
+
+			registry := newRegistry(nil) // Pass nil policy manager for test
+			detector := &mockDetector{
+				id:        testDetectorID,
+				eventName: testDetectorID + "_event",
+				requirements: detection.DetectorRequirements{
+					Events: []detection.EventRequirement{tt.requirement},
+				},
+			}
+
+			err = registry.RegisterDetector(detector, detection.DetectorParams{})
+			if tt.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestRegisterDetector_ScopeAndDataFilters(t *testing.T) {
+	tests := []struct {
+		name        string
+		requirement detection.EventRequirement
+		expectErr   bool
+	}{
+		{
+			name: "both scope and data filters",
+			requirement: detection.EventRequirement{
+				Name:         "execve",
+				Dependency:   detection.DependencyRequired,
+				ScopeFilters: []string{"container=started"},
+				DataFilters:  []string{"pathname=/bin/bash"},
+			},
+			expectErr: false,
+		},
+		{
+			name: "multiple scope and data filters",
+			requirement: detection.EventRequirement{
+				Name:         "execve",
+				Dependency:   detection.DependencyRequired,
+				ScopeFilters: []string{"container", "pid>100"},
+				DataFilters:  []string{"pathname=/bin/bash", "pathname!=/tmp/*"},
+			},
+			expectErr: false,
+		},
+		{
+			name: "invalid scope filter with valid data filter",
+			requirement: detection.EventRequirement{
+				Name:         "execve",
+				Dependency:   detection.DependencyRequired,
+				ScopeFilters: []string{"invalid==="},
+				DataFilters:  []string{"pathname=/bin/bash"},
+			},
+			expectErr: true,
+		},
+		{
+			name: "valid scope filter with invalid data filter",
+			requirement: detection.EventRequirement{
+				Name:         "execve",
+				Dependency:   detection.DependencyRequired,
+				ScopeFilters: []string{"container"},
+				DataFilters:  []string{"invalid==="},
+			},
+			expectErr: true,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Pre-register this test's detector event before creating the detector
+			testDetectorID := "test_combined_filters_" + tt.name
+			mockDetectors := []detection.EventDetector{
+				&mockDetector{
+					id:        testDetectorID,
+					eventName: testDetectorID + "_event",
+					requirements: detection.DetectorRequirements{
+						Events: []detection.EventRequirement{tt.requirement},
+					},
+				},
+			}
+			_, err := CreateEventsFromDetectors(events.StartDetectorID+events.ID(i+300), mockDetectors)
+			assert.NoError(t, err, "Failed to pre-register detector event")
+
+			registry := newRegistry(nil) // Pass nil policy manager for test
+			detector := &mockDetector{
+				id:        testDetectorID,
+				eventName: testDetectorID + "_event",
+				requirements: detection.DetectorRequirements{
+					Events: []detection.EventRequirement{tt.requirement},
+				},
+			}
+
+			err = registry.RegisterDetector(detector, detection.DetectorParams{})
+			if tt.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// mockDetector is a simple mock for testing
+type mockDetector struct {
+	id           string
+	eventName    string // Unique event name for this detector
+	requirements detection.DetectorRequirements
+}
+
+func (m *mockDetector) GetDefinition() detection.DetectorDefinition {
+	// Use provided event name or default to id + "_event"
+	producedEventName := m.eventName
+	if producedEventName == "" {
+		producedEventName = m.id + "_event"
+	}
+	return detection.DetectorDefinition{
+		ID:           m.id,
+		Requirements: m.requirements,
+		ProducedEvent: v1beta1.EventDefinition{
+			Name: producedEventName,
+		},
+		AutoPopulate: detection.AutoPopulateFields{},
+	}
+}
+
+func (m *mockDetector) Init(params detection.DetectorParams) error {
+	return nil
+}
+
+func (m *mockDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
+	return nil, nil
+}
+
+func (m *mockDetector) Close() error {
+	return nil
 }
