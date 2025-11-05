@@ -102,7 +102,7 @@ C_FILES_TO_BE_CHECKED = $(shell find ./pkg/ebpf/c/ -regextype posix-extended -re
 
 CMD_GOIMPORTS_COMPANY_PREFIXES ?= "github.com/aquasecurity"
 CMD_GOIMPORTS_PROJECT ?= "github.com/aquasecurity/tracee"
-CMD_GOIMPORTS_OUTPUT_FILE ?= "/tmp/check-goimports-fmt"
+CMD_GOIMPORTS_OUTPUT_FILE ?= ".check-goimports-fmt"
 
 .PHONY: fmt-check
 fmt-check: | \
@@ -129,6 +129,7 @@ fmt-check: | \
 		-list-diff \
 		-company-prefixes $(CMD_GOIMPORTS_COMPANY_PREFIXES) \
 		-project-name $(CMD_GOIMPORTS_PROJECT) \
+		-excludes "3rdparty" \
 		./... 2>/dev/null > $(CMD_GOIMPORTS_OUTPUT_FILE)
 	goimportsamount=$$(grep -cve '^\s*$$' $(CMD_GOIMPORTS_OUTPUT_FILE))
 	if [[ $$goimportsamount -ne 0 ]]; then
@@ -144,7 +145,7 @@ fmt-check: | \
 	fi
 #
 	echo "Checking golang files formatting..."
-	$(CMD_GOFMT) -l -s -d . | tee /tmp/check-go-fmt
+	$(CMD_GOFMT) -l -s -d $$(find . -name '*.go' -not -path './3rdparty/*') | tee /tmp/check-go-fmt
 	gofmtamount=$$(cat /tmp/check-go-fmt | wc -l)
 	if [[ $$gofmtamount -ne 0 ]]; then
 		errors=1
@@ -169,7 +170,7 @@ lint-check: | \
 #
 	@errors=0
 	echo "Linting golang code..."
-	$(CMD_REVIVE) -config .revive.toml ./...
+	$(CMD_REVIVE) -config .revive.toml -exclude 3rdparty/... ./...
 
 #
 # fix formatting (clang-format, goimports-reviser, gofmt)
@@ -189,12 +190,11 @@ fmt-fix: | \
 	$(CMD_GOIMPORTS) \
 		-company-prefixes $(CMD_GOIMPORTS_COMPANY_PREFIXES) \
 		-project-name $(CMD_GOIMPORTS_PROJECT) \
+		-excludes "3rdparty" \
 		./... 2>/dev/null
 #
 	echo "Fixing golang files formatting..."
-	$(CMD_GOFMT) -l -s -d . > /tmp/patch.$$
-	patch -p0 < /tmp/patch.$$
-	rm /tmp/patch.$$
+	$(CMD_GOFMT) -l -s -w $$(find . -name '*.go' -not -path './3rdparty/*')
 
 #
 # check code (go vet, static checkers, errcheck)
@@ -220,3 +220,4 @@ code-check: | \
 clean:
 	rm -f .check_tree
 	rm -f .check_$(CMD_CLANG_FMT)
+	rm -f $(CMD_GOIMPORTS_OUTPUT_FILE)
