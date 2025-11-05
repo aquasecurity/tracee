@@ -204,6 +204,15 @@ jobs:
       - name: Detect Changes
         id: detect
         run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "Running via workflow_dispatch - setting all modules to true"
+            echo "main=true" >> ${GITHUB_OUTPUT}
+            echo "types=true" >> ${GITHUB_OUTPUT}
+            echo "common=true" >> ${GITHUB_OUTPUT}
+            echo "api=true" >> ${GITHUB_OUTPUT}
+            exit 0
+          fi
+          
           # Get changed files using git (conventional approach)
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
           echo "Changed files:"
