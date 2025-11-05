@@ -14,18 +14,21 @@ alwaysApply: false
 
 ### Basic Usage
 ```bash
-# Run all unit tests (recommended)
+# Run all unit tests (slow - runs all packages)
 make test-unit
 
-# Test specific package
+# Test specific package (MUCH FASTER - use this during development!)
+make test-unit PKG=pkg/detectors
 make test-unit PKG=pkg/ebpf/probes
 
 # Test specific function across all packages  
 make test-unit TEST=TestKernelVersionRequirement_Basic
 
-# Test specific function in specific package
+# Test specific function in specific package (fast - use for debugging specific test)
 make test-unit PKG=pkg/ebpf/probes TEST=TestProbeCompatibility_Basic
 ```
+
+**Pro Tip**: During development, ALWAYS use `PKG=` to target only the package you're working on. This reduces test time from minutes to seconds!
 
 ### Why make test-unit?
 - Sets up proper BPF compilation environment (CGO flags, libbpf linking)
@@ -76,8 +79,9 @@ make test-common       # Common module (standalone)
 - This error occurs when trying to compile libbpfgo without proper environment
 
 ### Slow Test Execution
-- Use package targeting: `make test-unit PKG=specific/package`
-- Use function targeting: `make test-unit TEST=TestKernelVersionRequirement_Basic`
+- **ALWAYS use package targeting during development**: `make test-unit PKG=pkg/detectors` (seconds vs minutes)
+- Use function targeting for specific test: `make test-unit TEST=TestKernelVersionRequirement_Basic`
+- Running full test suite should only be done before commits or in CI
 
 ### Test Timeouts or Failures
 - Check kernel eBPF support: `cat /sys/kernel/debug/tracing/available_events`
