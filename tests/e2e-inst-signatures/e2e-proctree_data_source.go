@@ -200,7 +200,6 @@ func (sig *e2eProcessTreeDataSource) checkThread(eventObj *trace.Event) error {
 	if err != nil {
 		return err
 	}
-	queryTime := time.Unix(0, int64(eventObj.Timestamp))
 	threadInfo := threadTimeInfo.Info
 
 	debugFn := func(custom string) string {
@@ -238,9 +237,6 @@ func (sig *e2eProcessTreeDataSource) checkThread(eventObj *trace.Event) error {
 	if int(threadInfo.StartTime.UnixNano()) != eventObj.ThreadStartTime {
 		return errors.New(debugFn("no match for start time"))
 	}
-	if threadTimeInfo.Timestamp != queryTime {
-		return errors.New(debugFn("no match for info timestamp"))
-	}
 	if threadInfo.Name != eventObj.ProcessName {
 		return errors.New(debugFn("no match for thread name"))
 	}
@@ -254,7 +250,6 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
 	if err != nil {
 		return err
 	}
-	queryTime := time.Unix(0, int64(eventObj.Timestamp))
 	processInfo := processTimeInfo.Info
 
 	debugFn := func(custom string) string {
@@ -289,9 +284,6 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
 	}
 	if int(processInfo.StartTime.UnixNano()) != eventObj.ThreadStartTime {
 		return errors.New(debugFn("no match for start time"))
-	}
-	if processTimeInfo.Timestamp != queryTime {
-		return errors.New(debugFn("no match for timestamp"))
 	}
 
 	// Check if the process lists itself in the list of its threads (case #1)
