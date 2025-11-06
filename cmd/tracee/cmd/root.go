@@ -149,11 +149,11 @@ func initCmd() error {
 	// Container flags
 
 	rootCmd.Flags().StringArray(
-		flags.ContainersFlag,
+		flags.EnrichFlag,
 		[]string{},
-		"Configure container enrichment and runtime sockets for container events enrichment (see documentation)",
+		"enrichment",
 	)
-	err = viper.BindPFlag(flags.ContainersFlag, rootCmd.Flags().Lookup(flags.ContainersFlag))
+	err = viper.BindPFlag(flags.EnrichFlag, rootCmd.Flags().Lookup(flags.EnrichFlag))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

@@ -199,7 +199,7 @@ nav:
                 - output: docs/flags/output.1.md
                 - capture: docs/flags/capture.1.md
                 - config: docs/flags/config.1.md
-                - containers: docs/flags/containers.1.md
+                - enrich: docs/flags/enrich.1.md
                 - capabilities: docs/flags/capabilities.1.md
                 - log: docs/flags/log.1.md
                 - server: docs/flags/server.1.md

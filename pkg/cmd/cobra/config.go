@@ -28,14 +28,14 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &ProcTreeConfig{}
 	case "capabilities":
 		flagger = &CapabilitiesConfig{}
-	case "containers":
-		flagger = &ContainerConfig{}
 	case "log":
 		flagger = &LogConfig{}
 	case "output":
 		flagger = &OutputConfig{}
 	case "dnscache":
 		flagger = &DnsCacheConfig{}
+	case "enrich":
+		flagger = &EnrichConfig{}
 	default:
 		return nil, errfmt.Errorf("unrecognized key: %s", key)
 	}
@@ -67,17 +67,6 @@ func getConfigFlags(rawValue interface{}, flagger cliFlagger, key string) ([]str
 	default:
 		return nil, errfmt.Errorf("unrecognized type %T for key %s", v, key)
 	}
-}
-
-type ContainerConfig struct {
-	Enrich   *bool          `mapstructure:"enrich"`
-	Sockets  []SocketConfig `mapstructure:"sockets"`
-	Cgroupfs CgroupfsConfig `mapstructure:"cgroupfs"`
-}
-
-type CgroupfsConfig struct {
-	Path  string `mapstructure:"path"`
-	Force bool   `mapstructure:"force"`
 }
 
 //
@@ -114,49 +103,6 @@ func (s *ServerConfig) flags() []string {
 	if s.Pyroscope {
 		flags = append(flags, serverflag.PyroscopeAgentEndpointFlag)
 	}
-	return flags
-}
-
-type SocketConfig struct {
-	Runtime string `mapstructure:"runtime"`
-	Socket  string `mapstructure:"socket"`
-}
-
-func (c *ContainerConfig) flags() []string {
-	flags := make([]string, 0)
-
-	if c.Enrich == nil {
-		// default to true
-		flags = append(flags, "enrich=true")
-	} else if *c.Enrich {
-		// if set to true
-		flags = append(flags, "enrich=true")
-	} else {
-		// if set to false
-		flags = append(flags, "enrich=false")
-	}
-
-	if c.Cgroupfs.Path != "" {
-		flags = append(flags, fmt.Sprintf("cgroupfs.path=%s", c.Cgroupfs.Path))
-	}
-	if c.Cgroupfs.Force {
-		flags = append(flags, "cgroupfs.force=true")
-	}
-
-	for _, socket := range c.Sockets {
-		flags = append(flags, socket.flags()...)
-	}
-
-	return flags
-}
-
-func (c *SocketConfig) flags() []string {
-	flags := make([]string, 0)
-
-	if c.Runtime != "" && c.Socket != "" {
-		flags = append(flags, fmt.Sprintf("sockets.%s=%s", c.Runtime, c.Socket))
-	}
-
 	return flags
 }
 
@@ -479,4 +425,58 @@ type OutputWebhookConfig struct {
 	Timeout     string `mapstructure:"timeout"`
 	GoTemplate  string `mapstructure:"gotemplate"`
 	ContentType string `mapstructure:"content-type"`
+}
+
+//
+// enrichment flag
+//
+
+type EnrichConfig struct {
+	ContainerEnabled          bool   `mapstructure:"container-enabled"`
+	ContainerCgroupPath       string `mapstructure:"container-cgroup-path"`
+	ContainerDockerSocket     string `mapstructure:"container-docker-socket"`
+	ContainerContainerdSocket string `mapstructure:"container-containerd-socket"`
+	ContainerCrioSocket       string `mapstructure:"container-crio-socket"`
+	ContainerPodmanSocket     string `mapstructure:"container-podman-socket"`
+	ResolveFd                 bool   `mapstructure:"resolve-fd"`
+	ExecHashEnabled           bool   `mapstructure:"exec-hash-enabled"`
+	ExecHashMode              string `mapstructure:"exec-hash-mode"`
+	UserStackTrace            bool   `mapstructure:"user-stack-trace"`
+}
+
+func (c *EnrichConfig) flags() []string {
+	flags := []string{}
+
+	if c.ContainerEnabled {
+		flags = append(flags, "container.enabled=true")
+	}
+	if c.ContainerCgroupPath != "" {
+		flags = append(flags, fmt.Sprintf("container.cgroup.path=%s", c.ContainerCgroupPath))
+	}
+	if c.ContainerDockerSocket != "" {
+		flags = append(flags, fmt.Sprintf("container.docker.socket=%s", c.ContainerDockerSocket))
+	}
+	if c.ContainerContainerdSocket != "" {
+		flags = append(flags, fmt.Sprintf("container.containerd.socket=%s", c.ContainerContainerdSocket))
+	}
+	if c.ContainerCrioSocket != "" {
+		flags = append(flags, fmt.Sprintf("container.crio.socket=%s", c.ContainerCrioSocket))
+	}
+	if c.ContainerPodmanSocket != "" {
+		flags = append(flags, fmt.Sprintf("container.podman.socket=%s", c.ContainerPodmanSocket))
+	}
+	if c.ResolveFd {
+		flags = append(flags, "resolve-fd=true")
+	}
+	if c.ExecHashEnabled {
+		flags = append(flags, "exec-hash.enabled=true")
+	}
+	if c.ExecHashMode != "" {
+		flags = append(flags, fmt.Sprintf("exec-hash.mode=%s", c.ExecHashMode))
+	}
+	if c.UserStackTrace {
+		flags = append(flags, "user-stack-trace=true")
+	}
+
+	return flags
 }
