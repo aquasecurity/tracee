@@ -15,7 +15,7 @@ func (m ChannelMetrics[T]) RegisterChannels() error {
 
 		gaugeVec := prometheus.NewGaugeFunc(
 			prometheus.GaugeOpts{
-				Namespace: "tracee_ebpf",
+				Namespace: "tracee",
 				Name:      fmt.Sprintf("pipeline_channels_%s", name),
 				Help:      fmt.Sprintf("Pipeline channel %s", name),
 			},

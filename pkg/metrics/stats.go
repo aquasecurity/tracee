@@ -28,13 +28,13 @@ type BPFPerfEventCollector struct {
 func NewBPFPerfEventCollector(perfEventStatsMap *bpf.BPFMap) *BPFPerfEventCollector {
 	return &BPFPerfEventCollector{
 		attemptsDesc: prometheus.NewDesc(
-			"tracee_ebpf_bpf_perf_event_submit_attempts",
+			"tracee_bpf_perf_event_submit_attempts",
 			"calls to submit to the event perf buffer",
 			[]string{"event_name", "internal"},
 			nil,
 		),
 		failuresDesc: prometheus.NewDesc(
-			"tracee_ebpf_bpf_perf_event_submit_failures",
+			"tracee_bpf_perf_event_submit_failures",
 			"failed calls to submit to the event perf buffer",
 			[]string{"event_name", "internal"},
 			nil,
@@ -168,36 +168,36 @@ func (s *Stats) GetBPFPerfEventStats() BPFPerfEventStats {
 // Register Stats to prometheus metrics exporter
 func (s *Stats) RegisterPrometheus() error {
 	err := prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
-		Namespace: "tracee_ebpf",
+		Namespace: "tracee",
 		Name:      "events_total",
-		Help:      "events collected by tracee-ebpf",
+		Help:      "events collected by tracee",
 	}, func() float64 { return float64(s.EventCount.Get()) }))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
-		Namespace: "tracee_ebpf",
+		Namespace: "tracee",
 		Name:      "events_filtered",
-		Help:      "events filtered by tracee-ebpf in userspace",
+		Help:      "events filtered by tracee in userspace",
 	}, func() float64 { return float64(s.EventsFiltered.Get()) }))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
-		Namespace: "tracee_ebpf",
+		Namespace: "tracee",
 		Name:      "network_capture_events_total",
-		Help:      "network capture events collected by tracee-ebpf",
+		Help:      "network capture events collected by tracee",
 	}, func() float64 { return float64(s.NetCapCount.Get()) }))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
-		Namespace: "tracee_ebpf",
+		Namespace: "tracee",
 		Name:      "bpf_logs_total",
-		Help:      "logs collected by tracee-ebpf during ebpf execution",
+		Help:      "logs collected by tracee during ebpf execution",
 	}, func() float64 { return float64(s.BPFLogsCount.Get()) }))
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -213,16 +213,16 @@ func (s *Stats) RegisterPrometheus() error {
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
-		Namespace: "tracee_ebpf",
+		Namespace: "tracee",
 		Name:      "errors_total",
-		Help:      "errors accumulated by tracee-ebpf",
+		Help:      "errors accumulated by tracee",
 	}, func() float64 { return float64(s.ErrorCount.Get()) }))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
-		Namespace: "tracee_ebpf",
+		Namespace: "tracee",
 		Name:      "lostevents_total",
 		Help:      "events lost in the submission buffer",
 	}, func() float64 { return float64(s.LostEvCount.Get()) }))
@@ -231,7 +231,7 @@ func (s *Stats) RegisterPrometheus() error {
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
-		Namespace: "tracee_ebpf",
+		Namespace: "tracee",
 		Name:      "write_lostevents_total",
 		Help:      "events lost in the write buffer",
 	}, func() float64 { return float64(s.LostWrCount.Get()) }))
@@ -240,7 +240,7 @@ func (s *Stats) RegisterPrometheus() error {
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
-		Namespace: "tracee_ebpf",
+		Namespace: "tracee",
 		Name:      "network_capture_lostevents_total",
 		Help:      "network capture lost events in network capture buffer",
 	}, func() float64 { return float64(s.LostNtCapCount.Get()) }))

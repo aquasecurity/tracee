@@ -424,7 +424,7 @@ Tracee can capture the following types of artifacts:
     `objdump -D -b binary -m bpf <path>`
 
      ```text
-     $ sudo ./dist/tracee-ebpf \
+     $ sudo ./dist/tracee \
         --output none \
         --scope comm=bash \
         --scope follow \

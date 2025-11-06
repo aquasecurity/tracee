@@ -16,14 +16,14 @@ import (
 )
 
 var metrics = []string{
-	"tracee_ebpf_bpf_logs_total",
-	"tracee_ebpf_errors_total",
-	"tracee_ebpf_events_filtered",
-	"tracee_ebpf_events_total",
-	"tracee_ebpf_lostevents_total",
-	"tracee_ebpf_network_capture_events_total",
-	"tracee_ebpf_network_capture_lostevents_total",
-	"tracee_ebpf_write_lostevents_total",
+	"tracee_bpf_logs_total",
+	"tracee_errors_total",
+	"tracee_events_filtered",
+	"tracee_events_total",
+	"tracee_lostevents_total",
+	"tracee_network_capture_events_total",
+	"tracee_network_capture_lostevents_total",
+	"tracee_write_lostevents_total",
 }
 
 // checkIfMetricsExist checks if all metrics exist in the metrics endpoint.
