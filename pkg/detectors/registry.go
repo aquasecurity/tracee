@@ -17,6 +17,14 @@ import (
 	"github.com/aquasecurity/tracee/pkg/version"
 )
 
+// EnrichmentOptions represents available enrichment capabilities in Tracee.
+// Used by the detector engine to validate enrichment requirements during registration.
+type EnrichmentOptions struct {
+	ExecEnv      bool   // Whether exec environment variables are captured
+	ExecHash     bool   // Whether executable hashing is enabled
+	ExecHashMode string // Hash mode: "inode", "dev-inode", "digest-inode", or ""
+}
+
 // entry holds detector metadata for dispatch
 type entry struct {
 	detector     detection.EventDetector
@@ -31,18 +39,20 @@ type entry struct {
 
 // registry manages all registered detectors
 type registry struct {
-	mu             sync.RWMutex
-	detectors      map[string]*entry // Detector ID -> entry
-	eventNameIndex map[string]string // Event name -> Detector ID (for collision detection)
-	policyManager  *policy.Manager   // For policy checking during registration
+	mu                sync.RWMutex
+	detectors         map[string]*entry // Detector ID -> entry
+	eventNameIndex    map[string]string // Event name -> Detector ID (for collision detection)
+	policyManager     *policy.Manager   // For policy checking during registration
+	enrichmentOptions *EnrichmentOptions
 }
 
 // newRegistry creates a new detector registry
-func newRegistry(policyManager *policy.Manager) *registry {
+func newRegistry(policyManager *policy.Manager, enrichmentOptions *EnrichmentOptions) *registry {
 	return &registry{
-		detectors:      make(map[string]*entry),
-		eventNameIndex: make(map[string]string),
-		policyManager:  policyManager,
+		detectors:         make(map[string]*entry),
+		eventNameIndex:    make(map[string]string),
+		policyManager:     policyManager,
+		enrichmentOptions: enrichmentOptions,
 	}
 }
 
@@ -235,6 +245,37 @@ func (r *registry) RegisterDetector(
 			logger.Debugw("Optional datastore not available for detector",
 				"detector", detectorID,
 				"datastore", dsReq.Name)
+		}
+	}
+
+	// Validate enrichment requirements
+	for _, enrichReq := range definition.Requirements.Enrichments {
+		available := false
+		switch enrichReq.Name {
+		case "exec-env":
+			available = r.enrichmentOptions != nil && r.enrichmentOptions.ExecEnv
+		case "exec-hash":
+			available = r.enrichmentOptions != nil && r.enrichmentOptions.ExecHash
+			// If specific config requested, mode must match
+			if available && enrichReq.Config != "" {
+				actualMode := r.enrichmentOptions.ExecHashMode
+				if enrichReq.Config != actualMode {
+					available = false
+				}
+			}
+		default:
+			return fmt.Errorf("detector %s requires unknown enrichment: %s", detectorID, enrichReq.Name)
+		}
+
+		if !available && enrichReq.Dependency == detection.DependencyRequired {
+			return fmt.Errorf("detector %s requires enrichment %q which is not enabled", detectorID, enrichReq.Name)
+		}
+
+		if !available && enrichReq.Dependency == detection.DependencyOptional {
+			logger.Warnw("Detector enrichment not available",
+				"detector", detectorID,
+				"enrichment", enrichReq.Name,
+				"dependency", "optional")
 		}
 	}
 
