@@ -7,6 +7,9 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
+	"github.com/aquasecurity/tracee/pkg/datastores/container"
+	"github.com/aquasecurity/tracee/pkg/datastores/dns"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 )
 
 var _ RegistryManager = (*Registry)(nil) // Compile-time interface check
@@ -278,4 +281,43 @@ func (r *Registry) ShutdownAll(ctx context.Context) error {
 // This allows the Registry struct to implement RegistryManager
 func (r *Registry) Registry() datastores.Registry {
 	return r
+}
+
+// GetContainerManager returns the concrete container.Manager for internal Tracee use
+// Returns nil if the container store is not registered or is of wrong type
+func (r *Registry) GetContainerManager() *container.Manager {
+	if r.containerStore == nil {
+		return nil
+	}
+	mgr, ok := r.containerStore.(*container.Manager)
+	if !ok {
+		return nil
+	}
+	return mgr
+}
+
+// GetProcessTree returns the concrete process.ProcessTree for internal Tracee use
+// Returns nil if the process store is not registered or is of wrong type
+func (r *Registry) GetProcessTree() *process.ProcessTree {
+	if r.processStore == nil {
+		return nil
+	}
+	tree, ok := r.processStore.(*process.ProcessTree)
+	if !ok {
+		return nil
+	}
+	return tree
+}
+
+// GetDNSCache returns the concrete dns.DNSCache for internal Tracee use
+// Returns nil if the DNS store is not registered or is of wrong type
+func (r *Registry) GetDNSCache() *dns.DNSCache {
+	if r.dnsStore == nil {
+		return nil
+	}
+	cache, ok := r.dnsStore.(*dns.DNSCache)
+	if !ok {
+		return nil
+	}
+	return cache
 }
