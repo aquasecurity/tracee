@@ -17,8 +17,8 @@ type Broadcast struct {
 	containerMode      config.ContainerMode
 }
 
-// NewBroadcast creates a new Broadcast printer
-func NewBroadcast(destinationConfigs []config.Destination) (*Broadcast, error) {
+// newBroadcast creates a new Broadcast printer
+func newBroadcast(destinationConfigs []config.Destination) (*Broadcast, error) {
 	b := &Broadcast{DestinationConfigs: destinationConfigs}
 	return b, b.Init()
 }
@@ -27,7 +27,7 @@ func (b *Broadcast) Init() error {
 	printers := make([]EventPrinter, 0, len(b.DestinationConfigs))
 
 	for _, dstConfig := range b.DestinationConfigs {
-		p, err := newPrinter(dstConfig)
+		p, err := newSinglePrinter(dstConfig)
 		if err != nil {
 			return err
 		}
@@ -69,6 +69,10 @@ func (b *Broadcast) FromStream(ctx context.Context, stream *streams.Stream) {
 			b.Print(e)
 		}
 	}
+}
+
+func (b *Broadcast) Kind() string {
+	return "broadcast"
 }
 
 // Close closes Broadcast printer

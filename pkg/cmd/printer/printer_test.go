@@ -2,9 +2,12 @@ package printer_test
 
 import (
 	"bytes"
+	"context"
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,6 +15,9 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/policy"
+	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -262,4 +268,207 @@ func TestTemplateEventPrinterCloseFlushesData(t *testing.T) {
 	assert.NotEmpty(t, content, "File should contain data after Sync()")
 	assert.Contains(t, string(content), "test_process", "File should contain event data")
 	assert.Contains(t, string(content), "test_event", "File should contain event name")
+}
+
+func TestPrinterFromStream(t *testing.T) {
+	t.Parallel()
+
+	sm := streams.NewStreamsManager()
+	stream := sm.Subscribe(policy.PolicyAll, map[events.ID]struct{}{}, config.StreamBuffer{})
+	outPath := path.Join(t.TempDir(), "file1")
+
+	file, err := flags.CreateOutputFile(outPath)
+	require.NoError(t, err)
+	defer file.Close()
+
+	destination := config.Destination{
+		Type:   "file",
+		Format: "json",
+		Path:   outPath,
+		File:   file,
+	}
+
+	p, err := printer.New([]config.Destination{destination})
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+
+	go func() {
+		p.FromStream(ctx, stream)
+	}()
+
+	sm.Publish(t.Context(), trace.Event{
+		ProcessName:         "process_from_stream",
+		EventName:           "event_from_stream",
+		MatchedPoliciesUser: policy.PolicyAll,
+	})
+
+	time.Sleep(time.Millisecond * 10)
+
+	cancel()
+	p.Close()
+	sm.Close()
+
+	content, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, content, "file must not be empty")
+	assert.Contains(t, string(content), "process_from_stream", "file must contain the pushed process name")
+	assert.Contains(t, string(content), "event_from_stream", "file must contain the pushed event name")
+}
+
+func TestPrinterCreation(t *testing.T) {
+	t.Parallel()
+
+	templateFilePath := path.Join(t.TempDir(), "template1.tpl")
+	file, err := flags.CreateOutputFile(templateFilePath)
+	require.NoError(t, err)
+	file.Close() // close it immediately, we don't need to use it here
+
+	testCases := []struct {
+		testName      string
+		destinations  []config.Destination
+		expectedKind  string
+		expectedError string
+	}{
+		{
+			testName: "table_printer_creation_error_no_file",
+			destinations: []config.Destination{
+				{
+					Type:   "file",
+					Format: "table",
+					Path:   "stdout",
+				},
+			},
+			expectedError: "out file is not set",
+		},
+		{
+			testName: "table_printer_creation",
+			destinations: []config.Destination{
+				{
+					Type:   "file",
+					Format: "table",
+					Path:   "stdout",
+					File:   os.Stdout,
+				},
+			},
+			expectedKind: "table",
+		},
+		{
+			testName: "table_printer_creation",
+			destinations: []config.Destination{
+				{
+					Type:   "file",
+					Format: "table-verbose",
+					Path:   "stdout",
+					File:   os.Stdout,
+				},
+			},
+			expectedKind: "table",
+		},
+		{
+			testName: "json_printer_creation",
+			destinations: []config.Destination{
+				{
+					Type:   "file",
+					Format: "json",
+					Path:   "stdout",
+					File:   os.Stdout,
+				},
+			},
+			expectedKind: "json",
+		},
+		{
+			testName: "template_printer_creation",
+			destinations: []config.Destination{
+				{
+					Type:   "file",
+					Format: "gotemplate=" + templateFilePath,
+					Path:   "stdout",
+					File:   os.Stdout,
+				},
+			},
+			expectedKind: "template",
+		},
+		{
+			testName: "webhook_json_printer_creation",
+			destinations: []config.Destination{
+				{
+					Type:   "webhook",
+					Format: "json",
+					Url:    "http://1.1.1.1/webhook",
+				},
+			},
+			expectedKind: "webhook",
+		},
+		{
+			testName: "webhook_template_printer_creation",
+			destinations: []config.Destination{
+				{
+					Type:   "webhook",
+					Format: "gotemplate=" + templateFilePath,
+					Url:    "http://1.1.1.1/webhook",
+				},
+			},
+			expectedKind: "webhook",
+		},
+		{
+			testName: "forward_printer_creation",
+			destinations: []config.Destination{
+				{
+					Type:   "forward",
+					Format: "json",
+					Url:    "udp://1.1.1.1/fluent",
+				},
+			},
+			expectedKind: "forward",
+		},
+		{
+			testName: "ignore_printer_creation",
+			destinations: []config.Destination{
+				{
+					Type: "ignore",
+				},
+			},
+			expectedKind: "ignore",
+		},
+		{
+			testName: "broadcast_printer_creation",
+			destinations: []config.Destination{
+				{
+					Type:   "forward",
+					Format: "json",
+					Url:    "tcp://1.1.1.1/fluent",
+				},
+				{
+					Type:   "webhook",
+					Format: "json",
+					Url:    "http://1.1.1.1/fluent",
+				},
+			},
+			expectedKind: "broadcast",
+		},
+		{
+			testName:      "broadcast_printer_creation_empty_destination_error",
+			destinations:  []config.Destination{},
+			expectedError: "destinations can't be empty",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			t.Parallel()
+
+			printer, err := printer.New(tc.destinations)
+			if tc.expectedError != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectedError)
+
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedKind, printer.Kind())
+		})
+	}
+
 }

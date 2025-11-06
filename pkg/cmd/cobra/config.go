@@ -361,6 +361,33 @@ func getStructuredOutputConfig() (*OutputConfig, error) {
 		return nil, err
 	}
 
+	// validation
+	for _, stream := range output.Streams {
+		if stream.Name == "" {
+			return nil, errfmt.Errorf("validaiton error: name is mandatory for streams")
+		}
+	}
+
+	for dIdx := range output.Destinations {
+		destination := &output.Destinations[dIdx]
+		if destination.Name == "" {
+			return nil, errfmt.Errorf("validaiton error: name is mandatory for destinations")
+		}
+
+		if destination.Type == "" {
+			destination.Type = "file"
+		}
+
+		if destination.Type == "file" && destination.Format == "" {
+			destination.Format = "table"
+		}
+
+		if (destination.Type == "webhook" || destination.Type == "forward") &&
+			destination.Url == "" {
+			return nil, errfmt.Errorf("validaiton error: url is mandatory in destination for %s", destination.Type)
+		}
+	}
+
 	return &output, nil
 }
 
@@ -429,7 +456,8 @@ func prepareTraceeConfig(c OutputConfig, containerMode config.ContainerMode) (*c
 		declaredDestinations[destination.Name] = 0
 	}
 
-	// check that all the destinations used in the streams are also declared in the destinations section
+	// check that all destinations used in the streams exist in the destinations section
+	// and that each destination is used exactly once
 	for _, stream := range c.Streams {
 		for _, destinationInStream := range stream.Destinations {
 			if _, ok := declaredDestinations[destinationInStream]; !ok {
@@ -438,42 +466,15 @@ func prepareTraceeConfig(c OutputConfig, containerMode config.ContainerMode) (*c
 			}
 
 			declaredDestinations[destinationInStream]++
-		}
-	}
-
-	// check that each destination is used only once
-	for destinationName, numberOfReferences := range declaredDestinations {
-		if numberOfReferences > 1 {
-			return nil, fmt.Errorf("destination %s used multiple times, which is not allowed", destinationName)
-		}
-	}
-
-	// Create config.Destination from the config file
-	traceeConfigDestinations := map[string]config.Destination{}
-	for _, dst := range c.Destinations {
-		outputDestination := config.Destination{
-			Name:          dst.Name,
-			Type:          dst.Type,
-			Format:        dst.Format,
-			Path:          dst.Path,
-			Url:           dst.Url,
-			ContainerMode: containerMode,
-		}
-
-		if dst.Type == "file" {
-			outputDestination.File = os.Stdout
-
-			if dst.Path != "stdout" && dst.Path != "" {
-				outputFile, err := outputflags.CreateOutputFile(dst.Path)
-				if err != nil {
-					return nil, err
-				}
-
-				outputDestination.File = outputFile
+			if count := declaredDestinations[destinationInStream]; count > 1 {
+				return nil, fmt.Errorf("destination %s used multiple times, which is not allowed", destinationInStream)
 			}
 		}
+	}
 
-		traceeConfigDestinations[outputDestination.Name] = outputDestination
+	traceeConfigDestinations, err := prepareTraceeDestinationConfigs(c.Destinations, containerMode)
+	if err != nil {
+		return nil, err
 	}
 
 	// create streams from the config file
@@ -512,37 +513,102 @@ func prepareTraceeConfig(c OutputConfig, containerMode config.ContainerMode) (*c
 	}
 	cfg.Streams = append(cfg.Streams, syntheticStreams...)
 
-	// Options
-	if c.Options.StackAddresses {
-		if err := outputflags.SetOption(cfg, "stack-addresses"); err != nil {
-			return nil, err
-		}
+	// Create default stream if no streams are defined by the user
+	// and option.none == false
+	if len(cfg.Streams) == 0 && !c.Options.None {
+		cfg.Streams = append(cfg.Streams, config.Stream{
+			Name: "default-stream",
+			Destinations: []config.Destination{
+				{
+					Name:          "default-destination",
+					Type:          "file",
+					Format:        "table",
+					Path:          "stdout",
+					File:          os.Stdout,
+					ContainerMode: containerMode,
+				},
+			},
+		})
 	}
-	if c.Options.ExecEnv {
-		if err := outputflags.SetOption(cfg, "exec-env"); err != nil {
-			return nil, err
-		}
-	}
-	if c.Options.ExecHash != "" {
-		if err := outputflags.SetOption(cfg, fmt.Sprintf("exec-hash=%s", c.Options.ExecHash)); err != nil {
-			return nil, err
-		}
-	}
-	if c.Options.ParseArguments {
-		if err := outputflags.SetOption(cfg, "parse-arguments"); err != nil {
-			return nil, err
-		}
-	}
-	if c.Options.ParseArgumentsFDs {
-		if err := outputflags.SetOption(cfg, "parse-arguments-fds"); err != nil {
-			return nil, err
-		}
-	}
-	if c.Options.SortEvents {
-		if err := outputflags.SetOption(cfg, "sort-events"); err != nil {
-			return nil, err
-		}
+
+	// Set options
+	err = setOptions(c.Options, cfg)
+	if err != nil {
+		return nil, err
 	}
 
 	return cfg, nil
+}
+
+// prepareTraceeDestinationConfigs converts DestinationConfig to config.Destination and create the needed resources
+func prepareTraceeDestinationConfigs(destinations []DestinationsConfig, containerMode config.ContainerMode) (map[string]config.Destination, error) {
+	traceeConfigDestinations := map[string]config.Destination{}
+	for _, dst := range destinations {
+		outputDestination := config.Destination{
+			Name:          dst.Name,
+			Type:          dst.Type,
+			Format:        dst.Format,
+			Path:          dst.Path,
+			Url:           dst.Url,
+			ContainerMode: containerMode,
+		}
+
+		if dst.Type == "file" {
+			outputDestination.File = os.Stdout
+
+			if dst.Path != "stdout" && dst.Path != "" {
+				outputFile, err := outputflags.CreateOutputFile(dst.Path)
+				if err != nil {
+					return nil, err
+				}
+
+				outputDestination.File = outputFile
+			}
+		}
+
+		traceeConfigDestinations[outputDestination.Name] = outputDestination
+	}
+
+	return traceeConfigDestinations, nil
+}
+
+// setOptions sets the needed options from the user config to the tracee config
+func setOptions(options OutputOptsConfig, traceeConfig *config.OutputConfig) error {
+	if options.StackAddresses {
+		if err := outputflags.SetOption(traceeConfig, "stack-addresses"); err != nil {
+			return err
+		}
+	}
+
+	if options.ExecEnv {
+		if err := outputflags.SetOption(traceeConfig, "exec-env"); err != nil {
+			return err
+		}
+	}
+
+	if options.ExecHash != "" {
+		if err := outputflags.SetOption(traceeConfig, fmt.Sprintf("exec-hash=%s", options.ExecHash)); err != nil {
+			return err
+		}
+	}
+
+	if options.ParseArguments {
+		if err := outputflags.SetOption(traceeConfig, "parse-arguments"); err != nil {
+			return err
+		}
+	}
+
+	if options.ParseArgumentsFDs {
+		if err := outputflags.SetOption(traceeConfig, "parse-arguments-fds"); err != nil {
+			return err
+		}
+	}
+
+	if options.SortEvents {
+		if err := outputflags.SetOption(traceeConfig, "sort-events"); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

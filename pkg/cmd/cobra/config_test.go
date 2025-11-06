@@ -2,6 +2,7 @@ package cobra
 
 import (
 	"log"
+	"os"
 	"path"
 	"sort"
 	"strings"
@@ -803,12 +804,28 @@ func TestOutputConfig(t *testing.T) {
 		shouldError bool
 	}{
 		{
-			name:     "empty config",
-			config:   OutputConfig{},
-			expected: config.OutputConfig{},
+			name:   "empty config",
+			config: OutputConfig{},
+			expected: config.OutputConfig{
+				Streams: []config.Stream{
+					{
+						Name: "default-stream",
+						Destinations: []config.Destination{
+							{
+								Name:          "default-destination",
+								Type:          "file",
+								Format:        "table",
+								Path:          "stdout",
+								File:          os.Stdout,
+								ContainerMode: config.ContainerModeEnriched,
+							},
+						},
+					},
+				},
+			},
 		},
 		{
-			name: "options set",
+			name: "all options set",
 			config: OutputConfig{
 				Options: OutputOptsConfig{
 					None:              true,
@@ -829,6 +846,77 @@ func TestOutputConfig(t *testing.T) {
 				EventsSorting:     true,
 				Streams:           []config.Stream{},
 			},
+		},
+		{
+			name: "options set no sorting",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					None:              true,
+					StackAddresses:    true,
+					ExecEnv:           true,
+					ExecHash:          "dev-inode",
+					ParseArguments:    true,
+					ParseArgumentsFDs: true,
+				},
+			},
+			expected: config.OutputConfig{
+				StackAddresses:    true,
+				ExecEnv:           true,
+				CalcHashes:        digest.CalcHashesDevInode,
+				ParseArguments:    true,
+				ParseArgumentsFDs: true,
+			},
+		},
+		{
+			name: "options set no sorting no argument",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					None:           true,
+					StackAddresses: true,
+					ExecEnv:        true,
+					ExecHash:       "dev-inode",
+				},
+			},
+			expected: config.OutputConfig{
+				StackAddresses: true,
+				ExecEnv:        true,
+				CalcHashes:     digest.CalcHashesDevInode,
+			},
+		},
+		{
+			name: "options set no sorting no argument no hash",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					None:           true,
+					StackAddresses: true,
+					ExecEnv:        true,
+				},
+			},
+			expected: config.OutputConfig{
+				StackAddresses: true,
+				ExecEnv:        true,
+			},
+		},
+		{
+			name: "options set no sorting no argument no hash no env",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					None:           true,
+					StackAddresses: true,
+				},
+			},
+			expected: config.OutputConfig{
+				StackAddresses: true,
+			},
+		},
+		{
+			name: "options set no sorting no argument no hash no env no stack",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					None: true,
+				},
+			},
+			expected: config.OutputConfig{},
 		},
 		{
 			name: "formats set",
@@ -1194,6 +1282,16 @@ func TestOutputConfig(t *testing.T) {
 				},
 			},
 			shouldError: true,
+		},
+		{
+			name: "option.none true",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					None: true,
+				},
+			},
+			expected:    config.OutputConfig{},
+			shouldError: false,
 		},
 	}
 

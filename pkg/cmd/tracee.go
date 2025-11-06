@@ -89,13 +89,36 @@ func (r Runner) Run(ctx context.Context) error {
 
 	// Run Tracee
 
-	if len(r.TraceeConfig.Output.Streams) > 0 {
+	if r.shouldRunWithPrinter() {
 		// Run Tracee with event subscription and printing.
 		return r.runWithPrinter(ctx, t) // blocks until ctx is done
 	}
 
 	// Printer is inactive, run Tracee without event subscription.
 	return t.Run(ctx) // blocks until ctx is done
+}
+
+// shouldRunWithPrinter returns true only if there is at least one
+// stream with a destination which is not "ignore"
+func (r Runner) shouldRunWithPrinter() bool {
+	streamConfigs := r.TraceeConfig.Output.Streams
+	if len(streamConfigs) == 0 {
+		return false
+	}
+
+	// It should never happen
+	if len(streamConfigs) == 1 && len(streamConfigs[0].Destinations) == 0 {
+		return false
+	}
+
+	// If the only stream existing has a single destination which is
+	// ignore we ignore it and do not even jump to r.runWithPrinter()
+	if len(streamConfigs) == 1 && len(streamConfigs[0].Destinations) == 1 &&
+		streamConfigs[0].Destinations[0].Type == "ignore" {
+		return false
+	}
+
+	return true
 }
 
 // runWithPrinter runs Tracee with event subscription and printing enabled.

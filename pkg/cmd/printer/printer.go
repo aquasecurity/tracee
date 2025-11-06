@@ -37,6 +37,8 @@ type EventPrinter interface {
 	Print(event trace.Event)
 	// Receive events from stram
 	FromStream(ctx context.Context, stream *streams.Stream)
+	// Mainly created for testing purposes. Might be useful also in other context
+	Kind() string
 	// dispose of resources
 	Close()
 }
@@ -47,13 +49,13 @@ func New(destinations []config.Destination) (EventPrinter, error) {
 	}
 
 	if len(destinations) > 1 {
-		return NewBroadcast(destinations)
+		return newBroadcast(destinations)
 	}
 
-	return newPrinter(destinations[0])
+	return newSinglePrinter(destinations[0])
 }
 
-func newPrinter(dst config.Destination) (EventPrinter, error) {
+func newSinglePrinter(dst config.Destination) (EventPrinter, error) {
 	var res EventPrinter
 	kind := dst.Type
 	format := dst.Format
@@ -386,6 +388,10 @@ func (p *tableEventPrinter) FromStream(ctx context.Context, stream *streams.Stre
 	}
 }
 
+func (p *tableEventPrinter) Kind() string {
+	return "table"
+}
+
 func (p tableEventPrinter) Close() {
 	// Sync flushes buffered data, ensuring events aren't lost on process exit
 	if f, ok := p.out.(*os.File); ok {
@@ -443,6 +449,10 @@ func (p *templateEventPrinter) FromStream(ctx context.Context, stream *streams.S
 	}
 }
 
+func (p *templateEventPrinter) Kind() string {
+	return "template"
+}
+
 func (p templateEventPrinter) Close() {
 	// Sync flushes buffered data, ensuring events aren't lost on process exit
 	if f, ok := p.out.(*os.File); ok {
@@ -483,6 +493,10 @@ func (p jsonEventPrinter) FromStream(ctx context.Context, stream *streams.Stream
 	}
 }
 
+func (p *jsonEventPrinter) Kind() string {
+	return "json"
+}
+
 func (p jsonEventPrinter) Close() {
 	// Sync flushes buffered data, ensuring events aren't lost on process exit
 	if f, ok := p.out.(*os.File); ok {
@@ -504,6 +518,10 @@ func (p *ignoreEventPrinter) Print(event trace.Event) {}
 func (p *ignoreEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p *ignoreEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {}
+
+func (p *ignoreEventPrinter) Kind() string {
+	return "ignore"
+}
 
 func (p ignoreEventPrinter) Close() {}
 
@@ -654,6 +672,10 @@ func (p *forwardEventPrinter) FromStream(ctx context.Context, stream *streams.St
 	}
 }
 
+func (p *forwardEventPrinter) Kind() string {
+	return "forward"
+}
+
 func (p forwardEventPrinter) Close() {
 	if p.client != nil {
 		logger.Infow("Disconnecting from Forward destination", "url", p.url.Host, "tag", p.tag)
@@ -764,6 +786,10 @@ func (ws *webhookEventPrinter) FromStream(ctx context.Context, stream *streams.S
 			ws.Print(e)
 		}
 	}
+}
+
+func (ws *webhookEventPrinter) Kind() string {
+	return "webhook"
 }
 
 func (ws *webhookEventPrinter) Close() {}
