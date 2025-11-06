@@ -21,5 +21,7 @@
     "perf-buffer-size": 1024,
     "pprof": false,
     "pyroscope": false,
-    "signatures-dir": ""
+    "signatures": [
+        "search-paths="
+    ]
 }

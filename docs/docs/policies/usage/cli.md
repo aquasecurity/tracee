@@ -61,7 +61,8 @@ blob-perf-buffer-size: 1024
 
 # signatures
 
-signatures-dir: ""
+signatures:
+  - search-paths=""
 
 # features setup
 
