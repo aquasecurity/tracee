@@ -35,6 +35,8 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &OutputConfig{}
 	case "dnscache":
 		flagger = &DnsCacheConfig{}
+	case "runtime":
+		flagger = &RuntimeConfig{}
 	default:
 		return nil, errfmt.Errorf("unrecognized key: %s", key)
 	}

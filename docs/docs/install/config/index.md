@@ -63,16 +63,23 @@ A complete config file with all available options can be found [here](https://gi
     - process
   ```
 
-### Install Path
+### Runtime
 
-- **`--install-path`**: Specifies the directory where Tracee will install or look for its resources. If not specified, the default installation directory is `/tmp/tracee`.
+- **`--runtime` (`-r`)**: Controls runtime configurations for Tracee.
+
+  CLI Examples:
+  ```bash
+  # Set working directory
+  tracee --runtime workdir=/opt/tracee
+  ```
 
   YAML:
   ```yaml
-  install-path: /opt/tracee
+  runtime:
+    - workdir=/opt/tracee
   ```
 
-  __NOTE__: This option is useful when running Tracee in environments where `/tmp` is not suitable or secure.
+  __NOTE__: The workdir is the path where Tracee will install or lookup its resources. The default is `/tmp/tracee`. This option is useful when running Tracee in environments where `/tmp` is not suitable or secure.
 
 ### Log
 
