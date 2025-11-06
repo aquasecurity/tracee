@@ -654,7 +654,7 @@ jobs:
           name: e2e-inst-test-artifacts-${{ matrix.job_name }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             /tmp/tracee-log-*
-            /tmp/output-*
+            /tmp/tracee-output-*
           retention-days: 7
           if-no-files-found: warn
       - name: "Notify About Available Artifacts"
@@ -671,8 +671,8 @@ jobs:
           echo "4. Download: \`e2e-inst-test-artifacts-${{ matrix.job_name }}-${{ github.run_id }}-${{ github.run_attempt }}\`"
           echo ""
           echo "📁 **What's included in the artifacts:**"
-          echo "- **Log file**: Full debug-level logs from Tracee (tracee-log-*)"
-          echo "- **Output file**: JSON events captured during the test (output-*)"
+          echo "- **Log file**: Full debug-level logs from all E2E tests (tracee-log-*)"
+          echo "- **Output file**: JSON events captured during all E2E tests (tracee-output-*)"
           echo ""
           echo "⚠️ **Note**: Artifacts are available for 7 days from upload"
       - name: "Cleanup E2E Instrumentation Test Artifacts"

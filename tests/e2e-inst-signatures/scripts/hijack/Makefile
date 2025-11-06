@@ -11,3 +11,4 @@ hijack.o:
 clean:
 	rm -f hijack.mod hijack.o hijack.mod.c hijack.mod.o hijack.ko
 	rm -f modules.order Module.symvers
+	rm -f .*.cmd

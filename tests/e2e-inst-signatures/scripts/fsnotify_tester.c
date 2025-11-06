@@ -9,8 +9,8 @@
 #include <sys/inotify.h>
 #include <sys/fanotify.h>
 
-#define DNOTIFY_PATH "dnotify_test"
-#define INOTIFY_PATH "inotify_test"
+#define DNOTIFY_PATH  "dnotify_test"
+#define INOTIFY_PATH  "inotify_test"
 #define FANOTIFY_PATH "fanotify_test"
 
 static void cleanup_and_exit(int exit_code)
@@ -36,9 +36,9 @@ static void dnotify_watch(const char *path)
 {
     int fd;
     const int NOTIFY_SIG = SIGRTMIN;
-    int events = DN_ACCESS | DN_ATTRIB | DN_CREATE | DN_DELETE |
-                    DN_MODIFY | DN_RENAME | DN_MULTISHOT;
-    
+    int events = DN_ACCESS | DN_ATTRIB | DN_CREATE | DN_DELETE | DN_MODIFY | DN_RENAME |
+                 DN_MULTISHOT;
+
     signal(NOTIFY_SIG, SIG_IGN);
 
     fd = open(path, O_RDONLY);
@@ -51,12 +51,12 @@ static void dnotify_watch(const char *path)
         perror("fcntl: F_SETSIG");
         cleanup_and_exit(EXIT_FAILURE);
     }
-    
+
     if (fcntl(fd, F_NOTIFY, events) == -1) {
         perror("fcntl: F_NOTIFY");
         cleanup_and_exit(EXIT_FAILURE);
     }
-    
+
     close(fd);
 }
 
@@ -89,8 +89,7 @@ static void fanotify_watch(const char *path)
         cleanup_and_exit(EXIT_FAILURE);
     }
 
-    if (fanotify_mark(fanotify_fd, FAN_MARK_ADD,
-            FAN_ALL_EVENTS, AT_FDCWD, path) < 0) {
+    if (fanotify_mark(fanotify_fd, FAN_MARK_ADD, FAN_ALL_EVENTS, AT_FDCWD, path) < 0) {
         perror("fanotify_mark");
         cleanup_and_exit(EXIT_FAILURE);
     }
@@ -98,7 +97,8 @@ static void fanotify_watch(const char *path)
     close(fanotify_fd);
 }
 
-void main(void) {
+void main(void)
+{
     mkdir_exist_ok(DNOTIFY_PATH);
     dnotify_watch(DNOTIFY_PATH);
 

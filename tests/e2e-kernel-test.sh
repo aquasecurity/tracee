@@ -70,8 +70,8 @@ anyerror=""
 
 rm -f $SCRIPT_TMP_DIR/build-$$
 
-outputfile=$SCRIPT_TMP_DIR/output-$$
-logfile=$SCRIPT_TMP_DIR/tracee-log-$$
+logfile="${SCRIPT_TMP_DIR}/tracee-log-$$"
+outputfile="${SCRIPT_TMP_DIR}/tracee-output-$$"
 
 tracee_command="./dist/tracee \
     --install-path $TRACEE_TMP_DIR \

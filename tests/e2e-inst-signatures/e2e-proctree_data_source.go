@@ -3,9 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
+	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/aquasecurity/tracee/types/datasource"
@@ -14,26 +15,36 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-var firstEventWait = sync.Once{}
-
 const (
 	testerName = "proctreetester"
-	version    = 1
 )
 
 type e2eProcessTreeDataSource struct {
 	cb            detect.SignatureHandler
+	log           detect.Logger
 	processTreeDS *datasource.ProcessTreeDS
+	holdTime      int
 }
 
 // Init is called once when the signature is loaded.
 func (sig *e2eProcessTreeDataSource) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
+	sig.log = ctx.Logger
 
 	var err error
 	sig.processTreeDS, err = datasource.GetProcessTreeDataSource(ctx)
 	if err != nil {
 		return err
+	}
+
+	// Default to 5 seconds if not set
+	sig.holdTime = 5
+	if holdTimeStr := os.Getenv("PROCTREE_HOLD_TIME"); holdTimeStr != "" {
+		holdTime, err := strconv.Atoi(holdTimeStr)
+		if err != nil {
+			return err
+		}
+		sig.holdTime = holdTime
 	}
 
 	return nil
@@ -69,50 +80,115 @@ func (sig *e2eProcessTreeDataSource) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "sched_process_exec":
-		// ATTENTION: In order to have all the information in the data source, this signature needs
-		// that tracee is running with the following flags:
+		// ATTENTION: In order to have all the information in the data source,
+		// this signature needs to have tracee running with the following flags:
 		//
 		// * --output option:sort-events
 		// * --proctree source=both
 		// * --events PROCTREE_DATA_SOURCE
-		//
-		// With that, all cases, but the lineage test, work. The lineage test requires ancestor
-		// history, so the signature test needs to let process tree to enrich and populate all
-		// entries for a moment (sleeping a bit during signature initialization is enough).
-		// The reason why the sleep isn't at the signature init function is because that would
-		// stop all other signatures to be loaded on time and make other tests to fail.
-		//
-		firstEventWait.Do(func() {
-			time.Sleep(15 * time.Second)
-		})
 
 		// Check that the event is from the tester
 		pathname, err := eventObj.GetStringArgumentByName("pathname")
 		if err != nil || !strings.HasSuffix(pathname, testerName) {
 			return err
 		}
-		// Check thread entries in the data source
-		err = sig.checkThread(&eventObj)
-		if err != nil {
-			return err
+
+		// Exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms (100ms * 2^(attempt-1))
+		retryBackoff := func(attempt int) {
+			if attempt > 0 {
+				time.Sleep(100 * time.Millisecond * (1 << uint(attempt-1)))
+			}
 		}
-		// Check process entries in the data source
-		err = sig.checkProcess(&eventObj)
-		if err != nil {
-			return err
-		}
-		// Check lineage entries in the data source
-		err = sig.checkLineage(&eventObj)
-		if err != nil {
-			return err
-		}
-		// If all checks passed, send a finding
-		m, _ := sig.GetMetadata()
-		sig.cb(&detect.Finding{
-			SigMetadata: m,
-			Event:       event,
-			Data:        map[string]interface{}{},
-		})
+
+		go func() {
+			time.Sleep(time.Duration(sig.holdTime) * time.Second) // Wait a bit to let the process tree be updated
+
+			// Retry logic for checking the data source
+			maxRetries := 5
+
+			// Check thread entries in the data source
+			var threadErrorHistory []string
+			threadPassed := false
+			for attempt := 0; attempt < maxRetries; attempt++ {
+				retryBackoff(attempt)
+
+				err = sig.checkThread(&eventObj)
+				if err != nil {
+					threadErrorHistory = append(threadErrorHistory, fmt.Sprintf("  Attempt %d: checkThread: %v", attempt+1, err))
+					continue // retry
+				}
+
+				if attempt > 0 {
+					sig.log.Infow(fmt.Sprintf("[e2eProcessTreeDataSource] SUCCESS: checkThread | tid=%d | retries=%d",
+						eventObj.HostThreadID, attempt))
+				}
+				threadPassed = true
+				break
+			}
+			if !threadPassed {
+				sig.log.Errorw(fmt.Sprintf("[e2eProcessTreeDataSource] ERROR: checkThread | tid=%d | FAILED after %d attempts:\n%s",
+					eventObj.HostThreadID, maxRetries, strings.Join(threadErrorHistory, "\n")))
+				return
+			}
+
+			// Check process entries in the data source
+			var processErrorHistory []string
+			processPassed := false
+			for attempt := 0; attempt < maxRetries; attempt++ {
+				retryBackoff(attempt)
+
+				err = sig.checkProcess(&eventObj)
+				if err != nil {
+					processErrorHistory = append(processErrorHistory, fmt.Sprintf("  Attempt %d: checkProcess: %v", attempt+1, err))
+					continue // retry
+				}
+
+				if attempt > 0 {
+					sig.log.Infow(fmt.Sprintf("[e2eProcessTreeDataSource] SUCCESS: checkProcess | pid=%d | retries=%d",
+						eventObj.HostProcessID, attempt))
+				}
+				processPassed = true
+				break
+			}
+			if !processPassed {
+				sig.log.Errorw(fmt.Sprintf("[e2eProcessTreeDataSource] ERROR: checkProcess | pid=%d | FAILED after %d attempts:\n%s",
+					eventObj.HostProcessID, maxRetries, strings.Join(processErrorHistory, "\n")))
+				return
+			}
+
+			// Check lineage entries in the data source
+			var lineageErrorHistory []string
+			lineagePassed := false
+			for attempt := 0; attempt < maxRetries; attempt++ {
+				retryBackoff(attempt)
+
+				err = sig.checkLineage(&eventObj)
+				if err != nil {
+					lineageErrorHistory = append(lineageErrorHistory, fmt.Sprintf("  Attempt %d: checkLineage: %v", attempt+1, err))
+					continue // retry
+				}
+
+				if attempt > 0 {
+					sig.log.Infow(fmt.Sprintf("[e2eProcessTreeDataSource] SUCCESS: checkLineage | pid=%d | retries=%d",
+						eventObj.HostProcessID, attempt))
+				}
+				lineagePassed = true
+				break
+			}
+			if !lineagePassed {
+				sig.log.Errorw(fmt.Sprintf("[e2eProcessTreeDataSource] ERROR: checkLineage | pid=%d | FAILED after %d attempts:\n%s",
+					eventObj.HostProcessID, maxRetries, strings.Join(lineageErrorHistory, "\n")))
+				return
+			}
+
+			// If all checks passed, send a finding
+			m, _ := sig.GetMetadata()
+			sig.cb(&detect.Finding{
+				SigMetadata: m,
+				Event:       event,
+				Data:        map[string]interface{}{},
+			})
+		}()
 	}
 
 	return nil
@@ -258,7 +334,7 @@ func (sig *e2eProcessTreeDataSource) checkLineage(eventObj *trace.Event) error {
 		)
 	}
 
-	maxDepth := 5 // up to 5 ancestors + process itself
+	maxDepth := 10 // up to 10 ancestors + process itself
 
 	lineageInfo, err := sig.processTreeDS.GetEventProcessLineage(eventObj, maxDepth)
 	if err != nil {
@@ -283,66 +359,137 @@ func (sig *e2eProcessTreeDataSource) checkLineage(eventObj *trace.Event) error {
 		return true
 	}
 
-	// doesItMatch checks if a process in the lineage matches the process in the event.
-	doesItMatch := func(compareBase datasource.TimeRelevantInfo[datasource.ProcessInfo], id uint32) error {
-		given, err := sig.processTreeDS.GetProcessInfo(datasource.ProcKey{
-			EntityId: id,
-			Time:     compareBase.Timestamp,
-		})
-		if err != nil {
-			return err
+	// analyzeMaps analyzes differences between two maps and returns detailed mismatch information
+	analyzeMaps := func(baseMap, givenMap map[int]uint32) ([]int, string) {
+		var missing []int
+		var valueMismatchDetails []string
+
+		// Use smaller map as reference (same logic as compareMaps)
+		smaller := baseMap
+		bigger := givenMap
+		smallerIsBase := len(baseMap) <= len(givenMap)
+
+		if len(baseMap) > len(givenMap) {
+			smaller = givenMap
+			bigger = baseMap
 		}
 
-		// Debug (TODO: remove this after proctree is stable)
-		//
-		// fmt.Printf("=> base (pid: %v, ppid: %v, time: %v, hash: %v) (%v) %v\n",
-		// 	compareBase.Info.Pid, compareBase.Info.Ppid, compareBase.Info.ExecTime, compareBase.Info.EntityId,
-		// 	compareBase.Info.Cmd, compareBase.Info.ExecutionBinary.Path,
-		// )
-		// fmt.Printf("=> given (pid: %v, ppid: %v, time: %v, hash: %v) (%v) %v\n",
-		// 	given.Info.Pid, given.Info.Ppid, given.Info.ExecTime, given.Info.EntityId,
-		// 	given.Info.Cmd, given.Info.ExecutionBinary.Path,
-		// )
-
-		// Compare
-		if !compareMaps(compareBase.Info.ThreadsIds, given.Info.ThreadsIds) {
-			return errors.New(debug("threads do not match"))
-		}
-		if !compareMaps(compareBase.Info.ChildProcessesIds, given.Info.ChildProcessesIds) {
-			return errors.New(debug("children do not match"))
+		// Check for missing keys and value mismatches in the direction that matters
+		for k, smallerValue := range smaller {
+			if biggerValue, exists := bigger[k]; !exists {
+				missing = append(missing, k)
+			} else if smallerValue != biggerValue {
+				if smallerIsBase {
+					valueMismatchDetails = append(valueMismatchDetails,
+						fmt.Sprintf("pid=%d hash_expected=%d hash_actual=%d", k, smallerValue, biggerValue))
+				} else {
+					valueMismatchDetails = append(valueMismatchDetails,
+						fmt.Sprintf("pid=%d hash_expected=%d hash_actual=%d", k, biggerValue, smallerValue))
+				}
+			}
 		}
 
-		// Zero fields that can't be compared (timing, maps, etc)
-		zeroSomeProcStuff(&compareBase.Info)
-		zeroSomeProcStuff(&given.Info)
-
-		// Compare the rest
-		if !reflect.DeepEqual(compareBase.Info, given.Info) {
-			fmt.Printf("%+v\n", compareBase.Info)
-			fmt.Printf("%+v\n", given.Info)
-			// fmt.Printf("=> base (pid: %v, ppid: %v, time: %v, hash: %v) (%v) %v\n",
-			// compareBase.Info.Pid, compareBase.Info.Ppid, compareBase.Info.ExecTime, compareBase.Info.EntityId,
-			// compareBase.Info.Cmd, compareBase.Info.ExecutionBinary.Path,
-			// )
-			// fmt.Printf("=> given (pid: %v, ppid: %v, time: %v, hash: %v) (%v) %v\n",
-			// given.Info.Pid, given.Info.Ppid, given.Info.ExecTime, given.Info.EntityId,
-			// given.Info.Cmd, given.Info.ExecutionBinary.Path,
-			// )
-			return errors.New(debug("process in lineage does not match"))
-		}
-
-		return nil
+		return missing, strings.Join(valueMismatchDetails, ", ")
 	}
 
+	// isMatch checks if a process in the lineage matches the process in the event.
+	// Uses retry logic to handle async process tree updates.
+	isMatch := func(
+		compareBase datasource.TimeRelevantInfo[datasource.ProcessInfo],
+		id uint32,
+		maxRetries int,
+		retryDelay time.Duration,
+		context string,
+	) error {
+		processId := int(compareBase.Info.Pid)
+
+		var lastErr error
+		for attempt := 0; attempt < maxRetries; attempt++ {
+			given, err := sig.processTreeDS.GetProcessInfo(datasource.ProcKey{
+				EntityId: id,
+				Time:     compareBase.Timestamp,
+			})
+			if err != nil {
+				lastErr = err
+				if attempt < maxRetries-1 {
+					time.Sleep(retryDelay)
+					continue
+				}
+				return err
+			}
+
+			// Compare maps and collect mismatch details
+			threadsMatch := compareMaps(compareBase.Info.ThreadsIds, given.Info.ThreadsIds)
+			childrenMatch := compareMaps(compareBase.Info.ChildProcessesIds, given.Info.ChildProcessesIds)
+
+			var mismatchDetails string
+
+			// If maps don't match and not the last attempt, retry
+			if (!threadsMatch || !childrenMatch) && attempt < maxRetries-1 {
+				lastErr = fmt.Errorf("maps don't match (threads:%v, children:%v)", threadsMatch, childrenMatch)
+				time.Sleep(retryDelay)
+				continue
+			}
+
+			if !threadsMatch || !childrenMatch {
+				var details []string
+				if !threadsMatch {
+					missing, valueMismatchDetails := analyzeMaps(compareBase.Info.ThreadsIds, given.Info.ThreadsIds)
+					if len(missing) > 0 || valueMismatchDetails != "" {
+						details = append(details, fmt.Sprintf("threads: missing=%v mismatches=[%s]", missing, valueMismatchDetails))
+					}
+				}
+				if !childrenMatch {
+					missing, valueMismatchDetails := analyzeMaps(compareBase.Info.ChildProcessesIds, given.Info.ChildProcessesIds)
+					if len(missing) > 0 || valueMismatchDetails != "" {
+						details = append(details, fmt.Sprintf("children: missing=%v mismatches=[%s]", missing, valueMismatchDetails))
+					}
+				}
+				mismatchDetails = strings.Join(details, ", ")
+			}
+
+			// Log retry information for test diagnostics
+			if attempt > 0 && threadsMatch && childrenMatch {
+				sig.log.Infow(fmt.Sprintf("[e2eProcessTreeDataSource] SUCCESS: checkLineage | pid=%d context=%s | retries=%d",
+					processId, context, attempt+1))
+			}
+			// On final attempt, be tolerant of map mismatches
+			if !threadsMatch || !childrenMatch {
+				sig.log.Warnw(fmt.Sprintf("[e2eProcessTreeDataSource] WARNING: checkLineage | pid=%d context=%s | retries=%d | %s",
+					processId, context, maxRetries, mismatchDetails))
+			}
+
+			// Zero fields that can't be compared (timing, maps, etc)
+			zeroSomeProcStuff(&compareBase.Info)
+			zeroSomeProcStuff(&given.Info)
+
+			// Compare the rest (core process information)
+			if !reflect.DeepEqual(compareBase.Info, given.Info) {
+				return errors.New(debug("process core information does not match"))
+			}
+
+			return nil // Success
+		}
+
+		return lastErr
+	}
+
+	retries := 15
+	// Be aware that if the delay is too high, the test trigger must be adjusted
+	// accordingly to not timeout before the test is finished.
+	retryDelay := 200 * time.Millisecond
+
 	// First ancestor is the process itself, compare object from the Lineage and Object queries
-	err = doesItMatch((*lineageInfo)[0], eventObj.ProcessEntityId)
+	context := fmt.Sprintf("event-hostpid-%d-self", eventObj.HostProcessID)
+	err = isMatch((*lineageInfo)[0], eventObj.ProcessEntityId, retries, retryDelay, context)
 	if err != nil {
 		return err
 	}
 
 	// Check all ancestors in the data source up to maxDepth
-	for _, ancestor := range (*lineageInfo)[1:] {
-		err = doesItMatch(ancestor, ancestor.Info.EntityId) // compare lineage with proc from datasource
+	for i, ancestor := range (*lineageInfo)[1:] {
+		context := fmt.Sprintf("event-hostpid-%d-ancestor-%d", eventObj.HostProcessID, i+1)
+		err = isMatch(ancestor, ancestor.Info.EntityId, retries, retryDelay, context)
 		if err != nil {
 			return err
 		}

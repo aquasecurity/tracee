@@ -6,6 +6,6 @@ metadata:
     description: test tracee's bpf attach events
 spec:
   scope: 
-    - comm=tracee
+    - comm=bpftrace
   rules:
     - event: BPF_ATTACH
