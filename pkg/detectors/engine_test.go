@@ -13,7 +13,7 @@ import (
 )
 
 func TestNewEngine(t *testing.T) {
-	engine := NewEngine(nil)
+	engine := NewEngine(nil, nil)
 	require.NotNil(t, engine)
 	assert.NotNil(t, engine.registry)
 	assert.NotNil(t, engine.dispatcher)
@@ -34,7 +34,7 @@ func TestEngine_RegisterDetector(t *testing.T) {
 	_, err := CreateEventsFromDetectors(events.StartDetectorID+10000, []detection.EventDetector{testDetector})
 	require.NoError(t, err)
 
-	engine := NewEngine(nil)
+	engine := NewEngine(nil, nil)
 	params := detection.DetectorParams{
 		Config: detection.NewEmptyDetectorConfig(),
 	}
@@ -45,7 +45,7 @@ func TestEngine_RegisterDetector(t *testing.T) {
 }
 
 func TestEngine_GetDetectorCount(t *testing.T) {
-	engine := NewEngine(nil)
+	engine := NewEngine(nil, nil)
 	assert.Equal(t, 0, engine.GetDetectorCount())
 
 	// Register first detector
@@ -100,7 +100,7 @@ func TestEngine_UnregisterDetector(t *testing.T) {
 	_, err := CreateEventsFromDetectors(events.StartDetectorID+10003, []detection.EventDetector{testDetector})
 	require.NoError(t, err)
 
-	engine := NewEngine(nil)
+	engine := NewEngine(nil, nil)
 	params := detection.DetectorParams{
 		Config: detection.NewEmptyDetectorConfig(),
 	}
@@ -121,7 +121,7 @@ func TestEngine_UnregisterDetector(t *testing.T) {
 }
 
 func TestEngine_ListDetectors(t *testing.T) {
-	engine := NewEngine(nil)
+	engine := NewEngine(nil, nil)
 	assert.Empty(t, engine.ListDetectors())
 
 	// Register detectors
@@ -175,7 +175,7 @@ func TestEngine_GetDetector(t *testing.T) {
 	_, err := CreateEventsFromDetectors(events.StartDetectorID+10006, []detection.EventDetector{testDetector})
 	require.NoError(t, err)
 
-	engine := NewEngine(nil)
+	engine := NewEngine(nil, nil)
 	params := detection.DetectorParams{
 		Config: detection.NewEmptyDetectorConfig(),
 	}
@@ -207,7 +207,7 @@ func TestEngine_EnableDisableDetector(t *testing.T) {
 	_, err := CreateEventsFromDetectors(events.StartDetectorID+10007, []detection.EventDetector{testDetector})
 	require.NoError(t, err)
 
-	engine := NewEngine(nil)
+	engine := NewEngine(nil, nil)
 	params := detection.DetectorParams{
 		Config: detection.NewEmptyDetectorConfig(),
 	}
@@ -246,7 +246,7 @@ func TestEngine_DispatchToDetectors(t *testing.T) {
 	_, err := CreateEventsFromDetectors(events.StartDetectorID+10008, []detection.EventDetector{producingDetector})
 	require.NoError(t, err)
 
-	engine := NewEngine(nil)
+	engine := NewEngine(nil, nil)
 	params := detection.DetectorParams{
 		Config: detection.NewEmptyDetectorConfig(),
 	}
@@ -270,7 +270,7 @@ func TestEngine_DispatchToDetectors(t *testing.T) {
 }
 
 func TestEngine_GetMetrics(t *testing.T) {
-	engine := NewEngine(nil)
+	engine := NewEngine(nil, nil)
 	metrics := engine.GetMetrics()
 	assert.NotNil(t, metrics)
 	assert.NotNil(t, metrics.EventsProcessed)
@@ -280,7 +280,7 @@ func TestEngine_GetMetrics(t *testing.T) {
 }
 
 func TestEngine_RegisterPrometheusMetrics(t *testing.T) {
-	engine := NewEngine(nil)
+	engine := NewEngine(nil, nil)
 	// Just test that it doesn't panic - actual Prometheus registration
 	// might fail in test environment but shouldn't crash
 	err := engine.RegisterPrometheusMetrics()

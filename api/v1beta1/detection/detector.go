@@ -81,6 +81,9 @@ type DetectorRequirements struct {
 	// DataStores lists required datastores with their dependency types
 	DataStores []DataStoreRequirement `yaml:"datastores,omitempty"`
 
+	// Enrichments lists required event enrichment options
+	Enrichments []EnrichmentRequirement `yaml:"enrichments,omitempty"`
+
 	// Architectures lists supported CPU architectures (e.g., "amd64", "arm64")
 	// Empty slice means the detector supports all architectures
 	// Values should use Go's GOARCH format: "amd64" (x86-64), "arm64" (AArch64), etc.
@@ -135,6 +138,20 @@ type DataStoreRequirement struct {
 	// - Required: Registration fails if datastore unavailable
 	// - Optional: Detector handles absence gracefully
 	Dependency DependencyType `yaml:"dependency,omitempty"`
+}
+
+// EnrichmentRequirement specifies a required event enrichment option.
+type EnrichmentRequirement struct {
+	// Name is the enrichment option name: "exec-env", "exec-hash"
+	Name string `yaml:"name"`
+
+	// Dependency controls whether this enrichment is required or optional
+	// Zero value (0) = DependencyRequired (default)
+	Dependency DependencyType `yaml:"dependency,omitempty"`
+
+	// Config contains enrichment-specific configuration (e.g., exec-hash mode)
+	// For exec-hash: "inode", "dev-inode", "digest-inode"
+	Config string `yaml:"config,omitempty"`
 }
 
 // AutoPopulateFields specifies which output event fields the engine should populate.

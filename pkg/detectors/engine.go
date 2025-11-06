@@ -10,19 +10,21 @@ import (
 
 // Engine is the main detector engine that orchestrates registration and dispatch
 type Engine struct {
-	registry   *registry
-	dispatcher *dispatcher
-	metrics    *Metrics
+	registry          *registry
+	dispatcher        *dispatcher
+	metrics           *Metrics
+	enrichmentOptions *EnrichmentOptions
 }
 
 // NewEngine creates a new detector engine
-func NewEngine(policyManager *policy.Manager) *Engine {
-	registry := newRegistry(policyManager)
+func NewEngine(policyManager *policy.Manager, enrichmentOptions *EnrichmentOptions) *Engine {
+	registry := newRegistry(policyManager, enrichmentOptions)
 	metrics := NewMetrics()
 	return &Engine{
-		registry:   registry,
-		dispatcher: newDispatcher(registry, policyManager, metrics),
-		metrics:    metrics,
+		registry:          registry,
+		dispatcher:        newDispatcher(registry, policyManager, metrics),
+		metrics:           metrics,
+		enrichmentOptions: enrichmentOptions,
 	}
 }
 

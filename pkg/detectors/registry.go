@@ -10,12 +10,34 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/version"
 )
+
+// parseHashMode converts a string hash mode to digest.CalcHashesOption
+func parseHashMode(mode string) digest.CalcHashesOption {
+	switch mode {
+	case "inode":
+		return digest.CalcHashesInode
+	case "dev-inode":
+		return digest.CalcHashesDevInode
+	case "digest-inode":
+		return digest.CalcHashesDigestInode
+	default:
+		return digest.CalcHashesNone
+	}
+}
+
+// EnrichmentOptions represents available enrichment capabilities in Tracee.
+// Used by the detector engine to validate enrichment requirements during registration.
+type EnrichmentOptions struct {
+	ExecEnv      bool // Whether exec environment variables are captured
+	ExecHashMode digest.CalcHashesOption
+}
 
 // entry holds detector metadata for dispatch
 type entry struct {
@@ -31,18 +53,20 @@ type entry struct {
 
 // registry manages all registered detectors
 type registry struct {
-	mu             sync.RWMutex
-	detectors      map[string]*entry // Detector ID -> entry
-	eventNameIndex map[string]string // Event name -> Detector ID (for collision detection)
-	policyManager  *policy.Manager   // For policy checking during registration
+	mu                sync.RWMutex
+	detectors         map[string]*entry // Detector ID -> entry
+	eventNameIndex    map[string]string // Event name -> Detector ID (for collision detection)
+	policyManager     *policy.Manager   // For policy checking during registration
+	enrichmentOptions *EnrichmentOptions
 }
 
 // newRegistry creates a new detector registry
-func newRegistry(policyManager *policy.Manager) *registry {
+func newRegistry(policyManager *policy.Manager, enrichmentOptions *EnrichmentOptions) *registry {
 	return &registry{
-		detectors:      make(map[string]*entry),
-		eventNameIndex: make(map[string]string),
-		policyManager:  policyManager,
+		detectors:         make(map[string]*entry),
+		eventNameIndex:    make(map[string]string),
+		policyManager:     policyManager,
+		enrichmentOptions: enrichmentOptions,
 	}
 }
 
@@ -235,6 +259,61 @@ func (r *registry) RegisterDetector(
 			logger.Debugw("Optional datastore not available for detector",
 				"detector", detectorID,
 				"datastore", dsReq.Name)
+		}
+	}
+
+	// Validate enrichment requirements
+	for _, enrichReq := range definition.Requirements.Enrichments {
+		available := false
+		modeMismatch := false
+		var actualMode string
+
+		switch enrichReq.Name {
+		case "exec-env":
+			available = r.enrichmentOptions != nil && r.enrichmentOptions.ExecEnv
+		case "exec-hash":
+			available = r.enrichmentOptions != nil && r.enrichmentOptions.ExecHashMode != digest.CalcHashesNone
+			// If specific config requested, mode must match
+			if available && enrichReq.Config != "" {
+				// Parse requested mode string to enum
+				requestedMode := parseHashMode(enrichReq.Config)
+				if requestedMode == digest.CalcHashesNone {
+					return fmt.Errorf("detector %s requires invalid exec-hash mode: %s", detectorID, enrichReq.Config)
+				}
+				actualMode = r.enrichmentOptions.ExecHashMode.String()
+				if requestedMode != r.enrichmentOptions.ExecHashMode {
+					available = false
+					modeMismatch = true
+				}
+			}
+		default:
+			return fmt.Errorf("detector %s requires unknown enrichment: %s", detectorID, enrichReq.Name)
+		}
+
+		if !available && enrichReq.Dependency == detection.DependencyRequired {
+			// Provide specific error message for mode mismatch
+			if modeMismatch {
+				return fmt.Errorf("detector %s requires enrichment %q with mode %q, but current mode is %q",
+					detectorID, enrichReq.Name, enrichReq.Config, actualMode)
+			}
+			return fmt.Errorf("detector %s requires enrichment %q which is not enabled", detectorID, enrichReq.Name)
+		}
+
+		if !available && enrichReq.Dependency == detection.DependencyOptional {
+			// Provide specific warning for mode mismatch
+			if modeMismatch {
+				logger.Warnw("Detector enrichment mode mismatch",
+					"detector", detectorID,
+					"enrichment", enrichReq.Name,
+					"requested_mode", enrichReq.Config,
+					"actual_mode", actualMode,
+					"dependency", "optional")
+			} else {
+				logger.Warnw("Detector enrichment not available",
+					"detector", detectorID,
+					"enrichment", enrichReq.Name,
+					"dependency", "optional")
+			}
 		}
 	}
 
