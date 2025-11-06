@@ -150,32 +150,19 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	cfg.CgroupFSPath = res.CgroupfsPath
 	cfg.CgroupFSForce = res.CgroupfsForce
 
-	// Process Tree command line flags
-
-	procTreeFlags, err := flags.GetFlagsFromViper("proctree")
+	// Stores command line flags
+	storesFlags, err := flags.GetFlagsFromViper(flags.StoresFlag)
 	if err != nil {
 		return runner, err
 	}
 
-	procTree, err := flags.PrepareProcTree(procTreeFlags)
-	if err != nil {
-		return runner, err
-	}
-	cfg.ProcTree = procTree
-
-	// DNS Cache command line flags
-
-	dnsCacheFlags, err := flags.GetFlagsFromViper("dnscache")
+	stores, err := flags.PrepareStores(storesFlags)
 	if err != nil {
 		return runner, err
 	}
 
-	dnsCache, err := flags.PrepareDnsCache(dnsCacheFlags)
-	if err != nil {
-		return runner, err
-	}
-
-	cfg.DNSCacheConfig = dnsCache
+	cfg.ProcTree = stores.GetProcTreeConfig()
+	cfg.DNSCacheConfig = stores.GetDNSCacheConfig()
 
 	// Capture command line flags - via cobra flag
 

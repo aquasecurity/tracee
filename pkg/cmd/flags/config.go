@@ -23,8 +23,6 @@ func GetFlagsFromViper(key string) ([]string, error) {
 	switch key {
 	case ServerFlag:
 		flagger = &ServerConfig{}
-	case "proctree":
-		flagger = &ProcTreeConfig{}
 	case "capabilities":
 		flagger = &CapabilitiesConfig{}
 	case "containers":
@@ -33,10 +31,10 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &LogConfig{}
 	case "output":
 		flagger = &OutputConfig{}
-	case "dnscache":
-		flagger = &DnsCacheConfig{}
-	case "runtime":
+	case RuntimeFlag:
 		flagger = &RuntimeConfig{}
+	case StoresFlag:
+		flagger = &StoresConfig{}
 	default:
 		return nil, errfmt.Errorf("unrecognized key: %s", key)
 	}
@@ -119,64 +117,6 @@ func (c *SocketConfig) flags() []string {
 
 	if c.Runtime != "" && c.Socket != "" {
 		flags = append(flags, fmt.Sprintf("sockets.%s=%s", c.Runtime, c.Socket))
-	}
-
-	return flags
-}
-
-//
-// proctree flag
-//
-
-type ProcTreeConfig struct {
-	Source string              `mapstructure:"source"`
-	Cache  ProcTreeCacheConfig `mapstructure:"cache"`
-}
-
-type ProcTreeCacheConfig struct {
-	Process int `mapstructure:"process"`
-	Thread  int `mapstructure:"thread"`
-}
-
-func (c *ProcTreeConfig) flags() []string {
-	flags := make([]string, 0)
-
-	if c.Source != "" {
-		if c.Source == "none" {
-			flags = append(flags, "none")
-		} else {
-			flags = append(flags, fmt.Sprintf("source=%s", c.Source))
-		}
-	}
-	if c.Cache.Process != 0 {
-		flags = append(flags, fmt.Sprintf("process-cache=%d", c.Cache.Process))
-	}
-	if c.Cache.Thread != 0 {
-		flags = append(flags, fmt.Sprintf("thread-cache=%d", c.Cache.Thread))
-	}
-
-	return flags
-}
-
-//
-// dnscache flag
-//
-
-type DnsCacheConfig struct {
-	Enable bool `mapstructure:"enable"`
-	Size   int  `mapstructure:"size"`
-}
-
-func (c *DnsCacheConfig) flags() []string {
-	flags := make([]string, 0)
-
-	if !c.Enable {
-		flags = append(flags, "none")
-		return flags
-	}
-
-	if c.Size != 0 {
-		flags = append(flags, fmt.Sprintf("size=%d", c.Size))
 	}
 
 	return flags

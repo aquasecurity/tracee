@@ -23,34 +23,113 @@ func TestGetFlagsFromViper(t *testing.T) {
 		expectedFlags []string
 	}{
 		{
-			name: "Test proctree configuration (cli flags)",
+			name: "Test stores configuration (cli flags - process only)",
 			yamlContent: `
-proctree:
-    - source=events
-    - process-cache=8192
-    - thread-cache=4096
+stores:
+    - process
+    - process.source=events
+    - process.max-processes=8192
+    - process.max-threads=4096
 `,
-			key: "proctree",
+			key: "stores",
 			expectedFlags: []string{
-				"source=events",
-				"process-cache=8192",
-				"thread-cache=4096",
+				"process",
+				"process.source=events",
+				"process.max-processes=8192",
+				"process.max-threads=4096",
 			},
 		},
 		{
-			name: "Test proctree configuration (structured flags)",
+			name: "Test stores configuration (structured flags - process only)",
 			yamlContent: `
-proctree:
-    source: events
-    cache:
-        process: 8192
-        thread: 4096
+stores:
+    process:
+        enabled: true
+        source: events
+        max-processes: 8192
+        max-threads: 4096
 `,
-			key: "proctree",
+			key: "stores",
 			expectedFlags: []string{
-				"source=events",
-				"process-cache=8192",
-				"thread-cache=4096",
+				"process",
+				"process.source=events",
+				"process.max-processes=8192",
+				"process.max-threads=4096",
+			},
+		},
+		{
+			name: "Test stores configuration (cli flags - DNS only)",
+			yamlContent: `
+stores:
+    - dns
+    - dns.max-entries=1024
+`,
+			key: "stores",
+			expectedFlags: []string{
+				"dns",
+				"dns.max-entries=1024",
+			},
+		},
+		{
+			name: "Test stores configuration (structured flags - DNS only)",
+			yamlContent: `
+stores:
+    dns:
+        enabled: true
+        max-entries: 1024
+`,
+			key: "stores",
+			expectedFlags: []string{
+				"dns",
+				"dns.max-entries=1024",
+			},
+		},
+		{
+			name: "Test stores configuration (cli flags - all options)",
+			yamlContent: `
+stores:
+    - dns
+    - dns.max-entries=2048
+    - process
+    - process.source=both
+    - process.max-processes=8192
+    - process.max-threads=4096
+    - process.use-procfs
+`,
+			key: "stores",
+			expectedFlags: []string{
+				"dns",
+				"dns.max-entries=2048",
+				"process",
+				"process.source=both",
+				"process.max-processes=8192",
+				"process.max-threads=4096",
+				"process.use-procfs",
+			},
+		},
+		{
+			name: "Test stores configuration (structured flags - all options)",
+			yamlContent: `
+stores:
+    dns:
+        enabled: true
+        max-entries: 2048
+    process:
+        enabled: true
+        source: both
+        max-processes: 8192
+        max-threads: 4096
+        use-procfs: true
+`,
+			key: "stores",
+			expectedFlags: []string{
+				"dns",
+				"dns.max-entries=2048",
+				"process",
+				"process.source=both",
+				"process.max-processes=8192",
+				"process.max-threads=4096",
+				"process.use-procfs",
 			},
 		},
 		{
@@ -402,105 +481,6 @@ runtime:
 
 			if !slicesEqualIgnoreOrder(flags, tt.expectedFlags) {
 				t.Errorf("Expected %v, got %v", tt.expectedFlags, flags)
-			}
-		})
-	}
-}
-
-//
-// proctree
-//
-
-func TestProcTreeConfigFlags(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		config   ProcTreeConfig
-		expected []string
-	}{
-		{
-			name: "empty config",
-			config: ProcTreeConfig{
-				Source: "",
-				Cache:  ProcTreeCacheConfig{},
-			},
-			expected: []string{},
-		},
-		{
-			name: "only source set",
-			config: ProcTreeConfig{
-				Source: "events",
-				Cache:  ProcTreeCacheConfig{},
-			},
-			expected: []string{
-				"source=events",
-			},
-		},
-		{
-			name: "only process cache set",
-			config: ProcTreeConfig{
-				Source: "",
-				Cache: ProcTreeCacheConfig{
-					Process: 8192,
-				},
-			},
-			expected: []string{
-				"process-cache=8192",
-			},
-		},
-		{
-			name: "only thread cache set",
-			config: ProcTreeConfig{
-				Source: "",
-				Cache: ProcTreeCacheConfig{
-					Thread: 4096,
-				},
-			},
-			expected: []string{
-				"thread-cache=4096",
-			},
-		},
-		{
-			name: "both cache values set",
-			config: ProcTreeConfig{
-				Source: "",
-				Cache: ProcTreeCacheConfig{
-					Process: 8192,
-					Thread:  4096,
-				},
-			},
-			expected: []string{
-				"process-cache=8192",
-				"thread-cache=4096",
-			},
-		},
-		{
-			name: "all fields set",
-			config: ProcTreeConfig{
-				Source: "events",
-				Cache: ProcTreeCacheConfig{
-					Process: 8192,
-					Thread:  4096,
-				},
-			},
-			expected: []string{
-				"source=events",
-				"process-cache=8192",
-				"thread-cache=4096",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			got := tt.config.flags()
-			if !slicesEqualIgnoreOrder(got, tt.expected) {
-				t.Errorf("flags() = %v, want %v", got, tt.expected)
 			}
 		})
 	}

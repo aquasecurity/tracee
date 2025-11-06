@@ -68,11 +68,14 @@ signatures-dir: ""
 
 capabilities:
     bypass: false
-proctree:
-    source: both
-    cache:
-        process: 8192
-        thread: 8192
+stores:
+    process:
+        enabled: true
+        source: both
+        max-processes: 8192
+        max-threads: 8192
+    dns:
+        enabled: false
 
 # logging
 
