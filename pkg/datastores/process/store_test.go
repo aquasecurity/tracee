@@ -68,3 +68,75 @@ func TestProcessTree_DataStoreInterface(t *testing.T) {
 			"LastAccess should be updated after GetProcess call")
 	})
 }
+
+func TestProcessStore_GetAncestry(t *testing.T) {
+	ctx := context.Background()
+	pt, err := NewProcessTree(ctx, ProcTreeConfig{
+		Source:           SourceNone,
+		ProcessCacheSize: 100,
+		ThreadCacheSize:  100,
+	})
+	require.NoError(t, err)
+
+	// Create a process tree: init -> bash -> python
+	// init (hash: 100)
+	initProc := pt.GetOrCreateProcessByHash(100)
+	initFeed := &TaskInfoFeed{
+		Pid:  1,
+		Name: "init",
+	}
+	initProc.GetInfo().SetFeed(initFeed)
+	initProc.SetParentHash(0) // No parent
+
+	// bash (hash: 200, parent: 100)
+	bashProc := pt.GetOrCreateProcessByHash(200)
+	bashFeed := &TaskInfoFeed{
+		Pid:  1000,
+		Name: "bash",
+	}
+	bashProc.GetInfo().SetFeed(bashFeed)
+	bashProc.SetParentHash(100)
+
+	// python (hash: 300, parent: 200)
+	pythonProc := pt.GetOrCreateProcessByHash(300)
+	pythonFeed := &TaskInfoFeed{
+		Pid:  2000,
+		Name: "python",
+	}
+	pythonProc.GetInfo().SetFeed(pythonFeed)
+	pythonProc.SetParentHash(200)
+
+	t.Run("get ancestry with maxDepth 5", func(t *testing.T) {
+		ancestry, err := pt.GetAncestry(uint64(300), 5)
+		assert.NoError(t, err)
+		assert.Len(t, ancestry, 3) // python -> bash -> init
+
+		assert.Equal(t, uint64(300), ancestry[0].EntityID)
+		assert.Equal(t, "python", ancestry[0].Name)
+
+		assert.Equal(t, uint64(200), ancestry[1].EntityID)
+		assert.Equal(t, "bash", ancestry[1].Name)
+
+		assert.Equal(t, uint64(100), ancestry[2].EntityID)
+		assert.Equal(t, "init", ancestry[2].Name)
+	})
+
+	t.Run("get ancestry with maxDepth 1", func(t *testing.T) {
+		ancestry, err := pt.GetAncestry(uint64(300), 1)
+		assert.NoError(t, err)
+		assert.Len(t, ancestry, 1) // Only python itself
+		assert.Equal(t, "python", ancestry[0].Name)
+	})
+
+	t.Run("get ancestry for non-existent process", func(t *testing.T) {
+		ancestry, err := pt.GetAncestry(uint64(999), 5)
+		assert.NoError(t, err)
+		assert.Len(t, ancestry, 0) // Not found
+	})
+
+	t.Run("get ancestry with maxDepth 0", func(t *testing.T) {
+		ancestry, err := pt.GetAncestry(uint64(300), 0)
+		assert.NoError(t, err)
+		assert.Len(t, ancestry, 0) // Zero depth returns empty
+	})
+}
