@@ -563,7 +563,7 @@ jobs:
               ["GKE 5.15 aarch64"]="079f308677600eebf aarch64"
               ["AMZN2 5.10 x86_64"]="05d03d50b6008ede7 x86_64"
               ["AMZN2 5.10 aarch64"]="05e46d0a87c96bf69 aarch64"
-              ["RHEL8 4.18 x86_64"]="08c6b52c312ffee85 x86_64"
+              ["RHEL8 4.18 x86_64"]="0e6e8bf2181db9d65 x86_64"
               ["Focal 5.4 x86_64"]="0c75089aa342ffa26 x86_64"
               ["Focal 5.13 x86_64"]="094d5310a281c8679 x86_64"
               ["Focal 5.13 aarch64"]="08f88e2a2bd1b72a7 aarch64"
