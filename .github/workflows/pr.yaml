@@ -634,17 +634,24 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
-      # - name: "Prepare Image (Fix AMIs)"
-      #   run: ./tests/e2e-install-deps.sh
       - name: "Environment Variables"
         run: |
           if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
             echo "TESTS=${{ env.ARM64_TESTS }}" >> $GITHUB_ENV
           fi
+          LINUX_ID=$(grep -Pom1 '^ID=\K.*' /etc/os-release)
+          echo "LINUX_ID=${LINUX_ID}" >> ${GITHUB_ENV}
+      - name: "Disable Unattended Upgrades (Ubuntu only)"
+        if: ${{ env.LINUX_ID == 'ubuntu' }}
+        run: ./scripts/disable-unattended-upgrades.sh --timeout 5
+        continue-on-error: true
+      # - name: "Prepare Image (Fix AMIs)"
+      #   run: ./tests/e2e-install-deps.sh
       - name: "Build Tracee"
         run: make tracee
       - name: "Compatibility Test"
         run: env "PATH=$PATH" make test-compatibility
+
       - name: "Instrumentation Test"
         run: ./tests/e2e-inst-test.sh --keep-artifacts
       - name: "Upload E2E Instrumentation Test Artifacts"
