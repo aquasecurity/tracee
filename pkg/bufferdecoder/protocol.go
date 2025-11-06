@@ -1,5 +1,5 @@
 // Package bufferdecoder implements the structs (protocol indeed) used in the communication
-// between code eBPF running in the Kernel and the Tracee-eBPF user-space application.
+// between code eBPF running in the Kernel and the Tracee user-space application.
 package bufferdecoder
 
 import "github.com/aquasecurity/tracee/pkg/events"

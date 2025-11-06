@@ -26,7 +26,7 @@ make env                    # Shows all environment variables and tool versions
 
 # Basic building (takes 1-2 minutes)
 make clean                  # Clean all build artifacts first
-make all                    # Builds tracee-ebpf, tracee-rules, signatures, tracee, evt, traceectl
+make all                    # Builds tracee, tracee-rules, signatures, evt, traceectl
 
 # Individual components
 make bpf                    # eBPF object only
@@ -97,7 +97,6 @@ BTFHUB=1 STATIC=1 make      # Embed BTF for kernel compatibility
 
 - **`cmd/`** - Command-line binaries
   - `tracee/` - Main unified Tracee binary
-  - `tracee-ebpf/` - Legacy eBPF-only binary (deprecated)
   - `tracee-rules/` - Legacy rules engine binary (deprecated)
   - `evt/` - Event generation and testing tool
   - `traceectl/` - Control plane client tool (separate Go module)

@@ -3,7 +3,7 @@
 #
 
 ARG BTFHUB=0
-ARG FLAVOR=tracee-ebpf-core
+ARG FLAVOR=tracee-core
 
 #
 # Version
@@ -71,7 +71,7 @@ COPY . /tracee
 
 RUN source /etc/profile && \
     make clean && \
-    BTFHUB=$BTFHUB STATIC=$STATIC RELEASE_VERSION=$RELEASE_VERSION make tracee tracee-ebpf && \
+    BTFHUB=$BTFHUB STATIC=$STATIC RELEASE_VERSION=$RELEASE_VERSION make tracee && \
     make tracee-rules && \
     make tracee-operator && \
     make signatures && \
@@ -91,7 +91,6 @@ WORKDIR /tracee
 RUN apk --no-cache add mandoc
 
 COPY --from=tracee-make /tracee/dist/tracee /tracee
-COPY --from=tracee-make /tracee/dist/tracee-ebpf /tracee
 COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
 COPY --from=tracee-make /tracee/dist/tracee-operator /tracee
 COPY --from=tracee-make /tracee/dist/signatures/ /tracee/signatures/

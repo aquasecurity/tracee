@@ -34,8 +34,7 @@
    ```
 
 1. Verify that the `release` workflow has built and published the artifacts.
-   1. Tracee binaries (tracee, tracee-ebpf, tracee-static, tracee-ebpf-static,
-      tracee-rules, signatures) in the form of a tar archive `tracee.<VERSION>.tar.gz`
+   1. Tracee binaries (tracee, tracee-static, tracee-rules, signatures) in the form of a tar archive `tracee.<VERSION>.tar.gz`
    1. Source code zip and tar files
    1. Docker images pushed to the aquasec/tracee repository.
 1. Publish the Helm chart by triggering workflow [`.github/workflows/publish-helm.yaml`].

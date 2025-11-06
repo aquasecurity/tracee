@@ -1,4 +1,4 @@
-// Invoked tracee-ebpf events from user mode
+// Invoked tracee events from user mode
 //
 // This utility can be useful to generate information needed by signatures that
 // is not provided by normal events in the kernel.
@@ -8,11 +8,11 @@
 // information will be extracted.
 //
 // This is critical because tracee-rules is independent, and doesn't have to run
-// on the same machine as tracee-ebpf. This means that tracee-rules might lack
+// on the same machine as tracee. This means that tracee-rules might lack
 // basic information of the operating machine needed for some signatures.
 //
 // By creating user mode events this information could be intentionally
-// collected and passed to tracee-ebpf afterwards.
+// collected and passed to tracee afterwards.
 package events
 
 import (
@@ -39,7 +39,7 @@ func InitNamespacesEvent() trace.Event {
 
 	initNamespacesEvent := trace.Event{
 		Timestamp:   int(time.Now().UnixNano()),
-		ProcessName: "tracee-ebpf",
+		ProcessName: "tracee",
 		EventID:     int(InitNamespaces),
 		EventName:   initNamespacesDef.GetName(),
 		ArgsNum:     len(initNamespacesArgs),
@@ -142,7 +142,7 @@ func ExistingContainersEvents(cts *container.Manager, enrichDisabled bool) []tra
 		}
 		existingContainerEvent := trace.Event{
 			Timestamp:   int(time.Now().UnixNano()),
-			ProcessName: "tracee-ebpf",
+			ProcessName: "tracee",
 			EventID:     int(ExistingContainer),
 			EventName:   def.GetName(),
 			ArgsNum:     len(args),
