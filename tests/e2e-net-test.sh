@@ -84,7 +84,7 @@ logfile=$SCRIPT_TMP_DIR/tracee-log-$$
 outputfile=$SCRIPT_TMP_DIR/output-$$
 
 tracee_command="./dist/tracee \
-    --install-path $TRACEE_TMP_DIR \
+    --general workdir=$TRACEE_TMP_DIR \
     --output json:$outputfile \
     --log file:$logfile \
     --policy ./tests/policies/net/ \

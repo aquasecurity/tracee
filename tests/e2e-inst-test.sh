@@ -201,7 +201,7 @@ for TEST in $TESTS; do
 done
 
 tracee_command="./dist/tracee \
-                    --install-path $TRACEE_TMP_DIR \
+                    --general workdir=$TRACEE_TMP_DIR \
                     --proctree source=both \
                     --output option:sort-events \
                     --output option:parse-arguments \

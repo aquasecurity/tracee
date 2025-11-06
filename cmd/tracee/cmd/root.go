@@ -115,6 +115,19 @@ func initCmd() error {
 		"[file|dir]\t\t\t\tPath to a policy or directory with policies",
 	)
 
+	// General flags
+
+	rootCmd.Flags().StringArrayP(
+		"general",
+		"g",
+		[]string{"workdir=" + flags.WorkdirDefault},
+		"[workdir=/tmp/tracee]\t\tControl general configurations",
+	)
+	err := viper.BindPFlag("general", rootCmd.Flags().Lookup("general"))
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	// Output flags
 
 	rootCmd.Flags().StringArrayP(
@@ -123,7 +136,7 @@ func initCmd() error {
 		[]string{"table"},
 		"[json|none|webhook...]\t\tControl how and where output is printed",
 	)
-	err := viper.BindPFlag("output", rootCmd.Flags().Lookup("output"))
+	err = viper.BindPFlag("output", rootCmd.Flags().Lookup("output"))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -264,16 +277,6 @@ func initCmd() error {
 		"[bypass|add|drop]\t\t\tDefine capabilities for tracee to run with",
 	)
 	err = viper.BindPFlag("capabilities", rootCmd.Flags().Lookup("capabilities"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	rootCmd.Flags().String(
-		"install-path",
-		"/tmp/tracee",
-		"<dir>\t\t\t\tPath where tracee will install or lookup it's resources",
-	)
-	err = viper.BindPFlag("install-path", rootCmd.Flags().Lookup("install-path"))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

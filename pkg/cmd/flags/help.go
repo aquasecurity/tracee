@@ -19,6 +19,7 @@ func PrintAndExitIfHelp(ctx *cli.Context) {
 		"output",
 		"capabilities",
 		"log",
+		"general",
 	}
 
 	for _, k := range keys {
@@ -62,6 +63,8 @@ func GetHelpString(key string) string {
 		return capabilitiesHelp()
 	case "log":
 		return logHelp()
+	case "general":
+		return generalHelp()
 	}
 	return ""
 }

@@ -22,7 +22,7 @@ info() {
 rm -f $TRACEE_TMP_DIR/tracee.pid
 
 ./dist/tracee \
-    --install-path $TRACEE_TMP_DIR \
+    --general workdir=$TRACEE_TMP_DIR \
     --output none \
     --events security_file_open &
 

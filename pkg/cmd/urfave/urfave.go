@@ -168,8 +168,11 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Decide BTF & BPF files to use (based in the kconfig, release & environment info)
 
-	traceeInstallPath := c.String("install-path")
-	err = initialize.BpfObject(&cfg, kernelConfig, osInfo, traceeInstallPath, version)
+	generalConfig, err := flags.PrepareGeneral(c.StringSlice("general"))
+	if err != nil {
+		return runner, err
+	}
+	err = initialize.BpfObject(&cfg, kernelConfig, osInfo, generalConfig.Workdir, version)
 	if err != nil {
 		return runner, errfmt.Errorf("failed preparing BPF object: %v", err)
 	}
@@ -183,7 +186,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	runner.HTTP = serverRunner.HTTP
 	runner.TraceeConfig = cfg
 	runner.Printer = broadcast
-	runner.InstallPath = traceeInstallPath
+	runner.Workdir = generalConfig.Workdir
 
 	return runner, nil
 }

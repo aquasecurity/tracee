@@ -36,6 +36,8 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &OutputConfig{}
 	case "dnscache":
 		flagger = &DnsCacheConfig{}
+	case "general":
+		flagger = &GeneralConfig{}
 	default:
 		return nil, errfmt.Errorf("unrecognized key: %s", key)
 	}
@@ -479,4 +481,16 @@ type OutputWebhookConfig struct {
 	Timeout     string `mapstructure:"timeout"`
 	GoTemplate  string `mapstructure:"gotemplate"`
 	ContentType string `mapstructure:"content-type"`
+}
+
+//
+// general flag
+//
+
+type GeneralConfig struct {
+	Workdir string `mapstructure:"workdir"`
+}
+
+func (c *GeneralConfig) flags() []string {
+	return []string{fmt.Sprintf("workdir=%s", c.Workdir)}
 }
