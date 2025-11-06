@@ -141,13 +141,13 @@ func (r Runner) runWithPrinter(ctx context.Context, t *tracee.Tracee) error {
 	return err
 }
 
-func GetContainerMode(containerFilterEnabled, noContainersEnrich bool) config.ContainerMode {
+func GetContainerMode(containerFilterEnabled, enrichmentEnabled bool) config.ContainerMode {
 	if !containerFilterEnabled {
 		return config.ContainerModeDisabled
 	}
 
 	// If containers enrichment is disabled, return just enabled mode ...
-	if noContainersEnrich {
+	if !enrichmentEnabled {
 		return config.ContainerModeEnabled
 	}
 

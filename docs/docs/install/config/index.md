@@ -89,24 +89,36 @@ A complete config file with all available options can be found [here](https://gi
 
 ### Containers
 
-- To disable container enrichment use: **`--containers enrich=false`**.
+- To enable container enrichment, include the flag: **`--enrichment container.enabled`**. To disable it, simply omit the flag.
 
   YAML:
   ```yaml
-  containers:
-    enrich: false
+  enrichment:
+    container:
+      enabled: true
   ```
 
-  __NOTE__: You can view more in the [containers section](../../flags/containers.1.md).
+  __NOTE__: You can view more in the [enrichment section](../../flags/enrichment.1.md).
 
-- **`--containers`**: Configures container enrichment and runtime sockets. For example, to configure runtime sockets:
+- **`--enrichment`**: Configures enrichment options including container enrichment and runtime sockets. For example, to configure runtime sockets:
 
   YAML:
   ```yaml
-  containers:
-    sockets:
-      - runtime: docker
-        socket: /var/run/docker.sock
+  enrichment:
+    container:
+      enabled: true
+      cgroup:
+        path: /host/sys/fs/cgroup
+        force: false
+      docker-socket: /var/run/docker.sock
+      containerd-socket: /var/run/containerd/containerd.sock
+      crio-socket: /var/run/crio/crio.sock
+      podman-socket: /var/run/podman/podman.sock
+    resolve-fd: true
+    exec-hash:
+      enabled: true
+      mode: sha256
+    user-stack-trace: true
   ```
 
 ### DNS Cache

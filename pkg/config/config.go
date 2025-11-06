@@ -32,7 +32,7 @@ type Config struct {
 	KernelConfig        *environment.KernelConfig
 	OSInfo              *environment.OSInfo
 	Sockets             runtime.Sockets
-	NoContainersEnrich  bool
+	EnrichmentEnabled   bool
 	CgroupFSPath        string
 	CgroupFSForce       bool
 	EngineConfig        engine.Config

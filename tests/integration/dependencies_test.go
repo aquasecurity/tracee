@@ -236,7 +236,7 @@ func Test_EventsDependencies(t *testing.T) {
 				Capabilities: &config.CapabilitiesConfig{
 					BypassCaps: true,
 				},
-				NoContainersEnrich: true,
+				EnrichmentEnabled: false,
 			}
 			// Initialize OSInfo to prevent nil pointer dereference in probes compatibility
 			osInfo, err := environment.GetOSInfo()
