@@ -167,16 +167,18 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 	process := pt.GetOrCreateProcessByHash(processHash)
 	procInfo := process.GetInfo()
 
-	// check if the process info was already set (proctree might miss ppid and name)
+	// Check if the process info was already set AT THE START TIME
 	switch givenPid {
 	case 0, 1: // PIDs 0 and 1 are special
 	default:
-		if procInfo.GetName() != "" && procInfo.GetPPid() != 0 {
+		startTime := timeutil.NsSinceEpochToTime(epochTimeNs)
+		feedAtStart := procInfo.GetFeedAt(startTime)
+		if feedAtStart.Name == name && feedAtStart.Name != "" && feedAtStart.PPid != 0 {
 			return nil
 		}
 	}
 
-	procfsTimeStamp := timeutil.BootToEpochNS(startTimeNs)
+	procfsTimeStamp := epochTimeNs
 
 	// NOTE: override all the fields of the taskInfoFeed, to avoid any previous data.
 	taskInfoFeed := pt.GetTaskInfoFeedFromPool()
@@ -240,8 +242,8 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 	pid := status.GetPid()   // status: pid == tid
 	tgid := status.GetTgid() // status: tgid == pid
 	ppid := status.GetPPid()
-	nspid := status.GetNsTgid()
-	nstgid := status.GetNsTgid()
+	nspid := status.GetNsPid()   // namespace TID
+	nstgid := status.GetNsTgid() // namespace PID
 	nsppid := status.GetNsPPid()
 	start := stat.GetStartTime()
 
@@ -260,12 +262,14 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 	thread := pt.GetOrCreateThreadByHash(threadHash)
 	threadInfo := thread.GetInfo()
 
-	// check if the thread info was already set (proctree might miss ppid and name)
-	if threadInfo.GetName() != "" && threadInfo.GetPPid() != 0 {
+	// Check if the thread info was already set AT THE START TIME
+	startTime := timeutil.NsSinceEpochToTime(epochTimeNs)
+	feedAtStart := threadInfo.GetFeedAt(startTime)
+	if feedAtStart.Name == name && feedAtStart.Name != "" && feedAtStart.PPid != 0 {
 		return nil
 	}
 
-	procfsTimeStamp := timeutil.BootToEpochNS(startTimeNs)
+	procfsTimeStamp := epochTimeNs
 
 	// NOTE: override all the fields of the taskInfoFeed, to avoid any previous data.
 	taskInfoFeed := pt.GetTaskInfoFeedFromPool()
