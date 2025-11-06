@@ -335,6 +335,28 @@ server:
 				"pyroscope",
 			},
 		},
+		{
+			name: "Test runtime configuration (cli flags)",
+			yamlContent: `
+runtime:
+    - workdir=/tmp/tracee
+`,
+			key: "runtime",
+			expectedFlags: []string{
+				"workdir=/tmp/tracee",
+			},
+		},
+		{
+			name: "Test runtime configuration (structured flags)",
+			yamlContent: `
+runtime:
+    workdir: /opt/tracee
+`,
+			key: "runtime",
+			expectedFlags: []string{
+				"workdir=/opt/tracee",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1022,6 +1044,7 @@ func TestOutputConfigFlags(t *testing.T) {
 		})
 	}
 }
+
 func TestServerConfigFlags(t *testing.T) {
 	t.Parallel()
 
@@ -1106,6 +1129,70 @@ func TestServerConfigFlags(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
+			got := tt.config.flags()
+			if !slicesEqualIgnoreOrder(got, tt.expected) {
+				t.Errorf("flags() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+//
+// runtime
+//
+
+func TestRuntimeConfigFlags(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		config   RuntimeConfig
+		expected []string
+	}{
+		{
+			name: "empty config",
+			config: RuntimeConfig{
+				Workdir: "",
+			},
+			expected: []string{
+				"workdir=",
+			},
+		},
+		{
+			name: "default workdir",
+			config: RuntimeConfig{
+				Workdir: "/tmp/tracee",
+			},
+			expected: []string{
+				"workdir=/tmp/tracee",
+			},
+		},
+		{
+			name: "custom workdir",
+			config: RuntimeConfig{
+				Workdir: "/opt/tracee",
+			},
+			expected: []string{
+				"workdir=/opt/tracee",
+			},
+		},
+		{
+			name: "workdir with custom path",
+			config: RuntimeConfig{
+				Workdir: "/var/lib/tracee",
+			},
+			expected: []string{
+				"workdir=/var/lib/tracee",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := tt.config.flags()
 			if !slicesEqualIgnoreOrder(got, tt.expected) {
 				t.Errorf("flags() = %v, want %v", got, tt.expected)
