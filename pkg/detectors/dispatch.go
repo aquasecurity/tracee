@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -221,13 +223,53 @@ func (d *dispatcher) autoPopulateFields(output, input *v1beta1.Event, detector *
 	}
 
 	// ProcessAncestry - populate from data store (expensive, opt-in)
-	// TODO: Implement when ProcessStore has GetAncestry() method
-	// if autoPop.ProcessAncestry && output.Workload != nil && output.Workload.Process != nil {
-	//     if len(output.Workload.Process.Ancestors) == 0 {
-	//         // Query process store for ancestry (depth: 5)
-	//         // output.Workload.Process.Ancestors = ...
-	//     }
-	// }
+	if !autoPop.ProcessAncestry {
+		return
+	}
+	if output.Workload == nil || output.Workload.Process == nil {
+		return
+	}
+	if len(output.Workload.Process.Ancestors) > 0 {
+		return // Already populated by detector
+	}
+
+	entityId := uint64(output.Workload.Process.UniqueId.GetValue())
+	if entityId == 0 || detector.params.DataStores == nil {
+		return
+	}
+
+	const ancestryDepth = 5
+	ancestry, err := detector.params.DataStores.Processes().GetAncestry(entityId, ancestryDepth)
+	if err != nil || len(ancestry) <= 1 {
+		return // Error or no ancestors (only process itself)
+	}
+
+	// Convert datastores.ProcessInfo to v1beta1.Process
+	// Skip first entry (process itself, already in output.Workload.Process)
+	output.Workload.Process.Ancestors = make([]*v1beta1.Process, 0, len(ancestry)-1)
+	for _, ancestor := range ancestry[1:] {
+		proc := &v1beta1.Process{
+			UniqueId: &wrapperspb.UInt32Value{Value: uint32(ancestor.EntityID)},
+			HostPid:  &wrapperspb.UInt32Value{Value: ancestor.PID},
+			Pid:      &wrapperspb.UInt32Value{Value: ancestor.PID},
+		}
+
+		// Populate thread with process name (comm)
+		if ancestor.Name != "" {
+			proc.Thread = &v1beta1.Thread{
+				Name: ancestor.Name,
+			}
+		}
+
+		// Populate executable path if available
+		if ancestor.Exe != "" {
+			proc.Executable = &v1beta1.Executable{
+				Path: ancestor.Exe,
+			}
+		}
+
+		output.Workload.Process.Ancestors = append(output.Workload.Process.Ancestors, proc)
+	}
 }
 
 // cloneThreat creates a deep copy of Threat metadata
