@@ -92,7 +92,7 @@ func TestDispatchToDetectors_WithOutput(t *testing.T) {
 	detEventID, _ := events.Core.GetDefinitionIDByName(detector.eventName)
 	policyMgr := newTestPolicyManager(detEventID)
 
-	engine := NewEngine(policyMgr)
+	engine := NewEngine(policyMgr, nil)
 	params := detection.DetectorParams{
 		Config: detection.NewEmptyDetectorConfig(),
 	}
@@ -162,7 +162,7 @@ func TestAutoPopulateFields_Threat(t *testing.T) {
 	detEventID, _ := events.Core.GetDefinitionIDByName(detector.eventName)
 	policyMgr := newTestPolicyManager(detEventID)
 
-	engine := NewEngine(policyMgr)
+	engine := NewEngine(policyMgr, nil)
 	params := detection.DetectorParams{
 		Config: detection.NewEmptyDetectorConfig(),
 	}
@@ -230,7 +230,7 @@ func TestAutoPopulateFields_DetectedFrom(t *testing.T) {
 	detEventID, _ := events.Core.GetDefinitionIDByName(detector.eventName)
 	policyMgr := newTestPolicyManager(detEventID)
 
-	engine := NewEngine(policyMgr)
+	engine := NewEngine(policyMgr, nil)
 	params := detection.DetectorParams{
 		Config: detection.NewEmptyDetectorConfig(),
 	}
@@ -295,7 +295,7 @@ func TestAutoPopulateFields_Combined(t *testing.T) {
 	detEventID, _ := events.Core.GetDefinitionIDByName(detector.eventName)
 	policyMgr := newTestPolicyManager(detEventID)
 
-	engine := NewEngine(policyMgr)
+	engine := NewEngine(policyMgr, nil)
 	params := detection.DetectorParams{
 		Config: detection.NewEmptyDetectorConfig(),
 	}
@@ -425,7 +425,7 @@ func TestDispatchWithScopeFilter(t *testing.T) {
 	detEventID, _ := events.Core.GetDefinitionIDByName(detector.eventName)
 	policyMgr := newTestPolicyManager(detEventID)
 
-	engine := NewEngine(policyMgr)
+	engine := NewEngine(policyMgr, nil)
 	params := detection.DetectorParams{
 		Config: detection.NewEmptyDetectorConfig(),
 	}
