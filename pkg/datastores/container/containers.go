@@ -126,6 +126,12 @@ func (c *Manager) GetCgroupVersion() cgroup.CgroupVersion {
 	return c.cgroups.GetDefaultCgroup().GetVersion()
 }
 
+// Initialize initializes the container manager by populating existing containers.
+// This method is called automatically by the datastore registry during initialization.
+func (c *Manager) Initialize(ctx context.Context) error {
+	return c.Populate()
+}
+
 // Populate populates Containers struct by reading mounted proc and cgroups fs.
 func (c *Manager) Populate() error {
 	c.lock.Lock()
