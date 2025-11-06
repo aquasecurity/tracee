@@ -14,7 +14,7 @@ import (
 	"github.com/aquasecurity/tracee/types/protocol"
 )
 
-// Event is a single result of an ebpf event process. It is used as a payload later delivered to tracee-rules.
+// Event is a single result of an ebpf event process. It is used as a payload for signature evaluation.
 type Event struct {
 	Timestamp             int          `json:"timestamp"`
 	ThreadStartTime       int          `json:"threadStartTime"`

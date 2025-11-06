@@ -131,7 +131,6 @@ RELEASE_VERSION = $(shell $(CMD_GIT) describe --tags --abbrev=0)
 DOCKER_TAG = $(subst v,,$(RELEASE_VERSION))
 
 RELEASE_FILES = LICENSE
-RELEASE_FILES += $(OUTPUT_DIR)/tracee-rules
 RELEASE_FILES += $(OUTPUT_DIR)/tracee
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-static
 RELEASE_FILES += $(OUTPUT_DIR)/signatures
@@ -228,7 +227,7 @@ build-tracee-container: alpine-prepare
 		$(MAKE) -f builder/Makefile.tracee-container build-tracee
 
 #
-# build binaries (tracee, tracee-rules, rules)
+# build binaries (tracee, signatures)
 #
 
 .PHONY: ubuntu-prepare
