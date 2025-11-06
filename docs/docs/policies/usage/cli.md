@@ -35,7 +35,8 @@ tracee --config ./config.yaml --policy ./policy.yaml && cat /tmp/debug.json
 ### config.yaml (example)
 
 ```yaml
-install-path: /tmp/tracee
+runtime:
+  - workdir=/tmp/tracee
 
 # server configuration
 

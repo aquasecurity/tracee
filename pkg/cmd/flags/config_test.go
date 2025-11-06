@@ -335,6 +335,28 @@ server:
 				"pyroscope",
 			},
 		},
+		{
+			name: "Test runtime configuration (cli flags)",
+			yamlContent: `
+runtime:
+    - workdir=/tmp/tracee
+`,
+			key: "runtime",
+			expectedFlags: []string{
+				"workdir=/tmp/tracee",
+			},
+		},
+		{
+			name: "Test runtime configuration (structured flags)",
+			yamlContent: `
+runtime:
+    workdir: /opt/tracee
+`,
+			key: "runtime",
+			expectedFlags: []string{
+				"workdir=/opt/tracee",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1022,6 +1044,7 @@ func TestOutputConfigFlags(t *testing.T) {
 		})
 	}
 }
+
 func TestServerConfigFlags(t *testing.T) {
 	t.Parallel()
 

@@ -15,14 +15,14 @@ show_help() {
 Usage: $0 [OPTIONS]
 
 Options:
-    --install-path, -i PATH  Installation path for tracee (default: ${TRACEE_INSTALL_PATH_DEFAULT})
+    --workdir, -w PATH       Working directory for tracee (default: ${TRACEE_WORKDIR_DEFAULT})
     --timeout, -t SECONDS    Timeout to wait for graceful shutdown (default: ${TIMEOUT_DEFAULT})
     --force, -f              Force immediate termination (SIGKILL)
     --help, -h               Show this help message
 
 Examples:
     $0                                          # Stop tracee in default location
-    $0 --install-path /var/tracee               # Stop tracee in custom location
+    $0 --workdir /var/tracee                    # Stop tracee in custom location
     $0 --timeout 30                             # Wait up to 30 seconds for graceful shutdown
     $0 --force                                  # Immediately send KILL signal
 EOF
@@ -31,9 +31,9 @@ EOF
 # Parse command line arguments
 while [ $# -gt 0 ]; do
     case $1 in
-        --install-path | -i)
+        --workdir | -w)
             # shellcheck disable=SC2034
-            TRACEE_INSTALL_PATH="$2" # it is used in tracee_common.sh
+            TRACEE_WORKDIR="$2" # it is used in tracee_common.sh
             shift 2
             ;;
         --timeout | -t)
