@@ -112,7 +112,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *events.
 				// CgroupMkdir: pick EventID from the event itself
 				if eventID == events.CgroupMkdir {
 					// avoid sending irrelevant cgroups
-					isHid, err := isCgroupEventInHid(event.Event, t.container)
+					isHid, err := isCgroupEventInHid(event.Event, t.dataStoreRegistry.GetContainerManager())
 					if err != nil {
 						logger.Errorw("cgroup_mkdir event skipped enrichment: couldn't get cgroup hid", "error", err)
 						out <- event
@@ -140,7 +140,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *events.
 					queues[cgroupId] = make(chan *events.PipelineEvent, contQueueSize)
 
 					go func(cgroupId uint64) {
-						metadata, err := t.container.EnrichCgroupInfo(cgroupId)
+						metadata, err := t.dataStoreRegistry.GetContainerManager().EnrichCgroupInfo(cgroupId)
 						bLock.Lock()
 						enrichInfo[cgroupId] = &enrichResult{metadata, err}
 						enrichDone[cgroupId] = true

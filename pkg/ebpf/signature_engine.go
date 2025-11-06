@@ -159,18 +159,18 @@ func (t *Tracee) PrepareBuiltinDataSources() []detect.DataSource {
 	datasources := []detect.DataSource{}
 
 	// Containers Data Source
-	datasources = append(datasources, container.NewDataSource(t.container))
+	datasources = append(datasources, container.NewDataSource(t.dataStoreRegistry.GetContainerManager()))
 
 	// DNS Data Source
 	if t.config.DNSCacheConfig.Enable {
-		datasources = append(datasources, dns.NewDataSource(t.dnsCache))
+		datasources = append(datasources, dns.NewDataSource(t.dataStoreRegistry.GetDNSCache()))
 	}
 
 	// Process Tree Data Source
 	switch t.config.ProcTree.Source {
 	case process.SourceNone:
 	default:
-		datasources = append(datasources, process.NewDataSource(t.processTree))
+		datasources = append(datasources, process.NewDataSource(t.dataStoreRegistry.GetProcessTree()))
 	}
 
 	return datasources

@@ -4,13 +4,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/aquasecurity/tracee/pkg/datastores"
 	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func Benchmark_procTreeForkProcessor(b *testing.B) {
 	t := &Tracee{}
-	t.processTree, _ = process.NewProcessTree(
+	registry := datastores.NewRegistry()
+	processTree, _ := process.NewProcessTree(
 		context.Background(),
 		process.ProcTreeConfig{
 			Source:           process.SourceBoth,
@@ -18,6 +20,8 @@ func Benchmark_procTreeForkProcessor(b *testing.B) {
 			ThreadCacheSize:  process.DefaultThreadCacheSize,
 		},
 	)
+	_ = registry.RegisterStore("process", processTree, true)
+	t.dataStoreRegistry = registry
 
 	event := &trace.Event{
 		Args: []trace.Argument{
@@ -47,7 +51,8 @@ func Benchmark_procTreeForkProcessor(b *testing.B) {
 
 func Benchmark_procTreeExecProcessor(b *testing.B) {
 	t := &Tracee{}
-	t.processTree, _ = process.NewProcessTree(
+	registry := datastores.NewRegistry()
+	processTree, _ := process.NewProcessTree(
 		context.Background(),
 		process.ProcTreeConfig{
 			Source:           process.SourceBoth,
@@ -55,6 +60,8 @@ func Benchmark_procTreeExecProcessor(b *testing.B) {
 			ThreadCacheSize:  process.DefaultThreadCacheSize,
 		},
 	)
+	_ = registry.RegisterStore("process", processTree, true)
+	t.dataStoreRegistry = registry
 
 	event := &trace.Event{
 		Args: []trace.Argument{
@@ -83,7 +90,8 @@ func Benchmark_procTreeExecProcessor(b *testing.B) {
 
 func Benchmark_procTreeExitProcessor(b *testing.B) {
 	t := &Tracee{}
-	t.processTree, _ = process.NewProcessTree(
+	registry := datastores.NewRegistry()
+	processTree, _ := process.NewProcessTree(
 		context.Background(),
 		process.ProcTreeConfig{
 			Source:           process.SourceBoth,
@@ -91,6 +99,8 @@ func Benchmark_procTreeExitProcessor(b *testing.B) {
 			ThreadCacheSize:  process.DefaultThreadCacheSize,
 		},
 	)
+	_ = registry.RegisterStore("process", processTree, true)
+	t.dataStoreRegistry = registry
 
 	event := &trace.Event{
 		Args: []trace.Argument{
