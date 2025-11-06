@@ -41,7 +41,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 		Capabilities: &config.CapabilitiesConfig{
 			BypassCaps: true,
 		},
-		NoContainersEnrich: false, // Enable container enrichment for this test
+		EnrichmentEnabled: true, // Enable container enrichment for this test
 	}
 
 	// Register docker socket for the test
@@ -241,7 +241,7 @@ func Test_ExistingContainers(t *testing.T) {
 		Capabilities: &config.CapabilitiesConfig{
 			BypassCaps: true,
 		},
-		NoContainersEnrich: false, // Enable container enrichment for this test
+		EnrichmentEnabled: true, // Enable container enrichment for this test
 	}
 
 	// Register docker socket for the test
