@@ -163,7 +163,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				stackAddresses = t.getStackAddresses(eCtx.StackID)
 			}
 
-			_, containerInfo := t.container.GetCgroupInfo(eCtx.CgroupID)
+			_, containerInfo := t.dataStoreRegistry.GetContainerManager().GetCgroupInfo(eCtx.CgroupID)
 
 			commStr := string(stringutil.TrimTrailingNUL(eCtx.Comm[:]))       // clean potential trailing null
 			utsNameStr := string(stringutil.TrimTrailingNUL(eCtx.UtsName[:])) // clean potential trailing null
