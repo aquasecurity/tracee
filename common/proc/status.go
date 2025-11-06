@@ -283,15 +283,41 @@ func parsePPid(value []byte, s *ProcStatus) {
 }
 
 func parseNsTgid(value []byte, s *ProcStatus) {
-	s.nstgid, _ = ParseInt32(string(value))
+	s.nstgid, _ = parsePidNSField(value, false)
 }
 
 func parseNsPid(value []byte, s *ProcStatus) {
-	s.nspid, _ = ParseInt32(string(value))
+	s.nspid, _ = parsePidNSField(value, false)
 }
 
 func parseNsPgid(value []byte, s *ProcStatus) {
-	s.nspgid, _ = ParseInt32(string(value))
+	s.nspgid, _ = parsePidNSField(value, false)
+}
+
+// parsePidNSField parses namespace PID fields (NStgid, NSpid, NSpgid, NSsid).
+// These contain tab-separated PIDs from host to innermost namespace.
+// If innermost is true, returns the last value (innermost namespace PID).
+// If innermost is false, returns the first value (host PID).
+func parsePidNSField(value []byte, innermost bool) (int32, error) {
+	if len(value) == 0 {
+		return 0, nil
+	}
+
+	// Check if there are multiple namespace values (tab-separated)
+	firstTabIdx := bytes.IndexByte(value, '\t')
+	if firstTabIdx == -1 {
+		return ParseInt32(string(value))
+	}
+
+	// Multiple namespaces present
+	if innermost {
+		// Find the last tab and return everything after it
+		lastTabIdx := bytes.LastIndexByte(value, '\t')
+		return ParseInt32(string(value[lastTabIdx+1:]))
+	}
+
+	// Return the host PID (first value, before first tab)
+	return ParseInt32(string(value[:firstTabIdx]))
 }
 
 func parseVmRSS(value []byte, s *ProcStatus) {

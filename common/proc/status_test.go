@@ -69,9 +69,9 @@ Uid:    1000    1000    1000    1000
 Gid:    1000    1000    1000    1000
 FDSize: 128
 Groups: 3 90 98 108 955 959 986 991 998 1000 
-NStgid: 216443
-NSpid:  216445
-NSpgid: 216444
+NStgid:	216443	1234	1
+NSpid:	216445	1235	2
+NSpgid:	216444	1236	1
 NSsid:  3994523
 Kthread:        0
 VmPeak:    10392 kB
@@ -120,6 +120,99 @@ x86_Thread_features:
 x86_Thread_features_locked:
 `
 
+func Test_parsePidNSField(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name        string
+		input       []byte
+		innermost   bool
+		expectedPid int32
+		expectedErr bool
+	}{
+		// Host PID tests (innermost = false)
+		{
+			name:        "Host PID - Multiple namespaces",
+			input:       []byte("216443\t1234\t1"),
+			innermost:   false,
+			expectedPid: 216443,
+			expectedErr: false,
+		},
+		{
+			name:        "Host PID - Two namespaces",
+			input:       []byte("5000\t100"),
+			innermost:   false,
+			expectedPid: 5000,
+			expectedErr: false,
+		},
+		{
+			name:        "Host PID - Single value (no namespace)",
+			input:       []byte("12345"),
+			innermost:   false,
+			expectedPid: 12345,
+			expectedErr: false,
+		},
+		{
+			name:        "Host PID - Empty input",
+			input:       []byte(""),
+			innermost:   false,
+			expectedPid: 0,
+			expectedErr: false,
+		},
+
+		// Innermost PID tests (innermost = true)
+		{
+			name:        "Innermost PID - Multiple namespaces",
+			input:       []byte("216443\t1234\t1"),
+			innermost:   true,
+			expectedPid: 1,
+			expectedErr: false,
+		},
+		{
+			name:        "Innermost PID - Two namespaces",
+			input:       []byte("5000\t100"),
+			innermost:   true,
+			expectedPid: 100,
+			expectedErr: false,
+		},
+		{
+			name:        "Innermost PID - Single value (no namespace)",
+			input:       []byte("12345"),
+			innermost:   true,
+			expectedPid: 12345,
+			expectedErr: false,
+		},
+		{
+			name:        "Innermost PID - Empty input",
+			input:       []byte(""),
+			innermost:   true,
+			expectedPid: 0,
+			expectedErr: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// t.Parallel()
+
+			result, err := parsePidNSField(tc.input, tc.innermost)
+
+			if tc.expectedErr {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if result != tc.expectedPid {
+					t.Errorf("Expected PID: %d, but got: %d", tc.expectedPid, result)
+				}
+			}
+		})
+	}
+}
+
 func Test_newProcStatus(t *testing.T) {
 	t.Parallel()
 
@@ -134,9 +227,9 @@ func Test_newProcStatus(t *testing.T) {
 				tgid:   216448,
 				pid:    216447,
 				pPid:   3994523,
-				nstgid: 216443,
-				nspid:  216445,
-				nspgid: 216444,
+				nstgid: 216443, // First value from "216443\t1234\t1"
+				nspid:  216445, // First value from "216445\t1235\t2"
+				nspgid: 216444, // First value from "216444\t1236\t1"
 				vmrss:  6400,
 			},
 		},
