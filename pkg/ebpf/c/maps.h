@@ -396,6 +396,32 @@ struct elf_files_map {
 typedef struct elf_files_map elf_files_map_t;
 
 //
+// io_uring context maps
+// io_uring operations happen in the context of kernel threads, not user threads
+// so we need to store the originating userspace task context for each io_uring operation
+//
+
+// store real contexts of io_uring polling operations
+struct io_uring_poll_context_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 1024);
+    __type(key, u32);
+    __type(value, event_context_t);
+} io_uring_poll_context_map SEC(".maps");
+
+typedef struct io_uring_poll_context_map io_uring_poll_context_map_t;
+
+// store real contexts of io_uring worker operations
+struct io_uring_worker_context_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 1024);
+    __type(key, u32);
+    __type(value, event_context_t);
+} io_uring_worker_context_map SEC(".maps");
+
+typedef struct io_uring_worker_context_map io_uring_worker_context_map_t;
+
+//
 // versioned maps (map of maps)
 //
 

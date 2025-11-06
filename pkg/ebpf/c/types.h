@@ -136,6 +136,9 @@ typedef struct event_context {
     X(CHMOD_COMMON, )                                                                              \
     X(SECURITY_SB_UMOUNT, )                                                                        \
     X(SECURITY_TASK_PRCTL, )                                                                       \
+    X(IO_WRITE, )                                                                                  \
+    X(IO_URING_CREATE, )                                                                           \
+    X(IO_ISSUE_SQE, )                                                                              \
     // ...
 
 #define EVENT_ID_LIST_LAST                                                                         \
@@ -201,6 +204,7 @@ typedef enum signal_event_id_e {
     X(TAIL_HIDDEN_KERNEL_MODULE_MOD_TREE, )                                                        \
     X(TAIL_HIDDEN_KERNEL_MODULE_NEW_MOD_ONLY, )                                                    \
     X(TAIL_HIDDEN_KERNEL_MODULE_MODTREE_LOOP, )                                                    \
+    X(TAIL_IO_WRITE, )                                                                             \
     X(TAIL_FEATURES_FALLBACK, )                                                                    \
     // ...
 

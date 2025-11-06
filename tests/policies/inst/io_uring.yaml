@@ -1,0 +1,12 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: io-uring-tests
+  annotations:
+    description: test tracee's io_uring events
+spec:
+  scope: 
+    - comm=io_uring_writev
+  rules:
+    - event: IO_ISSUE_SQE
+    - event: IO_WRITE

@@ -196,6 +196,7 @@ const (
 	TailHiddenKernelModuleModTree
 	TailHiddenKernelModuleNewModOnly
 	TailHiddenKernelModuleModTreeLoop
+	TailIoWrite
 	TailFeaturesFallback // Use the same index to make sure that the tailcall is reset
 	maxTail
 )

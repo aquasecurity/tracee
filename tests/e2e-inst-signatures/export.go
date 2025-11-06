@@ -26,6 +26,8 @@ var ExportedSignatures = []detect.Signature{
 	&e2eStackPivot{},
 	&e2eLsm{},
 	&e2eSchedProcessExec{},
+	&e2eIoWrite{},
+	&e2eIoIssueSqe{},
 }
 
 var ExportedDataSources = []detect.DataSource{

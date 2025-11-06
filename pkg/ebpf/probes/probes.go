@@ -167,6 +167,17 @@ const (
 	ChmodCommon
 	SecuritySbUmount
 	SecurityTaskPrctl
+	IoUringCreate
+	IoSqOffloadStart
+	IoSqOffloadStartRet
+	IoSubmitSqeIssueSqe
+	IoSubmitSqeIoWrite
+	IoIssueSqe
+	IoUringQueueAsyncWork
+	IoWrite
+	IoWriteRet
+	IoWriteMagic
+	IoWriteMagicRet
 )
 
 // Test probe handles
