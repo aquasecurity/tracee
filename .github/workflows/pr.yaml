@@ -647,6 +647,9 @@ jobs:
         continue-on-error: true
       # - name: "Prepare Image (Fix AMIs)"
       #   run: ./tests/e2e-install-deps.sh
+      - name: "Sync System Time"
+        run: ./scripts/sync_system_time.sh
+        continue-on-error: true
       - name: "Build Tracee"
         run: make tracee
       - name: "Compatibility Test"
