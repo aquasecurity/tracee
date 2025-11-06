@@ -49,7 +49,8 @@ install_base_packages() {
         wget \
         linux-tools-common \
         iputils-ping \
-        netcat-openbsd
+        netcat-openbsd \
+        bpftrace
 
     info "Base packages installed successfully"
 }

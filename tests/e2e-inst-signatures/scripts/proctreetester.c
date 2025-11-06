@@ -9,16 +9,16 @@
 #include <unistd.h>
 #include <wait.h>
 
-extern int pthread_setname_np (pthread_t __target_thread, const char *__name);
+extern int pthread_setname_np(pthread_t __target_thread, const char *__name);
 
 // This is a test program that creates a process that creates 2 threads + 1 thread.
 // It also executes itself again a few times (depending on the TIMES environment variable).
 // This creates an exponential tree of processes and threads.
 // All processes and threads remain running for a while, allowing the process tree to be inspected.
 
-short time_to_sleep_in_secs = 60; // time that the threads sleep in seconds
-short times_to_execute;           // number of times this test should be executed
-char *full, *base;                // full path and base name of the executable
+short time_to_sleep_in_secs; // time that the threads sleep in seconds
+short times_to_execute;      // number of times this test should be executed
+char *full, *base;           // full path and base name of the executable
 
 // Print functions
 
@@ -34,18 +34,42 @@ void mprintf(FILE *stream, const char *format, ...)
     va_end(args);
 }
 
-#define print_info(...) { mprintf(stdout, __VA_ARGS__); }
-#define print_error_exit(...) { mprintf(stderr, __VA_ARGS__); exit(1); }
-#define print_perror_ret(...) { mprintf(stderr, __VA_ARGS__); perror(""); return -1; }
-#define print_perror_ret_null(...) { mprintf(stderr, __VA_ARGS__); perror(""); return NULL; }
-#define print_perror_void(...) { mprintf(stderr, __VA_ARGS__); perror(""); }
+#define print_info(...)                                                                            \
+    {                                                                                              \
+        mprintf(stdout, __VA_ARGS__);                                                              \
+    }
+#define print_error_exit(...)                                                                      \
+    {                                                                                              \
+        mprintf(stderr, __VA_ARGS__);                                                              \
+        exit(1);                                                                                   \
+    }
+#define print_perror_ret(...)                                                                      \
+    {                                                                                              \
+        mprintf(stderr, __VA_ARGS__);                                                              \
+        perror("");                                                                                \
+        return -1;                                                                                 \
+    }
+#define print_perror_ret_null(...)                                                                 \
+    {                                                                                              \
+        mprintf(stderr, __VA_ARGS__);                                                              \
+        perror("");                                                                                \
+        return NULL;                                                                               \
+    }
+#define print_perror_void(...)                                                                     \
+    {                                                                                              \
+        mprintf(stderr, __VA_ARGS__);                                                              \
+        perror("");                                                                                \
+    }
 
 // Messages
 
 char *thread_finished = "Thread (ppid=%d, pid=%d, tid=%d) finished.\n";
-char *thread_started_creating = "Thread (ppid=%d, pid=%d, tid=%d) started. Creating another thread...\n";
-char *thread_started_sleeping = "Thread (ppid=%d, pid=%d, tid=%d) started. Sleeping for %d seconds...\n";
-char *child_started_sleeping = "Child (ppid=%d, pid=%d, tid=%d) started. Sleeping for %d seconds...\n";
+char *thread_started_creating = "Thread (ppid=%d, pid=%d, tid=%d) started. Creating another "
+                                "thread...\n";
+char *thread_started_sleeping = "Thread (ppid=%d, pid=%d, tid=%d) started. Sleeping for %d "
+                                "seconds...\n";
+char *child_started_sleeping = "Child (ppid=%d, pid=%d, tid=%d) started. Sleeping for %d "
+                               "seconds...\n";
 char *child_finished = "Child (ppid=%d, pid=%d, tid=%d) finished.\n";
 char *process_started = "Process (ppid=%d, pid=%d, tid=%d) started.\n";
 char *process_finished = "Process (ppid=%d, pid=%d, tid=%d) finished.\n";
@@ -131,10 +155,8 @@ int process_spawning_sleep_threads(void)
 
     print_info(process_started, info.ppid, info.pid, info.tid);
 
-    void *(*thread_functions[number_of_threads])(void *) = {
-      thread_sleeps_for_sometime,
-      thread_creates_another_thread
-    };
+    void *(*thread_functions[number_of_threads]) (void *) = {thread_sleeps_for_sometime,
+                                                             thread_creates_another_thread};
 
     for (int i = 0; i < number_of_threads; i++) {
         if (pthread_create(&threads[i], NULL, thread_functions[i], NULL))
@@ -159,15 +181,22 @@ int process_execing_same_binary_again(void)
     prctl(PR_SET_NAME, "executing", 0, 0, 0);
     struct task_info info = get_task_info();
 
-    char minus[minus_size] = {0};
-    snprintf(minus, minus_size, "TIMES=%d", times_to_execute - 1);
-
     print_info(child_started_sleeping, info.ppid, info.pid, info.tid, time_to_sleep_in_secs);
 
-    char *const argv[] = {base, NULL};
-    char *const envp[] = {"PATH=/bin:/usr/bin", minus, NULL};
+    // Set environment variables and use execv to preserve current environment
+    char times_value[10];
+    snprintf(times_value, 10, "%d", times_to_execute - 1);
+    if (setenv("TIMES", times_value, 1) == -1)
+        print_perror_ret("Error setting TIMES environment variable");
 
-    if (execve(full, argv, envp) == -1)
+    char sleep_value[10];
+    snprintf(sleep_value, 10, "%d", time_to_sleep_in_secs);
+    if (setenv("E2E_INST_TEST_SLEEP", sleep_value, 1) == -1)
+        print_perror_ret("Error setting E2E_INST_TEST_SLEEP environment variable");
+
+    char *const argv[] = {base, NULL};
+
+    if (execv(full, argv) == -1)
         print_perror_ret(err_execve);
 
     // process is gone for good
@@ -209,7 +238,7 @@ void set_times_to_execute(void)
 
     if ((times_to_execute = atoi(times)) == 0) {
         prctl(PR_SET_NAME, "no-more-tests", 0, 0, 0);
-        sleep(time_to_sleep_in_secs); // keep process alive togethe with all others
+        sleep(time_to_sleep_in_secs); // keep process alive together with all others
         exit(0);
     }
 
@@ -226,6 +255,10 @@ int main()
 {
     prctl(PR_SET_NAME, "proctree", 0, 0, 0);
     struct task_info info = get_task_info();
+
+    // Initialize sleep time from environment variable
+    char *sleep_env = getenv("E2E_INST_TEST_SLEEP");
+    time_to_sleep_in_secs = sleep_env ? atoi(sleep_env) : 5; // default 5
 
     print_info(main_process_started, info.ppid, info.pid, info.tid);
 

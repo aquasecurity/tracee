@@ -2,7 +2,7 @@
 
 exit_err() {
     echo -n "ERROR: "
-    echo $@
+    echo "$@"
     exit 1
 }
 

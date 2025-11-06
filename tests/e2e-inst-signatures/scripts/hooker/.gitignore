@@ -1,0 +1,6 @@
+*
+!.gitignore
+!Makefile
+!hooker.c
+!load.sh
+!unload.sh

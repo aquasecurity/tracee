@@ -11,3 +11,4 @@ hooker.o:
 clean:
 	rm -f hooker.mod hooker.o hooker.mod.c hooker.mod.o hooker.ko
 	rm -f modules.order Module.symvers
+	rm -f .*.cmd

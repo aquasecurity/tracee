@@ -6,6 +6,6 @@ metadata:
     description: test tracee's file modification events
 spec:
   scope: 
-    - comm=echo,write
+    - comm=echo
   rules:
     - event: FILE_MODIFICATION
