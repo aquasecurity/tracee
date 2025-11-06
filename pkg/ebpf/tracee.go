@@ -62,6 +62,20 @@ const (
 	maxMemDumpLength = 127
 )
 
+// getHashModeName converts digest.CalcHashesOption to string name
+func getHashModeName(mode digest.CalcHashesOption) string {
+	switch mode {
+	case digest.CalcHashesInode:
+		return "inode"
+	case digest.CalcHashesDevInode:
+		return "dev-inode"
+	case digest.CalcHashesDigestInode:
+		return "digest-inode"
+	default:
+		return ""
+	}
+}
+
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
 	config    config.Config
@@ -462,7 +476,12 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 
 	// Initialize Detector Engine
-	t.detectorEngine = detectors.NewEngine(t.policyManager)
+	enrichOpts := &detectors.EnrichmentOptions{
+		ExecEnv:      t.config.Output.ExecEnv,
+		ExecHash:     t.config.Output.CalcHashes != digest.CalcHashesNone,
+		ExecHashMode: getHashModeName(t.config.Output.CalcHashes),
+	}
+	t.detectorEngine = detectors.NewEngine(t.policyManager, enrichOpts)
 
 	// Register detector metrics if metrics are enabled
 	if t.MetricsEnabled() {
