@@ -56,6 +56,17 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 					Dependency: detection.DependencyOptional,
 				},
 			},
+			// Enrichments: []detection.EnrichmentRequirement{
+			// 	{
+			// 		Name:       "exec-env",
+			// 		Dependency: detection.DependencyRequired, // Detector requires env vars
+			// 	},
+			// 	{
+			// 		Name:       "exec-hash",
+			// 		Dependency: detection.DependencyOptional, // Detector works without hashes
+			// 		// Config:  "inode", // Uncomment to require specific hash mode
+			// 	},
+			// },
 			// Architectures: []string{"amd64"}, // Uncomment to restrict to amd64 (x86-64) only
 			// Example: Only load on Tracee 0.20.0+
 			// MinTraceeVersion: &v1beta1.Version{Major: 0, Minor: 20, Patch: 0},
