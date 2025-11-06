@@ -335,6 +335,54 @@ server:
 				"pyroscope",
 			},
 		},
+		{
+			name: "Test signatures configuration (cli flags)",
+			yamlContent: `
+signatures:
+    - search-paths=/path/to/signatures
+`,
+			key: "signatures",
+			expectedFlags: []string{
+				"search-paths=/path/to/signatures",
+			},
+		},
+		{
+			name: "Test signatures configuration (structured flags)",
+			yamlContent: `
+signatures:
+    search-paths:
+        - /path/to/signatures
+`,
+			key: "signatures",
+			expectedFlags: []string{
+				"search-paths=/path/to/signatures",
+			},
+		},
+		{
+			name: "Test signatures configuration (cli flags - multiple paths)",
+			yamlContent: `
+signatures:
+    - search-paths=/path1,/path2
+`,
+			key: "signatures",
+			expectedFlags: []string{
+				"search-paths=/path1,/path2",
+			},
+		},
+		{
+			name: "Test signatures configuration (structured flags - multiple paths)",
+			yamlContent: `
+signatures:
+    search-paths:
+        - /path/to/signatures1
+        - /path/to/signatures2
+        - /opt/tracee/signatures
+`,
+			key: "signatures",
+			expectedFlags: []string{
+				"search-paths=/path/to/signatures1,/path/to/signatures2,/opt/tracee/signatures",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1106,6 +1154,84 @@ func TestServerConfigFlags(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
+			got := tt.config.flags()
+			if !slicesEqualIgnoreOrder(got, tt.expected) {
+				t.Errorf("flags() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+//
+// signatures
+//
+
+func TestSignaturesConfigFlags(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		config   SignaturesConfig
+		expected []string
+	}{
+		{
+			name: "empty config",
+			config: SignaturesConfig{
+				SearchPaths: []string{},
+			},
+			expected: []string{},
+		},
+		{
+			name: "single search path",
+			config: SignaturesConfig{
+				SearchPaths: []string{"/path/to/signatures"},
+			},
+			expected: []string{
+				"search-paths=/path/to/signatures",
+			},
+		},
+		{
+			name: "multiple search paths",
+			config: SignaturesConfig{
+				SearchPaths: []string{
+					"/path/to/signatures1,/path/to/signatures2,/opt/tracee/signatures",
+				},
+			},
+			expected: []string{
+				"search-paths=/path/to/signatures1,/path/to/signatures2,/opt/tracee/signatures",
+			},
+		},
+		{
+			name: "relative paths",
+			config: SignaturesConfig{
+				SearchPaths: []string{
+					"./signatures",
+					"../other/signatures",
+				},
+			},
+			expected: []string{
+				"search-paths=./signatures,../other/signatures",
+			},
+		},
+		{
+			name: "mixed absolute and relative paths",
+			config: SignaturesConfig{
+				SearchPaths: []string{
+					"/usr/local/signatures",
+					"./local/signatures",
+					"/opt/tracee/signatures",
+				},
+			},
+			expected: []string{
+				"search-paths=/usr/local/signatures,./local/signatures,/opt/tracee/signatures",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := tt.config.flags()
 			if !slicesEqualIgnoreOrder(got, tt.expected) {
 				t.Errorf("flags() = %v, want %v", got, tt.expected)

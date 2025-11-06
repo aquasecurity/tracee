@@ -208,7 +208,7 @@ tracee_command="./dist/tracee \
                     --output json:$outputfile \
                     --log debug \
                     --log file:$logfile \
-                    --signatures-dir "$SIG_DIR" \
+                    --signatures search-paths=$SIG_DIR \
                     --dnscache enable \
                     --server grpc-address=unix:/tmp/tracee.sock \
                     --policy ./tests/policies/inst/"

@@ -36,6 +36,8 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &OutputConfig{}
 	case "dnscache":
 		flagger = &DnsCacheConfig{}
+	case "signatures":
+		flagger = &SignaturesConfig{}
 	default:
 		return nil, errfmt.Errorf("unrecognized key: %s", key)
 	}
@@ -479,4 +481,18 @@ type OutputWebhookConfig struct {
 	Timeout     string `mapstructure:"timeout"`
 	GoTemplate  string `mapstructure:"gotemplate"`
 	ContentType string `mapstructure:"content-type"`
+}
+
+type SignaturesConfig struct {
+	SearchPaths []string `mapstructure:"search-paths"`
+}
+
+func (c *SignaturesConfig) flags() []string {
+	flags := make([]string, 0)
+
+	if len(c.SearchPaths) > 0 {
+		flags = append(flags, fmt.Sprintf("search-paths=%s", strings.Join(c.SearchPaths, ",")))
+	}
+
+	return flags
 }
