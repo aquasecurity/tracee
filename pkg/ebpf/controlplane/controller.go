@@ -28,25 +28,25 @@ const pollTimeout int = 300 // from tracee.go (move to a consts package?)
 type SignalHandler func(signalID events.ID, args []trace.Argument) error
 
 type Controller struct {
-	ctx            context.Context
-	signalChan     chan []byte
-	lostSignalChan chan uint64
-	bpfModule      *libbpfgo.Module
-	signalBuffer   *libbpfgo.PerfBuffer
-	signalPool     *sync.Pool
-	cgroupManager  *container.Manager
-	processTree    *process.ProcessTree
-	enrichDisabled bool
-	dataPresentor  bufferdecoder.TypeDecoder
-	signalHandlers map[events.ID]SignalHandler
-	perfBufferSize int
+	ctx               context.Context
+	signalChan        chan []byte
+	lostSignalChan    chan uint64
+	bpfModule         *libbpfgo.Module
+	signalBuffer      *libbpfgo.PerfBuffer
+	signalPool        *sync.Pool
+	cgroupManager     *container.Manager
+	processTree       *process.ProcessTree
+	enrichmentEnabled bool
+	dataPresentor     bufferdecoder.TypeDecoder
+	signalHandlers    map[events.ID]SignalHandler
+	perfBufferSize    int
 }
 
 // NewController creates a new controller.
 func NewController(
 	bpfModule *libbpfgo.Module,
 	cgroupManager *container.Manager,
-	enrichDisabled bool,
+	enrichmentEnabled bool,
 	procTree *process.ProcessTree,
 	dataPresentor bufferdecoder.TypeDecoder,
 	perfBufferSize int,
@@ -60,12 +60,12 @@ func NewController(
 				return &Signal{}
 			},
 		},
-		cgroupManager:  cgroupManager,
-		processTree:    procTree,
-		enrichDisabled: enrichDisabled,
-		dataPresentor:  dataPresentor,
-		signalHandlers: make(map[events.ID]SignalHandler),
-		perfBufferSize: perfBufferSize,
+		cgroupManager:     cgroupManager,
+		processTree:       procTree,
+		enrichmentEnabled: enrichmentEnabled,
+		dataPresentor:     dataPresentor,
+		signalHandlers:    make(map[events.ID]SignalHandler),
+		perfBufferSize:    perfBufferSize,
 	}
 }
 

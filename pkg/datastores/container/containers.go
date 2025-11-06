@@ -64,7 +64,7 @@ type CgroupDir struct {
 // New initializes a Containers object and returns a pointer to it. User should further
 // call "Populate" and iterate with Containers data.
 func New(
-	noContainersEnrich bool,
+	enrichmentEnabled bool,
 	cgroups *cgroup.Cgroups,
 	sockets runtime.Sockets,
 	mapName string,
@@ -82,7 +82,7 @@ func New(
 
 	// Attempt to register enrichers for all supported runtimes.
 
-	if !noContainersEnrich {
+	if enrichmentEnabled {
 		runtimeService := runtime.NewService(sockets)
 
 		err := runtimeService.Register(runtime.Containerd, runtime.ContainerdEnricher)

@@ -55,14 +55,13 @@ func init() {
 		capabilitiesCmd,
 		captureCmd,
 		configCmd,
-		containersCmd,
+		enrichmentCmd,
 		eventCmd,
 		eventsCmd,
 		loggingCmd,
 		outputCmd,
 		scopeCmd,
 		serverCmd,
-		eventCmd,
 		storesCmd,
 	)
 }
@@ -117,12 +116,12 @@ var configCmd = &cobra.Command{
 	},
 }
 
-var containersCmd = &cobra.Command{
-	Use:     "containers",
+var enrichmentCmd = &cobra.Command{
+	Use:     "enrichment",
 	Aliases: []string{},
-	Short:   "Show manual page for the --containers flag",
+	Short:   "Show manual page for the --enrichment flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runManForFlag("containers")
+		return runManForFlag("enrichment")
 	},
 }
 

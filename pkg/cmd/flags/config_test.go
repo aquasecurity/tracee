@@ -173,29 +173,6 @@ capabilities:
 			},
 		},
 		{
-			name: "Test containers socket configuration",
-			yamlContent: `
-containers:
-  enrich: true
-  cgroupfs:
-    path: /host/sys/fs/cgroup
-    force: true
-  sockets:
-    - runtime: docker
-      socket: /var/run/test2.sock
-    - runtime: crio
-      socket: /var/run/test1.sock
-`,
-			key: "containers",
-			expectedFlags: []string{
-				"sockets.docker=/var/run/test2.sock",
-				"sockets.crio=/var/run/test1.sock",
-				"cgroupfs.path=/host/sys/fs/cgroup",
-				"cgroupfs.force=true",
-				"enrich=true",
-			},
-		},
-		{
 			name: "Test log configuration (cli flags)",
 			yamlContent: `
 logging:
@@ -495,6 +472,71 @@ runtime:
 				"workdir=/opt/tracee",
 			},
 		},
+		{
+			name: "Test enrich configuration (cli flags)",
+			yamlContent: `
+enrichment:
+    - container
+    - container.cgroupfs.path=/host/sys/fs/cgroup
+    - container.cgroupfs.force
+    - container.docker.socket=/var/run/docker.sock
+    - container.containerd.socket=/var/run/containerd/containerd.sock
+    - container.crio.socket=/var/run/crio/crio.sock
+    - container.podman.socket=/var/run/podman/podman.sock
+    - resolve-fd
+    - exec-hash
+    - exec-hash.mode=dev-inode
+    - user-stack-trace
+`,
+			key: "enrichment",
+			expectedFlags: []string{
+				"container",
+				"container.cgroupfs.path=/host/sys/fs/cgroup",
+				"container.cgroupfs.force",
+				"container.docker.socket=/var/run/docker.sock",
+				"container.containerd.socket=/var/run/containerd/containerd.sock",
+				"container.crio.socket=/var/run/crio/crio.sock",
+				"container.podman.socket=/var/run/podman/podman.sock",
+				"resolve-fd",
+				"exec-hash",
+				"exec-hash.mode=dev-inode",
+				"user-stack-trace",
+			},
+		},
+		{
+			name: "Test enrich configuration (structured flags)",
+			yamlContent: `
+enrichment:
+    container:
+        enabled: true
+        cgroupfs:
+            path: /host/sys/fs/cgroup
+            force: true
+        docker-socket: /var/run/docker.sock
+        containerd-socket: /var/run/containerd/containerd.sock
+        crio-socket: /var/run/crio/crio.sock
+        podman-socket: /var/run/podman/podman.sock
+    resolve-fd: true
+    exec-hash:
+        enabled: true
+        mode: dev-inode
+    user-stack-trace: true
+`,
+			key: "enrichment",
+			expectedFlags: []string{
+				"container",
+				"container.cgroupfs.path=/host/sys/fs/cgroup",
+				"container.cgroupfs.force",
+				"container.docker.socket=/var/run/docker.sock",
+				"container.containerd.socket=/var/run/containerd/containerd.sock",
+				"container.crio.socket=/var/run/crio/crio.sock",
+				"container.podman.socket=/var/run/podman/podman.sock",
+				"resolve-fd",
+				"exec-hash",
+				"exec-hash.mode=dev-inode",
+				"user-stack-trace",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -635,115 +677,6 @@ func TestCapabilitiesConfigFlags(t *testing.T) {
 			if !slicesEqualIgnoreOrder(got, tt.expected) {
 				t.Errorf("flags() = %v, want %v", got, tt.expected)
 			}
-		})
-	}
-}
-
-//
-// cri
-//
-
-func TestContainerConfigFlag(t *testing.T) {
-	t.Parallel()
-
-	truePtr := true
-	falsePtr := false
-
-	tests := []struct {
-		name     string
-		config   ContainerConfig
-		expected []string
-	}{
-		{
-			name: "empty config",
-			expected: []string{
-				"enrich=true",
-			},
-		},
-		{
-			name: "valid config (socket)",
-			config: ContainerConfig{
-				Sockets: []SocketConfig{
-					{
-						Runtime: "testName",
-						Socket:  "/var/run/socket.sock",
-					},
-				},
-			},
-			expected: []string{
-				"enrich=true",
-				"sockets.testName=/var/run/socket.sock",
-			},
-		},
-		{
-			name: "valid config (cgroupfs)",
-			config: ContainerConfig{
-				Cgroupfs: CgroupfsConfig{
-					Path:  "/host/sys/fs/cgroup",
-					Force: false,
-				},
-			},
-			expected: []string{
-				"enrich=true",
-				"cgroupfs.path=/host/sys/fs/cgroup",
-			},
-		},
-		{
-			name: "valid config (enrich=true)",
-			config: ContainerConfig{
-				Enrich: &truePtr,
-			},
-			expected: []string{
-				"enrich=true",
-			},
-		},
-		{
-			name: "valid config (enrich=false)",
-			config: ContainerConfig{
-				Enrich: &falsePtr,
-			},
-			expected: []string{
-				"enrich=false",
-			},
-		},
-		{
-			name: "valid config (combined)",
-			config: ContainerConfig{
-				Sockets: []SocketConfig{
-					{
-						Runtime: "docker",
-						Socket:  "/var/run/docker.sock",
-					},
-					{
-						Runtime: "crio",
-						Socket:  "/var/run/crio.sock",
-					},
-				},
-				Cgroupfs: CgroupfsConfig{
-					Path:  "/host/sys/fs/cgroup",
-					Force: true,
-				},
-				Enrich: &truePtr,
-			},
-			expected: []string{
-				"sockets.docker=/var/run/docker.sock",
-				"sockets.crio=/var/run/crio.sock",
-				"cgroupfs.path=/host/sys/fs/cgroup",
-				"cgroupfs.force=true",
-				"enrich=true",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			got := tt.config.flags()
-			assert.Equal(t, len(tt.expected), len(got), "Expected %d flags, got %d flags", len(tt.expected), len(got))
-			assert.ElementsMatch(t, tt.expected, got, "Expected %v, got %v", tt.expected, got)
 		})
 	}
 }

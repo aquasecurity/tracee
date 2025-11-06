@@ -47,7 +47,7 @@ func (ctrl *Controller) processCgroupMkdir(args []trace.Argument) error {
 		return errfmt.WrapError(err)
 	}
 
-	if info.ContainerRoot && !ctrl.enrichDisabled {
+	if info.ContainerRoot && ctrl.enrichmentEnabled {
 		// If cgroupId belongs to a container, and is the root (to avoid duplicate requests)
 		// enrich now (in a goroutine)
 		go func() {
