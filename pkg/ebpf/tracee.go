@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"kernel.org/pub/linux/libs/security/libcap/cap"
@@ -396,9 +397,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	if err != nil {
 		return errfmt.Errorf("error initializing containers: %v", err)
 	}
-	if err := t.container.Populate(); err != nil {
-		return errfmt.Errorf("error populating containers: %v", err)
-	}
 
 	// Initialize DNS Cache
 
@@ -592,7 +590,13 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
-	// Register detectors from config (after datastores are registered)
+	// Initialize all registered datastores
+	// This will call Initialize(ctx) on stores that implement it (e.g., container.Populate())
+	if err := t.dataStoreRegistry.InitializeAll(ctx); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Register detectors from config (after datastores are registered and initialized)
 	if err := t.registerAllDetectors(t.config.DetectorConfig.Detectors); err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1913,6 +1917,15 @@ func (t *Tracee) Close() {
 	// clean up (unsubscribe) all streams connected if tracee is done
 	if t.streamsManager != nil {
 		t.streamsManager.Close()
+	}
+
+	// Shutdown all datastores with a reasonable timeout
+	if t.dataStoreRegistry != nil {
+		shutdownCtx, cancel := gocontext.WithTimeout(gocontext.Background(), 5*time.Second)
+		defer cancel()
+		if err := t.dataStoreRegistry.ShutdownAll(shutdownCtx); err != nil {
+			logger.Errorw("Failed to shutdown datastores", "error", err)
+		}
 	}
 
 	// Close all the perf buffers
