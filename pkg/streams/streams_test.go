@@ -8,6 +8,7 @@ import (
 	"gotest.tools/assert"
 
 	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -38,13 +39,13 @@ func TestStreamManager(t *testing.T) {
 	sm := NewStreamsManager()
 
 	// stream for policy1
-	stream1 := sm.Subscribe(policy1Mask, config.StreamBuffer{})
+	stream1 := sm.Subscribe(policy1Mask, map[events.ID]struct{}{}, config.StreamBuffer{})
 
 	// stream for policy1 and policy2
-	stream2 := sm.Subscribe(policy1And2Mask, config.StreamBuffer{})
+	stream2 := sm.Subscribe(policy1And2Mask, map[events.ID]struct{}{}, config.StreamBuffer{})
 
 	// stream for all policies
-	stream3 := sm.Subscribe(allPoliciesMask, config.StreamBuffer{})
+	stream3 := sm.Subscribe(allPoliciesMask, map[events.ID]struct{}{}, config.StreamBuffer{})
 
 	// consumers
 	consumersWG := &sync.WaitGroup{}
@@ -160,7 +161,7 @@ func Test_shouldIgnorePolicy(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			stream := sm.Subscribe(tt.policyMask, config.StreamBuffer{})
+			stream := sm.Subscribe(tt.policyMask, map[events.ID]struct{}{}, config.StreamBuffer{})
 			assert.Equal(t, tt.expected, stream.shouldIgnorePolicy(tt.event))
 		})
 	}

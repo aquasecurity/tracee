@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
 	"github.com/aquasecurity/tracee/common/environment"
@@ -280,7 +281,8 @@ func Test_EventsDependencies(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			stream := trc.SubscribeAll(config.StreamBuffer{})
+			stream, err := trc.Subscribe(config.Stream{})
+			require.NoError(t, err)
 			defer trc.Unsubscribe(stream)
 
 			// start a goroutine to read events from the channel into the buffer

@@ -6,6 +6,7 @@ import (
 
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -13,9 +14,13 @@ import (
 type Stream struct {
 	// policy mask is a bitmap of policies that this stream is interested in
 	policyMask uint64
+	// event to filter
+	eventMap map[events.ID]struct{}
+	// true if there is at least one element in the eventMap
+	eventFilter bool
 	// events is a channel that is used to receive events from the stream
-	events  chan trace.Event
-	publish func(context.Context, trace.Event)
+	events       chan trace.Event
+	strategyPush func(context.Context, trace.Event)
 }
 
 // ReceiveEvents returns a read-only channel for receiving events from the stream
@@ -23,14 +28,24 @@ func (s *Stream) ReceiveEvents() <-chan trace.Event {
 	return s.events
 }
 
-// Publish publishes an event to the stream,
-// but first check if this stream is interested in this event,
-// by checking the event's policy mask against the stream's policy mask.
-func (s *Stream) blockPublish(ctx context.Context, event trace.Event) {
+func (s *Stream) publish(ctx context.Context, event trace.Event) {
 	if s.shouldIgnorePolicy(event) {
 		return
 	}
 
+	if s.eventFilter {
+		if _, ok := s.eventMap[events.ID(event.EventID)]; !ok {
+			return
+		}
+	}
+
+	// Due to the dynamic nature of this function the compile doesn't
+	// inline this. A condition is faster (and cheaper) than a function call
+	// should we change it with a condition?
+	s.strategyPush(ctx, event)
+}
+
+func (s *Stream) blockPublish(ctx context.Context, event trace.Event) {
 	select {
 	case s.events <- event:
 	case <-ctx.Done():
@@ -39,16 +54,12 @@ func (s *Stream) blockPublish(ctx context.Context, event trace.Event) {
 }
 
 func (s *Stream) dropPublish(ctx context.Context, event trace.Event) {
-	if s.shouldIgnorePolicy(event) {
-		return
-	}
-
 	select {
 	case s.events <- event:
 	case <-ctx.Done():
 		return
 	default:
-		// Probably this is too verbose
+		// Probably this is going to be too verbose
 		logger.Debugw("stream channel full, dropping message")
 	}
 }
@@ -78,19 +89,22 @@ func NewStreamsManager() *StreamsManager {
 }
 
 // Subscribe adds a stream to the manager
-func (sm *StreamsManager) Subscribe(policyMask uint64, bufferConfig config.StreamBuffer) *Stream {
+func (sm *StreamsManager) Subscribe(policyMask uint64, eventMap map[events.ID]struct{}, bufferConfig config.StreamBuffer) *Stream {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 
 	stream := &Stream{
-		policyMask: policyMask,
-		events:     make(chan trace.Event, bufferConfig.Size),
+		policyMask:  policyMask,
+		events:      make(chan trace.Event, bufferConfig.Size),
+		eventMap:    eventMap,
+		eventFilter: len(eventMap) > 0,
 	}
 
-	if bufferConfig.Mode == "" || bufferConfig.Mode == config.StreamBufferBlock {
-		stream.publish = stream.blockPublish
-	} else {
-		stream.publish = stream.dropPublish
+	switch bufferConfig.Mode {
+	case "", config.StreamBufferBlock:
+		stream.strategyPush = stream.blockPublish
+	case config.StreamBufferDrop:
+		stream.strategyPush = stream.dropPublish
 	}
 
 	sm.subscribers[stream] = struct{}{}

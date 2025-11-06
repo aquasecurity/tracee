@@ -26,8 +26,8 @@ func NewBroadcast(destinationConfigs []config.Destination) (*Broadcast, error) {
 func (b *Broadcast) Init() error {
 	printers := make([]EventPrinter, 0, len(b.DestinationConfigs))
 
-	for _, dConfig := range b.DestinationConfigs {
-		p, err := New(dConfig)
+	for _, dstConfig := range b.DestinationConfigs {
+		p, err := newPrinter(dstConfig)
 		if err != nil {
 			return err
 		}

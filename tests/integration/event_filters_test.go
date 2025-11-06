@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
 	"github.com/aquasecurity/tracee/common/bitwise"
@@ -2345,7 +2346,8 @@ func Test_EventFilters(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			stream := trc.SubscribeAll(config.StreamBuffer{})
+			stream, err := trc.Subscribe(config.Stream{})
+			require.NoError(t, err)
 			defer trc.Unsubscribe(stream)
 
 			// start a goroutine to read events from the channel into the buffer

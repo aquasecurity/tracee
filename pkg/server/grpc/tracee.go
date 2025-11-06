@@ -605,14 +605,17 @@ func (s *TraceeService) StreamEvents(in *pb.StreamEventsRequest, grpcStream pb.T
 	var stream *streams.Stream
 	var err error
 
-	if len(in.Policies) == 0 {
-		stream = s.tracee.SubscribeAll(config.StreamBuffer{})
-	} else {
-		stream, err = s.tracee.Subscribe(in.Policies, config.StreamBuffer{})
-		if err != nil {
-			return err
-		}
+	streamConfig := config.Stream{
+		Filters: config.StreamFilters{
+			Policies: in.Policies,
+		},
 	}
+
+	stream, err = s.tracee.Subscribe(streamConfig)
+	if err != nil {
+		return err
+	}
+
 	defer s.tracee.Unsubscribe(stream)
 
 	mask := fmutils.NestedMaskFromPaths(in.GetMask().GetPaths())

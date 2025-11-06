@@ -41,12 +41,24 @@ type EventPrinter interface {
 	Close()
 }
 
-func New(cfg config.Destination) (EventPrinter, error) {
-	var res EventPrinter
-	kind := cfg.Type
-	format := cfg.Format
+func New(destinations []config.Destination) (EventPrinter, error) {
+	if len(destinations) == 0 {
+		return nil, errfmt.Errorf("destinations can't be empty")
+	}
 
-	if cfg.Type == "file" && cfg.File == nil {
+	if len(destinations) > 1 {
+		return NewBroadcast(destinations)
+	}
+
+	return newPrinter(destinations[0])
+}
+
+func newPrinter(dst config.Destination) (EventPrinter, error) {
+	var res EventPrinter
+	kind := dst.Type
+	format := dst.Format
+
+	if dst.Type == "file" && dst.File == nil {
 		return res, errfmt.Errorf("out file is not set")
 	}
 
@@ -57,33 +69,33 @@ func New(cfg config.Destination) (EventPrinter, error) {
 		switch {
 		case format == "table":
 			res = &tableEventPrinter{
-				out:           cfg.File,
+				out:           dst.File,
 				verbose:       false,
-				containerMode: cfg.ContainerMode,
+				containerMode: dst.ContainerMode,
 			}
 		case format == "table-verbose":
 			res = &tableEventPrinter{
-				out:           cfg.File,
+				out:           dst.File,
 				verbose:       true,
-				containerMode: cfg.ContainerMode,
+				containerMode: dst.ContainerMode,
 			}
 		case format == "json":
 			res = &jsonEventPrinter{
-				out: cfg.File,
+				out: dst.File,
 			}
 		case strings.HasPrefix(format, "gotemplate="):
 			res = &templateEventPrinter{
-				out:          cfg.File,
+				out:          dst.File,
 				templatePath: strings.Split(format, "=")[1],
 			}
 		}
 	case kind == "forward":
 		res = &forwardEventPrinter{
-			outPath: cfg.Url,
+			outPath: dst.Url,
 		}
 	case kind == "webhook":
 		res = &webhookEventPrinter{
-			outPath: cfg.Url,
+			outPath: dst.Url,
 		}
 	}
 
@@ -91,6 +103,7 @@ func New(cfg config.Destination) (EventPrinter, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return res, nil
 }
 

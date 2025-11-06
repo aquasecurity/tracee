@@ -105,7 +105,7 @@ func TestTemplateEventPrinterSprigFunctions(t *testing.T) {
 	}
 
 	// Create and initialize the printer
-	p, err := printer.New(cfg)
+	p, err := printer.New([]config.Destination{cfg})
 	require.NoError(t, err)
 
 	err = p.Init()
@@ -184,7 +184,7 @@ func TestPrinterCloseFlushesData(t *testing.T) {
 			}
 
 			// Create and initialize the printer
-			p, err := printer.New(cfg)
+			p, err := printer.New([]config.Destination{cfg})
 			require.NoError(t, err)
 
 			// Create a sample event
@@ -240,7 +240,7 @@ func TestTemplateEventPrinterCloseFlushesData(t *testing.T) {
 	}
 
 	// Create and initialize the printer
-	p, err := printer.New(cfg)
+	p, err := printer.New([]config.Destination{cfg})
 	require.NoError(t, err)
 
 	// Create a sample event

@@ -103,7 +103,7 @@ func (r Runner) Run(ctx context.Context) error {
 // It wraps Tracee's Run method to handle event subscription and printing, and ensures
 // that any remaining events are drained when the context is cancelled.
 //
-// NOTE: This should only be called if a printer is active.
+// NOTE: This should only be called if at least a stream with a destination exists.
 func (r Runner) runWithPrinter(ctx context.Context, t *tracee.Tracee) error {
 	streamList := make([]*streams.Stream, 0)
 	printers := []printer.EventPrinter{}
@@ -112,24 +112,16 @@ func (r Runner) runWithPrinter(ctx context.Context, t *tracee.Tracee) error {
 		var p printer.EventPrinter
 		var err error
 
-		if len(s.Destinations) > 1 {
-			p, err = printer.NewBroadcast(s.Destinations)
-		} else {
-			p, err = printer.New(s.Destinations[0])
-		}
+		p, err = printer.New(s.Destinations)
 		if err != nil {
 			return err
 		}
 		printers = append(printers, p)
 
 		var stream *streams.Stream
-		if len(s.Filters.Policies) == 0 {
-			stream = t.SubscribeAll(s.Buffer)
-		} else {
-			stream, err = t.Subscribe(s.Filters.Policies, s.Buffer)
-			if err != nil {
-				return err
-			}
+		stream, err = t.Subscribe(s)
+		if err != nil {
+			return err
 		}
 
 		go func() {

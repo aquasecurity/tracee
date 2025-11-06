@@ -2014,33 +2014,44 @@ func (t *Tracee) ready(ctx gocontext.Context) {
 	}
 }
 
-// SubscribeAll returns a stream subscribed to all policies
-func (t *Tracee) SubscribeAll(bufferConfig config.StreamBuffer) *streams.Stream {
-	return t.subscribe(policy.PolicyAll, bufferConfig)
-}
-
 // Subscribe returns a stream subscribed to selected policies
-func (t *Tracee) Subscribe(policyNames []string, bufferConfig config.StreamBuffer) (*streams.Stream, error) {
-	var policyMask uint64
+func (t *Tracee) Subscribe(stream config.Stream) (*streams.Stream, error) {
+	policyMask := policy.PolicyAll
+	eventMap := map[events.ID]struct{}{}
 
-	for _, policyName := range policyNames {
-		p, err := t.policyManager.LookupByName(policyName)
-		if err != nil {
-			return nil, err
+	if len(stream.Filters.Policies) > 0 {
+		policyMask = 0
+
+		for _, policyName := range stream.Filters.Policies {
+			p, err := t.policyManager.LookupByName(policyName)
+			if err != nil {
+				return nil, err
+			}
+			bitwise.SetBit(&policyMask, uint(p.ID))
 		}
-		bitwise.SetBit(&policyMask, uint(p.ID))
 	}
 
-	return t.subscribe(policyMask, bufferConfig), nil
+	if len(stream.Filters.Events) > 0 {
+		for _, eventName := range stream.Filters.Events {
+			id, found := events.Core.GetDefinitionIDByName(eventName)
+			if !found {
+				return nil, errfmt.Errorf("error event not found: %s", eventName)
+			}
+
+			eventMap[id] = struct{}{}
+		}
+	}
+
+	return t.subscribe(policyMask, eventMap, stream.Buffer), nil
 }
 
-func (t *Tracee) subscribe(policyMask uint64, bufferConfig config.StreamBuffer) *streams.Stream {
+func (t *Tracee) subscribe(policyMask uint64, eventMap map[events.ID]struct{}, bufferConfig config.StreamBuffer) *streams.Stream {
 	// To keep old behavior in case of streams created from GRPC server
 	if bufferConfig.Size <= 0 {
 		bufferConfig.Size = t.config.PipelineChannelSize
 	}
 
-	return t.streamsManager.Subscribe(policyMask, bufferConfig)
+	return t.streamsManager.Subscribe(policyMask, eventMap, bufferConfig)
 }
 
 // Unsubscribe unsubscribes stream
