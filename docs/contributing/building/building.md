@@ -50,10 +50,9 @@
 
     # build
 
-        $ make all                      # build tracee-rules, tracee & signatures
+        $ make all                      # build tracee, signatures & other tools
         $ make bpf                      # build ./dist/tracee.bpf.o
         $ make tracee                   # build ./dist/tracee
-        $ make tracee-rules             # build ./dist/tracee-rules
         $ make tracee-bench             # build ./dist/tracee-bench
         $ make signatures               # build ./dist/signatures
         $ make e2e-net-signatures       # build ./dist/e2e-net-signatures
@@ -65,7 +64,6 @@
         $ make clean                    # wipe ./dist/
         $ make clean-bpf                # wipe ./dist/tracee.bpf.o
         $ make clean-tracee             # wipe ./dist/tracee
-        $ make clean-tracee-rules       # wipe ./dist/tracee-rules
         $ make clean-tracee-bench       # wipe ./dist/tracee-bench
         $ make clean-signatures         # wipe ./dist/signatures
         $ make clean-tracee-operator    # wipe ./dist/tracee-operator
@@ -111,7 +109,7 @@
         at the BTFHUB repository)
 
     !!! Attention
-        compiling `tracee-rules` with STATIC=1 won't allow you to use golang based
+        compiling with STATIC=1 won't allow you to use golang based
         signatures as plugins, only as built-ins:
         >```text
         >2021/12/13 13:27:21 error opening plugin /tracee/dist/signatures/builtin.so:

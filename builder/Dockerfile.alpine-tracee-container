@@ -72,7 +72,6 @@ COPY . /tracee
 RUN source /etc/profile && \
     make clean && \
     BTFHUB=$BTFHUB STATIC=$STATIC RELEASE_VERSION=$RELEASE_VERSION make tracee && \
-    make tracee-rules && \
     make tracee-operator && \
     make signatures && \
     rm -rf ./3rdparty/btfhub/ && \
@@ -91,12 +90,10 @@ WORKDIR /tracee
 RUN apk --no-cache add mandoc
 
 COPY --from=tracee-make /tracee/dist/tracee /tracee
-COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
 COPY --from=tracee-make /tracee/dist/tracee-operator /tracee
 COPY --from=tracee-make /tracee/dist/signatures/ /tracee/signatures/
 COPY --from=tracee-make /tracee/docs/man/ /tracee/docs/man/
 COPY --from=tracee-make /tracee/builder/entrypoint.sh /tracee/entrypoint.sh
-COPY --from=tracee-make /tracee/cmd/tracee-rules/templates/ /tracee/templates/
 
 ENTRYPOINT ["/tracee/entrypoint.sh"]
 

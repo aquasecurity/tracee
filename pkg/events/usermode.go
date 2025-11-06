@@ -7,9 +7,9 @@
 // cannot anticipate which events will be invoked and as a result what
 // information will be extracted.
 //
-// This is critical because tracee-rules is independent, and doesn't have to run
-// on the same machine as tracee. This means that tracee-rules might lack
-// basic information of the operating machine needed for some signatures.
+// This is critical because signatures can be evaluated independently, and don't
+// have to run on the same machine as tracee. This means signature evaluation might
+// lack basic information of the operating machine needed for some signatures.
 //
 // By creating user mode events this information could be intentionally
 // collected and passed to tracee afterwards.

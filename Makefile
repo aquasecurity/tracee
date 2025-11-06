@@ -1,5 +1,5 @@
 .PHONY: all | env
-all:: tracee-rules signatures tracee evt traceectl lsm-check
+all:: signatures tracee evt traceectl lsm-check
 
 #
 # make
@@ -315,10 +315,9 @@ help::
 	@echo ""
 	@echo "# build"
 	@echo ""
-	@echo "    $$ make all                      # build tracee-rules, tracee & signatures"
+	@echo "    $$ make all                      # build tracee, signatures & other tools"
 	@echo "    $$ make bpf                      # build ./dist/tracee.bpf.o"
 	@echo "    $$ make tracee                   # build ./dist/tracee"
-	@echo "    $$ make tracee-rules             # build ./dist/tracee-rules"
 	@echo "    $$ make tracee-bench             # build ./dist/tracee-bench"
 	@echo "    $$ make signatures               # build ./dist/signatures"
 	@echo "    $$ make e2e-net-signatures       # build ./dist/e2e-net-signatures"
@@ -331,7 +330,6 @@ help::
 	@echo "    $$ make clean                    # wipe ./dist/"
 	@echo "    $$ make clean-bpf                # wipe ./dist/tracee.bpf.o"
 	@echo "    $$ make clean-tracee             # wipe ./dist/tracee"
-	@echo "    $$ make clean-tracee-rules       # wipe ./dist/tracee-rules"
 	@echo "    $$ make clean-tracee-bench       # wipe ./dist/tracee-bench"
 	@echo "    $$ make clean-signatures         # wipe ./dist/signatures"
 	@echo "    $$ make clean-tracee-operator    # wipe ./dist/tracee-operator"
@@ -698,35 +696,6 @@ clean-tracee::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee
 	$(CMD_RM) -rf .*.md5
-
-#
-# tracee-rules (deprecated)
-#
-
-TRACEE_RULES_SRC_DIRS = ./cmd/tracee-rules/ ./pkg/signatures/
-TRACEE_RULES_SRC=$(shell find $(TRACEE_RULES_SRC_DIRS) -type f -name '*.go')
-
-.PHONY: tracee-rules
-tracee-rules:: $(OUTPUT_DIR)/tracee-rules
-
-$(OUTPUT_DIR)/tracee-rules:: \
-	$(TRACEE_RULES_SRC) \
-	| .eval_goenv \
-	.checkver_$(CMD_GO) \
-	signatures
-#
-	$(GO_ENV_EBPF) $(CMD_GO) build \
-		-tags $(GO_TAGS_RULES) \
-		-ldflags="$(GO_DEBUG_FLAG) \
-			-extldflags \"$(CGO_EXT_LDFLAGS_RULES)\" \
-			" \
-		-v -o $@ \
-		./cmd/tracee-rules
-
-.PHONY: clean-tracee-rules
-clean-tracee-rules::
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-rules
 
 #
 # signatures

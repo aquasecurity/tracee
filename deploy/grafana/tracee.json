@@ -77,7 +77,7 @@
               "uid": "w5C9dFs7k"
             },
             "exemplar": true,
-            "expr": "tracee_rules_detections_total",
+            "expr": "tracee_signatures_detections_total",
             "interval": "",
             "legendFormat": "",
             "refId": "A"
@@ -139,7 +139,7 @@
               "uid": "w5C9dFs7k"
             },
             "exemplar": true,
-            "expr": "tracee_rules_signatures_total",
+            "expr": "tracee_signatures_signatures_total",
             "interval": "",
             "legendFormat": "",
             "refId": "A"
