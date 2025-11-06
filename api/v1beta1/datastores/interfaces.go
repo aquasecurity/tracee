@@ -48,6 +48,12 @@ type ProcessStore interface {
 	// GetChildProcesses returns all child processes of the given process
 	// Returns empty slice if no children found
 	GetChildProcesses(entityId uint64) ([]*ProcessInfo, error)
+
+	// GetAncestry retrieves the process ancestry chain up to maxDepth levels
+	// Returns slice of ProcessInfo with [0] = process itself, [1] = parent, [2] = grandparent, etc.
+	// If a parent is not found in the tree, the chain stops there
+	// Returns empty slice if maxDepth <= 0 or process not found
+	GetAncestry(entityId uint64, maxDepth int) ([]*ProcessInfo, error)
 }
 
 // ContainerStore provides access to container information
