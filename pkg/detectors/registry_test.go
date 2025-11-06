@@ -2,12 +2,14 @@ package detectors
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/pkg/events"
 )
 
@@ -447,7 +449,7 @@ func TestRegisterDetector_ScopeFilters(t *testing.T) {
 			_, err := CreateEventsFromDetectors(events.StartDetectorID+events.ID(i+100), mockDetectors)
 			assert.NoError(t, err, "Failed to pre-register detector event")
 
-			registry := newRegistry(nil) // Pass nil policy manager for test
+			registry := newRegistry(nil, nil) // Pass nil policy manager and enrichment options for test
 			detector := &mockDetector{
 				id:        testDetectorID,
 				eventName: testDetectorID + "_event",
@@ -535,7 +537,7 @@ func TestRegisterDetector_DataFilters(t *testing.T) {
 			_, err := CreateEventsFromDetectors(events.StartDetectorID+events.ID(i+200), mockDetectors)
 			assert.NoError(t, err, "Failed to pre-register detector event")
 
-			registry := newRegistry(nil) // Pass nil policy manager for test
+			registry := newRegistry(nil, nil) // Pass nil policy manager and enrichment options for test
 			detector := &mockDetector{
 				id:        testDetectorID,
 				eventName: testDetectorID + "_event",
@@ -618,7 +620,7 @@ func TestRegisterDetector_ScopeAndDataFilters(t *testing.T) {
 			_, err := CreateEventsFromDetectors(events.StartDetectorID+events.ID(i+300), mockDetectors)
 			assert.NoError(t, err, "Failed to pre-register detector event")
 
-			registry := newRegistry(nil) // Pass nil policy manager for test
+			registry := newRegistry(nil, nil) // Pass nil policy manager and enrichment options for test
 			detector := &mockDetector{
 				id:        testDetectorID,
 				eventName: testDetectorID + "_event",
@@ -670,4 +672,209 @@ func (m *mockDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]det
 
 func (m *mockDetector) Close() error {
 	return nil
+}
+
+func TestRegistry_EnrichmentValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		enrichments []detection.EnrichmentRequirement
+		enrichOpts  *EnrichmentOptions
+		expectErr   bool
+		errMsg      string
+	}{
+		{
+			name:        "no enrichments required - should pass",
+			enrichments: []detection.EnrichmentRequirement{},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv: false,
+			},
+			expectErr: false,
+		},
+		{
+			name: "exec-env required and enabled",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "exec-env", Dependency: detection.DependencyRequired},
+			},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv: true,
+			},
+			expectErr: false,
+		},
+		{
+			name: "exec-env required but not enabled",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "exec-env", Dependency: detection.DependencyRequired},
+			},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv: false,
+			},
+			expectErr: true,
+			errMsg:    "requires enrichment \"exec-env\" which is not enabled",
+		},
+		{
+			name: "exec-env optional and not enabled",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "exec-env", Dependency: detection.DependencyOptional},
+			},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv: false,
+			},
+			expectErr: false,
+		},
+		{
+			name: "exec-hash required and enabled",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "exec-hash", Dependency: detection.DependencyRequired},
+			},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv:      false,
+				ExecHashMode: digest.CalcHashesInode,
+			},
+			expectErr: false,
+		},
+		{
+			name: "exec-hash required but not enabled",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "exec-hash", Dependency: detection.DependencyRequired},
+			},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv: false,
+			},
+			expectErr: true,
+			errMsg:    "requires enrichment \"exec-hash\" which is not enabled",
+		},
+		{
+			name: "exec-hash with specific config - inode mode",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "exec-hash", Dependency: detection.DependencyRequired, Config: "inode"},
+			},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv:      false,
+				ExecHashMode: digest.CalcHashesInode,
+			},
+			expectErr: false,
+		},
+		{
+			name: "exec-hash with specific config - dev-inode mode",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "exec-hash", Dependency: detection.DependencyRequired, Config: "dev-inode"},
+			},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv:      false,
+				ExecHashMode: digest.CalcHashesDevInode,
+			},
+			expectErr: false,
+		},
+		{
+			name: "exec-hash with specific config - digest-inode mode",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "exec-hash", Dependency: detection.DependencyRequired, Config: "digest-inode"},
+			},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv:      false,
+				ExecHashMode: digest.CalcHashesDigestInode,
+			},
+			expectErr: false,
+		},
+		{
+			name: "exec-hash mode mismatch - should fail",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "exec-hash", Dependency: detection.DependencyRequired, Config: "digest-inode"},
+			},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv:      false,
+				ExecHashMode: digest.CalcHashesInode,
+			},
+			expectErr: true,
+			errMsg:    "requires enrichment \"exec-hash\" with mode \"digest-inode\", but current mode is \"inode\"",
+		},
+		{
+			name: "exec-hash mode mismatch optional - should not fail",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "exec-hash", Dependency: detection.DependencyOptional, Config: "digest-inode"},
+			},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv:      false,
+				ExecHashMode: digest.CalcHashesInode,
+			},
+			expectErr: false, // Optional dependency, should not fail
+		},
+		{
+			name: "multiple enrichments - all enabled",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "exec-env", Dependency: detection.DependencyRequired},
+				{Name: "exec-hash", Dependency: detection.DependencyRequired},
+			},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv:      true,
+				ExecHashMode: digest.CalcHashesInode,
+			},
+			expectErr: false,
+		},
+		{
+			name: "multiple enrichments - one missing",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "exec-env", Dependency: detection.DependencyRequired},
+				{Name: "exec-hash", Dependency: detection.DependencyRequired},
+			},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv: true,
+			},
+			expectErr: true,
+			errMsg:    "requires enrichment \"exec-hash\" which is not enabled",
+		},
+		{
+			name: "unknown enrichment",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "unknown-enrichment", Dependency: detection.DependencyRequired},
+			},
+			enrichOpts: &EnrichmentOptions{
+				ExecEnv: false,
+			},
+			expectErr: true,
+			errMsg:    "requires unknown enrichment: unknown-enrichment",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Pre-register the detector's produced event with unique ID and name per test
+			eventName := fmt.Sprintf("test_event_%d", i)
+			mockDetectors := []detection.EventDetector{
+				&mockDetector{
+					id:        "test-detector",
+					eventName: eventName,
+				},
+			}
+			_, err := CreateEventsFromDetectors(events.StartDetectorID+events.ID(i+900), mockDetectors)
+			assert.NoError(t, err, "Failed to pre-register detector event")
+
+			// Create registry with nil policy manager and enrichment options
+			registry := newRegistry(nil, tt.enrichOpts)
+
+			// Create detector with enrichment requirements
+			detector := &mockDetector{
+				id:        "test-detector",
+				eventName: eventName,
+				requirements: detection.DetectorRequirements{
+					Events: []detection.EventRequirement{
+						{Name: "syscall_table_check"},
+					},
+					Enrichments: tt.enrichments,
+				},
+			}
+
+			// Try to register detector
+			err = registry.RegisterDetector(detector, detection.DetectorParams{})
+
+			if tt.expectErr {
+				assert.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

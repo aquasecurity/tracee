@@ -463,7 +463,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 
 	// Initialize Detector Engine
-	t.detectorEngine = detectors.NewEngine(t.policyManager)
+	enrichOpts := &detectors.EnrichmentOptions{
+		ExecEnv:      t.config.Output.ExecEnv,
+		ExecHashMode: t.config.Output.CalcHashes,
+	}
+	t.detectorEngine = detectors.NewEngine(t.policyManager, enrichOpts)
 
 	// Register detector metrics if metrics are enabled
 	if t.MetricsEnabled() {
