@@ -172,7 +172,7 @@ func (sorter *EventsChronologicalSorter) Start(in <-chan *trace.Event, out chan<
 			if len(sorter.extractionSavedTimestamps) > sorter.intervalsAmountThresholdForDelay {
 				extractionTimestamp := sorter.extractionSavedTimestamps[0]
 				sorter.extractionSavedTimestamps = sorter.extractionSavedTimestamps[1:]
-				go sorter.sendEvents(out, extractionTimestamp)
+				sorter.sendEvents(out, extractionTimestamp)
 			}
 
 		case <-ctx.Done():
