@@ -23,18 +23,18 @@ esac
 require_cmds cat pgrep realpath
 
 # Common default values
-TRACEE_INSTALL_PATH_DEFAULT="/tmp/tracee"
+TRACEE_WORKDIR_DEFAULT="/tmp/tracee"
 
 # Setup common paths and variables
 setup_tracee_paths() {
     # Set defaults using parameter expansion
-    TRACEE_INSTALL_PATH="${TRACEE_INSTALL_PATH:-${TRACEE_INSTALL_PATH_DEFAULT}}"
-    TRACEE_INSTALL_PATH=$(realpath "${TRACEE_INSTALL_PATH}" 2> /dev/null \
-        || printf "%s" "${TRACEE_INSTALL_PATH}")
+    TRACEE_WORKDIR="${TRACEE_WORKDIR:-${TRACEE_WORKDIR_DEFAULT}}"
+    TRACEE_WORKDIR=$(realpath "${TRACEE_WORKDIR}" 2> /dev/null \
+        || printf "%s" "${TRACEE_WORKDIR}")
 
-    TRACEE_PIDFILE="${TRACEE_INSTALL_PATH}/tracee.pid"
+    TRACEE_PIDFILE="${TRACEE_WORKDIR}/tracee.pid"
 
-    export TRACEE_INSTALL_PATH TRACEE_PIDFILE
+    export TRACEE_WORKDIR TRACEE_PIDFILE
 }
 
 # Default error handler - scripts can override this

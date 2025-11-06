@@ -19,7 +19,7 @@ import (
 type Runner struct {
 	TraceeConfig config.Config
 	Printer      *printer.Broadcast
-	InstallPath  string
+	Workdir      string
 	HTTP         *http.Server
 	GRPC         *grpc.Server
 }
@@ -65,24 +65,24 @@ func (r Runner) Run(ctx context.Context) error {
 
 	// Manage PID file
 
-	if err := os.MkdirAll(r.InstallPath, 0755); err != nil {
-		return errfmt.Errorf("could not create install path dir: %v", err)
+	if err := os.MkdirAll(r.Workdir, 0755); err != nil {
+		return errfmt.Errorf("could not create workdir path: %v", err)
 	}
-	installPathDir, err := fileutil.OpenExistingDir(r.InstallPath)
+	workdir, err := fileutil.OpenExistingDir(r.Workdir)
 	if err != nil {
-		return errfmt.Errorf("error initializing Tracee: error opening installation path: %v", err)
+		return errfmt.Errorf("error initializing Tracee: error opening workdir path: %v", err)
 	}
 	defer func() {
-		err := installPathDir.Close()
+		err := workdir.Close()
 		if err != nil {
-			logger.Warnw("error closing install path dir", "error", err)
+			logger.Warnw("error closing workdir path", "error", err)
 		}
 	}()
-	if err := writePidFile(installPathDir); err != nil {
+	if err := writePidFile(workdir); err != nil {
 		return errfmt.WrapError(err)
 	}
 	defer func() {
-		if err := removePidFile(installPathDir); err != nil {
+		if err := removePidFile(workdir); err != nil {
 			logger.Warnw("error removing pid file", "error", err)
 		}
 	}()
