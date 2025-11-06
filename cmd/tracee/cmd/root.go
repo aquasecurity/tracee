@@ -161,11 +161,11 @@ func initCmd() error {
 	// Signature flags
 
 	rootCmd.Flags().StringArray(
-		"signatures-dir",
+		flags.SignaturesFlag,
 		[]string{},
-		"<dir>\t\t\t\tDirectories where to search for signatures in Go plugin (.so) format",
+		"Signatures configurations (e.g., search-paths=/path/to/signatures)",
 	)
-	err = viper.BindPFlag("signatures-dir", rootCmd.Flags().Lookup("signatures-dir"))
+	err = viper.BindPFlag(flags.SignaturesFlag, rootCmd.Flags().Lookup(flags.SignaturesFlag))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

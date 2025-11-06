@@ -20,8 +20,9 @@ data:
     {{- if .Values.config.installPath }}
     install-path: {{ .Values.config.installPath }}
     {{- end }}
-    {{- if .Values.config.signaturesDir }}
-    signatures-dir: {{ .Values.config.signaturesDir }}
+    {{- if .Values.config.signaturesSearchPaths }}
+    signatures:
+      - search-paths={{ .Values.config.signaturesSearchPaths }}
     {{- end }}
     log:
         level: {{ .Values.config.log.level }}

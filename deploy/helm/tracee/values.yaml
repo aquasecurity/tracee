@@ -87,7 +87,7 @@ config:
   pyroscope: false
   listenAddr: :3366
   installPath: ""
-  signaturesDir: ""
+  signaturesSearchPaths: ""
   log:
     level: info
   output:

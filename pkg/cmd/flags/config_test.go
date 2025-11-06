@@ -335,6 +335,54 @@ server:
 				"pyroscope",
 			},
 		},
+		{
+			name: "Test signatures configuration (cli flags)",
+			yamlContent: `
+signatures:
+    - search-paths=/path/to/signatures
+`,
+			key: "signatures",
+			expectedFlags: []string{
+				"search-paths=/path/to/signatures",
+			},
+		},
+		{
+			name: "Test signatures configuration (structured flags)",
+			yamlContent: `
+signatures:
+    search-paths:
+        - /path/to/signatures
+`,
+			key: "signatures",
+			expectedFlags: []string{
+				"search-paths=/path/to/signatures",
+			},
+		},
+		{
+			name: "Test signatures configuration (cli flags - multiple paths)",
+			yamlContent: `
+signatures:
+    - search-paths=/path1,/path2
+`,
+			key: "signatures",
+			expectedFlags: []string{
+				"search-paths=/path1,/path2",
+			},
+		},
+		{
+			name: "Test signatures configuration (structured flags - multiple paths)",
+			yamlContent: `
+signatures:
+    search-paths:
+        - /path/to/signatures1
+        - /path/to/signatures2
+        - /opt/tracee/signatures
+`,
+			key: "signatures",
+			expectedFlags: []string{
+				"search-paths=/path/to/signatures1,/path/to/signatures2,/opt/tracee/signatures",
+			},
+		},
 	}
 
 	for _, tt := range tests {

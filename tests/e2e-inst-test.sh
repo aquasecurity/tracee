@@ -329,7 +329,7 @@ print_test_header "START TRACE"
     -L debug \
     -t "${TRACEE_STARTUP_TIMEOUT}" \
     -- \
-    --signatures-dir "${SIG_DIR}" \
+    --signatures search-paths="${SIG_DIR}" \
     --output option:sort-events \
     --output option:parse-arguments \
     --proctree source=both \
