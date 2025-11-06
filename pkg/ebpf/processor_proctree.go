@@ -17,14 +17,15 @@ import (
 
 // procTreeForkProcessor handles process fork events.
 func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
-	if t.processTree == nil {
+	processTree := t.dataStoreRegistry.GetProcessTree()
+	if processTree == nil {
 		return errors.New("process tree is disabled")
 	}
 
 	var err error
 	// NOTE: override all the fields of the forkFeed, to avoid any previous data.
-	forkFeed := t.processTree.GetForkFeedFromPool()
-	defer t.processTree.PutForkFeedInPool(forkFeed)
+	forkFeed := processTree.GetForkFeedFromPool()
+	defer processTree.PutForkFeedInPool(forkFeed)
 
 	// NOTE: The "parent" related arguments can be ignored for process tree purposes.
 
@@ -105,12 +106,13 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 	forkFeed.LeaderHash = process.HashTaskID(uint32(forkFeed.LeaderTid), uint64(forkFeed.LeaderStartTime))
 	forkFeed.ChildHash = process.HashTaskID(uint32(forkFeed.ChildTid), uint64(forkFeed.ChildStartTime))
 
-	return t.processTree.FeedFromFork(forkFeed)
+	return processTree.FeedFromFork(forkFeed)
 }
 
 // procTreeExecProcessor handles process exec events.
 func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
-	if t.processTree == nil {
+	processTree := t.dataStoreRegistry.GetProcessTree()
+	if processTree == nil {
 		return errors.New("process tree is disabled")
 	}
 	if event.HostProcessID != event.HostThreadID {
@@ -120,8 +122,8 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 	var err error
 
 	// NOTE: override all the fields of the execFeed, to avoid any previous data.
-	execFeed := t.processTree.GetExecFeedFromPool()
-	defer t.processTree.PutExecFeedInPool(execFeed)
+	execFeed := processTree.GetExecFeedFromPool()
+	defer processTree.PutExecFeedInPool(execFeed)
 
 	// Executable
 	execFeed.CmdPath, err = parse.ArgVal[string](event.Args, "cmdpath")
@@ -188,12 +190,13 @@ func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 	execFeed.Tid = int32(event.ThreadID)
 	execFeed.PPid = int32(event.ParentProcessID)
 
-	return t.processTree.FeedFromExec(execFeed)
+	return processTree.FeedFromExec(execFeed)
 }
 
 // procTreeExitProcessor handles process exit events.
 func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
-	if t.processTree == nil {
+	processTree := t.dataStoreRegistry.GetProcessTree()
+	if processTree == nil {
 		return errors.New("process tree is disabled")
 	}
 	if event.HostProcessID != event.HostThreadID {
@@ -207,8 +210,8 @@ func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
 	// var err error
 
 	// NOTE: override all the fields of the exitFeed, to avoid any previous data.
-	exitFeed := t.processTree.GetExitFeedFromPool()
-	defer t.processTree.PutExitFeedInPool(exitFeed)
+	exitFeed := processTree.GetExitFeedFromPool()
+	defer processTree.PutExitFeedInPool(exitFeed)
 
 	// // Exit logic arguments
 	// exitFeed.ExitCode, err = parse.ArgVal[int32](event.Args, "exit_code")
@@ -223,7 +226,7 @@ func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
 	exitFeed.TimeStamp = uint64(event.Timestamp) // already normalized at decode stage
 	exitFeed.TaskHash = event.ThreadEntityId     // already computed at decode stage
 
-	return t.processTree.FeedFromExit(exitFeed)
+	return processTree.FeedFromExit(exitFeed)
 }
 
 //
@@ -232,9 +235,14 @@ func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
 
 // procTreeAddBinInfo enriches the event with processes information from the process tree.
 func (t *Tracee) procTreeAddBinInfo(event *trace.Event) error {
-	currentProcess, procOk := t.processTree.GetProcessByHash(event.ProcessEntityId)
+	processTree := t.dataStoreRegistry.GetProcessTree()
+	if processTree == nil {
+		return nil // process tree disabled
+	}
+
+	currentProcess, procOk := processTree.GetProcessByHash(event.ProcessEntityId)
 	if !procOk {
-		_, threadOk := t.processTree.GetThreadByHash(event.ProcessEntityId)
+		_, threadOk := processTree.GetThreadByHash(event.ProcessEntityId)
 		if !threadOk {
 			logger.Debugw(
 				"error enriching event executable info",
