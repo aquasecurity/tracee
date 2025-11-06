@@ -130,9 +130,15 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 				},
 			},
 		},
+		// AutoPopulate declaratively specifies what the engine enriches automatically
+		// - Threat: Copy ThreatMetadata to output event's Threat field (no manual cloning needed)
+		// - DetectedFrom: Populate reference to the input event that triggered this detection
+		// - ProcessAncestry: Query process store and add up to 5 ancestors to event.Workload.Process.Ancestors
+		//                    Ancestors will show the process lineage (parent, grandparent, etc.)
 		AutoPopulate: detection.AutoPopulateFields{
-			Threat:       true,
-			DetectedFrom: true,
+			Threat:          true, // Copy threat metadata from detector definition
+			DetectedFrom:    true, // Reference to input event
+			ProcessAncestry: true, // Automatically enrich with process lineage (5 levels)
 		},
 	}
 }
