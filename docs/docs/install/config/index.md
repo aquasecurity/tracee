@@ -50,17 +50,21 @@ A complete config file with all available options can be found [here](https://gi
     pyroscope: true
   ```
 
-### Process Tree
+### Stores (Process Tree and DNS Cache)
 
-- **`--proctree` (`-t`)**: Controls process tree options.
+- **`--stores`**: Controls process tree and DNS cache options.
 
 
-  __NOTE__: You can view more in the [Process Tree section](../../advanced/data-sources/builtin/process-tree.md).
+  __NOTE__: You can view more in the [Process Tree section](../../advanced/data-sources/builtin/process-tree.md) and [DNS Cache section](../../advanced/data-sources/builtin/dns.md).
 
   YAML:
   ```yaml
-  proctree:
-    - process
+  stores:
+    process:
+      enabled: true
+      source: both
+    dns:
+      enabled: true
   ```
 
 ### Runtime
@@ -114,17 +118,6 @@ A complete config file with all available options can be found [here](https://gi
     sockets:
       - runtime: docker
         socket: /var/run/docker.sock
-  ```
-
-### DNS Cache
-
-- **`--dnscache`**: Enables DNS caching in Tracee.
-
-  __NOTE__: You can view more in the [DNS Cache section](../../advanced/data-sources/builtin/dns.md). 
-
-  YAML:
-  ```yaml
-  dnscache: enable
   ```
 
 ### Capabilities

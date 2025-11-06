@@ -64,6 +64,7 @@ func (s SourceType) String() string {
 }
 
 type ProcTreeConfig struct {
+	Enabled              bool
 	Source               SourceType
 	ProcessCacheSize     int
 	ThreadCacheSize      int

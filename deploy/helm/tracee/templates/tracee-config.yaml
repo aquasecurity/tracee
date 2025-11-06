@@ -53,4 +53,34 @@ data:
     {{- if .Values.config.blobPerfBufferSize }}
     blob-perf-buffer-size: {{ .Values.config.blobPerfBufferSize}}
     {{- end }}
+    {{- if or .Values.config.stores.dns.enabled .Values.config.stores.dns.maxEntries .Values.config.stores.process.enabled .Values.config.stores.process.maxProcesses .Values.config.stores.process.maxThreads .Values.config.stores.process.source .Values.config.stores.process.useProcfs }}
+    stores:
+        {{- if or .Values.config.stores.dns.enabled .Values.config.stores.dns.maxEntries }}
+        dns:
+            {{- if .Values.config.stores.dns.enabled }}
+            enabled: {{ .Values.config.stores.dns.enabled }}
+            {{- end }}
+            {{- if .Values.config.stores.dns.maxEntries }}
+            max-entries: {{ .Values.config.stores.dns.maxEntries }}
+            {{- end }}
+        {{- end }}
+        {{- if or .Values.config.stores.process.enabled .Values.config.stores.process.maxProcesses .Values.config.stores.process.maxThreads .Values.config.stores.process.source .Values.config.stores.process.useProcfs }}
+        process:
+            {{- if .Values.config.stores.process.enabled }}
+            enabled: {{ .Values.config.stores.process.enabled }}
+            {{- end }}
+            {{- if .Values.config.stores.process.maxProcesses }}
+            max-processes: {{ .Values.config.stores.process.maxProcesses }}
+            {{- end }}
+            {{- if .Values.config.stores.process.maxThreads }}
+            max-threads: {{ .Values.config.stores.process.maxThreads }}
+            {{- end }}
+            {{- if .Values.config.stores.process.source }}
+            source: {{ .Values.config.stores.process.source }}
+            {{- end }}
+            {{- if .Values.config.stores.process.useProcfs }}
+            use-procfs: {{ .Values.config.stores.process.useProcfs }}
+            {{- end }}
+        {{- end }}
+    {{- end }}
   {{- end }}
