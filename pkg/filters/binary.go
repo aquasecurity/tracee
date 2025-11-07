@@ -131,6 +131,10 @@ func (f *BinaryFilter) Disable() {
 }
 
 func (f *BinaryFilter) Enabled() bool {
+	if f == nil {
+		return false
+	}
+
 	return f.enabled
 }
 

@@ -314,6 +314,10 @@ func (f *DataFilter) Disable() {
 }
 
 func (f *DataFilter) Enabled() bool {
+	if f == nil {
+		return false
+	}
+
 	return f.enabled
 }
 

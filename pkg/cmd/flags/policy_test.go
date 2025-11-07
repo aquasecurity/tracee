@@ -122,7 +122,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 					scopeFlags: []scopeFlag{
 						{
 							full:              "uid>=1000",
-							scopeName:         "uid",
+							scopeName:         string(filters.ScopeUID),
 							operator:          ">=",
 							values:            "1000",
 							operatorAndValues: ">=1000",
@@ -159,7 +159,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 					scopeFlags: []scopeFlag{
 						{
 							full:              "pid<=10",
-							scopeName:         "pid",
+							scopeName:         string(filters.ScopePID),
 							operator:          "<=",
 							values:            "10",
 							operatorAndValues: "<=10",
@@ -196,7 +196,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 					scopeFlags: []scopeFlag{
 						{
 							full:              "mntns=4026531840",
-							scopeName:         "mntns",
+							scopeName:         string(filters.ScopeMntNS),
 							operator:          "=",
 							values:            "4026531840",
 							operatorAndValues: "=4026531840",
@@ -233,7 +233,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 					scopeFlags: []scopeFlag{
 						{
 							full:              "pidns!=4026531836",
-							scopeName:         "pidns",
+							scopeName:         string(filters.ScopePidNS),
 							operator:          "!=",
 							values:            "4026531836",
 							operatorAndValues: "!=4026531836",
@@ -307,7 +307,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 					scopeFlags: []scopeFlag{
 						{
 							full:              "comm=bash",
-							scopeName:         "comm",
+							scopeName:         string(filters.ScopeComm),
 							operator:          "=",
 							values:            "bash",
 							operatorAndValues: "=bash",
@@ -344,7 +344,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 					scopeFlags: []scopeFlag{
 						{
 							full:              "container=new",
-							scopeName:         "container",
+							scopeName:         string(filters.ScopeContainer),
 							operator:          "=",
 							values:            "new",
 							operatorAndValues: "=new",
@@ -381,7 +381,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 					scopeFlags: []scopeFlag{
 						{
 							full:              "not-container",
-							scopeName:         "container",
+							scopeName:         string(filters.ScopeContainer),
 							operator:          "not",
 							values:            "",
 							operatorAndValues: "",
@@ -418,7 +418,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 					scopeFlags: []scopeFlag{
 						{
 							full:              "container",
-							scopeName:         "container",
+							scopeName:         string(filters.ScopeContainer),
 							operator:          "",
 							values:            "",
 							operatorAndValues: "",
@@ -678,7 +678,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 					scopeFlags: []scopeFlag{
 						{
 							full:              "comm=bash",
-							scopeName:         "comm",
+							scopeName:         string(filters.ScopeComm),
 							operator:          "=",
 							values:            "bash",
 							operatorAndValues: "=bash",
@@ -692,14 +692,14 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						},
 						{
 							full:              "not-container",
-							scopeName:         "container",
+							scopeName:         string(filters.ScopeContainer),
 							operator:          "not",
 							values:            "",
 							operatorAndValues: "",
 						},
 						{
 							full:              "uid=1000",
-							scopeName:         "uid",
+							scopeName:         string(filters.ScopeUID),
 							operator:          "=",
 							values:            "1000",
 							operatorAndValues: "=1000",
@@ -2147,7 +2147,7 @@ func TestCreateSinglePolicy(t *testing.T) {
 				policyName: "test-policy",
 				scopeFlags: []scopeFlag{{
 					full:              "comm=bash",
-					scopeName:         "comm",
+					scopeName:         string(filters.ScopeComm),
 					operator:          "=",
 					operatorAndValues: "=bash",
 				}},
@@ -2182,13 +2182,13 @@ func TestCreateSinglePolicy(t *testing.T) {
 				scopeFlags: []scopeFlag{
 					{
 						full:              "uid=1000",
-						scopeName:         "uid",
+						scopeName:         string(filters.ScopeUID),
 						operator:          "=",
 						operatorAndValues: "=1000",
 					},
 					{
 						full:      "container",
-						scopeName: "container",
+						scopeName: string(filters.ScopeContainer),
 					},
 				},
 			},
@@ -2270,7 +2270,7 @@ func TestParseScopeFilters(t *testing.T) {
 			policy: policy.NewPolicy(),
 			scopeFlags: []scopeFlag{{
 				full:              "comm=bash",
-				scopeName:         "comm",
+				scopeName:         string(filters.ScopeComm),
 				operator:          "=",
 				operatorAndValues: "=bash",
 			}},
@@ -2284,11 +2284,11 @@ func TestParseScopeFilters(t *testing.T) {
 			scopeFlags: []scopeFlag{
 				{
 					full:      "container",
-					scopeName: "container",
+					scopeName: string(filters.ScopeContainer),
 				},
 				{
 					full:              "container=new",
-					scopeName:         "container",
+					scopeName:         string(filters.ScopeContainer),
 					operator:          "=",
 					operatorAndValues: "=new",
 				},

@@ -16,6 +16,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/data"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
+	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 )
 
@@ -601,4 +602,31 @@ func (m *Manager) UpdateBPF(
 	defer m.mu.Unlock()
 
 	return m.ps.updateBPF(bpfModule, cts, m.rules, eventsFields, createNewMaps, updateProcTree)
+}
+
+// IsEventFilteredByScope returns true if at least one policy has filtering enabled
+// on the specified scope dimension for the given event.
+//
+// This method uses OR logic across all policies: if any policy has scope filtering
+// active for the event, it returns true.
+//
+// Returns false if the event is not found in any policy, no filtering exists for
+// the specified scope, or the scope name is invalid/unknown.
+func (m *Manager) IsEventFilteredByScope(eventID events.ID, scope filters.ScopeName) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	for _, p := range m.ps.policiesList {
+		ruleData, ok := p.Rules[eventID]
+		if !ok {
+			continue // event not in this policy
+		}
+
+		// Check if the rule has a scope filter with the specified dimension
+		if ruleData.ScopeFilter.HasScopeFiltering(scope) {
+			return true
+		}
+	}
+
+	return false
 }

@@ -37,7 +37,7 @@ func InvalidEventField(data string) error {
 	return fmt.Errorf("invalid event data field: %s", data)
 }
 
-func InvalidScopeField(field string) error {
+func InvalidScopeField(field ScopeName) error {
 	return fmt.Errorf("invalid event scope field: %s", field)
 }
 

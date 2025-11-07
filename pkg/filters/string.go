@@ -197,6 +197,10 @@ func (f *StringFilter) Disable() {
 }
 
 func (f *StringFilter) Enabled() bool {
+	if f == nil {
+		return false
+	}
+
 	return f.enabled
 }
 

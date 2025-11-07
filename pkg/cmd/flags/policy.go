@@ -140,17 +140,12 @@ func createSinglePolicy(policyIdx int, policyScope policyScopes, policyEvents po
 func parseScopeFilters(p *policy.Policy, scopeFlags []scopeFlag, newBinary bool) error {
 	for _, scopeFlag := range scopeFlags {
 		switch scopeFlag.scopeName {
-		case "comm":
+		case string(filters.ScopeComm):
 			if err := p.CommFilter.Parse(scopeFlag.operatorAndValues); err != nil {
 				return err
 			}
 
-		case "exec", "executable", "bin", "binary":
-			if err := p.BinaryFilter.Parse(scopeFlag.operatorAndValues); err != nil {
-				return err
-			}
-
-		case "container":
+		case string(filters.ScopeContainer):
 			switch {
 			case scopeFlag.operator == "not":
 				if err := p.ContFilter.Parse(scopeFlag.full); err != nil {
@@ -177,7 +172,7 @@ func parseScopeFilters(p *policy.Policy, scopeFlags []scopeFlag, newBinary bool)
 				}
 			}
 
-		case "mntns":
+		case string(filters.ScopeMntNS):
 			if strings.ContainsAny(scopeFlag.operator, "<>") {
 				return filters.InvalidExpression(scopeFlag.operatorAndValues)
 			}
@@ -185,7 +180,7 @@ func parseScopeFilters(p *policy.Policy, scopeFlags []scopeFlag, newBinary bool)
 				return err
 			}
 
-		case "pidns":
+		case string(filters.ScopePidNS):
 			if strings.ContainsAny(scopeFlag.operator, "<>") {
 				return filters.InvalidExpression(scopeFlag.operatorAndValues)
 			}
@@ -193,12 +188,7 @@ func parseScopeFilters(p *policy.Policy, scopeFlags []scopeFlag, newBinary bool)
 				return err
 			}
 
-		case "tree":
-			if err := p.ProcessTreeFilter.Parse(scopeFlag.operatorAndValues); err != nil {
-				return err
-			}
-
-		case "pid":
+		case string(filters.ScopePID):
 			switch scopeFlag.operatorAndValues {
 			case "=new":
 				if err := p.NewPidFilter.Parse("new"); err != nil {
@@ -214,13 +204,30 @@ func parseScopeFilters(p *policy.Policy, scopeFlags []scopeFlag, newBinary bool)
 				}
 			}
 
-		case "uts":
-			if err := p.UTSFilter.Parse(scopeFlag.operatorAndValues); err != nil {
+		case string(filters.ScopeUID):
+			if err := p.UIDFilter.Parse(scopeFlag.operatorAndValues); err != nil {
 				return err
 			}
 
-		case "uid":
-			if err := p.UIDFilter.Parse(scopeFlag.operatorAndValues); err != nil {
+		// Policy-level filters: These filters apply globally to the entire policy across all events,
+		// unlike the per-event scope filters above which are stored in RuleData.ScopeFilter and can
+		// be specified individually for each event.
+		// - "exec/executable/bin/binary": BinaryFilter (binary path with mount namespace tracking)
+		// - "tree": ProcessTreeFilter (process hierarchy filtering)
+		// - "uts": UTSFilter (UTS namespace filtering at policy level)
+		// - "follow": Follow flag (follow child processes)
+		case "exec", "executable", "bin", "binary":
+			if err := p.BinaryFilter.Parse(scopeFlag.operatorAndValues); err != nil {
+				return err
+			}
+
+		case "tree":
+			if err := p.ProcessTreeFilter.Parse(scopeFlag.operatorAndValues); err != nil {
+				return err
+			}
+
+		case "uts":
+			if err := p.UTSFilter.Parse(scopeFlag.operatorAndValues); err != nil {
 				return err
 			}
 
@@ -309,7 +316,7 @@ func parseEventFilters(p *policy.Policy, eventFlags []eventFlag) error {
 					return err
 				}
 			case "scope":
-				if err := p.Rules[eventId].ScopeFilter.Parse(evtFlag.eventOptionName, evtFlag.operatorAndValues); err != nil {
+				if err := p.Rules[eventId].ScopeFilter.Parse(filters.ScopeName(evtFlag.eventOptionName), evtFlag.operatorAndValues); err != nil {
 					return err
 				}
 			case "data", "args":

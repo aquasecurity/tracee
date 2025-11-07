@@ -144,6 +144,14 @@ func (f *BoolFilter) Value() bool {
 	return f.trueEnabled
 }
 
+func (f *BoolFilter) IsTrueEnabled() bool {
+	return f.trueEnabled
+}
+
+func (f *BoolFilter) IsFalseEnabled() bool {
+	return f.falseEnabled
+}
+
 func (f *BoolFilter) MatchIfKeyMissing() bool {
 	return !f.Value()
 }

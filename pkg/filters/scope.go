@@ -6,6 +6,68 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+// ScopeName represents a scope dimension name for filtering
+type ScopeName string
+
+// Scope name constants for filtering
+const (
+	// Boolean scope filters
+	ScopeContainer ScopeName = "container" // Matches container contexts
+	ScopeHost      ScopeName = "host"      // Matches host (non-container) contexts
+
+	// Process ID scope filters
+	ScopePID                 ScopeName = "pid"                 // Process ID
+	ScopeProcessID           ScopeName = "processId"           // Alias for pid
+	ScopeP                   ScopeName = "p"                   // Short alias for pid
+	ScopeTID                 ScopeName = "tid"                 // Thread ID
+	ScopeThreadID            ScopeName = "threadId"            // Alias for tid
+	ScopePPID                ScopeName = "ppid"                // Parent process ID
+	ScopeParentProcID        ScopeName = "parentProcessId"     // Alias for ppid
+	ScopeHostPID             ScopeName = "hostPid"             // Host process ID
+	ScopeHostTID             ScopeName = "hostTid"             // Host thread ID
+	ScopeHostThreadID        ScopeName = "hostThreadId"        // Alias for hostTid
+	ScopeHostPPID            ScopeName = "hostPpid"            // Host parent process ID
+	ScopeHostParentProcessID ScopeName = "hostParentProcessId" // Alias for hostPid
+
+	// User scope filters
+	ScopeUID    ScopeName = "uid"    // User ID
+	ScopeUserID ScopeName = "userId" // Alias for uid
+
+	// Namespace scope filters
+	ScopeMntNS          ScopeName = "mntns"          // Mount namespace
+	ScopeMountNamespace ScopeName = "mountNamespace" // Alias for mntns
+	ScopePidNS          ScopeName = "pidns"          // PID namespace
+	ScopePidNamespace   ScopeName = "pidNamespace"   // Alias for pidns
+
+	// Process name scope filters
+	ScopeComm        ScopeName = "comm"        // Process command name
+	ScopeProcessName ScopeName = "processName" // Alias for comm
+
+	// Host scope filter
+	ScopeHostName ScopeName = "hostName" // Hostname
+
+	// Cgroup scope filter
+	ScopeCgroupID ScopeName = "cgroupId" // Cgroup ID
+
+	// Container attribute scope filters
+	ScopeContainerID          ScopeName = "containerId"          // Container ID
+	ScopeContainerImage       ScopeName = "containerImage"       // Container image name
+	ScopeContainerName        ScopeName = "containerName"        // Container name
+	ScopeContainerImageDigest ScopeName = "containerImageDigest" // Container image digest
+
+	// Kubernetes pod scope filters
+	ScopePodName      ScopeName = "podName"      // Kubernetes pod name
+	ScopePodNamespace ScopeName = "podNamespace" // Kubernetes pod namespace
+	ScopePodNs        ScopeName = "podNs"        // Short alias for podNamespace
+	ScopePodUID       ScopeName = "podUid"       // Kubernetes pod UID
+	ScopePodSandbox   ScopeName = "podSandbox"   // Kubernetes pod sandbox
+
+	// Other scope filters
+	ScopeSyscall     ScopeName = "syscall"     // Syscall filtering
+	ScopeTimestamp   ScopeName = "timestamp"   // Timestamp filtering
+	ScopeProcessorID ScopeName = "processorId" // Processor ID filtering
+)
+
 type ScopeFilter struct {
 	enabled                    bool
 	timestampFilter            *NumericFilter[int64]
@@ -111,87 +173,90 @@ func (f *ScopeFilter) Filter(evt trace.Event) bool {
 		f.uidFilter.Filter(int64(evt.UserID))
 }
 
-func (f *ScopeFilter) Parse(field string, operatorAndValues string) error {
+func (f *ScopeFilter) Parse(field ScopeName, operatorAndValues string) error {
 	f.Enable()
 
 	switch field {
-	case "timestamp":
+	case ScopeTimestamp:
 		filter := f.timestampFilter
 		return filter.Parse(operatorAndValues)
-	case "processorId":
+	case ScopeProcessorID:
 		filter := f.processorIDFilter
 		return filter.Parse(operatorAndValues)
-	case "p", "pid", "processId":
+	case ScopeP, ScopePID, ScopeProcessID:
 		filter := f.pidFilter
 		return filter.Parse(operatorAndValues)
-	case "tid", "threadId":
+	case ScopeTID, ScopeThreadID:
 		filter := f.tidFilter
 		return filter.Parse(operatorAndValues)
-	case "ppid", "parentProcessId":
+	case ScopePPID, ScopeParentProcID:
 		filter := f.ppidFilter
 		return filter.Parse(operatorAndValues)
-	case "hostTid", "hostThreadId":
+	case ScopeHostTID, ScopeHostThreadID:
 		filter := f.hostTidFilter
 		return filter.Parse(operatorAndValues)
-	case "hostPid", "hostParentProcessId":
+	case ScopeHostPID, ScopeHostParentProcessID:
 		filter := f.hostPidFilter
 		return filter.Parse(operatorAndValues)
-	case "uid", "userId":
+	case ScopeHostPPID:
+		filter := f.hostPpidFilter
+		return filter.Parse(operatorAndValues)
+	case ScopeUID, ScopeUserID:
 		filter := f.uidFilter
 		return filter.Parse(operatorAndValues)
-	case "mntns", "mountNamespace":
+	case ScopeMntNS, ScopeMountNamespace:
 		filter := f.mntNSFilter
 		return filter.Parse(operatorAndValues)
-	case "pidns", "pidNamespace":
+	case ScopePidNS, ScopePidNamespace:
 		filter := f.pidNSFilter
 		return filter.Parse(operatorAndValues)
-	case "processName", "comm":
+	case ScopeProcessName, ScopeComm:
 		filter := f.processNameFilter
 		return filter.Parse(operatorAndValues)
-	case "hostName":
+	case ScopeHostName:
 		filter := f.hostNameFilter
 		return filter.Parse(operatorAndValues)
-	case "cgroupId":
+	case ScopeCgroupID:
 		filter := f.cgroupIDFilter
 		return filter.Parse(operatorAndValues)
 	// we reserve host for negating "container" scope
-	case "host":
+	case ScopeHost:
 		filter := f.containerFilter
 		filter.Enable()
 		return filter.add(false, Equal)
-	case "container":
+	case ScopeContainer:
 		filter := f.containerFilter
 		filter.Enable()
 		return filter.add(true, Equal)
 	// TODO: change this and below container filters to the format
 	// eventname.scope.container.id and so on...
-	case "containerId":
+	case ScopeContainerID:
 		filter := f.containerIDFilter
 		return addContainer[*StringFilter](f, filter, operatorAndValues)
-	case "containerImage":
+	case ScopeContainerImage:
 		filter := f.containerImageFilter
 		return addContainer[*StringFilter](f, filter, operatorAndValues)
-	case "containerImageDigest":
+	case ScopeContainerImageDigest:
 		filter := f.containerImageDigestFilter
 		return addContainer[*StringFilter](f, filter, operatorAndValues)
-	case "containerName":
+	case ScopeContainerName:
 		filter := f.containerNameFilter
 		return addContainer[*StringFilter](f, filter, operatorAndValues)
 	// TODO: change this and below pod filters to the format
 	// eventname.scope.kubernetes.podName and so on...
-	case "podName":
+	case ScopePodName:
 		filter := f.podNameFilter
 		return addContainer[*StringFilter](f, filter, operatorAndValues)
-	case "podNamespace":
+	case ScopePodNamespace, ScopePodNs:
 		filter := f.podNSFilter
 		return addContainer[*StringFilter](f, filter, operatorAndValues)
-	case "podUid":
+	case ScopePodUID:
 		filter := f.podUIDFilter
 		return addContainer[*StringFilter](f, filter, operatorAndValues)
-	case "podSandbox":
+	case ScopePodSandbox:
 		filter := f.podSandboxFilter
 		return addContainer[*BoolFilter](f, filter, operatorAndValues)
-	case "syscall":
+	case ScopeSyscall:
 		filter := f.syscallFilter
 		return filter.Parse(operatorAndValues)
 	}
@@ -208,6 +273,73 @@ func addContainer[T any](f *ScopeFilter, filter Filter[T], operatorAndValues str
 	}
 	f.containerFilter.Enable()
 	return nil
+}
+
+// HasScopeFiltering returns true if the specified scope dimension has active filtering.
+// Returns false for unknown scope names.
+func (f *ScopeFilter) HasScopeFiltering(scope ScopeName) bool {
+	if f == nil {
+		return false
+	}
+
+	if !f.enabled {
+		return false
+	}
+
+	switch scope {
+	case ScopeContainer:
+		return f.containerFilter.Enabled() && f.containerFilter.IsTrueEnabled()
+	case ScopeHost:
+		return f.containerFilter.Enabled() && f.containerFilter.IsFalseEnabled()
+	case ScopePID, ScopeP, ScopeProcessID:
+		return f.pidFilter.Enabled()
+	case ScopeTID, ScopeThreadID:
+		return f.tidFilter.Enabled()
+	case ScopePPID, ScopeParentProcID:
+		return f.ppidFilter.Enabled()
+	case ScopeHostPID, ScopeHostParentProcessID:
+		return f.hostPidFilter.Enabled()
+	case ScopeHostTID, ScopeHostThreadID:
+		return f.hostTidFilter.Enabled()
+	case ScopeHostPPID:
+		return f.hostPpidFilter.Enabled()
+	case ScopeUID, ScopeUserID:
+		return f.uidFilter.Enabled()
+	case ScopeMntNS, ScopeMountNamespace:
+		return f.mntNSFilter.Enabled()
+	case ScopePidNS, ScopePidNamespace:
+		return f.pidNSFilter.Enabled()
+	case ScopeComm, ScopeProcessName:
+		return f.processNameFilter.Enabled()
+	case ScopeHostName:
+		return f.hostNameFilter.Enabled()
+	case ScopeCgroupID:
+		return f.cgroupIDFilter.Enabled()
+	case ScopeContainerID:
+		return f.containerIDFilter.Enabled()
+	case ScopeContainerImage:
+		return f.containerImageFilter.Enabled()
+	case ScopeContainerName:
+		return f.containerNameFilter.Enabled()
+	case ScopeContainerImageDigest:
+		return f.containerImageDigestFilter.Enabled()
+	case ScopePodName:
+		return f.podNameFilter.Enabled()
+	case ScopePodNamespace, ScopePodNs:
+		return f.podNSFilter.Enabled()
+	case ScopePodUID:
+		return f.podUIDFilter.Enabled()
+	case ScopePodSandbox:
+		return f.podSandboxFilter.Enabled()
+	case ScopeSyscall:
+		return f.syscallFilter.Enabled()
+	case ScopeTimestamp:
+		return f.timestampFilter.Enabled()
+	case ScopeProcessorID:
+		return f.processorIDFilter.Enabled()
+	default:
+		return false
+	}
 }
 
 func (f *ScopeFilter) Clone() *ScopeFilter {

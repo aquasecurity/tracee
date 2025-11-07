@@ -8,6 +8,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
+	"github.com/aquasecurity/tracee/pkg/filters"
 )
 
 func TestPolicyManagerEnableRule(t *testing.T) {
@@ -336,4 +337,79 @@ func TestPolicyManagerIsEnabled(t *testing.T) {
 	assert.True(t, policyManager.IsEnabled(policy1Mached, events.SecurityBPF))
 	assert.True(t, policyManager.IsEnabled(policy2Mached, events.SecurityBPF))
 	assert.True(t, policyManager.IsEnabled(policy1And2Mached, events.SecurityBPF))
+}
+
+func TestPolicyManagerIsEventFilteredByScope(t *testing.T) {
+	t.Parallel()
+
+	// Create a policy with scope filters
+	// SecurityBPF on container context and SecurityFileOpen on pid context
+	policy1 := NewPolicy()
+	policy1.ID = 0
+	policy1.Name = "policy-with-container-scope"
+
+	// Create a rule with container scope filter
+	ruleData1 := RuleData{
+		EventID:     events.SecurityBPF,
+		ScopeFilter: filters.NewScopeFilter(),
+	}
+	err := ruleData1.ScopeFilter.Parse(filters.ScopeContainer, "")
+	assert.NoError(t, err)
+	policy1.Rules[events.SecurityBPF] = ruleData1
+
+	// Create a rule with pid scope filter
+	ruleData2 := RuleData{
+		EventID:     events.SecurityFileOpen,
+		ScopeFilter: filters.NewScopeFilter(),
+	}
+	err = ruleData2.ScopeFilter.Parse(filters.ScopePID, "=1234")
+	assert.NoError(t, err)
+	policy1.Rules[events.SecurityFileOpen] = ruleData2
+
+	//
+
+	// Create another policy with host scope filter
+	// SecurityBPF on host context
+	policy2 := NewPolicy()
+	policy2.ID = 1
+	policy2.Name = "policy-with-host-scope"
+
+	ruleData3 := RuleData{
+		EventID:     events.SecurityBPF,
+		ScopeFilter: filters.NewScopeFilter(),
+	}
+	err = ruleData3.ScopeFilter.Parse(filters.ScopeHost, "")
+	assert.NoError(t, err)
+	policy2.Rules[events.SecurityBPF] = ruleData3
+
+	//
+
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.DependencyStrategy {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	policyManager, err := NewManager(ManagerConfig{}, depsManager, policy1, policy2)
+	assert.NoError(t, err)
+
+	// Test container scope filtering
+	assert.True(t, policyManager.IsEventFilteredByScope(events.SecurityBPF, filters.ScopeContainer))
+
+	// Test host scope filtering
+	assert.True(t, policyManager.IsEventFilteredByScope(events.SecurityBPF, filters.ScopeHost))
+
+	// Test pid scope filtering
+	assert.True(t, policyManager.IsEventFilteredByScope(events.SecurityFileOpen, filters.ScopePID))
+
+	// Test scope NOT enabled for event
+	assert.False(t, policyManager.IsEventFilteredByScope(events.SecurityFileOpen, filters.ScopeContainer))
+
+	// Test host scope NOT enabled for event
+	assert.False(t, policyManager.IsEventFilteredByScope(events.SecurityFileOpen, filters.ScopeHost))
+
+	// Test event NOT in any policy
+	assert.False(t, policyManager.IsEventFilteredByScope(events.SecuritySocketAccept, filters.ScopeContainer))
+
+	// Test unknown scope name
+	assert.False(t, policyManager.IsEventFilteredByScope(events.SecurityBPF, filters.ScopeName("unknownScope")))
 }
