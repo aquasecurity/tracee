@@ -98,6 +98,7 @@ func newSinglePrinter(dst config.Destination) (EventPrinter, error) {
 	case kind == "webhook":
 		res = &webhookEventPrinter{
 			outPath: dst.Url,
+			format:  dst.Format,
 		}
 	}
 
@@ -689,6 +690,7 @@ type webhookEventPrinter struct {
 	outPath     string
 	url         *url.URL
 	timeout     time.Duration
+	format      string
 	templateObj *template.Template
 	contentType string
 }
@@ -709,8 +711,7 @@ func (ws *webhookEventPrinter) Init() error {
 	}
 	ws.timeout = t
 
-	gotemplate := getParameterValue(parameters, "gotemplate", "")
-	if gotemplate != "" {
+	if gotemplate, ok := strings.CutPrefix(ws.format, "gotemplate="); ok {
 		tmpl, err := template.New(filepath.Base(gotemplate)).
 			Funcs(sprig.TxtFuncMap()).
 			ParseFiles(gotemplate)
