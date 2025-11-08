@@ -47,4 +47,6 @@ dist
 release_notes.txt
 
 # Cursor rules - personal development configurations
-.cursor/rules/
+.cursor/rules/**
+!.cursor/rules/shell-style-guide.mdc
+!.cursor/rules/testing-guide.mdc

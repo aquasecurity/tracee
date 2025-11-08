@@ -1,0 +1,1629 @@
+---
+description: Shell script style guide following Google Shell Style Guide with shfmt formatting requirements
+globs:
+  - "**/*.sh"
+  - "**/scripts/**/*"
+  - "**/*.bash"
+  - "**/*.yaml"
+  - "**/*.yml"
+alwaysApply: false
+---
+
+# Shell Script Style Guide
+
+This guide follows the [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html) and enforces specific formatting requirements for all shell scripts in the Tracee project.
+
+## Key Requirements
+
+🔴 **MANDATORY - NO EXCEPTIONS:**
+1. All scripts MUST pass **ShellCheck with zero errors**
+2. All scripts MUST be formatted with **shfmt** (see formatting section)
+3. Library files (`scripts/lib*.sh`) MUST be **POSIX sh compatible** (see "POSIX sh Best Practices")
+4. YAML shell script blocks MUST follow **POSIX sh standards** (use `shell: sh` directive)
+5. Know the difference: **Bash scripts can use advanced features** (see "Bash Best Practices"), **POSIX sh cannot**
+
+## Formatting Requirements
+
+### Quick Reference Table
+
+| File Type | Shebang | shfmt Command | ShellCheck |
+|-----------|---------|---------------|------------|
+| Bash scripts | `#!/bin/bash` | `shfmt -i 4 -ci -bn -sr -w <file>` | `shellcheck -s bash <file>` |
+| POSIX sh scripts | `#!/bin/sh` | `shfmt -p -i 4 -ci -bn -sr -w <file>` | `shellcheck -s sh <file>` |
+| Library files (`lib*.sh`) | `#!/bin/sh` | `shfmt -p -i 4 -ci -bn -sr -w <file>` | `shellcheck -s sh -x <file>` |
+| YAML shell blocks | (embedded) | `shfmt -p -i 4 -ci -bn -sr -w <file>` | `shellcheck -s sh <file>` |
+
+### shfmt Formatting
+
+All shell scripts MUST be formatted with `shfmt` according to their shebang:
+
+**For `#!/bin/sh` scripts (POSIX):**
+```bash
+shfmt -p -i 4 -ci -bn -sr -w <file>
+```
+
+**For `#!/bin/bash` scripts:**
+```bash
+shfmt -i 4 -ci -bn -sr -w <file>
+```
+
+**For shell script blocks in YAML files:**
+```bash
+shfmt -p -i 4 -ci -bn -sr -w <file>
+```
+*(YAML shell blocks are treated as POSIX sh)*
+
+**Flag Explanation:**
+- `-p`: POSIX mode (for sh scripts only) - avoids Bash-specific syntax
+- `-i 4`: Indent with 4 spaces (not tabs)
+- `-ci`: Case indent - patterns get 4 spaces, commands get 8 spaces (4+4)
+- `-bn`: Binary operators like `&&` and `|` may start a line (with backslash continuation)
+- `-sr`: Space after redirect operators - `> /dev/null` not `>/dev/null`
+- `-w`: Write result to file instead of stdout
+
+**What shfmt will automatically fix:**
+- Removes spaces inside arithmetic: `(( x ))` → `((x))`
+- Adds space after redirects: `>/dev/null` → `> /dev/null`
+- Removes space before semicolon: `while : ;` → `while :;`
+- Normalizes case indentation: patterns at 4 spaces, commands at 8 spaces
+- Aligns inline comments with single space
+- Formats multiline conditions with operators at line start
+
+### ShellCheck Enforcement
+
+**ALL shell scripts MUST pass ShellCheck with no errors before committing.**
+
+Run ShellCheck on all scripts:
+```bash
+shellcheck -x script.sh              # Single file
+shellcheck scripts/**/*.sh           # Multiple files
+shellcheck -x scripts/lib*.sh        # Library files with source following
+```
+
+ShellCheck is non-negotiable and catches common bugs, portability issues, and anti-patterns.
+
+### Library Files (POSIX sh)
+
+**All library files (`scripts/lib*.sh`) are and MUST remain POSIX sh compatible.**
+
+- Use `#!/bin/sh` shebang (not `#!/bin/bash`)
+- Format with `shfmt -p -i 4 -ci -bn -sr -w`
+- Avoid Bash-specific features (arrays, `[[`, `local`, etc.)
+- Test with `shellcheck -s sh` to ensure POSIX compliance
+- Cannot use `local` keyword - see POSIX variable patterns below
+- **Internal functions**: prefix with `__` and namespace variables with function name
+- **Status variables**: MUST use `__status=$?` (not `status=$?`) to avoid namespace conflicts
+
+```bash
+#!/bin/sh
+# Library files must be POSIX-compliant for maximum portability
+
+# ✅ Correct - Public library function using __status
+my_lib_function() {
+    result="$(__my_lib_helper "$1")"
+    __status=$?
+    if [ "${__status}" -ne 0 ]; then
+        return "${__status}"
+    fi
+    echo "${result}"
+}
+
+# ✅ Correct - Internal helper with namespaced variables (RECOMMENDED)
+__my_lib_helper() {
+    __my_lib_helper_input="$1"
+    __my_lib_helper_result="$(some_command "${__my_lib_helper_input}")"
+    __status=$?
+    
+    if [ "${__status}" -ne 0 ]; then
+        return "${__status}"
+    fi
+    
+    echo "${__my_lib_helper_result}"
+}
+
+# ✅ Correct - Using __status in error handling blocks
+some_function() {
+    output=$(some_command "$@") || {
+        __status=$?
+        __error "some_function: some_command failed"
+        return ${__status}
+    }
+    echo "${output}"
+}
+
+# ❌ Wrong - Bash-specific
+if [[ -f "${file}" ]]; then
+    do_something
+fi
+
+# ❌ Wrong - 'local' not available in POSIX sh
+my_function() {
+    local var="value"  # This will fail in POSIX sh!
+}
+
+# ❌ Wrong - Using 'status' instead of '__status' in library
+__helper() {
+    result="$(command)"
+    status=$?  # Should be __status=$? to avoid conflicts
+    return ${status}
+}
+
+# ❌ Wrong - Internal function without proper namespacing
+__helper() {
+    result="$(command)"  # Variable 'result' might conflict with other functions
+    echo "${result}"
+}
+```
+
+**Variable Naming in Library Files:**
+- **Public function variables**: Can use simple names (but be cautious of conflicts)
+- **Internal function variables**: MUST prefix with function name (e.g., `__function_name_variable`)
+- This prevents variable collisions when functions call each other
+- Example: `__collect_missing_cmds_result`, `__lib_require_cmds_status`
+
+### Library Test Suite
+
+**The library has a comprehensive test suite in `scripts/lib_test.sh`:**
+
+- Run tests: `./scripts/lib_test.sh`
+- Tests cover all public library functions and key internal functions
+- **IMPORTANT**: As the library evolves, the test suite MUST be updated:
+  - Add tests for new functions
+  - Update tests when function behavior changes
+  - Ensure test coverage for edge cases and error conditions
+  - Maintain test quality and clarity
+
+**Test Development Guidelines:**
+```bash
+# ✅ Good test - clear, specific, tests behavior
+test_my_function() {
+    # case 1: normal input
+    input="test value"
+    expected="EXPECTED OUTPUT"
+    result=$(my_function "${input}")
+    test_assert_eq "${expected}" "${result}" "my_function handles normal input"
+    
+    # case 2: error condition
+    capture_outputs out err status my_function ""
+    # shellcheck disable=SC2154 # status assigned by capture_outputs
+    test_assert_neq 0 "${status}" "my_function returns error for empty input"
+}
+
+# ❌ Bad test - vague, doesn't test specific behavior
+test_my_function() {
+    my_function "input"
+    test_assert_eq 0 "$?" "function works"
+}
+```
+
+**When modifying library functions:**
+1. Run the test suite before changes: `./scripts/lib_test.sh`
+2. Make your changes
+3. Update/add tests as needed
+4. Run the test suite again to verify: `./scripts/lib_test.sh`
+5. All tests MUST pass before committing
+
+### YAML Shell Script Blocks
+
+**Shell script blocks embedded in YAML files (e.g., GitHub Actions, CI configs) MUST follow the same standards:**
+
+- Format as POSIX sh: `shfmt -p -i 4 -ci -bn -sr -w`
+- Pass ShellCheck validation
+- Follow all quoting and error handling rules
+
+Example in YAML (GitHub Actions with shell directive):
+```yaml
+steps:
+  - name: Run script
+    shell: sh
+    run: |
+      set -eu
+      
+      VAR="value"
+      readonly VAR
+      if [ -f "${file}" ]; then
+          echo "Processing ${file}"
+      fi
+```
+
+**Note:** GitHub Actions `shell: sh` directive means the script will be executed with `/bin/sh`, so it must be POSIX-compliant.
+
+### Indentation
+- Use **4 spaces** for indentation (NO tabs)
+- Indent switch case alternatives by 4 spaces
+- Continuation lines should be indented appropriately
+
+### Pre-Commit Validation
+
+Before committing any shell script changes, run these commands:
+
+```bash
+# For a Bash script
+shellcheck -s bash script.sh
+shfmt -i 4 -ci -bn -sr -d script.sh  # -d for diff/check mode
+
+# For a POSIX sh script or lib file
+shellcheck -s sh scripts/lib_example.sh
+shfmt -p -i 4 -ci -bn -sr -d scripts/lib_example.sh
+
+# To auto-fix formatting (use -w flag)
+shfmt -p -i 4 -ci -bn -sr -w scripts/lib_example.sh
+```
+
+**Tip:** Consider adding a git pre-commit hook to automate these checks.
+
+## Shell Selection
+
+### Which Shell to Use
+
+**Bash is the primary shell for executables in this project.**
+
+- All executable scripts MUST start with `#!/bin/bash`
+- Use `#!/bin/sh` only when POSIX compatibility is explicitly required
+- Use `set` to configure shell options for consistency
+- Avoid `#!/usr/bin/env bash` unless portability requires it
+
+Example (Bash):
+```bash
+#!/bin/bash
+#
+# Script description here
+#
+
+set -euo pipefail  # Exit on error, undefined variables, pipe failures
+```
+
+Example (POSIX sh):
+```bash
+#!/bin/sh
+#
+# Script description here
+#
+
+set -eu  # Exit on error, undefined variables (pipefail not available in POSIX sh)
+```
+
+### When to Use Shell
+
+- ✅ Small utilities or simple wrapper scripts
+- ✅ Mostly calling other utilities with minimal data manipulation
+- ✅ Scripts under 100 lines
+- ❌ Performance-critical applications (use Go instead)
+- ❌ Complex control flow or heavy data processing
+- ⚠️ Scripts over 100 lines (consider splitting into multiple scripts or rewriting in Go)
+
+## File Structure
+
+### File Extensions
+
+**Executables:**
+- Prefer `.sh` extension for source files with build rules
+- No extension for scripts added directly to `PATH`
+
+**Libraries:**
+- MUST have `.sh` extension
+- MUST NOT be executable
+
+### File Header
+
+Every script MUST have a top-level comment describing its purpose:
+
+```bash
+#!/bin/bash
+#
+# Brief description of what this script does.
+# Can span multiple lines if needed.
+#
+# Usage: script_name [options] <arguments>
+#
+```
+
+## Language Features
+
+### ShellCheck (MANDATORY)
+
+**All scripts MUST pass ShellCheck with zero errors before being committed.**
+
+This is a strict requirement - no exceptions. ShellCheck catches:
+- Common bugs and logic errors
+- Quoting issues that could cause security vulnerabilities
+- Portability problems between sh and bash
+- Deprecated or dangerous syntax
+- Subtle pitfalls in word splitting and globbing
+
+```bash
+shellcheck -x script.sh              # Check with source following
+shellcheck -s sh scripts/lib*.sh     # Enforce POSIX for lib files
+shellcheck -s bash script.sh         # Enforce Bash syntax
+```
+
+**Only use disable directives for legitimate false positives with explanation:**
+```bash
+# shellcheck disable=SC2034  # Variable used in sourced file
+EXPORTED_VAR="value"
+
+# shellcheck source=/dev/null  # Dynamic source, checked separately
+source "${CONFIG_FILE}"
+```
+
+**Never disable ShellCheck to work around real issues.**
+
+### Variables
+
+**Variable Names:**
+- Function/local variables: `lowercase_with_underscores`
+- Constants/environment: `UPPERCASE_WITH_UNDERSCORES`
+
+**Always quote variables unless word splitting is explicitly needed:**
+
+```bash
+# ✅ Correct
+local file_name="$1"
+echo "${file_name}"
+rm -f "${file_name}"
+
+# ❌ Wrong - unquoted variables
+echo $file_name
+rm -f $file_name
+```
+
+**Declare constants with `readonly` (POSIX-compliant):**
+```bash
+# ✅ Bash - BASH_SOURCE is Bash-specific
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly VERSION="1.0.0"
+
+# ✅ POSIX sh - use $0 instead of BASH_SOURCE
+readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+readonly VERSION="1.0.0"
+
+# ✅ POSIX sh - two-step approach (also valid)
+VERSION="1.0.0"
+readonly VERSION
+```
+
+**Note:** Both `readonly VAR="value"` and the two-step `VAR="value"; readonly VAR` are POSIX-compliant.
+
+**Use `local` for function variables (Bash only):**
+```bash
+my_function() {
+    local result
+    result="$(some_command)"
+    echo "${result}"
+}
+```
+
+**For POSIX sh - No `local` keyword available:**
+
+POSIX sh doesn't have the `local` keyword. Use these patterns instead:
+
+```bash
+# Pattern 1: Use function-scoped variable names (lowercase with underscores)
+# Be careful to avoid naming conflicts with global variables
+my_function() {
+    result="$(some_command)"
+    status=$?
+    if [ "${status}" -ne 0 ]; then
+        return "${status}"
+    fi
+    echo "${result}"
+}
+
+# Pattern 2: Use prefixed variable names to avoid conflicts
+# Example from lib_test.sh
+test_my_function() {
+    result=$(__collect_missing_cmds echo grep sed)
+    test_assert_eq "" "${result}" "test message"
+}
+
+# Pattern 3: Unset variables at function end if they might pollute namespace
+my_function() {
+    result="$(some_command)"
+    echo "${result}"
+    unset result  # Clean up if variable name is common
+}
+
+# Pattern 4: Prefix internal function variables with the function name (RECOMMENDED)
+# This creates a namespace for each function's variables
+__internal_helper() {
+    __internal_helper_result="$(some_command)"
+    __internal_helper_status=$?
+    if [ "${__internal_helper_status}" -ne 0 ]; then
+        return "${__internal_helper_status}"
+    fi
+    echo "${__internal_helper_result}"
+}
+
+# For complex internal functions with multiple variables
+__process_data() {
+    __process_data_input="$1"
+    __process_data_output=""
+    __process_data_count=0
+    
+    # Process logic here
+    __process_data_output="$(transform "${__process_data_input}")"
+    __process_data_count=$((${__process_data_count} + 1))
+    
+    printf '%s\n' "${__process_data_output}"
+}
+```
+
+**Important:** In POSIX sh, all function variables are global by default. Use careful naming to avoid conflicts:
+- **Best Practice**: Prefix internal function variables with the function name (Pattern 4)
+- Example: `__my_function_result`, `__my_function_status`, `__my_function_count`
+- This creates a namespace for each function and prevents variable collisions
+- Especially important for library functions that may be called from multiple contexts
+
+**Separate declaration from assignment for command substitution:**
+```bash
+# ✅ Correct - catches errors (Bash)
+local output
+output="$(command_that_might_fail)"
+if (($? != 0)); then
+    handle_error
+fi
+
+# ✅ Correct - catches errors (POSIX sh)
+output="$(command_that_might_fail)"
+status=$?
+if [ "${status}" -ne 0 ]; then
+    handle_error
+fi
+
+# ❌ Wrong - $? will always be 0 (exit of 'local')
+local output="$(command_that_might_fail)"
+if (($? != 0)); then  # This won't work!
+    handle_error
+fi
+```
+
+### Variable Expansion
+
+**Always use braces around variable names** (per [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html#variable-expansion)):
+
+```bash
+# ✅ Correct - always use ${var}
+echo "${var}"
+result="${output}"
+file="${prefix}_${name}.txt"
+
+# ❌ Wrong - no braces
+echo "$var"
+result="$output"
+file="$prefix_$name.txt"
+
+# ✅ Exception - inside $(( )) arithmetic, braces optional but still recommended
+result=$((i + 1))      # Acceptable
+result=$((${i} + 1))   # Also acceptable
+
+# ❌ Wrong - outside $(( ))
+result=$i + 1
+```
+
+**Why use braces:**
+- Prevents ambiguity: `${var}name` vs `$varname`
+- Consistent style makes code more readable
+- Required for parameter expansion: `${var:-default}`
+- Google Shell Style Guide requirement
+
+**Exceptions where braces are not required:**
+- Inside `$(( ))`: `result=$((i + 1))` - braces optional
+- Positional params: `$1` through `$9` - single digit, no ambiguity
+- Special vars: `$?` (exit status), `$@` (all args), `$*`, `$#` (arg count), `$$` (PID), `$!`, `$0` (script name)
+- For `$10` and above, use braces: `${10}`, `${11}`
+
+### Quoting
+
+**Quote everything by default:**
+
+```bash
+# ✅ Correct - quoted and with braces
+"${variable}"
+"${array[@]}"
+"$(command)"
+
+# ❌ Wrong - dangerous (unquoted)
+${variable}
+${array[@]}
+$(command)
+
+# ❌ Wrong - missing braces
+"$variable"
+```
+
+**Exceptions (don't quote):**
+- Arithmetic expressions: `((i++))` - no quoting needed
+- Test expressions inside `[[ ]]`: `[[ ${var} == "value" ]]` - still use braces
+- Variable assignments: `var=${value}` (unless value contains spaces)
+
+**Note:** Always use braces `${var}` even when not quoting, with these exceptions:
+- Inside `$(( ))` arithmetic: `result=$((i + 1))`
+- Special positional parameters: `$1`, `$2`, ... `$9` (single digit)
+- Special variables: `$?`, `$@`, `$*`, `$#`, `$$`, `$!`, `$0`
+- These don't need braces because there's no ambiguity
+
+### Command Substitution
+
+**Use `$(command)` instead of backticks (both are POSIX, but `$()` is preferred):**
+
+```bash
+# ✅ Correct - modern, nestable, clearer
+output="$(ls -la)"
+count="$(grep -c pattern file)"
+
+# Nesting is easy with $()
+result="$(command "$(inner_command)")"
+
+# ❌ Wrong - deprecated, hard to nest, less readable
+output=`ls -la`
+count=`grep -c pattern file`
+
+# Nesting with backticks is error-prone
+result=`command \`inner_command\``
+```
+
+**Note:** Both `$()` and backticks are POSIX-compliant, but `$()` is strongly preferred for readability and nestability.
+
+### Test Constructs
+
+**Prefer `[[ ... ]]` over `[ ... ]` for Bash:**
+
+```bash
+# ✅ Correct for Bash
+if [[ -f "${file}" ]]; then
+    echo "File exists"
+fi
+
+if [[ "${var}" == "value" ]]; then
+    do_something
+fi
+
+# ✅ POSIX sh - use [ ] with = (not ==)
+if [ -f "${file}" ]; then
+    echo "File exists"
+fi
+
+if [ "${var}" = "value" ]; then
+    do_something
+fi
+```
+
+**Important for POSIX sh:**
+- Use `[ ]` not `[[ ]]`
+- Use `=` not `==` for string comparison (max portability)
+- Note: `==` works in some `[ ]` implementations but `=` is the POSIX standard
+
+### Testing Strings
+
+```bash
+# ✅ Correct - explicit empty string test (Bash)
+if [[ -z "${var}" ]]; then
+    echo "Empty or unset"
+fi
+
+if [[ -n "${var}" ]]; then
+    echo "Not empty"
+fi
+
+# ✅ Correct - POSIX sh
+if [ -z "${var}" ]; then
+    echo "Empty or unset"
+fi
+
+if [ -n "${var}" ]; then
+    echo "Not empty"
+fi
+
+# ❌ Wrong - can cause issues
+if [[ "${var}" ]]; then
+    echo "Might not work as expected"
+fi
+```
+
+### Arrays
+
+**Use arrays for lists of items (Bash only):**
+
+```bash
+# ✅ Correct (Bash only)
+declare -a files=("file1.txt" "file2.txt" "file3.txt")
+for file in "${files[@]}"; do
+    process "${file}"
+done
+
+# Access with proper quoting
+echo "${files[0]}"      # First element
+echo "${files[@]}"      # All elements
+echo "${#files[@]}"     # Array length
+
+# ❌ Wrong - space-separated strings break on whitespace
+files="file1.txt file2.txt file3.txt"
+```
+
+**Note:** Arrays are NOT available in POSIX sh. For POSIX sh, use positional parameters or separate variables.
+
+### Arithmetic
+
+**Use `(( ... ))` for arithmetic (Bash only):**
+
+```bash
+# ✅ Correct - no spaces inside (( ))
+((i++))
+((i += 3))
+if ((i < 10)); then
+    echo "Less than 10"
+fi
+
+result=$((10 * 5 + 3))
+
+# ❌ Wrong - avoid these
+i=$((i + 1))           # Use ((i++)) instead
+result=$[10 * 5]       # Deprecated
+result=$(expr 10 + 5)  # Slow external command
+
+# ❌ Wrong - spaces inside arithmetic (inconsistent with shfmt)
+(( i++ ))              # shfmt will reformat to ((i++))
+if (( i < 10 )); then  # shfmt will reformat to ((i < 10))
+```
+
+**For POSIX sh, use test `[ ]` for comparisons:**
+
+```bash
+# ✅ Correct - POSIX compatible
+i=$((i + 1))
+if [ "${i}" -lt 10 ]; then
+    echo "Less than 10"
+fi
+```
+
+### Control Flow
+
+**Consistent formatting for if/then/else:**
+
+```bash
+# ✅ Correct (Bash)
+if [[ condition ]]; then
+    do_something
+elif [[ other_condition ]]; then
+    do_something_else
+else
+    do_default
+fi
+
+# ✅ Correct (POSIX sh)
+if [ condition ]; then
+    do_something
+elif [ other_condition ]; then
+    do_something_else
+else
+    do_default
+fi
+
+# ✅ Multi-line conditions with operators at line start (works in both)
+if ! command1 > /dev/null 2>&1 \
+    && ! command2 > /dev/null 2>&1 \
+    && ! command3 > /dev/null 2>&1; then
+    handle_error
+fi
+
+# For loops (Bash with array)
+for item in "${array[@]}"; do
+    process "${item}"
+done
+
+# For loops (POSIX sh - loop over arguments or items)
+for item in "$@"; do
+    process "${item}"
+done
+
+# While loops (Bash)
+while [[ condition ]]; do
+    do_something
+done
+
+# While loops (POSIX sh)
+while [ condition ]; do
+    do_something
+done
+
+# While with infinite loop (works in both)
+while :; do
+    do_something
+done
+```
+
+### Case Statements
+
+**Indent patterns by 4 spaces, commands by 8 spaces (4 + 4):**
+
+```bash
+case "${option}" in
+    --help | -h)
+        show_help
+        ;;
+    --version | -v)
+        show_version
+        ;;
+    --*)
+        echo "Unknown option: ${option}" >&2
+        exit 1
+        ;;
+    *)
+        process_argument "${option}"
+        ;;
+esac
+```
+
+**Note:** The `-ci` flag in shfmt indents case alternatives - patterns get 4 spaces, and commands within each case get an additional 4 spaces (8 total).
+
+### Pipelines
+
+**Break long pipelines across lines:**
+
+```bash
+# ✅ Correct - readable
+command1 \
+    | command2 \
+    | command3 \
+    | command4
+
+# Or with operators at line start (per shfmt -bn)
+command1 \
+| command2 \
+| command3
+
+# Check PIPESTATUS for piped commands (Bash only)
+command1 | command2 | command3
+if ((PIPESTATUS[0] != 0)); then
+    echo "command1 failed" >&2
+    exit 1
+fi
+
+# For POSIX sh, check exit status of each command separately
+# or use temporary files to capture intermediate results
+```
+
+### Redirect Operators
+
+**Always use a space after redirect operators (shfmt `-sr` flag):**
+
+```bash
+# ✅ Correct - space after redirect
+command > /dev/null
+command 2> /dev/null
+command > /dev/null 2>&1
+command >> file.log
+
+# ❌ Wrong - no space (shfmt will add it)
+command >/dev/null
+command 2>/dev/null
+command >file.log
+```
+
+### Whitespace and Formatting
+
+**Other shfmt formatting rules to follow:**
+
+```bash
+# ✅ No space before semicolon
+while :; do
+
+# ❌ Wrong
+while : ; do
+
+# ✅ No spaces inside arithmetic
+((i++))
+result=$((x + y))
+
+# ❌ Wrong
+(( i++ ))
+result=$(( x + y ))
+
+# ✅ Single space before inline comments
+command arg # comment
+
+# ❌ Wrong - multiple spaces
+command arg  # comment
+command arg    # comment
+```
+
+## Functions
+
+### Function Naming
+
+**Use lowercase with underscores:**
+
+```bash
+# ✅ Correct - public function
+my_function() {
+    local arg="$1"
+    echo "Processing ${arg}"
+}
+
+# ✅ Correct - internal function with namespaced variables
+__internal_helper() {
+    __internal_helper_data="$1"
+    __internal_helper_result="$(process "${__internal_helper_data}")"
+    echo "${__internal_helper_result}"
+}
+
+# ✅ Correct - for packages/libraries, use :: separator
+mypackage::my_function() {
+    do_something
+}
+
+# ❌ Wrong - inconsistent naming
+myFunction() { }
+MyFunction() { }
+my-function() { }
+
+# ❌ Wrong - internal function without namespaced variables
+__helper() {
+    result="$1"  # Variable not namespaced, potential conflicts
+    echo "${result}"
+}
+```
+
+**Naming Conventions:**
+- **Public functions**: `function_name` (lowercase with underscores)
+- **Internal functions**: `__function_name` (prefix with double underscore)
+  - Variables: `__function_name_variable` (namespace with function name)
+- **Package functions**: `package::function_name` (use `::` separator)
+- This convention prevents variable collisions and signals intended usage
+
+### Function Comments
+
+**Document all non-trivial functions:**
+
+```bash
+# Processes a file and returns status
+# Arguments:
+#   $1 - Path to file
+#   $2 - Processing mode (optional, default: "standard")
+# Returns:
+#   0 on success, non-zero on error
+# Outputs:
+#   Writes results to stdout
+process_file() {
+    local file="$1"
+    local mode="${2:-standard}"
+    
+    # Implementation
+}
+```
+
+### Function Organization
+
+**Place all functions near the top, after constants:**
+
+```bash
+#!/bin/bash
+#
+# Script description (Bash example)
+#
+
+set -euo pipefail
+
+# Constants
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly VERSION="1.0.0"
+
+# Functions
+helper_function() {
+    # ...
+}
+
+another_function() {
+    # ...
+}
+
+# Main function for scripts with multiple functions
+main() {
+    # Main logic here
+}
+
+# Script execution starts here
+main "$@"
+```
+
+**For POSIX sh, use `$0` instead of `BASH_SOURCE`:**
+```bash
+#!/bin/sh
+#
+# Script description (POSIX sh example)
+#
+
+set -eu
+
+# Constants
+readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+readonly VERSION="1.0.0"
+
+# Functions and main follow same pattern...
+```
+
+### The `main` Function
+
+**Required for scripts with multiple functions:**
+
+```bash
+main() {
+    # Parse arguments
+    local verbose=0
+    while (($# > 0)); do
+        case "$1" in
+            -v | --verbose)
+                verbose=1
+                shift
+                ;;
+            *)
+                echo "Unknown option: $1" >&2
+                return 1
+                ;;
+        esac
+    done
+    
+    # Main logic
+    do_work
+}
+
+main "$@"
+```
+
+## Error Handling
+
+### Exit on Error
+
+**Use `set -e` or `set -euo pipefail`:**
+
+```bash
+#!/bin/bash
+set -euo pipefail  # Recommended for Bash
+
+# -e: Exit on error
+# -u: Error on undefined variables
+# -o pipefail: Pipeline fails if any command fails (Bash/ksh only)
+```
+
+**For POSIX sh:**
+```bash
+#!/bin/sh
+set -eu  # POSIX sh doesn't support 'pipefail'
+
+# -e: Exit on error
+# -u: Error on undefined variables
+# Note: PIPESTATUS is not available in POSIX sh
+# Check each command in a pipeline separately or use temp files
+```
+
+### Check Return Values
+
+**Always check return values of commands:**
+
+```bash
+# ✅ Correct - check immediately
+if ! command; then
+    echo "Command failed" >&2
+    exit 1
+fi
+
+# ✅ Correct - check $?
+command
+if (($? != 0)); then
+    echo "Command failed" >&2
+    exit 1
+fi
+
+# ❌ Wrong - ignoring errors
+command  # What if this fails?
+next_command
+```
+
+### Error Messages
+
+**Send errors to stderr:**
+
+```bash
+# ✅ Correct - use >&2
+echo "Error: Something went wrong" >&2
+
+# Helper function for errors
+err() {
+    echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $*" >&2
+}
+
+err "Failed to process file"
+```
+
+## Bash Best Practices
+
+For Bash scripts (`#!/bin/bash`), you can use these powerful features from the [pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible):
+
+### Bash String Manipulation
+
+**Bash has powerful built-in string manipulation:**
+
+```bash
+# String replacement (Bash only)
+${var/pattern/replacement}     # Replace first match
+${var//pattern/replacement}    # Replace all matches
+${var/#pattern/replacement}    # Replace if matches at start
+${var/%pattern/replacement}    # Replace if matches at end
+
+# Examples
+file="example.txt.bak"
+echo "${file/.txt/.md}"        # example.md.bak
+echo "${file//.txt/.md}"       # example.md.bak (same, only one match)
+
+path="/home/user/file.txt"
+echo "${path/#\/home/~}"       # ~/user/file.txt
+
+# Case modification (Bash 4+)
+${var^}                        # Uppercase first character
+${var^^}                       # Uppercase all
+${var,}                        # Lowercase first character
+${var,,}                       # Lowercase all
+
+name="john doe"
+echo "${name^}"                # John doe
+echo "${name^^}"               # JOHN DOE
+```
+
+### Bash Arrays
+
+**Arrays are powerful in Bash (not available in POSIX sh):**
+
+```bash
+# Array declaration
+arr=("one" "two" "three")
+arr=(one two three)            # Same thing
+
+# Array operations
+${arr[0]}                      # First element
+${arr[@]}                      # All elements (word splitting)
+${arr[*]}                      # All elements (single word)
+${#arr[@]}                     # Array length
+${!arr[@]}                     # Array indices
+
+# Add elements
+arr+=("four")
+arr[10]="eleven"
+
+# Loop over array
+for item in "${arr[@]}"; do
+    echo "${item}"
+done
+
+# Loop with index
+for i in "${!arr[@]}"; do
+    echo "${i}: ${arr[${i}]}"
+done
+```
+
+### Bash Regular Expressions
+
+**Use `[[ ]]` with `=~` for regex matching:**
+
+```bash
+# Regex matching (Bash only)
+if [[ "${string}" =~ ^[0-9]+$ ]]; then
+    echo "String is a number"
+fi
+
+# Capture groups with BASH_REMATCH
+if [[ "${email}" =~ ^([^@]+)@([^@]+)$ ]]; then
+    username="${BASH_REMATCH[1]}"
+    domain="${BASH_REMATCH[2]}"
+    echo "User: ${username}, Domain: ${domain}"
+fi
+```
+
+### Bash Advanced Features
+
+**Other Bash-only features:**
+
+```bash
+# Process substitution
+diff <(ls dir1) <(ls dir2)
+
+while read -r line; do
+    echo "${line}"
+done < <(command)
+
+# Brace expansion
+echo {1..10}                   # 1 2 3 4 5 6 7 8 9 10
+echo {a..z}                    # a b c d ... z
+mkdir -p dir/{sub1,sub2,sub3}  # Create multiple dirs
+
+# Extended globbing (requires shopt -s extglob)
+shopt -s extglob
+ls !(*.txt)                    # List all except .txt files
+ls +(*.jpg|*.png)              # List .jpg and .png files
+
+# Associative arrays (Bash 4+)
+declare -A assoc_arr
+assoc_arr[key]="value"
+assoc_arr[foo]="bar"
+echo "${assoc_arr[key]}"
+
+# Printf with variable assignment (no subshell)
+printf -v date '%(%Y-%m-%d)T' -1
+echo "${date}"                 # 2024-01-15
+
+# Variable nameref (Bash 4.3+)
+declare -n ref=original_var
+ref="value"                    # Sets original_var="value"
+```
+
+### Bash Arithmetic
+
+**Bash arithmetic is more flexible than POSIX:**
+
+```bash
+# Arithmetic operations
+((i++))
+((i += 5))
+((result = i * 2 + 3))
+
+# C-style for loops
+for ((i = 0; i < 10; i++)); do
+    echo "${i}"
+done
+
+# Ternary operator
+result=$((a > b ? a : b))
+
+# Bitwise operations
+((result = 1 << 4))            # Bit shift
+((result = 5 & 3))             # Bitwise AND
+((result = 5 | 3))             # Bitwise OR
+```
+
+### Bash File Descriptor Tricks
+
+```bash
+# Read from file descriptor without spawning cat
+while IFS= read -r line; do
+    echo "${line}"
+done < file.txt
+
+# Read file into variable (Bash-efficient way)
+file_contents=$(<file.txt)
+
+# Here-document
+cat << 'EOF'
+This is a here-document
+Variables like ${var} are not expanded
+EOF
+
+# Here-string
+grep "pattern" <<< "${variable}"
+```
+
+## POSIX sh Best Practices
+
+For library files and POSIX-compliant scripts, follow these patterns from the [pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible):
+
+### POSIX Constants and Variables
+
+**Using `readonly` in POSIX sh:**
+
+```bash
+# readonly is POSIX-compliant - both syntaxes work:
+readonly VAR="value"           # One-step (common)
+VAR="value"
+readonly VAR                   # Two-step (explicit)
+
+# Examples
+readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+readonly VERSION="1.0.0"
+
+# Multiple readonly declarations
+readonly MAX_RETRIES=3
+readonly TIMEOUT=30
+readonly CONFIG_FILE="/etc/app.conf"
+```
+
+**Note:** Both `readonly VAR="value"` and the two-step approach are POSIX-compliant and portable.
+
+### POSIX Parameter Expansion
+
+**These are all POSIX-compliant and safe to use:**
+
+```bash
+# Default values
+${var:-default}        # Use default if var is unset or empty
+${var-default}         # Use default if var is unset
+${var:=default}        # Set var to default if unset or empty
+${var=default}         # Set var to default if unset
+
+# Pattern removal (prefix)
+${var#pattern}         # Remove shortest match from start
+${var##pattern}        # Remove longest match from start
+
+# Pattern removal (suffix)
+${var%pattern}         # Remove shortest match from end
+${var%%pattern}        # Remove longest match from end
+
+# String length
+${#var}                # Length of string
+
+# Examples from pure-sh-bible
+${file%.txt}           # Remove .txt extension
+${path##*/}            # Get basename (like basename command)
+${path%/*}             # Get dirname (like dirname command)
+```
+
+### POSIX String Manipulation
+
+```bash
+# Trim whitespace (POSIX way) - public function
+trim() {
+    # Remove leading/trailing whitespace
+    set -f
+    set -- $1
+    printf '%s\n' "$*"
+    set +f
+}
+
+# Internal helper with namespaced variables
+__string_contains() {
+    __string_contains_string="$1"
+    __string_contains_substring="$2"
+    
+    case "${__string_contains_string}" in
+        *"${__string_contains_substring}"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Check if string contains substring (POSIX)
+case "${string}" in
+    *"${substring}"*) echo "Contains substring" ;;
+esac
+
+# Check if string starts with prefix (POSIX)
+case "${string}" in
+    "${prefix}"*) echo "Starts with prefix" ;;
+esac
+
+# Check if string ends with suffix (POSIX)
+case "${string}" in
+    *"${suffix}") echo "Ends with suffix" ;;
+esac
+```
+
+### POSIX Arithmetic
+
+```bash
+# POSIX arithmetic (no spaces inside)
+result=$((a + b))
+i=$((i + 1))
+
+# Comparisons in POSIX
+if [ "${a}" -eq "${b}" ]; then
+    echo "Equal"
+fi
+
+# Ternary operator (POSIX compliant)
+result=$((a > b ? a : b))
+```
+
+### POSIX Loops and Iterations
+
+```bash
+# Loop over positional parameters
+for arg; do
+    printf '%s\n' "${arg}"
+done
+
+# Loop over range (POSIX)
+i=0
+while [ "${i}" -lt 10 ]; do
+    echo "${i}"
+    i=$((i + 1))
+done
+
+# Read file line by line (POSIX)
+while IFS= read -r line; do
+    printf '%s\n' "${line}"
+done < file.txt
+```
+
+### POSIX Conditional Expressions Reference
+
+**File tests (all POSIX):**
+- `[ -e file ]` - file exists
+- `[ -f file ]` - regular file
+- `[ -d file ]` - directory
+- `[ -r file ]` - readable
+- `[ -w file ]` - writable
+- `[ -x file ]` - executable
+- `[ -s file ]` - not empty
+- `[ -h file ]` or `[ -L file ]` - symbolic link
+
+**String tests (all POSIX):**
+- `[ -z "${var}" ]` - empty string
+- `[ -n "${var}" ]` - non-empty string
+- `[ "${a}" = "${b}" ]` - strings equal (use `=` not `==` for max portability)
+- `[ "${a}" != "${b}" ]` - strings not equal
+
+**Numeric tests (all POSIX):**
+- `[ "${a}" -eq "${b}" ]` - equal
+- `[ "${a}" -ne "${b}" ]` - not equal
+- `[ "${a}" -gt "${b}" ]` - greater than
+- `[ "${a}" -ge "${b}" ]` - greater than or equal
+- `[ "${a}" -lt "${b}" ]` - less than
+- `[ "${a}" -le "${b}" ]` - less than or equal
+
+**Combining conditions (POSIX):**
+- `[ cond1 ] && [ cond2 ]` - AND (preferred)
+- `[ cond1 ] || [ cond2 ]` - OR (preferred)
+- `[ cond1 -a cond2 ]` - AND (older style, avoid)
+- `[ cond1 -o cond2 ]` - OR (older style, avoid)
+- `[ ! cond ]` - NOT
+
+### What to AVOID in POSIX sh
+
+**These are NOT POSIX and will break in `#!/bin/sh` (but are available in Bash - see "Bash Best Practices" section):**
+
+```bash
+# ❌ No [[  double brackets
+[[ "${var}" == "value" ]]      # Bash/ksh only (use [ "${var}" = "value" ] in sh)
+
+# ❌ No arrays
+array=(one two three)          # Bash only
+echo "${array[@]}"             # Bash only
+
+# ❌ No local keyword
+local var="value"              # Not in POSIX (use careful naming in sh)
+
+# ❌ No +=  operator for strings
+var+="suffix"                  # Bash only (use var="${var}suffix" in sh)
+
+# ❌ No {n..m} brace expansion
+for i in {1..10}; do           # Bash only (use while loop in sh)
+
+# ❌ No ==  in [ ] for max portability
+[ "${a}" == "${b}" ]           # Use = instead for POSIX
+
+# ❌ No [[ ]] regex matching
+[[ "${var}" =~ regex ]]        # Bash only (use case in sh)
+
+# ❌ No process substitution
+while read -r line; do         # <() is Bash only (use temp files in sh)
+    echo "${line}"
+done < <(command)
+
+# ❌ No $'...' quoting
+echo $'line1\nline2'           # Bash only (use printf in sh)
+
+# ❌ No string replacement in parameter expansion
+${var/old/new}                 # Bash only (use sed in sh)
+${var//old/new}                # Bash only (use sed in sh)
+
+# ❌ No case modification
+${var^^}                       # Bash only (use tr in sh)
+${var,,}                       # Bash only (use tr in sh)
+```
+
+**POSIX alternatives:**
+
+```bash
+# ✅ Use [ ] with =
+[ "${a}" = "${b}" ]
+
+# ✅ Use case for pattern matching
+case "${var}" in
+    pattern*) echo "Matches" ;;
+esac
+
+# ✅ Use temp files instead of process substitution
+command > tmpfile
+while IFS= read -r line; do
+    echo "${line}"
+done < tmpfile
+rm -f tmpfile
+
+# ✅ Use printf for escape sequences
+printf 'line1\nline2\n'
+```
+
+## Best Practices
+
+### Use Builtin Commands
+
+**Prefer shell builtins over external commands (when available):**
+
+```bash
+# ✅ Correct - builtin (Bash only)
+if [[ "${string}" =~ ^[0-9]+$ ]]; then
+    echo "Is a number"
+fi
+
+# ✅ Correct - builtin string manipulation (Bash only)
+result="${string/#prefix/replacement}"
+
+# ✅ Correct - POSIX sh with case for simple patterns
+case "${string}" in
+    ''|*[!0-9]*) echo "Not a number" ;;
+    *) echo "Is a number" ;;
+esac
+
+# ❌ Wrong - external commands when builtins are available
+if echo "${string}" | grep -q '^[0-9]\+$'; then
+    echo "Is a number"
+fi
+
+result="$(echo "${string}" | sed 's/^prefix/replacement/')"
+```
+
+**Note:** Bash has more powerful builtins than POSIX sh. Use them when writing Bash scripts, but fall back to external commands when necessary in POSIX sh.
+
+### Avoid `eval`
+
+**Never use `eval` unless absolutely necessary:**
+
+```bash
+# ❌ Wrong - security risk
+eval "${user_input}"
+
+# ✅ Correct - use arrays or functions instead
+```
+
+### No Aliases in Scripts
+
+**Use functions instead of aliases:**
+
+```bash
+# ❌ Wrong - aliases in scripts
+alias ll='ls -la'
+
+# ✅ Correct - functions
+ll() {
+    ls -la "$@"
+}
+```
+
+### Avoid Globbing Issues
+
+**Quote globs or use arrays:**
+
+```bash
+# ✅ Correct (Bash with nullglob)
+shopt -s nullglob  # Empty if no matches (Bash only)
+files=( *.txt )
+for file in "${files[@]}"; do
+    process "${file}"
+done
+
+# ✅ Correct (POSIX sh - check if glob matched)
+for file in *.txt; do
+    [ -e "${file}" ] || continue  # Skip if no match
+    process "${file}"
+done
+
+# ❌ Wrong - can break on special characters
+for file in *.txt; do
+    process $file  # Unquoted!
+done
+```
+
+### Temporary Files
+
+**Use `mktemp` for temporary files:**
+
+```bash
+# ✅ Correct
+tmpfile="$(mktemp)"
+trap 'rm -f "${tmpfile}"' EXIT
+
+# Use the temp file
+echo "data" > "${tmpfile}"
+
+# ❌ Wrong - predictable names are insecure
+tmpfile="/tmp/myapp.$$"
+```
+
+## Common Pitfalls
+
+### Pipes to While
+
+**Variables modified in subshells don't persist:**
+
+```bash
+# ❌ Wrong - count won't be updated (applies to both Bash and POSIX sh)
+count=0
+cat file | while read -r line; do
+    count=$((count + 1))
+done
+echo "${count}"  # Still 0!
+
+# ✅ Correct - input redirection (works in both)
+count=0
+while read -r line; do
+    count=$((count + 1))
+done < file
+echo "${count}"  # Correct count
+
+# ✅ Correct - Bash with arithmetic
+count=0
+while read -r line; do
+    ((count++))
+done < file
+echo "${count}"  # Correct count
+```
+
+### Word Splitting
+
+**Unquoted variables split on whitespace:**
+
+```bash
+# ❌ Wrong
+files="file1.txt file2.txt"
+rm $files  # Tries to remove "file1.txt" and "file2.txt" separately
+
+# ✅ Correct - use arrays
+files=("file1.txt" "file2.txt")
+rm "${files[@]}"
+```
+
+## Summary Checklist
+
+When writing or reviewing shell scripts, ensure:
+
+### Mandatory Requirements
+- [ ] **ShellCheck passes with ZERO errors** (non-negotiable)
+- [ ] **Formatted with `shfmt`** according to shebang type:
+  - `#!/bin/sh` or lib files: `shfmt -p -i 4 -ci -bn -sr -w`
+  - `#!/bin/bash`: `shfmt -i 4 -ci -bn -sr -w`
+  - YAML shell blocks: `shfmt -p -i 4 -ci -bn -sr -w`
+
+### Script Type
+- [ ] Proper shebang: `#!/bin/bash` or `#!/bin/sh`
+- [ ] Library files (`scripts/lib*.sh`) use `#!/bin/sh` and are POSIX-compliant
+- [ ] YAML shell blocks follow POSIX sh standards
+- [ ] POSIX sh scripts use only POSIX features (see "What to AVOID in POSIX sh" section)
+- [ ] POSIX sh scripts tested with `shellcheck -s sh`
+
+### Error Handling
+- [ ] `set -euo pipefail` at script start (or `set -eu` for POSIX sh)
+- [ ] Return values checked for all important commands
+- [ ] Error messages sent to stderr: `>&2`
+- [ ] Proper error handling throughout
+
+### Variables and Quoting
+- [ ] **Always use braces for variables: `${var}` not `$var`** (Google Style Guide requirement)
+- [ ] All variables quoted: `"${var}"`
+- [ ] Exceptions: `$(( ))` arithmetic, `$1-$9`, `$?`, `$@`, `$*`, `$#`, `$$`, `$!`, `$0`
+- [ ] For `$10+` use braces: `${10}`, `${11}`
+- [ ] Arrays used for lists (Bash only): `"${array[@]}"`
+- [ ] Local variables declared with `local` (Bash) or careful naming (POSIX sh)
+- [ ] POSIX sh scripts avoid `local` keyword entirely
+- [ ] Constants declared with `readonly`
+- [ ] Proper naming: lowercase_with_underscores or UPPERCASE_CONSTANTS
+
+### Syntax
+- [ ] Command substitution: `$(command)` not backticks
+- [ ] Test construct: `[[ ... ]]` for Bash, `[ ... ]` for POSIX sh
+- [ ] Arithmetic: `((expr))` for Bash (no spaces), not `expr` command
+- [ ] Redirect operators: space after `>` and `2>` (e.g., `> /dev/null`)
+- [ ] No space before semicolon: `while :;` not `while : ;`
+- [ ] No aliases (use functions instead)
+- [ ] Avoid `eval` unless absolutely necessary
+
+### Code Organization
+- [ ] File header with description
+- [ ] Functions documented (non-trivial ones)
+- [ ] Functions placed near top after constants
+- [ ] `main` function for multi-function scripts
+- [ ] Internal functions prefixed with `__`
+- [ ] Internal function variables namespaced: `__function_name_variable`
+
+## References
+
+- [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html)
+- [ShellCheck](https://www.shellcheck.net/)
+- [shfmt](https://github.com/mvdan/sh)
+- [Pure sh bible](https://github.com/dylanaraps/pure-sh-bible) - POSIX sh alternatives and best practices
+- [Pure bash bible](https://github.com/dylanaraps/pure-bash-bible) - Bash alternatives to external processes
