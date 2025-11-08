@@ -20,6 +20,26 @@ case "${0##*/}" in
         ;;
 esac
 
+# Detect CI/GitHub Actions environment
+# GitHub Actions sets GITHUB_ACTIONS=true and CI=true
+# In CI environments, timestamps are typically already provided by the CI system
+__CI_ENVIRONMENT=0
+if [ "${GITHUB_ACTIONS}" = "true" ] || [ "${CI}" = "true" ]; then
+    __CI_ENVIRONMENT=1
+fi
+
+# Check for timestamp override
+# FORCE_LOG_TIMESTAMPS=1 forces timestamps even in CI
+# FORCE_LOG_TIMESTAMPS=0 disables timestamps even in local environments
+__LOG_TIMESTAMPS=1 # default: include timestamps
+if [ "${__CI_ENVIRONMENT}" -eq 1 ]; then
+    __LOG_TIMESTAMPS=0 # CI: disable timestamps by default
+fi
+# Allow override via FORCE_LOG_TIMESTAMPS
+if [ -n "${FORCE_LOG_TIMESTAMPS}" ]; then
+    __LOG_TIMESTAMPS="${FORCE_LOG_TIMESTAMPS}"
+fi
+
 # Set timestamp format based on the availability of the date command
 #
 # Format: ISO 8601 UTC timestamp with microsecond precision and 'Z' suffix
@@ -75,6 +95,7 @@ __get_timestamp() {
 }
 
 # __log logs an library message with timestamp and level.
+# Timestamps can be controlled via FORCE_LOG_TIMESTAMPS variable.
 #
 # $1: LEVEL - Log level (e.g., INFO, WARN, ERROR).
 # $2: MESSAGE - Message to log.
@@ -85,19 +106,31 @@ __get_timestamp() {
 # Example:
 #   __log "INFO" "This is an informational message."
 #
-# Output:
+# Output (with timestamps):
 #   [1970-01-01T00:00:00.000000Z] [script_name] [lib.sh] [INFO] This is an informational message.
+# Output (without timestamps):
+#   [script_name] [lib.sh] [INFO] This is an informational message.
 __log() {
-    __log_timestamp="$(__get_timestamp)"
-
     __log_level="$1"
     if [ -z "${__log_level}" ]; then
-        printf '[%s] [%s] [%s] [ERROR] __log: No LEVEL provided\n' "${__log_timestamp}" "${__SCRIPT_NAME}" "${__LIB_NAME}" >&2
+        if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+            __log_timestamp="$(__get_timestamp)"
+            printf '[%s] [%s] [%s] [ERROR] __log: No LEVEL provided\n' "${__log_timestamp}" "${__SCRIPT_NAME}" "${__LIB_NAME}" >&2
+        else
+            printf '[%s] [%s] [ERROR] __log: No LEVEL provided\n' "${__SCRIPT_NAME}" "${__LIB_NAME}" >&2
+        fi
         return 1
     fi
     shift
 
-    printf '[%s] [%s] [%s] [%s] %s\n' "${__log_timestamp}" "${__SCRIPT_NAME}" "${__LIB_NAME}" "${__log_level}" "$*" >&2
+    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+        # Include timestamp
+        __log_timestamp="$(__get_timestamp)"
+        printf '[%s] [%s] [%s] [%s] %s\n' "${__log_timestamp}" "${__SCRIPT_NAME}" "${__LIB_NAME}" "${__log_level}" "$*" >&2
+    else
+        # Omit timestamp
+        printf '[%s] [%s] [%s] %s\n' "${__SCRIPT_NAME}" "${__LIB_NAME}" "${__log_level}" "$*" >&2
+    fi
 }
 
 # __debug logs a debug-level message if DEBUG is set.
