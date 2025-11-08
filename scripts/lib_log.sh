@@ -32,6 +32,7 @@ esac
 ############
 
 # log logs a script message with timestamp and level.
+# Timestamps can be controlled via FORCE_LOG_TIMESTAMPS variable.
 #
 # $1: LEVEL - Log level (e.g., INFO, WARN, ERROR).
 # $2: MESSAGE - Message to log.
@@ -42,8 +43,10 @@ esac
 # Example:
 #   log "INFO" "This is an informational message."
 #
-# Output:
+# Output (with timestamps):
 #   [1970-01-01T00:00:00.000000Z] [script_name] [INFO] This is an informational message.
+# Output (without timestamps):
+#   [script_name] [INFO] This is an informational message.
 log() {
     log_level="$1"
     if [ -z "${log_level}" ]; then
@@ -52,7 +55,13 @@ log() {
     fi
     shift
 
-    printf '[%s] [%s] [%s] %s\n' "$(__get_timestamp)" "${__SCRIPT_NAME}" "${log_level}" "$*" >&2
+    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+        # Include timestamp
+        printf '[%s] [%s] [%s] %s\n' "$(__get_timestamp)" "${__SCRIPT_NAME}" "${log_level}" "$*" >&2
+    else
+        # Omit timestamp
+        printf '[%s] [%s] %s\n' "${__SCRIPT_NAME}" "${log_level}" "$*" >&2
+    fi
 }
 
 # debug logs a debug-level message if DEBUG is set.

@@ -272,8 +272,14 @@ test_print_script_start() {
     expected_header="${sep_char}${sep_char}${sep_char} ${title} ${sep_char}${sep_char}${sep_char}"
     expected_bottom=$(printf "%${#expected_header}s" "" | tr ' ' "${sep_char}")
 
-    # extract the two log lines
-    info_lines=$(echo "${output}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
+    # extract the two log lines (handle both with and without timestamps)
+    # With timestamps: [timestamp] [script] [INFO] message
+    # Without:         [script] [INFO] message
+    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+        info_lines=$(echo "${output}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
+    else
+        info_lines=$(echo "${output}" | grep '\[INFO\]' | cut -d']' -f3- | sed 's/^ *//')
+    fi
 
     old_ifs=${IFS}
     IFS='
@@ -302,8 +308,12 @@ test_print_script_start() {
     expected_header="${sep_char}${sep_char}${sep_char} ${title} ${sep_char}${sep_char}${sep_char}"
     expected_bottom=$(printf "%${#expected_header}s" "" | tr ' ' "${sep_char}")
 
-    # extract the two log lines
-    info_lines=$(echo "${output}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
+    # extract the two log lines (handle both with and without timestamps)
+    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+        info_lines=$(echo "${output}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
+    else
+        info_lines=$(echo "${output}" | grep '\[INFO\]' | cut -d']' -f3- | sed 's/^ *//')
+    fi
 
     old_ifs=${IFS}
     IFS='
