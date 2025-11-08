@@ -255,80 +255,6 @@ test_die() {
     test_assert_eq 7 "${__status}" "die exits with code 7" "${__status}"
 }
 
-test_print_script_start() {
-    # case 1: test with default separator
-    title="Test Start Block"
-    sep_char="-" # default separator
-
-    # trigger both print and trap
-    output=$(
-        (
-            print_script_start "${title}"
-            : # no-op to ensure the trap runs
-        ) 2>&1
-    )
-
-    # expected lines
-    expected_header="${sep_char}${sep_char}${sep_char} ${title} ${sep_char}${sep_char}${sep_char}"
-    expected_bottom=$(printf "%${#expected_header}s" "" | tr ' ' "${sep_char}")
-
-    # extract the two log lines (handle both with and without timestamps)
-    # With timestamps: [timestamp] [script] [INFO] message
-    # Without:         [script] [INFO] message
-    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
-        info_lines=$(echo "${output}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
-    else
-        info_lines=$(echo "${output}" | grep '\[INFO\]' | cut -d']' -f3- | sed 's/^ *//')
-    fi
-
-    old_ifs=${IFS}
-    IFS='
-'
-    # shellcheck disable=SC2086
-    set -- ${info_lines}
-    IFS=${old_ifs}
-
-    actual_header=$1
-    actual_bottom=$2
-
-    test_assert_eq "${expected_header}" "${actual_header}" "print_script_start prints header with title (default sep)"
-    test_assert_eq "${expected_bottom}" "${actual_bottom}" "print_script_start prints bottom of correct length (default sep)"
-
-    # case 2: test with custom separator
-    sep_char="#"
-    set_print_block_sep "${sep_char}"
-    output=$(
-        (
-            print_script_start "${title}"
-            : # no-op to ensure the trap runs
-        ) 2>&1
-    )
-
-    # expected lines
-    expected_header="${sep_char}${sep_char}${sep_char} ${title} ${sep_char}${sep_char}${sep_char}"
-    expected_bottom=$(printf "%${#expected_header}s" "" | tr ' ' "${sep_char}")
-
-    # extract the two log lines (handle both with and without timestamps)
-    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
-        info_lines=$(echo "${output}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
-    else
-        info_lines=$(echo "${output}" | grep '\[INFO\]' | cut -d']' -f3- | sed 's/^ *//')
-    fi
-
-    old_ifs=${IFS}
-    IFS='
-'
-    # shellcheck disable=SC2086
-    set -- ${info_lines}
-    IFS=${old_ifs}
-
-    actual_header=$1
-    actual_bottom=$2
-
-    test_assert_eq "${expected_header}" "${actual_header}" "print_script_start prints header with title (custom sep)"
-    test_assert_eq "${expected_bottom}" "${actual_bottom}" "print_script_start prints bottom of correct length (custom sep)"
-}
-
 test_list_diff() {
     # case 1: test with literal newlines
     list1="a
@@ -421,6 +347,173 @@ line3"
     test_assert_eq 0 "${ret6}" "capture_outputs returns 0 for command with no output"
 }
 
+test_print_chars() {
+    # case 1: basic character generation
+    result1=$(print_chars "=" 10)
+    test_assert_eq "==========" "${result1}" "print_chars creates 10 equal signs"
+
+    # case 2: different character
+    result2=$(print_chars "-" 5)
+    test_assert_eq "-----" "${result2}" "print_chars creates 5 dashes"
+
+    # case 3: single character
+    result3=$(print_chars "*" 1)
+    test_assert_eq "*" "${result3}" "print_chars creates 1 asterisk"
+
+    # case 4: zero count (edge case)
+    result4=$(print_chars "#" 0)
+    test_assert_eq "" "${result4}" "print_chars creates empty string for count 0"
+}
+
+test_print_separator() {
+    # case 1: default separator (80 chars, using __BLOCK_SEP_CHAR)
+    output1=$(print_separator 2>&1)
+    # Extract just the message part after [INFO]
+    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+        result1=$(echo "${output1}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
+    else
+        result1=$(echo "${output1}" | grep '\[INFO\]' | cut -d']' -f3- | sed 's/^ *//')
+    fi
+    expected1=$(print_chars "-" 80)
+    test_assert_eq "${expected1}" "${result1}" "print_separator creates default 80-char line"
+
+    # case 2: custom separator character and width
+    output2=$(print_separator "=" 40 2>&1)
+    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+        result2=$(echo "${output2}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
+    else
+        result2=$(echo "${output2}" | grep '\[INFO\]' | cut -d']' -f3- | sed 's/^ *//')
+    fi
+    expected2=$(print_chars "=" 40)
+    test_assert_eq "${expected2}" "${result2}" "print_separator creates custom 40-char line with ="
+
+    # case 3: different character, default width
+    output3=$(print_separator "*" 2>&1)
+    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+        result3=$(echo "${output3}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
+    else
+        result3=$(echo "${output3}" | grep '\[INFO\]' | cut -d']' -f3- | sed 's/^ *//')
+    fi
+    expected3=$(print_chars "*" 80)
+    test_assert_eq "${expected3}" "${result3}" "print_separator creates 80-char line with *"
+}
+
+test_print_section_header() {
+    # case 1: basic header with default padding (= character, 80 chars)
+    output1=$(print_section_header "Test Section" 2>&1)
+    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+        result1=$(echo "${output1}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
+    else
+        result1=$(echo "${output1}" | grep '\[INFO\]' | cut -d']' -f3- | sed 's/^ *//')
+    fi
+    prefix1="= Test Section "
+    padding1=$(print_chars "=" $((80 - ${#prefix1})))
+    expected1="${prefix1}${padding1}"
+    test_assert_eq "${expected1}" "${result1}" "print_section_header creates properly padded header"
+
+    # case 2: custom character
+    output2=$(print_section_header "Another Test" "-" 2>&1)
+    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+        result2=$(echo "${output2}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
+    else
+        result2=$(echo "${output2}" | grep '\[INFO\]' | cut -d']' -f3- | sed 's/^ *//')
+    fi
+    prefix2="= Another Test "
+    padding2=$(print_chars "-" $((80 - ${#prefix2})))
+    expected2="${prefix2}${padding2}"
+    test_assert_eq "${expected2}" "${result2}" "print_section_header works with custom character"
+
+    # case 3: custom width
+    output3=$(print_section_header "Short" "=" 30 2>&1)
+    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+        result3=$(echo "${output3}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
+    else
+        result3=$(echo "${output3}" | grep '\[INFO\]' | cut -d']' -f3- | sed 's/^ *//')
+    fi
+    prefix3="= Short "
+    padding3=$(print_chars "=" $((30 - ${#prefix3})))
+    expected3="${prefix3}${padding3}"
+    test_assert_eq "${expected3}" "${result3}" "print_section_header respects custom width"
+}
+
+test_print_section_banner() {
+    # case 1: basic banner with default character (= character, 80 chars)
+    output1=$(print_section_banner "Test Banner" 2>&1)
+
+    # Extract the three log lines
+    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+        lines1=$(echo "${output1}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
+    else
+        lines1=$(echo "${output1}" | grep '\[INFO\]' | cut -d']' -f3- | sed 's/^ *//')
+    fi
+
+    old_ifs=${IFS}
+    IFS='
+'
+    # shellcheck disable=SC2086
+    set -- ${lines1}
+    IFS=${old_ifs}
+
+    top_border1=$1
+    title1=$2
+    bottom_border1=$3
+
+    expected_border1=$(print_chars "=" 80)
+    test_assert_eq "${expected_border1}" "${top_border1}" "print_section_banner creates top border"
+    test_assert_eq "Test Banner" "${title1}" "print_section_banner prints title"
+    test_assert_eq "${expected_border1}" "${bottom_border1}" "print_section_banner creates bottom border"
+
+    # case 2: custom character
+    output2=$(print_section_banner "Custom Banner" "-" 2>&1)
+
+    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+        lines2=$(echo "${output2}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
+    else
+        lines2=$(echo "${output2}" | grep '\[INFO\]' | cut -d']' -f3- | sed 's/^ *//')
+    fi
+
+    old_ifs=${IFS}
+    IFS='
+'
+    # shellcheck disable=SC2086
+    set -- ${lines2}
+    IFS=${old_ifs}
+
+    top_border2=$1
+    title2=$2
+    bottom_border2=$3
+
+    expected_border2=$(print_chars "-" 80)
+    test_assert_eq "${expected_border2}" "${top_border2}" "print_section_banner works with custom character (top)"
+    test_assert_eq "Custom Banner" "${title2}" "print_section_banner prints custom title"
+    test_assert_eq "${expected_border2}" "${bottom_border2}" "print_section_banner works with custom character (bottom)"
+
+    # case 3: custom width
+    output3=$(print_section_banner "Short" "=" 40 2>&1)
+
+    if [ "${__LOG_TIMESTAMPS}" -eq 1 ]; then
+        lines3=$(echo "${output3}" | grep '\[INFO\]' | cut -d']' -f4- | sed 's/^ *//')
+    else
+        lines3=$(echo "${output3}" | grep '\[INFO\]' | cut -d']' -f3- | sed 's/^ *//')
+    fi
+
+    old_ifs=${IFS}
+    IFS='
+'
+    # shellcheck disable=SC2086
+    set -- ${lines3}
+    IFS=${old_ifs}
+
+    top_border3=$1
+    title3=$2
+    bottom_border3=$3
+
+    expected_border3=$(print_chars "=" 40)
+    test_assert_eq "${expected_border3}" "${top_border3}" "print_section_banner respects custom width (top)"
+    test_assert_eq "Short" "${title3}" "print_section_banner prints short title"
+    test_assert_eq "${expected_border3}" "${bottom_border3}" "print_section_banner respects custom width (bottom)"
+}
+
 #
 # run tests
 #
@@ -441,7 +534,10 @@ test_run "list_diff" test_list_diff
 test_run "capture_outputs" test_capture_outputs
 test_run "log functions" test_log_functions
 test_run "die" test_die
-test_run "print_script_start" test_print_script_start
+test_run "print_chars" test_print_chars
+test_run "print_separator" test_print_separator
+test_run "print_section_header" test_print_section_header
+test_run "print_section_banner" test_print_section_banner
 
 # print test summary
 test_summary

@@ -16,7 +16,7 @@ UNIT_TEST_SCRIPTS_SRC=$(find "$UNIT_TEST_SCRIPTS_DIR" -type f -name '*_test.sh')
 # script start
 #
 
-print_script_start "Running Unit Test Scripts" || die "Failed to start script"
+print_section_banner "Running Unit Test Scripts" || die "Failed to start script"
 
 for script in $UNIT_TEST_SCRIPTS_SRC; do
     info "Running: $script"

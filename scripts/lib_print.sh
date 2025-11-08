@@ -25,77 +25,134 @@ esac
 ############
 
 __BLOCK_SEP_CHAR="-"
-__BLOCK_SEP_SPACE=" "
-__BLOCK_SEP_LINE=""
-__PRINT_SCRIPT_END_TRAPPED=0
+__PRINT_DEFAULT_WIDTH=80
 
 ############
 # functions
 ############
 
-# print_script_start logs the start of a script with a decorative title.
-# It also sets a trap to log a separator at script exit (EXIT).
-# Subsequent calls will fail if already trapped to avoid duplicate traps.
+# print_chars generates a string of repeated characters.
 #
-# $1: TITLE - Title for the script start message.
+# $1: CHAR - Character to repeat.
+# $2: COUNT - Number of times to repeat.
 #
 # Usage:
-#   print_script_start TITLE
+#   print_chars CHAR COUNT
 #
 # Example:
-#   print_script_start "My Script Title"
+#   print_chars "=" 10
 #
 # Output:
-#   --- My Script Title ---
-print_script_start() {
-    print_script_start_title="$1"
-    if [ -z "${print_script_start_title}" ]; then
-        __error "print_script_start: No TITLE provided"
+#   ==========
+print_chars() {
+    print_chars_char="$1"
+    print_chars_count="$2"
+    if [ -z "${print_chars_char}" ]; then
+        __error "print_chars: No CHAR provided"
+        return 1
+    fi
+    if [ -z "${print_chars_count}" ]; then
+        __error "print_chars: No COUNT provided"
         return 1
     fi
 
-    # POSIX-compliant trap guard
-    if [ "${__PRINT_SCRIPT_END_TRAPPED}" -eq 1 ]; then
-        __error "print_script_start: __print_script_end already trapped"
-        return 1
-    fi
-
-    info "${__BLOCK_SEP_CHAR}${__BLOCK_SEP_CHAR}${__BLOCK_SEP_CHAR}${__BLOCK_SEP_SPACE}${print_script_start_title}${__BLOCK_SEP_SPACE}${__BLOCK_SEP_CHAR}${__BLOCK_SEP_CHAR}${__BLOCK_SEP_CHAR}"
-
-    print_script_start_sep_len=$((3 + 1 + ${#print_script_start_title} + 1 + 3))
-    __BLOCK_SEP_LINE=$(printf "%${print_script_start_sep_len}s" | tr ' ' "${__BLOCK_SEP_CHAR}")
-
-    # print at the end of the script
-    trap __print_script_end EXIT
-    __PRINT_SCRIPT_END_TRAPPED=1
+    printf "%${print_chars_count}s" | tr ' ' "${print_chars_char}"
 }
 
-# __print_script_end (internal) logs a decorative separator at the end of the script.
+# print_separator prints a full-width separator line.
+#
+# $1: CHAR - Character to use for separator (default: from __BLOCK_SEP_CHAR).
+# $2: WIDTH - Width of separator (default: from __PRINT_DEFAULT_WIDTH).
 #
 # Usage:
-#   __print_script_end
-__print_script_end() {
-    info "${__BLOCK_SEP_LINE}" || {
-        __status=$?
-        __error "__print_script_end: Failed to log message"
-        return ${__status}
-    }
-}
-
-# set_print_block_sep sets the character used for decorative separators.
-#
-# $1: CHARACTER - Character to use for the separator (default: "-").
-#
-# Usage:
-#   set_print_block_sep CHARACTER
+#   print_separator [CHAR] [WIDTH]
 #
 # Example:
-#   set_print_block_sep "#"
-set_print_block_sep() {
-    set_print_block_sep_chr="$1"
-    if [ -n "${set_print_block_sep_chr}" ] && [ "${#set_print_block_sep_chr}" -eq 1 ]; then
-        __BLOCK_SEP_CHAR="$1"
-    else
-        __warn "set_print_block_sep: Block separator must be a single character. Ignoring '${set_print_block_sep_chr}' and using '${__BLOCK_SEP_CHAR}'."
+#   print_separator
+#   print_separator "=" 100
+#
+# Output:
+#   --------------------------------------------------------------------------------
+print_separator() {
+    print_separator_char="${1:-${__BLOCK_SEP_CHAR}}"
+    print_separator_width="${2:-${__PRINT_DEFAULT_WIDTH}}"
+
+    print_separator_line=$(print_chars "${print_separator_char}" "${print_separator_width}")
+    info "${print_separator_line}"
+}
+
+# print_section_header prints a formatted section header with right-padding.
+#
+# $1: TITLE - Header title text.
+# $2: CHAR - Character to use for padding (default: "=").
+# $3: WIDTH - Total width of header (default: from __PRINT_DEFAULT_WIDTH).
+#
+# Usage:
+#   print_section_header TITLE [CHAR] [WIDTH]
+#
+# Example:
+#   print_section_header "Test Suite"
+#   print_section_header "My Section" "-" 60
+#
+# Output:
+#   = Test Suite ====================================================================
+print_section_header() {
+    print_section_header_title="$1"
+    print_section_header_char="${2:-=}"
+    print_section_header_width="${3:-${__PRINT_DEFAULT_WIDTH}}"
+
+    if [ -z "${print_section_header_title}" ]; then
+        __error "print_section_header: No TITLE provided"
+        return 1
     fi
+
+    # Format: "= TITLE "
+    print_section_header_prefix="= ${print_section_header_title} "
+    print_section_header_text_length=${#print_section_header_prefix}
+    print_section_header_chars_needed=$((print_section_header_width - print_section_header_text_length))
+
+    # Generate padding characters
+    if [ "${print_section_header_chars_needed}" -gt 0 ]; then
+        print_section_header_padding=$(print_chars "${print_section_header_char}" "${print_section_header_chars_needed}")
+        info "${print_section_header_prefix}${print_section_header_padding}"
+    else
+        # If title is too long, just print it as-is
+        info "${print_section_header_prefix}"
+    fi
+}
+
+# print_section_banner prints a formatted section banner with top and bottom borders.
+#
+# $1: TITLE - Section title text.
+# $2: CHAR - Character to use for borders (default: "=").
+# $3: WIDTH - Total width of borders (default: from __PRINT_DEFAULT_WIDTH).
+#
+# Usage:
+#   print_section_banner TITLE [CHAR] [WIDTH]
+#
+# Example:
+#   print_section_banner "Test Suite"
+#   print_section_banner "My Section" "-" 60
+#
+# Output:
+#   ================================================================================
+#   Test Suite
+#   ================================================================================
+print_section_banner() {
+    print_section_banner_title="$1"
+    print_section_banner_char="${2:-=}"
+    print_section_banner_width="${3:-${__PRINT_DEFAULT_WIDTH}}"
+
+    if [ -z "${print_section_banner_title}" ]; then
+        __error "print_section_banner: No TITLE provided"
+        return 1
+    fi
+
+    # Generate the border line
+    print_section_banner_border=$(print_chars "${print_section_banner_char}" "${print_section_banner_width}")
+
+    # Print top border, title, and bottom border
+    info "${print_section_banner_border}"
+    info "${print_section_banner_title}"
+    info "${print_section_banner_border}"
 }

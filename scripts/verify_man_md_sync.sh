@@ -90,7 +90,7 @@ require_cmds git basename grep sed xargs || die "Missing required commands"
 
 [ -z "$BASE_REF" ] && BASE_REF="$BASE_REMOTE/$BASE_BRANCH"
 
-print_script_start "Comparing changes from $BASE_REF to $TARGET_REF" || die "Failed to start script"
+print_section_banner "Comparing changes from $BASE_REF to $TARGET_REF" || die "Failed to start script"
 
 # conditional fetch
 if [ -n "$FETCH_DEPTH" ] || [ "$FORCE_FETCH" -eq 1 ]; then
