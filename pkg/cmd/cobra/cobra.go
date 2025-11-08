@@ -285,7 +285,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 		cfg.Output = output.TraceeConfig
 	} else {
-		outputConfig, err := getStructuredOutputConfig()
+		outputConfig, err := GetStructuredOutputConfig()
 		if err != nil {
 			return runner, err
 		}

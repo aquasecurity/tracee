@@ -3,6 +3,7 @@ package cobra
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 
@@ -354,24 +355,33 @@ func isStructured(key string) bool {
 	return ok
 }
 
-func getStructuredOutputConfig() (*OutputConfig, error) {
+// GetStructuredOutputConfig gets the output from config file
+// and returns an error if the validation goes wrong. Exported for testing
+func GetStructuredOutputConfig() (*OutputConfig, error) {
 	var output OutputConfig
 	err := viper.UnmarshalKey("output", &output)
 	if err != nil {
 		return nil, err
 	}
 
-	// validation
+	if err := output.ValidateOrDefaults(); err != nil {
+		return nil, err
+	}
+
+	return &output, nil
+}
+
+func (output *OutputConfig) ValidateOrDefaults() error {
 	for _, stream := range output.Streams {
 		if stream.Name == "" {
-			return nil, errfmt.Errorf("validaiton error: name is mandatory for streams")
+			return errfmt.Errorf("validation error: name is mandatory for streams")
 		}
 	}
 
 	for dIdx := range output.Destinations {
 		destination := &output.Destinations[dIdx]
 		if destination.Name == "" {
-			return nil, errfmt.Errorf("validaiton error: name is mandatory for destinations")
+			return errfmt.Errorf("validation error: name is mandatory for destinations")
 		}
 
 		if destination.Type == "" {
@@ -384,11 +394,22 @@ func getStructuredOutputConfig() (*OutputConfig, error) {
 
 		if (destination.Type == "webhook" || destination.Type == "forward") &&
 			destination.Url == "" {
-			return nil, errfmt.Errorf("validaiton error: url is mandatory in destination for %s", destination.Type)
+			return errfmt.Errorf("validation error: url is mandatory in destination for %s", destination.Type)
+		}
+
+		if destination.Format != "json" && destination.Format != "table" &&
+			destination.Format != "table-verbose" && !strings.HasPrefix(destination.Format, "gotemplate=") {
+			return errfmt.Errorf("validation error: destination format %s not valid for destination %s",
+				destination.Format, destination.Name)
+		}
+
+		if destination.Type != "file" && destination.Type != "webhook" && destination.Type != "forward" {
+			return errfmt.Errorf("validation error: destination type %s not valid for destination %s",
+				destination.Type, destination.Name)
 		}
 	}
 
-	return &output, nil
+	return nil
 }
 
 // The following structures are very similar to the ones defined in pkg/config/config.go.

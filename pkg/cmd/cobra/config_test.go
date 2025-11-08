@@ -1451,6 +1451,342 @@ func TestServerConfigFlags(t *testing.T) {
 	}
 }
 
+func TestOutputConfigValidation(t *testing.T) {
+	tests := []struct {
+		name          string
+		config        OutputConfig
+		expected      OutputConfig
+		expectedError string
+	}{
+		{
+			name: "destination without name",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Type:   "file",
+						Format: "table",
+					},
+				},
+			},
+			expectedError: "name is mandatory for destinations",
+		},
+		{
+			name: "stream without name",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "dest",
+						Type:   "file",
+						Format: "table",
+					},
+				},
+				Streams: []StreamConfig{
+					{
+						Destinations: []string{"dest"},
+					},
+				},
+			},
+			expectedError: "name is mandatory for streams",
+		},
+		{
+			name: "destination wrong type",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "wrong_type",
+						Type:   "wrong",
+						Format: "table",
+					},
+				},
+			},
+			expectedError: "destination type wrong not valid for destination wrong_type",
+		},
+		{
+			name: "destination wrong format",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "wrong_format",
+						Type:   "file",
+						Format: "wrong",
+					},
+				},
+			},
+			expectedError: "destination format wrong not valid for destination wrong_format",
+		},
+		{
+			name: "file table destination with stream",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "filedest",
+						Type:   "file",
+						Format: "table",
+					},
+				},
+				Streams: []StreamConfig{
+					{
+						Name:         "streamfiledest",
+						Destinations: []string{"filedest"},
+					},
+				},
+			},
+			expected: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name:         "streamfiledest",
+						Destinations: []string{"filedest"},
+					},
+				},
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "filedest",
+						Type:   "file",
+						Format: "table",
+					},
+				},
+			},
+		},
+		{
+			name: "file table-verbose destination with stream",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "filedest",
+						Type:   "file",
+						Format: "table-verbose",
+					},
+				},
+				Streams: []StreamConfig{
+					{
+						Name:         "streamfiledest",
+						Destinations: []string{"filedest"},
+					},
+				},
+			},
+			expected: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name:         "streamfiledest",
+						Destinations: []string{"filedest"},
+					},
+				},
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "filedest",
+						Type:   "file",
+						Format: "table-verbose",
+					},
+				},
+			},
+		},
+		{
+			name: "file json destination with stream",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "filedest",
+						Type:   "file",
+						Format: "json",
+					},
+				},
+				Streams: []StreamConfig{
+					{
+						Name:         "streamfiledest",
+						Destinations: []string{"filedest"},
+					},
+				},
+			},
+			expected: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name:         "streamfiledest",
+						Destinations: []string{"filedest"},
+					},
+				},
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "filedest",
+						Type:   "file",
+						Format: "json",
+					},
+				},
+			},
+		},
+		{
+			name: "file gotemplate destination with stream",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "filedest",
+						Type:   "file",
+						Format: "gotemplate=template1",
+					},
+				},
+				Streams: []StreamConfig{
+					{
+						Name:         "streamfiledest",
+						Destinations: []string{"filedest"},
+					},
+				},
+			},
+			expected: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name:         "streamfiledest",
+						Destinations: []string{"filedest"},
+					},
+				},
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "filedest",
+						Type:   "file",
+						Format: "gotemplate=template1",
+					},
+				},
+			},
+		},
+		{
+			name: "webhook json destination with stream",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "webhookdest",
+						Type:   "webhook",
+						Format: "json",
+					},
+				},
+				Streams: []StreamConfig{
+					{
+						Name:         "streamwebhookdest",
+						Destinations: []string{"webhookdest"},
+					},
+				},
+			},
+			expected: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name:         "streamwebhookdest",
+						Destinations: []string{"webhookdest"},
+					},
+				},
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "webhookdest",
+						Type:   "webhook",
+						Format: "json",
+					},
+				},
+			},
+		},
+		{
+			name: "forward json destination with stream",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "forwarddest",
+						Type:   "forward",
+						Format: "json",
+					},
+				},
+				Streams: []StreamConfig{
+					{
+						Name:         "streamforwarddest",
+						Destinations: []string{"forwarddest"},
+					},
+				},
+			},
+			expected: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name:         "streamforwarddest",
+						Destinations: []string{"forwarddest"},
+					},
+				},
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "forwarddest",
+						Type:   "forward",
+						Format: "json",
+					},
+				},
+			},
+		},
+		{
+			name: "set default destination type",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "defaultfiledest",
+						Format: "json",
+					},
+				},
+			},
+			expected: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "defaultfiledest",
+						Type:   "file",
+						Format: "json",
+					},
+				},
+			},
+		},
+		{
+			name: "set default destination format",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name: "defaultformatdest",
+						Type: "file",
+					},
+				},
+			},
+			expected: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "defaultformatdest",
+						Type:   "file",
+						Format: "table",
+					},
+				},
+			},
+		},
+		{
+			name: "set default destination format and type",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name: "defaultformattypedest",
+					},
+				},
+			},
+			expected: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "defaultformattypedest",
+						Type:   "file",
+						Format: "table",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.config.ValidateOrDefaults()
+			if tc.expectedError != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectedError)
+				return
+			}
+
+			assert.Equal(t, tc.config, tc.expected)
+		})
+	}
+}
+
 // slicesEqualIgnoreOrder compares two string slices, ignoring order
 func slicesEqualIgnoreOrder(a, b []string) bool {
 	if len(a) != len(b) {
@@ -1459,20 +1795,6 @@ func slicesEqualIgnoreOrder(a, b []string) bool {
 
 	sort.Strings(a)
 	sort.Strings(b)
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-
-	return true
-}
-
-func destinationsEqualIgnoreOrder(a, b []config.Destination) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
 	for i := range a {
 		if a[i] != b[i] {
 			return false
