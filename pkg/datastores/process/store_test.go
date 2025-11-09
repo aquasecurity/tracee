@@ -40,8 +40,8 @@ func TestProcessTree_DataStoreInterface(t *testing.T) {
 	})
 
 	t.Run("GetProcess_NotFound", func(t *testing.T) {
-		info, found := pt.GetProcess(999999)
-		assert.False(t, found)
+		info, err := pt.GetProcess(999999)
+		assert.ErrorIs(t, err, datastores.ErrNotFound)
 		assert.Nil(t, info)
 	})
 
