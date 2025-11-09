@@ -129,8 +129,11 @@ func (d *HookedSyscall) OnEvent(ctx context.Context, event *v1beta1.Event) ([]*v
 	d.reportedHooks.Add(syscallId, address)
 
 	// Convert syscall_id to syscall name using the SyscallStore
-	syscallName, _ := syscallStore.GetSyscallName(syscallId)
-	// If not found or not a syscall, syscallName will be empty string (matches original behavior)
+	syscallName, err := syscallStore.GetSyscallName(syscallId)
+	if err != nil {
+		// If not found or not a syscall, use empty string (matches original behavior)
+		syscallName = ""
+	}
 
 	hexAddress := fmt.Sprintf("%x", address)
 

@@ -194,16 +194,14 @@ func (d *ExampleDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]
 		// Get additional container details from ContainerStore
 		if d.dataStores != nil && containerID != "" {
 			containerStore := d.dataStores.Containers()
-			if containerStore != nil {
-				containerInfo, found := containerStore.GetContainer(containerID)
-				if found {
-					containerName = containerInfo.Name
-					containerImage = containerInfo.Image
-					d.logger.Debugw("Enriched with container info",
-						"container_id", containerID,
-						"container_name", containerName,
-						"image_name", containerImage)
-				}
+			containerInfo, err := containerStore.GetContainer(containerID)
+			if err == nil {
+				containerName = containerInfo.Name
+				containerImage = containerInfo.Image
+				d.logger.Debugw("Enriched with container info",
+					"container_id", containerID,
+					"container_name", containerName,
+					"image_name", containerImage)
 			}
 		}
 	}
