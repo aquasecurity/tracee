@@ -61,7 +61,7 @@ func (m *Manager) GetMetrics() *datastores.DataStoreMetrics {
 // ContainerStore interface implementation
 
 // GetContainer retrieves container information by container ID
-func (m *Manager) GetContainer(id string) (*datastores.ContainerInfo, bool) {
+func (m *Manager) GetContainer(id string) (*datastores.ContainerInfo, error) {
 	m.lastAccessNano.Store(time.Now().UnixNano())
 
 	m.lock.RLock()
@@ -69,14 +69,14 @@ func (m *Manager) GetContainer(id string) (*datastores.ContainerInfo, bool) {
 	m.lock.RUnlock()
 
 	if !ok {
-		return nil, false
+		return nil, datastores.ErrNotFound
 	}
 
-	return convertContainer(&cont), true
+	return convertContainer(&cont), nil
 }
 
 // GetContainerByName retrieves container information by container name
-func (m *Manager) GetContainerByName(name string) (*datastores.ContainerInfo, bool) {
+func (m *Manager) GetContainerByName(name string) (*datastores.ContainerInfo, error) {
 	m.lastAccessNano.Store(time.Now().UnixNano())
 
 	m.lock.RLock()
@@ -93,10 +93,10 @@ func (m *Manager) GetContainerByName(name string) (*datastores.ContainerInfo, bo
 	m.lock.RUnlock()
 
 	if foundCont == nil {
-		return nil, false
+		return nil, datastores.ErrNotFound
 	}
 
-	return convertContainer(foundCont), true
+	return convertContainer(foundCont), nil
 }
 
 // convertContainer converts internal Container to public ContainerInfo
