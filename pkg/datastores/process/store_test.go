@@ -40,8 +40,8 @@ func TestProcessTree_DataStoreInterface(t *testing.T) {
 	})
 
 	t.Run("GetProcess_NotFound", func(t *testing.T) {
-		info, found := pt.GetProcess(999999)
-		assert.False(t, found)
+		info, err := pt.GetProcess(999999)
+		assert.ErrorIs(t, err, datastores.ErrNotFound)
 		assert.Nil(t, info)
 	})
 
@@ -170,8 +170,8 @@ func TestProcessStore_GetAncestry(t *testing.T) {
 		}
 		proc.GetInfo().SetFeed(feed)
 
-		info, ok := pt.GetProcess(uint32(999))
-		require.True(t, ok)
+		info, err := pt.GetProcess(uint32(999))
+		require.NoError(t, err)
 		assert.NotZero(t, info.ExitTime, "ExitTime should be populated")
 	})
 }

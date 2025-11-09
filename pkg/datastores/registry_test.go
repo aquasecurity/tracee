@@ -26,8 +26,8 @@ type mockProcessStore struct {
 	mockDataStore
 }
 
-func (m *mockProcessStore) GetProcess(entityId uint32) (*datastores.ProcessInfo, bool) {
-	return nil, false
+func (m *mockProcessStore) GetProcess(entityId uint32) (*datastores.ProcessInfo, error) {
+	return nil, datastores.ErrNotFound
 }
 
 func (m *mockProcessStore) GetChildProcesses(entityId uint32) ([]*datastores.ProcessInfo, error) {
@@ -43,12 +43,12 @@ type mockContainerStore struct {
 	mockDataStore
 }
 
-func (m *mockContainerStore) GetContainer(id string) (*datastores.ContainerInfo, bool) {
-	return nil, false
+func (m *mockContainerStore) GetContainer(id string) (*datastores.ContainerInfo, error) {
+	return nil, datastores.ErrNotFound
 }
 
-func (m *mockContainerStore) GetContainerByName(name string) (*datastores.ContainerInfo, bool) {
-	return nil, false
+func (m *mockContainerStore) GetContainerByName(name string) (*datastores.ContainerInfo, error) {
+	return nil, datastores.ErrNotFound
 }
 
 func TestRegistry_RegisterStore(t *testing.T) {

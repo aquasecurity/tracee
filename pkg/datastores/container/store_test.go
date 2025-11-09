@@ -39,14 +39,14 @@ func TestManager_DataStoreInterface(t *testing.T) {
 	})
 
 	t.Run("GetContainer_NotFound", func(t *testing.T) {
-		info, found := mgr.GetContainer("nonexistent")
-		assert.False(t, found)
+		info, err := mgr.GetContainer("nonexistent")
+		assert.ErrorIs(t, err, datastores.ErrNotFound)
 		assert.Nil(t, info)
 	})
 
 	t.Run("GetContainerByName_NotFound", func(t *testing.T) {
-		info, found := mgr.GetContainerByName("nonexistent")
-		assert.False(t, found)
+		info, err := mgr.GetContainerByName("nonexistent")
+		assert.ErrorIs(t, err, datastores.ErrNotFound)
 		assert.Nil(t, info)
 	})
 }

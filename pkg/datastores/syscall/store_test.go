@@ -86,12 +86,13 @@ func TestStore_GetSyscallName_ValidSyscalls(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			name, ok := store.GetSyscallName(tt.syscallID)
-			assert.Equal(t, tt.expectOK, ok, "Should return correct ok status")
+			name, err := store.GetSyscallName(tt.syscallID)
 			if tt.expectOK {
+				assert.NoError(t, err, "Should not return error for valid syscall")
 				assert.Equal(t, tt.expectName, name, "Should return correct syscall name")
 				assert.NotEmpty(t, name, "Syscall name should not be empty")
 			} else {
+				assert.ErrorIs(t, err, datastores.ErrNotFound, "Should return ErrNotFound for invalid syscall")
 				assert.Empty(t, name, "Name should be empty for invalid syscall")
 			}
 		})
@@ -125,8 +126,8 @@ func TestStore_GetSyscallName_InvalidIDs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			name, ok := store.GetSyscallName(tt.syscallID)
-			assert.False(t, ok, "Should return false for invalid syscall ID")
+			name, err := store.GetSyscallName(tt.syscallID)
+			assert.ErrorIs(t, err, datastores.ErrNotFound, "Should return ErrNotFound for invalid syscall ID")
 			assert.Empty(t, name, "Name should be empty for invalid syscall ID")
 		})
 	}
@@ -175,11 +176,12 @@ func TestStore_GetSyscallID_ValidSyscalls(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			id, ok := store.GetSyscallID(tt.syscallName)
-			assert.Equal(t, tt.expectOK, ok, "Should return correct ok status")
+			id, err := store.GetSyscallID(tt.syscallName)
 			if tt.expectOK {
+				assert.NoError(t, err, "Should not return error for valid syscall")
 				assert.Equal(t, tt.expectID, id, "Should return correct syscall ID")
 			} else {
+				assert.ErrorIs(t, err, datastores.ErrNotFound, "Should return ErrNotFound")
 				assert.Zero(t, id, "ID should be zero for invalid syscall")
 			}
 		})
@@ -213,8 +215,8 @@ func TestStore_GetSyscallID_InvalidNames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			id, ok := store.GetSyscallID(tt.syscallName)
-			assert.False(t, ok, "Should return false for invalid syscall name")
+			id, err := store.GetSyscallID(tt.syscallName)
+			assert.ErrorIs(t, err, datastores.ErrNotFound, "Should return ErrNotFound for invalid syscall name")
 			assert.Zero(t, id, "ID should be zero for invalid syscall name")
 		})
 	}
@@ -227,16 +229,16 @@ func TestStore_GetSyscallName_GetSyscallID_Roundtrip(t *testing.T) {
 	tests := []int32{0, 1, 2, 3, 59, 322} // Various syscall IDs
 
 	for _, originalID := range tests {
-		name, ok := store.GetSyscallName(originalID)
-		if !ok {
+		name, err := store.GetSyscallName(originalID)
+		if err != nil {
 			// Skip syscalls that don't exist on this architecture
 			continue
 		}
 
 		t.Run("roundtrip_"+name, func(t *testing.T) {
 			// Now convert name back to ID
-			retrievedID, ok := store.GetSyscallID(name)
-			assert.True(t, ok, "Should be able to convert name back to ID")
+			retrievedID, err := store.GetSyscallID(name)
+			assert.NoError(t, err, "Should be able to convert name back to ID")
 			assert.Equal(t, originalID, retrievedID, "Roundtrip should preserve ID")
 		})
 	}
@@ -249,8 +251,8 @@ func TestStore_GetSyscallID_GetSyscallName_Roundtrip(t *testing.T) {
 	tests := []string{"read", "write", "open", "close", "execve", "socket"}
 
 	for _, originalName := range tests {
-		id, ok := store.GetSyscallID(originalName)
-		if !ok {
+		id, err := store.GetSyscallID(originalName)
+		if err != nil {
 			// Skip syscalls that don't exist on this architecture
 			t.Logf("Skipping %s (not found on this architecture)", originalName)
 			continue
@@ -258,8 +260,8 @@ func TestStore_GetSyscallID_GetSyscallName_Roundtrip(t *testing.T) {
 
 		t.Run("roundtrip_"+originalName, func(t *testing.T) {
 			// Now convert ID back to name
-			retrievedName, ok := store.GetSyscallName(id)
-			assert.True(t, ok, "Should be able to convert ID back to name")
+			retrievedName, err := store.GetSyscallName(id)
+			assert.NoError(t, err, "Should be able to convert ID back to name")
 			assert.Equal(t, originalName, retrievedName, "Roundtrip should preserve name")
 		})
 	}
@@ -276,14 +278,14 @@ func TestStore_ArchitectureSpecific(t *testing.T) {
 	foundCount := 0
 
 	for _, name := range commonSyscalls {
-		id, ok := store.GetSyscallID(name)
-		if ok {
+		id, err := store.GetSyscallID(name)
+		if err == nil {
 			foundCount++
 			t.Logf("Found syscall %s with ID %d", name, id)
 
 			// Verify roundtrip works
-			retrievedName, ok := store.GetSyscallName(id)
-			assert.True(t, ok, "Roundtrip should work for %s", name)
+			retrievedName, err := store.GetSyscallName(id)
+			assert.NoError(t, err, "Roundtrip should work for %s", name)
 			assert.Equal(t, name, retrievedName, "Roundtrip should preserve name for %s", name)
 		}
 	}

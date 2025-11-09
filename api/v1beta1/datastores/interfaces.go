@@ -42,8 +42,8 @@ type ProcessStore interface {
 	DataStore
 
 	// GetProcess retrieves process information by entity ID
-	// Returns nil, false if the process is not found
-	GetProcess(entityId uint32) (*ProcessInfo, bool)
+	// Returns ErrNotFound if the process is not found
+	GetProcess(entityId uint32) (*ProcessInfo, error)
 
 	// GetChildProcesses returns all child processes of the given process
 	// Returns empty slice if no children found
@@ -61,12 +61,12 @@ type ContainerStore interface {
 	DataStore
 
 	// GetContainer retrieves container information by container ID
-	// Returns nil, false if the container is not found
-	GetContainer(id string) (*ContainerInfo, bool)
+	// Returns ErrNotFound if the container is not found
+	GetContainer(id string) (*ContainerInfo, error)
 
 	// GetContainerByName retrieves container information by container name
-	// Returns nil, false if no container with that name is found
-	GetContainerByName(name string) (*ContainerInfo, bool)
+	// Returns ErrNotFound if no container with that name is found
+	GetContainerByName(name string) (*ContainerInfo, error)
 }
 
 // KernelSymbolStore provides access to kernel symbol information
@@ -95,8 +95,8 @@ type DNSStore interface {
 	DataStore
 
 	// GetDNSResponse retrieves cached DNS response for a query
-	// Returns nil, false if no cached response is found
-	GetDNSResponse(query string) (*DNSResponse, bool)
+	// Returns ErrNotFound if no cached response is found
+	GetDNSResponse(query string) (*DNSResponse, error)
 }
 
 // SystemStore provides access to immutable system information
@@ -113,12 +113,12 @@ type SyscallStore interface {
 	DataStore
 
 	// GetSyscallName returns the syscall name for a given ID
-	// Returns empty string and false if the syscall ID is not found
+	// Returns ErrNotFound if the syscall ID is not found
 	// Note: Syscall IDs are architecture-specific (x86 vs ARM)
-	GetSyscallName(id int32) (string, bool)
+	GetSyscallName(id int32) (string, error)
 
 	// GetSyscallID returns the syscall ID for a given name
-	// Returns 0 and false if the syscall name is not found
+	// Returns ErrNotFound if the syscall name is not found
 	// Note: Syscall IDs are architecture-specific (x86 vs ARM)
-	GetSyscallID(name string) (int32, bool)
+	GetSyscallID(name string) (int32, error)
 }
