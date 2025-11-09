@@ -66,17 +66,20 @@ type mockSyscallStore struct {
 func (m *mockSyscallStore) Name() string                             { return "mock_syscall" }
 func (m *mockSyscallStore) GetHealth() *datastores.HealthInfo        { return nil }
 func (m *mockSyscallStore) GetMetrics() *datastores.DataStoreMetrics { return nil }
-func (m *mockSyscallStore) GetSyscallName(id int32) (string, bool) {
+func (m *mockSyscallStore) GetSyscallName(id int32) (string, error) {
 	name, ok := m.syscalls[id]
-	return name, ok
+	if !ok {
+		return "", datastores.ErrNotFound
+	}
+	return name, nil
 }
-func (m *mockSyscallStore) GetSyscallID(name string) (int32, bool) {
+func (m *mockSyscallStore) GetSyscallID(name string) (int32, error) {
 	for id, n := range m.syscalls {
 		if n == name {
-			return id, true
+			return id, nil
 		}
 	}
-	return 0, false
+	return 0, datastores.ErrNotFound
 }
 
 // mockLogger implements detection.Logger for testing
