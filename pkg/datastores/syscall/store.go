@@ -48,36 +48,36 @@ func (s *Store) GetMetrics() *datastores.DataStoreMetrics {
 }
 
 // GetSyscallName returns the syscall name for a given ID
-// Returns empty string and false if the syscall ID is not found or is not a syscall
-func (s *Store) GetSyscallName(id int32) (string, bool) {
+// Returns ErrNotFound if the syscall ID is not found or is not a syscall
+func (s *Store) GetSyscallName(id int32) (string, error) {
 	def := s.eventCore.GetDefinitionByID(events.ID(id))
 
 	// Check if definition was found (Undefined means not found)
 	if def.GetID() == events.Undefined {
-		return "", false
+		return "", datastores.ErrNotFound
 	}
 
 	// Only return name if this is actually a syscall
 	if !def.IsSyscall() {
-		return "", false
+		return "", datastores.ErrNotFound
 	}
 
-	return def.GetName(), true
+	return def.GetName(), nil
 }
 
 // GetSyscallID returns the syscall ID for a given name
-// Returns 0 and false if the syscall name is not found or is not a syscall
-func (s *Store) GetSyscallID(name string) (int32, bool) {
+// Returns ErrNotFound if the syscall name is not found or is not a syscall
+func (s *Store) GetSyscallID(name string) (int32, error) {
 	id, found := s.eventCore.GetDefinitionIDByName(name)
 	if !found {
-		return 0, false
+		return 0, datastores.ErrNotFound
 	}
 
 	// Verify this is actually a syscall
 	def := s.eventCore.GetDefinitionByID(id)
 	if def.GetID() == events.Undefined || !def.IsSyscall() {
-		return 0, false
+		return 0, datastores.ErrNotFound
 	}
 
-	return int32(id), true
+	return int32(id), nil
 }

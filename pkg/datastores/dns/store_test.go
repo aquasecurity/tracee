@@ -37,8 +37,8 @@ func TestDNSCache_DataStoreInterface(t *testing.T) {
 	})
 
 	t.Run("GetDNSResponse_NotFound", func(t *testing.T) {
-		resp, found := cache.GetDNSResponse("nonexistent.example.com")
-		assert.False(t, found)
+		resp, err := cache.GetDNSResponse("nonexistent.example.com")
+		assert.ErrorIs(t, err, datastores.ErrNotFound)
 		assert.Nil(t, resp)
 	})
 
