@@ -72,17 +72,17 @@ func (nc *DNSCache) GetMetrics() *datastores.DataStoreMetrics {
 // DNSStore interface implementation
 
 // GetDNSResponse retrieves cached DNS response for a query
-func (nc *DNSCache) GetDNSResponse(query string) (*datastores.DNSResponse, bool) {
+func (nc *DNSCache) GetDNSResponse(query string) (*datastores.DNSResponse, error) {
 	nc.lastAccessNano.Store(time.Now().UnixNano())
 
 	result, err := nc.Get(query)
 	if err != nil {
-		return nil, false
+		return nil, datastores.ErrNotFound
 	}
 
 	return &datastores.DNSResponse{
 		Query:   query,
 		IPs:     result.IPResults(),
 		Domains: result.DNSResults(),
-	}, true
+	}, nil
 }

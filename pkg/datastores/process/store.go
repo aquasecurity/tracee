@@ -92,13 +92,13 @@ func (pt *ProcessTree) GetMetrics() *datastores.DataStoreMetrics {
 // ProcessStore interface implementation
 
 // GetProcess retrieves process information by entity ID (hash)
-func (pt *ProcessTree) GetProcess(entityId uint64) (*datastores.ProcessInfo, bool) {
+func (pt *ProcessTree) GetProcess(entityId uint64) (*datastores.ProcessInfo, error) {
 	pt.lastAccessNano.Store(time.Now().UnixNano())
 
 	hash := uint32(entityId)
 	proc, ok := pt.GetProcessByHash(hash)
 	if !ok {
-		return nil, false
+		return nil, datastores.ErrNotFound
 	}
 
 	info := proc.GetInfo()
@@ -113,7 +113,7 @@ func (pt *ProcessTree) GetProcess(entityId uint64) (*datastores.ProcessInfo, boo
 		StartTime: info.GetStartTime(),
 		UID:       info.GetUid(),
 		GID:       info.GetGid(),
-	}, true
+	}, nil
 }
 
 // GetChildProcesses returns all child processes of the given process
@@ -133,7 +133,7 @@ func (pt *ProcessTree) GetChildProcesses(entityId uint64) ([]*datastores.Process
 
 	children := make([]*datastores.ProcessInfo, 0, len(childrenMap))
 	for childHash := range childrenMap {
-		if childInfo, ok := pt.GetProcess(uint64(childHash)); ok {
+		if childInfo, err := pt.GetProcess(uint64(childHash)); err == nil {
 			children = append(children, childInfo)
 		}
 	}
