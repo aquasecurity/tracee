@@ -48,6 +48,7 @@ type DataFilter struct {
 	filters          map[string]Filter[*StringFilter]
 	kernelDataFilter *KernelDataFilter
 	enabled          bool
+	skipKernelFilter bool // For detector filters - always apply userspace filtering
 }
 
 // Compile-time check to ensure that DataFilter implements the Cloner interface.
@@ -58,6 +59,18 @@ func NewDataFilter() *DataFilter {
 		filters:          map[string]Filter[*StringFilter]{},
 		kernelDataFilter: NewKernelDataFilter(),
 		enabled:          false,
+		skipKernelFilter: false,
+	}
+}
+
+// NewDetectorDataFilter creates a DataFilter for detectors that skips kernel filtering optimization
+// Detectors don't have kernel-side filtering, so all filtering must happen in userspace
+func NewDetectorDataFilter() *DataFilter {
+	return &DataFilter{
+		filters:          map[string]Filter[*StringFilter]{},
+		kernelDataFilter: NewKernelDataFilter(),
+		enabled:          false,
+		skipKernelFilter: true, // Force userspace filtering
 	}
 }
 
@@ -118,7 +131,8 @@ func (f *DataFilter) Filter(data []trace.Argument) bool {
 		// been filtered in the kernel space
 		// TODO: Rethink whether using an integer instead of a string
 		// would improve efficiency in the args structure.
-		if f.kernelDataFilter.IsKernelFilterEnabled(fieldName) {
+		// Skip kernel filter optimization if this is a detector filter
+		if !f.skipKernelFilter && f.kernelDataFilter.IsKernelFilterEnabled(fieldName) {
 			continue
 		}
 
@@ -329,6 +343,7 @@ func (f *DataFilter) Clone() *DataFilter {
 	}
 
 	n.enabled = f.enabled
+	n.skipKernelFilter = f.skipKernelFilter
 
 	return n
 }

@@ -369,7 +369,7 @@ func (r *registry) RegisterDetector(
 			// Get or create data filter for this event ID
 			dataFilter, exists := dataFilters[reqEventID]
 			if !exists {
-				dataFilter = filters.NewDataFilter()
+				dataFilter = filters.NewDetectorDataFilter() // Use detector-specific filter
 				dataFilters[reqEventID] = dataFilter
 			}
 
