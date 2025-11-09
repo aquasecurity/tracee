@@ -183,6 +183,11 @@ nav:
                 - Custom Events:
                       - Overview: docs/events/custom/overview.md
                       - Go: docs/events/custom/golang.md
+          - Detectors:
+                - Overview: docs/detectors/index.md
+                - Quick Start: docs/detectors/quickstart.md
+                - API Reference: docs/detectors/api-reference.md
+                - DataStore API: docs/detectors/datastore-api.md
           - Policies:
                 - Overview: docs/policies/index.md
                 - Scopes: docs/policies/scopes.md
