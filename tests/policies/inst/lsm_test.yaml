@@ -6,6 +6,6 @@ metadata:
     description: test tracee's LSM support
 spec:
   scope: 
-    - comm=cat
+    - comm=lsm_e2e_test
   rules:
-    - event: LSM_TEST
+    - event: LSM_TEST # e2e signature for tracing

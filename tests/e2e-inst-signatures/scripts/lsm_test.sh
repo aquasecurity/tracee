@@ -6,11 +6,24 @@ exit_err() {
     exit 1
 }
 
-# Create a test file to trigger LSM events
-touch /tmp/lsm_test_file || exit_err "failed to create test file"
+# Create a uniquely named wrapper to trigger LSM events with a specific comm name
+# This avoids noise from other 'cat' processes
+UNIQUE_TRIGGER="/tmp/lsm_e2e_test"
 
-# Reading the file should trigger the LSM file_open hook
-cat /tmp/lsm_test_file || exit_err "failed to read test file"
+# Create the trigger script
+cat > "${UNIQUE_TRIGGER}" << 'TRIGGER_EOF'
+#!/bin/bash
+# This script will be executed with comm=lsm_e2e_test
+TESTFILE="/tmp/lsm_test_file_$$"
+touch "${TESTFILE}" || exit 1
+cat "${TESTFILE}" || exit 1
+rm -f "${TESTFILE}"
+TRIGGER_EOF
+
+chmod +x "${UNIQUE_TRIGGER}"
+
+# Execute the trigger (this will have comm=lsm_e2e_test)
+"${UNIQUE_TRIGGER}" || exit_err "failed to trigger LSM event"
 
 # Clean up
-rm -f /tmp/lsm_test_file
+rm -f "${UNIQUE_TRIGGER}"
