@@ -107,7 +107,12 @@ func TestRegistry_Processes(t *testing.T) {
 		reg := NewRegistry()
 
 		result := reg.Processes()
-		assert.Nil(t, result)
+		assert.NotNil(t, result, "accessor methods must never return nil")
+		assert.Equal(t, "null_process", result.Name())
+
+		// Null store should return ErrStoreUnhealthy
+		_, err := result.GetProcess(1)
+		assert.ErrorIs(t, err, datastores.ErrStoreUnhealthy)
 	})
 
 	t.Run("Processes_WrongType", func(t *testing.T) {
@@ -118,7 +123,8 @@ func TestRegistry_Processes(t *testing.T) {
 		require.NoError(t, err)
 
 		result := reg.Processes()
-		assert.Nil(t, result, "should return nil when store doesn't implement ProcessStore")
+		assert.NotNil(t, result, "accessor methods must never return nil")
+		assert.Equal(t, "null_process", result.Name(), "should return null object when store doesn't implement ProcessStore")
 	})
 }
 
@@ -139,7 +145,12 @@ func TestRegistry_Containers(t *testing.T) {
 		reg := NewRegistry()
 
 		result := reg.Containers()
-		assert.Nil(t, result)
+		assert.NotNil(t, result, "accessor methods must never return nil")
+		assert.Equal(t, "null_container", result.Name())
+
+		// Null store should return ErrStoreUnhealthy
+		_, err := result.GetContainer("test")
+		assert.ErrorIs(t, err, datastores.ErrStoreUnhealthy)
 	})
 }
 

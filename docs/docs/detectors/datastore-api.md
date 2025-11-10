@@ -163,6 +163,26 @@ type Registry interface {
 ```
 {% endraw %}
 
+**Nil-Safety Guarantee:**
+
+Accessor methods (`Processes()`, `Containers()`, etc.) **never return nil**. If a store is not registered or unavailable, they return a null object that:
+- Implements the store interface
+- Returns `ErrStoreUnhealthy` for all operations
+- Has health status set to `HealthUnhealthy`
+
+This eliminates nil checks and allows safe method chaining:
+
+```go
+// Always safe - no nil check needed
+proc, err := datastores.Processes().GetProcess(entityID)
+if errors.Is(err, datastores.ErrStoreUnhealthy) {
+    // Store not available
+}
+if errors.Is(err, datastores.ErrNotFound) {
+    // Process not found
+}
+```
+
 ### Usage Examples
 
 **Basic access**:
