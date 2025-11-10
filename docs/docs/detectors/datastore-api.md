@@ -16,6 +16,8 @@ Complete API reference for Tracee's DataStore system. This provides read-only ac
 10. [Health and Metrics](#health-and-metrics)
 11. [Error Handling](#error-handling)
 12. [Advanced Usage](#advanced-usage)
+13. [Writable DataStores](#writable-datastores)
+14. [Summary](#summary)
 
 ---
 
@@ -1334,6 +1336,334 @@ func (d *MyDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]detec
 }
 ```
 {% endraw %}
+
+---
+
+## Writable DataStores
+
+### Overview
+
+Writable datastores allow detectors and extensions to store and share custom data. Unlike read-only stores (which are populated by Tracee), writable stores can be written to by:
+- **Detectors** that need to maintain correlation state
+- **Extensions** that feed external threat intelligence
+- **External clients** via gRPC API (future feature)
+
+**Key Features:**
+- **Type-safe**: Protobuf schemas for keys and data
+- **Source isolation**: Multiple data sources can coexist
+- **Ownership model**: Registrant controls write access and defines store behavior
+
+### Registering a Writable Store
+
+Detectors register writable stores in their `Init()` method:
+
+```go
+import (
+    "github.com/aquasecurity/tracee/api/v1beta1/detection"
+    "github.com/aquasecurity/tracee/api/v1beta1/datastores"
+    "github.com/aquasecurity/tracee/pkg/datastores/ipreputation"
+)
+
+type CorrelationDetector struct {
+    logger         detection.Logger
+    correlationStore datastores.WritableStore  // Owner keeps WritableStore interface
+}
+
+func (d *CorrelationDetector) Init(params detection.DetectorParams) error {
+    d.logger = params.Logger
+
+    // Create a writable store
+    // Store-specific configuration (like conflict resolution) is defined here
+    store := ipreputation.NewIPReputationStore(
+        ipreputation.LastWriteWins,  // Store-specific policy
+        nil,                          // Store-specific options
+    )
+
+    // Register via registry - caller becomes owner
+    if err := params.DataStores.RegisterWritableStore("ip_reputation", store); err != nil {
+        return fmt.Errorf("failed to register store: %w", err)
+    }
+
+    // Keep reference for writing
+    d.correlationStore = store
+    d.logger.Infow("Registered IP reputation store")
+    return nil
+}
+```
+
+**Key Points:**
+- The registrant owns the store and defines its behavior (e.g., conflict resolution policies)
+- Store name must be unique across the system
+- Registration should happen in `Init()` before any event processing
+
+### Writing to a Writable Store
+
+**Type-Safe Method (Internal Go Code):**
+
+```go
+func (d *CorrelationDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]*v1beta1.Event, error) {
+    // Owner can write using type-safe methods
+    ipStore := d.correlationStore.(*ipreputation.IPReputationStore)
+
+    srcIP, found := v1beta1.GetData[string](event, "src_ip")
+    if !found {
+        return nil, nil
+    }
+
+    rep := &ipreputation.IPReputation{
+        Status:      ipreputation.ReputationBlacklisted,
+        Severity:    8,
+        Tags:        []string{"detected_by_tracee"},
+        LastUpdated: time.Now(),
+    }
+
+    if err := ipStore.WriteReputation("local_detector", srcIP, rep); err != nil {
+        d.logger.Errorw("Failed to write reputation", "error", err)
+    }
+
+    return nil, nil
+}
+```
+
+**Protobuf Method (gRPC or Generic):**
+
+```go
+import (
+    pb "github.com/aquasecurity/tracee/api/v1beta1/datastores"
+    "google.golang.org/protobuf/types/known/anypb"
+    "google.golang.org/protobuf/types/known/timestamppb"
+)
+
+func (d *CorrelationDetector) writeViaProtobuf(ip string) error {
+    // Create protobuf messages
+    keyMsg := &pb.IPAddressKey{Ip: ip}
+    repMsg := &pb.IPReputation{
+        Status:      pb.ReputationStatus_REPUTATION_BLACKLISTED,
+        Severity:    8,
+        Tags:        []string{"malware"},
+        LastUpdated: timestamppb.Now(),
+    }
+
+    // Pack into Any
+    keyAny, _ := anypb.New(keyMsg)
+    dataAny, _ := anypb.New(repMsg)
+
+    // Write via generic interface
+    entry := &datastores.DataEntry{
+        Key:  keyAny,
+        Data: dataAny,
+    }
+
+    return d.correlationStore.WriteValue("detector_source", entry)
+}
+```
+
+### Reading from a Writable Store
+
+Other detectors can read from writable stores (read-only access):
+
+```go
+type ThreatAnalyzer struct {
+    logger     detection.Logger
+    ipRepStore *ipreputation.IPReputationStore  // Read-only access
+}
+
+func (d *ThreatAnalyzer) Init(params detection.DetectorParams) error {
+    d.logger = params.Logger
+
+    // Access as DataStore (read-only)
+    store, err := params.DataStores.GetCustom("ip_reputation")
+    if err != nil {
+        d.logger.Warnw("IP reputation store not available, degrading gracefully")
+        return nil  // Optional dependency
+    }
+
+    // Type assert to access read methods
+    d.ipRepStore = store.(*ipreputation.IPReputationStore)
+    return nil
+}
+
+func (d *ThreatAnalyzer) OnEvent(ctx context.Context, event *v1beta1.Event) ([]*v1beta1.Event, error) {
+    if d.ipRepStore == nil {
+        return nil, nil  // Store not available
+    }
+
+    srcIP, found := v1beta1.GetData[string](event, "src_ip")
+    if !found {
+        return nil, nil
+    }
+
+    // Check if IP is blacklisted
+    if d.ipRepStore.IsBlacklisted(srcIP) {
+        d.logger.Warnw("Connection from blacklisted IP", "ip", srcIP)
+        return d.createThreatDetection(event), nil
+    }
+
+    return nil, nil
+}
+```
+
+### Source Isolation
+
+The `WritableStore` API includes a `source` parameter to organize data by origin:
+
+```go
+// Generic WritableStore methods all accept a source parameter
+store.WriteValue("external_feed", entry)
+store.WriteValue("local_detector", entry)
+store.Delete("external_feed", key)
+store.ClearSource("external_feed")  // Remove all data from this source
+sources, _ := store.ListSources()   // ["external_feed", "local_detector"]
+```
+
+**Purpose:**
+- Track data provenance (which feed/detector provided this data)
+- Support independent updates (each source can update without affecting others)
+- Enable cleanup by source (remove all data from a specific feed)
+
+**Implementation Note:** How multiple sources writing to the same key are handled (conflict resolution) is implementation-specific and defined by the store owner when creating the store.
+
+### Batch Operations
+
+For performance, use batch writes when available:
+
+```go
+// Using the generic WritableStore interface
+entries := []*datastores.DataEntry{
+    {Key: keyAny1, Data: dataAny1},
+    {Key: keyAny2, Data: dataAny2},
+    {Key: keyAny3, Data: dataAny3},
+}
+
+if err := store.WriteBatchValues("bulk_import", entries); err != nil {
+    return fmt.Errorf("batch write failed: %w", err)
+}
+```
+
+**Implementation-Specific Note:** Some stores may provide type-safe batch methods in addition to the generic interface. Consult the specific store's documentation (e.g., `pkg/datastores/ipreputation/`) for details.
+
+### Example: IP Reputation Detector
+
+This example shows a complete detector using a writable store. Note that the IP Reputation Store (`pkg/datastores/ipreputation/`) is a reference implementation with additional type-safe methods beyond the generic `WritableStore` interface.
+
+```go
+package detectors
+
+import (
+    "context"
+    "time"
+
+    "github.com/aquasecurity/tracee/api/v1beta1"
+    "github.com/aquasecurity/tracee/api/v1beta1/detection"
+    "github.com/aquasecurity/tracee/pkg/datastores/ipreputation"
+)
+
+func init() {
+    register(&IPReputationDetector{})
+}
+
+type IPReputationDetector struct {
+    logger   detection.Logger
+    ipStore  *ipreputation.IPReputationStore
+}
+
+func (d *IPReputationDetector) GetDefinition() detection.DetectorDefinition {
+    return detection.DetectorDefinition{
+        ID: "TRC-IP-001",
+        Requirements: detection.DetectorRequirements{
+            Events: []detection.EventRequirement{
+                {Name: "net_packet_tcp"},
+                {Name: "security_socket_connect"},
+            },
+        },
+        ProducedEvent: v1beta1.EventDefinition{
+            Name:        "malicious_ip_connection",
+            Description: "Connection to known malicious IP address",
+            Version:     &v1beta1.Version{Major: 1},
+        },
+        ThreatMetadata: &v1beta1.Threat{
+            Name:     "Malicious IP Connection",
+            Severity: v1beta1.Severity_HIGH,
+        },
+        AutoPopulate: detection.AutoPopulateFields{
+            Threat:       true,
+            DetectedFrom: true,
+        },
+    }
+}
+
+func (d *IPReputationDetector) Init(params detection.DetectorParams) error {
+    d.logger = params.Logger
+
+    // Register IP reputation store
+    store := ipreputation.NewIPReputationStore(
+        ipreputation.MaxSeverity,  // Highest severity wins
+        map[string]int{
+            "local_detector": 10,
+            "external_feed":  5,
+        },
+    )
+
+    if err := params.DataStores.RegisterWritableStore("ip_reputation", store); err != nil {
+        return err
+    }
+
+    d.ipStore = store
+    d.logger.Infow("IP reputation detector initialized")
+    return nil
+}
+
+func (d *IPReputationDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]*v1beta1.Event, error) {
+    // Extract destination IP
+    destIP, found := v1beta1.GetData[string](event, "dst_ip")
+    if !found {
+        return nil, nil
+    }
+
+    // Check reputation
+    if d.ipStore.IsBlacklisted(destIP) {
+        rep, _ := d.ipStore.GetReputation(destIP)
+
+        // Create detection event
+        detection := v1beta1.CreateEventFromBase(event)
+        detection.Data = []*v1beta1.EventValue{
+            v1beta1.NewStringValue("malicious_ip", destIP),
+            v1beta1.NewInt32Value("severity", int32(rep.Severity)),
+            v1beta1.NewStringValue("tags", strings.Join(rep.Tags, ",")),
+        }
+
+        return []*v1beta1.Event{detection}, nil
+    }
+
+    // Learn from observed connections (update store)
+    if isSuspiciousBehavior(event) {
+        rep := &ipreputation.IPReputation{
+            IP:          destIP,
+            Status:      ipreputation.ReputationSuspicious,
+            Severity:    5,
+            Tags:        []string{"suspicious_behavior"},
+            LastUpdated: time.Now(),
+        }
+        d.ipStore.WriteReputation("local_detector", destIP, rep)
+    }
+
+    return nil, nil
+}
+```
+
+### Ownership and Access Control
+
+**Ownership Model:**
+- The entity that calls `RegisterWritableStore()` owns the store
+- Owner keeps the `WritableStore` interface reference for writing
+- Other consumers access via `GetCustom()` as `DataStore` (read-only)
+- No authorization logic needed - access control is implicit via interface typing
+
+**Benefits:**
+- **Simple implementation**: No permission checks in store code
+- **Type-safe**: WritableStore methods only available to owner
+- **Clear responsibility**: Owner defines conflict resolution and retention policies
+- **Flexible sharing**: Multiple detectors can read, only owner writes
 
 ---
 
