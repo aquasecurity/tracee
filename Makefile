@@ -632,7 +632,7 @@ CGO_EXT_LDFLAGS_EBPF =
 PKG_CONFIG_PATH = $(LIBBPF_OBJDIR)
 PKG_CONFIG_FLAG =
 
-TRACEE_PROTOS_ALL = $(wildcard ./api/v1beta1/*.proto)
+TRACEE_PROTOS_ALL = $(wildcard ./api/v1beta1/*.proto) $(wildcard ./api/v1beta1/datastores/*.proto)
 TRACEE_PROTOS_NO_JSON = ./api/v1beta1/event.proto ./api/v1beta1/event_data.proto
 TRACEE_PROTOS = $(filter-out $(TRACEE_PROTOS_NO_JSON),$(TRACEE_PROTOS_ALL))
 
