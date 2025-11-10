@@ -1,0 +1,12 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: sched-process-exec-test
+  annotations:
+    description: test tracee's sched_process_exec event prev_comm field after task rename
+spec:
+  scope:
+    - comm=e2e_rename_test,true
+  rules:
+    - event: SCHED_PROCESS_EXEC
+
