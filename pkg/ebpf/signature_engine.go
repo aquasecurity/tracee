@@ -46,7 +46,13 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		logger.Fatalw("failed to initialize signature engine in \"everything is an event\" mode", "error", err)
 	}
 
-	go t.sigEngine.Start(ctx)
+	// Start the signature engine in a goroutine
+	// The engine will process events until the input channel is closed
+	engineDone := make(chan struct{})
+	go func() {
+		t.sigEngine.Start(ctx)
+		close(engineDone)
+	}()
 
 	// TODO: in the upcoming releases, the rule engine should be changed to receive trace.Event,
 	// and return a trace.Event, which should remove the necessity of converting trace.Event to protocol.Event,
@@ -56,7 +62,12 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		defer close(out)
 		defer close(errc)
 		defer close(engineInput)
-		defer close(engineOutput)
+		// Wait for the signature engine to finish before closing its output channel
+		// This prevents "send on closed channel" panics during shutdown
+		defer func() {
+			<-engineDone
+			close(engineOutput)
+		}()
 
 		// feedEngine feeds an event to the rules engine
 		feedEngine := func(event *trace.Event) {
