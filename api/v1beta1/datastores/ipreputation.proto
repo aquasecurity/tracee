@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package tracee.v1beta1.datastores;
+
+option go_package = "github.com/aquasecurity/tracee/api/v1beta1/datastores;datastores";
+
+import "google/protobuf/timestamp.proto";
+
+// IPAddressKey is used for IP-based lookups
+message IPAddressKey {
+    string ip = 1;  // IP address (IPv4 or IPv6)
+}
+
+// ReputationStatus indicates the reputation classification
+enum ReputationStatus {
+    REPUTATION_UNKNOWN = 0;
+    REPUTATION_ALLOW = 1;
+    REPUTATION_DENY = 2;
+    REPUTATION_SUSPICIOUS = 3;
+}
+
+// IPReputation represents threat intelligence data for an IP address
+message IPReputation {
+    ReputationStatus status = 1;
+    int32 severity = 2;  // 1-10 severity score
+    repeated string tags = 3;  // e.g., ["botnet", "malware", "c2"]
+    google.protobuf.Timestamp last_updated = 4;
+    map<string, string> metadata = 5;  // Additional key-value metadata
+}
+
