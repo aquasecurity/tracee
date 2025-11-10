@@ -37,6 +37,13 @@ func NewRegistry() *Registry {
 	return &Registry{
 		stores:      make(map[string]datastores.DataStore),
 		initialized: make(map[string]bool),
+		// Initialize with null objects to ensure accessor methods never return nil
+		processStore:      &nullProcessStore{},
+		containerStore:    &nullContainerStore{},
+		kernelSymbolStore: &nullKernelSymbolStore{},
+		dnsStore:          &nullDNSStore{},
+		systemStore:       &nullSystemStore{},
+		syscallStore:      &nullSyscallStore{},
 	}
 }
 
