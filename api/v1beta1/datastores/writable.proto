@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package tracee.v1beta1.datastores;
+
+option go_package = "github.com/aquasecurity/tracee/api/v1beta1/datastores;datastores";
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+
+// DataEntry represents a single key-value pair for writable datastores
+message DataEntry {
+    google.protobuf.Any key = 1;   // Key as protobuf Any for type safety
+    google.protobuf.Any data = 2;  // Data as protobuf Any for type safety
+}
+
+// Key types for different stores
+
+// IPAddressKey is used for IP-based lookups
+message IPAddressKey {
+    string ip = 1;  // IP address (IPv4 or IPv6)
+}
+
+// ConnectionKey is used for connection-based lookups
+message ConnectionKey {
+    string src_ip = 1;
+    string dst_ip = 2;
+    uint32 port = 3;
+    string protocol = 4;  // tcp, udp, etc.
+}
+
+// Data types
+
+// ReputationStatus indicates the reputation classification
+enum ReputationStatus {
+    REPUTATION_UNKNOWN = 0;
+    REPUTATION_WHITELISTED = 1;
+    REPUTATION_BLACKLISTED = 2;
+    REPUTATION_SUSPICIOUS = 3;
+}
+
+// IPReputation represents threat intelligence data for an IP address
+message IPReputation {
+    ReputationStatus status = 1;
+    int32 severity = 2;  // 1-10 severity score
+    repeated string tags = 3;  // e.g., ["botnet", "malware", "c2"]
+    google.protobuf.Timestamp last_updated = 4;
+    map<string, string> metadata = 5;  // Additional key-value metadata
+}
+
+// gRPC service for writing data to datastores
+
+message WriteDataRequest {
+    string store_name = 1;  // Name of the target datastore
+    string source = 2;      // Source identifier for this data
+    DataEntry entry = 3;    // The data entry to write
+}
+
+message WriteDataResponse {
+    // Empty response on success
+}
+
+message WriteBatchDataRequest {
+    string store_name = 1;
+    string source = 2;
+    repeated DataEntry entries = 3;
+}
+
+message WriteBatchDataResponse {
+    int32 written_count = 1;  // Number of entries successfully written
+}
+
+message DeleteDataRequest {
+    string store_name = 1;
+    string source = 2;
+    google.protobuf.Any key = 3;  // Key remains separate for delete
+}
+
+message DeleteDataResponse {
+    // Empty response on success
+}
+
+message ClearSourceRequest {
+    string store_name = 1;
+    string source = 2;  // Clear all data from this source
+}
+
+message ClearSourceResponse {
+    int32 deleted_count = 1;  // Number of entries deleted
+}
+
+message ListSourcesRequest {
+    string store_name = 1;
+}
+
+message ListSourcesResponse {
+    repeated string sources = 1;
+}
+
+service DataStoreService {
+    // Write a single data entry
+    rpc WriteData(WriteDataRequest) returns (WriteDataResponse);
+    
+    // Write multiple data entries in a batch
+    rpc WriteBatchData(WriteBatchDataRequest) returns (WriteBatchDataResponse);
+    
+    // Delete a data entry
+    rpc DeleteData(DeleteDataRequest) returns (DeleteDataResponse);
+    
+    // Clear all data from a specific source
+    rpc ClearSource(ClearSourceRequest) returns (ClearSourceResponse);
+    
+    // List all sources in a datastore
+    rpc ListSources(ListSourcesRequest) returns (ListSourcesResponse);
+}
+
