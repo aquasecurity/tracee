@@ -16,6 +16,8 @@ Complete API reference for Tracee's DataStore system. This provides read-only ac
 10. [Health and Metrics](#health-and-metrics)
 11. [Error Handling](#error-handling)
 12. [Advanced Usage](#advanced-usage)
+13. [Writable DataStores](#writable-datastores)
+14. [Summary](#summary)
 
 ---
 
@@ -1356,6 +1358,106 @@ func (d *MyDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]detec
 }
 ```
 {% endraw %}
+
+---
+
+## Writable DataStores
+
+Writable datastores allow detectors to store and share custom data, enabling use cases like:
+- **Threat intelligence**: Store IP/domain reputation from external feeds
+- **State tracking**: Maintain correlation state across events
+- **Cross-detector sharing**: Share enrichment data between detectors
+
+### Quick Start
+
+**Register a writable store** (owner):
+
+```go
+func (d *IPReputationDetector) Init(params detection.DetectorParams) error {
+    // Create and configure store
+    store := ipreputation.NewIPReputationStore(
+        ipreputation.MaxSeverity,   // Conflict resolution policy
+        nil,                        // Source priorities (optional)
+    )
+
+    // Register - you become the owner
+    err := params.DataStores.RegisterWritableStore("ip_reputation", store)
+    if err != nil {
+        return err
+    }
+
+    d.ipRepStore = store
+    return nil
+}
+```
+
+**Write to the store**:
+
+```go
+func (d *IPReputationDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
+    srcIP, _ := v1beta1.GetData[string](event, "src_ip")
+
+    // Write reputation data
+    d.ipRepStore.WriteReputation("local_detector", srcIP, &ipreputation.IPReputation{
+        IP:          srcIP,
+        Status:      ipreputation.ReputationBlacklisted,
+        Severity:    8,
+        Tags:        []string{"malware"},
+        LastUpdated: time.Now(),
+    })
+
+    return nil, nil
+}
+```
+
+**Read from the store** (other detectors):
+
+```go
+func (d *ThreatAnalyzer) Init(params detection.DetectorParams) error {
+    // Access as read-only
+    store, err := params.DataStores.GetCustom("ip_reputation")
+    if err != nil {
+        return nil  // Optional dependency - degrade gracefully
+    }
+
+    d.ipRepStore = store.(*ipreputation.IPReputationStore)
+    return nil
+}
+
+func (d *ThreatAnalyzer) OnEvent(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
+    srcIP, _ := v1beta1.GetData[string](event, "src_ip")
+
+    // Query the store
+    if d.ipRepStore.IsBlacklisted(srcIP) {
+        return []detection.DetectorOutput{{
+            Data: []*v1beta1.EventValue{
+                v1beta1.NewStringValue("malicious_ip", srcIP),
+            },
+        }}, nil
+    }
+
+    return nil, nil
+}
+```
+
+### Key Concepts
+
+**Ownership Model:**
+- The detector that calls `RegisterWritableStore()` owns the store
+- Owner has read/write access (keeps concrete type reference)
+- Others have read-only access (via `GetCustom()`)
+- No authorization code needed - access control via typing
+
+**Source Isolation:**
+- All write operations include a `source` parameter (e.g., `"local_detector"`, `"some_feed"`)
+- Enables data provenance tracking
+- Supports multi-source aggregation with conflict resolution
+- Cleanup by source: `Clear("external_feed")`
+
+**Implementation-Specific:**
+- Stores define their own behavior (conflict resolution, retention, etc.)
+- See `pkg/datastores/ipreputation/` for reference implementation
+- Custom stores implement the `WritableStore` interface
 
 ---
 
