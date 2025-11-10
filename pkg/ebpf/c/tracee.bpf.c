@@ -4568,6 +4568,10 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     proc_info->interpreter.id.inode = get_inode_nr_from_file(loaded_elf);
     proc_info->interpreter.id.ctime = get_ctime_nanosec_from_file(loaded_elf);
 
+    // Cache the current task comm for use as prev_comm in sched_process_exec.
+    // This captures the task name just before exec happens.
+    bpf_get_current_comm(&p.task_info->context.comm, sizeof(p.task_info->context.comm));
+
     if (!evaluate_scope_filters(&p))
         return 0;
 
