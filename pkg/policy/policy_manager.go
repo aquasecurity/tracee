@@ -544,6 +544,59 @@ func (m *Manager) IsEventToSubmit(id events.ID) bool {
 	return flags.policiesSubmit != 0
 }
 
+// IsContainerFilterSetOnEvent checks if container filters are configured for the given event.
+//
+// Returns:
+//   - forHost: true if any policy sets container=false for this event
+//   - forContainer: true if any policy sets container=true, new-container=true, or container-id=X
+//
+// Uses OR logic across policies: if Policy1 requires host and Policy2 requires containers,
+// both return values will be true. If no policies have container filters, both are false
+// (default: monitor all scopes).
+//
+// Note: Within a single policy, filters are ANDed. Contradictory combinations like
+// container=false + container-id=X will match nothing but are reported here as both scopes.
+// See TestPolicyManagerIsContainerFilterSetOnEvent for edge cases.
+func (m *Manager) IsContainerFilterSetOnEvent(id events.ID) (forHost bool, forContainer bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	for _, p := range m.ps.policiesList {
+		if _, ok := p.Rules[id]; !ok {
+			continue
+		}
+
+		if p.ContFilter.Enabled() {
+			if p.ContFilter.Value() {
+				forContainer = true
+			} else {
+				forHost = true
+			}
+		}
+
+		if p.NewContFilter.Enabled() {
+			if p.NewContFilter.Value() {
+				forContainer = true
+			} else {
+				// not new containers means host + existing containers
+				forHost = true
+				forContainer = true
+			}
+		}
+
+		if p.ContIDFilter.Enabled() {
+			forContainer = true
+		}
+
+		// Early exit: if both scopes are required, no need to check remaining policies
+		if forHost && forContainer {
+			break
+		}
+	}
+
+	return forHost, forContainer
+}
+
 //
 // Policies methods made available by Manager.
 // Some are transitive (tidying), some are not.
