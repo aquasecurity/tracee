@@ -632,7 +632,7 @@ CGO_EXT_LDFLAGS_EBPF =
 PKG_CONFIG_PATH = $(LIBBPF_OBJDIR)
 PKG_CONFIG_FLAG =
 
-TRACEE_PROTOS = ./api/v1beta1/*.proto
+TRACEE_PROTOS = ./api/v1beta1/*.proto ./api/v1beta1/datastores/*.proto
 
 #
 # btfhub (expensive: only run if ebpf obj changed)
