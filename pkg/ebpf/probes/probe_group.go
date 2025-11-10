@@ -243,7 +243,7 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 		RegisterKprobe:             NewTraceProbe(KProbe, "register_kprobe", "trace_register_kprobe"),
 		RegisterKprobeRet:          NewTraceProbe(KretProbe, "register_kprobe", "trace_ret_register_kprobe"),
 		CallUsermodeHelper:         NewTraceProbe(KProbe, "call_usermodehelper", "trace_call_usermodehelper"),
-		DebugfsCreateFile:          NewTraceProbe(KProbe, "debugfs_create_file", "trace_debugfs_create_file"),
+		DebugfsCreateFile:          NewTraceProbe(KProbe, "__debugfs_create_file", "trace___debugfs_create_file"),
 		DebugfsCreateDir:           NewTraceProbe(KProbe, "debugfs_create_dir", "trace_debugfs_create_dir"),
 		DeviceAdd:                  NewTraceProbe(KProbe, "device_add", "trace_device_add"),
 		RegisterChrdev:             NewTraceProbe(KProbe, "__register_chrdev", "trace___register_chrdev"),

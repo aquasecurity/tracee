@@ -12982,7 +12982,7 @@ var CoreEvents = map[ID]Definition{
 					{handle: probes.DoSpliceRet, required: true},
 				},
 				kSymbols: []KSymbol{
-					{symbol: "pipe_write", required: true},
+					{symbol: "pipe_write", required: false},
 				},
 			},
 		},

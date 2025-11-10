@@ -2616,8 +2616,8 @@ int BPF_KPROBE(trace_proc_create)
     return events_perf_submit(&p, 0);
 }
 
-SEC("kprobe/debugfs_create_file")
-int BPF_KPROBE(trace_debugfs_create_file)
+SEC("kprobe/__debugfs_create_file")
+int BPF_KPROBE(trace___debugfs_create_file)
 {
     program_data_t p = {};
     if (!init_program_data(&p, ctx, DEBUGFS_CREATE_FILE))
