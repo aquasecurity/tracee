@@ -1,6 +1,10 @@
 package datastores
 
-import "errors"
+import (
+	"errors"
+
+	"google.golang.org/protobuf/types/known/anypb"
+)
 
 // Common errors for datastores
 var (
@@ -121,4 +125,41 @@ type SyscallStore interface {
 	// Returns ErrNotFound if the syscall name is not found
 	// Note: Syscall IDs are architecture-specific (x86 vs ARM)
 	GetSyscallID(name string) (int32, error)
+}
+
+// WritableStore interface for datastores that support external data ingestion
+// Stores implementing this interface can be written to by detectors, extensions,
+// or external clients via gRPC.
+//
+// Ownership model: The entity that registers the store via Registry.RegisterWritableStore()
+// owns the store and controls write access. Other consumers access via GetCustom[DataStore]()
+// for read-only operations.
+//
+// DataEntry is defined in writable.proto and generated in writable.pb.go
+type WritableStore interface {
+	DataStore
+
+	// Write writes a single key-value entry from a source
+	// The source parameter identifies the origin of the data (e.g., "crowdstrike_feed", "local_detector")
+	// Returns error if the key/data types are invalid or the write fails
+	Write(source string, entry *DataEntry) error
+
+	// WriteBatch writes multiple entries from a source in one operation
+	// All entries are written atomically per-source (all succeed or all fail)
+	// Returns error if any entry is invalid or the batch write fails
+	WriteBatch(source string, entries []*DataEntry) error
+
+	// Delete removes a specific key from a source
+	// Returns error if the key type is invalid or the delete fails
+	// Returns nil if the key doesn't exist (idempotent)
+	Delete(source string, key *anypb.Any) error
+
+	// Clear removes all data from a specific source
+	// Returns error if the clear operation fails
+	// Returns nil if the source doesn't exist (idempotent)
+	Clear(source string) error
+
+	// ListSources returns all source identifiers that have data in this store
+	// Returns empty slice if no sources exist
+	ListSources() ([]string, error)
 }

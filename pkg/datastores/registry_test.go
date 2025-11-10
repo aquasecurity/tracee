@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
 )
@@ -17,9 +18,20 @@ type mockDataStore struct {
 	name string
 }
 
-func (m *mockDataStore) Name() string                             { return m.name }
-func (m *mockDataStore) GetHealth() *datastores.HealthInfo        { return nil }
-func (m *mockDataStore) GetMetrics() *datastores.DataStoreMetrics { return nil }
+func (m *mockDataStore) Name() string { return m.name }
+func (m *mockDataStore) GetHealth() *datastores.HealthInfo {
+	return &datastores.HealthInfo{
+		Status:    datastores.HealthHealthy,
+		Message:   "",
+		LastCheck: time.Now(),
+	}
+}
+func (m *mockDataStore) GetMetrics() *datastores.DataStoreMetrics {
+	return &datastores.DataStoreMetrics{
+		ItemCount:  0,
+		LastAccess: time.Now(),
+	}
+}
 
 // mockProcessStore implements ProcessStore for testing
 type mockProcessStore struct {
@@ -240,7 +252,7 @@ func TestRegistry_GetMetrics(t *testing.T) {
 
 		metrics, err := reg.GetMetrics("test")
 		assert.NoError(t, err)
-		assert.Nil(t, metrics) // mockDataStore returns nil
+		assert.NotNil(t, metrics) // mockDataStore returns valid metrics
 	})
 
 	t.Run("GetMetrics_NotFound", func(t *testing.T) {
@@ -467,4 +479,145 @@ func TestRegistry_RegistryMethod(t *testing.T) {
 
 	// Verify it's the same instance
 	assert.Equal(t, registry, publicRegistry)
+}
+
+// mockWritableStore implements WritableStore for testing
+type mockWritableStore struct {
+	mockDataStore
+}
+
+func (m *mockWritableStore) Write(source string, entry *datastores.DataEntry) error {
+	return nil
+}
+
+func (m *mockWritableStore) WriteBatch(source string, entries []*datastores.DataEntry) error {
+	return nil
+}
+
+func (m *mockWritableStore) Delete(source string, key *anypb.Any) error {
+	return nil
+}
+
+func (m *mockWritableStore) Clear(source string) error {
+	return nil
+}
+
+func (m *mockWritableStore) ListSources() ([]string, error) {
+	return []string{}, nil
+}
+
+func TestRegistry_RegisterWritableStore(t *testing.T) {
+	t.Run("Register_Success", func(t *testing.T) {
+		registry := NewRegistry()
+		store := &mockWritableStore{mockDataStore: mockDataStore{name: "test_writable"}}
+
+		err := registry.RegisterWritableStore("test_writable", store)
+		require.NoError(t, err)
+
+		// Verify it's registered
+		assert.True(t, registry.IsAvailable("test_writable"))
+
+		// Verify it can be retrieved
+		retrieved, err := registry.GetCustom("test_writable")
+		require.NoError(t, err)
+		assert.Equal(t, "test_writable", retrieved.Name())
+	})
+
+	t.Run("Register_Duplicate", func(t *testing.T) {
+		registry := NewRegistry()
+		store1 := &mockWritableStore{mockDataStore: mockDataStore{name: "test_writable"}}
+		store2 := &mockWritableStore{mockDataStore: mockDataStore{name: "test_writable"}}
+
+		err := registry.RegisterWritableStore("test_writable", store1)
+		require.NoError(t, err)
+
+		// Try to register another with the same name
+		err = registry.RegisterWritableStore("test_writable", store2)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already registered")
+	})
+
+	t.Run("Register_Nil", func(t *testing.T) {
+		registry := NewRegistry()
+
+		err := registry.RegisterWritableStore("test_writable", nil)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot be nil")
+	})
+
+	t.Run("Register_EmptyName", func(t *testing.T) {
+		registry := NewRegistry()
+		store := &mockWritableStore{mockDataStore: mockDataStore{name: "test"}}
+
+		err := registry.RegisterWritableStore("", store)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot be empty")
+	})
+
+	t.Run("Register_WhitespaceName", func(t *testing.T) {
+		registry := NewRegistry()
+		store := &mockWritableStore{mockDataStore: mockDataStore{name: "test"}}
+
+		// Leading whitespace
+		err := registry.RegisterWritableStore(" test", store)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "whitespace")
+
+		// Trailing whitespace
+		err = registry.RegisterWritableStore("test ", store)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "whitespace")
+
+		// Both
+		err = registry.RegisterWritableStore(" test ", store)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "whitespace")
+	})
+
+	t.Run("Access_Via_GetCustom", func(t *testing.T) {
+		registry := NewRegistry()
+		store := &mockWritableStore{mockDataStore: mockDataStore{name: "test_writable"}}
+
+		err := registry.RegisterWritableStore("test_writable", store)
+		require.NoError(t, err)
+
+		// Access via GetCustom (read-only interface)
+		retrieved, err := registry.GetCustom("test_writable")
+		require.NoError(t, err)
+		assert.NotNil(t, retrieved)
+
+		// Verify it's a DataStore
+		assert.Equal(t, "test_writable", retrieved.Name())
+	})
+
+	t.Run("List_Includes_WritableStore", func(t *testing.T) {
+		registry := NewRegistry()
+
+		// Register regular store
+		regular := &mockDataStore{name: "regular"}
+		err := registry.RegisterStore("regular", regular, false)
+		require.NoError(t, err)
+
+		// Register writable store
+		writable := &mockWritableStore{mockDataStore: mockDataStore{name: "writable"}}
+		err = registry.RegisterWritableStore("writable", writable)
+		require.NoError(t, err)
+
+		// List should include both
+		names := registry.List()
+		assert.ElementsMatch(t, []string{"regular", "writable"}, names)
+	})
+
+	t.Run("GetMetrics_WritableStore", func(t *testing.T) {
+		registry := NewRegistry()
+		store := &mockWritableStore{mockDataStore: mockDataStore{name: "test_writable"}}
+
+		err := registry.RegisterWritableStore("test_writable", store)
+		require.NoError(t, err)
+
+		// GetMetrics should work for writable stores
+		metrics, err := registry.GetMetrics("test_writable")
+		require.NoError(t, err)
+		assert.NotNil(t, metrics)
+	})
 }

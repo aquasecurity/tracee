@@ -47,6 +47,12 @@ type Registry interface {
 	// Returns ErrNotFound if the datastore is not registered
 	GetCustom(name string) (DataStore, error)
 
+	// RegisterWritableStore registers a new writable datastore
+	// The caller becomes the owner of the store and can write to it
+	// Other consumers can access the store via GetCustom() for read-only operations
+	// Returns error if a store with the same name already exists
+	RegisterWritableStore(name string, store WritableStore) error
+
 	// List returns names of all registered datastores
 	List() []string
 
