@@ -50,7 +50,7 @@ var listCmd = &cobra.Command{
 		sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
 
 		// Collect and register detector events
-		allDetectors := detectors.CollectAllDetectors()
+		allDetectors := detectors.CollectAllDetectors(nil) // Use default search paths
 		_, err = detectors.CreateEventsFromDetectors(events.StartDetectorID, allDetectors)
 		if err != nil {
 			logger.Fatalw("Failed to register detector events", "err", err)

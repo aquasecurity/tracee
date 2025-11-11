@@ -196,6 +196,18 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
+	// Detector flags
+
+	rootCmd.Flags().StringArray(
+		flags.DetectorsFlag,
+		[]string{},
+		"[yaml-dir=<dir>]\t\t\tConfigure YAML detector search directories",
+	)
+	err = viper.BindPFlag(flags.DetectorsFlag, rootCmd.Flags().Lookup(flags.DetectorsFlag))
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	// Buffer flags
 
 	rootCmd.Flags().StringArrayP(
