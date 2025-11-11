@@ -73,7 +73,7 @@ func (sig *e2eProcessTreeDataSource) OnEvent(event protocol.Event) error {
 		// that tracee is running with the following flags:
 		//
 		// * --output option:sort-events
-		// * --proctree source=both
+		// * --stores processes.source=both
 		// * --events PROCTREE_DATA_SOURCE
 		//
 		// With that, all cases, but the lineage test, work. The lineage test requires ancestor
