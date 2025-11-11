@@ -170,6 +170,18 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
+	// Detector flags
+
+	rootCmd.Flags().StringArray(
+		"detectors",
+		[]string{},
+		"[yaml-dir=<dir>]\t\tConfigure YAML detector search directories",
+	)
+	err = viper.BindPFlag("detectors", rootCmd.Flags().Lookup("detectors"))
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	rootCmd.Flags().Bool(
 		"no-signatures",
 		false,

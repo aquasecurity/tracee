@@ -1,0 +1,36 @@
+id: TRC-TEST-001
+produced_event:
+  name: test_threat_detection
+  version: 1.0.0
+  description: "Test threat detector for unit tests"
+  tags:
+    - test
+    - threat
+requirements:
+  min_tracee_version: 1.0.0
+  events:
+    - name: openat
+      data_filters:
+        - "pathname=/etc/shadow"
+      scope_filters:
+        - "container=started"
+threat:
+  name: "Test Threat"
+  description: "Test threat detection"
+  severity: high
+  mitre:
+    tactic:
+      name: "Test Tactic"
+    technique:
+      id: "T0000"
+      name: "Test Technique"
+auto_populate:
+  threat: true
+  detected_from: true
+output:
+  fields:
+    - name: target_file
+      expression: data.pathname
+    - name: pid
+      expression: workload.process.pid
+

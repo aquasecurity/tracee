@@ -3,6 +3,7 @@ package cobra
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -103,9 +104,25 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
 
+	// Get YAML detector search directories from config or CLI
+	var yamlDetectorDirs []string
+	if viper.IsSet("detectors.yaml-dir") {
+		// Config file format: detectors.yaml-dir
+		yamlDetectorDirs = viper.GetStringSlice("detectors.yaml-dir")
+	} else if viper.IsSet("detectors") {
+		// CLI format: --detectors yaml-dir=/path/to/dir
+		detectorsFlags := viper.GetStringSlice("detectors")
+		for _, flag := range detectorsFlags {
+			if strings.HasPrefix(flag, "yaml-dir=") {
+				dir := strings.TrimPrefix(flag, "yaml-dir=")
+				yamlDetectorDirs = append(yamlDetectorDirs, dir)
+			}
+		}
+	}
+
 	// Pre-register detector events in events.Core before policy initialization
 	// This allows the policy manager to select detector events just like regular events
-	allDetectors := detectors.CollectAllDetectors()
+	allDetectors := detectors.CollectAllDetectors(yamlDetectorDirs)
 	_, err = detectors.CreateEventsFromDetectors(events.StartDetectorID, allDetectors)
 	if err != nil {
 		return runner, fmt.Errorf("failed to create detector events: %w", err)
@@ -366,7 +383,8 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 
 	runner.TraceeConfig.DetectorConfig = config.DetectorConfig{
-		Detectors: allDetectors,
+		Detectors:      allDetectors,
+		YAMLSearchDirs: yamlDetectorDirs,
 	}
 
 	return runner, nil
