@@ -178,6 +178,147 @@ func GetContainerImageName(event *Event) string {
 	return ""
 }
 
+// GetProcessHostPid returns the process host PID from the event, or 0 if not available.
+// Null-safe: handles nil Workload or Process.
+func GetProcessHostPid(event *Event) uint32 {
+	if event == nil || event.Workload == nil || event.Workload.Process == nil {
+		return 0
+	}
+	if event.Workload.Process.HostPid != nil {
+		return event.Workload.Process.HostPid.Value
+	}
+	return 0
+}
+
+// GetProcessRealUserId returns the process real user ID from the event, or 0 if not available.
+// Null-safe: handles nil Workload, Process, or RealUser.
+func GetProcessRealUserId(event *Event) uint32 {
+	if event == nil || event.Workload == nil || event.Workload.Process == nil {
+		return 0
+	}
+	if event.Workload.Process.RealUser != nil && event.Workload.Process.RealUser.Id != nil {
+		return event.Workload.Process.RealUser.Id.Value
+	}
+	return 0
+}
+
+// GetProcessThreadName returns the thread name from the event, or empty string if not available.
+// Null-safe: handles nil Workload, Process, or Thread.
+func GetProcessThreadName(event *Event) string {
+	if event == nil || event.Workload == nil || event.Workload.Process == nil {
+		return ""
+	}
+	if event.Workload.Process.Thread != nil {
+		return event.Workload.Process.Thread.Name
+	}
+	return ""
+}
+
+// GetProcessThreadSyscall returns the thread syscall from the event, or empty string if not available.
+// Null-safe: handles nil Workload, Process, or Thread.
+func GetProcessThreadSyscall(event *Event) string {
+	if event == nil || event.Workload == nil || event.Workload.Process == nil {
+		return ""
+	}
+	if event.Workload.Process.Thread != nil {
+		return event.Workload.Process.Thread.Syscall
+	}
+	return ""
+}
+
+// GetProcessThreadTid returns the thread TID from the event, or 0 if not available.
+// Null-safe: handles nil Workload, Process, or Thread.
+func GetProcessThreadTid(event *Event) uint32 {
+	if event == nil || event.Workload == nil || event.Workload.Process == nil {
+		return 0
+	}
+	if event.Workload.Process.Thread != nil && event.Workload.Process.Thread.Tid != nil {
+		return event.Workload.Process.Thread.Tid.Value
+	}
+	return 0
+}
+
+// GetProcessThreadHostTid returns the thread host TID from the event, or 0 if not available.
+// Null-safe: handles nil Workload, Process, or Thread.
+func GetProcessThreadHostTid(event *Event) uint32 {
+	if event == nil || event.Workload == nil || event.Workload.Process == nil {
+		return 0
+	}
+	if event.Workload.Process.Thread != nil && event.Workload.Process.Thread.HostTid != nil {
+		return event.Workload.Process.Thread.HostTid.Value
+	}
+	return 0
+}
+
+// GetProcessThreadEntityId returns the thread entity ID from the event, or 0 if not available.
+// Null-safe: handles nil Workload, Process, or Thread.
+func GetProcessThreadEntityId(event *Event) uint32 {
+	if event == nil || event.Workload == nil || event.Workload.Process == nil {
+		return 0
+	}
+	if event.Workload.Process.Thread != nil && event.Workload.Process.Thread.UniqueId != nil {
+		return event.Workload.Process.Thread.UniqueId.Value
+	}
+	return 0
+}
+
+// GetContainerStarted returns whether the container is started from the event, or false if not available.
+// Null-safe: handles nil Workload or Container.
+func GetContainerStarted(event *Event) bool {
+	if event == nil || event.Workload == nil || event.Workload.Container == nil {
+		return false
+	}
+	return event.Workload.Container.Started
+}
+
+// GetContainerImageId returns the container image ID from the event, or empty string if not available.
+// Null-safe: handles nil Workload, Container, or Image.
+func GetContainerImageId(event *Event) string {
+	if event == nil || event.Workload == nil || event.Workload.Container == nil {
+		return ""
+	}
+	if event.Workload.Container.Image != nil {
+		return event.Workload.Container.Image.Id
+	}
+	return ""
+}
+
+// GetK8sPodName returns the Kubernetes pod name from the event, or empty string if not available.
+// Null-safe: handles nil Workload, K8S, or Pod.
+func GetK8sPodName(event *Event) string {
+	if event == nil || event.Workload == nil || event.Workload.K8S == nil {
+		return ""
+	}
+	if event.Workload.K8S.Pod != nil {
+		return event.Workload.K8S.Pod.Name
+	}
+	return ""
+}
+
+// GetK8sPodUid returns the Kubernetes pod UID from the event, or empty string if not available.
+// Null-safe: handles nil Workload, K8S, or Pod.
+func GetK8sPodUid(event *Event) string {
+	if event == nil || event.Workload == nil || event.Workload.K8S == nil {
+		return ""
+	}
+	if event.Workload.K8S.Pod != nil {
+		return event.Workload.K8S.Pod.Uid
+	}
+	return ""
+}
+
+// GetK8sNamespaceName returns the Kubernetes namespace name from the event, or empty string if not available.
+// Null-safe: handles nil Workload, K8S, or Namespace.
+func GetK8sNamespaceName(event *Event) string {
+	if event == nil || event.Workload == nil || event.Workload.K8S == nil {
+		return ""
+	}
+	if event.Workload.K8S.Namespace != nil {
+		return event.Workload.K8S.Namespace.Name
+	}
+	return ""
+}
+
 // CreateEventFromBase creates a new event derived from baseEvent.
 // This is the universal event creation helper for all detector types.
 //
