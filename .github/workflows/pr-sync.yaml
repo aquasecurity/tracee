@@ -30,7 +30,8 @@ jobs:
       - name: Install Required Tools
         shell: sh
         run: |
-          . ./scripts/lib.sh
+          __LIB_DIR="./scripts"
+          . "${__LIB_DIR}/lib.sh"
 
           apk update
           apk add --no-cache \
@@ -47,7 +48,8 @@ jobs:
           max_attempts: 5 # Maximum attempts to find the PR number
           sleep_time: 3 # Time to wait between attempts in seconds
         run: |
-          . ./scripts/lib.sh
+          __LIB_DIR="./scripts"
+          . "${__LIB_DIR}/lib.sh"
 
           if ! git config --global --add safe.directory "${GITHUB_WORKSPACE}"; then
               die "Failed to add safe.directory to git config."
@@ -96,7 +98,8 @@ jobs:
           timeout: 3 # Maximum time for each curl request in seconds
           sleep_time: 1 # Time to wait between attempts in seconds
         run: |
-          . ./scripts/lib.sh
+          __LIB_DIR="./scripts"
+          . "${__LIB_DIR}/lib.sh"
 
           attempts=0
           while [ "${attempts}" -lt "${max_attempts}" ]; do
