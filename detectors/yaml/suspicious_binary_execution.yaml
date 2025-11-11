@@ -1,0 +1,47 @@
+id: yaml-002
+produced_event:
+  name: suspicious_binary_execution
+  version: 1.0.0
+  description: Detects execution of binaries commonly used in attacks
+  tags:
+    - execution
+    - defense-evasion
+  fields:
+    - name: binary_path
+      type: string
+    - name: binary_name
+      type: string
+
+requirements:
+  min_tracee_version: 0.0.0
+  events:
+    - name: sched_process_exec
+      dependency: required
+      data_filters:
+        - pathname=/usr/bin/nc
+        - pathname=/usr/bin/ncat
+        - pathname=/usr/bin/netcat
+        - pathname=/usr/bin/socat
+        - pathname=/usr/bin/nmap
+
+threat:
+  severity: medium
+  description: Execution of networking tool commonly used for reverse shells and data exfiltration
+  mitre:
+    technique:
+      id: T1059
+      name: Command and Scripting Interpreter
+    tactic:
+      name: Execution
+
+auto_populate:
+  threat: true
+  detected_from: true
+
+output:
+  fields:
+    - name: binary_path
+      expression: data.pathname
+    - name: binary_name
+      expression: workload.process.thread.name
+
