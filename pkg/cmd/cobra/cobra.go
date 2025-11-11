@@ -94,7 +94,12 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Signature directory command line flags
 
-	signatures, dataSources, err := signature.Find(viper.GetStringSlice("signatures-dir"), nil)
+	signaturesFlags, err := flags.PrepareSignatures(viper.GetStringSlice("signatures"))
+	if err != nil {
+		return runner, err
+	}
+
+	signatures, dataSources, err := signature.Find(signaturesFlags.SearchPaths, nil)
 	if err != nil {
 		return runner, err
 	}
