@@ -4,12 +4,18 @@ Detectors are the modern way to write custom threat detection and event derivati
 
 ## What are Detectors?
 
-Detectors analyze runtime events to identify security threats and derive higher-level events from raw eBPF data. They provide:
+Detectors analyze runtime events to identify security threats and derive higher-level events from raw eBPF data.
 
-- **Type-safe APIs**: Direct protobuf access with compile-time guarantees
-- **Rich context**: Access to process trees, containers, DNS cache, and more
+**Two ways to create detectors:**
+
+1. **YAML Detectors**: Declarative configuration - no coding required
+2. **Go Detectors**: Full programmatic control with direct API access
+
+Both provide:
+
 - **Declarative filtering**: Engine-level event filtering by data, scope, and version
 - **Auto-enrichment**: Automatic population of threat metadata and process ancestry
+- **Rich context**: Access to process trees, containers, and more
 - **Built-in observability**: Prometheus metrics and structured logging
 
 ## Documentation Guide
@@ -17,6 +23,25 @@ Detectors analyze runtime events to identify security threats and derive higher-
 ### 🚀 For Newcomers
 
 **Start here if you're new to Tracee detectors:**
+
+### [YAML Detectors Guide](yaml-detectors.md)
+
+Learn how to create detectors using declarative YAML configuration:
+
+- Quick start with examples
+- Complete schema reference
+- Event filtering and data extraction
+- Threat metadata and auto-population
+- Deployment and best practices
+- Troubleshooting guide
+
+**Start here** if you want to create detectors without writing Go code.
+
+---
+
+### Go Detectors
+
+Complete guide to writing Go detectors, from quick start to advanced features:
 
 #### [Quick Start Guide](quickstart.md)
 **Get your first detector running in 30 minutes**
@@ -65,93 +90,36 @@ Perfect for: Detectors that need to query system state and context
 
 ---
 
-## Quick Example
-
-Here's a minimal detector to give you a taste:
-
-{% raw %}
-```go
-package detectors
-
-import (
-    "context"
-    "github.com/aquasecurity/tracee/api/v1beta1"
-    "github.com/aquasecurity/tracee/api/v1beta1/detection"
-)
-
-func init() {
-    register(&SensitiveFileAccess{})  // Auto-register
-}
-
-type SensitiveFileAccess struct {
-    logger detection.Logger
-}
-
-func (d *SensitiveFileAccess) GetDefinition() detection.DetectorDefinition {
-    return detection.DetectorDefinition{
-        ID: "TRC-001",
-        Requirements: detection.DetectorRequirements{
-            Events: []detection.EventRequirement{
-                {
-                    Name: "security_file_open",
-                    DataFilters: []string{"pathname=/etc/shadow"},  // Engine filters
-                },
-            },
-        },
-        ProducedEvent: v1beta1.EventDefinition{
-            Name:    "sensitive_file_access",
-            Version: &v1beta1.Version{Major: 1},
-        },
-        ThreatMetadata: &v1beta1.Threat{
-            Severity: v1beta1.Severity_HIGH,
-        },
-        AutoPopulate: detection.AutoPopulateFields{
-            Threat:          true,  // Auto-copy threat metadata
-            ProcessAncestry: true,  // Auto-fetch process tree
-        },
-    }
-}
-
-func (d *SensitiveFileAccess) Init(params detection.DetectorParams) error {
-    d.logger = params.Logger
-    return nil
-}
-
-func (d *SensitiveFileAccess) OnEvent(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
-    pathname, _ := v1beta1.GetData[string](event, "pathname")
-    return []detection.DetectorOutput{{
-        Data: []*v1beta1.EventValue{
-            v1beta1.NewStringValue("file", pathname),
-        },
-    }}, nil
-}
-```
-{% endraw %}
-
-**See the [Quick Start Guide](quickstart.md) for a complete walkthrough.**
-
 ## Documentation at a Glance
 
 | Document | Purpose | Audience |
 |----------|---------|----------|
-| [Quick Start](quickstart.md) | Hands-on tutorial, first detector | Newcomers |
-| [API Reference](api-reference.md) | Complete detector API + migration + troubleshooting | All developers |
-| [DataStore API](datastore-api.md) | Complete datastore API docs | Developers using datastores |
+| [YAML Detectors](yaml-detectors.md) | Declarative detector creation without code | Security analysts, operators |
+| [Quick Start](quickstart.md) | Hands-on tutorial, first Go detector | Go developers |
+| [API Reference](api-reference.md) | Complete detector API + migration + troubleshooting | Go developers |
+| [DataStore API](datastore-api.md) | Complete datastore API docs | Advanced Go developers |
 
-**Total reading time to first detector**: ~30 minutes (Quick Start only)
+**Total reading time to first detector**:
+- **YAML**: ~15 minutes
+- **Go**: ~30 minutes (Quick Start only)
 
 ## Resources
 
-### Code Examples
-- **Quick Start Example**: [Quick Start Guide](quickstart.md) - complete annotated walkthrough
-- **Comprehensive Example**: `detectors/example_detector.go` - demonstrates all detector API features including DataStore usage, filtering patterns, and enrichment (build with `make tracee-with-examples`)
-- **Real Detectors**: Browse `detectors/` directory for production implementations
+### Examples
+- **YAML Examples**: `examples/detectors/yaml/` directory - ready-to-use YAML detector examples
+- **Go Quick Start**: [Quick Start Guide](quickstart.md) - complete annotated walkthrough
+- **Go Comprehensive Example**: `detectors/example_detector.go` - demonstrates all detector API features including DataStore usage, filtering patterns, and enrichment (build with `make tracee-with-examples`)
+- **Production Detectors**: Browse `detectors/` directory for real implementations
 - **Migration Examples**: [API Reference](api-reference.md#migration-from-signatures) - signature → detector
 
-### API Definitions
+### API Definitions (Go Detectors)
 - **Detector Interfaces**: `api/v1beta1/detection/detector.go`
 - **DataStore Interfaces**: `api/v1beta1/datastores/interfaces.go`
 - **Event Protobuf**: `api/v1beta1/event.proto`
+
+### YAML Schema
+- **Schema Reference**: See [YAML Detectors Guide](yaml-detectors.md) for complete schema
+- **Examples**: `examples/detectors/yaml/` directory
 
 ### Migration from Signatures
 Existing signatures can be migrated to the new detector API. See [Migration Guide](api-reference.md#migration-from-signatures) for:
@@ -170,4 +138,6 @@ Existing signatures can be migrated to the new detector API. See [Migration Guid
 
 ---
 
-**Ready to start?** Jump to the [Quick Start Guide](quickstart.md) for a hands-on tutorial, or dive into the [API Reference](api-reference.md) for complete documentation.
+**Ready to start?**
+- **YAML detectors**: Jump to the [YAML Detectors Guide](yaml-detectors.md)
+- **Go detectors**: Jump to the [Quick Start Guide](quickstart.md) or dive into the [API Reference](api-reference.md)
