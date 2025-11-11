@@ -12982,7 +12982,7 @@ var CoreEvents = map[ID]Definition{
 					{handle: probes.DoSpliceRet, required: true},
 				},
 				kSymbols: []KSymbol{
-					{symbol: "pipe_write", required: true},
+					{symbol: "pipe_write", required: false},
 				},
 			},
 		},
@@ -13121,7 +13121,7 @@ var CoreEvents = map[ID]Definition{
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
-					{handle: probes.DebugfsCreateFile, required: true},
+					{handle: probes.DebugfsCreateFile, required: false},
 				},
 			},
 		},
