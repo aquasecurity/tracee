@@ -89,6 +89,118 @@ Network notes worth mentioning:
 `
 }
 
+const (
+	captureInvalidFlag = "invalid capture flag: %s, run 'man capture' for more info"
+)
+
+// Capture (Deprecated)
+// --capture file-write.enabled=<true/false> \
+// --capture file-write.filters= (multiple allowed)
+// --capture file-read.enabled=<true/false>
+// --capture file-read.filters= (multiple allowed)
+// --capture executable.enabled=<true/false>
+// --capture kernel-modules.enabled=<true/false>
+// --capture bpf-programs.enabled=<true/false>
+// --capture memory-regions.enabled=<true/false>
+// --capture network.enabled=<true/false>
+// --capture network.pcap=<split_mode>
+// --capture network.pcap-options=
+// --capture network.pcap-snaplen=
+// --capture dir.path= (default: /tmp/tracee)
+// --capture dir.clear=<true/false> (default: false)
+
+func NPrepareCapture(captureSlice []string, newBinary bool) (config.NCaptureConfig, error) {
+	capture := config.NCaptureConfig{}
+
+	for _, flag := range captureSlice {
+		values := strings.Split(flag, "=")
+		flagName := values[0]
+
+		if len(values) != 2 && !isBoolFlag(flagName) {
+			return config.NCaptureConfig{}, errfmt.Errorf(captureInvalidFlag, flagName)
+		}
+
+		if len(values) != 1 && isBoolFlag(flagName) {
+			return config.NCaptureConfig{}, errfmt.Errorf(captureInvalidFlag, flagName)
+		}
+
+		switch flagName {
+		case "file-write.enabled":
+			capture.FileWrite.Enabled = true
+		case "file-write.filters":
+			capture.FileWrite.PathFilter = append(capture.FileWrite.PathFilter, values[1])
+		case "file-read.enabled":
+			capture.FileRead.Enabled = true
+		case "file-read.filters":
+			capture.FileRead.PathFilter = append(capture.FileRead.PathFilter, values[1])
+		case "executable.enabled":
+			capture.Executable = true
+		case "kernel-modules.enabled":
+			capture.KernelModules = true
+		case "bpf-programs.enabled":
+			capture.BpfPrograms = true
+		case "memory-regions.enabled":
+			capture.MemoryRegions = true
+		case "network.enabled":
+			capture.Network.Enabled = true
+			// Default capture mode: a single pcap file with all traffic
+			capture.Network.Single = true
+			capture.Network.Length = 96 // default payload
+		case "network.pcap":
+			capture.Network.Single = false // remove default mode
+			fields := strings.Split(values[1], ",")
+			for _, field := range fields {
+				switch field {
+				case "single":
+					capture.Network.Single = true
+				case "process":
+					capture.Network.Process = true
+				case "container":
+					capture.Network.Container = true
+				case "command":
+					capture.Network.Command = true
+				default:
+					return config.NCaptureConfig{}, errfmt.Errorf(captureInvalidFlag, flagName)
+				}
+			}
+			capture.Network.Length = 96 // default payload
+		case "network.pcap-options":
+			switch strings.ToLower(values[1]) {
+			case "none":
+				capture.Network.Filtered = false
+			case "filtered":
+				capture.Network.Filtered = true
+			default:
+				return config.NCaptureConfig{}, errfmt.Errorf(captureInvalidFlag, flagName)
+			}
+		case "network.pcap-snaplen":
+			snapLen, err := parseNetworkSnapLen(values[1])
+			if err != nil {
+				return config.NCaptureConfig{}, err
+			}
+			capture.Network.Length = snapLen
+		case "dir.path":
+			capture.Output.Path = values[1]
+		case "dir.clear":
+			capture.Output.Clear = true
+		default:
+			return config.NCaptureConfig{}, errfmt.Errorf(captureInvalidFlag, flagName)
+		}
+	}
+
+	return capture, nil
+}
+
+func isBoolFlag(flag string) bool {
+	return flag == "file-write.enabled" ||
+		flag == "file-read.enabled" ||
+		flag == "executable.enabled" ||
+		flag == "kernel-modules.enabled" ||
+		flag == "bpf-programs.enabled" ||
+		flag == "memory-regions.enabled" ||
+		flag == "network.enabled"
+}
+
 func PrepareCapture(captureSlice []string, newBinary bool) (config.CaptureConfig, error) {
 	capture := config.CaptureConfig{}
 
@@ -156,34 +268,12 @@ func PrepareCapture(captureSlice []string, newBinary bool) (config.CaptureConfig
 			}
 		} else if strings.HasPrefix(c, "pcap-snaplen:") {
 			scope := strings.TrimPrefix(c, "pcap-snaplen:")
-			var amount uint64
-			var err error
-			scope = strings.ToLower(scope) // normalize
-			if scope == "default" {
-				amount = 96 // default payload
-			} else if scope == "max" {
-				amount = (1 << 16) - 1 // max length for IP packets
-			} else if scope == "headers" {
-				amount = 0 // sets headers only length for capturing (default)
-			} else if strings.HasSuffix(scope, "kb") ||
-				strings.HasSuffix(scope, "k") {
-				scope = strings.TrimSuffix(scope, "kb")
-				scope = strings.TrimSuffix(scope, "k")
-				amount, err = strconv.ParseUint(scope, 10, 64)
-				amount *= 1024 // result in bytes
-			} else if strings.HasSuffix(scope, "b") {
-				scope = strings.TrimSuffix(scope, "b")
-				amount, err = strconv.ParseUint(scope, 10, 64)
-			} else {
-				return config.CaptureConfig{}, errfmt.Errorf("could not parse pcap snaplen: missing b or kb ?")
-			}
+
+			snapLen, err := parseNetworkSnapLen(scope)
 			if err != nil {
-				return config.CaptureConfig{}, errfmt.Errorf("could not parse pcap snaplen: %v", err)
+				return config.CaptureConfig{}, err
 			}
-			if amount >= (1 << 16) {
-				amount = (1 << 16) - 1
-			}
-			capture.Net.CaptureLength = uint32(amount) // of packet length to be captured in bytes
+			capture.Net.CaptureLength = uint32(snapLen) // of packet length to be captured in bytes
 		} else if c == "clear-dir" {
 			clearDir = true
 		} else if strings.HasPrefix(c, "dir:") {
@@ -298,4 +388,36 @@ func parseFileCaptureFDs(filter string) (config.FileCaptureType, error) {
 		return filterFlag, nil
 	}
 	return 0, fmt.Errorf("unsupported file FD filter value for capture - %s", filter)
+}
+
+func parseNetworkSnapLen(scope string) (uint32, error) {
+	var amount uint64
+	var err error
+	scope = strings.ToLower(scope) // normalize
+	if scope == "default" {
+		amount = 96 // default payload
+	} else if scope == "max" {
+		amount = (1 << 16) - 1 // max length for IP packets
+	} else if scope == "headers" {
+		amount = 0 // sets headers only length for capturing (default)
+	} else if strings.HasSuffix(scope, "kb") ||
+		strings.HasSuffix(scope, "k") {
+		scope = strings.TrimSuffix(scope, "kb")
+		scope = strings.TrimSuffix(scope, "k")
+		amount, err = strconv.ParseUint(scope, 10, 64)
+		amount *= 1024 // result in bytes
+	} else if strings.HasSuffix(scope, "b") {
+		scope = strings.TrimSuffix(scope, "b")
+		amount, err = strconv.ParseUint(scope, 10, 64)
+	} else {
+		return 0, errfmt.Errorf("could not parse pcap snaplen: missing b or kb ?")
+	}
+	if err != nil {
+		return 0, errfmt.Errorf("could not parse pcap snaplen: %v", err)
+	}
+	if amount >= (1 << 16) {
+		amount = (1 << 16) - 1
+	}
+
+	return uint32(amount), nil
 }

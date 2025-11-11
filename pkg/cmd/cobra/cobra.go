@@ -175,11 +175,35 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	capture, err := flags.PrepareCapture(captureFlags, true)
+	capture, err := flags.NPrepareCapture(captureFlags, true)
 	if err != nil {
 		return runner, err
 	}
-	cfg.Capture = &capture
+	cfg.Capture = &config.CaptureConfig{
+		Exec:   capture.Executable,
+		Mem:    capture.MemoryRegions,
+		Bpf:    capture.BpfPrograms,
+		Module: capture.KernelModules,
+		Net: config.PcapsConfig{
+			CaptureSingle:    capture.Network.Single,
+			CaptureProcess:   capture.Network.Process,
+			CaptureContainer: capture.Network.Container,
+			CaptureCommand:   capture.Network.Command,
+			CaptureFiltered:  capture.Network.Filtered,
+			CaptureLength:    capture.Network.Length,
+		},
+		FileWrite: config.FileCaptureConfig{
+			Capture:    capture.FileWrite.Enabled,
+			PathFilter: capture.FileWrite.PathFilter,
+			// TypeFilter: config.CaptureRegularFiles,
+		},
+		FileRead: config.FileCaptureConfig{
+			Capture:    capture.FileRead.Enabled,
+			PathFilter: capture.FileRead.PathFilter,
+			// TypeFilter: config.CaptureRegularFiles,
+		},
+		OutputPath: capture.Output.Path,
+	}
 
 	// Capabilities command line flags
 
