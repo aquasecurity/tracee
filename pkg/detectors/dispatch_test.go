@@ -488,7 +488,7 @@ func TestCollectAllDetectors(t *testing.T) {
 	// CollectAllDetectors gathers detectors from built-in sources
 	// Since we can't easily mock the builtin module, we just verify it doesn't panic
 	// and returns a slice (could be empty in test environment)
-	detectors := CollectAllDetectors()
+	detectors := CollectAllDetectors(nil) // Pass nil to use default paths
 	assert.NotNil(t, detectors)
 	// The slice might be empty if no detectors are registered in init()
 }
