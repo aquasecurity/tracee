@@ -1,0 +1,22 @@
+id: DRV-TEST-001
+produced_event:
+  name: test_derived_event
+  version: 1.0.0
+  description: "Test derived event for unit tests"
+  tags:
+    - test
+    - derived
+  fields:
+    - name: extracted_field
+      type: string
+      description: "Test extracted field"
+requirements:
+  events:
+    - name: execve
+auto_populate:
+  detected_from: true
+output:
+  fields:
+    - name: extracted_field
+      expression: workload.process.executable.path
+

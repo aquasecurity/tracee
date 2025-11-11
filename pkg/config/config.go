@@ -167,7 +167,8 @@ type PrinterConfig struct {
 	ContainerMode ContainerMode
 }
 
-// DetectorConfig manages detector lifecycle
+// DetectorConfig manages detector lifecycle and YAML detector discovery
 type DetectorConfig struct {
-	Detectors []detection.EventDetector // All detectors (built-in + extensions)
+	Detectors      []detection.EventDetector // All detectors (built-in + extensions)
+	YAMLSearchDirs []string                  // Directories to search for YAML detectors
 }

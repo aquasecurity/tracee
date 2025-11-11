@@ -1,0 +1,6 @@
+invalid yaml syntax:
+  this is not proper YAML
+    [brackets and things
+  - unmatched indentation
+    unmatched: {
+
