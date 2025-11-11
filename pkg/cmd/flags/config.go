@@ -22,6 +22,8 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &ServerConfig{}
 	case CapabilitiesFlag:
 		flagger = &CapabilitiesConfig{}
+	case DetectorsFlag:
+		flagger = &DetectorsConfig{}
 	case LoggingFlag:
 		flagger = &LogConfig{}
 	case OutputFlag:

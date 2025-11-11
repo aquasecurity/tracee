@@ -1,0 +1,8 @@
+id: MIN-TEST-001
+produced_event:
+  name: minimal_detector
+  version: 1.0.0
+requirements:
+  events:
+    - name: openat
+

@@ -7,23 +7,42 @@ import (
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/logger"
 	builtin "github.com/aquasecurity/tracee/detectors"
+	yamldetectors "github.com/aquasecurity/tracee/pkg/detectors/yaml"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-// CollectAllDetectors gathers all detectors from built-in sources.
+// CollectAllDetectors gathers all detectors from built-in sources and YAML directories.
 // This is the canonical detector collection function used for both event registration
 // and detector initialization. Extensions should modify this function to inject additional detectors.
-func CollectAllDetectors() []detection.EventDetector {
+func CollectAllDetectors(yamlSearchDirs []string) []detection.EventDetector {
 	var allDetectors []detection.EventDetector
 
 	// Collect from built-in detectors module (auto-registered via init())
 	allDetectors = append(allDetectors, builtin.GetAllDetectors()...)
 
-	// TODO: Add derived event detectors when they're migrated to detector API
-	// allDetectors = append(allDetectors, derive.GetAllDetectors()...)
+	// Load YAML detectors from search directories
+	var yamlDirs []string
+	if len(yamlSearchDirs) > 0 {
+		yamlDirs = yamlSearchDirs
+	} else {
+		// Use default search paths if none specified
+		yamlDirs = yamldetectors.GetDefaultSearchPaths()
+	}
 
-	logger.Debugw("Collected detectors", "count", len(allDetectors))
+	yamlDets, errors := yamldetectors.LoadFromDirectories(yamlDirs)
+	if len(errors) > 0 {
+		for _, err := range errors {
+			logger.Warnw("Failed to load YAML detector", "error", err)
+		}
+	}
+
+	if len(yamlDets) > 0 {
+		logger.Debugw("Loaded YAML detectors", "count", len(yamlDets), "directories", yamlDirs)
+		allDetectors = append(allDetectors, yamlDets...)
+	}
+
+	logger.Debugw("Collected detectors", "total", len(allDetectors), "yaml", len(yamlDets))
 
 	return allDetectors
 }
