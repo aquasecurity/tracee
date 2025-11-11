@@ -14,9 +14,22 @@ Detectors analyze runtime events to identify security threats and derive higher-
 
 ## Documentation
 
+### [YAML Detectors Guide](yaml-detectors.md)
+
+Learn how to create detectors using declarative YAML configuration:
+
+- Quick start with examples
+- Complete schema reference
+- Event filtering and data extraction
+- Threat metadata and auto-population
+- Deployment and best practices
+- Troubleshooting guide
+
+**Start here** if you want to create detectors without writing Go code.
+
 ### [Developer Guide](developer-guide.md)
 
-Complete guide to writing detectors, from quick start to advanced features:
+Complete guide to writing Go detectors, from quick start to advanced features:
 
 - Quick start with a working example
 - Detector definition and requirements
@@ -29,7 +42,7 @@ Complete guide to writing detectors, from quick start to advanced features:
 - Migration from old signature API
 - Best practices and real examples
 
-**Start here** if you're writing your first detector or migrating from signatures.
+**Use this** if you need advanced features like state management or complex logic.
 
 ### [DataStore API Reference](datastore-api.md)
 
