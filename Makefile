@@ -1,5 +1,5 @@
 .PHONY: all | env
-all:: tracee-ebpf tracee-rules signatures tracee evt traceectl lsm-check
+all:: signatures tracee evt traceectl lsm-check
 
 #
 # make
@@ -315,15 +315,13 @@ help::
 	@echo ""
 	@echo "# build"
 	@echo ""
-	@echo "    $$ make all                      # build tracee-ebpf, tracee-rules & signatures"
+	@echo "    $$ make all                      # build tracee, signatures & other tools"
 	@echo "    $$ make bpf                      # build ./dist/tracee.bpf.o"
-	@echo "    $$ make tracee-ebpf              # build ./dist/tracee-ebpf"
-	@echo "    $$ make tracee-rules             # build ./dist/tracee-rules"
+	@echo "    $$ make tracee                   # build ./dist/tracee"
 	@echo "    $$ make tracee-bench             # build ./dist/tracee-bench"
 	@echo "    $$ make signatures               # build ./dist/signatures"
 	@echo "    $$ make e2e-net-signatures       # build ./dist/e2e-net-signatures"
 	@echo "    $$ make e2e-inst-signatures      # build ./dist/e2e-inst-signatures"
-	@echo "    $$ make tracee                   # build ./dist/tracee"
 	@echo "    $$ make tracee-operator          # build ./dist/tracee-operator"
 	@echo "    $$ make lsm-check                # build ./dist/lsm-check"
 	@echo ""
@@ -331,11 +329,9 @@ help::
 	@echo ""
 	@echo "    $$ make clean                    # wipe ./dist/"
 	@echo "    $$ make clean-bpf                # wipe ./dist/tracee.bpf.o"
-	@echo "    $$ make clean-tracee-ebpf        # wipe ./dist/tracee-ebpf"
-	@echo "    $$ make clean-tracee-rules       # wipe ./dist/tracee-rules"
+	@echo "    $$ make clean-tracee             # wipe ./dist/tracee"
 	@echo "    $$ make clean-tracee-bench       # wipe ./dist/tracee-bench"
 	@echo "    $$ make clean-signatures         # wipe ./dist/signatures"
-	@echo "    $$ make clean-tracee             # wipe ./dist/tracee"
 	@echo "    $$ make clean-tracee-operator    # wipe ./dist/tracee-operator"
 	@echo "    $$ make clean-lsm-check          # wipe ./dist/lsm-check"
 	@echo ""
@@ -700,68 +696,6 @@ clean-tracee::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee
 	$(CMD_RM) -rf .*.md5
-
-#
-# tracee-ebpf (deprecated)
-#
-
-.PHONY: tracee-ebpf
-tracee-ebpf:: $(OUTPUT_DIR)/tracee-ebpf
-
-$(OUTPUT_DIR)/tracee-ebpf:: \
-	$(OUTPUT_DIR)/tracee.bpf.o \
-	$(LSM_SUPPORT_OBJS) \
-	$(TRACEE_SRC) \
-	| .eval_goenv \
-	.checkver_$(CMD_GO) \
-	.checklib_$(LIB_BPF) \
-	btfhub
-#
-	$(MAKE) embedded-dirs
-	$(MAKE) btfhub
-	$(GO_ENV_EBPF) $(CMD_GO) build \
-		-tags $(GO_TAGS_EBPF) \
-		-ldflags="$(GO_DEBUG_FLAG) \
-			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
-			-X main.version=\"$(VERSION)\" \
-			" \
-		-v -o $@ \
-		./cmd/tracee-ebpf
-
-.PHONY: clean-tracee-ebpf
-clean-tracee-ebpf::
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-ebpf
-	$(CMD_RM) -rf .*.md5
-
-#
-# tracee-rules (deprecated)
-#
-
-TRACEE_RULES_SRC_DIRS = ./cmd/tracee-rules/ ./pkg/signatures/
-TRACEE_RULES_SRC=$(shell find $(TRACEE_RULES_SRC_DIRS) -type f -name '*.go')
-
-.PHONY: tracee-rules
-tracee-rules:: $(OUTPUT_DIR)/tracee-rules
-
-$(OUTPUT_DIR)/tracee-rules:: \
-	$(TRACEE_RULES_SRC) \
-	| .eval_goenv \
-	.checkver_$(CMD_GO) \
-	signatures
-#
-	$(GO_ENV_EBPF) $(CMD_GO) build \
-		-tags $(GO_TAGS_RULES) \
-		-ldflags="$(GO_DEBUG_FLAG) \
-			-extldflags \"$(CGO_EXT_LDFLAGS_RULES)\" \
-			" \
-		-v -o $@ \
-		./cmd/tracee-rules
-
-.PHONY: clean-tracee-rules
-clean-tracee-rules::
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-rules
 
 #
 # signatures

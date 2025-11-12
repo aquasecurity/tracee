@@ -162,7 +162,7 @@ func (engine *Engine) matchHandler(res *detect.Finding) {
 }
 
 // checkCompletion is a function that runs at the end of each input source
-// closing tracee-rules if no more pending input sources exists
+// closing signature evaluation if no more pending input sources exists
 func (engine *Engine) checkCompletion() bool {
 	if engine.inputs.Tracee == nil {
 		engine.unloadAllSignatures()

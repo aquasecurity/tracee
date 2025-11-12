@@ -85,7 +85,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	logCfg, err := flags.PrepareLogger(logFlags, true)
+	logCfg, err := flags.PrepareLogger(logFlags)
 	if err != nil {
 		return runner, err
 	}
@@ -182,7 +182,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	capture, err := flags.NPrepareCapture(captureFlags, true)
+	capture, err := flags.NPrepareCapture(captureFlags)
 	if err != nil {
 		return runner, err
 	}

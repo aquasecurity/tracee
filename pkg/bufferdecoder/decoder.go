@@ -45,7 +45,7 @@ func (decoder *EbpfDecoder) makeBufferTooShortError(typeName string, expected in
 // New creates and initializes a new EbpfDecoder using rawBuffer as its initial content.
 // The EbpfDecoder takes ownership of rawBuffer, and the caller should not use rawBuffer after this call.
 // New is intended to prepare a buffer to read existing data from it, translating it to protocol defined structs.
-// The protocol is specific between the Trace eBPF program and the Tracee-eBPF user space application.
+// The protocol is specific between the Trace eBPF program and the Tracee user space application.
 func New(rawBuffer []byte, typeDecoder TypeDecoder) *EbpfDecoder {
 	return &EbpfDecoder{
 		buffer:      rawBuffer,

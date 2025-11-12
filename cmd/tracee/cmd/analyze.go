@@ -82,7 +82,7 @@ tracee analyze --events anti_debugging --source events.json`,
 func command(cmd *cobra.Command, args []string) {
 	logFlags := viper.GetStringSlice(flags.LogFlag)
 
-	logCfg, err := flags.PrepareLogger(logFlags, true)
+	logCfg, err := flags.PrepareLogger(logFlags)
 	if err != nil {
 		logger.Fatalw("Failed to prepare logger", "error", err)
 	}
