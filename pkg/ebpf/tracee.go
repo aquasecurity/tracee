@@ -622,7 +622,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	return t.extensions.InitExtensionsForPhase(ctx, t, InitPhaseComplete)
 }
 
-// initTailCall initializes a given tailcall.
+// initTailCall initializes a given tailcall by updating the BPF map with the program FD.
 func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 	tailCallMapName := tailCall.GetMapName()
 	tailCallProgName := tailCall.GetProgName()
@@ -654,6 +654,37 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 		err := bpfMap.Update(unsafe.Pointer(&index), unsafe.Pointer(&bpfProgFD))
 		if err != nil {
 			return errfmt.WrapError(err)
+		}
+	}
+
+	return nil
+}
+
+// uninitTailCall removes a given tailcall by deleting its entries from the BPF map.
+func (t *Tracee) uninitTailCall(tailCall events.TailCall) error {
+	tailCallMapName := tailCall.GetMapName()
+	tailCallIndexes := tailCall.GetIndexes()
+
+	// Pick eBPF map by name.
+	bpfMap, err := t.bpfModule.GetMap(tailCallMapName)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Remove all indexes for this tailcall
+	for _, index := range tailCallIndexes {
+		// Workaround: Do not try to remove unsupported syscalls (arm64, e.g.)
+		if index >= uint32(events.Unsupported) {
+			continue
+		}
+		// Delete the entry from the BPF map
+		err := bpfMap.DeleteKey(unsafe.Pointer(&index))
+		if err != nil {
+			// Log but don't fail on individual delete errors
+			logger.Errorw("Failed to uninit tailcall index",
+				"map", tailCallMapName,
+				"index", index,
+				"error", err)
 		}
 	}
 
@@ -1075,7 +1106,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 	validateEvent := func(eventId events.ID) bool {
 		depsNode, err := t.eventsDependencies.GetEvent(eventId)
 		if err != nil {
-			logger.Debugw("Failed to get dependencies for event", "event", events.Core.GetDefinitionByID(eventId).GetName(), "error", err)
+			logger.Errorw("Failed to get dependencies for event", "event", events.Core.GetDefinitionByID(eventId).GetName(), "error", err)
 			return false
 		}
 		return validateNode(depsNode)
@@ -1124,7 +1155,7 @@ func (t *Tracee) setProgramsAutoload() {
 	for _, probeHandle := range t.eventsDependencies.GetProbes() {
 		err := t.defaultProbes.Autoload(probeHandle, true)
 		if err != nil {
-			logger.Debugw("Failed to autoload program", "handle", probeHandle, "error", err)
+			logger.Errorw("Failed to autoload program", "handle", probeHandle, "error", err)
 		}
 	}
 
@@ -1139,7 +1170,7 @@ func (t *Tracee) setProgramsAutoload() {
 			}
 			err := t.defaultProbes.Autoload(probeNode.GetHandle(), true)
 			if err != nil {
-				logger.Debugw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
+				logger.Errorw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
 			}
 			return nil
 		})
@@ -1155,7 +1186,7 @@ func (t *Tracee) setProgramsAutoload() {
 			}
 			err := t.defaultProbes.Autoload(probeNode.GetHandle(), false)
 			if err != nil {
-				logger.Debugw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
+				logger.Errorw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
 			}
 			return nil
 		})
@@ -1336,25 +1367,6 @@ func (t *Tracee) populateBPFMaps() error {
 		return errfmt.WrapError(err)
 	}
 
-	// Initialize tail call dependencies
-	// TODO: Tail calls are not updated upon events changes in the dependency manager.
-	//       Hence, upon events addition, fallbacks or removal, tail calls will not be updated.
-	//       This should be fixed dynamically in the future.
-	for _, eventID := range t.eventsDependencies.GetEvents() {
-		depsNode, err := t.eventsDependencies.GetEvent(eventID)
-		if err != nil {
-			return errfmt.Errorf("failed to get event dependencies: %v", err)
-		}
-		deps := depsNode.GetDependencies()
-		tailCalls := deps.GetTailCalls()
-		for _, tailCall := range tailCalls {
-			err := t.initTailCall(tailCall)
-			if err != nil {
-				return errfmt.Errorf("failed to initialize tail call: %v", err)
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -1410,7 +1422,7 @@ func (t *Tracee) attachProbes() error {
 			}
 			err := t.defaultProbes.Detach(probeNode.GetHandle())
 			if err != nil {
-				logger.Debugw("Failed to detach probe",
+				logger.Errorw("Failed to detach probe",
 					"probe", probeNode.GetHandle(),
 					"error", err)
 			}
@@ -1433,6 +1445,72 @@ func (t *Tracee) attachProbes() error {
 		}
 	}
 	// TODO: Update the eBPF maps according to events state after failure of attachments
+	return nil
+}
+
+// attachTailCalls initializes selected tailcalls by updating their BPF maps.
+func (t *Tracee) attachTailCalls() error {
+	// Subscribe to watchers on the dependencies to initialize and/or uninitialize
+	// tailcalls upon changes
+	t.eventsDependencies.SubscribeAdd(
+		dependencies.TailCallNodeType,
+		func(node interface{}) []dependencies.Action {
+			tailCallNode, ok := node.(*dependencies.TailCallNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested", "type", fmt.Sprintf("%T", node))
+				return nil
+			}
+			tailCall := tailCallNode.GetTailCall()
+			err := t.initTailCall(tailCall)
+			if err != nil {
+				// Cancel adding this tailcall node if initialization fails
+				return []dependencies.Action{dependencies.NewCancelNodeAddAction(err)}
+			}
+			return nil
+		})
+
+	t.eventsDependencies.SubscribeRemove(
+		dependencies.TailCallNodeType,
+		func(node interface{}) []dependencies.Action {
+			tailCallNode, ok := node.(*dependencies.TailCallNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested", "type", fmt.Sprintf("%T", node))
+				return nil
+			}
+			tailCall := tailCallNode.GetTailCall()
+			err := t.uninitTailCall(tailCall)
+			if err != nil {
+				logger.Errorw("Failed to uninit tailcall",
+					"map", tailCall.GetMapName(),
+					"program", tailCall.GetProgName(),
+					"error", err)
+			}
+			return nil
+		})
+
+	// Initialize all current tailcalls or fail them (and dependent events) if initialization fails.
+	for _, tailCallKey := range t.eventsDependencies.GetTailCalls() {
+		tailCallNode, err := t.eventsDependencies.GetTailCall(tailCallKey)
+		if err != nil {
+			logger.Debugw("Failed to get tailcall from dependencies manager", "key", tailCallKey, "error", err)
+			continue
+		}
+		tailCall := tailCallNode.GetTailCall()
+
+		// Initialize this specific tailcall
+		err = t.initTailCall(tailCall)
+		if err != nil {
+			// Mark this specific tailcall as failed, which will also fail all dependent events as needed.
+			failErr := t.eventsDependencies.FailTailCall(tailCall)
+			if failErr != nil {
+				logger.Warnw("Failed to fail tailcall in dependencies manager",
+					"tailcall", tailCallKey,
+					"init error", err,
+					"fail error", failErr)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -1613,6 +1691,12 @@ func (t *Tracee) initBPF() error {
 	// iteration on procfs to fill in any missing data.
 
 	err = t.attachProbes()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Initialize tailcalls for selected events
+	err = t.attachTailCalls()
 
 	return errfmt.WrapError(err)
 }

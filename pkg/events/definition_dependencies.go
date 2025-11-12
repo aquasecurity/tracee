@@ -1,6 +1,8 @@
 package events
 
 import (
+	"slices"
+
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
@@ -194,6 +196,7 @@ const (
 	TailHiddenKernelModuleModTree
 	TailHiddenKernelModuleNewModOnly
 	TailHiddenKernelModuleModTreeLoop
+	TailFeaturesFallback // Use the same index to make sure that the tailcall is reset
 	MaxTail
 )
 
@@ -216,4 +219,40 @@ func (tc TailCall) GetMapName() string {
 
 func (tc TailCall) GetProgName() string {
 	return tc.progName
+}
+
+func (tc TailCall) IsRequired() bool {
+	return true // tailcalls are always required
+}
+
+func NewTailCall(mapName string, progName string, indexes []uint32) TailCall {
+	return TailCall{mapName: mapName, progName: progName, indexes: indexes}
+}
+
+// NewTailCallWithMergedIndexes creates a new TailCall with merged indexes from an existing tailcall and new indexes.
+// This is used when multiple events share the same map+program combination but with different indexes.
+func NewTailCallWithMergedIndexes(base TailCall, additionalIndexes []uint32) TailCall {
+	// Create a map to track unique indexes
+	indexSet := make(map[uint32]struct{})
+	for _, idx := range base.indexes {
+		indexSet[idx] = struct{}{}
+	}
+	for _, idx := range additionalIndexes {
+		indexSet[idx] = struct{}{}
+	}
+
+	// Convert back to slice
+	mergedIndexes := make([]uint32, 0, len(indexSet))
+	for idx := range indexSet {
+		mergedIndexes = append(mergedIndexes, idx)
+	}
+
+	// Sort indexes so order is deterministic
+	slices.Sort(mergedIndexes)
+
+	return TailCall{
+		mapName:  base.mapName,
+		progName: base.progName,
+		indexes:  mergedIndexes,
+	}
 }

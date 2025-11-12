@@ -60,7 +60,13 @@ func (en *EventNode) fallback() bool {
 }
 
 func (en *EventNode) GetDependents() []events.ID {
-	return slices.Clone[[]events.ID](en.dependents)
+	return slices.Clone(en.dependents)
+}
+
+// HasDependents returns true if the node has any dependents.
+// This is more efficient than checking len(GetDependents()) since it avoids cloning.
+func (en *EventNode) HasDependents() bool {
+	return len(en.dependents) > 0
 }
 
 func (en *EventNode) IsDependencyOf(dependent events.ID) bool {
@@ -88,11 +94,14 @@ func (en *EventNode) addDependent(dependent events.ID) {
 	en.dependents = append(en.dependents, dependent)
 }
 
-func (en *EventNode) removeDependent(dependent events.ID) {
+// removeDependent removes the given dependent from the node.
+// Returns true if the node has no more dependents after removal, false otherwise.
+func (en *EventNode) removeDependent(dependent events.ID) bool {
 	for i, d := range en.dependents {
 		if d == dependent {
 			en.dependents = append(en.dependents[:i], en.dependents[i+1:]...)
 			break
 		}
 	}
+	return len(en.dependents) == 0
 }
