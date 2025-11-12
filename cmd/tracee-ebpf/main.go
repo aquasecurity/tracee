@@ -97,8 +97,8 @@ func main() {
 				Usage: "dns cache options. run '--dnscache help' for more info",
 			},
 			&cli.StringSliceFlag{
-				Name:  flags.ContainersFlag,
-				Usage: "configure container enrichment and runtime sockets. run '--containers help' for more info.",
+				Name:  flags.EnrichFlag,
+				Usage: "configure enrichment options. run '--enrich help' for more info.",
 				Value: cli.NewStringSlice(),
 			},
 			&cli.StringFlag{

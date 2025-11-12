@@ -137,19 +137,26 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Container command line flags
 
-	containerFlags, err := GetFlagsFromViper(flags.ContainersFlag)
+	enrichFlags, err := GetFlagsFromViper(flags.EnrichFlag)
 	if err != nil {
 		return runner, err
 	}
 
-	res, err := flags.PrepareContainers(containerFlags)
+	enrichment, err := flags.PrepareEnrichment(enrichFlags)
 	if err != nil {
 		return runner, err
 	}
-	cfg.Sockets = res.Sockets
-	cfg.NoContainersEnrich = res.NoEnrich
-	cfg.CgroupFSPath = res.CgroupfsPath
-	cfg.CgroupFSForce = res.CgroupfsForce
+
+	sockets, err := enrichment.GetRuntimeSockets()
+	if err != nil {
+		return runner, err
+	}
+	cfg.Sockets = sockets
+	cfg.NoContainersEnrich = enrichment.ContainerEnabled
+	cfg.CgroupFSPath = enrichment.ContainerCgroupPath
+
+	// TODO: are removing this?
+	// cfg.CgroupFSForce = enrichment.CgroupfsForce
 
 	// Process Tree command line flags
 
