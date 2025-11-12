@@ -11,7 +11,6 @@ import (
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
-	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
@@ -377,17 +376,20 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	if err != nil {
 		return runner, err
 	}
-	serverRunner, err := server.PrepareServer(serverFlag)
+	serverRunner, err := flags.PrepareServer(serverFlag)
 	if err != nil {
 		return runner, err
 	}
 
 	runner.HTTP = serverRunner.HTTP
 	runner.GRPC = serverRunner.GRPC
-	cfg.MetricsEnabled = runner.HTTP.MetricsEndpointEnabled()
 	runner.TraceeConfig = cfg
 	runner.Printer = p
 	runner.Workdir = generalConfig.Workdir
+
+	if runner.HTTP != nil {
+		cfg.MetricsEnabled = runner.HTTP.IsMetricsEnabled()
+	}
 
 	noSignaturesMode := viper.GetBool("no-signatures")
 	if noSignaturesMode {

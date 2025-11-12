@@ -116,7 +116,7 @@ func NPrepareCapture(captureSlice []string, newBinary bool) (config.NCaptureConf
 		values := strings.Split(flag, "=")
 		flagName := values[0]
 
-		if len(values) != 2 && !isBoolFlag(flagName) {
+		if len(values) != 2 && !isBoolCaptureFlag(flagName) {
 			return config.NCaptureConfig{}, errfmt.Errorf(captureInvalidFlag, flagName)
 		}
 
@@ -191,7 +191,7 @@ func NPrepareCapture(captureSlice []string, newBinary bool) (config.NCaptureConf
 	return capture, nil
 }
 
-func isBoolFlag(flag string) bool {
+func isBoolCaptureFlag(flag string) bool {
 	return flag == "file-write.enabled" ||
 		flag == "file-read.enabled" ||
 		flag == "executable.enabled" ||
