@@ -64,7 +64,8 @@ buffers:
 
 # signatures
 
-signatures-dir: ""
+signatures:
+  - search-paths=""
 
 # features setup
 

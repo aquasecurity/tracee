@@ -36,7 +36,8 @@ data:
       - workdir={{ .Values.config.installPath }}
     {{- end }}
     {{- if .Values.config.signaturesDir }}
-    signatures-dir: {{ .Values.config.signaturesDir }}
+    signatures:
+      - search-paths={{ .Values.config.signaturesDir }}
     {{- end }}
     log:
         level: {{ .Values.config.log.level }}

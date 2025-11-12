@@ -41,11 +41,11 @@ func init() {
 		"Define which signature events to load",
 	)
 
-	// signatures-dir
+	// signatures
 	analyzeCmd.Flags().StringArray(
-		"signatures-dir",
+		"signatures",
 		[]string{},
-		"Directory where to search for signatures in Go plugin (.so) format",
+		"Signatures configurations (e.g., search-paths=/path/to/signatures)",
 	)
 
 	analyzeCmd.Flags().StringArrayP(
@@ -71,8 +71,9 @@ tracee analyze --events anti_debugging --source events.json`,
 		bindViperFlag(cmd, "events")
 		bindViperFlag(cmd, "source")
 		bindViperFlag(cmd, "output")
+		bindViperFlag(cmd, "log")
 		bindViperFlag(cmd, flags.LogFlag)
-		bindViperFlag(cmd, "signatures-dir")
+		bindViperFlag(cmd, "signatures")
 	},
 	Run:                   command,
 	DisableFlagsInUseLine: true,
@@ -94,7 +95,7 @@ func command(cmd *cobra.Command, args []string) {
 	}
 	sourceFile, err := os.Open(sourcePath)
 	if err != nil {
-		logger.Fatalw("Failed to get signatures-dir flag", "err", err)
+		logger.Fatalw("Failed to open source file", "err", err)
 	}
 
 	// Set up printer output (outpath:format)
@@ -142,7 +143,7 @@ func command(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// Signature directory command line flags
+	// Signature command line flags
 
 	signatureEvents := viper.GetStringSlice("events")
 	// if no event was passed, load all events
@@ -150,7 +151,11 @@ func command(cmd *cobra.Command, args []string) {
 		signatureEvents = nil
 	}
 
-	signatureDirs := viper.GetStringSlice("signatures-dir")
+	signaturesFlags, err := flags.PrepareSignatures(viper.GetStringSlice("signatures"))
+	if err != nil {
+		logger.Fatalw("Failed to prepare signatures flags", "error", err)
+	}
+	signatureDirs := signaturesFlags.SearchPaths
 
 	analyze.Analyze(analyze.Config{
 		Source:          sourceFile,

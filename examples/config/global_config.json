@@ -26,5 +26,7 @@
     ],
     "pprof": false,
     "pyroscope": false,
-    "signatures-dir": ""
+    "signatures": [
+        "search-paths="
+    ]
 }

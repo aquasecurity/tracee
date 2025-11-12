@@ -88,7 +88,7 @@ tracee_command="./dist/tracee \
     --output json:$outputfile \
     --log file=$logfile \
     --policy ./tests/policies/net/ \
-    --signatures-dir ./dist/e2e-net-signatures/"
+    --signatures search-paths=./dist/e2e-net-signatures/"
 
 eval "$tracee_command &"
 

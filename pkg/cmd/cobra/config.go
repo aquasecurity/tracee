@@ -40,6 +40,8 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &EnrichConfig{}
 	case "general":
 		flagger = &GeneralConfig{}
+	case "signatures":
+		flagger = &SignaturesConfig{}
 	default:
 		return nil, errfmt.Errorf("unrecognized key: %s", key)
 	}
@@ -450,6 +452,19 @@ func (c *BuffersConfig) flags() []string {
 
 	if c.PipelineSize != 0 {
 		flags = append(flags, fmt.Sprintf("pipeline=%d", c.PipelineSize))
+	}
+	return flags
+}
+
+type SignaturesConfig struct {
+	SearchPaths []string `mapstructure:"search-paths"`
+}
+
+func (c *SignaturesConfig) flags() []string {
+	flags := make([]string, 0)
+
+	if len(c.SearchPaths) > 0 {
+		flags = append(flags, fmt.Sprintf("search-paths=%s", strings.Join(c.SearchPaths, ",")))
 	}
 
 	return flags
