@@ -7,7 +7,7 @@
 __LIB_INTERNAL_NAME="lib_internal.sh"
 
 # prevent multiple sourcing
-if [ -n "${__LIB_INTERNAL_SH_SOURCED}" ]; then
+if [ -n "${__LIB_INTERNAL_SH_SOURCED:-}" ]; then
     return 0
 fi
 __LIB_INTERNAL_SH_SOURCED=1
@@ -24,7 +24,7 @@ esac
 # GitHub Actions sets GITHUB_ACTIONS=true and CI=true
 # In CI environments, timestamps are typically already provided by the CI system
 __CI_ENVIRONMENT=0
-if [ "${GITHUB_ACTIONS}" = "true" ] || [ "${CI}" = "true" ]; then
+if [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${CI:-}" = "true" ]; then
     __CI_ENVIRONMENT=1
 fi
 
@@ -36,7 +36,7 @@ if [ "${__CI_ENVIRONMENT}" -eq 1 ]; then
     __LOG_TIMESTAMPS=0 # CI: disable timestamps by default
 fi
 # Allow override via FORCE_LOG_TIMESTAMPS
-if [ -n "${FORCE_LOG_TIMESTAMPS}" ]; then
+if [ -n "${FORCE_LOG_TIMESTAMPS:-}" ]; then
     __LOG_TIMESTAMPS="${FORCE_LOG_TIMESTAMPS}"
 fi
 

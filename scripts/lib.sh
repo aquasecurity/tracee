@@ -10,7 +10,7 @@
 #
 
 # prevent multiple sourcing
-if [ -n "${__LIB_SH_SOURCED}" ]; then
+if [ -n "${__LIB_SH_SOURCED:-}" ]; then
     # once the lib is sourced, __warn is already available
     __warn "This script is already sourced."
     return 0

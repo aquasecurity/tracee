@@ -7,7 +7,7 @@
 __LIB_TESTING_NAME="lib_testing.sh"
 
 # prevent multiple sourcing
-if [ -n "${__LIB_TESTING_SH_SOURCED}" ]; then
+if [ -n "${__LIB_TESTING_SH_SOURCED:-}" ]; then
     return 0
 fi
 __LIB_TESTING_SH_SOURCED=1

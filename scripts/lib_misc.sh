@@ -7,7 +7,7 @@
 __LIB_MISC_NAME="lib_misc.sh"
 
 # prevent multiple sourcing
-if [ -n "${__LIB_MISC_SH_SOURCED}" ]; then
+if [ -n "${__LIB_MISC_SH_SOURCED:-}" ]; then
     return 0
 fi
 __LIB_MISC_SH_SOURCED=1
