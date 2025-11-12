@@ -29,7 +29,7 @@ add_test_config() {
     local policy_name="$3"
     local timeout="$4"
     local sleep="$5"
-    
+
     config_map["$test_name"]="${policy_name}:${timeout}:${sleep}"
 }
 
@@ -44,12 +44,12 @@ get_policy_name() {
     local -n config_map="$1"
     local test_name="$2"
     local policy_name
-    
+
     if [[ -z "${config_map[$test_name]:-}" ]]; then
         error "Test '${test_name}' is not configured in TEST_CONFIG_MAP"
         return 1
     fi
-    
+
     policy_name=$(echo "${config_map[$test_name]}" | cut -d: -f1)
     echo "${policy_name}"
 }
@@ -61,12 +61,12 @@ get_test_timeout() {
     local -n config_map="$1"
     local test_name="$2"
     local timeout
-    
+
     if [[ -z "${config_map[$test_name]:-}" ]]; then
         error "Test '${test_name}' is not configured in TEST_CONFIG_MAP"
         return 1
     fi
-    
+
     timeout=$(echo "${config_map[$test_name]}" | cut -d: -f2)
     echo "${timeout}"
 }
@@ -78,12 +78,12 @@ get_test_sleep() {
     local -n config_map="$1"
     local test_name="$2"
     local sleep_time
-    
+
     if [[ -z "${config_map[$test_name]:-}" ]]; then
         error "Test '${test_name}' is not configured in TEST_CONFIG_MAP"
         return 1
     fi
-    
+
     sleep_time=$(echo "${config_map[$test_name]}" | cut -d: -f3)
     echo "${sleep_time}"
 }
@@ -231,4 +231,43 @@ cleanup_test_artifact_files() {
             info "  ${file}"
         fi
     done
+}
+
+# ==============================================================================
+# Test Execution Helpers
+# ==============================================================================
+
+# Execute a test script in background with timeout
+# This is a generic helper used by both core and extended test implementations
+# Arguments:
+#   $1 - Test name (for output file naming)
+#   $2 - Name of pid_map array (nameref to store PID)
+#   $3 - Timeout in seconds
+#   $4 - Sleep time in seconds
+#   $5 - Test script path (e.g., "${TESTS_DIR}/vfs_write.sh")
+#   $6 - Test arguments (optional, e.g., "--run")
+# Environment:
+#   E2E_INST_TEST_SLEEP - Set to sleep_time, consumed by test scripts
+run_test_background() {
+    local test_name="$1"
+    local -n pid_map_ref="$2"
+    local timeout="$3"
+    local sleep_time="$4"
+    local test_script="$5"
+    local test_args="${6:-}"
+
+    # Create unique output file for this test
+    local test_output_file="/tmp/test_${test_name,,}_$$"
+
+    # Run test in background with timeout
+    (
+        # shellcheck disable=SC2086
+        E2E_INST_TEST_SLEEP="${sleep_time}" \
+            timeout --preserve-status "${timeout}" \
+            "${test_script}" ${test_args}
+    ) > "${test_output_file}" 2>&1 &
+
+    # Store PID for later waiting
+    # shellcheck disable=SC2034  # pid_map_ref is a nameref to caller's array, SC2034 doesn't understand nameref array assignments
+    pid_map_ref["${test_name}"]=$!
 }
