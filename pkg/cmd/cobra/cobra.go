@@ -357,9 +357,16 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 
 	// Decide BTF & BPF files to use (based in the kconfig, release & environment info)
+	generalFlags, err := GetFlagsFromViper("general")
+	if err != nil {
+		return runner, err
+	}
+	generalConfig, err := flags.PrepareGeneral(generalFlags)
+	if err != nil {
+		return runner, err
+	}
 
-	traceeInstallPath := viper.GetString("install-path")
-	err = initialize.BpfObject(&cfg, kernelConfig, osInfo, traceeInstallPath, version)
+	err = initialize.BpfObject(&cfg, kernelConfig, osInfo, generalConfig.Workdir, version)
 	if err != nil {
 		return runner, errfmt.Errorf("failed preparing BPF object: %v", err)
 	}
@@ -380,7 +387,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	cfg.MetricsEnabled = runner.HTTP.MetricsEndpointEnabled()
 	runner.TraceeConfig = cfg
 	runner.Printer = p
-	runner.InstallPath = traceeInstallPath
+	runner.Workdir = generalConfig.Workdir
 
 	noSignaturesMode := viper.GetBool("no-signatures")
 	if noSignaturesMode {

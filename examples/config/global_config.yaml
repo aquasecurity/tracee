@@ -59,7 +59,8 @@ events:
 
 healthz: false
 
-install-path: /tmp/tracee
+general:
+  - workdir=/tmp/tracee
 
 listen-addr: :3366
 

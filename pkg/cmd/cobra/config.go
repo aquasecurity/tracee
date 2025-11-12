@@ -38,6 +38,8 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &BuffersConfig{}
 	case "enrich":
 		flagger = &EnrichConfig{}
+	case "general":
+		flagger = &GeneralConfig{}
 	default:
 		return nil, errfmt.Errorf("unrecognized key: %s", key)
 	}
@@ -510,4 +512,16 @@ func (c *EnrichConfig) flags() []string {
 	}
 
 	return flags
+}
+
+//
+// general flag
+//
+
+type GeneralConfig struct {
+	Workdir string `mapstructure:"workdir"`
+}
+
+func (c *GeneralConfig) flags() []string {
+	return []string{fmt.Sprintf("workdir=%s", c.Workdir)}
 }

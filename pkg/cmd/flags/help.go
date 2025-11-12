@@ -20,6 +20,7 @@ func PrintAndExitIfHelp(ctx *cli.Context) {
 		"log",
 		"buffers",
 		"enrich",
+		"general",
 	}
 
 	for _, k := range keys {
@@ -65,6 +66,8 @@ func GetHelpString(key string) string {
 		return buffersFlagHelp()
 	case "enrich":
 		return enrichmentHelp()
+	case "general":
+		return generalHelp()
 	}
 	return ""
 }

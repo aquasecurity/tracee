@@ -347,6 +347,7 @@ server:
 			},
 		},
 		{
+<<<<<<< HEAD
 			name: "Test enrich configuration (cli flags)",
 			yamlContent: `
 enrich:
@@ -402,6 +403,27 @@ enrich:
 				"exec-hash.enabled=true",
 				"exec-hash.mode=dev-inode",
 				"user-stack-trace=true",
+=======
+			name: "Test general configuration (cli flags)",
+			yamlContent: `
+general:
+    - workdir=/tmp/tracee
+`,
+			key: "general",
+			expectedFlags: []string{
+				"workdir=/tmp/tracee",
+			},
+		},
+		{
+			name: "Test general configuration (structured flags)",
+			yamlContent: `
+general:
+    workdir: /opt/tracee
+`,
+			key: "general",
+			expectedFlags: []string{
+				"workdir=/opt/tracee",
+>>>>>>> newGeneralFlag
 			},
 		},
 	}
@@ -1075,6 +1097,7 @@ func TestServerConfigFlags(t *testing.T) {
 	}
 }
 
+
 //
 // enrich
 //
@@ -1218,6 +1241,70 @@ func TestEnrichConfigFlags(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			got := tt.config.flags()
+			if !slicesEqualIgnoreOrder(got, tt.expected) {
+				t.Errorf("flags() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+//
+// general
+//
+
+func TestGeneralConfigFlags(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		config   GeneralConfig
+		expected []string
+	}{
+		{
+			name: "empty config",
+			config: GeneralConfig{
+				Workdir: "",
+			},
+			expected: []string{
+				"workdir=",
+			},
+		},
+		{
+			name: "default workdir",
+			config: GeneralConfig{
+				Workdir: "/tmp/tracee",
+			},
+			expected: []string{
+				"workdir=/tmp/tracee",
+			},
+		},
+		{
+			name: "custom workdir",
+			config: GeneralConfig{
+				Workdir: "/opt/tracee",
+			},
+			expected: []string{
+				"workdir=/opt/tracee",
+			},
+		},
+		{
+			name: "workdir with custom path",
+			config: GeneralConfig{
+				Workdir: "/var/lib/tracee",
+			},
+			expected: []string{
+				"workdir=/var/lib/tracee",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := tt.config.flags()
 			if !slicesEqualIgnoreOrder(got, tt.expected) {
 				t.Errorf("flags() = %v, want %v", got, tt.expected)

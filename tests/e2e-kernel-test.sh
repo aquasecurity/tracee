@@ -74,7 +74,7 @@ outputfile=$SCRIPT_TMP_DIR/output-$$
 logfile=$SCRIPT_TMP_DIR/tracee-log-$$
 
 tracee_command="./dist/tracee \
-    --install-path $TRACEE_TMP_DIR \
+    --general workdir=$TRACEE_TMP_DIR \
     --output json:$outputfile \
     --log file:$logfile \
     --policy ./tests/policies/kernel/kernel.yaml 2>&1 \

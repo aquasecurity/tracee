@@ -102,9 +102,9 @@ func main() {
 				Value: cli.NewStringSlice(),
 			},
 			&cli.StringFlag{
-				Name:  "install-path",
+				Name:  "general",
 				Value: "/tmp/tracee",
-				Usage: "path where tracee will install or lookup it's resources",
+				Usage: "general config options eg: workdir",
 			},
 			&cli.StringSliceFlag{
 				Name:  server.ServerFlag,
