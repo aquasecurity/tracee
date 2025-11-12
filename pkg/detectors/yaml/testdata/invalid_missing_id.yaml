@@ -1,0 +1,8 @@
+# Missing required fields
+produced_event:
+  name: missing_id
+  version: 1.0.0
+requirements:
+  events:
+    - name: openat
+

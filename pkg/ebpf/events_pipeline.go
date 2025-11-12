@@ -8,6 +8,7 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/bitwise"
 	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/errfmt"
@@ -68,6 +69,12 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 
 	eventsChan, errc = t.deriveEvents(ctx, eventsChan)
 	t.stats.Channels["derive"] = eventsChan
+	errcList = append(errcList, errc)
+
+	// Detect events stage: events go through the detector engine for detection.
+
+	eventsChan, errc = t.detectEvents(ctx, eventsChan)
+	t.stats.Channels["detect"] = eventsChan
 	errcList = append(errcList, errc)
 
 	// Engine events stage: events go through the signatures engine for detection.
@@ -156,7 +163,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				stackAddresses = t.getStackAddresses(eCtx.StackID)
 			}
 
-			_, containerInfo := t.container.GetCgroupInfo(eCtx.CgroupID)
+			_, containerInfo := t.dataStoreRegistry.GetContainerManager().GetCgroupInfo(eCtx.CgroupID)
 
 			commStr := string(stringutil.TrimTrailingNUL(eCtx.Comm[:]))       // clean potential trailing null
 			utsNameStr := string(stringutil.TrimTrailingNUL(eCtx.UtsName[:])) // clean potential trailing null
@@ -522,6 +529,105 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					t.processEvent(event)
 					out <- event
 				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return out, errc
+}
+
+// detectEvents is the detector dispatch pipeline stage. For each received event, it dispatches
+// the event to registered detectors that are interested in it. Detectors can produce new events
+// (derived or threat events) that flow through the pipeline. Supports detector chains with
+// breadth-first processing up to a maximum depth to prevent infinite loops.
+func (t *Tracee) detectEvents(ctx context.Context, in <-chan *trace.Event) (
+	<-chan *trace.Event, <-chan error,
+) {
+	out := make(chan *trace.Event, t.config.PipelineChannelSize)
+	errc := make(chan error, 1)
+
+	// Maximum depth for detector chains (prevents infinite loops)
+	// Expected: raw event → derived event → threat event → threat event (depth 4)
+	const maxDetectorChainDepth = 5
+
+	go func() {
+		defer close(out)
+		defer close(errc)
+
+		for {
+			select {
+			case event := <-in:
+				if event == nil {
+					continue
+				}
+
+				// Capture policy context BEFORE sending event downstream to avoid race conditions
+				// The event may be modified or returned to pool by downstream stages
+				matchedPoliciesKernel := event.MatchedPoliciesKernel
+				policiesVersion := event.PoliciesVersion
+
+				// Convert trace.Event to v1beta1.Event for detector API before sending downstream
+				v1Event := events.ConvertToProto(*event)
+
+				// Send original event down the pipeline first
+				out <- event
+
+				// Dispatch to detectors
+				outputs, err := t.detectorEngine.DispatchToDetectors(ctx, v1Event)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+				if len(outputs) == 0 {
+					continue
+				}
+
+				// All detector outputs in the chain inherit policy context from the original event
+				// since they're all derived from this single kernel event
+
+				// Process detector outputs through breadth-first chain traversal
+				queue := outputs
+
+				for depth := 0; depth < maxDetectorChainDepth && len(queue) > 0; depth++ {
+					var nextQueue []*v1beta1.Event
+
+					for _, protoEvent := range queue {
+						// Convert to trace.Event and inherit policy context
+						traceEvent := events.ConvertFromProto(protoEvent)
+						traceEvent.MatchedPoliciesKernel = matchedPoliciesKernel
+						traceEvent.PoliciesVersion = policiesVersion
+
+						// Apply policy filtering
+						if t.matchPolicies(traceEvent) == 0 {
+							continue
+						}
+
+						// Send to output
+						out <- traceEvent
+
+						// Dispatch to next level of detectors
+						nextOutputs, err := t.detectorEngine.DispatchToDetectors(ctx, protoEvent)
+						if err != nil {
+							t.handleError(err)
+							continue
+						}
+						nextQueue = append(nextQueue, nextOutputs...)
+					}
+
+					queue = nextQueue
+				}
+
+				// Safety check - log if max depth exceeded
+				if len(queue) > 0 {
+					t.detectorEngine.GetMetrics().ChainDepthExceeded.Inc()
+					_ = t.stats.ErrorCount.Increment()
+					logger.Errorw("Exceeded max detector chain depth",
+						"max_depth", maxDetectorChainDepth,
+						"remaining_events", len(queue))
+				}
+
 			case <-ctx.Done():
 				return
 			}

@@ -14,7 +14,7 @@ func (t *Tracee) populateDnsCache(event *trace.Event) error {
 		return fmt.Errorf("received event %s: event is not net_packet_dns_response", event.EventName)
 	}
 
-	err := t.dnsCache.Add(event)
+	err := t.dataStoreRegistry.GetDNSCache().Add(event)
 	if err != nil {
 		logger.Errorw("error caching dns data from event", "error", err)
 	}

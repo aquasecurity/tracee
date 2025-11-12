@@ -630,13 +630,13 @@ clean-lsmsupport-bpf:
 #
 
 STATIC ?= 0
-TRACEE_SRC_DIRS = ./cmd/ ./pkg/ ./signatures/
+TRACEE_SRC_DIRS = ./cmd/ ./pkg/ ./signatures/ ./detectors/
 TRACEE_SRC = $(shell find $(TRACEE_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
 CGO_EXT_LDFLAGS_EBPF =
 PKG_CONFIG_PATH = $(LIBBPF_OBJDIR)
 PKG_CONFIG_FLAG =
 
-TRACEE_PROTOS = ./api/v1beta1/*.proto
+TRACEE_PROTOS = ./api/v1beta1/*.proto ./api/v1beta1/datastores/*.proto
 
 #
 # btfhub (expensive: only run if ebpf obj changed)
@@ -677,6 +677,10 @@ $(OUTPUT_DIR)/tracee:: \
 	$(OUTPUT_DIR)/tracee.bpf.o \
 	$(LSM_SUPPORT_OBJS) \
 	$(TRACEE_SRC) \
+	go.mod \
+	go.sum \
+	detectors/go.mod \
+	detectors/go.sum \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
 	.checklib_$(LIB_BPF) \
