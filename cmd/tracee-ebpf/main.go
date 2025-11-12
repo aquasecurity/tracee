@@ -85,15 +85,9 @@ func main() {
 				Usage:   "control how and where output is printed. run '--output help' for more info.",
 			},
 			&cli.StringSliceFlag{
-				Name:    "proctree",
-				Aliases: []string{"t"},
-				Value:   cli.NewStringSlice("none"),
-				Usage:   "process tree options. run '--proctree help' for more info.",
-			},
-			&cli.StringSliceFlag{
-				Name:  "dnscache",
-				Value: cli.NewStringSlice("none"),
-				Usage: "dns cache options. run '--dnscache help' for more info",
+				Name:  "stores",
+				Value: cli.NewStringSlice(),
+				Usage: "stores configurations. run '--stores help' for more info",
 			},
 			&cli.StringSliceFlag{
 				Name:  flags.EnrichFlag,

@@ -23,34 +23,109 @@ func TestGetFlagsFromViper(t *testing.T) {
 		expectedFlags []string
 	}{
 		{
-			name: "Test proctree configuration (cli flags)",
+			name: "Test stores configuration (cli flags - process only)",
 			yamlContent: `
-proctree:
-    - source=events
-    - process-cache=8192
-    - thread-cache=4096
+stores:
+    - process.source=events
+    - process.processes=8192
+    - process.threads=4096
 `,
-			key: "proctree",
+			key: "stores",
 			expectedFlags: []string{
-				"source=events",
-				"process-cache=8192",
-				"thread-cache=4096",
+				"process.source=events",
+				"process.processes=8192",
+				"process.threads=4096",
 			},
 		},
 		{
-			name: "Test proctree configuration (structured flags)",
+			name: "Test stores configuration (structured flags - process only)",
 			yamlContent: `
-proctree:
-    source: events
-    cache:
-        process: 8192
-        thread: 4096
+stores:
+    process:
+        source: events
+        processes: 8192
+        threads: 4096
 `,
-			key: "proctree",
+			key: "stores",
 			expectedFlags: []string{
-				"source=events",
-				"process-cache=8192",
-				"thread-cache=4096",
+				"process.source=events",
+				"process.processes=8192",
+				"process.threads=4096",
+			},
+		},
+		{
+			name: "Test stores configuration (cli flags - DNS only)",
+			yamlContent: `
+stores:
+    - dns.enabled=true
+    - dns.size=1024
+`,
+			key: "stores",
+			expectedFlags: []string{
+				"dns.enabled=true",
+				"dns.size=1024",
+			},
+		},
+		{
+			name: "Test stores configuration (structured flags - DNS only)",
+			yamlContent: `
+stores:
+    dns:
+        enabled: true
+        size: 1024
+`,
+			key: "stores",
+			expectedFlags: []string{
+				"dns.enabled=true",
+				"dns.size=1024",
+			},
+		},
+		{
+			name: "Test stores configuration (cli flags - all options)",
+			yamlContent: `
+stores:
+    - dns.enabled=true
+    - dns.size=2048
+    - process.enabled=true
+    - process.source=both
+    - process.processes=8192
+    - process.threads=4096
+    - process.use-procfs=true
+`,
+			key: "stores",
+			expectedFlags: []string{
+				"dns.enabled=true",
+				"dns.size=2048",
+				"process.enabled=true",
+				"process.source=both",
+				"process.processes=8192",
+				"process.threads=4096",
+				"process.use-procfs=true",
+			},
+		},
+		{
+			name: "Test stores configuration (structured flags - all options)",
+			yamlContent: `
+stores:
+    dns:
+        enabled: true
+        size: 2048
+    process:
+        enabled: true
+        source: both
+        processes: 8192
+        threads: 4096
+        use-procfs: true
+`,
+			key: "stores",
+			expectedFlags: []string{
+				"dns.enabled=true",
+				"dns.size=2048",
+				"process.enabled=true",
+				"process.source=both",
+				"process.processes=8192",
+				"process.threads=4096",
+				"process.use-procfs=true",
 			},
 		},
 		{
@@ -520,105 +595,6 @@ signatures:
 
 			if !slicesEqualIgnoreOrder(flags, tt.expectedFlags) {
 				t.Errorf("Expected %v, got %v", tt.expectedFlags, flags)
-			}
-		})
-	}
-}
-
-//
-// proctree
-//
-
-func TestProcTreeConfigFlags(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		config   ProcTreeConfig
-		expected []string
-	}{
-		{
-			name: "empty config",
-			config: ProcTreeConfig{
-				Source: "",
-				Cache:  ProcTreeCacheConfig{},
-			},
-			expected: []string{},
-		},
-		{
-			name: "only source set",
-			config: ProcTreeConfig{
-				Source: "events",
-				Cache:  ProcTreeCacheConfig{},
-			},
-			expected: []string{
-				"source=events",
-			},
-		},
-		{
-			name: "only process cache set",
-			config: ProcTreeConfig{
-				Source: "",
-				Cache: ProcTreeCacheConfig{
-					Process: 8192,
-				},
-			},
-			expected: []string{
-				"process-cache=8192",
-			},
-		},
-		{
-			name: "only thread cache set",
-			config: ProcTreeConfig{
-				Source: "",
-				Cache: ProcTreeCacheConfig{
-					Thread: 4096,
-				},
-			},
-			expected: []string{
-				"thread-cache=4096",
-			},
-		},
-		{
-			name: "both cache values set",
-			config: ProcTreeConfig{
-				Source: "",
-				Cache: ProcTreeCacheConfig{
-					Process: 8192,
-					Thread:  4096,
-				},
-			},
-			expected: []string{
-				"process-cache=8192",
-				"thread-cache=4096",
-			},
-		},
-		{
-			name: "all fields set",
-			config: ProcTreeConfig{
-				Source: "events",
-				Cache: ProcTreeCacheConfig{
-					Process: 8192,
-					Thread:  4096,
-				},
-			},
-			expected: []string{
-				"source=events",
-				"process-cache=8192",
-				"thread-cache=4096",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			got := tt.config.flags()
-			if !slicesEqualIgnoreOrder(got, tt.expected) {
-				t.Errorf("flags() = %v, want %v", got, tt.expected)
 			}
 		})
 	}
@@ -1164,6 +1140,211 @@ func TestServerConfigFlags(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
+			got := tt.config.flags()
+			if !slicesEqualIgnoreOrder(got, tt.expected) {
+				t.Errorf("flags() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+//
+// stores
+//
+
+func TestStoresConfigFlags(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		config   StoresConfig
+		expected []string
+	}{
+		{
+			name: "empty config",
+			config: StoresConfig{
+				DNS: DNSConfig{
+					Enabled: false,
+					Size:    0,
+				},
+				Process: ProcessConfig{
+					Enabled:   false,
+					Processes: 0,
+					Threads:   0,
+					Source:    "",
+					Procfs:    false,
+				},
+			},
+			expected: []string{},
+		},
+		{
+			name: "DNS enabled only",
+			config: StoresConfig{
+				DNS: DNSConfig{
+					Enabled: true,
+					Size:    0,
+				},
+				Process: ProcessConfig{
+					Enabled:   false,
+					Processes: 0,
+					Threads:   0,
+					Source:    "",
+					Procfs:    false,
+				},
+			},
+			expected: []string{
+				"dns.enabled=true",
+			},
+		},
+		{
+			name: "DNS with size",
+			config: StoresConfig{
+				DNS: DNSConfig{
+					Enabled: true,
+					Size:    2048,
+				},
+				Process: ProcessConfig{
+					Enabled:   false,
+					Processes: 0,
+					Threads:   0,
+					Source:    "",
+					Procfs:    false,
+				},
+			},
+			expected: []string{
+				"dns.enabled=true",
+				"dns.size=2048",
+			},
+		},
+		{
+			name: "process enabled only",
+			config: StoresConfig{
+				DNS: DNSConfig{
+					Enabled: false,
+					Size:    0,
+				},
+				Process: ProcessConfig{
+					Enabled:   true,
+					Processes: 0,
+					Threads:   0,
+					Source:    "",
+					Procfs:    false,
+				},
+			},
+			expected: []string{
+				"process.enabled=true",
+			},
+		},
+		{
+			name: "process with source",
+			config: StoresConfig{
+				DNS: DNSConfig{
+					Enabled: false,
+					Size:    0,
+				},
+				Process: ProcessConfig{
+					Enabled:   false,
+					Processes: 0,
+					Threads:   0,
+					Source:    "events",
+					Procfs:    false,
+				},
+			},
+			expected: []string{
+				"process.source=events",
+			},
+		},
+		{
+			name: "process with all options",
+			config: StoresConfig{
+				DNS: DNSConfig{
+					Enabled: false,
+					Size:    0,
+				},
+				Process: ProcessConfig{
+					Enabled:   true,
+					Processes: 8192,
+					Threads:   4096,
+					Source:    "both",
+					Procfs:    true,
+				},
+			},
+			expected: []string{
+				"process.enabled=true",
+				"process.processes=8192",
+				"process.threads=4096",
+				"process.source=both",
+				"process.use-procfs=true",
+			},
+		},
+		{
+			name: "DNS and process combined",
+			config: StoresConfig{
+				DNS: DNSConfig{
+					Enabled: true,
+					Size:    1024,
+				},
+				Process: ProcessConfig{
+					Enabled:   true,
+					Processes: 4096,
+					Threads:   2048,
+					Source:    "signals",
+					Procfs:    false,
+				},
+			},
+			expected: []string{
+				"dns.enabled=true",
+				"dns.size=1024",
+				"process.enabled=true",
+				"process.processes=4096",
+				"process.threads=2048",
+				"process.source=signals",
+			},
+		},
+		{
+			name: "process source none",
+			config: StoresConfig{
+				DNS: DNSConfig{
+					Enabled: false,
+					Size:    0,
+				},
+				Process: ProcessConfig{
+					Enabled:   false,
+					Processes: 0,
+					Threads:   0,
+					Source:    "none",
+					Procfs:    false,
+				},
+			},
+			expected: []string{
+				"process.source=none",
+			},
+		},
+		{
+			name: "process source signals",
+			config: StoresConfig{
+				DNS: DNSConfig{
+					Enabled: false,
+					Size:    0,
+				},
+				Process: ProcessConfig{
+					Enabled:   false,
+					Processes: 0,
+					Threads:   0,
+					Source:    "signals",
+					Procfs:    false,
+				},
+			},
+			expected: []string{
+				"process.source=signals",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := tt.config.flags()
 			if !slicesEqualIgnoreOrder(got, tt.expected) {
 				t.Errorf("flags() = %v, want %v", got, tt.expected)

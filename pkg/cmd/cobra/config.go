@@ -20,20 +20,17 @@ type cliFlagger interface {
 func GetFlagsFromViper(key string) ([]string, error) {
 	var flagger cliFlagger
 	rawValue := viper.Get(key)
-
 	switch key {
 	case cmdflags.ServerFlag:
 		flagger = &ServerConfig{}
-	case "proctree":
-		flagger = &ProcTreeConfig{}
+	case "stores":
+		flagger = &StoresConfig{}
 	case "capabilities":
 		flagger = &CapabilitiesConfig{}
 	case cmdflags.LogFlag:
 		flagger = &LogConfig{}
 	case "output":
 		flagger = &OutputConfig{}
-	case "dnscache":
-		flagger = &DnsCacheConfig{}
 	case "buffers":
 		flagger = &BuffersConfig{}
 	case "enrich":
@@ -111,64 +108,6 @@ func (s *ServerConfig) flags() []string {
 		f = append(f, cmdflags.PyroscopeAgentEndpointFlag)
 	}
 	return f
-}
-
-//
-// proctree flag
-//
-
-type ProcTreeConfig struct {
-	Source string              `mapstructure:"source"`
-	Cache  ProcTreeCacheConfig `mapstructure:"cache"`
-}
-
-type ProcTreeCacheConfig struct {
-	Process int `mapstructure:"process"`
-	Thread  int `mapstructure:"thread"`
-}
-
-func (c *ProcTreeConfig) flags() []string {
-	flags := make([]string, 0)
-
-	if c.Source != "" {
-		if c.Source == "none" {
-			flags = append(flags, "none")
-		} else {
-			flags = append(flags, fmt.Sprintf("source=%s", c.Source))
-		}
-	}
-	if c.Cache.Process != 0 {
-		flags = append(flags, fmt.Sprintf("process-cache=%d", c.Cache.Process))
-	}
-	if c.Cache.Thread != 0 {
-		flags = append(flags, fmt.Sprintf("thread-cache=%d", c.Cache.Thread))
-	}
-
-	return flags
-}
-
-//
-// dnscache flag
-//
-
-type DnsCacheConfig struct {
-	Enable bool `mapstructure:"enable"`
-	Size   int  `mapstructure:"size"`
-}
-
-func (c *DnsCacheConfig) flags() []string {
-	flags := make([]string, 0)
-
-	if !c.Enable {
-		flags = append(flags, "none")
-		return flags
-	}
-
-	if c.Size != 0 {
-		flags = append(flags, fmt.Sprintf("size=%d", c.Size))
-	}
-
-	return flags
 }
 
 //
@@ -465,6 +404,56 @@ func (c *SignaturesConfig) flags() []string {
 
 	if len(c.SearchPaths) > 0 {
 		flags = append(flags, fmt.Sprintf("search-paths=%s", strings.Join(c.SearchPaths, ",")))
+	}
+
+	return flags
+}
+//
+// stores flag
+//
+
+type ProcessConfig struct {
+	Enabled   bool   `mapstructure:"enabled"`
+	Processes int    `mapstructure:"processes"`
+	Threads   int    `mapstructure:"threads"`
+	Source    string `mapstructure:"source"`
+	Procfs    bool   `mapstructure:"use-procfs"`
+}
+
+type DNSConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	Size    int  `mapstructure:"size"`
+}
+
+type StoresConfig struct {
+	DNS     DNSConfig     `mapstructure:"dns"`
+	Process ProcessConfig `mapstructure:"process"`
+}
+
+func (c *StoresConfig) flags() []string {
+	flags := []string{}
+
+	if c.DNS.Enabled {
+		flags = append(flags, fmt.Sprintf("dns.enabled=%v", c.DNS.Enabled))
+	}
+	if c.DNS.Size != 0 {
+		flags = append(flags, fmt.Sprintf("dns.size=%d", c.DNS.Size))
+	}
+
+	if c.Process.Enabled {
+		flags = append(flags, fmt.Sprintf("process.enabled=%v", c.Process.Enabled))
+	}
+	if c.Process.Processes != 0 {
+		flags = append(flags, fmt.Sprintf("process.processes=%d", c.Process.Processes))
+	}
+	if c.Process.Threads != 0 {
+		flags = append(flags, fmt.Sprintf("process.threads=%d", c.Process.Threads))
+	}
+	if c.Process.Source != "" {
+		flags = append(flags, fmt.Sprintf("process.source=%s", c.Process.Source))
+	}
+	if c.Process.Procfs {
+		flags = append(flags, fmt.Sprintf("process.use-procfs=%v", c.Process.Procfs))
 	}
 
 	return flags

@@ -48,8 +48,8 @@ func GetHelpString(key string) string {
 	switch key {
 	case "config":
 		return configHelp()
-	case "proctree":
-		return procTreeHelp()
+	case "stores":
+		return storesHelp()
 	case "capture":
 		return captureHelp()
 	case "scope":

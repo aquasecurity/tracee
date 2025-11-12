@@ -202,14 +202,14 @@ done
 
 tracee_command="./dist/tracee \
                     --general workdir=$TRACEE_TMP_DIR \
-                    --proctree source=both \
+                    --stores process.enabled=true --stores process.source=both \
                     --output option:sort-events \
                     --output option:parse-arguments \
                     --output json:$outputfile \
                     --log level=debug \
                     --log file=$logfile \
                     --signatures search-paths=$SIG_DIR \
-                    --dnscache enable \
+                    --stores dns.enabled=true \
                     --server grpc-address=unix:/tmp/tracee.sock \
                     --policy ./tests/policies/inst/"
 

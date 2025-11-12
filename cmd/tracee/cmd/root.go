@@ -214,27 +214,15 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
-	// Process Tree flags
+	// Stores flags
 
-	rootCmd.Flags().StringArrayP(
-		"proctree",
-		"t",
-		[]string{"source=none"},
-		"[source=[events|signals|both]...]\tControl process tree options",
-	)
-	err = viper.BindPFlag("proctree", rootCmd.Flags().Lookup("proctree"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// DNS Cache flags
-
+	// TODO: extract flags
 	rootCmd.Flags().StringArray(
-		"dnscache",
-		[]string{"none"},
-		"\t\t\t\t\tEnable DNS Cache",
+		"stores",
+		[]string{""},
+		"\t\t\t\t\tStores configurations",
 	)
-	err = viper.BindPFlag("dnscache", rootCmd.Flags().Lookup("dnscache"))
+	err = viper.BindPFlag("stores", rootCmd.Flags().Lookup("stores"))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
