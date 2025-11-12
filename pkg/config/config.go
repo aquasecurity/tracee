@@ -17,27 +17,28 @@ import (
 // NOTE: In the future, Tracee config will be changed at run time and will require
 // proper management.
 type Config struct {
-	InitialPolicies     []interface{} // due to circular dependency, policy.Policy cannot be used here
-	Capture             *CaptureConfig
-	Capabilities        *CapabilitiesConfig
-	Output              *OutputConfig
-	ProcTree            process.ProcTreeConfig
-	PerfBufferSize      int
-	BlobPerfBufferSize  int
-	PipelineChannelSize int
-	MaxPidsCache        int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
-	BTFObjPath          string
-	BPFObjBytes         []byte
-	BPFObjPath          string // path to the BPF object binary for uprobe attachment (defaults to /proc/self/exe)
-	KernelConfig        *environment.KernelConfig
-	OSInfo              *environment.OSInfo
-	Sockets             runtime.Sockets
-	NoContainersEnrich  bool
-	CgroupFSPath        string
-	CgroupFSForce       bool
-	EngineConfig        engine.Config
-	MetricsEnabled      bool
-	DNSCacheConfig      dns.Config
+	InitialPolicies            []interface{} // due to circular dependency, policy.Policy cannot be used here
+	Capture                    *CaptureConfig
+	Capabilities               *CapabilitiesConfig
+	Output                     *OutputConfig
+	ProcTree                   process.ProcTreeConfig
+	PerfBufferSize             int
+	BlobPerfBufferSize         int
+	PipelineChannelSize        int
+	ControlPlanePerfBufferSize int
+	MaxPidsCache               int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
+	BTFObjPath                 string
+	BPFObjBytes                []byte
+	BPFObjPath                 string // path to the BPF object binary for uprobe attachment (defaults to /proc/self/exe)
+	KernelConfig               *environment.KernelConfig
+	OSInfo                     *environment.OSInfo
+	Sockets                    runtime.Sockets
+	NoContainersEnrich         bool
+	CgroupFSPath               string
+	CgroupFSForce              bool
+	EngineConfig               engine.Config
+	MetricsEnabled             bool
+	DNSCacheConfig             dns.Config
 }
 
 // Validate does static validation of the configuration

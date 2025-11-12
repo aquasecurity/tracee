@@ -98,6 +98,7 @@ func StartTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 	defaultBufferPages := (4096 * 1024) / os.Getpagesize() // 4 MB of contiguous pages
 	cfg.PerfBufferSize = defaultBufferPages
 	cfg.BlobPerfBufferSize = defaultBufferPages
+	cfg.ControlPlanePerfBufferSize = defaultBufferPages
 	cfg.PipelineChannelSize = 10000
 
 	// No process tree in the integration tests
