@@ -43,30 +43,22 @@ Examples:
 `
 }
 
-func invalidLogOption(err error, opt string, newBinary bool) error {
+func invalidLogOption(err error, opt string) error {
 	if err == nil {
 		// this is a hack to clear the previous two chars from the error message
 		err = errors.New("\b\b")
 	}
 
-	if newBinary {
-		return errfmt.Errorf("invalid log option: %s, %s, run 'man log' for more info", opt, err)
-	}
-
-	return InvalidLogOptionError(opt, err.Error())
+	return errfmt.Errorf("invalid log option: %s, %s, run 'tracee man log' for more info", opt, err)
 }
 
-func invalidLogOptionValue(err error, opt string, newBinary bool) error {
+func invalidLogOptionValue(err error, opt string) error {
 	if err == nil {
 		// this is a hack to clear the previous two chars from the error message
 		err = errors.New("\b\b")
 	}
 
-	if newBinary {
-		return errfmt.Errorf("invalid log option value: %s, %s, use '--help' for more info", opt, err)
-	}
-
-	return InvalidLogOptionValueError(opt, err.Error())
+	return errfmt.Errorf("invalid log option value: %s, %s, use '--help' for more info", opt, err)
 }
 
 func parseLevel(level string) (logger.Level, error) {
@@ -103,10 +95,10 @@ func validateLogOption(opt string) error {
 	}
 
 	// don't pass the error, it's not relevant in this case
-	return invalidLogOption(nil, opt, false)
+	return invalidLogOption(nil, opt)
 }
 
-func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, error) {
+func PrepareLogger(logOptions []string) (logger.LoggingConfig, error) {
 	var (
 		agg           bool
 		filter        = logger.NewLoggerFilter()
@@ -126,7 +118,7 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 			vals := strings.Split(opt, ":")
 
 			if len(vals) == 1 || vals[1] == "" {
-				return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
+				return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt)
 			}
 
 			w, err = CreateOutputFile(vals[1])
@@ -142,22 +134,22 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 			if !strings.HasSuffix(opt, "aggregate") {
 				vals := strings.Split(opt, ":")
 				if len(vals) != 2 || len(vals[1]) <= 1 {
-					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
+					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt)
 				}
 
 				// handle only seconds and minutes
 				timeSuffix := vals[1][len(vals[1])-1:][0]
 				if timeSuffix != 's' && timeSuffix != 'm' {
-					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
+					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt)
 				}
 				prevByte := vals[1][len(vals[1])-2:][0]
 				if timeSuffix == 's' && !unicode.IsDigit(rune(prevByte)) {
-					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
+					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt)
 				}
 
 				flushInterval, err = time.ParseDuration(vals[1])
 				if err != nil {
-					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
+					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt)
 				}
 			}
 
@@ -181,11 +173,11 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 				optType := optTypeVal[0]
 				optVals := []string{}
 				if len(optTypeVal) == 1 && optType != "libbpf" {
-					return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
+					return logger.LoggingConfig{}, invalidLogOption(nil, opt)
 				}
 				if len(optTypeVal) == 2 {
 					if optTypeVal[1] == "" {
-						return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
+						return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt)
 					}
 					optVals = strings.Split(optTypeVal[1], ",")
 				}
@@ -199,7 +191,7 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 								continue
 							}
 
-							return logger.LoggingConfig{}, invalidLogOption(err, opt, newBinary)
+							return logger.LoggingConfig{}, invalidLogOption(err, opt)
 						}
 					}
 				case "pkg":
@@ -210,7 +202,7 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 								continue
 							}
 
-							return logger.LoggingConfig{}, invalidLogOption(err, opt, newBinary)
+							return logger.LoggingConfig{}, invalidLogOption(err, opt)
 						}
 					}
 				case "file":
@@ -221,14 +213,14 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 								continue
 							}
 
-							return logger.LoggingConfig{}, invalidLogOption(err, opt, newBinary)
+							return logger.LoggingConfig{}, invalidLogOption(err, opt)
 						}
 					}
 				case "lvl":
 					for _, val := range optVals {
 						filterLvl, err := parseLevel(val)
 						if err != nil {
-							return logger.LoggingConfig{}, invalidLogOptionValue(err, opt, newBinary)
+							return logger.LoggingConfig{}, invalidLogOptionValue(err, opt)
 						}
 
 						if err := filter.AddLvl(int(filterLvl), filterKind); err != nil {
@@ -237,7 +229,7 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 								continue
 							}
 
-							return logger.LoggingConfig{}, invalidLogOptionValue(err, opt, newBinary)
+							return logger.LoggingConfig{}, invalidLogOptionValue(err, opt)
 						}
 					}
 				case "regex":
@@ -248,7 +240,7 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 								continue
 							}
 
-							return logger.LoggingConfig{}, invalidLogOptionValue(err, opt, newBinary)
+							return logger.LoggingConfig{}, invalidLogOptionValue(err, opt)
 						}
 					}
 				case "libbpf":
@@ -258,10 +250,10 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 							continue
 						}
 
-						return logger.LoggingConfig{}, invalidLogOptionValue(err, opt, newBinary)
+						return logger.LoggingConfig{}, invalidLogOptionValue(err, opt)
 					}
 				default:
-					return logger.LoggingConfig{}, invalidLogOption(nil, opt, newBinary)
+					return logger.LoggingConfig{}, invalidLogOption(nil, opt)
 				}
 			}
 			continue
@@ -270,7 +262,7 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 		// parse level option
 		lvl, err = parseLevel(opt)
 		if err != nil {
-			return logger.LoggingConfig{}, invalidLogOption(err, opt, newBinary)
+			return logger.LoggingConfig{}, invalidLogOption(err, opt)
 		}
 	}
 

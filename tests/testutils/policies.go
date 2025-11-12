@@ -55,7 +55,7 @@ func NewPolicies(polsFilesID []PolicyFileWithID) []*policy.Policy {
 		panic(err)
 	}
 
-	policies, err := flags.CreatePolicies(policyScopeMap, policyEventMap, true)
+	policies, err := flags.CreatePolicies(policyScopeMap, policyEventMap)
 	if err != nil {
 		panic(err)
 	}

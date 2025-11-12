@@ -13,7 +13,7 @@ func createPoliciesFromK8SPolicy(policies []k8s.PolicyInterface) ([]*policy.Poli
 		return nil, err
 	}
 
-	return flags.CreatePolicies(policyScopeMap, policyEventsMap, true)
+	return flags.CreatePolicies(policyScopeMap, policyEventsMap)
 }
 
 func createPoliciesFromPolicyFiles(policyFlags []string) ([]*policy.Policy, error) {
@@ -27,7 +27,7 @@ func createPoliciesFromPolicyFiles(policyFlags []string) ([]*policy.Policy, erro
 		return nil, err
 	}
 
-	return flags.CreatePolicies(policyScopeMap, policyEventsMap, true)
+	return flags.CreatePolicies(policyScopeMap, policyEventsMap)
 }
 
 func createPoliciesFromCLIFlags(scopeFlags, eventFlags []string) ([]*policy.Policy, error) {
@@ -41,5 +41,5 @@ func createPoliciesFromCLIFlags(scopeFlags, eventFlags []string) ([]*policy.Poli
 		return nil, err
 	}
 
-	return flags.CreatePolicies(policyScopeMap, policyEventsMap, true)
+	return flags.CreatePolicies(policyScopeMap, policyEventsMap)
 }

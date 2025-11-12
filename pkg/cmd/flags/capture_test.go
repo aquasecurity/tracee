@@ -232,7 +232,7 @@ func TestPrepareCapture(t *testing.T) {
 			t.Run(tc.testName, func(t *testing.T) {
 				t.Parallel()
 
-				capture, err := PrepareCapture(tc.captureSlice, false)
+				capture, err := PrepareCapture(tc.captureSlice)
 				if tc.expectedError == nil {
 					require.NoError(t, err)
 					assert.Equal(t, tc.expectedCapture, capture, tc.testName)
@@ -246,7 +246,7 @@ func TestPrepareCapture(t *testing.T) {
 
 	t.Run("clear dir", func(t *testing.T) {
 		d, _ := os.CreateTemp("", "TestPrepareCapture-*")
-		capture, err := PrepareCapture([]string{fmt.Sprintf("dir:%s", d.Name()), "clear-dir"}, false)
+		capture, err := PrepareCapture([]string{fmt.Sprintf("dir:%s", d.Name()), "clear-dir"})
 		require.NoError(t, err)
 		assert.Equal(t, config.CaptureConfig{OutputPath: fmt.Sprintf("%s/out", d.Name())}, capture)
 		require.NoDirExists(t, d.Name()+"out")
