@@ -7,7 +7,7 @@
 __LIB_LOG_NAME="lib_log.sh"
 
 # prevent multiple sourcing
-if [ -n "${__LIB_LOG_SH_SOURCED}" ]; then
+if [ -n "${__LIB_LOG_SH_SOURCED:-}" ]; then
     return 0
 fi
 __LIB_LOG_SH_SOURCED=1

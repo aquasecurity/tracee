@@ -7,7 +7,7 @@
 __LIB_PRINT_NAME="lib_print.sh"
 
 # prevent multiple sourcing
-if [ -n "${__LIB_PRINT_SH_SOURCED}" ]; then
+if [ -n "${__LIB_PRINT_SH_SOURCED:-}" ]; then
     return 0
 fi
 __LIB_PRINT_SH_SOURCED=1

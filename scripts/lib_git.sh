@@ -7,7 +7,7 @@
 __LIB_GIT_NAME="lib_git.sh"
 
 # prevent multiple sourcing
-if [ -n "${__LIB_GIT_SH_SOURCED}" ]; then
+if [ -n "${__LIB_GIT_SH_SOURCED:-}" ]; then
     return 0
 fi
 __LIB_GIT_SH_SOURCED=1
