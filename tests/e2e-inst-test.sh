@@ -1,50 +1,66 @@
 #!/bin/bash
-
 #
-# This test is executed by github workflows inside the action runners
+# E2E Instrumentation Test Coordinator
+#
+# This script orchestrates the execution of core and extended instrumentation tests.
+# Test implementations are in:
+#   - e2e-inst-test-core.sh (core tests)
+#   - e2e-inst-test-extended.sh (extended tests, gitignored)
 #
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+
+# ==============================================================================
+# Load Dependencies
+# ==============================================================================
 # shellcheck disable=SC1091
 . "${SCRIPT_DIR}/e2e-common.sh"
 
-ARCH=$(uname -m)
+# ==============================================================================
+# Help Functions
+# ==============================================================================
+# Show help message for --help flag
+show_help() {
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --keep-artifacts    Don't delete test artifacts (logs and output files)"
+    echo "  -h, --help          Show this help message"
+    echo ""
+    echo "Test Selection (via INSTTESTS environment variable):"
+    echo "  INSTTESTS=all       Run all available tests (default)"
+    echo "  INSTTESTS=core      Run only core tests"
+    echo "  INSTTESTS=extended  Run only extended tests"
+    echo "  INSTTESTS='TEST1 TEST2'  Run specific tests"
+    echo ""
+    echo "Examples:"
+    echo "  $0                                    # Run all tests"
+    echo "  INSTTESTS=core $0                     # Run only core tests"
+    echo "  INSTTESTS='VFS_WRITE DNS_DATA_SOURCE' $0  # Run specific tests"
+}
 
-TRACEE_STARTUP_TIMEOUT=30
-TRACEE_SHUTDOWN_TIMEOUT=30
-SCRIPT_TMP_DIR=/tmp
-TRACEE_TMP_DIR=/tmp/tracee
+# Show usage hint for error scenarios
+show_usage_hint() {
+    error ""
+    error "Available tests:"
+    error "  Core: ${INSTTESTS_CORE_AVAILABLE}"
+    if [[ -n "${INSTTESTS_EXTENDED_AVAILABLE}" ]]; then
+        error "  Extended: ${INSTTESTS_EXTENDED_AVAILABLE}"
+    fi
+    error ""
+    error "Usage: INSTTESTS=<value> $0"
+    error "  where <value> can be:"
+    error "    - 'all' (run all available tests)"
+    error "    - 'core' (run only core tests)"
+    error "    - 'extended' (run only extended tests)"
+    error "    - specific test names (e.g., 'VFS_WRITE DNS_DATA_SOURCE')"
+}
 
-# Default test to run if no other is given
-TESTS=${INSTTESTS:=VFS_WRITE CONTAINERS_DATA_SOURCE WRITABLE_DATA_SOURCE DNS_DATA_SOURCE PROCTREE_DATA_SOURCE PROCESS_EXECUTE_FAILED LSM_TEST}
-
-TRACEE_POLICY_PATH="./tests/policies/inst/"
-
-# shellcheck disable=SC2034  # Used via nameref in e2e-common.sh functions
-declare -A TEST_CONFIG_MAP
-
-#                               <test_name>                 <policy_name>                 <timeout_sec> <sleep_sec>
-add_test_config TEST_CONFIG_MAP "SET_FS_PWD"                "set-fs-pwd-test"             5              0
-add_test_config TEST_CONFIG_MAP "WRITABLE_DATA_SOURCE"      "writable-ds-test"            40             0
-add_test_config TEST_CONFIG_MAP "SECURITY_PATH_NOTIFY"      "security-path-notify-test"   5              0
-add_test_config TEST_CONFIG_MAP "SUSPICIOUS_SYSCALL_SOURCE" "suspicious-syscall-src-test" 10             0
-add_test_config TEST_CONFIG_MAP "CONTAINERS_DATA_SOURCE"    "containers-ds-test"          10             5
-add_test_config TEST_CONFIG_MAP "PROCTREE_DATA_SOURCE"      "proctree-ds-test"            15             10
-add_test_config TEST_CONFIG_MAP "HOOKED_SYSCALL"            "hooked-syscall-test"         10             5
-add_test_config TEST_CONFIG_MAP "PROCESS_EXECUTE_FAILED"    "execute-failed-test"         5              2
-add_test_config TEST_CONFIG_MAP "STACK_PIVOT"               "stack-pivot-test"            10             5
-add_test_config TEST_CONFIG_MAP "FTRACE_HOOK"               "ftrace-hook-test"            15             5
-add_test_config TEST_CONFIG_MAP "BPF_ATTACH"                "bpf-attach-test"             15             5
-add_test_config TEST_CONFIG_MAP "DNS_DATA_SOURCE"           "dns-ds-test"                 10             0
-add_test_config TEST_CONFIG_MAP "SECURITY_INODE_RENAME"     "security-inode-rename-test"  10             2
-add_test_config TEST_CONFIG_MAP "FILE_MODIFICATION"         "file-modification-test"      5              0
-add_test_config TEST_CONFIG_MAP "LSM_TEST"                  "lsm-test"                    5              0
-add_test_config TEST_CONFIG_MAP "VFS_WRITE"                 "vfs-write-test"              5              0
-
-# Command line options
+# ==============================================================================
+# Command Line Arguments
+# ==============================================================================
 KEEP_ARTIFACTS=0
 
-# Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
         --keep-artifacts)
@@ -52,50 +68,190 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -h | --help)
-            echo "Usage: $0 [--keep-artifacts] [--help]"
-            echo "  --keep-artifacts    Don't delete test artifacts (logs and output files) after completion"
-            echo "  --help              Show this help message"
+            show_help
             exit 0
             ;;
         *)
-            echo "Unknown option: $1"
-            echo "Use --help for usage information"
+            error "Unknown option: $1"
+            error "Use --help for usage information"
             exit 1
             ;;
     esac
 done
 
+# ==============================================================================
+# Configuration
+# ==============================================================================
+# Export variables used by sourced test implementation files
+ARCH=$(uname -m)
+export ARCH
+export KERNEL # Set later, used by core_test_setup
+TRACEE_STARTUP_TIMEOUT=30
+TRACEE_SHUTDOWN_TIMEOUT=30
+SCRIPT_TMP_DIR=/tmp
+TRACEE_TMP_DIR=/tmp/tracee
 
+# ==============================================================================
+# Test List Configuration
+# ==============================================================================
+# Capture user/CI selection BEFORE sourcing implementation files
+USER_INSTTESTS=${INSTTESTS:-}
 
-# Function to check if a test should be skipped
-should_skip_test() {
-    local test_name="$1"
+# ==============================================================================
+# Test Configuration Map
+# ==============================================================================
+# Must be declared BEFORE sourcing implementation files
+# Implementation files populate this via add_test_config calls
+# shellcheck disable=SC2034  # Used via nameref in e2e-common.sh and implementation files
+declare -A TEST_CONFIG_MAP
 
-    case "${test_name}" in
-        HOOKED_SYSCALL)
-            [[ "${skip_hooked_syscall}" -eq 1 ]]
+# ==============================================================================
+# Source Test Implementations
+# ==============================================================================
+# Implementation files define INSTTESTS_*_AVAILABLE and test phase functions
+
+# Source core test implementation (required)
+CORE_TEST_IMPL="${SCRIPT_DIR}/e2e-inst-test-core.sh"
+if [[ ! -f "${CORE_TEST_IMPL}" ]]; then
+    die "Core test implementation not found: ${CORE_TEST_IMPL}"
+fi
+# shellcheck disable=SC1090
+. "${CORE_TEST_IMPL}"
+
+# Validate core tests available list was defined
+if [[ -z "${INSTTESTS_CORE_AVAILABLE:-}" ]]; then
+    die "INSTTESTS_CORE_AVAILABLE not defined in ${CORE_TEST_IMPL}"
+fi
+
+# Source extended test implementation (optional - private repo only)
+EXTENDED_TEST_IMPL="${SCRIPT_DIR}/e2e-inst-test-extended.sh"
+if [[ -f "${EXTENDED_TEST_IMPL}" ]]; then
+    info "Loading extended test implementation from ${EXTENDED_TEST_IMPL}"
+    # shellcheck disable=SC1090
+    . "${EXTENDED_TEST_IMPL}"
+
+    # Validate extended tests available list was defined
+    if [[ -z "${INSTTESTS_EXTENDED_AVAILABLE:-}" ]]; then
+        die "INSTTESTS_EXTENDED_AVAILABLE not defined in ${EXTENDED_TEST_IMPL}"
+    fi
+else
+    # No extended tests available - define no-op functions
+    INSTTESTS_EXTENDED_AVAILABLE=""
+
+    # Define stub functions so coordinator can safely call them
+    extended_init_test_config() { return 0; }
+    extended_should_skip_test() { return 0; }
+    extended_test_setup() { return 0; }
+    extended_test_run() { return 0; }
+    extended_test_check() { return 0; }
+fi
+
+# ==============================================================================
+# Test Selection and Routing
+# ==============================================================================
+# Route user selection to core or extended based on availability
+#
+# Behavior:
+#   - INSTTESTS not set: Run all available tests (core + extended)
+#   - INSTTESTS="all": Same as not set, run everything
+#   - INSTTESTS="core": Run all core tests only
+#   - INSTTESTS="extended": Run all extended tests only
+#   - INSTTESTS="TEST1 TEST2": Auto-route specified tests (strict validation)
+
+if [[ -n "${USER_INSTTESTS}" ]]; then
+    # Handle special keywords first
+    case "${USER_INSTTESTS}" in
+        all)
+            info "Running all available tests"
+            INSTTESTS_CORE=${INSTTESTS_CORE_AVAILABLE}
+            INSTTESTS_EXTENDED=${INSTTESTS_EXTENDED_AVAILABLE}
             ;;
-        FTRACE_HOOK)
-            [[ "${skip_ftrace_hook}" -eq 1 ]]
+        core)
+            info "Running all core tests"
+            INSTTESTS_CORE=${INSTTESTS_CORE_AVAILABLE}
+            INSTTESTS_EXTENDED=""
             ;;
-        SECURITY_PATH_NOTIFY)
-            [[ "${skip_security_path_notify}" -eq 1 ]]
-            ;;
-        SUSPICIOUS_SYSCALL_SOURCE)
-            [[ "${skip_suspicious_syscall_source}" -eq 1 ]]
-            ;;
-        STACK_PIVOT)
-            [[ "${skip_stack_pivot}" -eq 1 ]]
-            ;;
-        LSM_TEST)
-            [[ "${lsm_test_not_supported}" -eq 1 ]]
+        extended)
+            info "Running all extended tests"
+            INSTTESTS_CORE=""
+            INSTTESTS_EXTENDED=${INSTTESTS_EXTENDED_AVAILABLE}
             ;;
         *)
-            false
+            # User specified individual tests - route them automatically with strict validation
+            INSTTESTS_CORE=""
+            INSTTESTS_EXTENDED=""
+            invalid_tests=""
+
+            for test in ${USER_INSTTESTS}; do
+                # Check if test is in core available list
+                if grep -qw "${test}" <<< "${INSTTESTS_CORE_AVAILABLE}"; then
+                    INSTTESTS_CORE="${INSTTESTS_CORE} ${test}"
+                # Check if test is in extended available list
+                elif [[ -n "${INSTTESTS_EXTENDED_AVAILABLE}" ]] && grep -qw "${test}" <<< "${INSTTESTS_EXTENDED_AVAILABLE}"; then
+                    INSTTESTS_EXTENDED="${INSTTESTS_EXTENDED} ${test}"
+                else
+                    # Collect invalid tests
+                    invalid_tests="${invalid_tests} ${test}"
+                fi
+            done
+
+            # Strict validation: fail if any test is invalid
+            if [[ -n "${invalid_tests}" ]]; then
+                error "Invalid test(s) specified:${invalid_tests}"
+                show_usage_hint
+                die "Cannot proceed with invalid tests"
+            fi
+
+            # Trim leading spaces
+            INSTTESTS_CORE=${INSTTESTS_CORE# }
+            INSTTESTS_EXTENDED=${INSTTESTS_EXTENDED# }
             ;;
     esac
-}
+else
+    # Default: run all available tests
+    INSTTESTS_CORE=${INSTTESTS_CORE_AVAILABLE}
+    INSTTESTS_EXTENDED=${INSTTESTS_EXTENDED_AVAILABLE}
+fi
 
+# ==============================================================================
+# Validation
+# ==============================================================================
+# Check if we have any tests to run
+
+if [[ -z "${INSTTESTS_CORE}" && -z "${INSTTESTS_EXTENDED}" ]]; then
+    error "No tests to run!"
+    show_usage_hint
+    die "Please specify valid tests"
+fi
+
+info "Tests to run:"
+if [[ -n "${INSTTESTS_CORE}" ]]; then
+    info "  Core: ${INSTTESTS_CORE}"
+fi
+if [[ -n "${INSTTESTS_EXTENDED}" ]]; then
+    info "  Extended: ${INSTTESTS_EXTENDED}"
+fi
+
+# ==============================================================================
+# Initialize Test Configurations
+# ==============================================================================
+# Now that we know which tests to run, initialize their configurations
+
+if [[ -n "${INSTTESTS_CORE}" ]]; then
+    core_init_test_config
+fi
+
+if [[ -n "${INSTTESTS_EXTENDED}" ]] && declare -f extended_init_test_config > /dev/null; then
+    extended_init_test_config
+fi
+
+TRACEE_POLICY_PATH="./tests/policies/inst/"
+export TESTS_DIR="${SCRIPT_DIR}/e2e-inst-signatures/scripts" # Used by core_test_run
+SIG_DIR="${SCRIPT_DIR}/../dist/e2e-inst-signatures"
+
+# ==============================================================================
+# Pre-flight Checks
+# ==============================================================================
 if [[ ${UID} -ne 0 ]]; then
     die "need root privileges"
 fi
@@ -114,184 +270,58 @@ if [[ ${KERNEL_MAJ} -lt 5 && "${KERNEL}" != *"el8"* ]]; then
     exit 0
 fi
 
-TESTS_DIR="${SCRIPT_DIR}/e2e-inst-signatures/scripts"
-SIG_DIR="${SCRIPT_DIR}/../dist/e2e-inst-signatures"
-
+# ==============================================================================
+# Environment Information
+# ==============================================================================
 print_test_header "ENVIRONMENT"
 info "KERNEL: ${KERNEL}"
 info "CLANG: $(clang --version)"
 info "GO: $(go version)"
 print_test_separator
 
+# ==============================================================================
+# Build Tracee and Signatures
+# ==============================================================================
 print_test_header "COMPILING TRACEE, SIGNATURES AND LSM-CHECK"
 set -e
 make -j"$(nproc)" tracee e2e-inst-signatures lsm-check
 set +e
 print_test_separator
 
-# check if tracee was built correctly
 if [[ ! -x ./dist/tracee ]]; then
     die "could not find tracee executable"
 fi
 
+# ==============================================================================
+# Initialize Test State
+# ==============================================================================
 logfile="${SCRIPT_TMP_DIR}/tracee-log-$$"
 outputfile="${SCRIPT_TMP_DIR}/tracee-output-$$"
+rm -f "${outputfile}" "${logfile}"
 
-# remove old log and output files
-rm -f "${outputfile}"
-rm -f "${logfile}"
-
-skip_hooked_syscall=0
-skip_ftrace_hook=0
-skip_security_path_notify=0
-skip_suspicious_syscall_source=0
-skip_stack_pivot=0
-lsm_test_not_supported=0
-
-# Setup tests and skips
-# Some tests might need special setup (like running before tracee)
+# ==============================================================================
+# PHASE 1: SETUP TESTS
+# ==============================================================================
 print_test_header "SETUP TESTS"
-for TEST in ${TESTS}; do
+
+# Setup core tests
+for TEST in ${INSTTESTS_CORE}; do
     print_test_header "${TEST}" "SETUP"
-
-    case ${TEST} in
-        HOOKED_SYSCALL)
-            # TODO: install kernel headers in the AMI images
-            if [[ ! -d /lib/modules/${KERNEL}/build ]]; then
-                info "skip hooked_syscall test, no kernel headers"
-                skip_hooked_syscall=1
-            fi
-            if [[ "${KERNEL}" == *"amzn"* ]]; then
-                info "skip hooked_syscall test in amazon linux"
-                skip_hooked_syscall=1
-            fi
-            if [[ ${ARCH} == "aarch64" ]]; then
-                info "skip hooked_syscall test in aarch64"
-                skip_hooked_syscall=1
-            fi
-            if [[ "${skip_hooked_syscall}" -eq 0 ]]; then
-                ./tests/e2e-inst-signatures/scripts/hooked_syscall.sh --build --install
-            fi
-            ;;
-
-        FTRACE_HOOK)
-            # TODO: install kernel headers in the AMI images
-            if [[ ! -d /lib/modules/${KERNEL}/build ]]; then
-                info "skip ftrace_hook test, no kernel headers"
-                skip_ftrace_hook=1
-            fi
-            if [[ "${KERNEL}" == *"amzn"* ]]; then
-                info "skip ftrace_hook test in amazon linux"
-                skip_ftrace_hook=1
-            fi
-            if [[ ${ARCH} == "aarch64" ]]; then
-                info "skip ftrace_hook test in aarch64"
-                skip_ftrace_hook=1
-            fi
-            if [[ "${skip_ftrace_hook}" -eq 0 ]]; then
-                ./tests/e2e-inst-signatures/scripts/ftrace_hook.sh --build
-            fi
-            ;;
-
-        SECURITY_PATH_NOTIFY)
-            if ! grep -qw "security_path_notify" /proc/kallsyms; then
-                info "skip security_path_notify test on kernel ${KERNEL} (security hook doesn't exist)"
-                skip_security_path_notify=1
-            else
-                info "compiling security path notify test..."
-                if ! ./tests/e2e-inst-signatures/scripts/security_path_notify.sh --build; then
-                    error "could not compile security_path_notify"
-                fi
-            fi
-            ;;
-
-        SUSPICIOUS_SYSCALL_SOURCE)
-            if grep -qP "trace.*vma_store" /proc/kallsyms; then
-                info "skip ${TEST} test on kernel ${KERNEL} (VMAs stored in maple tree)"
-                skip_suspicious_syscall_source=1
-            else
-                info "compiling suspicious syscall source test..."
-                if ! ./tests/e2e-inst-signatures/scripts/suspicious_syscall_source.sh --build; then
-                    error "could not compile suspicious_syscall_source"
-                fi
-            fi
-            ;;
-
-        STACK_PIVOT)
-            if grep -qP "trace.*vma_store" /proc/kallsyms; then
-                info "skip ${TEST} test on kernel ${KERNEL} (VMAs stored in maple tree)"
-                skip_stack_pivot=1
-            else
-                info "compiling stack pivot test..."
-                if ! ./tests/e2e-inst-signatures/scripts/stack_pivot.sh --build; then
-                    error "could not compile stack_pivot"
-                fi
-            fi
-            ;;
-
-        WRITABLE_DATA_SOURCE)
-            info "building writable data source test..."
-            if ! ./tests/e2e-inst-signatures/scripts/writable_data_source.sh --build; then
-                error "could not build writable_data_source"
-            fi
-            ;;
-
-        CONTAINERS_DATA_SOURCE)
-            info "pulling container image for containers data source test..."
-            if ! ./tests/e2e-inst-signatures/scripts/containers_data_source.sh --install; then
-                error "could not pull container image"
-                # Note: don't skip this test so it can fail
-            fi
-            ;;
-
-        BPF_ATTACH)
-            if ! ./tests/e2e-inst-signatures/scripts/bpf_attach.sh --install; then
-                error "could not install bpftrace"
-                # Note: don't skip this test so it can fail
-            fi
-            ;;
-
-        LSM_TEST)
-            # Test LSM BPF support using Tracee's actual BPF loading test
-            info "testing LSM BPF support using actual BPF loading..."
-            if [[ ! -x ./dist/lsm-check ]]; then
-                error "skip lsm_test on kernel ${KERNEL} (lsm-check binary not found)"
-                lsm_test_not_supported=1
-            elif ./dist/lsm-check -q; then
-                info "LSM BPF support confirmed - test will run normally"
-            else
-                info "skip lsm_test on kernel ${KERNEL} (LSM BPF not supported)"
-                lsm_test_not_supported=1
-            fi
-            ;;
-        PROCTREE_DATA_SOURCE)
-            info "compiling proctree data source test..."
-            if ! ./tests/e2e-inst-signatures/scripts/proctree_data_source.sh --build; then
-                error "could not compile proctree_data_source"
-            fi
-            # Set up the hold on time for each selected event to be checked in the data source
-            PROCTREE_HOLD_TIME=$(get_test_sleep TEST_CONFIG_MAP "PROCTREE_DATA_SOURCE")
-            PROCTREE_HOLD_TIME=$((PROCTREE_HOLD_TIME / 2))
-            if [[ ${PROCTREE_HOLD_TIME} -lt 5 ]]; then
-                PROCTREE_HOLD_TIME=5
-                info "PROCTREE_HOLD_TIME is too low, setting to 5 seconds"
-            fi
-            export PROCTREE_HOLD_TIME
-            ;;
-
-        VFS_WRITE)
-            info "compiling vfs write test..."
-            if ! ./tests/e2e-inst-signatures/scripts/vfs_writev.sh --build; then
-                error "could not compile vfs_writev"
-            fi
-            ;;
-    esac
-
+    core_test_setup "${TEST}"
     print_test_separator
 done
 
-print_test_header "START TRACE"
+# Setup extended tests
+for TEST in ${INSTTESTS_EXTENDED}; do
+    print_test_header "${TEST}" "SETUP"
+    extended_test_setup "${TEST}"
+    print_test_separator
+done
 
+# ==============================================================================
+# PHASE 2: START TRACEE
+# ==============================================================================
+print_test_header "START TRACE"
 ./scripts/tracee_start.sh \
     -i "${TRACEE_TMP_DIR}" \
     -o "${outputfile}" \
@@ -308,22 +338,25 @@ print_test_header "START TRACE"
     --policy "${TRACEE_POLICY_PATH}"
 
 last_status=$?
-print_test_separator
-
 if [[ ${last_status} -ne 0 ]]; then
     die "tracee startup failed"
 fi
+print_test_separator
 
+# ==============================================================================
+# PHASE 3: RUN TESTS
+# ==============================================================================
 print_test_header "RUNNING TESTS"
-declare -A test_pids_map=() # Map: test_name -> pid
+declare -A test_pids_map
 max_internal_sleep=0
 max_test_timeout=0
 
-for TEST in ${TESTS}; do
+# Run core tests
+for TEST in ${INSTTESTS_CORE}; do
     print_test_header "${TEST}" "RUNNING"
 
-    # Check for skip conditions first
-    if should_skip_test "${TEST}"; then
+    # Check for skip conditions
+    if core_should_skip_test "${TEST}"; then
         info "skipping ${TEST}"
         print_test_separator
         continue
@@ -332,7 +365,7 @@ for TEST in ${TESTS}; do
     test_timeout=$(get_test_timeout TEST_CONFIG_MAP "${TEST}")
     test_sleep=$(get_test_sleep TEST_CONFIG_MAP "${TEST}")
 
-    # Track maximum internal sleep time and timeout
+    # Track maximum sleep and timeout
     if [[ "${test_sleep}" -gt "${max_internal_sleep}" ]]; then
         max_internal_sleep="${test_sleep}"
     fi
@@ -340,55 +373,42 @@ for TEST in ${TESTS}; do
         max_test_timeout="${test_timeout}"
     fi
 
-    # Set test arguments and run test
-    test_args=""
-    case ${TEST} in
-        HOOKED_SYSCALL)
-            info "unloading hijack module that was loaded at setup step"
-            test_args="--uninstall"
-            ;;
-        FTRACE_HOOK)
-            info "loading and unloading ftrace hook module"
-            test_args="--install --uninstall"
-            ;;
-        *)
-            case ${TEST} in
-                CONTAINERS_DATA_SOURCE | \
-                    BPF_ATTACH | \
-                    SUSPICIOUS_SYSCALL_SOURCE | \
-                    STACK_PIVOT | \
-                    WRITABLE_DATA_SOURCE | \
-                    SECURITY_PATH_NOTIFY | \
-                    PROCTREE_DATA_SOURCE | \
-                    VFS_WRITE)
-                    test_args="--run"
-                    ;;
-            esac
-
-            run_msg="running test ${TEST} with timeout ${test_timeout}"
-            if [[ "${test_sleep}" -gt 0 ]]; then
-                run_msg="${run_msg} and internal sleep ${test_sleep}"
-            fi
-            info "${run_msg}"
-            ;;
-    esac
-
-    # Run test in background and store PID in map
-    # Redirect output to file to show later during wait phase
-    test_output_file="/tmp/test_${TEST,,}_$$"
-    (
-        # shellcheck disable=SC2086
-        E2E_INST_TEST_SLEEP="${test_sleep}" timeout --preserve-status "${test_timeout}" "${TESTS_DIR}"/"${TEST,,}".sh ${test_args:-}
-    ) > "${test_output_file}" 2>&1 &
-    test_pids_map["${TEST}"]=$!
-
+    core_test_run "${TEST}" test_pids_map "${test_timeout}" "${test_sleep}"
     print_test_separator
 done
 
+# Run extended tests
+for TEST in ${INSTTESTS_EXTENDED}; do
+    print_test_header "${TEST}" "RUNNING"
+
+    # Check for skip conditions
+    if extended_should_skip_test "${TEST}"; then
+        info "skipping ${TEST}"
+        print_test_separator
+        continue
+    fi
+
+    test_timeout=$(get_test_timeout TEST_CONFIG_MAP "${TEST}")
+    test_sleep=$(get_test_sleep TEST_CONFIG_MAP "${TEST}")
+
+    # Track maximum sleep and timeout
+    if [[ "${test_sleep}" -gt "${max_internal_sleep}" ]]; then
+        max_internal_sleep="${test_sleep}"
+    fi
+    if [[ "${test_timeout}" -gt "${max_test_timeout}" ]]; then
+        max_test_timeout="${test_timeout}"
+    fi
+
+    extended_test_run "${TEST}" test_pids_map "${test_timeout}" "${test_sleep}"
+    print_test_separator
+done
+
+# ==============================================================================
+# PHASE 4: WAIT FOR TEST COMPLETION
+# ==============================================================================
 print_test_header "WAITING FOR TESTS TO COMPLETE"
 info "Waiting for all tests to complete (max timeout: ${max_test_timeout}s, max internal sleep: ${max_internal_sleep}s)..."
 
-# Wait for all test processes
 for test_name in "${!test_pids_map[@]}"; do
     pid="${test_pids_map[$test_name]}"
     test_output_file="/tmp/test_${test_name,,}_$$"
@@ -405,7 +425,7 @@ for test_name in "${!test_pids_map[@]}"; do
         continue
     fi
 
-    # Only show output if file has content
+    # Show output if file has content
     if [[ -s "${test_output_file}" ]]; then
         info "  Output from ${test_name} test:"
         while IFS= read -r line; do
@@ -415,9 +435,6 @@ for test_name in "${!test_pids_map[@]}"; do
     rm -f "${test_output_file}"
 
     # Extract PROCTREE_DATA_SOURCE signature logs from Tracee log file
-    # This is an exceptional case: debugging PROCTREE_DATA_SOURCE is complex, so we display
-    # signature-specific logs to aid diagnosis and keep all output (trigger and signature logs)
-    # in one place. In the future, this could be removed if we find a better way to debug this test.
     if [[ "${test_name}" == "PROCTREE_DATA_SOURCE" && -f "${logfile}" ]]; then
         signature_logs=$(grep '\[e2eProcessTreeDataSource\]' "${logfile}" 2> /dev/null || true)
         if [[ -n "${signature_logs}" ]]; then
@@ -430,78 +447,48 @@ for test_name in "${!test_pids_map[@]}"; do
 done
 print_test_separator
 
-# Wait for all events to be processed and signatures to complete.
+# Wait for event processing
 print_test_header "WAIT FOR EVENTS TO BE PROCESSED"
-# All tests are already managed by timeout command, so we just wait for more 5 seconds for event processing
 info "Waiting for more 5 seconds for event processing"
 sleep 5
 print_test_separator
 
+# ==============================================================================
+# PHASE 5: STOP TRACEE
+# ==============================================================================
 print_test_header "STOP TRACE"
-# Stop tracee
-# Make sure we exit tracee before checking output and log files
 ./scripts/tracee_stop.sh \
     -i "${TRACEE_TMP_DIR}" \
     -t "${TRACEE_SHUTDOWN_TIMEOUT}"
 
 last_status=$?
-print_test_separator
-
-# Check if tracee shutdown failed
 if [[ ${last_status} -ne 0 ]]; then
     die "tracee shutdown failed, trying to check for results may be misleading"
 fi
+print_test_separator
 
+# ==============================================================================
+# PHASE 6: CHECK TEST RESULTS
+# ==============================================================================
 print_test_header "CHECKING TESTS RESULTS"
 anyerror=""
-# Check if the test has failed or not
-for TEST in ${TESTS}; do
-    found=0 # Initialize for each test iteration
 
+# Check core test results
+for TEST in ${INSTTESTS_CORE}; do
+    found=0
     print_test_header "${TEST}" "CHECKING"
 
     # Check for skip conditions
-    if should_skip_test "${TEST}"; then
+    if core_should_skip_test "${TEST}"; then
         info "skipped ${TEST} test"
         print_test_separator
         continue
     fi
 
-    policy_name=$(get_policy_name TEST_CONFIG_MAP "${TEST}")
-
-    # Get match count for all non skipped tests
-    match_count=$(get_event_match_count "${outputfile}" "${TEST}" "${policy_name}")
-    info "Found ${match_count} matching ${TEST} events with policy ${policy_name}"
-
-    # Check for multi-policy matches (only if we have matches)
-    # This is a safeguard to detect if the event is matched by multiple policies
-    if [[ "${match_count}" -gt 0 ]]; then
-        check_multi_policy_matches "${outputfile}" "${TEST}" "${policy_name}"
-    fi
-
-    # Determine success based on test type
-    found=0
-
-    # Special case: LSM_TEST when not supported
-    if [[ "${TEST}" == "LSM_TEST" && "${lsm_test_not_supported}" -eq 1 ]]; then
-        # LSM not supported - check for probe cancellation instead of events
-        if grep -q "Probe failed due to incompatible probe" "${logfile}" \
-            && grep -q 'Failing event.*lsm_test' "${logfile}"; then
-            # Verify event is not present in output (should not be)
-            if [[ "${match_count}" -eq 0 ]]; then
-                found=1
-                info "LSM not supported: verified probe cancellation and event not present"
-            else
-                info "LSM not supported: probe cancellation found, but event present in output (unexpected)"
-            fi
-        else
-            info "LSM not supported: probe cancellation message not found"
-        fi
+    if core_test_check "${TEST}" "${outputfile}" "${logfile}"; then
+        found=1
     else
-        # Standard case: success means we found matching events
-        if [[ "${match_count}" -gt 0 ]]; then
-            found=1
-        fi
+        found=0
     fi
 
     info
@@ -509,10 +496,39 @@ for TEST in ${TESTS}; do
         info "${TEST}: SUCCESS"
     else
         anyerror="${anyerror}${TEST},"
-
         info "${TEST}: FAILED, critical logs from tracee:"
         filter_critical_logs "${logfile}"
+        info "${TEST}: FAILED, events from tracee:"
+        cat "${outputfile}"
+    fi
+    print_test_separator
+done
 
+# Check extended test results
+for TEST in ${INSTTESTS_EXTENDED}; do
+    found=0
+    print_test_header "${TEST}" "CHECKING"
+
+    # Check for skip conditions
+    if extended_should_skip_test "${TEST}"; then
+        info "skipped ${TEST} test"
+        print_test_separator
+        continue
+    fi
+
+    if extended_test_check "${TEST}" "${outputfile}" "${logfile}"; then
+        found=1
+    else
+        found=0
+    fi
+
+    info
+    if [[ ${found} -eq 1 ]]; then
+        info "${TEST}: SUCCESS"
+    else
+        anyerror="${anyerror}${TEST},"
+        info "${TEST}: FAILED, critical logs from tracee:"
+        filter_critical_logs "${logfile}"
         info "${TEST}: FAILED, events from tracee:"
         cat "${outputfile}"
     fi
@@ -521,11 +537,12 @@ done
 
 info
 
-# Cleanup test artifacts
+# ==============================================================================
+# Cleanup and Summary
+# ==============================================================================
 cleanup_test_artifact_files "${KEEP_ARTIFACTS}" "${outputfile}" "${logfile}"
 rm -rf "${TRACEE_TMP_DIR}"
 
-# Print summary and exit with error if any test failed
 info
 if [[ "${anyerror}" != "" ]]; then
     die "FAILED TESTS: ${anyerror::-1}"
