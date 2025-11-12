@@ -102,7 +102,7 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeM
 }
 
 // CreatePolicies creates a Policies object from the scope and events maps.
-func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMap, newBinary bool) ([]*policy.Policy, error) {
+func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMap) ([]*policy.Policy, error) {
 	policies := make([]*policy.Policy, 0, len(policyScopeMap))
 
 	for policyIdx, policyScope := range policyScopeMap {
@@ -111,7 +111,7 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 			return nil, InvalidFlagEmpty()
 		}
 
-		pol, err := createSinglePolicy(policyIdx, policyScope, policyEvents, newBinary)
+		pol, err := createSinglePolicy(policyIdx, policyScope, policyEvents)
 		if err != nil {
 			return nil, err
 		}
@@ -121,12 +121,12 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 	return policies, nil
 }
 
-func createSinglePolicy(policyIdx int, policyScope policyScopes, policyEvents policyEvents, newBinary bool) (*policy.Policy, error) {
+func createSinglePolicy(policyIdx int, policyScope policyScopes, policyEvents policyEvents) (*policy.Policy, error) {
 	p := policy.NewPolicy()
 	p.ID = policyIdx
 	p.Name = policyScope.policyName
 
-	if err := parseScopeFilters(p, policyScope.scopeFlags, newBinary); err != nil {
+	if err := parseScopeFilters(p, policyScope.scopeFlags); err != nil {
 		return nil, err
 	}
 
@@ -137,7 +137,7 @@ func createSinglePolicy(policyIdx int, policyScope policyScopes, policyEvents po
 	return p, nil
 }
 
-func parseScopeFilters(p *policy.Policy, scopeFlags []scopeFlag, newBinary bool) error {
+func parseScopeFilters(p *policy.Policy, scopeFlags []scopeFlag) error {
 	for _, scopeFlag := range scopeFlags {
 		switch scopeFlag.scopeName {
 		case "comm":
@@ -228,7 +228,7 @@ func parseScopeFilters(p *policy.Policy, scopeFlags []scopeFlag, newBinary bool)
 			p.Follow = true
 
 		default:
-			return InvalidScopeOptionError(scopeFlag.full, newBinary)
+			return InvalidScopeOptionError(scopeFlag.full)
 		}
 	}
 	return nil
