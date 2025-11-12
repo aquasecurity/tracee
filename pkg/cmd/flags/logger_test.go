@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -21,6 +22,12 @@ func TestPrepareLogger(t *testing.T) {
 	}{
 		// invalid log option
 		{
+			testName:       "invalid log level",
+			logOptions:     []string{""},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOption(nil, "", false),
+		},
+		{
 			testName:       "invalid log option",
 			logOptions:     []string{"invalid-option"},
 			expectedReturn: logger.LoggingConfig{},
@@ -29,68 +36,67 @@ func TestPrepareLogger(t *testing.T) {
 		// valid log level
 		{
 			testName:   "valid log level",
-			logOptions: []string{"debug"},
+			logOptions: []string{"level=debug"},
 			expectedReturn: logger.LoggingConfig{
-				Aggregate:     false,
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DebugLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
 		{
 			testName:   "valid log level",
-			logOptions: []string{"info"},
+			logOptions: []string{"level=info"},
 			expectedReturn: logger.LoggingConfig{
-				Aggregate:     false,
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.InfoLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
 		{
 			testName:   "valid log level",
-			logOptions: []string{"warn"},
+			logOptions: []string{"level=warn"},
 			expectedReturn: logger.LoggingConfig{
-				Aggregate:     false,
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.WarnLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
 		{
 			testName:   "valid log level",
-			logOptions: []string{"error"},
+			logOptions: []string{"level=error"},
 			expectedReturn: logger.LoggingConfig{
-				Aggregate:     false,
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.ErrorLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
 		{
 			testName:   "valid log level",
-			logOptions: []string{"fatal"},
+			logOptions: []string{"level=fatal"},
 			expectedReturn: logger.LoggingConfig{
-				Aggregate:     false,
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.FatalLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
-		// invalid log level
-		{
-			testName:       "invalid log level",
-			logOptions:     []string{"invalid-level"},
-			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "invalid-level", false),
-		},
-		{
-			testName:       "invalid log level",
-			logOptions:     []string{""},
-			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "", false),
-		},
-
 		// valid log aggregate
 		{
 			testName:   "valid log aggregate",
-			logOptions: []string{"aggregate"},
+			logOptions: []string{"aggregate.enabled=true"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				Aggregate:     true,
 				FlushInterval: logger.DefaultFlushInterval,
 			},
@@ -98,8 +104,11 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid log aggregate",
-			logOptions: []string{"aggregate:10s"},
+			logOptions: []string{"aggregate.flush-interval=10s"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				Aggregate:     true,
 				FlushInterval: 10 * time.Second,
 			},
@@ -107,8 +116,11 @@ func TestPrepareLogger(t *testing.T) {
 		},
 		{
 			testName:   "valid log aggregate",
-			logOptions: []string{"aggregate:2m"},
+			logOptions: []string{"aggregate.flush-interval=2m"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				Aggregate:     true,
 				FlushInterval: 2 * time.Minute,
 			},
@@ -151,22 +163,27 @@ func TestPrepareLogger(t *testing.T) {
 			expectedReturn: logger.LoggingConfig{},
 			expectedError:  invalidLogOptionValue(nil, "aggregate:1ms", false),
 		},
-
 		// valid log level + aggregate
 		{
 			testName:   "valid log level + aggregate",
-			logOptions: []string{"debug", "aggregate"},
+			logOptions: []string{"level=debug", "aggregate.enabled=true"},
 			expectedReturn: logger.LoggingConfig{
-				Aggregate:     true,
+				Aggregate: true,
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DebugLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
 		{
 			testName:   "valid log level + aggregate",
-			logOptions: []string{"debug", "aggregate:10s"},
+			logOptions: []string{"level=debug", "aggregate.flush-interval=10s"},
 			expectedReturn: logger.LoggingConfig{
-				Aggregate:     true,
+				Aggregate: true,
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DebugLevel),
+				},
 				FlushInterval: 10 * time.Second,
 			},
 			expectedError: nil,
@@ -177,179 +194,373 @@ func TestPrepareLogger(t *testing.T) {
 			expectedReturn: logger.LoggingConfig{},
 			expectedError:  invalidLogOptionValue(nil, "file:", false),
 		},
-
-		// valid filter-out options
 		{
-			testName:   "valid filter-out option",
-			logOptions: []string{"filter-out:msg=whatever"},
+			testName:   "valid log file with dots in path",
+			logOptions: []string{"file=/tmp/test.log"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
 		{
-			testName:   "valid filter-out option",
-			logOptions: []string{"filter-out:regex=^whatever$"},
+			testName:   "valid log file with multiple dots in path",
+			logOptions: []string{"file=/tmp/tracee.2024.01.15.log"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
 		{
-			testName:   "valid filter-out option",
-			logOptions: []string{"filter-out:pkg=whatever"},
+			testName:   "valid log file with dots in directory path",
+			logOptions: []string{"file=/tmp/.tracee/logs/tracee.log"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
 		{
-			testName:   "valid filter-out option",
-			logOptions: []string{"filter-out:file=whatever"},
+			testName:   "valid log file with complex path",
+			logOptions: []string{"file=/tmp/tracee-2024.01.15-14.30.45.log"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
 			},
 			expectedError: nil,
 		},
+		// valid exclude filter options
 		{
-			testName:   "valid filter-out option",
-			logOptions: []string{"filter-out:lvl=info"},
+			testName:   "valid exclude filter option",
+			logOptions: []string{"filters.exclude.msg=whatever"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "msg", "whatever", logger.FilterOut),
 			},
 			expectedError: nil,
 		},
 		{
-			testName:   "valid filter-out option",
-			logOptions: []string{"filter-out:libbpf"},
+			testName:   "valid exclude filter option",
+			logOptions: []string{"filters.exclude.regex=^whatever$"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "regex", "^whatever$", logger.FilterOut),
 			},
 			expectedError: nil,
 		},
-		// invalid filter-out options
 		{
-			testName:       "invalid filter-out option",
-			logOptions:     []string{"filter-out:"},
-			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter-out:", false),
+			testName:   "valid exclude filter option",
+			logOptions: []string{"filters.exclude.pkg=whatever"},
+			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
+				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "pkg", "whatever", logger.FilterOut),
+			},
+			expectedError: nil,
 		},
 		{
-			testName:       "invalid filter-out option",
-			logOptions:     []string{"filter-out:invalid"},
-			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter-out:invalid", false),
+			testName:   "valid exclude filter option",
+			logOptions: []string{"filters.exclude.file=whatever"},
+			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
+				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "file", "whatever", logger.FilterOut),
+			},
+			expectedError: nil,
 		},
 		{
-			testName:       "invalid filter-out option",
-			logOptions:     []string{"filter-out:msg"},
-			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter-out:msg", false),
+			testName:   "valid exclude filter option",
+			logOptions: []string{"filters.exclude.level=info"},
+			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
+				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "level", "info", logger.FilterOut),
+			},
+			expectedError: nil,
 		},
 		{
-			testName:       "invalid filter-out option",
-			logOptions:     []string{"filter-out:msg="},
+			testName:   "valid exclude filter option",
+			logOptions: []string{"filters.exclude.libbpf"},
+			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
+				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "regex", "^libbpf:", logger.FilterOut),
+			},
+			expectedError: nil,
+		},
+		// invalid exclude filter options
+		{
+			testName:       "invalid exclude filter option",
+			logOptions:     []string{"filters.exclude."},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter-out:msg=", false),
+			expectedError:  invalidLogOption(nil, "filters.exclude.", false),
 		},
 		{
-			testName:       "invalid filter-out option",
-			logOptions:     []string{"filter-out:regex=[whatever"},
+			testName:       "invalid exclude filter option",
+			logOptions:     []string{"filters.exclude.invalid"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter-out:regex=[whatever", false),
+			expectedError:  invalidLogOption(nil, "filters.exclude.invalid", false),
 		},
 		{
-			testName:       "valid filter-out option",
-			logOptions:     []string{"filter-out:lvl=invalid"},
+			testName:       "invalid exclude filter option",
+			logOptions:     []string{"filters.exclude.msg"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter-out:lvl=invalid", false),
+			expectedError:  invalidLogOption(nil, "filters.exclude.msg", false),
 		},
-
-		// valid filter options
+		{
+			testName:       "invalid exclude filter option",
+			logOptions:     []string{"filters.exclude.msg="},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "filters.exclude.msg=", false),
+		},
+		{
+			testName:       "invalid exclude filter option",
+			logOptions:     []string{"filters.exclude.regex=[whatever"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "filters.exclude.regex=[whatever", false),
+		},
+		{
+			testName:       "invalid exclude filter option",
+			logOptions:     []string{"filters.exclude.level=invalid"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "filters.exclude.level=invalid", false),
+		},
+		// valid include filter options
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter:msg=whatever"},
+			logOptions: []string{"filters.include.msg=whatever"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "msg", "whatever", logger.FilterIn),
 			},
 			expectedError: nil,
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter:regex=^whatever$"},
+			logOptions: []string{"filters.include.regex=^whatever$"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "regex", "^whatever$", logger.FilterIn),
 			},
 			expectedError: nil,
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter:pkg=whatever"},
+			logOptions: []string{"filters.include.pkg=whatever"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "pkg", "whatever", logger.FilterIn),
 			},
 			expectedError: nil,
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter:file=whatever"},
+			logOptions: []string{"filters.include.file=whatever"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "file", "whatever", logger.FilterIn),
 			},
 			expectedError: nil,
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter:lvl=info"},
+			logOptions: []string{"filters.include.level=info"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "level", "info", logger.FilterIn),
 			},
 			expectedError: nil,
 		},
 		{
 			testName:   "valid filter option",
-			logOptions: []string{"filter:libbpf"},
+			logOptions: []string{"filters.include.libbpf"},
 			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
 				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "regex", "^libbpf:", logger.FilterIn),
 			},
 			expectedError: nil,
 		},
-		// invalid filter options
+		// invalid include filter options
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter:"},
+			logOptions:     []string{"filters.include"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter:", false),
+			expectedError:  invalidLogOption(nil, "filters.include", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter:invalid"},
+			logOptions:     []string{"filters.include."},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter:invalid", false),
+			expectedError:  invalidLogOption(nil, "filters.include.", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter:msg"},
+			logOptions:     []string{"filters.include.invalid"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter:msg", false),
+			expectedError:  invalidLogOption(nil, "filters.include.invalid", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter:msg="},
+			logOptions:     []string{"filters.include.msg"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter:msg=", false),
+			expectedError:  invalidLogOption(nil, "filters.include.msg", false),
 		},
 		{
 			testName:       "invalid filter option",
-			logOptions:     []string{"filter:regex=[whatever"},
+			logOptions:     []string{"filters.include.msg="},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter:regex=[whatever", false),
+			expectedError:  invalidLogOption(nil, "filters.include.msg=", false),
 		},
 		{
-			testName:       "valid filter option",
-			logOptions:     []string{"filter:lvl=invalid"},
+			testName:       "invalid filter option",
+			logOptions:     []string{"filters.include.regex=[whatever"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter:lvl=invalid", false),
+			expectedError:  invalidLogOption(nil, "filters.include.regex=[whatever", false),
+		},
+		{
+			testName:       "invalid filter option",
+			logOptions:     []string{"filters.include.level=invalid"},
+			expectedReturn: logger.LoggingConfig{},
+			expectedError:  invalidLogOptionValue(nil, "filters.include.level=invalid", false),
+		},
+		{
+			testName:   "filter with multiple values",
+			logOptions: []string{"filters.include.msg=error,warning,info"},
+			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
+				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "msg", "error,warning,info", logger.FilterIn),
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "filter with multiple packages",
+			logOptions: []string{"filters.include.pkg=core,ebpf,logger"},
+			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
+				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "pkg", "core,ebpf,logger", logger.FilterIn),
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "filter with multiple files",
+			logOptions: []string{"filters.include.file=logger.go,flags.go,main.go"},
+			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
+				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "file", "logger.go,flags.go,main.go", logger.FilterIn),
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "filter with multiple regex patterns",
+			logOptions: []string{"filters.include.regex=^error,^warn,^debug"},
+			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
+				FlushInterval: logger.DefaultFlushInterval,
+				Filter:        createExpectedFilter(t, "regex", "^error,^warn,^debug", logger.FilterIn),
+			},
+			expectedError: nil,
+		},
+		{
+			testName:   "multiple filter options",
+			logOptions: []string{"filters.include.msg=error", "filters.include.pkg=core", "filters.exclude.level=debug"},
+			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
+				FlushInterval: logger.DefaultFlushInterval,
+				Filter: createExpectedMultiFilter(t, []filterTest{
+					{"msg", "error", logger.FilterIn},
+					{"pkg", "core", logger.FilterIn},
+					{"level", "debug", logger.FilterOut},
+				}),
+			},
+			expectedError: nil,
+		},
+		{
+			testName: "comprehensive filter options",
+			logOptions: []string{
+				"filters.include.msg=error,warning",
+				"filters.include.pkg=core,ebpf",
+				"filters.include.level=info,warn",
+				"filters.include.regex=^debug,^trace",
+				"filters.include.libbpf",
+				"filters.exclude.msg=spam,noise",
+				"filters.exclude.pkg=test,example",
+				"filters.exclude.level=debug",
+				"filters.exclude.regex=^verbose,^debug",
+			},
+			expectedReturn: logger.LoggingConfig{
+				LoggerConfig: logger.LoggerConfig{
+					Level: logger.NewAtomicLevelAt(logger.DefaultLevel),
+				},
+				FlushInterval: logger.DefaultFlushInterval,
+				Filter: createExpectedMultiFilter(t, []filterTest{
+					// Include filters
+					{"msg", "error,warning", logger.FilterIn},
+					{"pkg", "core,ebpf", logger.FilterIn},
+					{"level", "info,warn", logger.FilterIn},
+					{"regex", "^debug,^trace", logger.FilterIn},
+					{"regex", "^libbpf:", logger.FilterIn}, // libbpf creates a regex filter
+					// Exclude filters
+					{"msg", "spam,noise", logger.FilterOut},
+					{"pkg", "test,example", logger.FilterOut},
+					{"level", "debug", logger.FilterOut},
+					{"regex", "^verbose,^debug", logger.FilterOut},
+				}),
+			},
+			expectedError: nil,
 		},
 	}
 
@@ -369,9 +580,116 @@ func TestPrepareLogger(t *testing.T) {
 			if tc.expectedError == nil {
 				require.Nil(t, err)
 				require.NotNil(t, logCfg)
+				assert.Equal(t, tc.expectedReturn.LoggerConfig.Level, logCfg.LoggerConfig.Level)
 				assert.Equal(t, tc.expectedReturn.Aggregate, logCfg.Aggregate)
 				assert.Equal(t, tc.expectedReturn.FlushInterval, logCfg.FlushInterval)
+
+				if hasFilterOptions(tc.logOptions) {
+					assert.True(t, logCfg.Filter.Enabled(), "Filter should be enabled when filter options are provided")
+					assert.Equal(t, tc.expectedReturn.Filter, logCfg.Filter)
+				} else {
+					assert.False(t, logCfg.Filter.Enabled(), "Filter should not be enabled when no filter options are provided")
+				}
 			}
 		})
 	}
+}
+
+// Helper types and functions for filter testing
+type filterTest struct {
+	filterType string
+	value      string
+	kind       logger.FilterKind
+}
+
+// hasFilterOptions checks if any filter options are present in logOptions
+func hasFilterOptions(logOptions []string) bool {
+	for _, option := range logOptions {
+		if strings.HasPrefix(option, "filters.") {
+			return true
+		}
+	}
+	return false
+}
+
+// createExpectedFilter creates a LoggerFilter with a single filter rule
+func createExpectedFilter(t *testing.T, filterType, value string, kind logger.FilterKind) logger.LoggerFilter {
+	filter := logger.NewLoggerFilter()
+
+	// Split comma-separated values (matching PrepareLogger behavior)
+	values := strings.Split(value, ",")
+
+	switch filterType {
+	case "msg":
+		for _, val := range values {
+			err := filter.AddMsg(strings.TrimSpace(val), kind)
+			require.NoError(t, err)
+		}
+	case "pkg":
+		for _, val := range values {
+			err := filter.AddPkg(strings.TrimSpace(val), kind)
+			require.NoError(t, err)
+		}
+	case "file":
+		for _, val := range values {
+			err := filter.AddFile(strings.TrimSpace(val), kind)
+			require.NoError(t, err)
+		}
+	case "level":
+		for _, val := range values {
+			level, err := parseLevel(strings.TrimSpace(val))
+			require.NoError(t, err)
+			err = filter.AddLvl(int(level), kind)
+			require.NoError(t, err)
+		}
+	case "regex":
+		for _, val := range values {
+			err := filter.AddMsgRegex(strings.TrimSpace(val), kind)
+			require.NoError(t, err)
+		}
+	}
+
+	return filter
+}
+
+// createExpectedMultiFilter creates a LoggerFilter with multiple filter rules
+func createExpectedMultiFilter(t *testing.T, tests []filterTest) logger.LoggerFilter {
+	filter := logger.NewLoggerFilter()
+
+	for _, test := range tests {
+		// Split comma-separated values (matching PrepareLogger behavior)
+		values := strings.Split(test.value, ",")
+
+		switch test.filterType {
+		case "msg":
+			for _, val := range values {
+				err := filter.AddMsg(strings.TrimSpace(val), test.kind)
+				require.NoError(t, err)
+			}
+		case "pkg":
+			for _, val := range values {
+				err := filter.AddPkg(strings.TrimSpace(val), test.kind)
+				require.NoError(t, err)
+			}
+		case "file":
+			for _, val := range values {
+				err := filter.AddFile(strings.TrimSpace(val), test.kind)
+				require.NoError(t, err)
+			}
+		case "level":
+			for _, val := range values {
+				level, err := parseLevel(strings.TrimSpace(val))
+				require.NoError(t, err)
+				err = filter.AddLvl(int(level), test.kind)
+				require.NoError(t, err)
+			}
+		case "regex":
+			for _, val := range values {
+				err := filter.AddMsgRegex(strings.TrimSpace(val), test.kind)
+				require.NoError(t, err)
+			}
+		}
+	}
+
+	return filter
 }

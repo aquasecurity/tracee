@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
+	cmdflags "github.com/aquasecurity/tracee/pkg/cmd/flags"
 	serverflag "github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 )
 
@@ -28,7 +29,7 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &ProcTreeConfig{}
 	case "capabilities":
 		flagger = &CapabilitiesConfig{}
-	case "log":
+	case cmdflags.LogFlag:
 		flagger = &LogConfig{}
 	case "output":
 		flagger = &OutputConfig{}
@@ -208,30 +209,25 @@ func (c *LogConfig) flags() []string {
 
 	// level
 	if c.Level != "" {
-		flags = append(flags, c.Level)
+		flags = append(flags, fmt.Sprintf("%s=%s", cmdflags.LogLevel, c.Level))
 	}
 
 	// file
 	if c.File != "" {
-		flags = append(flags, fmt.Sprintf("file:%s", c.File))
+		flags = append(flags, fmt.Sprintf("%s=%s", cmdflags.LogFile, c.File))
 	}
 
 	// aggregate
 	if c.Aggregate.Enabled {
-		if c.Aggregate.FlushInterval == "" {
-			flags = append(flags, "aggregate")
-		} else {
-			flags = append(flags, fmt.Sprintf("aggregate:%s", c.Aggregate.FlushInterval))
-		}
+		flags = append(flags, fmt.Sprintf("%s.%s=true", cmdflags.LogAggregation, "enabled"))
+	}
+	if c.Aggregate.FlushInterval != "" {
+		flags = append(flags, fmt.Sprintf("%s.%s=%s", cmdflags.LogAggregation, cmdflags.LogAggregationFlushInterval, c.Aggregate.FlushInterval))
 	}
 
 	// filters
-	if c.Filters.LibBPF {
-		flags = append(flags, "filter:libbpf")
-	}
-
-	flags = append(flags, getLogFilterAttrFlags(false, c.Filters.In)...)
-	flags = append(flags, getLogFilterAttrFlags(true, c.Filters.Out)...)
+	flags = append(flags, getLogFilterAttrFlags(cmdflags.LogFilterInclude, c.Filters.Include)...)
+	flags = append(flags, getLogFilterAttrFlags(cmdflags.LogFilterExclude, c.Filters.Exclude)...)
 
 	return flags
 }
@@ -242,50 +238,49 @@ type LogAggregateConfig struct {
 }
 
 type LogFilterConfig struct {
-	LibBPF bool                `mapstructure:"libbpf"`
-	In     LogFilterAttributes `mapstructure:"in"`
-	Out    LogFilterAttributes `mapstructure:"out"`
+	Include LogFilterAttributes `mapstructure:"include"`
+	Exclude LogFilterAttributes `mapstructure:"exclude"`
 }
 
 type LogFilterAttributes struct {
-	Msg   []string `mapstructure:"msg"`
-	Pkg   []string `mapstructure:"pkg"`
-	File  []string `mapstructure:"file"`
-	Level []string `mapstructure:"lvl"`
-	Regex []string `mapstructure:"regex"`
+	Msg    []string `mapstructure:"msg"`
+	Pkg    []string `mapstructure:"pkg"`
+	File   []string `mapstructure:"file"`
+	Level  []string `mapstructure:"level"`
+	Regex  []string `mapstructure:"regex"`
+	LibBPF bool     `mapstructure:"libbpf"`
 }
 
-func getLogFilterAttrFlags(filterOut bool, attrs LogFilterAttributes) []string {
+func getLogFilterAttrFlags(option string, attrs LogFilterAttributes) []string {
 	attrFlags := []string{}
-	suffix := ""
-
-	if filterOut {
-		suffix = "-out"
-	}
 
 	// msg
 	for _, msg := range attrs.Msg {
-		attrFlags = append(attrFlags, fmt.Sprintf("filter%s:msg=%s", suffix, msg))
+		attrFlags = append(attrFlags, fmt.Sprintf("%s.%s.msg=%s", cmdflags.LogFilter, option, msg))
 	}
 
 	// pkg
 	for _, pkg := range attrs.Pkg {
-		attrFlags = append(attrFlags, fmt.Sprintf("filter%s:pkg=%s", suffix, pkg))
+		attrFlags = append(attrFlags, fmt.Sprintf("%s.%s.pkg=%s", cmdflags.LogFilter, option, pkg))
 	}
 
 	// file
 	for _, file := range attrs.File {
-		attrFlags = append(attrFlags, fmt.Sprintf("filter%s:file=%s", suffix, file))
+		attrFlags = append(attrFlags, fmt.Sprintf("%s.%s.file=%s", cmdflags.LogFilter, option, file))
 	}
 
 	// level
 	for _, level := range attrs.Level {
-		attrFlags = append(attrFlags, fmt.Sprintf("filter%s:lvl=%s", suffix, level))
+		attrFlags = append(attrFlags, fmt.Sprintf("%s.%s.level=%s", cmdflags.LogFilter, option, level))
 	}
 
 	// regex
 	for _, regex := range attrs.Regex {
-		attrFlags = append(attrFlags, fmt.Sprintf("filter%s:regex=%s", suffix, regex))
+		attrFlags = append(attrFlags, fmt.Sprintf("%s.%s.regex=%s", cmdflags.LogFilter, option, regex))
+	}
+	// libbpf
+	if attrs.LibBPF {
+		attrFlags = append(attrFlags, fmt.Sprintf("%s.%s.libbpf", cmdflags.LogFilter, option))
 	}
 
 	return attrFlags

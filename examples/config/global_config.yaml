@@ -72,33 +72,33 @@ log:
     #     flush-interval: "5s"
     # filters:
     #     libbpf: false
-    #     in:
-    #     msg:
-    #         - SampleMessage1
-    #         - SampleMessage2
-    #     pkg:
-    #         - package1
-    #         - package2
-    #     file:
-    #         - file1.go
-    #         - file2.go
-    #     level:
-    #         - warn
-    #         - error
-    #     regex:
-    #         - ^pattern1
-    #         - ^pattern2
-    #     out:
-    #     msg:
-    #         - ExcludedMessage1
-    #     pkg:
-    #         - excludedPackage
-    #     file:
-    #         - excludedFile.go
-    #     level:
-    #         - debug
-    #     regex:
-    #         - ^excludedPattern
+    #     include:
+    #         msg:
+    #             - SampleMessage1
+    #             - SampleMessage2
+    #         pkg:
+    #             - package1
+    #             - package2
+    #         file:
+    #             - file1.go
+    #             - file2.go
+    #         level:
+    #             - warn
+    #             - error
+    #         regex:
+    #             - ^pattern1
+    #             - ^pattern2
+    #     exclude:
+    #         msg:
+    #             - ExcludedMessage1
+    #         pkg:
+    #             - excludedPackage
+    #         file:
+    #             - excludedFile.go
+    #         level:
+    #             - debug
+    #         regex:
+    #             - ^excludedPattern
 
 scope:  
   #- uid=1000

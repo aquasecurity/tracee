@@ -92,6 +92,39 @@ config:
   signaturesDir: ""
   log:
     level: info
+    # file: "/var/log/tracee.log"
+    # aggregate:
+    #   enabled: true
+    #   flush-interval: "5s"
+    # filters:
+    #   include:
+    #     libbpf: false
+    #     msg:
+    #       - SampleMessage1
+    #       - SampleMessage2
+    #     pkg:
+    #       - package1
+    #       - package2
+    #     file:
+    #       - file1.go
+    #       - file2.go
+    #     level:
+    #       - warn
+    #       - error
+    #     regex:
+    #       - ^pattern1
+    #       - ^pattern2
+    #   exclude:
+    #     msg:
+    #       - ExcludedMessage1
+    #     pkg:
+    #       - excludedPackage
+    #     file:
+    #       - excludedFile.go
+    #     level:
+    #       - debug
+    #     regex:
+    #       - ^excludedPattern
   output:
     format: json
     options:
