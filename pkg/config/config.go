@@ -81,6 +81,59 @@ func (c Config) Validate() error {
 // Capture
 //
 
+// --capture file-write.enabled=<true/false> \
+// --capture file-write.filters= (multiple allowed)
+// --capture file-read.enabled=<true/false>
+// --capture file-read.filters= (multiple allowed)
+// --capture executable.enabled=<true/false>
+// --capture kernel-modules.enabled=<true/false>
+// --capture bpf-programs.enabled=<true/false>
+// --capture memory-regions.enabled=<true/false>
+// --capture network.enabled=<true/false>
+// --capture network.pcap=<split_mode>
+// --capture network.pcap-options=
+// --capture network.pcap-snaplen=
+// --capture dir.path= (default: /tmp/tracee)
+// --capture dir.clear=<true/false> (default: false)
+
+type NCaptureConfig struct {
+	Executable    bool
+	KernelModules bool
+	BpfPrograms   bool
+	MemoryRegions bool
+	FileWrite     FileWriteCaptureConfig
+	FileRead      FileReadCaptureConfig
+	Network       NetworkCaptureConfig
+	Output        OutputCaptureConfig
+}
+
+type FileWriteCaptureConfig struct {
+	Enabled    bool
+	PathFilter []string
+}
+
+type FileReadCaptureConfig struct {
+	Enabled    bool
+	PathFilter []string
+}
+
+type NetworkCaptureConfig struct {
+	Enabled   bool
+	Single    bool
+	Length    uint32
+	Filtered  bool
+	Process   bool
+	Container bool
+	Command   bool
+}
+
+type OutputCaptureConfig struct {
+	Path  string
+	Clear bool
+}
+
+// Legacy below
+
 type CaptureConfig struct {
 	OutputPath string
 	FileWrite  FileCaptureConfig
