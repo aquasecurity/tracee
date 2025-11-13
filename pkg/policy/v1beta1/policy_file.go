@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,15 +17,15 @@ import (
 
 // PolicyFile is the structure of the policy file
 type PolicyFile struct {
-	APIVersion string         `yaml:"apiVersion"`
-	Kind       string         `yaml:"kind"`
-	Metadata   Metadata       `yaml:"metadata"`
-	Spec       k8s.PolicySpec `yaml:"spec"`
+	APIVersion string         `yaml:"apiVersion" json:"apiVersion"`
+	Kind       string         `yaml:"kind" json:"kind"`
+	Metadata   Metadata       `yaml:"metadata" json:"metadata"`
+	Spec       k8s.PolicySpec `yaml:"spec" json:"spec"`
 }
 
 type Metadata struct {
-	Name        string            `yaml:"name"`
-	Annotations map[string]string `yaml:"annotations"`
+	Name        string            `yaml:"name" json:"name"`
+	Annotations map[string]string `yaml:"annotations" json:"annotations"`
 }
 
 func (p PolicyFile) GetName() string {
@@ -338,9 +339,9 @@ func PoliciesFromPaths(paths []string) ([]k8s.PolicyInterface, error) {
 				continue
 			}
 
-			// TODO: support json
 			if strings.HasSuffix(file.Name(), ".yaml") ||
-				strings.HasSuffix(file.Name(), ".yml") {
+				strings.HasSuffix(file.Name(), ".yml") ||
+				strings.HasSuffix(file.Name(), ".json") {
 				policy, err := getPoliciesFromFile(filepath.Join(path, file.Name()))
 				if err != nil {
 					return nil, err
@@ -369,7 +370,12 @@ func getPoliciesFromFile(filePath string) (PolicyFile, error) {
 		return p, err
 	}
 
-	err = yaml.Unmarshal(data, &p)
+	// Detect file format by extension and use appropriate unmarshaler
+	if strings.HasSuffix(filePath, ".json") {
+		err = json.Unmarshal(data, &p)
+	} else {
+		err = yaml.Unmarshal(data, &p)
+	}
 	if err != nil {
 		return p, err
 	}
