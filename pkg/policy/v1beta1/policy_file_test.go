@@ -2,6 +2,9 @@ package v1beta1
 
 import (
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"gotest.tools/assert"
@@ -589,6 +592,487 @@ func TestPolicyValidate(t *testing.T) {
 				assert.ErrorContains(t, err, test.expectedError.Error())
 			} else {
 				assert.NilError(t, err)
+			}
+		})
+	}
+}
+
+func TestPoliciesFromPaths(t *testing.T) {
+	t.Parallel()
+
+	// Determine which event to use - reuse fake_signature if it exists, otherwise create a new one
+	eventName := "fake_signature"
+	_, exists := events.Core.GetDefinitionIDByName("fake_signature")
+	if !exists {
+		// If it doesn't exist, create it with a different ID and name to avoid conflicts
+		eventName = "fake_signature_policies"
+		fakeSigEventDefinition := events.NewDefinition(
+			0,
+			events.Sys32Undefined,
+			eventName,
+			events.NewVersion(1, 0, 0),
+			"fake_description",
+			false,
+			false,
+			[]string{"signatures", "default"},
+			events.NewDependencyStrategy(
+				events.NewDependencies(
+					[]events.ID{},
+					[]events.KSymbol{},
+					[]events.Probe{},
+					[]events.TailCall{},
+					events.Capabilities{},
+				)),
+			[]events.DataField{},
+			nil,
+		)
+
+		// Use a different ID to avoid conflict with TestPolicyValidate
+		err := events.Core.Add(events.StartSignatureID+1, fakeSigEventDefinition)
+		assert.NilError(t, err)
+	}
+
+	validYAMLPolicy := fmt.Sprintf(`apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: test-yaml-policy
+  annotations:
+    description: Test YAML policy
+spec:
+  scope:
+    - global
+  defaultActions:
+    - log
+  rules:
+    - event: %s
+      actions:
+        - log
+`, eventName)
+
+	validJSONPolicy := fmt.Sprintf(`{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "test-json-policy",
+    "annotations": {
+      "description": "Test JSON policy"
+    }
+  },
+  "spec": {
+    "scope": [
+      "global"
+    ],
+    "defaultActions": [
+      "log"
+    ],
+    "rules": [
+      {
+        "event": "%s",
+        "actions": [
+          "log"
+        ]
+      }
+    ]
+  }
+}`, eventName)
+
+	invalidYAMLPolicy := `apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: invalid-yaml
+spec:
+  scope:
+    - global
+  rules:
+    - event: fake_signature
+invalid: yaml: syntax
+`
+
+	invalidJSONPolicy := `{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "invalid-json",
+    "annotations": {
+      "description": "Invalid JSON"
+    }
+  },
+  "spec": {
+    "scope": [
+      "global"
+    ],
+    "rules": [
+      {
+        "event": "fake_signature"
+      }
+    ]
+  },
+  invalid json syntax
+}`
+
+	tests := []struct {
+		testName      string
+		setupFiles    func(t *testing.T) []string
+		expectedCount int
+		expectError   bool
+		errorContains string
+	}{
+		{
+			testName: "load single YAML file",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+				policyFile := filepath.Join(tempDir, "policy.yaml")
+				err := os.WriteFile(policyFile, []byte(validYAMLPolicy), 0644)
+				assert.NilError(t, err)
+				return []string{policyFile}
+			},
+			expectedCount: 1,
+			expectError:   false,
+		},
+		{
+			testName: "load single JSON file",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+				policyFile := filepath.Join(tempDir, "policy.json")
+				err := os.WriteFile(policyFile, []byte(validJSONPolicy), 0644)
+				assert.NilError(t, err)
+				return []string{policyFile}
+			},
+			expectedCount: 1,
+			expectError:   false,
+		},
+		{
+			testName: "load directory with YAML files",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+				for i := 0; i < 3; i++ {
+					policyFile := filepath.Join(tempDir, fmt.Sprintf("policy%d.yaml", i))
+					// Change policy name to make them unique
+					policyContent := fmt.Sprintf(`apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: test-yaml-policy-%d
+  annotations:
+    description: Test YAML policy
+spec:
+  scope:
+    - global
+  defaultActions:
+    - log
+  rules:
+    - event: %s
+      actions:
+        - log
+`, i, eventName)
+					err := os.WriteFile(policyFile, []byte(policyContent), 0644)
+					assert.NilError(t, err)
+				}
+				return []string{tempDir}
+			},
+			expectedCount: 3,
+			expectError:   false,
+		},
+		{
+			testName: "load directory with JSON files",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+				for i := 0; i < 3; i++ {
+					policyFile := filepath.Join(tempDir, fmt.Sprintf("policy%d.json", i))
+					policyContent := fmt.Sprintf(`{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "test-json-policy-%d",
+    "annotations": {
+      "description": "Test JSON policy"
+    }
+  },
+  "spec": {
+    "scope": [
+      "global"
+    ],
+    "defaultActions": [
+      "log"
+    ],
+    "rules": [
+      {
+        "event": "%s",
+        "actions": [
+          "log"
+        ]
+      }
+    ]
+  }
+}`, i, eventName)
+					err := os.WriteFile(policyFile, []byte(policyContent), 0644)
+					assert.NilError(t, err)
+				}
+				return []string{tempDir}
+			},
+			expectedCount: 3,
+			expectError:   false,
+		},
+		{
+			testName: "load directory with mixed YAML and JSON files",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+				// Create YAML files
+				for i := 0; i < 2; i++ {
+					policyFile := filepath.Join(tempDir, fmt.Sprintf("policy-yaml-%d.yaml", i))
+					policyContent := fmt.Sprintf(`apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: test-yaml-policy-%d
+  annotations:
+    description: Test YAML policy
+spec:
+  scope:
+    - global
+  defaultActions:
+    - log
+  rules:
+    - event: %s
+      actions:
+        - log
+`, i, eventName)
+					err := os.WriteFile(policyFile, []byte(policyContent), 0644)
+					assert.NilError(t, err)
+				}
+				// Create JSON files
+				for i := 0; i < 2; i++ {
+					policyFile := filepath.Join(tempDir, fmt.Sprintf("policy-json-%d.json", i))
+					policyContent := fmt.Sprintf(`{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "test-json-policy-%d",
+    "annotations": {
+      "description": "Test JSON policy"
+    }
+  },
+  "spec": {
+    "scope": [
+      "global"
+    ],
+    "defaultActions": [
+      "log"
+    ],
+    "rules": [
+      {
+        "event": "%s",
+        "actions": [
+          "log"
+        ]
+      }
+    ]
+  }
+}`, i, eventName)
+					err := os.WriteFile(policyFile, []byte(policyContent), 0644)
+					assert.NilError(t, err)
+				}
+				return []string{tempDir}
+			},
+			expectedCount: 4,
+			expectError:   false,
+		},
+		{
+			testName: "load directory ignores non-policy files",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+				// Create valid policy files
+				policyFile1 := filepath.Join(tempDir, "policy1.yaml")
+				err := os.WriteFile(policyFile1, []byte(validYAMLPolicy), 0644)
+				assert.NilError(t, err)
+
+				policyFile2 := filepath.Join(tempDir, "policy2.json")
+				err = os.WriteFile(policyFile2, []byte(validJSONPolicy), 0644)
+				assert.NilError(t, err)
+
+				// Create non-policy files that should be ignored
+				otherFile1 := filepath.Join(tempDir, "readme.txt")
+				err = os.WriteFile(otherFile1, []byte("This is a readme"), 0644)
+				assert.NilError(t, err)
+
+				otherFile2 := filepath.Join(tempDir, "config.xml")
+				err = os.WriteFile(otherFile2, []byte("<config></config>"), 0644)
+				assert.NilError(t, err)
+
+				return []string{tempDir}
+			},
+			expectedCount: 2,
+			expectError:   false,
+		},
+		{
+			testName: "error on invalid YAML file",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+				policyFile := filepath.Join(tempDir, "invalid.yaml")
+				err := os.WriteFile(policyFile, []byte(invalidYAMLPolicy), 0644)
+				assert.NilError(t, err)
+				return []string{policyFile}
+			},
+			expectedCount: 0,
+			expectError:   true,
+			errorContains: "yaml",
+		},
+		{
+			testName: "error on invalid JSON file",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+				policyFile := filepath.Join(tempDir, "invalid.json")
+				err := os.WriteFile(policyFile, []byte(invalidJSONPolicy), 0644)
+				assert.NilError(t, err)
+				return []string{policyFile}
+			},
+			expectedCount: 0,
+			expectError:   true,
+			errorContains: "invalid character",
+		},
+		{
+			testName: "error on empty path",
+			setupFiles: func(t *testing.T) []string {
+				return []string{""}
+			},
+			expectedCount: 0,
+			expectError:   true,
+			errorContains: "policy path cannot be empty",
+		},
+		{
+			testName: "error on non-existent file",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+				return []string{filepath.Join(tempDir, "non-existent.yaml")}
+			},
+			expectedCount: 0,
+			expectError:   true,
+		},
+		{
+			testName: "error on duplicate policy names in directory",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+				// Create two files with same policy name
+				policyFile1 := filepath.Join(tempDir, "policy1.yaml")
+				err := os.WriteFile(policyFile1, []byte(validYAMLPolicy), 0644)
+				assert.NilError(t, err)
+
+				policyFile2 := filepath.Join(tempDir, "policy2.json")
+				// Use same policy name
+				duplicatePolicy := fmt.Sprintf(`{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "test-yaml-policy",
+    "annotations": {
+      "description": "Duplicate policy name"
+    }
+  },
+  "spec": {
+    "scope": [
+      "global"
+    ],
+    "defaultActions": [
+      "log"
+    ],
+    "rules": [
+      {
+        "event": "%s",
+        "actions": [
+          "log"
+        ]
+      }
+    ]
+  }
+}`, eventName)
+				err = os.WriteFile(policyFile2, []byte(duplicatePolicy), 0644)
+				assert.NilError(t, err)
+				return []string{tempDir}
+			},
+			expectedCount: 0,
+			expectError:   true,
+			errorContains: "already exist",
+		},
+		{
+			testName: "load multiple paths with YAML and JSON",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+				// Create YAML file
+				yamlFile := filepath.Join(tempDir, "policy.yaml")
+				err := os.WriteFile(yamlFile, []byte(validYAMLPolicy), 0644)
+				assert.NilError(t, err)
+
+				// Create JSON file
+				jsonFile := filepath.Join(tempDir, "policy.json")
+				jsonPolicy := fmt.Sprintf(`{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "test-json-policy-separate",
+    "annotations": {
+      "description": "Test JSON policy"
+    }
+  },
+  "spec": {
+    "scope": [
+      "global"
+    ],
+    "defaultActions": [
+      "log"
+    ],
+    "rules": [
+      {
+        "event": "%s",
+        "actions": [
+          "log"
+        ]
+      }
+    ]
+  }
+}`, eventName)
+				err = os.WriteFile(jsonFile, []byte(jsonPolicy), 0644)
+				assert.NilError(t, err)
+
+				return []string{yamlFile, jsonFile}
+			},
+			expectedCount: 2,
+			expectError:   false,
+		},
+		{
+			testName: "load directory with .yml extension",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+				policyFile := filepath.Join(tempDir, "policy.yml")
+				err := os.WriteFile(policyFile, []byte(validYAMLPolicy), 0644)
+				assert.NilError(t, err)
+				return []string{tempDir}
+			},
+			expectedCount: 1,
+			expectError:   false,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+
+		t.Run(test.testName, func(t *testing.T) {
+			t.Parallel()
+
+			paths := test.setupFiles(t)
+			policies, err := PoliciesFromPaths(paths)
+
+			if test.expectError {
+				assert.Assert(t, err != nil, "expected error but got none")
+				if test.errorContains != "" {
+					assert.ErrorContains(t, err, test.errorContains)
+				}
+				assert.Equal(t, len(policies), 0, "expected no policies on error")
+			} else {
+				assert.NilError(t, err, "unexpected error: %v", err)
+				assert.Equal(t, len(policies), test.expectedCount, "expected %d policies, got %d", test.expectedCount, len(policies))
+
+				// Verify policy names are correct
+				for i, policy := range policies {
+					assert.Assert(t, policy.GetName() != "", "policy %d should have a name", i)
+				}
 			}
 		})
 	}
