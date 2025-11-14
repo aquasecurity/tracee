@@ -11,7 +11,6 @@ import (
 // It is used only by the old binary (tracee-ebpf).
 func PrintAndExitIfHelp(ctx *cli.Context) {
 	keys := []string{
-		"containers",
 		"proctree",
 		"capture",
 		"scope",
@@ -19,6 +18,7 @@ func PrintAndExitIfHelp(ctx *cli.Context) {
 		"output",
 		"capabilities",
 		"log",
+		"enrich",
 	}
 
 	for _, k := range keys {
@@ -46,8 +46,6 @@ func GetHelpString(key string) string {
 	switch key {
 	case "config":
 		return configHelp()
-	case "containers":
-		return containersHelp()
 	case "proctree":
 		return procTreeHelp()
 	case "capture":
@@ -62,6 +60,8 @@ func GetHelpString(key string) string {
 		return capabilitiesHelp()
 	case "log":
 		return logHelp()
+	case "enrich":
+		return enrichmentHelp()
 	}
 	return ""
 }

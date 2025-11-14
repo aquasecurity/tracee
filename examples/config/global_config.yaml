@@ -37,17 +37,18 @@ server:
     pyroscope: true
 dnscache: enable
 
-containers:
-    enrich: false
-    # enrich: true
-    # cgroupfs:
-    #     path: /host/sys/fs/cgroup
-    #     force: true
-    # sockets:
-    #     - runtime: containerd
-    #       socket: /var/run/containerd/containerd.sock
-    #     - runtime: docker
-    #       socket: /var/run/docker.sock
+enrich:
+    # - container.enabled=false
+    # - container.enabled=true
+    # - container.cgroup.path=/host/sys/fs/cgroup
+    # - container.docker.socket=/var/run/docker.sock
+    # - container.containerd.socket=/var/run/containerd/containerd.sock
+    # - container.crio.socket=/var/run/crio/crio.sock
+    # - container.podman.socket=/var/run/podman/podman.sock
+    # - resolve-fd=true
+    # - exec-hash.enabled=true
+    # - exec-hash.mode=sha256
+    # - user-stack-trace=true
 
 events:
   #- open
