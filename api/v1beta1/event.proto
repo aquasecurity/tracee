@@ -584,6 +584,10 @@ enum EventId {
     symbols_collision = 2024;
     hidden_kernel_module = 2025;
     ftrace_hook = 2026;
+
+    // Reserved ranges for extended events
+    reserved 1500 to 1999;  // Common events (extended)
+    reserved 3000 to 3999;  // Userspace-derived events (extended)
 }
 
 message Event {

@@ -251,6 +251,9 @@ func ParseArgsSlice(args []trace.Argument, eventID int) error {
 		}
 	}
 
+	// Parse extended events (only available in extended builds)
+	parseArgsExtended(evtID, args)
+
 	return nil
 }
 
