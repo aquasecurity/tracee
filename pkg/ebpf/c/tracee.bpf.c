@@ -2290,15 +2290,17 @@ int BPF_KPROBE(trace_security_file_open)
 {
     program_data_t p = {};
     if (!init_program_data(&p, ctx, SECURITY_FILE_OPEN))
-        return 0;
+        goto out;
 
     if (!evaluate_scope_filters(&p))
-        return 0;
+        goto out;
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
+    void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
+    int flags = BPF_CORE_READ(file, f_flags);
+
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
-    void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
     u64 ctime = get_ctime_nanosec_from_file(file);
 
     // Load the arguments given to the open syscall (which eventually invokes this function)
@@ -2320,19 +2322,21 @@ int BPF_KPROBE(trace_security_file_open)
     }
 
     save_str_to_buf(&p.event->args_buf, file_path, 0);
-    save_to_submit_buf(&p.event->args_buf,
-                       (void *) __builtin_preserve_access_index(&file->f_flags),
-                       sizeof(int),
-                       1);
+    save_to_submit_buf(&p.event->args_buf, &flags, sizeof(int), 1);
     save_to_submit_buf(&p.event->args_buf, &s_dev, sizeof(dev_t), 2);
     save_to_submit_buf(&p.event->args_buf, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(&p.event->args_buf, &ctime, sizeof(u64), 4);
     save_str_to_buf(&p.event->args_buf, syscall_pathname, 5);
 
-    if (!evaluate_data_filters(&p, 0))
-        return 0;
+    if (evaluate_data_filters(&p, 0))
+        events_perf_submit(&p, 0);
 
-    return events_perf_submit(&p, 0);
+out:
+#ifdef EXTENDED_BUILD
+    #include "extensions/trace_security_file_open.c"
+#endif
+
+    return 0;
 }
 
 SEC("kprobe/security_sb_mount")
