@@ -186,6 +186,34 @@ typedef enum signal_event_id_e {
 } signal_event_id_e;
 #endif // #ifndef EXTENDED_BUILD
 
+#define TAIL_CALL_ID_LIST_CORE                                                                     \
+    X(TAIL_VFS_WRITE, )                                                                            \
+    X(TAIL_VFS_WRITEV, )                                                                           \
+    X(TAIL_SEND_BIN, )                                                                             \
+    X(TAIL_SEND_BIN_TP, )                                                                          \
+    X(TAIL_KERNEL_WRITE, )                                                                         \
+    X(TAIL_SCHED_PROCESS_EXEC_EVENT_SUBMIT, )                                                      \
+    X(TAIL_VFS_READ, )                                                                             \
+    X(TAIL_VFS_READV, )                                                                            \
+    X(TAIL_PROCESS_EXECUTE_FAILED, )                                                               \
+    X(TAIL_HIDDEN_KERNEL_MODULE_PROC, )                                                            \
+    X(TAIL_HIDDEN_KERNEL_MODULE_KSET, )                                                            \
+    X(TAIL_HIDDEN_KERNEL_MODULE_MOD_TREE, )                                                        \
+    X(TAIL_HIDDEN_KERNEL_MODULE_NEW_MOD_ONLY, )                                                    \
+    X(TAIL_HIDDEN_KERNEL_MODULE_MODTREE_LOOP, )                                                    \
+    // ...
+
+#ifndef EXTENDED_BUILD
+typedef enum tail_call_id_e {
+    #define X(name, val) name val,
+    // clang-format off
+    TAIL_CALL_ID_LIST_CORE
+    X(MAX_TAIL_CALL, )
+    // clang-format on
+    #undef X
+} tail_call_id_e;
+#endif // #ifndef EXTENDED_BUILD
+
 typedef struct args {
     unsigned long args[6];
 } args_t;

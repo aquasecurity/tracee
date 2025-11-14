@@ -194,7 +194,7 @@ const (
 	TailHiddenKernelModuleModTree
 	TailHiddenKernelModuleNewModOnly
 	TailHiddenKernelModuleModTreeLoop
-	MaxTail
+	maxTail
 )
 
 type TailCall struct {
