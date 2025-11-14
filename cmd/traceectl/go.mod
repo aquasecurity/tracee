@@ -6,7 +6,7 @@ toolchain go1.24.7
 
 require (
 	github.com/aquasecurity/table v1.10.0
-	github.com/aquasecurity/tracee/api v0.0.0-20250929201500-3e47b0c6eaf6
+	github.com/aquasecurity/tracee/api v0.0.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
