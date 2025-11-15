@@ -36,8 +36,9 @@ type Config struct {
 	CgroupFSPath        string
 	CgroupFSForce       bool
 	EngineConfig        engine.Config
-	MetricsEnabled      bool
 	DNSCacheConfig      dns.Config
+	MetricsEnabled      bool
+	HealthzEnabled      bool
 }
 
 // Validate does static validation of the configuration

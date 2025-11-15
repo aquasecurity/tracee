@@ -41,3 +41,38 @@ func TestServer(t *testing.T) {
 		})
 	}
 }
+
+func TestHealthzEnabled(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		server         *Server
+		enableHealthz  bool
+		expectedResult bool
+	}{
+		{
+			name:           "server without healthz enabled returns false",
+			server:         New(""),
+			enableHealthz:  false,
+			expectedResult: false,
+		},
+		{
+			name:           "server with healthz enabled returns true",
+			server:         New(""),
+			enableHealthz:  true,
+			expectedResult: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.enableHealthz && tt.server != nil {
+				tt.server.EnableHealthzEndpoint()
+			}
+
+			result := tt.server.HealthzEnabled()
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}

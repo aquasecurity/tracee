@@ -14466,7 +14466,7 @@ var CoreEvents = map[ID]Definition{
 	SignalHeartbeat: {
 		id:       SignalHeartbeat,
 		id32Bit:  Sys32Undefined,
-		name:     "heartbeat_event",
+		name:     "signal_heartbeat",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		sets:     []string{"default"},
