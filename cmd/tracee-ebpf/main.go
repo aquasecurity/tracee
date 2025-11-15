@@ -118,9 +118,9 @@ func main() {
 				Usage: "size, in event objects, of each pipeline stage's output channel",
 			},
 			&cli.StringFlag{
-				Name:  "install-path",
+				Name:  "runtime",
 				Value: "/tmp/tracee",
-				Usage: "path where tracee will install or lookup it's resources",
+				Usage: "runtime config options eg: workdir",
 			},
 			&cli.StringSliceFlag{
 				Name:  server.ServerFlag,
