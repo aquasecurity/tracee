@@ -258,9 +258,10 @@ func New(cfg config.Config) (*Tracee, error) {
 	}
 
 	pmCfg := policy.ManagerConfig{
-		DNSCacheConfig: cfg.DNSCacheConfig,
-		ProcTreeConfig: cfg.ProcTree,
-		CaptureConfig:  getNewCaptureConfig(),
+		HeartbeatEnabled: cfg.HealthzEnabled,
+		DNSCacheConfig:   cfg.DNSCacheConfig,
+		ProcTreeConfig:   cfg.ProcTree,
+		CaptureConfig:    getNewCaptureConfig(),
 	}
 	pm, err := policy.NewManager(pmCfg, depsManager, initialPolicies...)
 	if err != nil {
