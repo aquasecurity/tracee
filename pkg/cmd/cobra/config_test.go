@@ -318,6 +318,40 @@ output:
 			},
 		},
 		{
+			name: "Test buffers configuration (cli flags)",
+			yamlContent: `
+buffers:
+    - kernel-events=2048
+    - kernel-blob=512
+    - control-plane-events=256
+    - pipeline=4000
+`,
+			key: "buffers",
+			expectedFlags: []string{
+				"kernel-events=2048",
+				"kernel-blob=512",
+				"control-plane-events=256",
+				"pipeline=4000",
+			},
+		},
+		{
+			name: "Test buffers configuration (structured flags)",
+			yamlContent: `
+buffers:
+    kernel-events: 2048
+    kernel-blob: 512
+    control-plane-events: 256
+    pipeline: 4000
+`,
+			key: "buffers",
+			expectedFlags: []string{
+				"kernel-events=2048",
+				"kernel-blob=512",
+				"control-plane-events=256",
+				"pipeline=4000",
+			},
+		},
+		{
 			name: "server flag check",
 			yamlContent: `
 server:

@@ -16,17 +16,22 @@ import (
 
 func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	var runner cmd.Runner
+	var err error
 
+	buffers, err := flags.PrepareBuffers(c.StringSlice("buffers"))
+	if err != nil {
+		return runner, err
+	}
 	// Initialize a tracee config structure
 	cfg := config.Config{
-		PerfBufferSize:      c.Int("perf-buffer-size"),
-		BlobPerfBufferSize:  c.Int("blob-perf-buffer-size"),
-		PipelineChannelSize: c.Int("pipeline-channel-size"),
+		PerfBufferSize:             buffers.EventsSize,
+		BlobPerfBufferSize:         buffers.BlobSize,
+		ControlPlanePerfBufferSize: buffers.ControlPlaneSize,
+		PipelineChannelSize:        buffers.PipelineSize,
 	}
 
 	// Output command line flags
 
-	var err error
 	var output flags.PrepareOutputResult
 
 	output, err = flags.TraceeEbpfPrepareOutput(c.StringSlice("output"), false)
