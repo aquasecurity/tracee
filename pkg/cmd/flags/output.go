@@ -12,8 +12,8 @@ import (
 )
 
 type PrepareOutputResult struct {
-	TraceeConfig   *config.OutputConfig
-	PrinterConfigs []config.PrinterConfig
+	TraceeConfig       *config.OutputConfig
+	DestinationConfigs []config.Destination
 }
 
 func PrepareOutput(outputSlice []string) (PrepareOutputResult, error) {
@@ -21,13 +21,13 @@ func PrepareOutput(outputSlice []string) (PrepareOutputResult, error) {
 	traceeConfig := &config.OutputConfig{}
 
 	// outpath:format
-	printerMap := make(map[string]string)
+	destinationMap := make(map[string]string)
 
 	for _, o := range outputSlice {
 		outputParts := strings.SplitN(o, ":", 2)
 
 		if strings.HasPrefix(outputParts[0], "gotemplate=") {
-			err := parseFormat(outputParts, printerMap)
+			err := parseFormat(outputParts, destinationMap)
 			if err != nil {
 				return outConfig, err
 			}
@@ -39,9 +39,9 @@ func PrepareOutput(outputSlice []string) (PrepareOutputResult, error) {
 			if len(outputParts) > 1 {
 				return outConfig, NoneOutputPathError()
 			}
-			printerMap["stdout"] = "ignore"
+			destinationMap["stdout"] = "ignore"
 		case "table", "table-verbose", "json":
-			err := parseFormat(outputParts, printerMap)
+			err := parseFormat(outputParts, destinationMap)
 			if err != nil {
 				return outConfig, err
 			}
@@ -51,14 +51,14 @@ func PrepareOutput(outputSlice []string) (PrepareOutputResult, error) {
 				return outConfig, err
 			}
 
-			printerMap[outputParts[1]] = "forward"
+			destinationMap[outputParts[1]] = "forward"
 		case "webhook":
 			err := validateURL(outputParts, "webhook")
 			if err != nil {
 				return outConfig, err
 			}
 
-			printerMap[outputParts[1]] = "webhook"
+			destinationMap[outputParts[1]] = "webhook"
 		case "option":
 			err := parseOption(outputParts, traceeConfig)
 			if err != nil {
@@ -70,41 +70,80 @@ func PrepareOutput(outputSlice []string) (PrepareOutputResult, error) {
 	}
 
 	// default
-	if len(printerMap) == 0 {
-		printerMap["stdout"] = "table"
+	if len(destinationMap) == 0 {
+		destinationMap["stdout"] = "table"
 	}
 
-	printerConfigs, err := getPrinterConfigs(printerMap, traceeConfig)
+	destinationConfigs, err := getDestinationConfigs(destinationMap, traceeConfig)
 	if err != nil {
 		return outConfig, err
 	}
 
 	outConfig.TraceeConfig = traceeConfig
-	outConfig.PrinterConfigs = printerConfigs
+	outConfig.DestinationConfigs = destinationConfigs
 
 	return outConfig, nil
 }
 
-func PreparePrinterConfig(printerKind string, outputPath string) (config.PrinterConfig, error) {
-	outFile := os.Stdout
-	var err error
+func getWebhookFormat(webhookUrl string) string {
+	urlParts := strings.Split(webhookUrl, "?")
+	if len(urlParts) == 1 || urlParts[1] == "" {
+		return "json"
+	}
 
-	if outputPath != "stdout" && outputPath != "" && printerKind != "forward" && printerKind != "webhook" {
-		outFile, err = CreateOutputFile(outputPath)
-		if err != nil {
-			return config.PrinterConfig{}, err
+	queryParams := strings.SplitSeq(urlParts[1], "&")
+	for part := range queryParams {
+		if strings.HasPrefix(part, "gotemplate") {
+			return part
 		}
 	}
 
-	return config.PrinterConfig{
-		Kind:    printerKind,
-		OutPath: outputPath,
-		OutFile: outFile,
-	}, nil
+	return "json"
 }
 
-// setOption sets the given option in the given config
-func setOption(cfg *config.OutputConfig, option string) error {
+func PreparePrinterConfig(printerKind string, outputPath string) (config.Destination, error) {
+	if printerKind == "ignore" {
+		return config.Destination{
+			Name: "ignore",
+			Type: printerKind,
+			Path: "stdout", // here because tests expect `stdout` as a default value but I believe it can be removed
+		}, nil
+	}
+
+	var dest config.Destination
+	outFile := os.Stdout
+	var err error
+
+	isFile := outputPath != "" && printerKind != "forward" && printerKind != "webhook"
+
+	if printerKind == "webhook" {
+		dest.Format = getWebhookFormat(outputPath)
+	}
+
+	dest.Type = printerKind
+	dest.Url = outputPath
+	dest.Name = outputPath + printerKind
+
+	if isFile {
+		if outputPath != "stdout" {
+			outFile, err = CreateOutputFile(outputPath)
+			if err != nil {
+				return config.Destination{}, err
+			}
+		}
+
+		dest.File = outFile
+		dest.Format = printerKind
+		dest.Path = outputPath
+		dest.Type = "file"
+		dest.Url = "" // clear unused URL
+	}
+
+	return dest, nil
+}
+
+// SetOption sets the given option in the given config
+func SetOption(cfg *config.OutputConfig, option string) error {
 	switch option {
 	case "stack-addresses":
 		cfg.StackAddresses = true
@@ -154,13 +193,13 @@ func setOption(cfg *config.OutputConfig, option string) error {
 	return nil
 }
 
-// getPrinterConfigs returns a slice of printer.Configs based on the given printerMap
-func getPrinterConfigs(printerMap map[string]string, traceeConfig *config.OutputConfig) ([]config.PrinterConfig, error) {
-	printerConfigs := make([]config.PrinterConfig, 0, len(printerMap))
+// getDestinationConfigs returns a slice of printer.Configs based on the given printerMap
+func getDestinationConfigs(printerMap map[string]string, traceeConfig *config.OutputConfig) ([]config.Destination, error) {
+	printerConfigs := make([]config.Destination, 0, len(printerMap))
 
 	for outPath, printerKind := range printerMap {
 		if printerKind == "table" {
-			if err := setOption(traceeConfig, "parse-arguments"); err != nil {
+			if err := SetOption(traceeConfig, "parse-arguments"); err != nil {
 				return nil, err
 			}
 		}
@@ -202,7 +241,7 @@ func parseOption(outputParts []string, traceeConfig *config.OutputConfig) error 
 	}
 
 	for _, option := range strings.Split(outputParts[1], ",") {
-		err := setOption(traceeConfig, option)
+		err := SetOption(traceeConfig, option)
 		if err != nil {
 			return err
 		}

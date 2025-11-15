@@ -14,7 +14,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
-	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/k8s"
@@ -253,21 +252,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 	cfg.InitialPolicies = ps
 
-	// Output command line flags
-
-	outputFlags, err := GetFlagsFromViper("output")
-	if err != nil {
-		return runner, err
-	}
-
-	output, err := flags.PrepareOutput(outputFlags)
-	if err != nil {
-		return runner, err
-	}
-	cfg.Output = output.TraceeConfig
-
-	// Create printer
-
+	// Output
 	containerFilterEnabled := func() bool {
 		for _, p := range initialPolicies {
 			if p.ContainerFilterEnabled() {
@@ -278,13 +263,43 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return false
 	}
 
-	p, err := printer.NewBroadcast(
-		output.PrinterConfigs,
-		cmd.GetContainerMode(containerFilterEnabled(), cfg.NoContainersEnrich),
-	)
-	if err != nil {
-		return runner, err
+	if !isStructured("output") {
+		outputFlags, err := GetFlagsFromViper("output")
+		if err != nil {
+			return runner, err
+		}
+
+		output, err := flags.PrepareOutput(outputFlags)
+		if err != nil {
+			return runner, err
+		}
+
+		streams := []config.Stream{}
+		for _, destination := range output.DestinationConfigs {
+			streams = append(streams, config.Stream{
+				Name:         destination.Name + "-stream",
+				Destinations: []config.Destination{destination},
+			})
+		}
+		output.TraceeConfig.Streams = streams
+
+		cfg.Output = output.TraceeConfig
+	} else {
+		outputConfig, err := GetStructuredOutputConfig()
+		if err != nil {
+			return runner, err
+		}
+
+		outputTraceeConfig, err := prepareTraceeConfig(
+			*outputConfig,
+			cmd.GetContainerMode(containerFilterEnabled(), cfg.NoContainersEnrich))
+		if err != nil {
+			return runner, err
+		}
+
+		cfg.Output = outputTraceeConfig
 	}
+	cfg.Output.ContainerFilterEnabled = containerFilterEnabled()
 
 	// Check kernel lockdown
 
@@ -338,7 +353,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	runner.GRPC = serverRunner.GRPC
 	cfg.MetricsEnabled = runner.HTTP.MetricsEndpointEnabled()
 	runner.TraceeConfig = cfg
-	runner.Printer = p
 	runner.InstallPath = traceeInstallPath
 
 	noSignaturesMode := viper.GetBool("no-signatures")

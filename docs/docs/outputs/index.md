@@ -6,5 +6,6 @@ For examples on each configuration, please refer to:
 * Documentation on configuring [Tracee logs](./logging.md)
 * Documentation on configuring [output options](./output-options.md)
 * Documentation on configuring [output formats](./output-formats.md)
+* Documentation on configuring [output streams](./streams.md)
 
 Note that example configuration for each can be found in the Tracee root directory within the examples folder < [examples/config/global_config.yaml](https://github.com/aquasecurity/tracee/tree/main/examples/config)

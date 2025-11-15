@@ -2,12 +2,15 @@ package cobra
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/viper"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
+	outputflags "github.com/aquasecurity/tracee/pkg/cmd/flags"
 	serverflag "github.com/aquasecurity/tracee/pkg/cmd/flags/server"
+	"github.com/aquasecurity/tracee/pkg/config"
 )
 
 type cliFlagger interface {
@@ -345,103 +348,115 @@ func getLogFilterAttrFlags(filterOut bool, attrs LogFilterAttributes) []string {
 // output flag
 //
 
-type OutputConfig struct {
-	Options      OutputOptsConfig               `mapstructure:"options"`
-	Table        OutputFormatConfig             `mapstructure:"table"`
-	TableVerbose OutputFormatConfig             `mapstructure:"table-verbose"`
-	JSON         OutputFormatConfig             `mapstructure:"json"`
-	GoTemplate   OutputGoTemplateConfig         `mapstructure:"gotemplate"`
-	Forwards     map[string]OutputForwardConfig `mapstructure:"forward"`
-	Webhooks     map[string]OutputWebhookConfig `mapstructure:"webhook"`
+func isStructured(key string) bool {
+	rawValue := viper.Get(key)
+	_, ok := rawValue.(map[string]interface{})
+
+	return ok
 }
 
-func (c *OutputConfig) flags() []string {
-	flags := []string{}
-
-	// options flags
-	if c.Options.None {
-		flags = append(flags, "none")
-	}
-	if c.Options.StackAddresses {
-		flags = append(flags, "option:stack-addresses")
-	}
-	if c.Options.ExecEnv {
-		flags = append(flags, "option:exec-env")
-	}
-	if c.Options.ExecHash != "" {
-		flags = append(flags, fmt.Sprintf("option:exec-hash=%s", c.Options.ExecHash))
-	}
-	if c.Options.ParseArguments {
-		flags = append(flags, "option:parse-arguments")
-	}
-	if c.Options.ParseArgumentsFDs {
-		flags = append(flags, "option:parse-arguments-fds")
-	}
-	if c.Options.SortEvents {
-		flags = append(flags, "option:sort-events")
+// GetStructuredOutputConfig gets the output from config file
+// and returns an error if the validation goes wrong. Exported for testing
+func GetStructuredOutputConfig() (*OutputConfig, error) {
+	var output OutputConfig
+	err := viper.UnmarshalKey("output", &output)
+	if err != nil {
+		return nil, err
 	}
 
-	// formats with files
-	formatFilesMap := map[string][]string{
-		"table":         c.Table.Files,
-		"table-verbose": c.TableVerbose.Files,
-		"json":          c.JSON.Files,
+	if err := output.ValidateOrDefaults(); err != nil {
+		return nil, err
 	}
-	for format, files := range formatFilesMap {
-		for _, file := range files {
-			flags = append(flags, fmt.Sprintf("%s:%s", format, file))
+
+	return &output, nil
+}
+
+func (output *OutputConfig) ValidateOrDefaults() error {
+	for _, stream := range output.Streams {
+		if stream.Name == "" {
+			return errfmt.Errorf("validation error: name is mandatory for streams")
 		}
 	}
 
-	// gotemplate
-	if c.GoTemplate.Template != "" {
-		templateFlag := fmt.Sprintf("gotemplate=%s", c.GoTemplate.Template)
-		if len(c.GoTemplate.Files) > 0 {
-			templateFlag += ":" + strings.Join(c.GoTemplate.Files, ",")
+	for dIdx := range output.Destinations {
+		destination := &output.Destinations[dIdx]
+		if destination.Name == "" {
+			return errfmt.Errorf("validation error: name is mandatory for destinations")
 		}
 
-		flags = append(flags, templateFlag)
+		if destination.Type == "" {
+			destination.Type = "file"
+		}
+
+		if destination.Type == "file" && destination.Format == "" {
+			destination.Format = "table"
+		}
+
+		if (destination.Type == "webhook" || destination.Type == "forward") &&
+			destination.Url == "" {
+			return errfmt.Errorf("validation error: url is mandatory in destination for %s", destination.Type)
+		}
+
+		if destination.Format != "json" && destination.Format != "table" &&
+			destination.Format != "table-verbose" && !strings.HasPrefix(destination.Format, "gotemplate=") {
+			return errfmt.Errorf("validation error: destination format %s not valid for destination %s",
+				destination.Format, destination.Name)
+		}
+
+		if destination.Type != "file" && destination.Type != "webhook" && destination.Type != "forward" {
+			return errfmt.Errorf("validation error: destination type %s not valid for destination %s",
+				destination.Type, destination.Name)
+		}
 	}
 
-	// forward
-	for forwardName, forward := range c.Forwards {
-		_ = forwardName
-		url := fmt.Sprintf("%s://", forward.Protocol)
+	return nil
+}
 
-		if forward.User != "" && forward.Password != "" {
-			url += fmt.Sprintf("%s:%s@", forward.User, forward.Password)
-		}
+// The following structures are very similar to the ones defined in pkg/config/config.go.
+// The duplication allows the separation between the configuration passed by the user and
+// the configuration used to run tracee
+type StreamBufferMode string
 
-		url += fmt.Sprintf("%s:%d", forward.Host, forward.Port)
+const (
+	StreamBufferBlock StreamBufferMode = "block"
+	StreamBufferDrop  StreamBufferMode = "drop"
+)
 
-		if forward.Tag != "" {
-			url += fmt.Sprintf("?tag=%s", forward.Tag)
-		}
+type StreamFiltersConfig struct {
+	Policies []string `mapstructure:"policies"`
+	Events   []string `mapstructure:"events"`
+}
 
-		flags = append(flags, fmt.Sprintf("forward:%s", url))
-	}
+type StreamBufferConfig struct {
+	Size int              `mapstructure:"size"`
+	Mode StreamBufferMode `mapstructure:"mode"`
+}
 
-	// webhook
-	for webhookName, webhook := range c.Webhooks {
-		_ = webhookName
-		delim := "?"
-		url := fmt.Sprintf("%s://%s:%d", webhook.Protocol, webhook.Host, webhook.Port)
-		if webhook.Timeout != "" {
-			url += fmt.Sprintf("%stimeout=%s", delim, webhook.Timeout)
-			delim = "&"
-		}
-		if webhook.GoTemplate != "" {
-			url += fmt.Sprintf("%sgotemplate=%s", delim, webhook.GoTemplate)
-			delim = "&"
-		}
-		if webhook.ContentType != "" {
-			url += fmt.Sprintf("%scontentType=%s", delim, webhook.ContentType)
-		}
+type StreamConfig struct {
+	Name         string              `mapstructure:"name"`
+	Destinations []string            `mapstructure:"destinations"`
+	Filters      StreamFiltersConfig `mapstructure:"filters"`
+	Buffer       StreamBufferConfig  `mapstructure:"buffer"`
+}
 
-		flags = append(flags, fmt.Sprintf("webhook:%s", url))
-	}
+type DestinationsConfig struct {
+	Name   string `mapstructure:"name"`
+	Type   string `mapstructure:"type"`
+	Format string `mapstructure:"format"`
+	Path   string `mapstructure:"path"`
+	Url    string `mapstructure:"url"`
+}
 
-	return flags
+type OutputConfig struct {
+	Options      OutputOptsConfig     `mapstructure:"options"`
+	Destinations []DestinationsConfig `mapstructure:"destinations"`
+	Streams      []StreamConfig       `mapstructure:"streams"`
+}
+
+// For the output we are using a different path when the configuration is coming
+// from a structured configuration file.
+func (OutputConfig) flags() []string {
+	return []string{}
 }
 
 type OutputOptsConfig struct {
@@ -454,29 +469,167 @@ type OutputOptsConfig struct {
 	SortEvents        bool   `mapstructure:"sort-events"`
 }
 
-type OutputFormatConfig struct {
-	Files []string `mapstructure:"files"`
+func prepareTraceeConfig(c OutputConfig, containerMode config.ContainerMode) (*config.OutputConfig, error) {
+	cfg := &config.OutputConfig{}
+	declaredDestinations := map[string]int{}
+
+	for _, destination := range c.Destinations {
+		declaredDestinations[destination.Name] = 0
+	}
+
+	// check that all destinations used in the streams exist in the destinations section
+	// and that each destination is used exactly once
+	for _, stream := range c.Streams {
+		for _, destinationInStream := range stream.Destinations {
+			if _, ok := declaredDestinations[destinationInStream]; !ok {
+				return nil, fmt.Errorf("destination %s used in stream %s doesn't exist among the destinations",
+					destinationInStream, stream.Name)
+			}
+
+			declaredDestinations[destinationInStream]++
+			if count := declaredDestinations[destinationInStream]; count > 1 {
+				return nil, fmt.Errorf("destination %s used multiple times, which is not allowed", destinationInStream)
+			}
+		}
+	}
+
+	traceeConfigDestinations, err := prepareTraceeDestinationConfigs(c.Destinations, containerMode)
+	if err != nil {
+		return nil, err
+	}
+
+	// create streams from the config file
+	for _, s := range c.Streams {
+		streamsDestinations := []config.Destination{}
+		for _, destinationInStream := range s.Destinations {
+			d := traceeConfigDestinations[destinationInStream]
+			streamsDestinations = append(streamsDestinations, d)
+		}
+
+		cfg.Streams = append(cfg.Streams, config.Stream{
+			Name:         s.Name,
+			Destinations: streamsDestinations,
+			Filters: config.StreamFilters{
+				Policies: s.Filters.Policies,
+				Events:   s.Filters.Events,
+			},
+			Buffer: config.StreamBuffer{
+				Size: s.Buffer.Size,
+				Mode: config.StreamBufferMode(s.Buffer.Mode),
+			},
+		})
+	}
+
+	// create streams for the destinations that are not used in streams
+	syntheticStreams := []config.Stream{}
+	for _, destination := range c.Destinations {
+		if d := declaredDestinations[destination.Name]; d > 0 {
+			continue
+		}
+
+		syntheticStreams = append(syntheticStreams, config.Stream{
+			Name:         destination.Name + "-stream",
+			Destinations: []config.Destination{traceeConfigDestinations[destination.Name]},
+		})
+	}
+	cfg.Streams = append(cfg.Streams, syntheticStreams...)
+
+	// Create default stream if no streams are defined by the user
+	// and option.none == false
+	if len(cfg.Streams) == 0 && !c.Options.None {
+		cfg.Streams = append(cfg.Streams, config.Stream{
+			Name: "default-stream",
+			Destinations: []config.Destination{
+				{
+					Name:          "default-destination",
+					Type:          "file",
+					Format:        "table",
+					Path:          "stdout",
+					File:          os.Stdout,
+					ContainerMode: containerMode,
+				},
+			},
+		})
+	}
+
+	// Set options
+	err = setOptions(c.Options, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
 }
 
-type OutputGoTemplateConfig struct {
-	Template string   `mapstructure:"template"`
-	Files    []string `mapstructure:"files"`
+// prepareTraceeDestinationConfigs converts DestinationConfig to config.Destination and create the needed resources
+func prepareTraceeDestinationConfigs(destinations []DestinationsConfig, containerMode config.ContainerMode) (map[string]config.Destination, error) {
+	traceeConfigDestinations := map[string]config.Destination{}
+	for _, dst := range destinations {
+		outputDestination := config.Destination{
+			Name:          dst.Name,
+			Type:          dst.Type,
+			Format:        dst.Format,
+			Path:          dst.Path,
+			Url:           dst.Url,
+			ContainerMode: containerMode,
+		}
+
+		if dst.Type == "file" {
+			outputDestination.File = os.Stdout
+
+			if dst.Path != "stdout" && dst.Path != "" {
+				outputFile, err := outputflags.CreateOutputFile(dst.Path)
+				if err != nil {
+					return nil, err
+				}
+
+				outputDestination.File = outputFile
+			}
+		}
+
+		traceeConfigDestinations[outputDestination.Name] = outputDestination
+	}
+
+	return traceeConfigDestinations, nil
 }
 
-type OutputForwardConfig struct {
-	Protocol string `mapstructure:"protocol"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Tag      string `mapstructure:"tag"`
-}
+// setOptions sets the needed options from the user config to the tracee config
+func setOptions(options OutputOptsConfig, traceeConfig *config.OutputConfig) error {
+	if options.StackAddresses {
+		if err := outputflags.SetOption(traceeConfig, "stack-addresses"); err != nil {
+			return err
+		}
+	}
 
-type OutputWebhookConfig struct {
-	Protocol    string `mapstructure:"protocol"`
-	Host        string `mapstructure:"host"`
-	Port        int    `mapstructure:"port"`
-	Timeout     string `mapstructure:"timeout"`
-	GoTemplate  string `mapstructure:"gotemplate"`
-	ContentType string `mapstructure:"content-type"`
+	if options.ExecEnv {
+		if err := outputflags.SetOption(traceeConfig, "exec-env"); err != nil {
+			return err
+		}
+	}
+
+	if options.ExecHash != "" {
+		if err := outputflags.SetOption(traceeConfig, fmt.Sprintf("exec-hash=%s", options.ExecHash)); err != nil {
+			return err
+		}
+	}
+
+	if options.ParseArguments {
+		if err := outputflags.SetOption(traceeConfig, "parse-arguments"); err != nil {
+			return err
+		}
+	}
+
+	if options.ParseArgumentsFDs {
+		if err := outputflags.SetOption(traceeConfig, "parse-arguments-fds"); err != nil {
+			return err
+		}
+	}
+
+	if options.SortEvents {
+		if err := outputflags.SetOption(traceeConfig, "sort-events"); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

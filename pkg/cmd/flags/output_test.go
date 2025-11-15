@@ -52,8 +52,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "default format",
 			outputSlice: []string{},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "table", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "table", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
@@ -64,8 +64,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to stdout",
 			outputSlice: []string{"table"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "table", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "table", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
@@ -76,8 +76,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to /tmp/table",
 			outputSlice: []string{"table:/tmp/table"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "table", OutPath: "/tmp/table"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "table", Path: "/tmp/table"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
@@ -88,9 +88,9 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to stdout, and to /tmp/table",
 			outputSlice: []string{"table", "table:/tmp/table"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "table", OutPath: "stdout"},
-					{Kind: "table", OutPath: "/tmp/table"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "table", Path: "stdout"},
+					{Type: "file", Format: "table", Path: "/tmp/table"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
@@ -101,8 +101,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "json to stdout",
 			outputSlice: []string{"json"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "json", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "json", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{},
 			},
@@ -111,9 +111,9 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "json to /tmp/json, and json to /tmp/json2",
 			outputSlice: []string{"json:/tmp/json", "json:/tmp/json2"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "json", OutPath: "/tmp/json"},
-					{Kind: "json", OutPath: "/tmp/json2"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "json", Path: "/tmp/json"},
+					{Type: "file", Format: "json", Path: "/tmp/json2"},
 				},
 				TraceeConfig: &config.OutputConfig{},
 			},
@@ -122,8 +122,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table-verbose to stdout",
 			outputSlice: []string{"table-verbose"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "table-verbose", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "table-verbose", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{},
 			},
@@ -132,8 +132,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "gotemplate to stdout",
 			outputSlice: []string{"gotemplate=template.tmpl"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "gotemplate=template.tmpl", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "gotemplate=template.tmpl", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{},
 			},
@@ -142,9 +142,9 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "gotemplate to multiple files",
 			outputSlice: []string{"gotemplate=template.tmpl:/tmp/gotemplate1,/tmp/gotemplate2"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "gotemplate=template.tmpl", OutPath: "/tmp/gotemplate1"},
-					{Kind: "gotemplate=template.tmpl", OutPath: "/tmp/gotemplate2"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "gotemplate=template.tmpl", Path: "/tmp/gotemplate1"},
+					{Type: "file", Format: "gotemplate=template.tmpl", Path: "/tmp/gotemplate2"},
 				},
 				TraceeConfig: &config.OutputConfig{},
 			},
@@ -157,11 +157,11 @@ func TestPrepareOutput(t *testing.T) {
 				"gotemplate=template.tmpl:/tmp/gotemplate1",
 			},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "table", OutPath: "stdout"},
-					{Kind: "json", OutPath: "/tmp/json"},
-					{Kind: "json", OutPath: "/tmp/json2"},
-					{Kind: "gotemplate=template.tmpl", OutPath: "/tmp/gotemplate1"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "table", Path: "stdout"},
+					{Type: "file", Format: "json", Path: "/tmp/json"},
+					{Type: "file", Format: "json", Path: "/tmp/json2"},
+					{Type: "file", Format: "gotemplate=template.tmpl", Path: "/tmp/gotemplate1"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
@@ -187,8 +187,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "none",
 			outputSlice: []string{"none"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "ignore", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "ignore", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{},
 			},
@@ -223,8 +223,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "forward",
 			outputSlice: []string{"forward:tcp://localhost:1234"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "forward", OutPath: "tcp://localhost:1234"},
+				DestinationConfigs: []config.Destination{
+					{Type: "forward", Url: "tcp://localhost:1234"},
 				},
 				TraceeConfig: &config.OutputConfig{},
 			},
@@ -249,8 +249,18 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "webhook",
 			outputSlice: []string{"webhook:http://localhost:8080"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "webhook", OutPath: "http://localhost:8080"},
+				DestinationConfigs: []config.Destination{
+					{Type: "webhook", Url: "http://localhost:8080", Format: "json"},
+				},
+				TraceeConfig: &config.OutputConfig{},
+			},
+		},
+		{
+			testName:    "webhook with gotemplate",
+			outputSlice: []string{"webhook:http://localhost:8080?gotemplate=/path/to/template"},
+			expectedOutput: PrepareOutputResult{
+				DestinationConfigs: []config.Destination{
+					{Type: "webhook", Url: "http://localhost:8080?gotemplate=/path/to/template", Format: "gotemplate=/path/to/template"},
 				},
 				TraceeConfig: &config.OutputConfig{},
 			},
@@ -260,8 +270,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "table", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "table", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					StackAddresses: true,
@@ -273,8 +283,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option exec-env",
 			outputSlice: []string{"option:exec-env"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "table", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "table", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					ExecEnv:        true,
@@ -286,8 +296,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option exec-hash",
 			outputSlice: []string{"option:exec-hash"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "table", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "table", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					CalcHashes:     digest.CalcHashesDevInode,
@@ -299,8 +309,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option exec-hash=inode",
 			outputSlice: []string{"option:exec-hash=inode"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "table", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "table", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					CalcHashes:     digest.CalcHashesInode,
@@ -322,8 +332,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option parse-arguments",
 			outputSlice: []string{"json", "option:parse-arguments"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "json", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "json", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
@@ -334,8 +344,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option parse-arguments-fds",
 			outputSlice: []string{"json", "option:parse-arguments-fds"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "json", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "json", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					ParseArguments:    true,
@@ -347,8 +357,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option sort-events",
 			outputSlice: []string{"option:sort-events"},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "table", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "table", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
@@ -368,8 +378,8 @@ func TestPrepareOutput(t *testing.T) {
 				"option:sort-events",
 			},
 			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "json", OutPath: "stdout"},
+				DestinationConfigs: []config.Destination{
+					{Type: "file", Format: "json", Path: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
 					StackAddresses:    true,
@@ -389,9 +399,9 @@ func TestPrepareOutput(t *testing.T) {
 			// t.Parallel()
 
 			defer func() {
-				for _, printer := range testcase.expectedOutput.PrinterConfigs {
-					if strings.HasPrefix(printer.OutPath, "/tmp") {
-						_ = os.Remove(printer.OutPath)
+				for _, printer := range testcase.expectedOutput.DestinationConfigs {
+					if strings.HasPrefix(printer.Path, "/tmp") {
+						_ = os.Remove(printer.Path)
 					}
 				}
 			}()
@@ -403,26 +413,38 @@ func TestPrepareOutput(t *testing.T) {
 			} else {
 				assert.Equal(t, testcase.expectedOutput.TraceeConfig, output.TraceeConfig)
 
-				assertPrinterConfigs(t, testcase.expectedOutput.PrinterConfigs, output.PrinterConfigs)
+				assertPrinterConfigs(t, testcase.expectedOutput.DestinationConfigs, output.DestinationConfigs)
 			}
 		})
 	}
 }
 
-func assertPrinterConfigs(t *testing.T, expected []config.PrinterConfig, actual []config.PrinterConfig) {
+func assertPrinterConfigs(t *testing.T, expected []config.Destination, actual []config.Destination) {
 	// use a map to compare because the order of the printers is not guaranteed
-	printersMap := make(map[string]config.PrinterConfig)
+	printersMap := make(map[string]config.Destination)
 
 	for _, p := range expected {
-		printersMap[p.OutPath] = p
+		if p.Path != "" {
+			printersMap[p.Path] = p
+		} else {
+			printersMap[p.Url] = p
+		}
 	}
 
 	for _, p := range actual {
-		expectedPrinter, ok := printersMap[p.OutPath]
+		var expectedPrinter config.Destination
+		var ok bool
+		if p.Path != "" {
+			expectedPrinter, ok = printersMap[p.Path]
+		} else {
+			expectedPrinter, ok = printersMap[p.Url]
+		}
 		assert.True(t, ok)
 
-		assert.Equal(t, expectedPrinter.Kind, p.Kind)
-		assert.Equal(t, expectedPrinter.OutPath, p.OutPath)
+		assert.Equal(t, expectedPrinter.Type, p.Type)
+		assert.Equal(t, expectedPrinter.Path, p.Path)
+		assert.Equal(t, expectedPrinter.Url, p.Url)
+		assert.Equal(t, expectedPrinter.Format, p.Format)
 		assert.Equal(t, expectedPrinter.ContainerMode, p.ContainerMode)
 	}
 }
