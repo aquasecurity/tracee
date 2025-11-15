@@ -24,8 +24,9 @@ const heartbeatAckTimeout = time.Duration(2 * time.Second)
 type Server struct {
 	hs             *http.Server
 	mux            *http.ServeMux // just an exposed copy of hs.Handler
-	metricsEnabled bool
 	pyroProfiler   *pyroscope.Profiler
+	metricsEnabled bool
+	healthzEnabled bool
 }
 
 // New creates a new server
@@ -56,6 +57,7 @@ func (s *Server) EnableHealthzEndpoint() {
 		}
 		fmt.Fprintf(w, "NOT OK")
 	})
+	s.healthzEnabled = true
 }
 
 // Start starts the http server on the listen address
@@ -127,6 +129,15 @@ func (s *Server) MetricsEndpointEnabled() bool {
 	}
 
 	return s.metricsEnabled
+}
+
+// HealthzEnabled returns true if healthz endpoint is enabled
+func (s *Server) HealthzEnabled() bool {
+	if s == nil {
+		return false
+	}
+
+	return s.healthzEnabled
 }
 
 //go:noinline

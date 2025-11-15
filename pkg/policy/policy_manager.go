@@ -20,9 +20,10 @@ import (
 )
 
 type ManagerConfig struct {
-	DNSCacheConfig dns.Config
-	ProcTreeConfig process.ProcTreeConfig
-	CaptureConfig  config.CaptureConfig
+	DNSCacheConfig   dns.Config
+	ProcTreeConfig   process.ProcTreeConfig
+	CaptureConfig    config.CaptureConfig
+	HeartbeatEnabled bool
 }
 
 // Manager is a thread-safe struct that manages the enabled policies for each rule
@@ -207,6 +208,12 @@ func (m *Manager) selectConfiguredEvents() {
 
 	if m.cfg.DNSCacheConfig.Enable {
 		m.selectEvent(events.NetPacketDNS, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
+	}
+
+	// heartbeat event
+
+	if m.cfg.HeartbeatEnabled {
+		m.selectEvent(events.SignalHeartbeat, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
 	}
 
 	// Pseudo events added by capture (if enabled by the user)
