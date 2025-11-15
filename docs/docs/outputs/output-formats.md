@@ -113,7 +113,7 @@ When authoring a Go template the data source is Tracee's `trace.Event` struct, w
 
 Go template can utilize helper functions from [Sprig](http://masterminds.github.io/sprig/).
 
-For example templates, see [tracee/cmd/tracee-rules/templates](https://github.com/aquasecurity/tracee/tree/main/cmd/tracee-rules/templates).
+For example templates, see the templates directory in the source repository.
 
 The following sections can be specified as part of go templates:
 

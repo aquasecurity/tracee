@@ -24,7 +24,7 @@ func TestPrepareLogger(t *testing.T) {
 			testName:       "invalid log option",
 			logOptions:     []string{"invalid-option"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "invalid-option", false),
+			expectedError:  invalidLogOption(nil, "invalid-option"),
 		},
 		// valid log level
 		{
@@ -77,13 +77,13 @@ func TestPrepareLogger(t *testing.T) {
 			testName:       "invalid log level",
 			logOptions:     []string{"invalid-level"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "invalid-level", false),
+			expectedError:  invalidLogOption(nil, "invalid-level"),
 		},
 		{
 			testName:       "invalid log level",
 			logOptions:     []string{""},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "", false),
+			expectedError:  invalidLogOption(nil, ""),
 		},
 
 		// valid log aggregate
@@ -119,37 +119,37 @@ func TestPrepareLogger(t *testing.T) {
 			testName:       "invalid log aggregate",
 			logOptions:     []string{"aggregate:"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "aggregate:", false),
+			expectedError:  invalidLogOptionValue(nil, "aggregate:"),
 		},
 		{
 			testName:       "invalid log aggregate",
 			logOptions:     []string{"aggregate:s"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "aggregate:s", false),
+			expectedError:  invalidLogOptionValue(nil, "aggregate:s"),
 		},
 		{
 			testName:       "invalid log aggregate",
 			logOptions:     []string{"aggregate:-1"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "aggregate:-1", false),
+			expectedError:  invalidLogOptionValue(nil, "aggregate:-1"),
 		},
 		{
 			testName:       "invalid log aggregate",
 			logOptions:     []string{"aggregate:abc"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "aggregate:abc", false),
+			expectedError:  invalidLogOptionValue(nil, "aggregate:abc"),
 		},
 		{
 			testName:       "invalid log aggregate",
 			logOptions:     []string{"aggregate:15"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "aggregate:15", false),
+			expectedError:  invalidLogOptionValue(nil, "aggregate:15"),
 		},
 		{
 			testName:       "invalid log aggregate",
 			logOptions:     []string{"aggregate:1ms"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "aggregate:1ms", false),
+			expectedError:  invalidLogOptionValue(nil, "aggregate:1ms"),
 		},
 
 		// valid log level + aggregate
@@ -175,7 +175,7 @@ func TestPrepareLogger(t *testing.T) {
 			testName:       "invalid log file",
 			logOptions:     []string{"file:"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "file:", false),
+			expectedError:  invalidLogOptionValue(nil, "file:"),
 		},
 
 		// valid filter-out options
@@ -232,37 +232,37 @@ func TestPrepareLogger(t *testing.T) {
 			testName:       "invalid filter-out option",
 			logOptions:     []string{"filter-out:"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter-out:", false),
+			expectedError:  invalidLogOption(nil, "filter-out:"),
 		},
 		{
 			testName:       "invalid filter-out option",
 			logOptions:     []string{"filter-out:invalid"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter-out:invalid", false),
+			expectedError:  invalidLogOption(nil, "filter-out:invalid"),
 		},
 		{
 			testName:       "invalid filter-out option",
 			logOptions:     []string{"filter-out:msg"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter-out:msg", false),
+			expectedError:  invalidLogOption(nil, "filter-out:msg"),
 		},
 		{
 			testName:       "invalid filter-out option",
 			logOptions:     []string{"filter-out:msg="},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter-out:msg=", false),
+			expectedError:  invalidLogOptionValue(nil, "filter-out:msg="),
 		},
 		{
 			testName:       "invalid filter-out option",
 			logOptions:     []string{"filter-out:regex=[whatever"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter-out:regex=[whatever", false),
+			expectedError:  invalidLogOptionValue(nil, "filter-out:regex=[whatever"),
 		},
 		{
 			testName:       "valid filter-out option",
 			logOptions:     []string{"filter-out:lvl=invalid"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter-out:lvl=invalid", false),
+			expectedError:  invalidLogOptionValue(nil, "filter-out:lvl=invalid"),
 		},
 
 		// valid filter options
@@ -319,37 +319,37 @@ func TestPrepareLogger(t *testing.T) {
 			testName:       "invalid filter option",
 			logOptions:     []string{"filter:"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter:", false),
+			expectedError:  invalidLogOption(nil, "filter:"),
 		},
 		{
 			testName:       "invalid filter option",
 			logOptions:     []string{"filter:invalid"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter:invalid", false),
+			expectedError:  invalidLogOption(nil, "filter:invalid"),
 		},
 		{
 			testName:       "invalid filter option",
 			logOptions:     []string{"filter:msg"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOption(nil, "filter:msg", false),
+			expectedError:  invalidLogOption(nil, "filter:msg"),
 		},
 		{
 			testName:       "invalid filter option",
 			logOptions:     []string{"filter:msg="},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter:msg=", false),
+			expectedError:  invalidLogOptionValue(nil, "filter:msg="),
 		},
 		{
 			testName:       "invalid filter option",
 			logOptions:     []string{"filter:regex=[whatever"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter:regex=[whatever", false),
+			expectedError:  invalidLogOptionValue(nil, "filter:regex=[whatever"),
 		},
 		{
 			testName:       "valid filter option",
 			logOptions:     []string{"filter:lvl=invalid"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  invalidLogOptionValue(nil, "filter:lvl=invalid", false),
+			expectedError:  invalidLogOptionValue(nil, "filter:lvl=invalid"),
 		},
 	}
 
@@ -359,7 +359,7 @@ func TestPrepareLogger(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			t.Parallel()
 
-			logCfg, err := PrepareLogger(tc.logOptions, false)
+			logCfg, err := PrepareLogger(tc.logOptions)
 			if tc.expectedError != nil {
 				require.Equal(t, logger.LoggingConfig{}, logCfg)
 				require.Error(t, err)

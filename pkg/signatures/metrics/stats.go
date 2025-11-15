@@ -16,9 +16,9 @@ type Stats struct {
 // Register Stats to prometheus metrics exporter
 func (stats *Stats) RegisterPrometheus() error {
 	err := prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
-		Namespace: "tracee_rules",
-		Name:      "events_total",
-		Help:      "events ingested by tracee-rules",
+		Namespace: "tracee",
+		Name:      "signatures_events_total",
+		Help:      "events ingested by signature engine",
 	}, func() float64 { return float64(stats.Events.Get()) }))
 
 	if err != nil {
@@ -26,9 +26,9 @@ func (stats *Stats) RegisterPrometheus() error {
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
-		Namespace: "tracee_rules",
-		Name:      "detections_total",
-		Help:      "detections made by tracee-rules",
+		Namespace: "tracee",
+		Name:      "signatures_detections_total",
+		Help:      "detections made by signatures",
 	}, func() float64 { return float64(stats.Detections.Get()) }))
 
 	if err != nil {
@@ -36,7 +36,7 @@ func (stats *Stats) RegisterPrometheus() error {
 	}
 
 	err = prometheus.Register(prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-		Namespace: "tracee_rules",
+		Namespace: "tracee",
 		Name:      "signatures_total",
 		Help:      "signatures loaded",
 	}, func() float64 { return float64(stats.Signatures.Get()) }))

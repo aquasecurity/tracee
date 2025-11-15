@@ -23,8 +23,6 @@ const (
 	DefaultServerFlagValue     = ""
 )
 
-// TODO: this should be extracted to be under 'pkg/cmd/flags' now that tracee-rules no longer uses server functionality.
-
 type Server struct {
 	HTTP *http.Server
 	GRPC *grpc.Server

@@ -131,9 +131,6 @@ RELEASE_VERSION = $(shell $(CMD_GIT) describe --tags --abbrev=0)
 DOCKER_TAG = $(subst v,,$(RELEASE_VERSION))
 
 RELEASE_FILES = LICENSE
-RELEASE_FILES += $(OUTPUT_DIR)/tracee-ebpf
-RELEASE_FILES += $(OUTPUT_DIR)/tracee-ebpf-static
-RELEASE_FILES += $(OUTPUT_DIR)/tracee-rules
 RELEASE_FILES += $(OUTPUT_DIR)/tracee
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-static
 RELEASE_FILES += $(OUTPUT_DIR)/signatures
@@ -230,7 +227,7 @@ build-tracee-container: alpine-prepare
 		$(MAKE) -f builder/Makefile.tracee-container build-tracee
 
 #
-# build binaries (tracee, tracee-ebpf, tracee-rules, rules)
+# build binaries (tracee, signatures)
 #
 
 .PHONY: ubuntu-prepare
@@ -242,8 +239,7 @@ ubuntu-prepare:
 build-tracee-binary-static: ubuntu-prepare
 # static
 	BTFHUB=0 STATIC=1 STRIP_BPF_DEBUG=$(STRIP_BPF_DEBUG) RELEASE_VERSION=$(RELEASE_VERSION) \
-		$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf tracee" && \
-		$(CMD_MV) dist/tracee-ebpf dist/tracee-ebpf-static && \
+		$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee" && \
 		$(CMD_MV) dist/tracee dist/tracee-static
 
 .PHONY: build-tracee-binary-shared

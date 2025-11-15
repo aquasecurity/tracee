@@ -13,12 +13,8 @@ func InvalidEventExcludeError(event string) error {
 	return fmt.Errorf("invalid event to exclude: %s", event)
 }
 
-func InvalidScopeOptionError(expr string, newBinary bool) error {
-	if newBinary {
-		return fmt.Errorf("invalid scope option specified (%s), run 'man scope' for more info", expr)
-	}
-
-	return fmt.Errorf("invalid scope option specified (%s), use 'tracee man scope' for more info", expr)
+func InvalidScopeOptionError(expr string) error {
+	return fmt.Errorf("invalid scope option specified (%s), run 'tracee man scope' for more info", expr)
 }
 
 func InvalidFlagEmpty() error {
@@ -39,7 +35,7 @@ func InvalidFlagValue(expression string) error {
 
 // Help-related error messages
 func InvalidCaptureOptionError() error {
-	return errors.New("invalid capture option specified, use 'tracee man capture' for more info")
+	return errors.New("invalid capture option specified, run 'tracee man capture' for more info")
 }
 
 func InvalidOutputFlagError(flag string) error {

@@ -1931,27 +1931,27 @@ func TestCreatePolicies(t *testing.T) {
 		{
 			testName:        "invalid operator",
 			scopeFlags:      []string{"uid\t0"},
-			expectPolicyErr: InvalidScopeOptionError("uid\t0", false),
+			expectPolicyErr: InvalidScopeOptionError("uid\t0"),
 		},
 		{
 			testName:        "invalid operator",
 			scopeFlags:      []string{"mntns\t0"},
-			expectPolicyErr: InvalidScopeOptionError("mntns\t0", false),
+			expectPolicyErr: InvalidScopeOptionError("mntns\t0"),
 		},
 		{
 			testName:        "invalid filter type",
 			scopeFlags:      []string{"UID>0"},
-			expectPolicyErr: InvalidScopeOptionError("UID>0", false),
+			expectPolicyErr: InvalidScopeOptionError("UID>0"),
 		},
 		{
 			testName:        "invalid filter type",
 			scopeFlags:      []string{"test=0"},
-			expectPolicyErr: InvalidScopeOptionError("test=0", false),
+			expectPolicyErr: InvalidScopeOptionError("test=0"),
 		},
 		{
 			testName:        "invalid filter type",
 			scopeFlags:      []string{"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"},
-			expectPolicyErr: InvalidScopeOptionError("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0", false),
+			expectPolicyErr: InvalidScopeOptionError("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"),
 		},
 		{
 			testName:        "invalid mntns 2",
@@ -2118,7 +2118,7 @@ func TestCreatePolicies(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			_, err = CreatePolicies(policyScopeMap, policyEventsMap, false)
+			_, err = CreatePolicies(policyScopeMap, policyEventsMap)
 			if tc.expectPolicyErr != nil {
 				assert.ErrorContains(t, err, tc.expectPolicyErr.Error())
 			} else {
@@ -2136,7 +2136,6 @@ func TestCreateSinglePolicy(t *testing.T) {
 		policyIdx  int
 		scope      policyScopes
 		events     policyEvents
-		newBinary  bool
 		wantPolicy func() *policy.Policy
 		wantErr    error
 	}{
@@ -2239,7 +2238,7 @@ func TestCreateSinglePolicy(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := createSinglePolicy(tc.policyIdx, tc.scope, tc.events, tc.newBinary)
+			got, err := createSinglePolicy(tc.policyIdx, tc.scope, tc.events)
 
 			if tc.wantErr != nil {
 				require.Error(t, err)
@@ -2261,7 +2260,6 @@ func TestParseScopeFilters(t *testing.T) {
 		name       string
 		policy     *policy.Policy
 		scopeFlags []scopeFlag
-		newBinary  bool
 		wantErr    error
 		validate   func(*testing.T, *policy.Policy)
 	}{
@@ -2307,7 +2305,7 @@ func TestParseScopeFilters(t *testing.T) {
 				operator:          "=",
 				operatorAndValues: "=value",
 			}},
-			wantErr: InvalidScopeOptionError("invalid=value", false),
+			wantErr: InvalidScopeOptionError("invalid=value"),
 		},
 	}
 
@@ -2316,7 +2314,7 @@ func TestParseScopeFilters(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := parseScopeFilters(tc.policy, tc.scopeFlags, tc.newBinary)
+			err := parseScopeFilters(tc.policy, tc.scopeFlags)
 
 			if tc.wantErr != nil {
 				require.Error(t, err)

@@ -128,7 +128,7 @@ func TestContext_Apply(t *testing.T) {
 				ProcessID:   0,
 				ArgsNum:     3,
 				Container:   trace.Container{ID: ""},
-				ProcessName: "tracee-ebpf",
+				ProcessName: "tracee",
 				Args: []trace.Argument{
 					{
 						ArgMeta: trace.ArgMeta{

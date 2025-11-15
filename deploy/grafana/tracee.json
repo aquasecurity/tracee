@@ -77,7 +77,7 @@
               "uid": "w5C9dFs7k"
             },
             "exemplar": true,
-            "expr": "tracee_rules_detections_total",
+            "expr": "tracee_signatures_detections_total",
             "interval": "",
             "legendFormat": "",
             "refId": "A"
@@ -139,7 +139,7 @@
               "uid": "w5C9dFs7k"
             },
             "exemplar": true,
-            "expr": "tracee_rules_signatures_total",
+            "expr": "tracee_signatures_signatures_total",
             "interval": "",
             "legendFormat": "",
             "refId": "A"
@@ -226,7 +226,7 @@
               "uid": "w5C9dFs7k"
             },
             "exemplar": true,
-            "expr": "rate(tracee_ebpf_events_total[10s])",
+            "expr": "rate(tracee_events_total[10s])",
             "interval": "",
             "legendFormat": "events/sec",
             "refId": "events/sec"
@@ -237,7 +237,7 @@
               "uid": "w5C9dFs7k"
             },
             "exemplar": true,
-            "expr": "rate(tracee_ebpf_lostevents_total[10s])",
+            "expr": "rate(tracee_lostevents_total[10s])",
             "hide": false,
             "interval": "",
             "legendFormat": "lost_events/sec",
@@ -299,7 +299,7 @@
               "uid": "w5C9dFs7k"
             },
             "exemplar": true,
-            "expr": "tracee_ebpf_events_total",
+            "expr": "tracee_events_total",
             "interval": "",
             "legendFormat": "",
             "refId": "A"
@@ -362,7 +362,7 @@
               "uid": "w5C9dFs7k"
             },
             "exemplar": true,
-            "expr": "tracee_ebpf_lostevents_total",
+            "expr": "tracee_lostevents_total",
             "interval": "",
             "legendFormat": "Buffer Lost Events",
             "refId": "A"
@@ -373,7 +373,7 @@
               "uid": "w5C9dFs7k"
             },
             "exemplar": true,
-            "expr": "tracee_ebpf_network_lostevents_total",
+            "expr": "tracee_network_lostevents_total",
             "hide": false,
             "interval": "",
             "legendFormat": "Network Lost Events",
@@ -385,7 +385,7 @@
               "uid": "w5C9dFs7k"
             },
             "exemplar": true,
-            "expr": "tracee_ebpf_write_lostevents_total",
+            "expr": "tracee_write_lostevents_total",
             "hide": false,
             "interval": "",
             "legendFormat": "Write Lost Events",

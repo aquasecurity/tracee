@@ -89,7 +89,7 @@ Network notes worth mentioning:
 `
 }
 
-func PrepareCapture(captureSlice []string, newBinary bool) (config.CaptureConfig, error) {
+func PrepareCapture(captureSlice []string) (config.CaptureConfig, error) {
 	capture := config.CaptureConfig{}
 
 	outDir := "/tmp/tracee"
@@ -192,11 +192,7 @@ func PrepareCapture(captureSlice []string, newBinary bool) (config.CaptureConfig
 				return config.CaptureConfig{}, errfmt.Errorf("capture output dir cannot be empty")
 			}
 		} else {
-			if newBinary {
-				return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, run 'man capture' for more info")
-			}
-
-			return config.CaptureConfig{}, InvalidCaptureOptionError()
+			return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, run 'tracee man capture' for more info")
 		}
 	}
 

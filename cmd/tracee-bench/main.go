@@ -101,9 +101,9 @@ func main() {
 				queryName string
 				query     string
 			}{
-				eventspersec: {queryName: "average ebpf_events/sec", query: "rate(tracee_ebpf_events_total[1m])"},
-				lostpersec:   {queryName: "average ebpf_lostevents/sec", query: "rate(tracee_ebpf_lostevents_total[1m])"},
-				lostoverall:  {queryName: "lost events", query: "tracee_ebpf_lostevents_total"},
+				eventspersec: {queryName: "average ebpf_events/sec", query: "rate(tracee_events_total[1m])"},
+				lostpersec:   {queryName: "average ebpf_lostevents/sec", query: "rate(tracee_lostevents_total[1m])"},
+				lostoverall:  {queryName: "lost events", query: "tracee_lostevents_total"},
 			}
 
 			outputMode := OutputMode(ctx.String(outputFlag))
