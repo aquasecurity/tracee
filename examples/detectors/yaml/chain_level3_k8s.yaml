@@ -15,6 +15,13 @@ requirements:
   events:
     - name: netcat_in_container
 
+# CEL conditions - simple conditions you can test
+conditions:
+  # Only fire if binary path contains "nc" or "netcat"
+  - getData("binary_path").contains("nc") || getData("binary_path").contains("netcat")
+  # And the container name is not empty
+  - getData("container_name") != ""
+
 threat:
   name: Network Tool in Container
   severity: high
@@ -33,9 +40,9 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.binary_path
+      expression: getData("binary_path")
     - name: container_id
-      expression: data.container_id
+      expression: getData("container_id")
     - name: container_name
-      expression: data.container_name
+      expression: getData("container_name")
 

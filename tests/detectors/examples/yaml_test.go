@@ -56,7 +56,7 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.pathname
+      expression: getData("pathname")
     - name: binary_name
       expression: workload.process.thread.name
 `
@@ -125,7 +125,7 @@ requirements:
 output:
   fields:
     - name: binary_path
-      expression: data.pathname
+      expression: getData("pathname")
     - name: container_id
       expression: workload.container.id
 `

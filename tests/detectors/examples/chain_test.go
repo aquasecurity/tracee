@@ -38,7 +38,7 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.pathname
+      expression: getData("pathname")
 `
 
 	// Level 2: Context enrichment - adds container context
@@ -81,7 +81,7 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.binary_path
+      expression: getData("binary_path")
     - name: container_id
       expression: workload.container.id
     - name: container_name
@@ -177,7 +177,7 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.pathname
+      expression: getData("pathname")
 `
 
 	// Level 2: Add container context
@@ -201,7 +201,7 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.binary_path
+      expression: getData("binary_path")
     - name: container_id
       expression: workload.container.id
 `
@@ -232,9 +232,9 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.binary_path
+      expression: getData("binary_path")
     - name: container_id
-      expression: data.container_id
+      expression: getData("container_id")
     - name: namespace
       expression: workload.k8s.namespace.name
 `

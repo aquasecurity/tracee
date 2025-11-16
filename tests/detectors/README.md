@@ -147,9 +147,9 @@ requirements:
       data_filters:
         - pathname=/bin/nc
 output:
-  extract_fields:
+  fields:
     - name: binary_path
-      source: data.pathname
+      expression: getData("pathname")
 `
 
     harness := detectors.NewYAMLTestHarness(t, yaml, events.SchedProcessExec)
@@ -423,11 +423,11 @@ requirements:
   events:
     - name: sched_process_exec
 output:
-  extract_fields:
+  fields:
     - name: binary_path
-      source: data.pathname
+      expression: getData("pathname")
     - name: pid
-      source: workload.process.pid.value
+      expression: workload.process.pid
 `
 
     harness := detectors.NewYAMLTestHarness(t, yaml, events.SchedProcessExec)

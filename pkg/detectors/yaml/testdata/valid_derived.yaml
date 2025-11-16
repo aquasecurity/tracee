@@ -18,5 +18,5 @@ auto_populate:
 output:
   fields:
     - name: extracted_field
-      expression: workload.process.executable.path
+      expression: getData("pathname")
 

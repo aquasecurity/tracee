@@ -20,6 +20,11 @@ type YAMLDetectorSpec struct {
 	// AutoPopulate specifies which fields the engine should auto-populate
 	AutoPopulate AutoPopulateSpec `yaml:"auto_populate"`
 
+	// Conditions are CEL expressions that must all evaluate to true for detection
+	// Each condition is evaluated with access to the 'event' variable
+	// Example: ["event.workload.container.id != \"\"", "hasData(event, \"pathname\")"]
+	Conditions []string `yaml:"conditions,omitempty"`
+
 	// Output specifies how to extract fields from input events
 	Output *OutputSpec `yaml:"output,omitempty"`
 }
@@ -174,17 +179,16 @@ type AutoPopulateSpec struct {
 // OutputSpec specifies how to extract and populate output event fields
 type OutputSpec struct {
 	// Fields defines fields to extract from input events
-	Fields []ExtractFieldSpec `yaml:"fields,omitempty"`
+	Fields []FieldSpec `yaml:"fields,omitempty"`
 }
 
-// ExtractFieldSpec defines a single field extraction rule
-type ExtractFieldSpec struct {
-	// Name is the output field name
+// FieldSpec defines a single field extraction rule
+type FieldSpec struct {
+	// Name is the output field name (required)
 	Name string `yaml:"name"`
 
-	// Expression is the extraction path (e.g., "data.pathname", "workload.process.entity_id")
-	// Uses JSONPath-like syntax to navigate the Event protobuf structure
-	// Will become CEL expression in future phase
+	// Expression is the CEL expression to compute the field value (required)
+	// Examples: "getData("pathname")", "workload.container.id"
 	Expression string `yaml:"expression"`
 
 	// Optional indicates if the field can be missing without failing detection

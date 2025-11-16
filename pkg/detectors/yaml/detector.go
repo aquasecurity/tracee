@@ -2,8 +2,13 @@ package yaml
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"math"
 	"time"
+
+	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/common/types"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
@@ -25,29 +30,29 @@ type YAMLDetector struct {
 	threatMetadata *v1beta1.Threat
 	autoPopulate   detection.AutoPopulateFields
 
+	// CEL fields
+	celEnv          *cel.Env            // CEL environment (created once)
+	conditions      []cel.Program       // Compiled condition expressions
+	fieldExtractors []celFieldExtractor // Compiled field extractors
+
 	// Detector runtime fields
-	extractors []FieldExtractor
-	logger     detection.Logger
-	source     string        // YAML file path for debugging
-	timeout    time.Duration // Execution timeout for OnEvent
+	logger  detection.Logger
+	source  string        // YAML file path for debugging
+	timeout time.Duration // CEL evaluation timeout (default 100ms)
+}
+
+// celFieldExtractor holds compiled CEL program for field extraction
+type celFieldExtractor struct {
+	name     string
+	program  cel.Program // CEL program for expression evaluation
+	optional bool        // true if field is optional
 }
 
 // NewDetector creates a new YAML detector from a parsed and validated specification
 func NewDetector(def *detection.DetectorDefinition, spec *YAMLDetectorSpec, source string) (*YAMLDetector, error) {
-	// Build extractors if output is specified
-	var extractors []FieldExtractor
-	var err error
-
-	if spec.Output != nil {
-		extractors, err = BuildExtractors(spec.Output)
-		if err != nil {
-			return nil, fmt.Errorf("failed to build extractors: %w", err)
-		}
-	}
-
 	// Extract fields from definition to avoid copying protobuf structs with locks
 	// Store EventDefinition fields individually to avoid copying the struct
-	return &YAMLDetector{
+	detector := &YAMLDetector{
 		id:               def.ID,
 		eventName:        def.ProducedEvent.Name,
 		eventVersion:     def.ProducedEvent.Version,
@@ -57,10 +62,46 @@ func NewDetector(def *detection.DetectorDefinition, spec *YAMLDetectorSpec, sour
 		requirements:     def.Requirements,
 		threatMetadata:   def.ThreatMetadata,
 		autoPopulate:     def.AutoPopulate,
-		extractors:       extractors,
 		source:           source,
 		timeout:          5 * time.Millisecond, // Default timeout: 5x the "Critical" (>1ms) metric threshold
-	}, nil
+	}
+
+	// Create CEL environment
+	var err error
+	detector.celEnv, err = createCELEnvironment()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CEL environment: %w", err)
+	}
+
+	// Compile conditions
+	for i, condExpr := range spec.Conditions {
+		prog, err := CompileCondition(detector.celEnv, condExpr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compile condition %d (%s): %w", i, condExpr, err)
+		}
+		detector.conditions = append(detector.conditions, prog)
+	}
+
+	// Compile field extractors
+	if spec.Output != nil {
+		for _, fieldSpec := range spec.Output.Fields {
+			// Compile CEL expression
+			prog, err := CompileExpression(detector.celEnv, fieldSpec.Expression)
+			if err != nil {
+				return nil, fmt.Errorf("failed to compile expression for field %s (%s): %w", fieldSpec.Name, fieldSpec.Expression, err)
+			}
+
+			extractor := celFieldExtractor{
+				name:     fieldSpec.Name,
+				program:  prog,
+				optional: fieldSpec.Optional,
+			}
+
+			detector.fieldExtractors = append(detector.fieldExtractors, extractor)
+		}
+	}
+
+	return detector, nil
 }
 
 // GetDefinition returns the detector definition (called once at registration)
@@ -97,40 +138,139 @@ func (d *YAMLDetector) Init(params detection.DetectorParams) error {
 }
 
 // OnEvent processes an event and returns zero or more detection outputs
-func (d *YAMLDetector) OnEvent(_ context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
-	// Extract fields if extractors are defined
+func (d *YAMLDetector) OnEvent(_ context.Context, event *v1beta1.Event) (outputs []detection.DetectorOutput, err error) {
+	// Recover from panics to prevent a single malformed detector from crashing Tracee
+	defer func() {
+		if r := recover(); r != nil {
+			if d.logger != nil {
+				d.logger.Errorw("Panic in YAML detector OnEvent",
+					"detector_id", d.id,
+					"source", d.source,
+					"panic", r,
+				)
+			}
+			// Return error instead of propagating panic
+			err = fmt.Errorf("panic in detector %s: %v", d.id, r)
+			outputs = nil
+		}
+	}()
+
+	// Evaluate CEL conditions (all must be true)
+	for i, condProg := range d.conditions {
+		result, evalErr := EvaluateCondition(condProg, event, d.timeout)
+		if evalErr != nil {
+			if d.logger != nil {
+				d.logger.Warnw("CEL condition evaluation error, treating as false",
+					"detector_id", d.id,
+					"condition_index", i,
+					"error", evalErr.Error(),
+				)
+			}
+			return nil, nil // Treat evaluation error as false
+		}
+
+		if !result {
+			// Condition is false, don't fire detection
+			return nil, nil
+		}
+	}
+
+	// Extract fields using CEL expressions
 	var dataValues []*v1beta1.EventValue
 
-	if len(d.extractors) > 0 {
-		dataValues = make([]*v1beta1.EventValue, 0, len(d.extractors))
-
-		for _, extractor := range d.extractors {
-			value, err := extractor.Extract(event)
-			if err != nil {
-				if !extractor.IsOptional() {
-					// Required field missing - skip detection gracefully
-					if d.logger != nil {
-						d.logger.Warnw("Required field missing, skipping detection",
-							"detector_id", d.id,
-							"field", extractor.Name(),
-							"source", d.source,
-							"error", err.Error(),
-						)
-					}
-					return nil, nil
+	for _, extractor := range d.fieldExtractors {
+		// Evaluate CEL expression
+		value, evalErr := EvaluateExpression(extractor.program, event, d.timeout)
+		if evalErr != nil {
+			if !extractor.optional {
+				if d.logger != nil {
+					d.logger.Warnw("Required field extraction failed, skipping detection",
+						"detector_id", d.id,
+						"field", extractor.name,
+						"error", evalErr.Error(),
+					)
 				}
-				// Optional field missing - continue without it
-				continue
+				return nil, nil
 			}
-
-			dataValues = append(dataValues, value)
+			// Optional field failed - skip it
+			continue
 		}
+
+		// Convert to EventValue
+		eventValue, convErr := convertToEventValue(extractor.name, value)
+		if convErr != nil {
+			if d.logger != nil {
+				d.logger.Warnw("Failed to convert field value",
+					"detector_id", d.id,
+					"field", extractor.name,
+					"error", convErr.Error(),
+				)
+			}
+			if !extractor.optional {
+				return nil, nil
+			}
+			continue
+		}
+
+		dataValues = append(dataValues, eventValue)
 	}
 
 	// Engine will auto-populate Threat, DetectedFrom, ProcessAncestry based on AutoPopulate settings
 	// Engine will also assign EventID and Name based on ProducedEvent
 
 	return []detection.DetectorOutput{{Data: dataValues}}, nil
+}
+
+// convertToEventValue converts a Go value to an EventValue
+func convertToEventValue(name string, value interface{}) (*v1beta1.EventValue, error) {
+	if value == nil {
+		return nil, errors.New("value is nil")
+	}
+
+	// Handle CEL NullValue (when field doesn't exist)
+	// CEL returns types.Null as the actual null value
+	if value == types.NullValue {
+		return nil, errors.New("field not found (null value)")
+	}
+
+	switch v := value.(type) {
+	case string:
+		return v1beta1.NewStringValue(name, v), nil
+	case int:
+		// Safe conversion: check for overflow
+		if v > math.MaxInt32 || v < math.MinInt32 {
+			return nil, fmt.Errorf("int value %d overflows int32 range", v)
+		}
+		return v1beta1.NewInt32Value(name, int32(v)), nil
+	case int32:
+		return v1beta1.NewInt32Value(name, v), nil
+	case int64:
+		// Safe conversion: check for overflow
+		if v > math.MaxInt32 || v < math.MinInt32 {
+			return nil, fmt.Errorf("int64 value %d overflows int32 range", v)
+		}
+		return v1beta1.NewInt32Value(name, int32(v)), nil
+	case uint:
+		// Safe conversion: check for overflow
+		if v > math.MaxUint32 {
+			return nil, fmt.Errorf("uint value %d overflows uint32 range", v)
+		}
+		return v1beta1.NewUInt32Value(name, uint32(v)), nil
+	case uint32:
+		return v1beta1.NewUInt32Value(name, v), nil
+	case uint64:
+		// Use uint64 type if value doesn't fit in uint32
+		if v > math.MaxUint32 {
+			return v1beta1.NewUInt64Value(name, v), nil
+		}
+		return v1beta1.NewUInt32Value(name, uint32(v)), nil
+	case bool:
+		return v1beta1.NewBoolValue(name, v), nil
+	case []byte:
+		return v1beta1.NewBytesValue(name, v), nil
+	default:
+		return nil, fmt.Errorf("unsupported value type: %T", value)
+	}
 }
 
 // LoadFromFile loads a YAML detector from a file

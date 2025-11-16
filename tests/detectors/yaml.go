@@ -16,7 +16,9 @@ import (
 func LoadYAMLDetectorFromString(t *testing.T, yamlContent string) detection.EventDetector {
 	// Create a temporary file
 	tmpFile := CreateTempYAMLDetector(t, yamlContent)
-	defer os.Remove(tmpFile)
+	defer func() {
+		_ = os.Remove(tmpFile)
+	}()
 
 	// Load the detector
 	detector, err := yamldetectors.LoadFromFile(tmpFile)
