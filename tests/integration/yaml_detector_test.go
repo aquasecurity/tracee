@@ -217,7 +217,7 @@ auto_populate:
 output:
   fields:
     - name: test_field
-      expression: data.pathname
+      expression: getData("pathname")
 `
 
 	createTempYAMLDetector(t, yamlDir, "test_basic.yaml", detectorYAML)
@@ -278,11 +278,11 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.pathname
+      expression: getData("pathname")
     - name: binary_name
       expression: workload.process.thread.name
     - name: pid
-      expression: workload.process.pid.value
+      expression: workload.process.pid
 `
 
 	createTempYAMLDetector(t, yamlDir, "test_event_gen.yaml", detectorYAML)
@@ -363,9 +363,9 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.pathname
+      expression: getData("pathname")
     - name: pid
-      expression: workload.process.pid.value
+      expression: workload.process.pid
 `
 
 	// Level 2: Composed detector that consumes level 1 output
@@ -399,9 +399,9 @@ auto_populate:
 output:
   fields:
     - name: original_path
-      expression: data.binary_path
+      expression: getData("binary_path")
     - name: original_pid
-      expression: data.pid
+      expression: getData("pid")
 `
 
 	createTempYAMLDetector(t, yamlDir, "chain_level1.yaml", level1YAML)
@@ -484,7 +484,7 @@ auto_populate:
 output:
   fields:
     - name: matched_path
-      expression: data.pathname
+      expression: getData("pathname")
 `
 
 	createTempYAMLDetector(t, yamlDir, "test_filters.yaml", detectorYAML)
@@ -597,9 +597,9 @@ auto_populate:
   detected_from: true
 
 output:
-  extract_fields:
+  fields:
     - name: test_field
-      source: data.pathname
+      expression: getData("pathname")
 `
 
 	createTempYAMLDetector(t, yamlDir, "valid.yaml", validYAML)
@@ -654,10 +654,9 @@ auto_populate:
   detected_from: true
 
 output:
-  extract_fields:
+  fields:
     - name: required_field
-      source: data.nonexistent_field
-      optional: false
+      expression: getData("nonexistent_field")
 `
 
 	createTempYAMLDetector(t, yamlDir, "required_field.yaml", detectorWithRequiredField)
