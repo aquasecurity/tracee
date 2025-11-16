@@ -5,9 +5,11 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
@@ -174,18 +176,8 @@ func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta
 
 		// Post-process detector outputs: construct full events from outputs
 		for _, output := range detectorOutputs {
-			// Build complete v1beta1.Event from DetectorOutput
-			event := &v1beta1.Event{
-				Id:        detector.eventID,
-				Name:      detector.eventName,
-				Timestamp: inputEvent.Timestamp,
-				Data:      output.Data,
-				Workload:  inputEvent.Workload,
-			}
-
-			// Apply auto-population based on detector definition
-			d.autoPopulateFields(event, inputEvent, detector)
-
+			// Construct full event from detector output
+			event := d.buildEventFromOutput(&output, inputEvent, detector)
 			outputEvents = append(outputEvents, event)
 
 			// Track produced event (per-detector)
@@ -196,29 +188,59 @@ func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta
 	return outputEvents, nil
 }
 
+// buildEventFromOutput constructs a complete v1beta1.Event from DetectorOutput
+func (d *dispatcher) buildEventFromOutput(output *detection.DetectorOutput, inputEvent *v1beta1.Event, detector *entry) *v1beta1.Event {
+	event := &v1beta1.Event{
+		Id:        detector.eventID,
+		Name:      detector.eventName,
+		Timestamp: inputEvent.Timestamp, // Copy from input
+		Data:      output.Data,          // Detector's findings
+	}
+
+	// Clone workload from input (deep copy to prevent shared references)
+	if inputEvent.Workload != nil {
+		if cloned, ok := proto.Clone(inputEvent.Workload).(*v1beta1.Workload); ok {
+			event.Workload = cloned
+			// Clear ancestors - will be populated if requested
+			if event.Workload.Process != nil {
+				event.Workload.Process.Ancestors = nil
+			}
+		}
+	}
+
+	// Clone policies from input (preserve policy matching context)
+	if inputEvent.Policies != nil {
+		if cloned, ok := proto.Clone(inputEvent.Policies).(*v1beta1.Policies); ok {
+			event.Policies = cloned
+		}
+	}
+
+	// Apply auto-population based on detector definition
+	d.autoPopulateFields(event, inputEvent, detector)
+
+	return event
+}
+
 // autoPopulateFields applies declarative field population from detector definition.
 // This enriches detector outputs based on AutoPopulateFields configuration.
-func (d *dispatcher) autoPopulateFields(output, input *v1beta1.Event, detector *entry) {
+func (d *dispatcher) autoPopulateFields(event, input *v1beta1.Event, detector *entry) {
 	autoPop := detector.definition.AutoPopulate
 
-	// Threat field - copy from ThreatMetadata (immutable)
-	// Always copied as-is, never customized at runtime
+	// Threat field - copy from ThreatMetadata
 	if autoPop.Threat && detector.definition.ThreatMetadata != nil {
-		// Clone to prevent shared references
-		output.Threat = cloneThreat(detector.definition.ThreatMetadata)
+		event.Threat = cloneThreat(detector.definition.ThreatMetadata)
 	}
 
 	// DetectedFrom field - reference to input event
-	// Only populate if detector hasn't set it (rare override case)
-	if autoPop.DetectedFrom && output.DetectedFrom == nil {
-		output.DetectedFrom = &v1beta1.DetectedFrom{
+	if autoPop.DetectedFrom {
+		event.DetectedFrom = &v1beta1.DetectedFrom{
 			Id:   uint32(input.Id),
 			Name: input.Name,
 		}
-		// Copy input event data for audit trail
 		if len(input.Data) > 0 {
-			output.DetectedFrom.Data = make([]*v1beta1.EventValue, len(input.Data))
-			copy(output.DetectedFrom.Data, input.Data)
+			// Copy input event data for audit trail
+			event.DetectedFrom.Data = make([]*v1beta1.EventValue, len(input.Data))
+			copy(event.DetectedFrom.Data, input.Data)
 		}
 	}
 
@@ -226,14 +248,14 @@ func (d *dispatcher) autoPopulateFields(output, input *v1beta1.Event, detector *
 	if !autoPop.ProcessAncestry {
 		return
 	}
-	if output.Workload == nil || output.Workload.Process == nil {
+	if event.Workload == nil || event.Workload.Process == nil {
 		return
 	}
-	if len(output.Workload.Process.Ancestors) > 0 {
+	if len(event.Workload.Process.Ancestors) > 0 {
 		return // Already populated by detector
 	}
 
-	entityId := uint64(output.Workload.Process.UniqueId.GetValue())
+	entityId := uint64(event.Workload.Process.UniqueId.GetValue())
 	if entityId == 0 || detector.params.DataStores == nil {
 		return
 	}
@@ -245,8 +267,8 @@ func (d *dispatcher) autoPopulateFields(output, input *v1beta1.Event, detector *
 	}
 
 	// Convert datastores.ProcessInfo to v1beta1.Process
-	// Skip first entry (process itself, already in output.Workload.Process)
-	output.Workload.Process.Ancestors = make([]*v1beta1.Process, 0, len(ancestry)-1)
+	// Skip first entry (process itself, already in event.Workload.Process)
+	event.Workload.Process.Ancestors = make([]*v1beta1.Process, 0, len(ancestry)-1)
 	for _, ancestor := range ancestry[1:] {
 		proc := &v1beta1.Process{
 			UniqueId: &wrapperspb.UInt32Value{Value: uint32(ancestor.EntityID)},
@@ -268,7 +290,7 @@ func (d *dispatcher) autoPopulateFields(output, input *v1beta1.Event, detector *
 			}
 		}
 
-		output.Workload.Process.Ancestors = append(output.Workload.Process.Ancestors, proc)
+		event.Workload.Process.Ancestors = append(event.Workload.Process.Ancestors, proc)
 	}
 }
 
