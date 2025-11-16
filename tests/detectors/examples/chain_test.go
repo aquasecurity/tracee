@@ -32,6 +32,9 @@ requirements:
         - pathname=/bin/nc
         - pathname=/usr/bin/ncat
 
+auto_populate:
+  detected_from: true
+
 output:
   fields:
     - name: binary_path
@@ -121,6 +124,20 @@ output:
 		harness.AssertThreatPopulated(level2Outputs[0])
 		harness.AssertDetectedFromPopulated(level2Outputs[0], "suspicious_exec_detected")
 		detectors.AssertThreatSeverity(t, level2Outputs[0], v1beta1.Severity_HIGH)
+
+		// Verify DetectedFrom chain preservation
+		require.NotNil(t, level2Outputs[0].DetectedFrom, "Level 2 should have DetectedFrom")
+		assert.Equal(t, "suspicious_exec_detected", level2Outputs[0].DetectedFrom.Name, "Immediate parent should be level 1")
+
+		// Verify chain to root (original execve event)
+		require.NotNil(t, level2Outputs[0].DetectedFrom.Parent, "DetectedFrom should have parent")
+		assert.Equal(t, "sched_process_exec", level2Outputs[0].DetectedFrom.Parent.Name, "Root should be sched_process_exec")
+
+		// Verify root has no parent
+		assert.Nil(t, level2Outputs[0].DetectedFrom.Parent.Parent, "Root should have no parent")
+
+		// Verify chain depth
+		assert.Equal(t, 2, v1beta1.GetChainDepth(level2Outputs[0]), "Chain should have depth 2")
 	})
 
 	t.Run("ChainBreaksWithoutContainer", func(t *testing.T) {
@@ -155,6 +172,8 @@ requirements:
       data_filters:
         - pathname=/usr/bin/xmrig
         - pathname=/tmp/miner
+auto_populate:
+  detected_from: true
 output:
   fields:
     - name: binary_path
@@ -177,6 +196,8 @@ requirements:
     - name: cryptominer_execution
       scope_filters:
         - container
+auto_populate:
+  detected_from: true
 output:
   fields:
     - name: binary_path
@@ -256,6 +277,35 @@ output:
 		detectors.AssertFieldValue(t, level3Outputs[0], "container_id", "prod-123")
 		detectors.AssertFieldValue(t, level3Outputs[0], "namespace", "production")
 		detectors.AssertThreatSeverity(t, level3Outputs[0], v1beta1.Severity_CRITICAL)
+
+		// Verify 3-level DetectedFrom chain
+		require.NotNil(t, level3Outputs[0].DetectedFrom, "Level 3 should have DetectedFrom")
+		assert.Equal(t, "cryptominer_in_container", level3Outputs[0].DetectedFrom.Name, "Immediate parent should be level 2")
+
+		// Verify level 2 is in the chain
+		require.NotNil(t, level3Outputs[0].DetectedFrom.Parent, "Level 2 should have parent")
+		assert.Equal(t, "cryptominer_execution", level3Outputs[0].DetectedFrom.Parent.Name, "Level 2 parent should be level 1")
+
+		// Verify level 1 (root) is in the chain
+		require.NotNil(t, level3Outputs[0].DetectedFrom.Parent.Parent, "Level 1 should have parent")
+		assert.Equal(t, "sched_process_exec", level3Outputs[0].DetectedFrom.Parent.Parent.Name, "Root should be sched_process_exec")
+
+		// Verify root has no parent
+		assert.Nil(t, level3Outputs[0].DetectedFrom.Parent.Parent.Parent, "Root should have no parent")
+
+		// Verify chain depth
+		assert.Equal(t, 3, v1beta1.GetChainDepth(level3Outputs[0]), "Chain should have depth 3")
+
+		// Test helper functions
+		chain := v1beta1.GetDetectionChain(level3Outputs[0])
+		require.Len(t, chain, 3, "Chain should have 3 elements")
+		assert.Equal(t, "cryptominer_in_container", chain[0].Name, "Chain[0] should be immediate parent")
+		assert.Equal(t, "cryptominer_execution", chain[1].Name, "Chain[1] should be level 1")
+		assert.Equal(t, "sched_process_exec", chain[2].Name, "Chain[2] should be root")
+
+		root := v1beta1.GetRootDetection(level3Outputs[0])
+		require.NotNil(t, root, "Root detection should exist")
+		assert.Equal(t, "sched_process_exec", root.Name, "Root should be original event")
 	})
 
 	t.Run("ChainWithDifferentNamespace", func(t *testing.T) {
