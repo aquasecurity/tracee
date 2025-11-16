@@ -212,32 +212,40 @@ func (d *dispatcher) buildEventFromOutput(output *detection.DetectorOutput, inpu
 		}
 	}
 
-	// Apply auto-population based on detector definition
-	d.autoPopulateFields(event, inputEvent, detector)
+	// Apply auto-population with output-level overrides
+	d.autoPopulateFieldsFromOutput(event, output, inputEvent, detector)
 
 	return event
 }
 
-// autoPopulateFields applies declarative field population from detector definition.
-// This enriches detector outputs based on AutoPopulateFields configuration.
-func (d *dispatcher) autoPopulateFields(event, input *v1beta1.Event, detector *entry) {
+// autoPopulateFieldsFromOutput applies field population with output-level overrides
+func (d *dispatcher) autoPopulateFieldsFromOutput(event *v1beta1.Event, output *detection.DetectorOutput, inputEvent *v1beta1.Event, detector *entry) {
+	// Determine effective auto-populate settings
+	// Priority: output.AutoPopulate > detector.definition.AutoPopulate
 	autoPop := detector.definition.AutoPopulate
+	if output.AutoPopulate != nil {
+		autoPop = *output.AutoPopulate
+	}
 
-	// Threat field - copy from ThreatMetadata
-	if autoPop.Threat && detector.definition.ThreatMetadata != nil {
+	// Threat field - priority: output.Threat > definition.ThreatMetadata
+	if output.Threat != nil {
+		// Detector provided custom threat
+		event.Threat = cloneThreat(output.Threat)
+	} else if autoPop.Threat && detector.definition.ThreatMetadata != nil {
+		// Use static threat from definition
 		event.Threat = cloneThreat(detector.definition.ThreatMetadata)
 	}
 
 	// DetectedFrom field - reference to input event
 	if autoPop.DetectedFrom {
 		event.DetectedFrom = &v1beta1.DetectedFrom{
-			Id:   uint32(input.Id),
-			Name: input.Name,
+			Id:   uint32(inputEvent.Id),
+			Name: inputEvent.Name,
 		}
-		if len(input.Data) > 0 {
+		if len(inputEvent.Data) > 0 {
 			// Copy input event data for audit trail
-			event.DetectedFrom.Data = make([]*v1beta1.EventValue, len(input.Data))
-			copy(event.DetectedFrom.Data, input.Data)
+			event.DetectedFrom.Data = make([]*v1beta1.EventValue, len(inputEvent.Data))
+			copy(event.DetectedFrom.Data, inputEvent.Data)
 		}
 	}
 
