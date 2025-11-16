@@ -1,0 +1,26 @@
+id: chain-test-level1
+produced_event:
+  name: netcat_execution
+  version: 1.0.0
+  description: Detects netcat binary execution
+  fields:
+    - name: binary_path
+      type: string
+
+requirements:
+  events:
+    - name: sched_process_exec
+      data_filters:
+        - pathname=/bin/nc
+        - pathname=/usr/bin/nc
+        - pathname=/usr/bin/ncat
+        - pathname=/bin/busybox
+
+auto_populate:
+  detected_from: true
+
+output:
+  fields:
+    - name: binary_path
+      expression: data.pathname
+

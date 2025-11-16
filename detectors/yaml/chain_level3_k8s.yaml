@@ -1,0 +1,41 @@
+id: chain-test-level3
+produced_event:
+  name: netcat_privileged_alert
+  version: 1.0.0
+  description: Netcat in privileged container - critical alert
+  fields:
+    - name: binary_path
+      type: string
+    - name: container_id
+      type: string
+    - name: container_name
+      type: string
+
+requirements:
+  events:
+    - name: netcat_in_container
+
+threat:
+  name: Network Tool in Container
+  severity: high
+  description: Netcat detected in container - potential lateral movement
+  mitre:
+    technique:
+      id: T1021
+      name: Remote Services
+    tactic:
+      name: Lateral Movement
+
+auto_populate:
+  threat: true
+  detected_from: true
+
+output:
+  fields:
+    - name: binary_path
+      expression: data.binary_path
+    - name: container_id
+      expression: data.container_id
+    - name: container_name
+      expression: data.container_name
+
