@@ -22,5 +22,5 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.pathname
+      expression: getEventData("pathname")
 

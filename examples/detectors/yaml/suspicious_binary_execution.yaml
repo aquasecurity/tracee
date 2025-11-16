@@ -23,6 +23,14 @@ requirements:
         - pathname=/usr/bin/netcat
         - pathname=/usr/bin/socat
         - pathname=/usr/bin/nmap
+        - pathname=/bin/busybox
+
+# CEL conditions - simple and testable
+conditions:
+  # Binary path must be from /usr/bin or /bin
+  - getEventData("pathname").startsWith("/usr/bin/") || getEventData("pathname").startsWith("/bin/")
+  # Process must have a thread name (comm)
+  - workload.process.thread.name != ""
 
 threat:
   severity: medium
@@ -41,7 +49,7 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.pathname
+      expression: getEventData("pathname")
     - name: binary_name
       expression: workload.process.thread.name
 

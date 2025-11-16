@@ -30,7 +30,7 @@ auto_populate:
 output:
   fields:
     - name: target_file
-      expression: data.pathname
+      expression: getEventData("pathname")
     - name: pid
       expression: workload.process.pid
 
