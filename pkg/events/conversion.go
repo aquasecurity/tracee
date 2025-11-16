@@ -781,6 +781,20 @@ func getDetectedFrom(detectedFromArg trace.Argument) (*pb.DetectedFrom, error) {
 	}
 
 	detectedFrom.Data = data
+
+	// Recursively convert parent chain
+	if parentMap, ok := m["parent"].(map[string]interface{}); ok {
+		parentArg := trace.Argument{
+			ArgMeta: trace.ArgMeta{Name: "detectedFrom"},
+			Value:   parentMap,
+		}
+		parent, err := getDetectedFrom(parentArg)
+		if err != nil {
+			return nil, errfmt.Errorf("failed to convert parent DetectedFrom: %v", err)
+		}
+		detectedFrom.Parent = parent
+	}
+
 	return detectedFrom, nil
 }
 
@@ -1174,6 +1188,12 @@ func convertDetectedFromToArg(detectedFrom *pb.DetectedFrom) trace.Argument {
 				detectedFromMap["returnValue"] = int(v.Int64)
 			}
 		}
+	}
+
+	// Recursively convert parent chain
+	if detectedFrom.Parent != nil {
+		parentArg := convertDetectedFromToArg(detectedFrom.Parent)
+		detectedFromMap["parent"] = parentArg.Value
 	}
 
 	return trace.Argument{

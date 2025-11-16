@@ -237,6 +237,7 @@ func (d *dispatcher) autoPopulateFieldsFromOutput(event *v1beta1.Event, output *
 	}
 
 	// DetectedFrom field - reference to input event
+	// Automatically chains: output.DetectedFrom.parent = input.DetectedFrom
 	if autoPop.DetectedFrom {
 		event.DetectedFrom = &v1beta1.DetectedFrom{
 			Id:   uint32(inputEvent.Id),
@@ -246,6 +247,12 @@ func (d *dispatcher) autoPopulateFieldsFromOutput(event *v1beta1.Event, output *
 			// Copy input event data for audit trail
 			event.DetectedFrom.Data = make([]*v1beta1.EventValue, len(inputEvent.Data))
 			copy(event.DetectedFrom.Data, inputEvent.Data)
+		}
+		// Preserve detection chain: clone input's DetectedFrom (if exists)
+		if inputEvent.DetectedFrom != nil {
+			if cloned, ok := proto.Clone(inputEvent.DetectedFrom).(*v1beta1.DetectedFrom); ok {
+				event.DetectedFrom.Parent = cloned
+			}
 		}
 	}
 
