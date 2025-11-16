@@ -249,10 +249,20 @@ func (d *dispatcher) autoPopulateFieldsFromOutput(event *v1beta1.Event, output *
 		}
 	}
 
-	// ProcessAncestry - populate from data store (expensive, opt-in)
-	if !autoPop.ProcessAncestry {
-		return
+	// ProcessAncestry - determine depth from output override or definition default
+	// Priority: output.AncestryDepth > definition.ProcessAncestry (default 5)
+	var ancestryDepth uint32
+	if output.AncestryDepth != nil {
+		ancestryDepth = *output.AncestryDepth
+		if ancestryDepth == 0 {
+			return // Explicitly disabled via AncestryDepth
+		}
+	} else if autoPop.ProcessAncestry {
+		ancestryDepth = 5 // Default depth when ProcessAncestry boolean is true
+	} else {
+		return // Disabled
 	}
+
 	if event.Workload == nil || event.Workload.Process == nil {
 		return
 	}
@@ -265,8 +275,7 @@ func (d *dispatcher) autoPopulateFieldsFromOutput(event *v1beta1.Event, output *
 		return
 	}
 
-	const ancestryDepth = 5
-	ancestry, err := detector.params.DataStores.Processes().GetAncestry(entityId, ancestryDepth)
+	ancestry, err := detector.params.DataStores.Processes().GetAncestry(entityId, int(ancestryDepth))
 	if err != nil || len(ancestry) <= 1 {
 		return // Error or no ancestors (only process itself)
 	}
