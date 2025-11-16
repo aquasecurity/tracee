@@ -8,9 +8,11 @@ YAML detectors enable you to:
 
 - **Detect threats** by filtering events and generating alerts
 - **Derive events** by enriching or transforming existing events
-- **Extract runtime data** from events using JSONPath-like syntax
+- **Extract runtime data** using CEL expressions or simple field names
+- **Write dynamic conditions** using Common Expression Language (CEL)
 - **Auto-populate fields** like threat metadata and process ancestry
-- **Reuse policy syntax** for event filtering
+- **Reuse policy syntax** for static event filtering
+- **Chain detectors** to build complex multi-level detection logic
 
 ## Quick Start
 
@@ -27,6 +29,8 @@ produced_event:
     - defense-evasion
   fields:
     - name: binary_path
+      type: string
+    - name: binary_name
       type: string
 
 requirements:
@@ -52,10 +56,77 @@ auto_populate:
   threat: true
   detected_from: true
 
+# Simple field extraction using CEL
+output:
+  fields:
+    - name: pathname
+      expression: getData("pathname")
+    - name: binary_name
+      expression: getData("comm")
+```
+
+### Simplified CEL Syntax
+
+#### 1. Data Field Access
+
+The `getData()` function extracts event data fields:
+
+```yaml
 output:
   fields:
     - name: binary_path
-      expression: data.pathname
+      expression: getData("pathname")
+    - name: user_id
+      expression: getData("uid")
+    - name: process_id
+      expression: getData("pid")
+```
+
+**Works with any type:**
+```yaml
+conditions:
+  - getData("pathname").startsWith("/tmp")    # String operations
+  - getData("pid") > 1000                     # Numeric comparisons
+  - getData("uid") == 0                       # Any type supported
+```
+
+#### 2. Top-Level Variables
+
+Access workload and timestamp directly:
+
+```yaml
+conditions:
+  - workload.container.id != ""
+  - workload.process.pid > 1000
+
+output:
+  fields:
+    - name: container_id
+      expression: workload.container.id
+    - name: pod_name
+      expression: workload.kubernetes.pod_name
+```
+
+**Available variables:**
+- `workload` - Process, container, and Kubernetes context
+- `timestamp` - Event timestamp
+
+**Example:**
+```yaml
+conditions:
+  - hasData("pathname")
+  - getData("pathname").startsWith("/tmp")
+  - getData("uid") == 0
+  - workload.container.id != ""
+
+output:
+  fields:
+    - name: binary
+      expression: getData("pathname")
+    - name: uid
+      expression: getData("uid")
+    - name: container
+      expression: workload.container.id
 ```
 
 ## Schema Reference
@@ -178,41 +249,64 @@ auto_populate:
 - `detected_from`: Adds detector ID and source event information
 - `process_ancestry`: Includes full process tree (performance impact)
 
+### Conditions (CEL Expressions)
+
+YAML detectors support dynamic runtime conditions using Common Expression Language (CEL). Conditions are evaluated after static filters and all must be true for a detection to fire.
+
+```yaml
+conditions:
+  - hasData("pathname")  # Check if field exists
+  - getData("pathname").startsWith("/tmp")  # String operations
+  - getData("uid") > 1000  # Numeric comparisons
+  - workload.container.id != ""  # Check container context
+```
+
+**CEL Capabilities:**
+
+- **Boolean logic**: `&&`, `||`, `!`, ternary `? :`
+- **Comparisons**: `==`, `!=`, `<`, `<=`, `>`, `>=`
+- **String methods**: `.startsWith()`, `.endsWith()`, `.contains()`, `.matches()` (regex)
+- **List operations**: `in`, `.size()`, `.exists()`, `.all()`
+- **Type conversions**: Automatic for compatible types
+
+**Helper Functions:**
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `getData("field")` | Extract data field | `getData("pathname")`, `getData("pid")` |
+| `hasData("field")` | Check if data field exists | `hasData("pathname")` |
+
+**Performance:**
+- Conditions are evaluated with 5ms timeout by default
+- Failed evaluations are logged and treated as `false`
+- CEL programs are compiled once at load time
+
 ### Output Data Extraction
 
-Extract runtime values from input events to populate output event fields:
+Extract runtime values from input events to populate output event fields using CEL expressions.
 
 ```yaml
 output:
   fields:
-    - name: output_field_name   # Name in output event
-      expression: data.input_field  # Expression path in input event
-      optional: false           # Whether field is optional (default: false)
+    - name: output_field_name     # Name in output event
+      expression: getData("pathname")  # CEL expression (simplified syntax!)
+      optional: false              # Whether field is optional (default: false)
 ```
 
-**Supported expression paths:**
+**CEL Expression Examples:**
 
-| Path | Description | Example |
-|------|-------------|---------|
-| `data.FIELD` | Event data field | `data.pathname` |
-| `workload.process.executable.path` | Process executable | Full path to binary |
-| `workload.process.pid.value` | Process PID | Process ID |
-| `workload.process.unique_id.value` | Process entity ID | Unique process identifier |
-| `workload.process.host_pid.value` | Host PID | PID in host namespace |
-| `workload.process.real_user.id.value` | Real user ID | UID of process owner |
-| `workload.process.thread.name` | Thread name | Thread name |
-| `workload.process.thread.syscall` | Current syscall | Syscall name |
-| `workload.process.thread.tid.value` | Thread ID | TID |
-| `workload.container.id` | Container ID | Container identifier |
-| `workload.container.name` | Container name | Container name |
-| `workload.container.image.name` | Image name | Container image |
-| `workload.container.image.id` | Image ID | Image identifier |
-| `workload.container.started` | Container started | Boolean |
-| `workload.k8s.pod.name` | Pod name | Kubernetes pod name |
-| `workload.k8s.pod.uid` | Pod UID | Kubernetes pod UID |
-| `workload.k8s.namespace.name` | Namespace | Kubernetes namespace |
-| `timestamp` | Event timestamp | Nanoseconds since epoch |
-| `name` | Event name | Input event name |
+| Use Case | Expression |
+|----------|------------|
+| Extract data field | `getData("pathname")` |
+| Extract workload field | `workload.container.id` |
+| Conditional extraction | `workload.container.id != "" ? workload.container.id : "unknown"` |
+| String manipulation | `getData("pathname").split("/").last()` |
+| Combine fields | `getData("comm") + ":" + string(getData("pid"))` |
+
+**Field Semantics:**
+- **name**: Required, the output field name
+- **expression**: Required, CEL expression to compute the value
+- **optional**: If `true`, missing/failed fields are skipped without error
 
 ## Detector Composition
 
@@ -245,7 +339,7 @@ requirements:
 output:
   fields:
     - name: binary_path
-      expression: data.pathname
+      expression: getData("pathname")
 ```
 
 **Composed Detector** (adds context):
@@ -277,7 +371,7 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.binary_path  # From base detector
+      expression: getData("binary_path")  # From base detector
     - name: container_id
       expression: workload.container.id
 ```
@@ -436,9 +530,9 @@ Only extract fields that provide investigative value:
 output:
   fields:
     - name: source_ip      # Useful for investigation
-      expression: data.src_ip
+      expression: getData("src_ip")
     - name: target_user    # Useful for investigation
-      expression: data.username
+      expression: getData("username")
 ```
 
 ### 6. Set Appropriate Severity

@@ -15,6 +15,11 @@ requirements:
   events:
     - name: netcat_in_container
 
+# CEL conditions - simple conditions you can test
+conditions:
+  # Only fire if the container name is not empty
+  - getEventData("container_name") != ""
+
 threat:
   name: Network Tool in Container
   severity: high
@@ -33,9 +38,9 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.binary_path
+      expression: getEventData("binary_path")
     - name: container_id
-      expression: data.container_id
+      expression: getEventData("container_id")
     - name: container_name
-      expression: data.container_name
+      expression: getEventData("container_name")
 
