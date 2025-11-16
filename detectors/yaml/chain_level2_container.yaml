@@ -29,7 +29,7 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.binary_path
+      expression: getData("binary_path")
     - name: container_id
       expression: workload.container.id
     - name: container_name
