@@ -43,6 +43,12 @@ type DetectorOutput struct {
 	// If nil and AutoPopulate.Threat=true, engine uses Definition.ThreatMetadata
 	Threat *v1beta1.Threat
 
+	// AncestryDepth overrides the process ancestry depth for this detection.
+	// Priority: output.AncestryDepth > definition.ProcessAncestry (default 5).
+	// Values: nil (use ProcessAncestry boolean), 0 (disable), 1+ (fetch N levels)
+	// Use case: request deep ancestry for high-severity detections, or disable for performance
+	AncestryDepth *uint32
+
 	// Future extensibility (commented for documentation):
 	// Timestamp *timestamppb.Timestamp  // Override input timestamp (rare)
 	// Workload  *v1beta1.Workload       // Override input workload (rare)
