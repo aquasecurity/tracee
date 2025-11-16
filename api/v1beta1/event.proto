@@ -681,4 +681,5 @@ message DetectedFrom {
     uint32 id = 1;
     string name = 2;
     repeated EventValue data = 3;
+    DetectedFrom parent = 4;
 }
