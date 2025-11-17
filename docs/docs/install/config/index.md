@@ -89,23 +89,24 @@ A complete config file with all available options can be found [here](https://gi
 
 ### Containers
 
-- To disable container enrichment use: **`--containers enrich=false`**.
+- To disable container enrichment use: **`--enrich container.enabled=false`**.
 
   YAML:
   ```yaml
-  containers:
-    enrich: false
+  enrich:
+    container:
+      enabled: false
   ```
 
-  __NOTE__: You can view more in the [containers section](../../flags/containers.1.md).
+  __NOTE__: You can view more in the [enrich section](../../flags/enrich.1.md).
 
-- **`--containers`**: Configures container enrichment and runtime sockets. For example, to configure runtime sockets:
+- **`--enrich`**: Configures enrichment options including container enrichment and runtime sockets. For example, to configure runtime sockets:
 
   YAML:
   ```yaml
-  containers:
-    sockets:
-      - runtime: docker
+  enrich:
+    container:
+      docker:
         socket: /var/run/docker.sock
   ```
 
