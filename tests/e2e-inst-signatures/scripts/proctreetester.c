@@ -131,6 +131,9 @@ void *thread_creates_another_thread(void *arg)
 
     print_info(thread_started_creating, info.ppid, info.pid, info.tid);
 
+    // Add 30ms delay before creating nested thread to avoid hash collisions
+    usleep(30000);
+
     if (pthread_create(&thread, NULL, thread_sleeps_for_sometime, NULL))
         print_perror_void(err_creating_thread);
 
@@ -155,12 +158,14 @@ int process_spawning_sleep_threads(void)
 
     print_info(process_started, info.ppid, info.pid, info.tid);
 
-    void *(*thread_functions[number_of_threads]) (void *) = {thread_sleeps_for_sometime,
-                                                             thread_creates_another_thread};
+    void *(*thread_functions[number_of_threads])(void *) = {thread_sleeps_for_sometime,
+                                                            thread_creates_another_thread};
 
     for (int i = 0; i < number_of_threads; i++) {
         if (pthread_create(&threads[i], NULL, thread_functions[i], NULL))
             print_perror_ret(err_creating_thread);
+        // Add 30ms delay between thread creation to avoid hash collisions
+        usleep(30000);
     }
 
     // Wait for all threads to finish
@@ -287,6 +292,10 @@ int main()
                 print_error_exit(err_creating_process);
     }
 
+    // Add 30ms delay after spawning process to avoid hash collisions
+    if (one > 0)
+        usleep(30000);
+
     // The amount of childs (executing this process again) is times_to_execute
 
     if (one > 0) {
@@ -298,6 +307,8 @@ int main()
                     if (process_execing_same_binary_again())
                         print_error_exit(err_execve);
             }
+            // Add 30ms delay between forks to avoid hash collisions
+            usleep(30000);
         }
 
         // Wait for all childs to finish
