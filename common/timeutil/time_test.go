@@ -1,6 +1,8 @@
 package timeutil
 
 import (
+	"math"
+	"sync"
 	"testing"
 	"time"
 
@@ -362,4 +364,192 @@ func TestErrorConditions(t *testing.T) {
 			Init(-1000) // Another invalid clock ID
 		}, "Init should not panic with invalid clock")
 	})
+}
+
+//
+// Tests for clock-aware procfs conversion (added for PROCTREE clock base consistency fix)
+//
+
+// Test_getCurrentSuspendTime validates suspend time is within reasonable bounds.
+//
+// NOTE: This is an integration test - it reads actual system clocks.
+// It validates that getCurrentSuspendTime() returns reasonable values but
+// does not test exact calculations since that would just duplicate the syscalls.
+func Test_getCurrentSuspendTime(t *testing.T) {
+	suspendTime, err := getCurrentSuspendTime()
+	assert.NoError(t, err, "getCurrentSuspendTime() should not fail")
+
+	// Suspend time should be reasonable (0 to 30 days worth of nanoseconds)
+	maxReasonableSuspend := uint64(30 * 24 * 3600 * 1e9) // 30 days
+	assert.LessOrEqual(t, suspendTime, maxReasonableSuspend,
+		"Suspend time should be <= 30 days")
+
+	t.Logf("Current system suspend time: %d ns (%.3f seconds)",
+		suspendTime, float64(suspendTime)/1e9)
+}
+
+// Test_convertBoottimeToMonotonicEpoch tests the BOOTTIME to MONOTONIC conversion
+func Test_convertBoottimeToMonotonicEpoch(t *testing.T) {
+	tests := []struct {
+		name           string
+		boottimeEpoch  uint64
+		suspendNs      uint64
+		expectedResult uint64
+	}{
+		{
+			name:           "Zero timestamp with suspend time",
+			boottimeEpoch:  0,
+			suspendNs:      1_000_000_000, // 1 second
+			expectedResult: 0,             // Should return 0, not underflow
+		},
+		{
+			name:           "Zero timestamp with no suspend time",
+			boottimeEpoch:  0,
+			suspendNs:      0,
+			expectedResult: 0,
+		},
+		{
+			name:           "Small timestamp - underflow protection",
+			boottimeEpoch:  1000,
+			suspendNs:      5000, // Suspend time > timestamp
+			expectedResult: 1000, // Should return as-is, not underflow
+		},
+		{
+			name:           "Normal timestamp with suspend time",
+			boottimeEpoch:  1_700_000_000_000_000_000,                 // ~2023-11-14
+			suspendNs:      5_000_000_000,                             // 5 seconds suspend
+			expectedResult: 1_700_000_000_000_000_000 - 5_000_000_000, // boottime - suspend
+		},
+		{
+			name:           "Normal timestamp with no suspend time",
+			boottimeEpoch:  1_700_000_000_000_000_000,
+			suspendNs:      0,
+			expectedResult: 1_700_000_000_000_000_000, // Should be unchanged
+		},
+		{
+			name:           "Large timestamp with small suspend",
+			boottimeEpoch:  math.MaxUint64 / 2,
+			suspendNs:      1_000_000_000, // 1 second
+			expectedResult: math.MaxUint64/2 - 1_000_000_000,
+		},
+		{
+			name:           "Equal values",
+			boottimeEpoch:  1_000_000_000,
+			suspendNs:      1_000_000_000,
+			expectedResult: 0, // boottime - suspend = 0
+		},
+		{
+			name:           "Typical system values",
+			boottimeEpoch:  1_731_787_200_000_000_000,                     // 2024-11-16 20:00:00 UTC
+			suspendNs:      3_600_000_000_000,                             // 1 hour suspend
+			expectedResult: 1_731_787_200_000_000_000 - 3_600_000_000_000, // boottime - suspend
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := convertBoottimeToMonotonicEpoch(tt.boottimeEpoch, tt.suspendNs)
+
+			assert.Equal(t, tt.expectedResult, result,
+				"convertBoottimeToMonotonicEpoch(%d, %d)", tt.boottimeEpoch, tt.suspendNs)
+
+			// Verify invariant: result should never be greater than input
+			assert.LessOrEqual(t, result, tt.boottimeEpoch,
+				"Result should be <= input (monotonic <= boottime)")
+		})
+	}
+}
+
+// TestProcfsStartTimeToEpochNS tests the main procfs conversion function.
+//
+// NOTE: It uses actual system time and clocks.
+// It validates the conversion logic and clock-specific behavior with real data,
+// so it's not synthetic.
+func TestProcfsStartTimeToEpochNS(t *testing.T) {
+	tests := []struct {
+		name          string
+		clockID       int32
+		startJiffies  uint64
+		expectConvert bool // Whether BOOTTIME->MONOTONIC conversion should occur
+	}{
+		{
+			name:          "BOOTTIME clock - no conversion - small jiffies",
+			clockID:       CLOCK_BOOTTIME,
+			startJiffies:  100, // 1 second @ USER_HZ=100
+			expectConvert: false,
+		},
+		{
+			name:          "BOOTTIME clock - no conversion - large jiffies",
+			clockID:       CLOCK_BOOTTIME,
+			startJiffies:  100000, // 1000 seconds @ USER_HZ=100
+			expectConvert: false,
+		},
+		{
+			name:          "MONOTONIC clock - should convert - small jiffies",
+			clockID:       CLOCK_MONOTONIC,
+			startJiffies:  100,
+			expectConvert: true,
+		},
+		{
+			name:          "MONOTONIC clock - should convert - large jiffies",
+			clockID:       CLOCK_MONOTONIC,
+			startJiffies:  100000,
+			expectConvert: true,
+		},
+		{
+			name:          "MONOTONIC clock - zero jiffies",
+			clockID:       CLOCK_MONOTONIC,
+			startJiffies:  0,
+			expectConvert: true,
+		},
+		{
+			name:          "BOOTTIME clock - zero jiffies",
+			clockID:       CLOCK_BOOTTIME,
+			startJiffies:  0,
+			expectConvert: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset and initialize with test clock
+			initTimeOnce = sync.Once{}
+			usedClockID = 0
+
+			err := Init(tt.clockID)
+			assert.NoError(t, err, "Init() should not fail")
+
+			// Verify clock ID was stored correctly
+			assert.Equal(t, tt.clockID, GetUsedClockID(),
+				"Clock ID should be stored correctly")
+
+			// Perform conversion
+			result := ProcfsStartTimeToEpochNS(tt.startJiffies)
+
+			// Calculate expected baseline using BOOTTIME boot time
+			// (procfs values are always BOOTTIME-based)
+			bootNs := ClockTicksToNsSinceBootTime(tt.startJiffies)
+			epochBootNs := uint64(GetBootTimeBoottimeNS()) + bootNs
+
+			// Validate result
+			if tt.expectConvert {
+				// For MONOTONIC: result should be <= epochBootNs (accounting for suspend time)
+				assert.LessOrEqual(t, result, epochBootNs,
+					"MONOTONIC result should be <= BOOTTIME (accounting for suspend time)")
+				t.Logf("MONOTONIC: jiffies=%d -> boottime_epoch=%d, monotonic_epoch=%d (diff=%d)",
+					tt.startJiffies, epochBootNs, result, epochBootNs-result)
+			} else {
+				// For BOOTTIME: result should equal epochBootNs (no conversion)
+				assert.Equal(t, epochBootNs, result,
+					"BOOTTIME result should equal raw conversion (no conversion needed)")
+				t.Logf("BOOTTIME: jiffies=%d -> epoch=%d", tt.startJiffies, result)
+			}
+
+			// Additional sanity checks
+			if tt.startJiffies == 0 {
+				assert.LessOrEqual(t, result, uint64(time.Now().UnixNano()),
+					"Zero jiffies should not produce future timestamp")
+			}
+		})
+	}
 }
