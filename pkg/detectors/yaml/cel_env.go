@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
 )
 
 const (
@@ -27,7 +28,8 @@ const (
 
 // createCELEnvironment creates a CEL environment with event context and helper functions
 // lists: optional map of list name -> list values to expose as global variables
-func createCELEnvironment(lists map[string][]string) (*cel.Env, error) {
+// registry: optional registry for datastore access (nil during validation)
+func createCELEnvironment(lists map[string][]string, registry datastores.Registry) (*cel.Env, error) {
 	envOptions := []cel.EnvOption{
 		// Register protobuf types so CEL can access nested fields
 		cel.Types(&v1beta1.Event{}, &v1beta1.Workload{}, &v1beta1.Policies{}, &wrapperspb.UInt32Value{}),
@@ -74,6 +76,12 @@ func createCELEnvironment(lists map[string][]string) (*cel.Env, error) {
 	for name := range lists {
 		envOptions = append(envOptions, cel.Variable(name, cel.ListType(cel.StringType)))
 	}
+
+	// Always register datastore functions (for validation and runtime)
+	// During validation (registry == nil), functions return null
+	// During runtime (registry != nil), functions access actual data
+	datastoreOptions := registerDatastoreFunctions(registry)
+	envOptions = append(envOptions, datastoreOptions...)
 
 	return cel.NewEnv(envOptions...)
 }
@@ -201,11 +209,19 @@ func EvaluateCondition(prog cel.Program, event *v1beta1.Event, lists map[string]
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	// Build evaluation variables
+	// Build evaluation variables with nil-safe access
 	vars := map[string]any{
-		"event":     event,
-		"workload":  event.Workload,
-		"timestamp": event.Timestamp,
+		"event": event,
+	}
+
+	// Add workload if available (nil is valid - CEL will handle it)
+	if event.Workload != nil {
+		vars["workload"] = event.Workload
+	}
+
+	// Add timestamp if available (nil is valid - CEL will handle it)
+	if event.Timestamp != nil {
+		vars["timestamp"] = event.Timestamp
 	}
 
 	// Add list variables
@@ -250,11 +266,19 @@ func EvaluateExpression(prog cel.Program, event *v1beta1.Event, lists map[string
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	// Build evaluation variables
+	// Build evaluation variables with nil-safe access
 	vars := map[string]any{
-		"event":     event,
-		"workload":  event.Workload,
-		"timestamp": event.Timestamp,
+		"event": event,
+	}
+
+	// Add workload if available (nil is valid - CEL will handle it)
+	if event.Workload != nil {
+		vars["workload"] = event.Workload
+	}
+
+	// Add timestamp if available (nil is valid - CEL will handle it)
+	if event.Timestamp != nil {
+		vars["timestamp"] = event.Timestamp
 	}
 
 	// Add list variables
