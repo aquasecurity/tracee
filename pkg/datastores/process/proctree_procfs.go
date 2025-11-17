@@ -167,13 +167,14 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 	procInfo := process.GetInfo()
 
 	// Check if the process info was already set AT THE START TIME
+	// Skip procfs update if we already have complete BPF data
 	switch givenPid {
 	case 0, 1: // PIDs 0 and 1 are special
 	default:
 		startTime := timeutil.NsSinceEpochToTime(epochTimeNs)
 		feedAtStart := procInfo.GetFeedAt(startTime)
-		if feedAtStart.Name == name && feedAtStart.Name != "" && feedAtStart.PPid != 0 {
-			return nil
+		if feedAtStart.ShouldSkipProcfsUpdate() {
+			return nil // Already have complete BPF data
 		}
 	}
 
@@ -261,10 +262,11 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 	threadInfo := thread.GetInfo()
 
 	// Check if the thread info was already set AT THE START TIME
+	// Skip procfs update if we already have complete BPF data
 	startTime := timeutil.NsSinceEpochToTime(epochTimeNs)
 	feedAtStart := threadInfo.GetFeedAt(startTime)
-	if feedAtStart.Name == name && feedAtStart.Name != "" && feedAtStart.PPid != 0 {
-		return nil
+	if feedAtStart.ShouldSkipProcfsUpdate() {
+		return nil // Already have complete BPF data
 	}
 
 	procfsTimeStamp := epochTimeNs
