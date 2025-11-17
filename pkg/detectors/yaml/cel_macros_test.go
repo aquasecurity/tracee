@@ -12,7 +12,7 @@ import (
 
 // Test that the simplified getData("field") syntax works via macro
 func TestGetDataMacro(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Test expression: getData("pathname")
@@ -37,7 +37,7 @@ func TestGetDataMacro(t *testing.T) {
 
 // Test hasData macro
 func TestHasDataMacro(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	prog, err := CompileExpression(env, `hasData("pathname")`)
@@ -65,7 +65,7 @@ func TestHasDataMacro(t *testing.T) {
 
 // Test getDataInt macro
 func TestGetDataIntMacro(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	prog, err := CompileExpression(env, `getData("uid")`)
@@ -85,7 +85,7 @@ func TestGetDataIntMacro(t *testing.T) {
 
 // Test getDataUInt macro
 func TestGetDataUIntMacro(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	prog, err := CompileExpression(env, `getData("pid")`)
@@ -105,7 +105,7 @@ func TestGetDataUIntMacro(t *testing.T) {
 
 // Test getData with numeric comparisons (dynamic typing in action)
 func TestGetDataNumericComparison(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Condition: getData("pid") > 1000
@@ -126,7 +126,7 @@ func TestGetDataNumericComparison(t *testing.T) {
 
 // Test that both unary and binary forms work (macro expands unary to binary)
 func TestGetDataBothCallForms(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Binary form: getData(event, "pathname")
@@ -147,7 +147,7 @@ func TestGetDataBothCallForms(t *testing.T) {
 
 // Test macro in complex expressions
 func TestGetDataMacroInExpression(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Complex expression: getData("pathname").startsWith("/etc")
@@ -168,7 +168,7 @@ func TestGetDataMacroInExpression(t *testing.T) {
 
 // Test macro with conditions
 func TestGetDataMacroInCondition(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Condition: hasData("pathname") && getData("pathname") == "/etc/shadow"
@@ -189,7 +189,7 @@ func TestGetDataMacroInCondition(t *testing.T) {
 
 // Test top-level workload variable (no "event." prefix)
 func TestWorkloadTopLevelVariable(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Expression: workload.container.id (no "event." prefix!)
@@ -212,7 +212,7 @@ func TestWorkloadTopLevelVariable(t *testing.T) {
 
 // Test workload condition
 func TestWorkloadInCondition(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Condition: workload.container.id != ""
@@ -235,7 +235,7 @@ func TestWorkloadInCondition(t *testing.T) {
 
 // Test combined: simplified getData + top-level workload
 func TestCombinedSimplifiedSyntax(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Condition: hasData("pathname") && workload.container.id != ""
@@ -261,7 +261,7 @@ func TestCombinedSimplifiedSyntax(t *testing.T) {
 
 // Test workload.process.pid access
 func TestWorkloadProcessAccess(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Expression: workload.process.pid
@@ -298,7 +298,7 @@ func TestWorkloadProcessAccess(t *testing.T) {
 
 // Test that both forms work: workload.* and event.workload.*
 func TestEventPrefixOptional(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Both forms work: event.workload.container.id
@@ -327,7 +327,7 @@ func TestListVariables(t *testing.T) {
 		"SENSITIVE_PATHS": {"/etc/passwd", "/etc/shadow"},
 	}
 
-	env, err := createCELEnvironment(lists)
+	env, err := createCELEnvironment(lists, nil)
 	require.NoError(t, err, "Failed to create CEL environment with lists")
 
 	// Test 1: List variable exists and is accessible
@@ -355,7 +355,7 @@ func TestListVariableInOperator(t *testing.T) {
 		"SHELL_BINARIES": {"/bin/sh", "/bin/bash", "/usr/bin/zsh"},
 	}
 
-	env, err := createCELEnvironment(lists)
+	env, err := createCELEnvironment(lists, nil)
 	require.NoError(t, err, "Failed to create CEL environment with lists")
 
 	// Test condition: getData("pathname") in SHELL_BINARIES
@@ -389,7 +389,7 @@ func TestListVariableInOperator(t *testing.T) {
 
 // Test that undefined list variables produce compilation error
 func TestUndefinedListVariable(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Try to compile expression with undefined list variable
@@ -405,7 +405,7 @@ func TestListVariableComplexExpressions(t *testing.T) {
 		"SENSITIVE_PATHS": {"/etc/passwd", "/etc/shadow"},
 	}
 
-	env, err := createCELEnvironment(lists)
+	env, err := createCELEnvironment(lists, nil)
 	require.NoError(t, err, "Failed to create CEL environment with lists")
 
 	// Test: getData("pathname") in SHELL_BINARIES || getData("pathname") in SENSITIVE_PATHS
