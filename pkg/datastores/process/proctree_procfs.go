@@ -107,9 +107,9 @@ func getProcessByPID(pt *ProcessTree, givenPid int32) (*Process, error) {
 	}
 
 	statStartTime := stat.GetStartTime()
-	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(statStartTime)
 	// process hash (using epoch time for consistency with kernel signals)
-	epochTimeNs := timeutil.BootToEpochNS(startTimeNs)
+	// ProcfsStartTimeToEpochNS handles jiffies→ns conversion AND clock-aware epoch conversion
+	epochTimeNs := timeutil.ProcfsStartTimeToEpochNS(statStartTime)
 	processHash := HashTaskID(uint32(givenPid), epochTimeNs)
 
 	return pt.GetOrCreateProcessByHash(processHash), nil
@@ -157,10 +157,9 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 		}
 	}
 
-	// thread start time (monotonic boot)
-	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(start)
 	// process hash (using epoch time for consistency with kernel signals)
-	epochTimeNs := timeutil.BootToEpochNS(startTimeNs)
+	// ProcfsStartTimeToEpochNS handles jiffies→ns conversion AND clock-aware epoch conversion
+	epochTimeNs := timeutil.ProcfsStartTimeToEpochNS(start)
 	processHash := HashTaskID(uint32(pid), epochTimeNs)
 
 	// update tree for the given process
@@ -252,10 +251,9 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 		return errfmt.Errorf("invalid thread - status: %v, stat: %v", status, stat)
 	}
 
-	// thread start time (monotonic boot)
-	startTimeNs := timeutil.ClockTicksToNsSinceBootTime(start)
 	// thread hash (using epoch time for consistency with kernel signals)
-	epochTimeNs := timeutil.BootToEpochNS(startTimeNs)
+	// ProcfsStartTimeToEpochNS handles jiffies→ns conversion AND clock-aware epoch conversion
+	epochTimeNs := timeutil.ProcfsStartTimeToEpochNS(start)
 	threadHash := HashTaskID(uint32(pid), epochTimeNs)
 
 	// update tree for the given thread

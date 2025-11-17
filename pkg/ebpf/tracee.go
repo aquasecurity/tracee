@@ -514,14 +514,10 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize Process Tree (if enabled)
 
 	if t.config.ProcTree.Source != process.SourceNone {
-		// As procfs use boot time to calculate process start time, we can use the procfs
-		// only if the times we get from the eBPF programs are based on the boot time (instead of monotonic).
-		proctreeConfig := t.config.ProcTree
-		if usedClockID == timeutil.CLOCK_MONOTONIC {
-			proctreeConfig.ProcfsInitialization = false
-			proctreeConfig.ProcfsQuerying = false
-		}
-		t.processTree, err = process.NewProcessTree(ctx, proctreeConfig)
+		// Procfs enrichment is now supported with both CLOCK_BOOTTIME and CLOCK_MONOTONIC.
+		// The timeutil.ProcfsStartTimeToEpochNS() function handles the conversion from
+		// procfs values (always BOOTTIME) to the BPF clock base (MONOTONIC or BOOTTIME).
+		t.processTree, err = process.NewProcessTree(ctx, t.config.ProcTree)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
