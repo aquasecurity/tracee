@@ -24,6 +24,31 @@ type TaskInfoFeed struct {
 	ExitTimeNS  uint64 // immutable (this is a duration, in ns, since boot)
 }
 
+// ShouldSkipProcfsUpdate returns true if the feed already contains complete data from BPF,
+// indicating that procfs enrichment should be skipped to avoid overwriting accurate initial values.
+//
+// This method checks both immutable and mutable fields because procfs can provide stale data:
+//   - Name: May differ if changed via prctl() after process creation
+//   - PPid: May differ if process was reparented
+//   - Tid, Pid: Host namespace identifiers (immutable)
+//   - NsTid, NsPid: Container namespace identifiers (immutable)
+//
+// Rationale: BPF events capture process data at creation time (fork/exec), which is the most
+// accurate snapshot. Procfs reads are asynchronous and may occur after the process has changed
+// its name or been reparented. If we already have complete BPF data, we skip procfs updates
+// to preserve the accurate initial state.
+//
+// Returns false if any field is 0 (uninitialized) or -1 (not available), indicating that
+// procfs enrichment is needed to complete the data.
+func (f TaskInfoFeed) ShouldSkipProcfsUpdate() bool {
+	return f.Name != "" &&
+		f.PPid > 0 &&
+		f.Tid > 0 &&
+		f.Pid > 0 &&
+		f.NsTid > 0 &&
+		f.NsPid > 0
+}
+
 //
 // Task Info
 //
