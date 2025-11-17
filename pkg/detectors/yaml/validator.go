@@ -253,7 +253,7 @@ func validateOutput(spec *OutputSpec, declaredFields []EventFieldSpec, lists map
 	}
 
 	// Create CEL environment once for all field validations
-	env, err := createCELEnvironment(lists)
+	env, err := createCELEnvironment(lists, nil)
 	if err != nil {
 		return fmt.Errorf("%s: failed to create CEL environment: %w", filePath, err)
 	}
@@ -407,7 +407,7 @@ func validateConditions(conditions []string, lists map[string][]string, filePath
 	}
 
 	// Create CEL environment for validation with lists
-	env, err := createCELEnvironment(lists)
+	env, err := createCELEnvironment(lists, nil)
 	if err != nil {
 		return fmt.Errorf("%s: failed to create CEL environment: %w", filePath, err)
 	}
