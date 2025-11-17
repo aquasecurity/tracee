@@ -28,17 +28,18 @@ const pollTimeout int = 300 // from tracee.go (move to a consts package?)
 type SignalHandler func(signalID events.ID, args []trace.Argument) error
 
 type Controller struct {
-	ctx            context.Context
-	signalChan     chan []byte
-	lostSignalChan chan uint64
-	bpfModule      *libbpfgo.Module
-	signalBuffer   *libbpfgo.PerfBuffer
-	signalPool     *sync.Pool
-	cgroupManager  *container.Manager
-	processTree    *process.ProcessTree
-	enrichDisabled bool
-	dataPresentor  bufferdecoder.TypeDecoder
-	signalHandlers map[events.ID]SignalHandler
+	ctx                        context.Context
+	signalChan                 chan []byte
+	lostSignalChan             chan uint64
+	bpfModule                  *libbpfgo.Module
+	signalBuffer               *libbpfgo.PerfBuffer
+	signalPool                 *sync.Pool
+	cgroupManager              *container.Manager
+	processTree                *process.ProcessTree
+	enrichDisabled             bool
+	dataPresentor              bufferdecoder.TypeDecoder
+	signalHandlers             map[events.ID]SignalHandler
+	controlPlanePerfBufferSize int
 }
 
 // NewController creates a new controller.
@@ -48,6 +49,7 @@ func NewController(
 	enrichDisabled bool,
 	procTree *process.ProcessTree,
 	dataPresentor bufferdecoder.TypeDecoder,
+	controlPlanePerfBufferSize int,
 ) *Controller {
 	return &Controller{
 		signalChan:     make(chan []byte, 100),
@@ -58,17 +60,18 @@ func NewController(
 				return &Signal{}
 			},
 		},
-		cgroupManager:  cgroupManager,
-		processTree:    procTree,
-		enrichDisabled: enrichDisabled,
-		dataPresentor:  dataPresentor,
-		signalHandlers: make(map[events.ID]SignalHandler),
+		cgroupManager:              cgroupManager,
+		processTree:                procTree,
+		enrichDisabled:             enrichDisabled,
+		dataPresentor:              dataPresentor,
+		signalHandlers:             make(map[events.ID]SignalHandler),
+		controlPlanePerfBufferSize: controlPlanePerfBufferSize,
 	}
 }
 
 func (ctrl *Controller) Init() error {
 	var err error
-	ctrl.signalBuffer, err = ctrl.bpfModule.InitPerfBuf("signals", ctrl.signalChan, ctrl.lostSignalChan, 1024)
+	ctrl.signalBuffer, err = ctrl.bpfModule.InitPerfBuf("signals", ctrl.signalChan, ctrl.lostSignalChan, ctrl.controlPlanePerfBufferSize)
 	if err != nil {
 		return err
 	}

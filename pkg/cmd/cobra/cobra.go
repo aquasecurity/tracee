@@ -101,12 +101,22 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
 
+	buffersFlag, err := GetFlagsFromViper(flags.BuffersFlag)
+	if err != nil {
+		return runner, err
+	}
+	buffers, err := flags.PrepareBuffers(buffersFlag)
+	if err != nil {
+		return runner, err
+	}
+
 	// Initialize a tracee config structure
 
 	cfg := config.Config{
-		PerfBufferSize:      viper.GetInt("perf-buffer-size"),
-		BlobPerfBufferSize:  viper.GetInt("blob-perf-buffer-size"),
-		PipelineChannelSize: viper.GetInt("pipeline-channel-size"),
+		PerfBufferSize:             buffers.EventsSize,
+		BlobPerfBufferSize:         buffers.BlobSize,
+		ControlPlanePerfBufferSize: buffers.ControlPlaneSize,
+		PipelineChannelSize:        buffers.PipelineSize,
 	}
 
 	// OS release information

@@ -101,22 +101,6 @@ func main() {
 				Usage: "configure container enrichment and runtime sockets. run '--containers help' for more info.",
 				Value: cli.NewStringSlice(),
 			},
-			&cli.IntFlag{
-				Name:    "perf-buffer-size",
-				Aliases: []string{"b"},
-				Value:   1024, // 4 MB of contiguous pages
-				Usage:   "size, in pages, of the internal perf ring buffer used to submit events from the kernel",
-			},
-			&cli.IntFlag{
-				Name:  "blob-perf-buffer-size",
-				Value: 1024, // 4 MB of contiguous pages
-				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
-			},
-			&cli.IntFlag{
-				Name:  "pipeline-channel-size",
-				Value: 10000,
-				Usage: "size, in event objects, of each pipeline stage's output channel",
-			},
 			&cli.StringFlag{
 				Name:  "install-path",
 				Value: "/tmp/tracee",
@@ -130,6 +114,11 @@ func main() {
 				Name:  "log",
 				Usage: "logger option. run '--log help' for more info.",
 				Value: cli.NewStringSlice("info"),
+			},
+			&cli.StringSliceFlag{
+				Name:  "buffers",
+				Usage: "configure the buffers sizes for kernel and user buffers. run '--buffers help' for more info.",
+				Value: cli.NewStringSlice(),
 			},
 		},
 	}
