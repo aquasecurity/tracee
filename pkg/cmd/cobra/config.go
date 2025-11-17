@@ -36,6 +36,8 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &OutputConfig{}
 	case "dnscache":
 		flagger = &DnsCacheConfig{}
+	case "runtime":
+		flagger = &RuntimeConfig{}
 	default:
 		return nil, errfmt.Errorf("unrecognized key: %s", key)
 	}
@@ -479,4 +481,16 @@ type OutputWebhookConfig struct {
 	Timeout     string `mapstructure:"timeout"`
 	GoTemplate  string `mapstructure:"gotemplate"`
 	ContentType string `mapstructure:"content-type"`
+}
+
+//
+// runtime flag
+//
+
+type RuntimeConfig struct {
+	Workdir string `mapstructure:"workdir"`
+}
+
+func (c *RuntimeConfig) flags() []string {
+	return []string{fmt.Sprintf("workdir=%s", c.Workdir)}
 }
