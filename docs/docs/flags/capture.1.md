@@ -11,9 +11,12 @@ tracee **\-\-capture** - Capture artifacts that were written, executed, or found
 
 ## SYNOPSIS
 
-tracee **\-\-capture** <[artifact:]capture-option[=value]\> ...
+tracee **\-\-capture** <capture-option[=value]\> [**\-\-capture** <capture-option[=value]\>] ...
 
-tracee **\-\-capture** <network\> [**\-\-capture** [pcap:option1(,option2...)|pcap-options:option|pcap-snaplen:size]] ...
+Where capture-option can be one of:
+- **write[=/path/prefix\*]**, **read[=/path/prefix\*]**, **exec**, **module**, **bpf**, **mem**, **network** (or **net**)
+- **dir:/path/to/dir**, **clear-dir**
+- **pcap:[single,process,container,command]**, **pcap-options:[none,filtered]**, **pcap-snaplen:[default,headers,max,SIZE]**
 
 ## DESCRIPTION
 
@@ -36,7 +39,7 @@ Files captured upon read/write can be filtered to catch only specific IO operati
 Filter types:
 
 - **path**: A filter for the file path prefix (up to 50 characters). Up to 3 filters can be given. Identical to using '<read/write\>=/path/prefix\*'.
-- **type**: A file type from the following options: 'regular', 'pipe', and 'socket'.
+- **type**: A file type from the following options: 'regular', 'pipe', 'socket', and 'elf'.
 - **fd**: The file descriptor of the file. Can be one of the three standards: 'stdin', 'stdout', and 'stderr'.
 
 ### Network Capture Notes
@@ -50,11 +53,17 @@ Filter types:
   - If you specify **pcap-options:filtered**, events being traced will define what network traffic will be captured.
 
 - Snap Length:
-  - If you do not specify a snaplen, the default is headers only (incomplete packets in tcpdump).
-  - If you specify **max** as snaplen, you will get the full contents of each packet (pcap files will be large).
-  - If you specify **headers** as snaplen, you will only get L2/L3 headers in captured packets.
+  - **default**: Captures headers plus up to 96 bytes of payload if payload exists (default behavior when network capture is enabled).
+  - **headers**: Captures up to layer 4 headers. For ICMP and DNS, full headers are captured. For other protocols, only L2/L3 headers are captured.
+  - **max**: Captures the entire packet (pcap files will be large).
+  - **SIZE**: You can specify a custom size ending in 'b' or 'kb' (e.g., 256b, 512b, 1kb, 2kb, 4kb). The size is limited to the maximum IP packet size (65535 bytes).
   - If you specify **headers** but trace for **net_packet_dns** events, the L4 DNS header will be captured.
   - If you specify **headers** but trace for **net_packet_http** events, only L2/L3 headers will be captured.
+
+### Output Directory Options
+
+- **dir:/path/to/dir**: Specifies the path where tracee will save produced artifacts. The artifacts will be saved into an 'out' subdirectory within the specified path. The default output directory is `/tmp/tracee`.
+- **clear-dir**: Clears the captured artifacts output directory before starting. This will delete the 'out' subdirectory if it exists. By default, the directory is not cleared.
 
 ## EXAMPLES
 
@@ -82,6 +91,18 @@ Filter types:
 
   ```console
   --capture write:type=socket --capture write:fd=stdout
+  ```
+
+- To capture files that were read from anywhere under /etc/, use the following flag:
+
+  ```console
+  --capture read=/etc/*
+  ```
+
+- To capture executed files without printing the stream of events, use the following flags:
+
+  ```console
+  --capture exec --output none
   ```
 
 ### Network Capture
@@ -114,4 +135,28 @@ Filter types:
 
   ```console
   --capture network --capture pcap:container,command
+  ```
+
+- To capture network traffic with the default snaplen (headers + up to 96 bytes of payload), use the following flag:
+
+  ```console
+  --capture network --capture pcap-snaplen:default
+  ```
+
+- To capture network traffic with headers only, use the following flag:
+
+  ```console
+  --capture network --capture pcap-snaplen:headers
+  ```
+
+- To capture network traffic with full packet contents, use the following flag:
+
+  ```console
+  --capture network --capture pcap-snaplen:max
+  ```
+
+- To capture network traffic using the short form 'net' instead of 'network', use the following flag:
+
+  ```console
+  --capture net
   ```
