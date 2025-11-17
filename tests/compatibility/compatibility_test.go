@@ -13,6 +13,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
+	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -307,4 +308,112 @@ func debugEventDependencies(t *testing.T, traceeInstance interface{}) {
 	t.Logf("        so only one of the three variants will be attached based on kernel capabilities")
 
 	t.Logf("  --- done checking event dependencies ---")
+}
+
+// TestClockDetection validates that Tracee correctly detects and uses the appropriate
+// clock type (BOOTTIME or MONOTONIC) based on kernel BPF helper support.
+//
+// On kernels from 5.8: bpf_ktime_get_boot_ns is available → CLOCK_BOOTTIME
+// On kernels before 5.8: bpf_ktime_get_boot_ns is unavailable → CLOCK_MONOTONIC
+func TestClockDetection(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	testutils.AssureIsRoot(t)
+
+	// Step 1: Check what the current kernel actually supports
+	t.Logf("  --- detecting kernel BPF clock support ---")
+
+	boottimeSupported := handleSupportCheck(
+		t,
+		func() (bool, error) {
+			return bpf.BPFHelperIsSupported(
+				bpf.BPFProgTypeKprobe,
+				bpf.BPFFuncKtimeGetBootNs,
+			)
+		},
+		"bpf_ktime_get_boot_ns helper",
+	)
+
+	// Step 2: Determine expected clock based on kernel support
+	var expectedClockName string
+	var expectedClockID int32
+
+	if boottimeSupported {
+		expectedClockID = timeutil.CLOCK_BOOTTIME
+		expectedClockName = "CLOCK_BOOTTIME"
+		t.Logf("  ✅ Kernel supports bpf_ktime_get_boot_ns → expecting CLOCK_BOOTTIME")
+	} else {
+		expectedClockID = timeutil.CLOCK_MONOTONIC
+		expectedClockName = "CLOCK_MONOTONIC"
+		t.Logf("  ⚠️  Kernel does NOT support bpf_ktime_get_boot_ns → expecting CLOCK_MONOTONIC")
+	}
+
+	// Step 3: Initialize Tracee (which triggers clock detection in timeutil.Init)
+	t.Logf("  --- starting tracee to test clock detection ---")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	cfg := config.Config{
+		Capabilities: &config.CapabilitiesConfig{
+			BypassCaps: true,
+		},
+		NoContainersEnrich: true,
+	}
+
+	// Use a minimal policy to avoid unnecessary overhead
+	policies := testutils.BuildPoliciesFromEvents([]events.ID{})
+	initialPolicies := make([]interface{}, 0, len(policies))
+	for _, p := range policies {
+		initialPolicies = append(initialPolicies, p)
+	}
+	cfg.InitialPolicies = initialPolicies
+
+	traceeInstance, err := testutils.StartTracee(ctx, t, cfg, nil, nil)
+	require.NoError(t, err, "Failed to start Tracee")
+
+	err = testutils.WaitForTraceeStart(traceeInstance)
+	require.NoError(t, err, "Tracee failed to start")
+
+	t.Logf("  --- tracee started successfully ---")
+
+	// Step 4: Verify Tracee detected and is using the correct clock
+	t.Logf("  --- verifying clock selection ---")
+
+	// The clock is set during Tracee initialization via timeutil.Init()
+	// We can verify this using the public timeutil.GetUsedClockID() API
+	actualClockID := timeutil.GetUsedClockID()
+
+	var actualClockName string
+	if actualClockID == timeutil.CLOCK_BOOTTIME {
+		actualClockName = "CLOCK_BOOTTIME"
+	} else if actualClockID == timeutil.CLOCK_MONOTONIC {
+		actualClockName = "CLOCK_MONOTONIC"
+	} else {
+		actualClockName = "UNKNOWN"
+	}
+
+	t.Logf("  Expected clock: %s (ID: %d)", expectedClockName, expectedClockID)
+	t.Logf("  Actual clock:   %s (ID: %d)", actualClockName, actualClockID)
+
+	// Assert that the detected clock matches kernel capability
+	assert.Equal(t, expectedClockID, actualClockID,
+		"Tracee should detect and use %s based on kernel support for bpf_ktime_get_boot_ns",
+		expectedClockName)
+
+	if actualClockID == expectedClockID {
+		t.Logf("  ✅ Clock detection CORRECT: Using %s as expected", actualClockName)
+	} else {
+		t.Logf("  ❌ Clock detection MISMATCH: Expected %s but got %s",
+			expectedClockName, actualClockName)
+	}
+
+	t.Logf("  Note: This clock is used for all BPF timestamp conversions and procfs hash calculations")
+
+	// Step 5: Cleanup
+	cancel()
+	err = testutils.WaitForTraceeStop(traceeInstance)
+	assert.NoError(t, err, "Tracee should stop cleanly")
+
+	t.Logf("  --- stopped tracee ---")
 }
