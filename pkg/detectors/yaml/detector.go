@@ -11,6 +11,7 @@ import (
 	"github.com/google/cel-go/common/types"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 )
 
@@ -31,15 +32,18 @@ type YAMLDetector struct {
 	autoPopulate   detection.AutoPopulateFields
 
 	// CEL fields
-	celEnv          *cel.Env            // CEL environment (created once)
+	celEnv          *cel.Env            // CEL environment (created once, rebuilt in Init if datastores available)
 	conditions      []cel.Program       // Compiled condition expressions
+	conditionExprs  []string            // Original condition expressions (for recompilation with datastores)
 	fieldExtractors []celFieldExtractor // Compiled field extractors
+	fieldSpecs      []FieldSpec         // Original field specs (for recompilation with datastores)
 	lists           map[string][]string // Shared list variables for CEL
 
 	// Detector runtime fields
-	logger  detection.Logger
-	source  string        // YAML file path for debugging
-	timeout time.Duration // CEL evaluation timeout (default 5ms)
+	logger     detection.Logger
+	datastores datastores.Registry // Access to system state
+	source     string              // YAML file path for debugging
+	timeout    time.Duration       // CEL evaluation timeout (default 5ms)
 }
 
 // celFieldExtractor holds compiled CEL program for field extraction
@@ -69,39 +73,15 @@ func NewDetector(def *detection.DetectorDefinition, spec *YAMLDetectorSpec, list
 		timeout:          5 * time.Millisecond, // Default timeout: 5x the "Critical" (>1ms) metric threshold
 	}
 
-	// Create CEL environment with shared lists
-	var err error
-	detector.celEnv, err = createCELEnvironment(lists)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create CEL environment: %w", err)
-	}
-
-	// Compile conditions
-	for i, condExpr := range spec.Conditions {
-		prog, err := CompileCondition(detector.celEnv, condExpr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compile condition %d (%s): %w", i, condExpr, err)
-		}
-		detector.conditions = append(detector.conditions, prog)
-	}
-
-	// Compile field extractors
+	// Store condition expressions and field specs for compilation/recompilation
+	detector.conditionExprs = spec.Conditions
 	if spec.Output != nil {
-		for _, fieldSpec := range spec.Output.Fields {
-			// Compile CEL expression
-			prog, err := CompileExpression(detector.celEnv, fieldSpec.Expression)
-			if err != nil {
-				return nil, fmt.Errorf("failed to compile expression for field %s (%s): %w", fieldSpec.Name, fieldSpec.Expression, err)
-			}
+		detector.fieldSpecs = spec.Output.Fields
+	}
 
-			extractor := celFieldExtractor{
-				name:     fieldSpec.Name,
-				program:  prog,
-				optional: fieldSpec.Optional,
-			}
-
-			detector.fieldExtractors = append(detector.fieldExtractors, extractor)
-		}
+	// Create CEL environment and compile expressions (no datastores yet - will be added in Init)
+	if err := detector.compileCELPrograms(nil); err != nil {
+		return nil, err
 	}
 
 	return detector, nil
@@ -128,6 +108,14 @@ func (d *YAMLDetector) GetDefinition() detection.DetectorDefinition {
 // Init initializes the detector with provided parameters
 func (d *YAMLDetector) Init(params detection.DetectorParams) error {
 	d.logger = params.Logger
+	d.datastores = params.DataStores // Store for CEL datastore functions
+
+	// Rebuild CEL environment with datastores now available and recompile all expressions
+	if d.datastores != nil {
+		if err := d.compileCELPrograms(d.datastores); err != nil {
+			return fmt.Errorf("failed to recompile with datastores: %w", err)
+		}
+	}
 
 	if d.logger != nil {
 		d.logger.Debugw("YAML detector initialized",
@@ -135,6 +123,43 @@ func (d *YAMLDetector) Init(params detection.DetectorParams) error {
 			"source", d.source,
 			"event", d.eventName,
 		)
+	}
+
+	return nil
+}
+
+// compileCELPrograms creates CEL environment and compiles all conditions and field extractors
+// registry: optional registry for datastore access (nil during initial load, non-nil during Init)
+func (d *YAMLDetector) compileCELPrograms(registry datastores.Registry) error {
+	// Create CEL environment
+	var err error
+	d.celEnv, err = createCELEnvironment(d.lists, registry)
+	if err != nil {
+		return fmt.Errorf("failed to create CEL environment: %w", err)
+	}
+
+	// Compile conditions
+	d.conditions = d.conditions[:0] // Clear existing if recompiling
+	for i, condExpr := range d.conditionExprs {
+		prog, err := CompileCondition(d.celEnv, condExpr)
+		if err != nil {
+			return fmt.Errorf("failed to compile condition %d (%s): %w", i, condExpr, err)
+		}
+		d.conditions = append(d.conditions, prog)
+	}
+
+	// Compile field extractors
+	d.fieldExtractors = d.fieldExtractors[:0] // Clear existing if recompiling
+	for _, fieldSpec := range d.fieldSpecs {
+		prog, err := CompileExpression(d.celEnv, fieldSpec.Expression)
+		if err != nil {
+			return fmt.Errorf("failed to compile expression for field %s (%s): %w", fieldSpec.Name, fieldSpec.Expression, err)
+		}
+		d.fieldExtractors = append(d.fieldExtractors, celFieldExtractor{
+			name:     fieldSpec.Name,
+			program:  prog,
+			optional: fieldSpec.Optional,
+		})
 	}
 
 	return nil
