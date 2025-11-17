@@ -119,7 +119,6 @@ Migration examples:
 
 - If no **\-\-server** flags are specified, no servers are started.
 - If endpoint flags (metrics, healthz, pprof, pyroscope) are specified without http-address, an HTTP server is automatically created on localhost:3366.
-- If **grpc** flag is specified without grpc-address, a Unix socket server is created at /var/run/tracee.sock.
 - If **grpc-address=tcp** is specified without a port, defaults to port 4466.
 - If **grpc-address=unix** is specified without a path, defaults to /var/run/tracee.sock.
 - Existing Unix socket files are automatically cleaned up before starting the gRPC server.

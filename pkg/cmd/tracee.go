@@ -37,7 +37,7 @@ func (r Runner) Run(ctx context.Context) error {
 		func(ctx context.Context) {
 			logger.Debugw("Tracee is ready callback")
 			if r.HTTP != nil {
-				if r.HTTP.MetricsEndpointEnabled() {
+				if r.HTTP.IsMetricsEnabled() {
 					if err := t.Stats().RegisterPrometheus(); err != nil {
 						logger.Errorw("Registering prometheus metrics", "error", err)
 					}

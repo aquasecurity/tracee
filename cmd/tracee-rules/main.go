@@ -16,7 +16,7 @@ import (
 
 	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
+	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -141,7 +141,7 @@ func main() {
 			}
 
 			// Prepare HTTP server with new unified server flags
-			serverRunner, err := server.PrepareServer(c.StringSlice(server.ServerFlag))
+			serverRunner, err := flags.PrepareServer(c.StringSlice(flags.ServerFlag))
 			if err != nil {
 				return err
 			}
@@ -196,7 +196,7 @@ func main() {
 				Usage: "print a list of events that currently loaded signatures require",
 			},
 			&cli.StringSliceFlag{
-				Name:  server.ServerFlag,
+				Name:  flags.ServerFlag,
 				Usage: "Configure server endpoints. Examples: metrics, healthz",
 			},
 			&cli.BoolFlag{

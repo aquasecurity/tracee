@@ -318,19 +318,41 @@ output:
 			},
 		},
 		{
-			name: "server flag check",
+			name: "Test server configuration (cli flags)",
 			yamlContent: `
 server:
-    http-address: localhost:8080
-    grpc-address: unix:/var/run/tracee.sock
-    metrics: false
-    pprof: false
-    healthz: true
-    pyroscope: true`,
+    - http-address=localhost:8080
+    - grpc-address=unix:/var/run/tracee.sock
+    - metrics
+    - pprof
+    - healthz
+    - pyroscope`,
 			key: "server",
 			expectedFlags: []string{
 				"grpc-address=unix:/var/run/tracee.sock",
 				"http-address=localhost:8080",
+				"metrics",
+				"pprof",
+				"healthz",
+				"pyroscope",
+			},
+		},
+		{
+			name: "Test server configuration (structured flags)",
+			yamlContent: `
+server:
+    http-address: localhost:8080
+    grpc-address: unix:/var/run/tracee.sock
+    metrics: true
+    pprof: true
+    healthz: true
+    pyroscope: true`,
+			key: "server",
+			expectedFlags: []string{
+				"http-address=localhost:8080",
+				"grpc-address=unix:/var/run/tracee.sock",
+				"metrics",
+				"pprof",
 				"healthz",
 				"pyroscope",
 			},
