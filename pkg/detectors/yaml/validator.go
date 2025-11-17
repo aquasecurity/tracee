@@ -13,7 +13,7 @@ import (
 var validExtractionRoots = []string{"data", "workload", "timestamp", "id", "name", "policies"}
 
 // ValidateSpec validates a parsed YAML detector specification
-func ValidateSpec(spec *YAMLDetectorSpec, filePath string) error {
+func ValidateSpec(spec *YAMLDetectorSpec, lists map[string][]string, filePath string) error {
 	if spec == nil {
 		return errfmt.Errorf("spec cannot be nil")
 	}
@@ -42,14 +42,14 @@ func ValidateSpec(spec *YAMLDetectorSpec, filePath string) error {
 
 	// Validate CEL conditions if present
 	if len(spec.Conditions) > 0 {
-		if err := validateConditions(spec.Conditions, filePath); err != nil {
+		if err := validateConditions(spec.Conditions, lists, filePath); err != nil {
 			return err
 		}
 	}
 
 	// Validate output extraction if present
 	if spec.Output != nil {
-		if err := validateOutput(spec.Output, spec.ProducedEvent.Fields, filePath); err != nil {
+		if err := validateOutput(spec.Output, spec.ProducedEvent.Fields, lists, filePath); err != nil {
 			return err
 		}
 	}
@@ -250,9 +250,15 @@ func validateThreat(spec *ThreatSpec, filePath string) error {
 }
 
 // validateOutput validates the output specification and checks against declared fields
-func validateOutput(spec *OutputSpec, declaredFields []EventFieldSpec, filePath string) error {
+func validateOutput(spec *OutputSpec, declaredFields []EventFieldSpec, lists map[string][]string, filePath string) error {
 	if len(spec.Fields) == 0 {
 		return nil // Empty output is valid
+	}
+
+	// Create CEL environment once for all field validations
+	env, err := createCELEnvironment(lists)
+	if err != nil {
+		return fmt.Errorf("%s: failed to create CEL environment: %w", filePath, err)
 	}
 
 	extractedNames := make(map[string]bool)
@@ -267,11 +273,6 @@ func validateOutput(spec *OutputSpec, declaredFields []EventFieldSpec, filePath 
 		}
 
 		// Validate CEL expression
-		env, err := createCELEnvironment()
-		if err != nil {
-			return fmt.Errorf("%s: failed to create CEL environment: %w", filePath, err)
-		}
-
 		_, err = CompileExpression(env, field.Expression)
 		if err != nil {
 			return fmt.Errorf("%s: output field '%s' has invalid CEL expression '%s': %w", filePath, field.Name, field.Expression, err)
@@ -384,13 +385,13 @@ func ValidateDefinition(def *detection.DetectorDefinition) error {
 }
 
 // ParseAndValidate is a convenience function that parses and validates a YAML file
-func ParseAndValidate(filePath string) (*detection.DetectorDefinition, *YAMLDetectorSpec, error) {
+func ParseAndValidate(filePath string, lists map[string][]string) (*detection.DetectorDefinition, *YAMLDetectorSpec, error) {
 	spec, err := ParseFile(filePath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse file: %w", err)
 	}
 
-	if err := ValidateSpec(spec, filePath); err != nil {
+	if err := ValidateSpec(spec, lists, filePath); err != nil {
 		return nil, spec, fmt.Errorf("validation failed: %w", err)
 	}
 
@@ -407,13 +408,13 @@ func ParseAndValidate(filePath string) (*detection.DetectorDefinition, *YAMLDete
 }
 
 // validateConditions validates CEL condition expressions
-func validateConditions(conditions []string, filePath string) error {
+func validateConditions(conditions []string, lists map[string][]string, filePath string) error {
 	if len(conditions) == 0 {
 		return nil
 	}
 
-	// Create CEL environment for validation
-	env, err := createCELEnvironment()
+	// Create CEL environment for validation with lists
+	env, err := createCELEnvironment(lists)
 	if err != nil {
 		return fmt.Errorf("%s: failed to create CEL environment: %w", filePath, err)
 	}

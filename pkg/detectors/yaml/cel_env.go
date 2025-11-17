@@ -26,8 +26,9 @@ const (
 )
 
 // createCELEnvironment creates a CEL environment with event context and helper functions
-func createCELEnvironment() (*cel.Env, error) {
-	return cel.NewEnv(
+// lists: optional map of list name -> list values to expose as global variables
+func createCELEnvironment(lists map[string][]string) (*cel.Env, error) {
+	envOptions := []cel.EnvOption{
 		// Register protobuf types so CEL can access nested fields
 		cel.Types(&v1beta1.Event{}, &v1beta1.Workload{}, &v1beta1.Policies{}, &wrapperspb.UInt32Value{}),
 
@@ -67,7 +68,14 @@ func createCELEnvironment() (*cel.Env, error) {
 				cel.BinaryBinding(hasDataBinding),
 			),
 		),
-	)
+	}
+
+	// Add shared list variables
+	for name := range lists {
+		envOptions = append(envOptions, cel.Variable(name, cel.ListType(cel.StringType)))
+	}
+
+	return cel.NewEnv(envOptions...)
 }
 
 // getEventDataBinding extracts a data field from event.Data and returns its native type
@@ -183,7 +191,7 @@ func CompileExpression(env *cel.Env, expression string) (cel.Program, error) {
 }
 
 // EvaluateCondition evaluates a compiled CEL condition with timeout enforcement
-func EvaluateCondition(prog cel.Program, event *v1beta1.Event, timeout time.Duration) (bool, error) {
+func EvaluateCondition(prog cel.Program, event *v1beta1.Event, lists map[string][]string, timeout time.Duration) (bool, error) {
 	// Validate event is not nil
 	if event == nil {
 		return false, errors.New("event cannot be nil")
@@ -193,12 +201,20 @@ func EvaluateCondition(prog cel.Program, event *v1beta1.Event, timeout time.Dura
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	// Evaluate with context - will be interrupted if timeout is exceeded
-	result, details, err := prog.ContextEval(ctx, map[string]any{
+	// Build evaluation variables
+	vars := map[string]any{
 		"event":     event,
 		"workload":  event.Workload,
 		"timestamp": event.Timestamp,
-	})
+	}
+
+	// Add list variables
+	for name, values := range lists {
+		vars[name] = values
+	}
+
+	// Evaluate with context - will be interrupted if timeout is exceeded
+	result, details, err := prog.ContextEval(ctx, vars)
 
 	if err != nil {
 		// Check if timeout was exceeded
@@ -224,7 +240,7 @@ func EvaluateCondition(prog cel.Program, event *v1beta1.Event, timeout time.Dura
 }
 
 // EvaluateExpression evaluates a compiled CEL expression with timeout enforcement
-func EvaluateExpression(prog cel.Program, event *v1beta1.Event, timeout time.Duration) (interface{}, error) {
+func EvaluateExpression(prog cel.Program, event *v1beta1.Event, lists map[string][]string, timeout time.Duration) (interface{}, error) {
 	// Validate event is not nil
 	if event == nil {
 		return nil, errors.New("event cannot be nil")
@@ -234,12 +250,20 @@ func EvaluateExpression(prog cel.Program, event *v1beta1.Event, timeout time.Dur
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	// Evaluate with context - will be interrupted if timeout is exceeded
-	result, details, err := prog.ContextEval(ctx, map[string]any{
+	// Build evaluation variables
+	vars := map[string]any{
 		"event":     event,
 		"workload":  event.Workload,
 		"timestamp": event.Timestamp,
-	})
+	}
+
+	// Add list variables
+	for name, values := range lists {
+		vars[name] = values
+	}
+
+	// Evaluate with context - will be interrupted if timeout is exceeded
+	result, details, err := prog.ContextEval(ctx, vars)
 
 	if err != nil {
 		// Check if timeout was exceeded

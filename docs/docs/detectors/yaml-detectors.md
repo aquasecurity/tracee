@@ -433,6 +433,92 @@ Level 3: cryptominer_production_alert
 4. **Document Dependencies**: Clearly state what events are consumed
 5. **Version Carefully**: Breaking changes in base detectors affect all consumers
 
+## Shared Lists
+
+Shared lists allow you to define reusable lists of values (e.g., shell binaries, sensitive paths) that multiple detectors can reference. This avoids duplication and makes maintenance easier.
+
+### List Definition Format
+
+Lists are defined in YAML files placed in a `lists/` subdirectory within your detector directory.
+
+Each list file defines a named list:
+
+```yaml
+name: SHELL_BINARIES
+type: string_list
+values:
+  - /bin/sh
+  - /bin/bash
+  - /bin/dash
+  - /bin/zsh
+  - /usr/bin/sh
+  - /usr/bin/bash
+```
+
+**Naming convention:** List names must be uppercase snake_case (e.g., `SHELL_BINARIES`, `SENSITIVE_PATHS`).
+
+**Type:** Currently, only `string_list` is supported.
+
+### Using Lists in Detectors
+
+Reference list variables in CEL conditions using the `in` operator:
+
+```yaml
+id: yaml-shell-exec
+produced_event:
+  name: shell_execution_detected
+  version: 1.0.0
+  description: Detects execution of shell binaries
+  tags:
+    - execution
+  fields:
+    - name: shell_path
+      type: string
+
+requirements:
+  events:
+    - name: sched_process_exec
+
+conditions:
+  - getData("pathname") in SHELL_BINARIES  # Uses shared list
+
+output:
+  fields:
+    - name: shell_path
+      expression: getData("pathname")
+```
+
+### Complex List Expressions
+
+Lists work with standard CEL operators:
+
+```yaml
+conditions:
+  # Check membership in multiple lists
+  - getData("pathname") in SHELL_BINARIES || getData("pathname") in SCRIPT_INTERPRETERS
+
+  # Combine with other conditions
+  - getData("pathname") in SENSITIVE_PATHS && workload.container.id != ""
+
+  # Negate membership
+  - !(getData("pathname") in ALLOWED_BINARIES)
+```
+
+### List Loading Behavior
+
+- Lists are loaded once at startup from `{detector-dir}/lists/` subdirectory
+- Lists are shared across all detectors in the same directory
+- Lists are optional - detectors without lists work as before
+- Invalid list files prevent all detectors in that directory from loading
+- Duplicate list names are not allowed
+
+### Benefits
+
+1. **No duplication**: Define common lists once, use in multiple detectors
+2. **Easy maintenance**: Update lists in one place
+3. **Zero runtime overhead**: Lists are compiled into the CEL environment at load time
+4. **Type safety**: Undefined list references are caught at compile time
+
 ## Deployment
 
 ### Default Search Path
