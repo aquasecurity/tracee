@@ -8071,7 +8071,7 @@ This captured bytecode represents the BPF program as it was loaded by the loadin
 It is basically the BPF section of the compiled ELF that loads the BPF program, which contains the program instructions themselves.
 You can disassemble the bytecode with the help of <code>binutils-bpf</code> package and the following command line:
 <code>objdump -D -b binary -m bpf &lt;path&gt;</code></p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
+<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee \
    --output none \
    --scope comm=bash \
    --scope follow \
