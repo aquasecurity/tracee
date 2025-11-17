@@ -340,7 +340,8 @@ func PoliciesFromPaths(paths []string) ([]k8s.PolicyInterface, error) {
 
 			// TODO: support json
 			if strings.HasSuffix(file.Name(), ".yaml") ||
-				strings.HasSuffix(file.Name(), ".yml") {
+				strings.HasSuffix(file.Name(), ".yml") ||
+				strings.HasSuffix(file.Name(), ".json") {
 				policy, err := getPoliciesFromFile(filepath.Join(path, file.Name()))
 				if err != nil {
 					return nil, err
