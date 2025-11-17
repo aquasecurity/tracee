@@ -78,7 +78,7 @@ func getBootTimeInJiffies() int64 {
 // Boot time functions
 //
 
-var initTimeOnce sync.Once  // Set reference times times once
+var initTimeOnce sync.Once  // Set reference times once
 var startTime int64         // Process start time (in BPF clock base)
 var bootTime int64          // Boot time using BPF clock base (for backward compatibility)
 var bootTimeBoottime int64  // Boot time using BOOTTIME clock (for procfs conversion)
