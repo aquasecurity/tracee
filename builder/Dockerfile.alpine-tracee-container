@@ -16,7 +16,7 @@ ARG GO_VERSION=1.24.7
 # tracee-base
 #
 
-FROM alpine:3.21@sha256:b6a6be0ff92ab6db8acd94f5d1b7a6c2f0f5d10ce3c24af348d333ac6da80685 AS tracee-base
+FROM alpine:3.21.5@sha256:5405e8f36ce1878720f71217d664aa3dea32e5e5df11acbf07fc78ef5661465b AS tracee-base
 LABEL AS=tracee-base
 USER root
 
