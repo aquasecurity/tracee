@@ -34,11 +34,12 @@ type YAMLDetector struct {
 	celEnv          *cel.Env            // CEL environment (created once)
 	conditions      []cel.Program       // Compiled condition expressions
 	fieldExtractors []celFieldExtractor // Compiled field extractors
+	lists           map[string][]string // Shared list variables for CEL
 
 	// Detector runtime fields
 	logger  detection.Logger
 	source  string        // YAML file path for debugging
-	timeout time.Duration // CEL evaluation timeout (default 100ms)
+	timeout time.Duration // CEL evaluation timeout (default 5ms)
 }
 
 // celFieldExtractor holds compiled CEL program for field extraction
@@ -49,7 +50,8 @@ type celFieldExtractor struct {
 }
 
 // NewDetector creates a new YAML detector from a parsed and validated specification
-func NewDetector(def *detection.DetectorDefinition, spec *YAMLDetectorSpec, source string) (*YAMLDetector, error) {
+// lists: optional map of shared list variables to expose in CEL environment
+func NewDetector(def *detection.DetectorDefinition, spec *YAMLDetectorSpec, lists map[string][]string, source string) (*YAMLDetector, error) {
 	// Extract fields from definition to avoid copying protobuf structs with locks
 	// Store EventDefinition fields individually to avoid copying the struct
 	detector := &YAMLDetector{
@@ -62,13 +64,14 @@ func NewDetector(def *detection.DetectorDefinition, spec *YAMLDetectorSpec, sour
 		requirements:     def.Requirements,
 		threatMetadata:   def.ThreatMetadata,
 		autoPopulate:     def.AutoPopulate,
+		lists:            lists,
 		source:           source,
 		timeout:          5 * time.Millisecond, // Default timeout: 5x the "Critical" (>1ms) metric threshold
 	}
 
-	// Create CEL environment
+	// Create CEL environment with shared lists
 	var err error
-	detector.celEnv, err = createCELEnvironment()
+	detector.celEnv, err = createCELEnvironment(lists)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CEL environment: %w", err)
 	}
@@ -157,7 +160,7 @@ func (d *YAMLDetector) OnEvent(_ context.Context, event *v1beta1.Event) (outputs
 
 	// Evaluate CEL conditions (all must be true)
 	for i, condProg := range d.conditions {
-		result, evalErr := EvaluateCondition(condProg, event, d.timeout)
+		result, evalErr := EvaluateCondition(condProg, event, d.lists, d.timeout)
 		if evalErr != nil {
 			if d.logger != nil {
 				d.logger.Warnw("CEL condition evaluation error, treating as false",
@@ -180,7 +183,7 @@ func (d *YAMLDetector) OnEvent(_ context.Context, event *v1beta1.Event) (outputs
 
 	for _, extractor := range d.fieldExtractors {
 		// Evaluate CEL expression
-		value, evalErr := EvaluateExpression(extractor.program, event, d.timeout)
+		value, evalErr := EvaluateExpression(extractor.program, event, d.lists, d.timeout)
 		if evalErr != nil {
 			if !extractor.optional {
 				if d.logger != nil {
@@ -273,17 +276,23 @@ func convertToEventValue(name string, value interface{}) (*v1beta1.EventValue, e
 	}
 }
 
-// LoadFromFile loads a YAML detector from a file
-// This is a convenience function that combines parsing, validation, and detector creation
+// LoadFromFile loads a YAML detector from a file (convenience function for testing)
+// For production use, call LoadFromDirectory which handles shared lists
 func LoadFromFile(filePath string) (*YAMLDetector, error) {
-	// Parse and validate the YAML file
-	def, spec, err := ParseAndValidate(filePath)
+	// No shared lists when loading individual files
+	return loadFromFile(filePath, nil)
+}
+
+// loadFromFile loads a YAML detector from a file with optional shared lists
+func loadFromFile(filePath string, lists map[string][]string) (*YAMLDetector, error) {
+	// Parse and validate the YAML file (pass lists for validation)
+	def, spec, err := ParseAndValidate(filePath, lists)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load YAML detector from %s: %w", filePath, err)
 	}
 
-	// Create the detector
-	detector, err := NewDetector(def, spec, filePath)
+	// Create the detector with shared lists
+	detector, err := NewDetector(def, spec, lists, filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create detector from %s: %w", filePath, err)
 	}
