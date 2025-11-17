@@ -12,7 +12,7 @@ import (
 
 // Test that the simplified getEventData("field") syntax works via macro
 func TestGetDataMacro(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Test expression: getEventData("pathname")
@@ -37,7 +37,7 @@ func TestGetDataMacro(t *testing.T) {
 
 // Test hasData macro
 func TestHasDataMacro(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	prog, err := CompileExpression(env, `hasData("pathname")`)
@@ -65,7 +65,7 @@ func TestHasDataMacro(t *testing.T) {
 
 // Test getEventDataInt macro
 func TestGetDataIntMacro(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	prog, err := CompileExpression(env, `getEventData("uid")`)
@@ -85,7 +85,7 @@ func TestGetDataIntMacro(t *testing.T) {
 
 // Test getEventDataUInt macro
 func TestGetDataUIntMacro(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	prog, err := CompileExpression(env, `getEventData("pid")`)
@@ -105,7 +105,7 @@ func TestGetDataUIntMacro(t *testing.T) {
 
 // Test getEventData with numeric comparisons (dynamic typing in action)
 func TestGetDataNumericComparison(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Condition: getEventData("pid") > 1000
@@ -126,7 +126,7 @@ func TestGetDataNumericComparison(t *testing.T) {
 
 // Test that both unary and binary forms work (macro expands unary to binary)
 func TestGetDataBothCallForms(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Binary form: getEventData(event, "pathname")
@@ -147,7 +147,7 @@ func TestGetDataBothCallForms(t *testing.T) {
 
 // Test macro in complex expressions
 func TestGetDataMacroInExpression(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Complex expression: getEventData("pathname").startsWith("/etc")
@@ -168,7 +168,7 @@ func TestGetDataMacroInExpression(t *testing.T) {
 
 // Test macro with conditions
 func TestGetDataMacroInCondition(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Condition: hasData("pathname") && getEventData("pathname") == "/etc/shadow"
@@ -189,7 +189,7 @@ func TestGetDataMacroInCondition(t *testing.T) {
 
 // Test top-level workload variable (no "event." prefix)
 func TestWorkloadTopLevelVariable(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Expression: workload.container.id (no "event." prefix!)
@@ -212,7 +212,7 @@ func TestWorkloadTopLevelVariable(t *testing.T) {
 
 // Test workload condition
 func TestWorkloadInCondition(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Condition: workload.container.id != ""
@@ -235,7 +235,7 @@ func TestWorkloadInCondition(t *testing.T) {
 
 // Test combined: simplified getEventData + top-level workload
 func TestCombinedSimplifiedSyntax(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Condition: hasData("pathname") && workload.container.id != ""
@@ -261,7 +261,7 @@ func TestCombinedSimplifiedSyntax(t *testing.T) {
 
 // Test workload.process.pid access
 func TestWorkloadProcessAccess(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Expression: workload.process.pid
@@ -298,7 +298,7 @@ func TestWorkloadProcessAccess(t *testing.T) {
 
 // Test that both forms work: workload.* and event.workload.*
 func TestEventPrefixOptional(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Both forms work: event.workload.container.id
@@ -327,7 +327,7 @@ func TestListVariables(t *testing.T) {
 		"SENSITIVE_PATHS": {"/etc/passwd", "/etc/shadow"},
 	}
 
-	env, err := createCELEnvironment(lists)
+	env, err := createCELEnvironment(lists, nil)
 	require.NoError(t, err, "Failed to create CEL environment with lists")
 
 	// Test 1: List variable exists and is accessible
@@ -355,7 +355,7 @@ func TestListVariableInOperator(t *testing.T) {
 		"SHELL_BINARIES": {"/bin/sh", "/bin/bash", "/usr/bin/zsh"},
 	}
 
-	env, err := createCELEnvironment(lists)
+	env, err := createCELEnvironment(lists, nil)
 	require.NoError(t, err, "Failed to create CEL environment with lists")
 
 	// Test condition: getEventData("pathname") in SHELL_BINARIES
@@ -389,7 +389,7 @@ func TestListVariableInOperator(t *testing.T) {
 
 // Test that undefined list variables produce compilation error
 func TestUndefinedListVariable(t *testing.T) {
-	env, err := createCELEnvironment(nil)
+	env, err := createCELEnvironment(nil, nil)
 	require.NoError(t, err, "Failed to create CEL environment")
 
 	// Try to compile expression with undefined list variable
@@ -405,7 +405,7 @@ func TestListVariableComplexExpressions(t *testing.T) {
 		"SENSITIVE_PATHS": {"/etc/passwd", "/etc/shadow"},
 	}
 
-	env, err := createCELEnvironment(lists)
+	env, err := createCELEnvironment(lists, nil)
 	require.NoError(t, err, "Failed to create CEL environment with lists")
 
 	// Test: getEventData("pathname") in SHELL_BINARIES || getEventData("pathname") in SENSITIVE_PATHS
