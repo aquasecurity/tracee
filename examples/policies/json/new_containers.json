@@ -1,0 +1,23 @@
+{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "new-containers",
+    "annotations": {
+      "description": "traces events container_created and security_file_open only for new container"
+    }
+  },
+  "spec": {
+    "scope": [
+      "container=new"
+    ],
+    "rules": [
+      {
+        "event": "container_create"
+      },
+      {
+        "event": "security_file_open"
+      }
+    ]
+  }
+}

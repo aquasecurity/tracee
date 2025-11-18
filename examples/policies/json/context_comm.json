@@ -1,0 +1,23 @@
+{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "context-comm",
+    "annotations": {
+      "description": "traces openat done by ls"
+    }
+  },
+  "spec": {
+    "scope": [
+      "global"
+    ],
+    "rules": [
+      {
+        "event": "openat",
+        "filters": [
+          "comm=ls"
+        ]
+      }
+    ]
+  }
+}

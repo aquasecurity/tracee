@@ -1,0 +1,23 @@
+{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "openat-data-pathname",
+    "annotations": {
+      "description": "traces openat under /tmp/*"
+    }
+  },
+  "spec": {
+    "scope": [
+      "global"
+    ],
+    "rules": [
+      {
+        "event": "openat",
+        "filters": [
+          "data.pathname=/tmp*"
+        ]
+      }
+    ]
+  }
+}
