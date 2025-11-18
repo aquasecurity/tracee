@@ -164,7 +164,15 @@ func parseScopeFilters(p *policy.Policy, scopeFlags []scopeFlag) error {
 				if err := p.ContFilter.Parse(scopeFlag.scopeName); err != nil {
 					return err
 				}
-				if err := p.NewContFilter.Parse("!new"); err != nil {
+				if err := p.NewContFilter.Parse("not-new"); err != nil {
+					return err
+				}
+			case scopeFlag.operatorAndValues == "=started":
+				// Container started state filter: container=started (only started containers)
+				if err := p.ContFilter.Parse(scopeFlag.scopeName); err != nil {
+					return err
+				}
+				if err := p.ContStartedFilter.Parse("started"); err != nil {
 					return err
 				}
 			case scopeFlag.operator == "=":
@@ -205,7 +213,7 @@ func parseScopeFilters(p *policy.Policy, scopeFlags []scopeFlag) error {
 					return err
 				}
 			case "!=new":
-				if err := p.NewPidFilter.Parse("!new"); err != nil {
+				if err := p.NewPidFilter.Parse("not-new"); err != nil {
 					return err
 				}
 			default:

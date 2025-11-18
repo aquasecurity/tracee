@@ -1,0 +1,34 @@
+id: yaml-shell-exec
+produced_event:
+  name: shell_execution_detected
+  version: 1.0.0
+  description: Detects execution of shell binaries
+  tags:
+    - execution
+    - shell
+  fields:
+    - name: shell_path
+      type: string
+    - name: pid
+      type: uint32
+
+requirements:
+  min_tracee_version: 0.0.0
+  events:
+    - name: sched_process_exec
+      dependency: required
+
+conditions:
+  - getData("pathname") in SHELL_BINARIES  # Uses shared list from lists/shell_binaries.yaml
+
+auto_populate:
+  detected_from: true
+  process_ancestry: true
+
+output:
+  fields:
+    - name: shell_path
+      expression: getData("pathname")
+    - name: pid
+      expression: workload.process.pid
+
