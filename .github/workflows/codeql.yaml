@@ -6,12 +6,12 @@ on:
   push:
     branches:
       - "main"
-      - "release-v*.*.*"
+      - "release-v*.*"
 
   pull_request:
     branches:
       - "main"
-      - "release-v*.*.*"
+      - "release-v*.*"
 
 jobs:
   analyze:
