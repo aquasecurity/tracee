@@ -274,6 +274,19 @@ conditions:
 | `getData("field")` | Extract data field | `getData("pathname")`, `getData("pid")` |
 | `hasData("field")` | Check if data field exists | `hasData("pathname")` |
 
+**String Utility Functions:**
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `split(str, delimiter)` | Split string into list | `split("a,b,c", ",")` → `["a", "b", "c"]` |
+| `join(list, delimiter)` | Join list into string | `join(["a", "b"], ",")` → `"a,b"` |
+| `trim(str)` | Remove leading/trailing whitespace | `trim("  hello  ")` → `"hello"` |
+| `replace(str, old, new)` | Replace all occurrences | `replace("foo bar", "bar", "baz")` → `"foo baz"` |
+| `upper(str)` | Convert to uppercase | `upper("hello")` → `"HELLO"` |
+| `lower(str)` | Convert to lowercase | `lower("HELLO")` → `"hello"` |
+| `basename(path)` | Get filename from path | `basename("/path/to/file.txt")` → `"file.txt"` |
+| `dirname(path)` | Get directory from path | `dirname("/path/to/file.txt")` → `"/path/to"` |
+
 **Performance:**
 - Conditions are evaluated with 5ms timeout by default
 - Failed evaluations are logged and treated as `false`
@@ -298,7 +311,12 @@ output:
 | Extract data field | `getData("pathname")` |
 | Extract workload field | `workload.container.id` |
 | Conditional extraction | `workload.container.id != "" ? workload.container.id : "unknown"` |
-| String manipulation | `getData("pathname").split("/").last()` |
+| Extract filename | `basename(getData("pathname"))` |
+| Extract directory | `dirname(getData("pathname"))` |
+| Split path components | `split(getData("pathname"), "/")` |
+| Join path components | `join(["usr", "bin", "nc"], "/")` |
+| Normalize case | `lower(getData("comm"))` |
+| Replace substring | `replace(getData("pathname"), "/tmp", "/var/tmp")` |
 | Combine fields | `getData("comm") + ":" + string(getData("pid"))` |
 
 **Field Semantics:**
