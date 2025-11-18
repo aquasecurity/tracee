@@ -1,4 +1,4 @@
-package cobra
+package flags
 
 import (
 	"log"

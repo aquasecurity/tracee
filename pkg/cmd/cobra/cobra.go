@@ -81,7 +81,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	// Logger initialization must be the first thing to be done,
 	// so all other packages can use
 
-	logFlags, err := GetFlagsFromViper("log")
+	logFlags, err := flags.GetFlagsFromViper("log")
 	if err != nil {
 		return runner, err
 	}
@@ -127,7 +127,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Container command line flags
 
-	containerFlags, err := GetFlagsFromViper(flags.ContainersFlag)
+	containerFlags, err := flags.GetFlagsFromViper(flags.ContainersFlag)
 	if err != nil {
 		return runner, err
 	}
@@ -143,7 +143,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Process Tree command line flags
 
-	procTreeFlags, err := GetFlagsFromViper("proctree")
+	procTreeFlags, err := flags.GetFlagsFromViper("proctree")
 	if err != nil {
 		return runner, err
 	}
@@ -156,7 +156,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// DNS Cache command line flags
 
-	dnsCacheFlags, err := GetFlagsFromViper("dnscache")
+	dnsCacheFlags, err := flags.GetFlagsFromViper("dnscache")
 	if err != nil {
 		return runner, err
 	}
@@ -183,7 +183,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Capabilities command line flags
 
-	capFlags, err := GetFlagsFromViper("capabilities")
+	capFlags, err := flags.GetFlagsFromViper("capabilities")
 	if err != nil {
 		return runner, err
 	}
@@ -255,7 +255,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Output command line flags
 
-	outputFlags, err := GetFlagsFromViper("output")
+	outputFlags, err := flags.GetFlagsFromViper("output")
 	if err != nil {
 		return runner, err
 	}
@@ -325,7 +325,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Prepare the server
 
-	serverFlag, err := GetFlagsFromViper("server")
+	serverFlag, err := flags.GetFlagsFromViper("server")
 	if err != nil {
 		return runner, err
 	}
