@@ -60,34 +60,34 @@ auto_populate:
 output:
   fields:
     - name: pathname
-      expression: getData("pathname")
+      expression: getEventData("pathname")
     - name: binary_name
-      expression: getData("comm")
+      expression: getEventData("comm")
 ```
 
 ### Simplified CEL Syntax
 
 #### 1. Data Field Access
 
-The `getData()` function extracts event data fields:
+The `getEventData()` function extracts event data fields:
 
 ```yaml
 output:
   fields:
     - name: binary_path
-      expression: getData("pathname")
+      expression: getEventData("pathname")
     - name: user_id
-      expression: getData("uid")
+      expression: getEventData("uid")
     - name: process_id
-      expression: getData("pid")
+      expression: getEventData("pid")
 ```
 
 **Works with any type:**
 ```yaml
 conditions:
-  - getData("pathname").startsWith("/tmp")    # String operations
-  - getData("pid") > 1000                     # Numeric comparisons
-  - getData("uid") == 0                       # Any type supported
+  - getEventData("pathname").startsWith("/tmp")    # String operations
+  - getEventData("pid") > 1000                     # Numeric comparisons
+  - getEventData("uid") == 0                       # Any type supported
 ```
 
 #### 2. Top-Level Variables
@@ -115,16 +115,16 @@ output:
 ```yaml
 conditions:
   - hasData("pathname")
-  - getData("pathname").startsWith("/tmp")
-  - getData("uid") == 0
+  - getEventData("pathname").startsWith("/tmp")
+  - getEventData("uid") == 0
   - workload.container.id != ""
 
 output:
   fields:
     - name: binary
-      expression: getData("pathname")
+      expression: getEventData("pathname")
     - name: uid
-      expression: getData("uid")
+      expression: getEventData("uid")
     - name: container
       expression: workload.container.id
 ```
@@ -256,8 +256,8 @@ YAML detectors support dynamic runtime conditions using Common Expression Langua
 ```yaml
 conditions:
   - hasData("pathname")  # Check if field exists
-  - getData("pathname").startsWith("/tmp")  # String operations
-  - getData("uid") > 1000  # Numeric comparisons
+  - getEventData("pathname").startsWith("/tmp")  # String operations
+  - getEventData("uid") > 1000  # Numeric comparisons
   - workload.container.id != ""  # Check container context
 ```
 
@@ -273,8 +273,21 @@ conditions:
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `getData("field")` | Extract data field | `getData("pathname")`, `getData("pid")` |
+| `getEventData("field")` | Extract data field | `getEventData("pathname")`, `getEventData("pid")` |
 | `hasData("field")` | Check if data field exists | `hasData("pathname")` |
+
+**String Utility Functions:**
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `split(str, delimiter)` | Split string into list | `split("a,b,c", ",")` → `["a", "b", "c"]` |
+| `join(list, delimiter)` | Join list into string | `join(["a", "b"], ",")` → `"a,b"` |
+| `trim(str)` | Remove leading/trailing whitespace | `trim("  hello  ")` → `"hello"` |
+| `replace(str, old, new)` | Replace all occurrences | `replace("foo bar", "bar", "baz")` → `"foo baz"` |
+| `upper(str)` | Convert to uppercase | `upper("hello")` → `"HELLO"` |
+| `lower(str)` | Convert to lowercase | `lower("HELLO")` → `"hello"` |
+| `basename(path)` | Get filename from path | `basename("/path/to/file.txt")` → `"file.txt"` |
+| `dirname(path)` | Get directory from path | `dirname("/path/to/file.txt")` → `"/path/to"` |
 
 **Performance:**
 - Conditions are evaluated with 5ms timeout by default
@@ -289,7 +302,7 @@ Extract runtime values from input events to populate output event fields using C
 output:
   fields:
     - name: output_field_name     # Name in output event
-      expression: getData("pathname")  # CEL expression (simplified syntax!)
+      expression: getEventData("pathname")  # CEL expression (simplified syntax!)
       optional: false              # Whether field is optional (default: false)
 ```
 
@@ -297,11 +310,16 @@ output:
 
 | Use Case | Expression |
 |----------|------------|
-| Extract data field | `getData("pathname")` |
+| Extract data field | `getEventData("pathname")` |
 | Extract workload field | `workload.container.id` |
 | Conditional extraction | `workload.container.id != "" ? workload.container.id : "unknown"` |
-| String manipulation | `getData("pathname").split("/").last()` |
-| Combine fields | `getData("comm") + ":" + string(getData("pid"))` |
+| Extract filename | `basename(getEventData("pathname"))` |
+| Extract directory | `dirname(getEventData("pathname"))` |
+| Split path components | `split(getEventData("pathname"), "/")` |
+| Join path components | `join(["usr", "bin", "nc"], "/")` |
+| Normalize case | `lower(getEventData("comm"))` |
+| Replace substring | `replace(getEventData("pathname"), "/tmp", "/var/tmp")` |
+| Combine fields | `getEventData("comm") + ":" + string(getEventData("pid"))` |
 
 **Field Semantics:**
 - **name**: Required, the output field name
@@ -339,7 +357,7 @@ requirements:
 output:
   fields:
     - name: binary_path
-      expression: getData("pathname")
+      expression: getEventData("pathname")
 ```
 
 **Composed Detector** (adds context):
@@ -371,7 +389,7 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: getData("binary_path")  # From base detector
+      expression: getEventData("binary_path")  # From base detector
     - name: container_id
       expression: workload.container.id
 ```
@@ -480,12 +498,12 @@ requirements:
     - name: sched_process_exec
 
 conditions:
-  - getData("pathname") in SHELL_BINARIES  # Uses shared list
+  - getEventData("pathname") in SHELL_BINARIES  # Uses shared list
 
 output:
   fields:
     - name: shell_path
-      expression: getData("pathname")
+      expression: getEventData("pathname")
 ```
 
 ### Complex List Expressions
@@ -495,13 +513,13 @@ Lists work with standard CEL operators:
 ```yaml
 conditions:
   # Check membership in multiple lists
-  - getData("pathname") in SHELL_BINARIES || getData("pathname") in SCRIPT_INTERPRETERS
+  - getEventData("pathname") in SHELL_BINARIES || getEventData("pathname") in SCRIPT_INTERPRETERS
 
   # Combine with other conditions
-  - getData("pathname") in SENSITIVE_PATHS && workload.container.id != ""
+  - getEventData("pathname") in SENSITIVE_PATHS && workload.container.id != ""
 
   # Negate membership
-  - !(getData("pathname") in ALLOWED_BINARIES)
+  - !(getEventData("pathname") in ALLOWED_BINARIES)
 ```
 
 ### List Loading Behavior
@@ -665,7 +683,7 @@ Resolve kernel addresses and symbol names.
 ```yaml
 conditions:
   # Check if address resolves to a known function
-  - kernel.resolveSymbol(getData("addr")).exists(s, s.name == "sys_execve")
+  - kernel.resolveSymbol(getEventData("addr")).exists(s, s.name == "sys_execve")
 ```
 
 Returns a list of symbol objects (multiple if aliases exist):
@@ -680,7 +698,7 @@ Returns empty list if address cannot be resolved.
 ```yaml
 conditions:
   # Check if hooked address differs from expected
-  - getData("hooked_addr") != kernel.getSymbolAddress("sys_execve")
+  - getEventData("hooked_addr") != kernel.getSymbolAddress("sys_execve")
   
   # Verify symbol exists
   - kernel.getSymbolAddress("sys_read") > 0u
@@ -697,7 +715,7 @@ Query cached DNS responses.
 ```yaml
 conditions:
   # Check if domain resolves to suspicious IP
-  - dns.getResponse(getData("domain")).ips.exists(ip, ip.startsWith("192.168."))
+  - dns.getResponse(getEventData("domain")).ips.exists(ip, ip.startsWith("192.168."))
   
   # Check number of resolved IPs
   - dns.getResponse("example.com").ips.size() > 10
@@ -719,7 +737,7 @@ Map between syscall IDs and names (architecture-specific).
 ```yaml
 conditions:
   # Check if syscall ID is execve
-  - syscall.getName(getData("syscall_id")) == "execve"
+  - syscall.getName(getEventData("syscall_id")) == "execve"
   
   # Check for specific syscall
   - syscall.getName(59) in ["execve", "execveat"]
@@ -732,8 +750,8 @@ Returns the syscall name as a string, or empty string `""` if not found.
 ```yaml
 conditions:
   # Check if event is for specific syscalls
-  - getData("syscall_id") == syscall.getId("execve") || 
-    getData("syscall_id") == syscall.getId("execveat")
+  - getEventData("syscall_id") == syscall.getId("execve") || 
+    getEventData("syscall_id") == syscall.getId("execveat")
 ```
 
 Returns the syscall ID as `int`, or `-1` if not found.
@@ -827,10 +845,10 @@ requirements:
 
 conditions:
   # Check if hooked address doesn't match expected symbol
-  - getData("hooked_addr") != kernel.getSymbolAddress(getData("syscall_name"))
+  - getEventData("hooked_addr") != kernel.getSymbolAddress(getEventData("syscall_name"))
   
   # Verify it's a critical syscall
-  - getData("syscall_name") in ["sys_read", "sys_write", "sys_open", "sys_execve"]
+  - getEventData("syscall_name") in ["sys_read", "sys_write", "sys_open", "sys_execve"]
 ```
 
 ## Deployment
@@ -930,9 +948,9 @@ Only extract fields that provide investigative value:
 output:
   fields:
     - name: source_ip      # Useful for investigation
-      expression: getData("src_ip")
+      expression: getEventData("src_ip")
     - name: target_user    # Useful for investigation
-      expression: getData("username")
+      expression: getEventData("username")
 ```
 
 ### 6. Set Appropriate Severity
