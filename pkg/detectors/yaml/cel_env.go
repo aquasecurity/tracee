@@ -83,6 +83,10 @@ func createCELEnvironment(lists map[string][]string, registry datastores.Registr
 	datastoreOptions := registerDatastoreFunctions(registry)
 	envOptions = append(envOptions, datastoreOptions...)
 
+	// Register string utility functions
+	stringOptions := registerStringFunctions()
+	envOptions = append(envOptions, stringOptions...)
+
 	return cel.NewEnv(envOptions...)
 }
 
