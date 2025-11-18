@@ -1,0 +1,22 @@
+name: Setup Tracee (Ubuntu)
+description: |
+  Setup Tracee development environment on Ubuntu.
+  Installs Git, fixes Git ownership, and installs dependencies.
+  Note: Checkout must be done before calling this action.
+runs:
+  using: composite
+  steps:
+    - name: Install Git
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get install -y --no-install-recommends git-core ca-certificates
+        update-ca-certificates
+      shell: bash
+    - name: Fix Git ownership
+      run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      shell: bash
+    - name: Install Dependencies
+      run: ./scripts/installation/install-deps-ubuntu.sh
+      shell: bash
+

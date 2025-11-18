@@ -1,0 +1,37 @@
+name: Generate Kernel Test Matrix
+description: |
+  Generate kernel test matrix from JSON data file.
+  Adds timestamp suffix for unique runner identification.
+inputs:
+  data-file-path:
+    description: 'Path to the kernel matrix JSON data file'
+    required: false
+    default: '.github/data/kernel-test-matrix.json'
+outputs:
+  matrix:
+    description: 'Generated JSON matrix for GitHub Actions'
+    value: ${{ steps.generate.outputs.matrix }}
+runs:
+  using: composite
+  steps:
+    - name: Generate Matrix
+      id: generate
+      run: |
+        DATA_FILE="${{ inputs.data-file-path }}"
+        
+        if [ ! -f "$DATA_FILE" ]; then
+          echo "Error: Data file not found at $DATA_FILE"
+          exit 1
+        fi
+        
+        # Read the JSON file and add timestamp suffix to each entry
+        timestamp=$(date +%s)
+        matrix=$(jq --arg ts "$timestamp" -c '[.[] | . + {sufix: $ts, job_name: .name}]' "$DATA_FILE")
+        
+        echo "Generated matrix (pretty printed for display):"
+        echo "$matrix" | jq .
+        
+        # Output the matrix as a single line (compact JSON)
+        echo "matrix=$matrix" >> $GITHUB_OUTPUT
+      shell: bash
+
