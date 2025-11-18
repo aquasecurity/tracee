@@ -101,12 +101,8 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
-      - name: Fix Git ownership
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-        shell: sh
-      - name: Install Dependencies
-        run: ./scripts/installation/install-deps-alpine.sh
-        shell: sh
+      - name: Setup Tracee
+        uses: ./.github/actions/setup-tracee-alpine
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then
@@ -147,12 +143,8 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
-      - name: Fix Git ownership
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-        shell: sh
-      - name: Install Dependencies
-        run: ./scripts/installation/install-deps-alpine.sh
-        shell: sh
+      - name: Setup Tracee
+        uses: ./.github/actions/setup-tracee-alpine
       - name: Build Tracee Benchmark Tool
         run: |
           make clean
@@ -244,12 +236,8 @@ jobs:
         with:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
-      - name: Fix Git ownership
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-        shell: sh
-      - name: Install Dependencies
-        run: ./scripts/installation/install-deps-alpine.sh
-        shell: sh
+      - name: Setup Tracee
+        uses: ./.github/actions/setup-tracee-alpine
       - name: Test Types Module
         if: needs.detect-changes.outputs.types == 'true'
         uses: ./.github/actions/test-go-module
@@ -292,19 +280,16 @@ jobs:
         run: |
           sed -i "/^ID=/s/alpine/NotpineForGHA/" /etc/os-release
           apk add nodejs --update-cache
-          mkdir /opt/bin
+          mkdir -p /opt/bin
           ln -s /usr/bin/node /opt/bin/node
+        shell: sh
       - name: Checkout Code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
-      - name: Fix Git ownership
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-        shell: sh
-      - name: Install Dependencies
-        run: ./scripts/installation/install-deps-alpine.sh
-        shell: sh
+      - name: Setup Tracee
+        uses: ./.github/actions/setup-tracee-alpine
       - name: Test Types Module
         if: needs.detect-changes.outputs.types == 'true'
         uses: ./.github/actions/test-go-module
@@ -345,27 +330,12 @@ jobs:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0  # Fetch full history for codecov base comparison
-      - name: Fix Git ownership
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-        shell: sh
-      - name: Install Dependencies
-        run: ./scripts/installation/install-deps-alpine.sh
-        shell: sh
-      - name: Run Full Unit Test Suite
-        run: |
-          # Run comprehensive test suite for all modules (main + types + common + api)
-          make test-unit
-      - name: Upload Unit Test Coverage
-        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+      - name: Setup Tracee
+        uses: ./.github/actions/setup-tracee-alpine
+      - name: Run Unit Tests
+        uses: ./.github/actions/run-unit-tests
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.txt
-          flags: unit
-          name: unit-tests
-          fail_ci_if_error: false
-      - name: Run Scripts Unit Tests
-        run: |
-          make run-scripts-test-unit
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
   unit-tests-arm64:
     name: Full Unit Tests (ARM64)
@@ -389,34 +359,21 @@ jobs:
         run: |
           sed -i "/^ID=/s/alpine/NotpineForGHA/" /etc/os-release
           apk add nodejs --update-cache
-          mkdir /opt/bin
+          mkdir -p /opt/bin
           ln -s /usr/bin/node /opt/bin/node
+        shell: sh
       - name: Checkout Code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0  # Fetch full history for codecov base comparison
-      - name: Fix Git ownership
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-        shell: sh
-      - name: Install Dependencies
-        run: ./scripts/installation/install-deps-alpine.sh
-        shell: sh
+      - name: Setup Tracee
+        uses: ./.github/actions/setup-tracee-alpine
       - name: Run Unit Tests
-        run: |
-          make test-unit
-      - name: Upload Unit Test Coverage
-        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        uses: ./.github/actions/run-unit-tests
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.txt
-          flags: unit
-          name: unit-tests
-          fail_ci_if_error: false
-      - name: Run Scripts Unit Tests
-        run: |
-          make run-scripts-test-unit
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
   #
   # INTEGRATION TESTS
   #
@@ -445,19 +402,12 @@ jobs:
           fetch-depth: 0  # Fetch full history for codecov base comparison
       - name: Fix Git ownership
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
-      - name: Install Dependencies
-        run: ./scripts/installation/install-deps-ubuntu.sh
+      - name: Setup Tracee
+        uses: ./.github/actions/setup-tracee-ubuntu
       - name: Run Integration Tests
-        run: |
-          env "PATH=$PATH" make test-integration
-      - name: Upload Integration Test Coverage
-        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        uses: ./.github/actions/run-integration-tests
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./integration-coverage.txt
-          flags: integration
-          name: integration-tests
-          fail_ci_if_error: false
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
   integration-tests-arm64:
     name: Integration Tests (ARM64)
     needs:
@@ -483,19 +433,12 @@ jobs:
           fetch-depth: 0  # Fetch full history for codecov base comparison
       - name: Fix Git ownership
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
-      - name: Install Dependencies
-        run: ./scripts/installation/install-deps-ubuntu.sh
+      - name: Setup Tracee
+        uses: ./.github/actions/setup-tracee-ubuntu
       - name: Run Integration Tests
-        run: |
-          env "PATH=$PATH" make test-integration
-      - name: Upload Integration Test Coverage
-        uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+        uses: ./.github/actions/run-integration-tests
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./integration-coverage.txt
-          flags: integration
-          name: integration-tests
-          fail_ci_if_error: false
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
   #
   # PERFORMANCE TESTS
   #
@@ -515,12 +458,8 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
-      - name: Fix Git ownership
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-        shell: sh
-      - name: Install Dependencies
-        run: ./scripts/installation/install-deps-alpine.sh
-        shell: sh
+      - name: Setup Tracee
+        uses: ./.github/actions/setup-tracee-alpine
       - name: Run Performance Tests
         run: |
           make test-performance
@@ -534,66 +473,15 @@ jobs:
     runs-on: ubuntu-24.04
     if: needs.detect-changes.outputs.main == 'true'
     outputs:
-      matrix01: ${{ steps.set-matrix.outputs.matrix01 }}
+      matrix01: ${{ steps.generate.outputs.matrix }}
     steps:
-      - name: Set Matrix
-        id: set-matrix
-        run: |
-          declare -A job_names=(
-              ["GKE 5.4"]="0013845506cbdf2ca x86_64"
-              ["GKE 5.10"]="049b1b3a4a5fdf9fd x86_64"
-              ["GKE 5.15 x86_64"]="01f6d4f80f256ffe4 x86_64"
-              ["GKE 5.15 aarch64"]="079f308677600eebf aarch64"
-              ["AMZN2 5.10 x86_64"]="05d03d50b6008ede7 x86_64"
-              ["AMZN2 5.10 aarch64"]="05e46d0a87c96bf69 aarch64"
-              ["RHEL8 4.18 x86_64"]="0e6e8bf2181db9d65 x86_64"
-              ["Focal 5.4 x86_64"]="0c75089aa342ffa26 x86_64"
-              ["Focal 5.13 x86_64"]="094d5310a281c8679 x86_64"
-              ["Focal 5.13 aarch64"]="08f88e2a2bd1b72a7 aarch64"
-              ["Jammy 5.15 x86_64"]="0d01de8f7b26afe02 x86_64"
-              ["Jammy 5.15 aarch64"]="08e91aa07134e6a36 aarch64"
-              ["Jammy 5.19 x86_64"]="02691308713b4cec2 x86_64"
-              ["Jammy 5.19 aarch64"]="046579f8e52acb104 aarch64"
-              ["Lunar 6.2 x86_64"]="034e03e1bdb7c205f x86_64"
-              ["Lunar 6.2 aarch64"]="04b03463ee4e32182 aarch64"
-              ["Mantic 6.5 x86_64"]="0a44ad46e5c42e499 x86_64"
-              ["Mantic 6.5 aarch64"]="0387f77c4820c98db aarch64"
-              ["Mantic 6.6 x86_64"]="05b5ac8f6c43b3ca5 x86_64"
-              ["Mantic 6.6 aarch64"]="05c9d6cd9343f0a43 aarch64"
-              ["Noble 6.8 x86_64"]="0cc63426ae75d47c8 x86_64"
-              ["Noble 6.8 aarch64"]="0f5260685b3ec2293 aarch64"
-              ["Noble 6.10 x86_64"]="0ae23eabda70efc60 x86_64"
-              ["Noble 6.10 aarch64"]="01ce0f71400b5ff38 aarch64"
-              ["Noble 6.11 x86_64"]="0ce1f88aa63091921 x86_64"
-              ["Noble 6.11 aarch64"]="0123508488affb578 aarch64"
-              ["Noble 6.12 x86_64"]="0e38f3caba1b4234d x86_64"
-              ["Noble 6.12 aarch64"]="0547f429681dc1f2a aarch64"
-              # expand as needed
-          )
-          for num in 01; do
-              output="["
-              first=1
-              for job in "${!job_names[@]}"; do
-                  timestamp=$(date +%s)
-                  ami="${job_names[$job]%% *}"
-                  arch="${job_names[$job]##* }"
-                  if (( first )); then
-                      first=0
-                  else
-                      output+=","
-                  fi
-                  output+="{\"job_name\": \"$job\", \"arch\": \"$arch\", \"ami\": \"$ami\", \"sufix\": \"$timestamp\"}"
-              done
-            output+="]"
-            echo "matrix$num=$output" >> $GITHUB_OUTPUT
-            echo "matrix$num=$output"
-          done
-        shell: bash
-      - name: Show Matrix
-        id: show-matrix
-        run: |
-          echo ${{ steps.set-matrix.outputs.matrix01 }}
-        shell: bash
+      - name: Checkout Code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: ${{ env.TRACEE_REF }}
+      - name: Generate Matrix
+        id: generate
+        uses: ./.github/actions/generate-kernel-matrix
   kernel-tests:
     name: ${{ matrix.job_name }}
     needs:
@@ -633,77 +521,9 @@ jobs:
       - name: "Sync System Time"
         run: ./scripts/sync_system_time.sh
         continue-on-error: true
-      - name: "Build Tracee"
-        run: make tracee
-      - name: "Compatibility Test"
-        run: env "PATH=$PATH" make test-compatibility
-
-      - name: "Instrumentation Test"
-        id: e2e-inst-test
-        run: |
-          ./tests/e2e-inst-test.sh --keep-artifacts 2>&1 | tee /tmp/e2e-inst-test.log
-          exit ${PIPESTATUS[0]}
-      - name: "Network Test"
-        id: e2e-net-test
-        run: |
-          ./tests/e2e-net-test.sh 2>&1 | tee /tmp/e2e-net-test.log
-          exit ${PIPESTATUS[0]}
-      - name: "Kernel Test"
-        id: e2e-kernel-test
-        run: |
-          ./tests/e2e-kernel-test.sh 2>&1 | tee /tmp/e2e-kernel-test.log
-          exit ${PIPESTATUS[0]}
-      - name: "Determine Failed Test"
-        id: failed-test
-        if: failure() && (
-          steps.e2e-inst-test.conclusion == 'failure' ||
-          steps.e2e-net-test.conclusion == 'failure' || 
-          steps.e2e-kernel-test.conclusion == 'failure'
-          )
-        run: |
-          if [[ "${{ steps.e2e-inst-test.conclusion }}" == "failure" ]]; then
-            echo "name=inst" >> $GITHUB_OUTPUT
-          elif [[ "${{ steps.e2e-net-test.conclusion }}" == "failure" ]]; then
-            echo "name=net" >> $GITHUB_OUTPUT
-          elif [[ "${{ steps.e2e-kernel-test.conclusion }}" == "failure" ]]; then
-            echo "name=kernel" >> $GITHUB_OUTPUT
-          else
-            echo "No failed tests. Should not reach this point."
-            exit 1
-          fi
-      - name: "Upload E2E Test Artifacts"
-        if: always() && steps.failed-test.outputs.name != ''
-        uses: actions/upload-artifact@v4
+      - name: "Run E2E Tests"
+        uses: ./.github/actions/run-e2e-tests
         with:
-          name: e2e-${{ steps.failed-test.outputs.name }}-artifacts-${{ matrix.job_name }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            /tmp/tracee-log-*
-            /tmp/tracee-output-*
-            /tmp/e2e-*.log
-          retention-days: 7
-          if-no-files-found: warn
-      - name: "Notify About Available E2E Test Artifacts"
-        if: always() && steps.failed-test.outputs.name != ''
-        run: |
-          echo "::notice title=Debug Artifacts Available::E2E tests failed. Debug artifacts have been uploaded and can be downloaded from the Summary tab. Look for: e2e-${{ steps.failed-test.outputs.name }}-artifacts-${{ matrix.job_name }}-${{ github.run_id }}-${{ github.run_attempt }}"
-          echo ""
-          echo "📋 **E2E Test Failed - Debug Information Available**"
-          echo ""
-          echo "🔍 **How to access debug artifacts:**"
-          echo "1. Click on the 'Summary' tab above the jobs list"
-          echo "2. Scroll to the bottom of the Summary page"
-          echo "3. Look for the 'Artifacts' section"
-          echo "4. Download: \`e2e-${{ steps.failed-test.outputs.name }}-artifacts-${{ matrix.job_name }}-${{ github.run_id }}-${{ github.run_attempt }}\`"
-          echo ""
-          echo "📁 **What's included in the artifacts:**"
-          echo "- **Log file**: Full debug-level logs from all E2E tests (tracee-log-*)"
-          echo "- **Output file**: JSON events captured during all E2E tests (tracee-output-*)"
-          echo "- **Pipeline log**: Complete stdout/stderr from the failed test (e2e-*.log)"
-          echo ""
-          echo "⚠️ **Note**: Artifacts are available for 7 days from upload"
-      - name: "Cleanup E2E Test Artifacts"
-        if: always()
-        run: |
-          # Clean up artifact files from runner filesystem
-          rm -f /tmp/tracee-log-* /tmp/tracee-output-* /tmp/e2e-*.log 2>/dev/null || true
-          echo "Cleaned up local artifact files from all E2E tests"
+          job-name: ${{ matrix.job_name }}
+          run-id: ${{ github.run_id }}
+          run-attempt: ${{ github.run_attempt }}
