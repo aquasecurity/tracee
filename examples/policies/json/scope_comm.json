@@ -1,0 +1,23 @@
+{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "comm-strace",
+    "annotations": {
+      "description": "traces sched_process_exec and sched_process_exit for the command strace"
+    }
+  },
+  "spec": {
+    "scope": [
+      "comm=strace"
+    ],
+    "rules": [
+      {
+        "event": "sched_process_exec"
+      },
+      {
+        "event": "sched_process_exit"
+      }
+    ]
+  }
+}

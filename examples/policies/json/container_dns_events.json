@@ -1,0 +1,23 @@
+{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "container-dns-events",
+    "annotations": {
+      "description": "traces dns events from containers"
+    }
+  },
+  "spec": {
+    "scope": [
+      "container"
+    ],
+    "rules": [
+      {
+        "event": "net_packet_dns_request"
+      },
+      {
+        "event": "net_packet_dns_response"
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "uid-higher-than-or-equal-to-zero",
+    "annotations": {
+      "description": "traces read and write syscall for uids higher than or equal to 0"
+    }
+  },
+  "spec": {
+    "scope": [
+      "uid>=0"
+    ],
+    "rules": [
+      {
+        "event": "read"
+      },
+      {
+        "event": "write"
+      }
+    ]
+  }
+}

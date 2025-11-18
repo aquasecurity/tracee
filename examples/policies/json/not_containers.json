@@ -1,0 +1,20 @@
+{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "not-containers",
+    "annotations": {
+      "description": "traces anti_debugging in the host"
+    }
+  },
+  "spec": {
+    "scope": [
+      "not-container"
+    ],
+    "rules": [
+      {
+        "event": "anti_debugging"
+      }
+    ]
+  }
+}
