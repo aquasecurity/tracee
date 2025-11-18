@@ -3738,7 +3738,7 @@ SEC("kprobe/__io_submit_sqe")
 int BPF_KPROBE(trace__io_submit_sqe_io_write)
 {
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, IO_ISSUE_SQE))
+    if (!init_program_data(&p, ctx, IO_WRITE))
         return 0;
 
     struct io_kiocb___older_v55 *req = (struct io_kiocb___older_v55 *) PT_REGS_PARM2(ctx);
@@ -4001,7 +4001,7 @@ int BPF_KPROBE(trace__io_submit_sqe_issue_sqe)
     common_submit_io_issue_sqe(&p, (struct io_kiocb *) req, opcode, &user_data);
 
     // Do not corrupt the buffer for the io_write event
-    reset_event_args_buf(p.event);
+    // reset_event_args_buf(p.event);
 
     return 0;
 }
@@ -4009,21 +4009,36 @@ int BPF_KPROBE(trace__io_submit_sqe_issue_sqe)
 SEC("raw_tracepoint/io_uring_queue_async_work")
 int tracepoint__io_uring__io_uring_queue_async_work(struct bpf_raw_tracepoint_args *ctx)
 {
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx, IO_WRITE))
-        return 0;
+    // We only need to capture and store the task context for later use by io_uring workers.
+    // We do NOT need to initialize a full program_data_t with event buffer, as we're not
+    // submitting an event here. Calling init_program_data() would reset the shared per-CPU
+    // event buffer, potentially corrupting events being processed by other probes on the same CPU.
 
-    // get real task info from uring_poll_ctx_map
-    u32 host_tid = p.task_info->context.host_tid;
+    // Get current task IDs
+    u64 id = bpf_get_current_pid_tgid();
+    u32 host_tid = id;
+    u32 host_pid = id >> 32;
+
+    // Get task_info which has the full task context (cgroup, container, namespaces, etc.)
+    task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &host_tid);
+    if (task_info == NULL) {
+        return 0;
+    }
+
+    // Start with the full context from task_info
+    event_context_t current_ctx;
+
+    // Override with poll context if available (for SQPOLL mode)
+    // In SQPOLL mode, the io_uring_create probe stores the submitting thread's context
+    // keyed by the polling thread's tid
     event_context_t *real_ctx = bpf_map_lookup_elem(&io_uring_poll_context_map, &host_tid);
     if (real_ctx != NULL) {
-        p.event->context = *real_ctx;
+        current_ctx = *real_ctx;
+    } else {
+        init_event_context(&current_ctx, (struct task_struct *) bpf_get_current_task(), 0);
     }
-    
-    // note(nadav.str): this probe is only for map updates so probably not worth it
-    // if (!evaluate_scope_filters(&p))
-    //     return 0;
 
+    // Get the io_kiocb request pointer based on kernel version
     // kernel versions v5.5 - v5.17: arg 2
     // kernel versions v5.18 - v5.19: arg 1
     //  bpf_core_field_exists(req->msg)
@@ -4038,9 +4053,9 @@ int tracepoint__io_uring__io_uring_queue_async_work(struct bpf_raw_tracepoint_ar
         req = (struct io_kiocb___io_uring_queue_async_work *) ctx->args[2];
     }
 
-
-    // update uring_worker_ctx_map with real task info
-    bpf_map_update_elem(&io_uring_worker_context_map, &req, &p.event->context, BPF_ANY);
+    // Store the real task context for later use by io_uring worker probes
+    // The io_write probe will look this up using the req pointer
+    bpf_map_update_elem(&io_uring_worker_context_map, &req, &current_ctx, BPF_ANY);
 
     return 0;
 }

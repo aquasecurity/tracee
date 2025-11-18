@@ -14328,14 +14328,14 @@ var CoreEvents = map[ID]Definition{
 			primary: Dependencies{
 				probes: []Probe{
 
-					{handle: probes.IoUringCreate, required: false}, // exists in kernels v5.5 onwards
+					{handle: probes.IoUringCreate, required: true}, // exists in kernels v5.5 onwards
 				},
 			},
 			fallbacks: []Dependencies{
 				{
 					probes: []Probe{
-						{handle: probes.IoSqOffloadStart, required: false},    // exists in kernels v5.1 - v5.4
-						{handle: probes.IoSqOffloadStartRet, required: false}, // exists in kernels v5.1 - v5.4
+						{handle: probes.IoSqOffloadStart, required: true},    // exists in kernels v5.1 - v5.4
+						{handle: probes.IoSqOffloadStartRet, required: true}, // exists in kernels v5.1 - v5.4
 					},
 				},
 			},
@@ -14359,9 +14359,9 @@ var CoreEvents = map[ID]Definition{
 				// Strategy for v5.5+
 				probes: []Probe{
 					// io_uring_create probes, to get correct context for io_uring events
-					{handle: probes.IoUringCreate, required: false}, // exists in kernels v5.5 onwards
+					{handle: probes.IoUringCreate, required: true}, // exists in kernels v5.5 onwards
 
-					{handle: probes.IoIssueSqe, required: false}, // exists in kernels v5.5 onwards
+					{handle: probes.IoIssueSqe, required: true}, // exists in kernels v5.5 onwards
 				},
 			},
 			fallbacks: []Dependencies{
@@ -14399,13 +14399,13 @@ var CoreEvents = map[ID]Definition{
 				// Strategy for v5.5+
 				probes: []Probe{
 					// io_uring_create probes, to get correct context for io_uring events
-					{handle: probes.IoUringCreate, required: false},
+					{handle: probes.IoUringCreate, required: true},
 					// get correct context if async
-					{handle: probes.IoUringQueueAsyncWork, required: false},
+					{handle: probes.IoUringQueueAsyncWork, required: true},
 
 					// submit io_write here
-					{handle: probes.IoWrite, required: false},
-					{handle: probes.IoWriteRet, required: false},
+					{handle: probes.IoWrite, required: true},
+					{handle: probes.IoWriteRet, required: true},
 				},
 			},
 			fallbacks: []Dependencies{

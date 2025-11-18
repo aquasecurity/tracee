@@ -8,5 +8,4 @@ spec:
   scope: 
     - comm=io_uring_writev
   rules:
-    - event: IO_ISSUE_SQE
-    - event: IO_WRITE
+    - event: IO_URING_EVENTS

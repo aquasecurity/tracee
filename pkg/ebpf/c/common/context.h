@@ -11,6 +11,7 @@
 // PROTOTYPES
 
 statfunc int init_task_context(task_context_t *, struct task_struct *, u32);
+statfunc int init_event_context(event_context_t *, struct task_struct *, u32);
 statfunc void init_proc_info_scratch(u32, scratch_t *);
 statfunc proc_info_t *init_proc_info(u32, u32);
 statfunc void init_task_info_scratch(u32, scratch_t *);
@@ -65,6 +66,23 @@ statfunc int init_task_context(task_context_t *tsk_ctx, struct task_struct *task
     char *uts_name = get_task_uts_name(task);
     if (uts_name)
         bpf_probe_read_kernel_str(&tsk_ctx->uts_name, TASK_COMM_LEN, uts_name);
+
+    return 0;
+}
+
+statfunc int init_event_context(event_context_t *event_ctx, struct task_struct *task, u32 event_id)
+{
+    __builtin_memset(&event_ctx->task, 0, sizeof(event_ctx->task));
+
+    // get the minimal context required at this stage
+    // any other context will be initialized only if event is submitted
+    u64 id = bpf_get_current_pid_tgid();
+    event_ctx->task.host_tid = id;
+    event_ctx->task.host_pid = id >> 32;
+    event_ctx->eventid = event_id;
+    event_ctx->ts = get_current_time_in_ns();
+    event_ctx->processor_id = (u16) bpf_get_smp_processor_id();
+    event_ctx->syscall = get_current_task_syscall_id();
 
     return 0;
 }
@@ -133,19 +151,10 @@ statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
 
     reset_event_args_buf(p->event);
 
-    p->event->task = (struct task_struct *) bpf_get_current_task();
+    struct task_struct *current_task_struct = (struct task_struct *) bpf_get_current_task();
+    p->event->task = current_task_struct;
 
-    __builtin_memset(&p->event->context.task, 0, sizeof(p->event->context.task));
-
-    // get the minimal context required at this stage
-    // any other context will be initialized only if event is submitted
-    u64 id = bpf_get_current_pid_tgid();
-    p->event->context.task.host_tid = id;
-    p->event->context.task.host_pid = id >> 32;
-    p->event->context.eventid = event_id;
-    p->event->context.ts = get_current_time_in_ns();
-    p->event->context.processor_id = (u16) bpf_get_smp_processor_id();
-    p->event->context.syscall = get_current_task_syscall_id();
+    init_event_context(&p->event->context, current_task_struct, event_id);
 
     u32 host_pid = p->event->context.task.host_pid;
     p->proc_info = bpf_map_lookup_elem(&proc_info_map, &host_pid);

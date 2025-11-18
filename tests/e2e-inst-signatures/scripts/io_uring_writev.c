@@ -251,12 +251,12 @@ int prepare_file_info(char *file_path, struct file_info **fi, char *buf1, char *
     (*fi)->iovecs[0].iov_base = (void *) buf1;
     (*fi)->iovecs[0].iov_len = strlen(buf1);
 
-    fprintf(stdout, "first iov buffer len: %d\n", (*fi)->iovecs[0].iov_len);
+    fprintf(stdout, "first iov buffer len: %ld\n", (*fi)->iovecs[0].iov_len);
 
     (*fi)->iovecs[1].iov_base = (void *) buf2;
     (*fi)->iovecs[1].iov_len = strlen(buf2);
 
-    fprintf(stdout, "second iov buffer len: %d\n", (*fi)->iovecs[1].iov_len);
+    fprintf(stdout, "second iov buffer len: %ld\n", (*fi)->iovecs[1].iov_len);
 
     return 0;
 }

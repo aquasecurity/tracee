@@ -136,9 +136,9 @@ typedef struct event_context {
     X(CHMOD_COMMON, )                                                                              \
     X(SECURITY_SB_UMOUNT, )                                                                        \
     X(SECURITY_TASK_PRCTL, )                                                                       \
-    X(IO_WRITE, )                                                                                  \
     X(IO_URING_CREATE, )                                                                           \
     X(IO_ISSUE_SQE, )                                                                              \
+    X(IO_WRITE, )                                                                                  \
     // ...
 
 #define EVENT_ID_LIST_LAST                                                                         \
