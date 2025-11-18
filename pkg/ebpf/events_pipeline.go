@@ -95,9 +95,9 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 
 // decodeEvents is the event decoding pipeline stage. For each received event, it goes
 // through a decoding function that will decode the event from its raw format into a
-// trace.Event type.
-func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-chan *trace.Event, <-chan error) {
-	out := make(chan *trace.Event, t.config.PipelineChannelSize)
+// PipelineEvent type.
+func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-chan *events.PipelineEvent, <-chan error) {
+	out := make(chan *events.PipelineEvent, t.config.PipelineChannelSize)
 	errc := make(chan error, 1)
 
 	// Create local decoder pool for this pipeline stage
@@ -189,12 +189,20 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			}
 
 			// get an event pointer from the pool
-			evt, ok := t.eventsPool.Get().(*trace.Event)
+			evt, ok := t.eventsPool.Get().(*events.PipelineEvent)
 			if !ok {
 				t.handleError(errfmt.Errorf("failed to get event from pool"))
 				decoderPool.Put(ebpfMsgDecoder)
 				continue
 			}
+
+			// Ensure the embedded Event pointer is initialized
+			if evt.Event == nil {
+				evt.Event = &trace.Event{}
+			}
+
+			// Reset internal fields for reuse
+			evt.Reset()
 
 			// populate all the fields of the event used in this stage, and reset the rest
 
@@ -249,6 +257,9 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			}
 			evt.ParentEntityId = process.HashTaskID(eCtx.HostPpid, timeutil.BootToEpochNS(eCtx.ParentStartTime))
 
+			// Set internal bitmap from kernel-matched policies
+			evt.MatchedPoliciesBitmap = eCtx.MatchedPolicies
+
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.
 			// Some base events (derivative and signatures) might not have set related policy bit,
@@ -284,9 +295,13 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 // not match the event after userland filters are applied. In those cases, the policy bit is cleared
 // (so the event is "filtered" for that policy). This may be called in different stages of the
 // pipeline (decode, derive, engine).
-func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
+func (t *Tracee) matchPolicies(event *events.PipelineEvent) uint64 {
+	if event == nil || event.Event == nil {
+		return 0
+	}
+
 	eventID := events.ID(event.EventID)
-	bitmap := event.MatchedPoliciesKernel
+	bitmap := event.MatchedPoliciesBitmap
 
 	// Short circuit if there are no policies in userland that need filtering.
 	if !t.policyManager.FilterableInUserland() {
@@ -344,7 +359,7 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		}
 
 		// 3. event scope filters (medium cost)
-		if !rule.ScopeFilter.Filter(*event) {
+		if !rule.ScopeFilter.Filter(*event.Event) {
 			bitwise.ClearBit(&bitmap, bitOffset)
 			continue
 		}
@@ -366,7 +381,8 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		}
 	}
 
-	event.MatchedPoliciesUser = bitmap // store filtered bitmap to be used in sink stage
+	event.MatchedPoliciesUser = bitmap   // store filtered bitmap to be used in sink stage
+	event.MatchedPoliciesBitmap = bitmap // update internal bitmap
 
 	return bitmap
 }
@@ -391,10 +407,10 @@ func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
 // that event type.  It also clears policy bits for out-of-order container related events
 // (after the processing logic). This stage also starts some logic that will be used by
 // the processing logic in subsequent events.
-func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
-	<-chan *trace.Event, <-chan error,
+func (t *Tracee) processEvents(ctx context.Context, in <-chan *events.PipelineEvent) (
+	<-chan *events.PipelineEvent, <-chan error,
 ) {
-	out := make(chan *trace.Event, t.config.PipelineChannelSize)
+	out := make(chan *events.PipelineEvent, t.config.PipelineChannelSize)
 	errc := make(chan error, 1)
 
 	// Some "informational" events are started here (TODO: API server?)
@@ -445,6 +461,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 				// remove event from the policies with container filters
 				bitwise.ClearBits(&event.MatchedPoliciesKernel, policiesWithContainerFilter)
 				bitwise.ClearBits(&event.MatchedPoliciesUser, policiesWithContainerFilter)
+				bitwise.ClearBits(&event.MatchedPoliciesBitmap, policiesWithContainerFilter)
 
 				if event.MatchedPoliciesKernel == 0 {
 					t.eventsPool.Put(event)
@@ -466,10 +483,10 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 // deriveEVents is the event derivation pipeline stage. For each received event, it runs
 // the event derivation logic, described in the derivation table, and send the derived
 // events down the pipeline.
-func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
-	<-chan *trace.Event, <-chan error,
+func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *events.PipelineEvent) (
+	<-chan *events.PipelineEvent, <-chan error,
 ) {
-	out := make(chan *trace.Event, t.config.PipelineChannelSize)
+	out := make(chan *events.PipelineEvent, t.config.PipelineChannelSize)
 	errc := make(chan error, 1)
 
 	go func() {
@@ -485,7 +502,8 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 
 				// Derive events using original event pointer directly (no copying needed)
 				// We derive before sending the event downstream to avoid race conditions
-				derivatives, errors := t.eventDerivations.DeriveEvent(event)
+				// Extract trace.Event for derivation
+				derivatives, errors := t.eventDerivations.DeriveEvent(event.Event)
 
 				// Send original event down the pipeline
 				out <- event
@@ -502,7 +520,10 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					//
 					// Nadav: Likely related to https://github.com/golang/go/issues/57969 (GOEXPERIMENT=loopvar).
 					//        Let's keep an eye on that moving from experimental for these and similar cases in tracee.
-					event := &derivatives[i]
+					derivativeEvent := &derivatives[i]
+
+					// Wrap derived event in PipelineEvent
+					derivativePipelineEvent := events.NewPipelineEvent(derivativeEvent)
 
 					// Skip events that dont work with filtering due to missing types
 					// being handled (https://github.com/aquasecurity/tracee/issues/2486)
@@ -512,15 +533,15 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					case events.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
-						if t.matchPolicies(event) == 0 {
+						if t.matchPolicies(derivativePipelineEvent) == 0 {
 							_ = t.stats.EventsFiltered.Increment()
 							continue
 						}
 					}
 
 					// Process derived events
-					t.processEvent(event)
-					out <- event
+					t.processEvent(derivativePipelineEvent)
+					out <- derivativePipelineEvent
 				}
 			case <-ctx.Done():
 				return
@@ -534,14 +555,14 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 // sinkEvents is the event sink pipeline stage. For each received event, it goes through a
 // series of printers that will print the event to the desired output. It also handles the
 // event pool, returning the event to the pool after it is processed.
-func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan error {
+func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *events.PipelineEvent) <-chan error {
 	errc := make(chan error, 1)
 
 	go func() {
 		defer close(errc)
 
 		for event := range in {
-			if event == nil {
+			if event == nil || event.Event == nil {
 				continue // might happen during initialization (ctrl+c seg faults)
 			}
 
@@ -565,18 +586,19 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 
 			// Parse arguments for output formatting if enabled.
 			if t.config.Output.ParseArguments {
-				err := t.parseArguments(event)
+				err := t.parseArguments(event.Event)
 				if err != nil {
 					t.handleError(err)
 				}
 			}
 
 			// Send the event to the streams.
+			// Extract trace.Event for external API (streams expect trace.Event)
 			select {
 			case <-ctx.Done():
 				return
 			default:
-				t.streamsManager.Publish(ctx, *event)
+				t.streamsManager.Publish(ctx, *event.Event)
 				_ = t.stats.EventCount.Increment()
 				t.eventsPool.Put(event)
 			}
