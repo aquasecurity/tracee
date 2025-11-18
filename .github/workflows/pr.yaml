@@ -14,7 +14,7 @@ on:
   pull_request:
     branches:
       - "main"
-      - "release-v*.*.*"
+      - "release-v*.*"
     paths:
       - "!docs/**"
       - "!deploy/**"
