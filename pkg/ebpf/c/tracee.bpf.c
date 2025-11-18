@@ -3482,7 +3482,7 @@ statfunc int do_vfs_write_magic_return(struct pt_regs *ctx, bool is_buf)
     return events_perf_submit(&p, bytes_written);
 }
 
-statfunc int do_io_write_magic_enter(struct pt_regs *ctx, u32 event_id) {
+statfunc int do_io_write_enter(struct pt_regs *ctx, u32 event_id) {
     args_t args = {};
     args.args[0] = PT_REGS_PARM1(ctx);
     args.args[1] = PT_REGS_PARM2(ctx);
@@ -3575,7 +3575,7 @@ int BPF_KPROBE(kernel_write_magic_enter)
 SEC("kprobe/io_write")
 int BPF_KPROBE(io_write_magic_enter)
 {
-    return do_io_write_magic_enter(ctx, MAGIC_WRITE);
+    return do_io_write_enter(ctx, MAGIC_WRITE);
 }
 
 SEC("kretprobe/vfs_write")
@@ -3645,7 +3645,7 @@ statfunc int common_submit_io_write(program_data_t *p,
 SEC("kprobe/io_write")
 int BPF_KPROBE(trace_io_write)
 {
-    return do_io_write_magic_enter(ctx, IO_WRITE);
+    return do_io_write_enter(ctx, IO_WRITE);
 }
 
 SEC("kretprobe/io_write")
@@ -3657,26 +3657,39 @@ int BPF_KPROBE(trace_ret_io_write)
         return 0;
     }
 
+    
     // short circuit - write operation wasn't successful
     int ret = PT_REGS_RC(ctx);
     if (ret < 0) {
         del_args(IO_WRITE);
         return 0;
     }
+    bpf_printk("io_write ret: %d\n", ret);
 
     program_data_t p = {};
     if (!init_program_data(&p, ctx, IO_WRITE)) {
         del_args(IO_WRITE);
         return 0;
     }
+    bpf_printk("io_write: init_program_data success\n");
 
     // get real task info from io_uring_worker_context_map before evaluating scope filters
     struct io_kiocb *req = (struct io_kiocb *) saved_args.args[0];
     event_context_t *real_ctx = bpf_map_lookup_elem(&io_uring_worker_context_map, &req);
     if (real_ctx != NULL) {
-        p.event->context = *real_ctx;
+        // copy task context fields explicitly as to not overwrite other fields
+        // EXCLUDE eventid, matched_policies, and policies_version
+        p.event->context.processor_id = real_ctx->processor_id;
+        p.event->context.syscall = real_ctx->syscall;
+        p.event->context.retval = real_ctx->retval;
+        p.event->context.stack_id = real_ctx->stack_id;
+        p.event->context.task = real_ctx->task;
+        p.event->context.ts = real_ctx->ts;
+
         bpf_map_delete_elem(&io_uring_worker_context_map, &req);
     }
+
+    bpf_printk("io_write: get real task info success; eventid: %d\n", p.event->context.eventid);
 
     // now we can evaluate scope filters
     if (!evaluate_scope_filters(&p)) {
@@ -3684,6 +3697,8 @@ int BPF_KPROBE(trace_ret_io_write)
         return 0;
     }
 
+
+    bpf_printk("io_write: evaluate scope filters success\n");
     // get write info from req
     struct io_rw *rw = NULL;
     struct kiocb kiocb;
@@ -4035,7 +4050,8 @@ int tracepoint__io_uring__io_uring_queue_async_work(struct bpf_raw_tracepoint_ar
     if (real_ctx != NULL) {
         current_ctx = *real_ctx;
     } else {
-        init_event_context(&current_ctx, (struct task_struct *) bpf_get_current_task(), 0);
+        // only io_write uses this probe so we can hardcode the eventid
+        init_event_context(&current_ctx, (struct task_struct *) bpf_get_current_task(), IO_WRITE);
     }
 
     // Get the io_kiocb request pointer based on kernel version

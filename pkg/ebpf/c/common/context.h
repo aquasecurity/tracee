@@ -155,6 +155,9 @@ statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
     p->event->task = current_task_struct;
 
     init_event_context(&p->event->context, current_task_struct, event_id);
+    if (event_id == IO_WRITE) {
+        bpf_printk("io_write: init_event_context; eventid: %d\n", p->event->context.eventid);
+    }
 
     u32 host_pid = p->event->context.task.host_pid;
     p->proc_info = bpf_map_lookup_elem(&proc_info_map, &host_pid);
