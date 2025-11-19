@@ -35,22 +35,21 @@ jobs:
       - name: Build
         run: |
           make -f builder/Makefile.release snapshot
-      - name: Scan Docker Image for Vulnerabilities
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: "tracee:dev"
-          severity: "HIGH"
-          exit-code: "1"
       - name: Publish to docker.io registry
         run: |
           docker image tag tracee:dev aquasec/tracee:x86_64-dev
           docker image push aquasec/tracee:x86_64-dev
         shell: bash
-      # Disabled to avoid generating too many sigstore cosign signatures
-      # - name: Sign Docker image
-      #   run: |
-      #     cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:x86_64-dev)
-      #   shell: bash
+      - name: Scan Docker Image for Vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "aquasec/tracee:x86_64-dev"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
   release-snapshot-aarch64:
     name: Release Snapshot (aarch64)
     runs-on: 
@@ -85,11 +84,16 @@ jobs:
           docker image tag tracee:dev aquasec/tracee:aarch64-dev
           docker image push aquasec/tracee:aarch64-dev
         shell: bash
-      # Disabled to avoid generating too many sigstore cosign signatures
-      # - name: Sign Docker image
-      #   run: |
-      #     cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:aarch64-dev)
-      #   shell: bash
+      - name: Scan Docker Image for Vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "aquasec/tracee:aarch64-dev"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
   release-snapshot:
     name: Release Snapshot
     needs: [release-snapshot-x86_64, release-snapshot-aarch64]
