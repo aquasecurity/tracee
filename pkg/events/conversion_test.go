@@ -3,6 +3,7 @@ package events
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -523,4 +524,174 @@ func TestConvertToProto_ThreatMetadata_NoSeverity(t *testing.T) {
 	protoEvent := ConvertToProto(&e)
 
 	assert.Nil(t, protoEvent.Threat, "Threat should be nil when Severity is missing")
+}
+
+func TestConvertTraceeEventToProto_ProcessWorkload(t *testing.T) {
+	t.Parallel()
+
+	unixTime := int(time.Now().UnixNano())
+
+	traceEvent := trace.Event{
+		Timestamp:           unixTime,
+		ThreadStartTime:     unixTime,
+		ProcessID:           1,
+		ThreadID:            2,
+		HostProcessID:       3,
+		HostThreadID:        4,
+		ParentProcessID:     5,
+		HostParentProcessID: 6,
+		UserID:              7,
+		ProcessName:         "processTest",
+		EventID:             int(Execve),
+		EventName:           "eventTest",
+		MatchedPolicies:     []string{"policyTest"},
+		Syscall:             "syscall",
+		ContextFlags:        trace.ContextFlags{ContainerStarted: true, IsCompat: true},
+		ThreadEntityId:      9,
+		ProcessEntityId:     10,
+		ParentEntityId:      11,
+	}
+
+	protoEvent, err := ConvertTraceeEventToProto(traceEvent)
+	require.NoError(t, err)
+
+	require.NotNil(t, protoEvent.Workload)
+	require.NotNil(t, protoEvent.Workload.Process)
+	assert.Equal(t, uint32(1), protoEvent.Workload.Process.Pid.Value)
+	assert.Equal(t, uint32(2), protoEvent.Workload.Process.Thread.Tid.Value)
+	assert.Equal(t, uint32(3), protoEvent.Workload.Process.HostPid.Value)
+	assert.Equal(t, uint32(4), protoEvent.Workload.Process.Thread.HostTid.Value)
+	assert.Equal(t, uint32(5), protoEvent.Workload.Process.Ancestors[0].Pid.Value)
+	assert.Equal(t, uint32(6), protoEvent.Workload.Process.Ancestors[0].HostPid.Value)
+	assert.Equal(t, uint32(7), protoEvent.Workload.Process.RealUser.Id.Value)
+	assert.Equal(t, pb.EventId_execve, protoEvent.Id) // Verify translation table is used
+	assert.Equal(t, uint32(9), protoEvent.Workload.Process.Thread.UniqueId.Value)
+	assert.Equal(t, uint32(10), protoEvent.Workload.Process.UniqueId.Value)
+	assert.Equal(t, uint32(11), protoEvent.Workload.Process.Ancestors[0].UniqueId.Value)
+	assert.Equal(t, "eventTest", protoEvent.Name)
+	assert.Equal(t, []string{"policyTest"}, protoEvent.Policies.Matched)
+	assert.Equal(t, "processTest", protoEvent.Workload.Process.Thread.Name)
+	assert.Equal(t, "syscall", protoEvent.Workload.Process.Thread.Syscall)
+	assert.Equal(t, true, protoEvent.Workload.Process.Thread.Compat)
+}
+
+func TestConvertTraceeEventToProto_StackAddresses(t *testing.T) {
+	t.Parallel()
+
+	traceEvent := trace.Event{
+		ProcessID:      1, // Required to create Process
+		StackAddresses: []uint64{1, 2, 3},
+	}
+
+	protoEvent, err := ConvertTraceeEventToProto(traceEvent)
+	require.NoError(t, err)
+
+	expected := []*pb.StackAddress{
+		{Address: 1},
+		{Address: 2},
+		{Address: 3},
+	}
+
+	require.NotNil(t, protoEvent.Workload)
+	require.NotNil(t, protoEvent.Workload.Process)
+	require.NotNil(t, protoEvent.Workload.Process.Thread)
+	require.NotNil(t, protoEvent.Workload.Process.Thread.UserStackTrace)
+
+	for i := range expected {
+		assert.Equal(t, expected[i].Address, protoEvent.Workload.Process.Thread.UserStackTrace.Addresses[i].Address)
+	}
+}
+
+func TestConvertTraceeEventToProto_ContainerWorkload(t *testing.T) {
+	t.Parallel()
+
+	traceEvent := trace.Event{
+		Container: trace.Container{
+			ID:          "containerID",
+			Name:        "containerName",
+			ImageName:   "imageName",
+			ImageDigest: "imageDigest",
+		},
+		ContextFlags: trace.ContextFlags{ContainerStarted: true},
+	}
+
+	protoEvent, err := ConvertTraceeEventToProto(traceEvent)
+	require.NoError(t, err)
+
+	require.NotNil(t, protoEvent.Workload)
+	require.NotNil(t, protoEvent.Workload.Container)
+	assert.Equal(t, "containerID", protoEvent.Workload.Container.Id)
+	assert.Equal(t, "containerName", protoEvent.Workload.Container.Name)
+	assert.Equal(t, "imageName", protoEvent.Workload.Container.Image.Name)
+	assert.Equal(t, []string{"imageDigest"}, protoEvent.Workload.Container.Image.RepoDigests)
+	assert.Equal(t, true, protoEvent.Workload.Container.Started)
+}
+
+func TestConvertTraceeEventToProto_ContainerNotStarted(t *testing.T) {
+	t.Parallel()
+
+	traceEvent := trace.Event{
+		Container: trace.Container{
+			ID:          "containerID",
+			Name:        "containerName",
+			ImageName:   "imageName",
+			ImageDigest: "imageDigest",
+		},
+		ContextFlags: trace.ContextFlags{ContainerStarted: false},
+	}
+
+	protoEvent, err := ConvertTraceeEventToProto(traceEvent)
+	require.NoError(t, err)
+
+	require.NotNil(t, protoEvent.Workload)
+	require.NotNil(t, protoEvent.Workload.Container)
+	assert.Equal(t, "containerID", protoEvent.Workload.Container.Id)
+	assert.Equal(t, "containerName", protoEvent.Workload.Container.Name)
+	assert.Equal(t, false, protoEvent.Workload.Container.Started)
+}
+
+func TestConvertTraceeEventToProto_K8sWorkload(t *testing.T) {
+	t.Parallel()
+
+	traceEvent := trace.Event{
+		Kubernetes: trace.Kubernetes{
+			PodName:      "podName",
+			PodNamespace: "podNamespace",
+			PodUID:       "podUID",
+		},
+	}
+
+	protoEvent, err := ConvertTraceeEventToProto(traceEvent)
+	require.NoError(t, err)
+
+	require.NotNil(t, protoEvent.Workload)
+	require.NotNil(t, protoEvent.Workload.K8S)
+	assert.Equal(t, "podName", protoEvent.Workload.K8S.Pod.Name)
+	assert.Equal(t, "podNamespace", protoEvent.Workload.K8S.Namespace.Name)
+	assert.Equal(t, "podUID", protoEvent.Workload.K8S.Pod.Uid)
+}
+
+func TestConvertTraceeEventToProto_Threat(t *testing.T) {
+	t.Parallel()
+
+	traceEvent := trace.Event{
+		Metadata: &trace.Metadata{
+			Description: "An attempt to abuse the Docker UNIX ..",
+			Properties: map[string]interface{}{
+				"Severity":    2,
+				"Category":    "privilege-escalation",
+				"Technique":   "Exploitation for Privilege Escalation",
+				"external_id": "T1068",
+			},
+		},
+	}
+
+	protoEvent, err := ConvertTraceeEventToProto(traceEvent)
+	require.NoError(t, err)
+
+	require.NotNil(t, protoEvent.Threat)
+	assert.Equal(t, "An attempt to abuse the Docker UNIX ..", protoEvent.Threat.Description)
+	assert.Equal(t, "privilege-escalation", protoEvent.Threat.Mitre.Tactic.Name)
+	assert.Equal(t, "Exploitation for Privilege Escalation", protoEvent.Threat.Mitre.Technique.Name)
+	assert.Equal(t, "T1068", protoEvent.Threat.Mitre.Technique.Id)
 }
