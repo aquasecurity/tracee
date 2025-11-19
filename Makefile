@@ -1272,9 +1272,9 @@ format-pr:: \
 				show -s $$commit \
 				--color=always \
 				--format='%C(auto,yellow)%h%Creset **%C(auto,red)%s%Creset**%n'; \
-			echo '```'; \
-			echo "$$body"; \
-			echo '```'; \
+			echo "$$body" | sed 's/^/> /'; \
+			echo; \
+			echo "--"; \
 			echo; \
 		fi; \
 	done); \
