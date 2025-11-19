@@ -11,7 +11,7 @@ info() {
     echo "$@"
 }
 
-BUSYBOX_IMAGE="busybox:1.37.0"
+BUSYBOX_IMAGE="public.ecr.aws/docker/library/busybox:1.37.0"
 wait_container=${E2E_INST_TEST_SLEEP:-5} # time to let container alive
 
 # Parse command line arguments
