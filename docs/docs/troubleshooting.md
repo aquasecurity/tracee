@@ -171,7 +171,7 @@ WARN events dropped due to buffer overflow
 2. **Check for mixed output**:
    ```bash
    # Separate logs from events
-   tracee --output json --log file:/var/log/tracee.log
+   tracee --output json --log file=/var/log/tracee.log
    ```
 
 ### Missing Event Fields
@@ -192,7 +192,7 @@ WARN events dropped due to buffer overflow
 
 ```bash
 # Enable debug logs
-tracee --log debug
+tracee --log level=debug
 
 # Or via environment
 TRACEE_LOG_LEVEL=debug tracee
