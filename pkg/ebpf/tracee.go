@@ -27,10 +27,13 @@ import (
 	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/pkg/datastores"
 	"github.com/aquasecurity/tracee/pkg/datastores/container"
 	"github.com/aquasecurity/tracee/pkg/datastores/dns"
 	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/datastores/symbol"
+	"github.com/aquasecurity/tracee/pkg/datastores/syscall"
+	"github.com/aquasecurity/tracee/pkg/datastores/system"
 	"github.com/aquasecurity/tracee/pkg/ebpf/controlplane"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
@@ -113,6 +116,8 @@ type Tracee struct {
 	processTree *process.ProcessTree
 	// DNS Cache
 	dnsCache *dns.DNSCache
+	// DataStore Registry
+	dataStoreRegistry *datastores.Registry
 	// Specific Events Needs
 	triggerContexts trigger.Context
 	readyCallback   func(gocontext.Context)
@@ -181,6 +186,11 @@ func (t *Tracee) getKernelSymbols() *symbol.KernelSymbolTable {
 
 func (t *Tracee) setKernelSymbols(kernelSymbols *symbol.KernelSymbolTable) {
 	t.kernelSymbols.Store(kernelSymbols)
+}
+
+// DataStores returns the datastore registry for accessing system state information
+func (t *Tracee) DataStores() *datastores.Registry {
+	return t.dataStoreRegistry
 }
 
 // New creates a new Tracee instance based on a given valid Config. It is expected that it won't
@@ -526,6 +536,50 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
+	}
+
+	// Initialize DataStore Registry (after datastores are created)
+
+	t.dataStoreRegistry = datastores.NewRegistry()
+
+	// Register core datastores
+	// ProcessTree is optional (may be nil if Source == SourceNone)
+	if err := t.dataStoreRegistry.RegisterStore("process", t.processTree, false); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	if err := t.dataStoreRegistry.RegisterStore("container", t.container, true); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// DNS cache is optional (may be nil if DNSCacheConfig.Enable is false)
+	if err := t.dataStoreRegistry.RegisterStore("dns", t.dnsCache, false); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Kernel symbols can be hot-reloaded at runtime, so we use an adapter
+	// that always fetches the current symbol table
+	kernelSymbolAdapter := symbol.NewAdapter(t.getKernelSymbols)
+	if err := t.dataStoreRegistry.RegisterStore("symbol", kernelSymbolAdapter, true); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// System information is collected once at startup and is immutable
+	systemInfo, err := system.CollectSystemInfo()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	// Set Tracee's start time (in nanoseconds since epoch)
+	systemInfo.TraceeStartTime = timeutil.NsSinceEpochToTime(t.startTime)
+	systemStore := system.New(systemInfo)
+	if err := t.dataStoreRegistry.RegisterStore("system", systemStore, false); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Syscall information datastore provides syscall ID <-> name mapping
+	syscallStore := syscall.New(events.Core)
+	if err := t.dataStoreRegistry.RegisterStore("syscall", syscallStore, true); err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	// Initialize eBPF programs and maps
