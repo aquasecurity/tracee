@@ -175,7 +175,13 @@ func processWithPrinter(p printer.EventPrinter) func(finding *detect.Finding) {
 			logger.Fatalw("Failed to convert finding to event", "err", err)
 		}
 
-		p.Print(*event)
+		// Convert trace.Event to pb.Event for printing
+		pbEvent, err := events.ConvertTraceeEventToProto(*event)
+		if err != nil {
+			logger.Fatalw("Failed to convert event to proto", "err", err)
+		}
+
+		p.Print(pbEvent)
 	}
 }
 

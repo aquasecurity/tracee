@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/aquasecurity/tracee/types/trace"
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 )
 
 // Stream is a stream of events
@@ -12,19 +12,19 @@ type Stream struct {
 	// policy mask is a bitmap of policies that this stream is interested in
 	policyMask uint64
 	// events is a channel that is used to receive events from the stream
-	events chan trace.Event
+	events chan *pb.Event
 }
 
 // ReceiveEvents returns a read-only channel for receiving events from the stream
-func (s *Stream) ReceiveEvents() <-chan trace.Event {
+func (s *Stream) ReceiveEvents() <-chan *pb.Event {
 	return s.events
 }
 
 // Publish publishes an event to the stream,
 // but first check if this stream is interested in this event,
 // by checking the event's policy mask against the stream's policy mask.
-func (s *Stream) publish(ctx context.Context, event trace.Event) {
-	if s.shouldIgnorePolicy(event) {
+func (s *Stream) publish(ctx context.Context, event *pb.Event, policyBitmap uint64) {
+	if s.shouldIgnorePolicy(policyBitmap) {
 		return
 	}
 
@@ -43,8 +43,8 @@ func (s *Stream) publish(ctx context.Context, event trace.Event) {
 }
 
 // shouldIgnorePolicy checks if the stream should ignore the event
-func (s *Stream) shouldIgnorePolicy(event trace.Event) bool {
-	return s.policyMask&event.MatchedPoliciesUser == 0
+func (s *Stream) shouldIgnorePolicy(policyBitmap uint64) bool {
+	return s.policyMask&policyBitmap == 0
 }
 
 // close closes the stream
@@ -73,7 +73,7 @@ func (sm *StreamsManager) Subscribe(policyMask uint64, chanSize int) *Stream {
 
 	stream := &Stream{
 		policyMask: policyMask,
-		events:     make(chan trace.Event, chanSize),
+		events:     make(chan *pb.Event, chanSize),
 	}
 
 	sm.subscribers[stream] = struct{}{}
@@ -93,14 +93,22 @@ func (sm *StreamsManager) Unsubscribe(stream *Stream) {
 	}
 }
 
-// Publish publishes an event to all streams
-func (sm *StreamsManager) Publish(ctx context.Context, event trace.Event) {
+// Publish publishes an event to all streams.
+// The event is a pb.Event pointer and the policyBitmap indicates which policies matched.
+func (sm *StreamsManager) Publish(ctx context.Context, event *pb.Event, policyBitmap uint64) {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 
 	for stream := range sm.subscribers {
-		stream.publish(ctx, event)
+		stream.publish(ctx, event, policyBitmap)
 	}
+}
+
+// HasSubscribers returns true if there are any active subscribers
+func (sm *StreamsManager) HasSubscribers() bool {
+	sm.mutex.Lock()
+	defer sm.mutex.Unlock()
+	return len(sm.subscribers) > 0
 }
 
 // Close closes all streams
