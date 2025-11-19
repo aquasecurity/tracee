@@ -749,8 +749,11 @@ func TestEventTrigger(t *testing.T) {
 		},
 	}
 
-	expectedTriggerEvent, err := getDetectedFrom(event.Args)
+	// Use the new conversion function to get the expected DetectedFrom
+	protoEvent, err := events.ConvertTraceeEventToProto(event)
 	assert.NoError(t, err)
+	expectedTriggerEvent := protoEvent.DetectedFrom
+	assert.NotNil(t, expectedTriggerEvent)
 
 	actualTriggerId, ok := event.Args[1].Value.(map[string]interface{})["id"].(int)
 	assert.True(t, ok)

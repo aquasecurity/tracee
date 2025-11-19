@@ -21,6 +21,16 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+// ConvertTraceeEventToProto converts a trace.Event to v1beta1.Event with full error handling.
+// This function matches the signature expected by the gRPC server and can be used as a drop-in replacement.
+// It uses the event ID translation table to convert internal event IDs to external protobuf Event IDs.
+func ConvertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
+	event := ConvertToProto(&e)
+	// Apply event ID translation for gRPC API compatibility
+	event.Id = TranslateEventID(e.EventID)
+	return event, nil
+}
+
 // ConvertToProto converts a trace.Event to v1beta1.Event.
 func ConvertToProto(e *trace.Event) *pb.Event {
 	event := &pb.Event{
