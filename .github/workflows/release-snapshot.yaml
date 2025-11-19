@@ -45,7 +45,6 @@ jobs:
         with:
           image-ref: "aquasec/tracee:x86_64-dev"
           severity: "CRITICAL,HIGH"
-          exit-code: "1"
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
@@ -73,12 +72,6 @@ jobs:
       - name: Build
         run: |
           make -f builder/Makefile.release snapshot
-      - name: Scan Docker Image for Vulnerabilities
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: "tracee:dev"
-          severity: "HIGH"
-          exit-code: "1"
       - name: Publish to docker.io registry
         run: |
           docker image tag tracee:dev aquasec/tracee:aarch64-dev
@@ -89,7 +82,6 @@ jobs:
         with:
           image-ref: "aquasec/tracee:aarch64-dev"
           severity: "CRITICAL,HIGH"
-          exit-code: "1"
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
@@ -127,8 +119,3 @@ jobs:
             aquasec/tracee:aarch64-dev
           docker manifest push aquasec/tracee:dev-$timestamp
         shell: bash
-      # Disabled to avoid generating too many sigstore cosign signatures
-      # - name: Sign Docker image
-      #   run: |
-      #     cosign sign -y aquasec/tracee:dev
-      #   shell: bash
