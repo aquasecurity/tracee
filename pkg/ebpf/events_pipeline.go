@@ -593,12 +593,19 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *events.PipelineEvent
 			}
 
 			// Send the event to the streams.
-			// Extract trace.Event for external API (streams expect trace.Event)
+			// Convert to pb.Event once and publish the pointer (not pooled, safe to share).
+			// This avoids cloning the PipelineEvent and leverages the cached conversion.
 			select {
 			case <-ctx.Done():
 				return
 			default:
-				t.streamsManager.Publish(ctx, *event.Event)
+				if t.streamsManager.HasSubscribers() {
+					// Use cached conversion from PipelineEvent
+					pbEvent := event.ToProto()
+					if pbEvent != nil {
+						t.streamsManager.Publish(ctx, pbEvent, event.Event.MatchedPoliciesUser)
+					}
+				}
 				_ = t.stats.EventCount.Increment()
 				t.eventsPool.Put(event)
 			}

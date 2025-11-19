@@ -1,6 +1,7 @@
 package events
 
 import (
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -16,6 +17,10 @@ type PipelineEvent struct {
 	// MatchedPoliciesBitmap is a combined bitmap for efficient policy matching.
 	// This replaces the need to expose separate Kernel/User bitmaps to external APIs.
 	MatchedPoliciesBitmap uint64
+
+	// protoEvent is a cached protobuf representation of the event.
+	// It is lazily populated on first call to ToProto() and reused thereafter.
+	protoEvent *pb.Event
 }
 
 // NewPipelineEvent creates a new PipelineEvent wrapping the provided trace.Event.
@@ -47,6 +52,22 @@ func (pe *PipelineEvent) Reset() {
 		return
 	}
 	pe.MatchedPoliciesBitmap = 0
+	pe.protoEvent = nil
+}
+
+// ToProto converts the PipelineEvent to a v1beta1.Event for external API use.
+// The conversion is cached on first call and reused thereafter to avoid redundant conversions.
+// Returns nil if the conversion fails.
+// Note: This uses ConvertToProto which does NOT translate event IDs - translation should
+// only be applied at the gRPC boundary.
+func (pe *PipelineEvent) ToProto() *pb.Event {
+	if pe == nil || pe.Event == nil {
+		return nil
+	}
+	if pe.protoEvent == nil {
+		pe.protoEvent = ConvertToProto(pe.Event)
+	}
+	return pe.protoEvent
 }
 
 // ToProtocol converts the PipelineEvent to a protocol.Event for the signature engine.
