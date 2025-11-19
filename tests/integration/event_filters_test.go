@@ -2360,8 +2360,14 @@ func Test_EventFilters(t *testing.T) {
 					select {
 					case <-ctx.Done():
 						return
-					case evt := <-stream.ReceiveEvents():
-						buf.AddEvent(evt)
+					case pbEvent := <-stream.ReceiveEvents():
+						// Convert pb.Event back to trace.Event for test buffer
+						if pbEvent != nil {
+							traceEvent := events.ConvertFromProto(pbEvent)
+							if traceEvent != nil {
+								buf.AddEvent(*traceEvent)
+							}
+						}
 					}
 				}
 			}(ctx, buf)

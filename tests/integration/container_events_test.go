@@ -78,8 +78,14 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case event := <-eventStream.ReceiveEvents():
-				eventBuffer.AddEvent(event)
+			case pbEvent := <-eventStream.ReceiveEvents():
+				// Convert pb.Event back to trace.Event for test buffer
+				if pbEvent != nil {
+					traceEvent := events.ConvertFromProto(pbEvent)
+					if traceEvent != nil {
+						eventBuffer.AddEvent(*traceEvent)
+					}
+				}
 			case <-ctx.Done():
 				return
 			}
@@ -266,8 +272,14 @@ func Test_ExistingContainers(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case event := <-eventStream.ReceiveEvents():
-				eventBuffer.AddEvent(event)
+			case pbEvent := <-eventStream.ReceiveEvents():
+				// Convert pb.Event back to trace.Event for test buffer
+				if pbEvent != nil {
+					traceEvent := events.ConvertFromProto(pbEvent)
+					if traceEvent != nil {
+						eventBuffer.AddEvent(*traceEvent)
+					}
+				}
 			case <-ctx.Done():
 				return
 			}

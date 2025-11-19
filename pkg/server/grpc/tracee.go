@@ -35,18 +35,18 @@ func (s *TraceeService) StreamEvents(in *pb.StreamEventsRequest, grpcStream pb.T
 
 	mask := fmutils.NestedMaskFromPaths(in.GetMask().GetPaths())
 
-	for e := range stream.ReceiveEvents() {
-		// TODO: this conversion is temporary, we will use the new event structure
-		// on tracee internals, so the event received by the stream will already be a proto
-		eventProto, err := events.ConvertTraceeEventToProto(e)
-		if err != nil {
-			logger.Errorw("error can't create event proto: " + err.Error())
+	for event := range stream.ReceiveEvents() {
+		if event == nil {
+			logger.Errorw("error: received nil event from stream")
 			continue
 		}
 
-		mask.Filter(eventProto)
+		// Apply event ID translation for gRPC API compatibility
+		event.Id = events.TranslateEventID(int(event.Id))
 
-		err = grpcStream.Send(&pb.StreamEventsResponse{Event: eventProto})
+		mask.Filter(event)
+
+		err = grpcStream.Send(&pb.StreamEventsResponse{Event: event})
 		if err != nil {
 			return err
 		}

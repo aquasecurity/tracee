@@ -12,6 +12,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -26,7 +27,9 @@ func TestTemplateEventPrinterSprigFunctions(t *testing.T) {
 	t.Parallel()
 
 	// Create a temporary template file that uses Sprig functions
-	templateContent := `{"event_data": {{ toJson .Args }}, "process": "{{ .ProcessName | upper }}", "timestamp": {{ .Timestamp }}}`
+	// Note: pb.Event uses .Name instead of .EventName, .Data instead of .Args,
+	// .Workload.Process.Thread.Name instead of .ProcessName
+	templateContent := `{"event_data": {{ toJson .Data }}, "process": "{{ if .Workload }}{{ if .Workload.Process }}{{ if .Workload.Process.Thread }}{{ .Workload.Process.Thread.Name | upper }}{{ end }}{{ end }}{{ end }}", "timestamp": {{ if .Timestamp }}{{ .Timestamp.Seconds }}{{ else }}0{{ end }}}`
 
 	tempDir := t.TempDir()
 	templatePath := filepath.Join(tempDir, "sprig_test.tmpl")
@@ -53,30 +56,34 @@ func TestTemplateEventPrinterSprigFunctions(t *testing.T) {
 	// Create a sample event
 	sampleEvent := trace.Event{
 		ProcessName: "test_process",
-		Timestamp:   1234567890,
+		Timestamp:   1234567890000000000, // nanoseconds - will be converted to seconds in pb.Timestamp
 		Args: []trace.Argument{
 			{ArgMeta: trace.ArgMeta{Name: "arg1", Type: "string"}, Value: "value1"},
 			{ArgMeta: trace.ArgMeta{Name: "arg2", Type: "int"}, Value: 42},
 		},
 	}
 
+	// Convert to pb.Event
+	pbEvent, err := events.ConvertTraceeEventToProto(sampleEvent)
+	require.NoError(t, err)
+
 	// Test printing the event
 	p.Preamble()
-	p.Print(sampleEvent)
+	p.Print(pbEvent)
 	p.Close()
 
 	// Verify the output contains properly formatted JSON and uppercase process name
 	output := buf.String()
 
-	// Should contain JSON-formatted args (toJson function working)
-	assert.Contains(t, output, `"arg1"`, "toJson function should format Args as JSON")
-	assert.Contains(t, output, `"value1"`, "toJson should include argument values")
-	assert.Contains(t, output, `42`, "toJson should include numeric values")
+	// Should contain JSON-formatted data (toJson function working)
+	// pb.Event uses .Data instead of .Args, and each data item has .Name and .Value
+	assert.Contains(t, output, `"name"`, "toJson function should format Data as JSON")
+	assert.Contains(t, output, `"arg1"`, "toJson should include argument names")
 
 	// Should contain uppercase process name (upper function working)
 	assert.Contains(t, output, `"TEST_PROCESS"`, "upper function should convert process name to uppercase")
 
-	// Should contain timestamp
+	// Should contain timestamp (as seconds)
 	assert.Contains(t, output, `1234567890`, "timestamp should be included")
 }
 
@@ -133,9 +140,13 @@ func TestPrinterCloseFlushesData(t *testing.T) {
 				},
 			}
 
+			// Convert to pb.Event
+			pbEvent, err := events.ConvertTraceeEventToProto(sampleEvent)
+			require.NoError(t, err)
+
 			// Print an event
 			p.Preamble()
-			p.Print(sampleEvent)
+			p.Print(pbEvent)
 			p.Close() // This should flush the buffer via Sync()
 
 			// Read the file content (file is still open, but Sync() should have flushed data to disk)
@@ -154,7 +165,8 @@ func TestTemplateEventPrinterCloseFlushesData(t *testing.T) {
 	t.Parallel()
 
 	// Create a temporary template file
-	templateContent := `{"event": "{{ .EventName }}", "process": "{{ .ProcessName }}"}`
+	// Note: pb.Event uses .Name instead of .EventName, .Workload.Process.Thread.Name instead of .ProcessName
+	templateContent := `{"event": "{{ .Name }}", "process": "{{ if .Workload }}{{ if .Workload.Process }}{{ if .Workload.Process.Thread }}{{ .Workload.Process.Thread.Name }}{{ end }}{{ end }}{{ end }}"}`
 	tempDir := t.TempDir()
 	templatePath := filepath.Join(tempDir, "test.tmpl")
 	outputPath := filepath.Join(tempDir, "test_output.txt")
@@ -183,9 +195,13 @@ func TestTemplateEventPrinterCloseFlushesData(t *testing.T) {
 		EventName:   "test_event",
 	}
 
+	// Convert to pb.Event
+	pbEvent, err := events.ConvertTraceeEventToProto(sampleEvent)
+	require.NoError(t, err)
+
 	// Print an event
 	p.Preamble()
-	p.Print(sampleEvent)
+	p.Print(pbEvent)
 	p.Close() // This should flush the buffer via Sync()
 
 	// Read the file content (file is still open, but Sync() should have flushed data to disk)

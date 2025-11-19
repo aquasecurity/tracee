@@ -115,7 +115,9 @@ func (r Runner) runWithPrinter(ctx context.Context, t *tracee.Tracee) error {
 		for {
 			select {
 			case event := <-stream.ReceiveEvents():
-				r.Printer.Print(event)
+				if event != nil {
+					r.Printer.Print(event)
+				}
 			case <-ctx.Done():
 				return
 			}
@@ -127,7 +129,9 @@ func (r Runner) runWithPrinter(ctx context.Context, t *tracee.Tracee) error {
 
 	// Drain remaining channel events (sent during shutdown)
 	for event := range stream.ReceiveEvents() {
-		r.Printer.Print(event)
+		if event != nil {
+			r.Printer.Print(event)
+		}
 	}
 
 	stats := t.Stats()
