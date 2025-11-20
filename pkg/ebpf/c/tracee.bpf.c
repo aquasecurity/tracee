@@ -3912,19 +3912,19 @@ common_submit_io_issue_sqe(program_data_t *p, struct io_kiocb *req, u8 opcode, u
 SEC("kprobe/io_issue_sqe")
 int BPF_KPROBE(trace_io_issue_sqe)
 {
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx, IO_ISSUE_SQE))
-        return 0;
-
-    if (!evaluate_scope_filters(&p))
-        return 0;
-
     struct io_kiocb___io_issue_sqe *req = (struct io_kiocb___io_issue_sqe *) PT_REGS_PARM1(ctx);
     // Only proceed if we have the modern io_kiocb structure (kernel 5.5+)
     // The __builtin_preserve_type_info check happens at compile time
     if (!bpf_core_type_exists(struct io_kiocb___io_issue_sqe)) {
         return 0;
     }
+    
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, IO_ISSUE_SQE))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
 
     // get real task info from io_uring_worker_context_map
     event_context_t *real_ctx = bpf_map_lookup_elem(&io_uring_worker_context_map, &req);
