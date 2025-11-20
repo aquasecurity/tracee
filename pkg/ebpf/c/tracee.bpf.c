@@ -4054,7 +4054,7 @@ int tracepoint__io_uring__io_uring_queue_async_work(struct bpf_raw_tracepoint_ar
     }
 
     // Start with the full context from task_info
-    event_context_t current_ctx;
+    event_context_t current_ctx = {.processor_id = -1, .syscall = -1, .retval = -1, .stack_id = -1, .task = NULL, .ts = 0};
 
     // Override with poll context if available (for SQPOLL mode)
     // In SQPOLL mode, the io_uring_create probe stores the submitting thread's context
