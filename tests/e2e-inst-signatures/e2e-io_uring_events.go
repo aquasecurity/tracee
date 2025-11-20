@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/aquasecurity/tracee/common/parsers"
@@ -45,7 +46,7 @@ func (sig *e2eIoUring) GetSelectedEvents() ([]detect.SignatureEventSelector, err
 func (sig *e2eIoUring) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 
 	switch eventObj.EventName {
@@ -84,7 +85,7 @@ func (sig *e2eIoUring) OnEvent(event protocol.Event) error {
 func (sig *e2eIoUring) handleIoWrite(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 
 	// Validate path
@@ -138,7 +139,7 @@ func (sig *e2eIoUring) handleIoWrite(event protocol.Event) error {
 		return err
 	}
 	if buf == 0 {
-		return fmt.Errorf("buf pointer should not be null")
+		return errors.New("buf pointer should not be null")
 	}
 
 	// Validate worker_host_tid is set
@@ -147,7 +148,7 @@ func (sig *e2eIoUring) handleIoWrite(event protocol.Event) error {
 		return err
 	}
 	if workerTid == 0 {
-		return fmt.Errorf("worker_host_tid should not be 0")
+		return errors.New("worker_host_tid should not be 0")
 	}
 
 	return nil
@@ -156,7 +157,7 @@ func (sig *e2eIoUring) handleIoWrite(event protocol.Event) error {
 func (sig *e2eIoUring) handleIoIssueSqe(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 
 	// Validate path
@@ -174,7 +175,7 @@ func (sig *e2eIoUring) handleIoIssueSqe(event protocol.Event) error {
 		return err
 	}
 	if device == 0 {
-		return fmt.Errorf("device should not be 0")
+		return errors.New("device should not be 0")
 	}
 	sig.device = uint32(device)
 
@@ -184,7 +185,7 @@ func (sig *e2eIoUring) handleIoIssueSqe(event protocol.Event) error {
 		return err
 	}
 	if inode == 0 {
-		return fmt.Errorf("inode should not be 0")
+		return errors.New("inode should not be 0")
 	}
 	sig.inode = uint64(inode)
 
@@ -203,7 +204,7 @@ func (sig *e2eIoUring) handleIoIssueSqe(event protocol.Event) error {
 		return err
 	}
 	if userData == 0 {
-		return fmt.Errorf("user_data should not be 0")
+		return errors.New("user_data should not be 0")
 	}
 
 	return nil
@@ -212,7 +213,7 @@ func (sig *e2eIoUring) handleIoIssueSqe(event protocol.Event) error {
 func (sig *e2eIoUring) handleIoUringCreate(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
-		return fmt.Errorf("failed to cast event's payload")
+		return errors.New("failed to cast event's payload")
 	}
 
 	// Validate sq_entries
@@ -239,7 +240,7 @@ func (sig *e2eIoUring) handleIoUringCreate(event protocol.Event) error {
 		return err
 	}
 	if ctx == 0 {
-		return fmt.Errorf("ctx pointer should not be null")
+		return errors.New("ctx pointer should not be null")
 	}
 
 	return nil
