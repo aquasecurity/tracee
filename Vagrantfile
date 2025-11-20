@@ -103,13 +103,13 @@ def detect_hardware_acceleration(host_os, arch)
       return { accel: "hvf", cpu: "host", note: "Using HVF acceleration with host CPU (optimal performance)" }
     end
   end
-  
+
   # Fallback to software emulation
   emulated_cpu = arch == "amd64" ? "qemu64" : "cortex-a57"
-  return { 
-    accel: "tcg", 
-    cpu: emulated_cpu, 
-    note: "Using software emulation (TCG) - slower but more compatible" 
+  return {
+    accel: "tcg",
+    cpu: emulated_cpu,
+    note: "Using software emulation (TCG) - slower but more compatible"
   }
 end
 
@@ -142,7 +142,7 @@ end
 # Example: VM_ACCEL=tcg vagrant up (to force software emulation)
 if ENV["VM_ACCEL"]
   vm_accel_override = ENV["VM_ACCEL"]
-  
+
   # Validate that the specified acceleration is compatible with the host OS
   case vm_accel_override
   when "kvm"
@@ -238,7 +238,7 @@ provider_settings = lambda do |prov, name|
     prov.graphics_type = "none"
     prov.no_daemonize = true
   end
-  
+
 end
 
 Vagrant.configure("2") do |config|
@@ -285,7 +285,7 @@ Vagrant.configure("2") do |config|
       vm_config.vm.network "forwarded_port", guest: 10443, host: 10443, auto_correct: true
     end
 
-    vm_config.vm.provision "shell", privileged: true, reboot: true, inline: <<-SHELL
+    vm_config.vm.provision "shell", privileged: true, reboot: true, run: "once", inline: <<-SHELL
       set -e
 
       # silence 'dpkg-preconfigure: unable to re-open stdin: No such file or directory'
@@ -414,11 +414,13 @@ EOF
         # On Linux, direct 9p mount with dfltuid/dfltgid should work correctly
         mkdir -p ${SYNCED_FOLDER}
         echo "Mounting 9p filesystem directly to ${SYNCED_FOLDER}"
-        mount -t 9p -o trans=virtio,version=9p2000.L,dfltuid=1000,dfltgid=1000,uname=vagrant,access=any shared ${SYNCED_FOLDER} || echo "Note: 9p mount may already be active"
+        # Use mmap and cache=loose for better performance and permissions
+        # access=client allows root to write files
+        mount -t 9p -o trans=virtio,version=9p2000.L,mmap,cache=loose,access=client shared ${SYNCED_FOLDER} || echo "Note: 9p mount may already be active"
 
         # Add direct 9p mount to fstab
         if ! grep -q "shared" /etc/fstab; then
-          echo "shared ${SYNCED_FOLDER} 9p trans=virtio,version=9p2000.L,dfltuid=1000,dfltgid=1000,uname=vagrant,access=any,_netdev 0 0" >> /etc/fstab
+          echo "shared ${SYNCED_FOLDER} 9p trans=virtio,version=9p2000.L,mmap,cache=loose,access=client,_netdev 0 0" >> /etc/fstab
         fi
 
         echo "9p filesystem direct mount complete"
@@ -428,7 +430,7 @@ EOF
     SHELL
 
     # Kernel upgrade - early placement ensures new kernel is available for development tools
-    vm_config.vm.provision "shell", privileged: true, reboot: true, inline: <<-SHELL
+    vm_config.vm.provision "shell", privileged: true, reboot: true, run: "once", inline: <<-SHELL
       set -e
 
       KERNEL_VERSION="6.8.0-1038-aws"
@@ -450,7 +452,7 @@ EOF
     SHELL
 
     # System updates + reboot to load updated binaries
-    vm_config.vm.provision "shell", privileged: true, reboot: true, inline: <<-SHELL
+    vm_config.vm.provision "shell", privileged: true, reboot: true, run: "once", inline: <<-SHELL
       set -e
 
       # silence 'dpkg-preconfigure: unable to re-open stdin: No such file or directory'
@@ -464,7 +466,7 @@ EOF
     SHELL
 
     # Main provisioning after reboot with updated system
-    vm_config.vm.provision "shell", privileged: true, inline: <<-SHELL
+    vm_config.vm.provision "shell", privileged: true, run: "once", inline: <<-SHELL
       set -e
 
       ARCH="#{arch}"
@@ -485,7 +487,7 @@ EOF
 
       # Install Tracee dependencies using the installation script
       INSTALL_UBUNTU_DEPS="${SYNCED_FOLDER}/scripts/installation/install-deps-ubuntu.sh"
-      
+
       echo "Running Tracee dependency installation script"
       ${INSTALL_UBUNTU_DEPS}
 
@@ -566,7 +568,7 @@ EOF
     SHELL
 
     # Additional provisioning as the vagrant user
-    vm_config.vm.provision "shell", privileged: false, inline: <<-SHELL
+    vm_config.vm.provision "shell", privileged: false, run: "once", inline: <<-SHELL
       set -e
 
       SYNCED_FOLDER="#{vm_synced_folder}"
@@ -614,7 +616,7 @@ EOF
 
           HOST_OS="#{host_os}"
           echo ">>> Ensuring 9p mount is active (Host OS: ${HOST_OS})"
-          
+
           if [ "${HOST_OS}" = "Darwin" ]; then
             echo "Verifying Darwin-specific systemd mounts"
 
@@ -636,7 +638,7 @@ EOF
             if ! mountpoint -q ${SYNCED_FOLDER}; then
               echo "Re-mounting 9p filesystem directly to ${SYNCED_FOLDER}"
               mkdir -p ${SYNCED_FOLDER}
-              mount -t 9p -o trans=virtio,version=9p2000.L,dfltuid=1000,dfltgid=1000,uname=vagrant,access=any shared ${SYNCED_FOLDER} || echo "9p mount failed"
+              mount -t 9p -o trans=virtio,version=9p2000.L,mmap,cache=loose,access=client shared ${SYNCED_FOLDER} || echo "9p mount failed"
             fi
 
             echo ">>> Linux direct mount verification complete"
@@ -651,9 +653,9 @@ EOF
 
     # Always use QEMU share provisioning
     share_provisioning.call(vm_config, "qemu")
-    
+
     # Final step: provide usage instructions
-    vm_config.vm.provision "shell", privileged: false, inline: <<-SHELL
+    vm_config.vm.provision "shell", privileged: false, run: "once", inline: <<-SHELL
       echo ">>> VM provisioning complete!"
       echo ""
       echo "🔗 SSH Access:"
