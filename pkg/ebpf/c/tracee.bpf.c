@@ -3482,7 +3482,8 @@ statfunc int do_vfs_write_magic_return(struct pt_regs *ctx, bool is_buf)
     return events_perf_submit(&p, bytes_written);
 }
 
-statfunc int do_io_write_enter(struct pt_regs *ctx, u32 event_id) {
+statfunc int do_io_write_enter(struct pt_regs *ctx, u32 event_id)
+{
     args_t args = {};
     args.args[0] = PT_REGS_PARM1(ctx);
     args.args[1] = PT_REGS_PARM2(ctx);
@@ -3494,7 +3495,8 @@ statfunc int do_io_write_enter(struct pt_regs *ctx, u32 event_id) {
     return save_args(&args, event_id);
 }
 
-statfunc int do_io_write_magic_return(struct pt_regs *ctx) {
+statfunc int do_io_write_magic_return(struct pt_regs *ctx)
+{
     // WIP?
     args_t saved_args;
     if (load_args(&saved_args, MAGIC_WRITE) != 0) {
@@ -3533,7 +3535,6 @@ statfunc int do_io_write_magic_return(struct pt_regs *ctx) {
     // Calculate write start offset
     if (start_pos != 0)
         start_pos -= io_bytes_amount;
-
 
     u32 header_bytes = FILE_MAGIC_HDR_SIZE;
     if (header_bytes > io_bytes_amount)
@@ -3657,7 +3658,6 @@ int BPF_KPROBE(trace_ret_io_write)
         return 0;
     }
 
-    
     // short circuit - write operation wasn't successful
     int ret = PT_REGS_RC(ctx);
     if (ret < 0) {
@@ -3696,7 +3696,6 @@ int BPF_KPROBE(trace_ret_io_write)
         del_args(IO_WRITE);
         return 0;
     }
-
 
     bpf_printk("io_write: evaluate scope filters success\n");
     // get write info from req
