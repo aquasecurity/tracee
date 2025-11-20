@@ -3925,7 +3925,13 @@ int BPF_KPROBE(trace_io_issue_sqe)
     // get real task info from io_uring_worker_context_map
     event_context_t *real_ctx = bpf_map_lookup_elem(&io_uring_worker_context_map, &req);
     if (real_ctx != NULL) {
-        p.event->context = *real_ctx;
+        p.event->context.processor_id = real_ctx->processor_id;
+        p.event->context.syscall = real_ctx->syscall;
+        p.event->context.retval = real_ctx->retval;
+        p.event->context.stack_id = real_ctx->stack_id;
+        p.event->context.task = real_ctx->task;
+        p.event->context.ts = real_ctx->ts;
+        // Explicitly exclude: eventid, matched_policies, policies_version
     }
 
     // v5.1 - v5.4:     handled in trace__io_submit_sqe

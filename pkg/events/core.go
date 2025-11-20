@@ -14323,7 +14323,9 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "io_uring_create",
 		version: NewVersion(1, 0, 0),
-		sets:    []string{},
+		sets: []string{
+			"io_uring",
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -14353,7 +14355,9 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "io_issue_sqe",
 		version: NewVersion(1, 0, 0),
-		sets:    []string{},
+		sets: []string{
+			"io_uring",
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				// Strategy for v5.5+
@@ -14393,7 +14397,9 @@ var CoreEvents = map[ID]Definition{
 		id32Bit: Sys32Undefined,
 		name:    "io_write",
 		version: NewVersion(1, 0, 0),
-		sets:    []string{},
+		sets: []string{
+			"io_uring",
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				// Strategy for v5.5+
