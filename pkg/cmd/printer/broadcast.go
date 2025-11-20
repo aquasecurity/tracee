@@ -3,9 +3,9 @@ package printer
 import (
 	"sync"
 
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/metrics"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // Broadcast is a printer that broadcasts events to multiple printers
@@ -13,7 +13,7 @@ type Broadcast struct {
 	PrinterConfigs []config.PrinterConfig
 	printers       []EventPrinter
 	wg             *sync.WaitGroup
-	eventsChan     []chan trace.Event
+	eventsChan     []chan *pb.Event
 	done           chan struct{}
 	containerMode  config.ContainerMode
 }
@@ -39,13 +39,13 @@ func (b *Broadcast) Init() error {
 		printers = append(printers, p)
 	}
 
-	eventsChan := make([]chan trace.Event, 0, len(printers))
+	eventsChan := make([]chan *pb.Event, 0, len(printers))
 	done := make(chan struct{})
 
 	for _, printer := range printers {
 		// we use a buffered channel to avoid blocking the event channel,
 		// we match the size of ChanEvents buffer
-		eventChan := make(chan trace.Event, 1000)
+		eventChan := make(chan *pb.Event, 1000)
 		eventsChan = append(eventsChan, eventChan)
 
 		wg.Add(1)
@@ -67,7 +67,7 @@ func (b *Broadcast) Preamble() {
 }
 
 // Print broadcasts the event to all printers
-func (b *Broadcast) Print(event trace.Event) {
+func (b *Broadcast) Print(event *pb.Event) {
 	for _, c := range b.eventsChan {
 		// we are blocking here if the printer is not consuming events fast enough
 		c <- event
@@ -121,7 +121,7 @@ func (b *Broadcast) Kinds() []string {
 	return kinds
 }
 
-func startPrinter(wg *sync.WaitGroup, done chan struct{}, c chan trace.Event, p EventPrinter) {
+func startPrinter(wg *sync.WaitGroup, done chan struct{}, c chan *pb.Event, p EventPrinter) {
 	for {
 		select {
 		case <-done:

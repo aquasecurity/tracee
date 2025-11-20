@@ -21,14 +21,18 @@ func init() {
 }
 
 // processEvent processes an event by passing it through all registered event processors.
-func (t *Tracee) processEvent(event *trace.Event) []error {
+func (t *Tracee) processEvent(event *events.PipelineEvent) []error {
+	if event == nil || event.Event == nil {
+		return nil
+	}
+
 	var errs []error
 
 	processors := t.eventProcessor[events.ID(event.EventID)]         // this event processors
 	processors = append(processors, t.eventProcessor[events.All]...) // all events processors
 
 	for _, processor := range processors {
-		err := processor(event)
+		err := processor(event.Event) // processors expect *trace.Event
 		if err != nil {
 			logger.Errorw("Error processing event", "event", event.EventName, "error", err)
 			errs = append(errs, err)

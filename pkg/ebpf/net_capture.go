@@ -49,7 +49,7 @@ func (t *Tracee) handleNetCaptureEvents(ctx context.Context) {
 	}
 }
 
-func (t *Tracee) processNetCapEvents(ctx context.Context, in <-chan *trace.Event) <-chan error {
+func (t *Tracee) processNetCapEvents(ctx context.Context, in <-chan *events.PipelineEvent) <-chan error {
 	errc := make(chan error, 1)
 
 	go func() {
@@ -58,8 +58,11 @@ func (t *Tracee) processNetCapEvents(ctx context.Context, in <-chan *trace.Event
 		for {
 			select {
 			case event := <-in:
+				if event == nil || event.Event == nil {
+					continue
+				}
 				// TODO: Support captures pipeline in t.processEvent
-				t.processNetCapEvent(event)
+				t.processNetCapEvent(event.Event)
 				_ = t.stats.NetCapCount.Increment()
 				t.eventsPool.Put(event)
 

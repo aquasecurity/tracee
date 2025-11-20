@@ -14,7 +14,6 @@ import (
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/version"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // BPFPerfEventCollector is a custom Prometheus collector that reads from BPF maps on-demand
@@ -106,7 +105,7 @@ type Stats struct {
 	// BPF map for on-demand perf event stats collection (METRICS build only)
 	perfEventStatsMap *bpf.BPFMap
 
-	Channels ChannelMetrics[*trace.Event] `json:"ChannelMetrics"`
+	Channels ChannelMetrics[*events.PipelineEvent] `json:"ChannelMetrics"`
 }
 
 func NewStats() *Stats {
@@ -120,7 +119,7 @@ func NewStats() *Stats {
 		LostWrCount:      counter.NewCounter(0),
 		LostNtCapCount:   counter.NewCounter(0),
 		LostBPFLogsCount: counter.NewCounter(0),
-		Channels:         make(ChannelMetrics[*trace.Event]),
+		Channels:         make(ChannelMetrics[*events.PipelineEvent]),
 	}
 
 	return stats

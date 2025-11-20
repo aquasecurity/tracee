@@ -7,6 +7,8 @@ import (
 
 	"gotest.tools/assert"
 
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -17,11 +19,19 @@ const (
 )
 
 var (
-	policy1Event     = trace.Event{MatchedPoliciesUser: 0b1}
-	policy2Event     = trace.Event{MatchedPoliciesUser: 0b10}
-	policy3Event     = trace.Event{MatchedPoliciesUser: 0b100}
-	policy1And2Event = trace.Event{MatchedPoliciesUser: 0b11}
+	// Create pb.Events for testing
+	policy1Event = mustConvertEvent(&trace.Event{MatchedPoliciesUser: 0b1})
+	policy2Event = mustConvertEvent(&trace.Event{MatchedPoliciesUser: 0b10})
+	policy3Event = mustConvertEvent(&trace.Event{MatchedPoliciesUser: 0b100})
 )
+
+func mustConvertEvent(e *trace.Event) *pb.Event {
+	pbEvent, err := events.ConvertTraceeEventToProto(*e)
+	if err != nil {
+		panic(err)
+	}
+	return pbEvent
+}
 
 func TestStreamManager(t *testing.T) {
 	t.Parallel()
@@ -76,21 +86,21 @@ func TestStreamManager(t *testing.T) {
 
 	go func() {
 		for i := 0; i < 100; i++ {
-			sm.Publish(ctx, policy1Event)
+			sm.Publish(ctx, policy1Event, 0b1)
 		}
 		publishersWG.Done()
 	}()
 
 	go func() {
 		for i := 0; i < 100; i++ {
-			sm.Publish(ctx, policy2Event)
+			sm.Publish(ctx, policy2Event, 0b10)
 		}
 		publishersWG.Done()
 	}()
 
 	go func() {
 		for i := 0; i < 100; i++ {
-			sm.Publish(ctx, policy3Event)
+			sm.Publish(ctx, policy3Event, 0b100)
 		}
 		publishersWG.Done()
 	}()
@@ -110,46 +120,46 @@ func Test_shouldIgnorePolicy(t *testing.T) {
 	sm := NewStreamsManager()
 
 	tests := []struct {
-		name       string
-		policyMask uint64
-		event      trace.Event
-		expected   bool
+		name         string
+		policyMask   uint64
+		policyBitmap uint64
+		expected     bool
 	}{
 		{
-			name:       "event matched policy 1, policy mask 1",
-			policyMask: 0b1,
-			event:      policy1Event,
-			expected:   false,
+			name:         "event matched policy 1, policy mask 1",
+			policyMask:   0b1,
+			policyBitmap: 0b1,
+			expected:     false,
 		},
 		{
-			name:       "event matched policy 1, policy mask 2",
-			policyMask: 0b10,
-			event:      policy1Event,
-			expected:   true,
+			name:         "event matched policy 1, policy mask 2",
+			policyMask:   0b10,
+			policyBitmap: 0b1,
+			expected:     true,
 		},
 		{
-			name:       "event matched policy 1, catch all policy mask",
-			policyMask: 0xffffffffffffffff,
-			event:      policy1Event,
-			expected:   false,
+			name:         "event matched policy 1, catch all policy mask",
+			policyMask:   0xffffffffffffffff,
+			policyBitmap: 0b1,
+			expected:     false,
 		},
 		{
-			name:       "event matched policy 1 and policy 2, policy mask 1",
-			policyMask: 0b1,
-			event:      policy1And2Event,
-			expected:   false,
+			name:         "event matched policy 1 and policy 2, policy mask 1",
+			policyMask:   0b1,
+			policyBitmap: 0b11,
+			expected:     false,
 		},
 		{
-			name:       "event matched policy 1 and policy 2, policy mask 2",
-			policyMask: 0b10,
-			event:      policy1And2Event,
-			expected:   false,
+			name:         "event matched policy 1 and policy 2, policy mask 2",
+			policyMask:   0b10,
+			policyBitmap: 0b11,
+			expected:     false,
 		},
 		{
-			name:       "event matched policy 1 and policy 2, catch all policy mask",
-			policyMask: 0xffffffffffffffff,
-			event:      policy1And2Event,
-			expected:   false,
+			name:         "event matched policy 1 and policy 2, catch all policy mask",
+			policyMask:   0xffffffffffffffff,
+			policyBitmap: 0b11,
+			expected:     false,
 		},
 	}
 
@@ -160,7 +170,7 @@ func Test_shouldIgnorePolicy(t *testing.T) {
 			t.Parallel()
 
 			stream := sm.Subscribe(tt.policyMask, 0)
-			assert.Equal(t, tt.expected, stream.shouldIgnorePolicy(tt.event))
+			assert.Equal(t, tt.expected, stream.shouldIgnorePolicy(tt.policyBitmap))
 		})
 	}
 }

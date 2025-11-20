@@ -48,9 +48,9 @@ import (
 //
 
 // enrichContainerEvents is a pipeline stage that enriches container events with metadata.
-func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.Event,
+func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *events.PipelineEvent,
 ) (
-	chan *trace.Event, chan error,
+	chan *events.PipelineEvent, chan error,
 ) {
 	// Events may be enriched in the initial decode state, if the enrichment data has been
 	// stored in the Containers structure. In that case, this pipeline stage will be
@@ -69,22 +69,22 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	// big lock
 	bLock := sync.RWMutex{}
 	// pipeline channels
-	out := make(chan *trace.Event, t.config.PipelineChannelSize)
+	out := make(chan *events.PipelineEvent, t.config.PipelineChannelSize)
 	errc := make(chan error, 1)
 	// state machine for enrichment
 	enrichDone := make(map[uint64]bool)
 	enrichInfo := make(map[uint64]*enrichResult)
 	// 1 queue per cgroupId
-	queues := make(map[uint64]chan *trace.Event)
+	queues := make(map[uint64]chan *events.PipelineEvent)
 	// scheduler queues
 	queueReady := make(chan uint64, queueReadySize)
-	queueClean := make(chan *trace.Event, queueReadySize)
+	queueClean := make(chan *events.PipelineEvent, queueReadySize)
 
 	// wg tracks all goroutines that send to 'out' channel
 	var wg sync.WaitGroup
 
 	// Name function for symbolic reference
-	cleanupRoutine := func(out chan *trace.Event, errc chan error, wg *sync.WaitGroup) {
+	cleanupRoutine := func(out chan *events.PipelineEvent, errc chan error, wg *sync.WaitGroup) {
 		wg.Wait()
 		close(out)
 		close(errc)
@@ -112,7 +112,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				// CgroupMkdir: pick EventID from the event itself
 				if eventID == events.CgroupMkdir {
 					// avoid sending irrelevant cgroups
-					isHid, err := isCgroupEventInHid(event, t.container)
+					isHid, err := isCgroupEventInHid(event.Event, t.container)
 					if err != nil {
 						logger.Errorw("cgroup_mkdir event skipped enrichment: couldn't get cgroup hid", "error", err)
 						out <- event
@@ -137,7 +137,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				// make sure a queue channel exists for this cgroupId
 				bLock.Lock()
 				if _, ok := queues[cgroupId]; !ok {
-					queues[cgroupId] = make(chan *trace.Event, contQueueSize)
+					queues[cgroupId] = make(chan *events.PipelineEvent, contQueueSize)
 
 					go func(cgroupId uint64) {
 						metadata, err := t.container.EnrichCgroupInfo(cgroupId)
@@ -196,7 +196,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 							// event is not enriched: enrich if enrichment worked
 							i := enrichInfo[cgroupId]
 							if i.err == nil {
-								enrichEvent(event, i.result)
+								enrichEvent(event.Event, i.result)
 							}
 						}
 						out <- event

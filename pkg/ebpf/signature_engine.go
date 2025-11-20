@@ -16,13 +16,13 @@ import (
 )
 
 // engineEvents stage in the pipeline allows signatures detection to be executed in the pipeline
-func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
-	out := make(chan *trace.Event, t.config.PipelineChannelSize)
+func (t *Tracee) engineEvents(ctx context.Context, in <-chan *events.PipelineEvent) (<-chan *events.PipelineEvent, <-chan error) {
+	out := make(chan *events.PipelineEvent, t.config.PipelineChannelSize)
 	errc := make(chan error, 1)
 
 	engineOutput := make(chan *detect.Finding, t.config.PipelineChannelSize)
 	engineInput := make(chan protocol.Event, t.config.PipelineChannelSize)
-	engineOutputEvents := make(chan *trace.Event, t.config.PipelineChannelSize)
+	engineOutputEvents := make(chan *events.PipelineEvent, t.config.PipelineChannelSize)
 	source := engine.EventSources{Tracee: engineInput}
 
 	// Prepare built in data sources
@@ -70,8 +70,8 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		}()
 
 		// feedEngine feeds an event to the rules engine
-		feedEngine := func(event *trace.Event) {
-			if event == nil {
+		feedEngine := func(event *events.PipelineEvent) {
+			if event == nil || event.Event == nil {
 				return // might happen during initialization (ctrl+c seg faults)
 			}
 
@@ -85,7 +85,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 			// Get a copy of event before parsing it or sending it down the pipeline.
 			// This prevents race conditions between the sink stage (which modifies events
 			// for output formatting) and the signature engine (which needs raw event data).
-			eventCopy := *event
+			eventCopy := *event.Event
 
 			// Deep copy the Args slice to prevent race conditions during argument parsing
 			eventCopy.Args = make([]trace.Argument, len(event.Args))
@@ -124,12 +124,14 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 					continue // might happen during initialization (ctrl+c seg faults)
 				}
 
-				event, err := findings.FindingToEvent(finding)
+				traceEvent, err := findings.FindingToEvent(finding)
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
 
+				// Wrap finding event in PipelineEvent
+				event := events.NewPipelineEvent(traceEvent)
 				if t.matchPolicies(event) == 0 {
 					_ = t.stats.EventsFiltered.Increment()
 					continue

@@ -17,11 +17,11 @@ import (
 	forward "github.com/IBM/fluent-forward-go/fluent/client"
 	"github.com/Masterminds/sprig/v3"
 
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/metrics"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type EventPrinter interface {
@@ -32,7 +32,7 @@ type EventPrinter interface {
 	// Epilogue prints something after event printing ends (one time)
 	Epilogue(stats metrics.Stats)
 	// Print prints a single event
-	Print(event trace.Event)
+	Print(event *pb.Event)
 	// dispose of resources
 	Close()
 }
@@ -99,53 +99,40 @@ func (p tableEventPrinter) Preamble() {
 		switch p.containerMode {
 		case config.ContainerModeDisabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-17s %-13s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-25s %s",
+				"%-16s %-6s %-16s %-7s %-7s %-7s %-25s %s",
 				"TIME",
-				"UTS_NAME",
-				"CONTAINER_ID",
-				"MNT_NS",
-				"PID_NS",
 				"UID",
 				"COMM",
 				"PID",
 				"TID",
 				"PPID",
-				"RET",
 				"EVENT",
 				"ARGS",
 			)
 		case config.ContainerModeEnabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-17s %-13s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-25s %s",
+				"%-16s %-13s %-6s %-16s %-15s %-15s %-15s %-25s %s",
 				"TIME",
-				"UTS_NAME",
 				"CONTAINER_ID",
-				"MNT_NS",
-				"PID_NS",
 				"UID",
 				"COMM",
 				"PID/host",
 				"TID/host",
 				"PPID/host",
-				"RET",
 				"EVENT",
 				"ARGS",
 			)
 		case config.ContainerModeEnriched:
 			fmt.Fprintf(p.out,
-				"%-16s %-17s %-13s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-25s %s",
+				"%-16s %-13s %-16s %-6s %-16s %-15s %-15s %-15s %-25s %s",
 				"TIME",
-				"UTS_NAME",
 				"CONTAINER_ID",
 				"IMAGE",
-				"MNT_NS",
-				"PID_NS",
 				"UID",
 				"COMM",
 				"PID/host",
 				"TID/host",
 				"PPID/host",
-				"RET",
 				"EVENT",
 				"ARGS",
 			)
@@ -154,32 +141,30 @@ func (p tableEventPrinter) Preamble() {
 		switch p.containerMode {
 		case config.ContainerModeDisabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-6s %-16s %-7s %-7s %-16s %-25s %s",
+				"%-16s %-6s %-16s %-7s %-7s %-25s %s",
 				"TIME",
 				"UID",
 				"COMM",
 				"PID",
 				"TID",
-				"RET",
 				"EVENT",
 				"ARGS",
 			)
 		case config.ContainerModeEnabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-13s %-6s %-16s %-15s %-15s %-16s %-25s %s",
+				"%-16s %-13s %-6s %-16s %-15s %-15s %-25s %s",
 				"TIME",
 				"CONTAINER_ID",
 				"UID",
 				"COMM",
 				"PID/host",
 				"TID/host",
-				"RET",
 				"EVENT",
 				"ARGS",
 			)
 		case config.ContainerModeEnriched:
 			fmt.Fprintf(p.out,
-				"%-16s %-13s %-16s %-6s %-16s %-15s %-15s %-16s %-25s %s",
+				"%-16s %-13s %-16s %-6s %-16s %-15s %-15s %-25s %s",
 				"TIME",
 				"CONTAINER_ID",
 				"IMAGE",
@@ -187,7 +172,6 @@ func (p tableEventPrinter) Preamble() {
 				"COMM",
 				"PID/host",
 				"TID/host",
-				"RET",
 				"EVENT",
 				"ARGS",
 			)
@@ -196,137 +180,238 @@ func (p tableEventPrinter) Preamble() {
 	fmt.Fprintln(p.out)
 }
 
-func (p tableEventPrinter) Print(event trace.Event) {
-	ut := time.Unix(0, int64(event.Timestamp))
-	if p.relativeTS {
-		ut = ut.UTC()
-	}
-	timestamp := fmt.Sprintf("%02d:%02d:%02d:%06d", ut.Hour(), ut.Minute(), ut.Second(), ut.Nanosecond()/1000)
-
-	containerId := event.Container.ID
-	if len(containerId) > 12 {
-		containerId = containerId[:12]
-	}
-	containerImage := event.Container.ImageName
-	if len(containerImage) > 16 {
-		containerImage = containerImage[:16]
+func (p tableEventPrinter) Print(event *pb.Event) {
+	if event == nil {
+		return
 	}
 
-	eventName := event.EventName
+	// Extract timestamp
+	timestamp := "N/A"
+	if event.Timestamp != nil {
+		ut := event.Timestamp.AsTime()
+		if p.relativeTS {
+			ut = ut.UTC()
+		}
+		timestamp = fmt.Sprintf("%02d:%02d:%02d:%06d", ut.Hour(), ut.Minute(), ut.Second(), ut.Nanosecond()/1000)
+	}
+
+	// Extract container ID
+	containerId := ""
+	if event.Workload != nil && event.Workload.Container != nil {
+		containerId = event.Workload.Container.Id
+		if len(containerId) > 12 {
+			containerId = containerId[:12]
+		}
+	}
+
+	// Extract container image
+	containerImage := ""
+	if event.Workload != nil && event.Workload.Container != nil && event.Workload.Container.Image != nil {
+		containerImage = event.Workload.Container.Image.Name
+		if len(containerImage) > 16 {
+			containerImage = containerImage[:16]
+		}
+	}
+
+	// Extract event name
+	eventName := event.Name
 	if len(eventName) > 25 {
 		eventName = eventName[:22] + "..."
+	}
+
+	// Extract process fields
+	var userId, processName string
+	var processID, threadID, parentProcessID, hostProcessID, hostThreadID, hostParentProcessID int
+
+	if event.Workload != nil && event.Workload.Process != nil {
+		if event.Workload.Process.RealUser != nil && event.Workload.Process.RealUser.Id != nil {
+			userId = fmt.Sprintf("%d", event.Workload.Process.RealUser.Id.Value)
+		}
+		if event.Workload.Process.Thread != nil {
+			processName = event.Workload.Process.Thread.Name
+			if event.Workload.Process.Thread.Tid != nil {
+				threadID = int(event.Workload.Process.Thread.Tid.Value)
+			}
+			if event.Workload.Process.Thread.HostTid != nil {
+				hostThreadID = int(event.Workload.Process.Thread.HostTid.Value)
+			}
+		}
+		if event.Workload.Process.Pid != nil {
+			processID = int(event.Workload.Process.Pid.Value)
+		}
+		if event.Workload.Process.HostPid != nil {
+			hostProcessID = int(event.Workload.Process.HostPid.Value)
+		}
+		if len(event.Workload.Process.Ancestors) > 0 {
+			ancestor := event.Workload.Process.Ancestors[0]
+			if ancestor.Pid != nil {
+				parentProcessID = int(ancestor.Pid.Value)
+			}
+			if ancestor.HostPid != nil {
+				hostParentProcessID = int(ancestor.HostPid.Value)
+			}
+		}
 	}
 
 	if p.verbose {
 		switch p.containerMode {
 		case config.ContainerModeDisabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-17s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-25s ",
+				"%-16s %-6s %-16s %-7d %-7d %-7d %-25s ",
 				timestamp,
-				event.HostName,
-				containerId,
-				event.MountNS,
-				event.PIDNS,
-				event.UserID,
-				event.ProcessName,
-				event.ProcessID,
-				event.ThreadID,
-				event.ParentProcessID,
-				event.ReturnValue,
-				event.EventName,
+				userId,
+				processName,
+				processID,
+				threadID,
+				parentProcessID,
+				event.Name,
 			)
 		case config.ContainerModeEnabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-17s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-25s ",
+				"%-16s %-13s %-6s %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-25s ",
 				timestamp,
-				event.HostName,
 				containerId,
-				event.MountNS,
-				event.PIDNS,
-				event.UserID,
-				event.ProcessName,
-				event.ProcessID,
-				event.HostProcessID,
-				event.ThreadID,
-				event.HostThreadID,
-				event.ParentProcessID,
-				event.HostParentProcessID,
-				event.ReturnValue,
-				event.EventName,
+				userId,
+				processName,
+				processID,
+				hostProcessID,
+				threadID,
+				hostThreadID,
+				parentProcessID,
+				hostParentProcessID,
+				event.Name,
 			)
 		case config.ContainerModeEnriched:
 			fmt.Fprintf(p.out,
-				"%-16s %-17s %-13s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-25s ",
+				"%-16s %-13s %-16s %-6s %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-25s ",
 				timestamp,
-				event.HostName,
 				containerId,
-				event.Container.ImageName,
-				event.MountNS,
-				event.PIDNS,
-				event.UserID,
-				event.ProcessName,
-				event.ProcessID,
-				event.HostProcessID,
-				event.ThreadID,
-				event.HostThreadID,
-				event.ParentProcessID,
-				event.HostParentProcessID,
-				event.ReturnValue,
-				event.EventName,
+				containerImage,
+				userId,
+				processName,
+				processID,
+				hostProcessID,
+				threadID,
+				hostThreadID,
+				parentProcessID,
+				hostParentProcessID,
+				event.Name,
 			)
 		}
 	} else {
 		switch p.containerMode {
 		case config.ContainerModeDisabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-6d %-16s %-7d %-7d %-16d %-25s ",
+				"%-16s %-6s %-16s %-7d %-7d %-25s ",
 				timestamp,
-				event.UserID,
-				event.ProcessName,
-				event.ProcessID,
-				event.ThreadID,
-				event.ReturnValue,
+				userId,
+				processName,
+				processID,
+				threadID,
 				eventName,
 			)
 		case config.ContainerModeEnabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-25s ",
+				"%-16s %-13s %-6s %-16s %-7d/%-7d %-7d/%-7d %-25s ",
 				timestamp,
 				containerId,
-				event.UserID,
-				event.ProcessName,
-				event.ProcessID,
-				event.HostProcessID,
-				event.ThreadID,
-				event.HostThreadID,
-				event.ReturnValue,
+				userId,
+				processName,
+				processID,
+				hostProcessID,
+				threadID,
+				hostThreadID,
 				eventName,
 			)
 		case config.ContainerModeEnriched:
 			fmt.Fprintf(p.out,
-				"%-16s %-13s %-16s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-25s ",
+				"%-16s %-13s %-16s %-6s %-16s %-7d/%-7d %-7d/%-7d %-25s ",
 				timestamp,
 				containerId,
 				containerImage,
-				event.UserID,
-				event.ProcessName,
-				event.ProcessID,
-				event.HostProcessID,
-				event.ThreadID,
-				event.HostThreadID,
-				event.ReturnValue,
+				userId,
+				processName,
+				processID,
+				hostProcessID,
+				threadID,
+				hostThreadID,
 				eventName,
 			)
 		}
 	}
-	for i, arg := range event.Args {
-		name := arg.Name
-		value := arg.Value
 
-		// detectedFrom argument from pkg/ebpf/finding.go breaks the table output,
-		// so we simplify it
-		if name == "detectedFrom" {
-			value = fmt.Sprintf("%s", value.(map[string]interface{})["name"])
+	// Print event data (args)
+	for i, data := range event.Data {
+		name := data.Name
+		var value interface{}
+
+		// Get the actual value from the EventValue union
+		switch v := data.Value.(type) {
+		case *pb.EventValue_Int32:
+			value = v.Int32
+		case *pb.EventValue_Int64:
+			value = v.Int64
+		case *pb.EventValue_UInt32:
+			value = v.UInt32
+		case *pb.EventValue_UInt64:
+			value = v.UInt64
+		case *pb.EventValue_Str:
+			value = v.Str
+		case *pb.EventValue_Bytes:
+			value = v.Bytes
+		case *pb.EventValue_Bool:
+			value = v.Bool
+		case *pb.EventValue_StrArray:
+			value = v.StrArray.Value
+		case *pb.EventValue_Int32Array:
+			value = v.Int32Array.Value
+		case *pb.EventValue_UInt64Array:
+			value = v.UInt64Array.Value
+		case *pb.EventValue_Sockaddr:
+			value = v.Sockaddr
+		case *pb.EventValue_Credentials:
+			value = v.Credentials
+		case *pb.EventValue_Timespec:
+			value = v.Timespec
+		case *pb.EventValue_HookedSyscalls:
+			value = v.HookedSyscalls
+		case *pb.EventValue_HookedSeqOps:
+			value = v.HookedSeqOps
+		case *pb.EventValue_Ipv4:
+			value = v.Ipv4
+		case *pb.EventValue_Ipv6:
+			value = v.Ipv6
+		case *pb.EventValue_Tcp:
+			value = v.Tcp
+		case *pb.EventValue_Udp:
+			value = v.Udp
+		case *pb.EventValue_Icmp:
+			value = v.Icmp
+		case *pb.EventValue_Icmpv6:
+			value = v.Icmpv6
+		case *pb.EventValue_Dns:
+			value = v.Dns
+		case *pb.EventValue_DnsQuestions:
+			value = v.DnsQuestions
+		case *pb.EventValue_DnsResponses:
+			value = v.DnsResponses
+		case *pb.EventValue_PacketMetadata:
+			value = v.PacketMetadata
+		case *pb.EventValue_Http:
+			value = v.Http
+		case *pb.EventValue_HttpRequest:
+			value = v.HttpRequest
+		case *pb.EventValue_HttpResponse:
+			value = v.HttpResponse
+		case *pb.EventValue_Struct:
+			value = v.Struct
+		default:
+			value = "<unknown>"
+		}
+
+		// detectedFrom argument breaks the table output, so we simplify it
+		if name == "detectedFrom" && event.DetectedFrom != nil {
+			value = event.DetectedFrom.Name
 		}
 
 		if i == 0 {
@@ -380,7 +465,7 @@ func (p *templateEventPrinter) Init() error {
 
 func (p templateEventPrinter) Preamble() {}
 
-func (p templateEventPrinter) Print(event trace.Event) {
+func (p templateEventPrinter) Print(event *pb.Event) {
 	if p.templateObj != nil {
 		err := (*p.templateObj).Execute(p.out, event)
 		if err != nil {
@@ -408,7 +493,7 @@ func (p jsonEventPrinter) Init() error { return nil }
 
 func (p jsonEventPrinter) Preamble() {}
 
-func (p jsonEventPrinter) Print(event trace.Event) {
+func (p jsonEventPrinter) Print(event *pb.Event) {
 	eBytes, err := json.Marshal(event)
 	if err != nil {
 		logger.Errorw("Error marshaling event to json", "error", err)
@@ -434,7 +519,7 @@ func (p *ignoreEventPrinter) Init() error {
 
 func (p *ignoreEventPrinter) Preamble() {}
 
-func (p *ignoreEventPrinter) Print(event trace.Event) {}
+func (p *ignoreEventPrinter) Print(event *pb.Event) {}
 
 func (p *ignoreEventPrinter) Epilogue(stats metrics.Stats) {}
 
@@ -535,7 +620,7 @@ func (p *forwardEventPrinter) Init() error {
 
 func (p *forwardEventPrinter) Preamble() {}
 
-func (p *forwardEventPrinter) Print(event trace.Event) {
+func (p *forwardEventPrinter) Print(event *pb.Event) {
 	if p.client == nil {
 		logger.Errorw("Invalid Forward client")
 		return
@@ -626,7 +711,7 @@ func (ws *webhookEventPrinter) Init() error {
 
 func (ws *webhookEventPrinter) Preamble() {}
 
-func (ws *webhookEventPrinter) Print(event trace.Event) {
+func (ws *webhookEventPrinter) Print(event *pb.Event) {
 	var (
 		payload []byte
 		err     error

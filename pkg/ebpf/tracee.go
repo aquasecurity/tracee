@@ -601,7 +601,9 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	t.eventsPool = &sync.Pool{
 		New: func() interface{} {
-			return &trace.Event{}
+			return &events.PipelineEvent{
+				Event: &trace.Event{},
+			}
 		},
 	}
 
@@ -1920,7 +1922,7 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 // invokeInitEvents emits Tracee events, called Initialization Events, that are generated from the
 // userland process itself, and not from the kernel. These events usually serve as informational
 // events for the signatures engine/logic.
-func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
+func (t *Tracee) invokeInitEvents(out chan *events.PipelineEvent) {
 	var matchedPolicies uint64
 
 	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64) {
@@ -1940,7 +1942,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	if matchedPolicies > 0 {
 		traceeDataEvent := events.TraceeInfoEvent(t.bootTime, t.startTime)
 		setMatchedPolicies(&traceeDataEvent, matchedPolicies)
-		out <- &traceeDataEvent
+		out <- events.NewPipelineEvent(&traceeDataEvent)
 		_ = t.stats.EventCount.Increment()
 	}
 
@@ -1948,7 +1950,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	if matchedPolicies > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
 		setMatchedPolicies(&systemInfoEvent, matchedPolicies)
-		out <- &systemInfoEvent
+		out <- events.NewPipelineEvent(&systemInfoEvent)
 		_ = t.stats.EventCount.Increment()
 	}
 
@@ -1960,7 +1962,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		for i := range existingContainerEvents {
 			event := &(existingContainerEvents[i])
 			setMatchedPolicies(event, matchedPolicies)
-			out <- event
+			out <- events.NewPipelineEvent(event)
 			_ = t.stats.EventCount.Increment()
 		}
 	}
