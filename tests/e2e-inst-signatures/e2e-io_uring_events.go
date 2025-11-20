@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -13,6 +14,8 @@ type e2eIoUring struct {
 	ioIssueSqe    bool
 	ioWrite       bool
 	ioUringCreate bool
+	device        uint32
+	inode         uint64
 }
 
 func (sig *e2eIoUring) Init(ctx detect.SignatureContext) error {
@@ -84,19 +87,125 @@ func (sig *e2eIoUring) handleIoWrite(event protocol.Event) error {
 		return fmt.Errorf("failed to cast event's payload")
 	}
 
-	// do some validations...
+	// Validate path
+	path, err := eventObj.GetStringArgumentByName("path")
+	if err != nil {
+		return err
+	}
+	if path != "/tmp/io_uring_writev.txt" {
+		return fmt.Errorf("unexpected path: expected /tmp/io_uring_writev.txt, got %s", path)
+	}
+
+	// Validate device matches io_issue_sqe
+	device, err := eventObj.GetIntArgumentByName("device")
+	if err != nil {
+		return err
+	}
+	if sig.device != 0 && uint32(device) != sig.device {
+		return fmt.Errorf("device mismatch: expected %d, got %d", sig.device, device)
+	}
+
+	// Validate inode matches io_issue_sqe
+	inode, err := eventObj.GetIntArgumentByName("inode")
+	if err != nil {
+		return err
+	}
+	if sig.inode != 0 && uint64(inode) != sig.inode {
+		return fmt.Errorf("inode mismatch: expected %d, got %d", sig.inode, inode)
+	}
+
+	// Validate pos
+	pos, err := eventObj.GetIntArgumentByName("pos")
+	if err != nil {
+		return err
+	}
+	if pos < 0 {
+		return fmt.Errorf("pos should not be negative: %d", pos)
+	}
+
+	// Validate len
+	length, err := eventObj.GetIntArgumentByName("len")
+	if err != nil {
+		return err
+	}
+	if length <= 0 {
+		return fmt.Errorf("len should be positive: %d", length)
+	}
+
+	// Validate buf pointer is set
+	buf, err := eventObj.GetUintArgumentByName("buf")
+	if err != nil {
+		return err
+	}
+	if buf == 0 {
+		return fmt.Errorf("buf pointer should not be null")
+	}
+
+	// Validate worker_host_tid is set
+	workerTid, err := eventObj.GetIntArgumentByName("worker_host_tid")
+	if err != nil {
+		return err
+	}
+	if workerTid == 0 {
+		return fmt.Errorf("worker_host_tid should not be 0")
+	}
 
 	return nil
 }
 
 func (sig *e2eIoUring) handleIoIssueSqe(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("failed to cast event's payload")
 	}
 
-	// do some validations...
+	// Validate path
+	path, err := eventObj.GetStringArgumentByName("path")
+	if err != nil {
+		return err
+	}
+	if path != "/tmp/io_uring_writev.txt" {
+		return fmt.Errorf("unexpected path: expected /tmp/io_uring_writev.txt, got %s", path)
+	}
+
+	// Validate and store device
+	device, err := eventObj.GetIntArgumentByName("device")
+	if err != nil {
+		return err
+	}
+	if device == 0 {
+		return fmt.Errorf("device should not be 0")
+	}
+	sig.device = uint32(device)
+
+	// Validate and store inode
+	inode, err := eventObj.GetIntArgumentByName("inode")
+	if err != nil {
+		return err
+	}
+	if inode == 0 {
+		return fmt.Errorf("inode should not be 0")
+	}
+	sig.inode = uint64(inode)
+
+	// Validate opcode (IORING_OP_WRITEV = 1)
+	opcode, err := eventObj.GetIntArgumentByName("opcode")
+	if err != nil {
+		return err
+	}
+	if opcode != int(parsers.IORING_OP_WRITEV.Value()) {
+		return fmt.Errorf("unexpected opcode: expected 1 (IORING_OP_WRITEV), got %d", opcode)
+	}
+
+	// Validate user_data is set
+	userData, err := eventObj.GetIntArgumentByName("user_data")
+	if err != nil {
+		return err
+	}
+	if userData == 0 {
+		return fmt.Errorf("user_data should not be 0")
+	}
+
 	return nil
 }
 
@@ -105,7 +214,33 @@ func (sig *e2eIoUring) handleIoUringCreate(event protocol.Event) error {
 	if !ok {
 		return fmt.Errorf("failed to cast event's payload")
 	}
-	// do some validations...
+
+	// Validate sq_entries
+	sqEntries, err := eventObj.GetIntArgumentByName("sq_entries")
+	if err != nil {
+		return err
+	}
+	if sqEntries != 16 {
+		return fmt.Errorf("unexpected sq_entries: expected 16, got %d", sqEntries)
+	}
+
+	// Validate cq_entries
+	cqEntries, err := eventObj.GetIntArgumentByName("cq_entries")
+	if err != nil {
+		return err
+	}
+	if cqEntries != 32 {
+		return fmt.Errorf("unexpected cq_entries: expected 32, got %d", cqEntries)
+	}
+
+	// Validate ctx pointer is set
+	ctx, err := eventObj.GetUintArgumentByName("ctx")
+	if err != nil {
+		return err
+	}
+	if ctx == 0 {
+		return fmt.Errorf("ctx pointer should not be null")
+	}
 
 	return nil
 }
