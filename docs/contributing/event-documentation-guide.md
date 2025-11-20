@@ -7,6 +7,7 @@ This guide provides the standard format and requirements for documenting Tracee 
 ## Why Documentation Standards Matter
 
 Consistent event documentation helps users:
+
 - **Understand event purpose** and when to use specific events
 - **Configure events correctly** with accurate field names and types
 - **Troubleshoot issues** with clear dependency information
@@ -115,6 +116,7 @@ Signature events require additional sections (SIGNATURE METADATA, DETECTION LOGI
 - **PRIMARY SOURCE**: `pkg/events/core.go`
 - Find the event struct by searching for the event name
 - Extract the following with 100% accuracy:
+
   - `sets: []string{}` → EVENT SETS section
   - `fields: []DataField{}` → DATA FIELDS section (names and types)
   - `dependencies.probes` → DEPENDENCIES section
@@ -123,11 +125,13 @@ Signature events require additional sections (SIGNATURE METADATA, DETECTION LOGI
 - **PRIMARY SOURCE**: `pkg/ebpf/probes/probe_group.go`
 - Map internal probe handles to actual kernel attachment points
 - Examples:
+
   - `SysEnter: NewTraceProbe(RawTracepoint, "raw_syscalls:sys_enter", ...)` → `raw_syscalls:sys_enter`
   - `DoExit: NewTraceProbe(KProbe, "do_exit", ...)` → `do_exit`
   - `SecurityFileOpen: NewTraceProbe(KProbe, "security_file_open", ...)` → `security_file_open`
 
 ### Probe Type Mapping
+
 - `KProbe` → Use `**Kernel Probe:**` header
 - `RawTracepoint` → Use `**Kernel Tracepoint:**` header
 - Multiple types → Use separate headers for each type
@@ -135,13 +139,16 @@ Signature events require additional sections (SIGNATURE METADATA, DETECTION LOGI
 ## Quality Improvements
 
 ### Avoid Redundancy
+
 - **Problem**: Having "This event is useful for:" bullets in DESCRIPTION AND a separate USE CASES section creates redundancy
 - **Solution**: Keep DESCRIPTION focused on **what/when/how** the event works, save **why/for what** explanations for USE CASES section
 
 ### Simplify Dependencies
+
 - **Problem**: Separate entries for kprobe + kretprobe on same function is verbose
 - **Solution**: Combine as `function_name (kprobe + kretprobe, required): Description`
 - **Example**: Instead of:
+
   ```
   - vfs_write (required): VFS write function entry
   - vfs_write (required): VFS write function return
@@ -151,6 +158,7 @@ Signature events require additional sections (SIGNATURE METADATA, DETECTION LOGI
 ## Content Guidelines
 
 ### Writing Style
+
 - Use clear, technical language appropriate for system administrators and security professionals
 - Avoid marketing language or excessive enthusiasm
 - Keep descriptions factual and implementation-focused
@@ -158,11 +166,13 @@ Signature events require additional sections (SIGNATURE METADATA, DETECTION LOGI
 - Keep documentation **concise** - aim for 50-70 lines total per event
 
 ### Description Structure
+
 1. **Trigger condition**: "Triggered when..."
 2. **Context and purpose**: What the event captures and why it's important
 
 ### Use Case Categories
 Common categories to consider:
+
 - Security monitoring/analysis
 - Performance analysis
 - Debugging/troubleshooting
@@ -174,6 +184,7 @@ Common categories to consider:
 ## Formatting Requirements
 
 ### Consistency Rules
+
 - Use `**bold**` for field names, event names, and section emphasis
 - Use `*italics*` for data types
 - Use `- ` for bullet points (not `* `)
@@ -181,8 +192,10 @@ Common categories to consider:
 - Use singular headers for dependencies ("Kernel Probe:" not "Kernel Probes:")
 
 ### File Naming and Location
+
 - Filename: `event_name.md` (use underscores, lowercase)
 - Location based on event category:
+
   - System events: `docs/docs/events/builtin/man/misc/`
   - LSM events: `docs/docs/events/builtin/man/lsm/`
   - Network events: `docs/docs/events/builtin/man/net/`

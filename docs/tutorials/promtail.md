@@ -75,6 +75,7 @@ Now, you can write log queries in LogQL to access the logs that are stored in th
 ## Installation of Observability Tools
 
 We need to install an observability stack to access the logs of the pods inside our cluster. This will consist of:
+
 - Grafana (for Dashboards and querying logs)
 - Promtail for collecting logs from the pods on each node
 - Loki, which is feeding the logs inot Grafana

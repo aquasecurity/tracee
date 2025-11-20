@@ -13,6 +13,7 @@ every section should roughly cover:
 ## Distributions and Linux Flavors
 
 - List of supported environments:
+
   - With BTFHUB (check BTF session below):
     - Centos 8 (kernel < 4.18.0-193.el8)
     - Debian 10 (buster) with v5.10 kernels
@@ -125,6 +126,7 @@ sudo ./dist/lsm_check --quiet
 ```
 
 Exit codes:
+
 - `0`: LSM BPF is supported ✅
 - `1`: LSM BPF is not supported (expected on most systems) ⚠️  
 - `2`: Check failed due to insufficient privileges or other errors ❌

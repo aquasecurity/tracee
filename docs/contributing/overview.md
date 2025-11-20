@@ -14,6 +14,7 @@ If you have a suggestion, question, or a general comment - please use Discussion
 ## Discussions
 
 - We have the following discussion topics:
+
     1. [Announcements](https://github.com/aquasecurity/tracee/discussions/categories/announcements): One way communication from the team to the community. Consider this like our mini blog.
     1. [Questions and Help](https://github.com/aquasecurity/tracee/discussions/categories/questions-and-help): For help and support. Consider this similar to StackOverflow.
     1. [Development](https://github.com/aquasecurity/tracee/discussions/categories/development): For discussing potential features, and collaborating on their design.
@@ -22,6 +23,7 @@ If you have a suggestion, question, or a general comment - please use Discussion
 
 1. **Actionable and Assignable:** Every issue must be clear, actionable, and assignable to a specific person.  Break down large issues into smaller, more manageable tasks.
 2. **Clear and Definitive Descriptions:** Be precise in your issue descriptions:
+
     - **Bug Reports:** Include the following:
         - Detailed steps to reproduce the bug.
         - The complete error message.
@@ -30,6 +32,7 @@ If you have a suggestion, question, or a general comment - please use Discussion
         - A clear scope for the feature.
         - Specific acceptance criteria that will be used to determine if the feature is complete.
 3. **Issue Labels:** We use these labels to categorize and track issues:
+
     - `area/...` (e.g., `ebpf`, `events`): Specifies the area of Tracee affected by the issue.
     - `kind/...` (e.g., `bug`, `chore`, `enhancement`, `documentation`): Indicates the type of issue.
     - `milestone/...`: Specifies the target release for the issue.
@@ -56,6 +59,7 @@ To backport or cherry-pick a change:
 1. Every Pull Request should have an associated Issue unless it is a trivial fix.
 2. When adding a flag option or other UX related change, make sure the design is explicitly described in the associated issue, and a maintainer approved it.
 3. Commit subject should succinctly describe the change:
+
     1. Max 50 chars.
     2. Written in imperative mood: begin with a verb like "fix", "add", "improve", or "refactor"; Think "once applied, this commit will...".
     3. If ambiguous, mention the area that this commit affects (see area labels above).
@@ -125,6 +129,7 @@ For complete build options and development environment setup, run `make help` or
 If you're looking to add new event tracing capabilities to Tracee, see our comprehensive guide: [Adding New Event Tracing](adding-events.md).
 
 This guide covers:
+
 - Event definition in Go code
 - eBPF probe configuration
 - Implementation patterns and best practices

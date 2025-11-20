@@ -5,6 +5,7 @@ This guide covers all code quality tools and checks for Tracee development. The 
 ## Purpose
 
 This script now **powers the official `make check-pr` command** and includes all necessary checks for PR submission:
+
 - **Documentation verification**: Man page synchronization checks
 - **Code analysis**: Comprehensive formatting, linting, and static analysis
 - **Unit tests**: Go and script unit tests
@@ -58,11 +59,13 @@ make check-pr ARGS="--fast --skip-docs HEAD~1"  # Pass arguments through make
 ## Test Categories
 
 ### 1. Documentation Verification
+
 - Ensures `.1.md` and `.1` man page files are synchronized
 - Runs `scripts/verify_man_md_sync.sh`
 - Compares changes against `origin/main`
 
 ### 2. Code Analysis
+
 - **Go Formatting**: Checks `gofmt` compliance
 - **Linting**: Runs `revive` linter via `make check-lint`
 - **Code Style**: Validates formatting via `make check-fmt`
@@ -71,16 +74,19 @@ make check-pr ARGS="--fast --skip-docs HEAD~1"  # Pass arguments through make
 - **Error Check**: Unhandled error detection via `make check-err`
 
 ### 3. Unit Tests
+
 - **Go Unit Tests**: Runs `make test-unit`
 - **Script Unit Tests**: Runs `make run-scripts-test-unit`
 
 ### 4. PR Formatting
+
 - **Commit Display**: Shows commits in PR-ready format
 - **Description Generation**: Extracts commit bodies for PR descriptions
 
 ## Dependencies
 
 ### Required
+
 - `go` (Go compiler and tools)
 - `make` (Build system)
 - `git` (Version control)
@@ -134,6 +140,7 @@ Many IDEs can be configured to run external scripts. Configure your IDE to run `
 5. **Commit and push** with confidence
 
 **Integration Options:**
+
 - **Pre-commit hook**: Add `make check-pr-fast || exit 1` to `.git/hooks/pre-commit`
 - **IDE integration**: Configure your IDE to run `make check-pr-fast` as a build step
 
@@ -175,6 +182,7 @@ Many IDEs can be configured to run external scripts. Configure your IDE to run `
 ## Extending the Script
 
 To add additional test categories:
+
 1. Create a new test function following the pattern of existing functions
 2. Add it to the main execution in the `main()` function
 3. Update the help text and documentation
@@ -182,6 +190,7 @@ To add additional test categories:
 ## Comparison with CI
 
 This script covers the basic PR tests but does not include:
+
 - Integration tests (require elevated privileges)
 - Performance tests (resource intensive)
 - Multi-kernel testing (requires special infrastructure)
