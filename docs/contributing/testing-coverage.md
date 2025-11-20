@@ -9,12 +9,14 @@ Tracee uses Go's built-in coverage tools combined with Codecov for comprehensive
 ## Coverage Types
 
 ### 1. Unit Tests Coverage
+
 - **Target**: Maintain current baseline, 60% for new code
 - **Scope**: Core Go logic, utilities, and non-eBPF components
 - **Files**: `cmd/`, `pkg/`, `signatures/`
 - **Command**: `make test-unit`
 
 ### 2. Integration Tests Coverage
+
 - **Scope**: eBPF + Go integration, full system testing
 - **Command**: `make test-integration`
 
@@ -53,12 +55,14 @@ Coverage is automatically collected and reported on:
 ### Codecov Integration
 
 Coverage reports are uploaded to [Codecov](https://codecov.io) with the following flags:
+
 - `unit`: Unit test coverage
 - `integration`: Integration test coverage
 
 ### Coverage Configuration
 
 Coverage behavior is configured in `codecov.yml`:
+
 - Project coverage target: Auto (maintains current baseline)
 - Patch coverage target: 60% for new code
 - Automatic PR comments with coverage diff
@@ -67,6 +71,7 @@ Coverage behavior is configured in `codecov.yml`:
 ## Coverage Files
 
 The following coverage files are generated (and gitignored):
+
 - `coverage.txt`: Main unit test coverage
 - `integration-coverage.txt`: Integration test coverage
 - `coverage.html`: HTML report for local viewing
@@ -90,15 +95,18 @@ The following coverage files are generated (and gitignored):
 ## Troubleshooting
 
 ### Coverage Not Generated
+
 - Ensure you're running tests with `-coverprofile` flag
 - Check that `-covermode=atomic` is set (required for concurrent programs)
 
 ### Low Coverage Warnings
+
 - Review which functions/lines are not covered
 - Consider if uncovered code represents important paths
 - Add tests for critical uncovered functionality
 
 ### Codecov Upload Failures
+
 - Verify `CODECOV_TOKEN` is set in repository secrets
 - Check that coverage files exist before upload
 - Review GitHub Actions logs for specific error messages

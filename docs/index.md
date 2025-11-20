@@ -83,16 +83,19 @@ For a complete walkthrough please see the [Kubernetes getting started guide][kub
 After trying the quickstart, here's how to dive deeper:
 
 ### 🎯 For Security Analysts
+
 - **[Events Documentation](docs/events/index.md)**: Learn about security events and signatures
 - **[Policies Guide](docs/policies/index.md)**: Create custom detection rules
 - **[Kubernetes Tutorial](tutorials/k8s-policies.md)**: Monitor containerized workloads
 
 ### 🛠️ For DevOps Engineers
+
 - **[Installation Guide](docs/install/index.md)**: Production deployment options
 - **[Configuration](docs/install/config/index.md)**: Customize Tracee for your environment
 - **[Outputs](docs/outputs/index.md)**: Integrate with your monitoring stack
 
 ### 👨‍💻 For Developers
+
 - **[Custom Events](docs/events/custom/overview.md)**: Create your own detection logic
 - **[Contributing Guide](contributing/overview.md)**: Help improve Tracee
 - **[Building from Source](contributing/building/building.md)**: Development setup

@@ -18,6 +18,7 @@ Adding a new event to Tracee requires changes in several main areas:
 ### 1. Implement eBPF Program in `pkg/ebpf/c/tracee.bpf.c`
 
 **Choose a kernel function to monitor:**
+
 - **System calls**: `sys_openat`, `sys_execve`
 - **LSM hooks**: `security_file_open`, `security_bprm_check`
 - **VFS operations**: `vfs_read`, `vfs_write`
@@ -71,6 +72,7 @@ YourNewEvent: NewTraceProbe(KProbe, "your_kernel_function", "trace_your_event"),
 ```
 
 **Attachment types:**
+
 - `KProbe` - Attaches to kernel function entry (most common)
 - `KretProbe` - Attaches to kernel function exit (for return values)
 - `Tracepoint` - Attaches to predefined kernel tracepoints (stable interface)
@@ -81,6 +83,7 @@ YourNewEvent: NewTraceProbe(KProbe, "your_kernel_function", "trace_your_event"),
 **Choose an event ID** from the appropriate range and add it to both eBPF and Go code:
 
 **Event ID Ranges:**
+
 - Common events: 1-699 (most events)
 - Network events: 700-1999
 - User-space network: 2000-3999

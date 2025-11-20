@@ -12,6 +12,7 @@ ERRO error loading eBPF program: BTF is required
 ```
 
 **Solution**: 
+
 1. Check if BTF is available: `ls /sys/kernel/btf/vmlinux`
 2. If missing, upgrade to a kernel version that includes BTF support (most modern distributions)
 3. See [Prerequisites](install/prerequisites.md#btf) for more details
@@ -24,6 +25,7 @@ ERRO permission denied loading eBPF program
 ```
 
 **Solutions**:
+
 1. **Run as root**: `sudo tracee`
 2. **Use required capabilities**:
    ```bash
@@ -64,6 +66,7 @@ ERRO permission denied loading eBPF program
 **Problem**: Tracee starts but produces no events
 
 **Troubleshooting steps**:
+
 1. **Check scope filters**:
    ```bash
    # Test with minimal configuration
@@ -88,6 +91,7 @@ ERRO permission denied loading eBPF program
 **Problem**: Tracee consuming excessive CPU
 
 **Solutions**:
+
 1. **Reduce event scope**:
    ```yaml
    scope:
@@ -116,6 +120,7 @@ ERRO permission denied loading eBPF program
 **Problem**: Missing container-related events
 
 **Solutions**:
+
 1. **Mount container runtime socket**:
    ```bash
    # Docker
@@ -135,6 +140,7 @@ WARN events dropped due to buffer overflow
 ```
 
 **Solutions**:
+
 1. **Increase buffer size**:
    ```bash
    tracee --perf-buffer-size 1024
@@ -153,6 +159,7 @@ WARN events dropped due to buffer overflow
 **Problem**: Events arrive with significant delay
 
 **Solutions**:
+
 1. **Check system load**: Use `top`, `htop` to verify system isn't overloaded
 2. **Optimize event selection**: Use specific events instead of broad event sets
 
@@ -163,6 +170,7 @@ WARN events dropped due to buffer overflow
 **Problem**: Invalid JSON output
 
 **Solutions**:
+
 1. **Use proper output format**:
    ```bash
    tracee --output json --output option:parse-arguments
@@ -179,6 +187,7 @@ WARN events dropped due to buffer overflow
 **Problem**: Expected fields not present in events
 
 **Solutions**:
+
 1. **Enable argument parsing**:
    ```bash
    tracee --output option:parse-arguments
@@ -224,6 +233,7 @@ If you continue experiencing issues:
 3. **Join Slack**: [Aqua Community Slack](https://slack.aquasec.com)
 
 When reporting issues, include:
+
 - Tracee version (`tracee --version`)
 - Operating system and kernel version
 - Container runtime (if applicable)
