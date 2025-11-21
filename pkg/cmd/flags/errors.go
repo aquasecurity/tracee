@@ -77,3 +77,30 @@ func UnrecognizedOutputFormatError(format string) error {
 func UnsupportedContainerRuntimeError() error {
 	return errors.New("unsupported container runtime in sockets flag (see 'tracee man containers' for supported runtimes)")
 }
+
+func DestinationFlagIncorrectError(flag string) error {
+	return fmt.Errorf("destination flag format incorrect %s", flag)
+}
+
+func WrongFunctionInvocationError(functionName, flag string) error {
+	return fmt.Errorf("%s function called on wrong flag %s", functionName, flag)
+}
+
+func InvalidDestinationFieldError(field, value, destinationName string) error {
+	return fmt.Errorf("validation error: destination %s %s not valid for destination %s",
+		field, value, destinationName)
+}
+
+func MandatoryDestinationFieldError(destinationType, destinationName string) error {
+	return fmt.Errorf("validation error: url is mandatory for %s in destination %s", destinationName, destinationType)
+}
+
+func StreamFlagIncorrect(flag string) error {
+	return fmt.Errorf("stream flag format incorrect %s", flag)
+}
+
+func DestinationNotFoundError(destinationName, streamName string) error {
+	return fmt.Errorf(
+		"destination %s references in stream %s was not declared in destinations",
+		destinationName, streamName)
+}
