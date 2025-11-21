@@ -1,0 +1,15 @@
+name: Setup Tracee (Alpine)
+description: |
+  Setup Tracee development environment on Alpine Linux.
+  Fixes Git ownership and installs dependencies.
+  Note: Checkout must be done before calling this action.
+runs:
+  using: composite
+  steps:
+    - name: Fix Git ownership
+      run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      shell: sh
+    - name: Install Dependencies
+      run: ./scripts/installation/install-deps-alpine.sh
+      shell: sh
+

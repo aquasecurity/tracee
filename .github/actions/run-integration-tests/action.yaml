@@ -1,0 +1,24 @@
+name: Run Integration Tests
+description: |
+  Run integration test suite with full eBPF kernel integration.
+  Uploads coverage results to codecov.
+inputs:
+  codecov-token:
+    description: 'Codecov token for coverage upload'
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Run Integration Tests
+      run: |
+        env "PATH=$PATH" make test-integration
+      shell: bash
+    - name: Upload Integration Test Coverage
+      uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+      with:
+        token: ${{ inputs.codecov-token }}
+        files: ./integration-coverage.txt
+        flags: integration
+        name: integration-tests
+        fail_ci_if_error: false
+

@@ -1,0 +1,29 @@
+name: Run Unit Tests
+description: |
+  Run comprehensive unit test suite including main unit tests and script tests.
+  Uploads coverage results to codecov.
+inputs:
+  codecov-token:
+    description: 'Codecov token for coverage upload'
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Run Full Unit Test Suite
+      run: |
+        # Run comprehensive test suite for all modules (main + types + common + api)
+        make test-unit
+      shell: sh
+    - name: Upload Unit Test Coverage
+      uses: codecov/codecov-action@af09b5e394c93991b95a5e7646aeb90c1917f78f # v5.5.1
+      with:
+        token: ${{ inputs.codecov-token }}
+        files: ./coverage.txt
+        flags: unit
+        name: unit-tests
+        fail_ci_if_error: false
+    - name: Run Scripts Unit Tests
+      run: |
+        make run-scripts-test-unit
+      shell: sh
+

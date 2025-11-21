@@ -1,0 +1,99 @@
+name: Run E2E Tests
+description: |
+  Run end-to-end tests including build, compatibility, instrumentation, network, and kernel tests.
+  Handles test failure detection and artifact uploads.
+inputs:
+  job-name:
+    description: 'Job name for artifact naming'
+    required: true
+  run-id:
+    description: 'GitHub run ID for artifact naming'
+    required: true
+  run-attempt:
+    description: 'GitHub run attempt for artifact naming'
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Build Tracee
+      run: make tracee
+      shell: bash
+    - name: Compatibility Test
+      run: env "PATH=$PATH" make test-compatibility
+      shell: bash
+    - name: Instrumentation Test
+      id: e2e-inst-test
+      run: |
+        ./tests/e2e-inst-test.sh --keep-artifacts 2>&1 | tee /tmp/e2e-inst-test.log
+        exit ${PIPESTATUS[0]}
+      shell: bash
+    - name: Network Test
+      id: e2e-net-test
+      run: |
+        ./tests/e2e-net-test.sh 2>&1 | tee /tmp/e2e-net-test.log
+        exit ${PIPESTATUS[0]}
+      shell: bash
+    - name: Kernel Test
+      id: e2e-kernel-test
+      run: |
+        ./tests/e2e-kernel-test.sh 2>&1 | tee /tmp/e2e-kernel-test.log
+        exit ${PIPESTATUS[0]}
+      shell: bash
+    - name: Determine Failed Test
+      id: failed-test
+      if: failure() && (
+        steps.e2e-inst-test.conclusion == 'failure' ||
+        steps.e2e-net-test.conclusion == 'failure' || 
+        steps.e2e-kernel-test.conclusion == 'failure'
+        )
+      run: |
+        if [[ "${{ steps.e2e-inst-test.conclusion }}" == "failure" ]]; then
+          echo "name=inst" >> $GITHUB_OUTPUT
+        elif [[ "${{ steps.e2e-net-test.conclusion }}" == "failure" ]]; then
+          echo "name=net" >> $GITHUB_OUTPUT
+        elif [[ "${{ steps.e2e-kernel-test.conclusion }}" == "failure" ]]; then
+          echo "name=kernel" >> $GITHUB_OUTPUT
+        else
+          echo "No failed tests. Should not reach this point."
+          exit 1
+        fi
+      shell: bash
+    - name: Upload E2E Test Artifacts
+      if: always() && steps.failed-test.outputs.name != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: e2e-${{ steps.failed-test.outputs.name }}-artifacts-${{ inputs.job-name }}-${{ inputs.run-id }}-${{ inputs.run-attempt }}
+        path: |
+          /tmp/tracee-log-*
+          /tmp/tracee-output-*
+          /tmp/e2e-*.log
+        retention-days: 7
+        if-no-files-found: warn
+    - name: Notify About Available E2E Test Artifacts
+      if: always() && steps.failed-test.outputs.name != ''
+      run: |
+        echo "::notice title=Debug Artifacts Available::E2E tests failed. Debug artifacts have been uploaded and can be downloaded from the Summary tab. Look for: e2e-${{ steps.failed-test.outputs.name }}-artifacts-${{ inputs.job-name }}-${{ inputs.run-id }}-${{ inputs.run-attempt }}"
+        echo ""
+        echo "📋 **E2E Test Failed - Debug Information Available**"
+        echo ""
+        echo "🔍 **How to access debug artifacts:**"
+        echo "1. Click on the 'Summary' tab above the jobs list"
+        echo "2. Scroll to the bottom of the Summary page"
+        echo "3. Look for the 'Artifacts' section"
+        echo "4. Download: \`e2e-${{ steps.failed-test.outputs.name }}-artifacts-${{ inputs.job-name }}-${{ inputs.run-id }}-${{ inputs.run-attempt }}\`"
+        echo ""
+        echo "📁 **What's included in the artifacts:**"
+        echo "- **Log file**: Full debug-level logs from all E2E tests (tracee-log-*)"
+        echo "- **Output file**: JSON events captured during all E2E tests (tracee-output-*)"
+        echo "- **Pipeline log**: Complete stdout/stderr from the failed test (e2e-*.log)"
+        echo ""
+        echo "⚠️ **Note**: Artifacts are available for 7 days from upload"
+      shell: bash
+    - name: Cleanup E2E Test Artifacts
+      if: always()
+      run: |
+        # Clean up artifact files from runner filesystem
+        rm -f /tmp/tracee-log-* /tmp/tracee-output-* /tmp/e2e-*.log 2>/dev/null || true
+        echo "Cleaned up local artifact files from all E2E tests"
+      shell: bash
+

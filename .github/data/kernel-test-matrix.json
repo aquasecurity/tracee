@@ -1,0 +1,142 @@
+[
+    {
+        "name": "GKE 5.4",
+        "ami": "0013845506cbdf2ca",
+        "arch": "x86_64"
+    },
+    {
+        "name": "GKE 5.10",
+        "ami": "049b1b3a4a5fdf9fd",
+        "arch": "x86_64"
+    },
+    {
+        "name": "GKE 5.15 x86_64",
+        "ami": "01f6d4f80f256ffe4",
+        "arch": "x86_64"
+    },
+    {
+        "name": "GKE 5.15 aarch64",
+        "ami": "079f308677600eebf",
+        "arch": "aarch64"
+    },
+    {
+        "name": "AMZN2 5.10 x86_64",
+        "ami": "05d03d50b6008ede7",
+        "arch": "x86_64"
+    },
+    {
+        "name": "AMZN2 5.10 aarch64",
+        "ami": "05e46d0a87c96bf69",
+        "arch": "aarch64"
+    },
+    {
+        "name": "RHEL8 4.18 x86_64",
+        "ami": "0e6e8bf2181db9d65",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Focal 5.4 x86_64",
+        "ami": "0c75089aa342ffa26",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Focal 5.13 x86_64",
+        "ami": "094d5310a281c8679",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Focal 5.13 aarch64",
+        "ami": "08f88e2a2bd1b72a7",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Jammy 5.15 x86_64",
+        "ami": "0d01de8f7b26afe02",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Jammy 5.15 aarch64",
+        "ami": "08e91aa07134e6a36",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Jammy 5.19 x86_64",
+        "ami": "02691308713b4cec2",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Jammy 5.19 aarch64",
+        "ami": "046579f8e52acb104",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Lunar 6.2 x86_64",
+        "ami": "034e03e1bdb7c205f",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Lunar 6.2 aarch64",
+        "ami": "04b03463ee4e32182",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Mantic 6.5 x86_64",
+        "ami": "0a44ad46e5c42e499",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Mantic 6.5 aarch64",
+        "ami": "0387f77c4820c98db",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Mantic 6.6 x86_64",
+        "ami": "05b5ac8f6c43b3ca5",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Mantic 6.6 aarch64",
+        "ami": "05c9d6cd9343f0a43",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Noble 6.8 x86_64",
+        "ami": "0cc63426ae75d47c8",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Noble 6.8 aarch64",
+        "ami": "0f5260685b3ec2293",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Noble 6.10 x86_64",
+        "ami": "0ae23eabda70efc60",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Noble 6.10 aarch64",
+        "ami": "01ce0f71400b5ff38",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Noble 6.11 x86_64",
+        "ami": "0ce1f88aa63091921",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Noble 6.11 aarch64",
+        "ami": "0123508488affb578",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Noble 6.12 x86_64",
+        "ami": "0e38f3caba1b4234d",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Noble 6.12 aarch64",
+        "ami": "0547f429681dc1f2a",
+        "arch": "aarch64"
+    }
+]
