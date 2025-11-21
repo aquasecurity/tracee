@@ -8261,12 +8261,14 @@
 <h1 id="code-quality-guide">Code Quality Guide<a class="headerlink" href="#code-quality-guide" title="Permanent link">&para;</a></h1>
 <p>This guide covers all code quality tools and checks for Tracee development. The checkpatch script (<code>scripts/checkpatch.sh</code>) powers the <code>make check-pr</code> command and provides comprehensive PR verification for all developers.</p>
 <h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
-<p>This script now <strong>powers the official <code>make check-pr</code> command</strong> and includes all necessary checks for PR submission:
-- <strong>Documentation verification</strong>: Man page synchronization checks
-- <strong>Code analysis</strong>: Comprehensive formatting, linting, and static analysis
-- <strong>Unit tests</strong>: Go and script unit tests
-- <strong>PR formatting</strong>: Commit message formatting for PR descriptions
-- <strong>Enhanced UX</strong>: Better error messages, tool installation guidance, and flexible options</p>
+<p>This script now <strong>powers the official <code>make check-pr</code> command</strong> and includes all necessary checks for PR submission:</p>
+<ul>
+<li><strong>Documentation verification</strong>: Man page synchronization checks</li>
+<li><strong>Code analysis</strong>: Comprehensive formatting, linting, and static analysis</li>
+<li><strong>Unit tests</strong>: Go and script unit tests</li>
+<li><strong>PR formatting</strong>: Commit message formatting for PR descriptions</li>
+<li><strong>Enhanced UX</strong>: Better error messages, tool installation guidance, and flexible options</li>
+</ul>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <h3 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Official way - use make targets (recommended)</span>
@@ -8372,9 +8374,11 @@ make<span class="w"> </span>check-pr-fast<span class="w"> </span><span class="o"
 <li><strong>Full validation</strong>: Run <code>make check-pr</code> before PR submission</li>
 <li><strong>Commit and push</strong> with confidence</li>
 </ol>
-<p><strong>Integration Options:</strong>
-- <strong>Pre-commit hook</strong>: Add <code>make check-pr-fast || exit 1</code> to <code>.git/hooks/pre-commit</code>
-- <strong>IDE integration</strong>: Configure your IDE to run <code>make check-pr-fast</code> as a build step</p>
+<p><strong>Integration Options:</strong></p>
+<ul>
+<li><strong>Pre-commit hook</strong>: Add <code>make check-pr-fast || exit 1</code> to <code>.git/hooks/pre-commit</code></li>
+<li><strong>IDE integration</strong>: Configure your IDE to run <code>make check-pr-fast</code> as a build step</li>
+</ul>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
 <p><strong>Missing Tools Warning</strong>
@@ -8401,16 +8405,20 @@ make<span class="w"> </span>check-pr-fast<span class="w"> </span><span class="o"
 <li>Tests run in the order of fastest to slowest (docs → code analysis → unit tests)</li>
 </ul>
 <h2 id="extending-the-script">Extending the Script<a class="headerlink" href="#extending-the-script" title="Permanent link">&para;</a></h2>
-<p>To add additional test categories:
-1. Create a new test function following the pattern of existing functions
-2. Add it to the main execution in the <code>main()</code> function
-3. Update the help text and documentation</p>
+<p>To add additional test categories:</p>
+<ol>
+<li>Create a new test function following the pattern of existing functions</li>
+<li>Add it to the main execution in the <code>main()</code> function</li>
+<li>Update the help text and documentation</li>
+</ol>
 <h2 id="comparison-with-ci">Comparison with CI<a class="headerlink" href="#comparison-with-ci" title="Permanent link">&para;</a></h2>
-<p>This script covers the basic PR tests but does not include:
-- Integration tests (require elevated privileges)
-- Performance tests (resource intensive)
-- Multi-kernel testing (requires special infrastructure)
-- Build verification for other tools</p>
+<p>This script covers the basic PR tests but does not include:</p>
+<ul>
+<li>Integration tests (require elevated privileges)</li>
+<li>Performance tests (resource intensive)</li>
+<li>Multi-kernel testing (requires special infrastructure)</li>
+<li>Build verification for other tools</li>
+</ul>
 <p>For the complete test suite, the CI pipeline in GitHub Actions is still required.</p>
 
 

@@ -7947,7 +7947,9 @@
 <p>If you have a suggestion, question, or a general comment - please use Discussions. If there's a clear work item (including bugs) - you can open an Issue.</p>
 <h2 id="discussions">Discussions<a class="headerlink" href="#discussions" title="Permanent link">&para;</a></h2>
 <ul>
-<li>We have the following discussion topics:<ol>
+<li>
+<p>We have the following discussion topics:</p>
+<ol>
 <li><a href="https://github.com/aquasecurity/tracee/discussions/categories/announcements">Announcements</a>: One way communication from the team to the community. Consider this like our mini blog.</li>
 <li><a href="https://github.com/aquasecurity/tracee/discussions/categories/questions-and-help">Questions and Help</a>: For help and support. Consider this similar to StackOverflow.</li>
 <li><a href="https://github.com/aquasecurity/tracee/discussions/categories/development">Development</a>: For discussing potential features, and collaborating on their design.</li>
@@ -7957,7 +7959,9 @@
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
 <ol>
 <li><strong>Actionable and Assignable:</strong> Every issue must be clear, actionable, and assignable to a specific person.  Break down large issues into smaller, more manageable tasks.</li>
-<li><strong>Clear and Definitive Descriptions:</strong> Be precise in your issue descriptions:<ul>
+<li>
+<p><strong>Clear and Definitive Descriptions:</strong> Be precise in your issue descriptions:</p>
+<ul>
 <li><strong>Bug Reports:</strong> Include the following:<ul>
 <li>Detailed steps to reproduce the bug.</li>
 <li>The complete error message.</li>
@@ -7969,10 +7973,12 @@
 <li>Specific acceptance criteria that will be used to determine if the feature is complete.</li>
 </ul>
 </li>
-</ul>
+<li>
+<p><strong>Issue Labels:</strong> We use these labels to categorize and track issues:</p>
 </li>
-<li><strong>Issue Labels:</strong> We use these labels to categorize and track issues:<ul>
-<li><code>area/...</code> (e.g., <code>ebpf</code>, <code>events</code>): Specifies the area of Tracee affected by the issue.</li>
+<li>
+<p><code>area/...</code> (e.g., <code>ebpf</code>, <code>events</code>): Specifies the area of Tracee affected by the issue.</p>
+</li>
 <li><code>kind/...</code> (e.g., <code>bug</code>, <code>chore</code>, <code>enhancement</code>, <code>documentation</code>): Indicates the type of issue.</li>
 <li><code>milestone/...</code>: Specifies the target release for the issue.</li>
 <li><code>priority/...</code>:  Indicates the urgency of the issue.</li>
@@ -7982,9 +7988,9 @@
 <li><code>candidate/...</code>: (e.g., <code>candidate/v0.1.2</code>)  Identifies PRs in the <code>main</code> branch as candidates for backporting or cherry-picking to a release branch (e.g., <code>v0.1.2</code>). The specific method will be determined during the porting process.</li>
 <li><code>backported/...</code> (e.g., <code>backported/v0.1.2</code>): Marks PRs in the <code>main</code> branch as the basis for backporting changes to a release branch (e.g., <code>v0.1.2</code>) after the porting process.</li>
 <li><code>cherry-picked/...</code> (e.g., <code>cherry-picked/v0.1.2</code>): Marks PRs in the <code>main</code> branch as the basis for cherry-picking commits to a release branch (e.g., <code>v0.1.2</code>) after the porting process.</li>
+<li><strong>Issue Assignment:</strong> Self-assign issues or request assignment. Don't work on an issue assigned to someone else without their consent.</li>
 </ul>
 </li>
-<li><strong>Issue Assignment:</strong> Self-assign issues or request assignment. Don't work on an issue assigned to someone else without their consent.</li>
 </ol>
 <p><strong>Backporting and Cherry-Picking Workflow:</strong></p>
 <p>To backport or cherry-pick a change:</p>
@@ -7998,15 +8004,17 @@
 <ol>
 <li>Every Pull Request should have an associated Issue unless it is a trivial fix.</li>
 <li>When adding a flag option or other UX related change, make sure the design is explicitly described in the associated issue, and a maintainer approved it.</li>
-<li>Commit subject should succinctly describe the change:<ol>
+<li>
+<p>Commit subject should succinctly describe the change:</p>
+<ol>
 <li>Max 50 chars.</li>
 <li>Written in imperative mood: begin with a verb like "fix", "add", "improve", or "refactor"; Think "once applied, this commit will...".</li>
 <li>If ambiguous, mention the area that this commit affects (see area labels above).</li>
-</ol>
-</li>
 <li>Optional commit body (separated by empty line from subject) may explain why the change was made and not how. Wrap at 72 chars.</li>
 <li>Code related information should be in commit message, review related information should be in PR description.</li>
 <li>For changes that span different areas please try to make each change self contained and independent.</li>
+</ol>
+</li>
 </ol>
 <h2 id="development-and-testing">Development and Testing<a class="headerlink" href="#development-and-testing" title="Permanent link">&para;</a></h2>
 <h3 id="development-images">Development Images<a class="headerlink" href="#development-images" title="Permanent link">&para;</a></h3>
@@ -8053,11 +8061,13 @@ make<span class="w"> </span>test-integration<span class="w">      </span><span c
 <h2 id="contributing-code">Contributing Code<a class="headerlink" href="#contributing-code" title="Permanent link">&para;</a></h2>
 <h3 id="adding-new-event-tracing">Adding New Event Tracing<a class="headerlink" href="#adding-new-event-tracing" title="Permanent link">&para;</a></h3>
 <p>If you're looking to add new event tracing capabilities to Tracee, see our comprehensive guide: <a href="../adding-events/">Adding New Event Tracing</a>.</p>
-<p>This guide covers:
-- Event definition in Go code
-- eBPF probe configuration
-- Implementation patterns and best practices
-- Testing and troubleshooting</p>
+<p>This guide covers:</p>
+<ul>
+<li>Event definition in Go code</li>
+<li>eBPF probe configuration</li>
+<li>Implementation patterns and best practices</li>
+<li>Testing and troubleshooting</li>
+</ul>
 
 
 

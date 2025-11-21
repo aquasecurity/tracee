@@ -8177,20 +8177,26 @@ go<span class="w"> </span>tool<span class="w"> </span>cover<span class="w"> </sp
 - Every push to main branch
 - Integration tests (when run)</p>
 <h3 id="codecov-integration">Codecov Integration<a class="headerlink" href="#codecov-integration" title="Permanent link">&para;</a></h3>
-<p>Coverage reports are uploaded to <a href="https://codecov.io">Codecov</a> with the following flags:
-- <code>unit</code>: Unit test coverage
-- <code>integration</code>: Integration test coverage</p>
+<p>Coverage reports are uploaded to <a href="https://codecov.io">Codecov</a> with the following flags:</p>
+<ul>
+<li><code>unit</code>: Unit test coverage</li>
+<li><code>integration</code>: Integration test coverage</li>
+</ul>
 <h3 id="coverage-configuration">Coverage Configuration<a class="headerlink" href="#coverage-configuration" title="Permanent link">&para;</a></h3>
-<p>Coverage behavior is configured in <code>codecov.yml</code>:
-- Project coverage target: Auto (maintains current baseline)
-- Patch coverage target: 60% for new code
-- Automatic PR comments with coverage diff
-- Excludes test files, generated code, and vendor dependencies</p>
+<p>Coverage behavior is configured in <code>codecov.yml</code>:</p>
+<ul>
+<li>Project coverage target: Auto (maintains current baseline)</li>
+<li>Patch coverage target: 60% for new code</li>
+<li>Automatic PR comments with coverage diff</li>
+<li>Excludes test files, generated code, and vendor dependencies</li>
+</ul>
 <h2 id="coverage-files">Coverage Files<a class="headerlink" href="#coverage-files" title="Permanent link">&para;</a></h2>
-<p>The following coverage files are generated (and gitignored):
-- <code>coverage.txt</code>: Main unit test coverage
-- <code>integration-coverage.txt</code>: Integration test coverage
-- <code>coverage.html</code>: HTML report for local viewing</p>
+<p>The following coverage files are generated (and gitignored):</p>
+<ul>
+<li><code>coverage.txt</code>: Main unit test coverage</li>
+<li><code>integration-coverage.txt</code>: Integration test coverage</li>
+<li><code>coverage.html</code>: HTML report for local viewing</li>
+</ul>
 <h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
 <ol>
 <li><strong>Focus on Critical Paths</strong>: Prioritize coverage for core event processing, filtering, and detection logic</li>

@@ -8564,11 +8564,13 @@
 <p><strong>Note</strong>: This guide complements the <a href="../adding-events/">Adding New Events</a> guide. Complete the technical implementation first, then use this guide for creating proper documentation.</p>
 </blockquote>
 <h2 id="why-documentation-standards-matter">Why Documentation Standards Matter<a class="headerlink" href="#why-documentation-standards-matter" title="Permanent link">&para;</a></h2>
-<p>Consistent event documentation helps users:
-- <strong>Understand event purpose</strong> and when to use specific events
-- <strong>Configure events correctly</strong> with accurate field names and types
-- <strong>Troubleshoot issues</strong> with clear dependency information
-- <strong>Discover related events</strong> for comprehensive monitoring</p>
+<p>Consistent event documentation helps users:</p>
+<ul>
+<li><strong>Understand event purpose</strong> and when to use specific events</li>
+<li><strong>Configure events correctly</strong> with accurate field names and types</li>
+<li><strong>Troubleshoot issues</strong> with clear dependency information</li>
+<li><strong>Discover related events</strong> for comprehensive monitoring</li>
+</ul>
 <h2 id="required-sections">Required Sections<a class="headerlink" href="#required-sections" title="Permanent link">&para;</a></h2>
 <p>Every event documentation MUST include these sections in this exact order:</p>
 <h3 id="1-yaml-frontmatter">1. <strong>YAML Frontmatter</strong><a class="headerlink" href="#1-yaml-frontmatter" title="Permanent link">&para;</a></h3>
@@ -8668,8 +8670,12 @@
 <ul>
 <li><strong>PRIMARY SOURCE</strong>: <code>pkg/events/core.go</code></li>
 <li>Find the event struct by searching for the event name</li>
-<li>Extract the following with 100% accuracy:</li>
-<li><code>sets: []string{}</code> → EVENT SETS section</li>
+<li>
+<p>Extract the following with 100% accuracy:</p>
+</li>
+<li>
+<p><code>sets: []string{}</code> → EVENT SETS section</p>
+</li>
 <li><code>fields: []DataField{}</code> → DATA FIELDS section (names and types)</li>
 <li><code>dependencies.probes</code> → DEPENDENCIES section</li>
 </ul>
@@ -8677,8 +8683,12 @@
 <ul>
 <li><strong>PRIMARY SOURCE</strong>: <code>pkg/ebpf/probes/probe_group.go</code></li>
 <li>Map internal probe handles to actual kernel attachment points</li>
-<li>Examples:</li>
-<li><code>SysEnter: NewTraceProbe(RawTracepoint, "raw_syscalls:sys_enter", ...)</code> → <code>raw_syscalls:sys_enter</code></li>
+<li>
+<p>Examples:</p>
+</li>
+<li>
+<p><code>SysEnter: NewTraceProbe(RawTracepoint, "raw_syscalls:sys_enter", ...)</code> → <code>raw_syscalls:sys_enter</code></p>
+</li>
 <li><code>DoExit: NewTraceProbe(KProbe, "do_exit", ...)</code> → <code>do_exit</code></li>
 <li><code>SecurityFileOpen: NewTraceProbe(KProbe, "security_file_open", ...)</code> → <code>security_file_open</code></li>
 </ul>
@@ -8698,12 +8708,12 @@
 <ul>
 <li><strong>Problem</strong>: Separate entries for kprobe + kretprobe on same function is verbose</li>
 <li><strong>Solution</strong>: Combine as <code>function_name (kprobe + kretprobe, required): Description</code></li>
-<li><strong>Example</strong>: Instead of:
-  <div class="highlight"><pre><span></span><code>- vfs_write (required): VFS write function entry
+<li><strong>Example</strong>: Instead of:</li>
+</ul>
+<p><div class="highlight"><pre><span></span><code>- vfs_write (required): VFS write function entry
 - vfs_write (required): VFS write function return
 </code></pre></div>
-  Use: <code>- vfs_write (kprobe + kretprobe, required): VFS write function</code></li>
-</ul>
+  Use: <code>- vfs_write (kprobe + kretprobe, required): VFS write function</code></p>
 <h2 id="content-guidelines">Content Guidelines<a class="headerlink" href="#content-guidelines" title="Permanent link">&para;</a></h2>
 <h3 id="writing-style">Writing Style<a class="headerlink" href="#writing-style" title="Permanent link">&para;</a></h3>
 <ul>
@@ -8719,14 +8729,16 @@
 <li><strong>Context and purpose</strong>: What the event captures and why it's important</li>
 </ol>
 <h3 id="use-case-categories">Use Case Categories<a class="headerlink" href="#use-case-categories" title="Permanent link">&para;</a></h3>
-<p>Common categories to consider:
-- Security monitoring/analysis
-- Performance analysis
-- Debugging/troubleshooting
-- Compliance auditing
-- Process/network/file monitoring
-- Threat detection/hunting
-- Forensic analysis</p>
+<p>Common categories to consider:</p>
+<ul>
+<li>Security monitoring/analysis</li>
+<li>Performance analysis</li>
+<li>Debugging/troubleshooting</li>
+<li>Compliance auditing</li>
+<li>Process/network/file monitoring</li>
+<li>Threat detection/hunting</li>
+<li>Forensic analysis</li>
+</ul>
 <h2 id="formatting-requirements">Formatting Requirements<a class="headerlink" href="#formatting-requirements" title="Permanent link">&para;</a></h2>
 <h3 id="consistency-rules">Consistency Rules<a class="headerlink" href="#consistency-rules" title="Permanent link">&para;</a></h3>
 <ul>
@@ -8739,8 +8751,12 @@
 <h3 id="file-naming-and-location">File Naming and Location<a class="headerlink" href="#file-naming-and-location" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Filename: <code>event_name.md</code> (use underscores, lowercase)</li>
-<li>Location based on event category:</li>
-<li>System events: <code>docs/docs/events/builtin/man/misc/</code></li>
+<li>
+<p>Location based on event category:</p>
+</li>
+<li>
+<p>System events: <code>docs/docs/events/builtin/man/misc/</code></p>
+</li>
 <li>LSM events: <code>docs/docs/events/builtin/man/lsm/</code></li>
 <li>Network events: <code>docs/docs/events/builtin/man/net/</code></li>
 <li>Container events: <code>docs/docs/events/builtin/man/containers/</code></li>

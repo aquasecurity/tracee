@@ -7897,8 +7897,12 @@ every section should roughly cover:
 
 <h2 id="distributions-and-linux-flavors">Distributions and Linux Flavors<a class="headerlink" href="#distributions-and-linux-flavors" title="Permanent link">&para;</a></h2>
 <ul>
-<li>List of supported environments:</li>
-<li>With BTFHUB (check BTF session below):<ul>
+<li>
+<p>List of supported environments:</p>
+</li>
+<li>
+<p>With BTFHUB (check BTF session below):</p>
+<ul>
 <li>Centos 8 (kernel &lt; 4.18.0-193.el8)</li>
 <li>Debian 10 (buster) with v5.10 kernels</li>
 <li>Oracle Linux 7 and 8 with v5.4 kernels</li>
@@ -7999,10 +8003,12 @@ sudo<span class="w"> </span>./dist/lsm_check
 <span class="c1"># Quiet mode (just exit code)</span>
 sudo<span class="w"> </span>./dist/lsm_check<span class="w"> </span>--quiet
 </code></pre></div></p>
-<p>Exit codes:
-- <code>0</code>: LSM BPF is supported ✅
-- <code>1</code>: LSM BPF is not supported (expected on most systems) ⚠️<br />
-- <code>2</code>: Check failed due to insufficient privileges or other errors ❌</p>
+<p>Exit codes:</p>
+<ul>
+<li><code>0</code>: LSM BPF is supported ✅</li>
+<li><code>1</code>: LSM BPF is not supported (expected on most systems) ⚠️  </li>
+<li><code>2</code>: Check failed due to insufficient privileges or other errors ❌</li>
+</ul>
 <p>Note: LSM BPF requires specific kernel configuration and is not available on all systems. Tracee will function normally without LSM BPF support, but some advanced security features may be limited.</p>
 <div class="admonition tip">
 <p class="admonition-title">Having Issues?</p>

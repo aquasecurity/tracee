@@ -8226,17 +8226,20 @@
 <p><strong>Problem</strong>: Error message about missing BTF support
 <div class="highlight"><pre><span></span><code>ERRO error loading eBPF program: BTF is required
 </code></pre></div></p>
-<p><strong>Solution</strong>: 
-1. Check if BTF is available: <code>ls /sys/kernel/btf/vmlinux</code>
-2. If missing, upgrade to a kernel version that includes BTF support (most modern distributions)
-3. See <a href="../install/prerequisites/#btf">Prerequisites</a> for more details</p>
+<p><strong>Solution</strong>: </p>
+<ol>
+<li>Check if BTF is available: <code>ls /sys/kernel/btf/vmlinux</code></li>
+<li>If missing, upgrade to a kernel version that includes BTF support (most modern distributions)</li>
+<li>See <a href="../install/prerequisites/#btf">Prerequisites</a> for more details</li>
+</ol>
 <h3 id="permission-denied">Permission Denied<a class="headerlink" href="#permission-denied" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: Tracee fails to start with permission errors
 <div class="highlight"><pre><span></span><code>ERRO permission denied loading eBPF program
 </code></pre></div></p>
-<p><strong>Solutions</strong>:
-1. <strong>Run as root</strong>: <code>sudo tracee</code>
-2. <strong>Use required capabilities</strong>:
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><strong>Run as root</strong>: <code>sudo tracee</code></li>
+<li><strong>Use required capabilities</strong>:
    <div class="highlight"><pre><span></span><code><span class="c1"># Docker - minimal required capabilities</span>
 docker<span class="w"> </span>run<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--cap-add<span class="w"> </span>SYS_RESOURCE<span class="w"> </span><span class="se">\</span>
@@ -8255,9 +8258,10 @@ securityContext:
 <span class="w">      </span>-<span class="w"> </span><span class="s2">&quot;SYS_PTRACE&quot;</span>
 <span class="w">      </span>-<span class="w"> </span><span class="s2">&quot;NET_ADMIN&quot;</span>
 <span class="w">      </span>-<span class="w"> </span><span class="s2">&quot;SYSLOG&quot;</span>
-</code></pre></div>
-3. <strong>For recent kernels (&gt;=5.8)</strong>, you may use <code>CAP_BPF</code> + <code>CAP_PERFMON</code> instead of <code>CAP_SYS_ADMIN</code>
-4. See <a href="../install/prerequisites/#process-capabilities">Prerequisites</a> for complete details and justifications</p>
+</code></pre></div></li>
+<li><strong>For recent kernels (&gt;=5.8)</strong>, you may use <code>CAP_BPF</code> + <code>CAP_PERFMON</code> instead of <code>CAP_SYS_ADMIN</code></li>
+<li>See <a href="../install/prerequisites/#process-capabilities">Prerequisites</a> for complete details and justifications</li>
+</ol>
 <h3 id="kernel-version-incompatibility">Kernel Version Incompatibility<a class="headerlink" href="#kernel-version-incompatibility" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: Unsupported kernel version errors</p>
 <p><strong>Solution</strong>: 
@@ -8266,12 +8270,14 @@ securityContext:
 <h2 id="runtime-issues">Runtime Issues<a class="headerlink" href="#runtime-issues" title="Permanent link">&para;</a></h2>
 <h3 id="no-events-generated">No Events Generated<a class="headerlink" href="#no-events-generated" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: Tracee starts but produces no events</p>
-<p><strong>Troubleshooting steps</strong>:
-1. <strong>Check scope filters</strong>:
+<p><strong>Troubleshooting steps</strong>:</p>
+<ol>
+<li>
+<p><strong>Check scope filters</strong>:
    <div class="highlight"><pre><span></span><code><span class="c1"># Test with minimal configuration</span>
 tracee<span class="w"> </span>--events<span class="w"> </span>execve
 </code></pre></div></p>
-<ol>
+</li>
 <li>
 <p><strong>Verify events are enabled</strong>:
    <div class="highlight"><pre><span></span><code><span class="c1"># List enabled events</span>
@@ -8288,12 +8294,14 @@ tracee<span class="w"> </span>--events<span class="w"> </span><span class="nb">h
 </ol>
 <h3 id="high-cpu-usage">High CPU Usage<a class="headerlink" href="#high-cpu-usage" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: Tracee consuming excessive CPU</p>
-<p><strong>Solutions</strong>:
-1. <strong>Reduce event scope</strong>:
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li>
+<p><strong>Reduce event scope</strong>:
    <div class="highlight"><pre><span></span><code><span class="nt">scope</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">container</span><span class="w">  </span><span class="c1"># Limit to containers only</span>
 </code></pre></div></p>
-<ol>
+</li>
 <li>
 <p><strong>Filter events</strong>:
    <div class="highlight"><pre><span></span><code><span class="nt">rules</span><span class="p">:</span>
@@ -8313,57 +8321,73 @@ tracee<span class="w"> </span>--events<span class="w"> </span><span class="nb">h
 <h2 id="container-issues">Container Issues<a class="headerlink" href="#container-issues" title="Permanent link">&para;</a></h2>
 <h3 id="container-events-not-captured">Container Events Not Captured<a class="headerlink" href="#container-events-not-captured" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: Missing container-related events</p>
-<p><strong>Solutions</strong>:
-1. <strong>Mount container runtime socket</strong>:
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><strong>Mount container runtime socket</strong>:
    <div class="highlight"><pre><span></span><code><span class="c1"># Docker</span>
 docker<span class="w"> </span>run<span class="w"> </span>-v<span class="w"> </span>/var/run/docker.sock:/var/run/docker.sock<span class="w"> </span>tracee
 
 <span class="c1"># Containerd</span>
 docker<span class="w"> </span>run<span class="w"> </span>-v<span class="w"> </span>/run/containerd/containerd.sock:/run/containerd/containerd.sock<span class="w"> </span>tracee
-</code></pre></div></p>
+</code></pre></div></li>
+</ol>
 <h2 id="performance-issues">Performance Issues<a class="headerlink" href="#performance-issues" title="Permanent link">&para;</a></h2>
 <h3 id="events-being-dropped">Events Being Dropped<a class="headerlink" href="#events-being-dropped" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: Warning about dropped events
 <div class="highlight"><pre><span></span><code>WARN events dropped due to buffer overflow
 </code></pre></div></p>
-<p><strong>Solutions</strong>:
-1. <strong>Increase buffer size</strong>:
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li>
+<p><strong>Increase buffer size</strong>:
    <div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--perf-buffer-size<span class="w"> </span><span class="m">1024</span>
 </code></pre></div></p>
-<ol>
-<li><strong>Reduce event frequency</strong>:
+</li>
+<li>
+<p><strong>Reduce event frequency</strong>:
    <div class="highlight"><pre><span></span><code><span class="nt">rules</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openat</span>
 <span class="w">    </span><span class="nt">filters</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data.pathname!=/tmp/*</span><span class="w">  </span><span class="c1"># Filter noisy paths</span>
-</code></pre></div></li>
+</code></pre></div></p>
+</li>
 </ol>
 <h3 id="slow-event-processing">Slow Event Processing<a class="headerlink" href="#slow-event-processing" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: Events arrive with significant delay</p>
-<p><strong>Solutions</strong>:
-1. <strong>Check system load</strong>: Use <code>top</code>, <code>htop</code> to verify system isn't overloaded
-2. <strong>Optimize event selection</strong>: Use specific events instead of broad event sets</p>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><strong>Check system load</strong>: Use <code>top</code>, <code>htop</code> to verify system isn't overloaded</li>
+<li><strong>Optimize event selection</strong>: Use specific events instead of broad event sets</li>
+</ol>
 <h2 id="output-issues">Output Issues<a class="headerlink" href="#output-issues" title="Permanent link">&para;</a></h2>
 <h3 id="json-parsing-errors">JSON Parsing Errors<a class="headerlink" href="#json-parsing-errors" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: Invalid JSON output</p>
-<p><strong>Solutions</strong>:
-1. <strong>Use proper output format</strong>:
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li>
+<p><strong>Use proper output format</strong>:
    <div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span>--output<span class="w"> </span>option:parse-arguments
 </code></pre></div></p>
-<ol>
-<li><strong>Check for mixed output</strong>:
+</li>
+<li>
+<p><strong>Check for mixed output</strong>:
    <div class="highlight"><pre><span></span><code><span class="c1"># Separate logs from events</span>
 tracee<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span>--log<span class="w"> </span>file:/var/log/tracee.log
-</code></pre></div></li>
+</code></pre></div></p>
+</li>
 </ol>
 <h3 id="missing-event-fields">Missing Event Fields<a class="headerlink" href="#missing-event-fields" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: Expected fields not present in events</p>
-<p><strong>Solutions</strong>:
-1. <strong>Enable argument parsing</strong>:
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li>
+<p><strong>Enable argument parsing</strong>:
    <div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--output<span class="w"> </span>option:parse-arguments
 </code></pre></div></p>
-<ol>
-<li><strong>Check event definition</strong>: Some events may not include all expected fields</li>
+</li>
+<li>
+<p><strong>Check event definition</strong>: Some events may not include all expected fields</p>
+</li>
 </ol>
 <h2 id="debugging">Debugging<a class="headerlink" href="#debugging" title="Permanent link">&para;</a></h2>
 <h3 id="enable-debug-logging">Enable Debug Logging<a class="headerlink" href="#enable-debug-logging" title="Permanent link">&para;</a></h3>
@@ -8391,12 +8415,14 @@ sudo<span class="w"> </span>tracee<span class="w"> </span>--events<span class="w
 <li><strong>Check discussions</strong>: <a href="https://github.com/aquasecurity/tracee/discussions">GitHub Discussions</a></li>
 <li><strong>Join Slack</strong>: <a href="https://slack.aquasec.com">Aqua Community Slack</a></li>
 </ol>
-<p>When reporting issues, include:
-- Tracee version (<code>tracee --version</code>)
-- Operating system and kernel version
-- Container runtime (if applicable)
-- Complete error messages
-- Minimal reproduction steps</p>
+<p>When reporting issues, include:</p>
+<ul>
+<li>Tracee version (<code>tracee --version</code>)</li>
+<li>Operating system and kernel version</li>
+<li>Container runtime (if applicable)</li>
+<li>Complete error messages</li>
+<li>Minimal reproduction steps</li>
+</ul>
 
 
 

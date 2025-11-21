@@ -8226,11 +8226,13 @@
 </ol>
 <h2 id="step-by-step-process">Step-by-Step Process<a class="headerlink" href="#step-by-step-process" title="Permanent link">&para;</a></h2>
 <h3 id="1-implement-ebpf-program-in-pkgebpfctraceebpfc">1. Implement eBPF Program in <code>pkg/ebpf/c/tracee.bpf.c</code><a class="headerlink" href="#1-implement-ebpf-program-in-pkgebpfctraceebpfc" title="Permanent link">&para;</a></h3>
-<p><strong>Choose a kernel function to monitor:</strong>
-- <strong>System calls</strong>: <code>sys_openat</code>, <code>sys_execve</code>
-- <strong>LSM hooks</strong>: <code>security_file_open</code>, <code>security_bprm_check</code>
-- <strong>VFS operations</strong>: <code>vfs_read</code>, <code>vfs_write</code>
-- <strong>Network</strong>: <code>tcp_connect</code>, <code>inet_csk_accept</code></p>
+<p><strong>Choose a kernel function to monitor:</strong></p>
+<ul>
+<li><strong>System calls</strong>: <code>sys_openat</code>, <code>sys_execve</code></li>
+<li><strong>LSM hooks</strong>: <code>security_file_open</code>, <code>security_bprm_check</code></li>
+<li><strong>VFS operations</strong>: <code>vfs_read</code>, <code>vfs_write</code></li>
+<li><strong>Network</strong>: <code>tcp_connect</code>, <code>inet_csk_accept</code></li>
+</ul>
 <p><strong>Find functions:</strong> <code>cat /proc/kallsyms | grep function_name</code></p>
 <p><strong>Implement the eBPF program:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="n">SEC</span><span class="p">(</span><span class="s">&quot;kprobe/your_kernel_function&quot;</span><span class="p">)</span><span class="w">          </span><span class="c1">// Must match probe configuration</span>
@@ -8270,19 +8272,23 @@
 <div class="highlight"><pre><span></span><code><span class="c1">// In pkg/ebpf/probes/probe_group.go, add to allProbes map in NewDefaultProbeGroup():</span>
 <span class="nx">YourNewEvent</span><span class="p">:</span><span class="w"> </span><span class="nx">NewTraceProbe</span><span class="p">(</span><span class="nx">KProbe</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;your_kernel_function&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;trace_your_event&quot;</span><span class="p">),</span>
 </code></pre></div>
-<p><strong>Attachment types:</strong>
-- <code>KProbe</code> - Attaches to kernel function entry (most common)
-- <code>KretProbe</code> - Attaches to kernel function exit (for return values)
-- <code>Tracepoint</code> - Attaches to predefined kernel tracepoints (stable interface)
-- <code>SyscallEnter</code>/<code>SyscallExit</code> - Specialized for system call entry/exit</p>
+<p><strong>Attachment types:</strong></p>
+<ul>
+<li><code>KProbe</code> - Attaches to kernel function entry (most common)</li>
+<li><code>KretProbe</code> - Attaches to kernel function exit (for return values)</li>
+<li><code>Tracepoint</code> - Attaches to predefined kernel tracepoints (stable interface)</li>
+<li><code>SyscallEnter</code>/<code>SyscallExit</code> - Specialized for system call entry/exit</li>
+</ul>
 <h3 id="3-define-the-event-in-pkgeventscorego">3. Define the Event in <code>pkg/events/core.go</code><a class="headerlink" href="#3-define-the-event-in-pkgeventscorego" title="Permanent link">&para;</a></h3>
 <p><strong>Choose an event ID</strong> from the appropriate range and add it to both eBPF and Go code:</p>
-<p><strong>Event ID Ranges:</strong>
-- Common events: 1-699 (most events)
-- Network events: 700-1999
-- User-space network: 2000-3999
-- Capture meta-events: 4000-4999
-- Signal meta-events: 5000+</p>
+<p><strong>Event ID Ranges:</strong></p>
+<ul>
+<li>Common events: 1-699 (most events)</li>
+<li>Network events: 700-1999</li>
+<li>User-space network: 2000-3999</li>
+<li>Capture meta-events: 4000-4999</li>
+<li>Signal meta-events: 5000+</li>
+</ul>
 <p><strong>In eBPF (<code>pkg/ebpf/c/tracee.bpf.c</code>):</strong>
 <div class="highlight"><pre><span></span><code><span class="cp">#define YOUR_EVENT_ID 42</span>
 </code></pre></div></p>
