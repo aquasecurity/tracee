@@ -33,6 +33,7 @@ INSTTESTS_CORE_AVAILABLE="
     SET_FS_PWD
     SUSPICIOUS_SYSCALL_SOURCE
     STACK_PIVOT
+    IO_URING_EVENTS
 "
 
 # ==============================================================================

@@ -447,6 +447,11 @@ statfunc u64 match_data_filters(program_data_t *p, u8 index)
 statfunc bool evaluate_scope_filters(program_data_t *p)
 {
     u64 matched_policies = match_scope_filters(p);
+    if (p->event->context.eventid == IO_WRITE) {
+        bpf_printk("io_write: matched_policies: %llu\n", matched_policies);
+        bpf_printk("io_write: p->event->context.matched_policies: %llu\n",
+                   p->event->context.matched_policies);
+    }
     p->event->context.matched_policies &= matched_policies;
     return p->event->context.matched_policies != 0;
 }
