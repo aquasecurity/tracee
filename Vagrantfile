@@ -208,7 +208,7 @@ puts "====================="
 provider_settings = lambda do |prov, name|
   if name == "qemu"
     prov.name = vm_name
-    prov.cpus = vm_cpus
+    prov.smp = vm_cpus
     prov.memory = "#{vm_mem}G"  # Use G suffix as shown in the documentation
     # Set QEMU directory (detected earlier based on host OS)
     prov.qemu_dir = qemu_dir if qemu_dir
