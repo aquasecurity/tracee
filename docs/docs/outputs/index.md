@@ -7,4 +7,4 @@ For examples on each configuration, please refer to:
 * Documentation on configuring [output options](./output-options.md)
 * Documentation on configuring [output formats](./output-formats.md)
 
-Note that example configuration for each can be found in the Tracee root directory within the examples folder < [examples/config/global_config.yaml](https://github.com/aquasecurity/tracee/tree/main/examples/config)
+Example configuration files can be found in the Tracee repository at [examples/config/global_config.yaml](https://github.com/aquasecurity/tracee/blob/main/examples/config/global_config.yaml)
