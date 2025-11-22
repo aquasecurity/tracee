@@ -6,7 +6,7 @@ No. Tracee runs only on Linux operating system. But you can run a Linux VM on yo
 
 ## Does Tracee run on Apple Silicon?
 
-Apple Silicon (a.k.a `M#` CPUs) utilizes the ARM64 CPU architecture. Given that [Tracee is compatible with ARM64](../install/prerequisites.md#processor-architecture), it should run on Apple Silicon as well.
+Apple Silicon (a.k.a `M#` CPUs) utilizes the ARM64 CPU architecture. Given that [Tracee is compatible with ARM64](./prerequisites.md#processor-architecture), it should run on Apple Silicon as well.
 
 ## Does Tracee run in a Linux container on MacOS?
 
@@ -15,5 +15,5 @@ Yes. It is very common to install a container engine (e.g Docker Desktop) on Mac
 ## Linuxkit
 
 [linuxkit](https://github.com/linuxkit/linuxkit) is a popular Linux distribution used by Docker Desktop and other solutions.  
-Linux kit does not have the Kernel Symbols Table feature properly configured by default, which is a [prerequisite](../install/prerequisites.md#kernel-symbols) for running Tracee.  
-It is technically possible to enable kernel symbols in linuxkit but an easier solution would be to  disable [those Tracee events that depend on kernel symbols](../install/prerequisites.md#kernel-symbols).
+Linux kit does not have the Kernel Symbols Table feature properly configured by default, which is a [prerequisite](./prerequisites.md#kernel-symbols) for running Tracee.
+It is technically possible to enable kernel symbols in linuxkit but an easier solution would be to  disable [those Tracee events that depend on kernel symbols](./prerequisites.md#kernel-symbols).
