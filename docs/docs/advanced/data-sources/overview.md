@@ -1,7 +1,6 @@
 # Data Sources (Experimental)
 
-Data sources are a new feature, which will be the base of allowing access to
-dynamic data stores in signature writing (currently only available in golang).
+Data sources provide access to dynamic data stores in signature writing (currently only available in golang).
 
 > Data sources are currently an experimental feature and in active development,
 > and usage is opt-in.
@@ -18,19 +17,16 @@ container lifecycle events.
 
 ## What data sources can I use
 
-Tracee offer three built-in data sources out of the box.
+Tracee offers three built-in data sources out of the box.
 There is also support for plugging in external data sources through the golang 
-plugin mechanism, similar to how signatures are currently supplied (see [here](../../events/custom/golang.md)). 
-However, there are known technical limitation to this approach, and the aim is to replace it
-in the future.
+plugin mechanism, similar to how signatures are supplied (see [here](../../events/custom/golang.md)). 
+However, there are known technical limitations to this approach.
 
-Currently, the following data source are provided out of the box:
+The following data sources are provided out of the box:
 
 1. Containers: Provides metadata about containers given a container id.
 1. Process Tree: Provides access to a tree of ever existing processes and threads.
-1. DNS Cache: Provides access to relaated DNS queries of a given address (IP or domain).
-
-This list will be expanded as other features are developed.
+1. DNS Cache: Provides access to related DNS queries of a given address (IP or domain).
 
 ## How to use data sources
 
@@ -54,8 +50,8 @@ func (sig *mySig) Init(ctx detect.SignatureContext) error {
 
 As you can see, access to the data source has been requested using two keys: a
 namespace and a data source ID. Namespaces are employed to prevent name
-conflicts in the future when integrating custom data sources. All built-in data
-sources from Tracee will be available under the "tracee" namespace.
+conflicts when integrating custom data sources. All built-in data
+sources from Tracee are available under the "tracee" namespace.
 
 After verifying the data source's availability, it's suggested to include a
 version check against the data source. This approach ensures that outdated

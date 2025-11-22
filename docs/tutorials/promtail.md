@@ -78,7 +78,7 @@ We need to install an observability stack to access the logs of the pods inside 
 
 - Grafana (for Dashboards and querying logs)
 - Promtail for collecting logs from the pods on each node
-- Loki, which is feeding the logs inot Grafana
+- Loki, which is feeding the logs into Grafana
 
 And since it is easier to install Grafana together with Prometheus, we are also going to install Prometheus.
 

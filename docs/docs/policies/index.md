@@ -25,8 +25,8 @@ spec:
 
 This policy applies to any workload (`global`) and will log the `dropped_executable`, and `security_file_open` events. A data filter (`data.pathname`) is set on the `security_file_open` event to log only files which were opened from the `/tmp` directory.
 
-!!! Note TODO
-    Note that currently each event type can only be defined once in a policy
+!!! Note
+    Currently each event type can only be defined once in a policy
 
 There are many ways to fine tune the scope and filters. For further information on the details, have a look at the respective sections: 
 

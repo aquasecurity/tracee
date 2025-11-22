@@ -71,9 +71,9 @@ Every entity in the `Process Tree`, be it a process or thread, is indexed using 
 
 6. **FileInfo**: This structure aggregates file metadata, capturing attributes like path, device, and inode details. In the realm of processes, `FileInfo` is responsible for maintaining records of binaries and interpreters, with alterations being tracked in changelogs.
 
-## Process Tree Artifacts
+## Process Tree Artifacts (Planned Enhancement)
 
-In an upcoming update, the process tree will be enhanced with the addition of `artifacts`. Each process within the tree will be augmented with these "artifacts" to denote a task's various interactions and operations within the system. These artifacts, sourced from the tracing events provided by Tracee, offer a detailed depiction of a process's activities at the system level. Potential artifacts encompass:
+Future enhancements may include the addition of `artifacts` to the process tree. These artifacts would denote a task's various interactions and operations within the system, sourced from the tracing events provided by Tracee. Potential artifacts include:
 
 - **File Operations**: Opened files, read/write activities, file deletion, and attribute changes.
 - **Network Activities**: Sockets created, inbound/outbound connections, transmitted/received data packets, and protocol-specific operations (like TCP handshakes or UDP transmissions).
@@ -82,8 +82,6 @@ In an upcoming update, the process tree will be enhanced with the addition of `a
 - **Device Interactions**: I/O operations on devices, device mounting/unmounting.
 - **Kernel Module Activities**: Module load and unload operations.
 - **Security-Related Activities**: Capabilities changes, SELinux operations, and AppArmor profile transitions.
-
-This enhancement aims to offer developers and sysadmins a more detailed and granular view of task behaviors, paving the way for better system monitoring, diagnostics, and potential threat detection.
 
 ## Using the Process Tree
 
@@ -211,7 +209,7 @@ In the provided example, the `eventObj.ProcessEntityId` key (which is the proces
 
 > Keep in mind that users can specify a time to retrieve the information. By using the event timestamp, you obtain data available up to that specific moment.
 
-Within the retrieved process object, you can find essential information about the running process. This includes details such as the binary associated with the executing program, the interpreter used for that program (either ld.so for ELF files or the relevant interpreters responsible for execution). In the near future, you can expect to see additional data related to the process, such as open files and sockets, known hosts and resolved names, utilized protocols, and more.
+Within the retrieved process object, you can find essential information about the running process. This includes details such as the binary associated with the executing program, the interpreter used for that program (either ld.so for ELF files or the relevant interpreters responsible for execution).
 
 ### Threads Information Retrieval
 
