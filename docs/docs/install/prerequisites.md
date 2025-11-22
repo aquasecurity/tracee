@@ -75,7 +75,7 @@ Alternatively, you can disable the following events which depends on kallsyms:
 - `hooked_seq_ops` (detects network packets interception technique)
 - `print_mem_dump` (allows memory dumping from symbols to signatures can use)
 
-For more information and help about kernel symbols, please see [here](../advanced/ksyms.md).
+For more information and help about kernel symbols, please see [here](./kernel-symbols.md).
 
 ## OS information
 
@@ -85,7 +85,7 @@ capabilities. For this, it needs access to some standard informative files:
 - For OS information please make sure the file `/etc/os-release` is available.
 - For Kernel information please make sure one of the files `/boot/config-$(uname-r)` OR `/proc/config.gz` is available.
 
-For more information and help about OS info files, please see [here](../advanced/os-info.md).
+For more information and help about OS info files, please see [here](./os-requirements.md).
 
 ## Process capabilities
 
@@ -107,7 +107,7 @@ capabilities and justifications:
 - On cgroup v1 environments, `CAP_SYS_ADMIN` is recommended if running from a container in order to allow tracee to mount the cpuset cgroup controller.
 
 For more information and help about process capabilities, please see
-[here](../advanced/dropping-capabilities.md).
+[here](./capabilities.md).
 
 ## LSM BPF Support
 

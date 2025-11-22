@@ -225,6 +225,33 @@ ls -la /sys/kernel/btf/vmlinux
 sudo tracee --events execve
 ```
 
+## Security Considerations
+
+### Race Conditions in Argument Reading
+
+**Problem**: User programs can modify arguments after Tracee reads them
+
+When Tracee reads information from user programs, it is subject to a **race condition** where the user program might be able to change the arguments after Tracee reads them.
+
+**Example scenario:**
+
+A program invokes:
+```c
+execve("/bin/ls", NULL, 0)
+```
+
+Tracee picks this up and reports it. Then the program changes the first argument from `/bin/ls` to `/bin/bash`, and this is what the kernel will actually execute.
+
+**Solution**: Use LSM (Linux Security Module) events for verification
+
+Tracee provides LSM-based events that can be cross-referenced with regular syscall events. For example:
+
+- Use the `security_bprm_check` event alongside `execve` events
+- LSM hooks occur at security check time, providing more reliable data
+- Cross-reference both event types to detect potential tampering
+
+See [LSM BPF Support](install/lsm-support.md) for more information on enabling LSM events.
+
 ## Getting Help
 
 If you continue experiencing issues:
