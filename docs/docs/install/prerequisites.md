@@ -41,11 +41,11 @@ feedback if you face any issues in one of those environments.
 
 ## Kernel version
 
-To run Tracee a modern longterm supported kernel is needed: 5.4, 5.10, 5.15, 6.2, 6.5  
+Tracee requires Linux kernel version 5.4 or newer. For RHEL-based distributions, kernel 4.18 (RHEL 8) is supported due to backported features.
 
 You can check [kernel.org](https://kernel.org) for current supported kernels. In
-addition to upstream kernels, most distributions long-term supported kernels are
-supported as well, including CentOS8 4.18 kernel.
+addition to upstream kernels, most distributions' long-term supported kernels are
+supported as well.
 
 ## BTF
 
@@ -75,7 +75,7 @@ Alternatively, you can disable the following events which depends on kallsyms:
 - `hooked_seq_ops` (detects network packets interception technique)
 - `print_mem_dump` (allows memory dumping from symbols to signatures can use)
 
-For more information and help about kernel symbols, please see [here](../advanced/ksyms.md).
+For more information and help about kernel symbols, please see [here](./kernel-symbols.md).
 
 ## OS information
 
@@ -85,7 +85,7 @@ capabilities. For this, it needs access to some standard informative files:
 - For OS information please make sure the file `/etc/os-release` is available.
 - For Kernel information please make sure one of the files `/boot/config-$(uname-r)` OR `/proc/config.gz` is available.
 
-For more information and help about OS info files, please see [here](../advanced/os-info.md).
+For more information and help about OS info files, please see [here](./os-requirements.md).
 
 ## Process capabilities
 
@@ -107,7 +107,7 @@ capabilities and justifications:
 - On cgroup v1 environments, `CAP_SYS_ADMIN` is recommended if running from a container in order to allow tracee to mount the cpuset cgroup controller.
 
 For more information and help about process capabilities, please see
-[here](../advanced/dropping-capabilities.md).
+[here](./capabilities.md).
 
 ## LSM BPF Support
 
