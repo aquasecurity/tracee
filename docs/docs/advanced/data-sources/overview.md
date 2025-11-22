@@ -24,9 +24,9 @@ However, there are known technical limitations to this approach.
 
 The following data sources are provided out of the box:
 
-1. Containers: Provides metadata about containers given a container id.
-1. Process Tree: Provides access to a tree of ever existing processes and threads.
-1. DNS Cache: Provides access to related DNS queries of a given address (IP or domain).
+1. Container: Provides metadata about containers given a container id.
+1. Process: Provides access to a tree of ever existing processes and threads.
+1. DNS: Provides access to related DNS queries of a given address (IP or domain).
 
 ## How to use data sources
 

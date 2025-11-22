@@ -71,18 +71,6 @@ Every entity in the `Process Tree`, be it a process or thread, is indexed using 
 
 6. **FileInfo**: This structure aggregates file metadata, capturing attributes like path, device, and inode details. In the realm of processes, `FileInfo` is responsible for maintaining records of binaries and interpreters, with alterations being tracked in changelogs.
 
-## Process Tree Artifacts (Planned Enhancement)
-
-Future enhancements may include the addition of `artifacts` to the process tree. These artifacts would denote a task's various interactions and operations within the system, sourced from the tracing events provided by Tracee. Potential artifacts include:
-
-- **File Operations**: Opened files, read/write activities, file deletion, and attribute changes.
-- **Network Activities**: Sockets created, inbound/outbound connections, transmitted/received data packets, and protocol-specific operations (like TCP handshakes or UDP transmissions).
-- **System Calls**: Executed syscalls, their arguments, and return values.
-- **Memory Activities**: Memory allocation, deallocation, and page faults.
-- **Device Interactions**: I/O operations on devices, device mounting/unmounting.
-- **Kernel Module Activities**: Module load and unload operations.
-- **Security-Related Activities**: Capabilities changes, SELinux operations, and AppArmor profile transitions.
-
 ## Using the Process Tree
 
 The process tree is only available internally, to tracee's components, but, through the [datasource](../overview.md) mechanism, signatures are able to query the tree data using the data source process tree API.

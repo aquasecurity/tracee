@@ -1,6 +1,6 @@
-# About Kernel symbols
+# About Kernel Symbols
 
-As explained in the [prerequisites](../install/prerequisites.md) doc, Tracee 
+As explained in the [prerequisites](./prerequisites.md) doc, Tracee
 needs the kernel symbol table for some operations.
 
 A Linux kernel might lack the `/proc/kallsyms` file due to:

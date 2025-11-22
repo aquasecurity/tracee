@@ -12,16 +12,35 @@ nav:
           - Overview: docs/overview.md
           - Installation:
                 - Overview: docs/install/index.md
-                - Prerequisites: docs/install/prerequisites.md
-                - Docker: docs/install/docker.md
-                - Kubernetes: docs/install/kubernetes.md
-                - Container Engines: docs/install/container-engines.md
-                - Prometheus: docs/install/prometheus.md
-                - Healthz: docs/install/healthz.md
-                - Configure Tracee:
-                      - Overview: docs/install/config/index.md
-                      - CLI: docs/install/config/cli.md
-                      - Kubernetes: docs/install/config/kubernetes.md
+                - Requirements:
+                      - Prerequisites: docs/install/prerequisites.md
+                      - Kernel Symbols: docs/install/kernel-symbols.md
+                      - OS Requirements: docs/install/os-requirements.md
+                      - Capabilities: docs/install/capabilities.md
+                      - LSM BPF Support: docs/install/lsm-support.md
+                      - Mac FAQ: docs/install/mac-faq.md
+                - Getting Started:
+                      - Docker: docs/install/docker.md
+                      - Kubernetes: docs/install/kubernetes.md
+                - Usage:
+                      - Container Engines: docs/install/container-engines.md
+                      - Prometheus: docs/install/prometheus.md
+                      - Healthz: docs/install/healthz.md
+                      - Configuration:
+                            - Overview: docs/install/config/index.md
+                            - Config File:
+                                  - CLI: docs/install/config/cli.md
+                                  - Kubernetes: docs/install/config/kubernetes.md
+                            - Flag Reference:
+                                  - scope: docs/flags/scope.1.md
+                                  - events: docs/flags/events.1.md
+                                  - output: docs/flags/output.1.md
+                                  - capture: docs/flags/capture.1.md
+                                  - config: docs/flags/config.1.md
+                                  - containers: docs/flags/containers.1.md
+                                  - capabilities: docs/flags/capabilities.1.md
+                                  - log: docs/flags/log.1.md
+                                  - server: docs/flags/server.1.md
           - Events:
                 - Overview: docs/events/index.md
                 - Built-in Events:
@@ -179,11 +198,7 @@ nav:
           - Troubleshooting: docs/troubleshooting.md
           - Advanced:
                 - Ordering Events: docs/advanced/ordering-events.md
-                - Dropping Capabilities: docs/advanced/dropping-capabilities.md
-                - Kernel Symbols: docs/advanced/ksyms.md
                 - Secure Tracing: docs/advanced/secure-tracing.md
-                - OS Info: docs/advanced/os-info.md
-                - Mac FAQ: docs/advanced/mac.md
                 - Forensics: docs/advanced/forensics.md
                 - Data Sources:
                     - Overview: docs/advanced/data-sources/overview.md
@@ -193,16 +208,6 @@ nav:
                         - Containers: docs/advanced/data-sources/builtin/containers.md
                         - Process Tree: docs/advanced/data-sources/builtin/process-tree.md
                         - DNS Cache: docs/advanced/data-sources/builtin/dns.md
-          - CLI Flags:
-                - scope: docs/flags/scope.1.md
-                - events: docs/flags/events.1.md
-                - output: docs/flags/output.1.md
-                - capture: docs/flags/capture.1.md
-                - config: docs/flags/config.1.md
-                - containers: docs/flags/containers.1.md
-                - capabilities: docs/flags/capabilities.1.md
-                - log: docs/flags/log.1.md
-                - server: docs/flags/server.1.md
     - Traceectl: 
           - Overview: traceectl/index.md
           - Installation: traceectl/usage.md

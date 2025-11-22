@@ -1,4 +1,4 @@
-# Special: Environment Capabilities
+# Running Tracee with Least Privileges
 
 ## Introduction to Capabilities (quoting parts of kernel docs)
 
