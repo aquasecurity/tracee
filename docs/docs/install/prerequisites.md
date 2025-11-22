@@ -41,11 +41,11 @@ feedback if you face any issues in one of those environments.
 
 ## Kernel version
 
-To run Tracee a modern longterm supported kernel is needed: 5.4, 5.10, 5.15, 6.2, 6.5  
+Tracee requires Linux kernel version 5.4 or newer. For RHEL-based distributions, kernel 4.18 (RHEL 8) is supported due to backported features.
 
 You can check [kernel.org](https://kernel.org) for current supported kernels. In
-addition to upstream kernels, most distributions long-term supported kernels are
-supported as well, including CentOS8 4.18 kernel.
+addition to upstream kernels, most distributions' long-term supported kernels are
+supported as well.
 
 ## BTF
 

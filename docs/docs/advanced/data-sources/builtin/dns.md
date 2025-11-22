@@ -44,7 +44,7 @@ The `dns data source` operates straightforwardly. Using `string` keys, which rep
 	}
 ```
 
-Any address found in the cache, and other related addresses, will be returned in the above structure. Particulary useful is the `dns_root` field, which will store the initial dns query which all other addresses derive from.
+Any address found in the cache, and other related addresses, are returned in the above structure. Particularly useful is the `dns_root` field, which stores the initial DNS query from which all other addresses derive.
 
 ## Using the Containers Data Source
 
