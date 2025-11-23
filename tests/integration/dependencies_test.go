@@ -12,12 +12,12 @@ import (
 
 	"go.uber.org/goleak"
 
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/environment"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/tests/testutils"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func Test_EventsDependencies(t *testing.T) {
@@ -202,11 +202,11 @@ func Test_EventsDependencies(t *testing.T) {
 	// Each test will run a test binary that triggers the "exec_test" event.
 	// Upon its execution, which events are evicted and which not will be tested
 	createCmdEvents := func(expectedEventsIDs []events.ID, unexpectedEventsIDs []events.ID) []cmdEvents {
-		expectedEvents := make([]trace.Event, len(expectedEventsIDs))
+		expectedEvents := make([]*pb.Event, len(expectedEventsIDs))
 		for i, eventId := range expectedEventsIDs {
 			expectedEvents[i] = createGenericEventForCmdEvents(eventId)
 		}
-		unexpectedEvents := make([]trace.Event, len(unexpectedEventsIDs))
+		unexpectedEvents := make([]*pb.Event, len(unexpectedEventsIDs))
 		for i, eventId := range unexpectedEventsIDs {
 			unexpectedEvents[i] = createGenericEventForCmdEvents(eventId)
 		}
@@ -291,12 +291,8 @@ func Test_EventsDependencies(t *testing.T) {
 					case <-ctx.Done():
 						return
 					case pbEvent := <-stream.ReceiveEvents():
-						// Convert pb.Event back to trace.Event for test buffer
 						if pbEvent != nil {
-							traceEvent := events.ConvertFromProto(pbEvent)
-							if traceEvent != nil {
-								buf.AddEvent(*traceEvent)
-							}
+							buf.AddEvent(pbEvent)
 						}
 					}
 				}
@@ -348,16 +344,8 @@ func Test_EventsDependencies(t *testing.T) {
 	}
 }
 
-func createGenericEventForCmdEvents(eventId events.ID) trace.Event {
-	return trace.Event{
-		HostName:            anyHost,
-		ProcessName:         anyComm,
-		ProcessorID:         anyProcessorID,
-		ProcessID:           anyPID,
-		UserID:              anyUID,
-		EventID:             int(eventId),
-		MatchedPoliciesUser: anyPolicy,
-	}
+func createGenericEventForCmdEvents(eventId events.ID) *pb.Event {
+	return expectPbEvent(anyHost, anyComm, anyProcessorID, anyPID, anyUID, eventId, nil)
 }
 
 func GetAttachedKprobes() ([]string, error) {

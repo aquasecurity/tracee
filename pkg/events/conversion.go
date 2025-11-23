@@ -959,7 +959,7 @@ func convertPacketMetadata(v *trace.PacketMetadata) (*pb.EventValue, error) {
 	case trace.PacketEgress:
 		direction = "egress"
 	}
-	
+
 	return &pb.EventValue{
 		Value: &pb.EventValue_Str{
 			Str: direction,

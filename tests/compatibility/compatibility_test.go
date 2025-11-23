@@ -2,6 +2,7 @@ package compatibility
 
 import (
 	"context"
+	"errors"
 	"os"
 	"reflect"
 	"testing"
@@ -13,12 +14,23 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/tests/testutils"
 )
+
+// getDataByName is a helper function to extract an argument from pb.Event.Data by name
+func getDataByName(event *pb.Event, argName string) (*pb.EventValue, error) {
+	for _, arg := range event.Data {
+		if arg.Name == argName {
+			return arg, nil
+		}
+	}
+	return nil, errors.New("argument not found")
+}
 
 // TestCompatibility tests the compatibility of the features fallback test event
 // It tests the three levels of features fallback:
@@ -86,12 +98,8 @@ func TestCompatibility(t *testing.T) {
 		for {
 			select {
 			case pbEvent := <-eventStream.ReceiveEvents():
-				// Convert pb.Event back to trace.Event for test buffer
 				if pbEvent != nil {
-					traceEvent := events.ConvertFromProto(pbEvent)
-					if traceEvent != nil {
-						eventBuffer.AddEvent(*traceEvent)
-					}
+					eventBuffer.AddEvent(pbEvent)
 				}
 			case <-ctx.Done():
 				return
@@ -119,11 +127,16 @@ func TestCompatibility(t *testing.T) {
 		foundFeaturesFallback := false
 		usedProbeId := 0
 		for _, event := range capturedEvents {
-			if event.EventID == int(events.FeaturesFallbackTest) {
+			if events.ID(event.Id) == events.FeaturesFallbackTest {
 				foundFeaturesFallback = true
-				usedProbeId, err = event.GetIntArgumentByName("probe_used_id")
+				// Get probe_used_id from event data
+				probeArg, err := getDataByName(event, "probe_used_id")
 				if err != nil {
 					failed = true
+				} else if probeArg != nil {
+					if val, ok := probeArg.Value.(*pb.EventValue_Int32); ok {
+						usedProbeId = int(val.Int32)
+					}
 				}
 				break
 			}

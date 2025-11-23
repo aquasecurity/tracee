@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/datastores/container/runtime"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/tests/testutils"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // Test_ContainerCreateRemove tests that ContainerCreate and ContainerRemove events
@@ -79,12 +79,8 @@ func Test_ContainerCreateRemove(t *testing.T) {
 		for {
 			select {
 			case pbEvent := <-eventStream.ReceiveEvents():
-				// Convert pb.Event back to trace.Event for test buffer
 				if pbEvent != nil {
-					traceEvent := events.ConvertFromProto(pbEvent)
-					if traceEvent != nil {
-						eventBuffer.AddEvent(*traceEvent)
-					}
+					eventBuffer.AddEvent(pbEvent)
 				}
 			case <-ctx.Done():
 				return
@@ -115,30 +111,30 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	foundRemove := false
 
 	for _, evt := range capturedEvents {
-		switch evt.EventID {
-		case int(events.ContainerCreate):
+		eventID := events.ID(evt.Id)
+		switch eventID {
+		case events.ContainerCreate:
 			foundCreate = true
 			t.Logf("Found ContainerCreate event")
 			// Verify it has container-related arguments
-			assert.NotEmpty(t, evt.Args, "ContainerCreate should have arguments")
+			assert.NotEmpty(t, evt.Data, "ContainerCreate should have arguments")
 
 			// Check for expected fields: runtime, container_id, container_name, etc.
 			hasRuntime := false
 			hasContainerID := false
 			hasContainerName := false
 
-			for _, arg := range evt.Args {
+			for _, arg := range evt.Data {
 				switch arg.Name {
 				case "runtime":
 					hasRuntime = true
-					t.Logf("  Runtime: %v", arg.Value)
+					t.Logf("  Runtime: %v", arg.GetStr())
 				case "container_id":
 					hasContainerID = true
-					t.Logf("  Container ID: %v", arg.Value)
+					t.Logf("  Container ID: %v", arg.GetStr())
 				case "container_name":
 					hasContainerName = true
-					containerNameVal, ok := arg.Value.(string)
-					assert.True(t, ok, "Container name should be a string")
+					containerNameVal := arg.GetStr()
 					assert.True(t, containerNameVal == containerName,
 						"Container name should contain test container name")
 					t.Logf("  Container Name: %v", arg.Value)
@@ -149,23 +145,23 @@ func Test_ContainerCreateRemove(t *testing.T) {
 			assert.True(t, hasContainerID, "ContainerCreate should have 'container_id' field")
 			assert.True(t, hasContainerName, "ContainerCreate should have 'container_name' field")
 
-		case int(events.ContainerRemove):
+		case events.ContainerRemove:
 			foundRemove = true
 			t.Logf("Found ContainerRemove event")
 			// Verify it has the expected fields
-			assert.NotEmpty(t, evt.Args, "ContainerRemove should have arguments")
+			assert.NotEmpty(t, evt.Data, "ContainerRemove should have arguments")
 
 			hasRuntime := false
 			hasContainerID := false
 
-			for _, arg := range evt.Args {
+			for _, arg := range evt.Data {
 				switch arg.Name {
 				case "runtime":
 					hasRuntime = true
-					t.Logf("  Runtime: %v", arg.Value)
+					t.Logf("  Runtime: %v", arg.GetStr())
 				case "container_id":
 					hasContainerID = true
-					t.Logf("  Container ID: %v", arg.Value)
+					t.Logf("  Container ID: %v", arg.GetStr())
 				}
 			}
 
@@ -273,12 +269,8 @@ func Test_ExistingContainers(t *testing.T) {
 		for {
 			select {
 			case pbEvent := <-eventStream.ReceiveEvents():
-				// Convert pb.Event back to trace.Event for test buffer
 				if pbEvent != nil {
-					traceEvent := events.ConvertFromProto(pbEvent)
-					if traceEvent != nil {
-						eventBuffer.AddEvent(*traceEvent)
-					}
+					eventBuffer.AddEvent(pbEvent)
 				}
 			case <-ctx.Done():
 				return
@@ -301,26 +293,33 @@ func Test_ExistingContainers(t *testing.T) {
 	assert.Greater(t, len(capturedEvents), 0, "No events captured")
 
 	foundExisting := false
-	var testContainerEvent *trace.Event
+	var testContainerEvent *pb.Event
 
 	for _, evt := range capturedEvents {
-		if evt.EventID == int(events.ExistingContainer) {
+		eventID := events.ID(evt.Id)
+		if eventID == events.ExistingContainer {
 			foundExisting = true
 			t.Logf("Found ExistingContainer event")
 
 			// Verify it has container-related arguments
-			assert.NotEmpty(t, evt.Args, "ExistingContainer should have arguments")
+			assert.NotEmpty(t, evt.Data, "ExistingContainer should have arguments")
 
-			// Get the container id
-			containerName, err := evt.GetStringArgumentByName("container_name")
-			if err != nil {
-				t.Logf("Failed to get container name: %v", err)
+			// Get the container name
+			var containerName string
+			for _, arg := range evt.Data {
+				if arg.Name == "container_name" {
+					containerName = arg.GetStr()
+					break
+				}
+			}
+			if containerName == "" {
+				t.Logf("Failed to get container name")
 				continue
 			}
 			if containerName != testContainerName {
 				continue
 			}
-			testContainerEvent = &evt
+			testContainerEvent = evt
 			break
 		}
 	}
@@ -333,18 +332,17 @@ func Test_ExistingContainers(t *testing.T) {
 		hasContainerID := false
 		hasContainerName := false
 
-		for _, arg := range testContainerEvent.Args {
+		for _, arg := range testContainerEvent.Data {
 			switch arg.Name {
 			case "runtime":
 				hasRuntime = true
-				t.Logf("  Runtime: %v", arg.Value)
+				t.Logf("  Runtime: %v", arg.GetStr())
 			case "container_id":
 				hasContainerID = true
-				t.Logf("  Container ID: %v", arg.Value)
+				t.Logf("  Container ID: %v", arg.GetStr())
 			case "container_name":
 				hasContainerName = true
-				containerNameVal, ok := arg.Value.(string)
-				assert.True(t, ok, "Container name should be a string")
+				containerNameVal := arg.GetStr()
 				assert.True(t, containerNameVal == testContainerName,
 					"Container name should contain test container name")
 				t.Logf("  Container Name: %v", arg.Value)

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"unsafe"
 
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/bitwise"
 	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/errfmt"
@@ -603,6 +604,8 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *events.PipelineEvent
 					// Use cached conversion from PipelineEvent
 					pbEvent := event.ToProto()
 					if pbEvent != nil {
+						// Translate event ID to external format for streams (external API boundary)
+						pbEvent.Id = pb.EventId(events.TranslateEventID(int(pbEvent.Id)))
 						t.streamsManager.Publish(ctx, pbEvent, event.Event.MatchedPoliciesUser)
 					}
 				}
