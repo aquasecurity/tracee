@@ -13,8 +13,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/aquasecurity/tracee/common/bitwise"
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -73,8 +74,8 @@ func Test_EventFilters(t *testing.T) {
 					"docker run -d --rm hello-world",
 					0,
 					10*time.Second, // give some time for the container to start (possibly downloading the image)
-					[]trace.Event{
-						expectEvent(anyHost, "hello", anyProcessorID, 1, 0, events.SchedProcessExec, orPolNames("container-event"), orPolIDs(1)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "hello", anyProcessorID, 1, 0, events.SchedProcessExec, orPolNames("container-event")),
 					},
 					[]string{}, // no sets
 				),
@@ -105,9 +106,9 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				// no event expected
-				newCmdEvents("ls", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
-				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
-				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
+				newCmdEvents("ls", 100*time.Millisecond, 1*time.Second, []*pb.Event{}, []string{}),
+				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []*pb.Event{}, []string{}),
+				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []*pb.Event{}, []string{}),
 			},
 			useSyscaller: false,
 			coolDown:     0,
@@ -134,8 +135,8 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				// no event expected
-				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
-				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
+				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []*pb.Event{}, []string{}),
+				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []*pb.Event{}, []string{}),
 			},
 			useSyscaller: false,
 			coolDown:     0,
@@ -162,8 +163,8 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				// no event expected
-				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
-				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
+				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []*pb.Event{}, []string{}),
+				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []*pb.Event{}, []string{}),
 			},
 			useSyscaller: false,
 			coolDown:     0,
@@ -204,9 +205,9 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm_mntns_pidns_event"), orPolIDs(1)),
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm_mntns_pidns_event"), orPolIDs(1)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm_mntns_pidns_event")),
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm_mntns_pidns_event")),
 					},
 					[]string{},
 				),
@@ -248,9 +249,9 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm-event"), orPolIDs(1)),
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm-event"), orPolIDs(1)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm-event")),
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm-event")),
 					},
 					[]string{},
 				),
@@ -288,9 +289,9 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event"), orPolIDs(5)),
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event"), orPolIDs(5)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event")),
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event")),
 					},
 					[]string{},
 				),
@@ -330,9 +331,9 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "integration.tes", // note that comm name is from the go test binary that runs the command
-							testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event-data"), orPolIDs(42), expectArg("pathname", "*/ls")),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "integration.tes", // note that comm name is from the go test binary that runs the command
+							testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event-data"), expectPbArg("pathname", "*/ls")),
 					},
 					[]string{},
 				),
@@ -369,9 +370,9 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				// no event expected
-				newCmdEvents("ls", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
-				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
-				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []trace.Event{}, []string{}),
+				newCmdEvents("ls", 100*time.Millisecond, 1*time.Second, []*pb.Event{}, []string{}),
+				newCmdEvents("uname", 100*time.Millisecond, 1*time.Second, []*pb.Event{}, []string{}),
+				newCmdEvents("who", 100*time.Millisecond, 1*time.Second, []*pb.Event{}, []string{}),
 			},
 			useSyscaller: false,
 			coolDown:     0,
@@ -408,8 +409,8 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("comm-event-data"), orPolIDs(42), expectArg("pathname", "*integration")),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("comm-event-data"), expectPbArg("pathname", "*integration")),
 					},
 					[]string{},
 				),
@@ -466,16 +467,16 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm-event-4"), orPolIDs(4)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm-event-4")),
 					},
 					[]string{},
 				),
 				newCmdEvents("uname",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm-event-2"), orPolIDs(2)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm-event-2")),
 					},
 					[]string{},
 				),
@@ -532,16 +533,16 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("who",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("exec-event-1"), orPolIDs(1)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("exec-event-1")),
 					},
 					[]string{},
 				),
 				newCmdEvents("uname",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("exec-event-2"), orPolIDs(2)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("exec-event-2")),
 					},
 					[]string{},
 				),
@@ -589,8 +590,8 @@ func Test_EventFilters(t *testing.T) {
 		// 			expectFromSystem,
 		// 			100*time.Millisecond, // wait
 		// 			0,                    // this value is ignored when 'expectFromSystem' is used
-		// 			[]trace.Event{
-		// 				expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid-0-event-data"), orPolIDs(1)),
+		// 			[]*pb.Event{
+		// 				expectPbEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid-0-event-data")),
 		// 			},
 		// 			[]string{},
 		// 		),
@@ -627,9 +628,9 @@ func Test_EventFilters(t *testing.T) {
 					"kill -SIGHUP 1", // systemd: reloads the complete daemon configuration
 					500*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "systemd", anyProcessorID, 1, 0, events.MemfdCreate, orPolNames("pid-1"), orPolIDs(1)),
-						expectEvent(anyHost, "systemd", anyProcessorID, 1, 0, events.SecurityInodeUnlink, orPolNames("pid-1"), orPolIDs(1)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "systemd", anyProcessorID, 1, 0, events.MemfdCreate, orPolNames("pid-1")),
+						expectPbEvent(anyHost, "systemd", anyProcessorID, 1, 0, events.SecurityInodeUnlink, orPolNames("pid-1")),
 					},
 					[]string{},
 				),
@@ -663,8 +664,8 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("uid-0-comm"), orPolIDs(1)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("uid-0-comm")),
 					},
 					[]string{},
 				),
@@ -698,7 +699,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					100*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{}, // no events expected
+					[]*pb.Event{}, // no events expected
 					[]string{},
 				),
 			},
@@ -735,8 +736,8 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("event-fs"), orPolIDs(1)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("event-fs")),
 					},
 					[]string{"fs"},
 				),
@@ -774,9 +775,9 @@ func Test_EventFilters(t *testing.T) {
 					"docker run -d --rm hello-world",
 					0,
 					10*time.Second, // give some time for the container to start (possibly downloading the image)
-					[]trace.Event{
+					[]*pb.Event{
 						// using anyComm as some versions of dockerd may result in e.g. "dockerd" or "exe"
-						expectEvent(anyHost, anyComm, anyProcessorID, anyPID, 0, events.Setns, orPolNames("exec-event"), orPolIDs(1)),
+						expectPbEvent(anyHost, anyComm, anyProcessorID, anyPID, 0, events.Setns, orPolNames("exec-event")),
 					},
 					[]string{},
 				),
@@ -810,7 +811,7 @@ func Test_EventFilters(t *testing.T) {
 					"kill -SIGUSR1 1", // systemd: try to reconnect to the D-Bus bus
 					500*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{}, // no events expected
+					[]*pb.Event{}, // no events expected
 					[]string{},
 				),
 			},
@@ -842,8 +843,8 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64"), orPolIDs(64)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64")),
 					},
 					[]string{},
 				),
@@ -892,8 +893,8 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64"), orPolIDs(64)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64")),
 					},
 					[]string{},
 				),
@@ -941,8 +942,8 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64"), orPolIDs(64)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64")),
 					},
 					[]string{},
 				),
@@ -950,8 +951,8 @@ func Test_EventFilters(t *testing.T) {
 					"who",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-42"), orPolIDs(42)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-42")),
 					},
 					[]string{},
 				),
@@ -992,9 +993,9 @@ func Test_EventFilters(t *testing.T) {
 					"bash -c ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "bash", // note that comm name is from the runner
-							testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("event-data-context"), orPolIDs(42), expectArg("pathname", "*/ls")),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "bash", // note that comm name is from the runner
+							testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("event-data-context"), expectPbArg("pathname", "*/ls")),
 					},
 					[]string{},
 				),
@@ -1032,8 +1033,8 @@ func Test_EventFilters(t *testing.T) {
 					"bash -c '/usr/bin/tee /tmp/magic_write_test < <(echo 42)'",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "tee", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("comm-event"), orPolIDs(42)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "tee", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("comm-event")),
 					},
 					[]string{},
 				),
@@ -1096,17 +1097,17 @@ func Test_EventFilters(t *testing.T) {
 		// 		newCmdEvents(
 		// 			"ping -c1 0.0.0.0",
 		// 			1*time.Second,
-		// 			[]trace.Event{
-		// 				expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event"), orPolIDs(3)),
+		// 			[]*pb.Event{
+		// 				expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event")),
 		// 			},
 		// 			[]string{},
 		// 		),
 		// 		newCmdEvents(
 		// 			"strace ls",
 		// 			1*time.Second,
-		// 			[]trace.Event{
-		// 				expectEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.Ptrace, orPolNames("event-data"), orPolIDs(5)),
-		// 				expectEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.anti_debugging, orPolNames("sign"), orPolIDs(9)),
+		// 			[]*pb.Event{
+		// 				expectPbEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.Ptrace, orPolNames("event-data")),
+		// 				expectPbEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.anti_debugging, orPolNames("sign")),
 		// 			},
 		// 			[]string{},
 		// 		),
@@ -1166,9 +1167,9 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					100*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5")),
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5")),
 					},
 					[]string{},
 				),
@@ -1230,11 +1231,11 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					100*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.Setuid, orPolNames("comm-event-5"), orPolIDs(5)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.Setuid, orPolNames("comm-event-5")),
 
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5")),
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5")),
 					},
 					[]string{},
 				),
@@ -1336,13 +1337,13 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					100*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm-event-7", "comm-event-9"), orPolIDs(7, 9)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm-event-7", "comm-event-9")),
 
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SecuritySocketConnect, orPolNames("comm-event-9"), orPolIDs(9)),
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SecuritySocketConnect, orPolNames("comm-event-9")),
 
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5")),
+						expectPbEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5")),
 					},
 					[]string{},
 				),
@@ -1380,9 +1381,9 @@ func Test_EventFilters(t *testing.T) {
 					"bash -c 'nc -zv localhost 7777 || true'",
 					0,
 					2*time.Second,
-					[]trace.Event{
-						expectEvent(
-							anyHost, "nc", testutils.CPUForTests, anyPID, 0, events.NetTCPConnect, orPolNames("net-event-1"), orPolIDs(1)),
+					[]*pb.Event{
+						expectPbEvent(
+							anyHost, "nc", testutils.CPUForTests, anyPID, 0, events.NetTCPConnect, orPolNames("net-event-1")),
 					},
 					[]string{},
 				),
@@ -1431,8 +1432,8 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64", "comm-42"), orPolIDs(64, 42)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64", "comm-42")),
 					},
 					[]string{},
 				),
@@ -1440,8 +1441,8 @@ func Test_EventFilters(t *testing.T) {
 					"who",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-42"), orPolIDs(42)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-42")),
 					},
 					[]string{},
 				),
@@ -1489,8 +1490,8 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64", "comm-42"), orPolIDs(64, 42)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64", "comm-42")),
 					},
 					[]string{},
 				),
@@ -1498,8 +1499,8 @@ func Test_EventFilters(t *testing.T) {
 					"who",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-42"), orPolIDs(42)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-42")),
 					},
 					[]string{},
 				),
@@ -1547,9 +1548,9 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Read, orPolNames("comm-event"), orPolIDs(1)),
-						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Write, orPolNames("comm-event"), orPolIDs(1)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Read, orPolNames("comm-event")),
+						expectPbEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Write, orPolNames("comm-event")),
 					},
 					[]string{},
 				),
@@ -1585,8 +1586,8 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event-pol-42"), orPolIDs(42)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event-pol-42")),
 					},
 					[]string{},
 				),
@@ -1652,11 +1653,11 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-data-64"), orPolIDs(64),
-							expectArg("dirfd", int32(0)),
-							expectArg("flags", int32(0)),
-							expectArg("mode", uint16(0)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-data-64"),
+							expectPbArg("dirfd", int32(0)),
+							expectPbArg("flags", int32(0)),
+							expectPbArg("mode", uint16(0)),
 						),
 					},
 					[]string{},
@@ -1665,11 +1666,11 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog2",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "fakeprog2", testutils.CPUForTests, anyPID, 0, events.Read, orPolNames("comm-event-data-42"), orPolIDs(42),
-							expectArg("fd", int32(0)),
-							expectArg("buf", trace.Pointer(0)),
-							expectArg("count", uint64(0)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "fakeprog2", testutils.CPUForTests, anyPID, 0, events.Read, orPolNames("comm-event-data-42"),
+							expectPbArg("fd", int32(0)),
+							expectPbArg("buf", trace.Pointer(0)),
+							expectPbArg("count", uint64(0)),
 						),
 					},
 					[]string{},
@@ -1733,11 +1734,11 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-retval-64"), orPolIDs(64),
-							expectArg("dirfd", int32(0)),
-							expectArg("flags", int32(0)),
-							expectArg("mode", uint16(0)),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-retval-64"),
+							expectPbArg("dirfd", int32(0)),
+							expectPbArg("flags", int32(0)),
+							expectPbArg("mode", uint16(0)),
 						),
 					},
 					[]string{},
@@ -1746,7 +1747,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog2",
 					100*time.Millisecond,
 					1*time.Second,
-					[]trace.Event{}, // no events expected
+					[]*pb.Event{}, // no events expected
 					[]string{},
 				),
 			},
@@ -1840,11 +1841,11 @@ func Test_EventFilters(t *testing.T) {
 					20*time.Second,
 					// Running the commands inside a container caused duplicate
 					// security_file_open events to be generated. This is why the events are duplicated.
-					[]trace.Event{
-						expectEvent(anyHost, "more", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/ld.so.cache")),
-						expectEvent(anyHost, "more", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/ld.so.cache")),
-						expectEvent(anyHost, "more", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-3"), orPolIDs(1, 3), expectArg("pathname", "/etc/netconfig")),
-						expectEvent(anyHost, "more", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-3"), orPolIDs(1, 3), expectArg("pathname", "/etc/netconfig")),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "more", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), expectPbArg("pathname", "/etc/ld.so.cache")),
+						expectPbEvent(anyHost, "more", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), expectPbArg("pathname", "/etc/ld.so.cache")),
+						expectPbEvent(anyHost, "more", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-3"), expectPbArg("pathname", "/etc/netconfig")),
+						expectPbEvent(anyHost, "more", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-3"), expectPbArg("pathname", "/etc/netconfig")),
 					},
 					[]string{},
 				),
@@ -1924,12 +1925,12 @@ func Test_EventFilters(t *testing.T) {
 					20*time.Second,
 					// Running the commands inside a container caused duplicate
 					// security_file_open events to be generated. This is why the events are duplicated.
-					[]trace.Event{
-						expectEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1"), orPolIDs(1), expectArg("pathname", "/etc/ld.so.cache")),
-						expectEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1"), orPolIDs(1), expectArg("pathname", "/etc/ld.so.cache")),
-						expectEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1", "sfo-mw-combined-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/netconfig")),
-						expectEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1", "sfo-mw-combined-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/etc/netconfig")),
-						expectEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-combined-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/netconfig")),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1"), expectPbArg("pathname", "/etc/ld.so.cache")),
+						expectPbEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1"), expectPbArg("pathname", "/etc/ld.so.cache")),
+						expectPbEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1", "sfo-mw-combined-pol-2"), expectPbArg("pathname", "/etc/netconfig")),
+						expectPbEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-combined-pol-1", "sfo-mw-combined-pol-2"), expectPbArg("pathname", "/etc/netconfig")),
+						expectPbEvent(anyHost, "cat", anyProcessorID, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-combined-pol-1"), expectPbArg("pathname", "/tmp/netconfig")),
 					},
 					[]string{},
 				),
@@ -1992,10 +1993,10 @@ func Test_EventFilters(t *testing.T) {
 					"sh -c 'more /etc/hostname > /tmp/hostname; more /etc/shadow > /tmp/shadow; more /etc/passwd > /tmp/passwd;'",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1", "mw-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/tmp/hostname")),
-						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/shadow")),
-						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1", "mw-pol-2"), orPolIDs(1, 2), expectArg("pathname", "/tmp/passwd")),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1", "mw-pol-2"), expectPbArg("pathname", "/tmp/hostname")),
+						expectPbEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1"), expectPbArg("pathname", "/tmp/shadow")),
+						expectPbEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("mw-pol-1", "mw-pol-2"), expectPbArg("pathname", "/tmp/passwd")),
 					},
 					[]string{},
 				),
@@ -2057,8 +2058,8 @@ func Test_EventFilters(t *testing.T) {
 					"more /sys/class/dmi/id/bios_date",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1"), orPolIDs(1), expectArg("syscall_pathname", "/sys/class/dmi/id/bios_date")),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1"), expectPbArg("syscall_pathname", "/sys/class/dmi/id/bios_date")),
 					},
 					[]string{},
 				),
@@ -2066,8 +2067,8 @@ func Test_EventFilters(t *testing.T) {
 					"more /etc/pam.d/other",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-2"), orPolIDs(2), expectArg("pathname", "/etc/pam.d/other")),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-2"), expectPbArg("pathname", "/etc/pam.d/other")),
 					},
 					[]string{},
 				),
@@ -2130,8 +2131,8 @@ func Test_EventFilters(t *testing.T) {
 					"more /sys/class/dmi/id/bios_date",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1"), orPolIDs(1), expectArg("pathname", "/sys/devices/virtual/dmi/id/bios_date")),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1"), expectPbArg("pathname", "/sys/devices/virtual/dmi/id/bios_date")),
 					},
 					[]string{},
 				),
@@ -2172,9 +2173,9 @@ func Test_EventFilters(t *testing.T) {
 					"ldd /usr/bin/bash",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "ldd", testutils.CPUForTests, anyPID, 0, events.SecurityMmapFile, orPolNames("smf-pol-1"), orPolIDs(1), expectArg("pathname", "/usr/bin/bash")),
-						expectEvent(anyHost, "ldd", testutils.CPUForTests, anyPID, 0, events.SecurityMmapFile, orPolNames("smf-pol-1"), orPolIDs(1), expectArg("pathname", "/etc/ld.so.cache")),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "ldd", testutils.CPUForTests, anyPID, 0, events.SecurityMmapFile, orPolNames("smf-pol-1"), expectPbArg("pathname", "/usr/bin/bash")),
+						expectPbEvent(anyHost, "ldd", testutils.CPUForTests, anyPID, 0, events.SecurityMmapFile, orPolNames("smf-pol-1"), expectPbArg("pathname", "/etc/ld.so.cache")),
 					},
 					[]string{},
 				),
@@ -2221,10 +2222,10 @@ func Test_EventFilters(t *testing.T) {
 					"sh -c 'more /etc/hostname > /tmp/hostname; more /etc/shadow > /tmp/shadow; more /etc/passwd > /tmp/passwd;'",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/hostname")),
-						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/shadow")),
-						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-pol-1"), orPolIDs(1), expectArg("pathname", "/tmp/passwd")),
+					[]*pb.Event{
+						expectPbEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-mw-pol-1"), expectPbArg("pathname", "/etc/host*")),
+						expectPbEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-pol-1"), expectPbArg("pathname", "*shadow")),
+						expectPbEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("sfo-mw-pol-1"), expectPbArg("pathname", "*passwd")),
 					},
 					[]string{},
 				),
@@ -2290,9 +2291,9 @@ func Test_EventFilters(t *testing.T) {
 						"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCDEFGHIJK'",
 					0,
 					1*time.Second,
-					[]trace.Event{
-						expectEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"), orPolIDs(1, 2),
-							expectArg("pathname", "/tmp/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"+
+					[]*pb.Event{
+						expectPbEvent(anyHost, "more", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("sfo-pol-1", "sfo-pol-2"),
+							expectPbArg("pathname", "/tmp/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"+
 								"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"+
 								"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCDEFGHIJK")),
 					},
@@ -2361,12 +2362,8 @@ func Test_EventFilters(t *testing.T) {
 					case <-ctx.Done():
 						return
 					case pbEvent := <-stream.ReceiveEvents():
-						// Convert pb.Event back to trace.Event for test buffer
 						if pbEvent != nil {
-							traceEvent := events.ConvertFromProto(pbEvent)
-							if traceEvent != nil {
-								buf.AddEvent(*traceEvent)
-							}
+							buf.AddEvent(pbEvent)
 						}
 					}
 				}
@@ -2423,13 +2420,13 @@ type cmdEvents struct {
 	runCmd           string
 	waitFor          time.Duration // time to wait before collecting events
 	timeout          time.Duration // timeout for the command to run
-	expectedEvents   []trace.Event
-	unexpectedEvents []trace.Event
+	expectedEvents   []*pb.Event
+	unexpectedEvents []*pb.Event
 	sets             []string
 }
 
 // newCmdEvents is a helper function to create a cmdEvents
-func newCmdEvents(runCmd string, waitFor, timeout time.Duration, evts []trace.Event, sets []string) cmdEvents {
+func newCmdEvents(runCmd string, waitFor, timeout time.Duration, evts []*pb.Event, sets []string) cmdEvents {
 	return cmdEvents{
 		runCmd:         runCmd,
 		waitFor:        waitFor,
@@ -2440,53 +2437,124 @@ func newCmdEvents(runCmd string, waitFor, timeout time.Duration, evts []trace.Ev
 }
 
 // orPolIDs is a helper function to create a bit mask of the given policies IDs
-func orPolIDs(policies ...uint) uint64 {
-	var res uint64
-
-	for _, pol := range policies {
-		bitwise.SetBit(&res, pol-1)
-	}
-
-	return res
-}
-
 // orPolNames is a helper function to create a slice of the given policies names
 func orPolNames(policies ...string) []string {
 	return policies
 }
 
-// expectArg is a helper function to create a trace.Argument with the name and value fields set
-// If value has a star as wildcard, the value must be passed as it is due to test functions logic
-func expectArg(name string, value interface{}) trace.Argument {
-	return trace.Argument{
-		ArgMeta: trace.ArgMeta{
-			Name: name,
-		},
-		Value: value,
-	}
-}
-
-// revive:disable:argument-limit
-// expectEvent is a helper function to create a trace.Event
-func expectEvent(
+// expectPbEvent is a helper function to create a pb.Event for test expectations
+// Use sentinel values (anyHost, anyComm, anyPID, etc.) for fields that should not be checked
+func expectPbEvent(
 	host, comm string,
 	processorID, pid, uid int,
 	eventID events.ID,
-	matchPolName []string,
-	matchPols uint64,
-	args ...trace.Argument,
-) trace.Event {
-	return trace.Event{
-		ProcessorID:         processorID,
-		ProcessID:           pid,
-		UserID:              uid,
-		ProcessName:         comm,
-		HostName:            host,
-		EventID:             int(eventID),
-		MatchedPolicies:     matchPolName,
-		MatchedPoliciesUser: matchPols,
-		Args:                args,
+	matchPolNames []string,
+	args ...*pb.EventValue,
+) *pb.Event {
+	event := &pb.Event{
+		Name: events.Core.GetDefinitionByID(eventID).GetName(),
 	}
+
+	// Set event ID (translate to external ID)
+	// Integration tests receive events from streams, which publish external IDs
+	// (streams are at the external API boundary). Test expectations must match
+	// the same ID format as actual events from streams.
+	event.Id = events.TranslateEventID(int(eventID))
+
+	// Set workload if any fields are specified
+	if comm != anyComm || pid != anyPID || uid != anyUID || processorID != anyProcessorID {
+		event.Workload = &pb.Workload{}
+
+		if comm != anyComm || pid != anyPID || uid != anyUID {
+			event.Workload.Process = &pb.Process{}
+
+			// Set thread (comm)
+			if comm != anyComm {
+				event.Workload.Process.Thread = &pb.Thread{
+					Name: comm,
+				}
+			}
+
+			// Set PID
+			if pid != anyPID {
+				event.Workload.Process.Pid = wrapperspb.UInt32(uint32(pid))
+			}
+
+			// Set UID
+			if uid != anyUID {
+				event.Workload.Process.RealUser = &pb.User{
+					Id: wrapperspb.UInt32(uint32(uid)),
+				}
+			}
+		}
+	}
+
+	// Set policies
+	if len(matchPolNames) > 0 && matchPolNames[0] != anyPolicyName {
+		event.Policies = &pb.Policies{
+			Matched: matchPolNames,
+		}
+	}
+
+	// Set data (arguments)
+	if len(args) > 0 {
+		event.Data = args
+	}
+
+	return event
+}
+
+// expectPbArg is a helper function to create a pb.EventValue for argument expectations
+func expectPbArg(name string, value interface{}) *pb.EventValue {
+	ev := &pb.EventValue{
+		Name: name,
+	}
+
+	switch v := value.(type) {
+	case string:
+		ev.Value = &pb.EventValue_Str{Str: v}
+	case int:
+		ev.Value = &pb.EventValue_Int32{Int32: int32(v)}
+	case int32:
+		ev.Value = &pb.EventValue_Int32{Int32: v}
+	case int64:
+		ev.Value = &pb.EventValue_Int64{Int64: v}
+	case uint16:
+		ev.Value = &pb.EventValue_UInt32{UInt32: uint32(v)}
+	case uint32:
+		ev.Value = &pb.EventValue_UInt32{UInt32: v}
+	case uint64:
+		ev.Value = &pb.EventValue_UInt64{UInt64: v}
+	case trace.Pointer:
+		ev.Value = &pb.EventValue_UInt64{UInt64: uint64(v)}
+	case bool:
+		ev.Value = &pb.EventValue_Bool{Bool: v}
+	case []byte:
+		ev.Value = &pb.EventValue_Bytes{Bytes: v}
+	case []string:
+		ev.Value = &pb.EventValue_StrArray{StrArray: &pb.StringArray{Value: v}}
+	default:
+		// For unsupported types, store as string representation
+		ev.Value = &pb.EventValue_Str{Str: fmt.Sprintf("%v", v)}
+	}
+
+	return ev
+}
+
+// GetDataByName extracts an argument from pb.Event.Data by name
+// Similar to trace.Event.GetArgumentByName() but for protobuf events
+func GetDataByName(event *pb.Event, name string) (*pb.EventValue, error) {
+	if event == nil || event.Data == nil {
+		return nil, fmt.Errorf("data not found: %s", name)
+	}
+
+	for _, data := range event.Data {
+		if data.Name == name {
+			return data, nil
+		}
+	}
+
+	return nil, fmt.Errorf("data not found: %s", name)
 }
 
 func coolDown(t *testing.T, duration time.Duration) {
@@ -2583,7 +2651,15 @@ func formatCmdEvents(cmd *cmdEvents) {
 	cmd.runCmd = fmt.Sprintf("%s %s", syscallerAbsPath, cmd.runCmd)
 
 	for _, evt := range cmd.expectedEvents {
-		cmd.runCmd = fmt.Sprintf("%s %d", cmd.runCmd, evt.EventID)
+		// syscaller expects internal event IDs (actual syscall numbers on AMD64)
+		// evt.Id contains external protobuf IDs, so we need to reverse-translate
+		// by looking up the event definition by name
+		eventDef := events.Core.GetDefinitionByName(evt.Name)
+		if eventDef.NotValid() {
+			panic(fmt.Sprintf("event definition not found for %s", evt.Name))
+		}
+		internalID := eventDef.GetID()
+		cmd.runCmd = fmt.Sprintf("%s %d", cmd.runCmd, int(internalID))
 	}
 }
 
@@ -2637,22 +2713,34 @@ func isCmdAShellRunner(cmd string) bool {
 }
 
 // pidToCheck returns the pid of the process to check for events
-func pidToCheck(cmd string, actEvt trace.Event, expectedPid int) int {
+func pidToCheck(cmd string, actEvt *pb.Event, expectedPid int) int {
 	switch expectedPid {
 	case 0, 1, 2: // special pids: 0 swapper, 1 systemd, 2 kthreadd
 		return expectedPid
 	}
 
-	if isCmdAShellRunner(cmd) {
-		// For shell commands, try to match the expected PID directly first
-		if actEvt.ProcessID == expectedPid {
-			return actEvt.ProcessID
+	var actualPid int
+	var parentPid int
+
+	if actEvt.Workload != nil && actEvt.Workload.Process != nil {
+		if actEvt.Workload.Process.Pid != nil {
+			actualPid = int(actEvt.Workload.Process.Pid.Value)
 		}
-		// Otherwise, use parent PID (for child processes or fallback)
-		return actEvt.ParentProcessID
+		if len(actEvt.Workload.Process.Ancestors) > 0 && actEvt.Workload.Process.Ancestors[0].Pid != nil {
+			parentPid = int(actEvt.Workload.Process.Ancestors[0].Pid.Value)
+		}
 	}
 
-	return actEvt.ProcessID
+	if isCmdAShellRunner(cmd) {
+		// For shell commands, try to match the expected PID directly first
+		if actualPid == expectedPid {
+			return actualPid
+		}
+		// Otherwise, use parent PID (for child processes or fallback)
+		return parentPid
+	}
+
+	return actualPid
 }
 
 // assert that the given string slices are equal, ignoring order
@@ -2712,49 +2800,90 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *testut
 
 		actEvtsCopy := actual.GetCopy()
 
-		findEventInResults := func(expEvt trace.Event) (bool, error) {
-			checkHost := expEvt.HostName != anyHost
-			checkComm := expEvt.ProcessName != anyComm
-			checkProcessorID := expEvt.ProcessorID != anyProcessorID
-			checkPID := expEvt.ProcessID != anyPID
-			checkUID := expEvt.UserID != anyUID
-			checkEventID := expEvt.EventID != anyEventID
-			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
-			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
+		findEventInResults := func(expEvt *pb.Event) (bool, error) {
+			// Extract expected values (initialize to "any" sentinels)
+			expComm := anyComm
+			expPID := anyPID
+			expUID := anyUID
+			var expPolicies []string
+
+			if expEvt.Workload != nil && expEvt.Workload.Process != nil {
+				if expEvt.Workload.Process.Thread != nil {
+					expComm = expEvt.Workload.Process.Thread.Name
+				}
+				if expEvt.Workload.Process.Pid != nil {
+					expPID = int(expEvt.Workload.Process.Pid.Value)
+				}
+				if expEvt.Workload.Process.RealUser != nil && expEvt.Workload.Process.RealUser.Id != nil {
+					expUID = int(expEvt.Workload.Process.RealUser.Id.Value)
+				}
+			}
+			if expEvt.Policies != nil {
+				expPolicies = expEvt.Policies.Matched
+			}
+
+			checkComm := expComm != anyComm
+			checkPID := expPID != anyPID
+			checkUID := expUID != anyUID
+			checkEventID := expEvt.Id != pb.EventId(anyEventID)
+			checkPolicyName := len(expPolicies) > 0 && expPolicies[0] != anyPolicyName
 
 			for _, actEvt := range actEvtsCopy {
-				if checkSets && !isInSets(actEvt.EventName, syscallsInSets) {
+				if checkSets && !isInSets(actEvt.Name, syscallsInSets) {
 					continue
 				}
 
-				if checkHost && actEvt.HostName != expEvt.HostName {
+				// Check comm
+				if checkComm {
+					actComm := ""
+					if actEvt.Workload != nil && actEvt.Workload.Process != nil && actEvt.Workload.Process.Thread != nil {
+						actComm = actEvt.Workload.Process.Thread.Name
+					}
+					if actComm != expComm {
+						continue
+					}
+				}
+
+				// Check PID
+				if checkPID {
+					actPID := 0
+					if actEvt.Workload != nil && actEvt.Workload.Process != nil && actEvt.Workload.Process.Pid != nil {
+						actPID = int(actEvt.Workload.Process.Pid.Value)
+					}
+					if pidToCheck(cmd.runCmd, actEvt, expPID) != expPID {
+						continue
+					}
+					if actPID != expPID {
+						continue
+					}
+				}
+
+				// Check UID
+				if checkUID {
+					actUID := 0
+					if actEvt.Workload != nil && actEvt.Workload.Process != nil && actEvt.Workload.Process.RealUser != nil && actEvt.Workload.Process.RealUser.Id != nil {
+						actUID = int(actEvt.Workload.Process.RealUser.Id.Value)
+					}
+					if actUID != expUID {
+						continue
+					}
+				}
+
+				// Check EventID
+				if checkEventID && actEvt.Id != expEvt.Id {
 					continue
 				}
-				if checkComm && actEvt.ProcessName != expEvt.ProcessName {
-					continue
-				}
-				if checkProcessorID && actEvt.ProcessorID != expEvt.ProcessorID {
-					continue
-				}
-				if checkPID && pidToCheck(cmd.runCmd, actEvt, expEvt.ProcessID) != expEvt.ProcessID {
-					continue
-				}
-				if checkPID && actEvt.ProcessID != expEvt.ProcessID {
-					continue
-				}
-				if checkUID && actEvt.UserID != expEvt.UserID {
-					continue
-				}
-				if checkEventID && actEvt.EventID != expEvt.EventID {
-					continue
-				}
-				if checkPolicy && actEvt.MatchedPoliciesUser != expEvt.MatchedPoliciesUser {
-					continue
-				}
+
+				// Check policy names
 				if checkPolicyName {
+					actPolicies := []string{}
+					if actEvt.Policies != nil {
+						actPolicies = actEvt.Policies.Matched
+					}
+
 					polNameFound := false
-					for _, policyName := range expEvt.MatchedPolicies {
-						for _, actPolicyName := range actEvt.MatchedPolicies {
+					for _, policyName := range expPolicies {
+						for _, actPolicyName := range actPolicies {
 							if policyName == actPolicyName {
 								polNameFound = true
 								break
@@ -2771,32 +2900,32 @@ func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *testut
 				}
 
 				// check args
-				for _, expArg := range expEvt.Args {
-					actArg, err := actEvt.GetArgumentByName(
-						expArg.Name,
-						trace.GetArgOps{DefaultArgs: false},
-					)
+				for _, expArg := range expEvt.Data {
+					actArg, err := GetDataByName(actEvt, expArg.Name)
 					if err != nil {
 						return false, err
 					}
-					switch v := expArg.Value.(type) {
-					case string:
-						actVal, ok := actArg.Value.(string)
+
+					// Compare based on expected type
+					switch expVal := expArg.Value.(type) {
+					case *pb.EventValue_Str:
+						actVal, ok := actArg.Value.(*pb.EventValue_Str)
 						if !ok {
-							return false, errors.New("failed to cast arg's value")
+							return false, errors.New("failed to cast arg's value to string")
 						}
-						if strings.Contains(v, "*") {
-							v = strings.ReplaceAll(v, "*", "")
-							if !strings.Contains(actVal, v) {
+						// Handle wildcard matching
+						if strings.Contains(expVal.Str, "*") {
+							pattern := strings.ReplaceAll(expVal.Str, "*", "")
+							if !strings.Contains(actVal.Str, pattern) {
 								continue
 							}
 						} else {
-							if !assert.ObjectsAreEqual(v, actVal) {
+							if expVal.Str != actVal.Str {
 								continue
 							}
 						}
 					default:
-						if !assert.ObjectsAreEqual(v, actArg.Value) {
+						if !assert.ObjectsAreEqual(expArg.Value, actArg.Value) {
 							continue
 						}
 					}
@@ -2878,52 +3007,93 @@ func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *testutils.Even
 		// second stage: validate events
 		found := false
 		for _, expEvt := range cmd.expectedEvents {
-			checkHost := expEvt.HostName != anyHost
-			checkComm := expEvt.ProcessName != anyComm
-			checkProcessorID := expEvt.ProcessorID != anyProcessorID
-			checkPID := expEvt.ProcessID != anyPID
-			checkUID := expEvt.UserID != anyUID
-			checkEventID := expEvt.EventID != anyEventID
-			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
-			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
+			// Extract expected values (initialize to "any" sentinels)
+			expComm := anyComm
+			expPID := anyPID
+			expUID := anyUID
+			var expPolicies []string
+
+			if expEvt.Workload != nil && expEvt.Workload.Process != nil {
+				if expEvt.Workload.Process.Thread != nil {
+					expComm = expEvt.Workload.Process.Thread.Name
+				}
+				if expEvt.Workload.Process.Pid != nil {
+					expPID = int(expEvt.Workload.Process.Pid.Value)
+				}
+				if expEvt.Workload.Process.RealUser != nil && expEvt.Workload.Process.RealUser.Id != nil {
+					expUID = int(expEvt.Workload.Process.RealUser.Id.Value)
+				}
+			}
+			if expEvt.Policies != nil {
+				expPolicies = expEvt.Policies.Matched
+			}
+
+			checkComm := expComm != anyComm
+			checkPID := expPID != anyPID
+			checkUID := expUID != anyUID
+			checkEventID := expEvt.Id != pb.EventId(anyEventID)
+			checkPolicyName := len(expPolicies) > 0 && expPolicies[0] != anyPolicyName
 
 			if len(cmd.expectedEvents) > 0 && proc.expectedEvts == 0 {
 				return fmt.Errorf("expected events for command %s, but got none", cmd.runCmd)
 			}
 
 			for _, actEvt := range actEvtsCopy {
-				if checkSets && !isInSets(actEvt.EventName, syscallsInSets) {
+				if checkSets && !isInSets(actEvt.Name, syscallsInSets) {
 					continue
 				}
 
-				if checkHost && actEvt.HostName != expEvt.HostName {
+				// Check comm
+				if checkComm {
+					actComm := ""
+					if actEvt.Workload != nil && actEvt.Workload.Process != nil && actEvt.Workload.Process.Thread != nil {
+						actComm = actEvt.Workload.Process.Thread.Name
+					}
+					if actComm != expComm {
+						continue
+					}
+				}
+
+				// Check PID
+				if checkPID {
+					actPID := 0
+					if actEvt.Workload != nil && actEvt.Workload.Process != nil && actEvt.Workload.Process.Pid != nil {
+						actPID = int(actEvt.Workload.Process.Pid.Value)
+					}
+					if pidToCheck(cmd.runCmd, actEvt, expPID) != expPID {
+						continue
+					}
+					if actPID != expPID {
+						continue
+					}
+				}
+
+				// Check UID
+				if checkUID {
+					actUID := 0
+					if actEvt.Workload != nil && actEvt.Workload.Process != nil && actEvt.Workload.Process.RealUser != nil && actEvt.Workload.Process.RealUser.Id != nil {
+						actUID = int(actEvt.Workload.Process.RealUser.Id.Value)
+					}
+					if actUID != expUID {
+						continue
+					}
+				}
+
+				// Check EventID
+				if checkEventID && actEvt.Id != expEvt.Id {
 					continue
 				}
-				if checkComm && actEvt.ProcessName != expEvt.ProcessName {
-					continue
-				}
-				if checkProcessorID && actEvt.ProcessorID != expEvt.ProcessorID {
-					continue
-				}
-				if checkPID && pidToCheck(cmd.runCmd, actEvt, expEvt.ProcessID) != expEvt.ProcessID {
-					continue
-				}
-				if checkPID && actEvt.ProcessID != expEvt.ProcessID {
-					continue
-				}
-				if checkUID && actEvt.UserID != expEvt.UserID {
-					continue
-				}
-				if checkEventID && actEvt.EventID != expEvt.EventID {
-					continue
-				}
-				if checkPolicy && actEvt.MatchedPoliciesUser != expEvt.MatchedPoliciesUser {
-					continue
-				}
+
+				// Check policy names
 				if checkPolicyName {
+					actPolicies := []string{}
+					if actEvt.Policies != nil {
+						actPolicies = actEvt.Policies.Matched
+					}
+
 					polNameFound := false
-					for _, policyName := range expEvt.MatchedPolicies {
-						for _, actPolicyName := range actEvt.MatchedPolicies {
+					for _, policyName := range expPolicies {
+						for _, actPolicyName := range actPolicies {
 							if policyName == actPolicyName {
 								polNameFound = true
 								break
@@ -2940,29 +3110,32 @@ func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *testutils.Even
 				}
 
 				// check args
-				for _, expArg := range expEvt.Args {
-					actArg, err := actEvt.GetArgumentByName(expArg.Name, trace.GetArgOps{DefaultArgs: false})
+				for _, expArg := range expEvt.Data {
+					actArg, err := GetDataByName(actEvt, expArg.Name)
 					if err != nil {
 						return err
 					}
-					switch v := expArg.Value.(type) {
-					case string:
-						actVal, ok := actArg.Value.(string)
+
+					// Compare based on expected type
+					switch expVal := expArg.Value.(type) {
+					case *pb.EventValue_Str:
+						actVal, ok := actArg.Value.(*pb.EventValue_Str)
 						if !ok {
-							return errors.New("failed to cast arg's value")
+							return errors.New("failed to cast arg's value to string")
 						}
-						if strings.Contains(v, "*") {
-							v = strings.ReplaceAll(v, "*", "")
-							if !strings.Contains(actVal, v) {
+						// Handle wildcard matching
+						if strings.Contains(expVal.Str, "*") {
+							pattern := strings.ReplaceAll(expVal.Str, "*", "")
+							if !strings.Contains(actVal.Str, pattern) {
 								continue
 							}
 						} else {
-							if !assert.ObjectsAreEqual(v, actVal) {
+							if expVal.Str != actVal.Str {
 								continue
 							}
 						}
 					default:
-						if !assert.ObjectsAreEqual(v, actArg.Value) {
+						if !assert.ObjectsAreEqual(expArg.Value, actArg.Value) {
 							continue
 						}
 					}
@@ -3019,79 +3192,118 @@ func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *testut
 
 		// second stage: validate events
 		for _, expEvt := range cmd.expectedEvents {
+			// Extract expected values (initialize to "any" sentinels)
+			expComm := anyComm
+			expPID := anyPID
+			expUID := anyUID
+			var expPolicies []string
+
+			if expEvt.Workload != nil && expEvt.Workload.Process != nil {
+				if expEvt.Workload.Process.Thread != nil {
+					expComm = expEvt.Workload.Process.Thread.Name
+				}
+				if expEvt.Workload.Process.Pid != nil {
+					expPID = int(expEvt.Workload.Process.Pid.Value)
+				}
+				if expEvt.Workload.Process.RealUser != nil && expEvt.Workload.Process.RealUser.Id != nil {
+					expUID = int(expEvt.Workload.Process.RealUser.Id.Value)
+				}
+			}
+			if expEvt.Policies != nil {
+				expPolicies = expEvt.Policies.Matched
+			}
+
 			// Fix race condition: when anyPID is used, replace it with actual PID from launched process
-			expectedPID := expEvt.ProcessID
+			expectedPID := expPID
 			if expectedPID == anyPID {
 				expectedPID = proc.pid
 			}
 
-			checkHost := expEvt.HostName != anyHost
-			checkComm := expEvt.ProcessName != anyComm
-			checkProcessorID := expEvt.ProcessorID != anyProcessorID
-			checkPID := expEvt.ProcessID != anyPID // Always check PID now that anyPID has been replaced
-			checkUID := expEvt.UserID != anyUID
-			checkEventID := expEvt.EventID != anyEventID
-			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
-			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
+			checkComm := expComm != anyComm
+			checkPID := expPID != anyPID // Always check PID now that anyPID has been replaced
+			checkUID := expUID != anyUID
+			checkEventID := expEvt.Id != pb.EventId(anyEventID)
+			checkPolicyName := len(expPolicies) > 0 && expPolicies[0] != anyPolicyName
 
 			for _, actEvt := range actEvtsCopy {
-				if checkSets && !isInSets(actEvt.EventName, syscallsInSets) {
-					return fmt.Errorf("Event %s not found in sets %v", actEvt.EventName, cmd.sets)
+				if checkSets && !isInSets(actEvt.Name, syscallsInSets) {
+					return fmt.Errorf("Event %s not found in sets %v", actEvt.Name, cmd.sets)
 				}
 
-				if checkHost && !assert.ObjectsAreEqual(expEvt.HostName, actEvt.HostName) {
-					return fmt.Errorf("Event %+v:\nhost name mismatch: expected %s, got %s", actEvt, expEvt.HostName, actEvt.HostName)
+				// Check comm
+				if checkComm {
+					actComm := ""
+					if actEvt.Workload != nil && actEvt.Workload.Process != nil && actEvt.Workload.Process.Thread != nil {
+						actComm = actEvt.Workload.Process.Thread.Name
+					}
+					if !assert.ObjectsAreEqual(expComm, actComm) {
+						return fmt.Errorf("Event %+v:\ncomm mismatch: expected %s, got %s", actEvt, expComm, actComm)
+					}
 				}
-				if checkComm && !assert.ObjectsAreEqual(expEvt.ProcessName, actEvt.ProcessName) {
-					return fmt.Errorf("Event %+v:\ncomm mismatch: expected %s, got %s", actEvt, expEvt.ProcessName, actEvt.ProcessName)
-				}
-				if checkProcessorID && !assert.ObjectsAreEqual(expEvt.ProcessorID, actEvt.ProcessorID) {
-					return fmt.Errorf("Event %+v:\nprocessor Id mismatch: expected %d, got %d", actEvt, expEvt.ProcessorID, actEvt.ProcessorID)
-				}
+
+				// Check PID
 				if checkPID {
 					actPID := pidToCheck(cmd.runCmd, actEvt, expectedPID)
 					if !assert.ObjectsAreEqual(expectedPID, actPID) {
 						return fmt.Errorf("Event %+v:\npid mismatch: expected %d, got %d", actEvt, expectedPID, actPID)
 					}
 				}
-				if checkUID && !assert.ObjectsAreEqual(expEvt.UserID, actEvt.UserID) {
-					return fmt.Errorf("Event %+v:\nuser Id mismatch: expected %d, got %d", actEvt, expEvt.UserID, actEvt.UserID)
+
+				// Check UID
+				if checkUID {
+					actUID := 0
+					if actEvt.Workload != nil && actEvt.Workload.Process != nil && actEvt.Workload.Process.RealUser != nil && actEvt.Workload.Process.RealUser.Id != nil {
+						actUID = int(actEvt.Workload.Process.RealUser.Id.Value)
+					}
+					if !assert.ObjectsAreEqual(expUID, actUID) {
+						return fmt.Errorf("Event %+v:\nuser Id mismatch: expected %d, got %d", actEvt, expUID, actUID)
+					}
 				}
-				if checkEventID && !assert.ObjectsAreEqual(expEvt.EventID, actEvt.EventID) {
-					return fmt.Errorf("Event %+v:\nevent Id mismatch: expected %d, got %d", actEvt, expEvt.EventID, actEvt.EventID)
+
+				// Check EventID
+				if checkEventID && !assert.ObjectsAreEqual(expEvt.Id, actEvt.Id) {
+					return fmt.Errorf("Event %+v:\nevent Id mismatch: expected %d, got %d", actEvt, expEvt.Id, actEvt.Id)
 				}
-				if checkPolicy && !assert.ObjectsAreEqual(expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser) {
-					return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %d, got %d", actEvt, expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser)
-				}
-				if checkPolicyName && !assertUnorderedStringSlicesEqual(expEvt.MatchedPolicies, actEvt.MatchedPolicies) {
-					return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %v, got %v", actEvt, expEvt.MatchedPolicies, actEvt.MatchedPolicies)
+
+				// Check policy names
+				if checkPolicyName {
+					actPolicies := []string{}
+					if actEvt.Policies != nil {
+						actPolicies = actEvt.Policies.Matched
+					}
+					if !assertUnorderedStringSlicesEqual(expPolicies, actPolicies) {
+						return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %v, got %v", actEvt, expPolicies, actPolicies)
+					}
 				}
 
 				// check args
-				for _, expArg := range expEvt.Args {
-					actArg, err := actEvt.GetArgumentByName(expArg.Name, trace.GetArgOps{DefaultArgs: false})
+				for _, expArg := range expEvt.Data {
+					actArg, err := GetDataByName(actEvt, expArg.Name)
 					if err != nil {
 						return err
 					}
-					switch v := expArg.Value.(type) {
-					case string:
-						actVal, ok := actArg.Value.(string)
+
+					// Compare based on expected type
+					switch expVal := expArg.Value.(type) {
+					case *pb.EventValue_Str:
+						actVal, ok := actArg.Value.(*pb.EventValue_Str)
 						if !ok {
-							return errors.New("failed to cast arg's value")
+							return errors.New("failed to cast arg's value to string")
 						}
-						if strings.Contains(v, "*") {
-							v = strings.ReplaceAll(v, "*", "")
-							if !strings.Contains(actVal, v) {
-								return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", actEvt, v, v, actVal, actVal)
+						// Handle wildcard matching
+						if strings.Contains(expVal.Str, "*") {
+							pattern := strings.ReplaceAll(expVal.Str, "*", "")
+							if !strings.Contains(actVal.Str, pattern) {
+								return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", actEvt, pattern, pattern, actVal.Str, actVal.Str)
 							}
 						} else {
-							if !assert.ObjectsAreEqual(v, actVal) {
-								return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", actEvt, v, v, actVal, actVal)
+							if !assert.ObjectsAreEqual(expVal.Str, actVal.Str) {
+								return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", actEvt, expVal.Str, expVal.Str, actVal.Str, actVal.Str)
 							}
 						}
 					default:
-						if !assert.ObjectsAreEqual(v, actArg.Value) {
-							return fmt.Errorf("Event %+v:\narg value mismatch: expected %v (type %T), got %v (type %T)", actEvt, v, v, actArg.Value, actArg.Value)
+						if !assert.ObjectsAreEqual(expArg.Value, actArg.Value) {
+							return fmt.Errorf("Event %+v:\narg value mismatch: expected %v (type %T), got %v (type %T)", actEvt, expArg.Value, expArg.Value, actArg.Value, actArg.Value)
 						}
 					}
 				}
@@ -3135,72 +3347,112 @@ func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *t
 			actEvt := actEvtsCopy[actEvtIdx]
 			actEvtIdx++
 
-			if checkSets && !isInSets(actEvt.EventName, syscallsInSets) {
-				return fmt.Errorf("Event %s not found in sets %v", actEvt.EventName, cmd.sets)
+			if checkSets && !isInSets(actEvt.Name, syscallsInSets) {
+				return fmt.Errorf("Event %s not found in sets %v", actEvt.Name, cmd.sets)
 			}
-			checkHost := expEvt.HostName != anyHost
-			checkComm := expEvt.ProcessName != anyComm
-			checkProcessorID := expEvt.ProcessorID != anyProcessorID
-			checkPID := expEvt.ProcessID != anyPID
-			checkUID := expEvt.UserID != anyUID
-			checkEventID := expEvt.EventID != anyEventID
-			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
-			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
 
-			if checkHost && !assert.ObjectsAreEqual(expEvt.HostName, actEvt.HostName) {
-				return fmt.Errorf("Event %+v:\nhost name mismatch: expected %s, got %s", actEvt, expEvt.HostName, actEvt.HostName)
-			}
-			if checkComm && !assert.ObjectsAreEqual(expEvt.ProcessName, actEvt.ProcessName) {
-				return fmt.Errorf("Event %+v:\ncomm mismatch: expected %s, got %s", actEvt, expEvt.ProcessName, actEvt.ProcessName)
-			}
-			if checkProcessorID && !assert.ObjectsAreEqual(expEvt.ProcessorID, actEvt.ProcessorID) {
-				return fmt.Errorf("Event %+v:\nprocessor Id mismatch: expected %d, got %d", actEvt, expEvt.ProcessorID, actEvt.ProcessorID)
-			}
-			if checkPID {
-				actPID := pidToCheck(cmd.runCmd, actEvt, expEvt.ProcessID)
-				if !assert.ObjectsAreEqual(expEvt.ProcessID, actPID) {
-					return fmt.Errorf("Event %+v:\npid mismatch: expected %d, got %d", actEvt, expEvt.ProcessID, actPID)
+			// Extract expected values (initialize to "any" sentinels)
+			expComm := anyComm
+			expPID := anyPID
+			expUID := anyUID
+			var expPolicies []string
+
+			if expEvt.Workload != nil && expEvt.Workload.Process != nil {
+				if expEvt.Workload.Process.Thread != nil {
+					expComm = expEvt.Workload.Process.Thread.Name
+				}
+				if expEvt.Workload.Process.Pid != nil {
+					expPID = int(expEvt.Workload.Process.Pid.Value)
+				}
+				if expEvt.Workload.Process.RealUser != nil && expEvt.Workload.Process.RealUser.Id != nil {
+					expUID = int(expEvt.Workload.Process.RealUser.Id.Value)
 				}
 			}
-			if checkUID && !assert.ObjectsAreEqual(expEvt.UserID, actEvt.UserID) {
-				return fmt.Errorf("Event %+v:\nuser Id mismatch: expected %d, got %d", actEvt, expEvt.UserID, actEvt.UserID)
+			if expEvt.Policies != nil {
+				expPolicies = expEvt.Policies.Matched
 			}
-			if checkEventID && !assert.ObjectsAreEqual(expEvt.EventID, actEvt.EventID) {
-				return fmt.Errorf("Event %+v:\nevent Id mismatch: expected %d, got %d", actEvt, expEvt.EventID, actEvt.EventID)
+
+			checkComm := expComm != anyComm
+			checkPID := expPID != anyPID
+			checkUID := expUID != anyUID
+			checkEventID := expEvt.Id != pb.EventId(anyEventID)
+			checkPolicyName := len(expPolicies) > 0 && expPolicies[0] != anyPolicyName
+
+			// Check comm
+			if checkComm {
+				actComm := ""
+				if actEvt.Workload != nil && actEvt.Workload.Process != nil && actEvt.Workload.Process.Thread != nil {
+					actComm = actEvt.Workload.Process.Thread.Name
+				}
+				if !assert.ObjectsAreEqual(expComm, actComm) {
+					return fmt.Errorf("Event %+v:\ncomm mismatch: expected %s, got %s", actEvt, expComm, actComm)
+				}
 			}
-			if checkPolicy && !assert.ObjectsAreEqual(expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser) {
-				return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %d, got %d", actEvt, expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser)
+
+			// Check PID
+			if checkPID {
+				actPID := pidToCheck(cmd.runCmd, actEvt, expPID)
+				if !assert.ObjectsAreEqual(expPID, actPID) {
+					return fmt.Errorf("Event %+v:\npid mismatch: expected %d, got %d", actEvt, expPID, actPID)
+				}
 			}
-			if checkPolicyName && !assertUnorderedStringSlicesEqual(expEvt.MatchedPolicies, actEvt.MatchedPolicies) {
-				return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %v, got %v", actEvt, expEvt.MatchedPolicies, actEvt.MatchedPolicies)
+
+			// Check UID
+			if checkUID {
+				actUID := 0
+				if actEvt.Workload != nil && actEvt.Workload.Process != nil && actEvt.Workload.Process.RealUser != nil && actEvt.Workload.Process.RealUser.Id != nil {
+					actUID = int(actEvt.Workload.Process.RealUser.Id.Value)
+				}
+				if !assert.ObjectsAreEqual(expUID, actUID) {
+					return fmt.Errorf("Event %+v:\nuser Id mismatch: expected %d, got %d", actEvt, expUID, actUID)
+				}
+			}
+
+			// Check EventID
+			if checkEventID && !assert.ObjectsAreEqual(expEvt.Id, actEvt.Id) {
+				return fmt.Errorf("Event %+v:\nevent Id mismatch: expected %d, got %d", actEvt, expEvt.Id, actEvt.Id)
+			}
+
+			// Check policy names
+			if checkPolicyName {
+				actPolicies := []string{}
+				if actEvt.Policies != nil {
+					actPolicies = actEvt.Policies.Matched
+				}
+				if !assertUnorderedStringSlicesEqual(expPolicies, actPolicies) {
+					return fmt.Errorf("Event %+v:\nmatched policies mismatch: expected %v, got %v", actEvt, expPolicies, actPolicies)
+				}
 			}
 
 			// check args
-			for _, expArg := range expEvt.Args {
-				actArg, err := actEvt.GetArgumentByName(expArg.Name, trace.GetArgOps{DefaultArgs: false})
+			for _, expArg := range expEvt.Data {
+				actArg, err := GetDataByName(actEvt, expArg.Name)
 				if err != nil {
 					return err
 				}
-				switch v := expArg.Value.(type) {
-				case string:
-					actVal, ok := actArg.Value.(string)
+
+				// Compare based on expected type
+				switch expVal := expArg.Value.(type) {
+				case *pb.EventValue_Str:
+					actVal, ok := actArg.Value.(*pb.EventValue_Str)
 					if !ok {
-						return errors.New("failed to cast arg's value")
+						return errors.New("failed to cast arg's value to string")
 					}
-					if strings.Contains(v, "*") {
-						v = strings.ReplaceAll(v, "*", "")
-						if !strings.Contains(actVal, v) {
-							return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", actEvt, v, v, actVal, actVal)
+					// Handle wildcard matching
+					if strings.Contains(expVal.Str, "*") {
+						pattern := strings.ReplaceAll(expVal.Str, "*", "")
+						if !strings.Contains(actVal.Str, pattern) {
+							return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", actEvt, pattern, pattern, actVal.Str, actVal.Str)
 						}
 					} else {
-						if !assert.ObjectsAreEqual(v, actArg.Value) {
-							return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", actEvt, v, v, actVal, actVal)
+						if !assert.ObjectsAreEqual(expVal.Str, actVal.Str) {
+							return fmt.Errorf("Event %+v:\narg value mismatch: expected %s (type %T), got %s (type %T)", actEvt, expVal.Str, expVal.Str, actVal.Str, actVal.Str)
 						}
 					}
 
 				default:
-					if !assert.ObjectsAreEqual(v, actArg.Value) {
-						return fmt.Errorf("Event %+v:\narg value mismatch: expected %v (type %T), got %v (type %T)", actEvt, v, v, actArg.Value, actArg.Value)
+					if !assert.ObjectsAreEqual(expArg.Value, actArg.Value) {
+						return fmt.Errorf("Event %+v:\narg value mismatch: expected %v (type %T), got %v (type %T)", actEvt, expArg.Value, expArg.Value, actArg.Value, actArg.Value)
 					}
 				}
 			}

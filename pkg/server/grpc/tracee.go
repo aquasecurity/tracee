@@ -41,8 +41,8 @@ func (s *TraceeService) StreamEvents(in *pb.StreamEventsRequest, grpcStream pb.T
 			continue
 		}
 
-		// Apply event ID translation for gRPC API compatibility
-		event.Id = events.TranslateEventID(int(event.Id))
+		// Event IDs are already translated to external format by sinkEvents
+		// before being published to streams (streams are an external API boundary).
 
 		mask.Filter(event)
 

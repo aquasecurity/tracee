@@ -12,29 +12,29 @@ import (
 	"testing"
 	"time"
 
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/environment"
 	uproc "github.com/aquasecurity/tracee/common/proc"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // EventBuffer is a thread-safe buffer for tracee events
 type EventBuffer struct {
 	mu     sync.RWMutex
-	events []trace.Event
+	events []*pb.Event
 }
 
 func NewEventBuffer() *EventBuffer {
 	return &EventBuffer{
-		events: make([]trace.Event, 0),
+		events: make([]*pb.Event, 0),
 	}
 }
 
 // AddEvent adds an event to the EventBuffer
-func (b *EventBuffer) AddEvent(evt trace.Event) {
+func (b *EventBuffer) AddEvent(evt *pb.Event) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -46,7 +46,7 @@ func (b *EventBuffer) Clear() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.events = make([]trace.Event, 0)
+	b.events = make([]*pb.Event, 0)
 }
 
 // len returns the number of events in the EventBuffer
@@ -58,11 +58,11 @@ func (b *EventBuffer) len() int {
 }
 
 // getCopy returns a copy of the eventBuffer events
-func (b *EventBuffer) GetCopy() []trace.Event {
+func (b *EventBuffer) GetCopy() []*pb.Event {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
-	evts := make([]trace.Event, len(b.events))
+	evts := make([]*pb.Event, len(b.events))
 	copy(evts, b.events)
 
 	return evts
