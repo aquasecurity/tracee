@@ -104,10 +104,11 @@ jobs:
           attempts=0
           while [ "${attempts}" -lt "${max_attempts}" ]; do
               if curl --max-time "${timeout}" \
-                  -X POST "${{ secrets.AWS_OSS_PR_SYNC_LAMBDA_URL }}" \
-                  -H "Content-Type: application/json" \
-                  -H "Authorization: Bearer ${{ secrets.AWS_OSS_PR_SYNC_LAMBDA_TOKEN }}" \
-                  -d "{\"oss_pr_number\": \"${{ steps.pr-number.outputs.pr_number }}\"}"; then
+                  -X POST "${{ secrets.PRIV_SYNC_WORKFLOW_URL }}" \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  -H "Authorization: Bearer ${{ secrets.PRIV_PAT }}" \
+                  -d "{\"ref\": \"main\", \"inputs\": {\"oss_pr_number\": \"${{ steps.pr-number.outputs.pr_number }}\"}}"; then
                   break
               fi
               attempts=$((attempts + 1))
