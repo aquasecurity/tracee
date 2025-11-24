@@ -163,7 +163,15 @@ func (p *ProbeGroup) DetachAll() error {
 	return nil
 }
 
-// Autoload disables autoload feature for a given handle's program.
+// Autoload enables or disables the autoload feature for a given handle's program.
+//
+// Autoload failures are non-fatal and can occur when:
+// - The BPF program doesn't exist in the object file (e.g., uprobes in test binaries)
+// - The program is incompatible with the current kernel version
+// - The program has already been loaded or is in an unexpected state
+//
+// Callers should typically log failures at DEBUG level and continue, as probes that
+// fail to autoload will simply not be used, which is the correct behavior.
 func (p *ProbeGroup) Autoload(handle Handle, autoload bool) error {
 	p.probesLock.Lock()
 	defer p.probesLock.Unlock()
