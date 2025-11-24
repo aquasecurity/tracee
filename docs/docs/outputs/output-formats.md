@@ -109,9 +109,28 @@ Note: the `files: key` must also be defined, even if it's just for stdout. This 
 
 ### GOTEMPLATE
 
-When authoring a Go template the data source is Tracee's `trace.Event` struct, which is defined in `https://github.com/aquasecurity/tracee/blob/main/types/trace/trace.go#L15`.
+When authoring a Go template, the data source is Tracee's `v1beta1.Event` protobuf structure, which is defined in the [API protobuf definitions](https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event.proto).
 
-Go template can utilize helper functions from [Sprig](http://masterminds.github.io/sprig/).
+**Common event fields:**
+- `.timestamp` - Event timestamp (protobuf Timestamp with `.seconds` and `.nanos`)
+- `.id` - Event ID (protobuf enum)
+- `.name` - Event name (string)
+- `.policies.matched` - Array of matched policy names
+- `.workload.process` - Process information including:
+  - `.workload.process.thread.name` - Process/thread name (comm)
+  - `.workload.process.pid.value` - Process ID
+  - `.workload.process.real_user.id.value` - User ID
+  - `.workload.process.executable.path` - Executable path
+- `.data` - Array of event-specific data fields (each with `.name` and typed `.value`)
+- `.threat` - Threat information for signature detections
+
+**Note:** For signature events, additional fields are available:
+- `.threat.name` - Threat/signature name
+- `.threat.description` - Threat description
+- `.threat.properties.signatureID` - Signature ID
+- `.detected_from` - The underlying event that triggered the signature
+
+Go templates can utilize helper functions from [Sprig](http://masterminds.github.io/sprig/).
 
 For example templates, see the templates directory in the source repository.
 
