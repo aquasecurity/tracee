@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events"
 )
 
@@ -400,54 +399,4 @@ func (m *Manager) handleEventAddError(node *EventNode, err error) error {
 	}
 	// Fallback succeeded, no error to return
 	return nil
-}
-
-// GetAllEventDependentsOfProbe returns all events that transitively depend on the given probe.
-func (m *Manager) GetAllEventDependentsOfProbe(handle probes.Handle) ([]events.ID, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	probeNode := m.getProbe(handle)
-	if probeNode == nil {
-		return nil, ErrNodeNotFound
-	}
-
-	return m.collectAllEventDependents(probeNode.GetDependents()), nil
-}
-
-// collectAllEventDependents performs a depth-first traversal to collect all events
-// that transitively depend on the given starting events.
-func (m *Manager) collectAllEventDependents(startEvents []events.ID) []events.ID {
-	visited := make(map[events.ID]struct{}, len(startEvents))
-	result := make([]events.ID, 0, len(startEvents))
-
-	// Recursive function to collect all dependents
-	var collect func(events.ID)
-	collect = func(id events.ID) {
-		if _, seen := visited[id]; seen {
-			return
-		}
-
-		visited[id] = struct{}{}
-		result = append(result, id)
-
-		node := m.getEventNode(id)
-		if node == nil {
-			// should never happen
-			logger.Debugw("event node not found", "event", id)
-			return
-		}
-
-		// Recursively process all dependents
-		for _, dep := range node.GetDependents() {
-			collect(dep)
-		}
-	}
-
-	// Start collection from each initial event
-	for _, id := range startEvents {
-		collect(id)
-	}
-
-	return result
 }
