@@ -105,6 +105,11 @@ func StartTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 		Source: process.SourceNone,
 	}
 
+	// Disable healthz/heartbeat in integration tests
+	// The SignalHeartbeat probe is a uprobe that doesn't work properly when
+	// tracee runs as a library in test binaries
+	cfg.HealthzEnabled = false
+
 	errChan := make(chan error)
 
 	go func() {

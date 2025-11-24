@@ -1154,7 +1154,7 @@ func (t *Tracee) setProgramsAutoload() {
 	for _, probeHandle := range t.eventsDependencies.GetProbes() {
 		err := t.defaultProbes.Autoload(probeHandle, true)
 		if err != nil {
-			logger.Errorw("Failed to autoload program", "handle", probeHandle, "error", err)
+			logger.Debugw("Failed to autoload program", "handle", probeHandle, "error", err)
 		}
 	}
 
@@ -1169,7 +1169,7 @@ func (t *Tracee) setProgramsAutoload() {
 			}
 			err := t.defaultProbes.Autoload(probeNode.GetHandle(), true)
 			if err != nil {
-				logger.Errorw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
+				logger.Debugw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
 			}
 			return nil
 		})
@@ -1185,7 +1185,7 @@ func (t *Tracee) setProgramsAutoload() {
 			}
 			err := t.defaultProbes.Autoload(probeNode.GetHandle(), false)
 			if err != nil {
-				logger.Errorw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
+				logger.Debugw("Failed to autoload program", "handle", probeNode.GetHandle(), "error", err)
 			}
 			return nil
 		})
