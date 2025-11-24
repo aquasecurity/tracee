@@ -39,7 +39,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: "tracee:dev"
-          severity: "HIGH"
+          severity: "CRITICAL,HIGH,MEDIUM"
           exit-code: "1"
       - name: Publish to docker.io registry
         run: |
@@ -78,7 +78,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: "tracee:dev"
-          severity: "HIGH"
+          severity: "CRITICAL,HIGH,MEDIUM"
           exit-code: "1"
       - name: Publish to docker.io registry
         run: |
