@@ -157,7 +157,7 @@ get_event_match_count() {
         --arg policy "${policy_name}" \
         '
         [.[] | 
-         select(.eventName == $event and (.matchedPolicies[]? == $policy))
+         select(.name == $event and (.policies.matched[]? == $policy))
         ] | length
         ' \
         "${outputfile}"
@@ -177,11 +177,11 @@ get_multi_policy_matches() {
         -r \
         '
         [.[] | 
-         select(.eventName == $event and 
-                (.matchedPolicies[]? == $policy) and 
-                (.matchedPolicies | length > 1))
+         select(.name == $event and
+                (.policies.matched[]? == $policy) and
+                (.policies.matched | length > 1))
         ] |
-        .[] | "  Timestamp: \(.timestamp) | Event: \(.eventName) | Policies: \(.matchedPolicies | join(", "))"
+        .[] | "  Timestamp: \(.timestamp) | Event: \(.name) | Policies: \(.policies.matched | join(", "))"
         ' \
         "${outputfile}"
 }
