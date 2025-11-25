@@ -60,7 +60,7 @@ CMD_PROTOC ?= protoc
 CMD_PANDOC ?= pandoc
 CMD_CONTROLLER_GEN ?= controller-gen
 
-.check_%::
+.check_%:
 #
 	@command -v $* >/dev/null
 	if [ $$? -ne 0 ]; then
@@ -1298,12 +1298,12 @@ $(MAN_DIR)/$(notdir $(patsubst %.md,%.1,$(1))): $(1) \
 	$(CMD_CP) $$@ $(OUTPUT_MAN_DIR)
 endef
 
-$(OUTPUT_MAN_DIR):: \
+$(OUTPUT_MAN_DIR): \
 	| .check_$(CMD_MKDIR)
 #
 	$(CMD_MKDIR) -p $@
 
-$(MAN_DIR)/%:: $(FLAGS_MARKDOWN_DIR)/%.md \
+$(MAN_DIR)/%: $(FLAGS_MARKDOWN_DIR)/%.md \
 	| .check_$(CMD_PANDOC) \
 	$(OUTPUT_MAN_DIR)
 #
@@ -1328,7 +1328,7 @@ clean-man::
 	$(CMD_RM) -rf $(OUTPUT_MAN_DIR)
 
 .PHONY: man
-man:: clean-man $(MAN_FILES)
+man:: $(MAN_FILES)
 
 
 #
