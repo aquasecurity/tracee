@@ -249,6 +249,32 @@ func ParseArgsSlice(args []trace.Argument, eventID int) error {
 				vmaFlagsArg.Value = parsers.ParseVmFlags(flags).String()
 			}
 		}
+	case IoUringCreate:
+		if flagsArg := GetArg(args, "flags"); flagsArg != nil {
+			if flags, isUint32 := flagsArg.Value.(uint32); isUint32 {
+				flagsParsed := parsers.ParseIoUringSetupFlags(uint64(flags)).String()
+				flagsArg.Type = "string"
+				flagsArg.Value = flagsParsed
+			}
+		}
+	case IoIssueSqe:
+		if opcodeArg := GetArg(args, "opcode"); opcodeArg != nil {
+			if opcode, isUint8 := opcodeArg.Value.(uint8); isUint8 {
+				opcodeParsed, err := parsers.ParseIoUringOp(uint64(opcode))
+				if err != nil {
+					return errfmt.WrapError(err)
+				}
+				opcodeArg.Type = "string"
+				opcodeArg.Value = opcodeParsed.String()
+			}
+		}
+		if flagsArg := GetArg(args, "flags"); flagsArg != nil {
+			if flags, isUint32 := flagsArg.Value.(uint32); isUint32 {
+				flagsParsed := parsers.ParseIoUringRequestFlags(uint64(flags)).String()
+				flagsArg.Type = "string"
+				flagsArg.Value = flagsParsed
+			}
+		}
 	}
 
 	// Parse extended events (only available in extended builds)

@@ -167,6 +167,19 @@ const (
 	ChmodCommon
 	SecuritySbUmount
 	SecurityTaskPrctl
+	IoUringCreate
+	IoUringCreateKprobe     // kprobe version for kernels without tracepoint (5.1-5.4)
+	IoUringCreateKprobeRet  // kretprobe version for kernels without tracepoint (5.1-5.4)
+	IoSqOffloadStart
+	IoSqOffloadStartRet
+	IoSubmitSqeIssueSqe
+	IoSubmitSqeIoWrite
+	IoIssueSqe
+	IoUringQueueAsyncWork
+	IoWrite
+	IoWriteRet
+	IoWriteMagic
+	IoWriteMagicRet
 )
 
 // Test probe handles

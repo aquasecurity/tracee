@@ -555,6 +555,9 @@ enum EventId {
     chmod_common = 1090;
     security_sb_umount = 1091;
     security_task_prctl = 1092;
+    io_uring_create = 1093;
+    io_issue_sqe = 1094;
+    io_write = 1095;
 
     // Events originated from user-space
     net_packet_ipv4 = 2000;

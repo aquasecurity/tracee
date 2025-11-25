@@ -163,6 +163,9 @@ const (
 	ChmodCommon
 	SecuritySbUmount
 	SecurityTaskPrctl
+	IoUringCreate
+	IoIssueSqe
+	IoWrite
 	// MaxCommonID (1499)
 )
 
@@ -12353,6 +12356,8 @@ var CoreEvents = map[ID]Definition{
 					{handle: probes.VfsWriteVMagicRet, required: false},
 					{handle: probes.KernelWriteMagic, required: false},
 					{handle: probes.KernelWriteMagicRet, required: false},
+					{handle: probes.IoWriteMagic, required: false},
+					{handle: probes.IoWriteMagicRet, required: false},
 				},
 			},
 		},
@@ -14311,6 +14316,125 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "new_inode_mode"}},
 			// for PR_SET_SECUREBITS
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "old_securebits"}},
+		},
+	},
+	IoUringCreate: {
+		id:      IoUringCreate,
+		id32Bit: Sys32Undefined,
+		name:    "io_uring_create",
+		version: NewVersion(1, 0, 0),
+		sets: []string{
+			"io_uring",
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.IoUringCreate, required: true}, // exists in kernels v5.5 onwards
+				},
+			},
+			fallbacks: []Dependencies{
+				{
+					// Strategy for v5.1 - v5.4: use kprobe on io_uring_create function
+					probes: []Probe{
+						{handle: probes.IoUringCreateKprobe, required: true},    // kprobe for kernels 5.1 - 5.4
+						{handle: probes.IoUringCreateKprobeRet, required: true}, // kretprobe for kernels 5.1 - 5.4
+					},
+				},
+			},
+		},
+		fields: []DataField{
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ctx"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "sq_entries"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "cq_entries"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.BOOL_T, ArgMeta: trace.ArgMeta{Type: "bool", Name: "polling"}},
+		},
+	},
+	IoIssueSqe: {
+		id:      IoIssueSqe,
+		id32Bit: Sys32Undefined,
+		name:    "io_issue_sqe",
+		version: NewVersion(1, 0, 0),
+		sets: []string{
+			"io_uring",
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				// Strategy for v5.5+
+				probes: []Probe{
+					// io_uring_create probes, to get correct context for io_uring events
+					{handle: probes.IoUringCreate, required: true}, // exists in kernels v5.5 onwards
+
+					{handle: probes.IoIssueSqe, required: true}, // exists in kernels v5.5 onwards
+				},
+			},
+			fallbacks: []Dependencies{
+				{
+					// Strategy for v5.1 - v5.4
+					probes: []Probe{
+						// io_uring_create probes, to get correct context for io_uring events
+						{handle: probes.IoUringCreateKprobe, required: true},    // kprobe for kernels 5.1 - 5.4
+						{handle: probes.IoUringCreateKprobeRet, required: true}, // kretprobe for kernels 5.1 - 5.4
+						// probes to tell if an io_uring task is being issued
+						{handle: probes.IoSubmitSqeIssueSqe, required: false}, // exists in kernels v5.1 - v5.4
+					},
+				},
+			},
+		},
+		fields: []DataField{
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "device"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "inode"}},
+			{DecodeAs: data.U8_T, ArgMeta: trace.ArgMeta{Type: "uint8", Name: "opcode"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "user_data"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.BOOL_T, ArgMeta: trace.ArgMeta{Type: "bool", Name: "sq_thread"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "sq_thread_id"}},
+		},
+	},
+	IoWrite: {
+		id:      IoWrite,
+		id32Bit: Sys32Undefined,
+		name:    "io_write",
+		version: NewVersion(1, 0, 0),
+		sets: []string{
+			"io_uring",
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				// Strategy for v5.5+
+				probes: []Probe{
+					// io_uring_create probes, to get correct context for io_uring events
+					{handle: probes.IoUringCreate, required: true},
+					// get correct context if async
+					{handle: probes.IoUringQueueAsyncWork, required: true},
+
+					// submit io_write here
+					{handle: probes.IoWrite, required: true},
+					{handle: probes.IoWriteRet, required: true},
+				},
+			},
+			fallbacks: []Dependencies{
+				{
+					// Strategy for v5.1 - v5.4: use kprobe on io_uring_create function
+					probes: []Probe{
+						// io_uring_create kprobes for kernels without tracepoint
+						{handle: probes.IoUringCreateKprobe, required: true},
+						{handle: probes.IoUringCreateKprobeRet, required: true},
+						// submit io_write here - use __io_submit_sqe for older kernels
+						{handle: probes.IoSubmitSqeIoWrite, required: true},
+					},
+				},
+			},
+		},
+		fields: []DataField{
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "pos"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "len"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "worker_host_tid"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "device"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "inode"}},
 		},
 	},
 	//

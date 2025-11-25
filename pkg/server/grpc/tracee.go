@@ -564,6 +564,9 @@ var EventTranslationTable = [events.MaxBuiltinID]pb.EventId{
 	events.ChmodCommon:                  pb.EventId_chmod_common,
 	events.SecuritySbUmount:             pb.EventId_security_sb_umount,
 	events.SecurityTaskPrctl:            pb.EventId_security_task_prctl,
+	events.IoUringCreate:                pb.EventId_io_uring_create,
+	events.IoIssueSqe:                   pb.EventId_io_issue_sqe,
+	events.IoWrite:                      pb.EventId_io_write,
 
 	// Events from user-space translation section
 	events.NetPacketIPv4:         pb.EventId_net_packet_ipv4,
