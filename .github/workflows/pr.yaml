@@ -390,7 +390,10 @@ jobs:
       - verify-analyze-code
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
+    runs-on:
+      - graas_ami-0e38f3caba1b4234d_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123 # Noble 6.12 x86_64 GRAAS AMI
+      - EXECUTION_TYPE=SHORT
+      - INSTANCE_TYPE=MEDIUM
     container:
       image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
       options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
