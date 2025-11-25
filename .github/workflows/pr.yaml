@@ -88,7 +88,7 @@ jobs:
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           ref: ${{ env.TRACEE_REF }}
       - name: Ensure updates of *.1.md and *.1 pairs
@@ -104,7 +104,7 @@ jobs:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -146,7 +146,7 @@ jobs:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -177,7 +177,7 @@ jobs:
       api: ${{ steps.detect.outputs.api }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
@@ -239,7 +239,7 @@ jobs:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
@@ -291,7 +291,7 @@ jobs:
           ln -s /usr/bin/node /opt/bin/node
         shell: sh
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
@@ -332,7 +332,7 @@ jobs:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -370,7 +370,7 @@ jobs:
           ln -s /usr/bin/node /opt/bin/node
         shell: sh
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -405,7 +405,7 @@ jobs:
           apt-get install -y --no-install-recommends git-core ca-certificates
           update-ca-certificates
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -439,7 +439,7 @@ jobs:
           apt-get install -y --no-install-recommends git-core ca-certificates
           update-ca-certificates
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -467,7 +467,7 @@ jobs:
       options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro
     steps:
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
@@ -489,7 +489,7 @@ jobs:
       matrix01: ${{ steps.generate.outputs.matrix }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           ref: ${{ env.TRACEE_REF }}
       - name: Generate Matrix
@@ -514,7 +514,7 @@ jobs:
       GOROOT: "/usr/local/go"
     steps:
       - name: "Checkout"
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
