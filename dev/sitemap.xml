@@ -61,31 +61,11 @@
          <lastmod>2025-11-25</lastmod>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/dropping-capabilities/</loc>
-         <lastmod>2025-11-25</lastmod>
-    </url>
-    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/forensics/</loc>
          <lastmod>2025-11-25</lastmod>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/ksyms/</loc>
-         <lastmod>2025-11-25</lastmod>
-    </url>
-    <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/lsm/</loc>
-         <lastmod>2025-11-25</lastmod>
-    </url>
-    <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/mac/</loc>
-         <lastmod>2025-11-25</lastmod>
-    </url>
-    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/ordering-events/</loc>
-         <lastmod>2025-11-25</lastmod>
-    </url>
-    <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/os-info/</loc>
          <lastmod>2025-11-25</lastmod>
     </url>
     <url>
@@ -689,6 +669,10 @@
          <lastmod>2025-11-25</lastmod>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/install/capabilities/</loc>
+         <lastmod>2025-11-25</lastmod>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/install/container-engines/</loc>
          <lastmod>2025-11-25</lastmod>
     </url>
@@ -701,7 +685,23 @@
          <lastmod>2025-11-25</lastmod>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/install/kernel-symbols/</loc>
+         <lastmod>2025-11-25</lastmod>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/install/kubernetes/</loc>
+         <lastmod>2025-11-25</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/install/lsm-support/</loc>
+         <lastmod>2025-11-25</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/install/mac-faq/</loc>
+         <lastmod>2025-11-25</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/install/os-requirements/</loc>
          <lastmod>2025-11-25</lastmod>
     </url>
     <url>
