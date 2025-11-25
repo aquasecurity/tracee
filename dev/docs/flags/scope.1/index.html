@@ -7959,6 +7959,7 @@
 <p>The following special filters can be used within the scope filter expressions:</p>
 <ul>
 <li>new: Select newly created containers or process IDs.</li>
+<li>started: Select events from containers that have completed initialization and started running (post-entrypoint execution). Only available for container scope (e.g., <code>container=started</code>). Note: The negation <code>container!=started</code> is not supported due to race conditions with early container event recognition.</li>
 <li>follow: Select events from the processes that match the criteria and their descendants.</li>
 </ul>
 <h2 id="examples">EXAMPLES<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
@@ -7981,6 +7982,11 @@
 <li>To trace only events from newly created containers, use the following flag:</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="go">--scope container=new</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from containers that have started running (post-entrypoint execution), use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope container=started</span>
 </code></pre></div>
 <ul>
 <li>To trace only events from the container with ID 'ab356bc4dd554', use the following flag:</li>

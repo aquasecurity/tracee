@@ -8181,6 +8181,20 @@
 <div class="highlight"><pre><span></span><code><span class="nt">scope</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">container</span>
 </code></pre></div>
+<p>You can also filter for containers based on their state:</p>
+<ul>
+<li><strong>container=new</strong>: Events are collected only from newly created containers (during container initialization):</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">scope</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">container=new</span>
+</code></pre></div>
+<ul>
+<li><strong>container=started</strong>: Events are collected only from containers that have completed initialization and started running (post-entrypoint execution):</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">scope</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">container=started</span>
+</code></pre></div>
+<p>Note: The negation <code>container!=started</code> is not supported due to race conditions with early container event recognition.</p>
 <h3 id="not-container">not-container<a class="headerlink" href="#not-container" title="Permanent link">&para;</a></h3>
 <p>Events are collected from everything but containers:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">scope</span><span class="p">:</span>
