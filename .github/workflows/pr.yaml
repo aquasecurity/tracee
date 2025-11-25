@@ -73,12 +73,19 @@ env:
     HTTPRequest
     HTTPResponse
 jobs:
+  debug-runner-label:
+    name: Debug Runner Label
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Debug Runner Label
+        run: |
+          echo "Runner label: ${{ vars.UBUNTU_X86_RUNNER_LABEL }}"
   #
   # DOC VERIFICATION
   #
   verify-docs:
     name: Verify Documentation
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -92,7 +99,7 @@ jobs:
   #
   verify-analyze-code:
     name: Verify and Analyze Code
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
@@ -134,7 +141,7 @@ jobs:
     name: Verify Other Tools
     needs:
       - verify-analyze-code
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
@@ -162,7 +169,7 @@ jobs:
   #
   detect-changes:
     name: Detect Changes
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
     outputs:
       main: ${{ steps.detect.outputs.main }}
       types: ${{ steps.detect.outputs.types }}
@@ -227,7 +234,7 @@ jobs:
     needs:
       - detect-changes
     if: needs.detect-changes.outputs.main != 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
@@ -264,7 +271,7 @@ jobs:
     needs:
       - detect-changes
     if: needs.detect-changes.outputs.main != 'true'
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04-arm' }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       volumes:
@@ -320,7 +327,7 @@ jobs:
       - verify-analyze-code
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
@@ -343,7 +350,7 @@ jobs:
       - verify-analyze-code
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04-arm' }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       volumes:
@@ -383,7 +390,7 @@ jobs:
       - verify-analyze-code
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
     container:
       image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
       options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
@@ -414,7 +421,7 @@ jobs:
       - verify-analyze-code
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04-arm' }}
     container:
       image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
       options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
@@ -448,7 +455,7 @@ jobs:
       - verify-analyze-code
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro
@@ -470,7 +477,7 @@ jobs:
     name: Generate Test Matrix
     needs:
       - detect-changes
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
     if: needs.detect-changes.outputs.main == 'true'
     outputs:
       matrix01: ${{ steps.generate.outputs.matrix }}
