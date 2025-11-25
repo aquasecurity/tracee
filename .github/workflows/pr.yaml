@@ -271,7 +271,7 @@ jobs:
     needs:
       - detect-changes
     if: needs.detect-changes.outputs.main != 'true'
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04-arm' }}
+    runs-on: ${{ vars.UBUNTU_ARM64_RUNNER_LABEL || 'ubuntu-24.04-arm' }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       volumes:
@@ -350,7 +350,7 @@ jobs:
       - verify-analyze-code
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04-arm' }}
+    runs-on: ${{ vars.UBUNTU_ARM64_RUNNER_LABEL || 'ubuntu-24.04-arm' }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       volumes:
@@ -421,7 +421,7 @@ jobs:
       - verify-analyze-code
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04-arm' }}
+    runs-on: ${{ vars.UBUNTU_ARM64_RUNNER_LABEL || 'ubuntu-24.04-arm' }}
     container:
       image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
       options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
