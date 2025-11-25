@@ -3611,7 +3611,7 @@ statfunc int common_submit_io_write(program_data_t *p,
                                     u32 len,
                                     int ret)
 {
-    bpf_printk("common_submit_io_write: start\n");
+    bpf_printk("=== common_submit_io_write: CALLED host_tid=%d len=%d ret=%d ===\n", host_tid, len, ret);
     // get write position
     // (reusing io_kiocb struct flavors to get the correct data for the current kernel version)
     loff_t ki_pos = kiocb->ki_pos;
@@ -3641,8 +3641,10 @@ statfunc int common_submit_io_write(program_data_t *p,
     save_to_submit_buf(&p->event->args_buf, &file_info.id.device, sizeof(dev_t), 5);
     save_to_submit_buf(&p->event->args_buf, &file_info.id.inode, sizeof(unsigned long), 6);
 
-    bpf_printk("common_submit_io_write: events_perf_submit\n");
-    return events_perf_submit(p, 0);
+    bpf_printk("=== common_submit_io_write: calling events_perf_submit ===\n");
+    int submit_ret = events_perf_submit(p, 0);
+    bpf_printk("=== common_submit_io_write: events_perf_submit ret=%d ===\n", submit_ret);
+    return submit_ret;
 }
 
 SEC("kprobe/io_write")
@@ -3754,27 +3756,37 @@ int BPF_KPROBE(trace_ret_io_write)
 SEC("kprobe/__io_submit_sqe")
 int BPF_KPROBE(trace__io_submit_sqe_io_write)
 {
-    bpf_printk("trace__io_submit_sqe_io_write: start\n");
+    bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write START (kernel 5.1-5.4) ===\n");
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, IO_WRITE))
+    if (!init_program_data(&p, ctx, IO_WRITE)) {
+        bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write init_program_data failed ===\n");
         return 0;
+    }
 
     struct io_kiocb___older_v55 *req = (struct io_kiocb___older_v55 *) PT_REGS_PARM2(ctx);
 
     if (!bpf_core_field_exists(req->submit)) { // Version >= v5.5
+        bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write req->submit NOT exists (v5.5+), skipping ===\n");
         // this case handled by the tracepoints io_issue_sqe probe and io_write probe
         return 0;
     }
+    bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write req->submit exists (v5.1-5.4) ===\n");
 
     // get real task info from uring_worker_ctx_map
     event_context_t *real_ctx = bpf_map_lookup_elem(&io_uring_worker_context_map, &req);
     if (real_ctx != NULL) {
+        bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write found real_ctx in map ===\n");
         p.event->context = *real_ctx;
+    } else {
+        bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write real_ctx NOT in map ===\n");
     }
 
     // now we can evaluate scope filters
-    if (!evaluate_scope_filters(&p))
+    if (!evaluate_scope_filters(&p)) {
+        bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write scope filter FAILED ===\n");
         return 0;
+    }
+    bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write scope filter PASSED ===\n");
 
     u32 host_tid = p.task_info->context.host_tid;
     struct sqe_submit submit = BPF_CORE_READ(req, submit);
@@ -3787,9 +3799,11 @@ int BPF_KPROBE(trace__io_submit_sqe_io_write)
     u32 len = BPF_CORE_READ(sqe, len);
 
     // submit io_write
-    common_submit_io_write(&p, (struct io_kiocb *) req, &kiocb, host_tid, buf, len, 0);
+    bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write calling common_submit_io_write ===\n");
+    int ret = common_submit_io_write(&p, (struct io_kiocb *) req, &kiocb, host_tid, buf, len, 0);
+    bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write common_submit_io_write ret=%d ===\n", ret);
 
-    return 0;
+    return ret;
 }
 
 SEC("kretprobe/io_write_tail")
@@ -3801,6 +3815,7 @@ int BPF_KPROBE(trace_ret_io_write_tail)
 statfunc int common_io_uring_create(
     program_data_t *p, struct io_ring_ctx *io_uring_ctx, u32 sq_entries, u32 cq_entries, u32 flags)
 {
+    bpf_printk("=== common_io_uring_create: CALLED sq_entries=%d cq_entries=%d flags=%d ===\n", sq_entries, cq_entries, flags);
     // getting the task_struct of the kernel thread if polling is used on this ring.
     struct task_struct *thread = NULL;
     if (!bpf_core_field_exists(io_uring_ctx->sq_data)) { // Version <= v5.9
@@ -3854,18 +3869,34 @@ int tracepoint__io_uring__io_uring_create(struct bpf_raw_tracepoint_args *ctx)
 }
 
 SEC("kprobe/io_sq_offload_start")
-TRACE_ENT_FUNC(io_sq_offload_start, IO_URING_CREATE);
+int trace_io_sq_offload_start(struct pt_regs *ctx)
+{
+    bpf_printk("=== FALLBACK: trace_io_sq_offload_start ENTRY (kernel 5.1-5.4) ===\n");
+    args_t args = {};
+    args.args[0] = PT_REGS_PARM1(ctx);
+    args.args[1] = PT_REGS_PARM2(ctx);
+    args.args[2] = PT_REGS_PARM3(ctx);
+    args.args[3] = PT_REGS_PARM4(ctx);
+    args.args[4] = PT_REGS_PARM5(ctx);
+    args.args[5] = PT_REGS_PARM6(ctx);
+    
+    int ret = save_args(&args, IO_URING_CREATE);
+    bpf_printk("=== FALLBACK: trace_io_sq_offload_start ENTRY saved args, ret=%d ===\n", ret);
+    return ret;
+}
 
 SEC("kretprobe/io_sq_offload_start")
 int BPF_KPROBE(trace_ret_io_sq_offload_start)
 {
-    bpf_printk("trace_ret_io_sq_offload_start: start\n");
+    bpf_printk("=== FALLBACK: trace_ret_io_sq_offload_start RETURN (kernel 5.1-5.4) ===\n");
     args_t saved_args;
     if (load_args(&saved_args, IO_URING_CREATE) != 0) {
+        bpf_printk("=== FALLBACK: trace_ret_io_sq_offload_start failed to load args ===\n");
         // missed entry or not traced
         return 0;
     }
     del_args(IO_URING_CREATE);
+    bpf_printk("=== FALLBACK: trace_ret_io_sq_offload_start loaded args successfully ===\n");
 
     program_data_t p = {};
     if (!init_program_data(&p, ctx, IO_URING_CREATE))
@@ -3881,7 +3912,10 @@ int BPF_KPROBE(trace_ret_io_sq_offload_start)
     u32 cq_entries = BPF_CORE_READ(params, cq_entries);
     u32 flags = BPF_CORE_READ(io_uring_ctx, flags);
 
-    return common_io_uring_create(&p, io_uring_ctx, sq_entries, cq_entries, flags);
+    bpf_printk("=== FALLBACK: trace_ret_io_sq_offload_start calling common_io_uring_create ===\n");
+    int result = common_io_uring_create(&p, io_uring_ctx, sq_entries, cq_entries, flags);
+    bpf_printk("=== FALLBACK: trace_ret_io_sq_offload_start common_io_uring_create ret=%d ===\n", result);
+    return result;
 }
 
 statfunc int
