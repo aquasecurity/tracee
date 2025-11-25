@@ -3611,6 +3611,7 @@ statfunc int common_submit_io_write(program_data_t *p,
                                     u32 len,
                                     int ret)
 {
+    bpf_printk("common_submit_io_write: start\n");
     // get write position
     // (reusing io_kiocb struct flavors to get the correct data for the current kernel version)
     loff_t ki_pos = kiocb->ki_pos;
@@ -3640,6 +3641,7 @@ statfunc int common_submit_io_write(program_data_t *p,
     save_to_submit_buf(&p->event->args_buf, &file_info.id.device, sizeof(dev_t), 5);
     save_to_submit_buf(&p->event->args_buf, &file_info.id.inode, sizeof(unsigned long), 6);
 
+    bpf_printk("common_submit_io_write: events_perf_submit\n");
     return events_perf_submit(p, 0);
 }
 
@@ -3737,6 +3739,7 @@ int BPF_KPROBE(trace_ret_io_write)
     u32 host_tid = p.task_info->context.host_tid;
     int submit = common_submit_io_write(&p, req, &kiocb, host_tid, buf, len, ret);
     if (submit != 0) {
+        bpf_printk("io_write: common_submit_io_write failed\n");
         del_args(IO_WRITE);
         return submit;
     }
@@ -3751,6 +3754,7 @@ int BPF_KPROBE(trace_ret_io_write)
 SEC("kprobe/__io_submit_sqe")
 int BPF_KPROBE(trace__io_submit_sqe_io_write)
 {
+    bpf_printk("trace__io_submit_sqe_io_write: start\n");
     program_data_t p = {};
     if (!init_program_data(&p, ctx, IO_WRITE))
         return 0;
@@ -3830,6 +3834,7 @@ statfunc int common_io_uring_create(
 SEC("raw_tracepoint/io_uring_create")
 int tracepoint__io_uring__io_uring_create(struct bpf_raw_tracepoint_args *ctx)
 {
+    bpf_printk("tracepoint__io_uring__io_uring_create: start\n");
     program_data_t p = {};
     if (!init_program_data(&p, ctx, IO_URING_CREATE))
         return 0;
@@ -3854,6 +3859,7 @@ TRACE_ENT_FUNC(io_sq_offload_start, IO_URING_CREATE);
 SEC("kretprobe/io_sq_offload_start")
 int BPF_KPROBE(trace_ret_io_sq_offload_start)
 {
+    bpf_printk("trace_ret_io_sq_offload_start: start\n");
     args_t saved_args;
     if (load_args(&saved_args, IO_URING_CREATE) != 0) {
         // missed entry or not traced
