@@ -11,7 +11,7 @@ SHELL = /bin/sh
 BUILD_TYPE_FLAG := COMMON_BUILD
 GO_TAGS_EBPF := core,ebpf,lsmsupport
 
-EXCLUDED_MODULES :=
+EXCLUDED_MODULES := ./3rdparty/*
 
 # load extended-pre Makefile, if exists
 -include Makefile.extended-pre
