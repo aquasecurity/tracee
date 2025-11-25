@@ -14329,15 +14329,15 @@ var CoreEvents = map[ID]Definition{
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
-
 					{handle: probes.IoUringCreate, required: true}, // exists in kernels v5.5 onwards
 				},
 			},
 			fallbacks: []Dependencies{
 				{
+					// Strategy for v5.1 - v5.4: use kprobe on io_uring_create function
 					probes: []Probe{
-						{handle: probes.IoSqOffloadStart, required: true},    // exists in kernels v5.1 - v5.4
-						{handle: probes.IoSqOffloadStartRet, required: true}, // exists in kernels v5.1 - v5.4
+						{handle: probes.IoUringCreateKprobe, required: true},    // kprobe for kernels 5.1 - 5.4
+						{handle: probes.IoUringCreateKprobeRet, required: true}, // kretprobe for kernels 5.1 - 5.4
 					},
 				},
 			},
@@ -14373,8 +14373,8 @@ var CoreEvents = map[ID]Definition{
 					// Strategy for v5.1 - v5.4
 					probes: []Probe{
 						// io_uring_create probes, to get correct context for io_uring events
-						{handle: probes.IoSqOffloadStart, required: true},    // exists in kernels v5.1 - v5.4
-						{handle: probes.IoSqOffloadStartRet, required: true}, // exists in kernels v5.1 - v5.4
+						{handle: probes.IoUringCreateKprobe, required: true},    // kprobe for kernels 5.1 - 5.4
+						{handle: probes.IoUringCreateKprobeRet, required: true}, // kretprobe for kernels 5.1 - 5.4
 						// probes to tell if an io_uring task is being issued
 						{handle: probes.IoSubmitSqeIssueSqe, required: false}, // exists in kernels v5.1 - v5.4
 					},
@@ -14416,12 +14416,13 @@ var CoreEvents = map[ID]Definition{
 			},
 			fallbacks: []Dependencies{
 				{
+					// Strategy for v5.1 - v5.4: use kprobe on io_uring_create function
 					probes: []Probe{
-						// io_uring_create probes, to get correct context for io_uring events
-						{handle: probes.IoSqOffloadStart, required: true},    // exists in kernels v5.1 - v5.4
-						{handle: probes.IoSqOffloadStartRet, required: true}, // exists in kernels v5.1 - v5.4
-						// submit io_write here
-						{handle: probes.IoSubmitSqeIoWrite, required: true}, // so instead use __io_submit_sqe to populate the event.
+						// io_uring_create kprobes for kernels without tracepoint
+						{handle: probes.IoUringCreateKprobe, required: true},
+						{handle: probes.IoUringCreateKprobeRet, required: true},
+						// submit io_write here - use __io_submit_sqe for older kernels
+						{handle: probes.IoSubmitSqeIoWrite, required: true},
 					},
 				},
 			},

@@ -3868,6 +3868,53 @@ int tracepoint__io_uring__io_uring_create(struct bpf_raw_tracepoint_args *ctx)
     return common_io_uring_create(&p, io_uring_ctx, sq_entries, cq_entries, flags);
 }
 
+// Kprobe version for kernels 5.1-5.4 that have io_uring_create function but no tracepoint
+SEC("kprobe/io_uring_create")
+int trace_io_uring_create_kprobe(struct pt_regs *ctx)
+{
+    bpf_printk("=== FALLBACK KPROBE: trace_io_uring_create_kprobe ENTRY (kernel 5.1-5.4) ===\n");
+    args_t args = {};
+    args.args[0] = PT_REGS_PARM1(ctx); // io_ring_ctx *
+    args.args[1] = PT_REGS_PARM2(ctx); // io_uring_params *
+    
+    int ret = save_args(&args, IO_URING_CREATE);
+    bpf_printk("=== FALLBACK KPROBE: trace_io_uring_create_kprobe saved args, ret=%d ===\n", ret);
+    return ret;
+}
+
+SEC("kretprobe/io_uring_create")
+int BPF_KPROBE(trace_ret_io_uring_create_kprobe)
+{
+    bpf_printk("=== FALLBACK KPROBE: trace_ret_io_uring_create_kprobe RETURN (kernel 5.1-5.4) ===\n");
+    args_t saved_args;
+    if (load_args(&saved_args, IO_URING_CREATE) != 0) {
+        bpf_printk("=== FALLBACK KPROBE: trace_ret_io_uring_create_kprobe failed to load args ===\n");
+        // missed entry or not traced
+        return 0;
+    }
+    del_args(IO_URING_CREATE);
+    bpf_printk("=== FALLBACK KPROBE: trace_ret_io_uring_create_kprobe loaded args successfully ===\n");
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, IO_URING_CREATE))
+        return 0;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    struct io_ring_ctx *io_uring_ctx = (struct io_ring_ctx *) saved_args.args[0];
+    struct io_uring_params *params = (struct io_uring_params *) saved_args.args[1];
+
+    u32 sq_entries = BPF_CORE_READ(params, sq_entries);
+    u32 cq_entries = BPF_CORE_READ(params, cq_entries);
+    u32 flags = BPF_CORE_READ(io_uring_ctx, flags);
+
+    bpf_printk("=== FALLBACK KPROBE: trace_ret_io_uring_create_kprobe calling common_io_uring_create ===\n");
+    int result = common_io_uring_create(&p, io_uring_ctx, sq_entries, cq_entries, flags);
+    bpf_printk("=== FALLBACK KPROBE: trace_ret_io_uring_create_kprobe common_io_uring_create ret=%d ===\n", result);
+    return result;
+}
+
 SEC("kprobe/io_sq_offload_start")
 int trace_io_sq_offload_start(struct pt_regs *ctx)
 {

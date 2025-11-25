@@ -339,6 +339,8 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 		SecuritySbUmount:           NewTraceProbe(KProbe, "security_sb_umount", "trace_security_sb_umount"),
 		SecurityTaskPrctl:          NewTraceProbe(KProbe, "security_task_prctl", "trace_security_task_prctl"),
 		IoUringCreate:              NewTraceProbe(RawTracepoint, "io_uring:io_uring_create", "tracepoint__io_uring__io_uring_create"),
+		IoUringCreateKprobe:        NewTraceProbe(KProbe, "io_uring_create", "trace_io_uring_create_kprobe"),
+		IoUringCreateKprobeRet:     NewTraceProbe(KretProbe, "io_uring_create", "trace_ret_io_uring_create_kprobe"),
 		IoSqOffloadStart:           NewTraceProbe(KProbe, "io_sq_offload_start", "trace_io_sq_offload_start"),
 		IoSqOffloadStartRet:        NewTraceProbe(KretProbe, "io_sq_offload_start", "trace_ret_io_sq_offload_start"),
 		IoSubmitSqeIssueSqe:        NewTraceProbe(KProbe, "__io_submit_sqe", "trace__io_submit_sqe_issue_sqe"),
