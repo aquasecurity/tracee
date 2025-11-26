@@ -291,8 +291,12 @@ func parseContainerIdFromCgroupPath(cgroupPath string) (string, runtime.RuntimeI
 			contRuntime = runtime.Docker
 			id = strings.TrimPrefix(id, "docker-")
 		case strings.HasPrefix(id, "crio-"):
-			contRuntime = runtime.Crio
 			id = strings.TrimPrefix(id, "crio-")
+			// Skip conmon cgroups - conmon is a monitoring process, not a container
+			if strings.HasPrefix(id, "conmon-") {
+				continue
+			}
+			contRuntime = runtime.Crio
 		case strings.HasPrefix(id, "cri-containerd-"):
 			contRuntime = runtime.Containerd
 			id = strings.TrimPrefix(id, "cri-containerd-")
