@@ -29,7 +29,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	defer cancel()
 
 	// Start by pulling the busybox image
-	pullCmd := exec.Command("docker", "pull", "busybox")
+	pullCmd := exec.Command("docker", "pull", busyboxImage)
 	err := pullCmd.Run()
 	require.NoError(t, err, "Failed to pull busybox image")
 
@@ -90,7 +90,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 
 	// Run a test container
 	containerName := "tracee-test-container"
-	runCmd := exec.Command("docker", "run", "--name", containerName, "-d", "busybox", "sleep", "5")
+	runCmd := exec.Command("docker", "run", "--name", containerName, "-d", busyboxImage, "sleep", "5")
 	err = runCmd.Run()
 	require.NoError(t, err, "Failed to start test container")
 
@@ -198,7 +198,7 @@ func Test_ExistingContainers(t *testing.T) {
 	failed := false
 
 	// Start by pulling the busybox image
-	pullCmd := exec.Command("docker", "pull", "busybox")
+	pullCmd := exec.Command("docker", "pull", busyboxImage)
 	err := pullCmd.Run()
 	require.NoError(t, err, "Failed to pull busybox image")
 
@@ -210,7 +210,7 @@ func Test_ExistingContainers(t *testing.T) {
 	_ = cleanupCmd.Run()
 
 	// Start a long-running container
-	startCmd := exec.Command("docker", "run", "--name", testContainerName, "-d", "busybox", "sleep", "60")
+	startCmd := exec.Command("docker", "run", "--name", testContainerName, "-d", busyboxImage, "sleep", "60")
 	err = startCmd.Run()
 	require.NoError(t, err, "Failed to start existing container")
 
