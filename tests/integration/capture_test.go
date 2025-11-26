@@ -483,7 +483,7 @@ func packetContext(t *testing.T, captureDir string, workingDir string) error {
 	pid := cmd.Process.Pid
 
 	// Ping localhost from a container (use busybox because it's smaller than alpine)
-	cmd = exec.Command("docker", "run", "-d", "--rm", "busybox", "ping", "-c", "1", "127.0.0.1")
+	cmd = exec.Command("docker", "run", "-d", "--rm", busyboxImage, "ping", "-c", "1", "127.0.0.1")
 	// Get the container ID from the output
 	output, err := cmd.Output()
 	if err != nil {
