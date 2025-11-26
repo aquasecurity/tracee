@@ -17,7 +17,7 @@ jobs:
     name: PR Sync
     runs-on: ubuntu-24.04
     container:
-      image: alpine:3.21@sha256:b6a6be0ff92ab6db8acd94f5d1b7a6c2f0f5d10ce3c24af348d333ac6da80685
+      image: alpine:3.22.2@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412
 
     steps:
       - name: Install git
