@@ -16,7 +16,7 @@
         <link rel="prev" href="../">
       
       
-        <link rel="next" href="../output-options/">
+        <link rel="next" href="../event-structure/">
       
       
         
@@ -6318,6 +6318,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../event-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../output-options/" class="md-nav__link">
         
   
@@ -8218,8 +8246,25 @@ you can select fields, rename them, filter values, and much more!</p>
 </code></pre></div>
 <p>Note: the <code>files: key</code> must also be defined, even if it's just for stdout. This is mandatory for the parser.</p>
 <h3 id="gotemplate">GOTEMPLATE<a class="headerlink" href="#gotemplate" title="Permanent link">&para;</a></h3>
-<p>When authoring a Go template the data source is Tracee's <code>trace.Event</code> struct, which is defined in <code>https://github.com/aquasecurity/tracee/blob/main/types/trace/trace.go#L15</code>.</p>
-<p>Go template can utilize helper functions from <a href="http://masterminds.github.io/sprig/">Sprig</a>.</p>
+<p>When authoring a Go template, the data source is Tracee's <code>v1beta1.Event</code> protobuf structure, which is defined in the <a href="https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event.proto">API protobuf definitions</a>.</p>
+<p><strong>Common event fields:</strong>
+- <code>.timestamp</code> - Event timestamp (protobuf Timestamp with <code>.seconds</code> and <code>.nanos</code>)
+- <code>.id</code> - Event ID (protobuf enum)
+- <code>.name</code> - Event name (string)
+- <code>.policies.matched</code> - Array of matched policy names
+- <code>.workload.process</code> - Process information including:
+  - <code>.workload.process.thread.name</code> - Process/thread name (comm)
+  - <code>.workload.process.pid.value</code> - Process ID
+  - <code>.workload.process.real_user.id.value</code> - User ID
+  - <code>.workload.process.executable.path</code> - Executable path
+- <code>.data</code> - Array of event-specific data fields (each with <code>.name</code> and typed <code>.value</code>)
+- <code>.threat</code> - Threat information for signature detections</p>
+<p><strong>Note:</strong> For signature events, additional fields are available:
+- <code>.threat.name</code> - Threat/signature name
+- <code>.threat.description</code> - Threat description
+- <code>.threat.properties.signatureID</code> - Signature ID
+- <code>.detected_from</code> - The underlying event that triggered the signature</p>
+<p>Go templates can utilize helper functions from <a href="http://masterminds.github.io/sprig/">Sprig</a>.</p>
 <p>For example templates, see the templates directory in the source repository.</p>
 <p>The following sections can be specified as part of go templates:</p>
 <div class="highlight"><pre><span></span><code>output:

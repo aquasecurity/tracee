@@ -10,28 +10,28 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/events/builtin/man/lsm/security_socket_bind/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/outputs/event-structure/">
       
       
-        <link rel="prev" href="../security_socket_accept/">
+        <link rel="prev" href="../output-formats/">
       
       
-        <link rel="next" href="../security_socket_connect/">
+        <link rel="next" href="../output-options/">
       
       
         
       
       
-      <link rel="icon" href="../../../../../../assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0+insiders-4.53.17">
     
     
       
-        <title>TRACEE-SECURITY-SOCKET-BIND - Tracee</title>
+        <title>Event Structure - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="../../../../../../assets/stylesheets/main.22cc1d52.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.22cc1d52.min.css">
       
       
 
@@ -50,7 +50,7 @@
       
     
     
-    <script>__md_scope=new URL("../../../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#name" class="md-skip">
+        <a href="#macro-syntax-error" class="md-skip">
           Skip to content
         </a>
       
@@ -88,9 +88,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../../../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../../../../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              TRACEE-SECURITY-SOCKET-BIND
+              Event Structure
             
           </span>
         </div>
@@ -186,7 +186,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../../.." class="md-tabs__link">
+      <a href="../../.." class="md-tabs__link">
         
   
   
@@ -209,7 +209,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../../../../overview/" class="md-tabs__link">
+        <a href="../../overview/" class="md-tabs__link">
           
   
   
@@ -229,7 +229,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../../../../traceectl/" class="md-tabs__link">
+        <a href="../../../traceectl/" class="md-tabs__link">
           
   
   
@@ -249,7 +249,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../../../../tutorials/overview/" class="md-tabs__link">
+        <a href="../../../tutorials/overview/" class="md-tabs__link">
           
   
   
@@ -269,7 +269,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../../../../contributing/overview/" class="md-tabs__link">
+        <a href="../../../contributing/overview/" class="md-tabs__link">
           
   
   
@@ -309,9 +309,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../../../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../../../../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     Tracee
@@ -338,7 +338,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -422,7 +422,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../overview/" class="md-nav__link">
+      <a href="../../overview/" class="md-nav__link">
         
   
   
@@ -505,7 +505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/" class="md-nav__link">
+      <a href="../../install/" class="md-nav__link">
         
   
   
@@ -585,7 +585,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/prerequisites/" class="md-nav__link">
+      <a href="../../install/prerequisites/" class="md-nav__link">
         
   
   
@@ -613,7 +613,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/kernel-symbols/" class="md-nav__link">
+      <a href="../../install/kernel-symbols/" class="md-nav__link">
         
   
   
@@ -641,7 +641,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/os-requirements/" class="md-nav__link">
+      <a href="../../install/os-requirements/" class="md-nav__link">
         
   
   
@@ -669,7 +669,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/capabilities/" class="md-nav__link">
+      <a href="../../install/capabilities/" class="md-nav__link">
         
   
   
@@ -697,7 +697,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/lsm-support/" class="md-nav__link">
+      <a href="../../install/lsm-support/" class="md-nav__link">
         
   
   
@@ -725,7 +725,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/mac-faq/" class="md-nav__link">
+      <a href="../../install/mac-faq/" class="md-nav__link">
         
   
   
@@ -813,7 +813,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/docker/" class="md-nav__link">
+      <a href="../../install/docker/" class="md-nav__link">
         
   
   
@@ -841,7 +841,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/kubernetes/" class="md-nav__link">
+      <a href="../../install/kubernetes/" class="md-nav__link">
         
   
   
@@ -929,7 +929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/container-engines/" class="md-nav__link">
+      <a href="../../install/container-engines/" class="md-nav__link">
         
   
   
@@ -957,7 +957,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/prometheus/" class="md-nav__link">
+      <a href="../../install/prometheus/" class="md-nav__link">
         
   
   
@@ -985,7 +985,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/healthz/" class="md-nav__link">
+      <a href="../../install/healthz/" class="md-nav__link">
         
   
   
@@ -1065,7 +1065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/config/" class="md-nav__link">
+      <a href="../../install/config/" class="md-nav__link">
         
   
   
@@ -1145,7 +1145,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/config/cli/" class="md-nav__link">
+      <a href="../../install/config/cli/" class="md-nav__link">
         
   
   
@@ -1173,7 +1173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../install/config/kubernetes/" class="md-nav__link">
+      <a href="../../install/config/kubernetes/" class="md-nav__link">
         
   
   
@@ -1261,7 +1261,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../flags/scope.1/" class="md-nav__link">
+      <a href="../../flags/scope.1/" class="md-nav__link">
         
   
   
@@ -1289,7 +1289,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../flags/events.1/" class="md-nav__link">
+      <a href="../../flags/events.1/" class="md-nav__link">
         
   
   
@@ -1317,7 +1317,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../flags/output.1/" class="md-nav__link">
+      <a href="../../flags/output.1/" class="md-nav__link">
         
   
   
@@ -1345,7 +1345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../flags/capture.1/" class="md-nav__link">
+      <a href="../../flags/capture.1/" class="md-nav__link">
         
   
   
@@ -1373,7 +1373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../flags/config.1/" class="md-nav__link">
+      <a href="../../flags/config.1/" class="md-nav__link">
         
   
   
@@ -1401,7 +1401,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../flags/containers.1/" class="md-nav__link">
+      <a href="../../flags/containers.1/" class="md-nav__link">
         
   
   
@@ -1429,7 +1429,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../flags/capabilities.1/" class="md-nav__link">
+      <a href="../../flags/capabilities.1/" class="md-nav__link">
         
   
   
@@ -1457,7 +1457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../flags/log.1/" class="md-nav__link">
+      <a href="../../flags/log.1/" class="md-nav__link">
         
   
   
@@ -1485,7 +1485,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../flags/server.1/" class="md-nav__link">
+      <a href="../../flags/server.1/" class="md-nav__link">
         
   
   
@@ -1542,8 +1542,6 @@
                 
   
   
-    
-  
   
   
     
@@ -1559,11 +1557,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
         
           
           <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="">
@@ -1584,7 +1582,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1602,7 +1600,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../" class="md-nav__link">
+      <a href="../../events/" class="md-nav__link">
         
   
   
@@ -1627,8 +1625,6 @@
                 
   
   
-    
-  
   
   
     
@@ -1641,11 +1637,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3_2" >
         
           
           <label class="md-nav__link" for="__nav_2_3_2" id="__nav_2_3_2_label" tabindex="0">
@@ -1666,7 +1662,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_3_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_3_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_3_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1736,7 +1732,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lifecycle/sched_process_fork/" class="md-nav__link">
+      <a href="../../events/builtin/man/lifecycle/sched_process_fork/" class="md-nav__link">
         
   
   
@@ -1764,7 +1760,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lifecycle/sched_process_exec/" class="md-nav__link">
+      <a href="../../events/builtin/man/lifecycle/sched_process_exec/" class="md-nav__link">
         
   
   
@@ -1792,7 +1788,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lifecycle/sched_process_exit/" class="md-nav__link">
+      <a href="../../events/builtin/man/lifecycle/sched_process_exit/" class="md-nav__link">
         
   
   
@@ -1820,7 +1816,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lifecycle/do_exit/" class="md-nav__link">
+      <a href="../../events/builtin/man/lifecycle/do_exit/" class="md-nav__link">
         
   
   
@@ -1848,7 +1844,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lifecycle/sched_switch/" class="md-nav__link">
+      <a href="../../events/builtin/man/lifecycle/sched_switch/" class="md-nav__link">
         
   
   
@@ -1876,7 +1872,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lifecycle/container_create/" class="md-nav__link">
+      <a href="../../events/builtin/man/lifecycle/container_create/" class="md-nav__link">
         
   
   
@@ -1904,7 +1900,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lifecycle/container_remove/" class="md-nav__link">
+      <a href="../../events/builtin/man/lifecycle/container_remove/" class="md-nav__link">
         
   
   
@@ -1932,7 +1928,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lifecycle/existing_container/" class="md-nav__link">
+      <a href="../../events/builtin/man/lifecycle/existing_container/" class="md-nav__link">
         
   
   
@@ -1960,7 +1956,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lifecycle/init_namespaces/" class="md-nav__link">
+      <a href="../../events/builtin/man/lifecycle/init_namespaces/" class="md-nav__link">
         
   
   
@@ -1988,7 +1984,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lifecycle/switch_task_ns/" class="md-nav__link">
+      <a href="../../events/builtin/man/lifecycle/switch_task_ns/" class="md-nav__link">
         
   
   
@@ -2016,7 +2012,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lifecycle/cgroup_mkdir/" class="md-nav__link">
+      <a href="../../events/builtin/man/lifecycle/cgroup_mkdir/" class="md-nav__link">
         
   
   
@@ -2044,7 +2040,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lifecycle/cgroup_rmdir/" class="md-nav__link">
+      <a href="../../events/builtin/man/lifecycle/cgroup_rmdir/" class="md-nav__link">
         
   
   
@@ -2072,7 +2068,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../lifecycle/cgroup_attach_task/" class="md-nav__link">
+      <a href="../../events/builtin/man/lifecycle/cgroup_attach_task/" class="md-nav__link">
         
   
   
@@ -2160,7 +2156,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../security-events/" class="md-nav__link">
+      <a href="../../events/builtin/security-events/" class="md-nav__link">
         
   
   
@@ -2188,7 +2184,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/anti_debugging/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/anti_debugging/" class="md-nav__link">
         
   
   
@@ -2216,7 +2212,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/aslr_inspection/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/aslr_inspection/" class="md-nav__link">
         
   
   
@@ -2244,7 +2240,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/cgroup_notify_on_release_modification/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/cgroup_notify_on_release_modification/" class="md-nav__link">
         
   
   
@@ -2272,7 +2268,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/cgroup_release_agent_modification/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/cgroup_release_agent_modification/" class="md-nav__link">
         
   
   
@@ -2300,7 +2296,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/core_pattern_modification/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/core_pattern_modification/" class="md-nav__link">
         
   
   
@@ -2328,7 +2324,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/default_loader_modification/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/default_loader_modification/" class="md-nav__link">
         
   
   
@@ -2356,7 +2352,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/disk_mount/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/disk_mount/" class="md-nav__link">
         
   
   
@@ -2384,7 +2380,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/docker_abuse/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/docker_abuse/" class="md-nav__link">
         
   
   
@@ -2412,7 +2408,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/dropped_executable/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/dropped_executable/" class="md-nav__link">
         
   
   
@@ -2440,7 +2436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/dynamic_code_loading/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/dynamic_code_loading/" class="md-nav__link">
         
   
   
@@ -2468,7 +2464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/fileless_execution/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/fileless_execution/" class="md-nav__link">
         
   
   
@@ -2496,7 +2492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/hidden_file_created/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/hidden_file_created/" class="md-nav__link">
         
   
   
@@ -2524,7 +2520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/illegitimate_shell/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/illegitimate_shell/" class="md-nav__link">
         
   
   
@@ -2552,7 +2548,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/kubernetes_api_connection/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/kubernetes_api_connection/" class="md-nav__link">
         
   
   
@@ -2580,7 +2576,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/kubernetes_certificate_theft_attempt/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/kubernetes_certificate_theft_attempt/" class="md-nav__link">
         
   
   
@@ -2608,7 +2604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/kernel_module_loading/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/kernel_module_loading/" class="md-nav__link">
         
   
   
@@ -2636,7 +2632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/ld_preload/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/ld_preload/" class="md-nav__link">
         
   
   
@@ -2664,7 +2660,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/process_vm_write_code_injection/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/process_vm_write_code_injection/" class="md-nav__link">
         
   
   
@@ -2692,7 +2688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/proc_fops_hooking/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/proc_fops_hooking/" class="md-nav__link">
         
   
   
@@ -2720,7 +2716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/proc_kcore_read/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/proc_kcore_read/" class="md-nav__link">
         
   
   
@@ -2748,7 +2744,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/proc_mem_access/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/proc_mem_access/" class="md-nav__link">
         
   
   
@@ -2776,7 +2772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/proc_mem_code_injection/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/proc_mem_code_injection/" class="md-nav__link">
         
   
   
@@ -2804,7 +2800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/ptrace_code_injection/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/ptrace_code_injection/" class="md-nav__link">
         
   
   
@@ -2832,7 +2828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/rcd_modification/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/rcd_modification/" class="md-nav__link">
         
   
   
@@ -2860,7 +2856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/sched_debug_recon/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/sched_debug_recon/" class="md-nav__link">
         
   
   
@@ -2888,7 +2884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/scheduled_task_modification/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/scheduled_task_modification/" class="md-nav__link">
         
   
   
@@ -2916,7 +2912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/stack_pivot/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/stack_pivot/" class="md-nav__link">
         
   
   
@@ -2944,7 +2940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/stdio_over_socket/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/stdio_over_socket/" class="md-nav__link">
         
   
   
@@ -2972,7 +2968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/sudoers_modification/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/sudoers_modification/" class="md-nav__link">
         
   
   
@@ -3000,7 +2996,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/syscall_table_hooking/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/syscall_table_hooking/" class="md-nav__link">
         
   
   
@@ -3028,7 +3024,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/system_request_key_config_modification/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/system_request_key_config_modification/" class="md-nav__link">
         
   
   
@@ -3116,7 +3112,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../network-events/" class="md-nav__link">
+      <a href="../../events/builtin/network-events/" class="md-nav__link">
         
   
   
@@ -3144,7 +3140,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_flow_tcp_begin/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_flow_tcp_begin/" class="md-nav__link">
         
   
   
@@ -3172,7 +3168,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_flow_tcp_end/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_flow_tcp_end/" class="md-nav__link">
         
   
   
@@ -3200,7 +3196,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_packet_ipv4/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_packet_ipv4/" class="md-nav__link">
         
   
   
@@ -3228,7 +3224,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_packet_ipv6/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_packet_ipv6/" class="md-nav__link">
         
   
   
@@ -3256,7 +3252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_packet_tcp/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_packet_tcp/" class="md-nav__link">
         
   
   
@@ -3284,7 +3280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_packet_udp/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_packet_udp/" class="md-nav__link">
         
   
   
@@ -3312,7 +3308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_packet_icmp/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_packet_icmp/" class="md-nav__link">
         
   
   
@@ -3340,7 +3336,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_packet_icmpv6/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_packet_icmpv6/" class="md-nav__link">
         
   
   
@@ -3368,7 +3364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_packet_dns/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_packet_dns/" class="md-nav__link">
         
   
   
@@ -3396,7 +3392,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_packet_dns_request/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_packet_dns_request/" class="md-nav__link">
         
   
   
@@ -3424,7 +3420,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_packet_dns_response/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_packet_dns_response/" class="md-nav__link">
         
   
   
@@ -3452,7 +3448,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_packet_http/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_packet_http/" class="md-nav__link">
         
   
   
@@ -3480,7 +3476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_packet_http_request/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_packet_http_request/" class="md-nav__link">
         
   
   
@@ -3508,7 +3504,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../network/net_packet_http_response/" class="md-nav__link">
+      <a href="../../events/builtin/man/network/net_packet_http_response/" class="md-nav__link">
         
   
   
@@ -3541,8 +3537,6 @@
                 
   
   
-    
-  
   
   
     
@@ -3555,11 +3549,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3_2_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3_2_4" >
         
           
           <label class="md-nav__link" for="__nav_2_3_2_4" id="__nav_2_3_2_4_label" tabindex="0">
@@ -3580,7 +3574,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_3_2_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_3_2_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_3_2_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3598,7 +3592,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cap_capable/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/cap_capable/" class="md-nav__link">
         
   
   
@@ -3626,7 +3620,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_bpf/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_bpf/" class="md-nav__link">
         
   
   
@@ -3654,7 +3648,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_bpf_map/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_bpf_map/" class="md-nav__link">
         
   
   
@@ -3682,7 +3676,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_bpf_prog/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_bpf_prog/" class="md-nav__link">
         
   
   
@@ -3710,7 +3704,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_bprm_check/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_bprm_check/" class="md-nav__link">
         
   
   
@@ -3738,7 +3732,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_file_mprotect/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_file_mprotect/" class="md-nav__link">
         
   
   
@@ -3766,7 +3760,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_file_open/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_file_open/" class="md-nav__link">
         
   
   
@@ -3794,7 +3788,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_inode_mknod/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_inode_mknod/" class="md-nav__link">
         
   
   
@@ -3822,7 +3816,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_inode_rename/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_inode_rename/" class="md-nav__link">
         
   
   
@@ -3850,7 +3844,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_inode_unlink/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_inode_unlink/" class="md-nav__link">
         
   
   
@@ -3878,7 +3872,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_kernel_post_read_file/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_kernel_post_read_file/" class="md-nav__link">
         
   
   
@@ -3906,7 +3900,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_kernel_read_file/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_kernel_read_file/" class="md-nav__link">
         
   
   
@@ -3934,7 +3928,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_mmap_file/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_mmap_file/" class="md-nav__link">
         
   
   
@@ -3962,7 +3956,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_path_notify/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_path_notify/" class="md-nav__link">
         
   
   
@@ -3990,7 +3984,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_sb_mount/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_sb_mount/" class="md-nav__link">
         
   
   
@@ -4018,7 +4012,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_sb_umount/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_sb_umount/" class="md-nav__link">
         
   
   
@@ -4046,7 +4040,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_settime64/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_settime64/" class="md-nav__link">
         
   
   
@@ -4074,7 +4068,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_socket_accept/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_socket_accept/" class="md-nav__link">
         
   
   
@@ -4099,35 +4093,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    security_socket_bind
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../events/builtin/man/lsm/security_socket_bind/" class="md-nav__link">
         
   
   
@@ -4143,156 +4112,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        NAME
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#description" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DESCRIPTION
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#event-sets" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        EVENT SETS
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#data-fields" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DATA FIELDS
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DEPENDENCIES
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        USE CASES
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#binding-scenarios" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        BINDING SCENARIOS
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#address-families" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ADDRESS FAMILIES
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#security-considerations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SECURITY CONSIDERATIONS
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#port-categories" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PORT CATEGORIES
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance-considerations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PERFORMANCE CONSIDERATIONS
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-events" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RELATED EVENTS
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4305,7 +4124,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_socket_connect/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_socket_connect/" class="md-nav__link">
         
   
   
@@ -4333,7 +4152,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_socket_create/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_socket_create/" class="md-nav__link">
         
   
   
@@ -4361,7 +4180,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_socket_listen/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_socket_listen/" class="md-nav__link">
         
   
   
@@ -4389,7 +4208,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_socket_setsockopt/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_socket_setsockopt/" class="md-nav__link">
         
   
   
@@ -4417,7 +4236,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_task_setrlimit/" class="md-nav__link">
+      <a href="../../events/builtin/man/lsm/security_task_setrlimit/" class="md-nav__link">
         
   
   
@@ -4505,7 +4324,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/__kernel_write/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/__kernel_write/" class="md-nav__link">
         
   
   
@@ -4533,7 +4352,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/bpf_attach/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/bpf_attach/" class="md-nav__link">
         
   
   
@@ -4561,7 +4380,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/call_usermodehelper/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/call_usermodehelper/" class="md-nav__link">
         
   
   
@@ -4589,7 +4408,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/chmod_common/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/chmod_common/" class="md-nav__link">
         
   
   
@@ -4617,7 +4436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/commit_creds/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/commit_creds/" class="md-nav__link">
         
   
   
@@ -4645,7 +4464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/debugfs_create_dir/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/debugfs_create_dir/" class="md-nav__link">
         
   
   
@@ -4673,7 +4492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/debugfs_create_file/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/debugfs_create_file/" class="md-nav__link">
         
   
   
@@ -4701,7 +4520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/device_add/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/device_add/" class="md-nav__link">
         
   
   
@@ -4729,7 +4548,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/dirty_pipe_splice/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/dirty_pipe_splice/" class="md-nav__link">
         
   
   
@@ -4757,7 +4576,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/do_init_module/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/do_init_module/" class="md-nav__link">
         
   
   
@@ -4785,7 +4604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/do_mmap/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/do_mmap/" class="md-nav__link">
         
   
   
@@ -4813,7 +4632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/do_sigaction/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/do_sigaction/" class="md-nav__link">
         
   
   
@@ -4841,7 +4660,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/do_truncate/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/do_truncate/" class="md-nav__link">
         
   
   
@@ -4869,7 +4688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/file_modification/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/file_modification/" class="md-nav__link">
         
   
   
@@ -4897,7 +4716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/ftrace_hook/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/ftrace_hook/" class="md-nav__link">
         
   
   
@@ -4925,7 +4744,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/hidden_kernel_module/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/hidden_kernel_module/" class="md-nav__link">
         
   
   
@@ -4953,7 +4772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/hooked_seq_ops/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/hooked_seq_ops/" class="md-nav__link">
         
   
   
@@ -4981,7 +4800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/hooked_syscall/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/hooked_syscall/" class="md-nav__link">
         
   
   
@@ -5009,7 +4828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/inotify_watch/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/inotify_watch/" class="md-nav__link">
         
   
   
@@ -5037,7 +4856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/kallsyms_lookup_name/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/kallsyms_lookup_name/" class="md-nav__link">
         
   
   
@@ -5065,7 +4884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/kprobe_attach/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/kprobe_attach/" class="md-nav__link">
         
   
   
@@ -5093,7 +4912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/load_elf_phdrs/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/load_elf_phdrs/" class="md-nav__link">
         
   
   
@@ -5121,7 +4940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/magic_write/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/magic_write/" class="md-nav__link">
         
   
   
@@ -5149,7 +4968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/mem_prot_alert/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/mem_prot_alert/" class="md-nav__link">
         
   
   
@@ -5177,7 +4996,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/net_tcp_connect/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/net_tcp_connect/" class="md-nav__link">
         
   
   
@@ -5205,7 +5024,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/print_mem_dump/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/print_mem_dump/" class="md-nav__link">
         
   
   
@@ -5233,7 +5052,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/proc_create/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/proc_create/" class="md-nav__link">
         
   
   
@@ -5261,7 +5080,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/process_execute_failed/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/process_execute_failed/" class="md-nav__link">
         
   
   
@@ -5289,7 +5108,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/register_chrdev/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/register_chrdev/" class="md-nav__link">
         
   
   
@@ -5317,7 +5136,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/set_fs_pwd/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/set_fs_pwd/" class="md-nav__link">
         
   
   
@@ -5345,7 +5164,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/shared_object_loaded/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/shared_object_loaded/" class="md-nav__link">
         
   
   
@@ -5373,7 +5192,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/socket_accept/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/socket_accept/" class="md-nav__link">
         
   
   
@@ -5401,7 +5220,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/socket_dup/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/socket_dup/" class="md-nav__link">
         
   
   
@@ -5429,7 +5248,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/suspicious_syscall_source/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/suspicious_syscall_source/" class="md-nav__link">
         
   
   
@@ -5457,7 +5276,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/symbols_collision/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/symbols_collision/" class="md-nav__link">
         
   
   
@@ -5485,7 +5304,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/symbols_loaded/" class="md-nav__link">
+      <a href="../../events/builtin/man/security/symbols_loaded/" class="md-nav__link">
         
   
   
@@ -5513,7 +5332,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/task_rename/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/task_rename/" class="md-nav__link">
         
   
   
@@ -5541,7 +5360,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/tracee_info/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/tracee_info/" class="md-nav__link">
         
   
   
@@ -5569,7 +5388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/vfs_read/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/vfs_read/" class="md-nav__link">
         
   
   
@@ -5597,7 +5416,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/vfs_readv/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/vfs_readv/" class="md-nav__link">
         
   
   
@@ -5625,7 +5444,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/vfs_utimes/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/vfs_utimes/" class="md-nav__link">
         
   
   
@@ -5653,7 +5472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/vfs_write/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/vfs_write/" class="md-nav__link">
         
   
   
@@ -5681,7 +5500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../misc/vfs_writev/" class="md-nav__link">
+      <a href="../../events/builtin/man/misc/vfs_writev/" class="md-nav__link">
         
   
   
@@ -5769,7 +5588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../syscall-events/" class="md-nav__link">
+      <a href="../../events/builtin/syscall-events/" class="md-nav__link">
         
   
   
@@ -5797,7 +5616,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../syscalls/sys_enter/" class="md-nav__link">
+      <a href="../../events/builtin/man/syscalls/sys_enter/" class="md-nav__link">
         
   
   
@@ -5825,7 +5644,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../syscalls/sys_exit/" class="md-nav__link">
+      <a href="../../events/builtin/man/syscalls/sys_exit/" class="md-nav__link">
         
   
   
@@ -5921,7 +5740,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../custom/overview/" class="md-nav__link">
+      <a href="../../events/custom/overview/" class="md-nav__link">
         
   
   
@@ -5949,7 +5768,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../custom/golang/" class="md-nav__link">
+      <a href="../../events/custom/golang/" class="md-nav__link">
         
   
   
@@ -6048,7 +5867,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../policies/" class="md-nav__link">
+      <a href="../../policies/" class="md-nav__link">
         
   
   
@@ -6076,7 +5895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../policies/scopes/" class="md-nav__link">
+      <a href="../../policies/scopes/" class="md-nav__link">
         
   
   
@@ -6104,7 +5923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../policies/rules/" class="md-nav__link">
+      <a href="../../policies/rules/" class="md-nav__link">
         
   
   
@@ -6184,7 +6003,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../policies/usage/cli/" class="md-nav__link">
+      <a href="../../policies/usage/cli/" class="md-nav__link">
         
   
   
@@ -6212,7 +6031,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../policies/usage/kubernetes/" class="md-nav__link">
+      <a href="../../policies/usage/kubernetes/" class="md-nav__link">
         
   
   
@@ -6253,6 +6072,8 @@
                 
   
   
+    
+  
   
   
     
@@ -6268,11 +6089,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" checked>
         
           
           <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="">
@@ -6293,7 +6114,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -6311,7 +6132,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../outputs/" class="md-nav__link">
+      <a href="../" class="md-nav__link">
         
   
   
@@ -6339,7 +6160,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../outputs/output-formats/" class="md-nav__link">
+      <a href="../output-formats/" class="md-nav__link">
         
   
   
@@ -6364,10 +6185,19 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../../../outputs/event-structure/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -6383,6 +6213,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -6395,7 +6226,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../outputs/output-options/" class="md-nav__link">
+      <a href="../output-options/" class="md-nav__link">
         
   
   
@@ -6423,7 +6254,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../outputs/logging/" class="md-nav__link">
+      <a href="../logging/" class="md-nav__link">
         
   
   
@@ -6459,7 +6290,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../troubleshooting/" class="md-nav__link">
+      <a href="../../troubleshooting/" class="md-nav__link">
         
   
   
@@ -6542,7 +6373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../advanced/ordering-events/" class="md-nav__link">
+      <a href="../../advanced/ordering-events/" class="md-nav__link">
         
   
   
@@ -6570,7 +6401,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../advanced/secure-tracing/" class="md-nav__link">
+      <a href="../../advanced/secure-tracing/" class="md-nav__link">
         
   
   
@@ -6598,7 +6429,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../advanced/forensics/" class="md-nav__link">
+      <a href="../../advanced/forensics/" class="md-nav__link">
         
   
   
@@ -6678,7 +6509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../advanced/data-sources/overview/" class="md-nav__link">
+      <a href="../../advanced/data-sources/overview/" class="md-nav__link">
         
   
   
@@ -6706,7 +6537,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../advanced/data-sources/custom/" class="md-nav__link">
+      <a href="../../advanced/data-sources/custom/" class="md-nav__link">
         
   
   
@@ -6734,7 +6565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../advanced/data-sources/write/" class="md-nav__link">
+      <a href="../../advanced/data-sources/write/" class="md-nav__link">
         
   
   
@@ -6814,7 +6645,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../advanced/data-sources/builtin/containers/" class="md-nav__link">
+      <a href="../../advanced/data-sources/builtin/containers/" class="md-nav__link">
         
   
   
@@ -6842,7 +6673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../advanced/data-sources/builtin/process-tree/" class="md-nav__link">
+      <a href="../../advanced/data-sources/builtin/process-tree/" class="md-nav__link">
         
   
   
@@ -6870,7 +6701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../advanced/data-sources/builtin/dns/" class="md-nav__link">
+      <a href="../../advanced/data-sources/builtin/dns/" class="md-nav__link">
         
   
   
@@ -6981,7 +6812,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../traceectl/" class="md-nav__link">
+      <a href="../../../traceectl/" class="md-nav__link">
         
   
   
@@ -7009,7 +6840,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../traceectl/usage/" class="md-nav__link">
+      <a href="../../../traceectl/usage/" class="md-nav__link">
         
   
   
@@ -7089,7 +6920,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../traceectl/commands/event/" class="md-nav__link">
+      <a href="../../../traceectl/commands/event/" class="md-nav__link">
         
   
   
@@ -7117,7 +6948,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../traceectl/commands/metrics/" class="md-nav__link">
+      <a href="../../../traceectl/commands/metrics/" class="md-nav__link">
         
   
   
@@ -7145,7 +6976,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../traceectl/commands/stream/" class="md-nav__link">
+      <a href="../../../traceectl/commands/stream/" class="md-nav__link">
         
   
   
@@ -7173,7 +7004,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../traceectl/commands/version/" class="md-nav__link">
+      <a href="../../../traceectl/commands/version/" class="md-nav__link">
         
   
   
@@ -7261,7 +7092,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../traceectl/flags/output/" class="md-nav__link">
+      <a href="../../../traceectl/flags/output/" class="md-nav__link">
         
   
   
@@ -7289,7 +7120,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../traceectl/flags/format/" class="md-nav__link">
+      <a href="../../../traceectl/flags/format/" class="md-nav__link">
         
   
   
@@ -7317,7 +7148,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../traceectl/flags/server/" class="md-nav__link">
+      <a href="../../../traceectl/flags/server/" class="md-nav__link">
         
   
   
@@ -7345,7 +7176,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../traceectl/flags/policy/" class="md-nav__link">
+      <a href="../../../traceectl/flags/policy/" class="md-nav__link">
         
   
   
@@ -7440,7 +7271,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../tutorials/overview/" class="md-nav__link">
+      <a href="../../../tutorials/overview/" class="md-nav__link">
         
   
   
@@ -7468,7 +7299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../tutorials/verify-tracee-signature/" class="md-nav__link">
+      <a href="../../../tutorials/verify-tracee-signature/" class="md-nav__link">
         
   
   
@@ -7496,7 +7327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
+      <a href="../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
         
   
   
@@ -7524,7 +7355,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../tutorials/tracee-vagrant/" class="md-nav__link">
+      <a href="../../../tutorials/tracee-vagrant/" class="md-nav__link">
         
   
   
@@ -7552,7 +7383,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../tutorials/k8s-policies/" class="md-nav__link">
+      <a href="../../../tutorials/k8s-policies/" class="md-nav__link">
         
   
   
@@ -7580,7 +7411,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../tutorials/promtail/" class="md-nav__link">
+      <a href="../../../tutorials/promtail/" class="md-nav__link">
         
   
   
@@ -7608,7 +7439,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../tutorials/additional-resources/" class="md-nav__link">
+      <a href="../../../tutorials/additional-resources/" class="md-nav__link">
         
   
   
@@ -7695,7 +7526,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../contributing/overview/" class="md-nav__link">
+      <a href="../../../contributing/overview/" class="md-nav__link">
         
   
   
@@ -7723,7 +7554,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../contributing/guidelines/" class="md-nav__link">
+      <a href="../../../contributing/guidelines/" class="md-nav__link">
         
   
   
@@ -7751,7 +7582,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../contributing/checkpatch/" class="md-nav__link">
+      <a href="../../../contributing/checkpatch/" class="md-nav__link">
         
   
   
@@ -7779,7 +7610,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../contributing/adding-events/" class="md-nav__link">
+      <a href="../../../contributing/adding-events/" class="md-nav__link">
         
   
   
@@ -7807,7 +7638,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../contributing/event-documentation-guide/" class="md-nav__link">
+      <a href="../../../contributing/event-documentation-guide/" class="md-nav__link">
         
   
   
@@ -7835,7 +7666,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../contributing/testing-coverage/" class="md-nav__link">
+      <a href="../../../contributing/testing-coverage/" class="md-nav__link">
         
   
   
@@ -7863,7 +7694,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../contributing/performance/" class="md-nav__link">
+      <a href="../../../contributing/performance/" class="md-nav__link">
         
   
   
@@ -7891,7 +7722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../contributing/kubernetes/" class="md-nav__link">
+      <a href="../../../contributing/kubernetes/" class="md-nav__link">
         
   
   
@@ -7919,7 +7750,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../contributing/setup-development-machine-with-vagrant/" class="md-nav__link">
+      <a href="../../../contributing/setup-development-machine-with-vagrant/" class="md-nav__link">
         
   
   
@@ -7999,7 +7830,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../contributing/building/building/" class="md-nav__link">
+      <a href="../../../contributing/building/building/" class="md-nav__link">
         
   
   
@@ -8027,7 +7858,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../contributing/building/environment/" class="md-nav__link">
+      <a href="../../../contributing/building/environment/" class="md-nav__link">
         
   
   
@@ -8055,7 +7886,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../../contributing/building/containers/" class="md-nav__link">
+      <a href="../../../contributing/building/containers/" class="md-nav__link">
         
   
   
@@ -8108,146 +7939,8 @@
   
   
   
+    
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        NAME
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#description" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DESCRIPTION
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#event-sets" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        EVENT SETS
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#data-fields" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DATA FIELDS
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DEPENDENCIES
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        USE CASES
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#binding-scenarios" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        BINDING SCENARIOS
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#address-families" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ADDRESS FAMILIES
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#security-considerations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SECURITY CONSIDERATIONS
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#port-categories" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PORT CATEGORIES
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance-considerations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PERFORMANCE CONSIDERATIONS
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-events" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RELATED EVENTS
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
   
 </nav>
                   </div>
@@ -8264,92 +7957,17 @@
 
 
 
-  <h1>security_socket_bind</h1>
-
-<h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
-<p><strong>security_socket_bind</strong> - socket bind operation security check</p>
-<h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>Triggered when a socket is bound to a local address and port through the Linux Security Module (LSM) hook. This event captures socket binding operations, which are crucial for setting up servers, defining source addresses for outgoing connections, and establishing network services.</p>
-<p>Socket binding is a fundamental networking operation where applications specify which local address and port they want to use for network communication. Monitoring these operations provides visibility into service initialization and network configuration changes.</p>
-<h2 id="event-sets">EVENT SETS<a class="headerlink" href="#event-sets" title="Permanent link">&para;</a></h2>
-<p><strong>none</strong></p>
-<h2 id="data-fields">DATA FIELDS<a class="headerlink" href="#data-fields" title="Permanent link">&para;</a></h2>
-<p><strong>sockfd</strong> (<em>int32</em>)
-: The file descriptor referring to the socket being bound</p>
-<p><strong>local_addr</strong> (<em>trace.SockAddr</em>)
-: The local address structure containing the address and port details for the binding operation</p>
-<h2 id="dependencies">DEPENDENCIES<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h2>
-<p><strong>LSM Hook:</strong></p>
-<ul>
-<li>security_socket_bind (required): LSM hook for socket bind security checks</li>
-</ul>
-<h2 id="use-cases">USE CASES<a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h2>
-<ul>
-<li>
-<p><strong>Service monitoring</strong>: Track when network services are started or reconfigured</p>
-</li>
-<li>
-<p><strong>Security auditing</strong>: Detect unauthorized service bindings or port usage</p>
-</li>
-<li>
-<p><strong>Network configuration</strong>: Monitor network service setup and port allocation</p>
-</li>
-<li>
-<p><strong>Incident response</strong>: Investigate unexpected network service activity</p>
-</li>
-<li>
-<p><strong>Compliance monitoring</strong>: Ensure network services comply with policies</p>
-</li>
-</ul>
-<h2 id="binding-scenarios">BINDING SCENARIOS<a class="headerlink" href="#binding-scenarios" title="Permanent link">&para;</a></h2>
-<p>Common socket binding scenarios:</p>
-<ul>
-<li><strong>Server initialization</strong>: Web servers, database servers binding to listening ports</li>
-<li><strong>Service discovery</strong>: Applications binding to well-known ports</li>
-<li><strong>Dynamic port allocation</strong>: Applications requesting any available port (port 0)</li>
-<li><strong>Specific interface binding</strong>: Binding to specific network interfaces</li>
-<li><strong>Privilege port binding</strong>: Binding to ports below 1024 (requires privileges)</li>
-</ul>
-<h2 id="address-families">ADDRESS FAMILIES<a class="headerlink" href="#address-families" title="Permanent link">&para;</a></h2>
-<p>The <code>local_addr</code> field contains different address types:</p>
-<ul>
-<li><strong>IPv4</strong>: <code>sockaddr_in</code> with IPv4 address and port</li>
-<li><strong>IPv6</strong>: <code>sockaddr_in6</code> with IPv6 address and port</li>
-<li><strong>UNIX</strong>: <code>sockaddr_un</code> with filesystem socket path</li>
-</ul>
-<h2 id="security-considerations">SECURITY CONSIDERATIONS<a class="headerlink" href="#security-considerations" title="Permanent link">&para;</a></h2>
-<p>Monitor for suspicious binding patterns:</p>
-<ul>
-<li><strong>Privilege escalation</strong>: Unauthorized binding to privileged ports</li>
-<li><strong>Service hijacking</strong>: Binding to ports used by other services</li>
-<li><strong>Backdoor services</strong>: Unexpected services binding to unusual ports</li>
-<li><strong>Network reconnaissance</strong>: Applications probing port availability</li>
-</ul>
-<h2 id="port-categories">PORT CATEGORIES<a class="headerlink" href="#port-categories" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Well-known ports (0-1023)</strong>: Require root privileges to bind</li>
-<li><strong>Registered ports (1024-49151)</strong>: Commonly used application ports</li>
-<li><strong>Dynamic/private ports (49152-65535)</strong>: Typically used for client connections</li>
-</ul>
-<h2 id="performance-considerations">PERFORMANCE CONSIDERATIONS<a class="headerlink" href="#performance-considerations" title="Permanent link">&para;</a></h2>
-<p>Socket binding events are relatively infrequent compared to data transfer operations, but can be numerous in environments with frequent service starts/stops or applications that create many sockets.</p>
-<h2 id="related-events">RELATED EVENTS<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>security_socket_create</strong>: Socket creation security events</li>
-<li><strong>security_socket_listen</strong>: Socket listen security events</li>
-<li><strong>security_socket_accept</strong>: Socket accept security events</li>
-<li><strong>security_socket_connect</strong>: Socket connect security events</li>
-<li><strong>bind</strong>: Bind system call events</li>
-</ul>
+<h1 id="macro-syntax-error"><em>Macro Syntax Error</em><a class="headerlink" href="#macro-syntax-error" title="Permanent link">&para;</a></h1>
+<p><em>File</em>: <code>docs/outputs/event-structure.md</code></p>
+<p><em>Line 165 in Markdown file:</em> <strong>unexpected '.'</strong>
+<div class="highlight"><pre><span></span><code>Event: {{.EventName}}
+</code></pre></div></p>
 
 
 
 
 
 
-
-  
-  
 
 
 
@@ -8390,10 +8008,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link", "content.code.copy"], "search": "../../../../../../assets/javascripts/workers/search.26099bd0.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.26099bd0.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../../../../assets/javascripts/bundle.9d1edc04.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.9d1edc04.min.js"></script>
       
     
   </body>
