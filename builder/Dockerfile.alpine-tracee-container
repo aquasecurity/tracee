@@ -20,6 +20,10 @@ FROM alpine:3.22.2@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990
 LABEL AS=tracee-base
 USER root
 
+# Upgrade busybox to fix CVE-2024-58251
+# TODO: Remove this when Alpine releases a new version with busybox >= 1.37.0-r20
+RUN apk update && apk upgrade --available busybox busybox-binsh ssl_client
+
 # install base environment
 
 RUN apk --no-cache update && \
