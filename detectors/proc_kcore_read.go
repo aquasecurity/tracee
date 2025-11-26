@@ -34,7 +34,7 @@ func (d *ProcKcoreRead) GetDefinition() detection.DetectorDefinition {
 					},
 					// Scope filter: only from containers (matching original "Origin: container")
 					ScopeFilters: []string{
-						"container",
+						"container=started",
 					},
 				},
 			},

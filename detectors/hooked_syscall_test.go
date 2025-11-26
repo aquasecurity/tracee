@@ -12,30 +12,6 @@ import (
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 )
 
-// mockDataStoreRegistry implements datastores.Registry for testing
-type mockDataStoreRegistry struct {
-	symbolStore  datastores.KernelSymbolStore
-	syscallStore datastores.SyscallStore
-}
-
-func (m *mockDataStoreRegistry) KernelSymbols() datastores.KernelSymbolStore { return m.symbolStore }
-func (m *mockDataStoreRegistry) Containers() datastores.ContainerStore       { return nil }
-func (m *mockDataStoreRegistry) Processes() datastores.ProcessStore          { return nil }
-func (m *mockDataStoreRegistry) DNS() datastores.DNSStore                    { return nil }
-func (m *mockDataStoreRegistry) System() datastores.SystemStore              { return nil }
-func (m *mockDataStoreRegistry) Syscalls() datastores.SyscallStore           { return m.syscallStore }
-func (m *mockDataStoreRegistry) GetCustom(name string) (datastores.DataStore, error) {
-	return nil, datastores.ErrNotFound
-}
-func (m *mockDataStoreRegistry) List() []string               { return nil }
-func (m *mockDataStoreRegistry) IsAvailable(name string) bool { return false }
-func (m *mockDataStoreRegistry) GetMetadata(name string) (*datastores.DataStoreMetadata, error) {
-	return nil, datastores.ErrNotFound
-}
-func (m *mockDataStoreRegistry) GetMetrics(name string) (*datastores.DataStoreMetrics, error) {
-	return nil, datastores.ErrNotFound
-}
-
 // mockKernelSymbolStore implements KernelSymbolStore for testing
 type mockKernelSymbolStore struct {
 	symbols map[uint64][]*datastores.SymbolInfo
@@ -82,13 +58,29 @@ func (m *mockSyscallStore) GetSyscallID(name string) (int32, error) {
 	return 0, datastores.ErrNotFound
 }
 
-// mockLogger implements detection.Logger for testing
-type mockLogger struct{}
+// getOutputData extracts a string value from DetectorOutput.Data by field name
+func getOutputData(output detection.DetectorOutput, name string) string {
+	for _, ev := range output.Data {
+		if ev.Name == name {
+			if v, ok := ev.Value.(*v1beta1.EventValue_Str); ok {
+				return v.Str
+			}
+		}
+	}
+	return ""
+}
 
-func (m *mockLogger) Debugw(msg string, keysAndValues ...interface{}) {}
-func (m *mockLogger) Infow(msg string, keysAndValues ...interface{})  {}
-func (m *mockLogger) Warnw(msg string, keysAndValues ...interface{})  {}
-func (m *mockLogger) Errorw(msg string, keysAndValues ...interface{}) {}
+// mockDataStoreRegistryWithStores extends mockDataStoreRegistry for tests that need actual stores
+type mockDataStoreRegistryWithStores struct {
+	mockDataStoreRegistry
+	symbolStore  datastores.KernelSymbolStore
+	syscallStore datastores.SyscallStore
+}
+
+func (m *mockDataStoreRegistryWithStores) KernelSymbols() datastores.KernelSymbolStore {
+	return m.symbolStore
+}
+func (m *mockDataStoreRegistryWithStores) Syscalls() datastores.SyscallStore { return m.syscallStore }
 
 func TestHookedSyscall_GetDefinition(t *testing.T) {
 	detector := &HookedSyscall{}
@@ -149,7 +141,7 @@ func TestHookedSyscall_OnEvent_SymbolResolved(t *testing.T) {
 		},
 	}
 
-	registry := &mockDataStoreRegistry{
+	registry := &mockDataStoreRegistryWithStores{mockDataStoreRegistry: mockDataStoreRegistry{},
 		symbolStore:  symbolStore,
 		syscallStore: syscallStore,
 	}
@@ -183,19 +175,19 @@ func TestHookedSyscall_OnEvent_SymbolResolved(t *testing.T) {
 	require.Len(t, output.Data, 4)
 
 	assert.Equal(t, "syscall", output.Data[0].Name)
-	syscallName, _ := v1beta1.GetData[string](output, "syscall")
+	syscallName := getOutputData(output, "syscall")
 	assert.Equal(t, "read", syscallName)
 
 	assert.Equal(t, "address", output.Data[1].Name)
-	address, _ := v1beta1.GetData[string](output, "address")
+	address := getOutputData(output, "address")
 	assert.Equal(t, "ffffffffc0001000", address)
 
 	assert.Equal(t, "function", output.Data[2].Name)
-	function, _ := v1beta1.GetData[string](output, "function")
+	function := getOutputData(output, "function")
 	assert.Equal(t, "fake_read", function)
 
 	assert.Equal(t, "owner", output.Data[3].Name)
-	owner, _ := v1beta1.GetData[string](output, "owner")
+	owner := getOutputData(output, "owner")
 	assert.Equal(t, "rootkit", owner)
 }
 
@@ -213,7 +205,7 @@ func TestHookedSyscall_OnEvent_SymbolNotResolved(t *testing.T) {
 		},
 	}
 
-	registry := &mockDataStoreRegistry{
+	registry := &mockDataStoreRegistryWithStores{mockDataStoreRegistry: mockDataStoreRegistry{},
 		symbolStore:  symbolStore,
 		syscallStore: syscallStore,
 	}
@@ -246,16 +238,16 @@ func TestHookedSyscall_OnEvent_SymbolNotResolved(t *testing.T) {
 	output := outputEvents[0]
 	require.Len(t, output.Data, 4)
 
-	syscallName, _ := v1beta1.GetData[string](output, "syscall")
+	syscallName := getOutputData(output, "syscall")
 	assert.Equal(t, "write", syscallName)
 
-	address, _ := v1beta1.GetData[string](output, "address")
+	address := getOutputData(output, "address")
 	assert.Equal(t, "ffffffffc0002000", address)
 
-	function, _ := v1beta1.GetData[string](output, "function")
+	function := getOutputData(output, "function")
 	assert.Equal(t, "", function) // empty function
 
-	owner, _ := v1beta1.GetData[string](output, "owner")
+	owner := getOutputData(output, "owner")
 	assert.Equal(t, "", owner) // empty owner
 }
 
@@ -278,7 +270,7 @@ func TestHookedSyscall_OnEvent_MultipleSymbolsAtSameAddress(t *testing.T) {
 		},
 	}
 
-	registry := &mockDataStoreRegistry{
+	registry := &mockDataStoreRegistryWithStores{mockDataStoreRegistry: mockDataStoreRegistry{},
 		symbolStore:  symbolStore,
 		syscallStore: syscallStore,
 	}
@@ -307,10 +299,10 @@ func TestHookedSyscall_OnEvent_MultipleSymbolsAtSameAddress(t *testing.T) {
 	require.Len(t, outputEvents, 2)
 
 	// Verify both events
-	func1, _ := v1beta1.GetData[string](outputEvents[0], "function")
+	func1 := getOutputData(outputEvents[0], "function")
 	assert.Equal(t, "fake_read_alias1", func1)
 
-	func2, _ := v1beta1.GetData[string](outputEvents[1], "function")
+	func2 := getOutputData(outputEvents[1], "function")
 	assert.Equal(t, "fake_read_alias2", func2)
 }
 
@@ -331,7 +323,7 @@ func TestHookedSyscall_OnEvent_CacheBehavior(t *testing.T) {
 		},
 	}
 
-	registry := &mockDataStoreRegistry{
+	registry := &mockDataStoreRegistryWithStores{mockDataStoreRegistry: mockDataStoreRegistry{},
 		symbolStore:  symbolStore,
 		syscallStore: syscallStore,
 	}
@@ -385,7 +377,7 @@ func TestHookedSyscall_OnEvent_CacheUpdate(t *testing.T) {
 		},
 	}
 
-	registry := &mockDataStoreRegistry{
+	registry := &mockDataStoreRegistryWithStores{mockDataStoreRegistry: mockDataStoreRegistry{},
 		symbolStore:  symbolStore,
 		syscallStore: syscallStore,
 	}
@@ -413,7 +405,7 @@ func TestHookedSyscall_OnEvent_CacheUpdate(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, output1, 1)
 
-	func1, _ := v1beta1.GetData[string](output1[0], "function")
+	func1 := getOutputData(output1[0], "function")
 	assert.Equal(t, "fake_read_v1", func1)
 
 	// Same syscall now hooked at a different address (cache should update and report)
@@ -429,7 +421,7 @@ func TestHookedSyscall_OnEvent_CacheUpdate(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, output2, 1) // Should report the change
 
-	func2, _ := v1beta1.GetData[string](output2[0], "function")
+	func2 := getOutputData(output2[0], "function")
 	assert.Equal(t, "fake_read_v2", func2)
 }
 
@@ -450,7 +442,7 @@ func TestHookedSyscall_OnEvent_UnknownSyscall(t *testing.T) {
 		},
 	}
 
-	registry := &mockDataStoreRegistry{
+	registry := &mockDataStoreRegistryWithStores{mockDataStoreRegistry: mockDataStoreRegistry{},
 		symbolStore:  symbolStore,
 		syscallStore: syscallStore,
 	}
@@ -478,10 +470,10 @@ func TestHookedSyscall_OnEvent_UnknownSyscall(t *testing.T) {
 	require.Len(t, outputEvents, 1)
 
 	// Should have empty syscall name (matches original behavior)
-	syscallName, _ := v1beta1.GetData[string](outputEvents[0], "syscall")
+	syscallName := getOutputData(outputEvents[0], "syscall")
 	assert.Equal(t, "", syscallName)
 
-	function, _ := v1beta1.GetData[string](outputEvents[0], "function")
+	function := getOutputData(outputEvents[0], "function")
 	assert.Equal(t, "fake_unknown", function)
 }
 
