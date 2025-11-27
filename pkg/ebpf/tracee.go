@@ -1409,8 +1409,10 @@ func (t *Tracee) attachProbes() error {
 			// This is essential for fallback probes that weren't initially autoloaded
 			err := t.defaultProbes.Load(probeNode.GetHandle())
 			if err != nil {
-				logger.Debugw("Load probe failed or not needed", "probe", probeNode.GetHandle(), "error", err)
-				// Don't fail here - the probe may already be loaded, continue to attach
+				// If the probe was already loaded there will be no error, so we can log as ERROR here
+				logger.Errorw("Load probe failed or not needed", "probe", probeNode.GetHandle(), "error", err)
+				// Fail the probe node to prevent the event from being added
+				return []dependencies.Action{dependencies.NewCancelNodeAddAction(err)}
 			}
 
 			err = t.defaultProbes.Attach(probeNode.GetHandle(), t.cgroups, t.getKernelSymbols())

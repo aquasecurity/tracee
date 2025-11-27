@@ -286,15 +286,15 @@ func (p *TraceProbe) autoload(module *bpf.Module, autoload bool) error {
 	return enableDisableAutoload(module, p.programName, autoload)
 }
 
-func (p *TraceProbe) load(module *bpf.Module) error {
+func (p *TraceProbe) load(module *bpf.Module) (bool, error) {
 	prog, err := module.GetProgram(p.programName)
 	if err != nil {
-		return errfmt.WrapError(err)
+		return false, errfmt.WrapError(err)
 	}
 
 	// Check if already loaded (has FD)
 	if prog.FileDescriptor() > 0 {
-		return nil // already loaded
+		return false, nil // already loaded
 	}
 
 	// Load the program into the kernel using the appropriate Load API based on probe type
@@ -312,17 +312,17 @@ func (p *TraceProbe) load(module *bpf.Module) error {
 	case LSM:
 		_, err = prog.LoadLSM()
 	default:
-		return errfmt.Errorf("unsupported probe type for load: %v", p.probeType)
+		return false, errfmt.Errorf("unsupported probe type for load: %v", p.probeType)
 	}
 
 	if err != nil {
-		return errfmt.WrapError(err)
+		return false, errfmt.WrapError(err)
 	}
 
 	// Verify the program now has a valid FD
 	if prog.FileDescriptor() <= 0 {
-		return errfmt.Errorf("program loaded but has no valid file descriptor")
+		return false, errfmt.Errorf("program loaded but has no valid file descriptor")
 	}
 
-	return nil
+	return true, nil
 }

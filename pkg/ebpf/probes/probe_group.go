@@ -135,7 +135,14 @@ func (p *ProbeGroup) Load(handle Handle) error {
 		return errfmt.Errorf("probe handle (%d) does not exist", handle)
 	}
 
-	return probe.load(p.module)
+	loaded, err := probe.load(p.module)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	if !loaded {
+		return nil
+	}
+	return nil
 }
 
 // Attach attaches a probe's program to its hook, by given handle.

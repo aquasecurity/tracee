@@ -105,26 +105,26 @@ func (p *LsmProgramProbe) autoload(module *bpf.Module, autoload bool) error {
 	return enableDisableAutoload(module, p.programName, autoload)
 }
 
-func (p *LsmProgramProbe) load(module *bpf.Module) error {
+func (p *LsmProgramProbe) load(module *bpf.Module) (bool, error) {
 	prog, err := module.GetProgram(p.programName)
 	if err != nil {
-		return errfmt.WrapError(err)
+		return false, errfmt.WrapError(err)
 	}
 
 	// Check if already loaded
 	if prog.FileDescriptor() > 0 {
-		return nil
+		return false, nil
 	}
 
 	// Load and verify FD
 	_, err = prog.LoadLSM()
 	if err != nil {
-		return errfmt.WrapError(err)
+		return false, errfmt.WrapError(err)
 	}
 
 	if prog.FileDescriptor() <= 0 {
-		return errfmt.Errorf("program loaded but has no valid file descriptor")
+		return false, errfmt.Errorf("program loaded but has no valid file descriptor")
 	}
 
-	return nil
+	return true, nil
 }

@@ -16,7 +16,7 @@ type Probe interface {
 	// autoload sets the probe's ebpf program automatic attaching to its hook.
 	autoload(module *bpf.Module, autoload bool) error
 	// load loads the probe's BPF program into the kernel if not already loaded.
-	load(module *bpf.Module) error
+	load(module *bpf.Module) (bool, error) // true if loaded, false if already loaded
 	// isCompatible checks if the probe is compatible with the given environment.
 	isCompatible(env EnvironmentProvider) (bool, error)
 }
