@@ -11,7 +11,8 @@ info() {
     echo "$@"
 }
 
-BUSYBOX_IMAGE="busybox:1.37.0@sha256:e3652a00a2fabd16ce889f0aa32c38eec347b997e73bd09e69c962ec7f8732ee"
+# Using ECR Public mirror to avoid Docker Hub rate limits
+BUSYBOX_IMAGE="public.ecr.aws/docker/library/busybox:1.37.0@sha256:e3652a00a2fabd16ce889f0aa32c38eec347b997e73bd09e69c962ec7f8732ee"
 wait_container=${E2E_INST_TEST_SLEEP:-5} # time to let container alive
 
 # Parse command line arguments

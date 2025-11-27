@@ -71,11 +71,11 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
-					"docker run -d --rm hello-world",
+					"docker run -d --rm "+busyboxImage,
 					0,
 					10*time.Second, // give some time for the container to start (possibly downloading the image)
 					[]*pb.Event{
-						expectPbEvent(anyHost, "hello", anyProcessorID, 1, 0, events.SchedProcessExec, orPolNames("container-event")),
+						expectPbEvent(anyHost, "sh", anyProcessorID, 1, 0, events.SchedProcessExec, orPolNames("container-event")),
 					},
 					[]string{}, // no sets
 				),
@@ -772,7 +772,7 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
-					"docker run -d --rm hello-world",
+					"docker run -d --rm "+busyboxImage,
 					0,
 					10*time.Second, // give some time for the container to start (possibly downloading the image)
 					[]*pb.Event{
@@ -1836,7 +1836,7 @@ func Test_EventFilters(t *testing.T) {
 					// To test certain "not equal" filters, such as exact, prefix, and suffix,
 					// it was necessary to use a fixed version of Ubuntu to ensure consistent
 					// library versions.
-					"docker run --rm ubuntu:jammy-20240911.1 more /etc/netconfig",
+					"docker run --rm "+ubuntuJammyPinnedImage+" more /etc/netconfig",
 					0,
 					20*time.Second,
 					// Running the commands inside a container caused duplicate
@@ -1920,7 +1920,7 @@ func Test_EventFilters(t *testing.T) {
 					// To test certain "not equal" filters, such as exact, prefix, and suffix,
 					// it was necessary to use a fixed version of Ubuntu to ensure consistent
 					// library versions.
-					"docker run --rm ubuntu:jammy-20240911.1 sh -c 'cat /etc/netconfig > /tmp/netconfig'",
+					"docker run --rm "+ubuntuJammyPinnedImage+" sh -c 'cat /etc/netconfig > /tmp/netconfig'",
 					0,
 					20*time.Second,
 					// Running the commands inside a container caused duplicate

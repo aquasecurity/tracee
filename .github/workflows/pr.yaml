@@ -414,6 +414,8 @@ jobs:
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-ubuntu
+      - name: Pull test images
+        uses: ./.github/actions/pull-test-images
       - name: Run Integration Tests
         uses: ./.github/actions/run-integration-tests
         with:
@@ -448,6 +450,8 @@ jobs:
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-ubuntu
+      - name: Pull test images
+        uses: ./.github/actions/pull-test-images
       - name: Run Integration Tests
         uses: ./.github/actions/run-integration-tests
         with:
@@ -531,6 +535,8 @@ jobs:
         continue-on-error: true
       # - name: "Prepare Image (Fix AMIs)"
       #   run: ./tests/e2e-install-deps.sh
+      - name: Pull test images
+        uses: ./.github/actions/pull-test-images
       - name: "Sync System Time"
         run: ./scripts/sync_system_time.sh
         continue-on-error: true
