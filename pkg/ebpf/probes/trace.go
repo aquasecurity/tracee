@@ -297,9 +297,24 @@ func (p *TraceProbe) load(module *bpf.Module) error {
 		return nil // already loaded
 	}
 
-	// Load the program into the kernel using the new Load API
-	// After this, prog.FileDescriptor() should return a valid FD
-	_, err = prog.LoadTracepoint()
+	// Load the program into the kernel using the appropriate Load API based on probe type
+	switch p.probeType {
+	case KProbe, SyscallEnter:
+		_, err = prog.LoadKprobe()
+	case KretProbe, SyscallExit:
+		_, err = prog.LoadKprobe()
+	case Tracepoint:
+		_, err = prog.LoadTracepoint()
+	case RawTracepoint:
+		_, err = prog.LoadRawTracepoint()
+	case Fentry:
+		_, err = prog.LoadFentry()
+	case LSM:
+		_, err = prog.LoadLSM()
+	default:
+		return errfmt.Errorf("unsupported probe type for load: %v", p.probeType)
+	}
+
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
