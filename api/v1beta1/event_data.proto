@@ -13,7 +13,7 @@ message EventValue {
         int32 int32 = 2; // intT
         int64 int64 = 3; // longT
         uint32 u_int32 = 4; // uintT, modeT, devT, u8T, u16T
-        uint64 u_int64 = 5; // ulongT, offT, sizeT, pointerT
+        uint64 u_int64 = 5; // ulongT, offT, sizeT (pointerT removed - use dedicated 'pointer' field)
         string str = 6; // strT
         bytes bytes = 7; // bytesT
         bool bool = 8; // boolT
@@ -39,6 +39,7 @@ message EventValue {
         HTTPRequest http_request = 28;
         HTTPResponse http_response = 29;
         google.protobuf.Struct struct = 30;
+        uint64 pointer = 31;
     }
 }
 
