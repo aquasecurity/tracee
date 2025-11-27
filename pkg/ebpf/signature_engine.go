@@ -75,7 +75,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *events.PipelineEve
 				return // might happen during initialization (ctrl+c seg faults)
 			}
 
-			id := events.ID(event.EventID)
+			id := event.EventID
 
 			// if the event is NOT marked as submit, it is not sent to the rules engine
 			if !t.policyManager.IsEventToSubmit(id) {
@@ -152,18 +152,18 @@ func (t *Tracee) PrepareBuiltinDataSources() []detect.DataSource {
 	datasources := []detect.DataSource{}
 
 	// Containers Data Source
-	datasources = append(datasources, container.NewDataSource(t.container))
+	datasources = append(datasources, container.NewDataSource(t.dataStoreRegistry.GetContainerManager()))
 
 	// DNS Data Source
 	if t.config.DNSCacheConfig.Enable {
-		datasources = append(datasources, dns.NewDataSource(t.dnsCache))
+		datasources = append(datasources, dns.NewDataSource(t.dataStoreRegistry.GetDNSCache()))
 	}
 
 	// Process Tree Data Source
 	switch t.config.ProcTree.Source {
 	case process.SourceNone:
 	default:
-		datasources = append(datasources, process.NewDataSource(t.processTree))
+		datasources = append(datasources, process.NewDataSource(t.dataStoreRegistry.GetProcessTree()))
 	}
 
 	return datasources

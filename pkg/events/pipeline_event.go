@@ -13,24 +13,34 @@ type PipelineEvent struct {
 	// User-facing event data
 	*trace.Event
 
-	// Internal pipeline fields
+	// Internal pipeline metadata
+	// EventID is the original internal event ID (before translation to external format).
+	EventID ID
+
+	// Timestamp is the original event timestamp in nanoseconds since epoch.
+	Timestamp uint64
+
 	// MatchedPoliciesBitmap is a combined bitmap for efficient policy matching.
 	// This replaces the need to expose separate Kernel/User bitmaps to external APIs.
 	MatchedPoliciesBitmap uint64
 
-	// protoEvent is a cached protobuf representation of the event.
+	// ProtoEvent is a cached protobuf representation of the event.
 	// It is lazily populated on first call to ToProto() and reused thereafter.
-	protoEvent *pb.Event
+	// For proto-native detector events, this is set directly without a trace.Event.
+	ProtoEvent *pb.Event
 }
 
 // NewPipelineEvent creates a new PipelineEvent wrapping the provided trace.Event.
 // The MatchedPoliciesBitmap is initialized from the event's MatchedPoliciesKernel field.
+// The EventID and Timestamp are copied to top-level fields for efficient pipeline access.
 func NewPipelineEvent(event *trace.Event) *PipelineEvent {
 	if event == nil {
 		return nil
 	}
 	return &PipelineEvent{
 		Event:                 event,
+		EventID:               ID(event.EventID),
+		Timestamp:             uint64(event.Timestamp),
 		MatchedPoliciesBitmap: event.MatchedPoliciesKernel,
 	}
 }
@@ -51,8 +61,10 @@ func (pe *PipelineEvent) Reset() {
 	if pe == nil {
 		return
 	}
+	pe.EventID = 0
+	pe.Timestamp = 0
 	pe.MatchedPoliciesBitmap = 0
-	pe.protoEvent = nil
+	pe.ProtoEvent = nil
 }
 
 // ToProto converts the PipelineEvent to a v1beta1.Event for external API use.
@@ -61,13 +73,18 @@ func (pe *PipelineEvent) Reset() {
 // Note: This uses ConvertToProto which does NOT translate event IDs - translation should
 // only be applied at the gRPC boundary.
 func (pe *PipelineEvent) ToProto() *pb.Event {
-	if pe == nil || pe.Event == nil {
+	if pe == nil {
 		return nil
 	}
-	if pe.protoEvent == nil {
-		pe.protoEvent = ConvertToProto(pe.Event)
+	// Proto-native events have cached proto but no trace.Event
+	if pe.Event == nil {
+		return pe.ProtoEvent
 	}
-	return pe.protoEvent
+	// Lazy conversion for trace.Event-based events
+	if pe.ProtoEvent == nil {
+		pe.ProtoEvent = ConvertToProto(pe.Event)
+	}
+	return pe.ProtoEvent
 }
 
 // ToProtocol converts the PipelineEvent to a protocol.Event for the signature engine.

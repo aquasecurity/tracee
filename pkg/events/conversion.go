@@ -416,7 +416,7 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 		return &pb.EventValue{Value: &pb.EventValue_UInt64{UInt64: uint64(v)}}, nil
 
 	case trace.Pointer:
-		return &pb.EventValue{Value: &pb.EventValue_UInt64{UInt64: uint64(v)}}, nil
+		return &pb.EventValue{Value: &pb.EventValue_Pointer{Pointer: uint64(v)}}, nil
 
 	// Network port types from gopacket/layers
 	case layers.TCPPort:
@@ -730,6 +730,20 @@ func getDetectedFrom(detectedFromArg trace.Argument) (*pb.DetectedFrom, error) {
 	}
 
 	detectedFrom.Data = data
+
+	// Recursively convert parent chain
+	if parentMap, ok := m["parent"].(map[string]interface{}); ok {
+		parentArg := trace.Argument{
+			ArgMeta: trace.ArgMeta{Name: "detectedFrom"},
+			Value:   parentMap,
+		}
+		parent, err := getDetectedFrom(parentArg)
+		if err != nil {
+			return nil, errfmt.Errorf("failed to convert parent DetectedFrom: %v", err)
+		}
+		detectedFrom.Parent = parent
+	}
+
 	return detectedFrom, nil
 }
 
@@ -1073,6 +1087,8 @@ func convertDataToArgs(data []*pb.EventValue) []trace.Argument {
 			arg.Value = v.UInt32
 		case *pb.EventValue_UInt64:
 			arg.Value = v.UInt64
+		case *pb.EventValue_Pointer:
+			arg.Value = trace.Pointer(v.Pointer)
 		case *pb.EventValue_Str:
 			arg.Value = v.Str
 		case *pb.EventValue_Bool:
@@ -1121,6 +1137,12 @@ func convertDetectedFromToArg(detectedFrom *pb.DetectedFrom) trace.Argument {
 				detectedFromMap["returnValue"] = int(v.Int64)
 			}
 		}
+	}
+
+	// Recursively convert parent chain
+	if detectedFrom.Parent != nil {
+		parentArg := convertDetectedFromToArg(detectedFrom.Parent)
+		detectedFromMap["parent"] = parentArg.Value
 	}
 
 	return trace.Argument{

@@ -71,6 +71,12 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 	t.stats.Channels["derive"] = eventsChan
 	errcList = append(errcList, errc)
 
+	// Detect events stage: events go through the detector engine for detection.
+
+	eventsChan, errc = t.detectEvents(ctx, eventsChan)
+	t.stats.Channels["detect"] = eventsChan
+	errcList = append(errcList, errc)
+
 	// Engine events stage: events go through the signatures engine for detection.
 
 	if t.config.EngineConfig.Mode == engine.ModeSingleBinary {
@@ -157,7 +163,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				stackAddresses = t.getStackAddresses(eCtx.StackID)
 			}
 
-			_, containerInfo := t.container.GetCgroupInfo(eCtx.CgroupID)
+			_, containerInfo := t.dataStoreRegistry.GetContainerManager().GetCgroupInfo(eCtx.CgroupID)
 
 			commStr := string(stringutil.TrimTrailingNUL(eCtx.Comm[:]))       // clean potential trailing null
 			utsNameStr := string(stringutil.TrimTrailingNUL(eCtx.UtsName[:])) // clean potential trailing null
@@ -207,9 +213,15 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 
 			// populate all the fields of the event used in this stage, and reset the rest
 
-			evt.Timestamp = int(timeutil.BootToEpochNS(eCtx.Ts))              // normalize time
+			// Set pipeline-level metadata (normalized timestamps)
+			evt.Timestamp = timeutil.BootToEpochNS(eCtx.Ts)
+			evt.EventID = eCtx.EventID
+
+			// Set trace.Event fields
+			evt.Event.Timestamp = int(evt.Timestamp)                          // Keep trace.Event.Timestamp for backward compatibility
 			evt.ThreadStartTime = int(timeutil.BootToEpochNS(eCtx.StartTime)) // normalize time
 			evt.ProcessorID = int(eCtx.ProcessorId)
+			evt.Event.EventID = int(evt.EventID) // Keep trace.Event.EventID in sync (int32 -> int)
 			evt.ProcessID = int(eCtx.Pid)
 			evt.ThreadID = int(eCtx.Tid)
 			evt.ParentProcessID = int(eCtx.Ppid)
@@ -234,7 +246,6 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				PodNamespace: containerInfo.Pod.Namespace,
 				PodUID:       containerInfo.Pod.UID,
 			}
-			evt.EventID = int(eCtx.EventID)
 			evt.EventName = evtName
 			evt.PoliciesVersion = eCtx.PoliciesVersion
 			evt.MatchedPoliciesKernel = eCtx.MatchedPolicies
@@ -301,7 +312,7 @@ func (t *Tracee) matchPolicies(event *events.PipelineEvent) uint64 {
 		return 0
 	}
 
-	eventID := events.ID(event.EventID)
+	eventID := event.EventID
 	bitmap := event.MatchedPoliciesBitmap
 
 	// Short circuit if there are no policies in userland that need filtering.
@@ -388,6 +399,83 @@ func (t *Tracee) matchPolicies(event *events.PipelineEvent) uint64 {
 	return bitmap
 }
 
+// matchPoliciesProto does userland filtering for proto-native events (detector outputs).
+// It extracts fields from pb.Event and applies the same filtering logic as matchPolicies.
+// Note: This function applies only basic filters (UID/PID) and skips RetFilter, ScopeFilter,
+// and DataFilter since they require trace.Event. This is acceptable since detector outputs
+// typically don't need complex filtering.
+func (t *Tracee) matchPoliciesProto(pipelineEvent *events.PipelineEvent) uint64 {
+	if pipelineEvent == nil || pipelineEvent.ProtoEvent == nil {
+		return 0
+	}
+
+	pbEvent := pipelineEvent.ProtoEvent
+
+	eventID := pipelineEvent.EventID
+	bitmap := pipelineEvent.MatchedPoliciesBitmap
+
+	// Short circuit if no userland filtering needed
+	if !t.policyManager.FilterableInUserland() {
+		return bitmap
+	}
+
+	// Extract fields from protobuf for filtering using helper functions
+	eventUID := pb.GetProcessRealUserId(pbEvent)
+	eventPID := pb.GetProcessHostPid(pbEvent)
+
+	// range through each userland filterable policy
+	for it := t.policyManager.CreateUserlandIterator(); it.HasNext(); {
+		p := it.Next()
+		// Policy ID is the bit offset in the bitmap.
+		bitOffset := uint(p.ID)
+
+		if !bitwise.HasBit(bitmap, bitOffset) { // event does not match this policy
+			continue
+		}
+
+		// The event might have this policy bit set, but the policy might not have this
+		// event ID. This happens whenever the event submitted by the kernel is going to
+		// derive an event that this policy is interested in. In this case, don't do
+		// anything and let the derivation stage handle this event.
+		_, ok := p.Rules[eventID]
+		if !ok {
+			continue
+		}
+
+		// Apply fast filters (UID/PID only for proto-native events)
+		if p.UIDFilter.Enabled() {
+			if !p.UIDFilter.InMinMaxRange(eventUID) {
+				bitwise.ClearBit(&bitmap, bitOffset)
+				continue
+			}
+		}
+
+		if p.PIDFilter.Enabled() {
+			if !p.PIDFilter.InMinMaxRange(eventPID) {
+				bitwise.ClearBit(&bitmap, bitOffset)
+				continue
+			}
+		}
+
+		// RetFilter, ScopeFilter, and DataFilter are skipped for proto-native events
+		// since they require trace.Event fields that aren't available.
+		// This is acceptable since detector outputs typically don't need complex filtering.
+		//
+		// TODO: Once the entire pipeline is migrated to use proto events, we should
+		// re-implement these filters to work directly with protobuf fields and restore
+		// full filtering capabilities for all events.
+
+		// Early exit optimization: if bitmap becomes 0, no need to continue
+		if bitmap == 0 {
+			break
+		}
+	}
+
+	pipelineEvent.MatchedPoliciesBitmap = bitmap // update internal bitmap
+
+	return bitmap
+}
+
 func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
 	const (
 		contStartFlag = 1 << iota
@@ -449,7 +537,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *events.PipelineEv
 			// cgroup_mkdir or cgroup_rmdir.
 
 			if policiesWithContainerFilter > 0 && event.Container.ID == "" {
-				eventId := events.ID(event.EventID)
+				eventId := event.EventID
 
 				// never skip cgroup_{mkdir,rmdir}: container_{create,remove} events need it
 				if eventId == events.CgroupMkdir || eventId == events.CgroupRmdir {
@@ -553,6 +641,120 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *events.PipelineEve
 	return out, errc
 }
 
+// detectEvents is the detector dispatch pipeline stage. For each received event, it dispatches
+// the event to registered detectors that are interested in it. Detectors can produce new events
+// (derived or threat events) that flow through the pipeline. Supports detector chains with
+// breadth-first processing up to a maximum depth to prevent infinite loops.
+func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEvent) (
+	<-chan *events.PipelineEvent, <-chan error,
+) {
+	out := make(chan *events.PipelineEvent, t.config.PipelineChannelSize)
+	errc := make(chan error, 1)
+
+	// Maximum depth for detector chains (prevents infinite loops)
+	// Expected: raw event → derived event → threat event → threat event (depth 4)
+	const maxDetectorChainDepth = 5
+
+	go func() {
+		defer close(out)
+		defer close(errc)
+
+		for {
+			select {
+			case event := <-in:
+				if event == nil {
+					continue
+				}
+
+				// Capture policy context BEFORE sending event downstream to avoid race conditions
+				// The event may be modified or returned to pool by downstream stages
+				matchedPoliciesBitmap := event.MatchedPoliciesBitmap
+
+				// Convert to v1beta1.Event for detector API BEFORE sending downstream
+				// (uses cached conversion, but we get the pointer before potential race)
+				pbEvent := event.ToProto()
+
+				// Dispatch to detectors FIRST (before sending downstream)
+				// This prevents race condition where sink stage might modify the cached proto
+				// while detectors are still reading from it
+				outputs, err := t.detectorEngine.DispatchToDetectors(ctx, pbEvent)
+
+				// Send original event down the pipeline after dispatch completes
+				// (regardless of whether dispatch succeeded or failed)
+				out <- event
+
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+
+				if len(outputs) == 0 {
+					continue
+				}
+
+				// All detector outputs in the chain inherit policy context from the original event
+				// since they're all derived from this single kernel event
+
+				// Process detector outputs through breadth-first chain traversal
+				// Start queue with initial detector outputs (not the original event)
+				queue := outputs
+
+				for depth := 0; depth < maxDetectorChainDepth && len(queue) > 0; depth++ {
+					var nextDepth []*pb.Event
+
+					// Process all events at current depth
+					for _, protoEvent := range queue {
+						// Create proto-native PipelineEvent (similar to derive stage)
+						pipelineEvent := &events.PipelineEvent{
+							Event:                 nil, // proto-native, no trace.Event
+							EventID:               events.ID(protoEvent.Id),
+							Timestamp:             uint64(protoEvent.Timestamp.Seconds)*1e9 + uint64(protoEvent.Timestamp.Nanos),
+							MatchedPoliciesBitmap: matchedPoliciesBitmap,
+							ProtoEvent:            protoEvent,
+						}
+
+						// Apply policy filtering to detector outputs
+						if t.matchPoliciesProto(pipelineEvent) == 0 {
+							continue // Skip events not matching policy
+						}
+
+						// Dispatch to next level detectors FIRST (before sending to sink)
+						// This allows detectors to clone the proto before sink mutates it
+						nextOutputs, err := t.detectorEngine.DispatchToDetectors(ctx, protoEvent)
+						if err != nil {
+							t.handleError(err)
+							// Still send current event even if dispatch fails
+						}
+
+						// Now send to output (sink stage)
+						// Sink may mutate proto, but dispatch already completed its clone
+						out <- pipelineEvent
+
+						// Collect all outputs for next depth level
+						nextDepth = append(nextDepth, nextOutputs...)
+					}
+
+					queue = nextDepth
+				}
+
+				// Safety check - log if max depth exceeded
+				if len(queue) > 0 {
+					t.detectorEngine.GetMetrics().ChainDepthExceeded.Inc()
+					_ = t.stats.ErrorCount.Increment()
+					logger.Errorw("Exceeded max detector chain depth",
+						"max_depth", maxDetectorChainDepth,
+						"remaining_events", len(queue))
+				}
+
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return out, errc
+}
+
 // sinkEvents is the event sink pipeline stage. For each received event, it goes through a
 // series of printers that will print the event to the desired output. It also handles the
 // event pool, returning the event to the pool after it is processed.
@@ -563,51 +765,63 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *events.PipelineEvent
 		defer close(errc)
 
 		for event := range in {
-			if event == nil || event.Event == nil {
+			if event == nil {
 				continue // might happen during initialization (ctrl+c seg faults)
 			}
 
+			// Convert to protobuf once at the beginning of sink stage
+			// ToProto() returns nil if event data is nil/invalid
+			pbEvent := event.ToProto()
+			if pbEvent == nil {
+				t.eventsPool.Put(event)
+				continue
+			}
+
 			// Is the event enabled for the policies or globally?
-			if !t.policyManager.IsEnabled(event.MatchedPoliciesUser, events.ID(event.EventID)) {
+			if !t.policyManager.IsEnabled(event.MatchedPoliciesBitmap, event.EventID) {
 				// TODO: create metrics from dropped events
 				t.eventsPool.Put(event)
 				continue
 			}
 
 			// Only emit events requested by the user and matched by at least one policy.
-			id := events.ID(event.EventID)
-			event.MatchedPoliciesUser = t.policyManager.MatchEvent(id, event.MatchedPoliciesUser)
-			if event.MatchedPoliciesUser == 0 {
+			event.MatchedPoliciesBitmap = t.policyManager.MatchEvent(event.EventID, event.MatchedPoliciesBitmap)
+			if event.MatchedPoliciesBitmap == 0 {
 				t.eventsPool.Put(event)
 				continue
 			}
 
-			// Populate the event with the names of the matched policies.
-			event.MatchedPolicies = t.policyManager.MatchedNames(event.MatchedPoliciesUser)
+			// Populate the protobuf event with the names of the matched policies.
+			if pbEvent.Policies == nil {
+				pbEvent.Policies = &pb.Policies{}
+			}
+			pbEvent.Policies.Matched = t.policyManager.MatchedNames(event.MatchedPoliciesBitmap)
 
 			// Parse arguments for output formatting if enabled.
 			if t.config.Output.ParseArguments {
-				err := t.parseArguments(event.Event)
+				err := events.ParseDataFields(pbEvent.Data, int(pbEvent.Id))
+				if err != nil {
+					t.handleError(err)
+				}
+			}
+
+			if t.config.Output.ParseArgumentsFDs {
+				// Use original timestamp from pipeline metadata for BPF map lookup
+				err := events.ParseDataFieldsFDs(pbEvent.Data, event.Timestamp, t.FDArgPathMap)
 				if err != nil {
 					t.handleError(err)
 				}
 			}
 
 			// Send the event to the streams.
-			// Convert to pb.Event once and publish the pointer (not pooled, safe to share).
-			// This avoids cloning the PipelineEvent and leverages the cached conversion.
 			select {
 			case <-ctx.Done():
 				return
 			default:
 				if t.streamsManager.HasSubscribers() {
-					// Use cached conversion from PipelineEvent
-					pbEvent := event.ToProto()
-					if pbEvent != nil {
-						// Translate event ID to external format for streams (external API boundary)
-						pbEvent.Id = pb.EventId(events.TranslateEventID(int(pbEvent.Id)))
-						t.streamsManager.Publish(ctx, pbEvent, event.Event.MatchedPoliciesUser)
-					}
+					// Translate event ID to external format for streams (external API boundary)
+					pbEvent.Id = pb.EventId(events.TranslateEventID(int(pbEvent.Id)))
+					t.streamsManager.Publish(ctx, pbEvent, event.MatchedPoliciesBitmap)
 				}
 				_ = t.stats.EventCount.Increment()
 				t.eventsPool.Put(event)
@@ -700,29 +914,4 @@ func MergeErrors(cs ...<-chan error) <-chan error {
 func (t *Tracee) handleError(err error) {
 	_ = t.stats.ErrorCount.Increment()
 	logger.Errorw("Tracee encountered an error", "error", err)
-}
-
-// parseArguments parses the arguments of the event for display purposes.
-// This converts raw arguments (e.g., syscall numbers, addresses) to human-readable
-// format (e.g., syscall names, file paths). It uses the efficient slice-based parsing
-// functions and modifies the event's Args slice in-place.
-func (t *Tracee) parseArguments(e *trace.Event) error {
-	if !t.config.Output.ParseArguments || len(e.Args) == 0 {
-		return nil
-	}
-
-	// Parse arguments in-place using the efficient slice-based functions
-	err := events.ParseArgsSlice(e.Args, e.EventID)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	if t.config.Output.ParseArgumentsFDs {
-		err = events.ParseArgsFDsSlice(e.Args, uint64(e.Timestamp), t.FDArgPathMap)
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	return nil
 }
