@@ -1404,7 +1404,16 @@ func (t *Tracee) attachProbes() error {
 				logger.Errorw("Got node from type not requested")
 				return nil
 			}
-			err := t.defaultProbes.Attach(probeNode.GetHandle(), t.cgroups, t.getKernelSymbols())
+
+			// Load the probe program into the kernel if not already loaded
+			// This is essential for fallback probes that weren't initially autoloaded
+			err := t.defaultProbes.Load(probeNode.GetHandle())
+			if err != nil {
+				logger.Debugw("Load probe failed or not needed", "probe", probeNode.GetHandle(), "error", err)
+				// Don't fail here - the probe may already be loaded, continue to attach
+			}
+
+			err = t.defaultProbes.Attach(probeNode.GetHandle(), t.cgroups, t.getKernelSymbols())
 			if err != nil {
 				return []dependencies.Action{dependencies.NewCancelNodeAddAction(err)}
 			}

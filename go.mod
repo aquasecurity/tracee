@@ -34,7 +34,7 @@ require (
 	k8s.io/apimachinery v0.32.4
 	k8s.io/client-go v0.32.1
 	k8s.io/cri-api v0.32.3
-	kernel.org/pub/linux/libs/security/libcap/cap v1.2.76
+	kernel.org/pub/linux/libs/security/libcap/cap v1.2.77
 	sigs.k8s.io/controller-runtime v0.20.4
 )
 
@@ -169,9 +169,11 @@ require (
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	kernel.org/pub/linux/libs/security/libcap/psx v1.2.76 // indirect
+	kernel.org/pub/linux/libs/security/libcap/psx v1.2.77 // indirect
 )
 
 replace github.com/aquasecurity/tracee/api => ./api
 
 replace github.com/aquasecurity/tracee/common => ./common
+
+replace github.com/aquasecurity/libbpfgo => github.com/NDStrahilevitz/libbpfgo v0.2.4-libbpf-0.6.1.0.20251127115622-2faf6fe96ce1

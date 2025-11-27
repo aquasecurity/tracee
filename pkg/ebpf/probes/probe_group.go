@@ -124,6 +124,20 @@ func (p *ProbeGroup) IsProbeCompatible(handle Handle, env EnvironmentProvider) (
 	return false, errfmt.Errorf("probe handle (%d) does not exist", handle)
 }
 
+// Load loads a probe's BPF program into the kernel if not already loaded.
+// This is used for on-demand loading of fallback probes.
+func (p *ProbeGroup) Load(handle Handle) error {
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
+
+	probe, ok := p.probes[handle]
+	if !ok {
+		return errfmt.Errorf("probe handle (%d) does not exist", handle)
+	}
+
+	return probe.load(p.module)
+}
+
 // Attach attaches a probe's program to its hook, by given handle.
 func (p *ProbeGroup) Attach(handle Handle, args ...interface{}) error {
 	p.probesLock.Lock()

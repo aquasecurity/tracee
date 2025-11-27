@@ -285,3 +285,29 @@ func (p *TraceProbe) detach(args ...interface{}) error {
 func (p *TraceProbe) autoload(module *bpf.Module, autoload bool) error {
 	return enableDisableAutoload(module, p.programName, autoload)
 }
+
+func (p *TraceProbe) load(module *bpf.Module) error {
+	prog, err := module.GetProgram(p.programName)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Check if already loaded (has FD)
+	if prog.FileDescriptor() > 0 {
+		return nil // already loaded
+	}
+
+	// Load the program into the kernel using the new Load API
+	// After this, prog.FileDescriptor() should return a valid FD
+	_, err = prog.LoadTracepoint()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Verify the program now has a valid FD
+	if prog.FileDescriptor() <= 0 {
+		return errfmt.Errorf("program loaded but has no valid file descriptor")
+	}
+
+	return nil
+}
