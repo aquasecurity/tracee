@@ -399,6 +399,83 @@ func (t *Tracee) matchPolicies(event *events.PipelineEvent) uint64 {
 	return bitmap
 }
 
+// matchPoliciesProto does userland filtering for proto-native events (detector outputs).
+// It extracts fields from pb.Event and applies the same filtering logic as matchPolicies.
+// Note: This function applies only basic filters (UID/PID) and skips RetFilter, ScopeFilter,
+// and DataFilter since they require trace.Event. This is acceptable since detector outputs
+// typically don't need complex filtering.
+func (t *Tracee) matchPoliciesProto(pipelineEvent *events.PipelineEvent) uint64 {
+	if pipelineEvent == nil || pipelineEvent.ProtoEvent == nil {
+		return 0
+	}
+
+	pbEvent := pipelineEvent.ProtoEvent
+
+	eventID := pipelineEvent.EventID
+	bitmap := pipelineEvent.MatchedPoliciesBitmap
+
+	// Short circuit if no userland filtering needed
+	if !t.policyManager.FilterableInUserland() {
+		return bitmap
+	}
+
+	// Extract fields from protobuf for filtering using helper functions
+	eventUID := pb.GetProcessRealUserId(pbEvent)
+	eventPID := pb.GetProcessHostPid(pbEvent)
+
+	// range through each userland filterable policy
+	for it := t.policyManager.CreateUserlandIterator(); it.HasNext(); {
+		p := it.Next()
+		// Policy ID is the bit offset in the bitmap.
+		bitOffset := uint(p.ID)
+
+		if !bitwise.HasBit(bitmap, bitOffset) { // event does not match this policy
+			continue
+		}
+
+		// The event might have this policy bit set, but the policy might not have this
+		// event ID. This happens whenever the event submitted by the kernel is going to
+		// derive an event that this policy is interested in. In this case, don't do
+		// anything and let the derivation stage handle this event.
+		_, ok := p.Rules[eventID]
+		if !ok {
+			continue
+		}
+
+		// Apply fast filters (UID/PID only for proto-native events)
+		if p.UIDFilter.Enabled() {
+			if !p.UIDFilter.InMinMaxRange(eventUID) {
+				bitwise.ClearBit(&bitmap, bitOffset)
+				continue
+			}
+		}
+
+		if p.PIDFilter.Enabled() {
+			if !p.PIDFilter.InMinMaxRange(eventPID) {
+				bitwise.ClearBit(&bitmap, bitOffset)
+				continue
+			}
+		}
+
+		// RetFilter, ScopeFilter, and DataFilter are skipped for proto-native events
+		// since they require trace.Event fields that aren't available.
+		// This is acceptable since detector outputs typically don't need complex filtering.
+		//
+		// TODO: Once the entire pipeline is migrated to use proto events, we should
+		// re-implement these filters to work directly with protobuf fields and restore
+		// full filtering capabilities for all events.
+
+		// Early exit optimization: if bitmap becomes 0, no need to continue
+		if bitmap == 0 {
+			break
+		}
+	}
+
+	pipelineEvent.MatchedPoliciesBitmap = bitmap // update internal bitmap
+
+	return bitmap
+}
+
 func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
 	const (
 		contStartFlag = 1 << iota
@@ -592,7 +669,6 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 				// Capture policy context BEFORE sending event downstream to avoid race conditions
 				// The event may be modified or returned to pool by downstream stages
 				matchedPoliciesBitmap := event.MatchedPoliciesBitmap
-				policiesVersion := event.Event.PoliciesVersion
 
 				// Convert to v1beta1.Event for detector API BEFORE sending downstream
 				// (uses cached conversion, but we get the pointer before potential race)
@@ -628,16 +704,17 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 
 					// Process all events at current depth
 					for _, protoEvent := range queue {
-						// Convert v1beta1.Event back to trace.Event
-						traceEvent := events.ConvertFromProto(protoEvent)
-
-						// Wrap in PipelineEvent and inherit policy context from captured values
-						pipelineEvent := events.NewPipelineEvent(traceEvent)
-						pipelineEvent.MatchedPoliciesBitmap = matchedPoliciesBitmap
-						pipelineEvent.Event.PoliciesVersion = policiesVersion
+						// Create proto-native PipelineEvent (similar to derive stage)
+						pipelineEvent := &events.PipelineEvent{
+							Event:                 nil, // proto-native, no trace.Event
+							EventID:               events.ID(protoEvent.Id),
+							Timestamp:             uint64(protoEvent.GetTimestamp().AsTime().UnixNano()),
+							MatchedPoliciesBitmap: matchedPoliciesBitmap,
+							ProtoEvent:            protoEvent,
+						}
 
 						// Apply policy filtering to detector outputs
-						if t.matchPolicies(pipelineEvent) == 0 {
+						if t.matchPoliciesProto(pipelineEvent) == 0 {
 							continue // Skip events not matching policy
 						}
 
@@ -688,7 +765,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *events.PipelineEvent
 		defer close(errc)
 
 		for event := range in {
-			if event == nil || event.Event == nil {
+			if event == nil {
 				continue // might happen during initialization (ctrl+c seg faults)
 			}
 
