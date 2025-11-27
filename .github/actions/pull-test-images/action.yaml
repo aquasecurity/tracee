@@ -1,0 +1,54 @@
+name: Pull Test Images
+description: |
+  Pre-pull all container images required for tests to avoid rate limits.
+  Images are cached on the runner for subsequent test steps.
+
+runs:
+  using: composite
+  steps:
+    # - name: Login to Container Registry
+    #   uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+    #   with:
+    #     registry: ghcr.io
+    #     username: ${{ github.actor }}
+    #     password: ${{ github.token }}
+
+    - name: Pull required test images
+      run: |
+        set -eu
+
+        __LIB_DIR="./scripts"
+        # shellcheck disable=SC1091
+        . "${__LIB_DIR}/lib.sh"
+
+        info "Pre-pulling container images for tests..."
+        info "Using ECR Public mirrors to avoid Docker Hub rate limits"
+
+        images="
+        public.ecr.aws/docker/library/busybox:1.37.0@sha256:e3652a00a2fabd16ce889f0aa32c38eec347b997e73bd09e69c962ec7f8732ee
+        public.ecr.aws/docker/library/ubuntu:jammy-20240911.1@sha256:0e5e4a57c2499249aafc3b40fcd541e9a456aab7296681a3994d631587203f97
+        ghcr.io/aquasecurity/tracee-tester:latest
+        "
+
+        # Pull each image with 1 second delay between pulls to diminish load on registries
+        for image in ${images}; do
+            info "Pulling ${image}..."
+            docker pull "${image}"
+            sleep 1
+        done
+
+        info "All test images pre-pulled and cached"
+      shell: sh
+
+    # - name: Logout from Container Registry
+    #   if: always()
+    #   run: |
+    #     set -eu
+
+    #     __LIB_DIR="./scripts"
+    #     # shellcheck disable=SC1091
+    #     . "${__LIB_DIR}/lib.sh"
+
+    #     # Logout may fail if not logged in, ignore errors
+    #     docker logout ghcr.io || warn "Failed to logout from ghcr.io (may not be logged in)"
+    #   shell: sh
