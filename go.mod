@@ -176,4 +176,4 @@ replace github.com/aquasecurity/tracee/api => ./api
 
 replace github.com/aquasecurity/tracee/common => ./common
 
-replace github.com/aquasecurity/libbpfgo => github.com/NDStrahilevitz/libbpfgo v0.2.4-libbpf-0.6.1.0.20251127115622-2faf6fe96ce1
+replace github.com/aquasecurity/libbpfgo => github.com/NDStrahilevitz/libbpfgo v0.2.4-libbpf-0.6.1.0.20251127120919-210b2f699297
