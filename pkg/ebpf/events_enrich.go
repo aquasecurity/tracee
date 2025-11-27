@@ -100,7 +100,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *events.
 				if event == nil {
 					continue // might happen during initialization (ctrl+c seg faults)
 				}
-				eventID := events.ID(event.EventID)
+				eventID := event.EventID
 				// send out irrelevant events (non container or already enriched), don't skip the cgroup lifecycle events
 				if (event.Container.ID == "" || event.Container.Name != "") &&
 					eventID != events.CgroupMkdir &&
@@ -180,7 +180,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *events.
 						if event == nil {
 							continue // might happen during initialization (ctrl+c seg faults)
 						}
-						eventID := events.ID(event.EventID)
+						eventID := event.EventID
 						if eventID == events.CgroupMkdir {
 							// only one cgroup_mkdir should make it here
 							// report enrich success or error once

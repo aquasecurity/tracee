@@ -207,9 +207,15 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 
 			// populate all the fields of the event used in this stage, and reset the rest
 
-			evt.Timestamp = int(timeutil.BootToEpochNS(eCtx.Ts))              // normalize time
+			// Set pipeline-level metadata (normalized timestamps)
+			evt.Timestamp = timeutil.BootToEpochNS(eCtx.Ts)
+			evt.EventID = eCtx.EventID
+
+			// Set trace.Event fields
+			evt.Event.Timestamp = int(evt.Timestamp)                          // Keep trace.Event.Timestamp for backward compatibility
 			evt.ThreadStartTime = int(timeutil.BootToEpochNS(eCtx.StartTime)) // normalize time
 			evt.ProcessorID = int(eCtx.ProcessorId)
+			evt.Event.EventID = int(evt.EventID) // Keep trace.Event.EventID in sync (int32 -> int)
 			evt.ProcessID = int(eCtx.Pid)
 			evt.ThreadID = int(eCtx.Tid)
 			evt.ParentProcessID = int(eCtx.Ppid)
@@ -234,7 +240,6 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				PodNamespace: containerInfo.Pod.Namespace,
 				PodUID:       containerInfo.Pod.UID,
 			}
-			evt.EventID = int(eCtx.EventID)
 			evt.EventName = evtName
 			evt.PoliciesVersion = eCtx.PoliciesVersion
 			evt.MatchedPoliciesKernel = eCtx.MatchedPolicies
@@ -301,7 +306,7 @@ func (t *Tracee) matchPolicies(event *events.PipelineEvent) uint64 {
 		return 0
 	}
 
-	eventID := events.ID(event.EventID)
+	eventID := event.EventID
 	bitmap := event.MatchedPoliciesBitmap
 
 	// Short circuit if there are no policies in userland that need filtering.
@@ -449,7 +454,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *events.PipelineEv
 			// cgroup_mkdir or cgroup_rmdir.
 
 			if policiesWithContainerFilter > 0 && event.Container.ID == "" {
-				eventId := events.ID(event.EventID)
+				eventId := event.EventID
 
 				// never skip cgroup_{mkdir,rmdir}: container_{create,remove} events need it
 				if eventId == events.CgroupMkdir || eventId == events.CgroupRmdir {
@@ -567,47 +572,59 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *events.PipelineEvent
 				continue // might happen during initialization (ctrl+c seg faults)
 			}
 
+			// Convert to protobuf once at the beginning of sink stage
+			// ToProto() returns nil if event data is nil/invalid
+			pbEvent := event.ToProto()
+			if pbEvent == nil {
+				t.eventsPool.Put(event)
+				continue
+			}
+
 			// Is the event enabled for the policies or globally?
-			if !t.policyManager.IsEnabled(event.MatchedPoliciesUser, events.ID(event.EventID)) {
+			if !t.policyManager.IsEnabled(event.MatchedPoliciesBitmap, event.EventID) {
 				// TODO: create metrics from dropped events
 				t.eventsPool.Put(event)
 				continue
 			}
 
 			// Only emit events requested by the user and matched by at least one policy.
-			id := events.ID(event.EventID)
-			event.MatchedPoliciesUser = t.policyManager.MatchEvent(id, event.MatchedPoliciesUser)
-			if event.MatchedPoliciesUser == 0 {
+			event.MatchedPoliciesBitmap = t.policyManager.MatchEvent(event.EventID, event.MatchedPoliciesBitmap)
+			if event.MatchedPoliciesBitmap == 0 {
 				t.eventsPool.Put(event)
 				continue
 			}
 
-			// Populate the event with the names of the matched policies.
-			event.MatchedPolicies = t.policyManager.MatchedNames(event.MatchedPoliciesUser)
+			// Populate the protobuf event with the names of the matched policies.
+			if pbEvent.Policies == nil {
+				pbEvent.Policies = &pb.Policies{}
+			}
+			pbEvent.Policies.Matched = t.policyManager.MatchedNames(event.MatchedPoliciesBitmap)
 
 			// Parse arguments for output formatting if enabled.
 			if t.config.Output.ParseArguments {
-				err := t.parseArguments(event.Event)
+				err := events.ParseDataFields(pbEvent.Data, int(pbEvent.Id))
+				if err != nil {
+					t.handleError(err)
+				}
+			}
+
+			if t.config.Output.ParseArgumentsFDs {
+				// Use original timestamp from pipeline metadata for BPF map lookup
+				err := events.ParseDataFieldsFDs(pbEvent.Data, event.Timestamp, t.FDArgPathMap)
 				if err != nil {
 					t.handleError(err)
 				}
 			}
 
 			// Send the event to the streams.
-			// Convert to pb.Event once and publish the pointer (not pooled, safe to share).
-			// This avoids cloning the PipelineEvent and leverages the cached conversion.
 			select {
 			case <-ctx.Done():
 				return
 			default:
 				if t.streamsManager.HasSubscribers() {
-					// Use cached conversion from PipelineEvent
-					pbEvent := event.ToProto()
-					if pbEvent != nil {
-						// Translate event ID to external format for streams (external API boundary)
-						pbEvent.Id = pb.EventId(events.TranslateEventID(int(pbEvent.Id)))
-						t.streamsManager.Publish(ctx, pbEvent, event.Event.MatchedPoliciesUser)
-					}
+					// Translate event ID to external format for streams (external API boundary)
+					pbEvent.Id = pb.EventId(events.TranslateEventID(int(pbEvent.Id)))
+					t.streamsManager.Publish(ctx, pbEvent, event.MatchedPoliciesBitmap)
 				}
 				_ = t.stats.EventCount.Increment()
 				t.eventsPool.Put(event)
@@ -700,29 +717,4 @@ func MergeErrors(cs ...<-chan error) <-chan error {
 func (t *Tracee) handleError(err error) {
 	_ = t.stats.ErrorCount.Increment()
 	logger.Errorw("Tracee encountered an error", "error", err)
-}
-
-// parseArguments parses the arguments of the event for display purposes.
-// This converts raw arguments (e.g., syscall numbers, addresses) to human-readable
-// format (e.g., syscall names, file paths). It uses the efficient slice-based parsing
-// functions and modifies the event's Args slice in-place.
-func (t *Tracee) parseArguments(e *trace.Event) error {
-	if !t.config.Output.ParseArguments || len(e.Args) == 0 {
-		return nil
-	}
-
-	// Parse arguments in-place using the efficient slice-based functions
-	err := events.ParseArgsSlice(e.Args, e.EventID)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	if t.config.Output.ParseArgumentsFDs {
-		err = events.ParseArgsFDsSlice(e.Args, uint64(e.Timestamp), t.FDArgPathMap)
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	return nil
 }
