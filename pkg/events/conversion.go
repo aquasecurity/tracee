@@ -416,7 +416,7 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 		return &pb.EventValue{Value: &pb.EventValue_UInt64{UInt64: uint64(v)}}, nil
 
 	case trace.Pointer:
-		return &pb.EventValue{Value: &pb.EventValue_UInt64{UInt64: uint64(v)}}, nil
+		return &pb.EventValue{Value: &pb.EventValue_Pointer{Pointer: uint64(v)}}, nil
 
 	// Network port types from gopacket/layers
 	case layers.TCPPort:
@@ -1124,6 +1124,8 @@ func convertDataToArgs(data []*pb.EventValue) []trace.Argument {
 			arg.Value = v.UInt32
 		case *pb.EventValue_UInt64:
 			arg.Value = v.UInt64
+		case *pb.EventValue_Pointer:
+			arg.Value = trace.Pointer(v.Pointer)
 		case *pb.EventValue_Str:
 			arg.Value = v.Str
 		case *pb.EventValue_Bool:
