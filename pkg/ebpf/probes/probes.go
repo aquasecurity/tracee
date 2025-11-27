@@ -168,10 +168,8 @@ const (
 	SecuritySbUmount
 	SecurityTaskPrctl
 	IoUringCreate
-	IoUringCreateKprobe     // kprobe version for kernels without tracepoint (5.1-5.4)
-	IoUringCreateKprobeRet  // kretprobe version for kernels without tracepoint (5.1-5.4)
-	IoSqOffloadStart
-	IoSqOffloadStartRet
+	IoUringSetup    // kprobe for io_uring_setup kernel function (fallback for 5.1-5.4)
+	IoUringSetupRet // kretprobe for io_uring_setup kernel function (fallback for 5.1-5.4)
 	IoSubmitSqeIssueSqe
 	IoSubmitSqeIoWrite
 	IoIssueSqe

@@ -3611,7 +3611,8 @@ statfunc int common_submit_io_write(program_data_t *p,
                                     u32 len,
                                     int ret)
 {
-    bpf_printk("=== common_submit_io_write: CALLED host_tid=%d len=%d ret=%d ===\n", host_tid, len, ret);
+    bpf_printk(
+        "=== common_submit_io_write: CALLED host_tid=%d len=%d ret=%d ===\n", host_tid, len, ret);
     // get write position
     // (reusing io_kiocb struct flavors to get the correct data for the current kernel version)
     loff_t ki_pos = kiocb->ki_pos;
@@ -3766,7 +3767,8 @@ int BPF_KPROBE(trace__io_submit_sqe_io_write)
     struct io_kiocb___older_v55 *req = (struct io_kiocb___older_v55 *) PT_REGS_PARM2(ctx);
 
     if (!bpf_core_field_exists(req->submit)) { // Version >= v5.5
-        bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write req->submit NOT exists (v5.5+), skipping ===\n");
+        bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write req->submit NOT exists (v5.5+), "
+                   "skipping ===\n");
         // this case handled by the tracepoints io_issue_sqe probe and io_write probe
         return 0;
     }
@@ -3801,7 +3803,8 @@ int BPF_KPROBE(trace__io_submit_sqe_io_write)
     // submit io_write
     bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write calling common_submit_io_write ===\n");
     int ret = common_submit_io_write(&p, (struct io_kiocb *) req, &kiocb, host_tid, buf, len, 0);
-    bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write common_submit_io_write ret=%d ===\n", ret);
+    bpf_printk("=== FALLBACK: trace__io_submit_sqe_io_write common_submit_io_write ret=%d ===\n",
+               ret);
 
     return ret;
 }
@@ -3815,7 +3818,10 @@ int BPF_KPROBE(trace_ret_io_write_tail)
 statfunc int common_io_uring_create(
     program_data_t *p, struct io_ring_ctx *io_uring_ctx, u32 sq_entries, u32 cq_entries, u32 flags)
 {
-    bpf_printk("=== common_io_uring_create: CALLED sq_entries=%d cq_entries=%d flags=%d ===\n", sq_entries, cq_entries, flags);
+    bpf_printk("=== common_io_uring_create: CALLED sq_entries=%d cq_entries=%d flags=%d ===\n",
+               sq_entries,
+               cq_entries,
+               flags);
     // getting the task_struct of the kernel thread if polling is used on this ring.
     struct task_struct *thread = NULL;
     if (!bpf_core_field_exists(io_uring_ctx->sq_data)) { // Version <= v5.9
@@ -3868,32 +3874,33 @@ int tracepoint__io_uring__io_uring_create(struct bpf_raw_tracepoint_args *ctx)
     return common_io_uring_create(&p, io_uring_ctx, sq_entries, cq_entries, flags);
 }
 
-// Kprobe version for kernels 5.1-5.4 that have io_uring_create function but no tracepoint
-SEC("kprobe/io_uring_create")
-int trace_io_uring_create_kprobe(struct pt_regs *ctx)
+// Fallback probes for kernels 5.1-5.4 that don't have io_uring_create tracepoint
+// Hook io_uring_setup kernel function which wraps io_uring_create
+SEC("kprobe/io_uring_setup")
+int trace_io_uring_setup(struct pt_regs *ctx)
 {
-    bpf_printk("=== FALLBACK KPROBE: trace_io_uring_create_kprobe ENTRY (kernel 5.1-5.4) ===\n");
+    bpf_printk("=== FALLBACK: trace_io_uring_setup ENTRY (kernel 5.1-5.4) ===\n");
     args_t args = {};
-    args.args[0] = PT_REGS_PARM1(ctx); // io_ring_ctx *
-    args.args[1] = PT_REGS_PARM2(ctx); // io_uring_params *
-    
+    args.args[0] = PT_REGS_PARM1(ctx); // u32 entries
+    args.args[1] = PT_REGS_PARM2(ctx); // struct io_uring_params *params
+
     int ret = save_args(&args, IO_URING_CREATE);
-    bpf_printk("=== FALLBACK KPROBE: trace_io_uring_create_kprobe saved args, ret=%d ===\n", ret);
+    bpf_printk("=== FALLBACK: trace_io_uring_setup saved args, ret=%d ===\n", ret);
     return ret;
 }
 
-SEC("kretprobe/io_uring_create")
-int BPF_KPROBE(trace_ret_io_uring_create_kprobe)
+SEC("kretprobe/io_uring_setup")
+int BPF_KPROBE(trace_ret_io_uring_setup)
 {
-    bpf_printk("=== FALLBACK KPROBE: trace_ret_io_uring_create_kprobe RETURN (kernel 5.1-5.4) ===\n");
+    bpf_printk("=== FALLBACK: trace_ret_io_uring_setup RETURN (kernel 5.1-5.4) ===\n");
     args_t saved_args;
     if (load_args(&saved_args, IO_URING_CREATE) != 0) {
-        bpf_printk("=== FALLBACK KPROBE: trace_ret_io_uring_create_kprobe failed to load args ===\n");
+        bpf_printk("=== FALLBACK: trace_ret_io_uring_setup failed to load args ===\n");
         // missed entry or not traced
         return 0;
     }
     del_args(IO_URING_CREATE);
-    bpf_printk("=== FALLBACK KPROBE: trace_ret_io_uring_create_kprobe loaded args successfully ===\n");
+    bpf_printk("=== FALLBACK: trace_ret_io_uring_setup loaded args successfully ===\n");
 
     program_data_t p = {};
     if (!init_program_data(&p, ctx, IO_URING_CREATE))
@@ -3902,66 +3909,39 @@ int BPF_KPROBE(trace_ret_io_uring_create_kprobe)
     if (!evaluate_scope_filters(&p))
         return 0;
 
-    struct io_ring_ctx *io_uring_ctx = (struct io_ring_ctx *) saved_args.args[0];
-    struct io_uring_params *params = (struct io_uring_params *) saved_args.args[1];
-
-    u32 sq_entries = BPF_CORE_READ(params, sq_entries);
-    u32 cq_entries = BPF_CORE_READ(params, cq_entries);
-    u32 flags = BPF_CORE_READ(io_uring_ctx, flags);
-
-    bpf_printk("=== FALLBACK KPROBE: trace_ret_io_uring_create_kprobe calling common_io_uring_create ===\n");
-    int result = common_io_uring_create(&p, io_uring_ctx, sq_entries, cq_entries, flags);
-    bpf_printk("=== FALLBACK KPROBE: trace_ret_io_uring_create_kprobe common_io_uring_create ret=%d ===\n", result);
-    return result;
-}
-
-SEC("kprobe/io_sq_offload_start")
-int trace_io_sq_offload_start(struct pt_regs *ctx)
-{
-    bpf_printk("=== FALLBACK: trace_io_sq_offload_start ENTRY (kernel 5.1-5.4) ===\n");
-    args_t args = {};
-    args.args[0] = PT_REGS_PARM1(ctx);
-    args.args[1] = PT_REGS_PARM2(ctx);
-    args.args[2] = PT_REGS_PARM3(ctx);
-    args.args[3] = PT_REGS_PARM4(ctx);
-    args.args[4] = PT_REGS_PARM5(ctx);
-    args.args[5] = PT_REGS_PARM6(ctx);
-    
-    int ret = save_args(&args, IO_URING_CREATE);
-    bpf_printk("=== FALLBACK: trace_io_sq_offload_start ENTRY saved args, ret=%d ===\n", ret);
-    return ret;
-}
-
-SEC("kretprobe/io_sq_offload_start")
-int BPF_KPROBE(trace_ret_io_sq_offload_start)
-{
-    bpf_printk("=== FALLBACK: trace_ret_io_sq_offload_start RETURN (kernel 5.1-5.4) ===\n");
-    args_t saved_args;
-    if (load_args(&saved_args, IO_URING_CREATE) != 0) {
-        bpf_printk("=== FALLBACK: trace_ret_io_sq_offload_start failed to load args ===\n");
-        // missed entry or not traced
+    // io_uring_setup returns a file descriptor on success, negative on error
+    int ret = PT_REGS_RC(ctx);
+    if (ret < 0) {
+        bpf_printk("=== FALLBACK: io_uring_setup failed with ret=%d ===\n", ret);
         return 0;
     }
-    del_args(IO_URING_CREATE);
-    bpf_printk("=== FALLBACK: trace_ret_io_sq_offload_start loaded args successfully ===\n");
 
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx, IO_URING_CREATE))
-        return 0;
-
-    if (!evaluate_scope_filters(&p))
-        return 0;
-
-    struct io_ring_ctx *io_uring_ctx = (struct io_ring_ctx *) saved_args.args[0];
+    // io_uring_setup(u32 entries, struct io_uring_params *params)
+    // The function internally calls io_uring_create which creates the ctx
+    // We get the return value (struct io_ring_ctx *) from PT_REGS_RC for internal function
+    // But for io_uring_setup, it returns fd, and ctx is internal
+    // So we read params that was passed in
+    u32 entries = saved_args.args[0];
     struct io_uring_params *params = (struct io_uring_params *) saved_args.args[1];
+
+    if (params == NULL) {
+        bpf_printk("=== FALLBACK: params is NULL ===\n");
+        return 0;
+    }
 
     u32 sq_entries = BPF_CORE_READ(params, sq_entries);
     u32 cq_entries = BPF_CORE_READ(params, cq_entries);
-    u32 flags = BPF_CORE_READ(io_uring_ctx, flags);
+    // io_ring_ctx is not accessible from io_uring_setup return, so flags will be 0
+    u32 flags = 0;
 
-    bpf_printk("=== FALLBACK: trace_ret_io_sq_offload_start calling common_io_uring_create ===\n");
+    // io_ring_ctx is created internally and not returned, so we pass NULL
+    struct io_ring_ctx *io_uring_ctx = NULL;
+
+    bpf_printk(
+        "=== FALLBACK: calling common_io_uring_create sq=%d cq=%d ===\n", sq_entries, cq_entries);
     int result = common_io_uring_create(&p, io_uring_ctx, sq_entries, cq_entries, flags);
-    bpf_printk("=== FALLBACK: trace_ret_io_sq_offload_start common_io_uring_create ret=%d ===\n", result);
+    bpf_printk("=== FALLBACK: common_io_uring_create ret=%d ===\n", result);
+
     return result;
 }
 
@@ -4141,7 +4121,8 @@ int tracepoint__io_uring__io_uring_queue_async_work(struct bpf_raw_tracepoint_ar
     }
 
     // Start with the full context from task_info
-    event_context_t current_ctx = {.processor_id = -1, .syscall = -1, .retval = -1, .stack_id = -1, .task = NULL, .ts = 0};
+    event_context_t current_ctx = {
+        .processor_id = -1, .syscall = -1, .retval = -1, .stack_id = -1, .task = 0, .ts = 0};
 
     // Override with poll context if available (for SQPOLL mode)
     // In SQPOLL mode, the io_uring_create probe stores the submitting thread's context
