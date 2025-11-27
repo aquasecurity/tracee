@@ -1405,20 +1405,29 @@ func (t *Tracee) attachProbes() error {
 				return nil
 			}
 
-			// Load the probe program into the kernel if not already loaded
-			// This is essential for fallback probes that weren't initially autoloaded
-			err := t.defaultProbes.Load(probeNode.GetHandle())
+			// Load and attach the probe with BPF capabilities elevated
+			err := capabilities.GetInstance().EBPF(func() error {
+				// Load the probe program into the kernel if not already loaded
+				// This is essential for fallback probes that weren't initially autoloaded
+				if err := t.defaultProbes.Load(probeNode.GetHandle()); err != nil {
+					// If the probe was already loaded there will be no error, so we can log as ERROR here
+					logger.Errorw("Load probe failed or not needed", "probe", probeNode.GetHandle(), "error", err)
+					return err
+				}
+
+				// Attach the probe to its hook
+				if err := t.defaultProbes.Attach(probeNode.GetHandle(), t.cgroups, t.getKernelSymbols()); err != nil {
+					return err
+				}
+
+				return nil
+			})
+
 			if err != nil {
-				// If the probe was already loaded there will be no error, so we can log as ERROR here
-				logger.Errorw("Load probe failed or not needed", "probe", probeNode.GetHandle(), "error", err)
 				// Fail the probe node to prevent the event from being added
 				return []dependencies.Action{dependencies.NewCancelNodeAddAction(err)}
 			}
 
-			err = t.defaultProbes.Attach(probeNode.GetHandle(), t.cgroups, t.getKernelSymbols())
-			if err != nil {
-				return []dependencies.Action{dependencies.NewCancelNodeAddAction(err)}
-			}
 			return nil
 		})
 
