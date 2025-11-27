@@ -28,7 +28,7 @@ func (t *Tracee) processEvent(event *events.PipelineEvent) []error {
 
 	var errs []error
 
-	processors := t.eventProcessor[events.ID(event.EventID)]         // this event processors
+	processors := t.eventProcessor[event.EventID]                    // this event processors
 	processors = append(processors, t.eventProcessor[events.All]...) // all events processors
 
 	for _, processor := range processors {

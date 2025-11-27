@@ -13,7 +13,13 @@ type PipelineEvent struct {
 	// User-facing event data
 	*trace.Event
 
-	// Internal pipeline fields
+	// Internal pipeline metadata
+	// EventID is the original internal event ID (before translation to external format).
+	EventID ID
+
+	// Timestamp is the original event timestamp in nanoseconds since epoch.
+	Timestamp uint64
+
 	// MatchedPoliciesBitmap is a combined bitmap for efficient policy matching.
 	// This replaces the need to expose separate Kernel/User bitmaps to external APIs.
 	MatchedPoliciesBitmap uint64
@@ -25,12 +31,15 @@ type PipelineEvent struct {
 
 // NewPipelineEvent creates a new PipelineEvent wrapping the provided trace.Event.
 // The MatchedPoliciesBitmap is initialized from the event's MatchedPoliciesKernel field.
+// The EventID and Timestamp are copied to top-level fields for efficient pipeline access.
 func NewPipelineEvent(event *trace.Event) *PipelineEvent {
 	if event == nil {
 		return nil
 	}
 	return &PipelineEvent{
 		Event:                 event,
+		EventID:               ID(event.EventID),
+		Timestamp:             uint64(event.Timestamp),
 		MatchedPoliciesBitmap: event.MatchedPoliciesKernel,
 	}
 }
@@ -51,6 +60,8 @@ func (pe *PipelineEvent) Reset() {
 	if pe == nil {
 		return
 	}
+	pe.EventID = 0
+	pe.Timestamp = 0
 	pe.MatchedPoliciesBitmap = 0
 	pe.protoEvent = nil
 }

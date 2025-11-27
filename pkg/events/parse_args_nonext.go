@@ -3,11 +3,11 @@
 package events
 
 import (
-	"github.com/aquasecurity/tracee/types/trace"
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 )
 
-// parseArgsExtended is a stub for non-extended builds
+// parseEventDataExtended is a stub for non-extended builds
 // In extended builds, this is replaced
-func parseArgsExtended(eventID ID, args []trace.Argument) {
+func parseEventDataExtended(eventID ID, data []*pb.EventValue) {
 	// No-op for non-extended builds
 }

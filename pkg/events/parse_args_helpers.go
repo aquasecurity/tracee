@@ -5,208 +5,188 @@ import (
 
 	"golang.org/x/sys/unix"
 
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func parseDirfdAt(arg *trace.Argument, dirfd uint64) {
+// Protobuf event parsing helper functions
+// These work with pb.EventValue and modify the Value oneof field in-place
+
+func parseDirfdAt(ev *pb.EventValue, dirfd uint64) {
 	if int32(dirfd) == unix.AT_FDCWD {
-		arg.Type = "string"
-		arg.Value = "AT_FDCWD"
-		return
+		ev.Value = &pb.EventValue_Str{Str: "AT_FDCWD"}
 	}
 }
 
-func parseMMapProt(arg *trace.Argument, prot uint64) {
+func parseMMapProt(ev *pb.EventValue, prot uint64) {
 	mmapProtArgument := parsers.ParseMmapProt(prot)
-	arg.Type = "string"
-	arg.Value = mmapProtArgument.String()
+	ev.Value = &pb.EventValue_Str{Str: mmapProtArgument.String()}
 }
 
-func parseSocketDomainArgument(arg *trace.Argument, domain uint64) {
-	arg.Type = "string"
+func parseSocketDomainArgument(ev *pb.EventValue, domain uint64) {
 	socketDomainArgument, err := parsers.ParseSocketDomainArgument(domain)
 	if err != nil {
-		arg.Value = strconv.FormatUint(domain, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(domain, 10)}
 		return
 	}
-	arg.Value = socketDomainArgument
+	ev.Value = &pb.EventValue_Str{Str: socketDomainArgument}
 }
 
-func parseSocketType(arg *trace.Argument, typ uint64) {
-	arg.Type = "string"
+func parseSocketType(ev *pb.EventValue, typ uint64) {
 	socketTypeArgument, err := parsers.ParseSocketType(typ)
 	if err != nil {
-		arg.Value = strconv.FormatUint(typ, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(typ, 10)}
 		return
 	}
-	arg.Value = socketTypeArgument.String()
+	ev.Value = &pb.EventValue_Str{Str: socketTypeArgument.String()}
 }
 
-func parseInodeMode(arg *trace.Argument, mode uint64) {
-	arg.Type = "string"
+func parseInodeMode(ev *pb.EventValue, mode uint64) {
 	inodeModeArgument, err := parsers.ParseInodeMode(mode)
 	if err != nil {
-		arg.Value = strconv.FormatUint(mode, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(mode, 10)}
 		return
 	}
-	arg.Value = inodeModeArgument.String()
+	ev.Value = &pb.EventValue_Str{Str: inodeModeArgument.String()}
 }
 
-func parseBPFProgType(arg *trace.Argument, progType uint64) {
-	arg.Type = "string"
+func parseBPFProgType(ev *pb.EventValue, progType uint64) {
 	bpfProgTypeArgument, err := parsers.ParseBPFProgType(progType)
 	if err != nil {
-		arg.Value = strconv.FormatUint(progType, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(progType, 10)}
 		return
 	}
-	arg.Value = bpfProgTypeArgument.String()
+	ev.Value = &pb.EventValue_Str{Str: bpfProgTypeArgument.String()}
 }
 
-func parseCapability(arg *trace.Argument, capability uint64) {
-	arg.Type = "string"
+func parseCapability(ev *pb.EventValue, capability uint64) {
 	capabilityFlagArgument, err := parsers.ParseCapability(capability)
 	if err != nil {
-		arg.Value = strconv.FormatUint(capability, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(capability, 10)}
 		return
 	}
-	arg.Value = capabilityFlagArgument
+	ev.Value = &pb.EventValue_Str{Str: capabilityFlagArgument}
 }
 
-func parseMemProtAlert(arg *trace.Argument, alert uint32) {
-	arg.Type = "string"
-	arg.Value = trace.MemProtAlert(alert).String()
+func parseMemProtAlert(ev *pb.EventValue, alert uint32) {
+	ev.Value = &pb.EventValue_Str{Str: trace.MemProtAlert(alert).String()}
 }
 
-func parseSyscall(arg *trace.Argument, id int32) {
-	// Bypass the lock contention accessing the read-only map directly, avoiding
-	// locking the map for reading.
-	//
-	// NOTE: This might cause data races in the future if the map is modified.
-	// One solution to keep better CPU time is to segregate the map into two maps:
-	// one for proper core (read-only) events and another for the dynamic events.
-	arg.Type = "string"
+func parseSyscall(ev *pb.EventValue, id int32) {
 	def, ok := CoreEvents[ID(id)]
 	if !ok || !def.IsSyscall() {
-		arg.Value = strconv.FormatInt(int64(id), 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatInt(int64(id), 10)}
 		return
 	}
-
-	arg.Value = def.GetName()
+	ev.Value = &pb.EventValue_Str{Str: def.GetName()}
 }
 
-func parsePtraceRequestArgument(arg *trace.Argument, req uint64) {
-	arg.Type = "string"
+func parsePtraceRequestArgument(ev *pb.EventValue, req uint64) {
 	ptraceRequestArgument, err := parsers.ParsePtraceRequestArgument(req)
 	if err != nil {
-		arg.Value = strconv.FormatUint(req, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(req, 10)}
 		return
 	}
-	arg.Value = ptraceRequestArgument
+	ev.Value = &pb.EventValue_Str{Str: ptraceRequestArgument}
 }
 
-func parsePrctlOption(arg *trace.Argument, option uint64) {
-	arg.Type = "string"
+func parsePrctlOption(ev *pb.EventValue, option uint64) {
 	prctlOptionArgument, err := parsers.ParsePrctlOption(option)
 	if err != nil {
-		arg.Value = strconv.FormatUint(option, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(option, 10)}
 		return
 	}
-	arg.Value = prctlOptionArgument
+	ev.Value = &pb.EventValue_Str{Str: prctlOptionArgument}
 }
 
-func parseSocketcallCall(arg *trace.Argument, call uint64) {
-	arg.Type = "string"
+func parseSocketcallCall(ev *pb.EventValue, call uint64) {
 	socketCallArgument, err := parsers.ParseSocketcallCall(call)
 	if err != nil {
-		arg.Value = strconv.FormatUint(call, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(call, 10)}
 		return
 	}
-	arg.Value = socketCallArgument
+	ev.Value = &pb.EventValue_Str{Str: socketCallArgument}
 }
 
-func parseAccessMode(arg *trace.Argument, mode uint64) {
-	arg.Type = "string"
+func parseAccessMode(ev *pb.EventValue, mode uint64) {
 	accessModeArgument, err := parsers.ParseAccessMode(mode)
 	if err != nil {
-		arg.Value = strconv.FormatUint(mode, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(mode, 10)}
 		return
 	}
-	arg.Value = accessModeArgument
+	ev.Value = &pb.EventValue_Str{Str: accessModeArgument}
 }
 
-func parseFaccessatFlag(arg *trace.Argument, flags uint64) {
-	arg.Type = "string"
+func parseFaccessatFlag(ev *pb.EventValue, flags uint64) {
 	faccessatFlagArgument, err := parsers.ParseFaccessatFlag(flags)
 	if err != nil {
-		arg.Value = strconv.FormatUint(flags, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(flags, 10)}
 		return
 	}
-	arg.Value = faccessatFlagArgument
+	ev.Value = &pb.EventValue_Str{Str: faccessatFlagArgument}
 }
 
-func parseFchmodatFlag(arg *trace.Argument, flags uint64) {
-	arg.Type = "string"
+func parseFchmodatFlag(ev *pb.EventValue, flags uint64) {
 	fchmodatFlagArgument, err := parsers.ParseFchmodatFlag(flags)
 	if err != nil {
-		arg.Value = strconv.FormatUint(flags, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(flags, 10)}
 		return
 	}
-	arg.Value = fchmodatFlagArgument
+	ev.Value = &pb.EventValue_Str{Str: fchmodatFlagArgument}
 }
 
-func parseExecveatFlag(arg *trace.Argument, flags uint64) {
-	arg.Type = "string"
+func parseExecveatFlag(ev *pb.EventValue, flags uint64) {
 	execFlagArgument, err := parsers.ParseExecveatFlag(flags)
 	if err != nil {
-		arg.Value = strconv.FormatUint(flags, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(flags, 10)}
 		return
 	}
-	arg.Value = execFlagArgument
+	ev.Value = &pb.EventValue_Str{Str: execFlagArgument}
 }
 
-func parseOpenFlagArgument(arg *trace.Argument, flags uint64) {
-	arg.Type = "string"
+func parseOpenFlagArgument(ev *pb.EventValue, flags uint64) {
 	openFlagArgument, err := parsers.ParseOpenFlagArgument(flags)
 	if err != nil {
-		arg.Value = strconv.FormatUint(flags, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(flags, 10)}
 		return
 	}
-	arg.Value = openFlagArgument
+	ev.Value = &pb.EventValue_Str{Str: openFlagArgument}
 }
 
-func parseCloneFlags(arg *trace.Argument, flags uint64) {
-	arg.Type = "string"
+func parseCloneFlags(ev *pb.EventValue, flags uint64) {
 	cloneFlagArgument, err := parsers.ParseCloneFlags(flags)
 	if err != nil {
-		arg.Value = strconv.FormatUint(flags, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(flags, 10)}
 		return
 	}
-	arg.Value = cloneFlagArgument
+	ev.Value = &pb.EventValue_Str{Str: cloneFlagArgument}
 }
 
-func parseBPFCmd(arg *trace.Argument, cmd uint64) {
-	arg.Type = "string"
+func parseBPFCmd(ev *pb.EventValue, cmd uint64) {
 	bpfCommandArgument, err := parsers.ParseBPFCmd(cmd)
 	if err != nil {
-		arg.Value = strconv.FormatUint(cmd, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(cmd, 10)}
 		return
 	}
-	arg.Value = bpfCommandArgument
+	ev.Value = &pb.EventValue_Str{Str: bpfCommandArgument}
 }
 
-func parseSocketLevel(arg *trace.Argument, level uint64) {
-	arg.Type = "string"
+func parseKernelReadType(ev *pb.EventValue, readFileId int32) {
+	ev.Value = &pb.EventValue_Str{Str: trace.KernelReadType(readFileId).String()}
+}
+
+func parseSocketLevel(ev *pb.EventValue, level uint64) {
 	socketLevelArgument, err := parsers.ParseSocketLevel(level)
 	if err != nil {
-		arg.Value = strconv.FormatUint(level, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(level, 10)}
 		return
 	}
-	arg.Value = socketLevelArgument.String()
+	ev.Value = &pb.EventValue_Str{Str: socketLevelArgument.String()}
 }
 
-func parseGetSocketOption(arg *trace.Argument, opt uint64, evtID ID) {
+func parseGetSocketOption(ev *pb.EventValue, opt uint64, evtID ID) {
 	var optionNameArgument parsers.SocketOptionArgument
 	var err error
 	if evtID == Getsockopt {
@@ -214,24 +194,23 @@ func parseGetSocketOption(arg *trace.Argument, opt uint64, evtID ID) {
 	} else {
 		optionNameArgument, err = parsers.ParseSetSocketOption(uint64(opt))
 	}
-	arg.Type = "string"
 	if err == nil {
-		arg.Value = optionNameArgument.String()
+		ev.Value = &pb.EventValue_Str{Str: optionNameArgument.String()}
 	} else {
-		arg.Value = strconv.FormatUint(opt, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(opt, 10)}
 	}
 }
 
-func parseFsNotifyObjType(arg *trace.Argument, objType uint64) {
-	arg.Type = "string"
+func parseFsNotifyObjType(ev *pb.EventValue, objType uint64) {
 	fsNotifyObjTypeArgument, err := parsers.ParseFsNotifyObjType(objType)
 	if err != nil {
-		arg.Value = strconv.FormatUint(objType, 10)
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(objType, 10)}
 		return
 	}
-	arg.Value = fsNotifyObjTypeArgument.String()
+	ev.Value = &pb.EventValue_Str{Str: fsNotifyObjTypeArgument.String()}
 }
-func parseBpfHelpersUsage(arg *trace.Argument, helpersList []uint64) {
+
+func parseBpfHelpersUsage(ev *pb.EventValue, helpersList []uint64) {
 	var usedHelpers []string
 
 	for i := 0; i < len(helpersList)*64; i++ {
@@ -246,13 +225,10 @@ func parseBpfHelpersUsage(arg *trace.Argument, helpersList []uint64) {
 		}
 	}
 
-	arg.Type = "const char**"
-	arg.Value = usedHelpers
+	ev.Value = &pb.EventValue_StrArray{StrArray: &pb.StringArray{Value: usedHelpers}}
 }
 
-func parseBpfAttachType(arg *trace.Argument, attachType int32) {
-	arg.Type = "string"
-
+func parseBpfAttachType(ev *pb.EventValue, attachType int32) {
 	var attTypeName string
 
 	switch attachType {
@@ -270,8 +246,8 @@ func parseBpfAttachType(arg *trace.Argument, attachType int32) {
 		attTypeName = "uretprobe"
 	default:
 		attTypeName = strconv.FormatInt(int64(attachType), 10)
-		logger.Errorw("Unknown attach_type got from bpf_attach event")
+		logger.Errorw("Unknown attach_type got from bpf_attach event", "attach_type", attachType)
 	}
 
-	arg.Value = attTypeName
+	ev.Value = &pb.EventValue_Str{Str: attTypeName}
 }
