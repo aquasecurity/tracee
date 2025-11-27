@@ -2526,7 +2526,7 @@ func expectPbArg(name string, value interface{}) *pb.EventValue {
 	case uint64:
 		ev.Value = &pb.EventValue_UInt64{UInt64: v}
 	case trace.Pointer:
-		ev.Value = &pb.EventValue_UInt64{UInt64: uint64(v)}
+		ev.Value = &pb.EventValue_Pointer{Pointer: uint64(v)}
 	case bool:
 		ev.Value = &pb.EventValue_Bool{Bool: v}
 	case []byte:

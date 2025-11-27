@@ -123,7 +123,7 @@ const intervalsAmountThresholdForDelay = int(minDelay / eventsPassingInterval)
 type EventsChronologicalSorter struct {
 	cpuEventsQueues                  []cpuEventsQueue // Each CPU has its own events queue because events per CPU arrive in almost chronological order
 	outputChanMutex                  sync.Mutex
-	extractionSavedTimestamps        []int // Buffer to store timestamps of events for delayed extraction
+	extractionSavedTimestamps        []uint64 // Buffer to store timestamps of events for delayed extraction
 	errorChan                        chan<- error
 	eventsPassingInterval            time.Duration
 	intervalsAmountThresholdForDelay int
@@ -163,7 +163,7 @@ func (sorter *EventsChronologicalSorter) Start(in <-chan *events.PipelineEvent, 
 		select {
 		case newEvent := <-in:
 			if newEvent == nil {
-				sorter.sendEvents(out, math.MaxInt64)
+				sorter.sendEvents(out, math.MaxUint64)
 				return
 			}
 			sorter.addEvent(newEvent)
@@ -176,7 +176,7 @@ func (sorter *EventsChronologicalSorter) Start(in <-chan *events.PipelineEvent, 
 			}
 
 		case <-ctx.Done():
-			sorter.sendEvents(out, math.MaxInt64)
+			sorter.sendEvents(out, math.MaxUint64)
 			return
 		}
 	}
@@ -193,7 +193,7 @@ func (sorter *EventsChronologicalSorter) addEvent(newEvent *events.PipelineEvent
 }
 
 // sendEvents send to output channel all events up to given timestamp
-func (sorter *EventsChronologicalSorter) sendEvents(outputChan chan<- *events.PipelineEvent, extractionMaxTimestamp int) {
+func (sorter *EventsChronologicalSorter) sendEvents(outputChan chan<- *events.PipelineEvent, extractionMaxTimestamp uint64) {
 	sorter.outputChanMutex.Lock()
 	defer sorter.outputChanMutex.Unlock()
 	for {
@@ -242,9 +242,9 @@ func (sorter *EventsChronologicalSorter) updateSavedTimestamps() {
 // getMostDelayingEventCPUQueue search for the CPU queue which contains the oldest event.
 // It also returns the timestamp of its head event, to be used for race condition checks.
 // Return nil and timestamp of 0 if no valid queue found.
-func (sorter *EventsChronologicalSorter) getMostDelayingEventCPUQueue() (*cpuEventsQueue, int, error) {
+func (sorter *EventsChronologicalSorter) getMostDelayingEventCPUQueue() (*cpuEventsQueue, uint64, error) {
 	var mostDelayingEventQueue *cpuEventsQueue
-	mostDelayingEventQueueHeadTimestamp := 0
+	var mostDelayingEventQueueHeadTimestamp uint64
 	for i := 0; i < len(sorter.cpuEventsQueues); i++ {
 		cq := &sorter.cpuEventsQueues[i]
 		cqHead := cq.PeekHead()
@@ -264,8 +264,8 @@ func (sorter *EventsChronologicalSorter) getMostDelayingEventCPUQueue() (*cpuEve
 // getUpdatedMostDelayedLastCPUEventTimestamp search for the CPU queue with the oldest last inserted event which was updated since
 // last check
 // Queues which were not updated since last check are ignored to prevent events starvation if a CPU is not active
-func (sorter *EventsChronologicalSorter) getUpdatedMostDelayedLastCPUEventTimestamp() (int, error) {
-	var newMostDelayedEventTimestamp int
+func (sorter *EventsChronologicalSorter) getUpdatedMostDelayedLastCPUEventTimestamp() (uint64, error) {
+	var newMostDelayedEventTimestamp uint64
 	foundUpdatedQueue := false
 	for i := 0; i < len(sorter.cpuEventsQueues); i++ {
 		cq := &sorter.cpuEventsQueues[i]
@@ -285,8 +285,8 @@ func (sorter *EventsChronologicalSorter) getUpdatedMostDelayedLastCPUEventTimest
 }
 
 // getMostRecentEventTimestamp get the timestamp of the most recent event received from all CPUs.
-func (sorter *EventsChronologicalSorter) getMostRecentEventTimestamp() (int, error) {
-	mostRecentEventTimestamp := 0
+func (sorter *EventsChronologicalSorter) getMostRecentEventTimestamp() (uint64, error) {
+	var mostRecentEventTimestamp uint64
 	for i := 0; i < len(sorter.cpuEventsQueues); i++ {
 		cq := &sorter.cpuEventsQueues[i]
 		queueTail := cq.PeekTail()
