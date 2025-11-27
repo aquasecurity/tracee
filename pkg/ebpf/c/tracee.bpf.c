@@ -3875,32 +3875,32 @@ int tracepoint__io_uring__io_uring_create(struct bpf_raw_tracepoint_args *ctx)
 }
 
 // Fallback probes for kernels 5.1-5.4 that don't have io_uring_create tracepoint
-// Hook io_uring_setup kernel function which wraps io_uring_create
-SEC("kprobe/io_uring_setup")
+// Hook __x64_sys_io_uring_setup syscall which wraps io_uring_create
+SEC("kprobe/__x64_sys_io_uring_setup")
 int trace_io_uring_setup(struct pt_regs *ctx)
 {
-    bpf_printk("=== FALLBACK: trace_io_uring_setup ENTRY (kernel 5.1-5.4) ===\n");
+    bpf_printk("=== FALLBACK SYSCALL: trace_io_uring_setup ENTRY (kernel 5.1-5.4) ===\n");
     args_t args = {};
     args.args[0] = PT_REGS_PARM1(ctx); // u32 entries
     args.args[1] = PT_REGS_PARM2(ctx); // struct io_uring_params *params
 
     int ret = save_args(&args, IO_URING_CREATE);
-    bpf_printk("=== FALLBACK: trace_io_uring_setup saved args, ret=%d ===\n", ret);
+    bpf_printk("=== FALLBACK SYSCALL: trace_io_uring_setup saved args, ret=%d ===\n", ret);
     return ret;
 }
 
-SEC("kretprobe/io_uring_setup")
+SEC("kretprobe/__x64_sys_io_uring_setup")
 int BPF_KPROBE(trace_ret_io_uring_setup)
 {
-    bpf_printk("=== FALLBACK: trace_ret_io_uring_setup RETURN (kernel 5.1-5.4) ===\n");
+    bpf_printk("=== FALLBACK SYSCALL: trace_ret_io_uring_setup RETURN (kernel 5.1-5.4) ===\n");
     args_t saved_args;
     if (load_args(&saved_args, IO_URING_CREATE) != 0) {
-        bpf_printk("=== FALLBACK: trace_ret_io_uring_setup failed to load args ===\n");
+        bpf_printk("=== FALLBACK SYSCALL: trace_ret_io_uring_setup failed to load args ===\n");
         // missed entry or not traced
         return 0;
     }
     del_args(IO_URING_CREATE);
-    bpf_printk("=== FALLBACK: trace_ret_io_uring_setup loaded args successfully ===\n");
+    bpf_printk("=== FALLBACK SYSCALL: trace_ret_io_uring_setup loaded args successfully ===\n");
 
     program_data_t p = {};
     if (!init_program_data(&p, ctx, IO_URING_CREATE))
@@ -3912,7 +3912,7 @@ int BPF_KPROBE(trace_ret_io_uring_setup)
     // io_uring_setup returns a file descriptor on success, negative on error
     int ret = PT_REGS_RC(ctx);
     if (ret < 0) {
-        bpf_printk("=== FALLBACK: io_uring_setup failed with ret=%d ===\n", ret);
+        bpf_printk("=== FALLBACK SYSCALL: io_uring_setup failed with ret=%d ===\n", ret);
         return 0;
     }
 
@@ -3925,7 +3925,7 @@ int BPF_KPROBE(trace_ret_io_uring_setup)
     struct io_uring_params *params = (struct io_uring_params *) saved_args.args[1];
 
     if (params == NULL) {
-        bpf_printk("=== FALLBACK: params is NULL ===\n");
+        bpf_printk("=== FALLBACK SYSCALL: params is NULL ===\n");
         return 0;
     }
 
@@ -3937,10 +3937,11 @@ int BPF_KPROBE(trace_ret_io_uring_setup)
     // io_ring_ctx is created internally and not returned, so we pass NULL
     struct io_ring_ctx *io_uring_ctx = NULL;
 
-    bpf_printk(
-        "=== FALLBACK: calling common_io_uring_create sq=%d cq=%d ===\n", sq_entries, cq_entries);
+    bpf_printk("=== FALLBACK SYSCALL: calling common_io_uring_create sq=%d cq=%d ===\n",
+               sq_entries,
+               cq_entries);
     int result = common_io_uring_create(&p, io_uring_ctx, sq_entries, cq_entries, flags);
-    bpf_printk("=== FALLBACK: common_io_uring_create ret=%d ===\n", result);
+    bpf_printk("=== FALLBACK SYSCALL: common_io_uring_create ret=%d ===\n", result);
 
     return result;
 }
