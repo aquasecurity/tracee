@@ -17,12 +17,13 @@ This allows developers involved in the project to check out the code, run `vagra
 
 ## Prerequisites
 
-- [HashiCorp Vagrant]
-- [QEMU] with hardware acceleration support:
-  - **Linux**: KVM acceleration (recommended for optimal performance)
-  - **macOS**: HVF (Hypervisor Framework) acceleration on Intel/Apple Silicon
-  - **Fallback**: TCG software emulation (slower but works on all systems)
-- [vagrant-qemu plugin]: Install with `vagrant plugin install vagrant-qemu`
+- [Vagrant] (2.2+)
+- [QEMU] - Cross-platform virtualization (recommended)
+  - **Linux**: `sudo pacman -S qemu-full` (Arch) or `sudo apt install qemu-system-x86` (Ubuntu)
+  - **macOS**: `brew install qemu`
+- [vagrant-qemu plugin] - Install with: `vagrant plugin install vagrant-qemu`
+
+**Note**: The Vagrantfile uses QEMU for better cross-platform compatibility and performance. Hardware acceleration (KVM on Linux, HVF on macOS) is automatically detected and used when available.
 
 ## Clone the Tracee Repository
 
@@ -185,6 +186,46 @@ The VM uses a sophisticated shared folder system that varies by host OS:
 You can now build Tracee within the VM using the provided Makefile. Consult the Tracee documentation for specific build instructions.
 [Building Tracee Documentation](./building/building.md)
 
+## Running Tests in the VM
+
+Tracee's integration and e2e tests require root privileges and can affect your system. The recommended approach is to run them in an isolated VM environment.
+
+### Quick Start
+
+Run all tests automatically in an isolated VM:
+
+```bash
+./tests/run-vm-tests.sh
+```
+
+This will:
+- Start a test VM (`VM_TYPE=test`)
+- Build Tracee and run all test suites
+- Show results and clean up automatically
+
+**Run specific tests:**
+
+```bash
+# Run only integration tests
+./tests/run-vm-tests.sh --integration
+
+# Run only unit tests
+./tests/run-vm-tests.sh --unit
+
+# Combine test suites
+./tests/run-vm-tests.sh --integration --e2e-inst
+```
+
+### Detailed Testing Guide
+
+For comprehensive information including:
+- Prerequisites and installation
+- Manual testing workflows
+- Troubleshooting and debugging
+- Advanced usage examples
+
+See: **[VM Testing Guide](vm-testing.md)**
+
 ## Stopping the VM
 
 To stop the VM, use:
@@ -203,16 +244,13 @@ To completely remove the VM, use:
 
 ## Troubleshooting
 
-### Hardware Acceleration Issues
+- **QEMU Installation Issues**: Ensure QEMU is properly installed and the vagrant-qemu plugin is active. Run `vagrant plugin list` to verify.
 
-**KVM not available (Linux):**
-```bash
-# Check if KVM is supported
-ls /dev/kvm
-# If missing, enable virtualization in BIOS/UEFI
-# Install KVM packages:
-sudo apt install qemu-kvm libvirt-daemon-system
-```
+- **Shared Folder Issues**: QEMU uses 9p filesystem for sharing. If sync issues occur, try reloading the VM with `vagrant reload`.
+
+- **Networking Issues**: If you have trouble accessing forwarded ports, check your firewall settings on both the host and guest machines.
+
+- **Performance**: For best performance, ensure hardware acceleration is available (KVM on Linux, HVF on macOS). Check with `egrep -c '(vmx|svm)' /proc/cpuinfo` on Linux.
 
 **HVF not available (macOS):**
 ```bash
