@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -2312,8 +2313,8 @@ func Test_EventFilters(t *testing.T) {
 			// wait for the previous test to cool down
 			coolDown(t, tc.coolDown)
 
-			// prepare tracee config
-			config := config.Config{
+			// prepare tracee traceeConfig
+			traceeConfig := config.Config{
 				Capabilities: &config.CapabilitiesConfig{
 					BypassCaps: true,
 				},
@@ -2324,7 +2325,7 @@ func Test_EventFilters(t *testing.T) {
 			for _, p := range ps {
 				initialPolicies = append(initialPolicies, p)
 			}
-			config.InitialPolicies = initialPolicies
+			traceeConfig.InitialPolicies = initialPolicies
 
 			traceeTimeout := 60 * time.Second
 			ctx, cancel := context.WithTimeout(context.Background(), traceeTimeout)
@@ -2340,7 +2341,7 @@ func Test_EventFilters(t *testing.T) {
 			}()
 
 			// start tracee
-			trc, err := testutils.StartTracee(ctx, t, config, nil, nil)
+			trc, err := testutils.StartTracee(ctx, t, traceeConfig, nil, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -2351,7 +2352,8 @@ func Test_EventFilters(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			stream := trc.SubscribeAll()
+			stream, err := trc.Subscribe(config.Stream{})
+			require.NoError(t, err)
 			defer trc.Unsubscribe(stream)
 
 			// start a goroutine to read events from the channel into the buffer
