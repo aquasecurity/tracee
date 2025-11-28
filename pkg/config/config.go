@@ -72,6 +72,13 @@ func (c Config) Validate() error {
 		}
 	}
 
+	// Streams
+	for _, s := range c.Output.Streams {
+		if len(s.Destinations) == 0 {
+			return errfmt.Errorf("each stream must have at least 1 destination %s", s.Name)
+		}
+	}
+
 	// BPF
 	if c.BPFObjBytes == nil {
 		return errfmt.Errorf("nil bpf object in memory")
@@ -152,6 +159,8 @@ type OutputConfig struct {
 	ParseArguments    bool
 	ParseArgumentsFDs bool
 	EventsSorting     bool
+
+	Streams []Stream
 }
 
 type ContainerMode int
@@ -162,11 +171,38 @@ const (
 	ContainerModeEnriched
 )
 
-type PrinterConfig struct {
-	Kind          string
-	OutPath       string
-	OutFile       io.WriteCloser
+type Destination struct {
+	Name          string
+	Type          string
+	Format        string
+	Path          string
+	Url           string
+	File          io.WriteCloser
 	ContainerMode ContainerMode
+}
+
+type StreamBufferMode string
+
+const (
+	StreamBufferBlock StreamBufferMode = "block"
+	StreamBufferDrop  StreamBufferMode = "drop"
+)
+
+type StreamFilters struct {
+	Policies []string
+	Events   []string
+}
+
+type StreamBuffer struct {
+	Size int
+	Mode StreamBufferMode
+}
+
+type Stream struct {
+	Name         string
+	Destinations []Destination
+	Filters      StreamFilters
+	Buffer       StreamBuffer
 }
 
 // DetectorConfig manages detector lifecycle

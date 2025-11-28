@@ -101,9 +101,12 @@ func command(cmd *cobra.Command, args []string) {
 	outputArg := viper.GetString("output")
 
 	// placeholder printer for legacy mode
-	p, err := printer.New(config.PrinterConfig{
-		OutFile: os.Stdout,
-		Kind:    "ignore",
+	p, err := printer.New([]config.Destination{
+		{
+			Name: "ignore",
+			File: os.Stdout,
+			Type: "ignore",
+		},
 	})
 
 	if err != nil {
@@ -136,7 +139,7 @@ func command(cmd *cobra.Command, args []string) {
 		if err != nil {
 			logger.Fatalw("Failed to prepare output configuration", "error", err)
 		}
-		p, err = printer.New(printerCfg)
+		p, err = printer.New([]config.Destination{printerCfg})
 		if err != nil {
 			logger.Fatalw("Failed to create printer", "error", err)
 		}

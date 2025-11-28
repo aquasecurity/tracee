@@ -16,6 +16,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
+	"github.com/aquasecurity/tracee/api/v1beta1"
 	dsapi "github.com/aquasecurity/tracee/api/v1beta1/datastores"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/bitwise"
@@ -2187,30 +2188,44 @@ func (t *Tracee) ready(ctx gocontext.Context) {
 	}
 }
 
-// SubscribeAll returns a stream subscribed to all policies
-func (t *Tracee) SubscribeAll() *streams.Stream {
-	return t.subscribe(policy.PolicyAll)
-}
-
 // Subscribe returns a stream subscribed to selected policies
-func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
-	var policyMask uint64
+func (t *Tracee) Subscribe(stream config.Stream) (*streams.Stream, error) {
+	policyMask := policy.PolicyAll
+	eventMap := map[int32]struct{}{}
 
-	for _, policyName := range policyNames {
-		p, err := t.policyManager.LookupByName(policyName)
-		if err != nil {
-			return nil, err
+	if len(stream.Filters.Policies) > 0 {
+		policyMask = 0
+
+		for _, policyName := range stream.Filters.Policies {
+			p, err := t.policyManager.LookupByName(policyName)
+			if err != nil {
+				return nil, err
+			}
+			bitwise.SetBit(&policyMask, uint(p.ID))
 		}
-		bitwise.SetBit(&policyMask, uint(p.ID))
 	}
 
-	return t.subscribe(policyMask), nil
+	if len(stream.Filters.Events) > 0 {
+		for _, eventName := range stream.Filters.Events {
+			id, found := v1beta1.EventId_value[eventName]
+			if !found {
+				return nil, errfmt.Errorf("error event not found: %s", eventName)
+			}
+
+			eventMap[id] = struct{}{}
+		}
+	}
+
+	return t.subscribe(policyMask, eventMap, stream.Buffer), nil
 }
 
-func (t *Tracee) subscribe(policyMask uint64) *streams.Stream {
-	// TODO: the channel size matches the pipeline channel size,
-	// but we should make it configurable in the future.
-	return t.streamsManager.Subscribe(policyMask, t.config.PipelineChannelSize)
+func (t *Tracee) subscribe(policyMask uint64, eventMap map[int32]struct{}, bufferConfig config.StreamBuffer) *streams.Stream {
+	// To keep old behavior in case of streams created from GRPC server
+	if bufferConfig.Size <= 0 {
+		bufferConfig.Size = t.config.PipelineChannelSize
+	}
+
+	return t.streamsManager.Subscribe(policyMask, eventMap, bufferConfig)
 }
 
 // Unsubscribe unsubscribes stream
