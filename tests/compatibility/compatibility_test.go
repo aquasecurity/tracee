@@ -91,7 +91,8 @@ func TestCompatibility(t *testing.T) {
 	debugProbeAttachments(t, traceeInstance)
 	debugEventDependencies(t, traceeInstance)
 
-	eventStream := traceeInstance.SubscribeAll()
+	eventStream, err := traceeInstance.Subscribe(config.Stream{})
+	require.NoError(t, err)
 	defer traceeInstance.Unsubscribe(eventStream)
 
 	go func() {
