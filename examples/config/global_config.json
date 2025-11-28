@@ -30,9 +30,34 @@
         "info"
     ],
     "metrics": false,
-    "output": [
-        "json"
-    ],
+    "output": {
+        "destinations": [
+            {
+                "name": "default_destination",
+                "type": "file",
+                "path": "stdout",
+                "url": "",
+                "format": "table"
+            }
+        ],
+        "streams": [
+            {
+                "name": "default_stream",
+                "destinations": [
+                    "default_destination"
+                ],
+                "filters": {
+                    "events": [],
+                    "policies": []
+                },
+                "buffer": {
+                    "mode": "block",
+                    "size": 1024
+                }
+            }
+        ]
+    },
+    "perf-buffer-size": 1024,
     "pprof": false,
     "pyroscope": false,
     "signatures-dir": ""

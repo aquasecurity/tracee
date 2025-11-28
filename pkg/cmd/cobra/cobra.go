@@ -14,7 +14,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
-	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/detectors"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -264,21 +263,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 	cfg.InitialPolicies = ps
 
-	// Output command line flags
-
-	outputFlags, err := flags.GetFlagsFromViper("output")
-	if err != nil {
-		return runner, err
-	}
-
-	output, err := flags.PrepareOutput(outputFlags)
-	if err != nil {
-		return runner, err
-	}
-	cfg.Output = output.TraceeConfig
-
-	// Create printer
-
+	// Output
 	containerFilterEnabled := func() bool {
 		for _, p := range initialPolicies {
 			if p.ContainerFilterEnabled() {
@@ -289,16 +274,22 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return false
 	}
 
-	p, err := printer.NewBroadcast(
-		output.PrinterConfigs,
-		cmd.GetContainerMode(containerFilterEnabled(), cfg.EnrichmentEnabled),
-	)
+	outputFlags, err := flags.GetFlagsFromViper("output")
 	if err != nil {
 		return runner, err
 	}
 
-	// Check kernel lockdown
+	containerMode := cmd.GetContainerMode(
+		containerFilterEnabled(), cfg.EnrichmentEnabled)
 
+	output, err := flags.PrepareOutput(outputFlags, containerMode)
+	if err != nil {
+		return runner, err
+	}
+
+	cfg.Output = output
+
+	// Check kernel lockdown
 	lockdown, err := environment.Lockdown()
 	if err != nil {
 		logger.Debugw("OSInfo", "lockdown", err)
@@ -361,7 +352,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 
 	runner.TraceeConfig = cfg
-	runner.Printer = p
 	runner.Workdir = runtimeConfig.Workdir
 
 	noSignaturesMode := viper.GetBool("no-signatures")

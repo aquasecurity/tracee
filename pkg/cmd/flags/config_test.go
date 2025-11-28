@@ -301,78 +301,44 @@ output:
 			},
 		},
 		{
-			name: "Test output configuration (structured flags)",
+			name: "Test output configuration (config file)",
 			yamlContent: `
 output:
-    options:
-        none: false
-        stack-addresses: true
-        exec-env: true
-        exec-hash: dev-inode
-        parse-arguments: true
-        parse-arguments-fds: true
-        sort-events: true
-    table:
-        files:
-            - file1
-    table-verbose:
-        files:
-            - stdout
-    json:
-        files:
-            - /path/to/json1.out
-    gotemplate:
-        template: template1
-        files:
-            - file3
-            - file4
-    forward:
-        - forward1:
-            protocol: tcp
-            user: user
-            password: pass
-            host: 127.0.0.1
-            port: 24224
-            tag: tracee1
-        - forward2:
-            protocol: udp
-            user: user
-            password: pass
-            host: 127.0.0.1
-            port: 24225
-            tag: tracee2
-    webhook:
-        - webhook1:
-            protocol: http
-            host: localhost
-            port: 8000
-            timeout: 5s
-            gotemplate: /path/to/template1
-            content-type: application/json
-        - webhook2:
-            protocol: http
-            host: localhost
-            port: 9000
-            timeout: 3s
-            gotemplate: /path/to/template2
-            content-type: application/ld+json
+    destinations:
+    - name: d1
+      type: file
+      format: json
+      path: stdout
+    - name: d2
+      type: webhook
+      format: json
+      url: http://localhost:8080
+    streams:
+    - name: s1
+      destinations:
+      - d1
+      buffer:
+        size: 1024
+        mode: drop
+      filters:
+        events:
+        - e1
+        policies:
+        - p1
 `,
 			key: "output",
 			expectedFlags: []string{
-				"option:stack-addresses",
-				"option:exec-env",
-				"option:exec-hash=dev-inode",
-				"option:parse-arguments",
-				"option:parse-arguments-fds",
-				"option:sort-events",
-				"table:file1",
-				"table-verbose:stdout",
-				"json:/path/to/json1.out",
-				"gotemplate=template1:file3,file4",
-				"forward:tcp://user:pass@127.0.0.1:24224?tag=tracee1",
-				"forward:udp://user:pass@127.0.0.1:24225?tag=tracee2",
-				"webhook:http://localhost:8000?timeout=5s&gotemplate=/path/to/template1&contentType=application/json",
-				"webhook:http://localhost:9000?timeout=3s&gotemplate=/path/to/template2&contentType=application/ld+json",
+				"destinations.d1.type=file",
+				"destinations.d1.format=json",
+				"destinations.d1.path=stdout",
+				"destinations.d2.type=webhook",
+				"destinations.d2.format=json",
+				"destinations.d2.url=http://localhost:8080",
+				"streams.s1.destinations=d1",
+				"streams.s1.buffer.size=1024",
+				"streams.s1.buffer.mode=drop",
+				"streams.s1.filters.events=e1",
+				"streams.s1.filters.policies=p1",
 			},
 		},
 		{
@@ -684,166 +650,6 @@ func TestCapabilitiesConfigFlags(t *testing.T) {
 //
 // output
 //
-
-func TestOutputConfigFlags(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		config   OutputConfig
-		expected []string
-	}{
-		{
-			name:     "empty config",
-			config:   OutputConfig{},
-			expected: []string{},
-		},
-		{
-			name: "options set",
-			config: OutputConfig{
-				Options: OutputOptsConfig{
-					None:              true,
-					StackAddresses:    true,
-					ExecEnv:           true,
-					ExecHash:          "dev-inode",
-					ParseArguments:    true,
-					ParseArgumentsFDs: true,
-					SortEvents:        true,
-				},
-			},
-			expected: []string{
-				"none",
-				"option:stack-addresses",
-				"option:exec-env",
-				"option:exec-hash=dev-inode",
-				"option:parse-arguments",
-				"option:parse-arguments-fds",
-				"option:sort-events",
-			},
-		},
-		{
-			name: "formats set",
-			config: OutputConfig{
-				Table: OutputFormatConfig{
-					Files: []string{"file1"},
-				},
-				JSON: OutputFormatConfig{
-					Files: []string{"file2"},
-				},
-			},
-			expected: []string{
-				"table:file1",
-				"json:file2",
-			},
-		},
-		{
-			name: "gotemplate set",
-			config: OutputConfig{
-				GoTemplate: OutputGoTemplateConfig{
-					Template: "template1",
-					Files:    []string{"file3", "file4"},
-				},
-			},
-			expected: []string{
-				"gotemplate=template1:file3,file4",
-			},
-		},
-		{
-			name: "test forward with tag",
-			config: OutputConfig{
-				Forwards: map[string]OutputForwardConfig{
-					"example1": {
-						Protocol: "tcp",
-						User:     "",
-						Password: "",
-						Host:     "example.com",
-						Port:     8080,
-						Tag:      "sample",
-					},
-				},
-			},
-			expected: []string{
-				"forward:tcp://example.com:8080?tag=sample",
-			},
-		},
-		{
-			name: "test forward with user and password",
-			config: OutputConfig{
-				Forwards: map[string]OutputForwardConfig{
-					"example2": {
-						Protocol: "tcp",
-						User:     "user123",
-						Password: "pass123",
-						Host:     "secure.com",
-						Port:     443,
-						Tag:      "",
-					},
-				},
-			},
-			expected: []string{
-				"forward:tcp://user123:pass123@secure.com:443",
-			},
-		},
-		{
-			name: "test webhook with all fields",
-			config: OutputConfig{
-				Webhooks: map[string]OutputWebhookConfig{
-					"example3": {
-						Protocol:    "http",
-						Host:        "webhook.com",
-						Port:        9090,
-						Timeout:     "5s",
-						GoTemplate:  "/path/to/template1",
-						ContentType: "application/json",
-					},
-				},
-			},
-			expected: []string{
-				"webhook:http://webhook.com:9090?timeout=5s&gotemplate=/path/to/template1&contentType=application/json",
-			},
-		},
-		{
-			name: "test combined forward and webhook",
-			config: OutputConfig{
-				Forwards: map[string]OutputForwardConfig{
-					"example4": {
-						Protocol: "http",
-						User:     "",
-						Password: "",
-						Host:     "combined.com",
-						Port:     8000,
-						Tag:      "taggy",
-					},
-				},
-				Webhooks: map[string]OutputWebhookConfig{
-					"example5": {
-						Protocol: "http",
-						Host:     "hooky.com",
-						Port:     8088,
-						Timeout:  "10s",
-					},
-				},
-			},
-			expected: []string{
-				"forward:http://combined.com:8000?tag=taggy",
-				"webhook:http://hooky.com:8088?timeout=10s",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			got := tt.config.flags()
-			if !slicesEqualIgnoreOrder(got, tt.expected) {
-				t.Errorf("flags() = %v, want %v", got, tt.expected)
-			}
-		})
-	}
-}
 
 func TestServerConfigFlags(t *testing.T) {
 	t.Parallel()

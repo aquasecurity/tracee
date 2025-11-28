@@ -139,56 +139,25 @@ scope:
 metrics: false
 
 output:
-    json:
-        files:
-            - stdout
-
-    # table:
-    #     files:
-    #         - /path/to/table1.out
-    #         - /path/to/table2.out
-
-    # table-verbose:
-    #     files:
-    #         - stdout
-
-    # gotemplate:
-    #     template: /path/to/my_template1.tmpl
-    #     files:
-    #         - /path/to/output1.out
-    #         - /path/to/output2.out
-
-    # forward:
-    #     - forward1:
-    #         protocol: tcp
-    #         user: user
-    #         password: pass
-    #         host: 127.0.0.1
-    #         port: 24224
-    #         tag: tracee1
-    #     - forward2:
-    #         protocol: udp
-    #         user: user
-    #         password: pass
-    #         host: 127.0.0.1
-    #         port: 24225
-    #         tag: tracee2
-
-    # webhook:
-    #     - webhook1:
-    #         protocol: http
-    #         host: localhost
-    #         port: 8000
-    #         timeout: 5s
-    #         gotemplate: /path/to/template/test.tmpl
-    #         content-type: application/json
-    #     - webhook2:
-    #         protocol: http
-    #         host: localhost
-    #         port: 9000
-    #         timeout: 3s
-    #         gotemplate: /path/to/template/test.tmpl
-    #         content-type: application/json
+    # destinations:
+    #   - name: destination_name
+    #     type: file | webhook | forward
+    #     path: path in case of type == file
+    #     url: url in case of type == webhook or type == forward
+    #     format: json | gotemplate=/path/to/template.tpl | table | table-verbose
+    
+    # streams:
+    #   - name: stream_name
+    #     destinations: 
+    #       - destination_name
+    #     filters:
+    #       events:
+    #         - event_to_filter
+    #       policies:
+    #         - policy_to_filter
+    #     buffer:
+    #       mode: drop
+    #       size: 1024
 
     # options:
     #     none: false

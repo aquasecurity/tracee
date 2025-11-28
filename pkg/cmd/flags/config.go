@@ -154,14 +154,52 @@ func (c *CapabilitiesConfig) flags() []string {
 // output flag
 //
 
+type StreamBufferMode string
+
+const (
+	StreamBufferBlock StreamBufferMode = "block"
+	StreamBufferDrop  StreamBufferMode = "drop"
+)
+
+type StreamFiltersConfig struct {
+	Policies []string `mapstructure:"policies"`
+	Events   []string `mapstructure:"events"`
+}
+
+type StreamBufferConfig struct {
+	Size int              `mapstructure:"size"`
+	Mode StreamBufferMode `mapstructure:"mode"`
+}
+
+type StreamConfig struct {
+	Name         string              `mapstructure:"name"`
+	Destinations []string            `mapstructure:"destinations"`
+	Filters      StreamFiltersConfig `mapstructure:"filters"`
+	Buffer       StreamBufferConfig  `mapstructure:"buffer"`
+}
+
+type DestinationsConfig struct {
+	Name   string `mapstructure:"name"`
+	Type   string `mapstructure:"type"`
+	Format string `mapstructure:"format"`
+	Path   string `mapstructure:"path"`
+	Url    string `mapstructure:"url"`
+}
+
+type OutputOptsConfig struct {
+	None              bool   `mapstructure:"none"`
+	StackAddresses    bool   `mapstructure:"stack-addresses"`
+	ExecEnv           bool   `mapstructure:"exec-env"`
+	ExecHash          string `mapstructure:"exec-hash"`
+	ParseArguments    bool   `mapstructure:"parse-arguments"`
+	ParseArgumentsFDs bool   `mapstructure:"parse-arguments-fds"`
+	SortEvents        bool   `mapstructure:"sort-events"`
+}
+
 type OutputConfig struct {
-	Options      OutputOptsConfig               `mapstructure:"options"`
-	Table        OutputFormatConfig             `mapstructure:"table"`
-	TableVerbose OutputFormatConfig             `mapstructure:"table-verbose"`
-	JSON         OutputFormatConfig             `mapstructure:"json"`
-	GoTemplate   OutputGoTemplateConfig         `mapstructure:"gotemplate"`
-	Forwards     map[string]OutputForwardConfig `mapstructure:"forward"`
-	Webhooks     map[string]OutputWebhookConfig `mapstructure:"webhook"`
+	Options      OutputOptsConfig     `mapstructure:"options"`
+	Destinations []DestinationsConfig `mapstructure:"destinations"`
+	Streams      []StreamConfig       `mapstructure:"streams"`
 }
 
 func (c *OutputConfig) flags() []string {
@@ -190,102 +228,47 @@ func (c *OutputConfig) flags() []string {
 		flags = append(flags, "option:sort-events")
 	}
 
-	// formats with files
-	formatFilesMap := map[string][]string{
-		"table":         c.Table.Files,
-		"table-verbose": c.TableVerbose.Files,
-		"json":          c.JSON.Files,
-	}
-	for format, files := range formatFilesMap {
-		for _, file := range files {
-			flags = append(flags, fmt.Sprintf("%s:%s", format, file))
+	// destinations
+	for _, destination := range c.Destinations {
+		if destination.Format != "" {
+			flags = append(flags, fmt.Sprintf("destinations.%s.format=%s", destination.Name, destination.Format))
+		}
+
+		if destination.Type != "" {
+			flags = append(flags, fmt.Sprintf("destinations.%s.type=%s", destination.Name, destination.Type))
+		}
+
+		if destination.Path != "" {
+			flags = append(flags, fmt.Sprintf("destinations.%s.path=%s", destination.Name, destination.Path))
+		}
+
+		if destination.Url != "" {
+			flags = append(flags, fmt.Sprintf("destinations.%s.url=%s", destination.Name, destination.Url))
 		}
 	}
 
-	// gotemplate
-	if c.GoTemplate.Template != "" {
-		templateFlag := fmt.Sprintf("gotemplate=%s", c.GoTemplate.Template)
-		if len(c.GoTemplate.Files) > 0 {
-			templateFlag += ":" + strings.Join(c.GoTemplate.Files, ",")
+	// streams
+	for _, stream := range c.Streams {
+		if stream.Buffer.Mode != "" {
+			flags = append(flags, fmt.Sprintf("streams.%s.buffer.mode=%s", stream.Name, stream.Buffer.Mode))
 		}
 
-		flags = append(flags, templateFlag)
-	}
-
-	// forward
-	for forwardName, forward := range c.Forwards {
-		_ = forwardName
-		url := fmt.Sprintf("%s://", forward.Protocol)
-
-		if forward.User != "" && forward.Password != "" {
-			url += fmt.Sprintf("%s:%s@", forward.User, forward.Password)
+		if stream.Buffer.Size >= 0 {
+			flags = append(flags, fmt.Sprintf("streams.%s.buffer.size=%d", stream.Name, stream.Buffer.Size))
 		}
 
-		url += fmt.Sprintf("%s:%d", forward.Host, forward.Port)
-
-		if forward.Tag != "" {
-			url += fmt.Sprintf("?tag=%s", forward.Tag)
+		if len(stream.Destinations) > 0 {
+			flags = append(flags, fmt.Sprintf("streams.%s.destinations=%s", stream.Name, strings.Join(stream.Destinations, ",")))
 		}
 
-		flags = append(flags, fmt.Sprintf("forward:%s", url))
-	}
-
-	// webhook
-	for webhookName, webhook := range c.Webhooks {
-		_ = webhookName
-		delim := "?"
-		url := fmt.Sprintf("%s://%s:%d", webhook.Protocol, webhook.Host, webhook.Port)
-		if webhook.Timeout != "" {
-			url += fmt.Sprintf("%stimeout=%s", delim, webhook.Timeout)
-			delim = "&"
-		}
-		if webhook.GoTemplate != "" {
-			url += fmt.Sprintf("%sgotemplate=%s", delim, webhook.GoTemplate)
-			delim = "&"
-		}
-		if webhook.ContentType != "" {
-			url += fmt.Sprintf("%scontentType=%s", delim, webhook.ContentType)
+		if len(stream.Filters.Events) > 0 {
+			flags = append(flags, fmt.Sprintf("streams.%s.filters.events=%s", stream.Name, strings.Join(stream.Filters.Events, ",")))
 		}
 
-		flags = append(flags, fmt.Sprintf("webhook:%s", url))
+		if len(stream.Filters.Policies) > 0 {
+			flags = append(flags, fmt.Sprintf("streams.%s.filters.policies=%s", stream.Name, strings.Join(stream.Filters.Policies, ",")))
+		}
 	}
 
 	return flags
-}
-
-type OutputOptsConfig struct {
-	None              bool   `mapstructure:"none"`
-	StackAddresses    bool   `mapstructure:"stack-addresses"`
-	ExecEnv           bool   `mapstructure:"exec-env"`
-	ExecHash          string `mapstructure:"exec-hash"`
-	ParseArguments    bool   `mapstructure:"parse-arguments"`
-	ParseArgumentsFDs bool   `mapstructure:"parse-arguments-fds"`
-	SortEvents        bool   `mapstructure:"sort-events"`
-}
-
-type OutputFormatConfig struct {
-	Files []string `mapstructure:"files"`
-}
-
-type OutputGoTemplateConfig struct {
-	Template string   `mapstructure:"template"`
-	Files    []string `mapstructure:"files"`
-}
-
-type OutputForwardConfig struct {
-	Protocol string `mapstructure:"protocol"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Tag      string `mapstructure:"tag"`
-}
-
-type OutputWebhookConfig struct {
-	Protocol    string `mapstructure:"protocol"`
-	Host        string `mapstructure:"host"`
-	Port        int    `mapstructure:"port"`
-	Timeout     string `mapstructure:"timeout"`
-	GoTemplate  string `mapstructure:"gotemplate"`
-	ContentType string `mapstructure:"content-type"`
 }

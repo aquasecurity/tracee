@@ -14,11 +14,11 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/server/grpc"
 	"github.com/aquasecurity/tracee/pkg/server/http"
+	"github.com/aquasecurity/tracee/pkg/streams"
 )
 
 type Runner struct {
 	TraceeConfig config.Config
-	Printer      *printer.Broadcast
 	Workdir      string
 	HTTP         *http.Server
 	GRPC         *grpc.Server
@@ -89,7 +89,7 @@ func (r Runner) Run(ctx context.Context) error {
 
 	// Run Tracee
 
-	if r.Printer.Active() {
+	if r.shouldRunWithPrinter() {
 		// Run Tracee with event subscription and printing.
 		return r.runWithPrinter(ctx, t) // blocks until ctx is done
 	}
@@ -98,45 +98,75 @@ func (r Runner) Run(ctx context.Context) error {
 	return t.Run(ctx) // blocks until ctx is done
 }
 
+// shouldRunWithPrinter returns true only if there is at least one
+// stream with a destination which is not "ignore"
+func (r Runner) shouldRunWithPrinter() bool {
+	streamConfigs := r.TraceeConfig.Output.Streams
+	if len(streamConfigs) == 0 {
+		return false
+	}
+
+	// It should never happen
+	if len(streamConfigs) == 1 && len(streamConfigs[0].Destinations) == 0 {
+		return false
+	}
+
+	// If the only stream existing has a single destination which is
+	// ignore we ignore it and do not even jump to r.runWithPrinter()
+	if len(streamConfigs) == 1 && len(streamConfigs[0].Destinations) == 1 &&
+		streamConfigs[0].Destinations[0].Type == "ignore" {
+		return false
+	}
+
+	return true
+}
+
 // runWithPrinter runs Tracee with event subscription and printing enabled.
 //
 // It wraps Tracee's Run method to handle event subscription and printing, and ensures
 // that any remaining events are drained when the context is cancelled.
 //
-// NOTE: This should only be called if a printer is active.
+// NOTE: This should only be called if at least a stream with a destination exists.
 func (r Runner) runWithPrinter(ctx context.Context, t *tracee.Tracee) error {
-	stream := t.SubscribeAll()
-	defer t.Unsubscribe(stream)
+	streamList := make([]*streams.Stream, 0)
+	printers := []printer.EventPrinter{}
 
-	r.Printer.Preamble()
+	for _, s := range r.TraceeConfig.Output.Streams {
+		var p printer.EventPrinter
+		var err error
 
-	// Start goroutine to print incoming events
-	go func() {
-		for {
-			select {
-			case event := <-stream.ReceiveEvents():
-				if event != nil {
-					r.Printer.Print(event)
-				}
-			case <-ctx.Done():
-				return
-			}
+		p, err = printer.New(s.Destinations)
+		if err != nil {
+			return err
 		}
-	}()
+		printers = append(printers, p)
+
+		var stream *streams.Stream
+		stream, err = t.Subscribe(s)
+		if err != nil {
+			return err
+		}
+
+		go func() {
+			// blocks
+			p.FromStream(ctx, stream)
+		}()
+
+		streamList = append(streamList, stream)
+	}
 
 	// Blocks until ctx is done
 	err := t.Run(ctx)
 
-	// Drain remaining channel events (sent during shutdown)
-	for event := range stream.ReceiveEvents() {
-		if event != nil {
-			r.Printer.Print(event)
-		}
+	for _, s := range streamList {
+		t.Unsubscribe(s)
 	}
 
 	stats := t.Stats()
-	r.Printer.Epilogue(*stats)
-	r.Printer.Close()
+	for _, p := range printers {
+		p.Epilogue(*stats)
+		p.Close()
+	}
 
 	return err
 }

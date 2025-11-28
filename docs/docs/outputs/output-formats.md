@@ -6,20 +6,47 @@ Note that only one output format can be used in the Tracee configuration.
 
 ## Available Formats
 
-The following examples will have to be added into a Tracee configuration file.
+The following examples will have to be added into a Tracee configuration file or CLI flags.
 
 ### JSON
 
 Displays output events in json format. The default path to a file is stdout.
 
+**yaml**
+
 ```yaml
 output:
-    json:
-        files:
-            - stdout
+    destinations:
+    - name: stdout_destination
+      type: file
+      format: json
+      path: stdout
 ```
 
-Note: the `files: key` must also be defined, even if it's just for stdout. This is mandatory for the parser.
+**cli**
+
+```bash
+tracee  --output destinations.stdout_destination.type=file \
+        --output destinations.stdout_destination.format=json \
+        --output destinations.stdout_destination.path=stdout
+```
+
+Note: the `name` is mandatory. `type` has `file` as a default value. `format` has `table` as a default value. `path` has `stdout` as a default value. The following configuration is valid as well
+
+**yaml**
+
+```yaml
+output:
+    destinations:
+    - name: stdout_destination
+      format: json
+```
+
+**cli**
+
+```bash
+tracee --output destinations.stdout_destination.format=json
+```
 
 !!! Tip
     A good tip is to pipe **tracee** json output to [jq](https://jqlang.github.io/jq/) tool, this way
@@ -31,26 +58,35 @@ This sends events in json format to the webhook url
 
 Below is an example for configuring webhooks in the Tracee output section:
 
-```
+**yaml**
+
+```yaml
 output:
-    # webhook:
-    #     - webhook1:
-    #         protocol: http
-    #         host: localhost
-    #         port: 8000
-    #         timeout: 5s
-    #         gotemplate: /path/to/template/test.tmpl
-    #         content-type: application/json
-    #     - webhook2:
-    #         protocol: http
-    #         host: localhost
-    #         port: 9000
-    #         timeout: 3s
-    #         gotemplate: /path/to/template/test.tmpl
-    #         content-type: application/json
+    destinations:
+    - name: webhook1
+      type: webhook
+      url: http://localhost:8080?timeout=5s
+      format: gotemplate=/path/to/template/test.tmpl
+
+    - name: webhook2
+      type: webhook
+      url: http://localhost:9000
+      format: gotemplate=/path/to/template/test.tmpl
 ```
 
-Note: Please ensure that the respective fields will have to be uncommented.
+**cli**
+
+```bash
+tracee  --output destinations.webhook1.type=webhook \
+        --output destinations.webhook1.url=http://localhost:8080?timeout=5s \
+        --output destinations.webhook1.format=gotemplate=/path/to/template/test.tmpl \
+        --output destinations.webhook2.type=webhook \
+        --output destinations.webhook2.url=http://localhost:9000 \
+        --output destinations.webhook2.format=gotemplate=/path/to/template/test.tmpl
+```
+
+Note: `gotemplate=/path/to/template.tmpl` can be specified in `format` and as a parameter in the webhook url as well. 
+Be aware that the url parameters has the priority on the format.
 
 ### Forward
 
@@ -58,54 +94,111 @@ This sends events to a FluentBit receiver. More information on FluentBit can be 
 
 Below is an example for forwarding Tracee output: 
 
-```
+**yaml**
+
+```yaml
 output:
-    # forward:
-    #     - forward1:
-    #         protocol: tcp
-    #         user: user
-    #         password: pass
-    #         host: 127.0.0.1
-    #         port: 24224
-    #         tag: tracee1
-    #     - forward2:
-    #         protocol: udp
-    #         user: user
-    #         password: pass
-    #         host: 127.0.0.1
-    #         port: 24225
-    #         tag: tracee2
+    destinations:
+    - name: forward1
+      type: forward
+      url: tpc://user:password@localhost:24224?tag=tracee1
+      format: gotemplate=/path/to/template/test.tmpl
+
+    - name: forward2
+      type: forward
+      url: http://localhost:24224?tag=tracee2
+      format: json
 ```
 
-Note: Please ensure that the respective fields will have to be uncommented.
+**cli**
+
+```bash
+tracee  --output destinations.forward1.type=forward \
+        --output destinations.forward1.url=tpc://user:password@localhost:24224?tag=tracee1 \
+        --output destinations.forward1.format=gotemplate=/path/to/template/test.tmpl \
+        --output destinations.forward2.type=forward \
+        --output destinations.forward2.url=http://localhost:24224?tag=tracee2 \
+        --output destinations.forward2.format=json 
+```
 
 ### Table
 
 Displays output events in table format. The default path to a file is stdout.
 
+**yaml**
+
 ```yaml
 output:
-    table:
-        files:
-            - /path/to/table1.out
-            - /path/to/table2.out
+    destinations:
+    - name: stdout_table_destination
+      type: file
+      format: table
+      path: stdout
 ```
 
-Note: the `files: key` must also be defined, even if it's just for stdout. This is mandatory for the parser.
+**cli**
+
+```bash
+tracee  --output destinations.stdout_table_destination.type=file \
+        --output destinations.stdout_table_destination.path=stdout \
+        --output destinations.stdout_table_destination.format=table
+```
+
+or
+
+**yaml**
+
+```yaml
+output:
+    destinations:
+    - name: stdout_table_destination
+```
+
+**cli**
+
+```bash
+tracee --output destinations.stdout_table_destination.format=table
+```
 
 ### Table (Verbose)
 
 Displays the output events in table format with extra fields per event. The default path to a file is stdout.
 
+**yaml**
 
 ```yaml
 output:
-    table-verbose:
-        files:
-            - stdout
+    destinations:
+    - name: stdout_table_verbose_destination
+      type: file
+      format: table-verbose
+      path: stdout
 ```
 
-Note: the `files: key` must also be defined, even if it's just for stdout. This is mandatory for the parser.
+**cli**
+
+```bash
+tracee  --output destinations.stdout_table_verbose_destination.type=file \
+        --output destinations.stdout_table_verbose_destination.path=stdout \
+        --output destinations.stdout_table_verbose_destination.format=table-verbose
+```
+
+or a smaller version without default values explicitly declared
+
+**yaml**
+
+```yaml
+output:
+    destinations:
+    - name: stdout_table_verbose_destination
+      format: table-verbose
+```
+
+**cli**
+
+```bash
+tracee  --output destinations.stdout_table_verbose_destination.format=table-verbose
+```
 
 ### GOTEMPLATE
 
@@ -136,11 +229,42 @@ For example templates, see the templates directory in the source repository.
 
 The following sections can be specified as part of go templates:
 
-```
+```yaml
 output:
-    # gotemplate:
-    #     template: /path/to/my_template1.tmpl
-    #     files:
-    #         - /path/to/output1.out
-    #         - /path/to/output2.out
+    destinations:
+    - name: file_destination_1
+      type: file
+      format: gotemplate=/path/to/template_1.tmpl
+      path: /path/to/file.log
+
+    - name: file_destination_2
+      type: file
+      format: gotemplate=/path/to/template_2.tmpl
+      path: /path/to/file_2.log
 ```
+
+or the following flags can be used:
+
+```bash
+tracee  --output destinations.stdout_destination_1.type=file \
+        --output destinations.stdout_destination_1.format=gotemplate=/path/to/template_1.tmpl \
+        --output destinations.stdout_destination_1.path=/path/to/file.log \
+        --output destinations.stdout_destination_2.type=file \
+        --output destinations.stdout_destination_2.format=gotemplate=/path/to/template_2.tmpl \
+        --output destinations.stdout_destination_2.path=/path/to/file_2.log \
+```
+
+## CLI flags
+
+A destination can be configured using CLI flags as well. The format of a flag is `--output destinations.<destination_name>.<field_name>=<value>`.
+
+### Available fields
+
+| Field    | Usage                                                                                              | Default                                          |
+| :------: | -------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| type     | type of the destination. One of `file`, `webhook` or `forward`.                                    | file                                             |
+| format   | format of the event. One of `json`, `table`, `table-verbose` or gotemplate=/path/to/template.yaml. | `table` for file, `json` for webhook and forward |
+| url      | only for `webhook` and `forward` specify the destination url.                                      |                                                  |
+| path     | only for `file` specify the file path to create, default to `stdout`.                              |                                                  |
+
+Note: not specifying the `type` of destination will result in default value `file` which invalidates the presence of `url` field
