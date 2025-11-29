@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
 )
@@ -77,6 +78,7 @@ type KernelSymbolTable struct {
 	// Used for memory efficient representation of symbol owners
 	idxToSymbolOwner []string
 	symbolOwnerToIdx map[string]uint16
+	lastAccessNano   atomic.Int64 // last datastore access time (Unix nano)
 }
 
 // Creates a new KernelSymbolTable that will be populated from a reader.
