@@ -71,7 +71,8 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	require.NoError(t, err, "Tracee failed to start")
 
 	// Subscribe to events
-	eventStream := traceeInstance.SubscribeAll()
+	eventStream, err := traceeInstance.Subscribe(config.Stream{})
+	require.NoError(t, err)
 	defer traceeInstance.Unsubscribe(eventStream)
 
 	// Start event collection goroutine
@@ -268,9 +269,9 @@ func Test_ExistingContainers(t *testing.T) {
 
 	// Subscribe to events BEFORE waiting for Tracee to start
 	// (ExistingContainer events are emitted during Tracee's initialization)
-	eventStream := traceeInstance.SubscribeAll()
+	eventStream, err := traceeInstance.Subscribe(config.Stream{})
+	require.NoError(t, err)
 	defer traceeInstance.Unsubscribe(eventStream)
-
 	// Start event collection goroutine
 	go func() {
 		for {
