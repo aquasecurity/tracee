@@ -22,9 +22,10 @@ var (
 )
 
 const (
-	defaultTriggerOps   = int32(1)
-	defaultTriggerSleep = 10 * time.Nanosecond
-	triggerTimeout      = 30 * time.Minute
+	defaultTriggerOps      = int32(1)
+	defaultTriggerSleep    = 10 * time.Nanosecond
+	defaultTriggerParallel = int32(1)
+	triggerTimeout         = 30 * time.Minute
 )
 
 func init() {
@@ -66,12 +67,37 @@ func init() {
 		false,
 		"\t\t\tWait for start signal (SIGUSR1)",
 	)
+
+	triggerCmd.Flags().Int32P(
+		"parallel",
+		"p",
+		defaultTriggerParallel,
+		"<number>...\t\tNumber of parallel workers (total ops = workers × ops)",
+	)
 }
 
 func getTrigger(cmd *cobra.Command) (*trigger, error) {
 	event, err := cmd.Flags().GetString("event")
 	if err != nil {
 		return nil, err
+	}
+	if event == "" {
+		return nil, errors.New("event name cannot be empty")
+	}
+
+	// Check if user tried to specify multiple events (common mistake)
+	// Cobra doesn't error on duplicate flags, it just uses the last value
+	if cmd.Flags().Changed("event") {
+		// Check for multiple -e flags in os.Args
+		eventFlagCount := 0
+		for i, arg := range os.Args {
+			if arg == "-e" || arg == "--event" {
+				eventFlagCount++
+				if eventFlagCount > 1 {
+					return nil, fmt.Errorf("multiple events not supported: use separate 'evt trigger' commands for each event (found -e/%s at args[%d])", arg, i)
+				}
+			}
+		}
 	}
 
 	ops, err := cmd.Flags().GetInt32("ops")
@@ -97,12 +123,21 @@ func getTrigger(cmd *cobra.Command) (*trigger, error) {
 		return nil, err
 	}
 
+	parallel, err := cmd.Flags().GetInt32("parallel")
+	if err != nil {
+		return nil, err
+	}
+	if parallel <= 0 {
+		return nil, errors.New("parallel must be greater than 0")
+	}
+
 	return &trigger{
 		event:            event,
 		ops:              ops,
 		sleep:            sleep,
 		printBypassFlags: bypassFlags,
 		waitSignal:       waitSignal,
+		parallel:         parallel,
 		cmd:              cmd,
 	}, nil
 }

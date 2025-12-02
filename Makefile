@@ -771,6 +771,25 @@ clean-evt::
 	$(CMD_RM) -rf $(OUTPUT_DIR)/evt
 	$(CMD_RM) -rf $(OUTPUT_DIR)/evt-triggers
 
+# evt container image
+
+EVT_CONT_NAME = evt:latest
+EVT_CONT_DOCKERFILE = builder/Dockerfile.evt-container
+
+.PHONY: evt-container
+evt-container:
+#
+	docker build \
+		--network host \
+		-f $(EVT_CONT_DOCKERFILE) \
+		-t $(EVT_CONT_NAME) \
+		.
+
+.PHONY: clean-evt-container
+clean-evt-container:
+#
+	docker rmi -f $(EVT_CONT_NAME) 2>/dev/null || true
+
 # tracee-bench
 
 TRACEE_BENCH_SRC_DIRS = ./cmd/tracee-bench/

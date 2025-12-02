@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -27,6 +28,7 @@ type trigger struct {
 	sleep            time.Duration
 	waitSignal       bool
 	printBypassFlags bool
+	parallel         int32
 	triggerPath      string
 
 	ctx context.Context
@@ -70,8 +72,37 @@ func (t *trigger) setTriggerPath() error {
 func (t *trigger) runTriggers() error {
 	const layout = "15:04:05.999999999"
 	now := time.Now()
-	t.printf("Starting triggering %d ops with %v sleep time at %v\n", t.ops, t.sleep, now.Format(layout))
 
+	if t.parallel == 1 {
+		// Sequential execution
+		t.printf("Starting triggering %d ops with %v sleep time at %v\n", t.ops, t.sleep, now.Format(layout))
+		err := t.runTriggersSequential()
+		if err != nil {
+			return err
+		}
+	} else {
+		// Parallel execution: total = parallel × ops
+		totalOps := t.parallel * t.ops
+		t.printf("Starting triggering %d total ops (%d workers × %d ops) with %v sleep time at %v\n",
+			totalOps, t.parallel, t.ops, t.sleep, now.Format(layout))
+		err := t.runTriggersParallel()
+		if err != nil {
+			return err
+		}
+	}
+
+	end := time.Now()
+	totalOps := t.ops
+	if t.parallel > 1 {
+		totalOps = t.parallel * t.ops
+	}
+	t.printf("Finished triggering %d ops after %v at %v\n", totalOps, end.Sub(now).String(), end.Format(layout))
+
+	return nil
+}
+
+// runTriggersSequential runs ops sequentially
+func (t *trigger) runTriggersSequential() error {
 	for i := int32(0); i < t.ops; i++ {
 		select {
 		case <-t.ctx.Done():
@@ -87,9 +118,50 @@ func (t *trigger) runTriggers() error {
 			return fmt.Errorf("failed to run command: %w", err)
 		}
 	}
+	return nil
+}
 
-	end := time.Now()
-	t.printf("Finished triggering %d ops after %v at %v\n", t.ops, end.Sub(now).String(), end.Format(layout))
+// runTriggersParallel spawns N workers, each running ops operations
+// Total operations = parallel × ops
+func (t *trigger) runTriggersParallel() error {
+	var wg sync.WaitGroup
+	errChan := make(chan error, t.parallel)
+
+	// Each worker runs the full ops count
+	for workerID := int32(0); workerID < t.parallel; workerID++ {
+		wg.Add(1)
+		go func(id int32) {
+			defer wg.Done()
+
+			// Each worker runs t.ops operations
+			for i := int32(0); i < t.ops; i++ {
+				select {
+				case <-t.ctx.Done():
+					errChan <- t.ctx.Err()
+					return
+				default:
+					time.Sleep(t.sleep)
+				}
+
+				exeCmd := exec.CommandContext(t.ctx, t.triggerPath)
+				if err := exeCmd.Run(); err != nil {
+					errChan <- fmt.Errorf("worker %d failed: %w", id, err)
+					return
+				}
+			}
+		}(workerID)
+	}
+
+	// Wait for all workers to complete
+	wg.Wait()
+	close(errChan)
+
+	// Check for errors
+	for err := range errChan {
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
