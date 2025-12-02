@@ -1,0 +1,97 @@
+#
+# Creates the evt trigger runner container image.
+# This container is used by 'evt stress' command to run event triggers in isolation.
+#
+
+.PHONY: all
+all: help
+
+#
+# make
+#
+
+.ONESHELL:
+SHELL = /bin/sh
+
+MAKEFLAGS += --no-print-directory
+
+#
+# tools
+#
+
+CMD_DOCKER ?= docker
+
+.check_%:
+#
+	@command -v $* >/dev/null
+	if [ $$? -ne 0 ]; then
+		echo "missing required tool $*"
+		exit 1
+	else
+		touch $@ # avoid target rebuilds due to inexistent file
+	fi
+
+#
+# usage
+#
+
+.PHONY: help
+help:
+	@echo ""
+	@echo "CREATES THE EVT TRIGGER RUNNER CONTAINER IMAGE"
+	@echo ""
+	@echo "This container is used by 'evt stress' command to run event triggers in isolation."
+	@echo ""
+	@echo "To GENERATE evt trigger runner container:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.evt-trigger-runner build"
+	@echo ""
+	@echo "    Or with custom image name:"
+	@echo ""
+	@echo "    $$ EVT_TRIGGER_RUNNER_IMAGE=my-runner:dev make -f builder/Makefile.evt-trigger-runner build"
+	@echo ""
+	@echo "To CLEAN evt trigger runner container:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.evt-trigger-runner clean"
+	@echo ""
+
+#
+# requirements
+#
+
+.PHONY: .check_tree
+.check_tree:
+#
+	@if [ ! -d ./builder ]; then
+		echo "you must be in the root directory"
+		exit 1
+	fi
+
+#
+# create evt trigger runner
+#
+
+EVT_TRIGGER_RUNNER_IMAGE ?= evt-trigger-runner:latest
+EVT_TRIGGER_RUNNER_DOCKERFILE = builder/Dockerfile.evt-trigger-runner
+
+.PHONY: build
+build: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) image build \
+		--network host \
+		-f $(EVT_TRIGGER_RUNNER_DOCKERFILE) \
+		-t $(EVT_TRIGGER_RUNNER_IMAGE) \
+		.
+
+#
+# clean
+#
+
+.PHONY: clean
+clean: \
+	| .check_$(CMD_DOCKER)
+#
+	$(CMD_DOCKER) image rm -f $(EVT_TRIGGER_RUNNER_IMAGE) 2>/dev/null || true
+
