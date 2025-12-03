@@ -2,7 +2,6 @@ package trigger
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -18,15 +17,14 @@ import (
 	"github.com/aquasecurity/tracee/cmd/evt/cmd/helpers"
 )
 
-const (
-	signalWaitTimeout = 1 * time.Minute
-)
+const ()
 
 type trigger struct {
 	event            string
 	ops              int32
 	sleep            time.Duration
 	waitSignal       bool
+	signalTimeout    time.Duration
 	printBypassFlags bool
 	parallel         int32
 	triggerPath      string
@@ -166,19 +164,19 @@ func (t *trigger) runTriggersParallel() error {
 	return nil
 }
 
-func (t *trigger) printf(format string, args ...interface{}) {
+func (t *trigger) printf(format string, args ...any) {
 	t.cmd.Printf(format, args...)
 }
 
-func (t *trigger) println(args ...interface{}) {
+func (t *trigger) println(args ...any) {
 	t.cmd.Println(args...)
 }
 
-func (t *trigger) printErrf(format string, args ...interface{}) {
+func (t *trigger) printErrf(format string, args ...any) {
 	t.cmd.PrintErrf(format, args...)
 }
 
-func (t *trigger) printErrln(args ...interface{}) {
+func (t *trigger) printErrln(args ...any) {
 	t.cmd.PrintErrln(args...)
 }
 
@@ -206,10 +204,10 @@ func (t *trigger) waitForSignal() error {
 
 	startChan := make(chan os.Signal, 1)
 	signal.Notify(startChan, syscall.SIGUSR1)
-	t.println("Waiting for start signal SIGUSR1")
+	t.printf("Waiting for start signal SIGUSR1 (timeout: %v)", t.signalTimeout)
 
 	ctx := t.ctx
-	timeout := time.After(signalWaitTimeout)
+	timeout := time.After(t.signalTimeout)
 
 	select {
 	case <-ctx.Done():
@@ -217,7 +215,7 @@ func (t *trigger) waitForSignal() error {
 	case <-startChan:
 		return nil
 	case <-timeout:
-		return errors.New("timed out waiting for signal SIGUSR1")
+		return fmt.Errorf("timed out waiting for signal SIGUSR1 after %v", t.signalTimeout)
 	}
 }
 

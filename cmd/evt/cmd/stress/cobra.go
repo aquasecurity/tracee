@@ -66,6 +66,10 @@ Examples:
   evt stress --events security_file_open:instances=20:ops=10000:sleep=1ms \
     --pyroscope --wait-before-trigger --keep-tracee
 
+  # Custom signal timeout for longer setup times
+  evt stress --events security_file_open --pyroscope --wait-before-trigger \
+    --signal-timeout 30m
+
   # Keep Tracee running after test for external scrapers
   evt stress --events ptrace --pyroscope --keep-tracee
 
@@ -155,6 +159,12 @@ func init() {
 		"\t\tWait for user input before triggering events (useful to start profiling/scraping)",
 	)
 
+	stressCmd.Flags().Duration(
+		"signal-timeout",
+		15*time.Minute,
+		"<duration>\t\tTimeout for containers waiting for signal (e.g., 5m, 30m)",
+	)
+
 	stressCmd.Flags().Bool(
 		"dry-run",
 		false,
@@ -235,6 +245,11 @@ func getStress(cmd *cobra.Command) (*stress, error) {
 		return nil, err
 	}
 
+	signalTimeout, err := cmd.Flags().GetDuration("signal-timeout")
+	if err != nil {
+		return nil, err
+	}
+
 	// Extract event names from triggers for Tracee
 	eventNames := make([]string, 0, len(triggers))
 	for _, tc := range triggers {
@@ -254,6 +269,7 @@ func getStress(cmd *cobra.Command) (*stress, error) {
 		pyroscope:         pyroscope,
 		keepTracee:        keepTracee,
 		waitBeforeTrigger: waitBeforeTrigger,
+		signalTimeout:     signalTimeout,
 		cmd:               cmd,
 	}
 

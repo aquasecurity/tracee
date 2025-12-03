@@ -68,6 +68,12 @@ func init() {
 		"\t\t\tWait for start signal (SIGUSR1)",
 	)
 
+	triggerCmd.Flags().Duration(
+		"signal-timeout",
+		1*time.Minute,
+		"<duration>\t\tTimeout for waiting for signal (e.g., 5m, 10m)",
+	)
+
 	triggerCmd.Flags().Int32P(
 		"parallel",
 		"p",
@@ -123,6 +129,11 @@ func getTrigger(cmd *cobra.Command) (*trigger, error) {
 		return nil, err
 	}
 
+	signalTimeout, err := cmd.Flags().GetDuration("signal-timeout")
+	if err != nil {
+		return nil, err
+	}
+
 	parallel, err := cmd.Flags().GetInt32("parallel")
 	if err != nil {
 		return nil, err
@@ -137,6 +148,7 @@ func getTrigger(cmd *cobra.Command) (*trigger, error) {
 		sleep:            sleep,
 		printBypassFlags: bypassFlags,
 		waitSignal:       waitSignal,
+		signalTimeout:    signalTimeout,
 		parallel:         parallel,
 		cmd:              cmd,
 	}, nil
