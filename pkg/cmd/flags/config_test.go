@@ -503,6 +503,91 @@ enrichment:
 				"user-stack-trace",
 			},
 		},
+		{
+			name: "Test artifacts configuration (cli flags)",
+			yamlContent: `
+artifacts:
+    - file-write
+    - file-write.filters=path=/tmp*
+    - file-write.filters=type=socket
+    - file-read
+    - file-read.filters=path=/etc*
+    - executable
+    - kernel-modules
+    - bpf-programs
+    - memory-regions
+    - network
+    - network.pcap.split=process,command
+    - network.pcap.options=filtered
+    - network.pcap.snaplen=1kb
+    - dir.path=/custom/path
+    - dir.clear
+`,
+			key: "artifacts",
+			expectedFlags: []string{
+				"file-write",
+				"file-write.filters=path=/tmp*",
+				"file-write.filters=type=socket",
+				"file-read",
+				"file-read.filters=path=/etc*",
+				"executable",
+				"kernel-modules",
+				"bpf-programs",
+				"memory-regions",
+				"network",
+				"network.pcap.split=process,command",
+				"network.pcap.options=filtered",
+				"network.pcap.snaplen=1kb",
+				"dir.path=/custom/path",
+				"dir.clear",
+			},
+		},
+		{
+			name: "Test artifacts configuration (structured flags)",
+			yamlContent: `
+artifacts:
+    file-write:
+        enabled: true
+        filters:
+            - path=/tmp*
+            - type=socket
+    file-read:
+        enabled: true
+        filters:
+            - path=/etc*
+    executable: true
+    kernel-modules: true
+    bpf-programs: true
+    memory-regions: true
+    network:
+        enabled: true
+        pcap:
+            split: process,command
+            options: filtered
+            snaplen: 1kb
+    dir:
+        path: /custom/path
+        clear: true
+`,
+			key: "artifacts",
+			expectedFlags: []string{
+				"file-write",
+				"file-write.filters=path=/tmp*",
+				"file-write.filters=type=socket",
+				"file-read",
+				"file-read.filters=path=/etc*",
+				"executable",
+				"kernel-modules",
+				"bpf-programs",
+				"memory-regions",
+				"network",
+				"network.pcap.split=process,command",
+				"network.pcap.options=filtered",
+				"network.pcap.snaplen=1kb",
+				"dir.path=/custom/path",
+				"dir.clear",
+			},
+		},
 	}
 
 	for _, tt := range tests {
