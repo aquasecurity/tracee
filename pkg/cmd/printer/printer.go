@@ -2,7 +2,6 @@ package printer
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -494,7 +493,7 @@ func (p jsonEventPrinter) Init() error { return nil }
 func (p jsonEventPrinter) Preamble() {}
 
 func (p jsonEventPrinter) Print(event *pb.Event) {
-	eBytes, err := json.Marshal(event)
+	eBytes, err := event.MarshalJSON()
 	if err != nil {
 		logger.Errorw("Error marshaling event to json", "error", err)
 		return // Don't print empty line on marshal failure
@@ -628,7 +627,7 @@ func (p *forwardEventPrinter) Print(event *pb.Event) {
 	}
 
 	// The actual event is marshalled as JSON then sent with the other information (tag, etc.)
-	eBytes, err := json.Marshal(event)
+	eBytes, err := event.MarshalJSON()
 	if err != nil {
 		logger.Errorw("Error marshaling event to json", "error", err)
 	}
@@ -726,7 +725,7 @@ func (ws *webhookEventPrinter) Print(event *pb.Event) {
 		}
 		payload = buf.Bytes()
 	} else {
-		payload, err = json.Marshal(event)
+		payload, err = event.MarshalJSON()
 		if err != nil {
 			logger.Errorw("Error marshalling event", "error", err)
 			return
