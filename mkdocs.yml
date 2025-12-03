@@ -35,7 +35,7 @@ nav:
                                   - scope: docs/flags/scope.1.md
                                   - events: docs/flags/events.1.md
                                   - output: docs/flags/output.1.md
-                                  - capture: docs/flags/capture.1.md
+                                  - artifacts: docs/flags/artifacts.1.md
                                   - config: docs/flags/config.1.md
                                   - containers: docs/flags/containers.1.md
                                   - capabilities: docs/flags/capabilities.1.md
