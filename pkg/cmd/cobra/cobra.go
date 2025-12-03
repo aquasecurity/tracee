@@ -193,17 +193,18 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	cfg.ProcTree = stores.GetProcTreeConfig()
 	cfg.DNSCacheConfig = stores.GetDNSCacheConfig()
 
-	// Capture command line flags - via cobra flag
+	// Artifacts command line flags - via viper
 
-	captureFlags, err := c.Flags().GetStringArray("capture")
+	artifactsFlags, err := flags.GetFlagsFromViper(flags.ArtifactsFlag)
 	if err != nil {
 		return runner, err
 	}
 
-	capture, err := flags.PrepareCapture(captureFlags)
+	artifactsConfig, err := flags.PrepareArtifacts(artifactsFlags)
 	if err != nil {
 		return runner, err
 	}
+	capture := artifactsConfig.GetCapture()
 	cfg.Capture = &capture
 
 	// Capabilities command line flags

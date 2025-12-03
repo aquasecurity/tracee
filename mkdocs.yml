@@ -32,6 +32,7 @@ nav:
                                   - CLI: docs/install/config/cli.md
                                   - Kubernetes: docs/install/config/kubernetes.md
                       - Flag Reference:
+                            - artifacts: docs/flags/artifacts.1.md
                             - buffers: docs/flags/buffers.1.md
                             - capabilities: docs/flags/capabilities.1.md
                             - capture: docs/flags/capture.1.md

@@ -53,7 +53,7 @@ func init() {
 	manCmd.AddCommand(
 		buffersCmd,
 		capabilitiesCmd,
-		captureCmd,
+		artifactsCmd,
 		configCmd,
 		enrichmentCmd,
 		eventCmd,
@@ -101,12 +101,12 @@ var capabilitiesCmd = &cobra.Command{
 	},
 }
 
-var captureCmd = &cobra.Command{
-	Use:     "capture",
+var artifactsCmd = &cobra.Command{
+	Use:     "artifacts",
 	Aliases: []string{"c"},
-	Short:   "Show manual page for the --capture flag",
+	Short:   "Show manual page for the --artifacts flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runManForFlag("capture")
+		return runManForFlag("artifacts")
 	},
 }
 

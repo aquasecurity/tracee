@@ -140,13 +140,17 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
-	// capture is not bound to viper
+	// artifacts is bound to viper
 	rootCmd.Flags().StringArrayP(
-		"capture",
+		flags.ArtifactsFlag,
 		"c",
 		[]string{},
-		"[write|exec|network...]\t\tCapture artifacts that were written, executed or found to be suspicious",
+		"[file-write|executable...]\t\tCapture artifacts that were written, executed or found to be suspicious",
 	)
+	err = viper.BindPFlag(flags.ArtifactsFlag, rootCmd.Flags().Lookup(flags.ArtifactsFlag))
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
 
 	// Config flag
 
