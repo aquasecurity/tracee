@@ -335,6 +335,91 @@ server:
 				"pyroscope",
 			},
 		},
+		{
+			name: "Test artifacts configuration (cli flags)",
+			yamlContent: `
+artifacts:
+    - file-write
+    - file-write.filters=path=/tmp*
+    - file-write.filters=type=socket
+    - file-read
+    - file-read.filters=path=/etc*
+    - executable
+    - kernel-modules
+    - bpf-programs
+    - memory-regions
+    - network
+    - network.pcap.split=process,command
+    - network.pcap.options=filtered
+    - network.pcap.snaplen=1kb
+    - dir.path=/custom/path
+    - dir.clear
+`,
+			key: "artifacts",
+			expectedFlags: []string{
+				"file-write",
+				"file-write.filters=path=/tmp*",
+				"file-write.filters=type=socket",
+				"file-read",
+				"file-read.filters=path=/etc*",
+				"executable",
+				"kernel-modules",
+				"bpf-programs",
+				"memory-regions",
+				"network",
+				"network.pcap.split=process,command",
+				"network.pcap.options=filtered",
+				"network.pcap.snaplen=1kb",
+				"dir.path=/custom/path",
+				"dir.clear",
+			},
+		},
+		{
+			name: "Test artifacts configuration (structured flags)",
+			yamlContent: `
+artifacts:
+    file-write:
+        enabled: true
+        filters:
+            - path=/tmp*
+            - type=socket
+    file-read:
+        enabled: true
+        filters:
+            - path=/etc*
+    executable: true
+    kernel-modules: true
+    bpf-programs: true
+    memory-regions: true
+    network:
+        enabled: true
+        pcap:
+            split: process,command
+            options: filtered
+            snaplen: 1kb
+    dir:
+        path: /custom/path
+        clear: true
+`,
+			key: "artifacts",
+			expectedFlags: []string{
+				"file-write",
+				"file-write.filters=path=/tmp*",
+				"file-write.filters=type=socket",
+				"file-read",
+				"file-read.filters=path=/etc*",
+				"executable",
+				"kernel-modules",
+				"bpf-programs",
+				"memory-regions",
+				"network",
+				"network.pcap.split=process,command",
+				"network.pcap.options=filtered",
+				"network.pcap.snaplen=1kb",
+				"dir.path=/custom/path",
+				"dir.clear",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1106,6 +1191,194 @@ func TestServerConfigFlags(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
+			got := tt.config.flags()
+			if !slicesEqualIgnoreOrder(got, tt.expected) {
+				t.Errorf("flags() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+//
+// artifacts
+//
+
+func TestArtifactsConfigFlags(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		config   ArtifactsConfig
+		expected []string
+	}{
+		{
+			name:     "empty config",
+			config:   ArtifactsConfig{},
+			expected: []string{},
+		},
+		{
+			name: "file-write enabled only",
+			config: ArtifactsConfig{
+				FileWrite: FileWriteConfig{
+					Enabled: true,
+				},
+			},
+			expected: []string{
+				"file-write",
+			},
+		},
+		{
+			name: "file-write with filters",
+			config: ArtifactsConfig{
+				FileWrite: FileWriteConfig{
+					Enabled: true,
+					Filters: []string{"path=/tmp*", "type=socket"},
+				},
+			},
+			expected: []string{
+				"file-write",
+				"file-write.filters=path=/tmp*",
+				"file-write.filters=type=socket",
+			},
+		},
+		{
+			name: "file-read enabled",
+			config: ArtifactsConfig{
+				FileRead: FileReadConfig{
+					Enabled: true,
+				},
+			},
+			expected: []string{
+				"file-read",
+			},
+		},
+		{
+			name: "executable enabled",
+			config: ArtifactsConfig{
+				Executable: true,
+			},
+			expected: []string{
+				"executable",
+			},
+		},
+		{
+			name: "kernel-modules enabled",
+			config: ArtifactsConfig{
+				KernelModules: true,
+			},
+			expected: []string{
+				"kernel-modules",
+			},
+		},
+		{
+			name: "bpf-programs enabled",
+			config: ArtifactsConfig{
+				BpfPrograms: true,
+			},
+			expected: []string{
+				"bpf-programs",
+			},
+		},
+		{
+			name: "memory-regions enabled",
+			config: ArtifactsConfig{
+				MemoryRegions: true,
+			},
+			expected: []string{
+				"memory-regions",
+			},
+		},
+		{
+			name: "network enabled",
+			config: ArtifactsConfig{
+				Network: NetworkConfig{
+					Enabled: true,
+				},
+			},
+			expected: []string{
+				"network",
+			},
+		},
+		{
+			name: "network with pcap options",
+			config: ArtifactsConfig{
+				Network: NetworkConfig{
+					Enabled: true,
+					Pcap: NetworkPcapConfig{
+						Split:   "process,command",
+						Options: "filtered",
+						Snaplen: "1kb",
+					},
+				},
+			},
+			expected: []string{
+				"network",
+				"network.pcap.split=process,command",
+				"network.pcap.options=filtered",
+				"network.pcap.snaplen=1kb",
+			},
+		},
+		{
+			name: "dir path",
+			config: ArtifactsConfig{
+				Dir: DirConfig{
+					Path: "/custom/path",
+				},
+			},
+			expected: []string{
+				"dir.path=/custom/path",
+			},
+		},
+		{
+			name: "dir clear",
+			config: ArtifactsConfig{
+				Dir: DirConfig{
+					Clear: true,
+				},
+			},
+			expected: []string{
+				"dir.clear",
+			},
+		},
+		{
+			name: "combined config",
+			config: ArtifactsConfig{
+				FileWrite: FileWriteConfig{
+					Enabled: true,
+					Filters: []string{"path=/tmp*"},
+				},
+				Executable:    true,
+				KernelModules: true,
+				Network: NetworkConfig{
+					Enabled: true,
+					Pcap: NetworkPcapConfig{
+						Split: "single",
+					},
+				},
+				Dir: DirConfig{
+					Path:  "/custom/path",
+					Clear: true,
+				},
+			},
+			expected: []string{
+				"file-write",
+				"file-write.filters=path=/tmp*",
+				"executable",
+				"kernel-modules",
+				"network",
+				"network.pcap.split=single",
+				"dir.path=/custom/path",
+				"dir.clear",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := tt.config.flags()
 			if !slicesEqualIgnoreOrder(got, tt.expected) {
 				t.Errorf("flags() = %v, want %v", got, tt.expected)
