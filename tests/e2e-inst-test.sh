@@ -323,7 +323,7 @@ done
 # ==============================================================================
 print_test_header "START TRACE"
 ./scripts/tracee_start.sh \
-    -i "${TRACEE_TMP_DIR}" \
+    -w "${TRACEE_TMP_DIR}" \
     -o "${outputfile}" \
     -l "${logfile}" \
     -L debug \
