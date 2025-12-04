@@ -555,6 +555,45 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 
 	case net.IP: // DNS events use net.IP on src/dst
 		return &pb.EventValue{Value: &pb.EventValue_Str{Str: sanitizeStringForProtobuf(v.String())}}, nil
+
+	case map[string]interface{}:
+		// Handle generic map (e.g., detectedFrom nested structures)
+		sanitizedMap := sanitizeMapForProtobuf(v)
+		structValue, err := structpb.NewStruct(sanitizedMap)
+		if err != nil {
+			return nil, err
+		}
+		return &pb.EventValue{Value: &pb.EventValue_Struct{Struct: structValue}}, nil
+
+	// Handle arrays of maps
+	case []map[string]string:
+		// Convert to []interface{} and wrap in struct for protobuf
+		items := make([]interface{}, len(v))
+		for i, m := range v {
+			// Convert map[string]string to map[string]interface{}
+			converted := make(map[string]interface{})
+			for k, val := range m {
+				converted[k] = val
+			}
+			items[i] = sanitizeMapForProtobuf(converted)
+		}
+		wrapper := map[string]interface{}{"items": items}
+		structValue, err := structpb.NewStruct(wrapper)
+		if err == nil {
+			return &pb.EventValue{Value: &pb.EventValue_Struct{Struct: structValue}}, nil
+		}
+
+	case []map[string]interface{}:
+		// Wrap array in struct for protobuf
+		items := make([]interface{}, len(v))
+		for i, m := range v {
+			items[i] = sanitizeMapForProtobuf(m)
+		}
+		wrapper := map[string]interface{}{"items": items}
+		structValue, err := structpb.NewStruct(wrapper)
+		if err == nil {
+			return &pb.EventValue{Value: &pb.EventValue_Struct{Struct: structValue}}, nil
+		}
 	}
 
 	// Try struct conversion for custom types
@@ -900,7 +939,7 @@ func getDNSResourceRecord(source trace.ProtoDNSResourceRecord) *pb.DNSResourceRe
 	for i, o := range source.OPT {
 		opts[i] = &pb.DNSOPT{
 			Code: o.Code,
-			Data: o.Data,
+			Data: sanitizeStringForProtobuf(o.Data),
 		}
 	}
 
