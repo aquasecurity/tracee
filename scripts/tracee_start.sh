@@ -4,7 +4,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 # shellcheck disable=SC1091
 . "${SCRIPT_DIR}/tracee_common.sh"
 
-require_cmds cat realpath sleep
+require_cmds cat realpath setsid sleep
 
 # Default values specific to start script
 TRACEE_BIN_DEFAULT=$(realpath "${SCRIPT_DIR}/../dist/tracee" 2> /dev/null \
@@ -204,14 +204,34 @@ info "Start Tracee in the background"
 info "Command: ${tracee_cmd}"
 debug "Timeout: ${TIMEOUT} seconds"
 
+# Start Tracee in a new session using setsid to properly daemonize it.
+# This detaches from the controlling terminal and creates a new process session,
+# which ensures proper signal handling and prevents zombie processes. When the
+# parent shell exits, Tracee will be adopted by a session manager (systemd --user)
+# or init (PID 1), which will properly reap the process. Without setsid, signaling
+# the process for termination may not work correctly.
 # shellcheck disable=SC2086
-eval "${tracee_cmd} &"
+setsid ${tracee_cmd} &
 
 count=0
 info "Wait up to ${TIMEOUT} seconds for the ${TRACEE_PIDFILE} to appear"
 while [ ! -f "${TRACEE_PIDFILE}" ] && [ "${count}" -lt "${TIMEOUT}" ]; do
     sleep 1
     count=$((count + 1))
+
+    if [ "${count}" -lt 5 ]; then
+        continue
+    fi
+
+    # After a brief startup period, check if Tracee is actually running
+    # If no tracee processes found, it failed to start
+    if ! check_tracee_running > /dev/null 2>&1; then
+        if [ -f "${LOG_OUTPUT_FILE}" ]; then
+            handle_tracee_error "Process terminated early (see logs above)"
+        else
+            die "Tracee process terminated early without creating log file"
+        fi
+    fi
 done
 
 info "Elapsed time: ${count} seconds"

@@ -75,43 +75,95 @@ stop_tracee() {
         info "Force stopping Tracee process ${tracee_pid}"
         if kill -KILL "${tracee_pid}" 2> /dev/null; then
             info "Tracee process ${tracee_pid} terminated (SIGKILL)"
-            return 0
+            if ! wait_for_process_exit "${tracee_pid}" 5; then
+                warn "Process ${tracee_pid} did not fully exit within timeout"
+            fi
         else
-            error "Failed to send KILL signal to process ${tracee_pid}"
-            return 1
+            die "Failed to send KILL signal to process ${tracee_pid}"
+        fi
+    else
+        info "Gracefully stopping Tracee process ${tracee_pid}"
+        if ! kill -TERM "${tracee_pid}" 2> /dev/null; then
+            die "Failed to send TERM signal to process ${tracee_pid}"
+        fi
+
+        info "Waiting up to ${TIMEOUT} seconds for graceful shutdown"
+        count=0
+        while [ "${count}" -lt "${TIMEOUT}" ]; do
+            # Check if process is completely gone (not zombie)
+            if ! is_process_alive "${tracee_pid}"; then
+                info "Tracee process ${tracee_pid} terminated gracefully"
+                break
+            fi
+            sleep 1
+            count=$((count + 1))
+        done
+
+        # Check if process is still alive (not zombie) after timeout
+        if is_process_alive "${tracee_pid}"; then
+            info "Process still running after ${TIMEOUT} seconds, sending KILL signal"
+            if kill -KILL "${tracee_pid}" 2> /dev/null; then
+                info "Tracee process ${tracee_pid} terminated (SIGKILL)"
+                if ! wait_for_process_exit "${tracee_pid}" 5; then
+                    warn "Process ${tracee_pid} did not fully exit within timeout"
+                fi
+            else
+                die "Failed to send KILL signal to process ${tracee_pid}"
+            fi
         fi
     fi
 
-    info "Gracefully stopping Tracee process ${tracee_pid}"
-    if ! kill -TERM "${tracee_pid}" 2> /dev/null; then
-        error "Failed to send TERM signal to process ${tracee_pid}"
-        return 1
+    # Final check for zombie state (applies to both force and graceful modes)
+    if is_process_zombie "${tracee_pid}"; then
+        warn "Process ${tracee_pid} is in zombie state"
+        warn "This indicates Tracee didn't clean up properly before exit"
+        warn "The zombie will be reaped when its parent process exits"
+        # Zombie is not blocking anything, just a process table entry
     fi
 
-    info "Waiting up to ${TIMEOUT} seconds for graceful shutdown"
+    return 0
+}
+
+# Check if a process is truly alive (running, not zombie)
+is_process_alive() {
+    pid="$1"
+    # Process exists and is NOT in zombie state
+    if [ -d "/proc/${pid}" ]; then
+        state=$(cat "/proc/${pid}/stat" 2> /dev/null | awk '{print $3}')
+        if [ "${state}" != "Z" ]; then
+            return 0 # alive
+        fi
+    fi
+    return 1 # not alive (doesn't exist or is zombie)
+}
+
+# Check if a process is in zombie state
+is_process_zombie() {
+    pid="$1"
+    if [ -d "/proc/${pid}" ]; then
+        state=$(cat "/proc/${pid}/stat" 2> /dev/null | awk '{print $3}')
+        if [ "${state}" = "Z" ]; then
+            return 0 # is zombie
+        fi
+    fi
+    return 1 # not zombie
+}
+
+# Wait for process to fully exit (including zombie reaping)
+wait_for_process_exit() {
+    pid="$1"
+    timeout="${2:-10}"
+
     count=0
-    while [ "${count}" -lt "${TIMEOUT}" ]; do
-        if ! kill -0 "${tracee_pid}" 2> /dev/null; then
-            info "Tracee process ${tracee_pid} terminated gracefully"
-            break
+    while [ "${count}" -lt "${timeout}" ]; do
+        if [ ! -d "/proc/${pid}" ]; then
+            return 0 # fully gone
         fi
         sleep 1
         count=$((count + 1))
     done
 
-    # Check if process is still running after timeout
-    if kill -0 "${tracee_pid}" 2> /dev/null; then
-        info "Process still running after ${TIMEOUT} seconds, sending KILL signal"
-        if kill -KILL "${tracee_pid}" 2> /dev/null; then
-            info "Tracee process ${tracee_pid} terminated (SIGKILL)"
-            sleep 1
-        else
-            error "Failed to send KILL signal to process ${tracee_pid}"
-            return 1
-        fi
-    fi
-
-    return 0
+    return 1 # still exists (likely zombie)
 }
 
 #
