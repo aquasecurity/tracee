@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // LEGACY: These functions are used for converting threat metadata from the old signature system.
@@ -105,4 +106,40 @@ func getSeverity(metadata map[string]interface{}) pb.Severity {
 	}
 
 	return pb.Severity_INFO
+}
+
+// sanitizeArgumentsForProtobuf converts []trace.Argument to a serializable format
+// This is needed for signature-on-signature detections where detectedFrom may contain
+// nested []trace.Argument that cannot be directly marshalled to protobuf
+func sanitizeArgumentsForProtobuf(args any) any {
+	switch val := args.(type) {
+	case []trace.Argument:
+		// Convert []trace.Argument to []any for protobuf compatibility
+		argMaps := make([]any, 0, len(val))
+		for _, arg := range val {
+			argMap := map[string]any{
+				"name": arg.ArgMeta.Name,
+				"type": arg.ArgMeta.Type,
+			}
+			// Only include simple, serializable values
+			switch argVal := arg.Value.(type) {
+			case string, int, int32, int64, uint32, uint64, bool, float32, float64:
+				argMap["value"] = argVal
+			case []string:
+				// Convert []string to []any for protobuf compatibility
+				strArray := make([]any, len(argVal))
+				for i, s := range argVal {
+					strArray[i] = s
+				}
+				argMap["value"] = strArray
+			default:
+				// For complex types, convert to string representation
+				argMap["value"] = fmt.Sprintf("%v", argVal)
+			}
+			argMaps = append(argMaps, argMap)
+		}
+		return argMaps
+	default:
+		return args
+	}
 }
