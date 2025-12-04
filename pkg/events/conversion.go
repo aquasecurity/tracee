@@ -715,6 +715,15 @@ func getDetectedFrom(detectedFromArg trace.Argument) (*pb.DetectedFrom, error) {
 		if err != nil {
 			return nil, err
 		}
+		if eventValue == nil {
+			// Skip arguments that can't be converted
+			logger.Errorw(
+				"Can't convert detectedFrom argument. Please add it as a GRPC event data type or implement detect.FindingDataStruct interface.",
+				"name", arg.ArgMeta.Name,
+				"type", fmt.Sprintf("%T", arg.Value),
+			)
+			continue
+		}
 		eventValue.Name = sanitizeStringForProtobuf(arg.ArgMeta.Name)
 		data = append(data, eventValue)
 	}
