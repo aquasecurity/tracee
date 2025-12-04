@@ -1,6 +1,7 @@
 package printer
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -485,26 +486,63 @@ func (p templateEventPrinter) Close() {
 }
 
 type jsonEventPrinter struct {
-	out io.WriteCloser
+	out        io.WriteCloser
+	buffer     *bufio.Writer
+	eventCount int64
+	lastFlush  time.Time
 }
 
-func (p jsonEventPrinter) Init() error { return nil }
+func (p *jsonEventPrinter) Init() error {
+	// Use 256KB buffer - good performance while allowing frequent flushes
+	p.buffer = bufio.NewWriterSize(p.out, 256*1024)
+	p.eventCount = 0
+	p.lastFlush = time.Now()
+	return nil
+}
 
 func (p jsonEventPrinter) Preamble() {}
 
-func (p jsonEventPrinter) Print(event *pb.Event) {
+func (p *jsonEventPrinter) Print(event *pb.Event) {
 	eBytes, err := event.MarshalJSON()
 	if err != nil {
 		logger.Errorw("Error marshaling event to json", "error", err)
 		return // Don't print empty line on marshal failure
 	}
-	fmt.Fprintln(p.out, string(eBytes))
+
+	eBytes = append(eBytes, '\n')
+	if _, err := p.buffer.Write(eBytes); err != nil {
+		logger.Errorw("Error writing to buffer", "error", err)
+		return
+	}
+
+	p.eventCount++
+
+	// Flush buffer every 10 events OR every 1 second to prevent data loss
+	if p.eventCount%10 == 0 || time.Since(p.lastFlush) >= time.Second {
+		if err := p.buffer.Flush(); err != nil {
+			logger.Errorw("Error flushing buffer", "error", err)
+		}
+		p.lastFlush = time.Now()
+	}
 }
 
-func (p jsonEventPrinter) Epilogue(stats metrics.Stats) {}
+func (p *jsonEventPrinter) Epilogue(stats metrics.Stats) {
+	// Flush buffer when event stream ends to ensure all events are written
+	if p.buffer != nil {
+		if err := p.buffer.Flush(); err != nil {
+			logger.Errorw("Error flushing buffer in epilogue", "error", err)
+		}
+	}
+}
 
-func (p jsonEventPrinter) Close() {
-	// Sync flushes buffered data, ensuring events aren't lost on process exit
+func (p *jsonEventPrinter) Close() {
+	// Flush buffer before syncing to disk
+	if p.buffer != nil {
+		if err := p.buffer.Flush(); err != nil {
+			logger.Errorw("Error flushing buffer on close", "error", err)
+		}
+	}
+	// Sync flushes OS buffers to disk, ensuring events aren't lost on process exit
 	if f, ok := p.out.(*os.File); ok {
 		_ = f.Sync()
 	}
