@@ -4,7 +4,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 # shellcheck disable=SC1091
 . "${SCRIPT_DIR}/tracee_common.sh"
 
-require_cmds cat realpath sleep
+require_cmds cat realpath setsid sleep
 
 # Default values specific to start script
 TRACEE_BIN_DEFAULT=$(realpath "${SCRIPT_DIR}/../dist/tracee" 2> /dev/null \
@@ -84,13 +84,14 @@ while [ $# -gt 0 ]; do
             break
             ;;
         *)
-            # Collect unrecognized arguments to pass to tracee
-            if [ -z "${ADDITIONAL_ARGS}" ]; then
-                ADDITIONAL_ARGS="$1"
+            if [ -n "$2" ]; then
+                error "Unrecognized option: $1 $2"
+                error "Use '--' to pass arguments to tracee, e.g.: $0 -- $1 $2"
             else
-                ADDITIONAL_ARGS="${ADDITIONAL_ARGS} $1"
+                error "Unrecognized option: $1"
+                error "Use '--' to pass arguments to tracee, e.g.: $0 -- $1"
             fi
-            shift
+            die "Run '$0 --help' for usage information"
             ;;
     esac
 done
@@ -181,36 +182,58 @@ info "Running Tracee"
 
 rm -rf "${TRACEE_WORKDIR}" || die "Failed to remove ${TRACEE_WORKDIR}"
 
-# Build tracee command based on configuration
-output_flag="-o json:${EVENT_OUTPUT_FILE}"
-log_flag="--logging file=${LOG_OUTPUT_FILE}"
-log_level_flag="--logging level=${LOG_LEVEL}"
-runtime_flag="--runtime workdir=${TRACEE_WORKDIR}"
-
-tracee_cmd="${TRACEE_BIN} \
-${output_flag} \
-${log_flag} \
-${log_level_flag} \
-${runtime_flag}"
+# Build positional parameters for tracee execution
+# This approach preserves argument boundaries correctly without needing eval
+set -- "${TRACEE_BIN}" \
+    "--output" "json:${EVENT_OUTPUT_FILE}" \
+    "--logging" "file=${LOG_OUTPUT_FILE}" \
+    "--logging" "level=${LOG_LEVEL}" \
+    "--runtime" "workdir=${TRACEE_WORKDIR}"
 
 # Add additional arguments if any were provided
 if [ -n "${ADDITIONAL_ARGS}" ]; then
-    tracee_cmd="${tracee_cmd} ${ADDITIONAL_ARGS}"
     debug "Additional arguments passed to tracee: ${ADDITIONAL_ARGS}"
+    # Append ADDITIONAL_ARGS to positional parameters
+    # Note: This uses word splitting on ADDITIONAL_ARGS, which is intentional
+    # shellcheck disable=SC2086
+    set -- "$@" ${ADDITIONAL_ARGS}
 fi
 
 info "Start Tracee in the background"
-info "Command: ${tracee_cmd}"
+# Display the command that will be executed
+info "Command: $*"
 debug "Timeout: ${TIMEOUT} seconds"
 
-# shellcheck disable=SC2086
-eval "${tracee_cmd} &"
+# Start Tracee in a new session using setsid to properly daemonize it.
+# This detaches from the controlling terminal and creates a new process session,
+# which ensures proper signal handling and prevents zombie processes. When the
+# parent shell exits, Tracee will be adopted by a session manager (systemd --user)
+# or init (PID 1), which will properly reap the process. Without setsid, signaling
+# the process for termination may not work correctly.
+#
+# Using "$@" here properly preserves argument boundaries, including arguments
+# with spaces. The positional parameters were built using set -- above.
+setsid "$@" &
 
 count=0
 info "Wait up to ${TIMEOUT} seconds for the ${TRACEE_PIDFILE} to appear"
 while [ ! -f "${TRACEE_PIDFILE}" ] && [ "${count}" -lt "${TIMEOUT}" ]; do
     sleep 1
     count=$((count + 1))
+
+    if [ "${count}" -lt 5 ]; then
+        continue
+    fi
+
+    # After a brief startup period, check if Tracee is actually running
+    # If no tracee processes found, it failed to start
+    if ! check_tracee_running > /dev/null 2>&1; then
+        if [ -f "${LOG_OUTPUT_FILE}" ]; then
+            handle_tracee_error "Process terminated early (see logs above)"
+        else
+            die "Tracee process terminated early without creating log file"
+        fi
+    fi
 done
 
 info "Elapsed time: ${count} seconds"
