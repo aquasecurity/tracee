@@ -497,6 +497,7 @@ func (p jsonEventPrinter) Print(event *pb.Event) {
 	eBytes, err := json.Marshal(event)
 	if err != nil {
 		logger.Errorw("Error marshaling event to json", "error", err)
+		return // Don't print empty line on marshal failure
 	}
 	fmt.Fprintln(p.out, string(eBytes))
 }

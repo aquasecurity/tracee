@@ -704,6 +704,9 @@ func sanitizeMapForProtobuf(m map[string]interface{}) map[string]interface{} {
 			sanitizedMap[k] = sanitizeStringForProtobuf(val)
 		case map[string]interface{}:
 			sanitizedMap[k] = sanitizeMapForProtobuf(val)
+		case []trace.Argument:
+			// Handle []trace.Argument (e.g., from nested detectedFrom in signature-on-signature chains)
+			sanitizedMap[k] = sanitizeArgumentsForProtobuf(val)
 		default:
 			sanitizedMap[k] = val
 		}
