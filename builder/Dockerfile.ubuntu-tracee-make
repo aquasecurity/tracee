@@ -11,7 +11,7 @@ ARG gid=1000
 # Version
 #
 
-ARG GO_VERSION=1.24.9
+ARG GO_VERSION=1.24.11
 
 # install needed environment
 
