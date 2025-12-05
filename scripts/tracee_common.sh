@@ -121,9 +121,10 @@ cleanup_tracee_pid_file() {
 #
 # Returns: Prints PIDs of running tracee processes, one per line
 #          Returns 0 if any found, 1 if none found
+# Note: Excludes zombie processes (state Z) as they cannot be interacted with
 get_running_tracee_pids() {
     # Use ps with awk for better POSIX portability
-    pids=$(ps -eo pid,comm 2> /dev/null | awk '$2 == "tracee" {print $1}')
+    pids=$(ps -eo pid,stat,comm 2> /dev/null | awk '$3 == "tracee" && $2 !~ /^Z/ {print $1}')
     if [ -n "${pids}" ]; then
         printf "%s\n" "${pids}"
         return 0
