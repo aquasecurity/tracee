@@ -2,7 +2,7 @@ module github.com/aquasecurity/tracee
 
 go 1.24.0
 
-toolchain go1.24.9
+toolchain go1.24.11
 
 require (
 	github.com/IBM/fluent-forward-go v0.3.0
@@ -13,7 +13,6 @@ require (
 	github.com/aquasecurity/tracee/types v0.0.0-20251125194930-b6a4a233c0a8
 	github.com/containerd/containerd v1.7.29
 	github.com/docker/docker v28.1.1+incompatible
-	github.com/golang/protobuf v1.5.4
 	github.com/google/gopacket v1.1.19
 	github.com/grafana/pyroscope-go v1.2.2
 	github.com/hashicorp/golang-lru v1.0.2
@@ -63,6 +62,7 @@ require (
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
