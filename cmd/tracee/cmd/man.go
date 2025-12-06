@@ -61,6 +61,7 @@ func init() {
 		scopeCmd,
 		serverCmd,
 		eventCmd,
+		storesCmd,
 	)
 }
 
@@ -174,6 +175,15 @@ var eventCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return showEventDocumentation(args[0])
+	},
+}
+
+var storesCmd = &cobra.Command{
+	Use:     "stores",
+	Aliases: []string{},
+	Short:   "Show manual page for the --stores flag",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runManForFlag("stores")
 	},
 }
 

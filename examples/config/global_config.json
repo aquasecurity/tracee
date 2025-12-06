@@ -3,9 +3,15 @@
     "cache": [
         "none"
     ],
-    "proctree": [
-        "none"
-    ],
+    "stores": {
+        "process": {
+            "enabled": false,
+            "source": "none"
+        },
+        "dns": {
+            "enabled": false
+        }
+    },
     "capabilities": [],
     "containers": [],
     "healthz": false,
