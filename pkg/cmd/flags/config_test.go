@@ -318,19 +318,41 @@ output:
 			},
 		},
 		{
-			name: "server flag check",
+			name: "Test server configuration (cli flags)",
 			yamlContent: `
 server:
-    http-address: localhost:8080
-    grpc-address: unix:/var/run/tracee.sock
-    metrics: false
-    pprof: false
-    healthz: true
-    pyroscope: true`,
+    - http-address=localhost:8080
+    - grpc-address=unix:/var/run/tracee.sock
+    - metrics
+    - pprof
+    - healthz
+    - pyroscope`,
 			key: "server",
 			expectedFlags: []string{
 				"grpc-address=unix:/var/run/tracee.sock",
 				"http-address=localhost:8080",
+				"metrics",
+				"pprof",
+				"healthz",
+				"pyroscope",
+			},
+		},
+		{
+			name: "Test server configuration (structured flags)",
+			yamlContent: `
+server:
+    http-address: localhost:8080
+    grpc-address: unix:/var/run/tracee.sock
+    metrics: true
+    pprof: true
+    healthz: true
+    pyroscope: true`,
+			key: "server",
+			expectedFlags: []string{
+				"http-address=localhost:8080",
+				"grpc-address=unix:/var/run/tracee.sock",
+				"metrics",
+				"pprof",
 				"healthz",
 				"pyroscope",
 			},
@@ -1015,97 +1037,6 @@ func TestOutputConfigFlags(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := tt.config.flags()
-			if !slicesEqualIgnoreOrder(got, tt.expected) {
-				t.Errorf("flags() = %v, want %v", got, tt.expected)
-			}
-		})
-	}
-}
-func TestServerConfigFlags(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		config   ServerConfig
-		expected []string
-	}{
-		{
-			name:     "empty config",
-			config:   ServerConfig{},
-			expected: []string{},
-		},
-		{
-			name: "grpc only",
-			config: ServerConfig{
-				GrpcAddress: "unix:/var/run/tracee.sock",
-			},
-			expected: []string{
-				"grpc-address=unix:/var/run/tracee.sock",
-			},
-		},
-		{
-			name: "http only",
-			config: ServerConfig{
-				HttpAddress: "localhost:8080",
-			},
-			expected: []string{
-				"http-address=localhost:8080",
-			},
-		},
-		{
-			name: "http with options",
-			config: ServerConfig{
-				HttpAddress: "localhost:8080",
-				Metrics:     true,
-				Pprof:       true,
-				Healthz:     true,
-				Pyroscope:   true,
-			},
-			expected: []string{
-				"http-address=localhost:8080",
-				"metrics",
-				"pprof",
-				"healthz",
-				"pyroscope",
-			},
-		},
-		{
-			name: "both http and grpc",
-			config: ServerConfig{
-				HttpAddress: "localhost:8080",
-				GrpcAddress: "unix:/var/run/tracee.sock",
-			},
-			expected: []string{
-				"grpc-address=unix:/var/run/tracee.sock",
-				"http-address=localhost:8080",
-			},
-		},
-		{
-			name: "both http and grpc with options",
-			config: ServerConfig{
-				HttpAddress: "localhost:8080",
-				GrpcAddress: "unix:/var/run/tracee.sock",
-				Metrics:     true,
-				Pprof:       true,
-				Healthz:     true,
-				Pyroscope:   true,
-			},
-			expected: []string{
-				"grpc-address=unix:/var/run/tracee.sock",
-				"http-address=localhost:8080",
-				"metrics",
-				"pprof",
-				"healthz",
-				"pyroscope",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
 			got := tt.config.flags()
 			if !slicesEqualIgnoreOrder(got, tt.expected) {
 				t.Errorf("flags() = %v, want %v", got, tt.expected)
