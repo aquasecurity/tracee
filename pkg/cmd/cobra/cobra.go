@@ -127,19 +127,24 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Container command line flags
 
-	containerFlags, err := flags.GetFlagsFromViper(flags.ContainersFlag)
+	enrichmentFlags, err := flags.GetFlagsFromViper(flags.EnrichmentFlag)
 	if err != nil {
 		return runner, err
 	}
 
-	res, err := flags.PrepareContainers(containerFlags)
+	enrichmentConfig, err := flags.PrepareEnrichment(enrichmentFlags)
 	if err != nil {
 		return runner, err
 	}
-	cfg.Sockets = res.Sockets
-	cfg.NoContainersEnrich = res.NoEnrich
-	cfg.CgroupFSPath = res.CgroupfsPath
-	cfg.CgroupFSForce = res.CgroupfsForce
+
+	sockets, err := enrichmentConfig.GetRuntimeSockets()
+	if err != nil {
+		return runner, err
+	}
+	cfg.Sockets = sockets
+	cfg.EnrichmentEnabled = enrichmentConfig.Container.Enabled
+	cfg.CgroupFSPath = enrichmentConfig.Container.Cgroup.Path
+	cfg.CgroupFSForce = enrichmentConfig.Container.Cgroup.Force
 
 	// Process Tree command line flags
 
@@ -280,7 +285,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	p, err := printer.NewBroadcast(
 		output.PrinterConfigs,
-		cmd.GetContainerMode(containerFilterEnabled(), cfg.NoContainersEnrich),
+		cmd.GetContainerMode(containerFilterEnabled(), cfg.EnrichmentEnabled),
 	)
 	if err != nil {
 		return runner, err

@@ -59,7 +59,7 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 
 	// Enrichment stage: container events are enriched with additional runtime data.
 
-	if !t.config.NoContainersEnrich { // TODO: remove safe-guard soon.
+	if t.config.EnrichmentEnabled {
 		eventsChan, errc = t.enrichContainerEvents(ctx, eventsChan)
 		t.stats.Channels["enrich"] = eventsChan
 		errcList = append(errcList, errc)

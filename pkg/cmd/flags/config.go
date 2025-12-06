@@ -36,6 +36,8 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &OutputConfig{}
 	case "dnscache":
 		flagger = &DnsCacheConfig{}
+	case EnrichmentFlag:
+		flagger = &EnrichmentConfig{}
 	default:
 		return nil, errfmt.Errorf("unrecognized key: %s", key)
 	}

@@ -113,7 +113,7 @@ func fetchInitNamespaces() map[string]uint32 {
 }
 
 // ExistingContainersEvents returns a list of events for each existing container
-func ExistingContainersEvents(cts *container.Manager, enrichDisabled bool) []trace.Event {
+func ExistingContainersEvents(cts *container.Manager, enrichmentEnabled bool) []trace.Event {
 	var events []trace.Event
 
 	def := Core.GetDefinitionByID(ExistingContainer)
@@ -124,7 +124,7 @@ func ExistingContainersEvents(cts *container.Manager, enrichDisabled bool) []tra
 		containerId := containerInfo.ContainerId
 		ctime := containerInfo.CreatedAt.UnixNano()
 		enrichedContainer := container.Container{}
-		if !enrichDisabled {
+		if enrichmentEnabled {
 			enrichedContainer, _ = cts.EnrichCgroupInfo(cgroupId)
 		}
 		fields := def.GetFields()

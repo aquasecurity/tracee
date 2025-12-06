@@ -374,7 +374,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize containers enrichment logic
 
 	t.container, err = container.New(
-		t.config.NoContainersEnrich,
+		t.config.EnrichmentEnabled,
 		t.cgroups,
 		t.config.Sockets,
 		"containers_map",
@@ -1612,7 +1612,7 @@ func (t *Tracee) initBPF() error {
 	t.controlPlane = controlplane.NewController(
 		t.bpfModule,
 		t.container,
-		t.config.NoContainersEnrich,
+		t.config.EnrichmentEnabled,
 		t.processTree,
 		t.dataTypeDecoder,
 	)
@@ -2042,7 +2042,7 @@ func (t *Tracee) invokeInitEvents(out chan *events.PipelineEvent) {
 
 	matchedPolicies = policiesMatch(events.ExistingContainer)
 	if matchedPolicies > 0 {
-		existingContainerEvents := events.ExistingContainersEvents(t.container, t.config.NoContainersEnrich)
+		existingContainerEvents := events.ExistingContainersEvents(t.container, t.config.EnrichmentEnabled)
 		for i := range existingContainerEvents {
 			event := &(existingContainerEvents[i])
 			setMatchedPolicies(event, matchedPolicies)
