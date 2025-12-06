@@ -86,7 +86,7 @@ config:
   pprof: false
   pyroscope: false
   listenAddr: :3366
-  installPath: ""
+  workdir: ""
   signaturesDir: ""
   log:
     level: info

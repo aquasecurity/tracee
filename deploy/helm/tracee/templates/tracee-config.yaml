@@ -17,8 +17,9 @@ data:
     pprof: {{ .Values.config.pprof }}
     pyroscope: {{ .Values.config.pyroscope }}
     listen-addr: {{ .Values.config.listenAddr }}
-    {{- if .Values.config.installPath }}
-    install-path: {{ .Values.config.installPath }}
+    {{- if .Values.config.workdir }}
+    runtime:
+      - workdir={{ .Values.config.workdir }}
     {{- end }}
     {{- if .Values.config.signaturesDir }}
     signatures-dir: {{ .Values.config.signaturesDir }}

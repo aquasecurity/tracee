@@ -20,17 +20,17 @@ Usage: $0 [OPTIONS] [-- ADDITIONAL_TRACEE_ARGS]
 
 Options:
     --bin, -b PATH           Path to tracee binary (default: ${TRACEE_BIN_DEFAULT})
-    --install-path, -i PATH  Installation path for tracee (default: ${TRACEE_INSTALL_PATH_DEFAULT})
-    --output-file, -o FILE   Output file for events in JSON format (default: <install-path>/${EVENT_OUTPUT_FILE_DEFAULT})
-    --log-file, -l FILE      Output file for logs in JSON format (default: <install-path>/${LOG_OUTPUT_FILE_DEFAULT})
+    --workdir, -w PATH       Working directory for tracee (default: ${TRACEE_WORKDIR_DEFAULT})
+    --output-file, -o FILE   Output file for events in JSON format (default: <workdir>/${EVENT_OUTPUT_FILE_DEFAULT})
+    --log-file, -l FILE      Output file for logs in JSON format (default: <workdir>/${LOG_OUTPUT_FILE_DEFAULT})
     --log-level, -L LEVEL    Log level (default: ${LOG_LEVEL_DEFAULT})
     --timeout, -t SECONDS    Timeout to wait for tracee startup (default: ${TIMEOUT_DEFAULT})
     --help, -h               Show this help message
 
 Note: All outputs are automatically configured in JSON format.
       
-      The script manages install-path, output, and log flags internally before passing them to tracee.
-      Do not pass --install-path, --output or --log flags as additional arguments as they will conflict
+      The script manages runtime workdir, output, and log flags internally before passing them to tracee.
+      Do not pass --runtime workdir, --output or --log flags as additional arguments as they will conflict
       with the script's managed flags and may cause Tracee to behave unexpectedly.
       
       Other tracee-specific arguments like -e (events), -p (policies), -s (scope), etc. should be
@@ -40,7 +40,6 @@ Examples:
     $0 -e "execve,openat"
     $0 -p "/tmp/policies"
     $0 -p "/tmp/policies/policy1.yaml,/tmp/policies/policy2.yaml" --timeout 60
-    $0 --bin ~/bin/tracee --install-path /tmp/tracee_install -e "openat"
     $0 -e openat -s comm=uname
     $0 -- -e "openat" -s comm=uname --some-other-flag
 EOF
@@ -54,8 +53,8 @@ while [ $# -gt 0 ]; do
             TRACEE_BIN="$2"
             shift 2
             ;;
-        --install-path | -i)
-            TRACEE_INSTALL_PATH="$2"
+        --workdir | -w)
+            TRACEE_WORKDIR="$2"
             shift 2
             ;;
         --output-file | -o)
@@ -105,9 +104,9 @@ TIMEOUT="${TIMEOUT:-${TIMEOUT_DEFAULT}}"
 # Setup common paths
 setup_tracee_paths
 
-# Set up output files based on install path
-EVENT_OUTPUT_FILE="${EVENT_OUTPUT_FILE:-${TRACEE_INSTALL_PATH}/${EVENT_OUTPUT_FILE_DEFAULT}}"
-LOG_OUTPUT_FILE="${LOG_OUTPUT_FILE:-${TRACEE_INSTALL_PATH}/${LOG_OUTPUT_FILE_DEFAULT}}"
+# Set up output files based on workdir
+EVENT_OUTPUT_FILE="${EVENT_OUTPUT_FILE:-${TRACEE_WORKDIR}/${EVENT_OUTPUT_FILE_DEFAULT}}"
+LOG_OUTPUT_FILE="${LOG_OUTPUT_FILE:-${TRACEE_WORKDIR}/${LOG_OUTPUT_FILE_DEFAULT}}"
 LOG_LEVEL="${LOG_LEVEL:-${LOG_LEVEL_DEFAULT}}"
 
 cleanup() {
@@ -180,19 +179,19 @@ fi
 
 info "Running Tracee"
 
-rm -rf "${TRACEE_INSTALL_PATH}" || die "Failed to remove ${TRACEE_INSTALL_PATH}"
+rm -rf "${TRACEE_WORKDIR}" || die "Failed to remove ${TRACEE_WORKDIR}"
 
 # Build tracee command based on configuration
 output_flag="-o json:${EVENT_OUTPUT_FILE}"
 log_flag="-l file:${LOG_OUTPUT_FILE}"
 log_level_flag="-l ${LOG_LEVEL}"
-install_flag="--install-path ${TRACEE_INSTALL_PATH}"
+runtime_flag="--runtime workdir=${TRACEE_WORKDIR}"
 
 tracee_cmd="${TRACEE_BIN} \
 ${output_flag} \
 ${log_flag} \
 ${log_level_flag} \
-${install_flag}"
+${runtime_flag}"
 
 # Add additional arguments if any were provided
 if [ -n "${ADDITIONAL_ARGS}" ]; then
@@ -224,4 +223,4 @@ info "Wait ${cooldown} seconds for Tracee to finish initializing"
 sleep "${cooldown}"
 
 info "Tracee successfully started"
-info "To stop Tracee, run: ./scripts/tracee_stop.sh -i ${TRACEE_INSTALL_PATH}"
+info "To stop Tracee, run: ./scripts/tracee_stop.sh -w ${TRACEE_WORKDIR}"

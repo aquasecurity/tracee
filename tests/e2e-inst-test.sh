@@ -458,7 +458,7 @@ print_test_separator
 # ==============================================================================
 print_test_header "STOP TRACE"
 ./scripts/tracee_stop.sh \
-    -i "${TRACEE_TMP_DIR}" \
+    -w "${TRACEE_TMP_DIR}" \
     -t "${TRACEE_SHUTDOWN_TIMEOUT}"
 
 last_status=$?
