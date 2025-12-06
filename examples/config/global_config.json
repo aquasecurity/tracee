@@ -1,5 +1,12 @@
 {
-    "blob-perf-buffer-size": 1024,
+    "buffers": {
+        "kernel": {
+            "events": 1024,
+            "blobs": 1024,
+            "control-plane": 1024
+        },
+        "pipeline": 10000
+    },
     "cache": [
         "none"
     ],
@@ -18,7 +25,6 @@
     "output": [
         "json"
     ],
-    "perf-buffer-size": 1024,
     "pprof": false,
     "pyroscope": false,
     "signatures-dir": ""

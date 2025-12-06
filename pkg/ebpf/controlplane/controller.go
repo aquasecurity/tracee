@@ -39,6 +39,7 @@ type Controller struct {
 	enrichDisabled bool
 	dataPresentor  bufferdecoder.TypeDecoder
 	signalHandlers map[events.ID]SignalHandler
+	perfBufferSize int
 }
 
 // NewController creates a new controller.
@@ -48,6 +49,7 @@ func NewController(
 	enrichDisabled bool,
 	procTree *process.ProcessTree,
 	dataPresentor bufferdecoder.TypeDecoder,
+	perfBufferSize int,
 ) *Controller {
 	return &Controller{
 		signalChan:     make(chan []byte, 100),
@@ -63,12 +65,13 @@ func NewController(
 		enrichDisabled: enrichDisabled,
 		dataPresentor:  dataPresentor,
 		signalHandlers: make(map[events.ID]SignalHandler),
+		perfBufferSize: perfBufferSize,
 	}
 }
 
 func (ctrl *Controller) Init() error {
 	var err error
-	ctrl.signalBuffer, err = ctrl.bpfModule.InitPerfBuf("signals", ctrl.signalChan, ctrl.lostSignalChan, 1024)
+	ctrl.signalBuffer, err = ctrl.bpfModule.InitPerfBuf("signals", ctrl.signalChan, ctrl.lostSignalChan, ctrl.perfBufferSize)
 	if err != nil {
 		return err
 	}

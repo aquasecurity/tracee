@@ -17,37 +17,38 @@ import (
 // NOTE: In the future, Tracee config will be changed at run time and will require
 // proper management.
 type Config struct {
-	InitialPolicies     []interface{} // due to circular dependency, policy.Policy cannot be used here
-	Capture             *CaptureConfig
-	Capabilities        *CapabilitiesConfig
-	Output              *OutputConfig
-	ProcTree            process.ProcTreeConfig
-	PerfBufferSize      int
-	BlobPerfBufferSize  int
-	PipelineChannelSize int
-	MaxPidsCache        int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
-	BTFObjPath          string
-	BPFObjBytes         []byte
-	BPFObjPath          string // path to the BPF object binary for uprobe attachment (defaults to /proc/self/exe)
-	KernelConfig        *environment.KernelConfig
-	OSInfo              *environment.OSInfo
-	Sockets             runtime.Sockets
-	NoContainersEnrich  bool
-	CgroupFSPath        string
-	CgroupFSForce       bool
-	EngineConfig        engine.Config
-	DNSCacheConfig      dns.Config
-	MetricsEnabled      bool
-	HealthzEnabled      bool
+	InitialPolicies            []interface{} // due to circular dependency, policy.Policy cannot be used here
+	Capture                    *CaptureConfig
+	Capabilities               *CapabilitiesConfig
+	Output                     *OutputConfig
+	ProcTree                   process.ProcTreeConfig
+	EventsPerfBufferSize       int
+	BlobsPerfBufferSize        int
+	PipelineChannelSize        int
+	ControlPlanePerfBufferSize int
+	MaxPidsCache               int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
+	BTFObjPath                 string
+	BPFObjBytes                []byte
+	BPFObjPath                 string // path to the BPF object binary for uprobe attachment (defaults to /proc/self/exe)
+	KernelConfig               *environment.KernelConfig
+	OSInfo                     *environment.OSInfo
+	Sockets                    runtime.Sockets
+	NoContainersEnrich         bool
+	CgroupFSPath               string
+	CgroupFSForce              bool
+	EngineConfig               engine.Config
+	DNSCacheConfig             dns.Config
+	MetricsEnabled             bool
+	HealthzEnabled             bool
 }
 
 // Validate does static validation of the configuration
 func (c Config) Validate() error {
 	// Buffer sizes
-	if (c.PerfBufferSize & (c.PerfBufferSize - 1)) != 0 {
+	if (c.EventsPerfBufferSize & (c.EventsPerfBufferSize - 1)) != 0 {
 		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
 	}
-	if (c.BlobPerfBufferSize & (c.BlobPerfBufferSize - 1)) != 0 {
+	if (c.BlobsPerfBufferSize & (c.BlobsPerfBufferSize - 1)) != 0 {
 		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
 	}
 
