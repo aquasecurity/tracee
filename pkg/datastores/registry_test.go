@@ -90,14 +90,14 @@ func TestRegistry_RegisterStore(t *testing.T) {
 func TestRegistry_Processes(t *testing.T) {
 	t.Run("Processes_Found", func(t *testing.T) {
 		reg := NewRegistry()
-		store := &mockProcessStore{mockDataStore: mockDataStore{name: "process"}}
+		store := &mockProcessStore{mockDataStore: mockDataStore{name: datastores.Process}}
 
-		err := reg.RegisterStore("process", store, true)
+		err := reg.RegisterStore(datastores.Process, store, true)
 		require.NoError(t, err)
 
 		result := reg.Processes()
 		assert.NotNil(t, result)
-		assert.Equal(t, "process", result.Name())
+		assert.Equal(t, datastores.Process, result.Name())
 	})
 
 	t.Run("Processes_NotFound", func(t *testing.T) {
@@ -122,14 +122,14 @@ func TestRegistry_Processes(t *testing.T) {
 func TestRegistry_Containers(t *testing.T) {
 	t.Run("Containers_Found", func(t *testing.T) {
 		reg := NewRegistry()
-		store := &mockContainerStore{mockDataStore: mockDataStore{name: "container"}}
+		store := &mockContainerStore{mockDataStore: mockDataStore{name: datastores.Container}}
 
-		err := reg.RegisterStore("container", store, true)
+		err := reg.RegisterStore(datastores.Container, store, true)
 		require.NoError(t, err)
 
 		result := reg.Containers()
 		assert.NotNil(t, result)
-		assert.Equal(t, "container", result.Name())
+		assert.Equal(t, datastores.Container, result.Name())
 	})
 
 	t.Run("Containers_NotFound", func(t *testing.T) {

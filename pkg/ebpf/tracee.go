@@ -15,6 +15,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
+	dsapi "github.com/aquasecurity/tracee/api/v1beta1/datastores"
 	"github.com/aquasecurity/tracee/common/bitwise"
 	"github.com/aquasecurity/tracee/common/bucketcache"
 	"github.com/aquasecurity/tracee/common/capabilities"
@@ -540,23 +541,23 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Register core datastores
 	// ProcessTree is optional (may be nil if Source == SourceNone)
-	if err := t.dataStoreRegistry.RegisterStore("process", t.processTree, false); err != nil {
+	if err := t.dataStoreRegistry.RegisterStore(dsapi.Process, t.processTree, false); err != nil {
 		return errfmt.WrapError(err)
 	}
 
-	if err := t.dataStoreRegistry.RegisterStore("container", t.container, true); err != nil {
+	if err := t.dataStoreRegistry.RegisterStore(dsapi.Container, t.container, true); err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// DNS cache is optional (may be nil if DNSCacheConfig.Enable is false)
-	if err := t.dataStoreRegistry.RegisterStore("dns", t.dnsCache, false); err != nil {
+	if err := t.dataStoreRegistry.RegisterStore(dsapi.DNS, t.dnsCache, false); err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// Kernel symbols can be hot-reloaded at runtime, so we use an adapter
 	// that always fetches the current symbol table
 	kernelSymbolAdapter := symbol.NewAdapter(t.getKernelSymbols)
-	if err := t.dataStoreRegistry.RegisterStore("symbol", kernelSymbolAdapter, true); err != nil {
+	if err := t.dataStoreRegistry.RegisterStore(dsapi.Symbol, kernelSymbolAdapter, true); err != nil {
 		return errfmt.WrapError(err)
 	}
 
@@ -568,13 +569,13 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Set Tracee's start time (in nanoseconds since epoch)
 	systemInfo.TraceeStartTime = timeutil.NsSinceEpochToTime(t.startTime)
 	systemStore := system.New(systemInfo)
-	if err := t.dataStoreRegistry.RegisterStore("system", systemStore, false); err != nil {
+	if err := t.dataStoreRegistry.RegisterStore(dsapi.System, systemStore, false); err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// Syscall information datastore provides syscall ID <-> name mapping
 	syscallStore := syscall.New(events.Core)
-	if err := t.dataStoreRegistry.RegisterStore("syscall", syscallStore, true); err != nil {
+	if err := t.dataStoreRegistry.RegisterStore(dsapi.Syscall, syscallStore, true); err != nil {
 		return errfmt.WrapError(err)
 	}
 

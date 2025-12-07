@@ -21,7 +21,7 @@ func NewAdapter(getSymbols func() *KernelSymbolTable) datastores.KernelSymbolSto
 // All methods delegate to the current kernel symbol table
 
 func (a *Adapter) Name() string {
-	return "symbol"
+	return datastores.Symbol
 }
 
 func (a *Adapter) GetHealth() *datastores.HealthInfo {

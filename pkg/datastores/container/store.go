@@ -10,33 +10,47 @@ import (
 
 // Name returns the name of this datastore
 func (m *Manager) Name() string {
-	return "container"
+	return datastores.Container
 }
 
 // GetHealth returns the current health status of the datastore
 func (m *Manager) GetHealth() *datastores.HealthInfo {
-	// Try to acquire read lock with timeout to detect deadlocks
-	lockAcquired := make(chan struct{})
-	go func() {
-		m.lock.RLock()
-		_ = len(m.containerMap) // Read data to avoid empty critical section
-		m.lock.RUnlock()
-		close(lockAcquired)
-	}()
+	// Try to acquire lock with retries to distinguish between busy (healthy) and deadlocked (unhealthy)
+	const maxAttempts = 10
+	const retryDelay = 10 * time.Millisecond // Total max wait: 100ms
 
-	select {
-	case <-lockAcquired:
+	for attempt := range maxAttempts {
+		if !m.lock.TryRLock() {
+			// Failed to acquire lock, retry if not last attempt
+			if attempt < maxAttempts-1 {
+				time.Sleep(retryDelay)
+			}
+			continue
+		}
+
+		// Verify internal state is healthy
+		if m.containerMap == nil {
+			m.lock.RUnlock()
+			return &datastores.HealthInfo{
+				Status:    datastores.HealthUnhealthy,
+				Message:   "container map not initialized",
+				LastCheck: time.Now(),
+			}
+		}
+
+		m.lock.RUnlock()
 		return &datastores.HealthInfo{
 			Status:    datastores.HealthHealthy,
 			Message:   "",
 			LastCheck: time.Now(),
 		}
-	case <-time.After(100 * time.Millisecond):
-		return &datastores.HealthInfo{
-			Status:    datastores.HealthUnhealthy,
-			Message:   "lock acquisition timeout - possible deadlock",
-			LastCheck: time.Now(),
-		}
+	}
+
+	// Failed to acquire lock after multiple attempts
+	return &datastores.HealthInfo{
+		Status:    datastores.HealthUnhealthy,
+		Message:   "unable to acquire lock after multiple attempts - possible deadlock or severe contention",
+		LastCheck: time.Now(),
 	}
 }
 
