@@ -22,7 +22,7 @@ func New(eventCore *events.DefinitionGroup) datastores.SyscallStore {
 
 // Name returns the datastore name
 func (s *Store) Name() string {
-	return "syscall"
+	return datastores.Syscall
 }
 
 // GetHealth returns the health status of the datastore

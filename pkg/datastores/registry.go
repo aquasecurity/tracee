@@ -65,27 +65,27 @@ func (r *Registry) RegisterStore(name string, store datastores.DataStore, requir
 
 	// Store typed references for core datastores
 	switch name {
-	case "process":
+	case datastores.Process:
 		if ps, ok := store.(datastores.ProcessStore); ok {
 			r.processStore = ps
 		}
-	case "container":
+	case datastores.Container:
 		if cs, ok := store.(datastores.ContainerStore); ok {
 			r.containerStore = cs
 		}
-	case "symbol":
+	case datastores.Symbol:
 		if ks, ok := store.(datastores.KernelSymbolStore); ok {
 			r.kernelSymbolStore = ks
 		}
-	case "dns":
+	case datastores.DNS:
 		if ds, ok := store.(datastores.DNSStore); ok {
 			r.dnsStore = ds
 		}
-	case "system":
+	case datastores.System:
 		if ss, ok := store.(datastores.SystemStore); ok {
 			r.systemStore = ss
 		}
-	case "syscall":
+	case datastores.Syscall:
 		if sc, ok := store.(datastores.SyscallStore); ok {
 			r.syscallStore = sc
 		}

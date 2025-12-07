@@ -10,41 +10,47 @@ import (
 
 // Name returns the name of this datastore
 func (nc *DNSCache) Name() string {
-	return "dns"
+	return datastores.DNS
 }
 
 // GetHealth returns the current health status of the datastore
 func (nc *DNSCache) GetHealth() *datastores.HealthInfo {
-	// Try to acquire read lock with timeout to detect deadlocks
-	lockAcquired := make(chan struct{})
-	go func() {
-		nc.lock.RLock()
-		_ = len(nc.queryIndices) // Read data to avoid empty critical section
-		nc.lock.RUnlock()
-		close(lockAcquired)
-	}()
+	// Try to acquire lock with retries to distinguish between busy (healthy) and deadlocked (unhealthy)
+	const maxAttempts = 10
+	const retryDelay = 10 * time.Millisecond // Total max wait: 100ms
 
-	select {
-	case <-lockAcquired:
+	for attempt := range maxAttempts {
+		if !nc.lock.TryRLock() {
+			// Failed to acquire lock, retry if not last attempt
+			if attempt < maxAttempts-1 {
+				time.Sleep(retryDelay)
+			}
+			continue
+		}
+
 		// Verify LRU cache is healthy
 		if nc.queryRoots == nil {
+			nc.lock.RUnlock()
 			return &datastores.HealthInfo{
 				Status:    datastores.HealthUnhealthy,
 				Message:   "query roots cache is nil",
 				LastCheck: time.Now(),
 			}
 		}
+
+		nc.lock.RUnlock()
 		return &datastores.HealthInfo{
 			Status:    datastores.HealthHealthy,
 			Message:   "",
 			LastCheck: time.Now(),
 		}
-	case <-time.After(100 * time.Millisecond):
-		return &datastores.HealthInfo{
-			Status:    datastores.HealthUnhealthy,
-			Message:   "lock acquisition timeout - possible deadlock",
-			LastCheck: time.Now(),
-		}
+	}
+
+	// Failed to acquire lock after multiple attempts
+	return &datastores.HealthInfo{
+		Status:    datastores.HealthUnhealthy,
+		Message:   "unable to acquire lock after multiple attempts - possible deadlock or severe contention",
+		LastCheck: time.Now(),
 	}
 }
 

@@ -10,46 +10,48 @@ import (
 
 // Name returns the name of this datastore
 func (kst *KernelSymbolTable) Name() string {
-	return "symbol"
+	return datastores.Symbol
 }
 
 // GetHealth returns the current health status of the datastore
 func (kst *KernelSymbolTable) GetHealth() *datastores.HealthInfo {
-	// Verify symbol table is loaded
-	kst.symbols.mu.RLock()
-	symbolCount := len(kst.symbols.sortedSymbols)
-	kst.symbols.mu.RUnlock()
+	// Try to acquire lock with retries to distinguish between busy (healthy) and deadlocked (unhealthy)
+	const maxAttempts = 10
+	const retryDelay = 10 * time.Millisecond // Total max wait: 100ms
 
-	if symbolCount == 0 {
-		return &datastores.HealthInfo{
-			Status:    datastores.HealthUnhealthy,
-			Message:   "symbol table is empty - may not be loaded",
-			LastCheck: time.Now(),
+	for attempt := range maxAttempts {
+		if !kst.symbols.mu.TryRLock() {
+			// Failed to acquire lock, retry if not last attempt
+			if attempt < maxAttempts-1 {
+				time.Sleep(retryDelay)
+			}
+			continue
 		}
-	}
 
-	// Try to acquire read lock with timeout to detect deadlocks
-	lockAcquired := make(chan struct{})
-	go func() {
-		kst.symbols.mu.RLock()
-		_ = len(kst.symbols.sortedSymbols) // Read data to avoid empty critical section
+		// Verify symbol table is loaded
+		symbolCount := len(kst.symbols.sortedSymbols)
+		if symbolCount == 0 {
+			kst.symbols.mu.RUnlock()
+			return &datastores.HealthInfo{
+				Status:    datastores.HealthUnhealthy,
+				Message:   "symbol table is empty - may not be loaded",
+				LastCheck: time.Now(),
+			}
+		}
+
 		kst.symbols.mu.RUnlock()
-		close(lockAcquired)
-	}()
-
-	select {
-	case <-lockAcquired:
 		return &datastores.HealthInfo{
 			Status:    datastores.HealthHealthy,
 			Message:   "",
 			LastCheck: time.Now(),
 		}
-	case <-time.After(100 * time.Millisecond):
-		return &datastores.HealthInfo{
-			Status:    datastores.HealthUnhealthy,
-			Message:   "lock acquisition timeout - possible deadlock",
-			LastCheck: time.Now(),
-		}
+	}
+
+	// Failed to acquire lock after multiple attempts
+	return &datastores.HealthInfo{
+		Status:    datastores.HealthUnhealthy,
+		Message:   "unable to acquire lock after multiple attempts - possible deadlock or severe contention",
+		LastCheck: time.Now(),
 	}
 }
 

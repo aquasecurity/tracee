@@ -10,7 +10,7 @@ import (
 
 // Name returns the name of this datastore
 func (pt *ProcessTree) Name() string {
-	return "process"
+	return datastores.Process
 }
 
 // GetHealth returns the current health status of the datastore
@@ -24,31 +24,51 @@ func (pt *ProcessTree) GetHealth() *datastores.HealthInfo {
 		}
 	}
 
-	// Try to acquire read locks with timeout to detect deadlocks
-	lockAcquired := make(chan struct{})
-	go func() {
-		pt.processesThreadsMtx.RLock()
-		_ = len(pt.processesThreads) // Read data to avoid empty critical section
-		pt.processesThreadsMtx.RUnlock()
-		pt.processesChildrenMtx.RLock()
-		_ = len(pt.processesChildren) // Read data to avoid empty critical section
-		pt.processesChildrenMtx.RUnlock()
-		close(lockAcquired)
-	}()
+	// Try to acquire locks with retries to distinguish between busy (healthy) and deadlocked (unhealthy)
+	const maxAttempts = 10
+	const retryDelay = 10 * time.Millisecond // Total max wait: 100ms
 
-	select {
-	case <-lockAcquired:
+	// Try processesThreads lock
+	for attempt := range maxAttempts {
+		if !pt.processesThreadsMtx.TryRLock() {
+			// Failed to acquire lock, retry if not last attempt
+			if attempt < maxAttempts-1 {
+				time.Sleep(retryDelay)
+			}
+			continue
+		}
+		_ = len(pt.processesThreads)
+		pt.processesThreadsMtx.RUnlock()
+		goto checkChildrenLock
+	}
+	return &datastores.HealthInfo{
+		Status:    datastores.HealthUnhealthy,
+		Message:   "unable to acquire processesThreads lock after multiple attempts - possible deadlock",
+		LastCheck: time.Now(),
+	}
+
+checkChildrenLock:
+	// Try processesChildren lock
+	for attempt := range maxAttempts {
+		if !pt.processesChildrenMtx.TryRLock() {
+			// Failed to acquire lock, retry if not last attempt
+			if attempt < maxAttempts-1 {
+				time.Sleep(retryDelay)
+			}
+			continue
+		}
+		_ = len(pt.processesChildren)
+		pt.processesChildrenMtx.RUnlock()
 		return &datastores.HealthInfo{
 			Status:    datastores.HealthHealthy,
 			Message:   "",
 			LastCheck: time.Now(),
 		}
-	case <-time.After(100 * time.Millisecond):
-		return &datastores.HealthInfo{
-			Status:    datastores.HealthUnhealthy,
-			Message:   "lock acquisition timeout - possible deadlock",
-			LastCheck: time.Now(),
-		}
+	}
+	return &datastores.HealthInfo{
+		Status:    datastores.HealthUnhealthy,
+		Message:   "unable to acquire processesChildren lock after multiple attempts - possible deadlock",
+		LastCheck: time.Now(),
 	}
 }
 

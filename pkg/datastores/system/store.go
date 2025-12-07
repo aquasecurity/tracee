@@ -20,7 +20,7 @@ func New(info *datastores.SystemInfo) datastores.SystemStore {
 
 // Name returns the datastore name
 func (s *Store) Name() string {
-	return "system"
+	return datastores.System
 }
 
 // GetHealth returns the health status of the datastore
