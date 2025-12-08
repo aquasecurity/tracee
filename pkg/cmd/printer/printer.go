@@ -35,7 +35,7 @@ type EventPrinter interface {
 	Epilogue(stats metrics.Stats)
 	// Print prints a single event
 	Print(event *pb.Event)
-	// Receive events from stram
+	// Receive events from stream
 	FromStream(ctx context.Context, stream *streams.Stream)
 	// Mainly created for testing purposes. Might be useful also in other context
 	Kind() string
