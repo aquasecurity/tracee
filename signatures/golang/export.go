@@ -11,7 +11,6 @@ var ExportedSignatures = []detect.Signature{
 	&DockerAbuse{},
 	&ScheduledTaskModification{},
 	&LdPreload{},
-	&CgroupNotifyOnReleaseModification{},
 	&DefaultLoaderModification{},
 	&SudoersModification{},
 	&SchedDebugRecon{},
