@@ -6,7 +6,6 @@ import "github.com/aquasecurity/tracee/types/detect"
 // this is a list of signatures that this plugin exports
 var ExportedSignatures = []detect.Signature{
 	&StdioOverSocket{},
-	&K8sApiConnection{},
 	&ProcMemCodeInjection{},
 	&ScheduledTaskModification{},
 	&LdPreload{},
