@@ -15,7 +15,6 @@ var ExportedSignatures = []detect.Signature{
 	&SudoersModification{},
 	&SchedDebugRecon{},
 	&SystemRequestKeyConfigModification{},
-	&CgroupReleaseAgentModification{},
 	&RcdModification{},
 	&CorePatternModification{},
 	&ProcMemAccess{},
