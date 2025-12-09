@@ -8,7 +8,6 @@ var ExportedSignatures = []detect.Signature{
 	&StdioOverSocket{},
 	&ScheduledTaskModification{},
 	&SudoersModification{},
-	&SchedDebugRecon{},
 	&SystemRequestKeyConfigModification{},
 	&SyscallTableHooking{},
 }
