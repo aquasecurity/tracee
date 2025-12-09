@@ -6,7 +6,6 @@ import "github.com/aquasecurity/tracee/types/detect"
 // this is a list of signatures that this plugin exports
 var ExportedSignatures = []detect.Signature{
 	&SystemRequestKeyConfigModification{},
-	&SyscallTableHooking{},
 }
 
 // ExportedDataSources fulfills the goplugins contract required by the rule-engine
