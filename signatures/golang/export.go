@@ -16,7 +16,6 @@ var ExportedSignatures = []detect.Signature{
 	&ProcMemAccess{},
 	&PtraceCodeInjection{},
 	&ProcessVmWriteCodeInjection{},
-	&KubernetesCertificateTheftAttempt{},
 	&ProcFopsHooking{},
 	&SyscallTableHooking{},
 }
