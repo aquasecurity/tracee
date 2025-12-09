@@ -12,7 +12,6 @@ var ExportedSignatures = []detect.Signature{
 	&SystemRequestKeyConfigModification{},
 	&RcdModification{},
 	&PtraceCodeInjection{},
-	&ProcessVmWriteCodeInjection{},
 	&SyscallTableHooking{},
 }
 
