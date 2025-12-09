@@ -24,7 +24,6 @@ var ExportedSignatures = []detect.Signature{
 	&KubernetesCertificateTheftAttempt{},
 	&ProcFopsHooking{},
 	&SyscallTableHooking{},
-	&DroppedExecutable{},
 }
 
 // ExportedDataSources fulfills the goplugins contract required by the rule-engine
