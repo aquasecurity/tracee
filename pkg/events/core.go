@@ -41,7 +41,14 @@ const (
 
 	// Userspace-derived events (extended) - defined in extended builds
 	StartUserSpaceExtendedID ID = 3000
-	MaxUserSpaceExtendedID   ID = 3999
+	MaxUserSpaceExtendedID   ID = 3499
+
+	// Predefined detector event IDs (reserved slots for specific detector events)
+	// These IDs are used for detector events that need stable, well-known IDs
+	// Examples: events being migrated from derived events, or events that need
+	// to be referenced by name in policies or other systems
+	StartPredefinedDetectorID ID = 3500
+	MaxPredefinedDetectorID   ID = 3999
 
 	// Capture events
 	StartCaptureID ID = 4000
@@ -61,7 +68,12 @@ const (
 
 	// Signature events (extended) - defined in extended builds
 	StartSignatureExtendedID ID = 7000
-	MaxSignatureExtendedID   ID = 7999
+	MaxSignatureExtendedID   ID = 7499
+
+	// Dynamic detector event IDs (allocated at runtime for new detector events)
+	// These IDs are allocated automatically when detectors are registered
+	StartDetectorID ID = 7500
+	MaxDetectorID   ID = 7999
 
 	// Test events
 	StartTestID ID = 8000
@@ -223,21 +235,6 @@ const (
 	SignalSchedProcessExit
 	SignalHeartbeat
 	// MaxSignalID (5499)
-)
-
-// Detector events (new detector system)
-const (
-	// Predefined detector event IDs (reserved slots for specific detector events)
-	// These IDs are used for detector events that need stable, well-known IDs
-	// Examples: events being migrated from derived events, or events that need
-	// to be referenced by name in policies or other systems
-	StartPredefinedDetectorID ID = 3000
-	MaxPredefinedDetectorID   ID = 3999
-
-	// Dynamic detector event IDs (allocated at runtime for new detector events)
-	// These IDs are allocated automatically when detectors are registered
-	StartDetectorID ID = 7000
-	MaxDetectorID   ID = 7999
 )
 
 // PredefinedDetectorEvents maps detector event names to reserved (predefined) event IDs
