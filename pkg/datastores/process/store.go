@@ -92,13 +92,13 @@ func (pt *ProcessTree) GetMetrics() *datastores.DataStoreMetrics {
 // ProcessStore interface implementation
 
 // GetProcess retrieves process information by entity ID (hash)
-func (pt *ProcessTree) GetProcess(entityId uint64) (*datastores.ProcessInfo, bool) {
+func (pt *ProcessTree) GetProcess(entityId uint64) (*datastores.ProcessInfo, error) {
 	pt.lastAccessNano.Store(time.Now().UnixNano())
 
 	hash := uint32(entityId)
 	proc, ok := pt.GetProcessByHash(hash)
 	if !ok {
-		return nil, false
+		return nil, datastores.ErrNotFound
 	}
 
 	info := proc.GetInfo()
@@ -113,7 +113,7 @@ func (pt *ProcessTree) GetProcess(entityId uint64) (*datastores.ProcessInfo, boo
 		StartTime: info.GetStartTime(),
 		UID:       info.GetUid(),
 		GID:       info.GetGid(),
-	}, true
+	}, nil
 }
 
 // GetChildProcesses returns all child processes of the given process
@@ -133,10 +133,55 @@ func (pt *ProcessTree) GetChildProcesses(entityId uint64) ([]*datastores.Process
 
 	children := make([]*datastores.ProcessInfo, 0, len(childrenMap))
 	for childHash := range childrenMap {
-		if childInfo, ok := pt.GetProcess(uint64(childHash)); ok {
+		if childInfo, err := pt.GetProcess(uint64(childHash)); err == nil {
 			children = append(children, childInfo)
 		}
 	}
 
 	return children, nil
+}
+
+// GetAncestry retrieves the process ancestry chain up to maxDepth levels
+// Returns slice of ProcessInfo with [0] = process itself, [1] = parent, [2] = grandparent, etc.
+// If a parent is not found in the tree, the chain stops there
+func (pt *ProcessTree) GetAncestry(entityId uint64, maxDepth int) ([]*datastores.ProcessInfo, error) {
+	pt.lastAccessNano.Store(time.Now().UnixNano())
+
+	if maxDepth <= 0 {
+		return []*datastores.ProcessInfo{}, nil
+	}
+
+	ancestry := make([]*datastores.ProcessInfo, 0, maxDepth)
+	currentHash := uint32(entityId)
+
+	// Walk up the parent chain
+	for i := 0; i < maxDepth; i++ {
+		proc, ok := pt.GetProcessByHash(currentHash)
+		if !ok {
+			break // Process not in tree, stop here
+		}
+
+		info := proc.GetInfo()
+		executable := proc.GetExecutable()
+
+		ancestry = append(ancestry, &datastores.ProcessInfo{
+			EntityID:  uint64(currentHash),
+			PID:       uint32(info.GetPid()),
+			PPID:      uint32(info.GetPPid()),
+			Name:      info.GetName(),
+			Exe:       executable.GetPath(),
+			StartTime: info.GetStartTime(),
+			UID:       info.GetUid(),
+			GID:       info.GetGid(),
+		})
+
+		// Move to parent
+		parentHash := proc.GetParentHash()
+		if parentHash == 0 || parentHash == currentHash {
+			break // No parent or circular reference
+		}
+		currentHash = parentHash
+	}
+
+	return ancestry, nil
 }

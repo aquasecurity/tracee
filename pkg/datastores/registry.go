@@ -1,12 +1,18 @@
 package datastores
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sync"
 
 	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
+	"github.com/aquasecurity/tracee/pkg/datastores/container"
+	"github.com/aquasecurity/tracee/pkg/datastores/dns"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 )
+
+var _ RegistryManager = (*Registry)(nil) // Compile-time interface check
 
 // Registry implements the datastores.Registry interface and provides
 // store registration capabilities for internal Tracee use
@@ -21,12 +27,23 @@ type Registry struct {
 	dnsStore          datastores.DNSStore
 	systemStore       datastores.SystemStore
 	syscallStore      datastores.SyscallStore
+
+	// Lifecycle tracking
+	initialized map[string]bool
 }
 
 // NewRegistry creates a new datastore registry
 func NewRegistry() *Registry {
 	return &Registry{
-		stores: make(map[string]datastores.DataStore),
+		stores:      make(map[string]datastores.DataStore),
+		initialized: make(map[string]bool),
+		// Initialize with null objects to ensure accessor methods never return nil
+		processStore:      &nullProcessStore{},
+		containerStore:    &nullContainerStore{},
+		kernelSymbolStore: &nullKernelSymbolStore{},
+		dnsStore:          &nullDNSStore{},
+		systemStore:       &nullSystemStore{},
+		syscallStore:      &nullSyscallStore{},
 	}
 }
 
@@ -139,6 +156,29 @@ func (r *Registry) GetCustom(name string) (datastores.DataStore, error) {
 	return store, nil
 }
 
+// RegisterWritableStore registers a new writable datastore
+// The caller becomes the owner of the store and can write to it
+// Other consumers can access the store via GetCustom() for read-only operations
+// Returns error if a store with the same name already exists
+func (r *Registry) RegisterWritableStore(name string, store datastores.WritableStore) error {
+	if isNilInterface(store) {
+		return fmt.Errorf("writable datastore '%s' cannot be nil", name)
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Check for duplicates
+	if _, exists := r.stores[name]; exists {
+		return fmt.Errorf("datastore '%s' already registered", name)
+	}
+
+	// Register the writable store (it's also a DataStore)
+	r.stores[name] = store
+
+	return nil
+}
+
 // List returns a list of all registered datastore names
 func (r *Registry) List() []string {
 	r.mu.RLock()
@@ -189,4 +229,125 @@ func (r *Registry) GetMetrics(name string) (*datastores.DataStoreMetrics, error)
 	}
 
 	return store.GetMetrics(), nil
+}
+
+// InitializeAll initializes all registered datastores
+// Detects and calls Initialize(context.Context) on stores that implement it
+// Returns an error if any datastore fails to initialize
+// Already-initialized stores are skipped
+func (r *Registry) InitializeAll(ctx context.Context) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Optional lifecycle interface - stores can implement this for initialization
+	type initializer interface {
+		Initialize(context.Context) error
+	}
+
+	for name, store := range r.stores {
+		// Skip already initialized stores
+		if r.initialized[name] {
+			continue
+		}
+
+		// Check if store implements optional Initialize method
+		if init, ok := store.(initializer); ok {
+			if err := init.Initialize(ctx); err != nil {
+				return fmt.Errorf("failed to initialize datastore '%s': %w", name, err)
+			}
+		}
+
+		r.initialized[name] = true
+	}
+
+	return nil
+}
+
+// ShutdownAll gracefully shuts down all initialized datastores
+// Detects and calls Shutdown(context.Context) on stores that implement it
+// Continues shutting down remaining stores even if one fails
+// Returns the first error encountered, if any
+func (r *Registry) ShutdownAll(ctx context.Context) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Optional lifecycle interface - stores can implement this for cleanup
+	type shutdowner interface {
+		Shutdown(context.Context) error
+	}
+
+	var firstErr error
+
+	// Shutdown in reverse registration order for proper cleanup
+	names := make([]string, 0, len(r.stores))
+	for name := range r.stores {
+		if r.initialized[name] {
+			names = append(names, name)
+		}
+	}
+
+	// Reverse the order
+	for i := len(names) - 1; i >= 0; i-- {
+		name := names[i]
+		store := r.stores[name]
+
+		// Check if store implements optional Shutdown method
+		if shutdown, ok := store.(shutdowner); ok {
+			if err := shutdown.Shutdown(ctx); err != nil {
+				if firstErr == nil {
+					firstErr = fmt.Errorf("failed to shutdown datastore '%s': %w", name, err)
+				}
+				// Continue shutdown even if one fails
+			}
+		}
+
+		r.initialized[name] = false
+	}
+
+	return firstErr
+}
+
+// Registry returns itself as the Registry interface
+// This allows the Registry struct to implement RegistryManager
+func (r *Registry) Registry() datastores.Registry {
+	return r
+}
+
+// GetContainerManager returns the concrete container.Manager for internal Tracee use
+// Returns nil if the container store is not registered or is of wrong type
+func (r *Registry) GetContainerManager() *container.Manager {
+	if r.containerStore == nil {
+		return nil
+	}
+	mgr, ok := r.containerStore.(*container.Manager)
+	if !ok {
+		return nil
+	}
+	return mgr
+}
+
+// GetProcessTree returns the concrete process.ProcessTree for internal Tracee use
+// Returns nil if the process store is not registered or is of wrong type
+func (r *Registry) GetProcessTree() *process.ProcessTree {
+	if r.processStore == nil {
+		return nil
+	}
+	tree, ok := r.processStore.(*process.ProcessTree)
+	if !ok {
+		return nil
+	}
+	return tree
+}
+
+// GetDNSCache returns the concrete dns.DNSCache for internal Tracee use
+// Returns nil if the DNS store is not registered or is of wrong type
+func (r *Registry) GetDNSCache() *dns.DNSCache {
+	if r.dnsStore == nil {
+		return nil
+	}
+	cache, ok := r.dnsStore.(*dns.DNSCache)
+	if !ok {
+		return nil
+	}
+	return cache
 }

@@ -43,6 +43,12 @@ type DetectorOutput struct {
 	// If nil and AutoPopulate.Threat=true, engine uses Definition.ThreatMetadata
 	Threat *v1beta1.Threat
 
+	// AncestryDepth overrides the process ancestry depth for this detection.
+	// Priority: output.AncestryDepth > definition.ProcessAncestry (default 5).
+	// Values: nil (use ProcessAncestry boolean), 0 (disable), 1+ (fetch N levels)
+	// Use case: request deep ancestry for high-severity detections, or disable for performance
+	AncestryDepth *uint32
+
 	// Future extensibility (commented for documentation):
 	// Timestamp *timestamppb.Timestamp  // Override input timestamp (rare)
 	// Workload  *v1beta1.Workload       // Override input workload (rare)
@@ -80,6 +86,9 @@ type DetectorRequirements struct {
 
 	// DataStores lists required datastores with their dependency types
 	DataStores []DataStoreRequirement `yaml:"datastores,omitempty"`
+
+	// Enrichments lists required event enrichment options
+	Enrichments []EnrichmentRequirement `yaml:"enrichments,omitempty"`
 
 	// Architectures lists supported CPU architectures (e.g., "amd64", "arm64")
 	// Empty slice means the detector supports all architectures
@@ -135,6 +144,20 @@ type DataStoreRequirement struct {
 	// - Required: Registration fails if datastore unavailable
 	// - Optional: Detector handles absence gracefully
 	Dependency DependencyType `yaml:"dependency,omitempty"`
+}
+
+// EnrichmentRequirement specifies a required event enrichment option.
+type EnrichmentRequirement struct {
+	// Name is the enrichment option name: "exec-env", "exec-hash"
+	Name string `yaml:"name"`
+
+	// Dependency controls whether this enrichment is required or optional
+	// Zero value (0) = DependencyRequired (default)
+	Dependency DependencyType `yaml:"dependency,omitempty"`
+
+	// Config contains enrichment-specific configuration (e.g., exec-hash mode)
+	// For exec-hash: "inode", "dev-inode", "digest-inode"
+	Config string `yaml:"config,omitempty"`
 }
 
 // AutoPopulateFields specifies which output event fields the engine should populate.

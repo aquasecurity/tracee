@@ -1,10 +1,14 @@
 package datastores
 
 import (
+	"context"
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
 )
@@ -14,17 +18,28 @@ type mockDataStore struct {
 	name string
 }
 
-func (m *mockDataStore) Name() string                             { return m.name }
-func (m *mockDataStore) GetHealth() *datastores.HealthInfo        { return nil }
-func (m *mockDataStore) GetMetrics() *datastores.DataStoreMetrics { return nil }
+func (m *mockDataStore) Name() string { return m.name }
+func (m *mockDataStore) GetHealth() *datastores.HealthInfo {
+	return &datastores.HealthInfo{
+		Status:    datastores.HealthHealthy,
+		Message:   "",
+		LastCheck: time.Now(),
+	}
+}
+func (m *mockDataStore) GetMetrics() *datastores.DataStoreMetrics {
+	return &datastores.DataStoreMetrics{
+		ItemCount:  0,
+		LastAccess: time.Now(),
+	}
+}
 
 // mockProcessStore implements ProcessStore for testing
 type mockProcessStore struct {
 	mockDataStore
 }
 
-func (m *mockProcessStore) GetProcess(entityId uint64) (*datastores.ProcessInfo, bool) {
-	return nil, false
+func (m *mockProcessStore) GetProcess(entityId uint64) (*datastores.ProcessInfo, error) {
+	return nil, datastores.ErrNotFound
 }
 
 func (m *mockProcessStore) GetChildProcesses(entityId uint64) ([]*datastores.ProcessInfo, error) {
@@ -40,12 +55,12 @@ type mockContainerStore struct {
 	mockDataStore
 }
 
-func (m *mockContainerStore) GetContainer(id string) (*datastores.ContainerInfo, bool) {
-	return nil, false
+func (m *mockContainerStore) GetContainer(id string) (*datastores.ContainerInfo, error) {
+	return nil, datastores.ErrNotFound
 }
 
-func (m *mockContainerStore) GetContainerByName(name string) (*datastores.ContainerInfo, bool) {
-	return nil, false
+func (m *mockContainerStore) GetContainerByName(name string) (*datastores.ContainerInfo, error) {
+	return nil, datastores.ErrNotFound
 }
 
 func TestRegistry_RegisterStore(t *testing.T) {
@@ -104,7 +119,12 @@ func TestRegistry_Processes(t *testing.T) {
 		reg := NewRegistry()
 
 		result := reg.Processes()
-		assert.Nil(t, result)
+		assert.NotNil(t, result, "accessor methods must never return nil")
+		assert.Equal(t, "null_process", result.Name())
+
+		// Null store should return ErrStoreUnhealthy
+		_, err := result.GetProcess(1)
+		assert.ErrorIs(t, err, datastores.ErrStoreUnhealthy)
 	})
 
 	t.Run("Processes_WrongType", func(t *testing.T) {
@@ -115,7 +135,8 @@ func TestRegistry_Processes(t *testing.T) {
 		require.NoError(t, err)
 
 		result := reg.Processes()
-		assert.Nil(t, result, "should return nil when store doesn't implement ProcessStore")
+		assert.NotNil(t, result, "accessor methods must never return nil")
+		assert.Equal(t, "null_process", result.Name(), "should return null object when store doesn't implement ProcessStore")
 	})
 }
 
@@ -136,7 +157,12 @@ func TestRegistry_Containers(t *testing.T) {
 		reg := NewRegistry()
 
 		result := reg.Containers()
-		assert.Nil(t, result)
+		assert.NotNil(t, result, "accessor methods must never return nil")
+		assert.Equal(t, "null_container", result.Name())
+
+		// Null store should return ErrStoreUnhealthy
+		_, err := result.GetContainer("test")
+		assert.ErrorIs(t, err, datastores.ErrStoreUnhealthy)
 	})
 }
 
@@ -226,7 +252,7 @@ func TestRegistry_GetMetrics(t *testing.T) {
 
 		metrics, err := reg.GetMetrics("test")
 		assert.NoError(t, err)
-		assert.Nil(t, metrics) // mockDataStore returns nil
+		assert.NotNil(t, metrics) // mockDataStore returns valid metrics
 	})
 
 	t.Run("GetMetrics_NotFound", func(t *testing.T) {
@@ -266,4 +292,303 @@ func TestRegistry_Concurrency(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		<-done
 	}
+}
+
+// mockLifecycleStore implements optional lifecycle methods
+type mockLifecycleStore struct {
+	name             string
+	initializeCalled bool
+	shutdownCalled   bool
+	initializeError  error
+	shutdownError    error
+}
+
+func (m *mockLifecycleStore) Name() string { return m.name }
+
+func (m *mockLifecycleStore) Initialize(ctx context.Context) error {
+	m.initializeCalled = true
+	return m.initializeError
+}
+
+func (m *mockLifecycleStore) Shutdown(ctx context.Context) error {
+	m.shutdownCalled = true
+	return m.shutdownError
+}
+
+func (m *mockLifecycleStore) GetHealth() *datastores.HealthInfo {
+	return &datastores.HealthInfo{Status: datastores.HealthHealthy}
+}
+
+func (m *mockLifecycleStore) GetMetrics() *datastores.DataStoreMetrics {
+	return &datastores.DataStoreMetrics{}
+}
+
+// mockSimpleStore does NOT implement lifecycle methods
+type mockSimpleStore struct {
+	name string
+}
+
+func (m *mockSimpleStore) Name() string { return m.name }
+func (m *mockSimpleStore) GetHealth() *datastores.HealthInfo {
+	return &datastores.HealthInfo{Status: datastores.HealthHealthy}
+}
+func (m *mockSimpleStore) GetMetrics() *datastores.DataStoreMetrics {
+	return &datastores.DataStoreMetrics{}
+}
+
+func TestRegistry_InitializeAll(t *testing.T) {
+	t.Run("successful initialization", func(t *testing.T) {
+		registry := NewRegistry()
+		store1 := &mockLifecycleStore{name: "store1"}
+		store2 := &mockLifecycleStore{name: "store2"}
+
+		require.NoError(t, registry.RegisterStore("store1", store1, false))
+		require.NoError(t, registry.RegisterStore("store2", store2, false))
+
+		err := registry.InitializeAll(context.Background())
+		require.NoError(t, err)
+
+		assert.True(t, store1.initializeCalled)
+		assert.True(t, store2.initializeCalled)
+		assert.True(t, registry.initialized["store1"])
+		assert.True(t, registry.initialized["store2"])
+	})
+
+	t.Run("initialization failure", func(t *testing.T) {
+		registry := NewRegistry()
+		store1 := &mockLifecycleStore{name: "store1"}
+		store2 := &mockLifecycleStore{
+			name:            "store2",
+			initializeError: errors.New("init failed"),
+		}
+
+		require.NoError(t, registry.RegisterStore("store1", store1, false))
+		require.NoError(t, registry.RegisterStore("store2", store2, false))
+
+		err := registry.InitializeAll(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to initialize datastore")
+	})
+
+	t.Run("skip already initialized", func(t *testing.T) {
+		registry := NewRegistry()
+		store1 := &mockLifecycleStore{name: "store1"}
+
+		require.NoError(t, registry.RegisterStore("store1", store1, false))
+
+		err := registry.InitializeAll(context.Background())
+		require.NoError(t, err)
+		assert.True(t, store1.initializeCalled)
+
+		store1.initializeCalled = false
+		err = registry.InitializeAll(context.Background())
+		require.NoError(t, err)
+		assert.False(t, store1.initializeCalled, "Should not reinitialize")
+	})
+
+	t.Run("context cancellation", func(t *testing.T) {
+		registry := NewRegistry()
+
+		// Store that checks context
+		slowStore := &mockLifecycleStore{name: "slow"}
+		slowStore.initializeError = context.Canceled
+
+		require.NoError(t, registry.RegisterStore("slow", slowStore, false))
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // Cancel immediately
+
+		err := registry.InitializeAll(ctx)
+		// Store's Initialize should respect context
+		assert.Error(t, err)
+	})
+
+	t.Run("store without Initialize works", func(t *testing.T) {
+		registry := NewRegistry()
+		simple := &mockSimpleStore{name: "simple"}
+
+		require.NoError(t, registry.RegisterStore("simple", simple, false))
+
+		err := registry.InitializeAll(context.Background())
+		require.NoError(t, err)
+		assert.True(t, registry.initialized["simple"])
+	})
+}
+
+func TestRegistry_ShutdownAll(t *testing.T) {
+	t.Run("successful shutdown", func(t *testing.T) {
+		registry := NewRegistry()
+		store1 := &mockLifecycleStore{name: "store1"}
+		store2 := &mockLifecycleStore{name: "store2"}
+
+		require.NoError(t, registry.RegisterStore("store1", store1, false))
+		require.NoError(t, registry.RegisterStore("store2", store2, false))
+		require.NoError(t, registry.InitializeAll(context.Background()))
+
+		err := registry.ShutdownAll(context.Background())
+		require.NoError(t, err)
+
+		assert.True(t, store1.shutdownCalled)
+		assert.True(t, store2.shutdownCalled)
+		assert.False(t, registry.initialized["store1"])
+		assert.False(t, registry.initialized["store2"])
+	})
+
+	t.Run("shutdown continues on error", func(t *testing.T) {
+		registry := NewRegistry()
+		store1 := &mockLifecycleStore{name: "store1"}
+		store2 := &mockLifecycleStore{
+			name:          "store2",
+			shutdownError: errors.New("shutdown failed"),
+		}
+
+		require.NoError(t, registry.RegisterStore("store1", store1, false))
+		require.NoError(t, registry.RegisterStore("store2", store2, false))
+		require.NoError(t, registry.InitializeAll(context.Background()))
+
+		err := registry.ShutdownAll(context.Background())
+		require.Error(t, err)
+
+		// Both should be called despite error
+		assert.True(t, store1.shutdownCalled)
+		assert.True(t, store2.shutdownCalled)
+	})
+
+	t.Run("context timeout", func(t *testing.T) {
+		registry := NewRegistry()
+		store := &mockLifecycleStore{name: "store"}
+
+		require.NoError(t, registry.RegisterStore("store", store, false))
+		require.NoError(t, registry.InitializeAll(context.Background()))
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+		defer cancel()
+
+		// ShutdownAll should respect context (though store might not)
+		_ = registry.ShutdownAll(ctx)
+		assert.True(t, store.shutdownCalled)
+	})
+}
+
+func TestRegistry_RegistryMethod(t *testing.T) {
+	registry := NewRegistry()
+
+	// Verify Registry() returns itself
+	publicRegistry := registry.Registry()
+	assert.NotNil(t, publicRegistry)
+
+	// Verify it's the same instance
+	assert.Equal(t, registry, publicRegistry)
+}
+
+// mockWritableStore implements WritableStore for testing
+type mockWritableStore struct {
+	mockDataStore
+}
+
+func (m *mockWritableStore) WriteValue(source string, entry *datastores.DataEntry) error {
+	return nil
+}
+
+func (m *mockWritableStore) WriteBatchValues(source string, entries []*datastores.DataEntry) error {
+	return nil
+}
+
+func (m *mockWritableStore) Delete(source string, key *anypb.Any) error {
+	return nil
+}
+
+func (m *mockWritableStore) ClearSource(source string) error {
+	return nil
+}
+
+func (m *mockWritableStore) ListSources() ([]string, error) {
+	return []string{}, nil
+}
+
+func TestRegistry_RegisterWritableStore(t *testing.T) {
+	t.Run("Register_Success", func(t *testing.T) {
+		registry := NewRegistry()
+		store := &mockWritableStore{mockDataStore: mockDataStore{name: "test_writable"}}
+
+		err := registry.RegisterWritableStore("test_writable", store)
+		require.NoError(t, err)
+
+		// Verify it's registered
+		assert.True(t, registry.IsAvailable("test_writable"))
+
+		// Verify it can be retrieved
+		retrieved, err := registry.GetCustom("test_writable")
+		require.NoError(t, err)
+		assert.Equal(t, "test_writable", retrieved.Name())
+	})
+
+	t.Run("Register_Duplicate", func(t *testing.T) {
+		registry := NewRegistry()
+		store1 := &mockWritableStore{mockDataStore: mockDataStore{name: "test_writable"}}
+		store2 := &mockWritableStore{mockDataStore: mockDataStore{name: "test_writable"}}
+
+		err := registry.RegisterWritableStore("test_writable", store1)
+		require.NoError(t, err)
+
+		// Try to register another with the same name
+		err = registry.RegisterWritableStore("test_writable", store2)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already registered")
+	})
+
+	t.Run("Register_Nil", func(t *testing.T) {
+		registry := NewRegistry()
+
+		err := registry.RegisterWritableStore("test_writable", nil)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot be nil")
+	})
+
+	t.Run("Access_Via_GetCustom", func(t *testing.T) {
+		registry := NewRegistry()
+		store := &mockWritableStore{mockDataStore: mockDataStore{name: "test_writable"}}
+
+		err := registry.RegisterWritableStore("test_writable", store)
+		require.NoError(t, err)
+
+		// Access via GetCustom (read-only interface)
+		retrieved, err := registry.GetCustom("test_writable")
+		require.NoError(t, err)
+		assert.NotNil(t, retrieved)
+
+		// Verify it's a DataStore
+		assert.Equal(t, "test_writable", retrieved.Name())
+	})
+
+	t.Run("List_Includes_WritableStore", func(t *testing.T) {
+		registry := NewRegistry()
+
+		// Register regular store
+		regular := &mockDataStore{name: "regular"}
+		err := registry.RegisterStore("regular", regular, false)
+		require.NoError(t, err)
+
+		// Register writable store
+		writable := &mockWritableStore{mockDataStore: mockDataStore{name: "writable"}}
+		err = registry.RegisterWritableStore("writable", writable)
+		require.NoError(t, err)
+
+		// List should include both
+		names := registry.List()
+		assert.ElementsMatch(t, []string{"regular", "writable"}, names)
+	})
+
+	t.Run("GetMetrics_WritableStore", func(t *testing.T) {
+		registry := NewRegistry()
+		store := &mockWritableStore{mockDataStore: mockDataStore{name: "test_writable"}}
+
+		err := registry.RegisterWritableStore("test_writable", store)
+		require.NoError(t, err)
+
+		// GetMetrics should work for writable stores
+		metrics, err := registry.GetMetrics("test_writable")
+		require.NoError(t, err)
+		assert.NotNil(t, metrics)
+	})
 }

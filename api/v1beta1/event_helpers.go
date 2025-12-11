@@ -346,3 +346,40 @@ func NewValue(name string, value any) (*EventValue, error) {
 
 	return ev, nil
 }
+
+// GetDetectionChain returns the full detection chain from leaf to root.
+// Index 0 is the immediate parent, index N is the root/original event.
+// Returns nil if the event has no DetectedFrom chain.
+func GetDetectionChain(event *Event) []*DetectedFrom {
+	if event == nil || event.DetectedFrom == nil {
+		return nil
+	}
+
+	var chain []*DetectedFrom
+	current := event.DetectedFrom
+	for current != nil {
+		chain = append(chain, current)
+		current = current.Parent
+	}
+	return chain
+}
+
+// GetRootDetection returns the original event that started the detection chain.
+// Returns nil if there is no DetectedFrom chain.
+func GetRootDetection(event *Event) *DetectedFrom {
+	if event == nil || event.DetectedFrom == nil {
+		return nil
+	}
+
+	current := event.DetectedFrom
+	for current.Parent != nil {
+		current = current.Parent
+	}
+	return current
+}
+
+// GetChainDepth returns the depth of the detection chain.
+// Returns 0 if there is no chain, 1 for direct detection, 2+ for chained detections.
+func GetChainDepth(event *Event) int {
+	return len(GetDetectionChain(event))
+}
