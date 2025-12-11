@@ -39,6 +39,9 @@ compile_commands.json
 .vagrant
 goenv.mk
 
+# VM test logs
+tests/vm-test-logs/
+
 # binaries and build files
 dist
 *.o
