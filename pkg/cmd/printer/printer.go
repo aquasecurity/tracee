@@ -462,16 +462,7 @@ func (p tableEventPrinter) Epilogue(stats metrics.Stats) {
 }
 
 func (p *tableEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
-	eventChan := stream.ReceiveEvents()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case e := <-eventChan:
-			p.Print(e)
-		}
-	}
+	consumeFromStream(ctx, stream, p)
 }
 
 func (p *tableEventPrinter) Kind() string {
@@ -523,16 +514,7 @@ func (p templateEventPrinter) Print(event *pb.Event) {
 func (p templateEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p *templateEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
-	eventChan := stream.ReceiveEvents()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case e := <-eventChan:
-			p.Print(e)
-		}
-	}
+	consumeFromStream(ctx, stream, p)
 }
 
 func (p *templateEventPrinter) Kind() string {
@@ -596,17 +578,8 @@ func (p *jsonEventPrinter) Epilogue(stats metrics.Stats) {
 	}
 }
 
-func (p jsonEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
-	eventChan := stream.ReceiveEvents()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case e := <-eventChan:
-			p.Print(e)
-		}
-	}
+func (p *jsonEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
+	consumeFromStream(ctx, stream, p)
 }
 
 func (p *jsonEventPrinter) Kind() string {
@@ -782,16 +755,7 @@ func (p *forwardEventPrinter) Print(event *pb.Event) {
 func (p *forwardEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p *forwardEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
-	eventChan := stream.ReceiveEvents()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case e := <-eventChan:
-			p.Print(e)
-		}
-	}
+	consumeFromStream(ctx, stream, p)
 }
 
 func (p *forwardEventPrinter) Kind() string {
@@ -898,16 +862,7 @@ func (ws *webhookEventPrinter) Print(event *pb.Event) {
 func (ws *webhookEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (ws *webhookEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
-	eventChan := stream.ReceiveEvents()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case e := <-eventChan:
-			ws.Print(e)
-		}
-	}
+	consumeFromStream(ctx, stream, ws)
 }
 
 func (ws *webhookEventPrinter) Kind() string {
@@ -915,3 +870,16 @@ func (ws *webhookEventPrinter) Kind() string {
 }
 
 func (ws *webhookEventPrinter) Close() {}
+
+func consumeFromStream(ctx context.Context, stream *streams.Stream, printer EventPrinter) {
+	eventChan := stream.ReceiveEvents()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case e := <-eventChan:
+			printer.Print(e)
+		}
+	}
+}
