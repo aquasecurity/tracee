@@ -6,9 +6,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/pkg/datastores"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 	"github.com/aquasecurity/tracee/pkg/policy"
@@ -34,6 +37,20 @@ func newTestPolicyManager(selectedEventIDs ...events.ID) *policy.Manager {
 	}
 
 	return policyMgr
+}
+
+// Helper function to create a test process tree
+func newTestProcessTree(ctx context.Context) (*process.ProcessTree, error) {
+	return process.NewProcessTree(ctx, process.ProcTreeConfig{
+		Source:           process.SourceNone,
+		ProcessCacheSize: 100,
+		ThreadCacheSize:  100,
+	})
+}
+
+// Helper function to create a test datastore registry
+func newTestDataStoreRegistry() *datastores.Registry {
+	return datastores.NewRegistry()
 }
 
 // producingDetector is a mock detector that actually produces events
@@ -474,4 +491,106 @@ func TestCollectAllDetectors(t *testing.T) {
 	detectors := CollectAllDetectors()
 	assert.NotNil(t, detectors)
 	// The slice might be empty if no detectors are registered in init()
+}
+
+func TestAutoPopulateFields_ProcessAncestry(t *testing.T) {
+	// Setup: Create process tree with ancestry
+	ctx := context.Background()
+	pt, err := newTestProcessTree(ctx)
+	require.NoError(t, err)
+
+	// Create process hierarchy: init (100) -> bash (200) -> python (300)
+	initProc := pt.GetOrCreateProcessByHash(100)
+	initFeed := &process.TaskInfoFeed{
+		Pid:  1,
+		Name: "init",
+	}
+	initProc.GetInfo().SetFeed(initFeed)
+	initProc.SetParentHash(0)
+
+	bashProc := pt.GetOrCreateProcessByHash(200)
+	bashFeed := &process.TaskInfoFeed{
+		Pid:  1000,
+		Name: "bash",
+	}
+	bashProc.GetInfo().SetFeed(bashFeed)
+	bashProc.SetParentHash(100)
+
+	pythonProc := pt.GetOrCreateProcessByHash(300)
+	pythonFeed := &process.TaskInfoFeed{
+		Pid:  2000,
+		Name: "python",
+	}
+	pythonProc.GetInfo().SetFeed(pythonFeed)
+	pythonProc.SetParentHash(200)
+
+	// Create detector with ProcessAncestry enabled
+	detector := &producingDetector{
+		id:        "test_autopop_ancestry",
+		eventName: "test_autopop_ancestry_event",
+		requirements: detection.DetectorRequirements{
+			Events: []detection.EventRequirement{
+				{Name: "execve", Dependency: detection.DependencyRequired},
+			},
+		},
+		autoPopulate: detection.AutoPopulateFields{
+			ProcessAncestry: true, // Enable ancestry auto-population
+		},
+	}
+
+	_, err = CreateEventsFromDetectors(events.StartDetectorID+20005, []detection.EventDetector{detector})
+	require.NoError(t, err)
+
+	// Create test policy manager
+	detEventID, _ := events.Core.GetDefinitionIDByName(detector.eventName)
+	policyMgr := newTestPolicyManager(detEventID)
+
+	engine := NewEngine(policyMgr, nil)
+
+	// Create a registry with process store for testing
+	reg := newTestDataStoreRegistry()
+	err = reg.RegisterStore("process", pt, true)
+	require.NoError(t, err)
+
+	params := detection.DetectorParams{
+		Config:     detection.NewEmptyDetectorConfig(),
+		DataStores: reg.Registry(),
+	}
+
+	err = engine.RegisterDetector(detector, params)
+	require.NoError(t, err)
+
+	// Enable the detector
+	err = engine.EnableDetector(detector.id)
+	require.NoError(t, err)
+
+	// Create input event from python process
+	inputEvent := &v1beta1.Event{
+		Id:   v1beta1.EventId(events.Execve),
+		Name: "execve",
+		Workload: &v1beta1.Workload{
+			Process: &v1beta1.Process{
+				UniqueId: &wrapperspb.UInt32Value{Value: 300},
+			},
+		},
+	}
+
+	outputs, err := engine.DispatchToDetectors(ctx, inputEvent)
+	assert.NoError(t, err)
+	require.Len(t, outputs, 1)
+
+	// Verify ancestry was populated
+	output := outputs[0]
+	require.NotNil(t, output.Workload)
+	require.NotNil(t, output.Workload.Process)
+	require.NotNil(t, output.Workload.Process.Ancestors)
+	assert.Len(t, output.Workload.Process.Ancestors, 2) // bash + init
+
+	// Check first ancestor (bash)
+	assert.Equal(t, uint32(200), output.Workload.Process.Ancestors[0].UniqueId.GetValue())
+	assert.Equal(t, uint32(1000), output.Workload.Process.Ancestors[0].HostPid.GetValue())
+
+	// Check second ancestor (init)
+	assert.Equal(t, uint32(100), output.Workload.Process.Ancestors[1].UniqueId.GetValue())
+	assert.Equal(t, uint32(1), output.Workload.Process.Ancestors[1].HostPid.GetValue())
 }
