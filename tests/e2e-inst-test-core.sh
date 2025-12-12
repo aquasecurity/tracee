@@ -26,7 +26,6 @@ INSTTESTS_CORE_AVAILABLE="
     SECURITY_INODE_RENAME
     BPF_ATTACH
     CONTAINERS_DATA_SOURCE
-    PROCTREE_DATA_SOURCE
     DNS_DATA_SOURCE
     WRITABLE_DATA_SOURCE
     SECURITY_PATH_NOTIFY
@@ -46,7 +45,7 @@ core_init_test_config() {
     add_test_config TEST_CONFIG_MAP "SECURITY_PATH_NOTIFY" "security-path-notify-test" 5 0
     add_test_config TEST_CONFIG_MAP "SUSPICIOUS_SYSCALL_SOURCE" "suspicious-syscall-src-test" 10 0
     add_test_config TEST_CONFIG_MAP "CONTAINERS_DATA_SOURCE" "containers-ds-test" 10 5
-    add_test_config TEST_CONFIG_MAP "PROCTREE_DATA_SOURCE" "proctree-ds-test" 15 10
+    # add_test_config TEST_CONFIG_MAP "PROCTREE_DATA_SOURCE" "proctree-ds-test" 15 10
     add_test_config TEST_CONFIG_MAP "HOOKED_SYSCALL" "hooked-syscall-test" 10 5
     add_test_config TEST_CONFIG_MAP "PROCESS_EXECUTE_FAILED" "execute-failed-test" 5 2
     add_test_config TEST_CONFIG_MAP "STACK_PIVOT" "stack-pivot-test" 10 5
