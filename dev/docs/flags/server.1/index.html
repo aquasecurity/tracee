@@ -8293,7 +8293,6 @@
 <ul>
 <li>If no <strong>--server</strong> flags are specified, no servers are started.</li>
 <li>If endpoint flags (metrics, healthz, pprof, pyroscope) are specified without http-address, an HTTP server is automatically created on localhost:3366.</li>
-<li>If <strong>grpc</strong> flag is specified without grpc-address, a Unix socket server is created at /var/run/tracee.sock.</li>
 <li>If <strong>grpc-address=tcp</strong> is specified without a port, defaults to port 4466.</li>
 <li>If <strong>grpc-address=unix</strong> is specified without a path, defaults to /var/run/tracee.sock.</li>
 <li>Existing Unix socket files are automatically cleaned up before starting the gRPC server.</li>
