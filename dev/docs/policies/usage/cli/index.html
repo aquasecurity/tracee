@@ -8167,7 +8167,11 @@
 <span class="w">    </span><span class="c1">#     - runtime: docker</span>
 <span class="w">    </span><span class="c1">#       socket: /var/run/docker.sock</span>
 
-<span class="nt">blob-perf-buffer-size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1024</span>
+<span class="nt">buffers</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">kernel</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1024</span>
+<span class="w">        </span><span class="nt">control-plane</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1024</span>
+<span class="w">    </span><span class="nt">pipeline</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
 
 <span class="c1"># signatures</span>
 

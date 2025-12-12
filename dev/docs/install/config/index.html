@@ -8322,26 +8322,21 @@ tracee<span class="w"> </span>--runtime<span class="w"> </span><span class="nv">
 <p><strong>NOTE</strong>: Capabilities are Linux-specific permissions that control which privileged operations a program can perform.</p>
 <h3 id="buffer-and-cache">Buffer and Cache<a class="headerlink" href="#buffer-and-cache" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>--perf-buffer-size</code> (<code>-b</code>)</strong>: Specifies the size of the internal perf ring buffer in pages.</li>
+<li><strong><code>--buffers</code></strong>: Configures the buffer sizes for kernel and user buffers.</li>
 </ul>
-<p>Default: <code>1024</code> (4 MB)</p>
+<p>Buffer sizes for perf ring buffers (kernel.events, kernel.artifacts, kernel.control-plane) are specified in pages. The pipeline buffer size is specified in event objects. The default size for perf ring buffers is 1024 pages. The default size for the pipeline buffer is 1000 event objects.</p>
 <p>YAML:
-  <div class="highlight"><pre><span></span><code><span class="nt">perf-buffer-size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2048</span>
+  <div class="highlight"><pre><span></span><code><span class="nt">buffers</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">kernel</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">events</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2048</span>
+<span class="w">        </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1024</span>
+<span class="w">        </span><span class="nt">control-plane</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512</span>
+<span class="w">    </span><span class="nt">pipeline</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20000</span>
 </code></pre></div></p>
-<ul>
-<li><strong><code>--blob-perf-buffer-size</code></strong>: Specifies the size of the internal perf ring buffer used to send blobs from the kernel.</li>
-</ul>
-<p>Default: <code>1024</code> (4 MB)</p>
-<p>YAML:
-  <div class="highlight"><pre><span></span><code><span class="nt">blob-perf-buffer-size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2048</span>
+<p>CLI:
+  <div class="highlight"><pre><span></span><code>--buffers<span class="w"> </span>kernel.events<span class="o">=</span><span class="m">2048</span><span class="w"> </span>--buffers<span class="w"> </span>kernel.artifacts<span class="o">=</span><span class="m">1024</span><span class="w"> </span>--buffers<span class="w"> </span>kernel.control-plane<span class="o">=</span><span class="m">512</span><span class="w"> </span>--buffers<span class="w"> </span><span class="nv">pipeline</span><span class="o">=</span><span class="m">20000</span>
 </code></pre></div></p>
-<ul>
-<li><strong><code>--pipeline-channel-size</code></strong>: Specifies the size of each pipeline stage's output channel.</li>
-</ul>
-<p>Default: <code>1000</code></p>
-<p>YAML:
-  <div class="highlight"><pre><span></span><code><span class="nt">pipeline-channel-size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2048</span>
-</code></pre></div></p>
+<p><strong>NOTE</strong>: You can view more in the <a href="../../flags/buffers.1/">buffers section</a>.</p>
 
 
 
