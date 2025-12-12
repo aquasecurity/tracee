@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/flags/log.1/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/flags/logging.1/">
       
       
         <link rel="prev" href="../capabilities.1/">
@@ -27,7 +27,7 @@
     
     
       
-        <title>TRACEE-LOG - Tracee</title>
+        <title>TRACEE-LOGGING - Tracee</title>
       
     
     
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              TRACEE-LOG
+              TRACEE-LOGGING
             
           </span>
         </div>
@@ -1479,7 +1479,7 @@
   <span class="md-ellipsis">
     
   
-    log
+    logging
   
 
     
@@ -1497,7 +1497,7 @@
   <span class="md-ellipsis">
     
   
-    log
+    logging
   
 
     
@@ -8090,30 +8090,30 @@
 
 
 
-  <h1>log</h1>
+  <h1>logging</h1>
 
 <h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--log</strong> - Control logger options - aggregation and level priority</p>
+<p>tracee <strong>--logging</strong> - Control logger options - aggregation and level priority</p>
 <h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--log</strong> aggregate[:flush-interval] | &lt;debug|info|warn|error|panic&gt; | file:/path/to/file | filter:[msg=&lt;value,...&gt;;regex=&lt;value,...&gt;;pkg=&lt;value,...&gt;;file=&lt;value,...&gt;;lvl=&lt;value,...&gt;;libbpf] | filter-out:[msg=&lt;value,...&gt;;regex=&lt;value,...&gt;;pkg=&lt;value,...&gt;;file=&lt;value,...&gt;;lvl=&lt;value,...&gt;;libbpf]</p>
+<p>tracee <strong>--logging</strong> aggregate | aggregate.flush-interval=&lt;time&gt; | level=&lt;debug|info|warn|error|fatal&gt; | file=/path/to/file | filters.include.[msg=&lt;value,...&gt;] | filters.include.[regex=&lt;value,...&gt;] | filters.include.[pkg=&lt;value,...&gt;] | filters.include.[file=&lt;value,...&gt;] | filters.include.[level=&lt;value,...&gt;] | filters.include.[libbpf] | filters.exclude.[msg=&lt;value,...&gt;] | filters.exclude.[regex=&lt;value,...&gt;] | filters.exclude.[pkg=&lt;value,...&gt;] | filters.exclude.[file=&lt;value,...&gt;] | filters.exclude.[level=&lt;value,...&gt;] | filters.exclude.[libbpf]</p>
 <h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>The <strong>--log</strong> flag allows you to control logger options for the tool.</p>
+<p>The <strong>--logging</strong> flag allows you to control logger options for the tool.</p>
 <p>Possible log options:</p>
 <ul>
 <li>
-<p><strong>aggregate[:flush-interval]</strong>: Turns log aggregation on, delaying output with an optional interval (default: 3s). The flush-interval can be specified in seconds (s) or minutes (m).</p>
+<p><strong>aggregate | aggregate.flush-interval=[time]</strong>: Turns log aggregation on, delaying output with an optional interval (default: 3s). Use <code>aggregate</code> to enable aggregation with default flush interval, or <code>aggregate.flush-interval=[time]</code> to set a custom interval. The flush-interval can be specified in seconds (s) or minutes (m).</p>
 </li>
 <li>
-<p><strong>&lt;debug|info|warn|error|panic&gt;</strong>: Sets the log level. The default log level is 'info'.</p>
+<p><strong>level=&lt;debug|info|warn|error|fatal&gt;</strong>: Sets the log level. The default log level is 'info'.</p>
 </li>
 <li>
-<p><strong>file:/path/to/file</strong>: Writes the logs to the specified file. If the file exists, it will be created or trimmed.</p>
+<p><strong>file=/path/to/file</strong>: Writes the logs to the specified file. If the file exists, it will be created or trimmed.</p>
 </li>
 <li>
-<p><strong>filter:</strong>&lt;option;...&gt;: Filters in logs that match the specified option values. Multiple filter options can be provided, separated by semicolons.</p>
+<p><strong>filters.include.</strong>&lt;option;...&gt;: Filters in logs that match the specified option values. Multiple filter options can be provided, separated by semicolons.</p>
 </li>
 <li>
-<p><strong>filter-out:</strong>&lt;option;...&gt;: Filters out logs that match the specified option values. Multiple filter options can be provided, separated by semicolons.</p>
+<p><strong>filters.exclude.</strong>&lt;option;...&gt;: Filters out logs that match the specified option values. Multiple filter options can be provided, separated by semicolons.</p>
 </li>
 </ul>
 <p>Filter options:</p>
@@ -8131,7 +8131,7 @@
 <p><strong>file=&lt;value,...&gt;</strong>: Filters logs that originate from the specified file.</p>
 </li>
 <li>
-<p><strong>lvl=&lt;value,...&gt;</strong>: Filters logs that are of the specified level.</p>
+<p><strong>level=&lt;value,...&gt;</strong>: Filters logs that are of the specified level.</p>
 </li>
 <li>
 <p><strong>libbpf</strong>: Filters logs that originate from libbpf.</p>
@@ -8141,52 +8141,52 @@
 <ul>
 <li>To output debug level logs, use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--log debug</span>
+<div class="highlight"><pre><span></span><code><span class="go">--logging level=debug</span>
 </code></pre></div>
 <ul>
 <li>To output aggregated debug level logs every 3 seconds (default), use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--log debug --log aggregate</span>
+<div class="highlight"><pre><span></span><code><span class="go">--logging level=debug --logging aggregate</span>
 </code></pre></div>
 <ul>
 <li>To output aggregated logs every 5 seconds, use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--log aggregate:5s</span>
+<div class="highlight"><pre><span></span><code><span class="go">--logging aggregate.flush-interval=5s</span>
 </code></pre></div>
 <ul>
 <li>To output debug level logs to <code>/tmp/tracee.log</code>, use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--log debug --log file:/tmp/tracee.log</span>
+<div class="highlight"><pre><span></span><code><span class="go">--logging level=debug --logging file=/tmp/tracee.log</span>
 </code></pre></div>
 <ul>
 <li>To filter in logs that have either 'foo' or 'bar' in the message, are from the 'core' package, and are of 'error' level, use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--log filter:&#39;msg=foo,bar;pkg=core;lvl=error&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="go">--logging filters.include.msg=foo,bar --logging filters.include.pkg=core --logging filters.include.level=error</span>
 </code></pre></div>
 <ul>
 <li>To filter out logs that have either 'foo' or 'bar' in the message, are from the 'core' package, and are of 'error' level, use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--log filter-out:&#39;msg=foo,bar;pkg=core;lvl=error&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="go">--logging filters.exclude.msg=foo,bar --logging filters.exclude.pkg=core --logging filters.exclude.level=error</span>
 </code></pre></div>
 <ul>
 <li>To filter in logs that have either 'foo' or 'bar' in the message and, based on that result, filter out logs that are from the 'core' package, use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--log filter:msg=foo,bar --log filter-out:pkg=core</span>
+<div class="highlight"><pre><span></span><code><span class="go">--logging filters.include.msg=foo,bar --logging filters.exclude.pkg=core</span>
 </code></pre></div>
 <ul>
 <li>To filter out logs that originate from the '/pkg/cmd/flags/logger.go' file, use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--log filter-out:file=/pkg/cmd/flags/logger.go</span>
+<div class="highlight"><pre><span></span><code><span class="go">--logging filters.exclude.file=/pkg/cmd/flags/logger.go</span>
 </code></pre></div>
 <ul>
 <li>To filter in logs that have messages matching the regex '^foo', use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--log filter:regex=&#39;^foo&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="go">--logging filters.include.regex=&#39;^foo&#39;</span>
 </code></pre></div>
 <ul>
 <li>To filter in logs that originate from libbpf, use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--log filter:libbpf</span>
+<div class="highlight"><pre><span></span><code><span class="go">--logging filters.include.libbpf</span>
 </code></pre></div>
 
 

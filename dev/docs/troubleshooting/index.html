@@ -1457,14 +1457,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../flags/log.1/" class="md-nav__link">
+      <a href="../flags/logging.1/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    log
+    logging
   
 
     
@@ -8666,7 +8666,7 @@ docker<span class="w"> </span>run<span class="w"> </span>-v<span class="w"> </sp
 <li>
 <p><strong>Check for mixed output</strong>:
    <div class="highlight"><pre><span></span><code><span class="c1"># Separate logs from events</span>
-tracee<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span>--log<span class="w"> </span>file:/var/log/tracee.log
+tracee<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span>--logging<span class="w"> </span><span class="nv">file</span><span class="o">=</span>/var/log/tracee.log
 </code></pre></div></p>
 </li>
 </ol>
@@ -8686,7 +8686,7 @@ tracee<span class="w"> </span>--output<span class="w"> </span>json<span class="w
 <h2 id="debugging">Debugging<a class="headerlink" href="#debugging" title="Permanent link">&para;</a></h2>
 <h3 id="enable-debug-logging">Enable Debug Logging<a class="headerlink" href="#enable-debug-logging" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Enable debug logs</span>
-tracee<span class="w"> </span>--log<span class="w"> </span>debug
+tracee<span class="w"> </span>--logging<span class="w"> </span><span class="nv">level</span><span class="o">=</span>debug
 
 <span class="c1"># Or via environment</span>
 <span class="nv">TRACEE_LOG_LEVEL</span><span class="o">=</span>debug<span class="w"> </span>tracee

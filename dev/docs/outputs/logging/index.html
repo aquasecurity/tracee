@@ -1457,14 +1457,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/log.1/" class="md-nav__link">
+      <a href="../../flags/logging.1/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    log
+    logging
   
 
     
@@ -8069,47 +8069,54 @@
 <p>The flush-interval defines how often the Tracee logs will be forwarded.</p>
 <p><strong>Filter logs which message contains specified words:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="go">log:</span>
-<span class="go">    filters: </span>
-<span class="go">        msg: </span>
-<span class="go">            - foo</span>
-<span class="go">            - bar</span>
+<span class="go">    filters:</span>
+<span class="go">        include:</span>
+<span class="go">            msg: </span>
+<span class="go">                - foo</span>
+<span class="go">                - bar</span>
 </code></pre></div>
 <p><strong>Filter logs using regular expressions against messages:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="go">log:</span>
-<span class="go">    filters: </span>
-<span class="go">        regex: </span>
-<span class="go">            - ^pattern-one</span>
+<span class="go">    filters:</span>
+<span class="go">        include:</span>
+<span class="go">            regex: </span>
+<span class="go">                - ^pattern-one</span>
 </code></pre></div>
 <p><strong>Filter logs originating from a specific package:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="go">log:</span>
-<span class="go">    filters: </span>
-<span class="go">        pkg:</span>
-<span class="go">            - core</span>
+<span class="go">    filters:</span>
+<span class="go">        include: </span>
+<span class="go">            pkg:</span>
+<span class="go">                - core</span>
 </code></pre></div>
 <p><strong>Filter logs originating from a specific file:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="go">log:</span>
-<span class="go">    filter: </span>
-<span class="go">        file: </span>
-<span class="go">            - /pkg/cmd/flags/logger.go</span>
+<span class="go">    filters:</span>
+<span class="go">        include: </span>
+<span class="go">            file: </span>
+<span class="go">                - /pkg/cmd/flags/logger.go</span>
 </code></pre></div>
 <p><strong>Filter logs based on their severity level:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="go">log:</span>
-<span class="go">    filters: </span>
-<span class="go">        level: </span>
-<span class="go">            - error</span>
+<span class="go">    filters:</span>
+<span class="go">        include: </span>
+<span class="go">            level:</span>
+<span class="go">                - error</span>
 </code></pre></div>
 <p><strong>Filter logs originating from libbpf</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="go">log:</span>
-<span class="go">    filters: </span>
-<span class="go">        libbpf: true</span>
+<span class="go">    filters:</span>
+<span class="go">        include:</span>
+<span class="go">            libbpf: true</span>
 </code></pre></div>
 <h2 id="additional-configuration">Additional Configuration<a class="headerlink" href="#additional-configuration" title="Permanent link">&para;</a></h2>
-<p>All <code>filters</code> options can also be used with <code>filter-out</code> to achieve the opposite behavior. </p>
+<p>All <code>filters</code> options can also be used with <code>exclude</code> to achieve the opposite behavior.</p>
 <p>For instance, the following configuration would exclude all logs with the severity level <code>error</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="go">log:</span>
-<span class="go">    filter-out: </span>
-<span class="go">        level: </span>
-<span class="go">            - error</span>
+<span class="go">    filters:</span>
+<span class="go">        exclude:</span>
+<span class="go">            level:</span>
+<span class="go">                - error</span>
 </code></pre></div>
 
 
