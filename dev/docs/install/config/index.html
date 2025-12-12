@@ -1176,10 +1176,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#install-path" class="md-nav__link">
+  <a href="#runtime" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Install Path
+        Runtime
       
     </span>
   </a>
@@ -8151,10 +8151,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#install-path" class="md-nav__link">
+  <a href="#runtime" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Install Path
+        Runtime
       
     </span>
   </a>
@@ -8285,14 +8285,19 @@ tracee<span class="w"> </span>--server<span class="w"> </span>metrics<span class
   <div class="highlight"><pre><span></span><code><span class="nt">proctree</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">process</span>
 </code></pre></div></p>
-<h3 id="install-path">Install Path<a class="headerlink" href="#install-path" title="Permanent link">&para;</a></h3>
+<h3 id="runtime">Runtime<a class="headerlink" href="#runtime" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>--install-path</code></strong>: Specifies the directory where Tracee will install or look for its resources. If not specified, the default installation directory is <code>/tmp/tracee</code>.</li>
+<li><strong><code>--runtime</code> (<code>-r</code>)</strong>: Controls runtime configurations for Tracee.</li>
 </ul>
-<p>YAML:
-  <div class="highlight"><pre><span></span><code><span class="nt">install-path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/tracee</span>
+<p>CLI Examples:
+  <div class="highlight"><pre><span></span><code><span class="c1"># Set working directory</span>
+tracee<span class="w"> </span>--runtime<span class="w"> </span><span class="nv">workdir</span><span class="o">=</span>/opt/tracee
 </code></pre></div></p>
-<p><strong>NOTE</strong>: This option is useful when running Tracee in environments where <code>/tmp</code> is not suitable or secure.</p>
+<p>YAML:
+  <div class="highlight"><pre><span></span><code><span class="nt">runtime</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workdir=/opt/tracee</span>
+</code></pre></div></p>
+<p><strong>NOTE</strong>: The workdir is the path where Tracee will install or lookup its resources. The default is <code>/tmp/tracee</code>. This option is useful when running Tracee in environments where <code>/tmp</code> is not suitable or secure.</p>
 <h3 id="log">Log<a class="headerlink" href="#log" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><code>--log</code> (<code>-l</code>)</strong>: Controls the verbosity level of Tracee's logging system. The default log level is <code>info</code>.</li>
