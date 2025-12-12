@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"kernel.org/pub/linux/libs/security/libcap/cap"
@@ -110,17 +111,13 @@ type Tracee struct {
 	lostBPFLogChannel   chan uint64 // channel for lost bpf logs
 	// Containers
 	cgroups           *cgroup.Cgroups
-	container         *container.Manager
 	contPathResolver  *container.ContainerPathResolver
 	contSymbolsLoader *container.ContainersSymbolsLoader
 	// Control Plane
 	controlPlane *controlplane.Controller
-	// Process Tree
-	processTree *process.ProcessTree
-	// DNS Cache
-	dnsCache *dns.DNSCache
-	// DataStore Registry
-	dataStoreRegistry *datastores.Registry
+	// DataStore Registry Manager (provides both internal and public access).
+	// Use GetXxx() methods for internal Tracee operations; use Registry() for detector access.
+	dataStoreRegistry datastores.RegistryManager
 	// Detector Engine
 	detectorEngine *detectors.Engine
 	// Specific Events Needs
@@ -194,8 +191,8 @@ func (t *Tracee) setKernelSymbols(kernelSymbols *symbol.KernelSymbolTable) {
 }
 
 // DataStores returns the datastore registry for accessing system state information
-func (t *Tracee) DataStores() *datastores.Registry {
-	return t.dataStoreRegistry
+func (t *Tracee) DataStores() dsapi.Registry {
+	return t.dataStoreRegistry.Registry()
 }
 
 // New creates a new Tracee instance based on a given valid Config. It is expected that it won't
@@ -388,7 +385,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize containers enrichment logic
 
-	t.container, err = container.New(
+	containerMgr, err := container.New(
 		t.config.NoContainersEnrich,
 		t.cgroups,
 		t.config.Sockets,
@@ -397,14 +394,12 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	if err != nil {
 		return errfmt.Errorf("error initializing containers: %v", err)
 	}
-	if err := t.container.Populate(); err != nil {
-		return errfmt.Errorf("error populating containers: %v", err)
-	}
 
 	// Initialize DNS Cache
 
+	var dnsCache *dns.DNSCache
 	if t.config.DNSCacheConfig.Enable {
-		t.dnsCache, err = dns.New(t.config.DNSCacheConfig)
+		dnsCache, err = dns.New(t.config.DNSCacheConfig)
 		if err != nil {
 			return errfmt.Errorf("error initializing dns cache: %v", err)
 		}
@@ -519,13 +514,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// time in nanoseconds when the system was booted
 	t.bootTime = uint64(timeutil.GetBootTimeNS())
 
-	// Initialize event derivation logic
-
-	err = t.initDerivationTable()
-	if err != nil {
-		return errfmt.Errorf("error initializing event derivation map: %v", err)
-	}
-
 	// Initialize events field types map
 
 	t.eventDecodeTypes = make(map[events.ID][]data.DecodeAs)
@@ -539,11 +527,12 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize Process Tree (if enabled)
 
+	var processTree *process.ProcessTree
 	if t.config.ProcTree.Source != process.SourceNone {
 		// Procfs enrichment is now supported with both CLOCK_BOOTTIME and CLOCK_MONOTONIC.
 		// The timeutil.ProcfsStartTimeToEpochNS() function handles the conversion from
 		// procfs values (always BOOTTIME) to the BPF clock base (MONOTONIC or BOOTTIME).
-		t.processTree, err = process.NewProcessTree(ctx, t.config.ProcTree)
+		processTree, err = process.NewProcessTree(ctx, t.config.ProcTree)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -555,16 +544,16 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Register core datastores
 	// ProcessTree is optional (may be nil if Source == SourceNone)
-	if err := t.dataStoreRegistry.RegisterStore(dsapi.Process, t.processTree, false); err != nil {
+	if err := t.dataStoreRegistry.RegisterStore(dsapi.Process, processTree, false); err != nil {
 		return errfmt.WrapError(err)
 	}
 
-	if err := t.dataStoreRegistry.RegisterStore(dsapi.Container, t.container, true); err != nil {
+	if err := t.dataStoreRegistry.RegisterStore(dsapi.Container, containerMgr, true); err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// DNS cache is optional (may be nil if DNSCacheConfig.Enable is false)
-	if err := t.dataStoreRegistry.RegisterStore(dsapi.DNS, t.dnsCache, false); err != nil {
+	if err := t.dataStoreRegistry.RegisterStore(dsapi.DNS, dnsCache, false); err != nil {
 		return errfmt.WrapError(err)
 	}
 
@@ -593,7 +582,19 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
-	// Register detectors from config (after datastores are registered)
+	// Initialize all registered datastores
+	// This will call Initialize(ctx) on stores that implement it (e.g., container.Populate())
+	if err := t.dataStoreRegistry.InitializeAll(ctx); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Initialize event derivation logic (after datastores are initialized)
+	err = t.initDerivationTable()
+	if err != nil {
+		return errfmt.Errorf("error initializing event derivation map: %v", err)
+	}
+
+	// Register detectors from config (after datastores are registered and initialized)
 	if err := t.registerAllDetectors(t.config.DetectorConfig.Detectors); err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -783,13 +784,13 @@ func (t *Tracee) initDerivationTable() error {
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
 				Enabled:        shouldSubmit(events.ContainerCreate),
-				DeriveFunction: derive.ContainerCreate(t.container),
+				DeriveFunction: derive.ContainerCreate(t.dataStoreRegistry.GetContainerManager()),
 			},
 		},
 		events.CgroupRmdir: {
 			events.ContainerRemove: {
 				Enabled:        shouldSubmit(events.ContainerRemove),
-				DeriveFunction: derive.ContainerRemove(t.container),
+				DeriveFunction: derive.ContainerRemove(t.dataStoreRegistry.GetContainerManager()),
 			},
 		},
 		events.SyscallTableCheck: {
@@ -833,7 +834,7 @@ func (t *Tracee) initDerivationTable() error {
 			events.NetTCPConnect: {
 				Enabled: shouldSubmit(events.NetTCPConnect),
 				DeriveFunction: derive.NetTCPConnect(
-					t.dnsCache,
+					t.dataStoreRegistry.GetDNSCache(),
 				),
 			},
 		},
@@ -921,13 +922,13 @@ func (t *Tracee) initDerivationTable() error {
 			events.NetFlowTCPBegin: {
 				Enabled: shouldSubmit(events.NetFlowTCPBegin),
 				DeriveFunction: derive.NetFlowTCPBegin(
-					t.dnsCache,
+					t.dataStoreRegistry.GetDNSCache(),
 				),
 			},
 			events.NetFlowTCPEnd: {
 				Enabled: shouldSubmit(events.NetFlowTCPEnd),
 				DeriveFunction: derive.NetFlowTCPEnd(
-					t.dnsCache,
+					t.dataStoreRegistry.GetDNSCache(),
 				),
 			},
 		},
@@ -1387,7 +1388,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Populate containers map with existing containers
-	err = t.container.PopulateBpfMap(t.bpfModule)
+	err = t.dataStoreRegistry.GetContainerManager().PopulateBpfMap(t.bpfModule)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1447,7 +1448,7 @@ func (t *Tracee) populateBPFMaps() error {
 func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
 	polCfg, err := t.policyManager.UpdateBPF(
 		t.bpfModule,
-		t.container,
+		t.dataStoreRegistry.GetContainerManager(),
 		t.eventDecodeTypes,
 		true,
 		updateProcTree,
@@ -1685,9 +1686,9 @@ func (t *Tracee) initBPF() error {
 
 	t.controlPlane = controlplane.NewController(
 		t.bpfModule,
-		t.container,
+		t.dataStoreRegistry.GetContainerManager(),
 		t.config.NoContainersEnrich,
-		t.processTree,
+		t.dataStoreRegistry.GetProcessTree(),
 		t.dataTypeDecoder,
 	)
 	if err := t.controlPlane.Init(); err != nil {
@@ -1695,7 +1696,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
-	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.container, t.eventDecodeTypes, false, true)
+	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.dataStoreRegistry.GetContainerManager(), t.eventDecodeTypes, false, true)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1916,6 +1917,16 @@ func (t *Tracee) Close() {
 		t.streamsManager.Close()
 	}
 
+	// Shutdown all datastores with a reasonable timeout.
+	// 5 seconds allows graceful cleanup without blocking Tracee termination indefinitely.
+	if t.dataStoreRegistry != nil {
+		shutdownCtx, cancel := gocontext.WithTimeout(gocontext.Background(), 5*time.Second)
+		defer cancel()
+		if err := t.dataStoreRegistry.ShutdownAll(shutdownCtx); err != nil {
+			logger.Errorw("Failed to shutdown datastores", "error", err)
+		}
+	}
+
 	// Close all the perf buffers
 	if t.eventsPerfMap != nil {
 		t.eventsPerfMap.Close()
@@ -1953,8 +1964,8 @@ func (t *Tracee) Close() {
 	if t.bpfModule != nil {
 		t.bpfModule.Close()
 	}
-	if t.container != nil {
-		err := t.container.Close()
+	if t.dataStoreRegistry != nil && t.dataStoreRegistry.GetContainerManager() != nil {
+		err := t.dataStoreRegistry.GetContainerManager().Close()
 		if err != nil {
 			logger.Errorw("failed to clean containers module when closing tracee", "err", err)
 		}
@@ -2116,7 +2127,7 @@ func (t *Tracee) invokeInitEvents(out chan *events.PipelineEvent) {
 
 	matchedPolicies = policiesMatch(events.ExistingContainer)
 	if matchedPolicies > 0 {
-		existingContainerEvents := events.ExistingContainersEvents(t.container, t.config.NoContainersEnrich)
+		existingContainerEvents := events.ExistingContainersEvents(t.dataStoreRegistry.GetContainerManager(), t.config.NoContainersEnrich)
 		for i := range existingContainerEvents {
 			event := &(existingContainerEvents[i])
 			setMatchedPolicies(event, matchedPolicies)
@@ -2284,7 +2295,7 @@ func (t *Tracee) registerAllDetectors(detectorList []detection.EventDetector) er
 	// Build detector parameters
 	params := detection.DetectorParams{
 		Logger:     logger.Current(),
-		DataStores: t.dataStoreRegistry,
+		DataStores: t.dataStoreRegistry.Registry(),
 		Config:     detection.NewEmptyDetectorConfig(), // Empty config for now
 	}
 
