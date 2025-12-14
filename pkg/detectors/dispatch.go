@@ -233,7 +233,7 @@ func (d *dispatcher) autoPopulateFields(output, input *v1beta1.Event, detector *
 		return // Already populated by detector
 	}
 
-	entityId := uint64(output.Workload.Process.UniqueId.GetValue())
+	entityId := output.Workload.Process.UniqueId.GetValue()
 	if entityId == 0 || detector.params.DataStores == nil {
 		return
 	}
@@ -249,9 +249,9 @@ func (d *dispatcher) autoPopulateFields(output, input *v1beta1.Event, detector *
 	output.Workload.Process.Ancestors = make([]*v1beta1.Process, 0, len(ancestry)-1)
 	for _, ancestor := range ancestry[1:] {
 		proc := &v1beta1.Process{
-			UniqueId: &wrapperspb.UInt32Value{Value: uint32(ancestor.EntityID)},
-			HostPid:  &wrapperspb.UInt32Value{Value: ancestor.PID},
-			Pid:      &wrapperspb.UInt32Value{Value: ancestor.PID},
+			UniqueId: &wrapperspb.UInt32Value{Value: ancestor.UniqueId},
+			HostPid:  &wrapperspb.UInt32Value{Value: ancestor.HostPid},
+			Pid:      &wrapperspb.UInt32Value{Value: ancestor.Pid},
 		}
 
 		// Populate thread with process name (comm)

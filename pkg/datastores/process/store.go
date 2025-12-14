@@ -92,10 +92,10 @@ func (pt *ProcessTree) GetMetrics() *datastores.DataStoreMetrics {
 // ProcessStore interface implementation
 
 // GetProcess retrieves process information by entity ID (hash)
-func (pt *ProcessTree) GetProcess(entityId uint64) (*datastores.ProcessInfo, bool) {
+func (pt *ProcessTree) GetProcess(entityId uint32) (*datastores.ProcessInfo, bool) {
 	pt.lastAccessNano.Store(time.Now().UnixNano())
 
-	hash := uint32(entityId)
+	hash := entityId
 	proc, ok := pt.GetProcessByHash(hash)
 	if !ok {
 		return nil, false
@@ -105,22 +105,28 @@ func (pt *ProcessTree) GetProcess(entityId uint64) (*datastores.ProcessInfo, boo
 	executable := proc.GetExecutable()
 
 	return &datastores.ProcessInfo{
-		EntityID:  entityId,
-		PID:       uint32(info.GetPid()),
-		PPID:      uint32(info.GetPPid()),
+		UniqueId:       entityId,
+		ParentUniqueId: proc.GetParentHash(),
+
+		HostPid:  uint32(info.GetPid()),
+		Pid:      uint32(info.GetNsPid()),
+		HostPpid: uint32(info.GetPPid()),
+		Ppid:     uint32(info.GetNsPPid()),
+
 		Name:      info.GetName(),
 		Exe:       executable.GetPath(),
 		StartTime: info.GetStartTime(),
+		ExitTime:  info.GetExitTime(),
 		UID:       info.GetUid(),
 		GID:       info.GetGid(),
 	}, true
 }
 
 // GetChildProcesses returns all child processes of the given process
-func (pt *ProcessTree) GetChildProcesses(entityId uint64) ([]*datastores.ProcessInfo, error) {
+func (pt *ProcessTree) GetChildProcesses(entityId uint32) ([]*datastores.ProcessInfo, error) {
 	pt.lastAccessNano.Store(time.Now().UnixNano())
 
-	hash := uint32(entityId)
+	hash := entityId
 
 	// Get child hashes using the internal method
 	pt.processesChildrenMtx.RLock()
@@ -133,7 +139,7 @@ func (pt *ProcessTree) GetChildProcesses(entityId uint64) ([]*datastores.Process
 
 	children := make([]*datastores.ProcessInfo, 0, len(childrenMap))
 	for childHash := range childrenMap {
-		if childInfo, ok := pt.GetProcess(uint64(childHash)); ok {
+		if childInfo, ok := pt.GetProcess(childHash); ok {
 			children = append(children, childInfo)
 		}
 	}
@@ -144,7 +150,7 @@ func (pt *ProcessTree) GetChildProcesses(entityId uint64) ([]*datastores.Process
 // GetAncestry retrieves the process ancestry chain up to maxDepth levels
 // Returns slice of ProcessInfo with [0] = process itself, [1] = parent, [2] = grandparent, etc.
 // If a parent is not found in the tree, the chain stops there
-func (pt *ProcessTree) GetAncestry(entityId uint64, maxDepth int) ([]*datastores.ProcessInfo, error) {
+func (pt *ProcessTree) GetAncestry(entityId uint32, maxDepth int) ([]*datastores.ProcessInfo, error) {
 	pt.lastAccessNano.Store(time.Now().UnixNano())
 
 	if maxDepth <= 0 {
@@ -152,7 +158,7 @@ func (pt *ProcessTree) GetAncestry(entityId uint64, maxDepth int) ([]*datastores
 	}
 
 	ancestry := make([]*datastores.ProcessInfo, 0, maxDepth)
-	currentHash := uint32(entityId)
+	currentHash := entityId
 
 	// Walk up the parent chain
 	for i := 0; i < maxDepth; i++ {
@@ -163,20 +169,26 @@ func (pt *ProcessTree) GetAncestry(entityId uint64, maxDepth int) ([]*datastores
 
 		info := proc.GetInfo()
 		executable := proc.GetExecutable()
+		parentHash := proc.GetParentHash()
 
 		ancestry = append(ancestry, &datastores.ProcessInfo{
-			EntityID:  uint64(currentHash),
-			PID:       uint32(info.GetPid()),
-			PPID:      uint32(info.GetPPid()),
+			UniqueId:       currentHash,
+			ParentUniqueId: parentHash,
+
+			HostPid:  uint32(info.GetPid()),
+			Pid:      uint32(info.GetNsPid()),
+			HostPpid: uint32(info.GetPPid()),
+			Ppid:     uint32(info.GetNsPPid()),
+
 			Name:      info.GetName(),
 			Exe:       executable.GetPath(),
 			StartTime: info.GetStartTime(),
+			ExitTime:  info.GetExitTime(),
 			UID:       info.GetUid(),
 			GID:       info.GetGid(),
 		})
 
 		// Move to parent
-		parentHash := proc.GetParentHash()
 		if parentHash == 0 || parentHash == currentHash {
 			break // No parent or circular reference
 		}

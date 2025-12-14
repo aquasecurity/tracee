@@ -4,14 +4,25 @@ import "time"
 
 // ProcessInfo contains information about a process
 type ProcessInfo struct {
-	EntityID  uint64    // Primary key (hash from ProcessTree) - matches Event.Process.EntityId
-	PID       uint32    // OS process ID (for display/logging)
-	PPID      uint32    // OS parent PID (for display/logging)
+	// Unique identifiers (hashes)
+	UniqueId       uint32 // Process unique ID (hash) - matches protobuf unique_id
+	ParentUniqueId uint32 // Parent process unique ID (hash) - efficient ancestry
+
+	// Process IDs
+	HostPid  uint32 // Host namespace PID (root namespace) - matches protobuf host_pid
+	Pid      uint32 // Process namespace PID (container if containerized) - matches protobuf pid
+	HostPpid uint32 // Host namespace parent PID
+	Ppid     uint32 // Process namespace parent PID
+
+	// Process metadata
 	Name      string    // Binary name only: "bash"
 	Exe       string    // Full path: "/usr/bin/bash"
 	StartTime time.Time // Process start time
-	UID       uint32    // User ID
-	GID       uint32    // Group ID
+	ExitTime  time.Time // Process exit time (zero if still running)
+
+	// User/Group
+	UID uint32 // User ID - matches protobuf real_user.id
+	GID uint32 // Group ID
 	// Phase 2: CmdLine/Args (memory impact)
 }
 
