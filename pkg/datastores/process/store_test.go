@@ -82,8 +82,11 @@ func TestProcessStore_GetAncestry(t *testing.T) {
 	// init (hash: 100)
 	initProc := pt.GetOrCreateProcessByHash(100)
 	initFeed := &TaskInfoFeed{
-		Pid:  1,
-		Name: "init",
+		Pid:    1,
+		NsPid:  1,
+		PPid:   0,
+		NsPPid: 0,
+		Name:   "init",
 	}
 	initProc.GetInfo().SetFeed(initFeed)
 	initProc.SetParentHash(0) // No parent
@@ -91,8 +94,11 @@ func TestProcessStore_GetAncestry(t *testing.T) {
 	// bash (hash: 200, parent: 100)
 	bashProc := pt.GetOrCreateProcessByHash(200)
 	bashFeed := &TaskInfoFeed{
-		Pid:  1000,
-		Name: "bash",
+		Pid:    1000,
+		NsPid:  1,
+		PPid:   1,
+		NsPPid: 1,
+		Name:   "bash",
 	}
 	bashProc.GetInfo().SetFeed(bashFeed)
 	bashProc.SetParentHash(100)
@@ -100,43 +106,72 @@ func TestProcessStore_GetAncestry(t *testing.T) {
 	// python (hash: 300, parent: 200)
 	pythonProc := pt.GetOrCreateProcessByHash(300)
 	pythonFeed := &TaskInfoFeed{
-		Pid:  2000,
-		Name: "python",
+		Pid:    2000,
+		NsPid:  100,
+		PPid:   1000,
+		NsPPid: 1,
+		Name:   "python",
 	}
 	pythonProc.GetInfo().SetFeed(pythonFeed)
 	pythonProc.SetParentHash(200)
 
 	t.Run("get ancestry with maxDepth 5", func(t *testing.T) {
-		ancestry, err := pt.GetAncestry(uint64(300), 5)
+		ancestry, err := pt.GetAncestry(uint32(300), 5)
 		assert.NoError(t, err)
 		assert.Len(t, ancestry, 3) // python -> bash -> init
 
-		assert.Equal(t, uint64(300), ancestry[0].EntityID)
+		// Python process
+		assert.Equal(t, uint32(300), ancestry[0].UniqueId)
 		assert.Equal(t, "python", ancestry[0].Name)
+		assert.NotZero(t, ancestry[0].HostPid)
+		assert.NotZero(t, ancestry[0].Pid)
+		assert.Equal(t, uint32(200), ancestry[0].ParentUniqueId)
 
-		assert.Equal(t, uint64(200), ancestry[1].EntityID)
+		// Bash process
+		assert.Equal(t, uint32(200), ancestry[1].UniqueId)
 		assert.Equal(t, "bash", ancestry[1].Name)
+		assert.Equal(t, uint32(100), ancestry[1].ParentUniqueId)
 
-		assert.Equal(t, uint64(100), ancestry[2].EntityID)
+		// Init process
+		assert.Equal(t, uint32(100), ancestry[2].UniqueId)
 		assert.Equal(t, "init", ancestry[2].Name)
+		assert.Equal(t, uint32(0), ancestry[2].ParentUniqueId) // Init has no parent
 	})
 
 	t.Run("get ancestry with maxDepth 1", func(t *testing.T) {
-		ancestry, err := pt.GetAncestry(uint64(300), 1)
+		ancestry, err := pt.GetAncestry(uint32(300), 1)
 		assert.NoError(t, err)
 		assert.Len(t, ancestry, 1) // Only python itself
 		assert.Equal(t, "python", ancestry[0].Name)
 	})
 
 	t.Run("get ancestry for non-existent process", func(t *testing.T) {
-		ancestry, err := pt.GetAncestry(uint64(999), 5)
+		ancestry, err := pt.GetAncestry(uint32(999), 5)
 		assert.NoError(t, err)
 		assert.Len(t, ancestry, 0) // Not found
 	})
 
 	t.Run("get ancestry with maxDepth 0", func(t *testing.T) {
-		ancestry, err := pt.GetAncestry(uint64(300), 0)
+		ancestry, err := pt.GetAncestry(uint32(300), 0)
 		assert.NoError(t, err)
 		assert.Len(t, ancestry, 0) // Zero depth returns empty
+	})
+
+	t.Run("process with exit time", func(t *testing.T) {
+		// Create process and mark as exited
+		proc := pt.GetOrCreateProcessByHash(999)
+		feed := &TaskInfoFeed{
+			Pid:        9999,
+			NsPid:      9999,
+			PPid:       1,
+			NsPPid:     1,
+			Name:       "exited",
+			ExitTimeNS: uint64(time.Now().UnixNano()),
+		}
+		proc.GetInfo().SetFeed(feed)
+
+		info, ok := pt.GetProcess(uint32(999))
+		require.True(t, ok)
+		assert.NotZero(t, info.ExitTime, "ExitTime should be populated")
 	})
 }

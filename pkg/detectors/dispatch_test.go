@@ -502,24 +502,33 @@ func TestAutoPopulateFields_ProcessAncestry(t *testing.T) {
 	// Create process hierarchy: init (100) -> bash (200) -> python (300)
 	initProc := pt.GetOrCreateProcessByHash(100)
 	initFeed := &process.TaskInfoFeed{
-		Pid:  1,
-		Name: "init",
+		Pid:    1,
+		NsPid:  1,
+		PPid:   0,
+		NsPPid: 0,
+		Name:   "init",
 	}
 	initProc.GetInfo().SetFeed(initFeed)
 	initProc.SetParentHash(0)
 
 	bashProc := pt.GetOrCreateProcessByHash(200)
 	bashFeed := &process.TaskInfoFeed{
-		Pid:  1000,
-		Name: "bash",
+		Pid:    1000,
+		NsPid:  1,
+		PPid:   1,
+		NsPPid: 1,
+		Name:   "bash",
 	}
 	bashProc.GetInfo().SetFeed(bashFeed)
 	bashProc.SetParentHash(100)
 
 	pythonProc := pt.GetOrCreateProcessByHash(300)
 	pythonFeed := &process.TaskInfoFeed{
-		Pid:  2000,
-		Name: "python",
+		Pid:    2000,
+		NsPid:  100,
+		PPid:   1000,
+		NsPPid: 1,
+		Name:   "python",
 	}
 	pythonProc.GetInfo().SetFeed(pythonFeed)
 	pythonProc.SetParentHash(200)
@@ -545,7 +554,7 @@ func TestAutoPopulateFields_ProcessAncestry(t *testing.T) {
 	detEventID, _ := events.Core.GetDefinitionIDByName(detector.eventName)
 	policyMgr := newTestPolicyManager(detEventID)
 
-	engine := NewEngine(policyMgr, nil)
+	engine := NewEngine(policyMgr)
 
 	// Create a registry with process store for testing
 	reg := newTestDataStoreRegistry()
@@ -554,7 +563,7 @@ func TestAutoPopulateFields_ProcessAncestry(t *testing.T) {
 
 	params := detection.DetectorParams{
 		Config:     detection.NewEmptyDetectorConfig(),
-		DataStores: reg.Registry(),
+		DataStores: reg,
 	}
 
 	err = engine.RegisterDetector(detector, params)
@@ -586,11 +595,15 @@ func TestAutoPopulateFields_ProcessAncestry(t *testing.T) {
 	require.NotNil(t, output.Workload.Process.Ancestors)
 	assert.Len(t, output.Workload.Process.Ancestors, 2) // bash + init
 
-	// Check first ancestor (bash)
-	assert.Equal(t, uint32(200), output.Workload.Process.Ancestors[0].UniqueId.GetValue())
-	assert.Equal(t, uint32(1000), output.Workload.Process.Ancestors[0].HostPid.GetValue())
+	// Check bash (first ancestor)
+	bash := output.Workload.Process.Ancestors[0]
+	assert.Equal(t, uint32(200), bash.UniqueId.GetValue())
+	assert.Equal(t, uint32(1000), bash.HostPid.GetValue())
+	assert.Equal(t, uint32(1), bash.Pid.GetValue()) // VERIFY: namespace PID
 
-	// Check second ancestor (init)
-	assert.Equal(t, uint32(100), output.Workload.Process.Ancestors[1].UniqueId.GetValue())
-	assert.Equal(t, uint32(1), output.Workload.Process.Ancestors[1].HostPid.GetValue())
+	// Check init (second ancestor)
+	init := output.Workload.Process.Ancestors[1]
+	assert.Equal(t, uint32(100), init.UniqueId.GetValue())
+	assert.Equal(t, uint32(1), init.HostPid.GetValue())
+	assert.Equal(t, uint32(1), init.Pid.GetValue()) // Same for init
 }

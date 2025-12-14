@@ -23,15 +23,15 @@ type mockProcessStore struct {
 	mockDataStore
 }
 
-func (m *mockProcessStore) GetProcess(entityId uint64) (*datastores.ProcessInfo, bool) {
+func (m *mockProcessStore) GetProcess(entityId uint32) (*datastores.ProcessInfo, bool) {
 	return nil, false
 }
 
-func (m *mockProcessStore) GetChildProcesses(entityId uint64) ([]*datastores.ProcessInfo, error) {
+func (m *mockProcessStore) GetChildProcesses(entityId uint32) ([]*datastores.ProcessInfo, error) {
 	return nil, nil
 }
 
-func (m *mockProcessStore) GetAncestry(entityId uint64, maxDepth int) ([]*datastores.ProcessInfo, error) {
+func (m *mockProcessStore) GetAncestry(entityId uint32, maxDepth int) ([]*datastores.ProcessInfo, error) {
 	return nil, nil
 }
 
