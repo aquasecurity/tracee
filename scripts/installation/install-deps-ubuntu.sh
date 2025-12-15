@@ -3,7 +3,7 @@
 # Comprehensive dependency installation script for Tracee (Ubuntu/Debian)
 # For use in Vagrant VMs and Ubuntu-based environments
 
-set -e
+set -euo pipefail
 
 # Source lib.sh for consistent logging and utilities
 SCRIPT_DIR="${0%/*}"

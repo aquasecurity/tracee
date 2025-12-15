@@ -3,7 +3,7 @@
 # Centralized Clang installation script for Tracee
 # Supports Alpine Linux and Ubuntu/Debian environments
 
-set -e
+set -euo pipefail
 
 # Source lib.sh for consistent logging and utilities
 __LIB_DIR="${0%/*}/.."
@@ -49,8 +49,8 @@ setup_alpine_symlinks() {
     info "Setting up Clang ${CLANG_VERSION} symlinks"
 
     # Remove existing symlinks (one per line for readability)
-    for tool in $CLANG_TOOLS; do
-        rm -f /usr/bin/$tool
+    for tool in ${CLANG_TOOLS}; do
+        rm -f "/usr/bin/${tool}"
     done
 
     # Create new symlinks
@@ -72,6 +72,43 @@ setup_alpine_symlinks() {
     ln -s /usr/lib/llvm${CLANG_VERSION}/bin/opt /usr/bin/opt
 }
 
+# Add LLVM APT repository for newer Clang versions
+add_llvm_apt_repo() {
+    info "Adding LLVM APT repository for Clang ${CLANG_VERSION}"
+
+    require_cmds apt-get curl
+
+    # Install prerequisites
+    apt-get update
+    apt-get install -y wget gnupg software-properties-common
+
+    # Add LLVM GPG key
+    wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+
+    # Detect Ubuntu codename
+    local codename
+    if command -v lsb_release > /dev/null 2>&1; then
+        codename=$(lsb_release -cs)
+    elif [[ -f /etc/os-release ]]; then
+        # shellcheck source=/dev/null
+        . /etc/os-release
+        codename="${VERSION_CODENAME:-${UBUNTU_CODENAME:-}}"
+    fi
+
+    if [[ -z "${codename}" ]]; then
+        warn "Could not detect Ubuntu codename, using 'jammy'"
+        codename="jammy"
+    fi
+
+    info "Detected Ubuntu codename: ${codename}"
+
+    # Add LLVM repository
+    echo "deb http://apt.llvm.org/${codename}/ llvm-toolchain-${codename}-${CLANG_VERSION} main" > /etc/apt/sources.list.d/llvm.list
+    echo "deb-src http://apt.llvm.org/${codename}/ llvm-toolchain-${codename}-${CLANG_VERSION} main" >> /etc/apt/sources.list.d/llvm.list
+
+    apt-get update
+}
+
 # Ubuntu/Debian installation
 install_clang_ubuntu() {
     info "Installing Clang ${CLANG_VERSION} on Ubuntu/Debian"
@@ -79,8 +116,10 @@ install_clang_ubuntu() {
     # Verify Ubuntu-specific commands are available
     require_cmds apt-get update-alternatives ln rm
 
+    # Add LLVM repository for newer Clang versions
+    add_llvm_apt_repo
+
     # Install base LLVM and Clang packages
-    apt-get update
     apt-get install -y \
         llvm-${CLANG_VERSION} \
         clang-${CLANG_VERSION} \
@@ -101,8 +140,8 @@ setup_ubuntu_alternatives() {
     info "Setting up update-alternatives for Clang ${CLANG_VERSION}"
 
     # Remove all existing alternatives to avoid conflicts
-    for tool in $CLANG_TOOLS; do
-        update-alternatives --remove-all $tool 2> /dev/null || true
+    for tool in ${CLANG_TOOLS}; do
+        update-alternatives --remove-all "${tool}" 2> /dev/null || true
     done
 
     # Check if current clang is already the target version
