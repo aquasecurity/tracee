@@ -89,18 +89,20 @@ stop_tracee() {
 
         info "Waiting up to ${TIMEOUT} seconds for graceful shutdown"
         count=0
+        graceful_exit=0
         while [ "${count}" -lt "${TIMEOUT}" ]; do
             # Check if process is completely gone (not zombie)
             if ! is_process_alive "${tracee_pid}"; then
                 info "Tracee process ${tracee_pid} terminated gracefully"
+                graceful_exit=1
                 break
             fi
             sleep 1
             count=$((count + 1))
         done
 
-        # Check if process is still alive (not zombie) after timeout
-        if is_process_alive "${tracee_pid}"; then
+        # Only send KILL if process didn't exit gracefully (avoid PID reuse race)
+        if [ "${graceful_exit}" = 0 ] && is_process_alive "${tracee_pid}"; then
             info "Process still running after ${TIMEOUT} seconds, sending KILL signal"
             if kill -KILL "${tracee_pid}" 2> /dev/null; then
                 info "Tracee process ${tracee_pid} terminated (SIGKILL)"
