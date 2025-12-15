@@ -19,7 +19,6 @@ STATICCHECK_VERSION="2025.1"
 REVIVE_VERSION="v1.7.0"
 GOIMPORTS_REVISER_VERSION="v3.8.2"
 ERRCHECK_VERSION="v1.9.0"
-CLANG_VERSION="19"
 
 # Detect package manager (dnf preferred over yum)
 detect_pkg_manager() {
@@ -65,6 +64,7 @@ install_base_packages() {
         libzstd-devel \
         curl \
         tar \
+        xz \
         git \
         ca-certificates \
         wget \
@@ -119,50 +119,13 @@ install_golang() {
 }
 
 install_clang() {
-    info "Installing Clang ${CLANG_VERSION}"
+    info "Installing Clang using centralized script"
+    require_cmds bash
 
-    # For CentOS/RHEL, we need to use LLVM's official repository
-    # or install from available packages
+    # Call our existing Clang installation script
+    bash "${SCRIPT_DIR}/install-clang.sh"
 
-    # Try to install from EPEL/PowerTools first
-    if ${PKG_MANAGER} install -y clang clang-tools-extra llvm; then
-        info "Clang installed from repository"
-    else
-        # Install LLVM toolset if available (CentOS/RHEL 7+)
-        if ${PKG_MANAGER} install -y llvm-toolset-${CLANG_VERSION}.0 \
-            || ${PKG_MANAGER} install -y llvm-toolset; then
-            info "LLVM toolset installed"
-            # Enable the toolset
-            # shellcheck disable=SC1090,SC1091
-            source /opt/rh/llvm-toolset-*/enable 2> /dev/null || true
-        else
-            warn "Could not install Clang from repositories, installing from LLVM"
-            install_clang_from_llvm
-        fi
-    fi
-
-    # Verify clang is available
-    if ! command -v clang > /dev/null 2>&1; then
-        die "Clang installation failed"
-    fi
-
-    clang --version | head -n1
     info "Clang installation completed"
-}
-
-install_clang_from_llvm() {
-    info "Installing Clang from LLVM repository"
-
-    # Add LLVM repository
-    cat > /etc/yum.repos.d/llvm.repo << EOF
-[llvm-toolchain]
-name=LLVM Toolchain
-baseurl=https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/llvm-snapshots/epel-\$releasever-\$basearch/
-enabled=1
-gpgcheck=0
-EOF
-
-    ${PKG_MANAGER} install -y clang clang-tools-extra llvm
 }
 
 install_go_tools() {
