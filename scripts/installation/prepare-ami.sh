@@ -4,7 +4,8 @@
 # This script prepares an AMI with all required dependencies for running Tracee tests.
 # Supports Ubuntu and CentOS/RHEL-based distributions.
 #
-# Usage: prepare-ami.sh [--skip-images] [--skip-deps]
+# Usage: prepare-ami.sh [--force] [--skip-images] [--skip-deps]
+#   --force          Clean docker state and caches before setup
 #   --skip-images    Skip pulling test container images
 #   --skip-deps      Skip installing dependencies (only disable auto-updates)
 
@@ -17,6 +18,7 @@ __LIB_DIR="${SCRIPT_DIR}/.."
 . "${__LIB_DIR}/lib.sh"
 
 # Options
+FORCE="false"
 SKIP_IMAGES="false"
 SKIP_DEPS="false"
 
@@ -24,6 +26,10 @@ SKIP_DEPS="false"
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            --force | -f)
+                FORCE="true"
+                shift
+                ;;
             --skip-images)
                 SKIP_IMAGES="true"
                 shift
@@ -33,7 +39,8 @@ parse_args() {
                 shift
                 ;;
             --help | -h)
-                echo "Usage: ${0##*/} [--skip-images] [--skip-deps]"
+                echo "Usage: ${0##*/} [--force] [--skip-images] [--skip-deps]"
+                echo "  --force, -f      Clean docker state and caches before setup"
                 echo "  --skip-images    Skip pulling test container images"
                 echo "  --skip-deps      Skip installing dependencies"
                 exit 0
@@ -203,6 +210,21 @@ install_deps() {
     esac
 }
 
+# Clean docker state (for --force)
+clean_docker_state() {
+    info "Cleaning Docker state (prune all unused images, containers, networks)..."
+
+    if ! command -v docker > /dev/null 2>&1; then
+        warn "Docker not installed, skipping docker cleanup"
+        return 0
+    fi
+
+    # Prune all unused images, containers, networks, and build cache
+    docker system prune -a -f || warn "docker system prune failed"
+
+    info "Docker state cleaned"
+}
+
 # Pull test container images
 pull_test_images() {
     info "Pulling test container images"
@@ -212,6 +234,69 @@ pull_test_images() {
     else
         warn "pull-test-images.sh not found or not executable"
     fi
+}
+
+# Clean package manager caches (Ubuntu/Debian)
+clean_apt_cache() {
+    info "Cleaning APT caches..."
+
+    apt-get clean || warn "apt-get clean failed"
+    apt-get autoclean || warn "apt-get autoclean failed"
+    apt-get autoremove -y || warn "apt-get autoremove failed"
+    rm -rf /var/lib/apt/lists/*
+
+    info "APT caches cleaned"
+}
+
+# Clean package manager caches (CentOS/RHEL)
+clean_yum_cache() {
+    info "Cleaning YUM/DNF caches..."
+
+    if command -v dnf > /dev/null 2>&1; then
+        dnf clean all || warn "dnf clean all failed"
+    elif command -v yum > /dev/null 2>&1; then
+        yum clean all || warn "yum clean all failed"
+    fi
+
+    rm -rf /var/cache/dnf/* /var/cache/yum/*
+
+    info "YUM/DNF caches cleaned"
+}
+
+# Clean log files (all distros)
+clean_logs() {
+    info "Cleaning log files..."
+
+    rm -rf /var/log/*.log 2> /dev/null || true
+    rm -rf /var/log/*/*.log 2> /dev/null || true
+
+    info "Log files cleaned"
+}
+
+# Final cleanup based on distro
+final_cleanup() {
+    local distro="$1"
+
+    info "Performing final cleanup..."
+
+    # Clean logs for all distros
+    clean_logs
+
+    # Distro-specific cleanup
+    case "${distro}" in
+        ubuntu)
+            clean_apt_cache
+            ;;
+        centos)
+            clean_yum_cache
+            ;;
+        alpine)
+            info "Cleaning APK cache..."
+            rm -rf /var/cache/apk/* 2> /dev/null || true
+            ;;
+    esac
+
+    info "Final cleanup completed"
 }
 
 # Main function
@@ -226,29 +311,39 @@ main() {
     distro=$(detect_distro)
     info "Detected distribution: ${distro}"
 
+    # Step 0 (optional): Clean docker state if --force
+    if [[ "${FORCE}" == "true" ]]; then
+        info "Step 0/5: Cleaning Docker state (--force)..."
+        clean_docker_state
+    fi
+
     # Step 1: Disable automatic updates (before any package operations)
-    info "Step 1/4: Disabling automatic updates..."
+    info "Step 1/5: Disabling automatic updates..."
     disable_auto_updates "${distro}"
 
     # Step 2: Install dependencies
     if [[ "${SKIP_DEPS}" == "false" ]]; then
-        info "Step 2/4: Installing dependencies..."
+        info "Step 2/5: Installing dependencies..."
         install_deps "${distro}"
     else
-        info "Step 2/4: Skipping dependency installation (--skip-deps)"
+        info "Step 2/5: Skipping dependency installation (--skip-deps)"
     fi
 
     # Step 3: Pull test images
     if [[ "${SKIP_IMAGES}" == "false" ]]; then
-        info "Step 3/4: Pulling test container images..."
+        info "Step 3/5: Pulling test container images..."
         pull_test_images
     else
-        info "Step 3/4: Skipping image pull (--skip-images)"
+        info "Step 3/5: Skipping image pull (--skip-images)"
     fi
 
     # Step 4: Final safeguard - ensure auto-updates remain disabled
-    info "Step 4/4: Final safeguard - ensuring auto-updates remain disabled..."
+    info "Step 4/5: Final safeguard - ensuring auto-updates remain disabled..."
     disable_auto_updates "${distro}"
+
+    # Step 5: Final cleanup (logs, package caches)
+    info "Step 5/5: Final cleanup..."
+    final_cleanup "${distro}"
 
     info "=== AMI Preparation Completed Successfully ==="
     info "The AMI is now ready for Tracee CI/CD operations."
