@@ -130,8 +130,8 @@
         "arch": "aarch64"
     },
     {
-        "name": "Noble 6.12 x86_64",
-        "ami": "0e38f3caba1b4234d",
+        "name": "Noble 6.12 (6.12.62) x86_64",
+        "ami": "0a889ff5e18f11bf3",
         "arch": "x86_64"
     },
     {
