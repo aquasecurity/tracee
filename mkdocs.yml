@@ -37,10 +37,13 @@ nav:
                                   - output: docs/flags/output.1.md
                                   - capture: docs/flags/capture.1.md
                                   - config: docs/flags/config.1.md
-                                  - containers: docs/flags/containers.1.md
                                   - capabilities: docs/flags/capabilities.1.md
                                   - logging: docs/flags/logging.1.md
                                   - server: docs/flags/server.1.md
+                                  - buffers: docs/flags/buffers.1.md
+                                  - enrichment: docs/flags/enrichment.1.md
+                                  - runtime: docs/flags/runtime.1.md
+                                  - stores: docs/flags/stores.1.md
           - Events:
                 - Overview: docs/events/index.md
                 - Built-in Events:

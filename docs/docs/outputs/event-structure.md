@@ -160,6 +160,7 @@ If you're using Go templates, update your field references:
 
 ### Template Examples
 
+{% raw %}
 **Before:**
 ```go
 Event: {{.EventName}}
@@ -205,11 +206,13 @@ Time: {{.timestamp.seconds}}.{{.timestamp.nanos}}
   {{.name}}: {{.value}}
 {{end}}
 ```
+{% endraw %}
 
 ### Accessing Event Data
 
 Event-specific data is in the `.data` array. Each item has a `.name` and a typed `.value` field:
 
+{% raw %}
 ```go
 {{range .data}}
   {{if eq .name "pathname"}}
@@ -221,6 +224,7 @@ Event-specific data is in the `.data` array. Each item has a `.name` and a typed
   {{end}}
 {{end}}
 ```
+{% endraw %}
 
 ## Event Value Types
 
