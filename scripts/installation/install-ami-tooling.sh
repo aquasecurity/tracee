@@ -75,11 +75,15 @@ detect_platform_and_architecture() {
 
 # Installs AWS CLI package for the detected architecture
 install_aws_cli_package() {
+    # Remove local temporary files and directories
+    rm -rf aws
+    rm -f awscliv2.zip
+
     curl \
         "https://awscli.amazonaws.com/awscli-exe-linux-${ARCH_AWSCLI}.zip" \
         -o "awscliv2.zip"
     unzip awscliv2.zip
-    sudo ./aws/install
+    sudo ./aws/install --update
 
     # Cleanup temporary files
     rm -f awscliv2.zip
