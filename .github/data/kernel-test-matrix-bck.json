@@ -131,7 +131,7 @@
     },
     {
         "name": "Noble 6.12.62 x86_64",
-        "ami": "0a889ff5e18f11bf3",
+        "ami": "06bad8f5efbe39c50",
         "arch": "x86_64"
     },
     {
