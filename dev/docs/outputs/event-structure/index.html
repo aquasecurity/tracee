@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#macro-syntax-error" class="md-skip">
+        <a href="#event-output-structure" class="md-skip">
           Skip to content
         </a>
       
@@ -1401,34 +1401,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/containers.1.md" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    containers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../flags/capabilities.1/" class="md-nav__link">
         
   
@@ -1493,6 +1465,118 @@
     
   
     server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../flags/buffers.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    buffers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../flags/enrichment.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    enrichment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../flags/runtime.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../flags/stores.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    stores
   
 
     
@@ -6197,6 +6281,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event Structure
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -6213,6 +6315,180 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#event-structure-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event Structure Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Event Structure Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core-event-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Event Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workload-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workload Context
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#json-output-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON Output Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signature-detection-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature Detection Events
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration-guide-for-template-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration Guide for Template Users
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Migration Guide for Template Users">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#field-name-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field Name Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#template-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Template Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accessing-event-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accessing Event Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#event-value-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event Value Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#protobuf-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protobuf Definition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backwards-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backwards Compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -7942,6 +8218,169 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#event-structure-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event Structure Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Event Structure Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core-event-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Event Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workload-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workload Context
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#json-output-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON Output Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signature-detection-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature Detection Events
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration-guide-for-template-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration Guide for Template Users
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Migration Guide for Template Users">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#field-name-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field Name Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#template-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Template Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accessing-event-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accessing Event Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#event-value-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event Value Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#protobuf-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protobuf Definition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backwards-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backwards Compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -7957,11 +8396,268 @@
 
 
 
-<h1 id="macro-syntax-error"><em>Macro Syntax Error</em><a class="headerlink" href="#macro-syntax-error" title="Permanent link">&para;</a></h1>
-<p><em>File</em>: <code>docs/outputs/event-structure.md</code></p>
-<p><em>Line 165 in Markdown file:</em> <strong>unexpected '.'</strong>
-<div class="highlight"><pre><span></span><code>Event: {{.EventName}}
+<h1 id="event-output-structure">Event Output Structure<a class="headerlink" href="#event-output-structure" title="Permanent link">&para;</a></h1>
+<p>Tracee outputs events using the <code>v1beta1.Event</code> protobuf structure, providing a stable, well-documented format for event data across all output formats (JSON, Go templates, webhooks, etc.).</p>
+<h2 id="event-structure-overview">Event Structure Overview<a class="headerlink" href="#event-structure-overview" title="Permanent link">&para;</a></h2>
+<p>The event structure is defined in the <a href="https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event.proto">API protobuf definitions</a> and consists of several key components:</p>
+<h3 id="core-event-fields">Core Event Fields<a class="headerlink" href="#core-event-fields" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kd">message</span><span class="w"> </span><span class="nc">Event</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">google.protobuf.Timestamp</span><span class="w"> </span><span class="na">timestamp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">  </span><span class="c1">// Event timestamp</span>
+<span class="w">    </span><span class="n">EventId</span><span class="w"> </span><span class="na">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">                           </span><span class="c1">// Event ID (enum)</span>
+<span class="w">    </span><span class="kt">string</span><span class="w"> </span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w">                          </span><span class="c1">// Event name</span>
+<span class="w">    </span><span class="n">Policies</span><span class="w"> </span><span class="na">policies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w">                    </span><span class="c1">// Matched policies</span>
+<span class="w">    </span><span class="n">Workload</span><span class="w"> </span><span class="na">workload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span><span class="w">                    </span><span class="c1">// Process/container context</span>
+<span class="w">    </span><span class="k">repeated</span><span class="w"> </span><span class="n">EventValue</span><span class="w"> </span><span class="na">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">6</span><span class="p">;</span><span class="w">             </span><span class="c1">// Event-specific data</span>
+<span class="w">    </span><span class="n">Threat</span><span class="w"> </span><span class="na">threat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">7</span><span class="p">;</span><span class="w">                        </span><span class="c1">// Threat information (signatures)</span>
+<span class="w">    </span><span class="n">Event</span><span class="w"> </span><span class="na">detected_from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span><span class="p">;</span><span class="w">                  </span><span class="c1">// Source event (for derived events)</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="workload-context">Workload Context<a class="headerlink" href="#workload-context" title="Permanent link">&para;</a></h3>
+<p>Contains information about the process, container, and Kubernetes context:</p>
+<div class="highlight"><pre><span></span><code><span class="kd">message</span><span class="w"> </span><span class="nc">Workload</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">Process</span><span class="w"> </span><span class="na">process</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">      </span><span class="c1">// Process information</span>
+<span class="w">    </span><span class="n">Container</span><span class="w"> </span><span class="na">container</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">  </span><span class="c1">// Container information  </span>
+<span class="w">    </span><span class="n">Pod</span><span class="w"> </span><span class="na">pod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w">             </span><span class="c1">// Kubernetes pod information</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="process-information">Process Information<a class="headerlink" href="#process-information" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kd">message</span><span class="w"> </span><span class="nc">Process</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">Thread</span><span class="w"> </span><span class="na">thread</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">                    </span><span class="c1">// Thread details (name, TID, etc.)</span>
+<span class="w">    </span><span class="n">google.protobuf.UInt32Value</span><span class="w"> </span><span class="na">pid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">  </span><span class="c1">// Process ID</span>
+<span class="w">    </span><span class="n">User</span><span class="w"> </span><span class="na">real_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w">                   </span><span class="c1">// Real user ID</span>
+<span class="w">    </span><span class="n">Executable</span><span class="w"> </span><span class="na">executable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w">            </span><span class="c1">// Executable path and metadata</span>
+<span class="w">    </span><span class="k">repeated</span><span class="w"> </span><span class="n">Process</span><span class="w"> </span><span class="na">ancestors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span><span class="w">       </span><span class="c1">// Process ancestors</span>
+<span class="w">    </span><span class="c1">// ... other fields</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="json-output-example">JSON Output Example<a class="headerlink" href="#json-output-example" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;seconds&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1732454400&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;nanos&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">123456789</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sched_process_exec&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sched_process_exec&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;policies&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;matched&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;default-policy&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;workload&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;process&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;thread&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bash&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;start_time&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">&quot;seconds&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1732454350&quot;</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;unique_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1234567890</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;host_tid&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;tid&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;execve&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;pid&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;real_user&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;executable&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/usr/bin/bash&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;ancestors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">&quot;unique_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">9876543210</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;host_pid&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1234</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;pid&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1234</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;str&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/usr/bin/ls&quot;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;argv&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;str_array&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;ls&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-la&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/tmp&quot;</span><span class="p">]</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="signature-detection-events">Signature Detection Events<a class="headerlink" href="#signature-detection-events" title="Permanent link">&para;</a></h2>
+<p>Events generated by signatures include additional threat information:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">...</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6003</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FILE_MODIFICATION&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;policies&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;matched&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;file-modification-test&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;workload&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">...</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;threat&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;File Modification Test&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Instrumentation events E2E Tests: File Modification&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;mitre&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;tactic&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">      </span><span class="nt">&quot;technique&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TRC-5&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;signatureID&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FILE_MODIFICATION&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;detected_from&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">776</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;file_modification&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="migration-guide-for-template-users">Migration Guide for Template Users<a class="headerlink" href="#migration-guide-for-template-users" title="Permanent link">&para;</a></h2>
+<p>If you're using Go templates, update your field references:</p>
+<h3 id="field-name-changes">Field Name Changes<a class="headerlink" href="#field-name-changes" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Old Field (trace.Event)</th>
+<th>New Field (v1beta1.Event)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.EventName</code></td>
+<td><code>.name</code></td>
+<td>String, event name</td>
+</tr>
+<tr>
+<td><code>.Timestamp</code></td>
+<td><code>.timestamp.seconds</code></td>
+<td>Unix timestamp in seconds</td>
+</tr>
+<tr>
+<td>-</td>
+<td><code>.timestamp.nanos</code></td>
+<td>Nanosecond fraction</td>
+</tr>
+<tr>
+<td><code>.ProcessName</code></td>
+<td><code>.workload.process.thread.name</code></td>
+<td>Process/thread name (comm)</td>
+</tr>
+<tr>
+<td><code>.ProcessID</code></td>
+<td><code>.workload.process.pid.value</code></td>
+<td>Wrapped uint32</td>
+</tr>
+<tr>
+<td><code>.UserID</code></td>
+<td><code>.workload.process.real_user.id.value</code></td>
+<td>Wrapped uint32</td>
+</tr>
+<tr>
+<td><code>.Args</code></td>
+<td><code>.data</code></td>
+<td>Array of EventValue</td>
+</tr>
+<tr>
+<td><code>.MatchedPolicies</code></td>
+<td><code>.policies.matched</code></td>
+<td>Array of policy names</td>
+</tr>
+<tr>
+<td><code>.Container.ID</code></td>
+<td><code>.workload.container.id</code></td>
+<td>Container ID</td>
+</tr>
+<tr>
+<td><code>.Kubernetes.PodName</code></td>
+<td><code>.workload.pod.name</code></td>
+<td>Pod name</td>
+</tr>
+</tbody>
+</table>
+<h3 id="template-examples">Template Examples<a class="headerlink" href="#template-examples" title="Permanent link">&para;</a></h3>
+<p><strong>Before:</strong>
+<div class="highlight"><pre><span></span><code><span class="nx">Event</span><span class="p">:</span><span class="w"> </span><span class="p">{{.</span><span class="nx">EventName</span><span class="p">}}</span>
+<span class="nx">Process</span><span class="p">:</span><span class="w"> </span><span class="p">{{.</span><span class="nx">ProcessName</span><span class="p">}}</span><span class="w"> </span><span class="p">(</span><span class="nx">PID</span><span class="p">:</span><span class="w"> </span><span class="p">{{.</span><span class="nx">ProcessID</span><span class="p">}})</span>
+<span class="nx">Time</span><span class="p">:</span><span class="w"> </span><span class="p">{{.</span><span class="nx">Timestamp</span><span class="p">}}</span>
+<span class="p">{{</span><span class="k">range</span><span class="w"> </span><span class="p">.</span><span class="nx">Args</span><span class="p">}}</span>
+<span class="w">  </span><span class="p">{{.</span><span class="nx">Name</span><span class="p">}}:</span><span class="w"> </span><span class="p">{{.</span><span class="nx">Value</span><span class="p">}}</span>
+<span class="p">{{</span><span class="nx">end</span><span class="p">}}</span>
 </code></pre></div></p>
+<p><strong>After:</strong>
+<div class="highlight"><pre><span></span><code><span class="nx">Event</span><span class="p">:</span><span class="w"> </span><span class="p">{{.</span><span class="nx">name</span><span class="p">}}</span>
+<span class="nx">Process</span><span class="p">:</span><span class="w"> </span><span class="p">{{</span><span class="k">if</span><span class="w"> </span><span class="p">.</span><span class="nx">workload</span><span class="p">}}{{</span><span class="k">if</span><span class="w"> </span><span class="p">.</span><span class="nx">workload</span><span class="p">.</span><span class="nx">process</span><span class="p">}}{{</span><span class="k">if</span><span class="w"> </span><span class="p">.</span><span class="nx">workload</span><span class="p">.</span><span class="nx">process</span><span class="p">.</span><span class="nx">thread</span><span class="p">}}{{.</span><span class="nx">workload</span><span class="p">.</span><span class="nx">process</span><span class="p">.</span><span class="nx">thread</span><span class="p">.</span><span class="nx">name</span><span class="p">}}{{</span><span class="nx">end</span><span class="p">}}{{</span><span class="nx">end</span><span class="p">}}{{</span><span class="nx">end</span><span class="p">}}</span><span class="w"> </span><span class="p">(</span><span class="nx">PID</span><span class="p">:</span><span class="w"> </span><span class="p">{{</span><span class="k">if</span><span class="w"> </span><span class="p">.</span><span class="nx">workload</span><span class="p">}}{{</span><span class="k">if</span><span class="w"> </span><span class="p">.</span><span class="nx">workload</span><span class="p">.</span><span class="nx">process</span><span class="p">}}{{</span><span class="k">if</span><span class="w"> </span><span class="p">.</span><span class="nx">workload</span><span class="p">.</span><span class="nx">process</span><span class="p">.</span><span class="nx">pid</span><span class="p">}}{{.</span><span class="nx">workload</span><span class="p">.</span><span class="nx">process</span><span class="p">.</span><span class="nx">pid</span><span class="p">.</span><span class="nx">value</span><span class="p">}}{{</span><span class="nx">end</span><span class="p">}}{{</span><span class="nx">end</span><span class="p">}}{{</span><span class="nx">end</span><span class="p">}})</span>
+<span class="nx">Time</span><span class="p">:</span><span class="w"> </span><span class="p">{{</span><span class="k">if</span><span class="w"> </span><span class="p">.</span><span class="nx">timestamp</span><span class="p">}}{{.</span><span class="nx">timestamp</span><span class="p">.</span><span class="nx">seconds</span><span class="p">}}{{</span><span class="nx">end</span><span class="p">}}</span>
+<span class="p">{{</span><span class="k">range</span><span class="w"> </span><span class="p">.</span><span class="nx">data</span><span class="p">}}</span>
+<span class="w">  </span><span class="p">{{.</span><span class="nx">name</span><span class="p">}}:</span><span class="w"> </span><span class="p">{{.</span><span class="nx">value</span><span class="p">}}</span>
+<span class="p">{{</span><span class="nx">end</span><span class="p">}}</span>
+</code></pre></div></p>
+<p><strong>Simplified with better null handling:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{{</span><span class="o">-</span><span class="w"> </span><span class="nx">define</span><span class="w"> </span><span class="s">&quot;processName&quot;</span><span class="w"> </span><span class="o">-</span><span class="p">}}</span>
+<span class="p">{{</span><span class="o">-</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nx">and</span><span class="w"> </span><span class="p">.</span><span class="nx">workload</span><span class="w"> </span><span class="p">.</span><span class="nx">workload</span><span class="p">.</span><span class="nx">process</span><span class="w"> </span><span class="p">.</span><span class="nx">workload</span><span class="p">.</span><span class="nx">process</span><span class="p">.</span><span class="nx">thread</span><span class="w"> </span><span class="o">-</span><span class="p">}}</span>
+<span class="p">{{.</span><span class="nx">workload</span><span class="p">.</span><span class="nx">process</span><span class="p">.</span><span class="nx">thread</span><span class="p">.</span><span class="nx">name</span><span class="p">}}</span>
+<span class="p">{{</span><span class="o">-</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="o">-</span><span class="p">}}</span>
+<span class="p">&lt;</span><span class="nx">unknown</span><span class="p">&gt;</span>
+<span class="p">{{</span><span class="o">-</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="o">-</span><span class="p">}}</span>
+<span class="p">{{</span><span class="o">-</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="o">-</span><span class="p">}}</span>
+
+<span class="p">{{</span><span class="o">-</span><span class="w"> </span><span class="nx">define</span><span class="w"> </span><span class="s">&quot;pid&quot;</span><span class="w"> </span><span class="o">-</span><span class="p">}}</span>
+<span class="p">{{</span><span class="o">-</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nx">and</span><span class="w"> </span><span class="p">.</span><span class="nx">workload</span><span class="w"> </span><span class="p">.</span><span class="nx">workload</span><span class="p">.</span><span class="nx">process</span><span class="w"> </span><span class="p">.</span><span class="nx">workload</span><span class="p">.</span><span class="nx">process</span><span class="p">.</span><span class="nx">pid</span><span class="w"> </span><span class="o">-</span><span class="p">}}</span>
+<span class="p">{{.</span><span class="nx">workload</span><span class="p">.</span><span class="nx">process</span><span class="p">.</span><span class="nx">pid</span><span class="p">.</span><span class="nx">value</span><span class="p">}}</span>
+<span class="p">{{</span><span class="o">-</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="o">-</span><span class="p">}}</span>
+<span class="mi">0</span>
+<span class="p">{{</span><span class="o">-</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="o">-</span><span class="p">}}</span>
+<span class="p">{{</span><span class="o">-</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="o">-</span><span class="p">}}</span>
+
+<span class="nx">Event</span><span class="p">:</span><span class="w"> </span><span class="p">{{.</span><span class="nx">name</span><span class="p">}}</span>
+<span class="nx">Process</span><span class="p">:</span><span class="w"> </span><span class="p">{{</span><span class="nx">template</span><span class="w"> </span><span class="s">&quot;processName&quot;</span><span class="w"> </span><span class="p">.}}</span><span class="w"> </span><span class="p">(</span><span class="nx">PID</span><span class="p">:</span><span class="w"> </span><span class="p">{{</span><span class="nx">template</span><span class="w"> </span><span class="s">&quot;pid&quot;</span><span class="w"> </span><span class="p">.}})</span>
+<span class="nx">Time</span><span class="p">:</span><span class="w"> </span><span class="p">{{.</span><span class="nx">timestamp</span><span class="p">.</span><span class="nx">seconds</span><span class="p">}}.{{.</span><span class="nx">timestamp</span><span class="p">.</span><span class="nx">nanos</span><span class="p">}}</span>
+<span class="p">{{</span><span class="k">range</span><span class="w"> </span><span class="p">.</span><span class="nx">data</span><span class="p">}}</span>
+<span class="w">  </span><span class="p">{{.</span><span class="nx">name</span><span class="p">}}:</span><span class="w"> </span><span class="p">{{.</span><span class="nx">value</span><span class="p">}}</span>
+<span class="p">{{</span><span class="nx">end</span><span class="p">}}</span>
+</code></pre></div></p>
+<h3 id="accessing-event-data">Accessing Event Data<a class="headerlink" href="#accessing-event-data" title="Permanent link">&para;</a></h3>
+<p>Event-specific data is in the <code>.data</code> array. Each item has a <code>.name</code> and a typed <code>.value</code> field:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{{</span><span class="k">range</span><span class="w"> </span><span class="p">.</span><span class="nx">data</span><span class="p">}}</span>
+<span class="w">  </span><span class="p">{{</span><span class="k">if</span><span class="w"> </span><span class="nx">eq</span><span class="w"> </span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="s">&quot;pathname&quot;</span><span class="p">}}</span>
+<span class="w">    </span><span class="nx">File</span><span class="p">:</span><span class="w"> </span><span class="p">{{.</span><span class="nx">str</span><span class="p">}}</span>
+<span class="w">  </span><span class="p">{{</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nx">eq</span><span class="w"> </span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="s">&quot;fd&quot;</span><span class="p">}}</span>
+<span class="w">    </span><span class="nx">FD</span><span class="p">:</span><span class="w"> </span><span class="p">{{.</span><span class="kt">int32</span><span class="p">}}</span>
+<span class="w">  </span><span class="p">{{</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nx">eq</span><span class="w"> </span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="s">&quot;count&quot;</span><span class="p">}}</span>
+<span class="w">    </span><span class="nx">Count</span><span class="p">:</span><span class="w"> </span><span class="p">{{.</span><span class="nx">u_int64</span><span class="p">}}</span>
+<span class="w">  </span><span class="p">{{</span><span class="nx">end</span><span class="p">}}</span>
+<span class="p">{{</span><span class="nx">end</span><span class="p">}}</span>
+</code></pre></div>
+<h2 id="event-value-types">Event Value Types<a class="headerlink" href="#event-value-types" title="Permanent link">&para;</a></h2>
+<p>The <code>.data</code> array contains <code>EventValue</code> messages with typed union fields:</p>
+<ul>
+<li><code>.str</code> - String value</li>
+<li><code>.int32</code>, <code>.int64</code> - Signed integers</li>
+<li><code>.u_int32</code>, <code>.u_int64</code> - Unsigned integers</li>
+<li><code>.bool</code> - Boolean value</li>
+<li><code>.bytes</code> - Raw bytes</li>
+<li><code>.str_array</code> - String array</li>
+<li><code>.u_int64_array</code> - Uint64 array</li>
+<li><code>.sockaddr</code> - Socket address (IP, port)</li>
+<li><code>.credentials</code> - User credentials</li>
+<li><code>.ipv4</code>, <code>.ipv6</code> - IP packet metadata</li>
+<li><code>.tcp</code>, <code>.udp</code>, <code>.icmp</code>, <code>.icmpv6</code> - Protocol-specific data</li>
+<li><code>.dns_questions</code>, <code>.dns_responses</code> - DNS data</li>
+<li><code>.packet_metadata</code> - Packet direction (ingress/egress)</li>
+</ul>
+<h2 id="protobuf-definition">Protobuf Definition<a class="headerlink" href="#protobuf-definition" title="Permanent link">&para;</a></h2>
+<p>For the complete and authoritative event structure, see:
+- <a href="https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event.proto">event.proto</a> - Main event structure
+- <a href="https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event_data.proto">event_data.proto</a> - EventValue types
+- <a href="https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/workload.proto">workload.proto</a> - Workload/process context</p>
+<h2 id="backwards-compatibility">Backwards Compatibility<a class="headerlink" href="#backwards-compatibility" title="Permanent link">&para;</a></h2>
+<p><strong>Signature Development:</strong> Signatures still work with the internal <code>trace.Event</code> structure via <code>protocol.Event.Payload</code>. No changes are needed for signature code.</p>
+<p><strong>Output Only:</strong> The v1beta1.Event structure applies only to output formats (JSON, templates, gRPC, webhooks).</p>
 
 
 
