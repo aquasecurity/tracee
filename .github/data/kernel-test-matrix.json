@@ -1,7 +1,7 @@
 [
     {
         "name": "Noble 6.12.62 x86_64",
-        "ami": "06bad8f5efbe39c50",
+        "ami": "05d16b3d61a026d3a",
         "arch": "x86_64"
     }
 ]
