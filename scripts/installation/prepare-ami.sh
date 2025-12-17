@@ -225,6 +225,17 @@ clean_docker_state() {
     info "Docker state cleaned"
 }
 
+# Install AMI-specific tooling (AWS CLI, GitHub CLI, Actions Runner)
+install_ami_tooling() {
+    info "Installing AMI tooling (AWS CLI, GitHub CLI, Actions Runner)"
+
+    if [[ -x "${SCRIPT_DIR}/install-ami-tooling.sh" ]]; then
+        sh "${SCRIPT_DIR}/install-ami-tooling.sh"
+    else
+        die "install-ami-tooling.sh not found or not executable"
+    fi
+}
+
 # Pull test container images
 pull_test_images() {
     info "Pulling test container images"
@@ -313,36 +324,40 @@ main() {
 
     # Step 0 (optional): Clean docker state if --force
     if [[ "${FORCE}" == "true" ]]; then
-        info "Step 0/5: Cleaning Docker state (--force)..."
+        info "Step 0/6: Cleaning Docker state (--force)..."
         clean_docker_state
     fi
 
     # Step 1: Disable automatic updates (before any package operations)
-    info "Step 1/5: Disabling automatic updates..."
+    info "Step 1/6: Disabling automatic updates..."
     disable_auto_updates "${distro}"
 
     # Step 2: Install dependencies
     if [[ "${SKIP_DEPS}" == "false" ]]; then
-        info "Step 2/5: Installing dependencies..."
+        info "Step 2/6: Installing dependencies..."
         install_deps "${distro}"
     else
-        info "Step 2/5: Skipping dependency installation (--skip-deps)"
+        info "Step 2/6: Skipping dependency installation (--skip-deps)"
     fi
 
-    # Step 3: Pull test images
+    # Step 3: Install AMI-specific tooling (AWS CLI, GitHub CLI, Actions Runner)
+    info "Step 3/6: Installing AMI tooling..."
+    install_ami_tooling
+
+    # Step 4: Pull test images
     if [[ "${SKIP_IMAGES}" == "false" ]]; then
-        info "Step 3/5: Pulling test container images..."
+        info "Step 4/6: Pulling test container images..."
         pull_test_images
     else
-        info "Step 3/5: Skipping image pull (--skip-images)"
+        info "Step 4/6: Skipping image pull (--skip-images)"
     fi
 
-    # Step 4: Final safeguard - ensure auto-updates remain disabled
-    info "Step 4/5: Final safeguard - ensuring auto-updates remain disabled..."
+    # Step 5: Final safeguard - ensure auto-updates remain disabled
+    info "Step 5/6: Final safeguard - ensuring auto-updates remain disabled..."
     disable_auto_updates "${distro}"
 
-    # Step 5: Final cleanup (logs, package caches)
-    info "Step 5/5: Final cleanup..."
+    # Step 6: Final cleanup (logs, package caches)
+    info "Step 6/6: Final cleanup..."
     final_cleanup "${distro}"
 
     info "=== AMI Preparation Completed Successfully ==="
