@@ -6461,6 +6461,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#next-steps_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Next Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#learn-more-advanced-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Learn More Advanced Patterns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -9086,6 +9114,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#next-steps_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Next Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#learn-more-advanced-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Learn More Advanced Patterns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -9531,6 +9587,25 @@ sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>list<span class
 <span class="c1"># Debug mode</span>
 sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--logging<span class="w"> </span>debug
 </code></pre></div>
+<hr />
+<h2 id="next-steps_1">Next Steps<a class="headerlink" href="#next-steps_1" title="Permanent link">&para;</a></h2>
+<h3 id="learn-more-advanced-patterns">Learn More Advanced Patterns<a class="headerlink" href="#learn-more-advanced-patterns" title="Permanent link">&para;</a></h3>
+<p>For a comprehensive example demonstrating all detector API features, see <code>detectors/example_detector.go</code>:</p>
+<ul>
+<li>DataStore API usage (ContainerStore, SystemStore)</li>
+<li>Event filtering patterns (scope, data, version constraints)</li>
+<li>Conditional field population</li>
+<li>Advanced error handling</li>
+<li>Proper enrichment patterns</li>
+</ul>
+<p>To build and test it:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Build Tracee with example detectors</span>
+make<span class="w"> </span>tracee-with-examples
+
+<span class="c1"># Run tracee and filter for the example detection</span>
+sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>-e<span class="w"> </span>example_detection<span class="w"> </span>--output<span class="w"> </span>json
+</code></pre></div>
+<p><strong>Note</strong>: The example detector is excluded from default builds (via build tag) to prevent noise in production environments.</p>
 <hr />
 <p><strong>Ready for more?</strong> Continue to the <a href="../api-reference/">API Reference</a> for comprehensive documentation, including migration guides and troubleshooting.</p>
 
