@@ -923,7 +923,7 @@ func (t *Tracee) initDerivationTable() error {
 		//
 		// Network Flow Derivations
 		//
-		events.NetPacketFlow: {
+		events.NetPacketFlowBase: {
 			events.NetFlowTCPBegin: {
 				Enabled: shouldSubmit(events.NetFlowTCPBegin),
 				DeriveFunction: derive.NetFlowTCPBegin(

@@ -1705,7 +1705,7 @@ SEC("kprobe/call_usermodehelper")
 int BPF_KPROBE(trace_call_usermodehelper)
 {
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, CALL_USERMODE_HELPER))
+    if (!init_program_data(&p, ctx, CALL_USERMODEHELPER))
         return 0;
 
     if (!evaluate_scope_filters(&p))
@@ -4162,7 +4162,7 @@ SEC("kprobe/security_kernel_post_read_file")
 int BPF_KPROBE(trace_security_kernel_post_read_file)
 {
     program_data_t p = {};
-    if (!init_program_data(&p, ctx, SECURITY_POST_READ_FILE))
+    if (!init_program_data(&p, ctx, SECURITY_KERNEL_POST_READ_FILE))
         return 0;
 
     if (!evaluate_scope_filters(&p) && !(p.config->options & OPT_CAPTURE_MODULES))
