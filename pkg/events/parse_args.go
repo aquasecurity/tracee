@@ -176,7 +176,7 @@ func ParseDataFields(data []*pb.EventValue, eventID int) error {
 				parseBPFCmd(cmdField, uint64(cmdVal.Int32))
 			}
 		}
-	case SecurityKernelReadFile, SecurityPostReadFile:
+	case SecurityKernelReadFile, SecurityKernelPostReadFile:
 		if typeField := GetFieldValue(data, "type"); typeField != nil {
 			if typeVal, ok := typeField.Value.(*pb.EventValue_Int32); ok {
 				parseKernelReadType(typeField, typeVal.Int32)

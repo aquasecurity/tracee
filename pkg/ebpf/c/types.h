@@ -87,7 +87,7 @@ typedef struct event_context {
     X(SECURITY_BPF_MAP, )                                                                          \
     X(SECURITY_KERNEL_READ_FILE, )                                                                 \
     X(SECURITY_INODE_MKNOD, )                                                                      \
-    X(SECURITY_POST_READ_FILE, )                                                                   \
+    X(SECURITY_KERNEL_POST_READ_FILE, )                                                            \
     X(SECURITY_INODE_SYMLINK, )                                                                    \
     X(SECURITY_MMAP_FILE, )                                                                        \
     X(SECURITY_FILE_MPROTECT, )                                                                    \
@@ -96,7 +96,7 @@ typedef struct event_context {
     X(__KERNEL_WRITE, )                                                                            \
     X(PROC_CREATE, )                                                                               \
     X(KPROBE_ATTACH, )                                                                             \
-    X(CALL_USERMODE_HELPER, )                                                                      \
+    X(CALL_USERMODEHELPER, )                                                                       \
     X(DIRTY_PIPE_SPLICE, )                                                                         \
     X(DEBUGFS_CREATE_FILE, )                                                                       \
     X(SYSCALL_TABLE_CHECK, )                                                                       \

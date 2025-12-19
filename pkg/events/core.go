@@ -92,8 +92,9 @@ const (
 	NetPacketDNSBase
 	NetPacketHTTPBase
 	NetPacketCapture
-	NetPacketFlow
+	NetPacketFlowBase
 	MaxNetID // network base events go ABOVE this item
+
 	SysEnter
 	SysExit
 	SchedProcessFork
@@ -127,8 +128,8 @@ const (
 	SecurityBPFMap
 	SecurityKernelReadFile
 	SecurityInodeMknod
-	SecurityPostReadFile
-	SecurityInodeSymlinkEventId
+	SecurityKernelPostReadFile
+	SecurityInodeSymlink
 	SecurityMmapFile
 	SecurityFileMprotect
 	SocketDup
@@ -193,10 +194,10 @@ const (
 	NetPacketHTTP
 	NetPacketHTTPRequest
 	NetPacketHTTPResponse
-	NetFlowEnd
 	NetFlowTCPBegin
 	NetFlowTCPEnd
 	MaxUserNetID
+
 	NetTCPConnect
 	InitNamespaces
 	ContainerCreate
@@ -12779,8 +12780,8 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "ctime"}},
 		},
 	},
-	SecurityPostReadFile: {
-		id:      SecurityPostReadFile,
+	SecurityKernelPostReadFile: {
+		id:      SecurityKernelPostReadFile,
 		id32Bit: Sys32Undefined,
 		name:    "security_kernel_post_read_file",
 		version: NewVersion(1, 0, 0),
@@ -12817,8 +12818,8 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "dev"}},
 		},
 	},
-	SecurityInodeSymlinkEventId: {
-		id:      SecurityInodeSymlinkEventId,
+	SecurityInodeSymlink: {
+		id:      SecurityInodeSymlink,
 		id32Bit: Sys32Undefined,
 		name:    "security_inode_symlink",
 		version: NewVersion(1, 0, 0),
@@ -14975,8 +14976,8 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 	},
-	NetPacketFlow: {
-		id:       NetPacketFlow,
+	NetPacketFlowBase: {
+		id:       NetPacketFlowBase,
 		id32Bit:  Sys32Undefined,
 		name:     "net_packet_flow_base",
 		version:  NewVersion(1, 0, 0),
@@ -15001,7 +15002,7 @@ var CoreEvents = map[ID]Definition{
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				ids: []ID{
-					NetPacketFlow,
+					NetPacketFlowBase,
 				},
 			},
 		},
@@ -15024,7 +15025,7 @@ var CoreEvents = map[ID]Definition{
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				ids: []ID{
-					NetPacketFlow,
+					NetPacketFlowBase,
 				},
 			},
 		},

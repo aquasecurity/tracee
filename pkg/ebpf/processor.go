@@ -115,7 +115,7 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.VfsWritev, t.processWriteEvent)
 	t.RegisterEventProcessor(events.KernelWrite, t.processWriteEvent)
 	t.RegisterEventProcessor(events.SecurityKernelReadFile, processKernelReadFile)
-	t.RegisterEventProcessor(events.SecurityPostReadFile, processKernelReadFile)
+	t.RegisterEventProcessor(events.SecurityKernelPostReadFile, processKernelReadFile)
 	t.RegisterEventProcessor(events.SchedProcessExec, t.processSchedProcessExec)
 	t.RegisterEventProcessor(events.DoInitModule, t.processDoInitModule)
 	t.RegisterEventProcessor(events.HookedProcFops, t.processHookedProcFops)
