@@ -6561,6 +6561,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cli-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI flags
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI flags">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#available-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -8410,6 +8438,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cli-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI flags
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI flags">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#available-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -8431,15 +8487,32 @@
 <p>It is possible to define how the events that Tracee collects should be displayed. This is done through the Tracee configuration. You can read more on configuration in the <a href="../../install/">Tracee installation guide.</a></p>
 <p>Note that only one output format can be used in the Tracee configuration.</p>
 <h2 id="available-formats">Available Formats<a class="headerlink" href="#available-formats" title="Permanent link">&para;</a></h2>
-<p>The following examples will have to be added into a Tracee configuration file.</p>
+<p>The following examples will have to be added into a Tracee configuration file or CLI flags.</p>
 <h3 id="json">JSON<a class="headerlink" href="#json" title="Permanent link">&para;</a></h3>
 <p>Displays output events in json format. The default path to a file is stdout.</p>
+<p><strong>yaml</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">json</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">files</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout</span>
+<span class="w">    </span><span class="nt">destinations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout_destination</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout</span>
 </code></pre></div>
-<p>Note: the <code>files: key</code> must also be defined, even if it's just for stdout. This is mandatory for the parser.</p>
+<p><strong>cli</strong></p>
+<div class="highlight"><pre><span></span><code>tracee<span class="w">  </span>--output<span class="w"> </span>destinations.stdout_destination.type<span class="o">=</span>file<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.stdout_destination.format<span class="o">=</span>json<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.stdout_destination.path<span class="o">=</span>stdout
+</code></pre></div>
+<p>Note: the <code>name</code> is mandatory. <code>type</code> has <code>file</code> as a default value. <code>format</code> has <code>table</code> as a default value. <code>path</code> has <code>stdout</code> as a default value. The following configuration is valid as well</p>
+<p><strong>yaml</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">destinations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout_destination</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
+</code></pre></div>
+<p><strong>cli</strong></p>
+<div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--output<span class="w"> </span>destinations.stdout_destination.format<span class="o">=</span>json
+</code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>A good tip is to pipe <strong>tracee</strong> json output to <a href="https://jqlang.github.io/jq/">jq</a> tool, this way
@@ -8448,62 +8521,102 @@ you can select fields, rename them, filter values, and much more!</p>
 <h3 id="webhook">Webhook<a class="headerlink" href="#webhook" title="Permanent link">&para;</a></h3>
 <p>This sends events in json format to the webhook url</p>
 <p>Below is an example for configuring webhooks in the Tracee output section:</p>
-<div class="highlight"><pre><span></span><code>output:
-    # webhook:
-    #     - webhook1:
-    #         protocol: http
-    #         host: localhost
-    #         port: 8000
-    #         timeout: 5s
-    #         gotemplate: /path/to/template/test.tmpl
-    #         content-type: application/json
-    #     - webhook2:
-    #         protocol: http
-    #         host: localhost
-    #         port: 9000
-    #         timeout: 3s
-    #         gotemplate: /path/to/template/test.tmpl
-    #         content-type: application/json
+<p><strong>yaml</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">destinations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook1</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8080?timeout=5s</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gotemplate=/path/to/template/test.tmpl</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook2</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:9000</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gotemplate=/path/to/template/test.tmpl</span>
 </code></pre></div>
-<p>Note: Please ensure that the respective fields will have to be uncommented.</p>
+<p><strong>cli</strong></p>
+<div class="highlight"><pre><span></span><code>tracee<span class="w">  </span>--output<span class="w"> </span>destinations.webhook1.type<span class="o">=</span>webhook<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.webhook1.url<span class="o">=</span>http://localhost:8080?timeout<span class="o">=</span>5s<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.webhook1.format<span class="o">=</span><span class="nv">gotemplate</span><span class="o">=</span>/path/to/template/test.tmpl<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.webhook2.type<span class="o">=</span>webhook<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.webhook2.url<span class="o">=</span>http://localhost:9000<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.webhook2.format<span class="o">=</span><span class="nv">gotemplate</span><span class="o">=</span>/path/to/template/test.tmpl
+</code></pre></div>
+<p>Note: <code>gotemplate=/path/to/template.tmpl</code> can be specified in <code>format</code> and as a parameter in the webhook url as well. 
+Be aware that the url parameters has the priority on the format.</p>
 <h3 id="forward">Forward<a class="headerlink" href="#forward" title="Permanent link">&para;</a></h3>
 <p>This sends events to a FluentBit receiver. More information on FluentBit can be found in the <a href="https://fluentbit.io/">official documentation.</a></p>
 <p>Below is an example for forwarding Tracee output: </p>
-<div class="highlight"><pre><span></span><code>output:
-    # forward:
-    #     - forward1:
-    #         protocol: tcp
-    #         user: user
-    #         password: pass
-    #         host: 127.0.0.1
-    #         port: 24224
-    #         tag: tracee1
-    #     - forward2:
-    #         protocol: udp
-    #         user: user
-    #         password: pass
-    #         host: 127.0.0.1
-    #         port: 24225
-    #         tag: tracee2
+<p><strong>yaml</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">destinations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">forward1</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">forward</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tpc://user:password@localhost:24224?tag=tracee1</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gotemplate=/path/to/template/test.tmpl</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">forward2</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">forward</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:24224?tag=tracee2</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
 </code></pre></div>
-<p>Note: Please ensure that the respective fields will have to be uncommented.</p>
+<p><strong>cli</strong></p>
+<div class="highlight"><pre><span></span><code>tracee<span class="w">  </span>--output<span class="w"> </span>destinations.forward1.type<span class="o">=</span>forward<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.forward1.url<span class="o">=</span>tpc://user:password@localhost:24224?tag<span class="o">=</span>tracee1<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.forward1.format<span class="o">=</span><span class="nv">gotemplate</span><span class="o">=</span>/path/to/template/test.tmpl<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.forward2.type<span class="o">=</span>forward<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.forward2.url<span class="o">=</span>http://localhost:24224?tag<span class="o">=</span>tracee2<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.forward2.format<span class="o">=</span>json<span class="w"> </span>
+</code></pre></div>
 <h3 id="table">Table<a class="headerlink" href="#table" title="Permanent link">&para;</a></h3>
 <p>Displays output events in table format. The default path to a file is stdout.</p>
+<p><strong>yaml</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">table</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">files</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/table1.out</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/table2.out</span>
+<span class="w">    </span><span class="nt">destinations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout_table_destination</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">table</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout</span>
 </code></pre></div>
-<p>Note: the <code>files: key</code> must also be defined, even if it's just for stdout. This is mandatory for the parser.</p>
+<p><strong>cli</strong></p>
+<div class="highlight"><pre><span></span><code>tracee<span class="w">  </span>--output<span class="w"> </span>destinations.stdout_table_destination.type<span class="o">=</span>file<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.stdout_table_destination.path<span class="o">=</span>stdout<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.stdout_table_destination.format<span class="o">=</span>table
+</code></pre></div>
+<p>or</p>
+<p><strong>yaml</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">destinations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout_table_destination</span>
+</code></pre></div>
+<p><strong>cli</strong></p>
+<div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--output<span class="w"> </span>destinations.stdout_table_destination.format<span class="o">=</span>table
+</code></pre></div>
 <h3 id="table-verbose">Table (Verbose)<a class="headerlink" href="#table-verbose" title="Permanent link">&para;</a></h3>
 <p>Displays the output events in table format with extra fields per event. The default path to a file is stdout.</p>
+<p><strong>yaml</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">table-verbose</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">files</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout</span>
+<span class="w">    </span><span class="nt">destinations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout_table_verbose_destination</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">table-verbose</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout</span>
 </code></pre></div>
-<p>Note: the <code>files: key</code> must also be defined, even if it's just for stdout. This is mandatory for the parser.</p>
+<p><strong>cli</strong></p>
+<div class="highlight"><pre><span></span><code>tracee<span class="w">  </span>--output<span class="w"> </span>destinations.stdout_table_verbose_destination.type<span class="o">=</span>file<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.stdout_table_verbose_destination.path<span class="o">=</span>stdout<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.stdout_table_verbose_destination.format<span class="o">=</span>table-verbose
+</code></pre></div>
+<p>or a smaller version without default values explicitly declared</p>
+<p><strong>yaml</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">destinations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout_table_verbose_destination</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">table-verbose</span>
+</code></pre></div>
+<p><strong>cli</strong></p>
+<div class="highlight"><pre><span></span><code>tracee<span class="w">  </span>--output<span class="w"> </span>destinations.stdout_table_verbose_destination.format<span class="o">=</span>table-verbose
+</code></pre></div>
 <h3 id="gotemplate">GOTEMPLATE<a class="headerlink" href="#gotemplate" title="Permanent link">&para;</a></h3>
 <p>When authoring a Go template, the data source is Tracee's <code>v1beta1.Event</code> protobuf structure, which is defined in the <a href="https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event.proto">API protobuf definitions</a>.</p>
 <p><strong>Common event fields:</strong>
@@ -8526,13 +8639,61 @@ you can select fields, rename them, filter values, and much more!</p>
 <p>Go templates can utilize helper functions from <a href="http://masterminds.github.io/sprig/">Sprig</a>.</p>
 <p>For example templates, see the templates directory in the source repository.</p>
 <p>The following sections can be specified as part of go templates:</p>
-<div class="highlight"><pre><span></span><code>output:
-    # gotemplate:
-    #     template: /path/to/my_template1.tmpl
-    #     files:
-    #         - /path/to/output1.out
-    #         - /path/to/output2.out
+<div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">destinations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file_destination_1</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gotemplate=/path/to/template_1.tmpl</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/file.log</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file_destination_2</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gotemplate=/path/to/template_2.tmpl</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/file_2.log</span>
 </code></pre></div>
+<p>or the following flags can be used:</p>
+<div class="highlight"><pre><span></span><code>tracee<span class="w">  </span>--output<span class="w"> </span>destinations.stdout_destination_1.type<span class="o">=</span>file<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.stdout_destination_1.format<span class="o">=</span><span class="nv">gotemplate</span><span class="o">=</span>/path/to/template_1.tmpl<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.stdout_destination_1.path<span class="o">=</span>/path/to/file.log<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.stdout_destination_2.type<span class="o">=</span>file<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.stdout_destination_2.format<span class="o">=</span><span class="nv">gotemplate</span><span class="o">=</span>/path/to/template_2.tmpl<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span>destinations.stdout_destination_2.path<span class="o">=</span>/path/to/file_2.log<span class="w"> </span><span class="se">\</span>
+</code></pre></div>
+<h2 id="cli-flags">CLI flags<a class="headerlink" href="#cli-flags" title="Permanent link">&para;</a></h2>
+<p>A destination can be configured using CLI flags as well. The format of a flag is <code>--output destinations.&lt;destination_name&gt;.&lt;field_name&gt;=&lt;value&gt;</code>.</p>
+<h3 id="available-fields">Available fields<a class="headerlink" href="#available-fields" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Field</th>
+<th>Usage</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">type</td>
+<td>type of the destination. One of <code>file</code>, <code>webhook</code> or <code>forward</code>.</td>
+<td>file</td>
+</tr>
+<tr>
+<td style="text-align: center;">format</td>
+<td>format of the event. One of <code>json</code>, <code>table</code>, <code>table-verbose</code> or gotemplate=/path/to/template.yaml.</td>
+<td><code>table</code> for file, <code>json</code> for webhook and forward</td>
+</tr>
+<tr>
+<td style="text-align: center;">url</td>
+<td>only for <code>webhook</code> and <code>forward</code> specify the destination url.</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align: center;">path</td>
+<td>only for <code>file</code> specify the file path to create, default to <code>stdout</code>.</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Note: not specifying the <code>type</code> of destination will result in default value <code>file</code> which invalidates the presence of <code>url</code> field</p>
 
 
 
