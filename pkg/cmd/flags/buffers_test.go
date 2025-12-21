@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/config"
 )
 
 func TestPrepareBuffers(t *testing.T) {
@@ -13,15 +15,15 @@ func TestPrepareBuffers(t *testing.T) {
 	testCases := []struct {
 		testName       string
 		flags          []string
-		expectedReturn BuffersConfig
+		expectedReturn config.BuffersConfig
 		expectedError  string
 	}{
 		// default values (no flags)
 		{
 			testName: "default values",
 			flags:    []string{},
-			expectedReturn: BuffersConfig{
-				Kernel: KernelBuffersConfig{
+			expectedReturn: config.BuffersConfig{
+				Kernel: config.KernelBuffersConfig{
 					Events:       GetDefaultPerfBufferSize(),
 					Artifacts:    GetDefaultPerfBufferSize(),
 					ControlPlane: GetDefaultPerfBufferSize(),
@@ -33,8 +35,8 @@ func TestPrepareBuffers(t *testing.T) {
 		{
 			testName: "valid kernel.events",
 			flags:    []string{"kernel.events=2048"},
-			expectedReturn: BuffersConfig{
-				Kernel: KernelBuffersConfig{
+			expectedReturn: config.BuffersConfig{
+				Kernel: config.KernelBuffersConfig{
 					Events:       2048,
 					Artifacts:    GetDefaultPerfBufferSize(),
 					ControlPlane: GetDefaultPerfBufferSize(),
@@ -45,8 +47,8 @@ func TestPrepareBuffers(t *testing.T) {
 		{
 			testName: "valid pipeline",
 			flags:    []string{"pipeline=4000"},
-			expectedReturn: BuffersConfig{
-				Kernel: KernelBuffersConfig{
+			expectedReturn: config.BuffersConfig{
+				Kernel: config.KernelBuffersConfig{
 					Events:       GetDefaultPerfBufferSize(),
 					Artifacts:    GetDefaultPerfBufferSize(),
 					ControlPlane: GetDefaultPerfBufferSize(),
@@ -57,8 +59,8 @@ func TestPrepareBuffers(t *testing.T) {
 		{
 			testName: "valid kernel.artifacts",
 			flags:    []string{"kernel.artifacts=512"},
-			expectedReturn: BuffersConfig{
-				Kernel: KernelBuffersConfig{
+			expectedReturn: config.BuffersConfig{
+				Kernel: config.KernelBuffersConfig{
 					Events:       GetDefaultPerfBufferSize(),
 					Artifacts:    512,
 					ControlPlane: GetDefaultPerfBufferSize(),
@@ -69,8 +71,8 @@ func TestPrepareBuffers(t *testing.T) {
 		{
 			testName: "valid kernel.control-plane",
 			flags:    []string{"kernel.control-plane=256"},
-			expectedReturn: BuffersConfig{
-				Kernel: KernelBuffersConfig{
+			expectedReturn: config.BuffersConfig{
+				Kernel: config.KernelBuffersConfig{
 					Events:       GetDefaultPerfBufferSize(),
 					Artifacts:    GetDefaultPerfBufferSize(),
 					ControlPlane: 256,
@@ -82,8 +84,8 @@ func TestPrepareBuffers(t *testing.T) {
 		{
 			testName: "valid multiple flags",
 			flags:    []string{"kernel.events=2048", "pipeline=5000"},
-			expectedReturn: BuffersConfig{
-				Kernel: KernelBuffersConfig{
+			expectedReturn: config.BuffersConfig{
+				Kernel: config.KernelBuffersConfig{
 					Events:       2048,
 					Artifacts:    GetDefaultPerfBufferSize(),
 					ControlPlane: GetDefaultPerfBufferSize(),
@@ -94,8 +96,8 @@ func TestPrepareBuffers(t *testing.T) {
 		{
 			testName: "valid all flags",
 			flags:    []string{"kernel.events=2048", "pipeline=4000", "kernel.artifacts=512", "kernel.control-plane=256"},
-			expectedReturn: BuffersConfig{
-				Kernel: KernelBuffersConfig{
+			expectedReturn: config.BuffersConfig{
+				Kernel: config.KernelBuffersConfig{
 					Events:       2048,
 					Artifacts:    512,
 					ControlPlane: 256,
@@ -106,8 +108,8 @@ func TestPrepareBuffers(t *testing.T) {
 		{
 			testName: "valid flags in different order",
 			flags:    []string{"kernel.artifacts=512", "kernel.control-plane=256", "kernel.events=2048", "pipeline=40000"},
-			expectedReturn: BuffersConfig{
-				Kernel: KernelBuffersConfig{
+			expectedReturn: config.BuffersConfig{
+				Kernel: config.KernelBuffersConfig{
 					Events:       2048,
 					Artifacts:    512,
 					ControlPlane: 256,
@@ -119,8 +121,8 @@ func TestPrepareBuffers(t *testing.T) {
 		{
 			testName: "valid duplicate flags",
 			flags:    []string{"kernel.events=2048", "kernel.events=4096"},
-			expectedReturn: BuffersConfig{
-				Kernel: KernelBuffersConfig{
+			expectedReturn: config.BuffersConfig{
+				Kernel: config.KernelBuffersConfig{
 					Events:       4096,
 					Artifacts:    GetDefaultPerfBufferSize(),
 					ControlPlane: GetDefaultPerfBufferSize(),
@@ -132,65 +134,65 @@ func TestPrepareBuffers(t *testing.T) {
 		{
 			testName:       "invalid flag format missing equals",
 			flags:          []string{"kernel.events"},
-			expectedReturn: BuffersConfig{},
+			expectedReturn: config.BuffersConfig{},
 			expectedError:  invalidBuffersFlagErrorMsg("kernel.events"),
 		},
 		{
 			testName:       "invalid flag format missing equals with value",
 			flags:          []string{"kernel.events2048"},
-			expectedReturn: BuffersConfig{},
+			expectedReturn: config.BuffersConfig{},
 			expectedError:  invalidBuffersFlagErrorMsg("kernel.events2048"),
 		},
 		{
 			testName:       "invalid flag format empty value",
 			flags:          []string{"kernel.events="},
-			expectedReturn: BuffersConfig{},
+			expectedReturn: config.BuffersConfig{},
 			expectedError:  invalidBuffersFlagErrorMsg("kernel.events="),
 		},
 		// invalid flag name
 		{
 			testName:       "invalid flag name",
 			flags:          []string{"invalid-flag=2048"},
-			expectedReturn: BuffersConfig{},
+			expectedReturn: config.BuffersConfig{},
 			expectedError:  invalidBuffersFlagErrorMsg("invalid-flag"),
 		},
 		{
 			testName:       "invalid flag name with typo",
 			flags:          []string{"kernel.event=2048"},
-			expectedReturn: BuffersConfig{},
+			expectedReturn: config.BuffersConfig{},
 			expectedError:  invalidBuffersFlagErrorMsg("kernel.event"),
 		},
 		{
 			testName:       "invalid flag name empty",
 			flags:          []string{"=2048"},
-			expectedReturn: BuffersConfig{},
+			expectedReturn: config.BuffersConfig{},
 			expectedError:  invalidBuffersFlagErrorMsg("=2048"),
 		},
 		// invalid flag value (non-numeric) - note: parseInt returns 0, doesn't error
 		{
 			testName:       "invalid flag value non-numeric",
 			flags:          []string{"kernel.events=invalid"},
-			expectedReturn: BuffersConfig{},
+			expectedReturn: config.BuffersConfig{},
 			expectedError:  invalidBufferFlagPositiveIntegerError("kernel.events"),
 		},
 		{
 			testName:       "invalid flag value negative",
 			flags:          []string{"kernel.events=-2048"},
-			expectedReturn: BuffersConfig{},
+			expectedReturn: config.BuffersConfig{},
 			expectedError:  invalidBufferFlagNegativeOrZeroError("kernel.events"),
 		},
 		// valid edge cases
 		{
 			testName:       "valid zero value",
 			flags:          []string{"kernel.events=0"},
-			expectedReturn: BuffersConfig{},
+			expectedReturn: config.BuffersConfig{},
 			expectedError:  invalidBufferFlagNegativeOrZeroError("kernel.events"),
 		},
 		{
 			testName: "valid large value",
 			flags:    []string{"kernel.events=999999"},
-			expectedReturn: BuffersConfig{
-				Kernel: KernelBuffersConfig{
+			expectedReturn: config.BuffersConfig{
+				Kernel: config.KernelBuffersConfig{
 					Events:       999999,
 					Artifacts:    GetDefaultPerfBufferSize(),
 					ControlPlane: GetDefaultPerfBufferSize(),
@@ -202,13 +204,13 @@ func TestPrepareBuffers(t *testing.T) {
 		{
 			testName:       "mixed valid and invalid flag name",
 			flags:          []string{"kernel.events=2048", "invalid-flag=4096"},
-			expectedReturn: BuffersConfig{},
+			expectedReturn: config.BuffersConfig{},
 			expectedError:  invalidBuffersFlagErrorMsg("invalid-flag"),
 		},
 		{
 			testName:       "mixed valid and invalid format",
 			flags:          []string{"kernel.events=2048", "pipeline"},
-			expectedReturn: BuffersConfig{},
+			expectedReturn: config.BuffersConfig{},
 			expectedError:  invalidBuffersFlagErrorMsg("pipeline"),
 		},
 	}
@@ -234,7 +236,7 @@ func TestPrepareBuffers(t *testing.T) {
 	}
 }
 
-func TestBuffersConfig_flags(t *testing.T) {
+func TestBuffersFlags(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {

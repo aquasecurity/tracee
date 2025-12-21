@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/pkg/config"
 )
 
 const (
@@ -22,17 +23,30 @@ const (
 	invalidBufferFlagNegativeOrZero  = "invalid buffer flag: %s value can't be negative or zero, use 'trace man buffers' for more info"
 )
 
-// BuffersConfig is a struct containing the buffers sizes
+// BuffersConfig represents CLI buffer configuration that implements cliFlagger interface
 type BuffersConfig struct {
 	Kernel   KernelBuffersConfig `mapstructure:"kernel"`
 	Pipeline int                 `mapstructure:"pipeline"`
 }
 
-// KernelBuffersConfig holds kernel buffer sizes
+// KernelBuffersConfig holds kernel buffer sizes (CLI wrapper for config.KernelBuffersConfig)
 type KernelBuffersConfig struct {
 	Events       int `mapstructure:"events"`
 	Artifacts    int `mapstructure:"artifacts"`
 	ControlPlane int `mapstructure:"control-plane"`
+}
+
+// GetInternalConfig converts the CLI BuffersConfig to the internal config.BuffersConfig
+// This follows the isolation pattern used by other flags (stores, enrichment, etc.)
+func (c *BuffersConfig) GetInternalConfig() config.BuffersConfig {
+	return config.BuffersConfig{
+		Kernel: config.KernelBuffersConfig{
+			Events:       c.Kernel.Events,
+			Artifacts:    c.Kernel.Artifacts,
+			ControlPlane: c.Kernel.ControlPlane,
+		},
+		Pipeline: c.Pipeline,
+	}
 }
 
 // flags returns the flags for the buffers config

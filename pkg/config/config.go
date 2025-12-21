@@ -18,39 +18,36 @@ import (
 // NOTE: In the future, Tracee config will be changed at run time and will require
 // proper management.
 type Config struct {
-	InitialPolicies            []interface{} // due to circular dependency, policy.Policy cannot be used here
-	Capture                    *CaptureConfig
-	Capabilities               *CapabilitiesConfig
-	Output                     *OutputConfig
-	ProcTree                   process.ProcTreeConfig
-	EventsPerfBufferSize       int
-	ArtifactsPerfBufferSize    int
-	PipelineChannelSize        int
-	ControlPlanePerfBufferSize int
-	MaxPidsCache               int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
-	BTFObjPath                 string
-	BPFObjBytes                []byte
-	BPFObjPath                 string // path to the BPF object binary for uprobe attachment (defaults to /proc/self/exe)
-	KernelConfig               *environment.KernelConfig
-	OSInfo                     *environment.OSInfo
-	Sockets                    runtime.Sockets
-	EnrichmentEnabled          bool
-	CgroupFSPath               string
-	CgroupFSForce              bool
-	EngineConfig               engine.Config
-	DNSCacheConfig             dns.Config
-	MetricsEnabled             bool
-	HealthzEnabled             bool
-	DetectorConfig             DetectorConfig
+	InitialPolicies   []interface{} // due to circular dependency, policy.Policy cannot be used here
+	Capture           *CaptureConfig
+	Capabilities      *CapabilitiesConfig
+	Output            *OutputConfig
+	ProcTree          process.ProcTreeConfig
+	Buffers           BuffersConfig
+	MaxPidsCache      int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
+	BTFObjPath        string
+	BPFObjBytes       []byte
+	BPFObjPath        string // path to the BPF object binary for uprobe attachment (defaults to /proc/self/exe)
+	KernelConfig      *environment.KernelConfig
+	OSInfo            *environment.OSInfo
+	Sockets           runtime.Sockets
+	EnrichmentEnabled bool
+	CgroupFSPath      string
+	CgroupFSForce     bool
+	EngineConfig      engine.Config
+	DNSCacheConfig    dns.Config
+	MetricsEnabled    bool
+	HealthzEnabled    bool
+	DetectorConfig    DetectorConfig
 }
 
 // Validate does static validation of the configuration
 func (c Config) Validate() error {
 	// Buffer sizes
-	if (c.EventsPerfBufferSize & (c.EventsPerfBufferSize - 1)) != 0 {
+	if (c.Buffers.Kernel.Events & (c.Buffers.Kernel.Events - 1)) != 0 {
 		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
 	}
-	if (c.ArtifactsPerfBufferSize & (c.ArtifactsPerfBufferSize - 1)) != 0 {
+	if (c.Buffers.Kernel.Artifacts & (c.Buffers.Kernel.Artifacts - 1)) != 0 {
 		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
 	}
 
@@ -208,4 +205,21 @@ type Stream struct {
 // DetectorConfig manages detector lifecycle
 type DetectorConfig struct {
 	Detectors []detection.EventDetector // All detectors (built-in + extensions)
+}
+
+//
+// Buffers
+//
+
+// BuffersConfig is a struct containing the buffers sizes
+type BuffersConfig struct {
+	Kernel   KernelBuffersConfig `mapstructure:"kernel"`
+	Pipeline int                 `mapstructure:"pipeline"`
+}
+
+// KernelBuffersConfig holds kernel buffer sizes
+type KernelBuffersConfig struct {
+	Events       int `mapstructure:"events"`
+	Artifacts    int `mapstructure:"artifacts"`
+	ControlPlane int `mapstructure:"control-plane"`
 }

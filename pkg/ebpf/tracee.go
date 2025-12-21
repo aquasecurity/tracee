@@ -1695,7 +1695,7 @@ func (t *Tracee) initBPF() error {
 		t.config.EnrichmentEnabled,
 		t.dataStoreRegistry.GetProcessTree(),
 		t.dataTypeDecoder,
-		t.config.ControlPlanePerfBufferSize,
+		t.config.Buffers.Kernel.ControlPlane,
 	)
 	if err := t.controlPlane.Init(); err != nil {
 		return errfmt.WrapError(err)
@@ -1711,27 +1711,27 @@ func (t *Tracee) initBPF() error {
 
 	t.eventsChannel = make(chan []byte, 1000)
 	t.lostEvChannel = make(chan uint64)
-	if t.config.EventsPerfBufferSize < 1 {
-		return errfmt.Errorf("invalid perf buffer size: %d", t.config.EventsPerfBufferSize)
+	if t.config.Buffers.Kernel.Events < 1 {
+		return errfmt.Errorf("invalid perf buffer size: %d", t.config.Buffers.Kernel.Events)
 	}
 	t.eventsPerfMap, err = t.bpfModule.InitPerfBuf(
 		"events",
 		t.eventsChannel,
 		t.lostEvChannel,
-		t.config.EventsPerfBufferSize,
+		t.config.Buffers.Kernel.Events,
 	)
 	if err != nil {
 		return errfmt.Errorf("error initializing events perf map: %v", err)
 	}
 
-	if t.config.ArtifactsPerfBufferSize > 0 {
+	if t.config.Buffers.Kernel.Artifacts > 0 {
 		t.fileCapturesChannel = make(chan []byte, 1000)
 		t.lostCapturesChannel = make(chan uint64)
 		t.fileWrPerfMap, err = t.bpfModule.InitPerfBuf(
 			"file_writes",
 			t.fileCapturesChannel,
 			t.lostCapturesChannel,
-			t.config.ArtifactsPerfBufferSize,
+			t.config.Buffers.Kernel.Artifacts,
 		)
 		if err != nil {
 			return errfmt.Errorf("error initializing file_writes perf map: %v", err)
@@ -1745,7 +1745,7 @@ func (t *Tracee) initBPF() error {
 			"net_cap_events",
 			t.netCapChannel,
 			t.lostNetCapChannel,
-			t.config.EventsPerfBufferSize,
+			t.config.Buffers.Kernel.Events,
 		)
 		if err != nil {
 			return errfmt.Errorf("error initializing net capture perf map: %v", err)
@@ -1758,7 +1758,7 @@ func (t *Tracee) initBPF() error {
 		"logs",
 		t.bpfLogsChannel,
 		t.lostBPFLogChannel,
-		t.config.EventsPerfBufferSize,
+		t.config.Buffers.Kernel.Events,
 	)
 	if err != nil {
 		return errfmt.Errorf("error initializing logs perf map: %v", err)
@@ -1824,7 +1824,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 	// Parallel perf buffer with file writes events
 
-	if t.config.ArtifactsPerfBufferSize > 0 {
+	if t.config.Buffers.Kernel.Artifacts > 0 {
 		t.fileWrPerfMap.Poll(pollTimeout)
 		go t.handleFileCaptures(ctx)
 	}
@@ -1855,7 +1855,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	if err != nil {
 		return errfmt.Errorf("error stopping control plane: %v", err)
 	}
-	if t.config.ArtifactsPerfBufferSize > 0 {
+	if t.config.Buffers.Kernel.Artifacts > 0 {
 		t.fileWrPerfMap.Stop()
 	}
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
@@ -2222,7 +2222,7 @@ func (t *Tracee) Subscribe(stream config.Stream) (*streams.Stream, error) {
 func (t *Tracee) subscribe(policyMask uint64, eventMap map[int32]struct{}, bufferConfig config.StreamBuffer) *streams.Stream {
 	// To keep old behavior in case of streams created from GRPC server
 	if bufferConfig.Size <= 0 {
-		bufferConfig.Size = t.config.PipelineChannelSize
+		bufferConfig.Size = t.config.Buffers.Pipeline
 	}
 
 	return t.streamsManager.Subscribe(policyMask, eventMap, bufferConfig)

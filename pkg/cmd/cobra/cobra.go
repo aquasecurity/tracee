@@ -121,10 +121,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	// Initialize a tracee config structure
 
 	cfg := config.Config{
-		EventsPerfBufferSize:       buffers.Kernel.Events,
-		ArtifactsPerfBufferSize:    buffers.Kernel.Artifacts,
-		ControlPlanePerfBufferSize: buffers.Kernel.ControlPlane,
-		PipelineChannelSize:        buffers.Pipeline,
+		Buffers: buffers.GetInternalConfig(),
 	}
 
 	// OS release information

@@ -46,7 +46,7 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 	// Sort stage: events go through a sorting function.
 
 	if t.config.Output.EventsSorting {
-		eventsChan, errc = t.eventsSorter.StartPipeline(ctx, eventsChan, t.config.ArtifactsPerfBufferSize)
+		eventsChan, errc = t.eventsSorter.StartPipeline(ctx, eventsChan, t.config.Buffers.Kernel.Artifacts)
 		t.stats.Channels["sort"] = eventsChan
 		errcList = append(errcList, errc)
 	}
@@ -104,7 +104,7 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 // through a decoding function that will decode the event from its raw format into a
 // PipelineEvent type.
 func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-chan *events.PipelineEvent, <-chan error) {
-	out := make(chan *events.PipelineEvent, t.config.PipelineChannelSize)
+	out := make(chan *events.PipelineEvent, t.config.Buffers.Pipeline)
 	errc := make(chan error, 1)
 
 	// Create local decoder pool for this pipeline stage
@@ -499,7 +499,7 @@ func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
 func (t *Tracee) processEvents(ctx context.Context, in <-chan *events.PipelineEvent) (
 	<-chan *events.PipelineEvent, <-chan error,
 ) {
-	out := make(chan *events.PipelineEvent, t.config.PipelineChannelSize)
+	out := make(chan *events.PipelineEvent, t.config.Buffers.Pipeline)
 	errc := make(chan error, 1)
 
 	// Some "informational" events are started here (TODO: API server?)
@@ -575,7 +575,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *events.PipelineEv
 func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *events.PipelineEvent) (
 	<-chan *events.PipelineEvent, <-chan error,
 ) {
-	out := make(chan *events.PipelineEvent, t.config.PipelineChannelSize)
+	out := make(chan *events.PipelineEvent, t.config.Buffers.Pipeline)
 	errc := make(chan error, 1)
 
 	go func() {
@@ -648,7 +648,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *events.PipelineEve
 func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEvent) (
 	<-chan *events.PipelineEvent, <-chan error,
 ) {
-	out := make(chan *events.PipelineEvent, t.config.PipelineChannelSize)
+	out := make(chan *events.PipelineEvent, t.config.Buffers.Pipeline)
 	errc := make(chan error, 1)
 
 	// Maximum depth for detector chains (prevents infinite loops)
