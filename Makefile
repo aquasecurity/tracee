@@ -632,7 +632,9 @@ CGO_EXT_LDFLAGS_EBPF =
 PKG_CONFIG_PATH = $(LIBBPF_OBJDIR)
 PKG_CONFIG_FLAG =
 
-TRACEE_PROTOS = ./api/v1beta1/*.proto
+TRACEE_PROTOS_ALL = $(wildcard ./api/v1beta1/*.proto)
+TRACEE_PROTOS_NO_JSON = ./api/v1beta1/event.proto ./api/v1beta1/event_data.proto
+TRACEE_PROTOS = $(filter-out $(TRACEE_PROTOS_NO_JSON),$(TRACEE_PROTOS_ALL))
 
 #
 # btfhub (expensive: only run if ebpf obj changed)
@@ -1264,12 +1266,22 @@ check-pr-skip-tests::
 .PHONY: protoc
 protoc::
 #
+	# Generate protos with JSON marshallers (excludes event.proto and event_data.proto with custom implementations)
 	$(CMD_PROTOC) \
 		--go_out=. \
 		--go_opt=paths=source_relative \
 		--go-json_out=orig_name=true,paths=source_relative:. \
 		--go-grpc_out=. \
-		--go-grpc_opt=paths=source_relative $(TRACEE_PROTOS)
+		--go-grpc_opt=paths=source_relative \
+		$(TRACEE_PROTOS)
+
+	# Generate event.proto and event_data.proto WITHOUT JSON marshallers (have custom implementation)
+	$(CMD_PROTOC) \
+		--go_out=. \
+		--go_opt=paths=source_relative \
+		--go-grpc_out=. \
+		--go-grpc_opt=paths=source_relative \
+		$(TRACEE_PROTOS_NO_JSON)
 
 #
 # man pages

@@ -598,7 +598,7 @@ type EventValue_UInt32 struct {
 }
 
 type EventValue_UInt64 struct {
-	UInt64 uint64 `protobuf:"varint,5,opt,name=u_int64,json=uInt64,proto3,oneof"` // ulongT, offT, sizeT (removed pointerT - now has dedicated type)
+	UInt64 uint64 `protobuf:"varint,5,opt,name=u_int64,json=uInt64,proto3,oneof"` // ulongT, offT, sizeT (pointerT removed - use dedicated 'pointer' field)
 }
 
 type EventValue_Str struct {
@@ -702,7 +702,7 @@ type EventValue_Struct struct {
 }
 
 type EventValue_Pointer struct {
-	Pointer uint64 `protobuf:"varint,31,opt,name=pointer,proto3,oneof"` // pointerT - explicit pointer type for hex formatting
+	Pointer uint64 `protobuf:"varint,31,opt,name=pointer,proto3,oneof"`
 }
 
 func (*EventValue_Int32) isEventValue_Value() {}
