@@ -5,8 +5,9 @@
 tracee \f[B]\-\-buffers\f[R] \- Configure the buffers sizes for kernel
 and user buffers
 .SS SYNOPSIS
-tracee \f[B]\-\-buffers\f[R] [kernel.events=<size> | kernel.artifacts=<size>
-| kernel.control\-plane=<size> | pipeline=<size>] \&...
+tracee \f[B]\-\-buffers\f[R] [kernel.events=<size> |
+kernel.artifacts=<size> | kernel.control\-plane=<size> |
+pipeline=<size>] \&...
 [\f[B]\-\-buffers\f[R] [kernel.events=<size> | kernel.artifacts=<size> |
 kernel.control\-plane=<size> | pipeline=<size>] \&...]
 .SS DESCRIPTION
@@ -24,8 +25,8 @@ Possible buffer options:
 \f[B]kernel.events=<size>\f[R]: Sets the size, in pages, of the internal
 perf ring buffer used to submit events from the kernel.
 .IP \[bu] 2
-\f[B]kernel.artifacts=<size>\f[R]: Sets the size, in pages, of the internal
-perf ring buffer used to send artifacts from the kernel.
+\f[B]kernel.artifacts=<size>\f[R]: Sets the size, in pages, of the
+internal perf ring buffer used to send artifacts from the kernel.
 .IP \[bu] 2
 \f[B]kernel.control\-plane=<size>\f[R]: Sets the size, in pages, of the
 internal perf ring buffer used to submit events from the control plane.
