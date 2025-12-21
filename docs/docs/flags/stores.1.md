@@ -105,5 +105,7 @@ The **\-\-stores** flag allows you to configure data stores for DNS cache and pr
    
    Note: All process options automatically enable process, and `dns.max-entries` automatically enables DNS, so you don't need `--stores dns` or `--stores process`.
 
-Please refer to the [DNS data source documentation](../advanced/data-sources/builtin/dns.md) and [Process Tree data source documentation](../advanced/data-sources/builtin/process-tree.md) for more information.
+Please refer to the [DataStore API documentation](../detectors/datastore-api.md) for information about using these stores in detectors:
+- [DNSStore](../detectors/datastore-api.md#dnsstore) - DNS cache access
+- [ProcessStore](../detectors/datastore-api.md#processstore) - Process tree and ancestry
 
