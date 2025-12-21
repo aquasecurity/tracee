@@ -203,12 +203,13 @@ nav:
                 - Output Formats: docs/outputs/output-formats.md
                 - Event Structure: docs/outputs/event-structure.md
                 - Output Options: docs/outputs/output-options.md
-                - Logging: docs/outputs/logging.md
-          - Troubleshooting: docs/troubleshooting.md
-          - Advanced:
+                - Streams: docs/outputs/streams.md
                 - Ordering Events: docs/advanced/ordering-events.md
-                - Secure Tracing: docs/advanced/secure-tracing.md
-                - Forensics: docs/advanced/forensics.md
+                - Logging: docs/outputs/logging.md
+          - Forensics:
+                - Overview: docs/advanced/forensics.md
+          - Secure Tracing: docs/advanced/secure-tracing.md
+          - Troubleshooting: docs/troubleshooting.md
     - Traceectl: 
           - Overview: traceectl/index.md
           - Installation: traceectl/usage.md
