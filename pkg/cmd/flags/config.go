@@ -25,8 +25,6 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &ServerConfig{}
 	case "capabilities":
 		flagger = &CapabilitiesConfig{}
-	case "containers":
-		flagger = &ContainerConfig{}
 	case LoggingFlag:
 		flagger = &LogConfig{}
 	case "output":
@@ -70,60 +68,6 @@ func getConfigFlags(rawValue interface{}, flagger cliFlagger, key string) ([]str
 	default:
 		return nil, errfmt.Errorf("unrecognized type %T for key %s", v, key)
 	}
-}
-
-type ContainerConfig struct {
-	Enrich   *bool          `mapstructure:"enrich"`
-	Sockets  []SocketConfig `mapstructure:"sockets"`
-	Cgroupfs CgroupfsConfig `mapstructure:"cgroupfs"`
-}
-
-type CgroupfsConfig struct {
-	Path  string `mapstructure:"path"`
-	Force bool   `mapstructure:"force"`
-}
-
-type SocketConfig struct {
-	Runtime string `mapstructure:"runtime"`
-	Socket  string `mapstructure:"socket"`
-}
-
-func (c *ContainerConfig) flags() []string {
-	flags := make([]string, 0)
-
-	if c.Enrich == nil {
-		// default to true
-		flags = append(flags, "enrich=true")
-	} else if *c.Enrich {
-		// if set to true
-		flags = append(flags, "enrich=true")
-	} else {
-		// if set to false
-		flags = append(flags, "enrich=false")
-	}
-
-	if c.Cgroupfs.Path != "" {
-		flags = append(flags, fmt.Sprintf("cgroupfs.path=%s", c.Cgroupfs.Path))
-	}
-	if c.Cgroupfs.Force {
-		flags = append(flags, "cgroupfs.force=true")
-	}
-
-	for _, socket := range c.Sockets {
-		flags = append(flags, socket.flags()...)
-	}
-
-	return flags
-}
-
-func (c *SocketConfig) flags() []string {
-	flags := make([]string, 0)
-
-	if c.Runtime != "" && c.Socket != "" {
-		flags = append(flags, fmt.Sprintf("sockets.%s=%s", c.Runtime, c.Socket))
-	}
-
-	return flags
 }
 
 //
