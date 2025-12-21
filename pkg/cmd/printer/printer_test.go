@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -248,7 +249,10 @@ func TestPrinterFromStream(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(t.Context())
 
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		p.FromStream(ctx, stream)
 	}()
 
@@ -264,6 +268,7 @@ func TestPrinterFromStream(t *testing.T) {
 	time.Sleep(time.Millisecond * 10)
 
 	cancel()
+	wg.Wait() // Wait for goroutine to finish before closing
 	p.Close()
 	sm.Close()
 
