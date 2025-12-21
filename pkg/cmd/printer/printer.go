@@ -26,6 +26,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/streams"
 )
 
+// EventPrinter is the interface for all event printers.
 type EventPrinter interface {
 	// Init serves as the initializer method for every event Printer type
 	Init() error
@@ -43,6 +44,7 @@ type EventPrinter interface {
 	Close()
 }
 
+// New creates a new EventPrinter based on the destinations.
 func New(destinations []config.Destination) (EventPrinter, error) {
 	if len(destinations) == 0 {
 		return nil, errfmt.Errorf("destinations can't be empty")
@@ -55,6 +57,7 @@ func New(destinations []config.Destination) (EventPrinter, error) {
 	return newSinglePrinter(destinations[0])
 }
 
+// newSinglePrinter creates a new EventPrinter based on the destination.
 func newSinglePrinter(dst config.Destination) (EventPrinter, error) {
 	var res EventPrinter
 	kind := dst.Type
@@ -110,6 +113,7 @@ func newSinglePrinter(dst config.Destination) (EventPrinter, error) {
 	return res, nil
 }
 
+// tableEventPrinter is the printer for the table format.
 type tableEventPrinter struct {
 	out           io.WriteCloser
 	verbose       bool
@@ -117,10 +121,12 @@ type tableEventPrinter struct {
 	relativeTS    bool
 }
 
+// Init initializes the tableEventPrinter.
 func (p tableEventPrinter) Init() error {
 	return nil
 }
 
+// Preamble prints the preamble for the table format.
 func (p tableEventPrinter) Preamble() {
 	if p.verbose {
 		switch p.containerMode {
@@ -207,6 +213,7 @@ func (p tableEventPrinter) Preamble() {
 	fmt.Fprintln(p.out)
 }
 
+// Print prints a single event in the table format.
 func (p tableEventPrinter) Print(event *pb.Event) {
 	if event == nil {
 		return
@@ -450,6 +457,7 @@ func (p tableEventPrinter) Print(event *pb.Event) {
 	fmt.Fprintln(p.out)
 }
 
+// Epilogue prints the epilogue for the table format.
 func (p tableEventPrinter) Epilogue(stats metrics.Stats) {
 	fmt.Println()
 	fmt.Fprintf(p.out, "End of events stream\n")
@@ -461,14 +469,17 @@ func (p tableEventPrinter) Epilogue(stats metrics.Stats) {
 	fmt.Fprintf(p.out, "%s\n", string(jsonStats))
 }
 
+// FromStream receives events from the stream and prints them in the table format.
 func (p *tableEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
 	consumeFromStream(ctx, stream, p)
 }
 
+// Kind returns the kind of the tableEventPrinter.
 func (p *tableEventPrinter) Kind() string {
 	return "table"
 }
 
+// Close closes the tableEventPrinter.
 func (p tableEventPrinter) Close() {
 	// Sync flushes buffered data, ensuring events aren't lost on process exit
 	if f, ok := p.out.(*os.File); ok {
@@ -476,12 +487,14 @@ func (p tableEventPrinter) Close() {
 	}
 }
 
+// templateEventPrinter is the printer for the template format.
 type templateEventPrinter struct {
 	out          io.WriteCloser
 	templatePath string
 	templateObj  **template.Template
 }
 
+// Init initializes the templateEventPrinter.
 func (p *templateEventPrinter) Init() error {
 	tmplPath := p.templatePath
 	if tmplPath == "" {
@@ -498,8 +511,10 @@ func (p *templateEventPrinter) Init() error {
 	return nil
 }
 
+// Preamble prints the preamble for the template format.
 func (p templateEventPrinter) Preamble() {}
 
+// Print prints a single event in the template format.
 func (p templateEventPrinter) Print(event *pb.Event) {
 	if p.templateObj != nil {
 		err := (*p.templateObj).Execute(p.out, event)
@@ -511,16 +526,20 @@ func (p templateEventPrinter) Print(event *pb.Event) {
 	}
 }
 
+// Epilogue prints the epilogue for the template format.
 func (p templateEventPrinter) Epilogue(stats metrics.Stats) {}
 
+// FromStream receives events from the stream and prints them using the template format.
 func (p *templateEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
 	consumeFromStream(ctx, stream, p)
 }
 
+// Kind returns the kind of the templateEventPrinter.
 func (p *templateEventPrinter) Kind() string {
 	return "template"
 }
 
+// Close closes the templateEventPrinter and flushes buffered data.
 func (p templateEventPrinter) Close() {
 	// Sync flushes buffered data, ensuring events aren't lost on process exit
 	if f, ok := p.out.(*os.File); ok {
@@ -528,6 +547,7 @@ func (p templateEventPrinter) Close() {
 	}
 }
 
+// jsonEventPrinter is the printer for the JSON format.
 type jsonEventPrinter struct {
 	out        io.WriteCloser
 	buffer     *bufio.Writer
@@ -535,6 +555,7 @@ type jsonEventPrinter struct {
 	lastFlush  time.Time
 }
 
+// Init initializes the jsonEventPrinter with a buffered writer.
 func (p *jsonEventPrinter) Init() error {
 	// Use 256KB buffer - good performance while allowing frequent flushes
 	p.buffer = bufio.NewWriterSize(p.out, 256*1024)
@@ -543,8 +564,10 @@ func (p *jsonEventPrinter) Init() error {
 	return nil
 }
 
+// Preamble prints the preamble for the JSON format.
 func (p jsonEventPrinter) Preamble() {}
 
+// Print prints a single event in JSON format with buffered output.
 func (p *jsonEventPrinter) Print(event *pb.Event) {
 	eBytes, err := event.MarshalJSON()
 	if err != nil {
@@ -569,6 +592,7 @@ func (p *jsonEventPrinter) Print(event *pb.Event) {
 	}
 }
 
+// Epilogue prints the epilogue for the JSON format and flushes the buffer.
 func (p *jsonEventPrinter) Epilogue(stats metrics.Stats) {
 	// Flush buffer when event stream ends to ensure all events are written
 	if p.buffer != nil {
@@ -578,14 +602,17 @@ func (p *jsonEventPrinter) Epilogue(stats metrics.Stats) {
 	}
 }
 
+// FromStream receives events from the stream and prints them in JSON format.
 func (p *jsonEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
 	consumeFromStream(ctx, stream, p)
 }
 
+// Kind returns the kind of the jsonEventPrinter.
 func (p *jsonEventPrinter) Kind() string {
 	return "json"
 }
 
+// Close closes the jsonEventPrinter and flushes all buffered data.
 func (p *jsonEventPrinter) Close() {
 	// Flush buffer before syncing to disk
 	if p.buffer != nil {
@@ -599,25 +626,32 @@ func (p *jsonEventPrinter) Close() {
 	}
 }
 
-// ignoreEventPrinter ignores events
+// ignoreEventPrinter ignores events and discards all output.
 type ignoreEventPrinter struct{}
 
+// Init initializes the ignoreEventPrinter.
 func (p *ignoreEventPrinter) Init() error {
 	return nil
 }
 
+// Preamble prints the preamble for the ignore format (no-op).
 func (p *ignoreEventPrinter) Preamble() {}
 
+// Print prints a single event (no-op, events are ignored).
 func (p *ignoreEventPrinter) Print(event *pb.Event) {}
 
+// Epilogue prints the epilogue for the ignore format (no-op).
 func (p *ignoreEventPrinter) Epilogue(stats metrics.Stats) {}
 
+// FromStream receives events from the stream but ignores them.
 func (p *ignoreEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {}
 
+// Kind returns the kind of the ignoreEventPrinter.
 func (p *ignoreEventPrinter) Kind() string {
 	return "ignore"
 }
 
+// Close closes the ignoreEventPrinter (no-op).
 func (p ignoreEventPrinter) Close() {}
 
 // forwardEventPrinter sends events over the Fluent Forward protocol to a receiver
@@ -634,6 +668,8 @@ type forwardEventPrinter struct {
 	// revive:enable:struct-tag
 }
 
+// getParameterValue extracts a parameter value from URL query parameters,
+// returning the default value if the parameter is not found or empty.
 func getParameterValue(parameters url.Values, key string, defaultValue string) string {
 	param, found := parameters[key]
 	// Ensure we have a non-empty parameter set for this key
@@ -644,6 +680,7 @@ func getParameterValue(parameters url.Values, key string, defaultValue string) s
 	return defaultValue
 }
 
+// Init initializes the forwardEventPrinter by parsing the URL and connecting to the Forward destination.
 func (p *forwardEventPrinter) Init() error {
 	// Now parse the optional parameters with defaults and some basic verification
 	u, err := url.Parse(p.outPath)
@@ -714,8 +751,10 @@ func (p *forwardEventPrinter) Init() error {
 	return nil
 }
 
+// Preamble prints the preamble for the forward format (no-op).
 func (p *forwardEventPrinter) Preamble() {}
 
+// Print sends a single event to the Forward destination using the Fluent Forward protocol.
 func (p *forwardEventPrinter) Print(event *pb.Event) {
 	if p.client == nil {
 		logger.Errorw("Invalid Forward client")
@@ -752,16 +791,20 @@ func (p *forwardEventPrinter) Print(event *pb.Event) {
 	}
 }
 
+// Epilogue prints the epilogue for the forward format (no-op).
 func (p *forwardEventPrinter) Epilogue(stats metrics.Stats) {}
 
+// FromStream receives events from the stream and sends them to the Forward destination.
 func (p *forwardEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
 	consumeFromStream(ctx, stream, p)
 }
 
+// Kind returns the kind of the forwardEventPrinter.
 func (p *forwardEventPrinter) Kind() string {
 	return "forward"
 }
 
+// Close closes the forwardEventPrinter and disconnects from the Forward destination.
 func (p forwardEventPrinter) Close() {
 	if p.client != nil {
 		logger.Infow("Disconnecting from Forward destination", "url", p.url.Host, "tag", p.tag)
@@ -771,6 +814,7 @@ func (p forwardEventPrinter) Close() {
 	}
 }
 
+// webhookEventPrinter sends events to a webhook endpoint via HTTP POST.
 type webhookEventPrinter struct {
 	outPath     string
 	url         *url.URL
@@ -780,6 +824,7 @@ type webhookEventPrinter struct {
 	contentType string
 }
 
+// Init initializes the webhookEventPrinter by parsing the URL and preparing the template if needed.
 func (ws *webhookEventPrinter) Init() error {
 	u, err := url.Parse(ws.outPath)
 	if err != nil {
@@ -813,8 +858,10 @@ func (ws *webhookEventPrinter) Init() error {
 	return nil
 }
 
+// Preamble prints the preamble for the webhook format (no-op).
 func (ws *webhookEventPrinter) Preamble() {}
 
+// Print sends a single event to the webhook endpoint via HTTP POST.
 func (ws *webhookEventPrinter) Print(event *pb.Event) {
 	var (
 		payload []byte
@@ -859,18 +906,24 @@ func (ws *webhookEventPrinter) Print(event *pb.Event) {
 	_ = resp.Body.Close()
 }
 
+// Epilogue prints the epilogue for the webhook format (no-op).
 func (ws *webhookEventPrinter) Epilogue(stats metrics.Stats) {}
 
+// FromStream receives events from the stream and sends them to the webhook endpoint.
 func (ws *webhookEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
 	consumeFromStream(ctx, stream, ws)
 }
 
+// Kind returns the kind of the webhookEventPrinter.
 func (ws *webhookEventPrinter) Kind() string {
 	return "webhook"
 }
 
+// Close closes the webhookEventPrinter (no-op).
 func (ws *webhookEventPrinter) Close() {}
 
+// consumeFromStream consumes events from a stream and prints them using the provided printer.
+// It runs until the context is cancelled or the stream is closed.
 func consumeFromStream(ctx context.Context, stream *streams.Stream, printer EventPrinter) {
 	eventChan := stream.ReceiveEvents()
 

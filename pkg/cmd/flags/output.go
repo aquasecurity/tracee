@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -12,7 +13,166 @@ import (
 	"github.com/aquasecurity/tracee/pkg/config"
 )
 
+const (
+	OutputFlag = "output"
+
+	// output option flags
+	noneFlag              = "none"
+	optionFlag            = "option"
+	stackAddressesFlag    = "stack-addresses"
+	execEnvFlag           = "exec-env"
+	parseArgumentsFlag    = "parse-arguments"
+	parseArgumentsFDsFlag = "parse-arguments-fds"
+	sortEventsFlag        = "sort-events"
+
+	// output format flags
+	tableFlag        = "table"
+	tableVerboseFlag = "table-verbose"
+	jsonFlag         = "json"
+	forwardFlag      = "forward"
+	webhookFlag      = "webhook"
+	gotemplatePrefix = "gotemplate="
+
+	// destination flags
+	destinationsPrefix = "destinations."
+
+	// stream flags
+	streamsPrefix = "streams."
+)
+
+// StreamBufferMode is the mode of the stream buffer.
+type StreamBufferMode string
+
+// StreamBufferModeBlock is the block mode of the stream buffer.
+const (
+	// StreamBufferModeBlock is the block mode of the stream buffer.
+	StreamBufferBlock StreamBufferMode = "block"
+	// StreamBufferModeDrop is the drop mode of the stream buffer.
+	StreamBufferDrop StreamBufferMode = "drop"
+)
+
+// StreamFiltersConfig is the filters of the stream.
+type StreamFiltersConfig struct {
+	Policies []string `mapstructure:"policies"`
+	Events   []string `mapstructure:"events"`
+}
+
+// StreamBufferConfig is the buffer of the stream.
+type StreamBufferConfig struct {
+	Size int              `mapstructure:"size"`
+	Mode StreamBufferMode `mapstructure:"mode"`
+}
+
+// StreamConfig is the config of the stream.
+type StreamConfig struct {
+	Name         string              `mapstructure:"name"`
+	Destinations []string            `mapstructure:"destinations"`
+	Filters      StreamFiltersConfig `mapstructure:"filters"`
+	Buffer       StreamBufferConfig  `mapstructure:"buffer"`
+}
+
+// DestinationsConfig is the config of the destinations.
+type DestinationsConfig struct {
+	Name   string `mapstructure:"name"`
+	Type   string `mapstructure:"type"`
+	Format string `mapstructure:"format"`
+	Path   string `mapstructure:"path"`
+	Url    string `mapstructure:"url"`
+}
+
+// OutputOptsConfig is the options of the output.
+type OutputOptsConfig struct {
+	None              bool   `mapstructure:"none"`
+	StackAddresses    bool   `mapstructure:"stack-addresses"`
+	ExecEnv           bool   `mapstructure:"exec-env"`
+	ExecHash          string `mapstructure:"exec-hash"`
+	ParseArguments    bool   `mapstructure:"parse-arguments"`
+	ParseArgumentsFDs bool   `mapstructure:"parse-arguments-fds"`
+	SortEvents        bool   `mapstructure:"sort-events"`
+}
+
+// OutputConfig is the config of the output.
+type OutputConfig struct {
+	Options      OutputOptsConfig     `mapstructure:"options"`
+	Destinations []DestinationsConfig `mapstructure:"destinations"`
+	Streams      []StreamConfig       `mapstructure:"streams"`
+}
+
+// flags returns the flags of the output.
+func (c *OutputConfig) flags() []string {
+	flags := []string{}
+
+	// options flags
+	if c.Options.None {
+		flags = append(flags, noneFlag)
+	}
+	if c.Options.StackAddresses {
+		flags = append(flags, fmt.Sprintf("%s:%s", optionFlag, stackAddressesFlag))
+	}
+	if c.Options.ExecEnv {
+		flags = append(flags, fmt.Sprintf("%s:%s", optionFlag, execEnvFlag))
+	}
+	if c.Options.ExecHash != "" {
+		flags = append(flags, fmt.Sprintf("%s:exec-hash=%s", optionFlag, c.Options.ExecHash))
+	}
+	if c.Options.ParseArguments {
+		flags = append(flags, fmt.Sprintf("%s:%s", optionFlag, parseArgumentsFlag))
+	}
+	if c.Options.ParseArgumentsFDs {
+		flags = append(flags, fmt.Sprintf("%s:%s", optionFlag, parseArgumentsFDsFlag))
+	}
+	if c.Options.SortEvents {
+		flags = append(flags, fmt.Sprintf("%s:%s", optionFlag, sortEventsFlag))
+	}
+
+	// destinations
+	for _, destination := range c.Destinations {
+		if destination.Format != "" {
+			flags = append(flags, fmt.Sprintf("%s%s.format=%s", destinationsPrefix, destination.Name, destination.Format))
+		}
+
+		if destination.Type != "" {
+			flags = append(flags, fmt.Sprintf("%s%s.type=%s", destinationsPrefix, destination.Name, destination.Type))
+		}
+
+		if destination.Path != "" {
+			flags = append(flags, fmt.Sprintf("%s%s.path=%s", destinationsPrefix, destination.Name, destination.Path))
+		}
+
+		if destination.Url != "" {
+			flags = append(flags, fmt.Sprintf("%s%s.url=%s", destinationsPrefix, destination.Name, destination.Url))
+		}
+	}
+
+	// streams
+	for _, stream := range c.Streams {
+		if stream.Buffer.Mode != "" {
+			flags = append(flags, fmt.Sprintf("%s%s.buffer.mode=%s", streamsPrefix, stream.Name, stream.Buffer.Mode))
+		}
+
+		if stream.Buffer.Size > 0 {
+			flags = append(flags, fmt.Sprintf("%s%s.buffer.size=%d", streamsPrefix, stream.Name, stream.Buffer.Size))
+		}
+
+		if len(stream.Destinations) > 0 {
+			flags = append(flags, fmt.Sprintf("%s%s.destinations=%s", streamsPrefix, stream.Name, strings.Join(stream.Destinations, ",")))
+		}
+
+		if len(stream.Filters.Events) > 0 {
+			flags = append(flags, fmt.Sprintf("%s%s.filters.events=%s", streamsPrefix, stream.Name, strings.Join(stream.Filters.Events, ",")))
+		}
+
+		if len(stream.Filters.Policies) > 0 {
+			flags = append(flags, fmt.Sprintf("%s%s.filters.policies=%s", streamsPrefix, stream.Name, strings.Join(stream.Filters.Policies, ",")))
+		}
+	}
+
+	return flags
+}
+
+// PrepareOutput prepares the output config from the given output slice.
 func PrepareOutput(outputSlice []string, containerMode config.ContainerMode) (*config.OutputConfig, error) {
+	// TODO: decide if we want to separate the configs (cobra and tracee internals), or join them
 	traceeConfig := &config.OutputConfig{}
 
 	// outpath:format
@@ -22,7 +182,7 @@ func PrepareOutput(outputSlice []string, containerMode config.ContainerMode) (*c
 
 	// This for loop handle the simple output cases. Backward compatible with --output flags
 	for _, o := range outputSlice {
-		if strings.HasPrefix(o, "streams.") {
+		if strings.HasPrefix(o, streamsPrefix) {
 			// skip streams computation because we need to have all
 			// the destinations ready before processing them
 
@@ -30,7 +190,7 @@ func PrepareOutput(outputSlice []string, containerMode config.ContainerMode) (*c
 			continue
 		}
 
-		if strings.HasPrefix(o, "destinations.") {
+		if strings.HasPrefix(o, destinationsPrefix) {
 			err := parseDestinationFlag(o, declaredDestinations)
 			if err != nil {
 				return nil, err
@@ -41,7 +201,7 @@ func PrepareOutput(outputSlice []string, containerMode config.ContainerMode) (*c
 
 		outputParts := strings.SplitN(o, ":", 2)
 
-		if strings.HasPrefix(outputParts[0], "gotemplate=") {
+		if strings.HasPrefix(outputParts[0], gotemplatePrefix) {
 			err := parseFormat(outputParts, destinationMap)
 			if err != nil {
 				return nil, err
@@ -50,31 +210,31 @@ func PrepareOutput(outputSlice []string, containerMode config.ContainerMode) (*c
 		}
 
 		switch outputParts[0] {
-		case "none":
+		case noneFlag:
 			if len(outputParts) > 1 {
 				return nil, NoneOutputPathError()
 			}
 			destinationMap["stdout"] = "ignore"
-		case "table", "table-verbose", "json":
+		case tableFlag, tableVerboseFlag, jsonFlag:
 			err := parseFormat(outputParts, destinationMap)
 			if err != nil {
 				return nil, err
 			}
-		case "forward":
-			err := validateURL(outputParts, "forward")
+		case forwardFlag:
+			err := validateURL(outputParts, forwardFlag)
 			if err != nil {
 				return nil, err
 			}
 
-			destinationMap[outputParts[1]] = "forward"
-		case "webhook":
-			err := validateURL(outputParts, "webhook")
+			destinationMap[outputParts[1]] = forwardFlag
+		case webhookFlag:
+			err := validateURL(outputParts, webhookFlag)
 			if err != nil {
 				return nil, err
 			}
 
-			destinationMap[outputParts[1]] = "webhook"
-		case "option":
+			destinationMap[outputParts[1]] = webhookFlag
+		case optionFlag:
 			err := parseOption(outputParts, traceeConfig)
 			if err != nil {
 				return nil, err
@@ -119,7 +279,7 @@ func PrepareOutput(outputSlice []string, containerMode config.ContainerMode) (*c
 	}
 
 	if len(declaredDestinations) == 0 && len(destinationMap) == 0 {
-		destinationMap["stdout"] = "table"
+		destinationMap["stdout"] = tableFlag
 	}
 
 	destinationConfigs, err := getDestinationConfigs(destinationMap, traceeConfig, containerMode)
@@ -137,6 +297,7 @@ func PrepareOutput(outputSlice []string, containerMode config.ContainerMode) (*c
 	return traceeConfig, nil
 }
 
+// parseDestinationFlag parses the given destination flag and sets it in the given existing map.
 func parseDestinationFlag(flag string, existing map[string]*config.Destination) error {
 	parts := strings.SplitN(flag, "=", 2)
 	if len(parts) < 2 {
@@ -186,6 +347,7 @@ func parseDestinationFlag(flag string, existing map[string]*config.Destination) 
 	return nil
 }
 
+// validateOrDefaults validates the given destinations and sets the default values if needed.
 func validateOrDefaults(destinations map[string]*config.Destination) error {
 	for _, d := range destinations {
 		if d.Type == "" {
@@ -193,29 +355,29 @@ func validateOrDefaults(destinations map[string]*config.Destination) error {
 		}
 
 		if d.Type == "file" && d.Format == "" {
-			d.Format = "table"
+			d.Format = tableFlag
 		}
 
 		if d.Type == "file" && d.Path == "" {
 			d.Path = "stdout"
 		}
 
-		if (d.Type == "webhook" || d.Type == "forward") &&
+		if (d.Type == webhookFlag || d.Type == forwardFlag) &&
 			d.Format == "" {
-			d.Format = "json"
+			d.Format = jsonFlag
 		}
 
-		if (d.Type == "webhook" || d.Type == "forward") &&
+		if (d.Type == webhookFlag || d.Type == forwardFlag) &&
 			d.Url == "" {
 			return MandatoryDestinationFieldError(d.Type, d.Name)
 		}
 
-		if d.Format != "json" && d.Format != "table" &&
-			d.Format != "table-verbose" && !strings.HasPrefix(d.Format, "gotemplate=") {
+		if d.Format != jsonFlag && d.Format != tableFlag &&
+			d.Format != tableVerboseFlag && !strings.HasPrefix(d.Format, gotemplatePrefix) {
 			return InvalidDestinationFieldError("format", d.Format, d.Name)
 		}
 
-		if d.Type != "file" && d.Type != "webhook" && d.Type != "forward" {
+		if d.Type != "file" && d.Type != webhookFlag && d.Type != forwardFlag {
 			return InvalidDestinationFieldError("type", d.Type, d.Name)
 		}
 
@@ -236,6 +398,7 @@ func validateOrDefaults(destinations map[string]*config.Destination) error {
 	return nil
 }
 
+// parseStreamFlag parses the given stream flag and sets it in the given existing map.
 func parseStreamFlag(flag string, existing map[string]*config.Stream,
 	destinations map[string]*config.Destination) error {
 	parts := strings.SplitN(flag, "=", 2)
@@ -312,10 +475,11 @@ func parseStreamFlag(flag string, existing map[string]*config.Stream,
 	return nil
 }
 
+// getWebhookFormat returns the format of the given webhook URL.
 func getWebhookFormat(webhookUrl string) string {
 	urlParts := strings.Split(webhookUrl, "?")
 	if len(urlParts) == 1 || urlParts[1] == "" {
-		return "json"
+		return jsonFlag
 	}
 
 	queryParams := strings.SplitSeq(urlParts[1], "&")
@@ -325,9 +489,10 @@ func getWebhookFormat(webhookUrl string) string {
 		}
 	}
 
-	return "json"
+	return jsonFlag
 }
 
+// PreparePrinterConfig prepares the printer config from the given printer kind and output path.
 func PreparePrinterConfig(printerKind string, outputPath string) (config.Destination, error) {
 	if printerKind == "ignore" {
 		return config.Destination{
@@ -341,9 +506,9 @@ func PreparePrinterConfig(printerKind string, outputPath string) (config.Destina
 	outFile := os.Stdout
 	var err error
 
-	isFile := outputPath != "" && printerKind != "forward" && printerKind != "webhook"
+	isFile := outputPath != "" && printerKind != forwardFlag && printerKind != webhookFlag
 
-	if printerKind == "webhook" {
+	if printerKind == webhookFlag {
 		dest.Format = getWebhookFormat(outputPath)
 	}
 
@@ -372,16 +537,16 @@ func PreparePrinterConfig(printerKind string, outputPath string) (config.Destina
 // SetOption sets the given option in the given config
 func SetOption(cfg *config.OutputConfig, option string) error {
 	switch option {
-	case "stack-addresses":
+	case stackAddressesFlag:
 		cfg.StackAddresses = true
-	case "exec-env":
+	case execEnvFlag:
 		cfg.ExecEnv = true
-	case "parse-arguments":
+	case parseArgumentsFlag:
 		cfg.ParseArguments = true
-	case "parse-arguments-fds":
+	case parseArgumentsFDsFlag:
 		cfg.ParseArgumentsFDs = true
 		cfg.ParseArguments = true // no point in parsing file descriptor args only
-	case "sort-events":
+	case sortEventsFlag:
 		cfg.EventsSorting = true
 	default:
 		if strings.HasPrefix(option, "exec-hash") {
@@ -430,8 +595,8 @@ func getDestinationConfigs(printerMap map[string]string, traceeConfig *config.Ou
 			continue
 		}
 
-		if printerKind == "table" {
-			if err := SetOption(traceeConfig, "parse-arguments"); err != nil {
+		if printerKind == tableFlag {
+			if err := SetOption(traceeConfig, parseArgumentsFlag); err != nil {
 				return nil, err
 			}
 		}

@@ -16,12 +16,13 @@ type Broadcast struct {
 	containerMode      config.ContainerMode
 }
 
-// newBroadcast creates a new Broadcast printer
+// newBroadcast creates a new Broadcast printer that sends events to multiple destinations.
 func newBroadcast(destinationConfigs []config.Destination) (*Broadcast, error) {
 	b := &Broadcast{DestinationConfigs: destinationConfigs}
 	return b, b.Init()
 }
 
+// Init initializes the Broadcast printer by creating individual printers for each destination.
 func (b *Broadcast) Init() error {
 	printers := make([]EventPrinter, 0, len(b.DestinationConfigs))
 
@@ -39,13 +40,15 @@ func (b *Broadcast) Init() error {
 	return nil
 }
 
+// Preamble calls Preamble on all underlying printers.
 func (b *Broadcast) Preamble() {
 	for _, p := range b.printers {
 		p.Preamble()
 	}
 }
 
-// Print broadcasts the event to all printers
+// Print broadcasts the event to all underlying printers.
+// Note: This method blocks if any printer is not consuming events fast enough.
 func (b *Broadcast) Print(event *pb.Event) {
 	for _, p := range b.printers {
 		// we are blocking here if the printer is not consuming events fast enough
@@ -53,12 +56,15 @@ func (b *Broadcast) Print(event *pb.Event) {
 	}
 }
 
+// Epilogue calls Epilogue on all underlying printers with the given stats.
 func (b *Broadcast) Epilogue(stats metrics.Stats) {
 	for _, p := range b.printers {
 		p.Epilogue(stats)
 	}
 }
 
+// FromStream receives events from the stream and broadcasts them to all underlying printers.
+// It runs until the context is cancelled or the stream is closed.
 func (b *Broadcast) FromStream(ctx context.Context, stream *streams.Stream) {
 	for {
 		select {
@@ -70,11 +76,12 @@ func (b *Broadcast) FromStream(ctx context.Context, stream *streams.Stream) {
 	}
 }
 
+// Kind returns the kind of the Broadcast printer.
 func (b *Broadcast) Kind() string {
 	return "broadcast"
 }
 
-// Close closes Broadcast printer
+// Close closes all underlying printers and releases their resources.
 func (b *Broadcast) Close() {
 	for _, p := range b.printers {
 		p.Close()
