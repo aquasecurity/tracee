@@ -821,3 +821,384 @@ func assertPrinterConfigs(t *testing.T, expected []config.Stream, actual []confi
 		}
 	}
 }
+
+func TestOutputConfig_flags(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		config   OutputConfig
+		expected []string
+	}{
+		{
+			name:     "empty config",
+			config:   OutputConfig{},
+			expected: []string{},
+		},
+		{
+			name: "none option only",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					None: true,
+				},
+			},
+			expected: []string{"none"},
+		},
+		{
+			name: "stack-addresses option only",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					StackAddresses: true,
+				},
+			},
+			expected: []string{"option:stack-addresses"},
+		},
+		{
+			name: "exec-env option only",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					ExecEnv: true,
+				},
+			},
+			expected: []string{"option:exec-env"},
+		},
+		{
+			name: "exec-hash option only",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					ExecHash: "dev-inode",
+				},
+			},
+			expected: []string{"option:exec-hash=dev-inode"},
+		},
+		{
+			name: "parse-arguments option only",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					ParseArguments: true,
+				},
+			},
+			expected: []string{"option:parse-arguments"},
+		},
+		{
+			name: "parse-arguments-fds option only",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					ParseArgumentsFDs: true,
+				},
+			},
+			expected: []string{"option:parse-arguments-fds"},
+		},
+		{
+			name: "sort-events option only",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					SortEvents: true,
+				},
+			},
+			expected: []string{"option:sort-events"},
+		},
+		{
+			name: "all options",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					None:              true,
+					StackAddresses:    true,
+					ExecEnv:           true,
+					ExecHash:          "inode",
+					ParseArguments:    true,
+					ParseArgumentsFDs: true,
+					SortEvents:        true,
+				},
+			},
+			expected: []string{
+				"none",
+				"option:stack-addresses",
+				"option:exec-env",
+				"option:exec-hash=inode",
+				"option:parse-arguments",
+				"option:parse-arguments-fds",
+				"option:sort-events",
+			},
+		},
+		{
+			name: "single destination with format",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "d1",
+						Format: "json",
+					},
+				},
+			},
+			expected: []string{"destinations.d1.format=json"},
+		},
+		{
+			name: "single destination with type",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name: "d1",
+						Type: "file",
+					},
+				},
+			},
+			expected: []string{"destinations.d1.type=file"},
+		},
+		{
+			name: "single destination with path",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name: "d1",
+						Path: "/tmp/output",
+					},
+				},
+			},
+			expected: []string{"destinations.d1.path=/tmp/output"},
+		},
+		{
+			name: "single destination with url",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name: "d1",
+						Url:  "http://localhost:8080",
+					},
+				},
+			},
+			expected: []string{"destinations.d1.url=http://localhost:8080"},
+		},
+		{
+			name: "complete destination",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "d1",
+						Type:   "webhook",
+						Format: "json",
+						Url:    "http://localhost:8080",
+					},
+				},
+			},
+			expected: []string{
+				"destinations.d1.format=json",
+				"destinations.d1.type=webhook",
+				"destinations.d1.url=http://localhost:8080",
+			},
+		},
+		{
+			name: "multiple destinations",
+			config: OutputConfig{
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "d1",
+						Type:   "file",
+						Format: "json",
+						Path:   "/tmp/file1",
+					},
+					{
+						Name:   "d2",
+						Type:   "webhook",
+						Format: "json",
+						Url:    "http://localhost:8080",
+					},
+				},
+			},
+			expected: []string{
+				"destinations.d1.format=json",
+				"destinations.d1.type=file",
+				"destinations.d1.path=/tmp/file1",
+				"destinations.d2.format=json",
+				"destinations.d2.type=webhook",
+				"destinations.d2.url=http://localhost:8080",
+			},
+		},
+		{
+			name: "single stream with destinations",
+			config: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name:         "s1",
+						Destinations: []string{"d1", "d2"},
+					},
+				},
+			},
+			expected: []string{"streams.s1.destinations=d1,d2"},
+		},
+		{
+			name: "single stream with filters events",
+			config: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name: "s1",
+						Filters: StreamFiltersConfig{
+							Events: []string{"execve", "open"},
+						},
+					},
+				},
+			},
+			expected: []string{"streams.s1.filters.events=execve,open"},
+		},
+		{
+			name: "single stream with filters policies",
+			config: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name: "s1",
+						Filters: StreamFiltersConfig{
+							Policies: []string{"policy1", "policy2"},
+						},
+					},
+				},
+			},
+			expected: []string{"streams.s1.filters.policies=policy1,policy2"},
+		},
+		{
+			name: "single stream with buffer mode",
+			config: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name: "s1",
+						Buffer: StreamBufferConfig{
+							Mode: StreamBufferBlock,
+						},
+					},
+				},
+			},
+			expected: []string{"streams.s1.buffer.mode=block"},
+		},
+		{
+			name: "single stream with buffer size",
+			config: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name: "s1",
+						Buffer: StreamBufferConfig{
+							Size: 1024,
+						},
+					},
+				},
+			},
+			expected: []string{"streams.s1.buffer.size=1024"},
+		},
+		{
+			name: "complete stream",
+			config: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name:         "s1",
+						Destinations: []string{"d1", "d2"},
+						Filters: StreamFiltersConfig{
+							Events:   []string{"execve", "open"},
+							Policies: []string{"policy1"},
+						},
+						Buffer: StreamBufferConfig{
+							Mode: StreamBufferDrop,
+							Size: 2048,
+						},
+					},
+				},
+			},
+			expected: []string{
+				"streams.s1.destinations=d1,d2",
+				"streams.s1.filters.events=execve,open",
+				"streams.s1.filters.policies=policy1",
+				"streams.s1.buffer.mode=drop",
+				"streams.s1.buffer.size=2048",
+			},
+		},
+		{
+			name: "multiple streams",
+			config: OutputConfig{
+				Streams: []StreamConfig{
+					{
+						Name:         "s1",
+						Destinations: []string{"d1"},
+						Filters: StreamFiltersConfig{
+							Events: []string{"execve"},
+						},
+					},
+					{
+						Name:         "s2",
+						Destinations: []string{"d2"},
+						Buffer: StreamBufferConfig{
+							Mode: StreamBufferBlock,
+							Size: 1024,
+						},
+					},
+				},
+			},
+			expected: []string{
+				"streams.s1.destinations=d1",
+				"streams.s1.filters.events=execve",
+				"streams.s2.destinations=d2",
+				"streams.s2.buffer.mode=block",
+				"streams.s2.buffer.size=1024",
+			},
+		},
+		{
+			name: "all components",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					StackAddresses: true,
+					ExecEnv:        true,
+					ExecHash:       "dev-inode",
+				},
+				Destinations: []DestinationsConfig{
+					{
+						Name:   "d1",
+						Type:   "file",
+						Format: "json",
+						Path:   "/tmp/output",
+					},
+				},
+				Streams: []StreamConfig{
+					{
+						Name:         "s1",
+						Destinations: []string{"d1"},
+						Filters: StreamFiltersConfig{
+							Events: []string{"execve"},
+						},
+						Buffer: StreamBufferConfig{
+							Mode: StreamBufferBlock,
+							Size: 1024,
+						},
+					},
+				},
+			},
+			expected: []string{
+				"option:stack-addresses",
+				"option:exec-env",
+				"option:exec-hash=dev-inode",
+				"destinations.d1.format=json",
+				"destinations.d1.type=file",
+				"destinations.d1.path=/tmp/output",
+				"streams.s1.destinations=d1",
+				"streams.s1.filters.events=execve",
+				"streams.s1.buffer.mode=block",
+				"streams.s1.buffer.size=1024",
+			},
+		},
+		{
+			name: "empty exec-hash should not generate flag",
+			config: OutputConfig{
+				Options: OutputOptsConfig{
+					ExecHash: "",
+				},
+			},
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := tt.config.flags()
+			if !slicesEqualIgnoreOrder(got, tt.expected) {
+				t.Errorf("flags() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}

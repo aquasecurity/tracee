@@ -47,6 +47,7 @@ func (s *Stream) publish(ctx context.Context, event *pb.Event, policyBitmap uint
 	s.strategyPush(ctx, event)
 }
 
+// blockPublish publishes an event to the stream, blocking if the channel is full.
 func (s *Stream) blockPublish(ctx context.Context, event *pb.Event) {
 	select {
 	case s.events <- event:
@@ -55,6 +56,7 @@ func (s *Stream) blockPublish(ctx context.Context, event *pb.Event) {
 	}
 }
 
+// dropPublish publishes an event to the stream, dropping the event if the channel is full.
 func (s *Stream) dropPublish(ctx context.Context, event *pb.Event) {
 	select {
 	case s.events <- event:
