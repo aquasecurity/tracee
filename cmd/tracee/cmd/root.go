@@ -207,7 +207,7 @@ func initCmd() error {
 			fmt.Sprintf("kernel.artifacts=%d", flags.GetDefaultPerfBufferSize()),
 			"pipeline=1000",
 		},
-		"[kernel.events|kernel.artifacts|...]\tSize for kernel and user buffers",
+		"[kernel.events|...]\t\tSize for kernel and user buffers",
 	)
 	err = viper.BindPFlag(flags.BuffersFlag, rootCmd.Flags().Lookup(flags.BuffersFlag))
 	if err != nil {
@@ -219,7 +219,7 @@ func initCmd() error {
 	rootCmd.Flags().StringArray(
 		flags.StoresFlag,
 		[]string{},
-		"\t\t\t\t\tStores configurations",
+		"[process|dns...]\t\t\tStores configurations",
 	)
 	err = viper.BindPFlag(flags.StoresFlag, rootCmd.Flags().Lookup(flags.StoresFlag))
 	if err != nil {
