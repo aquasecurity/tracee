@@ -1,28 +1,40 @@
 package flags
 
 import (
+	"fmt"
 	"strings"
 
-	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/pkg/config"
 )
 
-func capabilitiesHelp() string {
-	availCaps := strings.Join(capabilities.ListAvailCaps(), "\n  ")
+const (
+	CapabilitiesFlag = "capabilities"
+)
 
-	return `
-Opt out from dropping capabilities by default OR set specific ones.
-
-Possible options:
-  --capabilities bypass=[true|false]        | keep all capabilities during execution time.
-  --capabilities add=cap_kill,cap_syslog    | add specific capabilities to the "required" capabilities ring.
-  --capabilities drop=cap_chown             | drop specific capabilities from the "required" capabilities ring.
-
-Available capabilities:
-` + "  " + availCaps + "\n"
+// CapabilitiesConfig is the configuration for the capabilities.
+type CapabilitiesConfig struct {
+	Bypass bool     `mapstructure:"bypass"`
+	Add    []string `mapstructure:"add"`
+	Drop   []string `mapstructure:"drop"`
 }
 
+// flags returns the flags for the capabilities configuration.
+func (c *CapabilitiesConfig) flags() []string {
+	flags := make([]string, 0)
+
+	flags = append(flags, fmt.Sprintf("bypass=%v", c.Bypass))
+	for _, cap := range c.Add {
+		flags = append(flags, fmt.Sprintf("add=%s", cap))
+	}
+	for _, cap := range c.Drop {
+		flags = append(flags, fmt.Sprintf("drop=%s", cap))
+	}
+
+	return flags
+}
+
+// PrepareCapabilities prepares the capabilities configuration from a slice of strings.
 func PrepareCapabilities(capsSlice []string) (config.CapabilitiesConfig, error) {
 	capsConfig := config.CapabilitiesConfig{
 		BypassCaps: false, // do not bypass capabilities by default

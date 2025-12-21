@@ -23,7 +23,7 @@ func GetFlagsFromViper(key string) ([]string, error) {
 	switch key {
 	case ServerFlag:
 		flagger = &ServerConfig{}
-	case "capabilities":
+	case CapabilitiesFlag:
 		flagger = &CapabilitiesConfig{}
 	case LoggingFlag:
 		flagger = &LogConfig{}
@@ -68,30 +68,6 @@ func getConfigFlags(rawValue interface{}, flagger cliFlagger, key string) ([]str
 	default:
 		return nil, errfmt.Errorf("unrecognized type %T for key %s", v, key)
 	}
-}
-
-//
-// capabilities flag
-//
-
-type CapabilitiesConfig struct {
-	Bypass bool     `mapstructure:"bypass"`
-	Add    []string `mapstructure:"add"`
-	Drop   []string `mapstructure:"drop"`
-}
-
-func (c *CapabilitiesConfig) flags() []string {
-	flags := make([]string, 0)
-
-	flags = append(flags, fmt.Sprintf("bypass=%v", c.Bypass))
-	for _, cap := range c.Add {
-		flags = append(flags, fmt.Sprintf("add=%s", cap))
-	}
-	for _, cap := range c.Drop {
-		flags = append(flags, fmt.Sprintf("drop=%s", cap))
-	}
-
-	return flags
 }
 
 //
