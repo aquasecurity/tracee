@@ -96,10 +96,14 @@ func StartTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 	cfg.Capture = capture
 
 	defaultBufferPages := (4096 * 1024) / os.Getpagesize() // 4 MB of contiguous pages
-	cfg.EventsPerfBufferSize = defaultBufferPages
-	cfg.ArtifactsPerfBufferSize = defaultBufferPages
-	cfg.ControlPlanePerfBufferSize = defaultBufferPages
-	cfg.PipelineChannelSize = 1000
+	cfg.Buffers = config.BuffersConfig{
+		Kernel: config.KernelBuffersConfig{
+			Events:       defaultBufferPages,
+			Artifacts:    defaultBufferPages,
+			ControlPlane: defaultBufferPages,
+		},
+		Pipeline: 1000,
+	}
 
 	// No process tree in the integration tests
 	cfg.ProcTree = process.ProcTreeConfig{

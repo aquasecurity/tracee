@@ -69,7 +69,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *events.
 	// big lock
 	bLock := sync.RWMutex{}
 	// pipeline channels
-	out := make(chan *events.PipelineEvent, t.config.PipelineChannelSize)
+	out := make(chan *events.PipelineEvent, t.config.Buffers.Pipeline)
 	errc := make(chan error, 1)
 	// state machine for enrichment
 	enrichDone := make(map[uint64]bool)
