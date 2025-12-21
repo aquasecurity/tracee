@@ -55,7 +55,7 @@ A complete config file with all available options can be found [here](https://gi
 - **`--stores`**: Controls process tree and DNS cache options.
 
 
-  __NOTE__: You can view more in the [Process Tree section](../../advanced/data-sources/builtin/process-tree.md) and [DNS Cache section](../../advanced/data-sources/builtin/dns.md).
+  __NOTE__: You can view more in the [Stores flag documentation](../../flags/stores.1.md) for CLI options. For information about accessing stores in detectors, see the [DataStore API documentation](../../detectors/datastore-api.md).
 
   YAML:
   ```yaml
