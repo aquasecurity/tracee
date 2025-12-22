@@ -148,6 +148,8 @@ func (r Runner) runWithPrinter(ctx context.Context, t *tracee.Tracee) error {
 		}
 
 		go func() {
+			p.Preamble()
+
 			// blocks
 			p.FromStream(ctx, stream)
 		}()
