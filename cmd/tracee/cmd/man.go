@@ -60,8 +60,11 @@ func init() {
 		eventsCmd,
 		loggingCmd,
 		outputCmd,
+		policyCmd,
+		runtimeCmd,
 		scopeCmd,
 		serverCmd,
+		signaturesDirCmd,
 		storesCmd,
 	)
 }
@@ -194,6 +197,33 @@ var buffersCmd = &cobra.Command{
 	Short:   "Show manual page for the --buffers flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("buffers")
+	},
+}
+
+var policyCmd = &cobra.Command{
+	Use:     "policy",
+	Aliases: []string{"p"},
+	Short:   "Show manual page for the --policy flag",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runManForFlag("policy")
+	},
+}
+
+var runtimeCmd = &cobra.Command{
+	Use:     "runtime",
+	Aliases: []string{"r"},
+	Short:   "Show manual page for the --runtime flag",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runManForFlag("runtime")
+	},
+}
+
+var signaturesDirCmd = &cobra.Command{
+	Use:     "signatures-dir",
+	Aliases: []string{},
+	Short:   "Show manual page for the --signatures-dir flag",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runManForFlag("signatures-dir")
 	},
 }
 
