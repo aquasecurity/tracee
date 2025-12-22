@@ -44,6 +44,14 @@ Everything works together seamlessly:
 - Custom signatures integrate naturally with built-in events
 - Single configuration controls the entire system
 
+### 🔒 Clear Security Model
+Tracee provides transparency about its capabilities and limitations:
+
+- **Strong protection** against userspace adversaries through eBPF's tamper-resistant architecture
+- **Best-effort detection** of kernel-level threats with rootkit detection signatures
+- **Clear boundaries** documented to set proper expectations
+- See the [Security Model](security-model.md) for detailed information about Tracee's adversary model and security guarantees
+
 ---
 
 👈 Please use the side-navigation on the left in order to browse the different topics.

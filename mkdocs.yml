@@ -191,6 +191,7 @@ nav:
           - Detectors:
                 - Overview: docs/detectors/index.md
                 - Quick Start: docs/detectors/quickstart.md
+                - YAML Detectors: docs/detectors/yaml-detectors.md
                 - API Reference: docs/detectors/api-reference.md
                 - DataStore API: docs/detectors/datastore-api.md
           - Policies:
@@ -206,11 +207,11 @@ nav:
                 - Event Structure: docs/outputs/event-structure.md
                 - Output Options: docs/outputs/output-options.md
                 - Streams: docs/outputs/streams.md
-                - Ordering Events: docs/advanced/ordering-events.md
+                - Ordering Events: docs/outputs/ordering-events.md
                 - Logging: docs/outputs/logging.md
           - Forensics:
-                - Overview: docs/advanced/forensics.md
-          - Secure Tracing: docs/advanced/secure-tracing.md
+                - Overview: docs/forensics.md
+          - Security Model: docs/security-model.md
           - Troubleshooting: docs/troubleshooting.md
     - Traceectl: 
           - Overview: traceectl/index.md

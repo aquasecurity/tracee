@@ -89,6 +89,7 @@ produced_event:
 ```
 
 **Supported field types:**
+
 - `string` - Text data
 - `int32` - 32-bit signed integer
 - `int64` - 64-bit signed integer
@@ -170,6 +171,7 @@ auto_populate:
 ```
 
 **Fields:**
+
 - `threat`: Populates threat metadata from detector definition
 - `detected_from`: Adds detector ID and source event information
 - `process_ancestry`: Includes full process tree (performance impact)
@@ -480,6 +482,7 @@ tracee --log debug
 ```
 
 Common issues:
+
 - Invalid YAML syntax
 - Missing required fields
 - Invalid filter expressions
@@ -488,6 +491,7 @@ Common issues:
 ### No Events Generated
 
 Verify:
+
 1. Input event is being generated: `tracee --events event_name`
 2. Filters are correct: Test with broader filters
 3. Event is selected in policy: Check policy configuration
