@@ -6044,7 +6044,29 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="🚀 For Newcomers">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaml-detectors-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML Detectors Guide
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#go-detectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Go Detectors
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Go Detectors">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -6108,17 +6130,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick Example
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#documentation-at-a-glance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6142,10 +6153,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#code-examples" class="md-nav__link">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Code Examples
+        Examples
       
     </span>
   </a>
@@ -6153,10 +6164,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#api-definitions" class="md-nav__link">
+  <a href="#api-definitions-go-detectors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        API Definitions
+        API Definitions (Go Detectors)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaml-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML Schema
       
     </span>
   </a>
@@ -8194,7 +8216,29 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="🚀 For Newcomers">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaml-detectors-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML Detectors Guide
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#go-detectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Go Detectors
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Go Detectors">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -8258,17 +8302,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick Example
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#documentation-at-a-glance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8292,10 +8325,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#code-examples" class="md-nav__link">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Code Examples
+        Examples
       
     </span>
   </a>
@@ -8303,10 +8336,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#api-definitions" class="md-nav__link">
+  <a href="#api-definitions-go-detectors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        API Definitions
+        API Definitions (Go Detectors)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaml-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML Schema
       
     </span>
   </a>
@@ -8360,17 +8404,36 @@
 <h1 id="detector-documentation">Detector Documentation<a class="headerlink" href="#detector-documentation" title="Permanent link">&para;</a></h1>
 <p>Detectors are the modern way to write custom threat detection and event derivation logic in Tracee.</p>
 <h2 id="what-are-detectors">What are Detectors?<a class="headerlink" href="#what-are-detectors" title="Permanent link">&para;</a></h2>
-<p>Detectors analyze runtime events to identify security threats and derive higher-level events from raw eBPF data. They provide:</p>
+<p>Detectors analyze runtime events to identify security threats and derive higher-level events from raw eBPF data.</p>
+<p><strong>Two ways to create detectors:</strong></p>
+<ol>
+<li><strong>YAML Detectors</strong>: Declarative configuration - no coding required</li>
+<li><strong>Go Detectors</strong>: Full programmatic control with direct API access</li>
+</ol>
+<p>Both provide:</p>
 <ul>
-<li><strong>Type-safe APIs</strong>: Direct protobuf access with compile-time guarantees</li>
-<li><strong>Rich context</strong>: Access to process trees, containers, DNS cache, and more</li>
 <li><strong>Declarative filtering</strong>: Engine-level event filtering by data, scope, and version</li>
 <li><strong>Auto-enrichment</strong>: Automatic population of threat metadata and process ancestry</li>
+<li><strong>Rich context</strong>: Access to process trees, containers, and more</li>
 <li><strong>Built-in observability</strong>: Prometheus metrics and structured logging</li>
 </ul>
 <h2 id="documentation-guide">Documentation Guide<a class="headerlink" href="#documentation-guide" title="Permanent link">&para;</a></h2>
 <h3 id="for-newcomers">🚀 For Newcomers<a class="headerlink" href="#for-newcomers" title="Permanent link">&para;</a></h3>
 <p><strong>Start here if you're new to Tracee detectors:</strong></p>
+<h3 id="yaml-detectors-guide"><a href="yaml-detectors/">YAML Detectors Guide</a><a class="headerlink" href="#yaml-detectors-guide" title="Permanent link">&para;</a></h3>
+<p>Learn how to create detectors using declarative YAML configuration:</p>
+<ul>
+<li>Quick start with examples</li>
+<li>Complete schema reference</li>
+<li>Event filtering and data extraction</li>
+<li>Threat metadata and auto-population</li>
+<li>Deployment and best practices</li>
+<li>Troubleshooting guide</li>
+</ul>
+<p><strong>Start here</strong> if you want to create detectors without writing Go code.</p>
+<hr />
+<h3 id="go-detectors">Go Detectors<a class="headerlink" href="#go-detectors" title="Permanent link">&para;</a></h3>
+<p>Complete guide to writing Go detectors, from quick start to advanced features:</p>
 <h4 id="quick-start-guide"><a href="quickstart/">Quick Start Guide</a><a class="headerlink" href="#quick-start-guide" title="Permanent link">&para;</a></h4>
 <p><strong>Get your first detector running in 30 minutes</strong></p>
 <p>Step-by-step tutorial to build a working detector:</p>
@@ -8408,64 +8471,6 @@
 </ul>
 <p>Perfect for: Detectors that need to query system state and context</p>
 <hr />
-<h2 id="quick-example">Quick Example<a class="headerlink" href="#quick-example" title="Permanent link">&para;</a></h2>
-<p>Here's a minimal detector to give you a taste:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">package</span><span class="w"> </span><span class="nx">detectors</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
-<span class="w">    </span><span class="s">&quot;context&quot;</span>
-<span class="w">    </span><span class="s">&quot;github.com/aquasecurity/tracee/api/v1beta1&quot;</span>
-<span class="w">    </span><span class="s">&quot;github.com/aquasecurity/tracee/api/v1beta1/detection&quot;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span><span class="w"> </span><span class="nx">init</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">register</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">SensitiveFileAccess</span><span class="p">{})</span><span class="w">  </span><span class="c1">// Auto-register</span>
-<span class="p">}</span>
-
-<span class="kd">type</span><span class="w"> </span><span class="nx">SensitiveFileAccess</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">logger</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">Logger</span>
-<span class="p">}</span>
-
-<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">d</span><span class="w"> </span><span class="o">*</span><span class="nx">SensitiveFileAccess</span><span class="p">)</span><span class="w"> </span><span class="nx">GetDefinition</span><span class="p">()</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorDefinition</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorDefinition</span><span class="p">{</span>
-<span class="w">        </span><span class="nx">ID</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TRC-001&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">Requirements</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorRequirements</span><span class="p">{</span>
-<span class="w">            </span><span class="nx">Events</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">EventRequirement</span><span class="p">{</span>
-<span class="w">                </span><span class="p">{</span>
-<span class="w">                    </span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;security_file_open&quot;</span><span class="p">,</span>
-<span class="w">                    </span><span class="nx">DataFilters</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;pathname=/etc/shadow&quot;</span><span class="p">},</span><span class="w">  </span><span class="c1">// Engine filters</span>
-<span class="w">                </span><span class="p">},</span>
-<span class="w">            </span><span class="p">},</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nx">ProducedEvent</span><span class="p">:</span><span class="w"> </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">EventDefinition</span><span class="p">{</span>
-<span class="w">            </span><span class="nx">Name</span><span class="p">:</span><span class="w">    </span><span class="s">&quot;sensitive_file_access&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nx">Version</span><span class="p">:</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">Version</span><span class="p">{</span><span class="nx">Major</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">},</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nx">ThreatMetadata</span><span class="p">:</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">Threat</span><span class="p">{</span>
-<span class="w">            </span><span class="nx">Severity</span><span class="p">:</span><span class="w"> </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">Severity_HIGH</span><span class="p">,</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nx">AutoPopulate</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">AutoPopulateFields</span><span class="p">{</span>
-<span class="w">            </span><span class="nx">Threat</span><span class="p">:</span><span class="w">          </span><span class="kc">true</span><span class="p">,</span><span class="w">  </span><span class="c1">// Auto-copy threat metadata</span>
-<span class="w">            </span><span class="nx">ProcessAncestry</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">  </span><span class="c1">// Auto-fetch process tree</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="p">}</span>
-
-<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">d</span><span class="w"> </span><span class="o">*</span><span class="nx">SensitiveFileAccess</span><span class="p">)</span><span class="w"> </span><span class="nx">Init</span><span class="p">(</span><span class="nx">params</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorParams</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">d</span><span class="p">.</span><span class="nx">logger</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">params</span><span class="p">.</span><span class="nx">Logger</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span>
-<span class="p">}</span>
-
-<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">d</span><span class="w"> </span><span class="o">*</span><span class="nx">SensitiveFileAccess</span><span class="p">)</span><span class="w"> </span><span class="nx">OnEvent</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">event</span><span class="w"> </span><span class="o">*</span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">Event</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorOutput</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">pathname</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">GetData</span><span class="p">[</span><span class="kt">string</span><span class="p">](</span><span class="nx">event</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;pathname&quot;</span><span class="p">)</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorOutput</span><span class="p">{{</span>
-<span class="w">        </span><span class="nx">Data</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">EventValue</span><span class="p">{</span>
-<span class="w">            </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewStringValue</span><span class="p">(</span><span class="s">&quot;file&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">pathname</span><span class="p">),</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">    </span><span class="p">}},</span><span class="w"> </span><span class="kc">nil</span>
-<span class="p">}</span>
-</code></pre></div>
-<p><strong>See the <a href="quickstart/">Quick Start Guide</a> for a complete walkthrough.</strong></p>
 <h2 id="documentation-at-a-glance">Documentation at a Glance<a class="headerlink" href="#documentation-at-a-glance" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -8477,36 +8482,49 @@
 </thead>
 <tbody>
 <tr>
+<td><a href="yaml-detectors/">YAML Detectors</a></td>
+<td>Declarative detector creation without code</td>
+<td>Security analysts, operators</td>
+</tr>
+<tr>
 <td><a href="quickstart/">Quick Start</a></td>
-<td>Hands-on tutorial, first detector</td>
-<td>Newcomers</td>
+<td>Hands-on tutorial, first Go detector</td>
+<td>Go developers</td>
 </tr>
 <tr>
 <td><a href="api-reference/">API Reference</a></td>
 <td>Complete detector API + migration + troubleshooting</td>
-<td>All developers</td>
+<td>Go developers</td>
 </tr>
 <tr>
 <td><a href="datastore-api/">DataStore API</a></td>
 <td>Complete datastore API docs</td>
-<td>Developers using datastores</td>
+<td>Advanced Go developers</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Total reading time to first detector</strong>: ~30 minutes (Quick Start only)</p>
+<p><strong>Total reading time to first detector</strong>:
+- <strong>YAML</strong>: ~15 minutes
+- <strong>Go</strong>: ~30 minutes (Quick Start only)</p>
 <h2 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h2>
-<h3 id="code-examples">Code Examples<a class="headerlink" href="#code-examples" title="Permanent link">&para;</a></h3>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Quick Start Example</strong>: <a href="quickstart/">Quick Start Guide</a> - complete annotated walkthrough</li>
-<li><strong>Comprehensive Example</strong>: <code>detectors/example_detector.go</code> - demonstrates all detector API features including DataStore usage, filtering patterns, and enrichment (build with <code>make tracee-with-examples</code>)</li>
-<li><strong>Real Detectors</strong>: Browse <code>detectors/</code> directory for production implementations</li>
+<li><strong>YAML Examples</strong>: <code>examples/detectors/yaml/</code> directory - ready-to-use YAML detector examples</li>
+<li><strong>Go Quick Start</strong>: <a href="quickstart/">Quick Start Guide</a> - complete annotated walkthrough</li>
+<li><strong>Go Comprehensive Example</strong>: <code>detectors/example_detector.go</code> - demonstrates all detector API features including DataStore usage, filtering patterns, and enrichment (build with <code>make tracee-with-examples</code>)</li>
+<li><strong>Production Detectors</strong>: Browse <code>detectors/</code> directory for real implementations</li>
 <li><strong>Migration Examples</strong>: <a href="api-reference/#migration-from-signatures">API Reference</a> - signature → detector</li>
 </ul>
-<h3 id="api-definitions">API Definitions<a class="headerlink" href="#api-definitions" title="Permanent link">&para;</a></h3>
+<h3 id="api-definitions-go-detectors">API Definitions (Go Detectors)<a class="headerlink" href="#api-definitions-go-detectors" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Detector Interfaces</strong>: <code>api/v1beta1/detection/detector.go</code></li>
 <li><strong>DataStore Interfaces</strong>: <code>api/v1beta1/datastores/interfaces.go</code></li>
 <li><strong>Event Protobuf</strong>: <code>api/v1beta1/event.proto</code></li>
+</ul>
+<h3 id="yaml-schema">YAML Schema<a class="headerlink" href="#yaml-schema" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Schema Reference</strong>: See <a href="yaml-detectors/">YAML Detectors Guide</a> for complete schema</li>
+<li><strong>Examples</strong>: <code>examples/detectors/yaml/</code> directory</li>
 </ul>
 <h3 id="migration-from-signatures">Migration from Signatures<a class="headerlink" href="#migration-from-signatures" title="Permanent link">&para;</a></h3>
 <p>Existing signatures can be migrated to the new detector API. See <a href="api-reference/#migration-from-signatures">Migration Guide</a> for:</p>
@@ -8524,7 +8542,9 @@
 <li><strong>Documentation</strong>: https://aquasecurity.github.io/tracee/</li>
 </ul>
 <hr />
-<p><strong>Ready to start?</strong> Jump to the <a href="quickstart/">Quick Start Guide</a> for a hands-on tutorial, or dive into the <a href="api-reference/">API Reference</a> for complete documentation.</p>
+<p><strong>Ready to start?</strong>
+- <strong>YAML detectors</strong>: Jump to the <a href="yaml-detectors/">YAML Detectors Guide</a>
+- <strong>Go detectors</strong>: Jump to the <a href="quickstart/">Quick Start Guide</a> or dive into the <a href="api-reference/">API Reference</a></p>
 
 
 
