@@ -9,6 +9,18 @@ by a signature, Tracee generates a corresponding "security event." This process
 enables Tracee to actively monitor and report potential security concerns
 arising from observed system interactions.
 
+## Security Model and Detection Boundaries
+
+Tracee's detection capabilities vary significantly depending on the adversary:
+
+- **Userspace Adversaries**: Tracee provides strong detection capabilities through eBPF's tamper-resistant architecture. Even root-privileged adversaries in userspace cannot bypass Tracee's monitoring.
+
+- **Kernel-Level Adversaries**: Tracee provides best-effort detection using signature-based approaches. Rootkit detection signatures (such as syscall table hooking, hidden kernel modules, and proc filesystem hooking) may detect known techniques, but cannot guarantee detection against sophisticated kernel-level threats.
+
+**Important**: If the kernel is compromised before Tracee starts, or if an adversary exploits kernel zero-day vulnerabilities, Tracee's detection capabilities cannot be guaranteed.
+
+For a comprehensive understanding of Tracee's security boundaries, threat model, and limitations, please see the [Security Model](../../security-model.md) documentation.
+
 ## Functionality and Scope of Signatures
 
 The signatures documented herein focus on key system operations. For instance,
