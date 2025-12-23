@@ -37,6 +37,7 @@ This event monitors the function tracing infrastructure to detect when functions
 
 **flags** (*string*)
 : Ftrace flags indicating hook behavior:
+
 - **R**: Registers are passed to the callback
 - **I**: Callback can change the RIP register value
 - **D**: Direct call to the function

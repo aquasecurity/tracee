@@ -3,6 +3,7 @@
 Rules are part of the Tracee Policy, `rules` let you define which events to trace.
 
 `rules` have 2 sections: 
+
 - events: let you define which events you want to trace.
 - filters: enable you to refine the policy's scope.
 

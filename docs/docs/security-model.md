@@ -13,11 +13,13 @@ Tracee's security model is built on one fundamental assumption:
 **The kernel is trusted when Tracee starts.**
 
 This means:
+
 - The kernel has not been compromised before Tracee loads its eBPF programs
 - No kernel rootkits or malicious kernel modules are already present
 - The kernel's integrity is intact at Tracee startup time
 
 If this assumption is violated (i.e., the kernel is already compromised), Tracee's detection capabilities cannot be guaranteed. A compromised kernel has complete control over the system and can potentially:
+
 - Interfere with eBPF program execution
 - Hide events from Tracee
 - Manipulate Tracee's data structures
@@ -35,19 +37,21 @@ Tracee's security guarantees differ significantly depending on whether the adver
 
 Tracee provides strong security boundaries against userspace adversaries through eBPF's architectural guarantees:
 
-- **Tamper-Resistant Monitoring**: eBPF programs run in the kernel with their own memory protection. While Tracee's eBPF programs are active and attached:
-  - Userspace processes cannot bypass the monitoring or evade the attached hooks through normal system operations
-  - The eBPF bytecode itself cannot be modified once loaded and verified
-  - Events are captured at the kernel level before userspace can manipulate them
-  - **However**: Root users with appropriate capabilities (CAP_BPF, CAP_SYS_ADMIN) can administratively disable the monitoring by detaching eBPF programs, killing the Tracee process, or accessing eBPF maps. Tracee's effectiveness assumes the monitoring infrastructure remains intact and that Tracee itself is protected by proper access controls
+**Tamper-Resistant Monitoring**: eBPF programs run in the kernel with their own memory protection. While Tracee's eBPF programs are active and attached:
 
-- **Complete Visibility**: Tracee can observe all system calls, LSM hooks, and kernel events from userspace processes, providing comprehensive monitoring of:
-  - Process execution and lifecycle
-  - File system operations
-  - Network activity
-  - Container escape attempts
-  - Privilege escalation attempts
-  - Suspicious behaviors and exploitation techniques
+- Userspace processes cannot bypass the monitoring or evade the attached hooks through normal system operations
+- The eBPF bytecode itself cannot be modified once loaded and verified
+- Events are captured at the kernel level before userspace can manipulate them
+- **However**: Root users with appropriate capabilities (CAP_BPF, CAP_SYS_ADMIN) can administratively disable the monitoring by detaching eBPF programs, killing the Tracee process, or accessing eBPF maps. Tracee's effectiveness assumes the monitoring infrastructure remains intact and that Tracee itself is protected by proper access controls
+
+**Complete Visibility**: Tracee can observe all system calls, LSM hooks, and kernel events from userspace processes, providing comprehensive monitoring of:
+
+- Process execution and lifecycle
+- File system operations
+- Network activity
+- Container escape attempts
+- Privilege escalation attempts
+- Suspicious behaviors and exploitation techniques
 
 **Security Guarantee:** Userspace adversaries with root privileges cannot evade Tracee's monitoring or bypass its detection mechanisms through userspace operations alone (assuming Tracee itself remains protected and operational).
 
@@ -59,21 +63,23 @@ Tracee provides strong security boundaries against userspace adversaries through
 
 Against kernel-level adversaries, Tracee provides **best-effort detection** but cannot guarantee protection:
 
-- **Rootkits Loaded Before Tracee**: Cannot be reliably detected. If a rootkit compromises the kernel before Tracee starts, it may already have mechanisms to hide from detection or interfere with Tracee's operation.
+**Rootkits Loaded Before Tracee**: Cannot be reliably detected. If a rootkit compromises the kernel before Tracee starts, it may already have mechanisms to hide from detection or interfere with Tracee's operation.
 
-- **Rootkits Loaded After Tracee**: May be detected using known signatures and heuristics. Tracee includes detection capabilities for:
-  - System call table hooking
-  - Kernel module loading
-  - Hidden kernel modules
-  - Ftrace hooks
-  - /proc filesystem hooks
-  - Suspicious kernel modifications
+**Rootkits Loaded After Tracee**: May be detected using known signatures and heuristics. Tracee includes detection capabilities for:
 
-- **Kernel Zero-Day Exploits**: Cannot be prevented or reliably detected. An attacker exploiting unknown kernel vulnerabilities can potentially:
-  - Bypass Tracee's monitoring
-  - Disable eBPF programs
-  - Gain complete system control
-  - Hide their activities from detection
+- System call table hooking
+- Kernel module loading
+- Hidden kernel modules
+- Ftrace hooks
+- /proc filesystem hooks
+- Suspicious kernel modifications
+
+**Kernel Zero-Day Exploits**: Cannot be prevented or reliably detected. An attacker exploiting unknown kernel vulnerabilities can potentially:
+
+- Bypass Tracee's monitoring
+- Disable eBPF programs
+- Gain complete system control
+- Hide their activities from detection
 
 **Limitations:**
 
@@ -134,9 +140,11 @@ For critical security monitoring, you should cross-reference regular syscall eve
 **Example: Process Execution Monitoring**
 
 Instead of relying solely on the `execve` syscall event, also monitor:
+
 - `security_bprm_check` - LSM hook that validates executables before execution
 
 By comparing both events, you can detect potential tampering:
+
 - If the `execve` event shows `/bin/ls`
 - But `security_bprm_check` shows `/bin/bash`
 - This indicates a TOCTOU attack attempt
@@ -144,6 +152,7 @@ By comparing both events, you can detect potential tampering:
 #### When to Use LSM Events
 
 Use LSM-based events for:
+
 - **Security-critical monitoring** where argument integrity is essential
 - **Detecting evasion techniques** that exploit TOCTOU vulnerabilities
 - **Compliance requirements** that demand tamper-resistant auditing
@@ -162,6 +171,7 @@ Use LSM-based events for:
 **Attack**: An adversary with root privileges inside a container attempts to escape using a known technique (e.g., cgroup release_agent modification).
 
 **Tracee's Response**:
+
 - ✅ Detects the suspicious cgroup modification
 - ✅ Triggers `cgroup_release_agent_modification` signature
 - ✅ Provides full context: container ID, process tree, file modifications
@@ -174,6 +184,7 @@ Use LSM-based events for:
 **Attack**: A kernel rootkit is installed on the system before Tracee starts. The rootkit hooks system calls to hide malicious processes.
 
 **Tracee's Response**:
+
 - ❌ Cannot guarantee detection
 - ⚠️ May detect some symptoms if rootkit is imperfect
 - ⚠️ Initial system scan may identify some inconsistencies
@@ -185,6 +196,7 @@ Use LSM-based events for:
 **Attack**: An adversary attempts to load a kernel module containing a rootkit after Tracee is running.
 
 **Tracee's Response**:
+
 - ✅ Detects kernel module loading event
 - ✅ Triggers `kernel_module_loading` signature
 - ✅ May detect system call table hooking via `hooked_syscall` event
@@ -198,6 +210,7 @@ Use LSM-based events for:
 **Attack**: An adversary exploits a userspace vulnerability to escalate privileges (e.g., dirty pipe, container escape via exposed socket).
 
 **Tracee's Response**:
+
 - ✅ Detects suspicious capability usage
 - ✅ Identifies unusual process behaviors
 - ✅ Monitors credential changes
@@ -210,6 +223,7 @@ Use LSM-based events for:
 **Attack**: An adversary with root privileges attempts to evade Tracee's monitoring while performing malicious activities, without administratively disabling Tracee first.
 
 **Tracee's Response**:
+
 - ✅ While eBPF programs are attached and active, userspace operations cannot bypass the monitoring hooks
 - ✅ System calls, file operations, network activity, and process events are captured at the kernel level
 - ✅ Attempts to manipulate data after capture don't affect what Tracee already observed

@@ -62,6 +62,7 @@ The event hooks into the inner implementation of `read` and other buffer read sy
 ## LIMITATIONS
 
 This event does not capture:
+
 - Memory-mapped file access
 - Direct I/O operations that bypass VFS
 - Other read methods like `vfs_readv` (vectorized reads)

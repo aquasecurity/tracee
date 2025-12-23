@@ -218,6 +218,7 @@ When authoring a Go template, the data source is Tracee's `v1beta1.Event` protob
 - `.threat` - Threat information for signature detections
 
 **Note:** For signature events, additional fields are available:
+
 - `.threat.name` - Threat/signature name
 - `.threat.description` - Threat description
 - `.threat.properties.signatureID` - Signature ID

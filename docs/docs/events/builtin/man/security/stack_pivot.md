@@ -62,6 +62,7 @@ This event detects stack pivoting by checking the stack pointer at selected sysc
 The kernel manages the stack for each process's main thread, but additional threads must create and manage their own stacks. Since the kernel has no direct notion of thread stacks, Tracee tracks thread stacks by storing the memory region pointed to by the stack pointer when new threads are created.
 
 Limitations:
+
 - Threads created before Tracee starts are not tracked
 - For untracked threads, anonymous memory regions are ignored to avoid false positives
 - This may result in false negatives for legitimate thread stacks created before Tracee started

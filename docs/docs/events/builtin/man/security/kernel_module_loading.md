@@ -65,12 +65,14 @@ The signature monitors for:
 ## LEGITIMATE VS. MALICIOUS LOADING
 
 **Legitimate scenarios**:
+
 - Hardware driver installation
 - System feature activation (e.g., VPN, virtualization)
 - Administrative tools requiring kernel access
 - Security software components
 
 **Suspicious indicators**:
+
 - Loading from unusual locations
 - Unsigned or unknown modules
 - Loading during suspicious timeframes

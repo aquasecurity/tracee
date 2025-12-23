@@ -16,6 +16,7 @@ For broad syscall analysis, Tracee provides comprehensive monitoring events:
 - **sys_exit**: Captures all system call exits using raw tracepoints
 
 These events are ideal for:
+
 - Security auditing across all syscalls
 - System-wide syscall pattern analysis
 - Performance monitoring of syscall frequency

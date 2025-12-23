@@ -56,6 +56,7 @@ ERRO permission denied loading eBPF program
 **Problem**: Unsupported kernel version errors
 
 **Solution**: 
+
 - Check supported kernels: [Prerequisites](install/prerequisites.md#kernel-version)
 - Tracee requires kernel 5.4 or newer (4.18 for RHEL 8)
 - Consider upgrading to a supported kernel version

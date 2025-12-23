@@ -76,12 +76,14 @@ Common ICMP message types captured:
 Each ICMP type has specific codes providing additional context:
 
 **Destination Unreachable (Type 3)**:
+
 - Code 0: Network unreachable
 - Code 1: Host unreachable
 - Code 2: Protocol unreachable
 - Code 3: Port unreachable
 
 **Time Exceeded (Type 11)**:
+
 - Code 0: TTL exceeded in transit
 - Code 1: Fragment reassembly time exceeded
 

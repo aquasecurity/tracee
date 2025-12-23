@@ -33,11 +33,17 @@ The callback offset inside the function
 The owner of the callback (kernel module name if applicable)
 .TP
 \f[B]flags\f[R] (\f[I]string\f[R])
-Ftrace flags indicating hook behavior: \- \f[B]R\f[R]: Registers are
-passed to the callback \- \f[B]I\f[R]: Callback can change the RIP
-register value \- \f[B]D\f[R]: Direct call to the function \-
-\f[B]O\f[R]: Callsite\-specific operations \- \f[B]M\f[R]: Function has
-I or D flags
+Ftrace flags indicating hook behavior:
+.IP \[bu] 2
+\f[B]R\f[R]: Registers are passed to the callback
+.IP \[bu] 2
+\f[B]I\f[R]: Callback can change the RIP register value
+.IP \[bu] 2
+\f[B]D\f[R]: Direct call to the function
+.IP \[bu] 2
+\f[B]O\f[R]: Callsite\-specific operations
+.IP \[bu] 2
+\f[B]M\f[R]: Function has I or D flags
 .TP
 \f[B]count\f[R] (\f[I]integer\f[R])
 The number of callbacks registered with the symbol

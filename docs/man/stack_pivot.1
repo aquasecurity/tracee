@@ -76,10 +76,15 @@ Since the kernel has no direct notion of thread stacks, Tracee tracks
 thread stacks by storing the memory region pointed to by the stack
 pointer when new threads are created.
 .PP
-Limitations: \- Threads created before Tracee starts are not tracked \-
+Limitations:
+.IP \[bu] 2
+Threads created before Tracee starts are not tracked
+.IP \[bu] 2
 For untracked threads, anonymous memory regions are ignored to avoid
-false positives \- This may result in false negatives for legitimate
-thread stacks created before Tracee started
+false positives
+.IP \[bu] 2
+This may result in false negatives for legitimate thread stacks created
+before Tracee started
 .SS EXAMPLE USAGE
 Monitor specific syscalls for stack pivoting:
 .IP

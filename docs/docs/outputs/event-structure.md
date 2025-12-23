@@ -247,6 +247,7 @@ The `.data` array contains `EventValue` messages with typed union fields:
 ## Protobuf Definition
 
 For the complete and authoritative event structure, see:
+
 - [event.proto](https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event.proto) - Main event structure
 - [event_data.proto](https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event_data.proto) - EventValue types
 - [workload.proto](https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/workload.proto) - Workload/process context

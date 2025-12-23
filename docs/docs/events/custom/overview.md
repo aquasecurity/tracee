@@ -9,6 +9,7 @@ Tracee comes with many built-in events, but you can extend its capabilities by c
 **📖 See the [Detector Documentation](../../detectors/index.md) for complete guide and examples.**
 
 Key benefits:
+
 - Type-safe protobuf access
 - Rich data extraction helpers
 - System state access (process trees, containers, DNS)
