@@ -9797,6 +9797,21 @@
 <span class="w">    </span><span class="nx">GetMetrics</span><span class="p">(</span><span class="nx">name</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="nx">DataStoreMetrics</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span>
 <span class="p">}</span>
 </code></pre></div>
+<p><strong>Nil-Safety Guarantee:</strong></p>
+<p>Accessor methods (<code>Processes()</code>, <code>Containers()</code>, etc.) <strong>never return nil</strong>. If a store is not registered or unavailable, they return a null object that:
+- Implements the store interface
+- Returns <code>ErrStoreUnhealthy</code> for all operations
+- Has health status set to <code>HealthUnhealthy</code></p>
+<p>This eliminates nil checks and allows safe method chaining:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// Always safe - no nil check needed</span>
+<span class="nx">proc</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">datastores</span><span class="p">.</span><span class="nx">Processes</span><span class="p">().</span><span class="nx">GetProcess</span><span class="p">(</span><span class="nx">entityID</span><span class="p">)</span>
+<span class="k">if</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">Is</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="nx">datastores</span><span class="p">.</span><span class="nx">ErrStoreUnhealthy</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Store not available</span>
+<span class="p">}</span>
+<span class="k">if</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">Is</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="nx">datastores</span><span class="p">.</span><span class="nx">ErrNotFound</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Process not found</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="usage-examples">Usage Examples<a class="headerlink" href="#usage-examples" title="Permanent link">&para;</a></h3>
 <p><strong>Basic access</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// Direct access to core stores</span>
