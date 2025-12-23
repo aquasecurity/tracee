@@ -72,14 +72,27 @@ are loaded
 \f[B]Forensic analysis\f[R]: Analyze kernel\-level persistence
 techniques
 .SS LEGITIMATE VS. MALICIOUS LOADING
-\f[B]Legitimate scenarios\f[R]: \- Hardware driver installation \-
-System feature activation (e.g., VPN, virtualization) \- Administrative
-tools requiring kernel access \- Security software components
+\f[B]Legitimate scenarios\f[R]:
+.IP \[bu] 2
+Hardware driver installation
+.IP \[bu] 2
+System feature activation (e.g., VPN, virtualization)
+.IP \[bu] 2
+Administrative tools requiring kernel access
+.IP \[bu] 2
+Security software components
 .PP
-\f[B]Suspicious indicators\f[R]: \- Loading from unusual locations \-
-Unsigned or unknown modules \- Loading during suspicious timeframes \-
-Modules with obfuscated names \- Concurrent with other suspicious
-activities
+\f[B]Suspicious indicators\f[R]:
+.IP \[bu] 2
+Loading from unusual locations
+.IP \[bu] 2
+Unsigned or unknown modules
+.IP \[bu] 2
+Loading during suspicious timeframes
+.IP \[bu] 2
+Modules with obfuscated names
+.IP \[bu] 2
+Concurrent with other suspicious activities
 .SS DETECTION CHALLENGES
 .IP \[bu] 2
 \f[B]False positives\f[R]: Legitimate administrative activities

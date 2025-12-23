@@ -61,9 +61,13 @@ resolution
 \f[B]Alternative methods\f[R]: Note that files can be read through other
 methods like \f[CR]vfs_readv\f[R], memory mapping, and direct I/O
 .SS LIMITATIONS
-This event does not capture: \- Memory\-mapped file access \- Direct I/O
-operations that bypass VFS \- Other read methods like
-\f[CR]vfs_readv\f[R] (vectorized reads)
+This event does not capture:
+.IP \[bu] 2
+Memory\-mapped file access
+.IP \[bu] 2
+Direct I/O operations that bypass VFS
+.IP \[bu] 2
+Other read methods like \f[CR]vfs_readv\f[R] (vectorized reads)
 .SS RELATED EVENTS
 .IP \[bu] 2
 \f[B]vfs_write\f[R]: Virtual filesystem write operations

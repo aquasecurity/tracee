@@ -100,6 +100,7 @@ Perfect for: Detectors that need to query system state and context
 | [DataStore API](datastore-api.md) | Complete datastore API docs | Advanced Go developers |
 
 **Total reading time to first detector**:
+
 - **YAML**: ~15 minutes
 - **Go**: ~30 minutes (Quick Start only)
 

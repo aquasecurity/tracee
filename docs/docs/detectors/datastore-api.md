@@ -166,6 +166,7 @@ type Registry interface {
 **Nil-Safety Guarantee:**
 
 Accessor methods (`Processes()`, `Containers()`, etc.) **never return nil**. If a store is not registered or unavailable, they return a null object that:
+
 - Implements the store interface
 - Returns `ErrStoreUnhealthy` for all operations
 - Has health status set to `HealthUnhealthy`
