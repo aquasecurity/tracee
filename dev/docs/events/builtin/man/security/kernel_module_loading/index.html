@@ -8380,17 +8380,21 @@
 </li>
 </ul>
 <h2 id="legitimate-vs-malicious-loading">LEGITIMATE VS. MALICIOUS LOADING<a class="headerlink" href="#legitimate-vs-malicious-loading" title="Permanent link">&para;</a></h2>
-<p><strong>Legitimate scenarios</strong>:
-- Hardware driver installation
-- System feature activation (e.g., VPN, virtualization)
-- Administrative tools requiring kernel access
-- Security software components</p>
-<p><strong>Suspicious indicators</strong>:
-- Loading from unusual locations
-- Unsigned or unknown modules
-- Loading during suspicious timeframes
-- Modules with obfuscated names
-- Concurrent with other suspicious activities</p>
+<p><strong>Legitimate scenarios</strong>:</p>
+<ul>
+<li>Hardware driver installation</li>
+<li>System feature activation (e.g., VPN, virtualization)</li>
+<li>Administrative tools requiring kernel access</li>
+<li>Security software components</li>
+</ul>
+<p><strong>Suspicious indicators</strong>:</p>
+<ul>
+<li>Loading from unusual locations</li>
+<li>Unsigned or unknown modules</li>
+<li>Loading during suspicious timeframes</li>
+<li>Modules with obfuscated names</li>
+<li>Concurrent with other suspicious activities</li>
+</ul>
 <h2 id="detection-challenges">DETECTION CHALLENGES<a class="headerlink" href="#detection-challenges" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>False positives</strong>: Legitimate administrative activities</li>

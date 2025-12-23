@@ -8325,10 +8325,12 @@
 </ul>
 <h2 id="implementation-notes">IMPLEMENTATION NOTES<a class="headerlink" href="#implementation-notes" title="Permanent link">&para;</a></h2>
 <p>The kernel manages the stack for each process's main thread, but additional threads must create and manage their own stacks. Since the kernel has no direct notion of thread stacks, Tracee tracks thread stacks by storing the memory region pointed to by the stack pointer when new threads are created.</p>
-<p>Limitations:
-- Threads created before Tracee starts are not tracked
-- For untracked threads, anonymous memory regions are ignored to avoid false positives
-- This may result in false negatives for legitimate thread stacks created before Tracee started</p>
+<p>Limitations:</p>
+<ul>
+<li>Threads created before Tracee starts are not tracked</li>
+<li>For untracked threads, anonymous memory regions are ignored to avoid false positives</li>
+<li>This may result in false negatives for legitimate thread stacks created before Tracee started</li>
+</ul>
 <h2 id="example-usage">EXAMPLE USAGE<a class="headerlink" href="#example-usage" title="Permanent link">&para;</a></h2>
 <p>Monitor specific syscalls for stack pivoting:
 <div class="highlight"><pre><span></span><code>tracee --events stack_pivot.args.syscall=open,openat

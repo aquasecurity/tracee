@@ -8650,10 +8650,12 @@
 <li><code>.packet_metadata</code> - Packet direction (ingress/egress)</li>
 </ul>
 <h2 id="protobuf-definition">Protobuf Definition<a class="headerlink" href="#protobuf-definition" title="Permanent link">&para;</a></h2>
-<p>For the complete and authoritative event structure, see:
-- <a href="https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event.proto">event.proto</a> - Main event structure
-- <a href="https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event_data.proto">event_data.proto</a> - EventValue types
-- <a href="https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/workload.proto">workload.proto</a> - Workload/process context</p>
+<p>For the complete and authoritative event structure, see:</p>
+<ul>
+<li><a href="https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event.proto">event.proto</a> - Main event structure</li>
+<li><a href="https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event_data.proto">event_data.proto</a> - EventValue types</li>
+<li><a href="https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/workload.proto">workload.proto</a> - Workload/process context</li>
+</ul>
 <h2 id="backwards-compatibility">Backwards Compatibility<a class="headerlink" href="#backwards-compatibility" title="Permanent link">&para;</a></h2>
 <p><strong>Signature Development:</strong> Signatures still work with the internal <code>trace.Event</code> structure via <code>protocol.Event.Payload</code>. No changes are needed for signature code.</p>
 <p><strong>Output Only:</strong> The v1beta1.Event structure applies only to output formats (JSON, templates, gRPC, webhooks).</p>

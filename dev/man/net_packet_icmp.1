@@ -76,11 +76,20 @@ unreachable
 .SS ICMP CODES
 Each ICMP type has specific codes providing additional context:
 .PP
-\f[B]Destination Unreachable (Type 3)\f[R]: \- Code 0: Network
-unreachable \- Code 1: Host unreachable \- Code 2: Protocol unreachable
-\- Code 3: Port unreachable
+\f[B]Destination Unreachable (Type 3)\f[R]:
+.IP \[bu] 2
+Code 0: Network unreachable
+.IP \[bu] 2
+Code 1: Host unreachable
+.IP \[bu] 2
+Code 2: Protocol unreachable
+.IP \[bu] 2
+Code 3: Port unreachable
 .PP
-\f[B]Time Exceeded (Type 11)\f[R]: \- Code 0: TTL exceeded in transit \-
+\f[B]Time Exceeded (Type 11)\f[R]:
+.IP \[bu] 2
+Code 0: TTL exceeded in transit
+.IP \[bu] 2
 Code 1: Fragment reassembly time exceeded
 .SS SECURITY CONSIDERATIONS
 Monitor for malicious ICMP usage:

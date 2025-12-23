@@ -8455,11 +8455,13 @@ Be aware that the url parameters has the priority on the format.</p>
   - <code>.workload.process.executable.path</code> - Executable path
 - <code>.data</code> - Array of event-specific data fields (each with <code>.name</code> and typed <code>.value</code>)
 - <code>.threat</code> - Threat information for signature detections</p>
-<p><strong>Note:</strong> For signature events, additional fields are available:
-- <code>.threat.name</code> - Threat/signature name
-- <code>.threat.description</code> - Threat description
-- <code>.threat.properties.signatureID</code> - Signature ID
-- <code>.detected_from</code> - The underlying event that triggered the signature</p>
+<p><strong>Note:</strong> For signature events, additional fields are available:</p>
+<ul>
+<li><code>.threat.name</code> - Threat/signature name</li>
+<li><code>.threat.description</code> - Threat description</li>
+<li><code>.threat.properties.signatureID</code> - Signature ID</li>
+<li><code>.detected_from</code> - The underlying event that triggered the signature</li>
+</ul>
 <p>Go templates can utilize helper functions from <a href="http://masterminds.github.io/sprig/">Sprig</a>.</p>
 <p>For example templates, see the templates directory in the source repository.</p>
 <p>The following sections can be specified as part of go templates:</p>

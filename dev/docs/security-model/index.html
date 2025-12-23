@@ -8756,32 +8756,34 @@
 <h2 id="core-security-assumptions">Core Security Assumptions<a class="headerlink" href="#core-security-assumptions" title="Permanent link">&para;</a></h2>
 <p>Tracee's security model is built on one fundamental assumption:</p>
 <p><strong>The kernel is trusted when Tracee starts.</strong></p>
-<p>This means:
-- The kernel has not been compromised before Tracee loads its eBPF programs
-- No kernel rootkits or malicious kernel modules are already present
-- The kernel's integrity is intact at Tracee startup time</p>
-<p>If this assumption is violated (i.e., the kernel is already compromised), Tracee's detection capabilities cannot be guaranteed. A compromised kernel has complete control over the system and can potentially:
-- Interfere with eBPF program execution
-- Hide events from Tracee
-- Manipulate Tracee's data structures
-- Disable Tracee entirely</p>
+<p>This means:</p>
+<ul>
+<li>The kernel has not been compromised before Tracee loads its eBPF programs</li>
+<li>No kernel rootkits or malicious kernel modules are already present</li>
+<li>The kernel's integrity is intact at Tracee startup time</li>
+</ul>
+<p>If this assumption is violated (i.e., the kernel is already compromised), Tracee's detection capabilities cannot be guaranteed. A compromised kernel has complete control over the system and can potentially:</p>
+<ul>
+<li>Interfere with eBPF program execution</li>
+<li>Hide events from Tracee</li>
+<li>Manipulate Tracee's data structures</li>
+<li>Disable Tracee entirely</li>
+</ul>
 <h2 id="two-tier-adversary-model">Two-Tier Adversary Model<a class="headerlink" href="#two-tier-adversary-model" title="Permanent link">&para;</a></h2>
 <p>Tracee's security guarantees differ significantly depending on whether the adversary operates in userspace or kernel space.</p>
 <h3 id="userspace-adversaries-strong-security-boundary">Userspace Adversaries: Strong Security Boundary<a class="headerlink" href="#userspace-adversaries-strong-security-boundary" title="Permanent link">&para;</a></h3>
 <p><strong>Target Profile:</strong> Root-privileged adversaries operating in userspace, including containerized environments.</p>
 <p><strong>Tracee's Capabilities:</strong></p>
 <p>Tracee provides strong security boundaries against userspace adversaries through eBPF's architectural guarantees:</p>
+<p><strong>Tamper-Resistant Monitoring</strong>: eBPF programs run in the kernel with their own memory protection. While Tracee's eBPF programs are active and attached:</p>
 <ul>
-<li><strong>Tamper-Resistant Monitoring</strong>: eBPF programs run in the kernel with their own memory protection. While Tracee's eBPF programs are active and attached:</li>
 <li>Userspace processes cannot bypass the monitoring or evade the attached hooks through normal system operations</li>
 <li>The eBPF bytecode itself cannot be modified once loaded and verified</li>
 <li>Events are captured at the kernel level before userspace can manipulate them</li>
-<li>
-<p><strong>However</strong>: Root users with appropriate capabilities (CAP_BPF, CAP_SYS_ADMIN) can administratively disable the monitoring by detaching eBPF programs, killing the Tracee process, or accessing eBPF maps. Tracee's effectiveness assumes the monitoring infrastructure remains intact and that Tracee itself is protected by proper access controls</p>
-</li>
-<li>
+<li><strong>However</strong>: Root users with appropriate capabilities (CAP_BPF, CAP_SYS_ADMIN) can administratively disable the monitoring by detaching eBPF programs, killing the Tracee process, or accessing eBPF maps. Tracee's effectiveness assumes the monitoring infrastructure remains intact and that Tracee itself is protected by proper access controls</li>
+</ul>
 <p><strong>Complete Visibility</strong>: Tracee can observe all system calls, LSM hooks, and kernel events from userspace processes, providing comprehensive monitoring of:</p>
-</li>
+<ul>
 <li>Process execution and lifecycle</li>
 <li>File system operations</li>
 <li>Network activity</li>
@@ -8794,24 +8796,18 @@
 <p><strong>Target Profile:</strong> Adversaries with kernel-level access, including rootkits, malicious kernel modules, and kernel zero-day exploits.</p>
 <p><strong>Tracee's Capabilities:</strong></p>
 <p>Against kernel-level adversaries, Tracee provides <strong>best-effort detection</strong> but cannot guarantee protection:</p>
-<ul>
-<li>
 <p><strong>Rootkits Loaded Before Tracee</strong>: Cannot be reliably detected. If a rootkit compromises the kernel before Tracee starts, it may already have mechanisms to hide from detection or interfere with Tracee's operation.</p>
-</li>
-<li>
 <p><strong>Rootkits Loaded After Tracee</strong>: May be detected using known signatures and heuristics. Tracee includes detection capabilities for:</p>
-</li>
+<ul>
 <li>System call table hooking</li>
 <li>Kernel module loading</li>
 <li>Hidden kernel modules</li>
 <li>Ftrace hooks</li>
 <li>/proc filesystem hooks</li>
-<li>
-<p>Suspicious kernel modifications</p>
-</li>
-<li>
+<li>Suspicious kernel modifications</li>
+</ul>
 <p><strong>Kernel Zero-Day Exploits</strong>: Cannot be prevented or reliably detected. An attacker exploiting unknown kernel vulnerabilities can potentially:</p>
-</li>
+<ul>
 <li>Bypass Tracee's monitoring</li>
 <li>Disable eBPF programs</li>
 <li>Gain complete system control</li>
@@ -8858,17 +8854,23 @@
 <h4 id="how-to-use-lsm-events">How to Use LSM Events<a class="headerlink" href="#how-to-use-lsm-events" title="Permanent link">&para;</a></h4>
 <p>For critical security monitoring, you should cross-reference regular syscall events with their corresponding LSM events:</p>
 <p><strong>Example: Process Execution Monitoring</strong></p>
-<p>Instead of relying solely on the <code>execve</code> syscall event, also monitor:
-- <code>security_bprm_check</code> - LSM hook that validates executables before execution</p>
-<p>By comparing both events, you can detect potential tampering:
-- If the <code>execve</code> event shows <code>/bin/ls</code>
-- But <code>security_bprm_check</code> shows <code>/bin/bash</code>
-- This indicates a TOCTOU attack attempt</p>
+<p>Instead of relying solely on the <code>execve</code> syscall event, also monitor:</p>
+<ul>
+<li><code>security_bprm_check</code> - LSM hook that validates executables before execution</li>
+</ul>
+<p>By comparing both events, you can detect potential tampering:</p>
+<ul>
+<li>If the <code>execve</code> event shows <code>/bin/ls</code></li>
+<li>But <code>security_bprm_check</code> shows <code>/bin/bash</code></li>
+<li>This indicates a TOCTOU attack attempt</li>
+</ul>
 <h4 id="when-to-use-lsm-events">When to Use LSM Events<a class="headerlink" href="#when-to-use-lsm-events" title="Permanent link">&para;</a></h4>
-<p>Use LSM-based events for:
-- <strong>Security-critical monitoring</strong> where argument integrity is essential
-- <strong>Detecting evasion techniques</strong> that exploit TOCTOU vulnerabilities
-- <strong>Compliance requirements</strong> that demand tamper-resistant auditing</p>
+<p>Use LSM-based events for:</p>
+<ul>
+<li><strong>Security-critical monitoring</strong> where argument integrity is essential</li>
+<li><strong>Detecting evasion techniques</strong> that exploit TOCTOU vulnerabilities</li>
+<li><strong>Compliance requirements</strong> that demand tamper-resistant auditing</li>
+</ul>
 <h3 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>Defense in Depth</strong>: Use both syscall and LSM events for critical monitoring</li>
@@ -8879,47 +8881,57 @@
 <h2 id="attack-scenarios">Attack Scenarios<a class="headerlink" href="#attack-scenarios" title="Permanent link">&para;</a></h2>
 <h3 id="scenario-1-container-escape-attempt-detectable">Scenario 1: Container Escape Attempt (Detectable)<a class="headerlink" href="#scenario-1-container-escape-attempt-detectable" title="Permanent link">&para;</a></h3>
 <p><strong>Attack</strong>: An adversary with root privileges inside a container attempts to escape using a known technique (e.g., cgroup release_agent modification).</p>
-<p><strong>Tracee's Response</strong>:
-- ✅ Detects the suspicious cgroup modification
-- ✅ Triggers <code>cgroup_release_agent_modification</code> signature
-- ✅ Provides full context: container ID, process tree, file modifications
-- ✅ Alerts security teams for immediate response</p>
+<p><strong>Tracee's Response</strong>:</p>
+<ul>
+<li>✅ Detects the suspicious cgroup modification</li>
+<li>✅ Triggers <code>cgroup_release_agent_modification</code> signature</li>
+<li>✅ Provides full context: container ID, process tree, file modifications</li>
+<li>✅ Alerts security teams for immediate response</li>
+</ul>
 <p><strong>Outcome</strong>: Attack detected with full forensic context for response.</p>
 <h3 id="scenario-2-rootkit-loaded-before-tracee-not-detectable">Scenario 2: Rootkit Loaded Before Tracee (Not Detectable)<a class="headerlink" href="#scenario-2-rootkit-loaded-before-tracee-not-detectable" title="Permanent link">&para;</a></h3>
 <p><strong>Attack</strong>: A kernel rootkit is installed on the system before Tracee starts. The rootkit hooks system calls to hide malicious processes.</p>
-<p><strong>Tracee's Response</strong>:
-- ❌ Cannot guarantee detection
-- ⚠️ May detect some symptoms if rootkit is imperfect
-- ⚠️ Initial system scan may identify some inconsistencies</p>
+<p><strong>Tracee's Response</strong>:</p>
+<ul>
+<li>❌ Cannot guarantee detection</li>
+<li>⚠️ May detect some symptoms if rootkit is imperfect</li>
+<li>⚠️ Initial system scan may identify some inconsistencies</li>
+</ul>
 <p><strong>Outcome</strong>: Rootkit may remain undetected. <strong>Mitigation</strong>: Deploy Tracee early in the boot process, ideally as part of the init system or container runtime startup.</p>
 <h3 id="scenario-3-rootkit-loaded-after-tracee-potentially-detectable">Scenario 3: Rootkit Loaded After Tracee (Potentially Detectable)<a class="headerlink" href="#scenario-3-rootkit-loaded-after-tracee-potentially-detectable" title="Permanent link">&para;</a></h3>
 <p><strong>Attack</strong>: An adversary attempts to load a kernel module containing a rootkit after Tracee is running.</p>
-<p><strong>Tracee's Response</strong>:
-- ✅ Detects kernel module loading event
-- ✅ Triggers <code>kernel_module_loading</code> signature
-- ✅ May detect system call table hooking via <code>hooked_syscall</code> event
-- ✅ May identify hidden kernel modules via <code>hidden_kernel_module</code> event
-- ⚠️ Sophisticated rootkits may still evade detection using novel techniques</p>
+<p><strong>Tracee's Response</strong>:</p>
+<ul>
+<li>✅ Detects kernel module loading event</li>
+<li>✅ Triggers <code>kernel_module_loading</code> signature</li>
+<li>✅ May detect system call table hooking via <code>hooked_syscall</code> event</li>
+<li>✅ May identify hidden kernel modules via <code>hidden_kernel_module</code> event</li>
+<li>⚠️ Sophisticated rootkits may still evade detection using novel techniques</li>
+</ul>
 <p><strong>Outcome</strong>: Good chance of detection for known techniques, but not guaranteed against advanced adversaries.</p>
 <h3 id="scenario-4-privilege-escalation-via-exploit-detectable">Scenario 4: Privilege Escalation via Exploit (Detectable)<a class="headerlink" href="#scenario-4-privilege-escalation-via-exploit-detectable" title="Permanent link">&para;</a></h3>
 <p><strong>Attack</strong>: An adversary exploits a userspace vulnerability to escalate privileges (e.g., dirty pipe, container escape via exposed socket).</p>
-<p><strong>Tracee's Response</strong>:
-- ✅ Detects suspicious capability usage
-- ✅ Identifies unusual process behaviors
-- ✅ Monitors credential changes
-- ✅ Tracks file and memory modifications</p>
+<p><strong>Tracee's Response</strong>:</p>
+<ul>
+<li>✅ Detects suspicious capability usage</li>
+<li>✅ Identifies unusual process behaviors</li>
+<li>✅ Monitors credential changes</li>
+<li>✅ Tracks file and memory modifications</li>
+</ul>
 <p><strong>Outcome</strong>: Attack detected with high confidence.</p>
 <h3 id="scenario-5-evading-active-monitoring-not-possible-without-disabling-tracee">Scenario 5: Evading Active Monitoring (Not Possible Without Disabling Tracee)<a class="headerlink" href="#scenario-5-evading-active-monitoring-not-possible-without-disabling-tracee" title="Permanent link">&para;</a></h3>
 <p><strong>Attack</strong>: An adversary with root privileges attempts to evade Tracee's monitoring while performing malicious activities, without administratively disabling Tracee first.</p>
-<p><strong>Tracee's Response</strong>:
-- ✅ While eBPF programs are attached and active, userspace operations cannot bypass the monitoring hooks
-- ✅ System calls, file operations, network activity, and process events are captured at the kernel level
-- ✅ Attempts to manipulate data after capture don't affect what Tracee already observed
-- ⚠️ However, an adversary with CAP_BPF or CAP_SYS_ADMIN capabilities can administratively disable Tracee by:
-  - Detaching eBPF programs from their hooks
-  - Killing the Tracee userspace process
-  - Unloading eBPF programs or modifying eBPF maps
-- ⚠️ Such administrative actions to disable monitoring may themselves be detectable if other security monitoring is in place</p>
+<p><strong>Tracee's Response</strong>:</p>
+<ul>
+<li>✅ While eBPF programs are attached and active, userspace operations cannot bypass the monitoring hooks</li>
+<li>✅ System calls, file operations, network activity, and process events are captured at the kernel level</li>
+<li>✅ Attempts to manipulate data after capture don't affect what Tracee already observed</li>
+<li>⚠️ However, an adversary with CAP_BPF or CAP_SYS_ADMIN capabilities can administratively disable Tracee by:</li>
+<li>Detaching eBPF programs from their hooks</li>
+<li>Killing the Tracee userspace process</li>
+<li>Unloading eBPF programs or modifying eBPF maps</li>
+<li>⚠️ Such administrative actions to disable monitoring may themselves be detectable if other security monitoring is in place</li>
+</ul>
 <p><strong>Outcome</strong>: Evasion of active monitoring is not possible through normal userspace operations. However, an adversary with sufficient capabilities can disable the monitoring infrastructure itself, which is why protecting Tracee's operational integrity is critical.</p>
 <h2 id="detection-capabilities-overview">Detection Capabilities Overview<a class="headerlink" href="#detection-capabilities-overview" title="Permanent link">&para;</a></h2>
 <table>

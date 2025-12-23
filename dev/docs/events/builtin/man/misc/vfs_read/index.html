@@ -8331,10 +8331,12 @@
 <li><strong>Alternative methods</strong>: Note that files can be read through other methods like <code>vfs_readv</code>, memory mapping, and direct I/O</li>
 </ul>
 <h2 id="limitations">LIMITATIONS<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
-<p>This event does not capture:
-- Memory-mapped file access
-- Direct I/O operations that bypass VFS
-- Other read methods like <code>vfs_readv</code> (vectorized reads)</p>
+<p>This event does not capture:</p>
+<ul>
+<li>Memory-mapped file access</li>
+<li>Direct I/O operations that bypass VFS</li>
+<li>Other read methods like <code>vfs_readv</code> (vectorized reads)</li>
+</ul>
 <h2 id="related-events">RELATED EVENTS<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>vfs_write</strong>: Virtual filesystem write operations</li>

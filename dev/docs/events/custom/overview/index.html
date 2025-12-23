@@ -8214,13 +8214,15 @@
 <h2 id="modern-approach-detectors">Modern Approach: Detectors<a class="headerlink" href="#modern-approach-detectors" title="Permanent link">&para;</a></h2>
 <p><strong>Recommended</strong>: The modern way to create custom threat detections and derived events is using the <strong>EventDetector API</strong>.</p>
 <p><strong>📖 See the <a href="../../../detectors/">Detector Documentation</a> for complete guide and examples.</strong></p>
-<p>Key benefits:
-- Type-safe protobuf access
-- Rich data extraction helpers
-- System state access (process trees, containers, DNS)
-- Declarative filtering and auto-enrichment
-- Built-in metrics and observability
-- No plugin complexity</p>
+<p>Key benefits:</p>
+<ul>
+<li>Type-safe protobuf access</li>
+<li>Rich data extraction helpers</li>
+<li>System state access (process trees, containers, DNS)</li>
+<li>Declarative filtering and auto-enrichment</li>
+<li>Built-in metrics and observability</li>
+<li>No plugin complexity</li>
+</ul>
 <h2 id="legacy-approach-signatures-plugin-system">Legacy Approach: Signatures (Plugin System)<a class="headerlink" href="#legacy-approach-signatures-plugin-system" title="Permanent link">&para;</a></h2>
 <p>The older signature system using <code>.so</code> plugins is still supported for backward compatibility, but we recommend migrating to detectors.</p>
 <p>Refer to the <a href="../golang/">Go</a> documentation for instructions on the legacy plugin-based approach.</p>

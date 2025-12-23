@@ -8280,12 +8280,14 @@
 <p><strong>callback_owner</strong> (<em>string</em>)
 : The owner of the callback (kernel module name if applicable)</p>
 <p><strong>flags</strong> (<em>string</em>)
-: Ftrace flags indicating hook behavior:
-- <strong>R</strong>: Registers are passed to the callback
-- <strong>I</strong>: Callback can change the RIP register value
-- <strong>D</strong>: Direct call to the function
-- <strong>O</strong>: Callsite-specific operations
-- <strong>M</strong>: Function has I or D flags</p>
+: Ftrace flags indicating hook behavior:</p>
+<ul>
+<li><strong>R</strong>: Registers are passed to the callback</li>
+<li><strong>I</strong>: Callback can change the RIP register value</li>
+<li><strong>D</strong>: Direct call to the function</li>
+<li><strong>O</strong>: Callsite-specific operations</li>
+<li><strong>M</strong>: Function has I or D flags</li>
+</ul>
 <p><strong>count</strong> (<em>integer</em>)
 : The number of callbacks registered with the symbol</p>
 <h2 id="dependencies">DEPENDENCIES<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h2>

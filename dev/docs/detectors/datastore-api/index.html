@@ -9798,10 +9798,12 @@
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>Nil-Safety Guarantee:</strong></p>
-<p>Accessor methods (<code>Processes()</code>, <code>Containers()</code>, etc.) <strong>never return nil</strong>. If a store is not registered or unavailable, they return a null object that:
-- Implements the store interface
-- Returns <code>ErrStoreUnhealthy</code> for all operations
-- Has health status set to <code>HealthUnhealthy</code></p>
+<p>Accessor methods (<code>Processes()</code>, <code>Containers()</code>, etc.) <strong>never return nil</strong>. If a store is not registered or unavailable, they return a null object that:</p>
+<ul>
+<li>Implements the store interface</li>
+<li>Returns <code>ErrStoreUnhealthy</code> for all operations</li>
+<li>Has health status set to <code>HealthUnhealthy</code></li>
+</ul>
 <p>This eliminates nil checks and allows safe method chaining:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// Always safe - no nil check needed</span>
 <span class="nx">proc</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">datastores</span><span class="p">.</span><span class="nx">Processes</span><span class="p">().</span><span class="nx">GetProcess</span><span class="p">(</span><span class="nx">entityID</span><span class="p">)</span>

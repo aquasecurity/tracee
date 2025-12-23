@@ -8210,11 +8210,13 @@
 <li><strong>sys_enter</strong>: Captures all system call entries using raw tracepoints</li>
 <li><strong>sys_exit</strong>: Captures all system call exits using raw tracepoints</li>
 </ul>
-<p>These events are ideal for:
-- Security auditing across all syscalls
-- System-wide syscall pattern analysis
-- Performance monitoring of syscall frequency
-- Detecting anomalous syscall behavior</p>
+<p>These events are ideal for:</p>
+<ul>
+<li>Security auditing across all syscalls</li>
+<li>System-wide syscall pattern analysis</li>
+<li>Performance monitoring of syscall frequency</li>
+<li>Detecting anomalous syscall behavior</li>
+</ul>
 <p><strong>Note</strong>: These comprehensive events generate high volumes of data since they capture every syscall. Use filtering or sampling for production environments.</p>
 <p>For detailed documentation about any specific system call, including its purpose, arguments, return values, and error conditions, please consult the standard Linux manual pages (man section 2). These can be accessed via:</p>
 <ul>
