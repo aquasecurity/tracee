@@ -99,11 +99,15 @@ IGNORE_MISSING_TOOLS=false
 FAST_MODE=false
 
 # Parse arguments
+COMMAND_MODE=""
 while [[ $# -gt 0 ]]; do
     case $1 in
         -h|--help)
             show_help
             exit 0
+            ;;
+        pr-format)
+            COMMAND_MODE="pr-format"
             ;;
         --skip-docs)
             SKIP_DOCS=true
@@ -374,7 +378,7 @@ pr_format() {
     echo "👇 PR Comment BEGIN"
     echo ""
 
-    # Display commits in PR format (without colors)
+    # Display commits in PR format (without colors for PR comment)
     git log $BASE_REF..HEAD --pretty=format:'%h **%s**' 2>/dev/null || {
         print_warning "Could not generate commit log from $BASE_REF to HEAD"
         print_info "This might be because you're not on a branch that diverges from $BASE_REF"
@@ -384,14 +388,14 @@ pr_format() {
     echo ""
     echo ""
 
-    # Display commit bodies if they exist
+    # Display commit bodies if they exist (with color for terminal, quote prefix for PR)
     output=$(git rev-list $BASE_REF..HEAD 2>/dev/null | while read commit; do
         body="$(git show --no-patch --format=%b $commit | sed ':a;N;$!ba;s/\n$//')"
         if [ -n "$body" ]; then
             git show -s $commit --color=always --format='%C(auto,yellow)%h%Creset **%C(auto,red)%s%Creset**%n'
-            echo '```'
-            echo "$body"
-            echo '```'
+            echo "$body" | sed 's/^/> /'
+            echo
+            echo "--"
             echo
         fi
     done)
@@ -502,6 +506,13 @@ main() {
         exit 1
     fi
 }
+
+# If pr-format command mode, just run that and exit
+if [ "$COMMAND_MODE" = "pr-format" ]; then
+    BASE_REF="${BASE_REF:-origin/main}"
+    pr_format
+    exit $?
+fi
 
 # Run main function
 main "$@"
