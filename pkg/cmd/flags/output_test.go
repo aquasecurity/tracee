@@ -141,20 +141,6 @@ func TestPrepareOutput(t *testing.T) {
 			},
 		},
 		{
-			testName:    "table-verbose to stdout",
-			outputSlice: []string{"table-verbose"},
-			expectedOutput: config.OutputConfig{
-				Streams: []config.Stream{
-					{
-						Name: "default-stream",
-						Destinations: []config.Destination{
-							{Name: "stdouttable-verbose", Type: "file", Format: "table-verbose", Path: "stdout"},
-						},
-					},
-				},
-			},
-		},
-		{
 			testName:    "gotemplate to stdout",
 			outputSlice: []string{"gotemplate=template.tmpl"},
 			expectedOutput: config.OutputConfig{
@@ -704,7 +690,6 @@ func TestPrepareOutput(t *testing.T) {
 				"destinations.d3.type=forward",
 				"destinations.d3.url=tcp://localhost:8080",
 				"destinations.d4.format=table",
-				"destinations.d5.format=table-verbose",
 			},
 			expectedOutput: config.OutputConfig{
 				Streams: []config.Stream{
@@ -715,7 +700,6 @@ func TestPrepareOutput(t *testing.T) {
 							{Name: "d2", Format: "json", Url: "http://localhost:8080", Type: "webhook"},
 							{Name: "d3", Format: "json", Url: "tcp://localhost:8080", Type: "forward"},
 							{Name: "d4", Format: "table", Path: "stdout", Type: "file"},
-							{Name: "d5", Format: "table-verbose", Path: "stdout", Type: "file"},
 						},
 					},
 				},

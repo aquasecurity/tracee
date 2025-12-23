@@ -160,46 +160,6 @@ output:
 tracee --output destinations.stdout_table_destination.format=table
 ```
 
-### Table (Verbose)
-
-Displays the output events in table format with extra fields per event. The default path to a file is stdout.
-
-**yaml**
-
-```yaml
-output:
-    destinations:
-    - name: stdout_table_verbose_destination
-      type: file
-      format: table-verbose
-      path: stdout
-```
-
-**cli**
-
-```bash
-tracee  --output destinations.stdout_table_verbose_destination.type=file \
-        --output destinations.stdout_table_verbose_destination.path=stdout \
-        --output destinations.stdout_table_verbose_destination.format=table-verbose
-```
-
-or a smaller version without default values explicitly declared
-
-**yaml**
-
-```yaml
-output:
-    destinations:
-    - name: stdout_table_verbose_destination
-      format: table-verbose
-```
-
-**cli**
-
-```bash
-tracee  --output destinations.stdout_table_verbose_destination.format=table-verbose
-```
-
 ### GOTEMPLATE
 
 When authoring a Go template, the data source is Tracee's `v1beta1.Event` protobuf structure, which is defined in the [API protobuf definitions](https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event.proto).
@@ -263,7 +223,7 @@ A destination can be configured using CLI flags as well. The format of a flag is
 | Field    | Usage                                                                                              | Default                                          |
 | :------: | -------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | type     | type of the destination. One of `file`, `webhook` or `forward`.                                    | file                                             |
-| format   | format of the event. One of `json`, `table`, `table-verbose` or gotemplate=/path/to/template.yaml. | `table` for file, `json` for webhook and forward |
+| format   | format of the event. One of `json`, `table` or gotemplate=/path/to/template.yaml. | `table` for file, `json` for webhook and forward |
 | url      | only for `webhook` and `forward` specify the destination url.                                      |                                                  |
 | path     | only for `file` specify the file path to create, default to `stdout`.                              |                                                  |
 

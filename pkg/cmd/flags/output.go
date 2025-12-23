@@ -27,7 +27,6 @@ const (
 
 	// output format flags
 	tableFlag        = "table"
-	tableVerboseFlag = "table-verbose"
 	jsonFlag         = "json"
 	forwardFlag      = "forward"
 	webhookFlag      = "webhook"
@@ -215,7 +214,7 @@ func PrepareOutput(outputSlice []string, containerMode config.ContainerMode) (*c
 				return nil, NoneOutputPathError()
 			}
 			destinationMap["stdout"] = "ignore"
-		case tableFlag, tableVerboseFlag, jsonFlag:
+		case tableFlag, jsonFlag:
 			err := parseFormat(outputParts, destinationMap)
 			if err != nil {
 				return nil, err
@@ -373,7 +372,7 @@ func validateOrDefaults(destinations map[string]*config.Destination) error {
 		}
 
 		if d.Format != jsonFlag && d.Format != tableFlag &&
-			d.Format != tableVerboseFlag && !strings.HasPrefix(d.Format, gotemplatePrefix) {
+			!strings.HasPrefix(d.Format, gotemplatePrefix) {
 			return InvalidDestinationFieldError("format", d.Format, d.Name)
 		}
 

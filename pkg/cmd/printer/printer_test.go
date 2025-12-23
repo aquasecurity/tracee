@@ -322,7 +322,7 @@ func TestPrinterCreation(t *testing.T) {
 			destinations: []config.Destination{
 				{
 					Type:   "file",
-					Format: "table-verbose",
+					Format: "table",
 					Path:   "stdout",
 					File:   os.Stdout,
 				},
