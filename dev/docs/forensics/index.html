@@ -10,28 +10,28 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/advanced/secure-tracing/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/forensics/">
       
       
-        <link rel="prev" href="../forensics/">
+        <link rel="prev" href="../outputs/logging/">
       
       
-        <link rel="next" href="../../troubleshooting/">
+        <link rel="next" href="../security-model/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0+insiders-4.53.17">
     
     
       
-        <title>Secure Tracing - Tracee</title>
+        <title>Overview - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.22cc1d52.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.22cc1d52.min.css">
       
       
 
@@ -50,7 +50,7 @@
       
     
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#secure-tracing-and-race-conditions" class="md-skip">
+        <a href="#getting-started-with-forensics" class="md-skip">
           Skip to content
         </a>
       
@@ -88,9 +88,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Secure Tracing
+              Overview
             
           </span>
         </div>
@@ -186,7 +186,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../.." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -209,7 +209,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../overview/" class="md-tabs__link">
+        <a href="../overview/" class="md-tabs__link">
           
   
   
@@ -229,7 +229,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../traceectl/" class="md-tabs__link">
+        <a href="../../traceectl/" class="md-tabs__link">
           
   
   
@@ -249,7 +249,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../tutorials/overview/" class="md-tabs__link">
+        <a href="../../tutorials/overview/" class="md-tabs__link">
           
   
   
@@ -269,7 +269,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../contributing/overview/" class="md-tabs__link">
+        <a href="../../contributing/overview/" class="md-tabs__link">
           
   
   
@@ -309,9 +309,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     Tracee
@@ -338,7 +338,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -422,7 +422,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../overview/" class="md-nav__link">
+      <a href="../overview/" class="md-nav__link">
         
   
   
@@ -505,7 +505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         
   
   
@@ -585,7 +585,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/prerequisites/" class="md-nav__link">
+      <a href="../install/prerequisites/" class="md-nav__link">
         
   
   
@@ -613,7 +613,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/kernel-symbols/" class="md-nav__link">
+      <a href="../install/kernel-symbols/" class="md-nav__link">
         
   
   
@@ -641,7 +641,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/os-requirements/" class="md-nav__link">
+      <a href="../install/os-requirements/" class="md-nav__link">
         
   
   
@@ -669,7 +669,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/capabilities/" class="md-nav__link">
+      <a href="../install/capabilities/" class="md-nav__link">
         
   
   
@@ -697,7 +697,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/lsm-support/" class="md-nav__link">
+      <a href="../install/lsm-support/" class="md-nav__link">
         
   
   
@@ -725,7 +725,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/mac-faq/" class="md-nav__link">
+      <a href="../install/mac-faq/" class="md-nav__link">
         
   
   
@@ -813,7 +813,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/docker/" class="md-nav__link">
+      <a href="../install/docker/" class="md-nav__link">
         
   
   
@@ -841,7 +841,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/kubernetes/" class="md-nav__link">
+      <a href="../install/kubernetes/" class="md-nav__link">
         
   
   
@@ -929,7 +929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/container-engines/" class="md-nav__link">
+      <a href="../install/container-engines/" class="md-nav__link">
         
   
   
@@ -957,7 +957,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/prometheus/" class="md-nav__link">
+      <a href="../install/prometheus/" class="md-nav__link">
         
   
   
@@ -985,7 +985,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/healthz/" class="md-nav__link">
+      <a href="../install/healthz/" class="md-nav__link">
         
   
   
@@ -1065,7 +1065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/config/" class="md-nav__link">
+      <a href="../install/config/" class="md-nav__link">
         
   
   
@@ -1145,7 +1145,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/config/cli/" class="md-nav__link">
+      <a href="../install/config/cli/" class="md-nav__link">
         
   
   
@@ -1173,7 +1173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/config/kubernetes/" class="md-nav__link">
+      <a href="../install/config/kubernetes/" class="md-nav__link">
         
   
   
@@ -1269,7 +1269,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/buffers.1/" class="md-nav__link">
+      <a href="../flags/buffers.1/" class="md-nav__link">
         
   
   
@@ -1297,7 +1297,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/capabilities.1/" class="md-nav__link">
+      <a href="../flags/capabilities.1/" class="md-nav__link">
         
   
   
@@ -1325,7 +1325,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/capture.1/" class="md-nav__link">
+      <a href="../flags/capture.1/" class="md-nav__link">
         
   
   
@@ -1353,7 +1353,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/config.1/" class="md-nav__link">
+      <a href="../flags/config.1/" class="md-nav__link">
         
   
   
@@ -1381,7 +1381,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/enrichment.1/" class="md-nav__link">
+      <a href="../flags/enrichment.1/" class="md-nav__link">
         
   
   
@@ -1409,7 +1409,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/events.1/" class="md-nav__link">
+      <a href="../flags/events.1/" class="md-nav__link">
         
   
   
@@ -1437,7 +1437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/logging.1/" class="md-nav__link">
+      <a href="../flags/logging.1/" class="md-nav__link">
         
   
   
@@ -1465,7 +1465,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/output.1/" class="md-nav__link">
+      <a href="../flags/output.1/" class="md-nav__link">
         
   
   
@@ -1493,7 +1493,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/policy.1/" class="md-nav__link">
+      <a href="../flags/policy.1/" class="md-nav__link">
         
   
   
@@ -1521,7 +1521,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/runtime.1/" class="md-nav__link">
+      <a href="../flags/runtime.1/" class="md-nav__link">
         
   
   
@@ -1549,7 +1549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/scope.1/" class="md-nav__link">
+      <a href="../flags/scope.1/" class="md-nav__link">
         
   
   
@@ -1577,7 +1577,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/server.1/" class="md-nav__link">
+      <a href="../flags/server.1/" class="md-nav__link">
         
   
   
@@ -1605,7 +1605,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/signatures-dir.1/" class="md-nav__link">
+      <a href="../flags/signatures-dir.1/" class="md-nav__link">
         
   
   
@@ -1633,7 +1633,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../flags/stores.1/" class="md-nav__link">
+      <a href="../flags/stores.1/" class="md-nav__link">
         
   
   
@@ -1740,7 +1740,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/" class="md-nav__link">
+      <a href="../events/" class="md-nav__link">
         
   
   
@@ -1872,7 +1872,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lifecycle/sched_process_fork/" class="md-nav__link">
+      <a href="../events/builtin/man/lifecycle/sched_process_fork/" class="md-nav__link">
         
   
   
@@ -1900,7 +1900,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lifecycle/sched_process_exec/" class="md-nav__link">
+      <a href="../events/builtin/man/lifecycle/sched_process_exec/" class="md-nav__link">
         
   
   
@@ -1928,7 +1928,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lifecycle/sched_process_exit/" class="md-nav__link">
+      <a href="../events/builtin/man/lifecycle/sched_process_exit/" class="md-nav__link">
         
   
   
@@ -1956,7 +1956,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lifecycle/do_exit/" class="md-nav__link">
+      <a href="../events/builtin/man/lifecycle/do_exit/" class="md-nav__link">
         
   
   
@@ -1984,7 +1984,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lifecycle/sched_switch/" class="md-nav__link">
+      <a href="../events/builtin/man/lifecycle/sched_switch/" class="md-nav__link">
         
   
   
@@ -2012,7 +2012,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lifecycle/container_create/" class="md-nav__link">
+      <a href="../events/builtin/man/lifecycle/container_create/" class="md-nav__link">
         
   
   
@@ -2040,7 +2040,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lifecycle/container_remove/" class="md-nav__link">
+      <a href="../events/builtin/man/lifecycle/container_remove/" class="md-nav__link">
         
   
   
@@ -2068,7 +2068,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lifecycle/existing_container/" class="md-nav__link">
+      <a href="../events/builtin/man/lifecycle/existing_container/" class="md-nav__link">
         
   
   
@@ -2096,7 +2096,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lifecycle/init_namespaces/" class="md-nav__link">
+      <a href="../events/builtin/man/lifecycle/init_namespaces/" class="md-nav__link">
         
   
   
@@ -2124,7 +2124,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lifecycle/switch_task_ns/" class="md-nav__link">
+      <a href="../events/builtin/man/lifecycle/switch_task_ns/" class="md-nav__link">
         
   
   
@@ -2152,7 +2152,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lifecycle/cgroup_mkdir/" class="md-nav__link">
+      <a href="../events/builtin/man/lifecycle/cgroup_mkdir/" class="md-nav__link">
         
   
   
@@ -2180,7 +2180,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lifecycle/cgroup_rmdir/" class="md-nav__link">
+      <a href="../events/builtin/man/lifecycle/cgroup_rmdir/" class="md-nav__link">
         
   
   
@@ -2208,7 +2208,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lifecycle/cgroup_attach_task/" class="md-nav__link">
+      <a href="../events/builtin/man/lifecycle/cgroup_attach_task/" class="md-nav__link">
         
   
   
@@ -2296,7 +2296,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/security-events/" class="md-nav__link">
+      <a href="../events/builtin/security-events/" class="md-nav__link">
         
   
   
@@ -2324,7 +2324,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/anti_debugging/" class="md-nav__link">
+      <a href="../events/builtin/man/security/anti_debugging/" class="md-nav__link">
         
   
   
@@ -2352,7 +2352,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/aslr_inspection/" class="md-nav__link">
+      <a href="../events/builtin/man/security/aslr_inspection/" class="md-nav__link">
         
   
   
@@ -2380,7 +2380,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/cgroup_notify_on_release_modification/" class="md-nav__link">
+      <a href="../events/builtin/man/security/cgroup_notify_on_release_modification/" class="md-nav__link">
         
   
   
@@ -2408,7 +2408,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/cgroup_release_agent_modification/" class="md-nav__link">
+      <a href="../events/builtin/man/security/cgroup_release_agent_modification/" class="md-nav__link">
         
   
   
@@ -2436,7 +2436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/core_pattern_modification/" class="md-nav__link">
+      <a href="../events/builtin/man/security/core_pattern_modification/" class="md-nav__link">
         
   
   
@@ -2464,7 +2464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/default_loader_modification/" class="md-nav__link">
+      <a href="../events/builtin/man/security/default_loader_modification/" class="md-nav__link">
         
   
   
@@ -2492,7 +2492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/disk_mount/" class="md-nav__link">
+      <a href="../events/builtin/man/security/disk_mount/" class="md-nav__link">
         
   
   
@@ -2520,7 +2520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/docker_abuse/" class="md-nav__link">
+      <a href="../events/builtin/man/security/docker_abuse/" class="md-nav__link">
         
   
   
@@ -2548,7 +2548,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/dropped_executable/" class="md-nav__link">
+      <a href="../events/builtin/man/security/dropped_executable/" class="md-nav__link">
         
   
   
@@ -2576,7 +2576,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/dynamic_code_loading/" class="md-nav__link">
+      <a href="../events/builtin/man/security/dynamic_code_loading/" class="md-nav__link">
         
   
   
@@ -2604,7 +2604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/fileless_execution/" class="md-nav__link">
+      <a href="../events/builtin/man/security/fileless_execution/" class="md-nav__link">
         
   
   
@@ -2632,7 +2632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/hidden_file_created/" class="md-nav__link">
+      <a href="../events/builtin/man/security/hidden_file_created/" class="md-nav__link">
         
   
   
@@ -2660,7 +2660,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/illegitimate_shell/" class="md-nav__link">
+      <a href="../events/builtin/man/security/illegitimate_shell/" class="md-nav__link">
         
   
   
@@ -2688,7 +2688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/kubernetes_api_connection/" class="md-nav__link">
+      <a href="../events/builtin/man/security/kubernetes_api_connection/" class="md-nav__link">
         
   
   
@@ -2716,7 +2716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/kubernetes_certificate_theft_attempt/" class="md-nav__link">
+      <a href="../events/builtin/man/security/kubernetes_certificate_theft_attempt/" class="md-nav__link">
         
   
   
@@ -2744,7 +2744,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/kernel_module_loading/" class="md-nav__link">
+      <a href="../events/builtin/man/security/kernel_module_loading/" class="md-nav__link">
         
   
   
@@ -2772,7 +2772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/ld_preload/" class="md-nav__link">
+      <a href="../events/builtin/man/security/ld_preload/" class="md-nav__link">
         
   
   
@@ -2800,7 +2800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/process_vm_write_code_injection/" class="md-nav__link">
+      <a href="../events/builtin/man/security/process_vm_write_code_injection/" class="md-nav__link">
         
   
   
@@ -2828,7 +2828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/proc_fops_hooking/" class="md-nav__link">
+      <a href="../events/builtin/man/security/proc_fops_hooking/" class="md-nav__link">
         
   
   
@@ -2856,7 +2856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/proc_kcore_read/" class="md-nav__link">
+      <a href="../events/builtin/man/security/proc_kcore_read/" class="md-nav__link">
         
   
   
@@ -2884,7 +2884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/proc_mem_access/" class="md-nav__link">
+      <a href="../events/builtin/man/security/proc_mem_access/" class="md-nav__link">
         
   
   
@@ -2912,7 +2912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/proc_mem_code_injection/" class="md-nav__link">
+      <a href="../events/builtin/man/security/proc_mem_code_injection/" class="md-nav__link">
         
   
   
@@ -2940,7 +2940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/ptrace_code_injection/" class="md-nav__link">
+      <a href="../events/builtin/man/security/ptrace_code_injection/" class="md-nav__link">
         
   
   
@@ -2968,7 +2968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/rcd_modification/" class="md-nav__link">
+      <a href="../events/builtin/man/security/rcd_modification/" class="md-nav__link">
         
   
   
@@ -2996,7 +2996,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/sched_debug_recon/" class="md-nav__link">
+      <a href="../events/builtin/man/security/sched_debug_recon/" class="md-nav__link">
         
   
   
@@ -3024,7 +3024,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/scheduled_task_modification/" class="md-nav__link">
+      <a href="../events/builtin/man/security/scheduled_task_modification/" class="md-nav__link">
         
   
   
@@ -3052,7 +3052,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/stack_pivot/" class="md-nav__link">
+      <a href="../events/builtin/man/security/stack_pivot/" class="md-nav__link">
         
   
   
@@ -3080,7 +3080,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/stdio_over_socket/" class="md-nav__link">
+      <a href="../events/builtin/man/security/stdio_over_socket/" class="md-nav__link">
         
   
   
@@ -3108,7 +3108,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/sudoers_modification/" class="md-nav__link">
+      <a href="../events/builtin/man/security/sudoers_modification/" class="md-nav__link">
         
   
   
@@ -3136,7 +3136,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/syscall_table_hooking/" class="md-nav__link">
+      <a href="../events/builtin/man/security/syscall_table_hooking/" class="md-nav__link">
         
   
   
@@ -3164,7 +3164,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/system_request_key_config_modification/" class="md-nav__link">
+      <a href="../events/builtin/man/security/system_request_key_config_modification/" class="md-nav__link">
         
   
   
@@ -3252,7 +3252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/network-events/" class="md-nav__link">
+      <a href="../events/builtin/network-events/" class="md-nav__link">
         
   
   
@@ -3280,7 +3280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_flow_tcp_begin/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_flow_tcp_begin/" class="md-nav__link">
         
   
   
@@ -3308,7 +3308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_flow_tcp_end/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_flow_tcp_end/" class="md-nav__link">
         
   
   
@@ -3336,7 +3336,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_packet_ipv4/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_packet_ipv4/" class="md-nav__link">
         
   
   
@@ -3364,7 +3364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_packet_ipv6/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_packet_ipv6/" class="md-nav__link">
         
   
   
@@ -3392,7 +3392,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_packet_tcp/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_packet_tcp/" class="md-nav__link">
         
   
   
@@ -3420,7 +3420,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_packet_udp/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_packet_udp/" class="md-nav__link">
         
   
   
@@ -3448,7 +3448,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_packet_icmp/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_packet_icmp/" class="md-nav__link">
         
   
   
@@ -3476,7 +3476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_packet_icmpv6/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_packet_icmpv6/" class="md-nav__link">
         
   
   
@@ -3504,7 +3504,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_packet_dns/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_packet_dns/" class="md-nav__link">
         
   
   
@@ -3532,7 +3532,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_packet_dns_request/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_packet_dns_request/" class="md-nav__link">
         
   
   
@@ -3560,7 +3560,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_packet_dns_response/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_packet_dns_response/" class="md-nav__link">
         
   
   
@@ -3588,7 +3588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_packet_http/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_packet_http/" class="md-nav__link">
         
   
   
@@ -3616,7 +3616,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_packet_http_request/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_packet_http_request/" class="md-nav__link">
         
   
   
@@ -3644,7 +3644,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/network/net_packet_http_response/" class="md-nav__link">
+      <a href="../events/builtin/man/network/net_packet_http_response/" class="md-nav__link">
         
   
   
@@ -3732,7 +3732,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/cap_capable/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/cap_capable/" class="md-nav__link">
         
   
   
@@ -3760,7 +3760,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_bpf/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_bpf/" class="md-nav__link">
         
   
   
@@ -3788,7 +3788,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_bpf_map/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_bpf_map/" class="md-nav__link">
         
   
   
@@ -3816,7 +3816,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_bpf_prog/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_bpf_prog/" class="md-nav__link">
         
   
   
@@ -3844,7 +3844,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_bprm_check/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_bprm_check/" class="md-nav__link">
         
   
   
@@ -3872,7 +3872,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_file_mprotect/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_file_mprotect/" class="md-nav__link">
         
   
   
@@ -3900,7 +3900,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_file_open/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_file_open/" class="md-nav__link">
         
   
   
@@ -3928,7 +3928,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_inode_mknod/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_inode_mknod/" class="md-nav__link">
         
   
   
@@ -3956,7 +3956,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_inode_rename/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_inode_rename/" class="md-nav__link">
         
   
   
@@ -3984,7 +3984,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_inode_unlink/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_inode_unlink/" class="md-nav__link">
         
   
   
@@ -4012,7 +4012,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_kernel_post_read_file/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_kernel_post_read_file/" class="md-nav__link">
         
   
   
@@ -4040,7 +4040,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_kernel_read_file/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_kernel_read_file/" class="md-nav__link">
         
   
   
@@ -4068,7 +4068,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_mmap_file/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_mmap_file/" class="md-nav__link">
         
   
   
@@ -4096,7 +4096,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_path_notify/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_path_notify/" class="md-nav__link">
         
   
   
@@ -4124,7 +4124,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_sb_mount/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_sb_mount/" class="md-nav__link">
         
   
   
@@ -4152,7 +4152,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_sb_umount/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_sb_umount/" class="md-nav__link">
         
   
   
@@ -4180,7 +4180,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_settime64/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_settime64/" class="md-nav__link">
         
   
   
@@ -4208,7 +4208,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_socket_accept/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_socket_accept/" class="md-nav__link">
         
   
   
@@ -4236,7 +4236,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_socket_bind/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_socket_bind/" class="md-nav__link">
         
   
   
@@ -4264,7 +4264,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_socket_connect/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_socket_connect/" class="md-nav__link">
         
   
   
@@ -4292,7 +4292,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_socket_create/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_socket_create/" class="md-nav__link">
         
   
   
@@ -4320,7 +4320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_socket_listen/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_socket_listen/" class="md-nav__link">
         
   
   
@@ -4348,7 +4348,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_socket_setsockopt/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_socket_setsockopt/" class="md-nav__link">
         
   
   
@@ -4376,7 +4376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/lsm/security_task_setrlimit/" class="md-nav__link">
+      <a href="../events/builtin/man/lsm/security_task_setrlimit/" class="md-nav__link">
         
   
   
@@ -4464,7 +4464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/__kernel_write/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/__kernel_write/" class="md-nav__link">
         
   
   
@@ -4492,7 +4492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/bpf_attach/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/bpf_attach/" class="md-nav__link">
         
   
   
@@ -4520,7 +4520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/call_usermodehelper/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/call_usermodehelper/" class="md-nav__link">
         
   
   
@@ -4548,7 +4548,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/chmod_common/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/chmod_common/" class="md-nav__link">
         
   
   
@@ -4576,7 +4576,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/commit_creds/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/commit_creds/" class="md-nav__link">
         
   
   
@@ -4604,7 +4604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/debugfs_create_dir/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/debugfs_create_dir/" class="md-nav__link">
         
   
   
@@ -4632,7 +4632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/debugfs_create_file/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/debugfs_create_file/" class="md-nav__link">
         
   
   
@@ -4660,7 +4660,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/device_add/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/device_add/" class="md-nav__link">
         
   
   
@@ -4688,7 +4688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/dirty_pipe_splice/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/dirty_pipe_splice/" class="md-nav__link">
         
   
   
@@ -4716,7 +4716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/do_init_module/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/do_init_module/" class="md-nav__link">
         
   
   
@@ -4744,7 +4744,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/do_mmap/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/do_mmap/" class="md-nav__link">
         
   
   
@@ -4772,7 +4772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/do_sigaction/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/do_sigaction/" class="md-nav__link">
         
   
   
@@ -4800,7 +4800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/do_truncate/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/do_truncate/" class="md-nav__link">
         
   
   
@@ -4828,7 +4828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/file_modification/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/file_modification/" class="md-nav__link">
         
   
   
@@ -4856,7 +4856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/ftrace_hook/" class="md-nav__link">
+      <a href="../events/builtin/man/security/ftrace_hook/" class="md-nav__link">
         
   
   
@@ -4884,7 +4884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/hidden_kernel_module/" class="md-nav__link">
+      <a href="../events/builtin/man/security/hidden_kernel_module/" class="md-nav__link">
         
   
   
@@ -4912,7 +4912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/hooked_seq_ops/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/hooked_seq_ops/" class="md-nav__link">
         
   
   
@@ -4940,7 +4940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/hooked_syscall/" class="md-nav__link">
+      <a href="../events/builtin/man/security/hooked_syscall/" class="md-nav__link">
         
   
   
@@ -4968,7 +4968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/inotify_watch/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/inotify_watch/" class="md-nav__link">
         
   
   
@@ -4996,7 +4996,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/kallsyms_lookup_name/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/kallsyms_lookup_name/" class="md-nav__link">
         
   
   
@@ -5024,7 +5024,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/kprobe_attach/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/kprobe_attach/" class="md-nav__link">
         
   
   
@@ -5052,7 +5052,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/load_elf_phdrs/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/load_elf_phdrs/" class="md-nav__link">
         
   
   
@@ -5080,7 +5080,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/magic_write/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/magic_write/" class="md-nav__link">
         
   
   
@@ -5108,7 +5108,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/mem_prot_alert/" class="md-nav__link">
+      <a href="../events/builtin/man/security/mem_prot_alert/" class="md-nav__link">
         
   
   
@@ -5136,7 +5136,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/net_tcp_connect/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/net_tcp_connect/" class="md-nav__link">
         
   
   
@@ -5164,7 +5164,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/print_mem_dump/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/print_mem_dump/" class="md-nav__link">
         
   
   
@@ -5192,7 +5192,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/proc_create/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/proc_create/" class="md-nav__link">
         
   
   
@@ -5220,7 +5220,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/process_execute_failed/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/process_execute_failed/" class="md-nav__link">
         
   
   
@@ -5248,7 +5248,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/register_chrdev/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/register_chrdev/" class="md-nav__link">
         
   
   
@@ -5276,7 +5276,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/set_fs_pwd/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/set_fs_pwd/" class="md-nav__link">
         
   
   
@@ -5304,7 +5304,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/shared_object_loaded/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/shared_object_loaded/" class="md-nav__link">
         
   
   
@@ -5332,7 +5332,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/socket_accept/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/socket_accept/" class="md-nav__link">
         
   
   
@@ -5360,7 +5360,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/socket_dup/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/socket_dup/" class="md-nav__link">
         
   
   
@@ -5388,7 +5388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/suspicious_syscall_source/" class="md-nav__link">
+      <a href="../events/builtin/man/security/suspicious_syscall_source/" class="md-nav__link">
         
   
   
@@ -5416,7 +5416,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/symbols_collision/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/symbols_collision/" class="md-nav__link">
         
   
   
@@ -5444,7 +5444,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/security/symbols_loaded/" class="md-nav__link">
+      <a href="../events/builtin/man/security/symbols_loaded/" class="md-nav__link">
         
   
   
@@ -5472,7 +5472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/task_rename/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/task_rename/" class="md-nav__link">
         
   
   
@@ -5500,7 +5500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/tracee_info/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/tracee_info/" class="md-nav__link">
         
   
   
@@ -5528,7 +5528,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/vfs_read/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/vfs_read/" class="md-nav__link">
         
   
   
@@ -5556,7 +5556,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/vfs_readv/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/vfs_readv/" class="md-nav__link">
         
   
   
@@ -5584,7 +5584,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/vfs_utimes/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/vfs_utimes/" class="md-nav__link">
         
   
   
@@ -5612,7 +5612,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/vfs_write/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/vfs_write/" class="md-nav__link">
         
   
   
@@ -5640,7 +5640,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/misc/vfs_writev/" class="md-nav__link">
+      <a href="../events/builtin/man/misc/vfs_writev/" class="md-nav__link">
         
   
   
@@ -5728,7 +5728,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/syscall-events/" class="md-nav__link">
+      <a href="../events/builtin/syscall-events/" class="md-nav__link">
         
   
   
@@ -5756,7 +5756,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/syscalls/sys_enter/" class="md-nav__link">
+      <a href="../events/builtin/man/syscalls/sys_enter/" class="md-nav__link">
         
   
   
@@ -5784,7 +5784,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/builtin/man/syscalls/sys_exit/" class="md-nav__link">
+      <a href="../events/builtin/man/syscalls/sys_exit/" class="md-nav__link">
         
   
   
@@ -5880,7 +5880,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/custom/overview/" class="md-nav__link">
+      <a href="../events/custom/overview/" class="md-nav__link">
         
   
   
@@ -5908,7 +5908,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../events/custom/golang/" class="md-nav__link">
+      <a href="../events/custom/golang/" class="md-nav__link">
         
   
   
@@ -6007,7 +6007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../detectors/" class="md-nav__link">
+      <a href="../detectors/" class="md-nav__link">
         
   
   
@@ -6035,7 +6035,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../detectors/quickstart/" class="md-nav__link">
+      <a href="../detectors/quickstart/" class="md-nav__link">
         
   
   
@@ -6063,7 +6063,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../detectors/api-reference/" class="md-nav__link">
+      <a href="../detectors/yaml-detectors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    YAML Detectors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../detectors/api-reference/" class="md-nav__link">
         
   
   
@@ -6091,7 +6119,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../detectors/datastore-api/" class="md-nav__link">
+      <a href="../detectors/datastore-api/" class="md-nav__link">
         
   
   
@@ -6182,7 +6210,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../policies/" class="md-nav__link">
+      <a href="../policies/" class="md-nav__link">
         
   
   
@@ -6210,7 +6238,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../policies/scopes/" class="md-nav__link">
+      <a href="../policies/scopes/" class="md-nav__link">
         
   
   
@@ -6238,7 +6266,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../policies/rules/" class="md-nav__link">
+      <a href="../policies/rules/" class="md-nav__link">
         
   
   
@@ -6318,7 +6346,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../policies/usage/cli/" class="md-nav__link">
+      <a href="../policies/usage/cli/" class="md-nav__link">
         
   
   
@@ -6346,7 +6374,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../policies/usage/kubernetes/" class="md-nav__link">
+      <a href="../policies/usage/kubernetes/" class="md-nav__link">
         
   
   
@@ -6445,7 +6473,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../outputs/" class="md-nav__link">
+      <a href="../outputs/" class="md-nav__link">
         
   
   
@@ -6473,7 +6501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../outputs/output-formats/" class="md-nav__link">
+      <a href="../outputs/output-formats/" class="md-nav__link">
         
   
   
@@ -6501,7 +6529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../outputs/event-structure/" class="md-nav__link">
+      <a href="../outputs/event-structure/" class="md-nav__link">
         
   
   
@@ -6529,7 +6557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../outputs/output-options/" class="md-nav__link">
+      <a href="../outputs/output-options/" class="md-nav__link">
         
   
   
@@ -6557,7 +6585,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../outputs/streams/" class="md-nav__link">
+      <a href="../outputs/streams/" class="md-nav__link">
         
   
   
@@ -6585,7 +6613,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ordering-events/" class="md-nav__link">
+      <a href="../outputs/ordering-events/" class="md-nav__link">
         
   
   
@@ -6613,7 +6641,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../outputs/logging/" class="md-nav__link">
+      <a href="../outputs/logging/" class="md-nav__link">
         
   
   
@@ -6646,6 +6674,8 @@
                 
   
   
+    
+  
   
   
     
@@ -6661,11 +6691,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7" checked>
         
           
           <label class="md-nav__link" for="__nav_2_7" id="__nav_2_7_label" tabindex="">
@@ -6686,7 +6716,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -6696,42 +6726,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../forensics/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
             
               
                 
@@ -6756,7 +6750,7 @@
   <span class="md-ellipsis">
     
   
-    Secure Tracing
+    Overview
   
 
     
@@ -6774,7 +6768,7 @@
   <span class="md-ellipsis">
     
   
-    Secure Tracing
+    Overview
   
 
     
@@ -6800,82 +6794,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#artifacts-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-problem" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The Problem
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-solution-lsm-events" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The Solution: LSM Events
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="The Solution: LSM Events">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-to-use-lsm-events" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How to Use LSM Events
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#when-to-use-lsm-events" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When to Use LSM Events
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Best Practices
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Related Documentation
+        Artifacts Types
       
     </span>
   </a>
@@ -6891,6 +6813,14 @@
 
               
             
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
               
                 
   
@@ -6898,7 +6828,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../troubleshooting/" class="md-nav__link">
+      <a href="../security-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
         
   
   
@@ -6985,7 +6943,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../traceectl/" class="md-nav__link">
+      <a href="../../traceectl/" class="md-nav__link">
         
   
   
@@ -7013,7 +6971,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../traceectl/usage/" class="md-nav__link">
+      <a href="../../traceectl/usage/" class="md-nav__link">
         
   
   
@@ -7093,7 +7051,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../traceectl/commands/event/" class="md-nav__link">
+      <a href="../../traceectl/commands/event/" class="md-nav__link">
         
   
   
@@ -7121,7 +7079,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../traceectl/commands/metrics/" class="md-nav__link">
+      <a href="../../traceectl/commands/metrics/" class="md-nav__link">
         
   
   
@@ -7149,7 +7107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../traceectl/commands/stream/" class="md-nav__link">
+      <a href="../../traceectl/commands/stream/" class="md-nav__link">
         
   
   
@@ -7177,7 +7135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../traceectl/commands/version/" class="md-nav__link">
+      <a href="../../traceectl/commands/version/" class="md-nav__link">
         
   
   
@@ -7265,7 +7223,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../traceectl/flags/output/" class="md-nav__link">
+      <a href="../../traceectl/flags/output/" class="md-nav__link">
         
   
   
@@ -7293,7 +7251,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../traceectl/flags/format/" class="md-nav__link">
+      <a href="../../traceectl/flags/format/" class="md-nav__link">
         
   
   
@@ -7321,7 +7279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../traceectl/flags/server/" class="md-nav__link">
+      <a href="../../traceectl/flags/server/" class="md-nav__link">
         
   
   
@@ -7349,7 +7307,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../traceectl/flags/policy/" class="md-nav__link">
+      <a href="../../traceectl/flags/policy/" class="md-nav__link">
         
   
   
@@ -7444,7 +7402,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/overview/" class="md-nav__link">
+      <a href="../../tutorials/overview/" class="md-nav__link">
         
   
   
@@ -7472,7 +7430,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/verify-tracee-signature/" class="md-nav__link">
+      <a href="../../tutorials/verify-tracee-signature/" class="md-nav__link">
         
   
   
@@ -7500,7 +7458,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
+      <a href="../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
         
   
   
@@ -7528,7 +7486,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/tracee-vagrant/" class="md-nav__link">
+      <a href="../../tutorials/tracee-vagrant/" class="md-nav__link">
         
   
   
@@ -7556,7 +7514,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/k8s-policies/" class="md-nav__link">
+      <a href="../../tutorials/k8s-policies/" class="md-nav__link">
         
   
   
@@ -7584,7 +7542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/promtail/" class="md-nav__link">
+      <a href="../../tutorials/promtail/" class="md-nav__link">
         
   
   
@@ -7612,7 +7570,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/additional-resources/" class="md-nav__link">
+      <a href="../../tutorials/additional-resources/" class="md-nav__link">
         
   
   
@@ -7699,7 +7657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/overview/" class="md-nav__link">
+      <a href="../../contributing/overview/" class="md-nav__link">
         
   
   
@@ -7727,7 +7685,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/guidelines/" class="md-nav__link">
+      <a href="../../contributing/guidelines/" class="md-nav__link">
         
   
   
@@ -7755,7 +7713,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/checkpatch/" class="md-nav__link">
+      <a href="../../contributing/checkpatch/" class="md-nav__link">
         
   
   
@@ -7783,7 +7741,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/adding-events/" class="md-nav__link">
+      <a href="../../contributing/adding-events/" class="md-nav__link">
         
   
   
@@ -7811,7 +7769,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/event-documentation-guide/" class="md-nav__link">
+      <a href="../../contributing/event-documentation-guide/" class="md-nav__link">
         
   
   
@@ -7839,7 +7797,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/testing-coverage/" class="md-nav__link">
+      <a href="../../contributing/testing-coverage/" class="md-nav__link">
         
   
   
@@ -7867,7 +7825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/performance/" class="md-nav__link">
+      <a href="../../contributing/performance/" class="md-nav__link">
         
   
   
@@ -7895,7 +7853,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/kubernetes/" class="md-nav__link">
+      <a href="../../contributing/kubernetes/" class="md-nav__link">
         
   
   
@@ -7923,7 +7881,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/setup-development-machine-with-vagrant/" class="md-nav__link">
+      <a href="../../contributing/setup-development-machine-with-vagrant/" class="md-nav__link">
         
   
   
@@ -8003,7 +7961,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/building/building/" class="md-nav__link">
+      <a href="../../contributing/building/building/" class="md-nav__link">
         
   
   
@@ -8031,7 +7989,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/building/environment/" class="md-nav__link">
+      <a href="../../contributing/building/environment/" class="md-nav__link">
         
   
   
@@ -8059,7 +8017,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/building/containers/" class="md-nav__link">
+      <a href="../../contributing/building/containers/" class="md-nav__link">
         
   
   
@@ -8122,82 +8080,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#artifacts-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-problem" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The Problem
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-solution-lsm-events" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The Solution: LSM Events
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="The Solution: LSM Events">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-to-use-lsm-events" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How to Use LSM Events
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#when-to-use-lsm-events" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When to Use LSM Events
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Best Practices
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Related Documentation
+        Artifacts Types
       
     </span>
   </a>
@@ -8221,43 +8107,361 @@
 
 
 
-<h1 id="secure-tracing-and-race-conditions">Secure Tracing and Race Conditions<a class="headerlink" href="#secure-tracing-and-race-conditions" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>When Tracee reads information from user programs, it is subject to a <strong>race condition</strong> where the user program might be able to change the arguments after Tracee reads them. This is known as a Time-of-Check-Time-of-Use (TOCTOU) vulnerability.</p>
-<h2 id="the-problem">The Problem<a class="headerlink" href="#the-problem" title="Permanent link">&para;</a></h2>
-<p>Consider this scenario:</p>
-<p>A program invokes:</p>
-<div class="highlight"><pre><span></span><code><span class="n">execve</span><span class="p">(</span><span class="s">&quot;/bin/ls&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<h1 id="getting-started-with-forensics">Getting Started with Forensics<a class="headerlink" href="#getting-started-with-forensics" title="Permanent link">&para;</a></h1>
+<p>Tracee has a unique feature that lets you capture interesting artifacts from
+running applications, using the <code>--capture</code> flag.</p>
+<div class="highlight"><pre><span></span><code><span class="go">./dist/tracee man capture</span>
 </code></pre></div>
-<p>Tracee picks this up and reports it. However, the program could change the first argument from <code>/bin/ls</code> to <code>/bin/bash</code> after Tracee reads it but before the kernel executes it. This means Tracee would report <code>/bin/ls</code> while the kernel actually executes <code>/bin/bash</code>.</p>
-<h2 id="the-solution-lsm-events">The Solution: LSM Events<a class="headerlink" href="#the-solution-lsm-events" title="Permanent link">&para;</a></h2>
-<p>To mitigate this race condition, Tracee provides <strong>LSM (Linux Security Module)</strong> based events. These events occur at security check time within the kernel, providing more reliable data that's harder for user-space programs to manipulate.</p>
-<h3 id="how-to-use-lsm-events">How to Use LSM Events<a class="headerlink" href="#how-to-use-lsm-events" title="Permanent link">&para;</a></h3>
-<p>For critical security monitoring, you should cross-reference regular syscall events with their corresponding LSM events:</p>
-<p><strong>Example: Process Execution Monitoring</strong></p>
-<p>Instead of relying solely on the <code>execve</code> syscall event, also monitor:
-- <code>security_bprm_check</code> - LSM hook that validates executables before execution</p>
-<p>By comparing both events, you can detect potential tampering:
-- If the <code>execve</code> event shows <code>/bin/ls</code>
-- But <code>security_bprm_check</code> shows <code>/bin/bash</code>
-- This indicates a TOCTOU attack attempt</p>
-<h3 id="when-to-use-lsm-events">When to Use LSM Events<a class="headerlink" href="#when-to-use-lsm-events" title="Permanent link">&para;</a></h3>
-<p>Use LSM-based events for:
-- <strong>Security-critical monitoring</strong> where argument integrity is essential
-- <strong>Detecting evasion techniques</strong> that exploit TOCTOU vulnerabilities
-- <strong>Compliance requirements</strong> that demand tamper-resistant auditing</p>
-<h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --capture xxx</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>All captured artifacts are saved in Tracee's "output directory", which can
+be configured using <code>--capture dir:/path/to/dir</code>. You may also use
+<code>--capture clear-dir</code> if you want contents of the destination directory
+to be cleared every time you execute tracee.</p>
+</div>
+<h2 id="artifacts-types">Artifacts Types<a class="headerlink" href="#artifacts-types" title="Permanent link">&para;</a></h2>
+<p>Tracee can capture the following types of artifacts:</p>
 <ol>
-<li><strong>Defense in Depth</strong>: Use both syscall and LSM events for critical monitoring</li>
-<li><strong>Cross-Reference</strong>: Compare data between event types to detect anomalies</li>
-<li><strong>Document Assumptions</strong>: If using only syscall events, document the TOCTOU risk</li>
-<li><strong>Test Detection</strong>: Verify your policies catch TOCTOU evasion attempts</li>
+<li>
+<p><strong>I/O Files</strong></p>
+<p>Anytime a file is being written to and/or read from, the contents of the
+file will be captured. I/O files can be filtered using 3 optional filters:
+1. path - prefix of the file written/read. Up to 3 path filters can be
+   provided per capture type.
+2. type - file's type can be <code>pipe</code>, <code>socket</code>, <code>elf</code> or <code>regular</code>.
+3. fd - standard FD, one of the following: <code>stdin</code>, <code>stdout</code> and <code>stderr</code>.</p>
+<p><strong><em>write example</em></strong>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">   --output json \</span>
+<span class="go">   --scope comm=bash \</span>
+<span class="go">   --scope follow \</span>
+<span class="go">   --output option:parse-arguments \</span>
+<span class="go">   --capture dir:/tmp/tracee/ \</span>
+<span class="go">   --capture write=&#39;/tmp/*&#39;</span>
+</code></pre></div></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Using file capture without filter name will be path by default. Hence,
+<code>--capture write='/tmp/*</code> is the same as <code>--capture write:path='/tmp/*</code>.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="go">echo write testing 123 &gt; /tmp/testing.txt</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1657321167356748797</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">620311624458929</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">7</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531840</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;bash&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;fujitsu&quot;</span><span class="p">,</span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;722&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;security_file_open&quot;</span><span class="p">,</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="s2">&quot;openat&quot;</span><span class="p">,</span><span class="nt">&quot;contextFlags&quot;</span><span class="p">:{</span><span class="nt">&quot;containerStarted&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;isCompat&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">},</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;/tmp/testing.txt&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;flags&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;string&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;dev&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;dev_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">271581185</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;inode&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">1966101</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;ctime&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">1657321027326584850</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;syscall_pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;/tmp/testing.txt&quot;</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1657321167356729582</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">620311624458929</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">7</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531840</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;bash&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;fujitsu&quot;</span><span class="p">,</span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;257&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;openat&quot;</span><span class="p">,</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="s2">&quot;openat&quot;</span><span class="p">,</span><span class="nt">&quot;contextFlags&quot;</span><span class="p">:{</span><span class="nt">&quot;containerStarted&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;isCompat&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">},</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;dirfd&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">-100</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;/tmp/testing.txt&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;flags&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;string&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;O_WRONLY|O_CREAT|O_TRUNC&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;mode_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">438</span><span class="p">}]}</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can read captured files written at <code>/tmp/tracee/out</code>:
+<div class="highlight"><pre><span></span><code><span class="go">sudo cat /tmp/tracee/out/host/write.dev-271581185.inode-1966101</span>
+</code></pre></div></p>
+<div class="highlight"><pre><span></span><code>write testing 123
+</code></pre></div>
+</div>
+<p><strong><em>read example</em></strong></p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">   --output json \</span>
+<span class="go">   --scope comm=bash \</span>
+<span class="go">   --scope follow \</span>
+<span class="go">   --output option:parse-arguments \</span>
+<span class="go">   --capture dir:/tmp/tracee/ \</span>
+<span class="go">   --capture read:type=pipe \</span>
+<span class="go">   --capture read:fd=stdin&#39;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">echo read testing 123 | cat</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1685285181028166900</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">1685285181026565700</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">182934</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">182934</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">147428</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">184128</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">184128</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">148293</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026532277</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026532279</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;Alon-Zivony&quot;</span><span class="p">,</span><span class="nt">&quot;container&quot;</span><span class="p">:{},</span><span class="nt">&quot;kubernetes&quot;</span><span class="p">:{},</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;720&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;vfs_read&quot;</span><span class="p">,</span><span class="nt">&quot;matchedPolicies&quot;</span><span class="p">:[</span><span class="s2">&quot;&quot;</span><span class="p">],</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">5</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">17</span><span class="p">,</span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="s2">&quot;read&quot;</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;contextFlags&quot;</span><span class="p">:{</span><span class="nt">&quot;containerStarted&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;isCompat&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">},</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;dev&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;dev_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">12</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;inode&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">174033</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;count&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;size_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">131072</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;pos&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;off_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1685285181028267200</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">1685285181026565700</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">182934</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">182934</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">147428</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">184128</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">184128</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">148293</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026532277</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026532279</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;Alon-Zivony&quot;</span><span class="p">,</span><span class="nt">&quot;container&quot;</span><span class="p">:{},</span><span class="nt">&quot;kubernetes&quot;</span><span class="p">:{},</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;720&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;vfs_read&quot;</span><span class="p">,</span><span class="nt">&quot;matchedPolicies&quot;</span><span class="p">:[</span><span class="s2">&quot;&quot;</span><span class="p">],</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">5</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="s2">&quot;read&quot;</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;contextFlags&quot;</span><span class="p">:{</span><span class="nt">&quot;containerStarted&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;isCompat&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">},</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;dev&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;dev_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">12</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;inode&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">174033</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;count&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;size_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">131072</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;pos&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;off_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">}]}</span>
+</code></pre></div>
+</li>
 </ol>
-<h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="../../events/">Events Documentation</a> - Learn about available LSM events</li>
-<li><a href="../../policies/">Policies</a> - Create policies that use multiple event types</li>
-</ul>
+<p>!!! Note
+       You can read captured files read at <code>/tmp/tracee/out</code>:
+       <div class="highlight"><pre><span></span><code><span class="go">sudo cat /tmp/tracee/out/host/read.dev-12.inode-176203</span>
+</code></pre></div></p>
+<div class="highlight"><pre><span></span><code>    ```text
+    read testing 123
+    ```
+</code></pre></div>
+<ol>
+<li>
+<p><strong>Executed Files</strong></p>
+<p>Anytime a <strong>binary is executed</strong>, the binary file will be captured. If the
+same binary is executed multiple times, it will be captured just once.</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">   --output json \</span>
+<span class="go">   --scope comm=bash \</span>
+<span class="go">   --scope follow \</span>
+<span class="go">   --output option:parse-arguments \</span>
+<span class="go">   --capture dir:/tmp/tracee/ \</span>
+<span class="go">   --capture exec</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">/bin/ls</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1657322300531713371</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">620311624458929</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531840</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;bash&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;fujitsu&quot;</span><span class="p">,</span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;56&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;clone&quot;</span><span class="p">,</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">5</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">3331757</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="s2">&quot;clone&quot;</span><span class="p">,</span><span class="nt">&quot;contextFlags&quot;</span><span class="p">:{</span><span class="nt">&quot;containerStarted&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;isCompat&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">},</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;flags&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;string&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;stack&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;void*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;0x0&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;parent_tid&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;0x0&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;child_tid&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;0x7fd7ce0d3a10&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;tls&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1657322300534562489</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">620311624458929</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531840</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;bash&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;fujitsu&quot;</span><span class="p">,</span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;3&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;close&quot;</span><span class="p">,</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="s2">&quot;close&quot;</span><span class="p">,</span><span class="nt">&quot;contextFlags&quot;</span><span class="p">:{</span><span class="nt">&quot;containerStarted&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;isCompat&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">},</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;fd&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">}]}</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You will have a copy of each executed file written at <code>/tmp/tracee/out</code>:
+<div class="highlight"><pre><span></span><code><span class="go">ldd /bin/ls</span>
+</code></pre></div></p>
+<div class="highlight"><pre><span></span><code>linux-vdso.so.1 (0x00007ffca632c000)
+libselinux.so.1 =&gt; /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007f9a930d5000)
+libc.so.6 =&gt; /lib/x86_64-linux-gnu/libc.so.6 (0x00007f9a92ead000)
+libpcre2-8.so.0 =&gt; /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007f9a92e16000)
+/lib64/ld-linux-x86-64.so.2 (0x00007f9a93136000)
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">ldd /tmp/tracee/out/host/exec.1657322052835478987.ls</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>linux-vdso.so.1 (0x00007ffe337fb000)
+libselinux.so.1 =&gt; /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007feeb1fa5000)
+libc.so.6 =&gt; /lib/x86_64-linux-gnu/libc.so.6 (0x00007feeb1d7d000)
+libpcre2-8.so.0 =&gt; /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007feeb1ce6000)
+/lib64/ld-linux-x86-64.so.2 (0x00007feeb2006000)
+
+```console
+sudo chmod +x /tmp/tracee/out/host/exec.1657322052835478987.ls
+/tmp/tracee/out/host/exec.1657322052835478987.ls
+</code></pre></div>
+</div>
+</li>
+<li>
+<p><strong>Memory Files</strong></p>
+<p>Anytime a <strong>memory unpacker</strong> is detected, the suspicious <strong>memory region</strong>
+will be captured. This is triggered when memory protection changes from
+<strong>Write+Execute</strong> to <strong>Write</strong>.</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">   --output none \</span>
+<span class="go">   --scope comm=bash \</span>
+<span class="go">   --scope follow \</span>
+<span class="go">   --capture dir:/tmp/tracee/ \</span>
+<span class="go">   --capture mem</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You may opt not to have any output from <strong>tracee</strong> with <code>--output none</code>
+command flag is given. This makes tracee to work in capture mode only.</p>
+</div>
+</li>
+<li>
+<p><strong>Network PCAP Files</strong></p>
+<p>Anytime a <strong>network packet</strong> is delivered to a process, traced by tracee,
+this packet might be captured into one or multiple pcap files.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>The default behavior when capturing network traffic is to capture
+ALL traffic, despite given event filters. If you want to make
+capture feature to follow the given event filters, like for example
+capturing DNS events only, then you have to provide <code>--capture
+pcap-options:filtered</code> argument in the command line. Then only
+net_packet_XXX events will be captured (IPv4, IPv6, TCP, UDP,
+ICMP, ICMPv6, DNS, HTTP, etc).</p>
+</div>
+<p>A good way to test this behavior is to execute:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    --events net_packet_ipv4 \</span>
+<span class="go">    --capture network \</span>
+<span class="go">    --capture pcap-options:filtered</span>
+</code></pre></div>
+<p>and observe a single <strong>pcap file</strong> for all ipv4 packets created:</p>
+<div class="highlight"><pre><span></span><code><span class="go">find /tmp/tracee/out/pcap/</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>/tmp/tracee/out/pcap/
+/tmp/tracee/out/pcap/single.pcap
+</code></pre></div>
+<p>You can select only dns packets, for example:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    --events net_packet_dns \</span>
+<span class="go">    --capture network \</span>
+<span class="go">    --capture pcap-options:filtered</span>
+</code></pre></div>
+<p>and the file <code>/tmp/tracee/out/pcap/single.pcap</code> would only contain DNS
+related packets:</p>
+<div class="highlight"><pre><span></span><code><span class="go">find /tmp/tracee/out/pcap/</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>/tmp/tracee/out/pcap/
+/tmp/tracee/out/pcap/single.pcap
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">sudo tcpdump -n -r /tmp/tracee/out/pcap/single.pcap | head -2</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>reading from file /tmp/tracee/out/pcap/single.pcap, link-type NULL (BSD loopback), snapshot length 262144
+16:53:48.870629 IP 127.0.0.1.55569 &gt; 127.0.0.53.53: 33361+ [1au] A? www.uol.com.br. (43)
+16:53:48.870690 IP 127.0.0.1.55569 &gt; 127.0.0.53.53: 25943+ [1au] AAAA? www.uol.com.br. (43)
+</code></pre></div>
+<p>A great thing is that you may have multiple pcap files, divided by:</p>
+<ol>
+<li>single: a single pcap file containing all packets (the default)</li>
+<li>process: one file per process executed, ordered by host and container</li>
+<li>container: one file for the host and one pcap file per container</li>
+<li>per-command: one file per command executed (even if multiple times)</li>
+</ol>
+<p>and you can even have multiple ways at the same time. Example: a ping
+command is executed inside a container. You want to summarize captured
+traffic per container and per command. You will find the same captured
+data for that ping command inside <code>commands/container_id/ping.pcap</code> and
+inside <code>containers/container_id.pcap</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    --events net_packet_icmp \</span>
+<span class="go">    --capture network \</span>
+<span class="go">    --capture pcap-options:filtered \</span>
+<span class="go">    --capture pcap:process,container,command</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">cd /tmp/tracee/out</span>
+<span class="go">find pcap</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>pcap
+pcap/commands
+pcap/commands/b86533d11f3
+pcap/commands/b86533d11f3/ping.pcap
+pcap/commands/host
+pcap/commands/host/sshd.pcap
+pcap/commands/host/zerotier-one.pcap
+pcap/commands/host/node.pcap
+pcap/commands/fd95a035ce5
+pcap/commands/fd95a035ce5/ping.pcap
+pcap/processes
+pcap/processes/b86533d11f3
+pcap/processes/b86533d11f3/ping_1261180_1663772450241192.pcap
+pcap/processes/host
+pcap/processes/host/node_186708_1573567360495399.pcap
+pcap/processes/host/node_1196826_1662656211119567.pcap
+pcap/processes/host/zerotier-one_7882_137007714376.pcap
+pcap/processes/host/sshd_1196773_1662654999660718.pcap
+pcap/processes/fd95a035ce5
+pcap/processes/fd95a035ce5/ping_1261163_1663769383806467.pcap
+pcap/containers
+pcap/containers/host.pcap
+pcap/containers/b86533d11f3.pcap
+pcap/containers/fd95a035ce5.pcap
+</code></pre></div>
+<p>you can see the packets by executing tcpdump on any pcap file:</p>
+<div class="highlight"><pre><span></span><code><span class="go">tcpdump -r pcap/containers/b86533d11f3.pcap</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>reading from file pcap/containers/b86533d11f3.pcap, link-type NULL (BSD loopback), snapshot length 65535
+02:52:00.524035 IP 172.17.0.3 &gt; dns.google: ICMP echo request, id 5, seq 476, length 64
+02:52:00.533145 IP dns.google &gt; 172.17.0.3: ICMP echo reply, id 5, seq 476, length 64
+02:52:01.525455 IP 172.17.0.3 &gt; dns.google: ICMP echo request, id 5, seq 477, length 64
+02:52:01.535414 IP dns.google &gt; 172.17.0.3: ICMP echo reply, id 5, seq 477, length 64
+02:52:02.526715 IP 172.17.0.3 &gt; dns.google: ICMP echo request, id 5, seq 478, length 64
+02:52:02.536444 IP dns.google &gt; 172.17.0.3: ICMP echo reply, id 5, seq 478, length 64
+02:52:03.528739 IP 172.17.0.3 &gt; dns.google: ICMP echo request, id 5, seq 479, length 64
+02:52:03.538622 IP dns.google &gt; 172.17.0.3: ICMP echo reply, id 5, seq 479, length 64
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">tcpdump -r pcap/commands/b86533d11f3/ping.pcap</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>reading from file pcap/commands/b86533d11f3/ping.pcap, link-type NULL (BSD loopback), snapshot length 65535
+02:52:00.524035 IP 172.17.0.3 &gt; dns.google: ICMP echo request, id 5, seq 476, length 64
+02:52:00.533145 IP dns.google &gt; 172.17.0.3: ICMP echo reply, id 5, seq 476, length 64
+02:52:01.525455 IP 172.17.0.3 &gt; dns.google: ICMP echo request, id 5, seq 477, length 64
+02:52:01.535414 IP dns.google &gt; 172.17.0.3: ICMP echo reply, id 5, seq 477, length 64
+02:52:02.526715 IP 172.17.0.3 &gt; dns.google: ICMP echo request, id 5, seq 478, length 64
+02:52:02.536444 IP dns.google &gt; 172.17.0.3: ICMP echo reply, id 5, seq 478, length 64
+02:52:03.528739 IP 172.17.0.3 &gt; dns.google: ICMP echo request, id 5, seq 479, length 64
+02:52:03.538622 IP dns.google &gt; 172.17.0.3: ICMP echo reply, id 5, seq 479, length 64
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note that the same packets were written to 2 different pcap files: the
+pcap file describing the container <code>b86533d11f3</code> (because it was
+executing a single process: ping) and the pcap file describing ANY ping
+command executed in that container (commands/b86533d11f3/ping.pcap).</p>
+</div>
+<p>The format for the pcap filenames inside <code>output_dir</code> is the following:</p>
+<ol>
+<li><strong>single</strong>:<br />
+   ./pcap/single.pcap</li>
+<li><strong>processes</strong>:<br />
+   ./pcap/processes/<code>container_id</code>/<code>process_comm</code>/<code>host_tid</code>/<code>task_starttime</code>.pcap</li>
+<li><strong>containers</strong>:<br />
+   ./pcap/containers/<code>container_id</code>.pcap</li>
+<li><strong>commands</strong>:<br />
+   ./pcap/commands/<code>container_id</code>/<code>process_comm</code>.pcap</li>
+</ol>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>By default, all pcap files will contain packets with headers only. That
+might too little for introspection, since sometimes one might be
+interested in a few bytes of the captured packet (or event it all). Next
+item shows how to capture a specific packet payload size.</p>
+</div>
+<p>In order to capture a specific payload size you may specify:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    --events net_packet_tcp \</span>
+<span class="go">    --capture network \</span>
+<span class="go">    --capture pcap-options:filtered \</span>
+<span class="go">    --capture pcap:single,command \</span>
+<span class="go">    --capture pcap-snaplen:default</span>
+</code></pre></div>
+<p>To capture packet headers + 96 bytes of payload. Or replace <code>default</code> by:</p>
+<ol>
+<li>headers: capture up to L4 headers only</li>
+<li>max: full sized packets into pcap. WARNING: big pcap files.</li>
+<li><strong>256b</strong>, <strong>512b</strong>, <strong>1024b</strong>, ... (any number plus "b")</li>
+<li><strong>16kb</strong>, <strong>32kb</strong>, <strong>64kb</strong>,  ... (any number plus "kb")</li>
+</ol>
+<blockquote>
+<p>when specifying a payload size, it refers to the payload AFTER the layer4
+headers (and not the entire packet length).</p>
+</blockquote>
+</li>
+<li>
+<p><strong>Loaded Kernel Modules</strong></p>
+<p>Anytime a <strong>kernel module</strong> is loaded, the binary file will be captured.
+If the same binary is loaded multiple times, it will be captured just once.</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    --output none \</span>
+<span class="go">    --scope comm=bash \</span>
+<span class="go">    --scope follow \</span>
+<span class="go">    --capture clear-dir \</span>
+<span class="go">    --capture module</span>
+</code></pre></div>
+<p>Captured module will be found in tracee destination directory, just like
+any other captured file would be:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ls /tmp/tracee/out/host</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>module.dev-271581185.inode-4071826.pid-3668786.c8b62228208f4bdbf21df09c01046b73dd44733841675bf3c0ff969fbedab616
+</code></pre></div>
+<p>AND, the captured module is an exact copy of the loaded module:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo rmmod lkm_example</span>
+<span class="go">sudo insmod /tmp/tracee/out/host/module.dev-271581185.inode-4071826.pid-3668786.c8b62228208f4bdbf21df09c01046b73dd44733841675bf3c0ff969fbedab616</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">lsmod | grep example</span>
+
+<span class="go">```text</span>
+<span class="go">lkm_example            16384  0</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">sudo rmmod lkm_example</span>
+</code></pre></div>
+<p>you can even load/unload it.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Example kernel module taken from <a href="https://blog.sourcerer.io/writing-a-simple-linux-kernel-module-d9dc3762c234">this blog</a></p>
+</div>
+</li>
+<li>
+<p><strong>BPF programs</strong></p>
+<p>Wheneber a <strong>BPF program</strong> is loaded, the BPF bytecode will be captured.
+This captured bytecode represents the BPF program as it was loaded by the loading process.
+It is basically the BPF section of the compiled ELF that loads the BPF program, which contains the program instructions themselves.
+You can disassemble the bytecode with the help of <code>binutils-bpf</code> package and the following command line:
+<code>objdump -D -b binary -m bpf &lt;path&gt;</code></p>
+<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee \
+   --output none \
+   --scope comm=bash \
+   --scope follow \
+   --capture clear-dir \
+   --capture bpf
+</code></pre></div>
+<p>Captured bpf bytecode will be found in tracee destination directory, just like
+any other captured file would be:</p>
+<p><div class="highlight"><pre><span></span><code>$ sudo ls /tmp/tracee/out/host
+  bpf.name-test_prog.pid-3668786.c8b62228208f4bdbf21df09c01046b73dd44733841675bf3c0ff969fbedab616
+</code></pre></div>
+   The hex value after the last "." is the hash of the bpf bytecode.</p>
+</li>
+</ol>
 
 
 
@@ -8304,10 +8508,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.26099bd0.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link", "content.code.copy"], "search": "../../assets/javascripts/workers/search.26099bd0.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.9d1edc04.min.js"></script>
+      <script src="../../assets/javascripts/bundle.9d1edc04.min.js"></script>
       
     
   </body>

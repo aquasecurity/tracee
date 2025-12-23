@@ -2373,6 +2373,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#security-model-and-detection-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Model and Detection Boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#functionality-and-scope-of-signatures" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6171,6 +6182,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../detectors/yaml-detectors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    YAML Detectors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../detectors/api-reference/" class="md-nav__link">
         
   
@@ -6693,7 +6732,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../advanced/ordering-events/" class="md-nav__link">
+      <a href="../../../outputs/ordering-events/" class="md-nav__link">
         
   
   
@@ -6812,7 +6851,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../advanced/forensics/" class="md-nav__link">
+      <a href="../../../forensics/" class="md-nav__link">
         
   
   
@@ -6848,14 +6887,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../advanced/secure-tracing/" class="md-nav__link">
+      <a href="../../../security-model/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Secure Tracing
+    Security Model
   
 
     
@@ -8111,6 +8150,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#security-model-and-detection-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Model and Detection Boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#functionality-and-scope-of-signatures" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8179,6 +8229,18 @@ occurrences. When these foundational system events align with the conditions set
 by a signature, Tracee generates a corresponding "security event." This process
 enables Tracee to actively monitor and report potential security concerns
 arising from observed system interactions.</p>
+<h2 id="security-model-and-detection-boundaries">Security Model and Detection Boundaries<a class="headerlink" href="#security-model-and-detection-boundaries" title="Permanent link">&para;</a></h2>
+<p>Tracee's detection capabilities vary significantly depending on the adversary:</p>
+<ul>
+<li>
+<p><strong>Userspace Adversaries</strong>: Tracee provides strong detection capabilities through eBPF's tamper-resistant architecture. Even root-privileged adversaries in userspace cannot bypass Tracee's monitoring.</p>
+</li>
+<li>
+<p><strong>Kernel-Level Adversaries</strong>: Tracee provides best-effort detection using signature-based approaches. Rootkit detection signatures (such as syscall table hooking, hidden kernel modules, and proc filesystem hooking) may detect known techniques, but cannot guarantee detection against sophisticated kernel-level threats.</p>
+</li>
+</ul>
+<p><strong>Important</strong>: If the kernel is compromised before Tracee starts, or if an adversary exploits kernel zero-day vulnerabilities, Tracee's detection capabilities cannot be guaranteed.</p>
+<p>For a comprehensive understanding of Tracee's security boundaries, threat model, and limitations, please see the <a href="../../../security-model/">Security Model</a> documentation.</p>
 <h2 id="functionality-and-scope-of-signatures">Functionality and Scope of Signatures<a class="headerlink" href="#functionality-and-scope-of-signatures" title="Permanent link">&para;</a></h2>
 <p>The signatures documented herein focus on key system operations. For instance,
 one signature identifies attempts to manipulate the syscall tables or the
