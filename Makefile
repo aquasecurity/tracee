@@ -1218,35 +1218,7 @@ LOGFROM ?= main
 format-pr:: \
 	| .check_$(CMD_GIT)
 #
-	@echo
-	@echo "👇 PR Comment BEGIN"
-	@echo
-
-	@$(CMD_GIT) \
-		log $(LOGFROM)..HEAD \
-		--pretty=format:'%C(auto,yellow)%h%Creset **%C(auto,red)%s%Creset**'
-
-	@echo
-	@echo
-
-	@output=$$($(CMD_GIT) rev-list $(LOGFROM)..HEAD | while read commit; do \
-		body="$$($(CMD_GIT) show --no-patch --format=%b $$commit | sed ':a;N;$$!ba;s/\n$$//')"; \
-		if [ -n "$$body" ]; then \
-			$(CMD_GIT) \
-				show -s $$commit \
-				--color=always \
-				--format='%C(auto,yellow)%h%Creset **%C(auto,red)%s%Creset**%n'; \
-			echo "$$body" | sed 's/^/> /'; \
-			echo; \
-			echo "--"; \
-			echo; \
-		fi; \
-	done); \
-	echo "$$output"
-
-	@echo
-	@echo "👆 PR Comment END"
-	@echo
+	@$(CURDIR)/scripts/checkpatch.sh pr-format
 
 .PHONY: check-pr
 check-pr::
