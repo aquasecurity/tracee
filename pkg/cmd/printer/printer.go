@@ -75,13 +75,6 @@ func newSinglePrinter(dst config.Destination) (EventPrinter, error) {
 		case format == "table":
 			res = &tableEventPrinter{
 				out:           dst.File,
-				verbose:       false,
-				containerMode: dst.ContainerMode,
-			}
-		case format == "table-verbose":
-			res = &tableEventPrinter{
-				out:           dst.File,
-				verbose:       true,
 				containerMode: dst.ContainerMode,
 			}
 		case format == "json":
@@ -116,7 +109,6 @@ func newSinglePrinter(dst config.Destination) (EventPrinter, error) {
 // tableEventPrinter is the printer for the table format.
 type tableEventPrinter struct {
 	out           io.WriteCloser
-	verbose       bool
 	containerMode config.ContainerMode
 	relativeTS    bool
 }
@@ -128,87 +120,43 @@ func (p tableEventPrinter) Init() error {
 
 // Preamble prints the preamble for the table format.
 func (p tableEventPrinter) Preamble() {
-	if p.verbose {
-		switch p.containerMode {
-		case config.ContainerModeDisabled:
-			fmt.Fprintf(p.out,
-				"%-16s %-6s %-16s %-7s %-7s %-7s %-25s %s",
-				"TIME",
-				"UID",
-				"COMM",
-				"PID",
-				"TID",
-				"PPID",
-				"EVENT",
-				"ARGS",
-			)
-		case config.ContainerModeEnabled:
-			fmt.Fprintf(p.out,
-				"%-16s %-13s %-6s %-16s %-15s %-15s %-15s %-25s %s",
-				"TIME",
-				"CONTAINER_ID",
-				"UID",
-				"COMM",
-				"PID/host",
-				"TID/host",
-				"PPID/host",
-				"EVENT",
-				"ARGS",
-			)
-		case config.ContainerModeEnriched:
-			fmt.Fprintf(p.out,
-				"%-16s %-13s %-16s %-6s %-16s %-15s %-15s %-15s %-25s %s",
-				"TIME",
-				"CONTAINER_ID",
-				"IMAGE",
-				"UID",
-				"COMM",
-				"PID/host",
-				"TID/host",
-				"PPID/host",
-				"EVENT",
-				"ARGS",
-			)
-		}
-	} else {
-		switch p.containerMode {
-		case config.ContainerModeDisabled:
-			fmt.Fprintf(p.out,
-				"%-16s %-6s %-16s %-7s %-7s %-25s %s",
-				"TIME",
-				"UID",
-				"COMM",
-				"PID",
-				"TID",
-				"EVENT",
-				"ARGS",
-			)
-		case config.ContainerModeEnabled:
-			fmt.Fprintf(p.out,
-				"%-16s %-13s %-6s %-16s %-15s %-15s %-25s %s",
-				"TIME",
-				"CONTAINER_ID",
-				"UID",
-				"COMM",
-				"PID/host",
-				"TID/host",
-				"EVENT",
-				"ARGS",
-			)
-		case config.ContainerModeEnriched:
-			fmt.Fprintf(p.out,
-				"%-16s %-13s %-16s %-6s %-16s %-15s %-15s %-25s %s",
-				"TIME",
-				"CONTAINER_ID",
-				"IMAGE",
-				"UID",
-				"COMM",
-				"PID/host",
-				"TID/host",
-				"EVENT",
-				"ARGS",
-			)
-		}
+	switch p.containerMode {
+	case config.ContainerModeDisabled:
+		fmt.Fprintf(p.out,
+			"%-16s %-6s %-16s %-7s %-7s %-25s %s",
+			"TIME",
+			"UID",
+			"COMM",
+			"PID",
+			"TID",
+			"EVENT",
+			"ARGS",
+		)
+	case config.ContainerModeEnabled:
+		fmt.Fprintf(p.out,
+			"%-16s %-13s %-6s %-16s %-15s %-15s %-25s %s",
+			"TIME",
+			"CONTAINER_ID",
+			"UID",
+			"COMM",
+			"PID/host",
+			"TID/host",
+			"EVENT",
+			"ARGS",
+		)
+	case config.ContainerModeEnriched:
+		fmt.Fprintf(p.out,
+			"%-16s %-13s %-16s %-6s %-16s %-15s %-15s %-25s %s",
+			"TIME",
+			"CONTAINER_ID",
+			"IMAGE",
+			"UID",
+			"COMM",
+			"PID/host",
+			"TID/host",
+			"EVENT",
+			"ARGS",
+		)
 	}
 	fmt.Fprintln(p.out)
 }
@@ -255,7 +203,7 @@ func (p tableEventPrinter) Print(event *pb.Event) {
 
 	// Extract process fields
 	var userId, processName string
-	var processID, threadID, parentProcessID, hostProcessID, hostThreadID, hostParentProcessID int
+	var processID, threadID, hostProcessID, hostThreadID int
 
 	if event.Workload != nil && event.Workload.Process != nil {
 		if event.Workload.Process.RealUser != nil && event.Workload.Process.RealUser.Id != nil {
@@ -276,102 +224,46 @@ func (p tableEventPrinter) Print(event *pb.Event) {
 		if event.Workload.Process.HostPid != nil {
 			hostProcessID = int(event.Workload.Process.HostPid.Value)
 		}
-		if len(event.Workload.Process.Ancestors) > 0 {
-			ancestor := event.Workload.Process.Ancestors[0]
-			if ancestor.Pid != nil {
-				parentProcessID = int(ancestor.Pid.Value)
-			}
-			if ancestor.HostPid != nil {
-				hostParentProcessID = int(ancestor.HostPid.Value)
-			}
-		}
 	}
 
-	if p.verbose {
-		switch p.containerMode {
-		case config.ContainerModeDisabled:
-			fmt.Fprintf(p.out,
-				"%-16s %-6s %-16s %-7d %-7d %-7d %-25s ",
-				timestamp,
-				userId,
-				processName,
-				processID,
-				threadID,
-				parentProcessID,
-				event.Name,
-			)
-		case config.ContainerModeEnabled:
-			fmt.Fprintf(p.out,
-				"%-16s %-13s %-6s %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-25s ",
-				timestamp,
-				containerId,
-				userId,
-				processName,
-				processID,
-				hostProcessID,
-				threadID,
-				hostThreadID,
-				parentProcessID,
-				hostParentProcessID,
-				event.Name,
-			)
-		case config.ContainerModeEnriched:
-			fmt.Fprintf(p.out,
-				"%-16s %-13s %-16s %-6s %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-25s ",
-				timestamp,
-				containerId,
-				containerImage,
-				userId,
-				processName,
-				processID,
-				hostProcessID,
-				threadID,
-				hostThreadID,
-				parentProcessID,
-				hostParentProcessID,
-				event.Name,
-			)
-		}
-	} else {
-		switch p.containerMode {
-		case config.ContainerModeDisabled:
-			fmt.Fprintf(p.out,
-				"%-16s %-6s %-16s %-7d %-7d %-25s ",
-				timestamp,
-				userId,
-				processName,
-				processID,
-				threadID,
-				eventName,
-			)
-		case config.ContainerModeEnabled:
-			fmt.Fprintf(p.out,
-				"%-16s %-13s %-6s %-16s %-7d/%-7d %-7d/%-7d %-25s ",
-				timestamp,
-				containerId,
-				userId,
-				processName,
-				processID,
-				hostProcessID,
-				threadID,
-				hostThreadID,
-				eventName,
-			)
-		case config.ContainerModeEnriched:
-			fmt.Fprintf(p.out,
-				"%-16s %-13s %-16s %-6s %-16s %-7d/%-7d %-7d/%-7d %-25s ",
-				timestamp,
-				containerId,
-				containerImage,
-				userId,
-				processName,
-				processID,
-				hostProcessID,
-				threadID,
-				hostThreadID,
-				eventName,
-			)
-		}
+	switch p.containerMode {
+	case config.ContainerModeDisabled:
+		fmt.Fprintf(p.out,
+			"%-16s %-6s %-16s %-7d %-7d %-25s ",
+			timestamp,
+			userId,
+			processName,
+			processID,
+			threadID,
+			eventName,
+		)
+	case config.ContainerModeEnabled:
+		fmt.Fprintf(p.out,
+			"%-16s %-13s %-6s %-16s %-7d/%-7d %-7d/%-7d %-25s ",
+			timestamp,
+			containerId,
+			userId,
+			processName,
+			processID,
+			hostProcessID,
+			threadID,
+			hostThreadID,
+			eventName,
+		)
+	case config.ContainerModeEnriched:
+		fmt.Fprintf(p.out,
+			"%-16s %-13s %-16s %-6s %-16s %-7d/%-7d %-7d/%-7d %-25s ",
+			timestamp,
+			containerId,
+			containerImage,
+			userId,
+			processName,
+			processID,
+			hostProcessID,
+			threadID,
+			hostThreadID,
+			eventName,
+		)
 	}
 
 	// Print event data (args)

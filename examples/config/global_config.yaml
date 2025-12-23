@@ -144,7 +144,7 @@ output:
     #     type: file | webhook | forward
     #     path: path in case of type == file
     #     url: url in case of type == webhook or type == forward
-    #     format: json | gotemplate=/path/to/template.tpl | table | table-verbose
+    #     format: json | gotemplate=/path/to/template.tpl | table
     
     # streams:
     #   - name: stream_name

@@ -71,7 +71,7 @@ func InvalidLogOptionValueError(opt, details string) error {
 }
 
 func UnrecognizedOutputFormatError(format string) error {
-	return fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', or 'gotemplate='. Use 'tracee man output' for more info", format)
+	return fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'json', or 'gotemplate='. Use 'tracee man output' for more info", format)
 }
 
 func UnsupportedContainerRuntimeError() error {

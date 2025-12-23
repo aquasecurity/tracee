@@ -22,8 +22,6 @@ Format options:
 
 - **table[:/path/to/file,...]**: Output events in table format. The default path to the file is stdout. Multiple file paths can be specified, separated by commas.
 
-- **table-verbose[:/path/to/file,...]**: Output events in table format with extra fields per event. The default path to the file is stdout. Multiple file paths can be specified, separated by commas.
-
 - **json[:/path/to/file,...]**: Output events in JSON format. The default path to the file is stdout. Multiple file paths can be specified, separated by commas.
 
 - **gotemplate=/path/to/template[:/path/to/file,...]**: Output events formatted using a given Go template file. The default path to the file is stdout. Multiple file paths can be specified, separated by commas.
