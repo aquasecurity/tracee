@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/flags/capture.1/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/flags/artifacts.1/">
       
       
-        <link rel="prev" href="../capabilities.1/">
+        <link rel="prev" href="../../install/config/kubernetes/">
       
       
-        <link rel="next" href="../config.1/">
+        <link rel="next" href="../buffers.1/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>TRACEE-CAPTURE - Tracee</title>
+        <title>TRACEE-ARTIFACTS - Tracee</title>
       
     
     
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              TRACEE-CAPTURE
+              TRACEE-ARTIFACTS
             
           </span>
         </div>
@@ -1272,62 +1272,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../buffers.1/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    buffers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../capabilities.1/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    capabilities
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -1345,7 +1289,7 @@
   <span class="md-ellipsis">
     
   
-    capture
+    artifacts
   
 
     
@@ -1363,7 +1307,7 @@
   <span class="md-ellipsis">
     
   
-    capture
+    artifacts
   
 
     
@@ -1490,6 +1434,90 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../buffers.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    buffers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../capabilities.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    capabilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../capture.1.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    capture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -8283,54 +8311,60 @@
 
 
 
-  <h1>capture</h1>
+  <h1>artifacts</h1>
 
 <h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--capture</strong> - Capture artifacts that were written, executed, or found to be suspicious</p>
+<p>tracee <strong>--artifacts</strong> - Capture artifacts that were written, executed, or found to be suspicious</p>
 <h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--capture</strong> &lt;[artifact:]capture-option[=value]&gt; ...</p>
-<p>tracee <strong>--capture</strong> &lt;network&gt; [<strong>--capture</strong> [pcap:option1(,option2...)|pcap-options:option|pcap-snaplen:size]] ...</p>
+<p>tracee <strong>--artifacts</strong> &lt;artifact-option[=value]&gt; ...</p>
 <h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>The <strong>--capture</strong> flag allows you to capture artifacts that were written, executed, or found to be suspicious during the execution of Tracee. The captured artifacts will appear in the 'output-path' directory.</p>
-<p>Possible capture options:</p>
+<p>The <strong>--artifacts</strong> flag allows you to capture artifacts that were written, executed, or found to be suspicious during the execution of Tracee. The captured artifacts will appear in the 'output-path' directory.</p>
+<p>Possible artifacts options:</p>
 <ul>
-<li><strong>[artifact:]write[=/path/prefix*]</strong>: Capture written files. You can provide a filter to only capture file writes whose path starts with a certain prefix (up to 50 characters). Up to 3 filters can be given.</li>
-<li><strong>[artifact:]read[=/path/prefix*]</strong>: Capture read files. You can provide a filter to only capture file reads whose path starts with a certain prefix (up to 50 characters). Up to 3 filters can be given.</li>
-<li><strong>[artifact:]exec</strong>: Capture executed files.</li>
-<li><strong>[artifact:]module</strong>: Capture loaded kernel modules.</li>
-<li><strong>[artifact:]bpf</strong>: Capture loaded BPF programs bytecode.</li>
-<li><strong>[artifact:]mem</strong>: Capture memory regions that had write+execute (w+x) protection and then changed to execute (x) only.</li>
-<li><strong>[artifact:]network</strong>: Capture network traffic. Only TCP/UDP/ICMP protocols are currently supported.</li>
+<li><strong>file-write</strong>: Capture written files. <strong>Note</strong>: Using <code>file-write.filters</code> automatically enables file-write, so you don't need to also specify <code>--artifacts file-write</code>.</li>
+<li><strong>file-write.filters=\&lt;filter&gt;</strong>: Filter for file writes (multiple allowed). Format: \&lt;filter_type&gt;=\&lt;filter_value&gt;</li>
+<li><strong>file-read</strong>: Capture read files. <strong>Note</strong>: Using <code>file-read.filters</code> automatically enables file-read, so you don't need to also specify <code>--artifacts file-read</code>.</li>
+<li><strong>file-read.filters=\&lt;filter&gt;</strong>: Filter for file reads (multiple allowed). Format: \&lt;filter_type&gt;=\&lt;filter_value&gt;</li>
+<li><strong>executable</strong>: Capture executed files.</li>
+<li><strong>kernel-modules</strong>: Capture loaded kernel modules.</li>
+<li><strong>bpf-programs</strong>: Capture loaded BPF programs bytecode.</li>
+<li><strong>memory-regions</strong>: Capture memory regions that had write+execute (w+x) protection and then changed to execute (x) only.</li>
+<li><strong>network</strong>: Capture network traffic. Only TCP/UDP/ICMP protocols are currently supported. <strong>Note</strong>: Using <code>network.pcap.split</code>, <code>network.pcap.options</code>, or <code>network.pcap.snaplen</code> automatically enables network, so you don't need to also specify <code>--artifacts network</code>.</li>
+<li><strong>network.pcap.split=\&lt;split_mode&gt;</strong>: Capture separate pcap files organized by split mode: single, process, container, command (comma-separated).</li>
+<li><strong>network.pcap.options=\&lt;option&gt;</strong>: Network capturing options: none (default) or filtered.</li>
+<li><strong>network.pcap.snaplen=\&lt;size&gt;</strong>: Sets captured payload from each packet: default, headers, max, or SIZE (e.g., 256b, 512b, 1kb, 2kb, 4kb).</li>
+<li><strong>dir.path=\&lt;path&gt;</strong>: Path where tracee will save produced artifacts. The artifact will be saved into an 'out' subdirectory (default: /tmp/tracee).</li>
+<li><strong>dir.clear</strong>: Clear the captured artifacts output dir before starting (default: false).</li>
 </ul>
 <h3 id="file-capture-filters">File Capture Filters<a class="headerlink" href="#file-capture-filters" title="Permanent link">&para;</a></h3>
-<p>Files captured upon read/write can be filtered to catch only specific IO operations. The different filter types have a logical 'AND' between them but a logical 'OR' between filters of the same type. The filter format is as follows: &lt;read/write&gt;:&lt;filter-type&gt;=&lt;filter-value&gt;</p>
+<p>Files captured upon read/write can be filtered to catch only specific IO operations. The different filter types have a logical 'AND' between them but a logical 'OR' between filters of the same type. The filter format is as follows: \&lt;filter_type&gt;=\&lt;filter_value&gt;</p>
 <p>Filter types:</p>
 <ul>
-<li><strong>path</strong>: A filter for the file path prefix (up to 50 characters). Up to 3 filters can be given. Identical to using '&lt;read/write&gt;=/path/prefix*'.</li>
-<li><strong>type</strong>: A file type from the following options: 'regular', 'pipe', and 'socket'.</li>
-<li><strong>fd</strong>: The file descriptor of the file. Can be one of the three standards: 'stdin', 'stdout', and 'stderr'.</li>
+<li><strong>path</strong>: A filter for the file path prefix (up to 50 characters). Up to 3 filters can be given. Format: path=/path/prefix*</li>
+<li><strong>type</strong>: A file type from the following options: 'regular', 'pipe', 'socket' and 'elf'. Format: type=regular</li>
+<li><strong>fd</strong>: The file descriptor of the file. Can be one of the three standards: 'stdin', 'stdout' and 'stderr'. Format: fd=stdout</li>
 </ul>
 <h3 id="network-capture-notes">Network Capture Notes<a class="headerlink" href="#network-capture-notes" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Pcap Files:</li>
-<li>If you only specify <strong>--capture network</strong>, you will have a single file with all network traffic.</li>
+<li>If you only specify <strong>--artifacts network</strong>, you will have a single file with all network traffic.</li>
 <li>
-<p>You can use <strong>pcap:xxx,yyy</strong> to have more than one pcap file, split by different means.</p>
+<p>You can use <strong>network.pcap.split=xxx,yyy</strong> to have more than one pcap file, split by different means.</p>
 </li>
 <li>
 <p>Pcap Options:</p>
 </li>
-<li>If you do not specify <strong>pcap-options</strong> (or set to none), you will capture ALL network traffic into your pcap files.</li>
+<li>If you do not specify <strong>network.pcap.options</strong> (or set to none), you will capture ALL network traffic into your pcap files.</li>
 <li>
-<p>If you specify <strong>pcap-options:filtered</strong>, events being traced will define what network traffic will be captured.</p>
+<p>If you specify <strong>network.pcap.options=filtered</strong>, events being traced will define what network traffic will be captured.</p>
 </li>
 <li>
 <p>Snap Length:</p>
 </li>
 <li>If you do not specify a snaplen, the default is headers only (incomplete packets in tcpdump).</li>
-<li>If you specify <strong>max</strong> as snaplen, you will get the full contents of each packet (pcap files will be large).</li>
+<li>If you specify <strong>max</strong> as snaplen, you will get full packets contents (pcap files will be large).</li>
 <li>If you specify <strong>headers</strong> as snaplen, you will only get L2/L3 headers in captured packets.</li>
-<li>If you specify <strong>headers</strong> but trace for <strong>net_packet_dns</strong> events, the L4 DNS header will be captured.</li>
+<li>If you specify <strong>headers</strong> but trace for <strong>net_packet_dns</strong> events, L4 DNS header will be captured.</li>
 <li>If you specify <strong>headers</strong> but trace for <strong>net_packet_http</strong> events, only L2/L3 headers will be captured.</li>
 </ul>
 <h2 id="examples">EXAMPLES<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
@@ -8338,49 +8372,55 @@
 <ul>
 <li>To capture executed files into the default output directory, use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--capture exec</span>
+<div class="highlight"><pre><span></span><code><span class="go">--artifacts executable</span>
 </code></pre></div>
 <ul>
 <li>To capture executed files into a specific directory, clear the directory before starting, use the following flags:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--capture exec --capture dir:/my/dir --capture clear-dir</span>
+<div class="highlight"><pre><span></span><code><span class="go">--artifacts executable --artifacts dir.path=/my/dir --artifacts dir.clear</span>
 </code></pre></div>
 <ul>
 <li>To capture files that were written into anywhere under /usr/bin/ or /etc/, use the following flags:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--capture write=/usr/bin/* --capture write=/etc/*</span>
+<p><div class="highlight"><pre><span></span><code><span class="go">--artifacts file-write.filters=path=/usr/bin/* --artifacts file-write.filters=path=/etc/*</span>
 </code></pre></div>
+  Note: <code>file-write.filters</code> automatically enables file-write, so <code>--artifacts file-write</code> is not needed.</p>
 <ul>
-<li>To capture file writes to socket files that are the 'stdout' of the writing process, use the following flag:</li>
+<li>To capture file writes to socket files that are the 'stdout' of the writing process, use the following flags:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--capture write:type=socket --capture write:fd=stdout</span>
+<p><div class="highlight"><pre><span></span><code><span class="go">--artifacts file-write.filters=type=socket --artifacts file-write.filters=fd=stdout</span>
 </code></pre></div>
+  Note: <code>file-write.filters</code> automatically enables file-write, so <code>--artifacts file-write</code> is not needed.</p>
 <h3 id="network-capture">Network Capture<a class="headerlink" href="#network-capture" title="Permanent link">&para;</a></h3>
 <ul>
 <li>To capture network traffic, use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--capture network</span>
+<div class="highlight"><pre><span></span><code><span class="go">--artifacts network</span>
 </code></pre></div>
 <ul>
-<li>To capture network traffic and save separate pcap files for processes and commands, use the following flag:</li>
+<li>To capture network traffic and save separate pcap files for processes and commands, use the following flags:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--capture network --capture pcap:process,command</span>
+<p><div class="highlight"><pre><span></span><code><span class="go">--artifacts network.pcap.split=process,command</span>
 </code></pre></div>
+  Note: <code>network.pcap.split</code> automatically enables network, so <code>--artifacts network</code> is not needed.</p>
 <ul>
-<li>To capture network traffic and save pcap files containing only traced/filtered packets, use the following flag:</li>
+<li>To capture network traffic and save pcap files containing only traced/filtered packets, use the following flags:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--capture network --capture pcap-options:filtered</span>
+<p><div class="highlight"><pre><span></span><code><span class="go">--artifacts network.pcap.options=filtered</span>
 </code></pre></div>
+  Note: <code>network.pcap.options</code> automatically enables network, so <code>--artifacts network</code> is not needed.</p>
 <ul>
-<li>To capture network traffic and set the captured payload from each packet to 1KB, use the following flag:</li>
+<li>To capture network traffic and set the captured payload from each packet to 1KB, use the following flags:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--capture network --capture pcap-snaplen:1kb</span>
+<p><div class="highlight"><pre><span></span><code><span class="go">--artifacts network.pcap.snaplen=1kb</span>
 </code></pre></div>
+  Note: <code>network.pcap.snaplen</code> automatically enables network, so <code>--artifacts network</code> is not needed.</p>
 <ul>
-<li>To capture network traffic and save pcap files for containers and commands, use the following flag:</li>
+<li>To capture network traffic and save pcap files for containers and commands, use the following flags:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--capture network --capture pcap:container,command</span>
+<p><div class="highlight"><pre><span></span><code><span class="go">--artifacts network.pcap.split=container,command</span>
 </code></pre></div>
+  Note: <code>network.pcap.split</code> automatically enables network, so <code>--artifacts network</code> is not needed.</p>
 
 
 
