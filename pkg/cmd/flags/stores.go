@@ -113,8 +113,8 @@ func (s *StoresConfig) GetProcTreeConfig() process.ProcTreeConfig {
 	}
 }
 
-// GetDNSCacheConfig returns the DNS cache config
-func (s *StoresConfig) GetDNSCacheConfig() dns.Config {
+// GetDNSStoreConfig returns the DNS store config
+func (s *StoresConfig) GetDNSStoreConfig() dns.Config {
 	return dns.Config{
 		Enable:    s.DNS.Enabled,
 		CacheSize: s.DNS.MaxEntries,

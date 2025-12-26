@@ -35,7 +35,7 @@ type Config struct {
 	CgroupFSPath      string
 	CgroupFSForce     bool
 	EngineConfig      engine.Config
-	DNSCacheConfig    dns.Config
+	DNSStore          dns.Config
 	MetricsEnabled    bool
 	HealthzEnabled    bool
 	DetectorConfig    DetectorConfig

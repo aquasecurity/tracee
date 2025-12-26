@@ -20,7 +20,7 @@ import (
 )
 
 type ManagerConfig struct {
-	DNSCacheConfig   dns.Config
+	DNSStore         dns.Config
 	ProcTreeConfig   process.ProcTreeConfig
 	CaptureConfig    config.CaptureConfig
 	HeartbeatEnabled bool
@@ -209,7 +209,7 @@ func (m *Manager) selectConfiguredEvents() {
 
 	// DNS Cache events
 
-	if m.cfg.DNSCacheConfig.Enable {
+	if m.cfg.DNSStore.Enable {
 		m.selectEvent(events.NetPacketDNS, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
 	}
 

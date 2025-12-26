@@ -272,7 +272,7 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	pmCfg := policy.ManagerConfig{
 		HeartbeatEnabled: cfg.HealthzEnabled,
-		DNSCacheConfig:   cfg.DNSCacheConfig,
+		DNSStore:         cfg.DNSStore,
 		ProcTreeConfig:   cfg.ProcTree,
 		CaptureConfig:    getNewCaptureConfig(),
 	}
@@ -399,8 +399,8 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize DNS Cache
 
 	var dnsCache *dns.DNSCache
-	if t.config.DNSCacheConfig.Enable {
-		dnsCache, err = dns.New(t.config.DNSCacheConfig)
+	if t.config.DNSStore.Enable {
+		dnsCache, err = dns.New(t.config.DNSStore)
 		if err != nil {
 			return errfmt.Errorf("error initializing dns cache: %v", err)
 		}
@@ -557,7 +557,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
-	// DNS cache is optional (may be nil if DNSCacheConfig.Enable is false)
+	// DNS cache is optional (may be nil if DNSStore.Enable is false)
 	if err := t.dataStoreRegistry.RegisterStore(dsapi.DNS, dnsCache, false); err != nil {
 		return errfmt.WrapError(err)
 	}
