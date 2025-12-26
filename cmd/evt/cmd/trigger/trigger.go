@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -17,16 +18,14 @@ import (
 	"github.com/aquasecurity/tracee/cmd/evt/cmd/helpers"
 )
 
-const (
-	signalWaitTimeout = 1 * time.Minute
-)
-
 type trigger struct {
 	event            string
 	ops              int32
 	sleep            time.Duration
 	waitSignal       bool
+	signalTimeout    time.Duration
 	printBypassFlags bool
+	parallel         int32
 	triggerPath      string
 
 	ctx context.Context
@@ -70,8 +69,37 @@ func (t *trigger) setTriggerPath() error {
 func (t *trigger) runTriggers() error {
 	const layout = "15:04:05.999999999"
 	now := time.Now()
-	t.printf("Starting triggering %d ops with %v sleep time at %v\n", t.ops, t.sleep, now.Format(layout))
 
+	if t.parallel == 1 {
+		// Sequential execution
+		t.printf("Starting triggering %d ops with %v sleep time at %v\n", t.ops, t.sleep, now.Format(layout))
+		err := t.runTriggersSequential()
+		if err != nil {
+			return err
+		}
+	} else {
+		// Parallel execution: total = parallel × ops
+		totalOps := t.parallel * t.ops
+		t.printf("Starting triggering %d total ops (%d workers × %d ops) with %v sleep time at %v\n",
+			totalOps, t.parallel, t.ops, t.sleep, now.Format(layout))
+		err := t.runTriggersParallel()
+		if err != nil {
+			return err
+		}
+	}
+
+	end := time.Now()
+	totalOps := t.ops
+	if t.parallel > 1 {
+		totalOps = t.parallel * t.ops
+	}
+	t.printf("Finished triggering %d ops after %v at %v\n", totalOps, end.Sub(now).String(), end.Format(layout))
+
+	return nil
+}
+
+// runTriggersSequential runs ops sequentially
+func (t *trigger) runTriggersSequential() error {
 	for i := int32(0); i < t.ops; i++ {
 		select {
 		case <-t.ctx.Done():
@@ -87,26 +115,74 @@ func (t *trigger) runTriggers() error {
 			return fmt.Errorf("failed to run command: %w", err)
 		}
 	}
-
-	end := time.Now()
-	t.printf("Finished triggering %d ops after %v at %v\n", t.ops, end.Sub(now).String(), end.Format(layout))
-
 	return nil
 }
 
-func (t *trigger) printf(format string, args ...interface{}) {
+// runTriggersParallel spawns N workers, each running ops operations
+// Total operations = parallel × ops
+func (t *trigger) runTriggersParallel() error {
+	var wg sync.WaitGroup
+	errChan := make(chan error, t.parallel)
+
+	// Each worker runs the full ops count
+	for workerID := int32(0); workerID < t.parallel; workerID++ {
+		wg.Add(1)
+		go func(id int32) {
+			defer wg.Done()
+
+			// Each worker runs t.ops operations
+			for i := int32(0); i < t.ops; i++ {
+				select {
+				case <-t.ctx.Done():
+					errChan <- t.ctx.Err()
+					return
+				default:
+					time.Sleep(t.sleep)
+				}
+
+				exeCmd := exec.CommandContext(t.ctx, t.triggerPath)
+				if err := exeCmd.Run(); err != nil {
+					errChan <- fmt.Errorf("worker %d failed: %w", id, err)
+					return
+				}
+			}
+		}(workerID)
+	}
+
+	// Wait for all workers to complete
+	wg.Wait()
+	close(errChan)
+
+	// Collect all errors
+	var errs []error
+	for err := range errChan {
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	// Return combined error if any failures occurred
+	if len(errs) == 0 {
+		return nil
+	}
+
+	// Multiple errors - join them preserving error chain
+	return fmt.Errorf("%d workers failed: %w", len(errs), errors.Join(errs...))
+}
+
+func (t *trigger) printf(format string, args ...any) {
 	t.cmd.Printf(format, args...)
 }
 
-func (t *trigger) println(args ...interface{}) {
+func (t *trigger) println(args ...any) {
 	t.cmd.Println(args...)
 }
 
-func (t *trigger) printErrf(format string, args ...interface{}) {
+func (t *trigger) printErrf(format string, args ...any) {
 	t.cmd.PrintErrf(format, args...)
 }
 
-func (t *trigger) printErrln(args ...interface{}) {
+func (t *trigger) printErrln(args ...any) {
 	t.cmd.PrintErrln(args...)
 }
 
@@ -134,10 +210,10 @@ func (t *trigger) waitForSignal() error {
 
 	startChan := make(chan os.Signal, 1)
 	signal.Notify(startChan, syscall.SIGUSR1)
-	t.println("Waiting for start signal SIGUSR1")
+	t.printf("Waiting for start signal SIGUSR1 (timeout: %v)", t.signalTimeout)
 
 	ctx := t.ctx
-	timeout := time.After(signalWaitTimeout)
+	timeout := time.After(t.signalTimeout)
 
 	select {
 	case <-ctx.Done():
@@ -145,7 +221,7 @@ func (t *trigger) waitForSignal() error {
 	case <-startChan:
 		return nil
 	case <-timeout:
-		return errors.New("timed out waiting for signal SIGUSR1")
+		return fmt.Errorf("timed out waiting for signal SIGUSR1 after %v", t.signalTimeout)
 	}
 }
 
