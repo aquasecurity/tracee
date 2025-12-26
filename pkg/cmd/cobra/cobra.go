@@ -191,7 +191,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 
 	cfg.ProcTree = stores.GetProcTreeConfig()
-	cfg.DNSCacheConfig = stores.GetDNSCacheConfig()
+	cfg.DNSStore = stores.GetDNSStoreConfig()
 
 	// Artifacts command line flags - via viper
 

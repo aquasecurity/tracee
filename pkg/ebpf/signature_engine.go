@@ -162,7 +162,7 @@ func (t *Tracee) PrepareBuiltinDataSources() []detect.DataSource {
 	datasources = append(datasources, container.NewDataSource(t.dataStoreRegistry.GetContainerManager()))
 
 	// DNS Data Source
-	if t.config.DNSCacheConfig.Enable {
+	if t.config.DNSStore.Enable {
 		datasources = append(datasources, dns.NewDataSource(t.dataStoreRegistry.GetDNSCache()))
 	}
 

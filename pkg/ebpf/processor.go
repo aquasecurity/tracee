@@ -102,7 +102,7 @@ func (t *Tracee) registerEventProcessors() {
 	// DNS Cache Processors
 	//
 
-	if t.config.DNSCacheConfig.Enable {
+	if t.config.DNSStore.Enable {
 		// TODO(nadav): Migrate to control plane signals?
 		t.RegisterEventProcessor(events.NetPacketDNS, t.populateDnsCache)
 	}
