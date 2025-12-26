@@ -31,12 +31,12 @@ func TestNewKernelSymbolTable(t *testing.T) {
 	}
 
 	if kst == nil {
-		t.Fatalf("NewKernelSymbolTable() returned nil")
+		t.Fatal("NewKernelSymbolTable() returned nil")
 	}
 
 	// Check if symbols is initialized
 	if kst.symbols == nil {
-		t.Errorf("KernelSymbolTable is not initialized correctly")
+		t.Error("KernelSymbolTable is not initialized correctly")
 	}
 }
 
@@ -48,7 +48,7 @@ func getTheOnlySymbol(t *testing.T, kst *KernelSymbolTable) *KernelSymbol {
 		foundSymbol = symbol
 	})
 	if i > 1 {
-		t.Errorf("multiple symbols found")
+		t.Error("multiple symbols found")
 	}
 	return foundSymbol
 }

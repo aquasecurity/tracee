@@ -238,7 +238,7 @@ output:
 	}
 
 	assert.True(t, found, "YAML detector yaml-test-001 should be loaded")
-	t.Logf("Successfully loaded YAML detector yaml-test-001")
+	t.Log("Successfully loaded YAML detector yaml-test-001")
 }
 
 // Test_YAMLDetectorEventGeneration tests that a YAML detector produces events with correct field extraction
@@ -299,7 +299,7 @@ output:
 		}
 	}()
 
-	t.Logf("Tracee started, triggering detection...")
+	t.Log("Tracee started, triggering detection...")
 
 	// Trigger the detector by executing /usr/bin/true
 	cmd := exec.Command("/usr/bin/true")
@@ -419,7 +419,7 @@ output:
 		}
 	}()
 
-	t.Logf("Tracee started with chained detectors, triggering detection...")
+	t.Log("Tracee started with chained detectors, triggering detection...")
 
 	// Trigger the detector chain by executing /usr/bin/id
 	cmd := exec.Command("/usr/bin/id")
@@ -501,13 +501,13 @@ output:
 		}
 	}()
 
-	t.Logf("Tracee started, testing filters...")
+	t.Log("Tracee started, testing filters...")
 
 	// Clear buffer before tests
 	buf.Clear()
 
 	// Test 1: Execute matching pathname - should fire
-	t.Logf("Test 1: Executing /usr/bin/cat (should match filter)")
+	t.Log("Test 1: Executing /usr/bin/cat (should match filter)")
 	cmd := exec.Command("/usr/bin/cat", "/dev/null")
 	err := cmd.Run()
 	require.NoError(t, err, "Failed to execute /usr/bin/cat")
@@ -520,14 +520,14 @@ output:
 	if matchedEvt != nil {
 		matchedPath := getArgValue(matchedEvt, "matched_path")
 		assert.Contains(t, matchedPath, "/usr/bin/cat", "matched_path should contain /usr/bin/cat")
-		t.Logf("✓ Filter matched correctly for /usr/bin/cat")
+		t.Log("✓ Filter matched correctly for /usr/bin/cat")
 	}
 
 	// Clear buffer for next test
 	buf.Clear()
 
 	// Test 2: Execute non-matching pathname - should NOT fire
-	t.Logf("Test 2: Executing /usr/bin/id (should NOT match filter)")
+	t.Log("Test 2: Executing /usr/bin/id (should NOT match filter)")
 	cmd = exec.Command("/usr/bin/id")
 	err = cmd.Run()
 	require.NoError(t, err, "Failed to execute /usr/bin/id")
@@ -536,7 +536,7 @@ output:
 
 	unmatchedEvt := waitForDetectorEvent(buf, "test_filter_match", 2*time.Second)
 	assert.Nil(t, unmatchedEvt, "Detector should NOT fire for non-matching pathname /usr/bin/id")
-	t.Logf("✓ Filter correctly rejected /usr/bin/id")
+	t.Log("✓ Filter correctly rejected /usr/bin/id")
 }
 
 // Test_YAMLDetectorErrorHandling tests graceful handling of invalid YAML and missing fields
@@ -628,7 +628,7 @@ output:
 	assert.False(t, invalidFound, "Invalid syntax detector should NOT be loaded")
 	assert.False(t, missingIDFound, "Missing ID detector should NOT be loaded")
 
-	t.Logf("✓ Error handling verified: valid loaded, invalid rejected")
+	t.Log("✓ Error handling verified: valid loaded, invalid rejected")
 
 	// Test 4: Missing required field during extraction should skip detection gracefully
 	detectorWithRequiredField := `id: yaml-test-required-field
@@ -674,7 +674,7 @@ output:
 		}
 	}()
 
-	t.Logf("Tracee started, testing missing required field...")
+	t.Log("Tracee started, testing missing required field...")
 
 	// Trigger the detector
 	cmd := exec.Command("/bin/hostname")
@@ -687,5 +687,5 @@ output:
 	evt := waitForDetectorEvent(buf, "test_required_field", 2*time.Second)
 	assert.Nil(t, evt, "Detector should skip detection when required field is missing")
 
-	t.Logf("✓ Missing required field handled gracefully (detection skipped)")
+	t.Log("✓ Missing required field handled gracefully (detection skipped)")
 }

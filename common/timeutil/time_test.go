@@ -302,7 +302,7 @@ func TestSystemDependentFunctions(t *testing.T) {
 			now := time.Now().UnixNano()
 			assert.Less(t, bootTime, now, "Boot time should be before current time")
 		} else {
-			t.Logf("Boot time is 0 (likely containerized environment)")
+			t.Log("Boot time is 0 (likely containerized environment)")
 		}
 	})
 
@@ -331,7 +331,7 @@ func TestSystemDependentFunctions(t *testing.T) {
 			now := time.Now().UnixNano()
 			assert.Less(t, bootTime, now, "Boot time should be before current time")
 		} else {
-			t.Logf("Boot time is 0 (likely containerized environment)")
+			t.Log("Boot time is 0 (likely containerized environment)")
 		}
 	})
 }
@@ -356,7 +356,7 @@ func TestErrorConditions(t *testing.T) {
 		if err != nil {
 			t.Logf("Init with invalid clock returned expected error: %v", err)
 		} else {
-			t.Logf("Init with invalid clock did not return error (system-dependent behavior)")
+			t.Log("Init with invalid clock did not return error (system-dependent behavior)")
 		}
 
 		// Should not panic or crash - just calling the function is the test

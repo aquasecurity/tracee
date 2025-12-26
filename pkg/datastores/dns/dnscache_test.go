@@ -42,7 +42,6 @@ func init() {
 			eventDump = append(eventDump, e)
 		}
 	}
-
 }
 
 func TestDnsCacheSync(t *testing.T) {

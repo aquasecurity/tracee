@@ -617,9 +617,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *events.PipelineEve
 					// Skip events that dont work with filtering due to missing types
 					// being handled (https://github.com/aquasecurity/tracee/issues/2486)
 					switch events.ID(derivatives[i].EventID) {
-					case events.SymbolsLoaded:
-					case events.SharedObjectLoaded:
-					case events.PrintMemDump:
+					case events.SymbolsLoaded, events.SharedObjectLoaded, events.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
 						if t.matchPolicies(derivativePipelineEvent) == 0 {

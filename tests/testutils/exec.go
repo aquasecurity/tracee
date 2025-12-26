@@ -107,7 +107,7 @@ func ExecCmdBgWithSudoAndCtx(ctx context.Context, command string) (int, chan err
 
 	command, args, err := ParseCmd(command)
 	if err != nil {
-		fmt.Printf("Failed to parse command\n")
+		fmt.Println("Failed to parse command")
 		close(cmdStatus)
 		return -1, cmdStatus, &failedToParseCmd{command: command, err: err}
 	}

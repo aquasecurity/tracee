@@ -233,7 +233,7 @@ func TestGetRSSMemoryIntegration(t *testing.T) {
 			t.Errorf("RSS seems too small: %d bytes", stats.RSS)
 		}
 	} else {
-		t.Logf("RSS is 0, possibly /proc/self/status is not readable")
+		t.Log("RSS is 0, possibly /proc/self/status is not readable")
 	}
 }
 

@@ -199,7 +199,7 @@ func Test_parsePidNSField(t *testing.T) {
 
 			if tc.expectedErr {
 				if err == nil {
-					t.Errorf("Expected error but got none")
+					t.Error("Expected error but got none")
 				}
 			} else {
 				if err != nil {

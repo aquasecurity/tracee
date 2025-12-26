@@ -90,12 +90,10 @@ func (s *StoresConfig) GetProcessStoreConfig() process.ProcTreeConfig {
 		switch s.Process.Source {
 		case processSourceEvents:
 			source = process.SourceEvents
-		case processSourceSignals:
-			source = process.SourceSignals
 		case processSourceBoth:
 			source = process.SourceBoth
 		default:
-			// If source is empty or invalid, default to signals
+			// If source is empty, invalid, or signals, default to signals
 			source = process.SourceSignals
 		}
 	} else {

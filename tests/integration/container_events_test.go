@@ -63,7 +63,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	cfg.InitialPolicies = initialPolicies
 
 	// Start Tracee
-	t.Logf("  --- started tracee ---")
+	t.Log("  --- started tracee ---")
 	traceeInstance, err := testutils.StartTracee(ctx, t, cfg, nil, nil)
 	require.NoError(t, err, "Failed to start Tracee")
 
@@ -116,7 +116,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 		switch eventID {
 		case events.ContainerCreate:
 			foundCreate = true
-			t.Logf("Found ContainerCreate event")
+			t.Log("Found ContainerCreate event")
 			// Verify it has container-related arguments
 			assert.NotEmpty(t, evt.Data, "ContainerCreate should have arguments")
 
@@ -155,7 +155,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 
 		case events.ContainerRemove:
 			foundRemove = true
-			t.Logf("Found ContainerRemove event")
+			t.Log("Found ContainerRemove event")
 			// Verify it has the expected fields
 			assert.NotEmpty(t, evt.Data, "ContainerRemove should have arguments")
 
@@ -189,7 +189,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 		t.Log(errStop)
 		failed = true
 	} else {
-		t.Logf("  --- stopped tracee ---")
+		t.Log("  --- stopped tracee ---")
 	}
 
 	if failed {
@@ -263,7 +263,7 @@ func Test_ExistingContainers(t *testing.T) {
 	cfg.InitialPolicies = initialPolicies
 
 	// Start Tracee AFTER the container is already running
-	t.Logf("  --- started tracee ---")
+	t.Log("  --- started tracee ---")
 	traceeInstance, err := testutils.StartTracee(ctx, t, cfg, nil, nil)
 	require.NoError(t, err, "Failed to start Tracee")
 
@@ -307,7 +307,7 @@ func Test_ExistingContainers(t *testing.T) {
 		eventID := events.ID(evt.Id)
 		if eventID == events.ExistingContainer {
 			foundExisting = true
-			t.Logf("Found ExistingContainer event")
+			t.Log("Found ExistingContainer event")
 
 			// Verify it has container-related arguments
 			assert.NotEmpty(t, evt.Data, "ExistingContainer should have arguments")
@@ -321,7 +321,7 @@ func Test_ExistingContainers(t *testing.T) {
 				}
 			}
 			if containerName == "" {
-				t.Logf("Failed to get container name")
+				t.Log("Failed to get container name")
 				continue
 			}
 			if containerName != testContainerName {
@@ -371,7 +371,7 @@ func Test_ExistingContainers(t *testing.T) {
 		t.Log(errStop)
 		failed = true
 	} else {
-		t.Logf("  --- stopped tracee ---")
+		t.Log("  --- stopped tracee ---")
 	}
 
 	if failed {

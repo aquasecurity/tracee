@@ -35,15 +35,15 @@ func (s testSymbol) Clone() testSymbol {
 func TestNewSymbolTable(t *testing.T) {
 	st := NewSymbolTable[testSymbol](true)
 	if st == nil {
-		t.Fatalf("NewSymbolTable() returned nil")
+		t.Fatal("NewSymbolTable() returned nil")
 	}
 
 	if !st.lazyNameLookup {
-		t.Errorf("lazyNameLookup was not set to true")
+		t.Error("lazyNameLookup was not set to true")
 	}
 
 	if st.sortedSymbols == nil || st.symbolsByName == nil {
-		t.Errorf("data structures are nil")
+		t.Error("data structures are nil")
 	}
 }
 

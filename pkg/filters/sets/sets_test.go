@@ -84,7 +84,7 @@ func TestPrefixSetClone(t *testing.T) {
 	// ensure that changes to the copy do not affect the original
 	copy.Put("/home")
 	if cmp.Equal(set, copy, opt1) {
-		t.Errorf("Changes to copied filter affected the original")
+		t.Error("Changes to copied filter affected the original")
 	}
 }
 
@@ -107,6 +107,6 @@ func TestSuffixSetClone(t *testing.T) {
 	// ensure that changes to the copy do not affect the original
 	copy.Put(".ssh")
 	if cmp.Equal(set, copy, opt1) {
-		t.Errorf("Changes to copied filter affected the original")
+		t.Error("Changes to copied filter affected the original")
 	}
 }

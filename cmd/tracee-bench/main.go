@@ -32,7 +32,7 @@ type measurement struct {
 }
 
 func (m measurement) Print() {
-	log.Printf("\n")
+	log.Print("\n")
 	fmt.Printf("Events/Sec:     %f\n", m.AvgEbpfRate)
 	fmt.Printf("EventsLost/Sec: %f\n", m.AvgLostEventsRate)
 	fmt.Printf("Events Lost:    %d\n", m.LostEvents)
