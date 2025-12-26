@@ -13,6 +13,27 @@ import (
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 )
 
+// Error variables and helper functions
+var (
+	invalidKernelEventsBufferSizeError = errfmt.Errorf("invalid kernel events buffer size - must be a power of 2")
+
+	invalidKernelArtifactsBufferSizeError = errfmt.Errorf("invalid kernel artifacts buffer size - must be a power of 2")
+
+	invalidArtifactsFileWriteTooManyPathFiltersError = errfmt.Errorf("invalid artifacts file-write too many path filters")
+
+	invalidArtifactsFileReadTooManyPathFiltersError = errfmt.Errorf("invalid artifacts file-read too many path filters")
+
+	nilBPFObjectError = errfmt.Errorf("nil bpf object in memory")
+)
+
+func invalidPathFilterError(filter string) error {
+	return errfmt.Errorf("invalid artifacts path filter: %s, the length is limited to 50 characters", filter)
+}
+
+func invalidStreamConfigError(streamName string) error {
+	return errfmt.Errorf("invalid stream config each stream must have at least 1 destination %s", streamName)
+}
+
 // Config is a struct containing user defined configuration to initialize Tracee
 //
 // NOTE: In the future, Tracee config will be changed at run time and will require
@@ -45,40 +66,40 @@ type Config struct {
 func (c Config) Validate() error {
 	// Buffer sizes
 	if (c.Buffers.Kernel.Events & (c.Buffers.Kernel.Events - 1)) != 0 {
-		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
+		return invalidKernelEventsBufferSizeError
 	}
 	if (c.Buffers.Kernel.Artifacts & (c.Buffers.Kernel.Artifacts - 1)) != 0 {
-		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
+		return invalidKernelArtifactsBufferSizeError
 	}
 
 	// Capture
 	if len(c.Capture.FileWrite.PathFilter) > 3 {
-		return errfmt.Errorf("too many file-write path filters given")
+		return invalidArtifactsFileWriteTooManyPathFiltersError
 	}
 	for _, filter := range c.Capture.FileWrite.PathFilter {
 		if len(filter) > 50 {
-			return errfmt.Errorf("the length of a path filter is limited to 50 characters: %s", filter)
+			return invalidPathFilterError(filter)
 		}
 	}
 	if len(c.Capture.FileRead.PathFilter) > 3 {
-		return errfmt.Errorf("too many file-read path filters given")
+		return invalidArtifactsFileReadTooManyPathFiltersError
 	}
 	for _, filter := range c.Capture.FileWrite.PathFilter {
 		if len(filter) > 50 {
-			return errfmt.Errorf("the length of a path filter is limited to 50 characters: %s", filter)
+			return invalidPathFilterError(filter)
 		}
 	}
 
 	// Streams
 	for _, s := range c.Output.Streams {
 		if len(s.Destinations) == 0 {
-			return errfmt.Errorf("each stream must have at least 1 destination %s", s.Name)
+			return invalidStreamConfigError(s.Name)
 		}
 	}
 
 	// BPF
 	if c.BPFObjBytes == nil {
-		return errfmt.Errorf("nil bpf object in memory")
+		return nilBPFObjectError
 	}
 
 	return nil
