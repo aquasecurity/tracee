@@ -352,7 +352,7 @@ func (p tableEventPrinter) Print(event *pb.Event) {
 // Epilogue prints the epilogue for the table format.
 func (p tableEventPrinter) Epilogue(stats metrics.Stats) {
 	fmt.Println()
-	fmt.Fprintf(p.out, "End of events stream\n")
+	fmt.Fprint(p.out, "End of events stream\n")
 
 	jsonStats, err := stats.MarshalJSON()
 	if err != nil {
@@ -414,7 +414,7 @@ func (p templateEventPrinter) Print(event *pb.Event) {
 			logger.Errorw("Error executing template", "error", err)
 		}
 	} else {
-		fmt.Fprintf(p.out, "Template Obj is nil")
+		fmt.Fprint(p.out, "Template Obj is nil")
 	}
 }
 

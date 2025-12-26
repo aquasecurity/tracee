@@ -34,7 +34,7 @@ access to hundreds of events that help you understand how your system behaves.`,
 				// parse all flags
 				if err := cmd.Flags().Parse(args); err != nil {
 					fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-					fmt.Fprintf(os.Stderr, "Run 'tracee --help' or 'tracee man' for usage.\n")
+					fmt.Fprint(os.Stderr, "Run 'tracee --help' or 'tracee man' for usage.\n")
 					os.Exit(1)
 				}
 

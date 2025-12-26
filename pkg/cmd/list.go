@@ -53,7 +53,7 @@ func PrintEventList(includeSigs bool, wideOutput bool) {
 		}
 	}
 
-	fmt.Printf("Tracee supports the following events (use --wide for wider output):\n")
+	fmt.Println("Tracee supports the following events (use --wide for wider output):")
 	table := newTable()
 
 	// Signature Events

@@ -40,7 +40,7 @@ func TestServer(t *testing.T) {
 			break // Socket exists, server is ready
 		}
 		if i == maxRetries-1 {
-			t.Fatalf("Server did not start within expected time")
+			t.Fatal("Server did not start within expected time")
 		}
 		time.Sleep(10 * time.Millisecond) // Short wait between checks
 	}

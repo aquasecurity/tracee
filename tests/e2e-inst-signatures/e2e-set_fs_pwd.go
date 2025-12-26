@@ -36,11 +36,7 @@ func (sig *e2eSetFsPwd) Init(ctx detect.SignatureContext) error {
 		return err
 	}
 	_, err = ksyms.GetSymbolByName("bpf_probe_read_user_str")
-	if err != nil {
-		sig.hasReadUser = false
-	} else {
-		sig.hasReadUser = true
-	}
+	sig.hasReadUser = err == nil
 
 	return nil
 }

@@ -94,7 +94,7 @@ func TestHashCalculationConsistency(t *testing.T) {
 
 	// Verify that the old approach was different (demonstrating THE BUG)
 	if oldProcfsHash == kernelSignalHash {
-		t.Errorf("Old procfs hash should NOT match kernel signal hash (this demonstrates the bug)")
-		t.Errorf("  If they match, the test conditions don't reproduce the original bug")
+		t.Error("Old procfs hash should NOT match kernel signal hash (this demonstrates the bug)")
+		t.Error("  If they match, the test conditions don't reproduce the original bug")
 	}
 }

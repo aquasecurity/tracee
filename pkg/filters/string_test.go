@@ -236,6 +236,6 @@ func TestStringFilterClone(t *testing.T) {
 	// ensure that changes to the copy do not affect the original
 	copy.Parse("=xyz")
 	if cmp.Equal(filter, copy, opt1, opt2) {
-		t.Errorf("Changes to copied filter affected the original")
+		t.Error("Changes to copied filter affected the original")
 	}
 }

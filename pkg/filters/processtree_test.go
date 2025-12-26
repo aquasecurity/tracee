@@ -165,6 +165,6 @@ func TestProcessTreeFilterClone(t *testing.T) {
 	err = filter.Parse("=2")
 	require.NoError(t, err)
 	if cmp.Equal(filter, copy, opt1) {
-		t.Errorf("Changes to copied filter affected the original")
+		t.Error("Changes to copied filter affected the original")
 	}
 }

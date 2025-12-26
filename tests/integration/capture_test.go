@@ -99,7 +99,7 @@ func Test_TraceeCapture(t *testing.T) {
 			r := <-ready // block until tracee is ready (or not)
 			switch r {
 			case testutils.TraceeStarted:
-				t.Logf("  --- started tracee ---")
+				t.Log("  --- started tracee ---")
 			case testutils.TraceeFailed:
 				t.Fatal("tracee failed to start")
 			case testutils.TraceeTimedout:
@@ -129,7 +129,7 @@ func Test_TraceeCapture(t *testing.T) {
 				failed = true
 				t.Logf("failed to stop tracee: %v", cmdErrs)
 			} else {
-				t.Logf("  --- stopped tracee ---")
+				t.Log("  --- stopped tracee ---")
 			}
 
 			if failed {
@@ -164,7 +164,7 @@ func readWriteCaptureTest(t *testing.T, captureDir string, workingDir string) er
 
 	statInfo, ok := fi.Sys().(*syscall.Stat_t)
 	if !ok {
-		t.Logf("type assertion failed: expected *syscall.Stat_t")
+		t.Log("type assertion failed: expected *syscall.Stat_t")
 	}
 	inode := statInfo.Ino
 
@@ -207,7 +207,7 @@ func readWritevCaptureTest(t *testing.T, captureDir string, workingDir string) e
 
 	statInfo, ok := fi.Sys().(*syscall.Stat_t)
 	if !ok {
-		t.Logf("type assertion failed: expected *syscall.Stat_t")
+		t.Log("type assertion failed: expected *syscall.Stat_t")
 	}
 	inode := statInfo.Ino
 

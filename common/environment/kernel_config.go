@@ -365,9 +365,7 @@ func (k *KernelConfig) ExistsValue(option KernelConfigOption, value interface{})
 	if cfg, ok := k.configs[option]; ok {
 		switch v := cfg.(type) {
 		case KernelConfigOptionValue:
-			if value == ANY {
-				return true
-			} else if v == value {
+			if value == ANY || v == value {
 				return true
 			}
 		case string:

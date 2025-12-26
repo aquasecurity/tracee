@@ -141,7 +141,7 @@ func testCloneLogic[T NumericConstraint](t *testing.T, filter *NumericFilter[T],
 	err = cloned.Parse("=51")
 	require.NoError(t, err)
 	if cmp.Equal(filter, cloned, opt) {
-		t.Errorf("Changes to copied filter affected the original")
+		t.Error("Changes to copied filter affected the original")
 	}
 }
 

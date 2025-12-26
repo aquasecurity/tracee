@@ -61,9 +61,7 @@ func FromString(str string) RuntimeId {
 	switch str {
 	case "docker":
 		return Docker
-	case "crio":
-		return Crio
-	case "cri-o":
+	case "crio", "cri-o":
 		return Crio
 	case "podman":
 		return Podman

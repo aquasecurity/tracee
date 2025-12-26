@@ -56,10 +56,10 @@ func (s *Server) EnableMetricsEndpoint() {
 func (s *Server) EnableHealthzEndpoint() {
 	s.mux.HandleFunc("/healthz", func(w http.ResponseWriter, req *http.Request) {
 		if heartbeat.GetInstance() != nil && heartbeat.GetInstance().IsAlive() {
-			fmt.Fprintf(w, "OK")
+			fmt.Fprint(w, "OK")
 			return
 		}
-		fmt.Fprintf(w, "NOT OK")
+		fmt.Fprint(w, "NOT OK")
 	})
 	s.healthzEnabled = true
 }

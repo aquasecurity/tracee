@@ -743,9 +743,7 @@ func getDNSResponseFromProtoDNS(query trace.DnsQueryData, answers []trace.ProtoD
 		var dnsAnswer trace.DnsAnswer
 
 		switch answer.Type {
-		case "A":
-			dnsAnswer.Answer = answer.IP
-		case "AAAA":
+		case "A", "AAAA":
 			dnsAnswer.Answer = answer.IP
 		case "NS":
 			dnsAnswer.Answer = answer.NS

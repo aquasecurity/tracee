@@ -75,14 +75,14 @@ func TestCompatibility(t *testing.T) {
 	eventBuffer := testutils.NewEventBuffer()
 
 	// Start Tracee
-	t.Logf("  --- started tracee ---")
+	t.Log("  --- started tracee ---")
 	traceeInstance, err := testutils.StartTracee(ctx, t, cfg, nil, nil)
 	require.NoError(t, err, "Failed to start Tracee")
 
 	err = testutils.WaitForTraceeStart(traceeInstance)
 	require.NoError(t, err, "Tracee failed to start")
 
-	t.Logf("  --- tracee started successfully ---")
+	t.Log("  --- tracee started successfully ---")
 
 	// Give time for probes to attach
 	time.Sleep(500 * time.Millisecond)
@@ -111,7 +111,7 @@ func TestCompatibility(t *testing.T) {
 	// Give a moment for the uprobe to fire and event processing to fully initialize
 	time.Sleep(2 * time.Second)
 	// Trigger the features fallback test event multiple times to ensure it fires
-	t.Logf("  --- triggering features fallback test ---")
+	t.Log("  --- triggering features fallback test ---")
 	traceeInstance.TriggerFeaturesFallbackTest()
 
 	err = testutils.WaitForTraceeOutputEvents(t, 10*time.Second, eventBuffer, 1, true)
@@ -153,7 +153,7 @@ func TestCompatibility(t *testing.T) {
 		t.Log(errStop)
 		failed = true
 	} else {
-		t.Logf("  --- stopped tracee ---")
+		t.Log("  --- stopped tracee ---")
 	}
 
 	if failed {
@@ -209,14 +209,14 @@ func getExpectedProbeId(t *testing.T) int {
 // debugProbeAttachments uses reflection to inspect the private defaultProbes field
 // and log the attachment status of the features fallback test probes
 func debugProbeAttachments(t *testing.T, traceeInstance interface{}) {
-	t.Logf("  --- checking probe attachments ---")
+	t.Log("  --- checking probe attachments ---")
 
 	// Use reflection to access the private defaultProbes field
 	traceeValue := reflect.ValueOf(traceeInstance).Elem()
 	defaultProbesField := traceeValue.FieldByName("defaultProbes")
 
 	if !defaultProbesField.IsValid() {
-		t.Logf("  !!! Could not access defaultProbes field")
+		t.Log("  !!! Could not access defaultProbes field")
 		return
 	}
 
@@ -224,7 +224,7 @@ func debugProbeAttachments(t *testing.T, traceeInstance interface{}) {
 	defaultProbesField = reflect.NewAt(defaultProbesField.Type(), defaultProbesField.Addr().UnsafePointer()).Elem()
 
 	if defaultProbesField.IsNil() {
-		t.Logf("  !!! defaultProbes is nil")
+		t.Log("  !!! defaultProbes is nil")
 		return
 	}
 
@@ -242,7 +242,7 @@ func debugProbeAttachments(t *testing.T, traceeInstance interface{}) {
 		// Call GetProbeByHandle method using reflection
 		getProbeMethod := defaultProbesField.MethodByName("GetProbeByHandle")
 		if !getProbeMethod.IsValid() {
-			t.Logf("  !!! Could not find GetProbeByHandle method")
+			t.Log("  !!! Could not find GetProbeByHandle method")
 			continue
 		}
 
@@ -285,20 +285,20 @@ func debugProbeAttachments(t *testing.T, traceeInstance interface{}) {
 		}
 	}
 
-	t.Logf("  --- done checking probe attachments ---")
+	t.Log("  --- done checking probe attachments ---")
 }
 
 // debugEventDependencies uses reflection to inspect the event dependencies
 // and log which probes should be attached for the features fallback test event
 func debugEventDependencies(t *testing.T, traceeInstance interface{}) {
-	t.Logf("  --- checking event dependencies ---")
+	t.Log("  --- checking event dependencies ---")
 
 	// Use reflection to access the private eventsDependencies field
 	traceeValue := reflect.ValueOf(traceeInstance).Elem()
 	eventsDepsField := traceeValue.FieldByName("eventsDependencies")
 
 	if !eventsDepsField.IsValid() {
-		t.Logf("  !!! Could not access eventsDependencies field")
+		t.Log("  !!! Could not access eventsDependencies field")
 		return
 	}
 
@@ -306,34 +306,34 @@ func debugEventDependencies(t *testing.T, traceeInstance interface{}) {
 	eventsDepsField = reflect.NewAt(eventsDepsField.Type(), eventsDepsField.Addr().UnsafePointer()).Elem()
 
 	if eventsDepsField.IsNil() {
-		t.Logf("  !!! eventsDependencies is nil")
+		t.Log("  !!! eventsDependencies is nil")
 		return
 	}
 
 	// Call GetProbes() method to see which probes are registered
 	getProbesMethod := eventsDepsField.MethodByName("GetProbes")
 	if !getProbesMethod.IsValid() {
-		t.Logf("  !!! Could not find GetProbes method")
+		t.Log("  !!! Could not find GetProbes method")
 		return
 	}
 
 	results := getProbesMethod.Call([]reflect.Value{})
 	if len(results) == 0 {
-		t.Logf("  !!! GetProbes returned no results")
+		t.Log("  !!! GetProbes returned no results")
 		return
 	}
 
 	probeHandles := results[0]
 	if !probeHandles.IsValid() || probeHandles.IsNil() {
-		t.Logf("  !!! GetProbes returned invalid/nil slice")
+		t.Log("  !!! GetProbes returned invalid/nil slice")
 		return
 	}
 
 	t.Logf("  Total probe dependencies registered: %d", probeHandles.Len())
-	t.Logf("  Note: Feature fallback probes use compatibility-based selection,")
-	t.Logf("        so only one of the three variants will be attached based on kernel capabilities")
+	t.Log("  Note: Feature fallback probes use compatibility-based selection,")
+	t.Log("        so only one of the three variants will be attached based on kernel capabilities")
 
-	t.Logf("  --- done checking event dependencies ---")
+	t.Log("  --- done checking event dependencies ---")
 }
 
 // TestClockDetection validates that Tracee correctly detects and uses the appropriate
@@ -347,7 +347,7 @@ func TestClockDetection(t *testing.T) {
 	testutils.AssureIsRoot(t)
 
 	// Step 1: Check what the current kernel actually supports
-	t.Logf("  --- detecting kernel BPF clock support ---")
+	t.Log("  --- detecting kernel BPF clock support ---")
 
 	boottimeSupported := handleSupportCheck(
 		t,
@@ -367,15 +367,15 @@ func TestClockDetection(t *testing.T) {
 	if boottimeSupported {
 		expectedClockID = timeutil.CLOCK_BOOTTIME
 		expectedClockName = "CLOCK_BOOTTIME"
-		t.Logf("  ✅ Kernel supports bpf_ktime_get_boot_ns → expecting CLOCK_BOOTTIME")
+		t.Log("  ✅ Kernel supports bpf_ktime_get_boot_ns → expecting CLOCK_BOOTTIME")
 	} else {
 		expectedClockID = timeutil.CLOCK_MONOTONIC
 		expectedClockName = "CLOCK_MONOTONIC"
-		t.Logf("  ⚠️  Kernel does NOT support bpf_ktime_get_boot_ns → expecting CLOCK_MONOTONIC")
+		t.Log("  ⚠️  Kernel does NOT support bpf_ktime_get_boot_ns → expecting CLOCK_MONOTONIC")
 	}
 
 	// Step 3: Initialize Tracee (which triggers clock detection in timeutil.Init)
-	t.Logf("  --- starting tracee to test clock detection ---")
+	t.Log("  --- starting tracee to test clock detection ---")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -401,10 +401,10 @@ func TestClockDetection(t *testing.T) {
 	err = testutils.WaitForTraceeStart(traceeInstance)
 	require.NoError(t, err, "Tracee failed to start")
 
-	t.Logf("  --- tracee started successfully ---")
+	t.Log("  --- tracee started successfully ---")
 
 	// Step 4: Verify Tracee detected and is using the correct clock
-	t.Logf("  --- verifying clock selection ---")
+	t.Log("  --- verifying clock selection ---")
 
 	// The clock is set during Tracee initialization via timeutil.Init()
 	// We can verify this using the public timeutil.GetUsedClockID() API
@@ -434,12 +434,12 @@ func TestClockDetection(t *testing.T) {
 			expectedClockName, actualClockName)
 	}
 
-	t.Logf("  Note: This clock is used for all BPF timestamp conversions and procfs hash calculations")
+	t.Log("  Note: This clock is used for all BPF timestamp conversions and procfs hash calculations")
 
 	// Step 5: Cleanup
 	cancel()
 	err = testutils.WaitForTraceeStop(traceeInstance)
 	assert.NoError(t, err, "Tracee should stop cleanly")
 
-	t.Logf("  --- stopped tracee ---")
+	t.Log("  --- stopped tracee ---")
 }

@@ -11,7 +11,7 @@ func TestNewSimpleSet(t *testing.T) {
 	t.Run("empty set", func(t *testing.T) {
 		s := NewSimpleSet[int]()
 		if !s.Empty() {
-			t.Errorf("Expected empty set")
+			t.Error("Expected empty set")
 		}
 		if s.Length() != 0 {
 			t.Errorf("Expected length 0, got %d", s.Length())
@@ -21,7 +21,7 @@ func TestNewSimpleSet(t *testing.T) {
 	t.Run("set with initial items", func(t *testing.T) {
 		s := NewSimpleSet(1, 2, 3)
 		if s.Empty() {
-			t.Errorf("Expected non-empty set")
+			t.Error("Expected non-empty set")
 		}
 		if s.Length() != 3 {
 			t.Errorf("Expected length 3, got %d", s.Length())
@@ -61,7 +61,7 @@ func TestNewSimpleSet(t *testing.T) {
 		}
 
 		if !s.Has("hello") || !s.Has("world") {
-			t.Errorf("Expected set to contain 'hello' and 'world'")
+			t.Error("Expected set to contain 'hello' and 'world'")
 		}
 	})
 }
@@ -90,10 +90,10 @@ func TestNewSimpleSetWithHash(t *testing.T) {
 		}
 
 		if !s.Has(Person{"Alice", 99}) { // Any age should work for Alice
-			t.Errorf("Expected set to contain Alice (regardless of age)")
+			t.Error("Expected set to contain Alice (regardless of age)")
 		}
 		if !s.Has(Person{"Bob", 99}) { // Any age should work for Bob
-			t.Errorf("Expected set to contain Bob (regardless of age)")
+			t.Error("Expected set to contain Bob (regardless of age)")
 		}
 	})
 
@@ -119,23 +119,23 @@ func TestSimpleSet_BasicOperations(t *testing.T) {
 
 	t.Run("empty set operations", func(t *testing.T) {
 		if !s.Empty() {
-			t.Errorf("New set should be empty")
+			t.Error("New set should be empty")
 		}
 		if s.Length() != 0 {
-			t.Errorf("Empty set length should be 0")
+			t.Error("Empty set length should be 0")
 		}
 		if s.Has(42) {
-			t.Errorf("Empty set should not contain any items")
+			t.Error("Empty set should not contain any items")
 		}
 		if len(s.Items()) != 0 {
-			t.Errorf("Empty set items should be empty slice")
+			t.Error("Empty set items should be empty slice")
 		}
 	})
 
 	t.Run("append items", func(t *testing.T) {
 		s.Append(1, 2, 3)
 		if s.Empty() {
-			t.Errorf("Set should not be empty after append")
+			t.Error("Set should not be empty after append")
 		}
 		if s.Length() != 3 {
 			t.Errorf("Expected length 3, got %d", s.Length())
@@ -162,10 +162,10 @@ func TestSimpleSet_BasicOperations(t *testing.T) {
 	t.Run("clear set", func(t *testing.T) {
 		s.Clear()
 		if !s.Empty() {
-			t.Errorf("Set should be empty after clear")
+			t.Error("Set should be empty after clear")
 		}
 		if s.Length() != 0 {
-			t.Errorf("Cleared set length should be 0")
+			t.Error("Cleared set length should be 0")
 		}
 	})
 }
@@ -209,7 +209,7 @@ func TestSimpleSet_ItemsVsMutable(t *testing.T) {
 
 		// Original set should be unchanged
 		if s.Items()[0] == 999 {
-			t.Errorf("Items() should return a copy, not reference")
+			t.Error("Items() should return a copy, not reference")
 		}
 	})
 
@@ -219,13 +219,13 @@ func TestSimpleSet_ItemsVsMutable(t *testing.T) {
 
 		// They should be the same slice
 		if &mutable[0] != &original[0] {
-			t.Errorf("ItemsMutable() should return same reference")
+			t.Error("ItemsMutable() should return same reference")
 		}
 
 		// Modifying one affects the other
 		mutable[0] = 999
 		if original[0] != 999 {
-			t.Errorf("ItemsMutable() should return mutable reference")
+			t.Error("ItemsMutable() should return mutable reference")
 		}
 	})
 }
@@ -264,13 +264,13 @@ func TestSet_ThreadSafe(t *testing.T) {
 		s := New(1, 2, 3)
 
 		if s.Empty() {
-			t.Errorf("Set with items should not be empty")
+			t.Error("Set with items should not be empty")
 		}
 		if s.Length() != 3 {
 			t.Errorf("Expected length 3, got %d", s.Length())
 		}
 		if !s.Has(2) {
-			t.Errorf("Set should contain 2")
+			t.Error("Set should contain 2")
 		}
 
 		items := s.Items()
@@ -299,7 +299,7 @@ func TestSet_ThreadSafe(t *testing.T) {
 		s.Clear()
 
 		if !s.Empty() {
-			t.Errorf("Set should be empty after clear")
+			t.Error("Set should be empty after clear")
 		}
 	})
 
@@ -341,18 +341,18 @@ func TestSet_WithHash(t *testing.T) {
 		// We can't predict which of "hello"/"world" will be kept, so check both possibilities
 		hasLength5 := s.Has("hello") || s.Has("world")
 		if !hasLength5 {
-			t.Errorf("Should contain either 'hello' or 'world' (length 5)")
+			t.Error("Should contain either 'hello' or 'world' (length 5)")
 		}
 		if !s.Has("hi") {
-			t.Errorf("Should contain 'hi' (length 2)")
+			t.Error("Should contain 'hi' (length 2)")
 		}
 
 		// Test that any other string with same length is recognized
 		if !s.Has("abcde") { // Any 5-char string should match "hello"/"world"
-			t.Errorf("Should contain string of length 5")
+			t.Error("Should contain string of length 5")
 		}
 		if !s.Has("xy") { // Any 2-char string should match "hi"
-			t.Errorf("Should contain string of length 2")
+			t.Error("Should contain string of length 2")
 		}
 	})
 }
@@ -375,7 +375,7 @@ func TestSimpleSet_EdgeCases(t *testing.T) {
 
 		// Check some random items
 		if !s.Has(500) || !s.Has(999) || !s.Has(0) {
-			t.Errorf("Large set should contain test items")
+			t.Error("Large set should contain test items")
 		}
 	})
 
@@ -388,7 +388,7 @@ func TestSimpleSet_EdgeCases(t *testing.T) {
 		s.Clear()
 
 		if !s.Empty() {
-			t.Errorf("Set should remain empty")
+			t.Error("Set should remain empty")
 		}
 	})
 
@@ -399,10 +399,10 @@ func TestSimpleSet_EdgeCases(t *testing.T) {
 		s.Append(nilPtr)
 
 		if s.Length() != 1 {
-			t.Errorf("Should be able to store nil pointers")
+			t.Error("Should be able to store nil pointers")
 		}
 		if !s.Has(nilPtr) {
-			t.Errorf("Should find nil pointer")
+			t.Error("Should find nil pointer")
 		}
 	})
 }
@@ -472,7 +472,7 @@ func TestSet_DifferentTypes(t *testing.T) {
 		}
 
 		if !s.Has(Point{1, 2}) {
-			t.Errorf("Should contain Point{1, 2}")
+			t.Error("Should contain Point{1, 2}")
 		}
 	})
 }

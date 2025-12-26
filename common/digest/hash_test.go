@@ -34,7 +34,6 @@ func TestCurrentHashCompatibility(t *testing.T) {
 	}
 
 	for _, filePath := range files {
-
 		file, err := os.Open(filePath)
 		if err != nil {
 			t.Fatal(err)

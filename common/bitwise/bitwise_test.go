@@ -335,10 +335,10 @@ func TestBitwiseOperationsCombined(t *testing.T) {
 
 		// Check each bit
 		if !HasBit(n, 0) || !HasBit(n, 2) || !HasBit(n, 4) {
-			t.Errorf("Bits 0, 2, 4 should be set")
+			t.Error("Bits 0, 2, 4 should be set")
 		}
 		if HasBit(n, 1) || HasBit(n, 3) || HasBit(n, 5) {
-			t.Errorf("Bits 1, 3, 5 should not be set")
+			t.Error("Bits 1, 3, 5 should not be set")
 		}
 
 		// Clear using mask (clear bits 0 and 4)
@@ -349,10 +349,10 @@ func TestBitwiseOperationsCombined(t *testing.T) {
 			t.Errorf("Expected value 4, got %d", n)
 		}
 		if !HasBit(n, 2) {
-			t.Errorf("Bit 2 should still be set")
+			t.Error("Bit 2 should still be set")
 		}
 		if HasBit(n, 0) || HasBit(n, 4) {
-			t.Errorf("Bits 0 and 4 should be cleared")
+			t.Error("Bits 0 and 4 should be cleared")
 		}
 	})
 }

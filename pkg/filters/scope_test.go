@@ -38,7 +38,7 @@ func TestScopeFilterClone(t *testing.T) {
 	err = copy.Parse("pid", "=1")
 	require.NoError(t, err)
 	if cmp.Equal(filter, copy, opt1) {
-		t.Errorf("Changes to copied filter affected the original")
+		t.Error("Changes to copied filter affected the original")
 	}
 }
 

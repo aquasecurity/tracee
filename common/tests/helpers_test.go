@@ -341,7 +341,7 @@ And unicode: 🚀 ñ 中文`
 		}
 
 		if string(readContent) != content {
-			t.Errorf("Content mismatch for large file")
+			t.Error("Content mismatch for large file")
 		}
 	})
 
@@ -475,7 +475,7 @@ func TestHelperIntegration(t *testing.T) {
 		}
 
 		if !strings.Contains(string(content), "TestStruct") {
-			t.Errorf("Expected temp file to contain struct analysis")
+			t.Error("Expected temp file to contain struct analysis")
 		}
 	})
 }

@@ -433,5 +433,4 @@ func TestPrinterCreation(t *testing.T) {
 			assert.Equal(t, tc.expectedKind, printer.Kind())
 		})
 	}
-
 }

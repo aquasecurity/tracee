@@ -2346,7 +2346,7 @@ func Test_EventFilters(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			t.Logf("  --- started tracee ---")
+			t.Log("  --- started tracee ---")
 			err = testutils.WaitForTraceeStart(trc)
 			if err != nil {
 				t.Fatal(err)
@@ -2385,7 +2385,7 @@ func Test_EventFilters(t *testing.T) {
 				t.Log(errStop)
 				failed = true
 			} else {
-				t.Logf("  --- stopped tracee ---")
+				t.Log("  --- stopped tracee ---")
 			}
 
 			if failed {

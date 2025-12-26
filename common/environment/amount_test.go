@@ -147,7 +147,7 @@ func TestGetMEMAmountInMBs(t *testing.T) {
 			t.Logf("System memory: %d MB", result)
 		} else {
 			// On some systems the file might not exist or be inaccessible
-			t.Logf("GetMEMAmountInMBs returned 0 (expected on some systems)")
+			t.Log("GetMEMAmountInMBs returned 0 (expected on some systems)")
 		}
 	})
 
