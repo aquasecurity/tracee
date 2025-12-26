@@ -209,7 +209,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Capabilities command line flags
 
-	capFlags, err := flags.GetFlagsFromViper("capabilities")
+	capFlags, err := flags.GetFlagsFromViper(flags.CapabilitiesFlag)
 	if err != nil {
 		return runner, err
 	}
@@ -290,7 +290,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return false
 	}
 
-	outputFlags, err := flags.GetFlagsFromViper("output")
+	outputFlags, err := flags.GetFlagsFromViper(flags.OutputFlag)
 	if err != nil {
 		return runner, err
 	}
@@ -350,7 +350,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Prepare the server
 
-	serverFlags, err := flags.GetFlagsFromViper("server")
+	serverFlags, err := flags.GetFlagsFromViper(flags.ServerFlag)
 	if err != nil {
 		return runner, err
 	}
