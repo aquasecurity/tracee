@@ -156,6 +156,29 @@ func (r *Registry) GetCustom(name string) (datastores.DataStore, error) {
 	return store, nil
 }
 
+// RegisterWritableStore registers a new writable datastore
+// The caller becomes the owner of the store and can write to it
+// Other consumers can access the store via GetCustom() for read-only operations
+// Returns error if a store with the same name already exists
+func (r *Registry) RegisterWritableStore(name string, store datastores.WritableStore) error {
+	if isNilInterface(store) {
+		return fmt.Errorf("writable datastore '%s' cannot be nil", name)
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Check for duplicates
+	if _, exists := r.stores[name]; exists {
+		return fmt.Errorf("datastore '%s' already registered", name)
+	}
+
+	// Register the writable store (it's also a DataStore)
+	r.stores[name] = store
+
+	return nil
+}
+
 // List returns a list of all registered datastore names
 func (r *Registry) List() []string {
 	r.mu.RLock()

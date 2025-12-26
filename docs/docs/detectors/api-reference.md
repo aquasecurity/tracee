@@ -799,6 +799,55 @@ AutoPopulate: detection.AutoPopulateFields{
 }
 ```
 
+**Use cases**:
+- Debugging: Understand why detector fired
+- Forensics: Reconstruct detection chains
+- Correlation: Link detections to root causes
+
+#### Detection Chain Preservation
+
+When detectors form chains (detector consuming another detector's output), the engine automatically preserves the complete provenance chain via `DetectedFrom.parent`:
+
+**Example 3-level chain:**
+
+```json
+{
+  "name": "critical_threat_in_production",
+  "detected_from": {
+    "id": "7001",
+    "name": "suspicious_container_exec",
+    "data": [{"name": "binary", "value": "nc"}],
+    "parent": {
+      "id": "7000",
+      "name": "suspicious_binary_exec",
+      "data": [{"name": "pathname", "value": "/usr/bin/nc"}],
+      "parent": {
+        "id": "700",
+        "name": "sched_process_exec",
+        "data": [{"name": "pathname", "value": "/usr/bin/nc"}]
+      }
+    }
+  }
+}
+```
+
+**Traversal helpers:**
+
+{% raw %}
+```go
+// Get full chain (immediate parent to root)
+chain := v1beta1.GetDetectionChain(event)
+
+// Get original triggering event
+root := v1beta1.GetRootDetection(event)
+
+// Get chain depth
+depth := v1beta1.GetChainDepth(event)  // 3 for example above
+```
+{% endraw %}
+
+This chaining is automatic - detectors don't need to do anything special.
+
 ### ProcessAncestry: Automatic Ancestry Enrichment
 
 {% raw %}
