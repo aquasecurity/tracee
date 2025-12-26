@@ -167,7 +167,7 @@ func (t *Tracee) PrepareBuiltinDataSources() []detect.DataSource {
 	}
 
 	// Process Tree Data Source
-	switch t.config.ProcTree.Source {
+	switch t.config.ProcessStore.Source {
 	case process.SourceNone:
 	default:
 		datasources = append(datasources, process.NewDataSource(t.dataStoreRegistry.GetProcessTree()))
