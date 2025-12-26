@@ -87,14 +87,14 @@ func (t *Tracee) registerEventProcessors() {
 	//
 
 	// Processors registered when proctree source "events" is enabled.
-	switch t.config.ProcTree.Source {
+	switch t.config.ProcessStore.Source {
 	case process.SourceEvents, process.SourceBoth:
 		t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkProcessor)
 		t.RegisterEventProcessor(events.SchedProcessExec, t.procTreeExecProcessor)
 		t.RegisterEventProcessor(events.SchedProcessExit, t.procTreeExitProcessor)
 	}
 	// Processors enriching process tree with regular pipeline events.
-	if t.config.ProcTree.Source != process.SourceNone {
+	if t.config.ProcessStore.Source != process.SourceNone {
 		t.RegisterEventProcessor(events.All, t.procTreeAddBinInfo)
 	}
 

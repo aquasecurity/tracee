@@ -81,8 +81,8 @@ func (s *StoresConfig) flags() []string {
 	return flags
 }
 
-// GetProcTreeConfig returns the process tree config
-func (s *StoresConfig) GetProcTreeConfig() process.ProcTreeConfig {
+// GetProcessStoreConfig returns the process store config
+func (s *StoresConfig) GetProcessStoreConfig() process.ProcTreeConfig {
 	// Default to SourceSignals if process is enabled but no source is specified
 	source := process.SourceSignals
 

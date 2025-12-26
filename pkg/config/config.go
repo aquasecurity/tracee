@@ -22,7 +22,7 @@ type Config struct {
 	Capture           *CaptureConfig
 	Capabilities      *CapabilitiesConfig
 	Output            *OutputConfig
-	ProcTree          process.ProcTreeConfig
+	ProcessStore      process.ProcTreeConfig
 	Buffers           BuffersConfig
 	MaxPidsCache      int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BTFObjPath        string

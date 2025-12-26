@@ -106,7 +106,7 @@ func StartTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 	}
 
 	// No process tree in the integration tests
-	cfg.ProcTree = process.ProcTreeConfig{
+	cfg.ProcessStore = process.ProcTreeConfig{
 		Source: process.SourceNone,
 	}
 

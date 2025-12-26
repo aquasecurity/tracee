@@ -271,10 +271,10 @@ func New(cfg config.Config) (*Tracee, error) {
 	}
 
 	pmCfg := policy.ManagerConfig{
-		HeartbeatEnabled: cfg.HealthzEnabled,
-		DNSStore:         cfg.DNSStore,
-		ProcTreeConfig:   cfg.ProcTree,
-		CaptureConfig:    getNewCaptureConfig(),
+		HeartbeatEnabled:   cfg.HealthzEnabled,
+		DNSStoreConfig:     cfg.DNSStore,
+		ProcessStoreConfig: cfg.ProcessStore,
+		CaptureConfig:      getNewCaptureConfig(),
 	}
 	pm, err := policy.NewManager(pmCfg, depsManager, initialPolicies...)
 	if err != nil {
@@ -533,11 +533,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize Process Tree (if enabled)
 
 	var processTree *process.ProcessTree
-	if t.config.ProcTree.Source != process.SourceNone {
+	if t.config.ProcessStore.Source != process.SourceNone {
 		// Procfs enrichment is now supported with both CLOCK_BOOTTIME and CLOCK_MONOTONIC.
 		// The timeutil.ProcfsStartTimeToEpochNS() function handles the conversion from
 		// procfs values (always BOOTTIME) to the BPF clock base (MONOTONIC or BOOTTIME).
-		processTree, err = process.NewProcessTree(ctx, t.config.ProcTree)
+		processTree, err = process.NewProcessTree(ctx, t.config.ProcessStore)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -990,7 +990,7 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	if t.config.Output.ParseArgumentsFDs {
 		cOptVal = cOptVal | optTranslateFDFilePath
 	}
-	switch t.config.ProcTree.Source {
+	switch t.config.ProcessStore.Source {
 	case process.SourceBoth, process.SourceEvents:
 		cOptVal = cOptVal | optForkProcTree // tell sched_process_fork to be prolix
 	}
