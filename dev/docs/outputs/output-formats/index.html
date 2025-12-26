@@ -6619,17 +6619,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#table-verbose" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Table (Verbose)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#gotemplate" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8236,17 +8225,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#table-verbose" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Table (Verbose)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#gotemplate" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8416,31 +8394,6 @@ Be aware that the url parameters has the priority on the format.</p>
 <p><strong>cli</strong></p>
 <div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--output<span class="w"> </span>destinations.stdout_table_destination.format<span class="o">=</span>table
 </code></pre></div>
-<h3 id="table-verbose">Table (Verbose)<a class="headerlink" href="#table-verbose" title="Permanent link">&para;</a></h3>
-<p>Displays the output events in table format with extra fields per event. The default path to a file is stdout.</p>
-<p><strong>yaml</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">destinations</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout_table_verbose_destination</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file</span>
-<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">table-verbose</span>
-<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout</span>
-</code></pre></div>
-<p><strong>cli</strong></p>
-<div class="highlight"><pre><span></span><code>tracee<span class="w">  </span>--output<span class="w"> </span>destinations.stdout_table_verbose_destination.type<span class="o">=</span>file<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--output<span class="w"> </span>destinations.stdout_table_verbose_destination.path<span class="o">=</span>stdout<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--output<span class="w"> </span>destinations.stdout_table_verbose_destination.format<span class="o">=</span>table-verbose
-</code></pre></div>
-<p>or a smaller version without default values explicitly declared</p>
-<p><strong>yaml</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">destinations</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdout_table_verbose_destination</span>
-<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">table-verbose</span>
-</code></pre></div>
-<p><strong>cli</strong></p>
-<div class="highlight"><pre><span></span><code>tracee<span class="w">  </span>--output<span class="w"> </span>destinations.stdout_table_verbose_destination.format<span class="o">=</span>table-verbose
-</code></pre></div>
 <h3 id="gotemplate">GOTEMPLATE<a class="headerlink" href="#gotemplate" title="Permanent link">&para;</a></h3>
 <p>When authoring a Go template, the data source is Tracee's <code>v1beta1.Event</code> protobuf structure, which is defined in the <a href="https://github.com/aquasecurity/tracee/blob/main/api/v1beta1/event.proto">API protobuf definitions</a>.</p>
 <p><strong>Common event fields:</strong>
@@ -8504,7 +8457,7 @@ Be aware that the url parameters has the priority on the format.</p>
 </tr>
 <tr>
 <td style="text-align: center;">format</td>
-<td>format of the event. One of <code>json</code>, <code>table</code>, <code>table-verbose</code> or gotemplate=/path/to/template.yaml.</td>
+<td>format of the event. One of <code>json</code>, <code>table</code> or gotemplate=/path/to/template.yaml.</td>
 <td><code>table</code> for file, <code>json</code> for webhook and forward</td>
 </tr>
 <tr>
