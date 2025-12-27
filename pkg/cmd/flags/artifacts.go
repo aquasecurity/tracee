@@ -430,6 +430,77 @@ func PrepareArtifacts(artifactsSlice []string) (ArtifactsConfig, error) {
 	return artifacts, nil
 }
 
+// parseFileCaptureSubOption parses file capture sub-options in the format '<sub-opt>=<value>'.
+// This is shared logic between the legacy capture flag and the new artifacts flag.
+func parseFileCaptureSubOption(option string, captureConfig *config.FileCaptureConfig) error {
+	optAndValue := strings.SplitN(option, "=", 2)
+	if len(optAndValue) != 2 || len(optAndValue[1]) == 0 {
+		return errfmt.Errorf("invalid file capture option format: %s", option)
+	}
+	opt := optAndValue[0]
+	value := optAndValue[1]
+	switch opt {
+	case "path":
+		if !strings.HasSuffix(option, "*") {
+			return errfmt.Errorf("file path filter should end with *")
+		}
+		pathPrefix := strings.TrimSuffix(value, "*")
+		if len(pathPrefix) == 0 {
+			return errfmt.Errorf("capture path filter cannot be empty")
+		}
+		captureConfig.PathFilter = append(captureConfig.PathFilter, pathPrefix)
+	case "type":
+		typeFilter := strings.TrimPrefix(option, "type=")
+		filterFlag, err := parseFileCaptureType(typeFilter)
+		if err != nil {
+			return err
+		}
+		captureConfig.TypeFilter |= filterFlag
+	case "fd":
+		typeFilter := strings.TrimPrefix(option, "fd=")
+		filterFlag, err := parseFileCaptureFDs(typeFilter)
+		if err != nil {
+			return err
+		}
+		captureConfig.TypeFilter |= filterFlag
+	default:
+		return errfmt.Errorf("unrecognized file capture option: %s", opt)
+	}
+
+	return nil
+}
+
+var captureFileTypeStringToFlag = map[string]config.FileCaptureType{
+	"pipe":    config.CapturePipeFiles,
+	"socket":  config.CaptureSocketFiles,
+	"regular": config.CaptureRegularFiles,
+	"elf":     config.CaptureELFFiles,
+}
+
+// parseFileCaptureType parses file type string to its matching bit-flag value.
+func parseFileCaptureType(filter string) (config.FileCaptureType, error) {
+	filterFlag, ok := captureFileTypeStringToFlag[filter]
+	if ok {
+		return filterFlag, nil
+	}
+	return 0, errfmt.Errorf("unsupported file type filter value for capture - %s", filter)
+}
+
+var captureFDsStringToFlag = map[string]config.FileCaptureType{
+	"stdin":  config.CaptureStdinFiles,
+	"stdout": config.CaptureStdoutFiles,
+	"stderr": config.CaptureStderrFiles,
+}
+
+// parseFileCaptureFDs parses file standard FD string to its matching bit-flag value.
+func parseFileCaptureFDs(filter string) (config.FileCaptureType, error) {
+	filterFlag, ok := captureFDsStringToFlag[filter]
+	if ok {
+		return filterFlag, nil
+	}
+	return 0, errfmt.Errorf("unsupported file FD filter value for capture - %s", filter)
+}
+
 // parseFileArtifactOptionWrite parses file-write artifact options.
 func parseFileArtifactOptionWrite(fileConfig *FileWriteConfig, subOpt string) error {
 	if strings.HasPrefix(subOpt, filtersKey+"=") {
