@@ -1,0 +1,38 @@
+id: chain-test-level2
+produced_event:
+  name: netcat_in_container
+  version: 1.0.0
+  description: Netcat executed inside container
+  fields:
+    - name: binary_path
+      type: string
+    - name: container_id
+      type: string
+    - name: container_name
+      type: string
+
+requirements:
+  events:
+    - name: netcat_execution
+      scope_filters:
+        - container
+
+threat:
+  name: Suspicious Network Tool in Container
+  severity: medium
+  description: Netcat network utility executed inside container
+
+auto_populate:
+  threat: true
+  detected_from: true
+
+output:
+  fields:
+    - name: binary_path
+      expression: data.binary_path
+    - name: container_id
+      expression: workload.container.id
+    - name: container_name
+      expression: workload.container.name
+      optional: true
+
