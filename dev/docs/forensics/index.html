@@ -8137,16 +8137,16 @@
 
 <h1 id="getting-started-with-forensics">Getting Started with Forensics<a class="headerlink" href="#getting-started-with-forensics" title="Permanent link">&para;</a></h1>
 <p>Tracee has a unique feature that lets you capture interesting artifacts from
-running applications, using the <code>--capture</code> flag.</p>
-<div class="highlight"><pre><span></span><code><span class="go">./dist/tracee man capture</span>
+running applications, using the <code>--artifacts</code> flag.</p>
+<div class="highlight"><pre><span></span><code><span class="go">./dist/tracee man artifacts</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --capture xxx</span>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --artifacts xxx</span>
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>All captured artifacts are saved in Tracee's "output directory", which can
-be configured using <code>--capture dir:/path/to/dir</code>. You may also use
-<code>--capture clear-dir</code> if you want contents of the destination directory
+be configured using <code>--artifacts dir.path=/path/to/dir</code>. You may also use
+<code>--artifacts dir.clear</code> if you want contents of the destination directory
 to be cleared every time you execute tracee.</p>
 </div>
 <h2 id="artifacts-types">Artifacts Types<a class="headerlink" href="#artifacts-types" title="Permanent link">&para;</a></h2>
@@ -8166,14 +8166,9 @@ file will be captured. I/O files can be filtered using 3 optional filters:
 <span class="go">   --scope comm=bash \</span>
 <span class="go">   --scope follow \</span>
 <span class="go">   --output option:parse-arguments \</span>
-<span class="go">   --capture dir:/tmp/tracee/ \</span>
-<span class="go">   --capture write=&#39;/tmp/*&#39;</span>
+<span class="go">   --artifacts dir.path=/tmp/tracee \</span>
+<span class="go">   --artifacts file-write.filters=path=/tmp/*</span>
 </code></pre></div></p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Using file capture without filter name will be path by default. Hence,
-<code>--capture write='/tmp/*</code> is the same as <code>--capture write:path='/tmp/*</code>.</p>
-</div>
 <div class="highlight"><pre><span></span><code><span class="go">echo write testing 123 &gt; /tmp/testing.txt</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1657321167356748797</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">620311624458929</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">7</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531840</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;bash&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;fujitsu&quot;</span><span class="p">,</span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;722&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;security_file_open&quot;</span><span class="p">,</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="s2">&quot;openat&quot;</span><span class="p">,</span><span class="nt">&quot;contextFlags&quot;</span><span class="p">:{</span><span class="nt">&quot;containerStarted&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;isCompat&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">},</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;/tmp/testing.txt&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;flags&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;string&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;dev&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;dev_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">271581185</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;inode&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">1966101</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;ctime&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">1657321027326584850</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;syscall_pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;/tmp/testing.txt&quot;</span><span class="p">}]}</span>
@@ -8193,9 +8188,9 @@ file will be captured. I/O files can be filtered using 3 optional filters:
 <span class="go">   --scope comm=bash \</span>
 <span class="go">   --scope follow \</span>
 <span class="go">   --output option:parse-arguments \</span>
-<span class="go">   --capture dir:/tmp/tracee/ \</span>
-<span class="go">   --capture read:type=pipe \</span>
-<span class="go">   --capture read:fd=stdin&#39;</span>
+<span class="go">   --artifacts dir.path=/tmp/tracee \</span>
+<span class="go">   --artifacts file-read.filters=type=pipe \</span>
+<span class="go">   --artifacts file-read.filters=fd=stdin</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="go">echo read testing 123 | cat</span>
 </code></pre></div>
@@ -8222,8 +8217,8 @@ same binary is executed multiple times, it will be captured just once.</p>
 <span class="go">   --scope comm=bash \</span>
 <span class="go">   --scope follow \</span>
 <span class="go">   --output option:parse-arguments \</span>
-<span class="go">   --capture dir:/tmp/tracee/ \</span>
-<span class="go">   --capture exec</span>
+<span class="go">   --artifacts dir.path=/tmp/tracee \</span>
+<span class="go">   --artifacts executable</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="go">/bin/ls</span>
 </code></pre></div>
@@ -8264,8 +8259,8 @@ will be captured. This is triggered when memory protection changes from
 <span class="go">   --output none \</span>
 <span class="go">   --scope comm=bash \</span>
 <span class="go">   --scope follow \</span>
-<span class="go">   --capture dir:/tmp/tracee/ \</span>
-<span class="go">   --capture mem</span>
+<span class="go">   --artifacts dir.path=/tmp/tracee \</span>
+<span class="go">   --artifacts memory-regions</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -8282,16 +8277,16 @@ this packet might be captured into one or multiple pcap files.</p>
 <p>The default behavior when capturing network traffic is to capture
 ALL traffic, despite given event filters. If you want to make
 capture feature to follow the given event filters, like for example
-capturing DNS events only, then you have to provide <code>--capture
-pcap-options:filtered</code> argument in the command line. Then only
+capturing DNS events only, then you have to provide <code>--artifacts
+network.pcap.options=filtered</code> argument in the command line. Then only
 net_packet_XXX events will be captured (IPv4, IPv6, TCP, UDP,
 ICMP, ICMPv6, DNS, HTTP, etc).</p>
 </div>
 <p>A good way to test this behavior is to execute:</p>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
 <span class="go">    --events net_packet_ipv4 \</span>
-<span class="go">    --capture network \</span>
-<span class="go">    --capture pcap-options:filtered</span>
+<span class="go">    --artifacts network \</span>
+<span class="go">    --artifacts network.pcap.options=filtered</span>
 </code></pre></div>
 <p>and observe a single <strong>pcap file</strong> for all ipv4 packets created:</p>
 <div class="highlight"><pre><span></span><code><span class="go">find /tmp/tracee/out/pcap/</span>
@@ -8302,8 +8297,8 @@ ICMP, ICMPv6, DNS, HTTP, etc).</p>
 <p>You can select only dns packets, for example:</p>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
 <span class="go">    --events net_packet_dns \</span>
-<span class="go">    --capture network \</span>
-<span class="go">    --capture pcap-options:filtered</span>
+<span class="go">    --artifacts network \</span>
+<span class="go">    --artifacts network.pcap.options=filtered</span>
 </code></pre></div>
 <p>and the file <code>/tmp/tracee/out/pcap/single.pcap</code> would only contain DNS
 related packets:</p>
@@ -8332,9 +8327,9 @@ data for that ping command inside <code>commands/container_id/ping.pcap</code> a
 inside <code>containers/container_id.pcap</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
 <span class="go">    --events net_packet_icmp \</span>
-<span class="go">    --capture network \</span>
-<span class="go">    --capture pcap-options:filtered \</span>
-<span class="go">    --capture pcap:process,container,command</span>
+<span class="go">    --artifacts network \</span>
+<span class="go">    --artifacts network.pcap.options=filtered \</span>
+<span class="go">    --artifacts network.pcap.split=process,container,command</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="go">cd /tmp/tracee/out</span>
 <span class="go">find pcap</span>
@@ -8417,10 +8412,10 @@ item shows how to capture a specific packet payload size.</p>
 <p>In order to capture a specific payload size you may specify:</p>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
 <span class="go">    --events net_packet_tcp \</span>
-<span class="go">    --capture network \</span>
-<span class="go">    --capture pcap-options:filtered \</span>
-<span class="go">    --capture pcap:single,command \</span>
-<span class="go">    --capture pcap-snaplen:default</span>
+<span class="go">    --artifacts network \</span>
+<span class="go">    --artifacts network.pcap.options=filtered \</span>
+<span class="go">    --artifacts network.pcap.split=single,command \</span>
+<span class="go">    --artifacts network.pcap.snaplen=default</span>
 </code></pre></div>
 <p>To capture packet headers + 96 bytes of payload. Or replace <code>default</code> by:</p>
 <ol>
@@ -8442,8 +8437,8 @@ If the same binary is loaded multiple times, it will be captured just once.</p>
 <span class="go">    --output none \</span>
 <span class="go">    --scope comm=bash \</span>
 <span class="go">    --scope follow \</span>
-<span class="go">    --capture clear-dir \</span>
-<span class="go">    --capture module</span>
+<span class="go">    --artifacts dir.clear \</span>
+<span class="go">    --artifacts kernel-modules</span>
 </code></pre></div>
 <p>Captured module will be found in tracee destination directory, just like
 any other captured file would be:</p>
@@ -8479,8 +8474,8 @@ You can disassemble the bytecode with the help of <code>binutils-bpf</code> pack
    --output none \
    --scope comm=bash \
    --scope follow \
-   --capture clear-dir \
-   --capture bpf
+   --artifacts dir.clear \
+   --artifacts bpf-programs
 </code></pre></div>
 <p>Captured bpf bytecode will be found in tracee destination directory, just like
 any other captured file would be:</p>
