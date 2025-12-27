@@ -27,6 +27,7 @@ run_tracee() {
     else
         # default arguments
         $TRACEE_EXE \
+        --enrichment container \
         --server metrics \
         --capabilities bypass=$CAPABILITIES_BYPASS \
         --capabilities add=$CAPABILITIES_ADD \
