@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/datastores/container/runtime"
 )
 
@@ -61,30 +62,51 @@ type ExecHashConfig struct {
 // GetRuntimeSockets returns the runtime sockets for the enrichment configuration
 func (e *EnrichmentConfig) GetRuntimeSockets() (runtime.Sockets, error) {
 	sockets := runtime.Sockets{}
+	anySocketRegistered := false
+
 	if e.Container.DockerSocket != "" {
 		err := sockets.Register(runtime.Docker, e.Container.DockerSocket)
 		if err != nil {
 			return sockets, errfmt.Errorf("failed to register docker socket: %v", err)
 		}
+		anySocketRegistered = true
 	}
 	if e.Container.ContainerdSocket != "" {
 		err := sockets.Register(runtime.Containerd, e.Container.ContainerdSocket)
 		if err != nil {
 			return sockets, errfmt.Errorf("failed to register containerd socket: %v", err)
 		}
+		anySocketRegistered = true
 	}
 	if e.Container.CrioSocket != "" {
 		err := sockets.Register(runtime.Crio, e.Container.CrioSocket)
 		if err != nil {
 			return sockets, errfmt.Errorf("failed to register crio socket: %v", err)
 		}
+		anySocketRegistered = true
 	}
 	if e.Container.PodmanSocket != "" {
 		err := sockets.Register(runtime.Podman, e.Container.PodmanSocket)
 		if err != nil {
 			return sockets, errfmt.Errorf("failed to register podman socket: %v", err)
 		}
+		anySocketRegistered = true
 	}
+
+	// If no sockets were explicitly configured, auto-discover default socket paths
+	if !anySocketRegistered {
+		sockets = runtime.Autodiscover(func(err error, rtime runtime.RuntimeId, socket string) {
+			logger.Debugw("RuntimeSockets: failed to register default", "runtime", rtime.String(), "socket", socket, "error", err)
+		})
+
+		// Log successfully registered sockets
+		for _, rtime := range []runtime.RuntimeId{runtime.Docker, runtime.Containerd, runtime.Crio, runtime.Podman} {
+			if sockets.Supports(rtime) {
+				logger.Debugw("RuntimeSockets: registered default", "runtime", rtime.String(), "socket", sockets.Socket(rtime))
+			}
+		}
+	}
+
 	return sockets, nil
 }
 
