@@ -143,7 +143,7 @@ func initCmd() error {
 	// artifacts is bound to viper
 	rootCmd.Flags().StringArrayP(
 		flags.ArtifactsFlag,
-		"c",
+		"a",
 		[]string{},
 		"[file-write|executable...]\t\tCapture artifacts that were written, executed or found to be suspicious",
 	)
@@ -155,9 +155,10 @@ func initCmd() error {
 	// Config flag
 
 	// config is not bound to viper
-	rootCmd.Flags().StringVar(
+	rootCmd.Flags().StringVarP(
 		&cfgFileFlag,
 		"config",
+		"c",
 		"",
 		"<file>\t\t\t\tGlobal config file (yaml, json between others - see documentation)",
 	)

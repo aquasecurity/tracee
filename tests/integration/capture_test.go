@@ -81,9 +81,9 @@ func Test_TraceeCapture(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			coolDown(t, tc.coolDown)
-			cmd := fmt.Sprintf("--events init_namespaces -c dir:%s", tc.directory)
+			cmd := fmt.Sprintf("--events init_namespaces -a dir:%s", tc.directory)
 			for _, filter := range tc.captureFilters {
-				cmd = fmt.Sprintf("%s -c %s", cmd, filter)
+				cmd = fmt.Sprintf("%s -a %s", cmd, filter)
 			}
 			running := testutils.NewRunningTracee(context.Background(), cmd)
 

@@ -103,7 +103,7 @@ var capabilitiesCmd = &cobra.Command{
 
 var artifactsCmd = &cobra.Command{
 	Use:     "artifacts",
-	Aliases: []string{"c"},
+	Aliases: []string{"a"},
 	Short:   "Show manual page for the --artifacts flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("artifacts")
@@ -112,7 +112,7 @@ var artifactsCmd = &cobra.Command{
 
 var configCmd = &cobra.Command{
 	Use:     "config",
-	Aliases: []string{},
+	Aliases: []string{"c"},
 	Short:   "Show manual page for the --config flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("config")

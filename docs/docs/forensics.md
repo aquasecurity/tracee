@@ -1,20 +1,20 @@
 # Getting Started with Forensics
 
 Tracee has a unique feature that lets you capture interesting artifacts from
-running applications, using the `--capture` flag.
+running applications, using the `--artifacts` flag.
 
 ```console
-./dist/tracee man capture
+./dist/tracee man artifacts
 ```
 
 ```console
-sudo ./dist/tracee --capture xxx
+sudo ./dist/tracee --artifacts xxx
 ```
 
 !!! Tip
     All captured artifacts are saved in Tracee's "output directory", which can
-    be configured using `--capture dir:/path/to/dir`. You may also use
-    `--capture clear-dir` if you want contents of the destination directory
+    be configured using `--artifacts dir.path=/path/to/dir`. You may also use
+    `--artifacts dir.clear` if you want contents of the destination directory
     to be cleared every time you execute tracee.
 
 ## Artifacts Types
@@ -37,13 +37,9 @@ Tracee can capture the following types of artifacts:
        --scope comm=bash \
        --scope follow \
        --output option:parse-arguments \
-       --capture dir:/tmp/tracee/ \
-       --capture write='/tmp/*'
+       --artifacts dir.path=/tmp/tracee \
+       --artifacts file-write.filters=path=/tmp/*
     ```
-   
-    !!! Note
-        Using file capture without filter name will be path by default. Hence,
-        `--capture write='/tmp/*` is the same as `--capture write:path='/tmp/*`.
 
     ```console
     echo write testing 123 > /tmp/testing.txt
@@ -72,9 +68,9 @@ Tracee can capture the following types of artifacts:
        --scope comm=bash \
        --scope follow \
        --output option:parse-arguments \
-       --capture dir:/tmp/tracee/ \
-       --capture read:type=pipe \
-       --capture read:fd=stdin'
+       --artifacts dir.path=/tmp/tracee \
+       --artifacts file-read.filters=type=pipe \
+       --artifacts file-read.filters=fd=stdin
     ```
 
     ```console
@@ -107,8 +103,8 @@ Tracee can capture the following types of artifacts:
        --scope comm=bash \
        --scope follow \
        --output option:parse-arguments \
-       --capture dir:/tmp/tracee/ \
-       --capture exec
+       --artifacts dir.path=/tmp/tracee \
+       --artifacts executable
     ```
 
     ```console
@@ -161,8 +157,8 @@ Tracee can capture the following types of artifacts:
        --output none \
        --scope comm=bash \
        --scope follow \
-       --capture dir:/tmp/tracee/ \
-       --capture mem
+       --artifacts dir.path=/tmp/tracee \
+       --artifacts memory-regions
     ```
 
     !!! Note
@@ -178,8 +174,8 @@ Tracee can capture the following types of artifacts:
         The default behavior when capturing network traffic is to capture
         ALL traffic, despite given event filters. If you want to make
         capture feature to follow the given event filters, like for example
-        capturing DNS events only, then you have to provide `--capture
-        pcap-options:filtered` argument in the command line. Then only
+        capturing DNS events only, then you have to provide `--artifacts
+        network.pcap.options=filtered` argument in the command line. Then only
         net_packet_XXX events will be captured (IPv4, IPv6, TCP, UDP,
         ICMP, ICMPv6, DNS, HTTP, etc).
 
@@ -188,8 +184,8 @@ Tracee can capture the following types of artifacts:
     ```console
     sudo ./dist/tracee \
         --events net_packet_ipv4 \
-        --capture network \
-        --capture pcap-options:filtered
+        --artifacts network \
+        --artifacts network.pcap.options=filtered
     ```
 
     and observe a single **pcap file** for all ipv4 packets created:
@@ -208,8 +204,8 @@ Tracee can capture the following types of artifacts:
     ```console
     sudo ./dist/tracee \
         --events net_packet_dns \
-        --capture network \
-        --capture pcap-options:filtered
+        --artifacts network \
+        --artifacts network.pcap.options=filtered
     ```
 
     and the file `/tmp/tracee/out/pcap/single.pcap` would only contain DNS
@@ -250,9 +246,9 @@ Tracee can capture the following types of artifacts:
     ```console
     sudo ./dist/tracee \
         --events net_packet_icmp \
-        --capture network \
-        --capture pcap-options:filtered \
-        --capture pcap:process,container,command
+        --artifacts network \
+        --artifacts network.pcap.options=filtered \
+        --artifacts network.pcap.split=process,container,command
     ```
 
     ```console
@@ -349,10 +345,10 @@ Tracee can capture the following types of artifacts:
     ```console
     sudo ./dist/tracee \
         --events net_packet_tcp \
-        --capture network \
-        --capture pcap-options:filtered \
-        --capture pcap:single,command \
-        --capture pcap-snaplen:default
+        --artifacts network \
+        --artifacts network.pcap.options=filtered \
+        --artifacts network.pcap.split=single,command \
+        --artifacts network.pcap.snaplen=default
     ```
 
     To capture packet headers + 96 bytes of payload. Or replace `default` by:
@@ -375,8 +371,8 @@ Tracee can capture the following types of artifacts:
         --output none \
         --scope comm=bash \
         --scope follow \
-        --capture clear-dir \
-        --capture module
+        --artifacts dir.clear \
+        --artifacts kernel-modules
     ```
 
     Captured module will be found in tracee destination directory, just like
@@ -428,8 +424,8 @@ Tracee can capture the following types of artifacts:
         --output none \
         --scope comm=bash \
         --scope follow \
-        --capture clear-dir \
-        --capture bpf
+        --artifacts dir.clear \
+        --artifacts bpf-programs
      ```
 
     Captured bpf bytecode will be found in tracee destination directory, just like
