@@ -506,6 +506,353 @@ func TestConvertToProto_ThreatMetadata(t *testing.T) {
 	assert.Equal(t, "Process Injection", protoEvent.Threat.Mitre.Technique.Name)
 }
 
+// TestConvertToProto_DetectedFrom_SingleLevel tests DetectedFrom conversion
+func TestConvertToProto_DetectedFrom_SingleLevel(t *testing.T) {
+	t.Parallel()
+
+	e := trace.Event{
+		EventID:   2018,
+		EventName: "container_create",
+		Args: []trace.Argument{
+			{
+				ArgMeta: trace.ArgMeta{Name: "detectedFrom"},
+				Value: map[string]interface{}{
+					"id":          int(Execve),
+					"name":        "execve",
+					"returnValue": int(0), // Syscalls need returnValue
+					"args": []trace.Argument{
+						{ArgMeta: trace.ArgMeta{Name: "pathname"}, Value: "/bin/bash"},
+						{ArgMeta: trace.ArgMeta{Name: "pid"}, Value: int32(1234)},
+					},
+				},
+			},
+		},
+	}
+
+	protoEvent := ConvertToProto(&e)
+
+	require.NotNil(t, protoEvent.DetectedFrom)
+	assert.Equal(t, uint32(Execve), protoEvent.DetectedFrom.Id)
+	assert.Equal(t, "execve", protoEvent.DetectedFrom.Name)
+	require.Len(t, protoEvent.DetectedFrom.Data, 3) // pathname, pid, returnValue (syscall)
+	assert.Equal(t, "pathname", protoEvent.DetectedFrom.Data[0].Name)
+	assert.Equal(t, "/bin/bash", protoEvent.DetectedFrom.Data[0].GetStr())
+	assert.Equal(t, "pid", protoEvent.DetectedFrom.Data[1].Name)
+	assert.Equal(t, int32(1234), protoEvent.DetectedFrom.Data[1].GetInt32())
+	assert.Equal(t, "returnValue", protoEvent.DetectedFrom.Data[2].Name) // Syscall adds returnValue
+	assert.Nil(t, protoEvent.DetectedFrom.Parent)                        // No parent
+}
+
+// TestConvertToProto_DetectedFrom_WithParent tests parent chain conversion
+func TestConvertToProto_DetectedFrom_WithParent(t *testing.T) {
+	t.Parallel()
+
+	// Build a 2-level detection chain
+	e := trace.Event{
+		EventID:   7002,
+		EventName: "detector_level2",
+		Args: []trace.Argument{
+			{
+				ArgMeta: trace.ArgMeta{Name: "detectedFrom"},
+				Value: map[string]interface{}{
+					"id":   7001,
+					"name": "detector_level1",
+					"args": []trace.Argument{
+						{ArgMeta: trace.ArgMeta{Name: "binary"}, Value: "nc"},
+					},
+					"parent": map[string]interface{}{
+						"id":          int(Execve),
+						"name":        "execve",
+						"returnValue": int(0), // Syscalls need returnValue
+						"args": []trace.Argument{
+							{ArgMeta: trace.ArgMeta{Name: "pathname"}, Value: "/usr/bin/nc"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	protoEvent := ConvertToProto(&e)
+
+	require.NotNil(t, protoEvent.DetectedFrom)
+	assert.Equal(t, uint32(7001), protoEvent.DetectedFrom.Id)
+	assert.Equal(t, "detector_level1", protoEvent.DetectedFrom.Name)
+
+	// Verify parent was converted
+	require.NotNil(t, protoEvent.DetectedFrom.Parent)
+	assert.Equal(t, uint32(Execve), protoEvent.DetectedFrom.Parent.Id)
+	assert.Equal(t, "execve", protoEvent.DetectedFrom.Parent.Name)
+	require.Len(t, protoEvent.DetectedFrom.Parent.Data, 2) // pathname + returnValue (syscall)
+	assert.Equal(t, "pathname", protoEvent.DetectedFrom.Parent.Data[0].Name)
+	assert.Equal(t, "/usr/bin/nc", protoEvent.DetectedFrom.Parent.Data[0].GetStr())
+}
+
+// TestConvertToProto_DetectedFrom_ThreeLevels tests deep chain conversion
+func TestConvertToProto_DetectedFrom_ThreeLevels(t *testing.T) {
+	t.Parallel()
+
+	// Build a 3-level detection chain
+	e := trace.Event{
+		EventID:   7003,
+		EventName: "detector_level3",
+		Args: []trace.Argument{
+			{
+				ArgMeta: trace.ArgMeta{Name: "detectedFrom"},
+				Value: map[string]interface{}{
+					"id":   7002,
+					"name": "detector_level2",
+					"args": []trace.Argument{
+						{ArgMeta: trace.ArgMeta{Name: "container_id"}, Value: "abc123"},
+					},
+					"parent": map[string]interface{}{
+						"id":   7001,
+						"name": "detector_level1",
+						"args": []trace.Argument{
+							{ArgMeta: trace.ArgMeta{Name: "binary"}, Value: "nc"},
+						},
+						"parent": map[string]interface{}{
+							"id":          int(Execve),
+							"name":        "sched_process_exec",
+							"returnValue": int(0), // Syscalls need returnValue
+							"args": []trace.Argument{
+								{ArgMeta: trace.ArgMeta{Name: "pathname"}, Value: "/usr/bin/nc"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	protoEvent := ConvertToProto(&e)
+
+	require.NotNil(t, protoEvent.DetectedFrom)
+
+	// Level 1 (immediate parent)
+	assert.Equal(t, uint32(7002), protoEvent.DetectedFrom.Id)
+	assert.Equal(t, "detector_level2", protoEvent.DetectedFrom.Name)
+	require.Len(t, protoEvent.DetectedFrom.Data, 1)
+	assert.Equal(t, "container_id", protoEvent.DetectedFrom.Data[0].Name)
+
+	// Level 2
+	require.NotNil(t, protoEvent.DetectedFrom.Parent)
+	assert.Equal(t, uint32(7001), protoEvent.DetectedFrom.Parent.Id)
+	assert.Equal(t, "detector_level1", protoEvent.DetectedFrom.Parent.Name)
+	require.Len(t, protoEvent.DetectedFrom.Parent.Data, 1)
+	assert.Equal(t, "binary", protoEvent.DetectedFrom.Parent.Data[0].Name)
+
+	// Level 3 (root)
+	require.NotNil(t, protoEvent.DetectedFrom.Parent.Parent)
+	assert.Equal(t, uint32(Execve), protoEvent.DetectedFrom.Parent.Parent.Id)
+	assert.Equal(t, "sched_process_exec", protoEvent.DetectedFrom.Parent.Parent.Name)
+	require.Len(t, protoEvent.DetectedFrom.Parent.Parent.Data, 2) // pathname + returnValue (syscall)
+	assert.Equal(t, "pathname", protoEvent.DetectedFrom.Parent.Parent.Data[0].Name)
+	assert.Nil(t, protoEvent.DetectedFrom.Parent.Parent.Parent) // No more parents
+}
+
+// TestConvertFromProto_DetectedFrom tests reverse conversion of DetectedFrom
+func TestConvertFromProto_DetectedFrom(t *testing.T) {
+	t.Parallel()
+
+	protoEvent := &pb.Event{
+		Id:   7001,
+		Name: "detector_event",
+		DetectedFrom: &pb.DetectedFrom{
+			Id:   uint32(Execve),
+			Name: "execve",
+			Data: []*pb.EventValue{
+				{Name: "pathname", Value: &pb.EventValue_Str{Str: "/bin/bash"}},
+			},
+		},
+	}
+
+	traceEvent := ConvertFromProto(protoEvent)
+
+	require.NotNil(t, traceEvent)
+	require.Len(t, traceEvent.Args, 1)
+
+	// DetectedFrom should be converted back to an arg
+	arg := traceEvent.Args[0]
+	assert.Equal(t, "detectedFrom", arg.Name)
+
+	detectedFromMap, ok := arg.Value.(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, int(Execve), detectedFromMap["id"])
+	assert.Equal(t, "execve", detectedFromMap["name"])
+
+	args, ok := detectedFromMap["args"].([]trace.Argument)
+	require.True(t, ok)
+	require.Len(t, args, 1)
+	assert.Equal(t, "pathname", args[0].Name)
+	assert.Equal(t, "/bin/bash", args[0].Value)
+}
+
+// TestConvertFromProto_DetectedFrom_WithParent tests parent chain reverse conversion
+func TestConvertFromProto_DetectedFrom_WithParent(t *testing.T) {
+	t.Parallel()
+
+	protoEvent := &pb.Event{
+		Id:   7002,
+		Name: "detector_level2",
+		DetectedFrom: &pb.DetectedFrom{
+			Id:   7001,
+			Name: "detector_level1",
+			Data: []*pb.EventValue{
+				{Name: "binary", Value: &pb.EventValue_Str{Str: "nc"}},
+			},
+			Parent: &pb.DetectedFrom{
+				Id:   uint32(Execve),
+				Name: "execve",
+				Data: []*pb.EventValue{
+					{Name: "pathname", Value: &pb.EventValue_Str{Str: "/usr/bin/nc"}},
+				},
+			},
+		},
+	}
+
+	traceEvent := ConvertFromProto(protoEvent)
+
+	require.NotNil(t, traceEvent)
+	require.Len(t, traceEvent.Args, 1)
+
+	arg := traceEvent.Args[0]
+	assert.Equal(t, "detectedFrom", arg.Name)
+
+	detectedFromMap, ok := arg.Value.(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, 7001, detectedFromMap["id"])
+	assert.Equal(t, "detector_level1", detectedFromMap["name"])
+
+	// Check parent was converted
+	parentValue, ok := detectedFromMap["parent"]
+	require.True(t, ok, "parent should be present")
+
+	parentMap, ok := parentValue.(map[string]interface{})
+	require.True(t, ok, "parent should be a map")
+	assert.Equal(t, int(Execve), parentMap["id"])
+	assert.Equal(t, "execve", parentMap["name"])
+}
+
+// TestRoundTrip_DetectedFrom_PreservesChain tests that conversion preserves chains
+func TestRoundTrip_DetectedFrom_PreservesChain(t *testing.T) {
+	t.Parallel()
+
+	// Start with trace.Event with 2-level chain
+	original := trace.Event{
+		EventID:   7002,
+		EventName: "detector_level2",
+		Args: []trace.Argument{
+			{
+				ArgMeta: trace.ArgMeta{Name: "detectedFrom"},
+				Value: map[string]interface{}{
+					"id":   7001,
+					"name": "detector_level1",
+					"args": []trace.Argument{
+						{ArgMeta: trace.ArgMeta{Name: "binary"}, Value: "nc"},
+					},
+					"parent": map[string]interface{}{
+						"id":          int(Execve),
+						"name":        "execve",
+						"returnValue": int(0), // Syscalls need returnValue
+						"args": []trace.Argument{
+							{ArgMeta: trace.ArgMeta{Name: "pathname"}, Value: "/usr/bin/nc"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Convert to proto
+	protoEvent := ConvertToProto(&original)
+	assert.NotNil(t, protoEvent)
+	require.NotNil(t, protoEvent.DetectedFrom)
+	require.NotNil(t, protoEvent.DetectedFrom.Parent)
+
+	// Convert back to trace
+	converted := ConvertFromProto(protoEvent)
+	assert.NotNil(t, converted)
+	require.Len(t, converted.Args, 1)
+
+	// Verify chain is preserved
+	arg := converted.Args[0]
+	detectedFromMap, ok := arg.Value.(map[string]interface{})
+	require.True(t, ok)
+
+	assert.Equal(t, 7001, detectedFromMap["id"])
+	assert.Equal(t, "detector_level1", detectedFromMap["name"])
+
+	parentValue, ok := detectedFromMap["parent"]
+	require.True(t, ok)
+
+	parentMap, ok := parentValue.(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, int(Execve), parentMap["id"])
+	assert.Equal(t, "execve", parentMap["name"])
+}
+
+// TestConvertToProto_DetectedFrom_DeepChain tests very deep chains
+func TestConvertToProto_DetectedFrom_DeepChain(t *testing.T) {
+	t.Parallel()
+
+	// Build a 5-level chain recursively
+	var buildChain func(level int) interface{}
+	buildChain = func(level int) interface{} {
+		if level == 0 {
+			// Base case - original event
+			return map[string]interface{}{
+				"id":          int(Execve),
+				"name":        "execve",
+				"returnValue": int(0), // Syscalls need returnValue
+				"args": []trace.Argument{
+					{ArgMeta: trace.ArgMeta{Name: "pathname"}, Value: "/bin/original"},
+				},
+			}
+		}
+		// Recursive case
+		return map[string]interface{}{
+			"id":   7000 + level,
+			"name": "detector_level",
+			"args": []trace.Argument{
+				{ArgMeta: trace.ArgMeta{Name: "level"}, Value: int32(level)},
+			},
+			"parent": buildChain(level - 1),
+		}
+	}
+
+	e := trace.Event{
+		EventID:   7005,
+		EventName: "detector_level5",
+		Args: []trace.Argument{
+			{
+				ArgMeta: trace.ArgMeta{Name: "detectedFrom"},
+				Value:   buildChain(4),
+			},
+		},
+	}
+
+	protoEvent := ConvertToProto(&e)
+
+	// Walk down the chain and count levels
+	current := protoEvent.DetectedFrom
+	depth := 0
+	for current != nil {
+		depth++
+		current = current.Parent
+	}
+
+	assert.Equal(t, 5, depth, "Should have 5 levels in the chain")
+
+	// Verify root is the execve event
+	current = protoEvent.DetectedFrom
+	for current.Parent != nil {
+		current = current.Parent
+	}
+	assert.Equal(t, uint32(Execve), current.Id)
+	assert.Equal(t, "execve", current.Name)
+}
+
 func TestConvertToProto_ThreatMetadata_NoSeverity(t *testing.T) {
 	t.Parallel()
 
