@@ -6533,6 +6533,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="DetectedFrom: Provenance Tracking">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detection-chain-preservation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detection Chain Preservation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -9197,6 +9214,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="DetectedFrom: Provenance Tracking">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detection-chain-preservation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detection Chain Preservation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -10196,6 +10230,43 @@
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div></p>
+<p><strong>Use cases</strong>:
+- Debugging: Understand why detector fired
+- Forensics: Reconstruct detection chains
+- Correlation: Link detections to root causes</p>
+<h4 id="detection-chain-preservation">Detection Chain Preservation<a class="headerlink" href="#detection-chain-preservation" title="Permanent link">&para;</a></h4>
+<p>When detectors form chains (detector consuming another detector's output), the engine automatically preserves the complete provenance chain via <code>DetectedFrom.parent</code>:</p>
+<p><strong>Example 3-level chain:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;critical_threat_in_production&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;detected_from&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;7001&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;suspicious_container_exec&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;binary&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;nc&quot;</span><span class="p">}],</span>
+<span class="w">    </span><span class="nt">&quot;parent&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;7000&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;suspicious_binary_exec&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/usr/bin/nc&quot;</span><span class="p">}],</span>
+<span class="w">      </span><span class="nt">&quot;parent&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;700&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sched_process_exec&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/usr/bin/nc&quot;</span><span class="p">}]</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Traversal helpers:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1">// Get full chain (immediate parent to root)</span>
+<span class="nx">chain</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">GetDetectionChain</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span>
+
+<span class="c1">// Get original triggering event</span>
+<span class="nx">root</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">GetRootDetection</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span>
+
+<span class="c1">// Get chain depth</span>
+<span class="nx">depth</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">GetChainDepth</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span><span class="w">  </span><span class="c1">// 3 for example above</span>
+</code></pre></div>
+<p>This chaining is automatic - detectors don't need to do anything special.</p>
 <h3 id="processancestry-automatic-ancestry-enrichment">ProcessAncestry: Automatic Ancestry Enrichment<a class="headerlink" href="#processancestry-automatic-ancestry-enrichment" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nx">AutoPopulate</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">AutoPopulateFields</span><span class="p">{</span>
 <span class="w">    </span><span class="nx">ProcessAncestry</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">  </span><span class="c1">// Default: 5 levels</span>
