@@ -514,3 +514,361 @@ func TestNullSafety(t *testing.T) {
 		assert.Equal(t, "", GetK8sPodName(event))
 	})
 }
+
+// TestGetDetectionChain tests the full detection chain retrieval
+func TestGetDetectionChain(t *testing.T) {
+	t.Run("nil event returns nil", func(t *testing.T) {
+		chain := GetDetectionChain(nil)
+		assert.Nil(t, chain)
+	})
+
+	t.Run("event without DetectedFrom returns nil", func(t *testing.T) {
+		event := &Event{
+			Id:   1,
+			Name: "test_event",
+		}
+		chain := GetDetectionChain(event)
+		assert.Nil(t, chain)
+	})
+
+	t.Run("single level detection chain", func(t *testing.T) {
+		event := &Event{
+			Id:   7001,
+			Name: "detector_level1",
+			DetectedFrom: &DetectedFrom{
+				Id:   700,
+				Name: "base_event",
+				Data: []*EventValue{
+					NewStringValue("pathname", "/bin/nc"),
+				},
+			},
+		}
+
+		chain := GetDetectionChain(event)
+		require.NotNil(t, chain)
+		assert.Len(t, chain, 1)
+		assert.Equal(t, uint32(700), chain[0].Id)
+		assert.Equal(t, "base_event", chain[0].Name)
+	})
+
+	t.Run("two level detection chain", func(t *testing.T) {
+		event := &Event{
+			Id:   7002,
+			Name: "detector_level2",
+			DetectedFrom: &DetectedFrom{
+				Id:   7001,
+				Name: "detector_level1",
+				Parent: &DetectedFrom{
+					Id:   700,
+					Name: "base_event",
+				},
+			},
+		}
+
+		chain := GetDetectionChain(event)
+		require.NotNil(t, chain)
+		assert.Len(t, chain, 2)
+
+		// Index 0 is immediate parent
+		assert.Equal(t, uint32(7001), chain[0].Id)
+		assert.Equal(t, "detector_level1", chain[0].Name)
+
+		// Index 1 is root
+		assert.Equal(t, uint32(700), chain[1].Id)
+		assert.Equal(t, "base_event", chain[1].Name)
+	})
+
+	t.Run("three level detection chain", func(t *testing.T) {
+		event := &Event{
+			Id:   7003,
+			Name: "detector_level3",
+			DetectedFrom: &DetectedFrom{
+				Id:   7002,
+				Name: "detector_level2",
+				Data: []*EventValue{
+					NewStringValue("container_id", "abc123"),
+				},
+				Parent: &DetectedFrom{
+					Id:   7001,
+					Name: "detector_level1",
+					Data: []*EventValue{
+						NewStringValue("binary", "nc"),
+					},
+					Parent: &DetectedFrom{
+						Id:   700,
+						Name: "sched_process_exec",
+						Data: []*EventValue{
+							NewStringValue("pathname", "/usr/bin/nc"),
+						},
+					},
+				},
+			},
+		}
+
+		chain := GetDetectionChain(event)
+		require.NotNil(t, chain)
+		assert.Len(t, chain, 3)
+
+		// Index 0 is immediate parent (level2)
+		assert.Equal(t, uint32(7002), chain[0].Id)
+		assert.Equal(t, "detector_level2", chain[0].Name)
+		require.Len(t, chain[0].Data, 1)
+		assert.Equal(t, "container_id", chain[0].Data[0].Name)
+
+		// Index 1 is middle (level1)
+		assert.Equal(t, uint32(7001), chain[1].Id)
+		assert.Equal(t, "detector_level1", chain[1].Name)
+		require.Len(t, chain[1].Data, 1)
+		assert.Equal(t, "binary", chain[1].Data[0].Name)
+
+		// Index 2 is root (original event)
+		assert.Equal(t, uint32(700), chain[2].Id)
+		assert.Equal(t, "sched_process_exec", chain[2].Name)
+		require.Len(t, chain[2].Data, 1)
+		assert.Equal(t, "pathname", chain[2].Data[0].Name)
+	})
+}
+
+// TestGetRootDetection tests the root detection retrieval
+func TestGetRootDetection(t *testing.T) {
+	t.Run("nil event returns nil", func(t *testing.T) {
+		root := GetRootDetection(nil)
+		assert.Nil(t, root)
+	})
+
+	t.Run("event without DetectedFrom returns nil", func(t *testing.T) {
+		event := &Event{
+			Id:   1,
+			Name: "test_event",
+		}
+		root := GetRootDetection(event)
+		assert.Nil(t, root)
+	})
+
+	t.Run("single level chain returns immediate parent", func(t *testing.T) {
+		event := &Event{
+			Id:   7001,
+			Name: "detector_level1",
+			DetectedFrom: &DetectedFrom{
+				Id:   700,
+				Name: "base_event",
+				Data: []*EventValue{
+					NewStringValue("pathname", "/bin/nc"),
+				},
+			},
+		}
+
+		root := GetRootDetection(event)
+		require.NotNil(t, root)
+		assert.Equal(t, uint32(700), root.Id)
+		assert.Equal(t, "base_event", root.Name)
+	})
+
+	t.Run("multi level chain returns original root", func(t *testing.T) {
+		event := &Event{
+			Id:   7003,
+			Name: "detector_level3",
+			DetectedFrom: &DetectedFrom{
+				Id:   7002,
+				Name: "detector_level2",
+				Parent: &DetectedFrom{
+					Id:   7001,
+					Name: "detector_level1",
+					Parent: &DetectedFrom{
+						Id:   700,
+						Name: "sched_process_exec",
+						Data: []*EventValue{
+							NewStringValue("pathname", "/usr/bin/nc"),
+						},
+					},
+				},
+			},
+		}
+
+		root := GetRootDetection(event)
+		require.NotNil(t, root)
+		assert.Equal(t, uint32(700), root.Id)
+		assert.Equal(t, "sched_process_exec", root.Name)
+		require.Len(t, root.Data, 1)
+		assert.Equal(t, "pathname", root.Data[0].Name)
+	})
+
+	t.Run("deep chain traverses to original event", func(t *testing.T) {
+		// Build a 5-level chain
+		event := &Event{
+			Id:   7005,
+			Name: "detector_level5",
+			DetectedFrom: &DetectedFrom{
+				Id:   7004,
+				Name: "detector_level4",
+				Parent: &DetectedFrom{
+					Id:   7003,
+					Name: "detector_level3",
+					Parent: &DetectedFrom{
+						Id:   7002,
+						Name: "detector_level2",
+						Parent: &DetectedFrom{
+							Id:   7001,
+							Name: "detector_level1",
+							Parent: &DetectedFrom{
+								Id:   700,
+								Name: "original_event",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		root := GetRootDetection(event)
+		require.NotNil(t, root)
+		assert.Equal(t, uint32(700), root.Id)
+		assert.Equal(t, "original_event", root.Name)
+	})
+}
+
+// TestGetChainDepth tests the chain depth calculation
+func TestGetChainDepth(t *testing.T) {
+	t.Run("nil event returns 0", func(t *testing.T) {
+		depth := GetChainDepth(nil)
+		assert.Equal(t, 0, depth)
+	})
+
+	t.Run("event without DetectedFrom returns 0", func(t *testing.T) {
+		event := &Event{
+			Id:   1,
+			Name: "test_event",
+		}
+		depth := GetChainDepth(event)
+		assert.Equal(t, 0, depth)
+	})
+
+	t.Run("single level detection returns 1", func(t *testing.T) {
+		event := &Event{
+			Id:   7001,
+			Name: "detector_level1",
+			DetectedFrom: &DetectedFrom{
+				Id:   700,
+				Name: "base_event",
+			},
+		}
+
+		depth := GetChainDepth(event)
+		assert.Equal(t, 1, depth)
+	})
+
+	t.Run("two level detection returns 2", func(t *testing.T) {
+		event := &Event{
+			Id:   7002,
+			Name: "detector_level2",
+			DetectedFrom: &DetectedFrom{
+				Id:   7001,
+				Name: "detector_level1",
+				Parent: &DetectedFrom{
+					Id:   700,
+					Name: "base_event",
+				},
+			},
+		}
+
+		depth := GetChainDepth(event)
+		assert.Equal(t, 2, depth)
+	})
+
+	t.Run("three level detection returns 3", func(t *testing.T) {
+		event := &Event{
+			Id:   7003,
+			Name: "detector_level3",
+			DetectedFrom: &DetectedFrom{
+				Id:   7002,
+				Name: "detector_level2",
+				Parent: &DetectedFrom{
+					Id:   7001,
+					Name: "detector_level1",
+					Parent: &DetectedFrom{
+						Id:   700,
+						Name: "sched_process_exec",
+					},
+				},
+			},
+		}
+
+		depth := GetChainDepth(event)
+		assert.Equal(t, 3, depth)
+	})
+
+	t.Run("deep chain returns correct depth", func(t *testing.T) {
+		// Build a 10-level chain
+		root := &DetectedFrom{Id: 700, Name: "root"}
+		current := root
+
+		for i := 1; i < 10; i++ {
+			current = &DetectedFrom{
+				Id:     uint32(7000 + i),
+				Name:   "level",
+				Parent: current,
+			}
+		}
+
+		event := &Event{
+			Id:           7010,
+			Name:         "final_detection",
+			DetectedFrom: current,
+		}
+
+		depth := GetChainDepth(event)
+		assert.Equal(t, 10, depth)
+	})
+}
+
+// TestDetectionChainHelpers_Combined tests all three helpers together
+func TestDetectionChainHelpers_Combined(t *testing.T) {
+	t.Run("3-level chain example from docs", func(t *testing.T) {
+		// Build example from docs/docs/detectors/api-reference.md
+		event := &Event{
+			Id:   7002,
+			Name: "critical_threat_in_production",
+			DetectedFrom: &DetectedFrom{
+				Id:   7001,
+				Name: "suspicious_container_exec",
+				Data: []*EventValue{
+					NewStringValue("binary", "nc"),
+				},
+				Parent: &DetectedFrom{
+					Id:   7000,
+					Name: "suspicious_binary_exec",
+					Data: []*EventValue{
+						NewStringValue("pathname", "/usr/bin/nc"),
+					},
+					Parent: &DetectedFrom{
+						Id:   700,
+						Name: "sched_process_exec",
+						Data: []*EventValue{
+							NewStringValue("pathname", "/usr/bin/nc"),
+						},
+					},
+				},
+			},
+		}
+
+		// Test GetDetectionChain
+		chain := GetDetectionChain(event)
+		require.NotNil(t, chain)
+		assert.Len(t, chain, 3)
+
+		// Test GetRootDetection
+		root := GetRootDetection(event)
+		require.NotNil(t, root)
+		assert.Equal(t, uint32(700), root.Id)
+		assert.Equal(t, "sched_process_exec", root.Name)
+
+		// Test GetChainDepth
+		depth := GetChainDepth(event)
+		assert.Equal(t, 3, depth)
+
+		// Verify chain order (immediate parent to root)
+		assert.Equal(t, "suspicious_container_exec", chain[0].Name)
+		assert.Equal(t, "suspicious_binary_exec", chain[1].Name)
+		assert.Equal(t, "sched_process_exec", chain[2].Name)
+	})
+}
