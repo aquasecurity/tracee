@@ -432,7 +432,7 @@ jobs:
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
     runs-on:
-      - graas_ami-0547f429681dc1f2a_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }} # Noble 6.12 aarch64 GRAAS AMI
+      - graas_ami-0d5340923542acc7d_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }} # Noble 6.12 aarch64 GRAAS AMI
       - EXECUTION_TYPE=SHORT
       - INSTANCE_TYPE=MEDIUM
     container:

@@ -187,6 +187,39 @@ disable_auto_updates() {
     esac
 }
 
+# Update system packages
+update_system() {
+    local distro="$1"
+
+    case "${distro}" in
+        ubuntu)
+            info "Updating system packages (Ubuntu)"
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update || die "apt-get update failed"
+            apt-get upgrade -y || die "apt-get upgrade failed"
+            info "System packages updated successfully"
+            ;;
+        centos)
+            info "Updating system packages (CentOS/RHEL)"
+            if command -v dnf > /dev/null 2>&1; then
+                dnf upgrade -y || die "dnf upgrade failed"
+            elif command -v yum > /dev/null 2>&1; then
+                yum upgrade -y || die "yum upgrade failed"
+            fi
+            info "System packages updated successfully"
+            ;;
+        alpine)
+            info "Updating system packages (Alpine)"
+            apk update || die "apk update failed"
+            apk upgrade || die "apk upgrade failed"
+            info "System packages updated successfully"
+            ;;
+        *)
+            warn "Unknown distro for system update: ${distro}"
+            ;;
+    esac
+}
+
 # Install dependencies based on distro
 install_deps() {
     local distro="$1"
@@ -324,40 +357,44 @@ main() {
 
     # Step 0 (optional): Clean docker state if --force
     if [[ "${FORCE}" == "true" ]]; then
-        info "Step 0/6: Cleaning Docker state (--force)..."
+        info "Step 0/7: Cleaning Docker state (--force)..."
         clean_docker_state
     fi
 
     # Step 1: Disable automatic updates (before any package operations)
-    info "Step 1/6: Disabling automatic updates..."
+    info "Step 1/7: Disabling automatic updates..."
     disable_auto_updates "${distro}"
 
-    # Step 2: Install dependencies
+    # Step 2: Update system packages
+    info "Step 2/7: Updating system packages..."
+    update_system "${distro}"
+
+    # Step 3: Install dependencies
     if [[ "${SKIP_DEPS}" == "false" ]]; then
-        info "Step 2/6: Installing dependencies..."
+        info "Step 3/7: Installing dependencies..."
         install_deps "${distro}"
     else
-        info "Step 2/6: Skipping dependency installation (--skip-deps)"
+        info "Step 3/7: Skipping dependency installation (--skip-deps)"
     fi
 
-    # Step 3: Install AMI-specific tooling (AWS CLI, GitHub CLI, Actions Runner)
-    info "Step 3/6: Installing AMI tooling..."
+    # Step 4: Install AMI-specific tooling (AWS CLI, GitHub CLI, Actions Runner)
+    info "Step 4/7: Installing AMI tooling..."
     install_ami_tooling
 
-    # Step 4: Pull test images
+    # Step 5: Pull test images
     if [[ "${SKIP_IMAGES}" == "false" ]]; then
-        info "Step 4/6: Pulling test container images..."
+        info "Step 5/7: Pulling test container images..."
         pull_test_images
     else
-        info "Step 4/6: Skipping image pull (--skip-images)"
+        info "Step 5/7: Skipping image pull (--skip-images)"
     fi
 
-    # Step 5: Final safeguard - ensure auto-updates remain disabled
-    info "Step 5/6: Final safeguard - ensuring auto-updates remain disabled..."
+    # Step 6: Final safeguard - ensure auto-updates remain disabled
+    info "Step 6/7: Final safeguard - ensuring auto-updates remain disabled..."
     disable_auto_updates "${distro}"
 
-    # Step 6: Final cleanup (logs, package caches)
-    info "Step 6/6: Final cleanup..."
+    # Step 7: Final cleanup (logs, package caches)
+    info "Step 7/7: Final cleanup..."
     final_cleanup "${distro}"
 
     info "=== AMI Preparation Completed Successfully ==="
