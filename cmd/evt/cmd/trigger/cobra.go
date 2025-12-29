@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -22,9 +23,10 @@ var (
 )
 
 const (
-	defaultTriggerOps   = int32(1)
-	defaultTriggerSleep = 10 * time.Nanosecond
-	triggerTimeout      = 30 * time.Minute
+	defaultTriggerOps      = int32(1)
+	defaultTriggerSleep    = 10 * time.Nanosecond
+	defaultTriggerParallel = int32(1)
+	triggerTimeout         = 30 * time.Minute
 )
 
 func init() {
@@ -66,12 +68,33 @@ func init() {
 		false,
 		"\t\t\tWait for start signal (SIGUSR1)",
 	)
+
+	triggerCmd.Flags().Duration(
+		"signal-timeout",
+		1*time.Minute,
+		"<duration>\t\tTimeout for waiting for signal (e.g., 5m, 10m)",
+	)
+
+	triggerCmd.Flags().Int32P(
+		"parallel",
+		"p",
+		defaultTriggerParallel,
+		"<number>...\t\tNumber of parallel workers (total ops = workers × ops)",
+	)
 }
 
 func getTrigger(cmd *cobra.Command) (*trigger, error) {
 	event, err := cmd.Flags().GetString("event")
 	if err != nil {
 		return nil, err
+	}
+	if event == "" {
+		return nil, errors.New("event name cannot be empty")
+	}
+
+	// Check if user tried to specify multiple events as comma-separated (common mistake)
+	if strings.Contains(event, ",") {
+		return nil, errors.New("multiple events not supported in a single --event flag: use separate 'evt trigger' commands for each event, or use 'evt stress' for multiple concurrent events")
 	}
 
 	ops, err := cmd.Flags().GetInt32("ops")
@@ -97,12 +120,27 @@ func getTrigger(cmd *cobra.Command) (*trigger, error) {
 		return nil, err
 	}
 
+	signalTimeout, err := cmd.Flags().GetDuration("signal-timeout")
+	if err != nil {
+		return nil, err
+	}
+
+	parallel, err := cmd.Flags().GetInt32("parallel")
+	if err != nil {
+		return nil, err
+	}
+	if parallel <= 0 {
+		return nil, errors.New("parallel must be greater than 0")
+	}
+
 	return &trigger{
 		event:            event,
 		ops:              ops,
 		sleep:            sleep,
 		printBypassFlags: bypassFlags,
 		waitSignal:       waitSignal,
+		signalTimeout:    signalTimeout,
+		parallel:         parallel,
 		cmd:              cmd,
 	}, nil
 }

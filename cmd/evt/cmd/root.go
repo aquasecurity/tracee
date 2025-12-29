@@ -6,11 +6,13 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/aquasecurity/tracee/cmd/evt/cmd/stress"
 	"github.com/aquasecurity/tracee/cmd/evt/cmd/trigger"
 )
 
 func init() {
 	rootCmd.AddCommand(trigger.Cmd())
+	rootCmd.AddCommand(stress.Cmd())
 }
 
 var (

@@ -22,7 +22,20 @@
     make -f builder/Makefile.performance dashboard-stop
     ```
 
-3. **Benchmarking:** Before submitting significant code changes, consider running benchmarks to assess their impact on Tracee's performance. (Details on specific benchmarking tools or scripts used within the Tracee project should be added here. If there are existing benchmarks, provide instructions on how to run them. If not, suggest a methodology).
+3. **Benchmarking and Stress Testing:** Before submitting significant code changes, use the `evt` tool to run stress tests and assess their impact on Tracee's performance:
+
+    ```bash
+    # Build evt and trigger runner container
+    make evt evt-trigger-runner
+    
+    # Run stress test with profiling
+    evt stress \
+      --events security_file_open:instances=16:ops=100000 \
+      --pyroscope --pprof --metrics \
+      --keep-tracee
+    ```
+    
+    For comprehensive documentation on the `evt` tool, see [evt - Event Generator and Stress Testing Tool](evt-tool.md).
 
 4. **Common Performance Pitfalls:**
 

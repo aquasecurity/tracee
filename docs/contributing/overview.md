@@ -110,9 +110,15 @@ make all                   # Build all components
 # Testing
 make test-unit             # Run unit tests with coverage
 make test-integration      # Run integration tests
+
+# Performance and stress testing
+make evt                   # Build the event generator tool
+make evt-trigger-runner    # Build stress testing container
 ```
 
 For detailed information about code quality checks, dependencies, and troubleshooting, see our [Code Quality Guide](checkpatch.md).
+
+For performance testing and stress testing with the `evt` tool, see [evt - Event Generator and Stress Testing Tool](evt-tool.md).
 
 For complete build options and development environment setup, run `make help` or see [Building Documentation](building/building.md).
 
