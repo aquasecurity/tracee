@@ -2,8 +2,10 @@ package datastores
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
@@ -13,6 +15,19 @@ import (
 )
 
 var _ RegistryManager = (*Registry)(nil) // Compile-time interface check
+
+// validateStoreName validates that a datastore name is not empty and contains valid characters
+func validateStoreName(name string) error {
+	if name == "" {
+		return errors.New("datastore name cannot be empty")
+	}
+	// Check for whitespace
+	if strings.TrimSpace(name) != name {
+		return fmt.Errorf("datastore name '%s' contains leading/trailing whitespace", name)
+	}
+	// Reserved names check could be added here if needed
+	return nil
+}
 
 // Registry implements the datastores.Registry interface and provides
 // store registration capabilities for internal Tracee use
@@ -65,6 +80,10 @@ func isNilInterface(i interface{}) bool {
 // RegisterStore registers a datastore with the given name
 // If required is true, returns an error if the store is nil
 func (r *Registry) RegisterStore(name string, store datastores.DataStore, required bool) error {
+	if err := validateStoreName(name); err != nil {
+		return err
+	}
+
 	if isNilInterface(store) {
 		if required {
 			return fmt.Errorf("required datastore '%s' is nil", name)
@@ -154,6 +173,33 @@ func (r *Registry) GetCustom(name string) (datastores.DataStore, error) {
 	}
 
 	return store, nil
+}
+
+// RegisterWritableStore registers a new writable datastore
+// The caller becomes the owner of the store and can write to it
+// Other consumers can access the store via GetCustom() for read-only operations
+// Returns error if a store with the same name already exists
+func (r *Registry) RegisterWritableStore(name string, store datastores.WritableStore) error {
+	if err := validateStoreName(name); err != nil {
+		return err
+	}
+
+	if isNilInterface(store) {
+		return fmt.Errorf("writable datastore '%s' cannot be nil", name)
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Check for duplicates
+	if _, exists := r.stores[name]; exists {
+		return fmt.Errorf("datastore '%s' already registered", name)
+	}
+
+	// Register the writable store (it's also a DataStore)
+	r.stores[name] = store
+
+	return nil
 }
 
 // List returns a list of all registered datastore names
