@@ -8,9 +8,11 @@ YAML detectors enable you to:
 
 - **Detect threats** by filtering events and generating alerts
 - **Derive events** by enriching or transforming existing events
-- **Extract runtime data** from events using JSONPath-like syntax
+- **Extract runtime data** using CEL expressions or simple field names
+- **Write dynamic conditions** using Common Expression Language (CEL)
 - **Auto-populate fields** like threat metadata and process ancestry
-- **Reuse policy syntax** for event filtering
+- **Reuse policy syntax** for static event filtering
+- **Chain detectors** to build complex multi-level detection logic
 
 ## Quick Start
 
@@ -27,6 +29,8 @@ produced_event:
     - defense-evasion
   fields:
     - name: binary_path
+      type: string
+    - name: binary_name
       type: string
 
 requirements:
@@ -52,10 +56,77 @@ auto_populate:
   threat: true
   detected_from: true
 
+# Simple field extraction using CEL
+output:
+  fields:
+    - name: pathname
+      expression: getData("pathname")
+    - name: binary_name
+      expression: getData("comm")
+```
+
+### Simplified CEL Syntax
+
+#### 1. Data Field Access
+
+The `getData()` function extracts event data fields:
+
+```yaml
 output:
   fields:
     - name: binary_path
-      expression: data.pathname
+      expression: getData("pathname")
+    - name: user_id
+      expression: getData("uid")
+    - name: process_id
+      expression: getData("pid")
+```
+
+**Works with any type:**
+```yaml
+conditions:
+  - getData("pathname").startsWith("/tmp")    # String operations
+  - getData("pid") > 1000                     # Numeric comparisons
+  - getData("uid") == 0                       # Any type supported
+```
+
+#### 2. Top-Level Variables
+
+Access workload and timestamp directly:
+
+```yaml
+conditions:
+  - workload.container.id != ""
+  - workload.process.pid > 1000
+
+output:
+  fields:
+    - name: container_id
+      expression: workload.container.id
+    - name: pod_name
+      expression: workload.kubernetes.pod_name
+```
+
+**Available variables:**
+- `workload` - Process, container, and Kubernetes context
+- `timestamp` - Event timestamp
+
+**Example:**
+```yaml
+conditions:
+  - hasData("pathname")
+  - getData("pathname").startsWith("/tmp")
+  - getData("uid") == 0
+  - workload.container.id != ""
+
+output:
+  fields:
+    - name: binary
+      expression: getData("pathname")
+    - name: uid
+      expression: getData("uid")
+    - name: container
+      expression: workload.container.id
 ```
 
 ## Schema Reference
@@ -176,41 +247,82 @@ auto_populate:
 - `detected_from`: Adds detector ID and source event information
 - `process_ancestry`: Includes full process tree (performance impact)
 
+### Conditions (CEL Expressions)
+
+YAML detectors support dynamic runtime conditions using Common Expression Language (CEL). Conditions are evaluated after static filters and all must be true for a detection to fire.
+
+```yaml
+conditions:
+  - hasData("pathname")  # Check if field exists
+  - getData("pathname").startsWith("/tmp")  # String operations
+  - getData("uid") > 1000  # Numeric comparisons
+  - workload.container.id != ""  # Check container context
+```
+
+**CEL Capabilities:**
+
+- **Boolean logic**: `&&`, `||`, `!`, ternary `? :`
+- **Comparisons**: `==`, `!=`, `<`, `<=`, `>`, `>=`
+- **String methods**: `.startsWith()`, `.endsWith()`, `.contains()`, `.matches()` (regex)
+- **List operations**: `in`, `.size()`, `.exists()`, `.all()`
+- **Type conversions**: Automatic for compatible types
+
+**Helper Functions:**
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `getData("field")` | Extract data field | `getData("pathname")`, `getData("pid")` |
+| `hasData("field")` | Check if data field exists | `hasData("pathname")` |
+
+**String Utility Functions:**
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `split(str, delimiter)` | Split string into list | `split("a,b,c", ",")` → `["a", "b", "c"]` |
+| `join(list, delimiter)` | Join list into string | `join(["a", "b"], ",")` → `"a,b"` |
+| `trim(str)` | Remove leading/trailing whitespace | `trim("  hello  ")` → `"hello"` |
+| `replace(str, old, new)` | Replace all occurrences | `replace("foo bar", "bar", "baz")` → `"foo baz"` |
+| `upper(str)` | Convert to uppercase | `upper("hello")` → `"HELLO"` |
+| `lower(str)` | Convert to lowercase | `lower("HELLO")` → `"hello"` |
+| `basename(path)` | Get filename from path | `basename("/path/to/file.txt")` → `"file.txt"` |
+| `dirname(path)` | Get directory from path | `dirname("/path/to/file.txt")` → `"/path/to"` |
+
+**Performance:**
+- Conditions are evaluated with 5ms timeout by default
+- Failed evaluations are logged and treated as `false`
+- CEL programs are compiled once at load time
+
 ### Output Data Extraction
 
-Extract runtime values from input events to populate output event fields:
+Extract runtime values from input events to populate output event fields using CEL expressions.
 
 ```yaml
 output:
   fields:
-    - name: output_field_name   # Name in output event
-      expression: data.input_field  # Expression path in input event
-      optional: false           # Whether field is optional (default: false)
+    - name: output_field_name     # Name in output event
+      expression: getData("pathname")  # CEL expression (simplified syntax!)
+      optional: false              # Whether field is optional (default: false)
 ```
 
-**Supported expression paths:**
+**CEL Expression Examples:**
 
-| Path | Description | Example |
-|------|-------------|---------|
-| `data.FIELD` | Event data field | `data.pathname` |
-| `workload.process.executable.path` | Process executable | Full path to binary |
-| `workload.process.pid.value` | Process PID | Process ID |
-| `workload.process.unique_id.value` | Process entity ID | Unique process identifier |
-| `workload.process.host_pid.value` | Host PID | PID in host namespace |
-| `workload.process.real_user.id.value` | Real user ID | UID of process owner |
-| `workload.process.thread.name` | Thread name | Thread name |
-| `workload.process.thread.syscall` | Current syscall | Syscall name |
-| `workload.process.thread.tid.value` | Thread ID | TID |
-| `workload.container.id` | Container ID | Container identifier |
-| `workload.container.name` | Container name | Container name |
-| `workload.container.image.name` | Image name | Container image |
-| `workload.container.image.id` | Image ID | Image identifier |
-| `workload.container.started` | Container started | Boolean |
-| `workload.k8s.pod.name` | Pod name | Kubernetes pod name |
-| `workload.k8s.pod.uid` | Pod UID | Kubernetes pod UID |
-| `workload.k8s.namespace.name` | Namespace | Kubernetes namespace |
-| `timestamp` | Event timestamp | Nanoseconds since epoch |
-| `name` | Event name | Input event name |
+| Use Case | Expression |
+|----------|------------|
+| Extract data field | `getData("pathname")` |
+| Extract workload field | `workload.container.id` |
+| Conditional extraction | `workload.container.id != "" ? workload.container.id : "unknown"` |
+| Extract filename | `basename(getData("pathname"))` |
+| Extract directory | `dirname(getData("pathname"))` |
+| Split path components | `split(getData("pathname"), "/")` |
+| Join path components | `join(["usr", "bin", "nc"], "/")` |
+| Normalize case | `lower(getData("comm"))` |
+| Replace substring | `replace(getData("pathname"), "/tmp", "/var/tmp")` |
+| Combine fields | `getData("comm") + ":" + string(getData("pid"))` |
+
+**Field Semantics:**
+- **name**: Required, the output field name
+- **expression**: Required, CEL expression to compute the value
+- **optional**: If `true`, missing/failed fields are skipped without error
 
 ## Detector Composition
 
@@ -243,7 +355,7 @@ requirements:
 output:
   fields:
     - name: binary_path
-      expression: data.pathname
+      expression: getData("pathname")
 ```
 
 **Composed Detector** (adds context):
@@ -275,7 +387,7 @@ auto_populate:
 output:
   fields:
     - name: binary_path
-      expression: data.binary_path  # From base detector
+      expression: getData("binary_path")  # From base detector
     - name: container_id
       expression: workload.container.id
 ```
@@ -336,6 +448,406 @@ Level 3: cryptominer_production_alert
 3. **Avoid Deep Chains**: Keep chains to 2-3 levels for maintainability
 4. **Document Dependencies**: Clearly state what events are consumed
 5. **Version Carefully**: Breaking changes in base detectors affect all consumers
+
+## Shared Lists
+
+Shared lists allow you to define reusable lists of values (e.g., shell binaries, sensitive paths) that multiple detectors can reference. This avoids duplication and makes maintenance easier.
+
+### List Definition Format
+
+Lists are defined in YAML files placed in a `lists/` subdirectory within your detector directory.
+
+Each list file defines a named list:
+
+```yaml
+name: SHELL_BINARIES
+type: string_list
+values:
+  - /bin/sh
+  - /bin/bash
+  - /bin/dash
+  - /bin/zsh
+  - /usr/bin/sh
+  - /usr/bin/bash
+```
+
+**Naming convention:** List names must be uppercase snake_case (e.g., `SHELL_BINARIES`, `SENSITIVE_PATHS`).
+
+**Type:** Currently, only `string_list` is supported.
+
+### Using Lists in Detectors
+
+Reference list variables in CEL conditions using the `in` operator:
+
+```yaml
+id: yaml-shell-exec
+produced_event:
+  name: shell_execution_detected
+  version: 1.0.0
+  description: Detects execution of shell binaries
+  tags:
+    - execution
+  fields:
+    - name: shell_path
+      type: string
+
+requirements:
+  events:
+    - name: sched_process_exec
+
+conditions:
+  - getData("pathname") in SHELL_BINARIES  # Uses shared list
+
+output:
+  fields:
+    - name: shell_path
+      expression: getData("pathname")
+```
+
+### Complex List Expressions
+
+Lists work with standard CEL operators:
+
+```yaml
+conditions:
+  # Check membership in multiple lists
+  - getData("pathname") in SHELL_BINARIES || getData("pathname") in SCRIPT_INTERPRETERS
+
+  # Combine with other conditions
+  - getData("pathname") in SENSITIVE_PATHS && workload.container.id != ""
+
+  # Negate membership
+  - !(getData("pathname") in ALLOWED_BINARIES)
+```
+
+### List Loading Behavior
+
+- Lists are loaded once at startup from `{detector-dir}/lists/` subdirectory
+- Lists are shared across all detectors in the same directory
+- Lists are optional - detectors without lists work as before
+- Invalid list files prevent all detectors in that directory from loading
+- Duplicate list names are not allowed
+
+### Benefits
+
+1. **No duplication**: Define common lists once, use in multiple detectors
+2. **Easy maintenance**: Update lists in one place
+3. **Zero runtime overhead**: Lists are compiled into the CEL environment at load time
+4. **Type safety**: Undefined list references are caught at compile time
+
+## Datastore Functions
+
+YAML detectors can query system state using datastore functions in CEL conditions and output expressions. This enables detectors to make decisions based on process ancestry, container metadata, system information, and more.
+
+### Process Functions
+
+Query process information from Tracee's process datastore.
+
+**`process.get(entityId)`** - Get process information by entity ID
+
+```yaml
+conditions:
+  # Check if process executable is bash
+  - process.get(workload.process.unique_id).exe == "/bin/bash"
+  
+  # Check process UID
+  - process.get(workload.process.unique_id).uid == 0
+```
+
+Returns a process object with fields:
+- `entity_id` (uint64) - Unique entity ID
+- `pid` (uint32) - Process ID
+- `ppid` (uint32) - Parent process ID
+- `name` (string) - Process name
+- `exe` (string) - Executable path
+- `start_time` (int64) - Process start timestamp
+- `uid` (uint32) - User ID
+- `gid` (uint32) - Group ID
+
+Returns `null` if process not found.
+
+**`process.getAncestry(entityId, maxDepth)`** - Get process ancestry chain
+
+```yaml
+conditions:
+  # Check if any ancestor is a shell
+  - process.getAncestry(workload.process.unique_id, 5).exists(p, p.name in SHELL_BINARIES)
+  
+  # Check if parent process is systemd
+  - process.getAncestry(workload.process.unique_id, 2)[1].name == "systemd"
+  
+  # Verify process depth (count of ancestors)
+  - process.getAncestry(workload.process.unique_id, 10).size() < 3
+```
+
+Returns a list of process objects, where `[0]` is the process itself, `[1]` is its parent, etc.
+
+**`process.getChildren(entityId)`** - Get child processes
+
+```yaml
+conditions:
+  # Check if process has spawned children
+  - process.getChildren(workload.process.unique_id).size() > 0
+  
+  # Check if any child is a specific binary
+  - process.getChildren(workload.process.unique_id).exists(c, c.exe == "/usr/bin/nc")
+```
+
+Returns a list of child process objects.
+
+### Container Functions
+
+Query container information from Tracee's container datastore.
+
+**`container.get(id)`** - Get container by ID
+
+```yaml
+conditions:
+  # Check container image
+  - container.get(workload.container.id).image.startsWith("malicious")
+  
+  # Check container runtime
+  - container.get(workload.container.id).runtime == "docker"
+  
+  # Check if container has pod metadata
+  - container.get(workload.container.id).pod != null
+```
+
+Returns a container object with fields:
+- `id` (string) - Container ID
+- `name` (string) - Container name
+- `image` (string) - Container image
+- `image_digest` (string) - Image digest (SHA256)
+- `runtime` (string) - Container runtime (docker, containerd, cri-o)
+- `start_time` (int64) - Container start timestamp
+- `pod` (object or null) - Kubernetes pod metadata (if available)
+  - `name` (string) - Pod name
+  - `uid` (string) - Pod UID
+  - `namespace` (string) - Pod namespace
+  - `sandbox` (bool) - Whether this is a sandbox container
+
+Returns `null` if container not found.
+
+**`container.getByName(name)`** - Get container by name
+
+```yaml
+conditions:
+  # Find container by name pattern
+  - container.getByName("suspicious-app").image.contains("malware")
+```
+
+Returns the same container object as `container.get()`, or `null` if not found.
+
+### System Functions
+
+Access immutable system information collected at Tracee startup.
+
+**`system.info()`** - Get system information
+
+```yaml
+conditions:
+  # Check architecture
+  - system.info().architecture == "x86_64"
+  
+  # Check kernel version
+  - system.info().kernel_release.startsWith("5.")
+  
+  # Check OS
+  - system.info().os_name == "Ubuntu" && system.info().os_version.startsWith("22.")
+  
+  # Check hostname
+  - system.info().hostname.contains("prod")
+```
+
+Returns a system info object with fields:
+- `architecture` (string) - System architecture (x86_64, arm64, etc.)
+- `kernel_release` (string) - Kernel version (e.g., "5.15.0-91-generic")
+- `hostname` (string) - System hostname
+- `boot_time` (int64) - System boot timestamp
+- `tracee_start_time` (int64) - Tracee start timestamp
+- `os_name` (string) - OS name (e.g., "Ubuntu")
+- `os_version` (string) - OS version (e.g., "22.04")
+- `os_pretty_name` (string) - Human-readable OS name
+- `tracee_version` (string) - Tracee version
+
+Always returns a valid object (never `null`).
+
+### Kernel Symbol Functions
+
+Resolve kernel addresses and symbol names.
+
+**`kernel.resolveSymbol(address)`** - Resolve address to symbol
+
+```yaml
+conditions:
+  # Check if address resolves to a known function
+  - kernel.resolveSymbol(getData("addr")).exists(s, s.name == "sys_execve")
+```
+
+Returns a list of symbol objects (multiple if aliases exist):
+- `name` (string) - Symbol name
+- `address` (uint64) - Symbol address
+- `module` (string) - Module name (e.g., "vmlinux")
+
+Returns empty list if address cannot be resolved.
+
+**`kernel.getSymbolAddress(name)`** - Get symbol address
+
+```yaml
+conditions:
+  # Check if hooked address differs from expected
+  - getData("hooked_addr") != kernel.getSymbolAddress("sys_execve")
+  
+  # Verify symbol exists
+  - kernel.getSymbolAddress("sys_read") > 0u
+```
+
+Returns the symbol address as `uint64`, or `0` if not found.
+
+### DNS Functions
+
+Query cached DNS responses.
+
+**`dns.getResponse(query)`** - Get cached DNS response
+
+```yaml
+conditions:
+  # Check if domain resolves to suspicious IP
+  - dns.getResponse(getData("domain")).ips.exists(ip, ip.startsWith("192.168."))
+  
+  # Check number of resolved IPs
+  - dns.getResponse("example.com").ips.size() > 10
+```
+
+Returns a DNS response object:
+- `query` (string) - Original DNS query
+- `ips` (list of strings) - Resolved IP addresses
+- `domains` (list of strings) - CNAME chain
+
+Returns `null` if no cached response found.
+
+### Syscall Functions
+
+Map between syscall IDs and names (architecture-specific).
+
+**`syscall.getName(id)`** - Get syscall name from ID
+
+```yaml
+conditions:
+  # Check if syscall ID is execve
+  - syscall.getName(getData("syscall_id")) == "execve"
+  
+  # Check for specific syscall
+  - syscall.getName(59) in ["execve", "execveat"]
+```
+
+Returns the syscall name as a string, or empty string `""` if not found.
+
+**`syscall.getId(name)`** - Get syscall ID from name
+
+```yaml
+conditions:
+  # Check if event is for specific syscalls
+  - getData("syscall_id") == syscall.getId("execve") || 
+    getData("syscall_id") == syscall.getId("execveat")
+```
+
+Returns the syscall ID as `int`, or `-1` if not found.
+
+### Return Values and Error Handling
+
+**Null handling:**
+- Functions return `null` when an entity is not found (safe for conditions)
+- Non-existent datastores return `null` (graceful degradation)
+- Use null-safe checks: `container.get(id) != null` or `container.get(id).image`
+
+**Error propagation:**
+- Unexpected errors (not "not found") cause condition evaluation to fail
+- The detector will log the error and skip the event
+
+**Performance considerations:**
+- Datastore lookups add latency (typically <1ms)
+- Use judiciously in high-frequency events
+- Prefer static filters (in `requirements`) over dynamic lookups when possible
+
+### Datastore Examples
+
+**Example 1: Detect reverse shell from containerized bash**
+
+```yaml
+id: yaml-container-reverse-shell
+produced_event:
+  name: container_reverse_shell
+  version: 1.0.0
+  description: Reverse shell spawned from container bash process
+
+requirements:
+  events:
+    - name: security_socket_connect
+      scope_filters:
+        - container=true
+
+conditions:
+  # Check if process ancestry includes bash
+  - process.getAncestry(workload.process.unique_id, 5).exists(p, 
+      p.name == "bash" || p.name == "sh")
+  
+  # Check if container image is not trusted
+  - container.get(workload.container.id).image.startsWith("suspicious/")
+
+output:
+  fields:
+    - name: container_image
+      expression: container.get(workload.container.id).image
+    - name: shell_exe
+      expression: process.getAncestry(workload.process.unique_id, 5).filter(p, 
+          p.name in ["bash", "sh"])[0].exe
+```
+
+**Example 2: Detect privilege escalation**
+
+```yaml
+id: yaml-privilege-escalation
+produced_event:
+  name: privilege_escalation_detected
+  version: 1.0.0
+  description: Process escalated privileges from non-root to root
+
+requirements:
+  events:
+    - name: setuid
+      data_filters:
+        - uid=0
+
+conditions:
+  # Check if parent was non-root
+  - process.get(workload.process.unique_id).uid != 0
+  
+  # Check if not running as expected system process
+  - !process.getAncestry(workload.process.unique_id, 3).exists(p, 
+      p.name == "systemd" || p.name == "init")
+```
+
+**Example 3: Detect kernel rootkit**
+
+```yaml
+id: yaml-kernel-rootkit
+produced_event:
+  name: kernel_rootkit_detected
+  version: 1.0.0
+  description: Syscall table hooking detected
+
+requirements:
+  events:
+    - name: hooked_syscalls
+
+conditions:
+  # Check if hooked address doesn't match expected symbol
+  - getData("hooked_addr") != kernel.getSymbolAddress(getData("syscall_name"))
+  
+  # Verify it's a critical syscall
+  - getData("syscall_name") in ["sys_read", "sys_write", "sys_open", "sys_execve"]
+```
 
 ## Deployment
 
@@ -434,9 +946,9 @@ Only extract fields that provide investigative value:
 output:
   fields:
     - name: source_ip      # Useful for investigation
-      expression: data.src_ip
+      expression: getData("src_ip")
     - name: target_user    # Useful for investigation
-      expression: data.username
+      expression: getData("username")
 ```
 
 ### 6. Set Appropriate Severity

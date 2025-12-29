@@ -55,6 +55,16 @@ func LoadFromDirectory(dir string) ([]detection.EventDetector, []error) {
 		return detectors, loaderErrors
 	}
 
+	// Load shared lists from {dir}/lists/ subdirectory (optional)
+	lists, err := LoadListsFromDirectory(dir)
+	if err != nil {
+		loaderErrors = append(loaderErrors, &LoaderError{
+			FilePath: dir,
+			Err:      fmt.Errorf("failed to load lists: %w", err),
+		})
+		return detectors, loaderErrors
+	}
+
 	// Read directory contents
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -80,8 +90,8 @@ func LoadFromDirectory(dir string) ([]detection.EventDetector, []error) {
 
 		filePath := filepath.Join(dir, name)
 
-		// Load the detector
-		detector, err := LoadFromFile(filePath)
+		// Load the detector with shared lists
+		detector, err := loadFromFile(filePath, lists)
 		if err != nil {
 			loaderErrors = append(loaderErrors, &LoaderError{
 				FilePath: filePath,

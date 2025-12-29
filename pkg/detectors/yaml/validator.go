@@ -3,7 +3,6 @@ package yaml
 import (
 	"fmt"
 	"runtime"
-	"strings"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
@@ -14,7 +13,7 @@ import (
 var validExtractionRoots = []string{"data", "workload", "timestamp", "id", "name", "policies"}
 
 // ValidateSpec validates a parsed YAML detector specification
-func ValidateSpec(spec *YAMLDetectorSpec, filePath string) error {
+func ValidateSpec(spec *YAMLDetectorSpec, lists map[string][]string, filePath string) error {
 	if spec == nil {
 		return errfmt.Errorf("spec cannot be nil")
 	}
@@ -41,9 +40,16 @@ func ValidateSpec(spec *YAMLDetectorSpec, filePath string) error {
 		}
 	}
 
+	// Validate CEL conditions if present
+	if len(spec.Conditions) > 0 {
+		if err := validateConditions(spec.Conditions, lists, filePath); err != nil {
+			return err
+		}
+	}
+
 	// Validate output extraction if present
 	if spec.Output != nil {
-		if err := validateOutput(spec.Output, spec.ProducedEvent.Fields, filePath); err != nil {
+		if err := validateOutput(spec.Output, spec.ProducedEvent.Fields, lists, filePath); err != nil {
 			return err
 		}
 	}
@@ -244,19 +250,32 @@ func validateThreat(spec *ThreatSpec, filePath string) error {
 }
 
 // validateOutput validates the output specification and checks against declared fields
-func validateOutput(spec *OutputSpec, declaredFields []EventFieldSpec, filePath string) error {
+func validateOutput(spec *OutputSpec, declaredFields []EventFieldSpec, lists map[string][]string, filePath string) error {
 	if len(spec.Fields) == 0 {
 		return nil // Empty output is valid
 	}
 
+	// Create CEL environment once for all field validations
+	env, err := createCELEnvironment(lists, nil)
+	if err != nil {
+		return fmt.Errorf("%s: failed to create CEL environment: %w", filePath, err)
+	}
+
 	extractedNames := make(map[string]bool)
-	for _, field := range spec.Fields {
+	for i, field := range spec.Fields {
 		if field.Name == "" {
-			return errfmt.Errorf("%s: output field name is required", filePath)
+			return errfmt.Errorf("%s: output field %d name is required", filePath, i)
 		}
 
+		// Expression is required
 		if field.Expression == "" {
 			return errfmt.Errorf("%s: output field '%s' expression is required", filePath, field.Name)
+		}
+
+		// Validate CEL expression
+		_, err = CompileExpression(env, field.Expression)
+		if err != nil {
+			return fmt.Errorf("%s: output field '%s' has invalid CEL expression '%s': %w", filePath, field.Name, field.Expression, err)
 		}
 
 		// Check for duplicate field names
@@ -264,11 +283,6 @@ func validateOutput(spec *OutputSpec, declaredFields []EventFieldSpec, filePath 
 			return errfmt.Errorf("%s: duplicate output field name '%s'", filePath, field.Name)
 		}
 		extractedNames[field.Name] = true
-
-		// Validate extraction path syntax
-		if err := validateExtractionPath(field.Expression); err != nil {
-			return fmt.Errorf("%s: output field '%s': %w", filePath, field.Name, err)
-		}
 	}
 
 	// If event fields are declared, validate that extracted fields match
@@ -284,58 +298,10 @@ func validateOutput(spec *OutputSpec, declaredFields []EventFieldSpec, filePath 
 				return errfmt.Errorf("%s: extracted field '%s' not declared in produced_event.fields", filePath, extracted.Name)
 			}
 
-			// Type checking would require knowing the expression field type from Event protobuf
+			// Type checking would require knowing the CEL expression return type
 			// This is deferred to runtime validation
 			_ = declared
 		}
-	}
-
-	return nil
-}
-
-// validateExtractionPath validates the syntax of an extraction path
-func validateExtractionPath(path string) error {
-	if path == "" {
-		return errfmt.Errorf("extraction path cannot be empty")
-	}
-
-	// Basic syntax validation for JSONPath-like paths
-	// Supported formats:
-	// - data.<key>
-	// - workload.process.<field>
-	// - workload.container.<field>
-	// - workload.container.image.<field>
-	// - timestamp
-
-	parts := strings.Split(path, ".")
-	if len(parts) == 0 {
-		return errfmt.Errorf("invalid extraction path '%s': must contain at least one segment", path)
-	}
-
-	// Validate root segment
-	root := parts[0]
-	isValid := false
-	for _, validRoot := range validExtractionRoots {
-		if root == validRoot {
-			isValid = true
-			break
-		}
-	}
-	if !isValid {
-		return errfmt.Errorf("invalid extraction path '%s': root must be one of %v", path, validExtractionRoots)
-	}
-
-	// Special case: single-segment paths
-	if root == "timestamp" || root == "id" || root == "name" {
-		if len(parts) > 1 {
-			return errfmt.Errorf("invalid extraction path '%s': '%s' does not support nested access", path, root)
-		}
-		return nil
-	}
-
-	// Multi-segment paths require at least 2 parts
-	if len(parts) < 2 {
-		return errfmt.Errorf("invalid extraction path '%s': '%s' requires nested field access", path, root)
 	}
 
 	return nil
@@ -415,13 +381,13 @@ func ValidateDefinition(def *detection.DetectorDefinition) error {
 }
 
 // ParseAndValidate is a convenience function that parses and validates a YAML file
-func ParseAndValidate(filePath string) (*detection.DetectorDefinition, *YAMLDetectorSpec, error) {
+func ParseAndValidate(filePath string, lists map[string][]string) (*detection.DetectorDefinition, *YAMLDetectorSpec, error) {
 	spec, err := ParseFile(filePath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse file: %w", err)
 	}
 
-	if err := ValidateSpec(spec, filePath); err != nil {
+	if err := ValidateSpec(spec, lists, filePath); err != nil {
 		return nil, spec, fmt.Errorf("validation failed: %w", err)
 	}
 
@@ -435,4 +401,31 @@ func ParseAndValidate(filePath string) (*detection.DetectorDefinition, *YAMLDete
 	}
 
 	return def, spec, nil
+}
+
+// validateConditions validates CEL condition expressions
+func validateConditions(conditions []string, lists map[string][]string, filePath string) error {
+	if len(conditions) == 0 {
+		return nil
+	}
+
+	// Create CEL environment for validation with lists
+	env, err := createCELEnvironment(lists, nil)
+	if err != nil {
+		return fmt.Errorf("%s: failed to create CEL environment: %w", filePath, err)
+	}
+
+	for i, condition := range conditions {
+		if condition == "" {
+			return errfmt.Errorf("%s: condition %d is empty", filePath, i)
+		}
+
+		// Try to compile the condition
+		_, err := CompileCondition(env, condition)
+		if err != nil {
+			return fmt.Errorf("%s: condition %d (%s) is invalid: %w", filePath, i, condition, err)
+		}
+	}
+
+	return nil
 }
