@@ -277,11 +277,11 @@ jobs:
       volumes:
         - /opt:/opt:rw,rshared
         # The following volume mount is a workaround for GitHub Actions runner limitations.
-        # Some GitHub-hosted runners expect Node.js to be available at /__e/node20, which is not present in the base container.
+        # Some GitHub-hosted runners expect Node.js to be available at /__e/node24, which is not present in the base container.
         # This mapping provides Node.js from the host's /opt directory to the expected location in the container.
         # WARNING: This creates a fragile dependency on the runner's internal filesystem layout.
         # If the runner environment changes, this workflow may break. Consider updating this step if a more robust solution becomes available.
-        - /opt:/__e/node20:ro,rshared
+        - /opt:/__e/node24:ro,rshared
     steps:
       - name: Allow Linux musl containers on ARM64 runners
         run: |
@@ -356,11 +356,11 @@ jobs:
       volumes:
         - /opt:/opt:rw,rshared
         # The following volume mount is a workaround for GitHub Actions runner limitations.
-        # Some GitHub-hosted runners expect Node.js to be available at /__e/node20, which is not present in the base container.
+        # Some GitHub-hosted runners expect Node.js to be available at /__e/node24, which is not present in the base container.
         # This mapping provides Node.js from the host's /opt directory to the expected location in the container.
         # WARNING: This creates a fragile dependency on the runner's internal filesystem layout.
         # If the runner environment changes, this workflow may break. Consider updating this step if a more robust solution becomes available.
-        - /opt:/__e/node20:ro,rshared
+        - /opt:/__e/node24:ro,rshared
     steps:
       - name: Allow Linux musl containers on ARM64 runners
         run: |
@@ -403,6 +403,9 @@ jobs:
     #   image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
     #   options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
     steps:
+      - name: Prepare Environment
+        run: |
+          mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
       # - name: Install Git
       #   run: |
       #     export DEBIAN_FRONTEND=noninteractive
@@ -444,6 +447,9 @@ jobs:
     #   image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
     #   options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
     steps:
+      - name: Prepare Environment
+        run: |
+          mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
       # - name: Install Git
       #   run: |
       #     export DEBIAN_FRONTEND=noninteractive
@@ -527,6 +533,9 @@ jobs:
       GOCACHE: "/tmp/go-cache"
       GOROOT: "/usr/local/go"
     steps:
+      - name: Prepare Environment
+        run: |
+          mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
       - name: "Checkout"
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
