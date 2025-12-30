@@ -1124,3 +1124,70 @@ func TestGetPathFromRawAddr(t *testing.T) {
 		})
 	}
 }
+
+func TestParseNamespaceType(t *testing.T) {
+	tests := []struct {
+		name     string
+		rawValue uint64
+		expected string
+	}{
+		{
+			name:     "Zero (any namespace)",
+			rawValue: 0,
+			expected: "0",
+		},
+		{
+			name:     "CLONE_NEWNS",
+			rawValue: 0x00020000,
+			expected: "CLONE_NEWNS",
+		},
+		{
+			name:     "CLONE_NEWUTS",
+			rawValue: 0x04000000,
+			expected: "CLONE_NEWUTS",
+		},
+		{
+			name:     "CLONE_NEWIPC",
+			rawValue: 0x08000000,
+			expected: "CLONE_NEWIPC",
+		},
+		{
+			name:     "CLONE_NEWUSER",
+			rawValue: 0x10000000,
+			expected: "CLONE_NEWUSER",
+		},
+		{
+			name:     "CLONE_NEWPID",
+			rawValue: 0x20000000,
+			expected: "CLONE_NEWPID",
+		},
+		{
+			name:     "CLONE_NEWNET",
+			rawValue: 0x40000000,
+			expected: "CLONE_NEWNET",
+		},
+		{
+			name:     "CLONE_NEWCGROUP",
+			rawValue: 0x02000000,
+			expected: "CLONE_NEWCGROUP",
+		},
+		{
+			name:     "Multiple namespaces",
+			rawValue: 0x40020000, // CLONE_NEWNET | CLONE_NEWNS
+			expected: "CLONE_NEWNS|CLONE_NEWNET",
+		},
+		{
+			name:     "All namespace types",
+			rawValue: 0x7E020000, // All CLONE_NEW* flags
+			expected: "CLONE_NEWNS|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWUSER|CLONE_NEWPID|CLONE_NEWNET|CLONE_NEWCGROUP",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ParseNamespaceType(tt.rawValue)
+			assert.Equal(t, tt.expected, result.String())
+			assert.Equal(t, tt.rawValue, result.Value())
+		})
+	}
+}

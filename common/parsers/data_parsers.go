@@ -2388,6 +2388,70 @@ func ParseMmapFlags(rawValue uint64) MmapFlagArgument {
 	return MmapFlagArgument{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
 }
 
+// NamespaceTypeArgument represents a namespace type for setns syscall
+type NamespaceTypeArgument struct {
+	rawValue    uint64
+	stringValue string
+}
+
+func (ns NamespaceTypeArgument) Value() uint64 {
+	return ns.rawValue
+}
+
+func (ns NamespaceTypeArgument) String() string {
+	return ns.stringValue
+}
+
+// Namespace type constants for setns syscall
+// These correspond to CLONE_NEW* flags used in clone/unshare/setns
+var (
+	NSTYPE_MOUNT   = NamespaceTypeArgument{rawValue: CLONE_NEWNS.Value(), stringValue: "CLONE_NEWNS"}
+	NSTYPE_UTS     = NamespaceTypeArgument{rawValue: CLONE_NEWUTS.Value(), stringValue: "CLONE_NEWUTS"}
+	NSTYPE_IPC     = NamespaceTypeArgument{rawValue: CLONE_NEWIPC.Value(), stringValue: "CLONE_NEWIPC"}
+	NSTYPE_USER    = NamespaceTypeArgument{rawValue: CLONE_NEWUSER.Value(), stringValue: "CLONE_NEWUSER"}
+	NSTYPE_PID     = NamespaceTypeArgument{rawValue: CLONE_NEWPID.Value(), stringValue: "CLONE_NEWPID"}
+	NSTYPE_NET     = NamespaceTypeArgument{rawValue: CLONE_NEWNET.Value(), stringValue: "CLONE_NEWNET"}
+	NSTYPE_CGROUP  = NamespaceTypeArgument{rawValue: CLONE_NEWCGROUP.Value(), stringValue: "CLONE_NEWCGROUP"}
+	NSTYPE_UNKNOWN = NamespaceTypeArgument{rawValue: 0, stringValue: "UNKNOWN"}
+)
+
+var namespaceTypeValues = []NamespaceTypeArgument{
+	NSTYPE_MOUNT,
+	NSTYPE_UTS,
+	NSTYPE_IPC,
+	NSTYPE_USER,
+	NSTYPE_PID,
+	NSTYPE_NET,
+	NSTYPE_CGROUP,
+}
+
+// ParseNamespaceType parses the `nstype` argument of the `setns` syscall
+// http://man7.org/linux/man-pages/man2/setns.2.html
+// The nstype can be 0 (allow any type) or one of the CLONE_NEW* constants
+func ParseNamespaceType(rawValue uint64) NamespaceTypeArgument {
+	if rawValue == 0 {
+		return NamespaceTypeArgument{rawValue: 0, stringValue: "0"}
+	}
+
+	var sb strings.Builder
+	found := false
+	for _, ns := range namespaceTypeValues {
+		if optionIsContainedInArgument(rawValue, ns.Value()) {
+			if sb.Len() > 0 {
+				sb.WriteByte('|')
+			}
+			sb.WriteString(ns.String())
+			found = true
+		}
+	}
+
+	if !found {
+		return NamespaceTypeArgument{rawValue: rawValue, stringValue: strconv.FormatUint(rawValue, 10)}
+	}
+
+	return NamespaceTypeArgument{stringValue: sb.String(), rawValue: rawValue}
+}
+
 type IoUringSetupFlag struct {
 	rawValue    uint32
 	stringValue string
