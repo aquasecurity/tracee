@@ -84,6 +84,98 @@ func TestParseDataFields(t *testing.T) {
 		assert.Contains(t, strVal.Str, "PROT_")
 	})
 
+	t.Run("Parse mmap flags", func(t *testing.T) {
+		t.Parallel()
+
+		// MAP_PRIVATE | MAP_ANONYMOUS = 0x2 | 0x20 = 0x22
+		data := []*pb.EventValue{
+			{
+				Name:  "flags",
+				Value: &pb.EventValue_Int32{Int32: 0x22},
+			},
+		}
+
+		err := ParseDataFields(data, int(Mmap))
+		require.NoError(t, err)
+
+		flagsField := GetFieldValue(data, "flags")
+		require.NotNil(t, flagsField)
+
+		// Should be converted to string
+		strVal, ok := flagsField.Value.(*pb.EventValue_Str)
+		require.True(t, ok, "mmap flags should be converted to string")
+		assert.Contains(t, strVal.Str, "MAP_")
+	})
+
+	t.Run("Parse setns nstype", func(t *testing.T) {
+		t.Parallel()
+
+		// CLONE_NEWNET = 0x40000000
+		data := []*pb.EventValue{
+			{
+				Name:  "nstype",
+				Value: &pb.EventValue_Int32{Int32: 0x40000000},
+			},
+		}
+
+		err := ParseDataFields(data, int(Setns))
+		require.NoError(t, err)
+
+		nstypeField := GetFieldValue(data, "nstype")
+		require.NotNil(t, nstypeField)
+
+		// Should be converted to string
+		strVal, ok := nstypeField.Value.(*pb.EventValue_Str)
+		require.True(t, ok, "nstype should be converted to string")
+		assert.Equal(t, "CLONE_NEWNET", strVal.Str)
+	})
+
+	t.Run("Parse setns nstype zero", func(t *testing.T) {
+		t.Parallel()
+
+		// 0 = any namespace type
+		data := []*pb.EventValue{
+			{
+				Name:  "nstype",
+				Value: &pb.EventValue_Int32{Int32: 0},
+			},
+		}
+
+		err := ParseDataFields(data, int(Setns))
+		require.NoError(t, err)
+
+		nstypeField := GetFieldValue(data, "nstype")
+		require.NotNil(t, nstypeField)
+
+		// Should be converted to string "0"
+		strVal, ok := nstypeField.Value.(*pb.EventValue_Str)
+		require.True(t, ok, "nstype should be converted to string")
+		assert.Equal(t, "0", strVal.Str)
+	})
+
+	t.Run("Parse setns nstype multiple", func(t *testing.T) {
+		t.Parallel()
+
+		// CLONE_NEWNS | CLONE_NEWNET = 0x20000 | 0x40000000
+		data := []*pb.EventValue{
+			{
+				Name:  "nstype",
+				Value: &pb.EventValue_Int32{Int32: 0x40020000},
+			},
+		}
+
+		err := ParseDataFields(data, int(Setns))
+		require.NoError(t, err)
+
+		nstypeField := GetFieldValue(data, "nstype")
+		require.NotNil(t, nstypeField)
+
+		// Should be converted to string with both types
+		strVal, ok := nstypeField.Value.(*pb.EventValue_Str)
+		require.True(t, ok, "nstype should be converted to string")
+		assert.Contains(t, strVal.Str, "CLONE_NEW")
+	})
+
 	t.Run("Parse socket domain", func(t *testing.T) {
 		t.Parallel()
 
