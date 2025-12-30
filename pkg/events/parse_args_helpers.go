@@ -251,3 +251,13 @@ func parseBpfAttachType(ev *pb.EventValue, attachType int32) {
 
 	ev.Value = &pb.EventValue_Str{Str: attTypeName}
 }
+
+func parseMmapFlags(ev *pb.EventValue, flags uint64) {
+	mmapFlagsArgument := parsers.ParseMmapFlags(flags)
+	ev.Value = &pb.EventValue_Str{Str: mmapFlagsArgument.String()}
+}
+
+func parseNamespaceType(ev *pb.EventValue, nstype uint64) {
+	namespaceTypeArgument := parsers.ParseNamespaceType(nstype)
+	ev.Value = &pb.EventValue_Str{Str: namespaceTypeArgument.String()}
+}

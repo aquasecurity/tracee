@@ -58,16 +58,35 @@ func ParseDataFields(data []*pb.EventValue, eventID int) error {
 				parseCapability(capField, uint64(capVal.Int32))
 			}
 		}
-	case SecurityMmapFile, DoMmap:
+	case SecurityMmapFile:
 		if protField := GetFieldValue(data, "prot"); protField != nil {
 			if protVal, ok := protField.Value.(*pb.EventValue_UInt64); ok {
 				parseMMapProt(protField, protVal.UInt64)
+			}
+		}
+	case DoMmap:
+		if protField := GetFieldValue(data, "prot"); protField != nil {
+			if protVal, ok := protField.Value.(*pb.EventValue_UInt64); ok {
+				parseMMapProt(protField, protVal.UInt64)
+			}
+		}
+		if mmapFlagsField := GetFieldValue(data, "mmap_flags"); mmapFlagsField != nil {
+			if mmapFlagsVal, ok := mmapFlagsField.Value.(*pb.EventValue_UInt64); ok {
+				parseMmapFlags(mmapFlagsField, mmapFlagsVal.UInt64)
 			}
 		}
 	case Mmap, Mprotect, PkeyMprotect:
 		if protField := GetFieldValue(data, "prot"); protField != nil {
 			if protVal, ok := protField.Value.(*pb.EventValue_Int32); ok {
 				parseMMapProt(protField, uint64(protVal.Int32))
+			}
+		}
+		// Parse mmap flags for Mmap syscall
+		if evtID == Mmap {
+			if flagsField := GetFieldValue(data, "flags"); flagsField != nil {
+				if flagsVal, ok := flagsField.Value.(*pb.EventValue_Int32); ok {
+					parseMmapFlags(flagsField, uint64(flagsVal.Int32))
+				}
 			}
 		}
 	case SecurityFileMprotect:
@@ -249,6 +268,12 @@ func ParseDataFields(data []*pb.EventValue, eventID int) error {
 		if vmaFlagsField := GetFieldValue(data, "vma_flags"); vmaFlagsField != nil {
 			if vmaFlagsVal, ok := vmaFlagsField.Value.(*pb.EventValue_UInt64); ok {
 				vmaFlagsField.Value = &pb.EventValue_Str{Str: parsers.ParseVmFlags(vmaFlagsVal.UInt64).String()}
+			}
+		}
+	case Setns:
+		if nstypeField := GetFieldValue(data, "nstype"); nstypeField != nil {
+			if nstypeVal, ok := nstypeField.Value.(*pb.EventValue_Int32); ok {
+				parseNamespaceType(nstypeField, uint64(nstypeVal.Int32))
 			}
 		}
 	}
