@@ -25,7 +25,7 @@ func TestAntiDebugging_GetDefinition(t *testing.T) {
 	assert.Equal(t, "request=0", def.Requirements.Events[0].DataFilters[0])
 
 	// Check produced event
-	assert.Equal(t, "anti_debugging_detector", def.ProducedEvent.Name)
+	assert.Equal(t, "anti_debugging", def.ProducedEvent.Name)
 	assert.Contains(t, def.ProducedEvent.Description, "anti-debugging")
 
 	// Check threat metadata matches original signature
