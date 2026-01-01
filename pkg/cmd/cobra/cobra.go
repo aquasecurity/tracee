@@ -261,13 +261,13 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 	if len(k8sPolicies) > 0 {
 		logger.Debugw("using policies from kubernetes crd")
-		initialPolicies, err = createPoliciesFromK8SPolicy(k8sPolicies)
+		initialPolicies, err = createPoliciesFromK8SPolicy(k8sPolicies, allDetectors)
 	} else if len(policyFlags) > 0 {
 		logger.Debugw("using policies from --policy flag")
-		initialPolicies, err = createPoliciesFromPolicyFiles(policyFlags)
+		initialPolicies, err = createPoliciesFromPolicyFiles(policyFlags, allDetectors)
 	} else {
 		logger.Debugw("using policies from --scope and --events flag")
-		initialPolicies, err = createPoliciesFromCLIFlags(scopeFlags, eventFlags)
+		initialPolicies, err = createPoliciesFromCLIFlags(scopeFlags, eventFlags, allDetectors)
 	}
 	if err != nil {
 		return runner, err

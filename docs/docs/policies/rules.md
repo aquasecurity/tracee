@@ -36,6 +36,105 @@ For example: `syscall` event would be the `syscall` event name.
 
 The [events](../events/index.md) section provides further information on the type of events that Tracee can trace.
 
+### Threat-Based Detector Selection
+
+Instead of specifying individual detector event names, you can select multiple detectors based on their threat metadata properties. This is especially useful for:
+
+- Enabling all high-severity detectors without knowing their names
+- Selecting detectors by MITRE ATT&CK framework categories
+- Filtering by threat characteristics
+
+#### Selecting by Severity
+
+Select detectors based on their severity level (info, low, medium, high, critical):
+
+```yaml
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: critical-threats-only
+  annotations:
+    description: Enable all critical severity detectors
+spec:
+  scope:
+    - global
+  rules:
+    - event: threat.severity=critical
+```
+
+You can also use comparison operators:
+
+```yaml
+rules:
+  - event: threat.severity>=high  # Enable high and critical threats
+```
+
+#### Selecting by MITRE ATT&CK
+
+Select detectors by MITRE ATT&CK technique or tactic:
+
+```yaml
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: process-injection-detectors
+  annotations:
+    description: Enable all process injection detectors
+spec:
+  scope:
+    - global
+  rules:
+    - event: threat.mitre.technique=T1055
+```
+
+Or by tactic:
+
+```yaml
+rules:
+  - event: threat.mitre.tactic=Defense Evasion
+```
+
+#### Selecting by Threat Name
+
+Select detectors by exact threat name:
+
+```yaml
+rules:
+  - event: threat.name=process_injection
+```
+
+#### Combining with Regular Events
+
+Threat-based selection can be combined with regular event selection:
+
+```yaml
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: mixed-events
+  annotations:
+    description: Trace specific events and all critical threats
+spec:
+  scope:
+    - global
+  rules:
+    - event: security_file_open
+      filters:
+        - data.pathname=/etc/*
+    - event: threat.severity=critical
+```
+
+#### Available Threat Properties
+
+| Property | Description | Example Values | Operators |
+|----------|-------------|----------------|-----------|
+| `threat.severity` | Severity level | info, low, medium, high, critical (or 0-4) | =, !=, <, >, <=, >= |
+| `threat.mitre.technique` | MITRE technique ID | T1055, T1071 | =, != |
+| `threat.mitre.tactic` | MITRE tactic name | Defense Evasion, Execution | =, != |
+| `threat.name` | Threat identifier | process_injection | =, != |
+
+**Note:** Detector selection based on threat properties is performed once when Tracee starts. Matching detectors are enabled; non-matching detectors are never loaded. Multiple rules in a policy are combined with OR logic.
+
 
 ## Filters
 

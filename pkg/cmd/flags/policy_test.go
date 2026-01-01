@@ -1831,7 +1831,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			t.Parallel()
 
-			policyScopeMap, policyEventMap, err := PrepareFilterMapsFromPolicies([]k8s.PolicyInterface{test.policy})
+			policyScopeMap, policyEventMap, err := PrepareFilterMapsFromPolicies([]k8s.PolicyInterface{test.policy}, nil)
 			assert.NoError(t, err)
 
 			for k, v := range test.expPolicyScopeMap {
@@ -2104,7 +2104,7 @@ func TestCreatePolicies(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			t.Parallel()
 
-			policyEventsMap, err := PrepareEventMapFromFlags(tc.evtFlags)
+			policyEventsMap, err := PrepareEventMapFromFlags(tc.evtFlags, nil)
 			if tc.expectEvtErr != nil {
 				assert.ErrorContains(t, err, tc.expectEvtErr.Error())
 			} else {
@@ -2473,7 +2473,7 @@ func TestParseEventFilters(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := parseEventFilters(tc.policy, tc.eventFlags)
+			err := parseEventFilters(tc.policy, tc.eventFlags, nil)
 
 			if tc.wantErr != nil {
 				require.Error(t, err)

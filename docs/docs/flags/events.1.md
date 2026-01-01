@@ -21,6 +21,8 @@ The **\-\-events** flag allows you to select which events to trace by defining f
 
 - Event or set name: Select specific events using 'event-name1,event-name2...' or predefined event sets using 'event_set_name1,event_set_name2...'. To exclude events, prepend the event name with a dash '-': '-event-name'.
 
+- Detector selection by threat properties: Select detectors based on their threat metadata using 'threat.property=value'. See THREAT-BASED DETECTOR SELECTION section below.
+
 - Event data: Filter events based on their data using 'event-name.data.event_data'. The event data expression follows the syntax of a string expression.
 
 - Event return value: Filter events based on their return value using 'event-name.retval'. The event return value expression follows the syntax of a numerical expression.
@@ -70,6 +72,46 @@ NOTE: Expressions containing '\*' token must be escaped!
 Available only for:
 
 - event names
+
+## THREAT-BASED DETECTOR SELECTION
+
+Detectors can be selected based on their threat metadata properties. This allows you to enable all detectors that match specific security criteria without knowing their individual event names.
+
+### THREAT PROPERTIES
+
+**threat.severity** - Severity level (info, low, medium, high, critical or 0-4). Supports: =, !=, <, \>, <=, \>=
+
+```console
+--events threat.severity=critical                # Only critical threats
+--events 'threat.severity>=high'                 # High and critical threats
+```
+
+**threat.mitre.technique** - MITRE ATT&CK technique ID (e.g., T1055). Supports: =, !=
+
+```console
+--events threat.mitre.technique=T1055
+```
+
+**threat.mitre.tactic** - MITRE ATT&CK tactic name (e.g., "Defense Evasion"). Supports: =, !=
+
+```console
+--events 'threat.mitre.tactic="Defense Evasion"'
+```
+
+**threat.name** - Threat name/identifier. Supports: =, !=
+
+```console
+--events threat.name=process_injection
+```
+
+Threat selection can be combined with regular events. Multiple `--events` flags are combined additively (OR logic):
+
+```console
+--events threat.severity=critical --events write    # Critical threats OR write events
+--events fs --events 'threat.severity>=high'        # Filesystem events OR high+ threats
+```
+
+**Note:** Detector selection based on threat properties is performed once at startup. Matching detectors are enabled; non-matching detectors are never loaded.
 
 ## EXAMPLES
 
@@ -137,4 +179,34 @@ Available only for:
 
   ```console
   --events security_file_open.scope.container
+  ```
+
+- To trace all detectors with critical severity, use the following flag:
+
+  ```console
+  --events threat.severity=critical
+  ```
+
+- To trace all detectors with high or critical severity, use the following flag:
+
+  ```console
+  --events 'threat.severity>=high'
+  ```
+
+- To trace detectors for a specific MITRE ATT&CK technique, use the following flag:
+
+  ```console
+  --events threat.mitre.technique=T1055
+  ```
+
+- To trace detectors for a specific MITRE ATT&CK tactic, use the following flag:
+
+  ```console
+  --events 'threat.mitre.tactic="Defense Evasion"'
+  ```
+
+- To combine threat-based selection with regular events, use the following flags:
+
+  ```console
+  --events write --events threat.severity=critical
   ```
