@@ -26,6 +26,23 @@ By specifying individual policies:
 tracee --policy ./policy-one.yaml --policy ./policy-two.yaml 
 ```
 
+## Event Selection Shortcuts
+
+Instead of defining policies in YAML files, you can use the `--events` flag for quick event selection:
+
+```console
+# Trace specific events
+tracee --events execve,openat
+
+# Select detectors by threat severity
+tracee --events threat.severity=critical
+
+# Combine regular events with threat-based selection
+tracee --events write --events 'threat.severity>=high'
+```
+
+See the [events flag documentation](../../flags/events.1.md) for complete details on threat-based detector selection.
+
 ## EXAMPLE
 
 ```console

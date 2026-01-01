@@ -82,6 +82,14 @@ func CreateEventsFromDetectors(startID events.ID, detectors []detection.EventDet
 		// Convert detector requirements to event dependencies
 		dependencies := convertRequirementsToDependencies(def.Requirements.Events, eventNameToID)
 
+		// Validate detector tags don't collide with existing event names
+		for _, tag := range def.ProducedEvent.Tags {
+			if _, found := events.Core.GetDefinitionIDByName(tag); found {
+				logger.Warnw("Detector tag collides with existing event name",
+					"tag", tag, "detector", def.ID)
+			}
+		}
+
 		// Build event definition with detector's schema
 		eventDef := events.NewDefinition(
 			eventID,                // id
