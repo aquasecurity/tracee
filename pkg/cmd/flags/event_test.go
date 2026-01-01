@@ -564,7 +564,7 @@ func TestPrepareEventMapFromFlags(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			eventMap, err := PrepareEventMapFromFlags(tc.eventsArr)
+			eventMap, err := PrepareEventMapFromFlags(tc.eventsArr, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, tc.expected, eventMap)
 		})
