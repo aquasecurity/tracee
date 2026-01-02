@@ -219,7 +219,7 @@ func validateEnrichmentRequirement(spec EnrichmentRequirementSpec, filePath stri
 
 	// Validate known enrichment names
 	if !isValidEnrichmentName(spec.Name) {
-		return errfmt.Errorf("%s: unknown enrichment '%s': must be one of exec-env, exec-hash", filePath, spec.Name)
+		return errfmt.Errorf("%s: unknown enrichment '%s': must be one of exec-env, exec-hash, container", filePath, spec.Name)
 	}
 
 	return nil
@@ -376,7 +376,11 @@ func isValidArchitecture(arch string) bool {
 
 // isValidEnrichmentName checks if an enrichment name is known
 func isValidEnrichmentName(name string) bool {
-	validEnrichments := []string{"exec-env", "exec-hash"}
+	validEnrichments := []string{
+		detection.EnrichmentExecEnv,
+		detection.EnrichmentExecHash,
+		detection.EnrichmentContainer,
+	}
 	for _, valid := range validEnrichments {
 		if name == valid {
 			return true

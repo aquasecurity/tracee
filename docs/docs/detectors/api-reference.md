@@ -470,6 +470,7 @@ type EnrichmentRequirement struct {
 
 - `exec-env` - Execution environment variables
 - `exec-hash` - Executable file hashes (Config: "inode", "dev-inode", "digest-inode")
+- `container` - Container metadata fields in Event struct (Name, Image, Pod info)
 
 **Example**:
 {% raw %}
@@ -488,6 +489,29 @@ DetectorDefinition{
 }
 ```
 {% endraw %}
+
+**Container enrichment example**:
+
+{% raw %}
+```go
+DetectorDefinition{
+    ID: "TRC-CONTAINER-001",
+    Requirements: detection.DetectorRequirements{
+        Events: []detection.EventRequirement{
+            {Name: "security_file_open"},
+        },
+        Enrichments: []detection.EnrichmentRequirement{
+            {
+                Name:       detection.EnrichmentContainer,
+                Dependency: detection.DependencyRequired,
+            },
+        },
+    },
+}
+```
+{% endraw %}
+
+This detector requires container fields to be pre-populated in the Event struct. Without `--enrichment container`, registration will fail.
 
 ### Architecture Filtering
 

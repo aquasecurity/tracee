@@ -487,6 +487,28 @@ type ContainerStore interface {
 ```
 {% endraw %}
 
+**Important:** Container enrichment (`--enrichment container`) is required for container metadata:
+
+When `--enrichment container` is enabled, Tracee:
+1. Queries container runtimes (Docker, containerd, CRI-O, Podman) at userspace
+2. Populates the container datastore with Name, Image, Pod info, etc.
+3. Attaches this metadata to Event.Workload.Container fields
+
+**Without `--enrichment container`:**
+- Only `Event.Workload.Container.Id` is available (from cgroup context)
+- Container datastore queries will NOT return Name, Image, or Pod information
+- Both Event fields and datastore will lack enriched metadata
+
+**With `--enrichment container`:**
+- `Event.Workload.Container.Name`, `.Image`, `.Pod` are populated in events
+- Container datastore can return full metadata when queried
+- Detectors can choose: read from Event fields directly OR query datastore
+
+**Why use datastore queries if enrichment is required anyway?**
+- More flexible error handling (e.g., handle not-found containers)
+- Access to additional methods like `GetContainerByName()`
+- Useful when container info is needed conditionally in detection logic
+
 ### ContainerInfo Structure
 
 {% raw %}
