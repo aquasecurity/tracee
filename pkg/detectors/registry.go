@@ -35,8 +35,9 @@ func parseHashMode(mode string) digest.CalcHashesOption {
 // EnrichmentOptions represents available enrichment capabilities in Tracee.
 // Used by the detector engine to validate enrichment requirements during registration.
 type EnrichmentOptions struct {
-	ExecEnv      bool // Whether exec environment variables are captured
-	ExecHashMode digest.CalcHashesOption
+	ExecEnv      bool                    // Whether exec environment variables are captured
+	ExecHashMode digest.CalcHashesOption // Executable hash calculation mode
+	Container    bool                    // Whether container enrichment is enabled (populates Event.Workload.Container fields and container datastore)
 }
 
 // entry holds detector metadata for dispatch
@@ -269,9 +270,9 @@ func (r *registry) RegisterDetector(
 		var actualMode string
 
 		switch enrichReq.Name {
-		case "exec-env":
+		case detection.EnrichmentExecEnv:
 			available = r.enrichmentOptions != nil && r.enrichmentOptions.ExecEnv
-		case "exec-hash":
+		case detection.EnrichmentExecHash:
 			available = r.enrichmentOptions != nil && r.enrichmentOptions.ExecHashMode != digest.CalcHashesNone
 			// If specific config requested, mode must match
 			if available && enrichReq.Config != "" {
@@ -286,6 +287,8 @@ func (r *registry) RegisterDetector(
 					modeMismatch = true
 				}
 			}
+		case detection.EnrichmentContainer:
+			available = r.enrichmentOptions != nil && r.enrichmentOptions.Container
 		default:
 			return fmt.Errorf("detector %s requires unknown enrichment: %s", detectorID, enrichReq.Name)
 		}

@@ -358,6 +358,106 @@ ScopeFilters: []string{"not-container"},  // Host only
 ```
 {% endraw %}
 
+### Accessing Container Information
+
+Detectors can access container information using the `container` enrichment requirement.
+
+**Container enrichment is required** for both approaches below - it enables Tracee to query container runtimes and populate metadata.
+
+#### Option 1: Use Pre-Populated Event Fields
+
+{% raw %}
+```go
+Requirements: detection.DetectorRequirements{
+    Events: []detection.EventRequirement{
+        {Name: "security_file_open"},
+    },
+    Enrichments: []detection.EnrichmentRequirement{
+        {
+            Name:       detection.EnrichmentContainer,
+            Dependency: detection.DependencyRequired,
+        },
+    },
+}
+
+func (d *MyDetector) OnEvent(event *v1beta1.Event) {
+    // Container fields are pre-populated in the event
+    containerName := event.GetWorkload().GetContainer().GetName()
+    containerImage := event.GetWorkload().GetContainer().GetImage().GetName()
+
+    if strings.Contains(containerImage, "malicious") {
+        // detect...
+    }
+}
+```
+{% endraw %}
+
+**Pros**:
+
+- Simple, direct field access
+
+**Cons**:
+
+- Cannot handle missing/not-found containers gracefully
+
+#### Option 2: Query Container Datastore
+
+{% raw %}
+```go
+Requirements: detection.DetectorRequirements{
+    Events: []detection.EventRequirement{
+        {Name: "security_file_open"},
+    },
+    Enrichments: []detection.EnrichmentRequirement{
+        {
+            Name:       detection.EnrichmentContainer,
+            Dependency: detection.DependencyRequired,
+        },
+    },
+    DataStores: []detection.DataStoreRequirement{
+        {
+            Name:       detection.DataStoreContainer,
+            Dependency: detection.DependencyRequired,
+        },
+    },
+}
+
+func (d *MyDetector) OnEvent(event *v1beta1.Event) {
+    // Container ID is always available
+    containerID := event.GetWorkload().GetContainer().GetId()
+    if containerID == "" {
+        return nil, nil  // Not a container event
+    }
+
+    // Explicitly query datastore for metadata
+    containerInfo, err := d.dataStores.Containers().GetContainer(containerID)
+    if errors.Is(err, datastores.ErrNotFound) {
+        // Handle not-found case (e.g., short-lived container)
+        return nil, nil
+    }
+    if err != nil {
+        return nil, err
+    }
+
+    if strings.Contains(containerInfo.Image, "malicious") {
+        // detect...
+    }
+}
+```
+{% endraw %}
+
+**Pros**:
+
+- Flexible error handling, access to additional datastore methods
+
+**Cons**:
+
+- Slightly more verbose
+
+**Both approaches require** `--enrichment container` to be enabled. The enrichment flag tells Tracee to query container runtimes and populate both Event fields and the datastore.
+
+User must run: `tracee --enrichment container --detector my-detector`
+
 ## Debugging Tips
 
 ### Enable Debug Logging

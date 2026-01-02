@@ -55,23 +55,27 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 			},
 			DataStores: []detection.DataStoreRequirement{
 				{
-					Name:       "container",
+					Name:       detection.DataStoreContainer,
 					Dependency: detection.DependencyRequired,
 				},
 				{
-					Name:       "system",
+					Name:       detection.DataStoreSystem,
 					Dependency: detection.DependencyOptional,
 				},
 			},
 			// Enrichments: []detection.EnrichmentRequirement{
 			// 	{
-			// 		Name:       "exec-env",
+			// 		Name:       detection.EnrichmentExecEnv,
 			// 		Dependency: detection.DependencyRequired, // Detector requires env vars
 			// 	},
 			// 	{
-			// 		Name:       "exec-hash",
+			// 		Name:       detection.EnrichmentExecHash,
 			// 		Dependency: detection.DependencyOptional, // Detector works without hashes
 			// 		// Config:  "inode", // Uncomment to require specific hash mode
+			// 	},
+			// 	{
+			// 		Name:       detection.EnrichmentContainer,
+			// 		Dependency: detection.DependencyRequired, // Detector needs container fields in Event
 			// 	},
 			// },
 			// Architectures: []string{"amd64"}, // Uncomment to restrict to amd64 (x86-64) only
@@ -177,49 +181,43 @@ func (d *ExampleDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]
 	}
 
 	// Get basic process information from the event
-	binaryPath := ""
-	var pid uint32
-	if event.Workload != nil && event.Workload.Process != nil {
-		if event.Workload.Process.Executable != nil {
-			binaryPath = event.Workload.Process.Executable.Path
-		}
-		if event.Workload.Process.Pid != nil {
-			pid = event.Workload.Process.Pid.Value
-		}
-	}
+	binaryPath := event.GetWorkload().GetProcess().GetExecutable().GetPath()
+	pid := event.GetWorkload().GetProcess().GetPid().GetValue()
 
 	// Enrich with container information using ContainerStore
-	containerID := ""
+	// Note: This detector queries the datastore (Option 2 from docs)
+	// Container enrichment (--enrichment container) is required for BOTH options:
+	//   Option 1: Read Event.Workload.Container fields directly (simpler)
+	//   Option 2: Query datastore (shown here, more flexible error handling)
+	// Without enrichment, both Event fields and datastore will only have Container.Id
+	containerID := event.GetWorkload().GetContainer().GetId()
 	containerName := ""
 	containerImage := ""
-	if event.Workload != nil && event.Workload.Container != nil {
-		containerID = event.Workload.Container.Id
 
-		// Get additional container details from ContainerStore
-		// Note: Container datastore is marked as required, so it's always available
-		if containerID != "" {
-			containerStore := d.dataStores.Containers()
-			containerInfo, err := containerStore.GetContainer(containerID)
-			if err != nil {
-				// Use errors.Is to distinguish between not-found vs actual errors
-				if errors.Is(err, datastores.ErrNotFound) {
-					// Container not in datastore cache - this is normal for short-lived containers
-					d.logger.Debugw("Container not found in datastore cache", "container_id", containerID)
-				} else {
-					// Unexpected error querying datastore
-					d.logger.Warnw("Failed to query container datastore",
-						"error", err,
-						"container_id", containerID)
-				}
+	// Get additional container details from ContainerStore
+	// Note: Container datastore is marked as required, so it's always available
+	if containerID != "" {
+		containerStore := d.dataStores.Containers()
+		containerInfo, err := containerStore.GetContainer(containerID)
+		if err != nil {
+			// Use errors.Is to distinguish between not-found vs actual errors
+			if errors.Is(err, datastores.ErrNotFound) {
+				// Container not in datastore cache - this is normal for short-lived containers
+				d.logger.Debugw("Container not found in datastore cache", "container_id", containerID)
 			} else {
-				// Successfully enriched with container info
-				containerName = containerInfo.Name
-				containerImage = containerInfo.Image
-				d.logger.Debugw("Enriched with container info",
-					"container_id", containerID,
-					"container_name", containerName,
-					"image_name", containerImage)
+				// Unexpected error querying datastore
+				d.logger.Warnw("Failed to query container datastore",
+					"error", err,
+					"container_id", containerID)
 			}
+		} else {
+			// Successfully enriched with container info
+			containerName = containerInfo.Name
+			containerImage = containerInfo.Image
+			d.logger.Debugw("Enriched with container info",
+				"container_id", containerID,
+				"container_name", containerName,
+				"image_name", containerImage)
 		}
 	}
 
