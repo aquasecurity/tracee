@@ -73,6 +73,10 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 			// 		Dependency: detection.DependencyOptional, // Detector works without hashes
 			// 		// Config:  "inode", // Uncomment to require specific hash mode
 			// 	},
+			// 	{
+			// 		Name:       "container",
+			// 		Dependency: detection.DependencyRequired, // Detector needs container fields in Event
+			// 	},
 			// },
 			// Architectures: []string{"amd64"}, // Uncomment to restrict to amd64 (x86-64) only
 			// Example: Only load on Tracee 0.20.0+
@@ -189,6 +193,11 @@ func (d *ExampleDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]
 	}
 
 	// Enrich with container information using ContainerStore
+	// Note: This detector queries the datastore (Option 2 from docs)
+	// Container enrichment (--enrichment container) is required for BOTH options:
+	//   Option 1: Read Event.Workload.Container.Name/Image directly (simpler)
+	//   Option 2: Query datastore (shown here, more flexible error handling)
+	// Without enrichment, both Event fields and datastore will only have Container.Id
 	containerID := ""
 	containerName := ""
 	containerImage := ""
