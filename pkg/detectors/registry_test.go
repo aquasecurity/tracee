@@ -812,6 +812,49 @@ func TestRegistry_EnrichmentValidation(t *testing.T) {
 			expectErr: false,
 		},
 		{
+			name: "container enrichment required and enabled",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "container", Dependency: detection.DependencyRequired},
+			},
+			enrichOpts: &EnrichmentOptions{
+				Container: true,
+			},
+			expectErr: false,
+		},
+		{
+			name: "container enrichment required but not enabled",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "container", Dependency: detection.DependencyRequired},
+			},
+			enrichOpts: &EnrichmentOptions{
+				Container: false,
+			},
+			expectErr: true,
+			errMsg:    "requires enrichment \"container\" which is not enabled",
+		},
+		{
+			name: "container enrichment optional and not enabled",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "container", Dependency: detection.DependencyOptional},
+			},
+			enrichOpts: &EnrichmentOptions{
+				Container: false,
+			},
+			expectErr: false,
+		},
+		{
+			name: "mixed enrichments: container required, exec-env optional",
+			enrichments: []detection.EnrichmentRequirement{
+				{Name: "container", Dependency: detection.DependencyRequired},
+				{Name: "exec-env", Dependency: detection.DependencyOptional},
+			},
+			enrichOpts: &EnrichmentOptions{
+				Container: true,
+				ExecEnv:   false,
+			},
+			expectErr: false,
+		},
+		{
 			name: "multiple enrichments - one missing",
 			enrichments: []detection.EnrichmentRequirement{
 				{Name: "exec-env", Dependency: detection.DependencyRequired},

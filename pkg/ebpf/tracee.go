@@ -467,6 +467,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	enrichOpts := &detectors.EnrichmentOptions{
 		ExecEnv:      t.config.Output.ExecEnv,
 		ExecHashMode: t.config.Output.CalcHashes,
+		Container:    t.config.EnrichmentEnabled,
 	}
 	t.detectorEngine = detectors.NewEngine(t.policyManager, enrichOpts)
 

@@ -123,6 +123,8 @@ requirements:
       dependency: required      # required or optional
     - name: exec-hash
       config: digest-inode      # Enrichment-specific config
+    - name: container           # Container enrichment
+      dependency: required
 ```
 
 **Event Filters:**
