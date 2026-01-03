@@ -75,7 +75,10 @@ checkChildrenLock:
 // GetMetrics returns operational metrics for the datastore
 func (pt *ProcessTree) GetMetrics() *datastores.DataStoreMetrics {
 	processCount := pt.processesLRU.Len()
-	threadCount := pt.threadsLRU.Len()
+	threadCount := 0
+	if pt.threadsLRU != nil {
+		threadCount = pt.threadsLRU.Len()
+	}
 	totalItems := int64(processCount + threadCount)
 	lastAccessNano := pt.lastAccessNano.Load()
 

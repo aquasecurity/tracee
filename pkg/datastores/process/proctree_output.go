@@ -50,6 +50,9 @@ func (pt *ProcessTree) String() string {
 
 	// getListOfThreadsTids returns a comma-separated list of threads tids for a given process.
 	getListOfThreadsTids := func(process *Process) string {
+		if pt.threadsLRU == nil {
+			return "" // Thread cache disabled
+		}
 		var threadsTids []string
 		for _, threadHash := range pt.GetThreads(process.GetHash()) { // for each thread (if process is a thread group leader)
 			thread, ok := pt.threadsLRU.Get(threadHash)

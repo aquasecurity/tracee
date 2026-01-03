@@ -27,14 +27,12 @@ func TestGetFlagsFromViper(t *testing.T) {
 			yamlContent: `
 stores:
     - process
-    - process.source=events
     - process.max-processes=8192
     - process.max-threads=4096
 `,
 			key: "stores",
 			expectedFlags: []string{
 				"process",
-				"process.source=events",
 				"process.max-processes=8192",
 				"process.max-threads=4096",
 			},
@@ -45,14 +43,12 @@ stores:
 stores:
     process:
         enabled: true
-        source: events
         max-processes: 8192
         max-threads: 4096
 `,
 			key: "stores",
 			expectedFlags: []string{
 				"process",
-				"process.source=events",
 				"process.max-processes=8192",
 				"process.max-threads=4096",
 			},
@@ -91,7 +87,6 @@ stores:
     - dns
     - dns.max-entries=2048
     - process
-    - process.source=both
     - process.max-processes=8192
     - process.max-threads=4096
     - process.use-procfs
@@ -101,7 +96,6 @@ stores:
 				"dns",
 				"dns.max-entries=2048",
 				"process",
-				"process.source=both",
 				"process.max-processes=8192",
 				"process.max-threads=4096",
 				"process.use-procfs",
@@ -116,7 +110,6 @@ stores:
         max-entries: 2048
     process:
         enabled: true
-        source: both
         max-processes: 8192
         max-threads: 4096
         use-procfs: true
@@ -126,7 +119,6 @@ stores:
 				"dns",
 				"dns.max-entries=2048",
 				"process",
-				"process.source=both",
 				"process.max-processes=8192",
 				"process.max-threads=4096",
 				"process.use-procfs",

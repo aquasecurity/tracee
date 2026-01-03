@@ -138,7 +138,7 @@ make tracee
 
 ```bash
 # Start Tracee with process tree and JSON output
-sudo ./dist/tracee --stores process.source=both --output json | jq
+sudo ./dist/tracee --stores process --output json | jq
 ```
 
 ## Step 4: Trigger Your Detector
@@ -464,7 +464,7 @@ User must run: `tracee --enrichment container --detector my-detector`
 
 ```bash
 # Run with debug logs
-sudo ./dist/tracee --logging debug --stores process.source=both
+sudo ./dist/tracee --logging debug --stores process
 ```
 
 ### Check Detector Registration
@@ -558,7 +558,7 @@ make tracee
 
 **Solution**: Enable process tree:
 ```bash
-sudo ./dist/tracee --stores process.source=both
+sudo ./dist/tracee --stores process
 ```
 
 ### Build Errors
@@ -640,7 +640,7 @@ func (d *MyDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]detec
 make tracee
 
 # Run with process tree
-sudo ./dist/tracee --stores process.source=both
+sudo ./dist/tracee --stores process
 
 # View detections in JSON
 sudo ./dist/tracee --output json | jq

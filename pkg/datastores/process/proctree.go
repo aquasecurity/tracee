@@ -36,8 +36,8 @@ import (
 //
 
 const (
-	DefaultProcessCacheSize = 10928
-	DefaultThreadCacheSize  = 21856
+	DefaultProcessCacheSize = 32768 // 32K processes - reasonable for most workloads
+	DefaultThreadCacheSize  = 0     // Thread tracking disabled by default to save memory
 )
 
 type SourceType int
@@ -136,10 +136,12 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 	thrEvicted := 0
 
 	// Create caches for processes.
-	procTree.processesLRU, err = lru.NewWithEvict[uint32, *Process](
+	procTree.processesLRU, err = lru.NewWithEvict(
 		config.ProcessCacheSize,
 		func(key uint32, value *Process) {
-			procTree.EvictThreads(key)
+			if procTree.threadsLRU != nil { // Only evict threads if thread cache exists
+				procTree.EvictThreads(key)
+			}
 			procTree.EvictChildren(key)
 			procEvicted++
 		},
@@ -148,15 +150,17 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 		return nil, errfmt.WrapError(err)
 	}
 
-	// Create caches for threads.
-	procTree.threadsLRU, err = lru.NewWithEvict[uint32, *Thread](
-		config.ThreadCacheSize,
-		func(key uint32, value *Thread) {
-			thrEvicted++
-		},
-	)
-	if err != nil {
-		return nil, errfmt.WrapError(err)
+	// Create caches for threads (only if ThreadCacheSize > 0).
+	if config.ThreadCacheSize > 0 {
+		procTree.threadsLRU, err = lru.NewWithEvict(
+			config.ThreadCacheSize,
+			func(key uint32, value *Thread) {
+				thrEvicted++
+			},
+		)
+		if err != nil {
+			return nil, errfmt.WrapError(err)
+		}
 	}
 
 	// Report cache stats if debug is enabled.
@@ -172,11 +176,15 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 				return
 			case <-ticker15s.C:
 				if procEvicted != 0 || thrEvicted != 0 {
+					threadsLen := 0
+					if procTree.threadsLRU != nil {
+						threadsLen = procTree.threadsLRU.Len()
+					}
 					logger.Debugw("proctree cache stats",
 						"processes evicted", procEvicted,
 						"total processes", procTree.processesLRU.Len(),
 						"threads evicted", thrEvicted,
-						"total threads", procTree.threadsLRU.Len(),
+						"total threads", threadsLen,
 					)
 					procEvicted = 0
 					thrEvicted = 0
@@ -185,9 +193,13 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 				// For debugging purposes, print the entire process tree.
 				// fmt.Println(procTree.String())
 			case <-ticker1m.C:
+				threadsLen := 0
+				if procTree.threadsLRU != nil {
+					threadsLen = procTree.threadsLRU.Len()
+				}
 				logger.Debugw("proctree cache stats",
 					"total processes", procTree.processesLRU.Len(),
-					"total threads", procTree.threadsLRU.Len(),
+					"total threads", threadsLen,
 				)
 			}
 		}
@@ -219,19 +231,25 @@ func (pt *ProcessTree) GetOrCreateProcessByHash(hash uint32) *Process {
 
 		// Each process must have a thread with thread ID matching its process ID.
 		// Both share the same info as both represent the same task in the kernel.
-		thread, ok := pt.threadsLRU.Get(hash)
-		if ok {
-			taskInfo = thread.GetInfo()
+		if pt.threadsLRU != nil {
+			thread, ok := pt.threadsLRU.Get(hash)
+			if ok {
+				taskInfo = thread.GetInfo()
+			} else {
+				taskInfo = NewTaskInfo()
+				thread = NewThread(hash, taskInfo) // create a new thread
+				pt.threadsLRU.Add(hash, thread)
+				thread.SetLeaderHash(hash)
+			}
 		} else {
+			// Thread cache disabled - create taskInfo without thread tracking
 			taskInfo = NewTaskInfo()
-			thread = NewThread(hash, taskInfo) // create a new thread
-			pt.threadsLRU.Add(hash, thread)
 		}
 
-		thread.SetLeaderHash(hash)
-
 		process = NewProcess(hash, taskInfo) // create a new process
-		pt.AddThreadToProcess(hash, hash)    // add itself as a thread
+		if pt.threadsLRU != nil {
+			pt.AddThreadToProcess(hash, hash) // add itself as a thread
+		}
 		pt.processesLRU.Add(hash, process)
 
 		return process
@@ -332,12 +350,18 @@ func (pt *ProcessTree) EvictChildren(processHash uint32) {
 
 // GetThreadByHash returns a thread by its hash.
 func (pt *ProcessTree) GetThreadByHash(hash uint32) (*Thread, bool) {
+	if pt.threadsLRU == nil {
+		return nil, false
+	}
 	thread, ok := pt.threadsLRU.Get(hash)
 	return thread, ok
 }
 
 // GetOrCreateThreadByHash returns a thread by its hash, or creates a new one if it doesn't exist.
 func (pt *ProcessTree) GetOrCreateThreadByHash(hash uint32) *Thread {
+	if pt.threadsLRU == nil {
+		return nil // Thread cache disabled
+	}
 	thread, ok := pt.threadsLRU.Get(hash)
 	if !ok {
 		var taskInfo *TaskInfo

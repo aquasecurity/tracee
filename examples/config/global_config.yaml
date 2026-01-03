@@ -14,8 +14,8 @@ buffers:
 stores:
     process:
         enabled: false
-        # max-processes: 8192
-        # max-threads: 4096
+        # max-processes: 32768  # default: 32K processes
+        # max-threads: 0        # default: 0 (disabled to save memory)
     dns:
         enabled: false
         # max-entries: 5000
