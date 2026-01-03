@@ -62,7 +62,8 @@ func (s *StoresConfig) flags() []string {
 	}
 
 	// Process: if Enabled is true OR any Process field is set, add process flag
-	if s.Process.Enabled || s.Process.MaxProcesses != 0 || s.Process.MaxThreads != 0 || s.Process.Source != "" || s.Process.Procfs {
+	// Note: Source is deprecated and ignored, so we don't include it in the output
+	if s.Process.Enabled || s.Process.MaxProcesses != 0 || s.Process.MaxThreads != 0 || s.Process.Procfs {
 		flags = append(flags, processFlag)
 	}
 	if s.Process.MaxProcesses != 0 {
@@ -70,9 +71,6 @@ func (s *StoresConfig) flags() []string {
 	}
 	if s.Process.MaxThreads != 0 {
 		flags = append(flags, fmt.Sprintf("%s=%d", processMaxThreads, s.Process.MaxThreads))
-	}
-	if s.Process.Source != "" {
-		flags = append(flags, fmt.Sprintf("%s=%s", processSource, s.Process.Source))
 	}
 	if s.Process.Procfs {
 		flags = append(flags, processUseProcfs)
@@ -83,22 +81,24 @@ func (s *StoresConfig) flags() []string {
 
 // GetProcessStoreConfig returns the process store config
 func (s *StoresConfig) GetProcessStoreConfig() process.ProcTreeConfig {
-	// Default to SourceSignals if process is enabled but no source is specified
-	source := process.SourceSignals
-
+	// Always use SourceBoth when process store is enabled.
+	//
+	// Why both sources?
+	// - Events (pipeline): Provide synchronous, immediate updates to the process tree.
+	//   These are captured directly from the eBPF program and processed in the main
+	//   events pipeline, ensuring timely population before detector processing.
+	//
+	// - Signals (control plane): Provide asynchronous enrichment with additional
+	//   context that may not be available in the fast path. The control plane can
+	//   perform more expensive operations without blocking the main pipeline.
+	//
+	// Using only signals can create race conditions where detectors query the process
+	// tree before signals populate it. Using only events risks data loss if critical
+	// exec/fork/exit events are dropped. Both sources together provide the best
+	// reliability and completeness.
+	source := process.SourceNone
 	if s.Process.Enabled {
-		switch s.Process.Source {
-		case processSourceEvents:
-			source = process.SourceEvents
-		case processSourceBoth:
-			source = process.SourceBoth
-		default:
-			// If source is empty, invalid, or signals, default to signals
-			source = process.SourceSignals
-		}
-	} else {
-		// If process is not enabled, use SourceNone internally
-		source = process.SourceNone
+		source = process.SourceBoth
 	}
 
 	return process.ProcTreeConfig{
@@ -131,7 +131,7 @@ func PrepareStores(storeSlice []string) (StoresConfig, error) {
 			Enabled:      false,
 			MaxProcesses: process.DefaultProcessCacheSize,
 			MaxThreads:   process.DefaultThreadCacheSize,
-			Source:       process.SourceSignals.String(),
+			Source:       "", // Deprecated field, kept only for backward compatibility with old configs
 			Procfs:       false,
 		},
 	}

@@ -183,21 +183,24 @@ func (pt *ProcessTree) FeedFromFork(feed *ForkFeed) error {
 	}
 
 	// In all cases (task is a process, or a thread) there is a thread entry.
+	// However, if thread cache is disabled, skip thread tracking.
 
-	thread, found := pt.GetThreadByHash(feed.ChildHash)
-	if !found {
-		thread = pt.GetOrCreateThreadByHash(feed.ChildHash)
+	if pt.threadsLRU != nil {
+		thread, found := pt.GetThreadByHash(feed.ChildHash)
+		if !found {
+			thread = pt.GetOrCreateThreadByHash(feed.ChildHash)
+		}
+
+		// Same case here (for events out of order created by execve first)
+
+		if !found || thread.GetInfo().GetPPid() != feed.ParentPid {
+			pt.setThreadFeed(thread, leader, feed, feedTimeStamp)
+		}
+
+		thread.SetParentHash(feed.ParentHash)                  // all threads have the same parent as the thread group leader
+		thread.SetLeaderHash(feed.LeaderHash)                  // thread group leader is a "process" and a "thread"
+		pt.AddThreadToProcess(feed.LeaderHash, feed.ChildHash) // add the thread to the thread group leader
 	}
-
-	// Same case here (for events out of order created by execve first)
-
-	if !found || thread.GetInfo().GetPPid() != feed.ParentPid {
-		pt.setThreadFeed(thread, leader, feed, feedTimeStamp)
-	}
-
-	thread.SetParentHash(feed.ParentHash)                  // all threads have the same parent as the thread group leader
-	thread.SetLeaderHash(feed.LeaderHash)                  // thread group leader is a "process" and a "thread"
-	pt.AddThreadToProcess(feed.LeaderHash, feed.ChildHash) // add the thread to the thread group leader
 
 	return nil
 }
@@ -321,8 +324,10 @@ func (pt *ProcessTree) FeedFromExit(feed *ExitFeed) error {
 	//
 	// TODO: Analyze if the other fields will be needed in the future.
 
-	thread := pt.GetOrCreateThreadByHash(feed.TaskHash)
-	thread.GetInfo().SetExitTime(feed.TimeStamp)
+	if pt.threadsLRU != nil {
+		thread := pt.GetOrCreateThreadByHash(feed.TaskHash)
+		thread.GetInfo().SetExitTime(feed.TimeStamp)
+	}
 
 	process := pt.GetOrCreateProcessByHash(feed.TaskHash)
 	process.GetInfo().SetExitTime(feed.TimeStamp)

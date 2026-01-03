@@ -11,7 +11,7 @@ tracee **\-\-stores** - Configure data stores for DNS cache and process tree
 
 ## SYNOPSIS
 
-tracee **\-\-stores** [dns|dns.max-entries=*size*|process|process.max-processes=*size*|process.max-threads=*size*|process.source=*source*|process.use-procfs] [**\-\-stores** ...]
+tracee **\-\-stores** [dns|dns.max-entries=*size*|process|process.max-processes=*size*|process.max-threads=*size*|process.use-procfs] [**\-\-stores** ...]
 
 ## DESCRIPTION
 
@@ -27,16 +27,9 @@ The **\-\-stores** flag allows you to configure data stores for DNS cache and pr
 
 - **process**: Enable the process tree store with default settings. When enabled, Tracee will maintain a tree of processes and threads for enrichment of events.
 
-- **process.max-processes**=*size*: Enable the process tree store and set the maximum number of processes to cache in the process tree. Default is 10928. This is an LRU cache that will evict least recently accessed entries when full. **Note**: Using this option automatically enables process, so you don't need to also specify `--stores process`.
+- **process.max-processes**=*size*: Enable the process tree store and set the maximum number of processes to cache in the process tree. Default is 32768. This is an LRU cache that will evict least recently accessed entries when full. **Note**: Using this option automatically enables process, so you don't need to also specify `--stores process`.
 
-- **process.max-threads**=*size*: Enable the process tree store and set the maximum number of threads to cache in the process tree. Default is 21856. This is an LRU cache that will evict least recently accessed entries when full. **Note**: Using this option automatically enables process, so you don't need to also specify `--stores process`.
-
-- **process.source**=*source*: Enable the process tree store and set the source for process tree enrichment. Valid values are:
-  - **signals**: Process tree is built from signals (default).
-  - **events**: Process tree is built from events.
-  - **both**: Process tree is built from both events and signals.
-  
-  **Note**: Using this option automatically enables process, so you don't need to also specify `--stores process`. If no source is specified, the default is `signals`.
+- **process.max-threads**=*size*: Enable the process tree store and set the maximum number of threads to cache in the process tree. Default is 0 (thread tracking disabled to save memory). This is an LRU cache that will evict least recently accessed entries when full. **Note**: Using this option automatically enables process, so you don't need to also specify `--stores process`.
 
 - **process.use-procfs**: Enable the process tree store and enable procfs initialization and querying. When enabled, Tracee will:
   - Scan procfs during initialization to fill all existing processes and threads.
@@ -70,37 +63,23 @@ The **\-\-stores** flag allows you to configure data stores for DNS cache and pr
    
    Note: `process.max-processes` and `process.max-threads` automatically enable process, so `--stores process` is not needed.
 
-5. Enable process tree with events source:
-   ```console
-   --stores process.source=events
-   ```
-   
-   Note: `process.source` automatically enables process, so `--stores process` is not needed.
-
-6. Enable process tree with both events and signals sources:
-   ```console
-   --stores process.source=both
-   ```
-   
-   Note: `process.source` automatically enables process, so `--stores process` is not needed.
-
-7. Enable process tree with procfs support:
+5. Enable process tree with procfs support:
    ```console
    --stores process.use-procfs
    ```
    
    Note: `process.use-procfs` automatically enables process, so `--stores process` is not needed.
 
-8. Combine DNS and process stores:
+6. Combine DNS and process stores:
    ```console
-   --stores dns.max-entries=5000 --stores process.source=both --stores process.max-processes=8192
+   --stores dns.max-entries=5000 --stores process.max-processes=8192
    ```
    
-   Note: Since `dns.max-entries` and `process.source` automatically enable their respective stores, you don't need `--stores dns` or `--stores process`.
+   Note: Since `dns.max-entries` automatically enables DNS and `process.max-processes` automatically enables process, you don't need `--stores dns` or `--stores process`.
 
-9. Complete configuration example:
+7. Complete configuration example:
    ```console
-   --stores dns.max-entries=5000 --stores process.max-processes=8192 --stores process.max-threads=16384 --stores process.source=both --stores process.use-procfs
+   --stores dns.max-entries=5000 --stores process.max-processes=8192 --stores process.max-threads=16384 --stores process.use-procfs
    ```
    
    Note: All process options automatically enable process, and `dns.max-entries` automatically enables DNS, so you don't need `--stores dns` or `--stores process`.

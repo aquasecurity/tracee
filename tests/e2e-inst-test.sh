@@ -332,7 +332,7 @@ print_test_header "START TRACE"
     --signatures-dir "${SIG_DIR}" \
     --output option:sort-events \
     --output option:parse-arguments \
-    --stores process.source=both \
+    --stores process \
     --stores dns \
     --server grpc-address=unix:/tmp/tracee.sock \
     --policy "${TRACEE_POLICY_PATH}"

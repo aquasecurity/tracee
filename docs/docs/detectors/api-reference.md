@@ -884,7 +884,7 @@ AutoPopulate: detection.AutoPopulateFields{
 
 **Requirements**:
 
-- Tracee must run with `--stores process.source=both`
+- Tracee must run with `--stores process`
 - Process must be in the process tree
 - Default depth: 5 levels (parent → grandparent → great-grandparent → ...)
 
@@ -1990,7 +1990,7 @@ sudo ./dist/tracee --logging debug
 **Symptoms**: `GetProcess()`, `GetContainer()` return `ErrNotFound`
 
 **Possible causes**:
-1. Process tree not enabled: `--stores process.source=both`
+1. Process tree not enabled: `--stores process`
 2. Process exited before query
 3. Container not tracked yet
 
