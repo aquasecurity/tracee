@@ -128,7 +128,7 @@ func PrepareStores(storeSlice []string) (StoresConfig, error) {
 			MaxEntries: dns.DefaultCacheSize,
 		},
 		Process: ProcessConfig{
-			Enabled:      false,
+			Enabled:      true, // Enabled by default for better UX and complete detector outputs
 			MaxProcesses: process.DefaultProcessCacheSize,
 			MaxThreads:   process.DefaultThreadCacheSize,
 			Source:       "", // Deprecated field, kept only for backward compatibility with old configs

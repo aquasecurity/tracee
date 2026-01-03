@@ -13,8 +13,8 @@ buffers:
 # Data stores configuration
 stores:
     process:
-        enabled: false
-        # max-processes: 32768  # default: 32K processes
+        enabled: true  # Enabled by default (can be disabled if needed)
+        # max-processes: 10000  # default: 10K processes
         # max-threads: 0        # default: 0 (disabled to save memory)
     dns:
         enabled: false

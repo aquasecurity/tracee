@@ -36,7 +36,7 @@ import (
 //
 
 const (
-	DefaultProcessCacheSize = 32768 // 32K processes - reasonable for most workloads
+	DefaultProcessCacheSize = 10000 // 10K processes - reasonable default for most workloads
 	DefaultThreadCacheSize  = 0     // Thread tracking disabled by default to save memory
 )
 

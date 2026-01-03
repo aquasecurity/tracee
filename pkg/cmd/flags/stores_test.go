@@ -19,7 +19,7 @@ func TestPrepareStores(t *testing.T) {
 		expectedReturn StoresConfig
 		expectedError  string
 	}{
-		// default values (no flags)
+		// default values (no flags) - process is enabled by default
 		{
 			testName: "default values",
 			flags:    []string{},
@@ -29,7 +29,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: dns.DefaultCacheSize,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -47,7 +47,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: dns.DefaultCacheSize,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -64,7 +64,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: 2048,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -190,7 +190,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: 4096,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -259,7 +259,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: dns.DefaultCacheSize,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -277,7 +277,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: dns.DefaultCacheSize,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -295,7 +295,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: dns.DefaultCacheSize,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -314,7 +314,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: dns.DefaultCacheSize,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -332,7 +332,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: dns.DefaultCacheSize,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -351,7 +351,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: dns.DefaultCacheSize,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -369,7 +369,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: dns.DefaultCacheSize,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -388,7 +388,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: dns.DefaultCacheSize,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -406,7 +406,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: dns.DefaultCacheSize,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -425,7 +425,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: dns.DefaultCacheSize,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
@@ -461,7 +461,7 @@ func TestPrepareStores(t *testing.T) {
 					MaxEntries: dns.DefaultCacheSize,
 				},
 				Process: ProcessConfig{
-					Enabled:      false,
+					Enabled:      true, // Enabled by default
 					MaxProcesses: process.DefaultProcessCacheSize,
 					MaxThreads:   process.DefaultThreadCacheSize,
 					Source:       "",
