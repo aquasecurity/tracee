@@ -28,11 +28,12 @@ don\[cq]t need to also specify \f[CR]\-\-stores dns\f[R].
 \f[B]process\f[R]: Enable the process tree store with default settings.
 When enabled, Tracee will maintain a tree of processes and threads for
 enrichment of events.
+\f[B]Note: Process tree is enabled by default.\f[R]
 .IP \[bu] 2
 \f[B]process.max\-processes\f[R]=\f[I]size\f[R]: Enable the process tree
 store and set the maximum number of processes to cache in the process
 tree.
-Default is 32768.
+Default is 10000.
 This is an LRU cache that will evict least recently accessed entries
 when full.
 \f[B]Note\f[R]: Using this option automatically enables process, so you

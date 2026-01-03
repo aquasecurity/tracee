@@ -25,9 +25,9 @@ The **\-\-stores** flag allows you to configure data stores for DNS cache and pr
 
 ### Process Store Options
 
-- **process**: Enable the process tree store with default settings. When enabled, Tracee will maintain a tree of processes and threads for enrichment of events.
+- **process**: Enable the process tree store with default settings. When enabled, Tracee will maintain a tree of processes and threads for enrichment of events. **Note: Process tree is enabled by default.**
 
-- **process.max-processes**=*size*: Enable the process tree store and set the maximum number of processes to cache in the process tree. Default is 32768. This is an LRU cache that will evict least recently accessed entries when full. **Note**: Using this option automatically enables process, so you don't need to also specify `--stores process`.
+- **process.max-processes**=*size*: Enable the process tree store and set the maximum number of processes to cache in the process tree. Default is 10000. This is an LRU cache that will evict least recently accessed entries when full. **Note**: Using this option automatically enables process, so you don't need to also specify `--stores process`.
 
 - **process.max-threads**=*size*: Enable the process tree store and set the maximum number of threads to cache in the process tree. Default is 0 (thread tracking disabled to save memory). This is an LRU cache that will evict least recently accessed entries when full. **Note**: Using this option automatically enables process, so you don't need to also specify `--stores process`.
 
