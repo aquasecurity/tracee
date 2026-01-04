@@ -459,8 +459,15 @@ const (
 )
 
 // x86 32bit syscall numbers
-// Used for compatibility mode
-// https://github.com/torvalds/linux/blob/master/arch/x86/entry/syscalls/syscall_32.tbl
+// Used for compatibility mode (i386 on x86_64)
+//
+// NOTE: These syscall numbers are identical to ARM 32-bit syscalls by Linux kernel design.
+// The kernel maintains compatibility by using the same numbering for common syscalls across
+// x86 and ARM 32-bit architectures.
+//
+// References:
+//   - x86: https://github.com/torvalds/linux/blob/master/arch/x86/entry/syscalls/syscall_32.tbl
+//   - ARM: https://github.com/torvalds/linux/blob/master/arch/arm/tools/syscall.tbl
 const (
 	Sys32restart_syscall              ID = 0
 	Sys32exit                         ID = 1

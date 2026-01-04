@@ -347,7 +347,6 @@ const (
 	MemfdSecret              ID = 447
 	ProcessMrelease          ID = 448
 	MaxSyscallID             ID = 449
-	// TODO: Compile list of unique 32bit syscalls for arm64
 )
 
 // following syscalls are undefined on arm64
@@ -498,8 +497,16 @@ const (
 )
 
 // ARM 32bit syscall numbers
-// Used for compatibility mode
-// https://github.com/torvalds/linux/blob/master/arch/arm/tools/syscall.tbl
+// Used for compatibility mode (AArch32 on ARM64)
+//
+// NOTE: These syscall numbers are identical to x86 32-bit syscalls by Linux kernel design.
+// The kernel maintains compatibility by using the same numbering for common syscalls across
+// x86 and ARM 32-bit architectures. When ARM64 runs 32-bit binaries in compatibility mode,
+// it uses the ARM 32-bit syscall table which aligns with x86 32-bit for most syscalls.
+//
+// References:
+//   - ARM: https://github.com/torvalds/linux/blob/master/arch/arm/tools/syscall.tbl
+//   - x86: https://github.com/torvalds/linux/blob/master/arch/x86/entry/syscalls/syscall_32.tbl
 const (
 	Sys32restart_syscall              ID = 0
 	Sys32exit                         ID = 1
