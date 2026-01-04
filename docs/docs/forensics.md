@@ -82,15 +82,15 @@ Tracee can capture the following types of artifacts:
     {"timestamp":1685285181028267200,"threadStartTime":1685285181026565700,"processorId":1,"processId":182934,"cgroupId":1,"threadId":182934,"parentProcessId":147428,"hostProcessId":184128,"hostThreadId":184128,"hostParentProcessId":148293,"userId":0,"mountNamespace":4026532277,"pidNamespace":4026532279,"processName":"cat","hostName":"Alon-Zivony","container":{},"kubernetes":{},"eventId":"720","eventName":"vfs_read","matchedPolicies":[""],"argsNum":5,"returnValue":0,"syscall":"read","stackAddresses":null,"contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"pathname","type":"const char*","value":""},{"name":"dev","type":"dev_t","value":12},{"name":"inode","type":"unsigned long","value":174033},{"name":"count","type":"size_t","value":131072},{"name":"pos","type":"off_t","value":0}]}
     ```
 
-   !!! Note
-       You can read captured files read at `/tmp/tracee/out`:
-       ```console
-       sudo cat /tmp/tracee/out/host/read.dev-12.inode-176203
-       ```
+!!! Note
+    You can read captured files read at `/tmp/tracee/out`:
+    ```console
+    sudo cat /tmp/tracee/out/host/read.dev-12.inode-176203
+    ```
 
-        ```text
-        read testing 123
-        ```
+    ```text
+    read testing 123
+    ```
 
 1. **Executed Files**
 

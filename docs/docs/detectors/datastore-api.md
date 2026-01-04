@@ -1372,6 +1372,7 @@ Writable datastores allow detectors to store and share custom data, enabling use
 
 **Register a writable store** (owner):
 
+{% raw %}
 ```go
 func (d *IPReputationDetector) Init(params detection.DetectorParams) error {
     // Create and configure store
@@ -1390,9 +1391,11 @@ func (d *IPReputationDetector) Init(params detection.DetectorParams) error {
     return nil
 }
 ```
+{% endraw %}
 
 **Write to the store**:
 
+{% raw %}
 ```go
 func (d *IPReputationDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
     srcIP, _ := v1beta1.GetData[string](event, "src_ip")
@@ -1409,9 +1412,11 @@ func (d *IPReputationDetector) OnEvent(ctx context.Context, event *v1beta1.Event
     return nil, nil
 }
 ```
+{% endraw %}
 
 **Read from the store** (other detectors):
 
+{% raw %}
 ```go
 func (d *ThreatAnalyzer) Init(params detection.DetectorParams) error {
     // Access as read-only
@@ -1439,6 +1444,7 @@ func (d *ThreatAnalyzer) OnEvent(ctx context.Context, event *v1beta1.Event) ([]d
     return nil, nil
 }
 ```
+{% endraw %}
 
 ### Key Concepts
 

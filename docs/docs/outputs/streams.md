@@ -121,3 +121,10 @@ CLI flags have a the following structure: `--output streams.<stream_name>.<field
 | buffer           | buffer settings.                                                                                                    | {}      |
 | buffer.size      | number of maximum elements allowed in the stream buffer queue.                                                      | 1024    |
 | buffer.mode      | `drop` of `block`. `drop` allows dropping events when the `buffer` is full. `block` does not allow events dropping. | block   |
+
+## See Also
+
+- [Output Flag Reference](../flags/output.1.md) - Complete output configuration
+- [Output Overview](./index.md) - Output system overview
+- [Output Formats](./output-formats.md) - Available event formats
+- [Policies](../policies/index.md) - Policy-based filtering

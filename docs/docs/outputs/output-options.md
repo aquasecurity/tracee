@@ -1,61 +1,124 @@
 # Output Options
 
-Tracee supports different output options for customizing the way events are printed. For a complete list of available options.
+Tracee supports different output options for enriching events with additional context and information.
 
-Available options:
+!!! Note
+    These options will be migrated to the `--enrichment` flag in a future release.
 
-1. **stack-addresses**  
+## Available Options
 
-    Makes it possible to pick stack memory addresses from each event.
+### stack-addresses
 
-    ```
-    output:
-        options:
-            stack-addresses: true
-    ```
+Include stack memory addresses in events for debugging and analysis.
 
-2. **parse-arguments**
+**Configuration:**
+```yaml
+output:
+  options:
+    stack-addresses: true
+```
 
-    In order to have a better experience with the output provided by
-    **tracee**, you may opt to parse event arguments to a **human
-    *readable** format.
+**CLI:**
+```bash
+tracee --output option:stack-addresses
+```
 
-    ```
-    output:
-        options:
-            parse-arguments: true
-    ```
+### parse-arguments
 
-3. **exec-env**
+Parse event arguments into human-readable format instead of raw values. Recommended for interactive use and readability, but may add processing overhead that impacts performance on high-volume event streams.
 
-    Sometimes it is also important to know the execution environment variables
-    whenever an event is detected, specially when detecting **execve** event.
+**Configuration:**
+```yaml
+output:
+  options:
+    parse-arguments: true
+```
 
-    ```
-    output:
-        options:
-            exec-env: true
+**CLI:**
+```bash
+tracee --output option:parse-arguments
+```
 
-    ```
+### exec-env
 
-4. **exec-hash**
+Include execution environment variables in process execution events (particularly useful for `execve` events).
 
-    This is a special output option for **sched_process_exec** so user can get
-    the **file hash** and **process ctime** (particularly interesting if you
-    would like to compare executed binaries from a list of known hashes, for
-    example).
+**Configuration:**
+```yaml
+output:
+  options:
+    exec-env: true
+```
 
-    ```
-    output:
-        options:
-            exec-hash: dev-inode
-    ```
+**CLI:**
+```bash
+tracee --output option:exec-env
+```
 
-5. **sort-events**
+### exec-hash
 
-    This makes it possible to sort the events as they happened. Especially in systems where Tracee tracks lots of events, it can happen that they are received unordered. More information is provided in the [ordering-event](ordering-events.md) section of the documentation.
-    ```
-    output:
-        options:
-                sort-events: true
-    ```
+Include file SHA256 hashes and process creation time (ctime) in `sched_process_exec` events. Useful for comparing executed binaries against known hash lists.
+
+The option controls the hash caching strategy for performance and correctness tradeoffs.
+
+**Configuration:**
+```yaml
+output:
+  options:
+    exec-hash: dev-inode
+```
+
+**CLI:**
+```bash
+tracee --output option:exec-hash=dev-inode
+```
+
+**Available modes:**
+
+- `inode` - Recalculate hash if inode's ctime differs (performant, may miss changes)
+- `dev-inode` - Key by device+inode pair (recommended: good balance of performance and correctness)
+- `digest-inode` - Key by container image digest+inode (most efficient, requires container enrichment)
+
+!!! Note
+    All modes calculate SHA256 hashes. The mode only affects the caching strategy used to avoid recalculating hashes for the same binary.
+
+### parse-arguments-fds
+
+Parse file descriptor arguments to show associated file paths instead of just the descriptor number.
+
+**Configuration:**
+```yaml
+output:
+  options:
+    parse-arguments-fds: true
+```
+
+**CLI:**
+```bash
+tracee --output option:parse-arguments-fds
+```
+
+### sort-events
+
+Enable chronological sorting of events. On busy systems, events may be received out of order. This option ensures events are output in the order they occurred.
+
+See the [Sorting Events](./sorting-events.md) documentation for details on how this works.
+
+**Configuration:**
+```yaml
+output:
+  options:
+    sort-events: true
+```
+
+**CLI:**
+```bash
+tracee --output option:sort-events
+```
+
+## See Also
+
+- [Output Flag Reference](../flags/output.1.md) - Complete output configuration
+- [Output Overview](./index.md) - Output system overview
+- [Sorting Events](./sorting-events.md) - Event ordering details
+- [Enrichment Flag Reference](../flags/enrichment.1.md) - Container and process enrichment
