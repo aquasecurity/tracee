@@ -111,6 +111,24 @@ Threat selection can be combined with regular events and is performed at policy 
 --events fs --events 'threat.severity>=high'
 ```
 
+## DETECTOR TAG SELECTION
+
+Detectors can be categorized with tags. You can select all detectors with a specific tag:
+
+```console
+--events containers       # All detectors tagged with "containers"
+--events malware          # All detectors tagged with "malware"
+--events detectors        # All detectors (existing behavior)
+```
+
+Tags can be combined with other selection methods:
+
+```console
+--events containers,execve                # Detectors with "containers" tag + execve syscall
+--events 'threat.severity=critical'       # Critical threats (any tag)
+--events malware,'threat.severity>=high'  # Detectors with "malware" tag OR high+ severity threats
+```
+
 ## EXAMPLES
 
 - To trace only 'execve' and 'open' events, use the following flag:
