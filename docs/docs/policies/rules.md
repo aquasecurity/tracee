@@ -103,6 +103,16 @@ rules:
   - event: threat.name=process_injection
 ```
 
+#### Selecting by Detector Tags
+
+Detectors can be categorized with tags. Select all detectors with a specific tag:
+
+```yaml
+rules:
+  - event: containers        # All detectors with "containers" tag
+  - event: malware          # All detectors with "malware" tag
+```
+
 #### Combining with Regular Events
 
 Threat-based selection can be combined with regular event selection:

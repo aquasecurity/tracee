@@ -99,10 +99,10 @@ func CreateEventsFromDetectors(startID events.ID, detectors []detection.EventDet
 			def.ProducedEvent.Description,             // description
 			false,                                     // internal
 			false,                                     // syscall
-			[]string{"detectors", "default"},          // sets
-			events.NewDependencyStrategy(dependencies),          // deps
-			convertFieldsToDataFields(def.ProducedEvent.Fields), // fields
-			map[string]interface{}{"detectorID": def.ID},        // properties
+			append([]string{"detectors", "default"}, def.ProducedEvent.Tags...), // sets - include detector tags
+			events.NewDependencyStrategy(dependencies),                          // deps
+			convertFieldsToDataFields(def.ProducedEvent.Fields),                 // fields
+			map[string]interface{}{"detectorID": def.ID},                        // properties
 		)
 
 		// Add to events.Core
