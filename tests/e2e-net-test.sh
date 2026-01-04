@@ -87,6 +87,7 @@ tracee_command="./dist/tracee \
     --runtime workdir=$TRACEE_TMP_DIR \
     --output json:$outputfile \
     --logging file=$logfile \
+    --server healthz \
     --policy ./tests/policies/net/ \
     --signatures-dir ./dist/e2e-net-signatures/"
 
@@ -98,7 +99,7 @@ timedout=0
 while true; do
     times=$(($times + 1))
     sleep 1
-    if [[ -f $TRACEE_TMP_DIR/tracee.pid ]]; then
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:3366/healthz 2>/dev/null | grep -q "200"; then
         info
         info "UP AND RUNNING"
         info

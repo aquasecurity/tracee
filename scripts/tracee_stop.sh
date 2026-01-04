@@ -176,21 +176,24 @@ set -e
 
 info "Stopping Tracee"
 
-# Check if tracee is running
-tracee_pid=$(get_tracee_pid_from_pidfile fail)
+# Check if tracee is running using pgrep
+running_pids=$(get_running_tracee_pids 2> /dev/null || echo "")
 
-if [ -z "${tracee_pid}" ]; then
+if [ -z "${running_pids}" ]; then
     info "Tracee is not running"
-    cleanup_tracee_pid_file
     exit 0
 fi
 
-info "Found Tracee running with PID ${tracee_pid}"
+info "Found Tracee running with PID(s): ${running_pids}"
 
-# Stop the process
-if stop_tracee "${tracee_pid}"; then
-    info "Tracee stopped successfully"
-    cleanup_tracee_pid_file
-else
-    die "Failed to stop Tracee"
-fi
+# Stop each tracee process
+for tracee_pid in ${running_pids}; do
+    info "Stopping PID ${tracee_pid}"
+    if stop_tracee "${tracee_pid}"; then
+        info "Tracee PID ${tracee_pid} stopped successfully"
+    else
+        die "Failed to stop Tracee PID ${tracee_pid}"
+    fi
+done
+
+info "All Tracee processes stopped"

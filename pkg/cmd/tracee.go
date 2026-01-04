@@ -3,11 +3,8 @@ package cmd
 import (
 	"context"
 	"os"
-	"strconv"
-	"syscall"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
-	"github.com/aquasecurity/tracee/common/fileutil"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
@@ -63,29 +60,11 @@ func (r Runner) Run(ctx context.Context) error {
 		return errfmt.Errorf("error initializing Tracee: %v", err)
 	}
 
-	// Manage PID file
+	// Ensure workdir exists
 
 	if err := os.MkdirAll(r.Workdir, 0755); err != nil {
 		return errfmt.Errorf("could not create workdir path: %v", err)
 	}
-	workdir, err := fileutil.OpenExistingDir(r.Workdir)
-	if err != nil {
-		return errfmt.Errorf("error initializing Tracee: error opening workdir path: %v", err)
-	}
-	defer func() {
-		err := workdir.Close()
-		if err != nil {
-			logger.Warnw("error closing workdir path", "error", err)
-		}
-	}()
-	if err := writePidFile(workdir); err != nil {
-		return errfmt.WrapError(err)
-	}
-	defer func() {
-		if err := removePidFile(workdir); err != nil {
-			logger.Warnw("error removing pid file", "error", err)
-		}
-	}()
 
 	// Run Tracee
 
@@ -185,30 +164,4 @@ func GetContainerMode(containerFilterEnabled, enrichmentEnabled bool) config.Con
 
 	// ... otherwise return enriched mode as default.
 	return config.ContainerModeEnriched
-}
-
-const pidFileName = "tracee.pid"
-
-// Initialize PID file
-func writePidFile(dir *os.File) error {
-	pidFile, err := fileutil.OpenAt(dir, pidFileName, syscall.O_WRONLY|syscall.O_CREAT, 0640)
-	if err != nil {
-		return errfmt.Errorf("error creating readiness file: %v", err)
-	}
-
-	_, err = pidFile.Write([]byte(strconv.Itoa(os.Getpid()) + "\n"))
-	if err != nil {
-		return errfmt.Errorf("error writing to readiness file: %v", err)
-	}
-
-	return nil
-}
-
-// Remove PID file
-func removePidFile(dir *os.File) error {
-	if err := fileutil.RemoveAt(dir, pidFileName, 0); err != nil {
-		return errfmt.Errorf("%v", err)
-	}
-
-	return nil
 }

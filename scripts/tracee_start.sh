@@ -4,12 +4,13 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 # shellcheck disable=SC1091
 . "${SCRIPT_DIR}/tracee_common.sh"
 
-require_cmds cat realpath setsid sleep
+require_cmds cat curl realpath setsid sleep
 
 # Default values specific to start script
 TRACEE_BIN_DEFAULT=$(realpath "${SCRIPT_DIR}/../dist/tracee" 2> /dev/null \
     || printf "%s" "${SCRIPT_DIR}/../dist/tracee")
 TIMEOUT_DEFAULT=30
+HEALTHZ_PORT_DEFAULT=3366
 EVENT_OUTPUT_FILE_DEFAULT="events.json"
 LOG_OUTPUT_FILE_DEFAULT="log.json"
 LOG_LEVEL_DEFAULT="info"
@@ -25,6 +26,7 @@ Options:
     --log-file, -l FILE      Output file for logs in JSON format (default: <workdir>/${LOG_OUTPUT_FILE_DEFAULT})
     --log-level, -L LEVEL    Log level (default: ${LOG_LEVEL_DEFAULT})
     --timeout, -t SECONDS    Timeout to wait for tracee startup (default: ${TIMEOUT_DEFAULT})
+    --healthz-port PORT      Port for healthz endpoint (default: ${HEALTHZ_PORT_DEFAULT})
     --help, -h               Show this help message
 
 Note: All outputs are automatically configured in JSON format.
@@ -73,6 +75,10 @@ while [ $# -gt 0 ]; do
             TIMEOUT="$2"
             shift 2
             ;;
+        --healthz-port)
+            HEALTHZ_PORT="$2"
+            shift 2
+            ;;
         --help | -h)
             show_help
             exit 0
@@ -101,6 +107,7 @@ TRACEE_BIN="${TRACEE_BIN:-${TRACEE_BIN_DEFAULT}}"
 TRACEE_BIN=$(realpath "${TRACEE_BIN}" 2> /dev/null \
     || printf "%s" "${TRACEE_BIN}")
 TIMEOUT="${TIMEOUT:-${TIMEOUT_DEFAULT}}"
+HEALTHZ_PORT="${HEALTHZ_PORT:-${HEALTHZ_PORT_DEFAULT}}"
 
 # Setup common paths
 setup_tracee_paths
@@ -113,28 +120,35 @@ LOG_LEVEL="${LOG_LEVEL:-${LOG_LEVEL_DEFAULT}}"
 cleanup() {
     info "Cleaning up ..."
 
-    tracee_pid=$(get_tracee_pid_from_pidfile nofail)
-    if [ -n "${tracee_pid}" ]; then
-        kill -TERM "${tracee_pid}" 2> /dev/null || true
+    # Find any running tracee processes and terminate them
+    running_pids=$(get_running_tracee_pids 2> /dev/null || echo "")
+    if [ -n "${running_pids}" ]; then
+        for pid in ${running_pids}; do
+            kill -TERM "${pid}" 2> /dev/null || true
+        done
+        
         cleanup_count=10
         while [ ${cleanup_count} -gt 0 ]; do
             sleep 1
-            if [ ! -d "/proc/${tracee_pid}" ]; then
+            # Check if any tracee processes are still running
+            if ! check_tracee_running > /dev/null 2>&1; then
                 break
             fi
             cleanup_count=$((cleanup_count - 1))
         done
 
-        if [ -d "/proc/${tracee_pid}" ]; then
-            warn "Process ${tracee_pid} didn't terminate gracefully, using SIGKILL"
-            kill -KILL "${tracee_pid}" 2> /dev/null || true
+        # If still running, force kill
+        running_pids=$(get_running_tracee_pids 2> /dev/null || echo "")
+        if [ -n "${running_pids}" ]; then
+            warn "Tracee processes didn't terminate gracefully, using SIGKILL"
+            for pid in ${running_pids}; do
+                kill -KILL "${pid}" 2> /dev/null || true
+            done
         fi
-
-        cleanup_tracee_pid_file
 
         sleep 5
     else
-        info "No PID from PID file found to clean up"
+        info "No running tracee processes found to clean up"
     fi
 
     info "Cleaned up"
@@ -171,13 +185,6 @@ if [ -n "${running_pids}" ]; then
     die "Stop the existing tracee instance first"
 fi
 
-# Check for stale PID file
-if [ -f "${TRACEE_PIDFILE}" ]; then
-    warn "Found stale PID file (no running tracee process)"
-    info "Cleaning up stale PID file..."
-    cleanup_tracee_pid_file
-fi
-
 info "Running Tracee"
 
 rm -rf "${TRACEE_WORKDIR}" || die "Failed to remove ${TRACEE_WORKDIR}"
@@ -188,7 +195,9 @@ set -- "${TRACEE_BIN}" \
     "--output" "json:${EVENT_OUTPUT_FILE}" \
     "--logging" "file=${LOG_OUTPUT_FILE}" \
     "--logging" "level=${LOG_LEVEL}" \
-    "--runtime" "workdir=${TRACEE_WORKDIR}"
+    "--runtime" "workdir=${TRACEE_WORKDIR}" \
+    "--server" "healthz" \
+    "--server" "http-address=:${HEALTHZ_PORT}"
 
 # Add additional arguments if any were provided
 if [ -n "${ADDITIONAL_ARGS}" ]; then
@@ -216,8 +225,14 @@ debug "Timeout: ${TIMEOUT} seconds"
 setsid "$@" &
 
 count=0
-info "Wait up to ${TIMEOUT} seconds for the ${TRACEE_PIDFILE} to appear"
-while [ ! -f "${TRACEE_PIDFILE}" ] && [ "${count}" -lt "${TIMEOUT}" ]; do
+info "Wait up to ${TIMEOUT} seconds for /healthz endpoint to respond"
+while [ "${count}" -lt "${TIMEOUT}" ]; do
+    # Check if healthz endpoint responds with 200 OK
+    if curl -s -o /dev/null -w "%{http_code}" "http://localhost:${HEALTHZ_PORT}/healthz" 2>/dev/null | grep -q "200"; then
+        info "Tracee is ready (healthz endpoint responded)"
+        break
+    fi
+    
     sleep 1
     count=$((count + 1))
 
@@ -238,8 +253,17 @@ done
 
 info "Elapsed time: ${count} seconds"
 
-tracee_pid=$(get_tracee_pid_from_pidfile fail)
-info "Tracee PID from file: ${tracee_pid}"
+if [ "${count}" -ge "${TIMEOUT}" ]; then
+    handle_tracee_error "Tracee failed to become ready within ${TIMEOUT} seconds"
+fi
+
+# Get the PID of the tracee process that's actually running
+running_pids=$(get_running_tracee_pids 2> /dev/null || echo "")
+if [ -n "${running_pids}" ]; then
+    info "Tracee PID(s): ${running_pids}"
+else
+    handle_tracee_error "Tracee process not found after successful healthz check"
+fi
 
 cooldown=5
 info "Wait ${cooldown} seconds for Tracee to finish initializing"
