@@ -1,17 +1,25 @@
-# Special: Ordering Events
+# Sorting Events
 
-Package sorting feature is responsible for sorting incoming events from the BPF
-programs chronologically.
+The sorting feature sorts incoming events from the BPF programs chronologically to ensure events are output in the order they occurred.
+
+## Enabling Sorting
+
+Enable event sorting using the `sort-events` option:
 
 ```console
-sudo ./dist/tracee \
-    -o json \
-    -o option:parse-arguments \
-    -o option:sort-events
+tracee --output option:sort-events
+```
+
+Or in a configuration file:
+
+```yaml
+output:
+  options:
+    sort-events: true
 ```
 
 !!! Information
-    There are **3 known** sources to events **sorting issues**:
+    There are **3 known** sources of **sorting issues**:
     
       1. In perf buffer, events are read in round robing order from CPUs buffers
          (and not according to invocation time).
@@ -23,27 +31,17 @@ sudo ./dist/tracee \
          events after some delay.
 
 
-## Deep Dive Into Sorting Feature
+## How Sorting Works
 
-To address the events perf buffers issue, the events are **divided to queues
-according to the source CPU**. This way the events are almost ordered (except
-for syscalls). The syscall events are inserted to their right chronological
-place manually.
+To address the perf buffer issues, events are **divided into queues according to the source CPU**. This way the events are almost sorted (except for syscalls). Syscall events are inserted to their correct chronological position manually.
 
-This way, **all events which occurred before the last event** of the **most
-delaying CPU** could be sent forward with guaranteed order.
+This way, **all events which occurred before the last event** of the **most delaying CPU** can be sent forward with guaranteed order.
 
-To make sure **syscall events are not missed** when sending, a **small delay**
-is needed. Lastly, to address the **vCPU sleep issue** (which might cause up to
-2 events received in a delay), the events need to be sent **after a delay which
-is bigger than max possible vCPU sleep time** (which is just an increase of the
-syscall events delay sending).
+To make sure **syscall events are not missed** when sending, a **small delay** is needed. Lastly, to address the **vCPU sleep issue** (which might cause up to 2 events to be received with a delay), the events need to be sent **after a delay which is larger than the maximum possible vCPU sleep time** (which is just an increase of the syscall events delay).
 
-## Algorithm for Nerds =D
+## Sorting Algorithm
 
-To summarize the algorithm main logic, here is textual simulation of the
-operation (assume that 2 scheduler ticks are larger than max possible vCPU
-sleep time):  
+To summarize the algorithm's main logic, here is a textual simulation of the operation (assume that 2 scheduler ticks are larger than the maximum possible vCPU sleep time):  
 
 Tn = Timestamp (n == TOD)  
 \#m = Event's Source CPU  

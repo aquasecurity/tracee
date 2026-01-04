@@ -1,13 +1,23 @@
 # Configuring Tracee
 
-Tracee has many different options and settings that control how Tracee operates. 
+Tracee has many different options and settings that control how Tracee operates.
 
+## Using Configuration Files
 
-To learn about how to apply configuration to Tracee, please refer to the [CLI](./cli.md) or [Kubernetes](./kubernetes.md) specific guides, depending on how you deploy Tracee.
+The `--config` flag allows you to specify global configuration options for Tracee by providing a configuration file in [YAML](https://github.com/aquasecurity/tracee/blob/main/examples/config/global_config.yaml) or [JSON](https://github.com/aquasecurity/tracee/blob/main/examples/config/global_config.json) format.
 
-A complete config file with all available options can be found [here](https://github.com/aquasecurity/tracee/blob/main/examples/config/global_config.yaml). Most of the options are documented in different sections in the documentation.
+The configuration file can include settings for output formats, enrichment, buffers, logging, server options, and more.
 
-  - __NOTE__: The YAML examples can be translated to JSON as well
+To use the `--config` flag, provide the path to the configuration file:
+
+```console
+tracee --config /path/to/tracee-config.yaml
+```
+
+A complete example config file with all available options can be found [here](https://github.com/aquasecurity/tracee/blob/main/examples/config/global_config.yaml). Most of the options are documented in different sections in the documentation.
+
+!!! note
+    The YAML examples below can be translated to JSON as well. For Kubernetes-specific configuration, see the [Kubernetes Configuration](./kubernetes.md) guide.
 
 ## Common configurations
 
@@ -175,3 +185,12 @@ filters, destination file and others.
   ```
 
   __NOTE__: You can view more in the [buffers section](../../flags/buffers.1.md).
+
+## See Also
+
+- [Kubernetes Configuration](./kubernetes.md) - Kubernetes-specific configuration
+- [Container Enrichment](../container-engines.md) - Configure container runtime integration
+- [Monitoring](./monitoring.md) - Configure Prometheus metrics and health checks
+- [Flag Reference](../../flags/config.1.md) - Complete configuration file reference
+- [Output Configuration](../../outputs/index.md) - Configure event output and formatting
+- [Policy Configuration](../../policies/index.md) - Define what to monitor

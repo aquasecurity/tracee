@@ -22,20 +22,15 @@ nav:
                 - Getting Started:
                       - Docker: docs/install/docker.md
                       - Kubernetes: docs/install/kubernetes.md
-                - Usage:
-                      - Container Engines: docs/install/container-engines.md
-                      - Prometheus: docs/install/prometheus.md
-                      - Healthz: docs/install/healthz.md
-                      - Configuration:
-                            - Overview: docs/install/config/index.md
-                            - Config File:
-                                  - CLI: docs/install/config/cli.md
-                                  - Kubernetes: docs/install/config/kubernetes.md
+                - Configuration:
+                      - Overview: docs/install/config/index.md
+                      - Kubernetes: docs/install/config/kubernetes.md
+                      - Container Enrichment: docs/install/container-engines.md
+                      - Monitoring: docs/install/config/monitoring.md
                       - Flag Reference:
                             - artifacts: docs/flags/artifacts.1.md
                             - buffers: docs/flags/buffers.1.md
                             - capabilities: docs/flags/capabilities.1.md
-                            - capture: docs/flags/capture.1.md
                             - config: docs/flags/config.1.md
                             - enrichment: docs/flags/enrichment.1.md
                             - events: docs/flags/events.1.md
@@ -47,6 +42,13 @@ nav:
                             - server: docs/flags/server.1.md
                             - signatures-dir: docs/flags/signatures-dir.1.md
                             - stores: docs/flags/stores.1.md
+          - Policies:
+                - Overview: docs/policies/index.md
+                - Scopes: docs/policies/scopes.md
+                - Rules: docs/policies/rules.md
+                - Usage:
+                      - CLI: docs/policies/usage/cli.md
+                      - Kubernetes: docs/policies/usage/kubernetes.md
           - Events:
                 - Overview: docs/events/index.md
                 - Built-in Events:
@@ -195,20 +197,13 @@ nav:
                 - YAML Detectors: docs/detectors/yaml-detectors.md
                 - API Reference: docs/detectors/api-reference.md
                 - DataStore API: docs/detectors/datastore-api.md
-          - Policies:
-                - Overview: docs/policies/index.md
-                - Scopes: docs/policies/scopes.md
-                - Rules: docs/policies/rules.md
-                - Usage:
-                      - CLI: docs/policies/usage/cli.md
-                      - Kubernetes: docs/policies/usage/kubernetes.md
-          - Outputs:
+          - Output:
                 - Overview: docs/outputs/index.md
-                - Output Formats: docs/outputs/output-formats.md
-                - Event Structure: docs/outputs/event-structure.md
-                - Output Options: docs/outputs/output-options.md
+                - Formats: docs/outputs/output-formats.md
                 - Streams: docs/outputs/streams.md
-                - Ordering Events: docs/outputs/ordering-events.md
+                - Event Structure: docs/outputs/event-structure.md
+                - Sorting Events: docs/outputs/sorting-events.md
+                - Options: docs/outputs/output-options.md
                 - Logging: docs/outputs/logging.md
           - Forensics:
                 - Overview: docs/forensics.md

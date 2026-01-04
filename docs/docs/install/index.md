@@ -41,20 +41,15 @@ Choose your deployment method:
 
 After installing Tracee, configure it for your environment:
 
-### Container Integration
-
-- **[Container Runtime Detection](./container-engines.md)** - Configure Tracee to detect and enrich events from Docker, Containerd, CRI-O, or Podman
-
 ### Configuration
 
 - **[Configuration Guide](./config/index.md)** - Complete configuration reference for CLI and Kubernetes deployments
-  - [CLI Configuration](./config/cli.md) - Configure Tracee command-line tool
   - [Kubernetes Configuration](./config/kubernetes.md) - Configure Tracee in Kubernetes
+  - [Container Enrichment](./container-engines.md) - Configure Tracee to detect and enrich events from Docker, Containerd, CRI-O, or Podman
 
 ### Monitoring & Observability
 
-- **[Health Monitoring](./healthz.md)** - Enable health check endpoints for monitoring
-- **[Prometheus Integration](./prometheus.md)** - Enable metrics collection and export to Prometheus
+- **[Monitoring Configuration](./config/monitoring.md)** - Enable Prometheus metrics and health check endpoints for monitoring Tracee
 
 ## 🔍 Next Steps
 

@@ -1,10 +1,10 @@
 # CLI Policy Usage
 
-This section details how to use the flags in the Tracee CLI.
+This section details how to use policies with the Tracee CLI.
 
-## Applying Tracee Polcies
+## Applying Tracee Policies
 
-A [policy file](../index.md) can be applied in the Tracee command using the `--policy` flag and providing a path to the location of the policy file.
+A [policy file](../index.md) can be applied using the `--policy` flag:
 
 ```console
 tracee --policy ./policy.yml
@@ -83,32 +83,31 @@ stores:
 
 # logging
 
-log:
-    level: debug
-    file: /tmp/debug.json
-    # aggregate:
-    #     enabled: true
-    #     flush-interval: 5s
-    filters:
-        exclude:
-            pkg:
-                - capabilities
+logging:
+  level: debug
+  file: /tmp/debug.json
+  # aggregate:
+  #     enabled: true
+  #     flush-interval: 5s
+  filters:
+    exclude:
+      pkg:
+        - capabilities
+
 # output
 
 output:
-    options:
-        none: false
-        stack-addresses: false
-        exec-env: true
-        exec-hash: dev-inode
-        parse-arguments: true
-        parse-arguments-fds: true
-        sort-events: true
-    json:
-        files:
-            - stdout
-    forward: []
-    webhook: []
+  options:
+    stack-addresses: false
+    exec-env: true
+    exec-hash: dev-inode
+    parse-arguments: true
+    parse-arguments-fds: true
+    sort-events: true
+  destinations:
+    - name: stdout
+      format: json
+      path: stdout
 ```
 
 ### policy.yaml
