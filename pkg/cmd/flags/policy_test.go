@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"testing"
@@ -8,6 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/pkg/detectors"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
@@ -2487,4 +2491,149 @@ func TestParseEventFilters(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseEventFiltersDetectorTags(t *testing.T) {
+	// NOTE: Not using t.Parallel() because this test modifies global events.Core state
+
+	// Save and restore events.Core
+	originalCore := events.Core
+	defer func() { events.Core = originalCore }()
+
+	// Create fresh DefinitionGroup with core events
+	events.Core = events.NewDefinitionGroup()
+	err := events.Core.AddBatch(events.CoreEvents)
+	require.NoError(t, err)
+
+	// Create mock detectors with tags and register their events
+	mockDetectors := []detection.EventDetector{
+		createMockDetectorForTagTest("det1", "detector_event1", []string{"test_tag_a"}),
+		createMockDetectorForTagTest("det2", "detector_event2", []string{"test_tag_b"}),
+		createMockDetectorForTagTest("det3", "detector_event3", []string{"test_tag_a", "test_tag_c"}),
+	}
+
+	// Register detector events in events.Core (simulating what happens at startup)
+	eventNameToID, err := detectors.CreateEventsFromDetectors(events.StartDetectorID, mockDetectors)
+	require.NoError(t, err)
+
+	testCases := []struct {
+		name       string
+		eventFlags []eventFlag
+		validate   func(*testing.T, *policy.Policy, map[string]events.ID)
+	}{
+		{
+			name: "detector tag selection - test_tag_a",
+			eventFlags: []eventFlag{{
+				full:      "test_tag_a",
+				eventName: "test_tag_a",
+			}},
+			validate: func(t *testing.T, p *policy.Policy, eMap map[string]events.ID) {
+				// Should have detector_event1 and detector_event3 (both have "test_tag_a" tag)
+				assert.Contains(t, p.Rules, eMap["detector_event1"])
+				assert.Contains(t, p.Rules, eMap["detector_event3"])
+				assert.NotContains(t, p.Rules, eMap["detector_event2"])
+				assert.Equal(t, 2, len(p.Rules), "Should have exactly 2 events selected")
+			},
+		},
+		{
+			name: "detector tag selection - test_tag_b",
+			eventFlags: []eventFlag{{
+				full:      "test_tag_b",
+				eventName: "test_tag_b",
+			}},
+			validate: func(t *testing.T, p *policy.Policy, eMap map[string]events.ID) {
+				// Should have only detector_event2
+				assert.Contains(t, p.Rules, eMap["detector_event2"])
+				assert.NotContains(t, p.Rules, eMap["detector_event1"])
+				assert.NotContains(t, p.Rules, eMap["detector_event3"])
+				assert.Equal(t, 1, len(p.Rules), "Should have exactly 1 event selected")
+			},
+		},
+		{
+			name: "detector tag with regular event",
+			eventFlags: []eventFlag{
+				{
+					full:      "test_tag_a",
+					eventName: "test_tag_a",
+				},
+				{
+					full:      "write",
+					eventName: "write",
+				},
+			},
+			validate: func(t *testing.T, p *policy.Policy, eMap map[string]events.ID) {
+				// Should have test_tag_a detectors + write syscall
+				assert.Contains(t, p.Rules, eMap["detector_event1"])
+				assert.Contains(t, p.Rules, eMap["detector_event3"])
+				assert.Contains(t, p.Rules, events.Write)
+				assert.Equal(t, 3, len(p.Rules), "Should have 3 events selected")
+			},
+		},
+		{
+			name: "all detectors set",
+			eventFlags: []eventFlag{{
+				full:      "detectors",
+				eventName: "detectors",
+			}},
+			validate: func(t *testing.T, p *policy.Policy, eMap map[string]events.ID) {
+				// Should have all detector events (including built-in detectors, so check for ours)
+				assert.Contains(t, p.Rules, eMap["detector_event1"])
+				assert.Contains(t, p.Rules, eMap["detector_event2"])
+				assert.Contains(t, p.Rules, eMap["detector_event3"])
+				// Note: may have more than 3 if there are built-in detectors
+				assert.GreaterOrEqual(t, len(p.Rules), 3, "Should have at least our 3 detector events")
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Don't use t.Parallel() here because we need the events.Core state from parent test
+			// Create fresh policy for each test case
+			p := policy.NewPolicy()
+
+			err := parseEventFilters(p, tc.eventFlags, mockDetectors)
+			require.NoError(t, err)
+
+			if tc.validate != nil {
+				tc.validate(t, p, eventNameToID)
+			}
+		})
+	}
+}
+
+// createMockDetectorForTagTest creates a mock detector for tag testing
+func createMockDetectorForTagTest(id, eventName string, tags []string) detection.EventDetector {
+	return &mockDetectorForPolicyTest{
+		id:        id,
+		eventName: eventName,
+		tags:      tags,
+	}
+}
+
+// mockDetectorForPolicyTest implements detection.EventDetector for policy testing
+type mockDetectorForPolicyTest struct {
+	id        string
+	eventName string
+	tags      []string
+}
+
+func (m *mockDetectorForPolicyTest) GetDefinition() detection.DetectorDefinition {
+	return detection.DetectorDefinition{
+		ID: m.id,
+		ProducedEvent: pb.EventDefinition{
+			Name:        m.eventName,
+			Description: "Mock detector for policy test",
+			Tags:        m.tags,
+		},
+		Requirements: detection.DetectorRequirements{},
+	}
+}
+
+func (m *mockDetectorForPolicyTest) Init(params detection.DetectorParams) error {
+	return nil
+}
+
+func (m *mockDetectorForPolicyTest) OnEvent(ctx context.Context, event *pb.Event) ([]detection.DetectorOutput, error) {
+	return nil, nil
 }
