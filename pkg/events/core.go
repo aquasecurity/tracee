@@ -13520,6 +13520,9 @@ var CoreEvents = map[ID]Definition{
 		internal: true,
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SecurityFileMProtect, required: true},
+				},
 				tailCalls: []TailCall{
 					{"prog_array", "send_bin", []uint32{TailSendBin}},
 				},

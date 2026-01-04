@@ -32,6 +32,7 @@ func Test_EventsDependencies(t *testing.T) {
 	testCases := []struct {
 		name              string
 		events            []events.ID
+		captureConfig     *config.CaptureConfig // For internal/capture events
 		expectedLogs      []string
 		expectedEvents    []events.ID
 		unexpectedEvents  []events.ID
@@ -198,6 +199,12 @@ func Test_EventsDependencies(t *testing.T) {
 			expectedEvents:   []events.ID{events.SharedProbeEventA, events.SharedProbeEventB},
 			expectedKprobes:  []string{"security_bprm_check"},
 		},
+		{
+			name:            "capture_mem requires security_file_mprotect",
+			events:          []events.ID{events.ExecTest}, // Avoid triggering default event set
+			captureConfig:   &config.CaptureConfig{Mem: true, OutputPath: "/tmp/tracee-test"},
+			expectedKprobes: []string{"security_file_mprotect"},
+		},
 	}
 
 	// Each test will run a test binary that triggers the "exec_test" event.
@@ -269,7 +276,7 @@ func Test_EventsDependencies(t *testing.T) {
 			defer closeLogsDone()
 
 			// start tracee
-			trc, err := testutils.StartTracee(ctx, t, testConfig, nil, nil)
+			trc, err := testutils.StartTracee(ctx, t, testConfig, nil, testCaseInst.captureConfig)
 			if err != nil {
 				cancel()
 				t.Fatal(err)
