@@ -14241,8 +14241,8 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"lsm"},
 		fields: []DataField{
-			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "tv_sec"}},
-			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "tv_nsec"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "tv_sec"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "tv_nsec"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "tz_minuteswest"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "tz_dsttime"}},
 		},

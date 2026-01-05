@@ -42,7 +42,8 @@ statfunc struct pipe_inode_info *get_file_pipe_info(struct file *file)
 {
     struct pipe_inode_info *pipe = BPF_CORE_READ(file, private_data);
     char pipe_write_sym[11] = "pipe_write";
-    void *file_write_iter_op = BPF_CORE_READ(file, f_op, write_iter);
+    void *file_write_iter_op = NULL;
+    BPF_CORE_READ_INTO(&file_write_iter_op, file, f_op, write_iter);
 
     if (file_write_iter_op != get_symbol_addr(pipe_write_sym))
         return NULL;
