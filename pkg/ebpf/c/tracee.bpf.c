@@ -5285,14 +5285,18 @@ int BPF_KPROBE(trace_security_settime64)
     const struct timespec64 *ts = (const struct timespec64 *) PT_REGS_PARM1(ctx);
     const struct timezone *tz = (const struct timezone *) PT_REGS_PARM2(ctx);
 
-    u64 tv_sec = BPF_CORE_READ(ts, tv_sec);
-    u64 tv_nsec = BPF_CORE_READ(ts, tv_nsec);
+    s64 tv_sec = 0;
+    long tv_nsec = 0;
+    int tz_minuteswest = 0;
+    int tz_dsttime = 0;
 
-    int tz_minuteswest = BPF_CORE_READ(tz, tz_minuteswest);
-    int tz_dsttime = BPF_CORE_READ(tz, tz_dsttime);
+    BPF_CORE_READ_INTO(&tv_sec, ts, tv_sec);
+    BPF_CORE_READ_INTO(&tv_nsec, ts, tv_nsec);
+    BPF_CORE_READ_INTO(&tz_minuteswest, tz, tz_minuteswest);
+    BPF_CORE_READ_INTO(&tz_dsttime, tz, tz_dsttime);
 
-    save_to_submit_buf(&p.event->args_buf, &tv_sec, sizeof(u64), 0);
-    save_to_submit_buf(&p.event->args_buf, &tv_nsec, sizeof(u64), 1);
+    save_to_submit_buf(&p.event->args_buf, &tv_sec, sizeof(s64), 0);
+    save_to_submit_buf(&p.event->args_buf, &tv_nsec, sizeof(long), 1);
     save_to_submit_buf(&p.event->args_buf, &tz_minuteswest, sizeof(int), 2);
     save_to_submit_buf(&p.event->args_buf, &tz_dsttime, sizeof(int), 3);
 
@@ -5556,7 +5560,8 @@ int BPF_KPROBE(trace_security_task_prctl)
     // Save old securebits for PR_SET_SECUREBITS
     if (option == PR_SET_SECUREBITS) {
         struct task_struct *task = p.event->task;
-        unsigned int old_securebits = BPF_CORE_READ(task, cred, securebits);
+        unsigned int old_securebits = 0;
+        BPF_CORE_READ_INTO(&old_securebits, task, cred, securebits);
         save_to_submit_buf(&p.event->args_buf, &old_securebits, sizeof(old_securebits), 40);
     }
 
