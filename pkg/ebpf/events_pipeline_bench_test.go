@@ -100,7 +100,7 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 				evt.MatchedPoliciesUser = 0
 				evt.MatchedPolicies = []string{}
 				evt.ArgsNum = int(argnum)
-				evt.ReturnValue = int(ctx.Retval)
+				evt.ReturnValue = 0 // Extracted from Args if present
 				evt.Args = args
 				evt.StackAddresses = stackAddresses
 				evt.ContextFlags = flags
@@ -258,7 +258,7 @@ func BenchmarkNewEventObject(b *testing.B) {
 					PoliciesVersion:       ctx.PoliciesVersion,
 					MatchedPoliciesKernel: ctx.MatchedPolicies,
 					ArgsNum:               int(argnum),
-					ReturnValue:           int(ctx.Retval),
+					ReturnValue:           0, // Extracted from Args if present
 					Args:                  args,
 					StackAddresses:        stackAddresses,
 					ContextFlags:          flags,

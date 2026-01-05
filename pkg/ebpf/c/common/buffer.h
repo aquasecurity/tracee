@@ -24,7 +24,7 @@ statfunc int save_str_arr_to_buf(args_buffer_t *, const char __user *const __use
 statfunc int save_args_str_arr_to_buf(args_buffer_t *, const char *, const char *, int, u8);
 statfunc int save_sockaddr_to_buf(args_buffer_t *, struct socket *, bool, u8);
 statfunc int save_args_to_submit_buf(event_data_t *, args_t *);
-statfunc int events_perf_submit(program_data_t *, long);
+statfunc int events_perf_submit(program_data_t *);
 statfunc int signal_perf_submit(void *, controlplane_signal_t *);
 
 // FUNCTIONS
@@ -530,6 +530,23 @@ save_sockaddr_to_buf(args_buffer_t *buf, struct socket *sock, bool local_address
 
 #define DEC_ARG(n, enc_arg) ((enc_arg >> (8 * n)) & 0xFF)
 
+// get_num_fields counts the number of non-NONE_T fields in the field_types bitmap
+// This represents the expected number of arguments for the event (excluding returnValue)
+statfunc u8 get_num_fields(u64 field_types)
+{
+    u8 count = 0;
+
+#pragma unroll
+    for (u8 i = 0; i < 6; i++) {
+        u8 type = DEC_ARG(i, field_types);
+        if (type != NONE_T) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
 // types whose data needs to be directly in type_size_table (arg = (void *) args->args[i])
 #define BITMASK_POINTER_TYPES                                                                      \
     ((u64) 1 << INT_ARR_2_T | (u64) 1 << STR_T | (u64) 1 << SOCKADDR_T | (u64) 1 << TIMESPEC_T)
@@ -677,10 +694,8 @@ statfunc void update_event_stats(u32 event_id, long perf_ret)
 #endif
 }
 
-statfunc int events_perf_submit(program_data_t *p, long ret)
+statfunc int events_perf_submit(program_data_t *p)
 {
-    p->event->context.retval = ret;
-
     // enrich event with task context
     init_task_context(&p->event->context.task, p->event->task, p->config->options);
     // keep task_info updated

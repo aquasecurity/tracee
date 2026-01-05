@@ -45,15 +45,16 @@ type EventContext struct {
 
 	EventID         events.ID // int32
 	Syscall         int32
-	Retval          int64
 	StackID         uint32
 	ProcessorId     uint16
 	PoliciesVersion uint16
 	MatchedPolicies uint64
 }
 
+// GetSizeBytes returns the size of the EventContext struct in bytes.
+// This must match the size of event_context_t in the eBPF code (tracee.bpf.c).
 func (EventContext) GetSizeBytes() int {
-	return 144
+	return 136
 }
 
 type ChunkMeta struct {

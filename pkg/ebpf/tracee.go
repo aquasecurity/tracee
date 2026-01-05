@@ -527,6 +527,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		id := eventDefinition.GetID()
 		fields := eventDefinition.GetFields()
 		for _, field := range fields {
+			// Skip returnValue field - it's not part of syscall arguments captured on entry,
+			// it's added separately on exit in the eBPF code
+			if field.Name == "returnValue" {
+				continue
+			}
 			t.eventDecodeTypes[id] = append(t.eventDecodeTypes[id], field.DecodeAs)
 		}
 	}

@@ -122,8 +122,10 @@ typedef struct net_event_context {
     event_context_t eventctx;
     u8 argnum;
     struct { // event arguments (needs packing), use anonymous struct to ...
-        u8 index0;
-        u32 bytes;
+        u8 index_flags;     // Index 0: position of flags in event arguments array
+        s64 flags;          // Network event flags (8 bytes fixed size)
+        u8 index_payload;   // Index 1: position of payload in event arguments array
+        u32 bytes;          // Size of payload
         // ... (payload sent by bpf_perf_event_output)
     } __attribute__((__packed__)); // ... avoid address-of-packed-member warns
     // members bellow this point are metadata (not part of event to be sent)

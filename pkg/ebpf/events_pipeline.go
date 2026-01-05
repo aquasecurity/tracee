@@ -252,7 +252,10 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.MatchedPoliciesUser = 0
 			evt.MatchedPolicies = []string{}
 			evt.ArgsNum = int(argnum)
-			evt.ReturnValue = int(eCtx.Retval)
+
+			// Extract return value from Args if present (stored as the last argument)
+			evt.ReturnValue = extractReturnValue(args, evt.EventName)
+
 			evt.Args = args
 			evt.StackAddresses = stackAddresses
 			evt.ContextFlags = flags
@@ -912,4 +915,30 @@ func MergeErrors(cs ...<-chan error) <-chan error {
 func (t *Tracee) handleError(err error) {
 	_ = t.stats.ErrorCount.Increment()
 	logger.Errorw("Tracee encountered an error", "error", err)
+}
+
+// extractReturnValue extracts the returnValue argument from event arguments.
+// It expects returnValue to be the last argument with type int64.
+// Returns 0 if not found or if the type is incorrect.
+func extractReturnValue(args []trace.Argument, eventName string) int {
+	if len(args) == 0 {
+		return 0
+	}
+
+	lastArg := args[len(args)-1]
+	if lastArg.Name != "returnValue" {
+		return 0
+	}
+
+	val, ok := lastArg.Value.(int64)
+	if !ok {
+		logger.Warnw("unexpected type for returnValue argument",
+			"event", eventName,
+			"expected", "int64",
+			"actual", fmt.Sprintf("%T", lastArg.Value),
+		)
+		return 0
+	}
+
+	return int(val)
 }
