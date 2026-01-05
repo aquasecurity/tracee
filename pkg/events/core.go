@@ -322,6 +322,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -349,6 +350,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -376,6 +378,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -401,6 +404,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_file_ops"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -427,6 +431,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -453,6 +458,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -479,6 +485,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -506,6 +513,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "fds"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "nfds"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "timeout"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -533,6 +541,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "offset"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "whence"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -563,6 +572,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "off"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -590,6 +600,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "prot"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -616,6 +627,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "length"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -641,6 +653,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -669,6 +682,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "act"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "oldact"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -697,6 +711,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "set"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "oldset"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -720,7 +735,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -747,6 +764,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "request"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -775,6 +793,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "offset"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -803,6 +822,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "offset"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -830,6 +850,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "iov"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "iovcnt"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -857,6 +878,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "iov"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "iovcnt"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -883,6 +905,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "mode"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -908,6 +931,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "ipc", "ipc_pipe"},
 		fields: []DataField{
 			{DecodeAs: data.INT_ARR_2_T, ArgMeta: trace.ArgMeta{Type: "[2]int", Name: "pipefd"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -937,6 +961,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "writefds"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "exceptfds"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "timeout"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -960,7 +985,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -989,6 +1016,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "new_size"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_address"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1016,6 +1044,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "length"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1043,6 +1072,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "length"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "vec"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1070,6 +1100,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "length"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "advice"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1097,6 +1128,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "key"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "shmflg"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1124,6 +1156,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "shmid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "shmaddr"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "shmflg"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1151,6 +1184,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "shmid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1176,6 +1210,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_fd_ops"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "oldfd"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1196,6 +1231,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "oldfd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "newfd"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1213,7 +1249,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -1239,6 +1277,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "req"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "rem"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1265,6 +1304,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "curr_value"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1290,6 +1330,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_timer"},
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "seconds"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1317,6 +1358,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_value"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_value"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1340,7 +1382,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -1368,6 +1412,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "in_fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "offset"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1395,6 +1440,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "domain"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "type"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "protocol"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1422,6 +1468,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sockfd"}},
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "addr"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "addrlen"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1449,6 +1496,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sockfd"}},
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "addr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addrlen"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1479,6 +1527,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "dest_addr"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "addrlen"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1509,6 +1558,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "src_addr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addrlen"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1536,6 +1586,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sockfd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "msg"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1563,6 +1614,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sockfd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "msg"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1589,6 +1641,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sockfd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "how"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1616,6 +1669,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sockfd"}},
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "addr"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "addrlen"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1642,6 +1696,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sockfd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "backlog"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1669,6 +1724,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sockfd"}},
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "addr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addrlen"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1696,6 +1752,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sockfd"}},
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "addr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addrlen"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1724,6 +1781,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "type"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "protocol"}},
 			{DecodeAs: data.INT_ARR_2_T, ArgMeta: trace.ArgMeta{Type: "[2]int", Name: "sv"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1753,6 +1811,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "optname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "optval"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "optlen"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1782,6 +1841,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "optname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "optval"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "optlen"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1811,6 +1871,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "parent_tid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "child_tid"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "tls"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1834,7 +1895,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -1857,7 +1920,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -1884,6 +1949,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.STR_ARR_T, ArgMeta: trace.ArgMeta{Type: "[]string", Name: "argv"}},
 			{DecodeAs: data.STR_ARR_T, ArgMeta: trace.ArgMeta{Type: "[]string", Name: "envp"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1911,6 +1977,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_life"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "status"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1939,6 +2006,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "wstatus"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "options"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rusage"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1965,6 +2033,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sig"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -1990,6 +2059,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "system"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2017,6 +2087,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "key"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "nsems"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "semflg"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2044,6 +2115,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "semid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sops"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "nsops"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2072,6 +2144,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "semnum"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2097,6 +2170,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "ipc", "ipc_shm"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "shmaddr"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2123,6 +2197,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "key"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "msgflg"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2151,6 +2226,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "msgp"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "msgsz"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "msgflg"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2180,6 +2256,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "msgsz"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "msgtyp"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "msgflg"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2207,6 +2284,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "msqid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2234,6 +2312,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2260,6 +2339,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "operation"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2285,6 +2365,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_sync"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2310,6 +2391,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_sync"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2336,6 +2418,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "length"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2362,6 +2445,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "length"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2389,6 +2473,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "dirp"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "count"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2415,6 +2500,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "buf"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2440,6 +2526,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2465,6 +2552,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2491,6 +2579,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "oldpath"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "newpath"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2517,6 +2606,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2542,6 +2632,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2568,6 +2659,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2594,6 +2686,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "oldpath"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "newpath"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2619,6 +2712,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_link_ops"},
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2645,6 +2739,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "target"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "linkpath"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2672,6 +2767,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "buf"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "bufsiz"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2698,6 +2794,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2724,6 +2821,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2751,6 +2849,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "owner"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "group"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2778,6 +2877,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "owner"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "group"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2805,6 +2905,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "owner"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "group"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2830,6 +2931,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "mask"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2856,6 +2958,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tv"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tz"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2882,6 +2985,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "resource"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rlim"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2908,6 +3012,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "who"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "usage"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2933,6 +3038,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "system"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "info"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2958,6 +3064,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -2986,6 +3093,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "data"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3003,7 +3111,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -3030,6 +3140,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "type"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "bufp"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "len"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3053,7 +3164,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -3078,6 +3191,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "uid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3103,6 +3217,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "gid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3126,7 +3241,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -3149,7 +3266,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -3175,6 +3294,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pgid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3198,7 +3318,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -3221,7 +3343,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -3244,7 +3368,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -3270,6 +3396,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "ruid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "euid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3296,6 +3423,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "rgid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "egid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3322,6 +3450,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "size"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "list"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3348,6 +3477,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "size"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "list"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3375,6 +3505,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "ruid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "euid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "suid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3402,6 +3533,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ruid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "euid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "suid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3429,6 +3561,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "rgid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "egid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sgid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3456,6 +3589,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rgid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "egid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sgid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3481,6 +3615,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3506,6 +3641,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fsuid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3531,6 +3667,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fsgid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3556,6 +3693,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3582,6 +3720,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "hdrp"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "datap"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3608,6 +3747,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "hdrp"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "datap"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3634,6 +3774,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "set"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3662,6 +3803,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "info"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3689,6 +3831,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "tgid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sig"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "info"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3715,6 +3858,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mask"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3741,6 +3885,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ss"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_ss"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3767,6 +3912,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "times"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3794,6 +3940,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "dev"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3819,6 +3966,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc"},
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "library"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3844,6 +3992,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "system"},
 		fields: []DataField{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "persona"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3870,6 +4019,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "dev"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ubuf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3896,6 +4046,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3922,6 +4073,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3947,6 +4099,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_info"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "option"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -3973,6 +4126,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "who"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4000,6 +4154,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "who"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "prio"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4026,6 +4181,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "param"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4052,6 +4208,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "param"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4079,6 +4236,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "policy"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "param"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4104,6 +4262,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_sched"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4129,6 +4288,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_sched"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "policy"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4154,6 +4314,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_sched"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "policy"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4180,6 +4341,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "tp"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4206,6 +4368,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4232,6 +4395,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4257,6 +4421,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4280,7 +4445,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -4303,7 +4470,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -4330,6 +4499,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "func"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ptr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "bytecount"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4356,6 +4526,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "new_root"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "put_old"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4381,6 +4552,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "system"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "args"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4410,6 +4582,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg3"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg4"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg5"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4436,6 +4609,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "option"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "addr"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4455,6 +4629,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_clock"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4481,6 +4656,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "resource"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rlim"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4506,6 +4682,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4529,7 +4706,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_sync"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -4554,6 +4733,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "system"},
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4580,6 +4760,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tv"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tz"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4609,6 +4790,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filesystemtype"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "mountflags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "data"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4635,6 +4817,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "target"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4661,6 +4844,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "swapflags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4686,6 +4870,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs"},
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4714,6 +4899,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "magic2"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "arg"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4740,6 +4926,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4766,6 +4953,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4791,6 +4979,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "system"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "level"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4818,6 +5007,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "from"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "num"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "turn_on"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4841,7 +5031,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -4868,6 +5060,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "module_image"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "param_values"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4894,6 +5087,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4917,7 +5111,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -4940,7 +5136,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -4968,6 +5166,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "special"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "id"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -4991,7 +5190,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -5014,7 +5215,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -5037,7 +5240,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -5060,7 +5265,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -5083,7 +5290,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -5106,7 +5315,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -5129,7 +5340,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -5156,6 +5369,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "offset"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5185,6 +5399,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "value"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5214,6 +5429,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "value"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5243,6 +5459,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "value"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5271,6 +5488,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "value"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5299,6 +5517,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "value"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5327,6 +5546,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "value"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5354,6 +5574,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "list"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5381,6 +5602,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "list"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5408,6 +5630,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "list"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5434,6 +5657,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5460,6 +5684,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5486,6 +5711,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5512,6 +5738,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "tid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sig"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5537,6 +5764,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_tod"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tloc"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5567,6 +5795,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uaddr2"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "val3"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5594,6 +5823,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "cpusetsize"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mask"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5621,6 +5851,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "cpusetsize"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mask"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5646,6 +5877,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "u_info"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5672,6 +5904,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "nr_events"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ctx_idp"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5697,6 +5930,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_async_io"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ctx_id"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5726,6 +5960,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "nr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "events"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5753,6 +5988,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ctx_id"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "nr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "iocbpp"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5780,6 +6016,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ctx_id"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "iocb"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "result"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5805,6 +6042,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "u_info"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5832,6 +6070,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "cookie"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "buffer"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5857,6 +6096,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "size"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5880,7 +6120,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -5903,7 +6145,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -5932,6 +6176,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "prot"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pgoff"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5959,6 +6204,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "dirp"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "count"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -5984,6 +6230,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tidptr"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6007,7 +6254,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -6035,6 +6284,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sops"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "nsops"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6063,6 +6313,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "offset"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "advice"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6090,6 +6341,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sevp"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "timer_id"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6118,6 +6370,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_value"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_value"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6144,6 +6397,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "timer_id"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "curr_value"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6169,6 +6423,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_timer"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "timer_id"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6194,6 +6449,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "time", "time_timer"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "timer_id"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6220,6 +6476,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "tp"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6246,6 +6503,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "tp"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6272,6 +6530,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "res"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6300,6 +6559,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "request"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "remain"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6325,6 +6585,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_life"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "status"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6353,6 +6614,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "events"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "maxevents"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "timeout"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6381,6 +6643,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "op"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "event"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6408,6 +6671,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "tgid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "tid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sig"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6434,6 +6698,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "times"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6457,7 +6722,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -6487,6 +6754,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "nodemask"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "maxnode"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6514,6 +6782,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "mode"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "nodemask"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "maxnode"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6543,6 +6812,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "maxnode"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6571,6 +6841,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "oflag"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "attr"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6596,6 +6867,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6625,6 +6897,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "msg_len"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "msg_prio"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "abs_timeout"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6654,6 +6927,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "msg_len"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "msg_prio"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "abs_timeout"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6680,6 +6954,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "mqdes"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sevp"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6707,6 +6982,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "mqdes"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "newattr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "oldattr"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6735,6 +7011,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "nr_segments"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "segments"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6764,6 +7041,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "infop"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "options"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rusage"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6793,6 +7071,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "payload"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "plen"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "keyring"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6821,6 +7100,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "description"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "callout_info"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dest_keyring"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6850,6 +7130,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg3"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg4"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg5"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6877,6 +7158,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "who"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "ioprio"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6903,6 +7185,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "who"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6926,7 +7209,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_monitor"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -6953,6 +7238,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "mask"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -6979,6 +7265,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "wd"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7007,6 +7294,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "maxnode"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_nodes"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_nodes"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7035,6 +7323,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7062,6 +7351,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dirfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7090,6 +7380,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "dev"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7119,6 +7410,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "owner"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "group"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7146,6 +7438,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dirfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "times"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7174,6 +7467,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7201,6 +7495,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dirfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7229,6 +7524,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "oldpath"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "newdirfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "newpath"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7258,6 +7554,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "newdirfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "newpath"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7285,6 +7582,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "target"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "newdirfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "linkpath"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7313,6 +7611,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "buf"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "bufsiz"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7341,6 +7640,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7369,6 +7669,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "mode"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7399,6 +7700,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "exceptfds"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sigmask"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7428,6 +7730,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "tmo_p"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sigmask"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7453,6 +7756,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7479,6 +7783,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "head"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7506,6 +7811,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "head_ptr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "len_ptr"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7536,6 +7842,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "off_out"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7564,6 +7871,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd_out"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7592,6 +7900,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "offset"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "nbytes"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7620,6 +7929,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "iov"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "nr_segs"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7650,6 +7960,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "nodes"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "status"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7678,6 +7989,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "times"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7708,6 +8020,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "timeout"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sigmask"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7735,6 +8048,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mask"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7761,6 +8075,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7787,6 +8102,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "initval"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7815,6 +8131,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "mode"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "offset"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "len"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7843,6 +8160,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_value"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_value"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7869,6 +8187,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "curr_value"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7897,6 +8216,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.SOCK_ADDR_T, ArgMeta: trace.ArgMeta{Type: "SockAddr", Name: "addr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addrlen"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7925,6 +8245,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mask"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sizemask"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7951,6 +8272,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "initval"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -7976,6 +8298,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8003,6 +8326,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "oldfd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "newfd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8023,6 +8347,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_ARR_2_T, ArgMeta: trace.ArgMeta{Type: "[2]int", Name: "pipefd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8048,6 +8373,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_monitor"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8077,6 +8403,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "iovcnt"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_l"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_h"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8106,6 +8433,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "iovcnt"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_l"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_h"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8134,6 +8462,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "tid"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sig"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "info"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8163,6 +8492,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cpu"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "group_fd"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8192,6 +8522,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "vlen"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8218,6 +8549,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "event_f_flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8247,6 +8579,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "mask"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dirfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8275,6 +8608,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "resource"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new_limit"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old_limit"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8304,6 +8638,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "handle"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mount_id"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8331,6 +8666,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "mount_fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "handle"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8357,6 +8693,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clk_id"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8382,6 +8719,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_sync"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8410,6 +8748,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "msgvec"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "vlen"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8436,6 +8775,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "nstype"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8463,6 +8803,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "cpu"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "node"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tcache"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8493,6 +8834,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "remote_iov"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "riovcnt"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8523,6 +8865,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "remote_iov"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "riovcnt"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8546,6 +8889,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "type"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "idx1"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "idx2"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8573,6 +8917,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "param_values"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8600,6 +8945,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "attr"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8628,6 +8974,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "attr"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "size"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8657,6 +9004,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "newdirfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "newpath"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8684,6 +9032,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "operation"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "args"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8711,6 +9060,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "buflen"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8737,6 +9087,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8766,6 +9117,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "cmdline_len"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "cmdline"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8793,6 +9145,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "attr"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "size"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8822,6 +9175,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_ARR_T, ArgMeta: trace.ArgMeta{Type: "[]string", Name: "argv"}},
 			{DecodeAs: data.STR_ARR_T, ArgMeta: trace.ArgMeta{Type: "[]string", Name: "envp"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8849,6 +9203,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "system"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8875,6 +9230,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8902,6 +9258,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8932,6 +9289,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "off_out"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8962,6 +9320,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_l"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_h"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -8992,6 +9351,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_l"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pos_h"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9020,6 +9380,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "prot"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pkey"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9046,6 +9407,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "access_rights"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9071,6 +9433,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pkey"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9100,6 +9463,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "mask"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statxbuf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9130,6 +9494,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "events"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "usig"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9158,6 +9523,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "rseq_len"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "sig"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9186,6 +9552,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sig"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "info"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9212,6 +9579,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "entries"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "p"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9241,6 +9609,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "min_complete"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sig"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9269,6 +9638,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "opcode"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "arg"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "nr_args"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9296,6 +9666,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9325,6 +9696,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "to_dfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "to_path"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9351,6 +9723,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "fsname"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9380,6 +9753,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "key"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "value"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "aux"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9407,6 +9781,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fsfd"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "ms_flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9434,6 +9809,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dirfd"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9460,6 +9836,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9486,6 +9863,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "cl_args"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9512,6 +9890,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "first"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "last"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9540,6 +9919,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "how"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9567,6 +9947,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pidfd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "targetfd"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9595,6 +9976,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "mode"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flag"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9624,6 +10006,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "length"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "advice"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9653,6 +10036,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "maxevents"}},
 			{DecodeAs: data.TIMESPEC_T, ArgMeta: trace.ArgMeta{Type: "float64", Name: "timeout"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sigset"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9682,6 +10066,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uattr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "usize"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9710,6 +10095,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "cmd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "id"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "addr"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9737,6 +10123,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "attr"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9765,6 +10152,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "rule_type"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rule_attr"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9791,6 +10179,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "ruleset_fd"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9816,6 +10205,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls"},
 		fields: []DataField{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9842,6 +10232,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pidfd"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9869,6 +10260,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "status"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "options"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9892,7 +10284,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -9915,7 +10309,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -9941,6 +10337,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9966,6 +10363,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "target"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -9991,6 +10389,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "t"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10014,7 +10413,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10037,7 +10438,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10062,6 +10465,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "inc"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10085,7 +10489,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10108,7 +10514,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10134,6 +10542,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "signum"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "handler"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10157,7 +10566,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10180,7 +10591,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10203,7 +10616,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10228,6 +10643,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "name"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10255,6 +10671,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "sig"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "act"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "oact"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10278,7 +10695,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10303,6 +10722,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []DataField{
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "newmask"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10328,6 +10748,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mask"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10353,6 +10774,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "set"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10379,6 +10801,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10406,6 +10829,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "dirp"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "count"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10429,7 +10853,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10455,6 +10881,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "call"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "args"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10480,6 +10907,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10503,7 +10931,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10528,6 +10958,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []DataField{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "info"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10558,6 +10989,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "third"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ptr"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "fifth"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10581,7 +11013,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10608,6 +11042,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "how"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "set"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "oldset"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10631,7 +11066,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10654,7 +11091,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10683,6 +11122,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "offset_low"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "result"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "whence"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10712,6 +11152,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "writefds"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "exceptfds"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "timeout"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10738,6 +11179,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "fn"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "v86"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10764,6 +11206,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "resource"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rlim"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10794,6 +11237,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "fd"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "pgoffset"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10820,6 +11264,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "length"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10846,6 +11291,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "length"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10872,6 +11318,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10898,6 +11345,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10924,6 +11372,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "statbuf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10951,6 +11400,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "owner"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "group"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -10974,7 +11424,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -10997,7 +11449,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -11020,7 +11474,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -11043,7 +11499,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -11069,6 +11527,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "ruid"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "euid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11095,6 +11554,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "rgid"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "egid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11121,6 +11581,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "size"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "list"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11147,6 +11608,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "list"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11174,6 +11636,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "fd"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "user"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "group"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11201,6 +11664,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "ruid"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "euid"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "suid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11228,6 +11692,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ruid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "euid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "suid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11255,6 +11720,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "rgid"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "euid"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "suid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11282,6 +11748,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rgid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "egid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sgid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11309,6 +11776,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "owner"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "group"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11334,6 +11802,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []DataField{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "uid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11359,6 +11828,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []DataField{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "gid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11384,6 +11854,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []DataField{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "fsuid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11409,6 +11880,7 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		fields: []DataField{
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "fsgid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11436,6 +11908,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "cmd"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "arg"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11464,6 +11937,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "in_fd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "offset"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11491,6 +11965,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "path"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sz"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11518,6 +11993,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sz"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11546,6 +12022,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "offset"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "advice"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11572,6 +12049,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which_clock"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tp"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11598,6 +12076,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which_clock"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tp"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11621,7 +12100,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -11647,6 +12128,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "which_clock"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tp"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11675,6 +12157,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rqtp"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "rmtp"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11701,6 +12184,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "timer_id"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "setting"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11729,6 +12213,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "new"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "old"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11755,6 +12240,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "ufd"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "otmr"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11783,6 +12269,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "utmr"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "otmr"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11811,6 +12298,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "t"}},
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11841,6 +12329,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "exp"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tsp"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sig"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11870,6 +12359,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "tsp"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "sigmask"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11893,7 +12383,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
-		fields:  []DataField{},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
 				probes: []Probe{
@@ -11922,6 +12414,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "vlen"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "timeout"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11951,6 +12444,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "msg_len"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "msg_prio"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "u_abs_timeout"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -11980,6 +12474,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "msg_len"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "u_msg_prio"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "u_abs_timeout"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -12008,6 +12503,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uinfo"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uts"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "sigsetsize"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -12038,6 +12534,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "utime"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uaddr2"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "val3"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -12064,6 +12561,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "pid"}},
 			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "interval"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -12261,8 +12759,10 @@ var CoreEvents = map[ID]Definition{
 				probes: []Probe{{handle: probes.DoExit, required: true}},
 			},
 		},
-		sets:   []string{"proc", "proc_life"},
-		fields: []DataField{},
+		sets: []string{"proc", "proc_life"},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
 	},
 	CapCapable: {
 		id:      CapCapable,
@@ -12301,6 +12801,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "inode"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "pos"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 	},
 	VfsWritev: {
@@ -12323,6 +12824,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "inode"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "vlen"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "pos"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 	},
 	MemProtAlert: {
@@ -12415,6 +12917,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "bytes"}},
 			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "dev"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "inode"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 	},
 	CgroupAttachTask: {
@@ -13569,6 +14072,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "version"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "src_version"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 	},
 	ModuleLoad: {
@@ -13910,6 +14414,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "inode"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "count"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "pos"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 	},
 	VfsReadv: {
@@ -13932,6 +14437,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "inode"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "vlen"}},
 			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "pos"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 	},
 	VfsUtimes: {
@@ -14083,6 +14589,7 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "kernel_invoked"}},
 			{DecodeAs: data.STR_ARR_T, ArgMeta: trace.ArgMeta{Type: "[]string", Name: "argv"}},
 			{DecodeAs: data.STR_ARR_T, ArgMeta: trace.ArgMeta{Type: "[]string", Name: "envp"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 	},
 	ProcessExecuteFailedInternal: {
@@ -14257,6 +14764,7 @@ var CoreEvents = map[ID]Definition{
 		fields: []DataField{
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
 			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 		dependencies: DependencyStrategy{
 			primary: Dependencies{
@@ -14562,8 +15070,7 @@ var CoreEvents = map[ID]Definition{
 				},
 			},
 		},
-		sets:   []string{"network_events"},
-		fields: []DataField{},
+		sets: []string{"network_events"},
 	},
 	NetPacketRaw: {
 		id:      NetPacketRaw,
@@ -14597,6 +15104,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"network_events"},
 		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "flags"}},
 			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "payload"}},
 		},
 	},
@@ -14655,6 +15163,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"network_events"},
 		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "flags"}},
 			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "payload"}},
 		},
 	},
@@ -14695,6 +15204,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"network_events"},
 		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "flags"}},
 			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "payload"}},
 		},
 	},
@@ -14735,6 +15245,7 @@ var CoreEvents = map[ID]Definition{
 		internal: true,
 		sets:     []string{"network_events"},
 		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "flags"}},
 			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "payload"}},
 		},
 	},
@@ -14773,6 +15284,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"network_events"},
 		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "flags"}},
 			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "payload"}},
 		},
 	},
@@ -14811,6 +15323,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"network_events"},
 		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "flags"}},
 			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "payload"}},
 		},
 	},
@@ -14887,6 +15400,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"network_events"},
 		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "flags"}},
 			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "payload"}},
 		},
 	},
@@ -14962,6 +15476,7 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "flags"}},
 			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "payload"}},
 		},
 	},
@@ -14994,6 +15509,7 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"network_events"},
 		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "flags"}},
 			{DecodeAs: data.BYTES_T, ArgMeta: trace.ArgMeta{Type: "[]byte", Name: "payload"}},
 		},
 	},

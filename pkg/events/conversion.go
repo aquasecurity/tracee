@@ -316,17 +316,6 @@ func getEventData(e trace.Event) ([]*pb.EventValue, error) {
 		data = append(data, eventValue)
 	}
 
-	// Add return value for syscalls
-	def := Core.GetDefinitionByID(ID(e.EventID))
-	if def.IsSyscall() {
-		data = append(data, &pb.EventValue{
-			Name: "returnValue",
-			Value: &pb.EventValue_Int64{
-				Int64: int64(e.ReturnValue),
-			},
-		})
-	}
-
 	return data, nil
 }
 

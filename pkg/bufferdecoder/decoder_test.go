@@ -37,7 +37,6 @@ func TestDecodeContext(t *testing.T) {
 		ParentStartTime: 1221,
 		EventID:         5,
 		Syscall:         0,
-		Retval:          0,
 		StackID:         0,
 		ProcessorId:     5,
 		PoliciesVersion: 11,
@@ -517,7 +516,6 @@ func BenchmarkDecodeContext(*testing.B) {
 			Comm:        [16]byte{1, 3, 5, 3, 1, 5, 56, 6, 7, 32, 2, 4},
 			UtsName:     [16]byte{5, 6, 7, 8, 9, 4, 3, 2},
 			EventID:     654,
-			Retval:      6543,
 			StackID:     6,
 			Argnum:      234,
 		}
@@ -553,7 +551,6 @@ func BenchmarkBinaryContext(*testing.B) {
 			Comm:     [16]byte{1, 3, 5, 3, 1, 5, 56, 6, 7, 32, 2, 4},
 			UtsName:  [16]byte{5, 6, 7, 8, 9, 4, 3, 2},
 			EventID:  654,
-			Retval:   6543,
 			StackID:  6,
 			Argnum:   234,
 		}

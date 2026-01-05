@@ -31,7 +31,6 @@ typedef struct event_context {
     task_context_t task;
     u32 eventid;
     s32 syscall; // syscall that triggered the event
-    s64 retval;
     u32 stack_id;
     u16 processor_id; // ID of the processor that processed the event
     u16 policies_version;

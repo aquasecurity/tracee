@@ -41,8 +41,10 @@
             return 0;                                                                              \
                                                                                                    \
         save_args_to_submit_buf(p.event, &args);                                                   \
-                                                                                                   \
-        return events_perf_submit(&p, PT_REGS_RC(ctx));                                            \
+        long ret = PT_REGS_RC(ctx);                                                                \
+        u8 ret_index = get_num_fields(p.event->config.field_types);                                \
+        save_to_submit_buf(&p.event->args_buf, (void *) &ret, sizeof(long), ret_index);            \
+        return events_perf_submit(&p);                                                             \
     }
 
 #define TRACE_FUNC(name, id)                                                                       \
@@ -208,7 +210,9 @@ get_syscall_args(struct task_struct *task, struct pt_regs *sys_regs, syscall_dat
                                                                                                    \
         save_args_to_submit_buf(p.event, &sys->args);                                              \
         p.event->context.ts = sys->ts;                                                             \
-        events_perf_submit(&p, sys->ret);                                                          \
+        u8 ret_index = get_num_fields(p.event->config.field_types);                                \
+        save_to_submit_buf(&p.event->args_buf, (void *) &sys->ret, sizeof(long), ret_index);       \
+        events_perf_submit(&p);                                                                    \
                                                                                                    \
     out:                                                                                           \
         bpf_tail_call(ctx, &generic_sys_exit_tails, _id);                                          \

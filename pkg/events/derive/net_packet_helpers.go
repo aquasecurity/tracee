@@ -122,12 +122,25 @@ func swapSrcDst(s, d net.IP, sp, dp uint16) (net.IP, net.IP, uint16, uint16) {
 // revive:enable:confusing-results
 // revive:enable:function-result-limit
 
+// getFlagsFromEvent extracts the flags argument from a network event.
+func getFlagsFromEvent(event *trace.Event) int {
+	for i := range event.Args {
+		if event.Args[i].Name == "flags" {
+			if val, ok := event.Args[i].Value.(int64); ok {
+				return int(val)
+			}
+		}
+	}
+	return 0
+}
+
 // getPacketDirection returns the packet direction from the event.
 func getPacketDirection(event *trace.Event) trace.PacketDirection {
+	flags := getFlagsFromEvent(event)
 	switch {
-	case event.ReturnValue&packetIngress == packetIngress:
+	case flags&packetIngress == packetIngress:
 		return trace.PacketIngress
-	case event.ReturnValue&packetEgress == packetEgress:
+	case flags&packetEgress == packetEgress:
 		return trace.PacketEgress
 	}
 	return trace.InvalidPacketDirection
@@ -135,10 +148,11 @@ func getPacketDirection(event *trace.Event) trace.PacketDirection {
 
 // getPacketHTTPDirection returns the packet HTTP direction from the event.
 func getPacketHTTPDirection(event *trace.Event) int {
+	flags := getFlagsFromEvent(event)
 	switch {
-	case event.ReturnValue&protoHTTPRequest == protoHTTPRequest:
+	case flags&protoHTTPRequest == protoHTTPRequest:
 		return protoHTTPRequest
-	case event.ReturnValue&protoHTTPResponse == protoHTTPResponse:
+	case flags&protoHTTPResponse == protoHTTPResponse:
 		return protoHTTPResponse
 	}
 	return 0
@@ -274,10 +288,12 @@ func getLayer3TypeFromFlag(layer3TypeFlag int) (gopacket.LayerType, error) {
 
 // getLayer3TypeFlagFromEvent returns the layer 3 protocol type from a given event.
 func getLayer3TypeFlagFromEvent(event *trace.Event) (int, error) {
+	flags := getFlagsFromEvent(event)
+
 	switch {
-	case event.ReturnValue&familyIPv4 == familyIPv4:
+	case flags&familyIPv4 == familyIPv4:
 		return familyIPv4, nil
-	case event.ReturnValue&familyIPv6 == familyIPv6:
+	case flags&familyIPv6 == familyIPv6:
 		return familyIPv6, nil
 	}
 	return 0, errors.New("wrong layer 3 ret value flag")
