@@ -113,6 +113,79 @@ func (m *Manager) GetContainerByName(name string) (*datastores.ContainerInfo, er
 	return convertContainer(foundCont), nil
 }
 
+// ListContainers returns currently running containers, optionally filtered
+func (m *Manager) ListContainers(opts ...datastores.ContainerFilterOption) ([]*datastores.ContainerInfo, error) {
+	m.lastAccessNano.Store(time.Now().UnixNano())
+
+	// Build filter from options
+	filter := m.buildFilter(opts...)
+
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+
+	// Pre-allocate slice with estimated capacity
+	liveContainers := make([]*datastores.ContainerInfo, 0, len(m.containerMap))
+
+	// Iterate through cgroup map to find container roots (same logic as GetLiveContainers)
+	for _, cgroupDir := range m.cgroupsMap {
+		// Only include live container roots
+		if !cgroupDir.ContainerRoot || !cgroupDir.expiresAt.IsZero() {
+			continue
+		}
+
+		container, ok := m.containerMap[cgroupDir.ContainerId]
+		if !ok {
+			continue
+		}
+
+		// Apply filter
+		if !matchesFilter(&container, filter) {
+			continue
+		}
+
+		liveContainers = append(liveContainers, convertContainer(&container))
+	}
+
+	return liveContainers, nil
+}
+
+// buildFilter constructs a filter from functional options
+func (m *Manager) buildFilter(opts ...datastores.ContainerFilterOption) *datastores.ContainerFilter {
+	filter := &datastores.ContainerFilter{}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(filter)
+		}
+	}
+	return filter
+}
+
+// matchesFilter checks if a container matches the given filter criteria
+// Returns true if all specified criteria match
+func matchesFilter(container *Container, filter *datastores.ContainerFilter) bool {
+	// If filter is nil or empty, return true (no filtering)
+	if filter == nil {
+		return true
+	}
+
+	// Check name filter
+	if filter.Name != nil && container.Name != *filter.Name {
+		return false
+	}
+
+	// Check image filter
+	if filter.Image != nil && container.Image != *filter.Image {
+		return false
+	}
+
+	// Check runtime filter
+	if filter.Runtime != nil && container.Runtime.String() != *filter.Runtime {
+		return false
+	}
+
+	return true
+}
+
 // convertContainer converts internal Container to public ContainerInfo
 func convertContainer(cont *Container) *datastores.ContainerInfo {
 	var podInfo *datastores.K8sPodInfo

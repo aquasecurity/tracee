@@ -69,6 +69,10 @@ func (n *nullContainerStore) GetContainerByName(name string) (*datastores.Contai
 	return nil, datastores.ErrStoreUnhealthy
 }
 
+func (n *nullContainerStore) ListContainers(opts ...datastores.ContainerFilterOption) ([]*datastores.ContainerInfo, error) {
+	return nil, datastores.ErrStoreUnhealthy
+}
+
 // nullKernelSymbolStore implements KernelSymbolStore with all operations returning ErrStoreUnhealthy
 type nullKernelSymbolStore struct{}
 

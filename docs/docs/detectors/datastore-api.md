@@ -485,6 +485,19 @@ type ContainerStore interface {
     // GetContainerByName retrieves container by name
     // Returns ErrNotFound if not found
     GetContainerByName(name string) (*ContainerInfo, error)
+
+    // ListContainers returns currently running containers, optionally filtered
+    // Pass nil filter to return all containers
+    // Returns empty slice if no containers match the filter
+    ListContainers(filter *ContainerFilter) ([]*ContainerInfo, error)
+}
+
+// ContainerFilter allows filtering containers by various criteria
+// All fields are optional - nil values mean the field is not used for filtering
+type ContainerFilter struct {
+    Name    *string  // Filter by container name (exact match)
+    Image   *string  // Filter by image name (exact match)
+    Runtime *string  // Filter by runtime (e.g., "docker", "containerd")
 }
 ```
 {% endraw %}
@@ -624,12 +637,81 @@ if err != nil {
     return nil, fmt.Errorf("failed to get container: %w", err)
 }
 
-d.logger.Infow("Found container by name",
-    "name", container.Name,
-    "id", container.ID,
-    "image", container.Image)
+d.logger.Infow("Found container", "id", container.ID, "image", container.Image)
 ```
 {% endraw %}
+
+#### ListContainers
+
+List all currently running containers, with optional filtering by name, image, or runtime using functional options.
+
+**Signature**:
+{% raw %}
+```go
+ListContainers(opts ...ContainerFilterOption) ([]*ContainerInfo, error)
+```
+{% endraw %}
+
+**Filter Options**:
+
+- `WithName(name string)`: Filter by exact container name match
+- `WithImage(image string)`: Filter by exact image name match
+- `WithRuntime(runtime string)`: Filter by runtime type ("docker", "containerd", "crio", "podman")
+
+**Returns**:
+
+- `[]*ContainerInfo`: Slice of containers matching the filter (empty if none found)
+- `error`: Error if the operation fails (never returns `ErrNotFound`)
+
+**Use Cases**:
+
+- Container discovery at startup
+- Periodic container inventory
+- Finding all containers running a specific image
+- Filtering containers by runtime type
+
+**Examples**:
+
+{% raw %}
+```go
+// List all containers (no filter)
+containers, err := d.dataStores.Containers().ListContainers()
+if err != nil {
+    return fmt.Errorf("failed to list containers: %w", err)
+}
+
+// Filter by image
+nginxContainers, err := d.dataStores.Containers().ListContainers(
+    datastores.WithImage("nginx:latest"),
+)
+
+// Filter by multiple criteria (AND logic)
+containers, err = d.dataStores.Containers().ListContainers(
+    datastores.WithImage("redis:7"),
+    datastores.WithRuntime("docker"),
+)
+
+// Discover containers at detector initialization
+func (d *MyDetector) Init(params detection.DetectorParams) error {
+    containers, err := params.DataStores.Containers().ListContainers()
+    if err != nil {
+        return fmt.Errorf("failed to discover containers: %w", err)
+    }
+    // Initialize state based on existing containers
+    for _, c := range containers {
+        d.trackContainer(c)
+    }
+    return nil
+}
+```
+{% endraw %}
+
+**Notes**:
+
+- Pass `nil` filter to list all containers
+- All filters use AND logic (must match all specified criteria)
+- Returns only live, running containers (excludes expired/dead)
+- Cleaner alternative to buffering `existing_container` events
 
 ---
 

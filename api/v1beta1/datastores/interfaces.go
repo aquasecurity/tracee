@@ -60,6 +60,37 @@ type ProcessStore interface {
 	GetAncestry(entityId uint32, maxDepth int) ([]*ProcessInfo, error)
 }
 
+// ContainerFilterOption is a functional option for filtering containers
+type ContainerFilterOption func(*ContainerFilter)
+
+// ContainerFilter holds the internal filter criteria
+type ContainerFilter struct {
+	Name    *string
+	Image   *string
+	Runtime *string
+}
+
+// WithName filters containers by name (exact match)
+func WithName(name string) ContainerFilterOption {
+	return func(f *ContainerFilter) {
+		f.Name = &name
+	}
+}
+
+// WithImage filters containers by image (exact match)
+func WithImage(image string) ContainerFilterOption {
+	return func(f *ContainerFilter) {
+		f.Image = &image
+	}
+}
+
+// WithRuntime filters containers by runtime (e.g., "docker", "containerd")
+func WithRuntime(runtime string) ContainerFilterOption {
+	return func(f *ContainerFilter) {
+		f.Runtime = &runtime
+	}
+}
+
 // ContainerStore provides access to container information
 type ContainerStore interface {
 	DataStore
@@ -71,6 +102,15 @@ type ContainerStore interface {
 	// GetContainerByName retrieves container information by container name
 	// Returns ErrNotFound if no container with that name is found
 	GetContainerByName(name string) (*ContainerInfo, error)
+
+	// ListContainers returns currently running containers, optionally filtered
+	// Examples:
+	//   containers, err := store.ListContainers()                                 // All containers
+	//   containers, err := store.ListContainers(WithName("nginx"))                // Filter by name
+	//   containers, err := store.ListContainers(WithImage("nginx:latest"), WithRuntime("docker"))
+	// Returns empty slice if no containers match the filter
+	// This is useful for discovery at startup or periodic inventory
+	ListContainers(opts ...ContainerFilterOption) ([]*ContainerInfo, error)
 }
 
 // KernelSymbolStore provides access to kernel symbol information
