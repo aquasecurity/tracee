@@ -63,6 +63,10 @@ func (m *mockContainerStore) GetContainerByName(name string) (*datastores.Contai
 	return nil, datastores.ErrNotFound
 }
 
+func (m *mockContainerStore) ListContainers(opts ...datastores.ContainerFilterOption) ([]*datastores.ContainerInfo, error) {
+	return []*datastores.ContainerInfo{}, nil
+}
+
 func TestRegistry_RegisterStore(t *testing.T) {
 	t.Run("RegisterStore_Success", func(t *testing.T) {
 		reg := NewRegistry()
