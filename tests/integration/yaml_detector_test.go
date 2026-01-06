@@ -14,6 +14,7 @@ import (
 	"go.uber.org/goleak"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/detectors"
 	yamldetectors "github.com/aquasecurity/tracee/pkg/detectors/yaml"
@@ -44,12 +45,8 @@ func createTempYAMLDetector(t *testing.T, yamlDir, filename, content string) {
 // startTraceeWithYAMLDetectors starts Tracee with YAML detector directory configured
 func startTraceeWithYAMLDetectors(ctx context.Context, t *testing.T, yamlDir string) (*tracee.Tracee, *testutils.EventBuffer, *streams.Stream) {
 	// Load YAML detectors from test directory
-	yamlDets, errors := yamldetectors.LoadFromDirectories([]string{yamlDir})
-	if len(errors) > 0 {
-		for _, err := range errors {
-			t.Logf("Warning: Failed to load YAML detector: %v", err)
-		}
-	}
+	yamlDets, _ := yamldetectors.LoadFromDirectories([]string{yamlDir})
+	// Errors are expected in error handling tests and suppressed via logger setup
 
 	// Allocate unique event IDs for this test to avoid conflicts in global events.Core
 	// Each test gets its own range of IDs
@@ -238,7 +235,6 @@ output:
 	}
 
 	assert.True(t, found, "YAML detector yaml-test-001 should be loaded")
-	t.Log("Successfully loaded YAML detector yaml-test-001")
 }
 
 // Test_YAMLDetectorEventGeneration tests that a YAML detector produces events with correct field extraction
@@ -299,8 +295,6 @@ output:
 		}
 	}()
 
-	t.Log("Tracee started, triggering detection...")
-
 	// Trigger the detector by executing /usr/bin/true
 	cmd := exec.Command("/usr/bin/true")
 	err := cmd.Run()
@@ -309,8 +303,6 @@ output:
 	// Wait for the detector event
 	evt := waitForDetectorEvent(buf, "test_event_generation", 5*time.Second)
 	require.NotNil(t, evt, "Expected test_event_generation event not found")
-
-	t.Logf("Found event: %s", evt.Name)
 
 	// Verify extracted fields
 	binaryPath := getArgValue(evt, "binary_path")
@@ -324,8 +316,6 @@ output:
 	pid := getArgValue(evt, "pid")
 	assert.NotNil(t, pid, "pid should be extracted")
 	assert.Greater(t, pid, uint32(0), "pid should be greater than 0")
-
-	t.Logf("Field extraction verified: binary_path=%v, binary_name=%v, pid=%v", binaryPath, binaryName, pid)
 }
 
 // Test_YAMLDetectorChaining tests that YAML detectors can consume events from other YAML detectors
@@ -419,8 +409,6 @@ output:
 		}
 	}()
 
-	t.Log("Tracee started with chained detectors, triggering detection...")
-
 	// Trigger the detector chain by executing /usr/bin/id
 	cmd := exec.Command("/usr/bin/id")
 	err := cmd.Run()
@@ -429,11 +417,9 @@ output:
 	// Wait for both level 1 and level 2 events
 	level1Evt := waitForDetectorEvent(buf, "test_exec_detected", 5*time.Second)
 	require.NotNil(t, level1Evt, "Expected level 1 event test_exec_detected not found")
-	t.Logf("Found level 1 event: %s", level1Evt.Name)
 
 	level2Evt := waitForDetectorEvent(buf, "test_exec_enriched", 5*time.Second)
 	require.NotNil(t, level2Evt, "Expected level 2 event test_exec_enriched not found")
-	t.Logf("Found level 2 event: %s", level2Evt.Name)
 
 	// Verify level 1 extracted fields
 	level1Path := getArgValue(level1Evt, "binary_path")
@@ -447,8 +433,6 @@ output:
 
 	level2Pid := getArgValue(level2Evt, "original_pid")
 	assert.NotNil(t, level2Pid, "level 2 original_pid should be extracted")
-
-	t.Logf("Detector chaining verified: level1_path=%v, level2_path=%v, level2_pid=%v", level1Path, level2Path, level2Pid)
 }
 
 // Test_YAMLDetectorFilters tests that data_filters and scope_filters work correctly
@@ -501,13 +485,10 @@ output:
 		}
 	}()
 
-	t.Log("Tracee started, testing filters...")
-
 	// Clear buffer before tests
 	buf.Clear()
 
 	// Test 1: Execute matching pathname - should fire
-	t.Log("Test 1: Executing /usr/bin/cat (should match filter)")
 	cmd := exec.Command("/usr/bin/cat", "/dev/null")
 	err := cmd.Run()
 	require.NoError(t, err, "Failed to execute /usr/bin/cat")
@@ -520,14 +501,12 @@ output:
 	if matchedEvt != nil {
 		matchedPath := getArgValue(matchedEvt, "matched_path")
 		assert.Contains(t, matchedPath, "/usr/bin/cat", "matched_path should contain /usr/bin/cat")
-		t.Log("✓ Filter matched correctly for /usr/bin/cat")
 	}
 
 	// Clear buffer for next test
 	buf.Clear()
 
 	// Test 2: Execute non-matching pathname - should NOT fire
-	t.Log("Test 2: Executing /usr/bin/id (should NOT match filter)")
 	cmd = exec.Command("/usr/bin/id")
 	err = cmd.Run()
 	require.NoError(t, err, "Failed to execute /usr/bin/id")
@@ -536,13 +515,16 @@ output:
 
 	unmatchedEvt := waitForDetectorEvent(buf, "test_filter_match", 2*time.Second)
 	assert.Nil(t, unmatchedEvt, "Detector should NOT fire for non-matching pathname /usr/bin/id")
-	t.Log("✓ Filter correctly rejected /usr/bin/id")
 }
 
 // Test_YAMLDetectorErrorHandling tests graceful handling of invalid YAML and missing fields
 func Test_YAMLDetectorErrorHandling(t *testing.T) {
 	testutils.AssureIsRoot(t)
 	defer goleak.VerifyNone(t)
+
+	// Suppress logger output for expected warnings during error handling tests
+	teardown := testutils.EnableTestLogger(t, logger.ErrorLevel)
+	defer teardown()
 
 	yamlDir := t.TempDir()
 
@@ -628,8 +610,6 @@ output:
 	assert.False(t, invalidFound, "Invalid syntax detector should NOT be loaded")
 	assert.False(t, missingIDFound, "Missing ID detector should NOT be loaded")
 
-	t.Log("✓ Error handling verified: valid loaded, invalid rejected")
-
 	// Test 4: Missing required field during extraction should skip detection gracefully
 	detectorWithRequiredField := `id: yaml-test-required-field
 produced_event:
@@ -674,8 +654,6 @@ output:
 		}
 	}()
 
-	t.Log("Tracee started, testing missing required field...")
-
 	// Trigger the detector
 	cmd := exec.Command("/bin/hostname")
 	err := cmd.Run()
@@ -686,6 +664,4 @@ output:
 	// The detector should NOT produce an event because required field is missing
 	evt := waitForDetectorEvent(buf, "test_required_field", 2*time.Second)
 	assert.Nil(t, evt, "Detector should skip detection when required field is missing")
-
-	t.Log("✓ Missing required field handled gracefully (detection skipped)")
 }
