@@ -1873,8 +1873,8 @@ func Test_EventFilters(t *testing.T) {
 								{
 									Event: "security_file_open",
 									Filters: []string{
+										"data.pathname=/etc/ld.so.cache",
 										"data.pathname=/etc/netconfig",
-										"data.pathname!=/usr/lib/*",
 									},
 								},
 								{
