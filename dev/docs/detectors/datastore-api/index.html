@@ -10070,6 +10070,23 @@
 <span class="w">    </span><span class="nx">GetContainerByName</span><span class="p">(</span><span class="nx">name</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="nx">ContainerInfo</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span>
 <span class="p">}</span>
 </code></pre></div>
+<p><strong>Important:</strong> Container enrichment (<code>--enrichment container</code>) is required for container metadata:</p>
+<p>When <code>--enrichment container</code> is enabled, Tracee:
+1. Queries container runtimes (Docker, containerd, CRI-O, Podman) at userspace
+2. Populates the container datastore with Name, Image, Pod info, etc.
+3. Attaches this metadata to Event.Workload.Container fields</p>
+<p><strong>Without <code>--enrichment container</code>:</strong>
+- Only <code>Event.Workload.Container.Id</code> is available (from cgroup context)
+- Container datastore queries will NOT return Name, Image, or Pod information
+- Both Event fields and datastore will lack enriched metadata</p>
+<p><strong>With <code>--enrichment container</code>:</strong>
+- <code>Event.Workload.Container.Name</code>, <code>.Image</code>, <code>.Pod</code> are populated in events
+- Container datastore can return full metadata when queried
+- Detectors can choose: read from Event fields directly OR query datastore</p>
+<p><strong>Why use datastore queries if enrichment is required anyway?</strong>
+- More flexible error handling (e.g., handle not-found containers)
+- Access to additional methods like <code>GetContainerByName()</code>
+- Useful when container info is needed conditionally in detection logic</p>
 <h3 id="containerinfo-structure">ContainerInfo Structure<a class="headerlink" href="#containerinfo-structure" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kd">type</span><span class="w"> </span><span class="nx">ContainerInfo</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">ID</span><span class="w">          </span><span class="kt">string</span><span class="w">      </span><span class="c1">// Container ID</span>

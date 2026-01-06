@@ -9975,6 +9975,7 @@
 <ul>
 <li><code>exec-env</code> - Execution environment variables</li>
 <li><code>exec-hash</code> - Executable file hashes (Config: "inode", "dev-inode", "digest-inode")</li>
+<li><code>container</code> - Container metadata fields in Event struct (Name, Image, Pod info)</li>
 </ul>
 <p><strong>Example</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="nx">DetectorDefinition</span><span class="p">{</span>
@@ -9990,6 +9991,23 @@
 <span class="w">    </span><span class="p">},</span>
 <span class="p">}</span>
 </code></pre></div>
+<p><strong>Container enrichment example</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="nx">DetectorDefinition</span><span class="p">{</span>
+<span class="w">    </span><span class="nx">ID</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TRC-CONTAINER-001&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">Requirements</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorRequirements</span><span class="p">{</span>
+<span class="w">        </span><span class="nx">Events</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">EventRequirement</span><span class="p">{</span>
+<span class="w">            </span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;security_file_open&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nx">Enrichments</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">EnrichmentRequirement</span><span class="p">{</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="nx">detection</span><span class="p">.</span><span class="nx">EnrichmentContainer</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyRequired</span><span class="p">,</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>This detector requires container fields to be pre-populated in the Event struct. Without <code>--enrichment container</code>, registration will fail.</p>
 <h3 id="architecture-filtering">Architecture Filtering<a class="headerlink" href="#architecture-filtering" title="Permanent link">&para;</a></h3>
 <p>Restrict detector to specific CPU architectures (rarely needed):</p>
 <div class="highlight"><pre><span></span><code><span class="nx">DetectorDefinition</span><span class="p">{</span>

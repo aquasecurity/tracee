@@ -6318,6 +6318,45 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#accessing-container-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accessing Container Information
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Accessing Container Information">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-1-use-pre-populated-event-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 1: Use Pre-Populated Event Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-2-query-container-datastore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 2: Query Container Datastore
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8739,6 +8778,45 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#accessing-container-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accessing Container Information
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Accessing Container Information">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-1-use-pre-populated-event-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 1: Use Pre-Populated Event Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-2-query-container-datastore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 2: Query Container Datastore
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9289,6 +9367,91 @@ sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--stores<span c
 <p>Or only from host:</p>
 <div class="highlight"><pre><span></span><code><span class="nx">ScopeFilters</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;not-container&quot;</span><span class="p">},</span><span class="w">  </span><span class="c1">// Host only</span>
 </code></pre></div>
+<h3 id="accessing-container-information">Accessing Container Information<a class="headerlink" href="#accessing-container-information" title="Permanent link">&para;</a></h3>
+<p>Detectors can access container information using the <code>container</code> enrichment requirement.</p>
+<p><strong>Container enrichment is required</strong> for both approaches below - it enables Tracee to query container runtimes and populate metadata.</p>
+<h4 id="option-1-use-pre-populated-event-fields">Option 1: Use Pre-Populated Event Fields<a class="headerlink" href="#option-1-use-pre-populated-event-fields" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="nx">Requirements</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorRequirements</span><span class="p">{</span>
+<span class="w">    </span><span class="nx">Events</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">EventRequirement</span><span class="p">{</span>
+<span class="w">        </span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;security_file_open&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">Enrichments</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">EnrichmentRequirement</span><span class="p">{</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="nx">detection</span><span class="p">.</span><span class="nx">EnrichmentContainer</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyRequired</span><span class="p">,</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">d</span><span class="w"> </span><span class="o">*</span><span class="nx">MyDetector</span><span class="p">)</span><span class="w"> </span><span class="nx">OnEvent</span><span class="p">(</span><span class="nx">event</span><span class="w"> </span><span class="o">*</span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">Event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Container fields are pre-populated in the event</span>
+<span class="w">    </span><span class="nx">containerName</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">GetWorkload</span><span class="p">().</span><span class="nx">GetContainer</span><span class="p">().</span><span class="nx">GetName</span><span class="p">()</span>
+<span class="w">    </span><span class="nx">containerImage</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">GetWorkload</span><span class="p">().</span><span class="nx">GetContainer</span><span class="p">().</span><span class="nx">GetImage</span><span class="p">().</span><span class="nx">GetName</span><span class="p">()</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nx">Contains</span><span class="p">(</span><span class="nx">containerImage</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;malicious&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// detect...</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Pros</strong>:</p>
+<ul>
+<li>Simple, direct field access</li>
+</ul>
+<p><strong>Cons</strong>:</p>
+<ul>
+<li>Cannot handle missing/not-found containers gracefully</li>
+</ul>
+<h4 id="option-2-query-container-datastore">Option 2: Query Container Datastore<a class="headerlink" href="#option-2-query-container-datastore" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="nx">Requirements</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorRequirements</span><span class="p">{</span>
+<span class="w">    </span><span class="nx">Events</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">EventRequirement</span><span class="p">{</span>
+<span class="w">        </span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;security_file_open&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">Enrichments</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">EnrichmentRequirement</span><span class="p">{</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="nx">detection</span><span class="p">.</span><span class="nx">EnrichmentContainer</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyRequired</span><span class="p">,</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">DataStores</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">DataStoreRequirement</span><span class="p">{</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DataStoreContainer</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyRequired</span><span class="p">,</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">d</span><span class="w"> </span><span class="o">*</span><span class="nx">MyDetector</span><span class="p">)</span><span class="w"> </span><span class="nx">OnEvent</span><span class="p">(</span><span class="nx">event</span><span class="w"> </span><span class="o">*</span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">Event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Container ID is always available</span>
+<span class="w">    </span><span class="nx">containerID</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">GetWorkload</span><span class="p">().</span><span class="nx">GetContainer</span><span class="p">().</span><span class="nx">GetId</span><span class="p">()</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">containerID</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span><span class="w">  </span><span class="c1">// Not a container event</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// Explicitly query datastore for metadata</span>
+<span class="w">    </span><span class="nx">containerInfo</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">d</span><span class="p">.</span><span class="nx">dataStores</span><span class="p">.</span><span class="nx">Containers</span><span class="p">().</span><span class="nx">GetContainer</span><span class="p">(</span><span class="nx">containerID</span><span class="p">)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">Is</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="nx">datastores</span><span class="p">.</span><span class="nx">ErrNotFound</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Handle not-found case (e.g., short-lived container)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nx">Contains</span><span class="p">(</span><span class="nx">containerInfo</span><span class="p">.</span><span class="nx">Image</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;malicious&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// detect...</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Pros</strong>:</p>
+<ul>
+<li>Flexible error handling, access to additional datastore methods</li>
+</ul>
+<p><strong>Cons</strong>:</p>
+<ul>
+<li>Slightly more verbose</li>
+</ul>
+<p><strong>Both approaches require</strong> <code>--enrichment container</code> to be enabled. The enrichment flag tells Tracee to query container runtimes and populate both Event fields and the datastore.</p>
+<p>User must run: <code>tracee --enrichment container --detector my-detector</code></p>
 <h2 id="debugging-tips">Debugging Tips<a class="headerlink" href="#debugging-tips" title="Permanent link">&para;</a></h2>
 <h3 id="enable-debug-logging">Enable Debug Logging<a class="headerlink" href="#enable-debug-logging" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run with debug logs</span>
