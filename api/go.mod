@@ -5,6 +5,7 @@ go 1.24.0
 toolchain go1.24.11
 
 require (
+	github.com/stretchr/testify v1.8.4
 	google.golang.org/grpc v1.72.0
 	google.golang.org/protobuf v1.36.6
 )
@@ -12,8 +13,6 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
