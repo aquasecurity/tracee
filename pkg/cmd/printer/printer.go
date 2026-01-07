@@ -441,14 +441,21 @@ func (p templateEventPrinter) Close() {
 
 // jsonEventPrinter is the printer for the JSON format.
 type jsonEventPrinter struct {
-	out        io.WriteCloser
-	buffer     *bufio.Writer
-	eventCount int64
-	lastFlush  time.Time
+	out              io.WriteCloser
+	buffer           *bufio.Writer
+	eventCount       int64
+	lastFlush        time.Time
+	isStdoutOrStderr bool // flush immediately for interactive output
 }
 
 // Init initializes the jsonEventPrinter with a buffered writer.
 func (p *jsonEventPrinter) Init() error {
+	// Detect if output is stdout/stderr for immediate flushing (interactive use)
+	// vs file output where we want buffering for performance
+	if f, ok := p.out.(*os.File); ok {
+		p.isStdoutOrStderr = f == os.Stdout || f == os.Stderr
+	}
+
 	// Use 256KB buffer - good performance while allowing frequent flushes
 	p.buffer = bufio.NewWriterSize(p.out, 256*1024)
 	p.eventCount = 0
@@ -475,8 +482,12 @@ func (p *jsonEventPrinter) Print(event *pb.Event) {
 
 	p.eventCount++
 
-	// Flush buffer every 10 events OR every 1 second to prevent data loss
-	if p.eventCount%10 == 0 || time.Since(p.lastFlush) >= time.Second {
+	// Flush strategy depends on output destination:
+	// - For stdout/stderr: flush immediately for interactive visibility
+	// - For files: flush every 10 events OR every 1 second for performance
+	shouldFlush := p.isStdoutOrStderr || p.eventCount%10 == 0 || time.Since(p.lastFlush) >= time.Second
+
+	if shouldFlush {
 		if err := p.buffer.Flush(); err != nil {
 			logger.Errorw("Error flushing buffer", "error", err)
 		}
