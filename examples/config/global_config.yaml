@@ -1,32 +1,26 @@
+# Tracee Global Configuration File
+# This file demonstrates all available configuration options for Tracee.
+# Most fields are optional and show example values or defaults.
+
+# Buffer configuration for kernel and pipeline events
 buffers:
     kernel:
-        events: 1024
-        artifacts: 1024
-        control-plane: 1024
-    pipeline: 1000
-cache:
-    type: none
-    # size: 1024
+        events: 1024           # Kernel event buffer size in pages
+        artifacts: 1024        # Kernel artifact buffer size in pages
+        control-plane: 1024    # Kernel control plane buffer size in pages
+    pipeline: 1000             # Pipeline buffer size for event processing
 
-capture:
-  #- write
-  #- exec
-  #- network
-
-policy:
-  - /path/to/policy.yaml
-  #- /path/to/policy-directory
-
+# Data stores configuration
 stores:
     process:
         enabled: false
-        source: signals
         # max-processes: 8192
         # max-threads: 4096
     dns:
         enabled: false
         # max-entries: 5000
 
+# Capabilities configuration
 capabilities:
     bypass: false
     # add:
@@ -35,8 +29,7 @@ capabilities:
     # drop:
     #     - cap_chown
 
-metrics-endpoint: true
-
+# Server configuration for HTTP and gRPC endpoints
 server:
     http-address: "127.0.0.1:8080"
     grpc-address: "unix:/var/run/tracee.sock"
@@ -45,6 +38,7 @@ server:
     pprof: true
     pyroscope: true
 
+# Enrichment configuration
 enrichment:
     # CLI flags format:
     # - container
@@ -75,17 +69,50 @@ enrichment:
     #     mode: sha256
     # user-stack-trace: true
 
-events:
-  #- open
-  #- execve
+# Artifacts capture configuration
+artifacts:
+    # file-write:
+    #     enabled: true
+    #     filters:
+    #         - path=/tmp/*
+    #         - type=regular
+    #         - fd=stdout
 
-healthz: false
+    # file-read:
+    #     enabled: true
+    #     filters:
+    #         - path=/etc/*
+    #         - type=regular
 
+    # executable: true
+
+    # kernel-modules: true
+
+    # bpf-programs: true
+
+    # memory-regions: true
+
+    # network:
+    #     enabled: true
+    #     pcap:
+    #         split: single          # Options: single, process, container, command (comma-separated)
+    #         options: filtered      # Options: filtered, none
+    #         snaplen: default       # Options: default, max, headers, or size (e.g., 96b, 4kb)
+
+    # dir:
+    #     path: /tmp/tracee
+    #     clear: false
+
+# Detectors configuration
+detectors:
+    # yaml-dir:
+    #     - /path/to/detector/dir
+
+# Runtime configuration
 runtime:
-  - workdir=/tmp/tracee
+    workdir: /tmp/tracee
 
-listen-addr: :3366
-
+# Logging configuration
 logging:
     level: info
     # file: "/path/to/log/file.log"
@@ -93,7 +120,6 @@ logging:
     #     enabled: true
     #     flush-interval: "5s"
     # filters:
-    #     libbpf: false
     #     include:
     #         msg:
     #             - SampleMessage1
@@ -121,24 +147,12 @@ logging:
     #             - debug
     #         regex:
     #             - ^excludedPattern
+    #         libbpf: true           # Filter out verbose libbpf logs (matches logs starting with "libbpf:")
+    #                                # By default (no filters), all logs including libbpf are shown
 
-scope:  
-  #- uid=1000
-  #- global
-  #- pid=1000
-  #- mntns=4026531840
-  #- pidns=4026531836    
-  #- uts=ab356bc4dd554
-  #- comm=uname
-  #- container
-  #- not-container
-  #- tree=1000
-  #- executable=/usr/bin/dig
-  #- follow
-
-metrics: false
-
+# Output configuration
 output:
+    # Destinations define where and how to output events
     # destinations:
     #   - name: destination_name
     #     type: file | webhook | forward
@@ -146,6 +160,7 @@ output:
     #     url: url in case of type == webhook or type == forward
     #     format: json | gotemplate=/path/to/template.tpl | table
     
+    # Streams route events to destinations with optional filtering
     # streams:
     #   - name: stream_name
     #     destinations: 
@@ -156,20 +171,18 @@ output:
     #       policies:
     #         - policy_to_filter
     #     buffer:
-    #       mode: drop
+    #       mode: drop           # Options: drop, block
     #       size: 1024
 
+    # Output options
     # options:
     #     none: false
     #     stack-addresses: true
     #     exec-env: false
-    #     exec-hash: dev-inode
+    #     exec-hash: dev-inode     # Options: none, inode, dev-inode, digest-inode
     #     parse-arguments: true
+    #     parse-arguments-fds: false
     #     sort-events: false
 
-
-pprof: false
-
-pyroscope: false
-
+# Signatures directory for custom signatures
 signatures-dir: ""
