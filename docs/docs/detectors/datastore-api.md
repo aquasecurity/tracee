@@ -1449,18 +1449,21 @@ func (d *ThreatAnalyzer) OnEvent(ctx context.Context, event *v1beta1.Event) ([]d
 ### Key Concepts
 
 **Ownership Model:**
+
 - The detector that calls `RegisterWritableStore()` owns the store
 - Owner has read/write access (keeps concrete type reference)
 - Others have read-only access (via `GetCustom()`)
 - No authorization code needed - access control via typing
 
 **Source Isolation:**
+
 - All write operations include a `source` parameter (e.g., `"local_detector"`, `"some_feed"`)
 - Enables data provenance tracking
 - Supports multi-source aggregation with conflict resolution
 - Cleanup by source: `Clear("external_feed")`
 
 **Implementation-Specific:**
+
 - Stores define their own behavior (conflict resolution, retention, etc.)
 - See `pkg/datastores/ipreputation/` for reference implementation
 - Custom stores implement the `WritableStore` interface
