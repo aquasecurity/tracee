@@ -574,118 +574,143 @@ func writeEventValue(buf *bytes.Buffer, ev *EventValue) {
 	writeEscapedString(buf, ev.Name)
 	buf.WriteString(`"`)
 
-	// Write the value based on the oneof type
+	// Write the value with type-specific field names to match protobuf JSON format
+	// This maintains backward compatibility and makes the JSON self-describing
+	// Note: int64/uint64 are encoded as strings per protobuf JSON spec to prevent JS precision loss
 	switch v := ev.Value.(type) {
 	case *EventValue_Int32:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"int32":`)
 		writeInt(buf, int64(v.Int32))
 	case *EventValue_Int64:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"int64":"`)
 		writeInt(buf, v.Int64)
+		buf.WriteByte('"')
 	case *EventValue_UInt32:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"u_int32":`)
 		writeUint32(buf, v.UInt32)
 	case *EventValue_UInt64:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"u_int64":"`)
 		writeUint(buf, v.UInt64)
+		buf.WriteByte('"')
 	case *EventValue_Str:
-		buf.WriteString(`,"value":"`)
+		buf.WriteString(`,"str":"`)
 		writeEscapedString(buf, v.Str)
 		buf.WriteByte('"')
 	case *EventValue_Bytes:
-		buf.WriteString(`,"value":"`)
+		buf.WriteString(`,"bytes":"`)
 		buf.WriteString(base64.StdEncoding.EncodeToString(v.Bytes))
 		buf.WriteByte('"')
 	case *EventValue_Bool:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"bool":`)
 		writeBool(buf, v.Bool)
 	case *EventValue_StrArray:
-		buf.WriteString(`,"value":[`)
-		for i, s := range v.StrArray.Value {
-			if i > 0 {
-				buf.WriteByte(',')
+		buf.WriteString(`,"str_array":`)
+		if len(v.StrArray.Value) == 0 {
+			buf.WriteString(`{}`)
+		} else {
+			buf.WriteString(`{"value":[`)
+			for i, s := range v.StrArray.Value {
+				if i > 0 {
+					buf.WriteByte(',')
+				}
+				buf.WriteByte('"')
+				writeEscapedString(buf, s)
+				buf.WriteByte('"')
 			}
-			buf.WriteByte('"')
-			writeEscapedString(buf, s)
-			buf.WriteByte('"')
+			buf.WriteString(`]}`)
 		}
-		buf.WriteByte(']')
 	case *EventValue_Int32Array:
-		buf.WriteString(`,"value":[`)
-		for i, n := range v.Int32Array.Value {
-			if i > 0 {
-				buf.WriteByte(',')
+		buf.WriteString(`,"int32_array":`)
+		if len(v.Int32Array.Value) == 0 {
+			buf.WriteString(`{}`)
+		} else {
+			buf.WriteString(`{"value":[`)
+			for i, n := range v.Int32Array.Value {
+				if i > 0 {
+					buf.WriteByte(',')
+				}
+				writeInt(buf, int64(n))
 			}
-			writeInt(buf, int64(n))
+			buf.WriteString(`]}`)
 		}
-		buf.WriteByte(']')
 	case *EventValue_UInt64Array:
-		buf.WriteString(`,"value":[`)
-		for i, n := range v.UInt64Array.Value {
-			if i > 0 {
-				buf.WriteByte(',')
+		buf.WriteString(`,"u_int64_array":`)
+		if len(v.UInt64Array.Value) == 0 {
+			buf.WriteString(`{}`)
+		} else {
+			buf.WriteString(`{"value":[`)
+			for i, n := range v.UInt64Array.Value {
+				if i > 0 {
+					buf.WriteByte(',')
+				}
+				buf.WriteByte('"')
+				writeUint(buf, n)
+				buf.WriteByte('"')
 			}
-			writeUint(buf, n)
+			buf.WriteString(`]}`)
 		}
-		buf.WriteByte(']')
 	case *EventValue_Sockaddr:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"sockaddr":`)
 		writeSockAddr(buf, v.Sockaddr)
 	case *EventValue_Credentials:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"credentials":`)
 		writeCredentials(buf, v.Credentials)
 	case *EventValue_Timespec:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"timespec":`)
 		writeTimespec(buf, v.Timespec)
 	case *EventValue_Struct:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"struct":`)
 		writeStruct(buf, v.Struct)
 	// Complex network types - use json.Marshal fallback (rare, performance not critical)
 	case *EventValue_HookedSyscalls:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"hooked_syscalls":`)
 		writeJSONFallback(buf, v.HookedSyscalls)
 	case *EventValue_HookedSeqOps:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"hooked_seq_ops":`)
 		writeJSONFallback(buf, v.HookedSeqOps)
 	case *EventValue_Ipv4:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"ipv4":`)
 		writeJSONFallback(buf, v.Ipv4)
 	case *EventValue_Ipv6:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"ipv6":`)
 		writeJSONFallback(buf, v.Ipv6)
 	case *EventValue_Tcp:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"tcp":`)
 		writeJSONFallback(buf, v.Tcp)
 	case *EventValue_Udp:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"udp":`)
 		writeJSONFallback(buf, v.Udp)
 	case *EventValue_Icmp:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"icmp":`)
 		writeJSONFallback(buf, v.Icmp)
 	case *EventValue_Icmpv6:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"icmpv6":`)
 		writeJSONFallback(buf, v.Icmpv6)
 	case *EventValue_Dns:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"dns":`)
 		writeJSONFallback(buf, v.Dns)
 	case *EventValue_DnsQuestions:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"dns_questions":`)
 		writeJSONFallback(buf, v.DnsQuestions)
 	case *EventValue_DnsResponses:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"dns_responses":`)
 		writeJSONFallback(buf, v.DnsResponses)
 	case *EventValue_PacketMetadata:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"packet_metadata":`)
 		writeJSONFallback(buf, v.PacketMetadata)
 	case *EventValue_Http:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"http":`)
 		writeJSONFallback(buf, v.Http)
 	case *EventValue_HttpRequest:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"http_request":`)
 		writeJSONFallback(buf, v.HttpRequest)
 	case *EventValue_HttpResponse:
-		buf.WriteString(`,"value":`)
+		buf.WriteString(`,"http_response":`)
 		writeJSONFallback(buf, v.HttpResponse)
+	case *EventValue_Pointer:
+		buf.WriteString(`,"pointer":"`)
+		writeUint(buf, v.Pointer)
+		buf.WriteByte('"')
 	default:
 		// Unknown type - write null
 		buf.WriteString(`,"value":null`)
@@ -700,9 +725,21 @@ func writeSockAddr(buf *bytes.Buffer, sa *SockAddr) {
 		buf.WriteString("null")
 		return
 	}
+
+	// Check if sockaddr is empty (all fields are zero/empty)
+	isEmpty := sa.SaFamily == 0 && sa.SunPath == "" && sa.SinAddr == "" &&
+		sa.SinPort == 0 && sa.Sin6Addr == "" && sa.Sin6Port == 0 &&
+		sa.Sin6Flowinfo == 0 && sa.Sin6Scopeid == 0
+
+	if isEmpty {
+		buf.WriteString("{}")
+		return
+	}
+
 	buf.WriteByte('{')
-	buf.WriteString(`"sa_family":`)
-	writeInt(buf, int64(sa.SaFamily))
+	buf.WriteString(`"sa_family":"`)
+	buf.WriteString(sa.SaFamily.String())
+	buf.WriteByte('"')
 
 	if sa.SunPath != "" {
 		buf.WriteString(`,"sun_path":"`)
