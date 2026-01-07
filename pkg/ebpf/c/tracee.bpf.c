@@ -419,8 +419,7 @@ int syscall__execve_exit(void *ctx)
             &p.event->args_buf, (const char *const *) sys->args.args[2] /*envp*/, 2);
     }
 
-    save_to_submit_buf(
-        &p.event->args_buf, (void *) &sys->ret, sizeof(long), p.event->args_buf.argnum);
+    save_to_submit_buf(&p.event->args_buf, (void *) &sys->ret, sizeof(long), 3);
     return events_perf_submit(&p);
 }
 
@@ -483,8 +482,7 @@ int syscall__execveat_exit(void *ctx)
     }
     save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[4] /*flags*/, sizeof(int), 4);
 
-    save_to_submit_buf(
-        &p.event->args_buf, (void *) &sys->ret, sizeof(long), p.event->args_buf.argnum);
+    save_to_submit_buf(&p.event->args_buf, (void *) &sys->ret, sizeof(long), 5);
     return events_perf_submit(&p);
 }
 
