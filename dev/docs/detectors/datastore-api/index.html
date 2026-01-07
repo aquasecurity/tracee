@@ -10687,20 +10687,26 @@ It does <strong>not</strong> contain historical or system-wide DNS data.</p>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="key-concepts">Key Concepts<a class="headerlink" href="#key-concepts" title="Permanent link">&para;</a></h3>
-<p><strong>Ownership Model:</strong>
-- The detector that calls <code>RegisterWritableStore()</code> owns the store
-- Owner has read/write access (keeps concrete type reference)
-- Others have read-only access (via <code>GetCustom()</code>)
-- No authorization code needed - access control via typing</p>
-<p><strong>Source Isolation:</strong>
-- All write operations include a <code>source</code> parameter (e.g., <code>"local_detector"</code>, <code>"some_feed"</code>)
-- Enables data provenance tracking
-- Supports multi-source aggregation with conflict resolution
-- Cleanup by source: <code>Clear("external_feed")</code></p>
-<p><strong>Implementation-Specific:</strong>
-- Stores define their own behavior (conflict resolution, retention, etc.)
-- See <code>pkg/datastores/ipreputation/</code> for reference implementation
-- Custom stores implement the <code>WritableStore</code> interface</p>
+<p><strong>Ownership Model:</strong></p>
+<ul>
+<li>The detector that calls <code>RegisterWritableStore()</code> owns the store</li>
+<li>Owner has read/write access (keeps concrete type reference)</li>
+<li>Others have read-only access (via <code>GetCustom()</code>)</li>
+<li>No authorization code needed - access control via typing</li>
+</ul>
+<p><strong>Source Isolation:</strong></p>
+<ul>
+<li>All write operations include a <code>source</code> parameter (e.g., <code>"local_detector"</code>, <code>"some_feed"</code>)</li>
+<li>Enables data provenance tracking</li>
+<li>Supports multi-source aggregation with conflict resolution</li>
+<li>Cleanup by source: <code>Clear("external_feed")</code></li>
+</ul>
+<p><strong>Implementation-Specific:</strong></p>
+<ul>
+<li>Stores define their own behavior (conflict resolution, retention, etc.)</li>
+<li>See <code>pkg/datastores/ipreputation/</code> for reference implementation</li>
+<li>Custom stores implement the <code>WritableStore</code> interface</li>
+</ul>
 <hr />
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <h3 id="quick-reference">Quick Reference<a class="headerlink" href="#quick-reference" title="Permanent link">&para;</a></h3>
