@@ -7,29 +7,34 @@
         },
         "pipeline": 1000
     },
-    "cache": [
-        "none"
-    ],
     "stores": {
         "process": {
-            "enabled": false,
-            "source": "signals"
+            "enabled": false
         },
         "dns": {
             "enabled": false
         }
     },
-    "capabilities": [],
-    "containers": [],
-    "healthz": false,
-    "runtime": [
-        "workdir=/tmp/tracee"
-    ],
-    "listen-addr": ":3366",
-    "logging": [
-        "info"
-    ],
-    "metrics": false,
+    "capabilities": {
+        "bypass": false
+    },
+    "server": {
+        "http-address": "127.0.0.1:8080",
+        "grpc-address": "unix:/var/run/tracee.sock",
+        "metrics": true,
+        "healthz": true,
+        "pprof": true,
+        "pyroscope": true
+    },
+    "enrichment": {},
+    "artifacts": {},
+    "detectors": {},
+    "runtime": {
+        "workdir": "/tmp/tracee"
+    },
+    "logging": {
+        "level": "info"
+    },
     "output": {
         "destinations": [
             {
@@ -55,10 +60,8 @@
                     "size": 1024
                 }
             }
-        ]
+        ],
+        "options": {}
     },
-    "perf-buffer-size": 1024,
-    "pprof": false,
-    "pyroscope": false,
     "signatures-dir": ""
 }
