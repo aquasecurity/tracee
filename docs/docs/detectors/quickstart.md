@@ -114,16 +114,16 @@ func (d *SensitiveFileAccess) OnEvent(
 	// Extract executable path (nil-safe protobuf getters)
 	executablePath := event.GetWorkload().GetProcess().GetExecutable().GetPath()
 
-	// Return output data - engine handles the rest (threat, ancestry, etc.)
-	return []detection.DetectorOutput{{
-		Data: []*v1beta1.EventValue{
-			v1beta1.NewStringValue("file_path", pathname),
-			v1beta1.NewStringValue("executable", executablePath),
-		},
-	}}, nil
+	// Return detection with data - engine handles the rest (threat, ancestry, etc.)
+	return detection.DetectedWithData([]*v1beta1.EventValue{
+		v1beta1.NewStringValue("file_path", pathname),
+		v1beta1.NewStringValue("executable", executablePath),
+	}), nil
 }
 ```
 {% endraw %}
+
+**Helper Functions**: For cleaner code, use `detection.Detected()` for simple detections with no extra data, or `detection.DetectedWithData(data)` when including additional event values.
 
 ## Step 2: Build Tracee
 

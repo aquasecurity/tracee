@@ -54,6 +54,34 @@ type DetectorOutput struct {
 	// Workload  *v1beta1.Workload       // Override input workload (rare)
 }
 
+// Detected returns a single detection with no additional data.
+// Use this when all relevant information is already present in the triggering
+// event and will be auto-populated by the engine according to the detector's
+// AutoPopulate settings from DetectorDefinition.
+//
+// Example:
+//
+//	if d.isThreat(event) {
+//	    return detection.Detected(), nil
+//	}
+func Detected() []DetectorOutput {
+	return []DetectorOutput{{}}
+}
+
+// DetectedWithData returns a single detection with additional event data.
+// Use this when you need to include extra information beyond what's available
+// in the triggering event. The provided data will be included in the output
+// event's Data field, in addition to any auto-populated fields.
+//
+// Example:
+//
+//	return detection.DetectedWithData([]*v1beta1.EventValue{
+//	    v1beta1.NewStringValue("env_var", envValue),
+//	}), nil
+func DetectedWithData(data []*v1beta1.EventValue) []DetectorOutput {
+	return []DetectorOutput{{Data: data}}
+}
+
 // DetectorCloser is an optional interface for detectors that need cleanup.
 // If implemented, Close() will be called during shutdown.
 type DetectorCloser interface {

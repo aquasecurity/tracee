@@ -264,7 +264,7 @@ func (d *ExampleDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]
 		)
 	}
 
-	return []detection.DetectorOutput{{Data: data}}, nil
+	return detection.DetectedWithData(data), nil
 }
 
 func (d *ExampleDetector) Close() error {
