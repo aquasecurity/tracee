@@ -391,7 +391,7 @@ jobs:
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
     runs-on:
-      - graas_ami-0e38f3caba1b4234d_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123 # Noble 6.12 x86_64 GRAAS AMI
+      - graas_ami-03dbff05cae3a30d0_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123 # Noble 6.12.62 x86_64 GRAAS AMI
       - EXECUTION_TYPE=SHORT
       - INSTANCE_TYPE=MEDIUM
     container:
@@ -427,7 +427,7 @@ jobs:
       - detect-changes
     if: needs.detect-changes.outputs.main == 'true'
     runs-on:
-      - graas_ami-0547f429681dc1f2a_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }} # Noble 6.12 aarch64 GRAAS AMI
+      - graas_ami-07774797557132122_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }} # Noble 6.12 aarch64 GRAAS AMI
       - EXECUTION_TYPE=SHORT
       - INSTANCE_TYPE=MEDIUM
     container:
