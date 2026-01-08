@@ -41,14 +41,15 @@ type Pod struct {
 
 // Manager contains information about running containers in the host.
 type Manager struct {
-	cgroups        *cgroup.Cgroups
-	cgroupsMap     map[uint32]CgroupDir
-	containerMap   map[string]Container
-	deleted        []uint64
-	lock           sync.RWMutex // protecting both cgroups and deleted fields
-	enricher       runtime.Service
-	bpfMapName     string
-	lastAccessNano atomic.Int64 // last datastore access time (Unix nano)
+	cgroups           *cgroup.Cgroups
+	cgroupsMap        map[uint32]CgroupDir
+	containerMap      map[string]Container
+	deleted           []uint64
+	lock              sync.RWMutex // protecting both cgroups and deleted fields
+	enricher          runtime.Service
+	enrichmentEnabled bool
+	bpfMapName        string
+	lastAccessNano    atomic.Int64 // last datastore access time (Unix nano)
 }
 
 // CgroupDir represents a cgroup dir (which may be a container cgroup dir).
@@ -73,11 +74,12 @@ func New(
 	error,
 ) {
 	containers := &Manager{
-		cgroups:      cgroups,
-		cgroupsMap:   make(map[uint32]CgroupDir),
-		containerMap: make(map[string]Container),
-		lock:         sync.RWMutex{},
-		bpfMapName:   mapName,
+		cgroups:           cgroups,
+		cgroupsMap:        make(map[uint32]CgroupDir),
+		containerMap:      make(map[string]Container),
+		lock:              sync.RWMutex{},
+		enrichmentEnabled: enrichmentEnabled,
+		bpfMapName:        mapName,
 	}
 
 	// Attempt to register enrichers for all supported runtimes.
@@ -111,9 +113,11 @@ func New(
 
 // Close executes cleanup logic for Containers object.
 func (c *Manager) Close() error {
-	err := c.enricher.Close()
-	if err != nil {
-		return errfmt.WrapError(err)
+	if c.enrichmentEnabled {
+		err := c.enricher.Close()
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
 	}
 	return nil
 }
@@ -129,7 +133,53 @@ func (c *Manager) GetCgroupVersion() cgroup.CgroupVersion {
 // Initialize initializes the container manager by populating existing containers.
 // This method is called automatically by the datastore registry during initialization.
 func (c *Manager) Initialize(ctx context.Context) error {
-	return c.Populate()
+	// First, populate containers from cgroup filesystem
+	if err := c.Populate(); err != nil {
+		return err
+	}
+
+	// If enrichment is enabled, proactively enrich all discovered containers
+	if c.enrichmentEnabled {
+		c.enrichExistingContainers()
+	}
+
+	return nil
+}
+
+// enrichExistingContainers enriches all container root cgroups discovered during population.
+// This is called during initialization when enrichment is enabled to ensure containers
+// have full metadata (name, image, etc.) available immediately via ListContainers API.
+func (c *Manager) enrichExistingContainers() {
+	c.lock.RLock()
+	var cgroupsToEnrich []uint32
+	for cgroupId, cgroupDir := range c.cgroupsMap {
+		// Only enrich container root cgroups that are live
+		if cgroupDir.ContainerRoot && cgroupDir.expiresAt.IsZero() {
+			cgroupsToEnrich = append(cgroupsToEnrich, cgroupId)
+		}
+	}
+	c.lock.RUnlock()
+
+	logger.Debugw("Enriching existing containers at startup",
+		"count", len(cgroupsToEnrich))
+
+	// Enrich each container (don't hold read lock during enrichment)
+	enrichedCount := 0
+	for _, cgroupId := range cgroupsToEnrich {
+		_, err := c.EnrichCgroupInfo(uint64(cgroupId))
+		if err != nil {
+			// Log but don't fail - some containers may not be enrichable
+			logger.Debugw("Failed to enrich existing container",
+				"cgroup_id", cgroupId,
+				"error", err)
+		} else {
+			enrichedCount++
+		}
+	}
+
+	logger.Debugw("Container enrichment at startup completed",
+		"enriched", enrichedCount,
+		"total", len(cgroupsToEnrich))
 }
 
 // Populate populates Containers struct by reading mounted proc and cgroups fs.
