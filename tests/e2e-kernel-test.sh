@@ -35,7 +35,7 @@ if [[ ! -d ./signatures ]]; then
     error_exit "need to be in tracee root directory"
 fi
 
-DOCKER_IMAGE=ghcr.io/aquasecurity/tracee-tester:latest
+DOCKER_IMAGE=ghcr.io/aquasecurity/tracee-tester:latest@sha256:7f93e117d9b5ba99797171805139238f6c91a80dbd77846eb7e35587e4c70a6e
 
 # run CO-RE ARM compatible tests only by default (x86_64 has more but this is for manual user runs)
 TESTS=${TESTS:=TRC-102 TRC-103 TRC-104 TRC-105 TRC-107 TRC-1010 TRC-1014 TRC-1016 TRC-1018}
