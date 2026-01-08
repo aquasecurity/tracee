@@ -115,7 +115,7 @@ if [[ "$RUN" == "true" ]]; then
         exit_err "bpftrace is required for the test but not available"
     fi
 
-    sleep_time=${E2E_INST_TEST_SLEEP:-5}
+    sleep_time=${E2E_INST_TEST_SLEEP:-10}
 
     # Use bpftrace to attach a simple kprobe that should trigger BPF_ATTACH event
     # Run in background to ensure attachment happens, then let it run for the sleep time
