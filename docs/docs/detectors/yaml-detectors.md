@@ -14,11 +14,42 @@ YAML detectors enable you to:
 - **Reuse policy syntax** for static event filtering
 - **Chain detectors** to build complex multi-level detection logic
 
+## File Format
+
+All YAML detector files must include a `type` field at the top:
+
+```yaml
+type: detector
+id: your-detector-id
+# ... rest of detector definition
+```
+
+**Type field values:**
+- `detector` - For threat and derived event detectors
+- `string_list` - For shared list variables
+
+The `type` field is **case-insensitive** (`detector`, `Detector`, `DETECTOR` all work).
+
+### Directory Structure
+
+Detectors and lists can coexist in the same flat directory:
+
+```
+detectors/
+  ├── suspicious_exec.yaml        # type: detector
+  ├── hidden_file.yaml            # type: detector
+  ├── shell_binaries.yaml         # type: string_list
+  └── suspicious_ports.yaml       # type: string_list
+```
+
+**Note:** Only the top-level directory is scanned - subdirectories are ignored.
+
 ## Quick Start
 
 Here's a simple YAML detector that identifies execution of networking tools:
 
 ```yaml
+type: detector
 id: yaml-001
 produced_event:
   name: suspicious_binary_execution
@@ -457,7 +488,7 @@ Shared lists allow you to define reusable lists of values (e.g., shell binaries,
 
 ### List Definition Format
 
-Lists are defined in YAML files placed in a `lists/` subdirectory within your detector directory.
+Lists are defined in YAML files placed in the **same directory** as your detectors.
 
 Each list file defines a named list:
 
@@ -524,7 +555,8 @@ conditions:
 
 ### List Loading Behavior
 
-- Lists are loaded once at startup from `{detector-dir}/lists/` subdirectory
+- Lists are loaded once at startup from the same directory as detectors
+- Lists must have `type: string_list` at the top of the file
 - Lists are shared across all detectors in the same directory
 - Lists are optional - detectors without lists work as before
 - Invalid list files prevent all detectors in that directory from loading

@@ -1,3 +1,4 @@
+type: detector
 id: yaml-002
 produced_event:
   name: suspicious_binary_execution

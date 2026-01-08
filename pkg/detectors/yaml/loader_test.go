@@ -9,7 +9,7 @@ import (
 
 func TestLoadFromFile(t *testing.T) {
 	t.Run("valid threat detector", func(t *testing.T) {
-		detector, err := LoadFromFile("testdata/valid_threat.yaml")
+		detector, err := LoadFromFile("testdata/valid_threat.yaml", nil)
 		require.NoError(t, err)
 		require.NotNil(t, detector)
 
@@ -19,12 +19,12 @@ func TestLoadFromFile(t *testing.T) {
 	})
 
 	t.Run("invalid file returns error", func(t *testing.T) {
-		_, err := LoadFromFile("testdata/invalid_syntax.yaml")
+		_, err := LoadFromFile("testdata/invalid_syntax.yaml", nil)
 		assert.Error(t, err)
 	})
 
 	t.Run("missing file returns error", func(t *testing.T) {
-		_, err := LoadFromFile("testdata/doesnotexist.yaml")
+		_, err := LoadFromFile("testdata/doesnotexist.yaml", nil)
 		assert.Error(t, err)
 	})
 }

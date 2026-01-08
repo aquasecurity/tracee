@@ -1,9 +1,18 @@
 package yaml
 
+// File type identifiers
+const (
+	TypeDetector = "detector"
+)
+
 // YAMLDetectorSpec represents the complete YAML detector specification.
 // It maps directly to the YAML file structure and provides full parity
 // with Go DetectorDefinition from api/v1beta1/detection.
 type YAMLDetectorSpec struct {
+	// Type identifies the file type (REQUIRED)
+	// Value: "detector"
+	Type string `yaml:"type"`
+
 	// ID is the unique detector identifier (e.g., "TRC-YAML-001", "DRV-YAML-001")
 	ID string `yaml:"id"`
 

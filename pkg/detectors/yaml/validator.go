@@ -3,6 +3,7 @@ package yaml
 import (
 	"fmt"
 	"runtime"
+	"strings"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
@@ -16,6 +17,11 @@ var validExtractionRoots = []string{"data", "workload", "timestamp", "id", "name
 func ValidateSpec(spec *YAMLDetectorSpec, lists map[string][]string, filePath string) error {
 	if spec == nil {
 		return errfmt.Errorf("spec cannot be nil")
+	}
+
+	// Validate type field first
+	if err := validateType(spec); err != nil {
+		return fmt.Errorf("%s: %w", filePath, err)
 	}
 
 	// Validate required fields
@@ -52,6 +58,21 @@ func ValidateSpec(spec *YAMLDetectorSpec, lists map[string][]string, filePath st
 		if err := validateOutput(spec.Output, spec.ProducedEvent.Fields, lists, filePath); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// validateType validates the type field
+func validateType(spec *YAMLDetectorSpec) error {
+	if spec.Type == "" {
+		return errfmt.Errorf("missing required field 'type'")
+	}
+
+	// Normalize for comparison
+	normalized := strings.TrimSpace(strings.ToLower(spec.Type))
+	if normalized != TypeDetector {
+		return errfmt.Errorf("invalid type '%s', must be 'detector'", spec.Type)
 	}
 
 	return nil
