@@ -50,7 +50,7 @@ core_init_test_config() {
     add_test_config TEST_CONFIG_MAP "PROCESS_EXECUTE_FAILED" "execute-failed-test" 5 2
     add_test_config TEST_CONFIG_MAP "STACK_PIVOT" "stack-pivot-test" 10 5
     add_test_config TEST_CONFIG_MAP "FTRACE_HOOK" "ftrace-hook-test" 15 5
-    add_test_config TEST_CONFIG_MAP "BPF_ATTACH" "bpf-attach-test" 15 5
+    add_test_config TEST_CONFIG_MAP "BPF_ATTACH" "bpf-attach-test" 15 10
     add_test_config TEST_CONFIG_MAP "DNS_DATA_SOURCE" "dns-ds-test" 10 0
     add_test_config TEST_CONFIG_MAP "SECURITY_INODE_RENAME" "security-inode-rename-test" 10 2
     add_test_config TEST_CONFIG_MAP "FILE_MODIFICATION" "file-modification-test" 5 0
