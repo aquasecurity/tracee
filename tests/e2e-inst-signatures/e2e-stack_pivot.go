@@ -69,6 +69,7 @@ func (sig *e2eStackPivot) OnEvent(event protocol.Event) error {
 		} else {
 			// False positive, mark it so that the test will fail
 			sig.falsePositive = true
+			sig.log.Warnw("False positive detected", "event", event)
 		}
 	}
 
