@@ -189,7 +189,8 @@ func Test_YAMLDetectorBasicLoading(t *testing.T) {
 	yamlDir := t.TempDir()
 
 	// Create a simple YAML detector
-	detectorYAML := `id: yaml-test-001
+	detectorYAML := `type: detector
+id: yaml-test-001
 produced_event:
   name: test_basic_loading
   version: 1.0.0
@@ -245,7 +246,8 @@ func Test_YAMLDetectorEventGeneration(t *testing.T) {
 	yamlDir := t.TempDir()
 
 	// Create a detector that extracts multiple fields
-	detectorYAML := `id: yaml-test-002
+	detectorYAML := `type: detector
+id: yaml-test-002
 produced_event:
   name: test_event_generation
   version: 1.0.0
@@ -326,7 +328,8 @@ func Test_YAMLDetectorChaining(t *testing.T) {
 	yamlDir := t.TempDir()
 
 	// Level 1: Base detector that detects exec of /usr/bin/id
-	level1YAML := `id: yaml-chain-level1
+	level1YAML := `type: detector
+id: yaml-chain-level1
 produced_event:
   name: test_exec_detected
   version: 1.0.0
@@ -359,7 +362,8 @@ output:
 `
 
 	// Level 2: Composed detector that consumes level 1 output
-	level2YAML := `id: yaml-chain-level2
+	level2YAML := `type: detector
+id: yaml-chain-level2
 produced_event:
   name: test_exec_enriched
   version: 1.0.0
@@ -443,7 +447,8 @@ func Test_YAMLDetectorFilters(t *testing.T) {
 	yamlDir := t.TempDir()
 
 	// Create a detector with specific pathname filter
-	detectorYAML := `id: yaml-test-filters
+	detectorYAML := `type: detector
+id: yaml-test-filters
 produced_event:
   name: test_filter_match
   version: 1.0.0
@@ -529,7 +534,8 @@ func Test_YAMLDetectorErrorHandling(t *testing.T) {
 	yamlDir := t.TempDir()
 
 	// Test 1: Invalid YAML syntax - should be logged but not crash
-	invalidYAML := `id: yaml-invalid
+	invalidYAML := `type: detector
+id: yaml-invalid
 produced_event:
   name: invalid_event
   version: 1.0.0
@@ -556,7 +562,8 @@ requirements:
 	createTempYAMLDetector(t, yamlDir, "missing_id.yaml", missingIDYAML)
 
 	// Test 3: Valid detector that should load successfully
-	validYAML := `id: yaml-test-valid
+	validYAML := `type: detector
+id: yaml-test-valid
 produced_event:
   name: test_valid_event
   version: 1.0.0

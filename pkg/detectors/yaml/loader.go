@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 )
 
@@ -55,17 +57,7 @@ func LoadFromDirectory(dir string) ([]detection.EventDetector, []error) {
 		return detectors, loaderErrors
 	}
 
-	// Load shared lists from {dir}/lists/ subdirectory (optional)
-	lists, err := LoadListsFromDirectory(dir)
-	if err != nil {
-		loaderErrors = append(loaderErrors, &LoaderError{
-			FilePath: dir,
-			Err:      fmt.Errorf("failed to load lists: %w", err),
-		})
-		return detectors, loaderErrors
-	}
-
-	// Read directory contents
+	// Read directory (flat - no subdirectories)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		loaderErrors = append(loaderErrors, &LoaderError{
@@ -75,28 +67,91 @@ func LoadFromDirectory(dir string) ([]detection.EventDetector, []error) {
 		return detectors, loaderErrors
 	}
 
-	// Process each file
+	// PASS 1: Categorize all YAML files by type (read each file ONCE)
+	listPaths := make([]string, 0)
+	detectorPaths := make([]string, 0)
+
 	for _, entry := range entries {
-		// Skip directories
+		// Skip subdirectories (flat structure only)
 		if entry.IsDir() {
 			continue
 		}
 
-		// Only process .yaml and .yml files
+		// Skip non-YAML files
 		name := entry.Name()
 		if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
 			continue
 		}
 
-		filePath := filepath.Join(dir, name)
+		path := filepath.Join(dir, name)
 
-		// Load the detector with shared lists
-		detector, err := loadFromFile(filePath, lists)
+		// Peek at type field
+		fileType, err := peekFileType(path)
 		if err != nil {
 			loaderErrors = append(loaderErrors, &LoaderError{
-				FilePath: filePath,
+				FilePath: path,
+				Err:      fmt.Errorf("failed to read type field: %w", err),
+			})
+			continue
+		}
+
+		// Route by type
+		switch fileType {
+		case ListTypeString:
+			listPaths = append(listPaths, path)
+		case TypeDetector:
+			detectorPaths = append(detectorPaths, path)
+		case "":
+			loaderErrors = append(loaderErrors, &LoaderError{
+				FilePath: path,
+				Err:      errors.New("missing required field 'type'"),
+			})
+		default:
+			loaderErrors = append(loaderErrors, &LoaderError{
+				FilePath: path,
+				Err:      fmt.Errorf("invalid type '%s', must be 'detector' or 'string_list'", fileType),
+			})
+		}
+	}
+
+	// PASS 2: Load all lists
+	lists := make(map[string][]string)
+	for _, path := range listPaths {
+		listDef, err := loadListFile(path)
+		if err != nil {
+			loaderErrors = append(loaderErrors, &LoaderError{
+				FilePath: path,
 				Err:      err,
 			})
+			continue
+		}
+
+		// Validate list name
+		if err := validateListName(listDef.Name); err != nil {
+			loaderErrors = append(loaderErrors, &LoaderError{
+				FilePath: path,
+				Err:      err,
+			})
+			continue
+		}
+
+		// Check for duplicates
+		if _, exists := lists[listDef.Name]; exists {
+			loaderErrors = append(loaderErrors, &LoaderError{
+				FilePath: path,
+				Err:      fmt.Errorf("duplicate list name '%s'", listDef.Name),
+			})
+			continue
+		}
+
+		lists[listDef.Name] = listDef.Values
+	}
+
+	// PASS 3: Load all detectors with lists context
+	for _, path := range detectorPaths {
+		detector, err := LoadFromFile(path, lists)
+		if err != nil {
+			loaderErrors = append(loaderErrors, err)
 			continue
 		}
 
@@ -104,6 +159,26 @@ func LoadFromDirectory(dir string) ([]detection.EventDetector, []error) {
 	}
 
 	return detectors, loaderErrors
+}
+
+// peekFileType reads just the type field from a YAML file
+// Returns empty string if type field is missing
+func peekFileType(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	var peek struct {
+		Type string `yaml:"type"`
+	}
+
+	if err := yaml.Unmarshal(data, &peek); err != nil {
+		return "", err
+	}
+
+	// Normalize: trim whitespace, lowercase for case-insensitive comparison
+	return strings.TrimSpace(strings.ToLower(peek.Type)), nil
 }
 
 // LoadFromDirectories loads detectors from multiple directories

@@ -1,5 +1,5 @@
-name: SHELL_BINARIES
 type: string_list
+name: SHELL_BINARIES
 values:
   - /bin/sh
   - /bin/bash

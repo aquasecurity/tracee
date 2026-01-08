@@ -1,3 +1,4 @@
+type: detector
 id: DRV-TEST-001
 produced_event:
   name: test_derived_event

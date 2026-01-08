@@ -1,3 +1,4 @@
+type: detector
 id: chain-test-level1
 produced_event:
   name: netcat_execution

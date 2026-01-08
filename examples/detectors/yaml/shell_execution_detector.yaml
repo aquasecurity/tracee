@@ -1,3 +1,4 @@
+type: detector
 id: yaml-shell-exec
 produced_event:
   name: shell_execution_detected

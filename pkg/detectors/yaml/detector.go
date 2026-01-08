@@ -301,11 +301,15 @@ func convertToEventValue(name string, value interface{}) (*v1beta1.EventValue, e
 	}
 }
 
-// LoadFromFile loads a YAML detector from a file (convenience function for testing)
-// For production use, call LoadFromDirectory which handles shared lists
-func LoadFromFile(filePath string) (*YAMLDetector, error) {
-	// No shared lists when loading individual files
-	return loadFromFile(filePath, nil)
+// LoadFromFile loads a YAML detector from a file with optional shared lists
+func LoadFromFile(filePath string, lists map[string][]string) (*YAMLDetector, error) {
+	// If no lists provided, use empty map
+	if lists == nil {
+		lists = make(map[string][]string)
+	}
+
+	// Delegate to internal function (which already accepts lists)
+	return loadFromFile(filePath, lists)
 }
 
 // loadFromFile loads a YAML detector from a file with optional shared lists

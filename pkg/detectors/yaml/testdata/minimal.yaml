@@ -1,3 +1,4 @@
+type: detector
 id: MIN-TEST-001
 produced_event:
   name: minimal_detector

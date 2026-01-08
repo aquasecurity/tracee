@@ -1,3 +1,4 @@
+type: detector
 id: chain-test-level3
 produced_event:
   name: netcat_privileged_alert
