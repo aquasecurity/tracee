@@ -465,7 +465,7 @@ requirements:
     - name: sched_process_exec
       dependency: required
       data_filters:
-        - pathname=/usr/bin/cat
+        - pathname=/usr/bin/true
 
 auto_populate:
   detected_from: true
@@ -494,32 +494,34 @@ output:
 	buf.Clear()
 
 	// Test 1: Execute matching pathname - should fire
-	cmd := exec.Command("/usr/bin/cat", "/dev/null")
+	cmd := exec.Command("/usr/bin/true")
 	err := cmd.Run()
-	require.NoError(t, err, "Failed to execute /usr/bin/cat")
+	require.NoError(t, err, "Failed to execute /usr/bin/true")
 
 	time.Sleep(1 * time.Second)
 
 	matchedEvt := waitForDetectorEvent(buf, "test_filter_match", 3*time.Second)
-	assert.NotNil(t, matchedEvt, "Detector should fire for matching pathname /usr/bin/cat")
+	assert.NotNil(t, matchedEvt, "Detector should fire for matching pathname /usr/bin/true")
 
 	if matchedEvt != nil {
 		matchedPath := getArgValue(matchedEvt, "matched_path")
-		assert.Contains(t, matchedPath, "/usr/bin/cat", "matched_path should contain /usr/bin/cat")
+		assert.Contains(t, matchedPath, "/usr/bin/true", "matched_path should contain /usr/bin/true")
 	}
+
+	// Wait for any remaining events from test 1 to arrive before clearing
+	time.Sleep(200 * time.Millisecond)
 
 	// Clear buffer for next test
 	buf.Clear()
 
 	// Test 2: Execute non-matching pathname - should NOT fire
-	cmd = exec.Command("/usr/bin/id")
-	err = cmd.Run()
-	require.NoError(t, err, "Failed to execute /usr/bin/id")
+	cmd = exec.Command("/usr/bin/false")
+	_ = cmd.Run() // /usr/bin/false exits with code 1 by design, ignore error
 
 	time.Sleep(1 * time.Second)
 
 	unmatchedEvt := waitForDetectorEvent(buf, "test_filter_match", 2*time.Second)
-	assert.Nil(t, unmatchedEvt, "Detector should NOT fire for non-matching pathname /usr/bin/id")
+	assert.Nil(t, unmatchedEvt, "Detector should NOT fire for non-matching pathname /usr/bin/false")
 }
 
 // Test_YAMLDetectorErrorHandling tests graceful handling of invalid YAML and missing fields
