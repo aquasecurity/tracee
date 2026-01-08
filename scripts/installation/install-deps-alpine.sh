@@ -13,6 +13,10 @@ __LIB_DIR="${SCRIPT_DIR}/.."
 info "Starting Tracee dependency installation on Alpine Linux"
 
 # Configuration
+# When changing GOLANG_VERSION, update the corresponding checksum files in:
+#   scripts/installation/checksums/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
+#   scripts/installation/checksums/go${GOLANG_VERSION}.linux-arm64.tar.gz.sha256
+# Get checksums from: https://go.dev/dl/ (click "Show checksum" for each file)
 GOLANG_VERSION="1.24.11"
 STATICCHECK_VERSION="2025.1"
 REVIVE_VERSION="v1.7.0"
@@ -60,24 +64,46 @@ install_golang() {
     require_cmds curl tar
 
     # Detect architecture for Go download
-    ARCH=$(uname -m)
-    case "$ARCH" in
-        x86_64) GOARCH="amd64" ;;
-        aarch64) GOARCH="arm64" ;;
+    install_golang_arch=$(uname -m)
+    install_golang_goarch=""
+    case "${install_golang_arch}" in
+        x86_64) install_golang_goarch="amd64" ;;
+        aarch64) install_golang_goarch="arm64" ;;
         *)
-            error "Unsupported architecture: $ARCH"
-            exit 1
+            die "Unsupported architecture: ${install_golang_arch}"
             ;;
     esac
+
+    install_golang_tarball="go${GOLANG_VERSION}.linux-${install_golang_goarch}.tar.gz"
+    install_golang_checksum_file="${SCRIPT_DIR}/checksums/${install_golang_tarball}.sha256"
+    install_golang_url="https://go.dev/dl/${install_golang_tarball}"
+
+    # Check that the checksum file exists
+    if [ ! -f "${install_golang_checksum_file}" ]; then
+        die "Go checksum file not found: ${install_golang_checksum_file}
+Please create the checksum file with the SHA256 from https://go.dev/dl/"
+    fi
 
     # Remove any existing Go installation
     rm -f /usr/bin/go /usr/bin/gofmt
     rm -rf /usr/local/go
 
-    # Download and install Go
-    curl -L -o /tmp/golang.tar.gz "https://go.dev/dl/go${GOLANG_VERSION}.linux-${GOARCH}.tar.gz"
-    tar -C /usr/local -xzf /tmp/golang.tar.gz
-    rm /tmp/golang.tar.gz
+    # Download Go tarball
+    info "Downloading Go ${GOLANG_VERSION}..."
+    if ! curl -fsSL -o "/tmp/${install_golang_tarball}" "${install_golang_url}"; then
+        die "Failed to download Go tarball from ${install_golang_url}"
+    fi
+
+    # Verify the checksum before extraction
+    if ! verify_sha256_checksum "/tmp/${install_golang_tarball}" "${install_golang_checksum_file}" "Go ${GOLANG_VERSION}"; then
+        rm -f "/tmp/${install_golang_tarball}"
+        die "Aborting Go installation due to checksum verification failure"
+    fi
+
+    # Checksum verified, proceed with extraction
+    info "Extracting Go to /usr/local..."
+    tar -C /usr/local -xzf "/tmp/${install_golang_tarball}"
+    rm -f "/tmp/${install_golang_tarball}"
 
     # Create symlinks
     ln -s /usr/local/go/bin/go /usr/bin/go

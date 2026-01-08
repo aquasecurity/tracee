@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Comprehensive dependency installation script for Tracee (Ubuntu/Debian)
-# For use in Vagrant VMs and Ubuntu-based environments
+# Comprehensive dependency installation script for Tracee (CentOS/RHEL/Amazon Linux)
+# For use in AMI preparation and CentOS-based environments
 
 set -euo pipefail
 
@@ -11,7 +11,7 @@ __LIB_DIR="${SCRIPT_DIR}/.."
 # shellcheck disable=SC1091
 . "${__LIB_DIR}/lib.sh"
 
-info "Starting Tracee dependency installation on Ubuntu/Debian"
+info "Starting Tracee dependency installation on CentOS/RHEL"
 
 # Configuration
 # When changing GOLANG_VERSION, update the corresponding checksum files in:
@@ -24,37 +24,66 @@ REVIVE_VERSION="v1.7.0"
 GOIMPORTS_REVISER_VERSION="v3.8.2"
 ERRCHECK_VERSION="v1.9.0"
 
-wait_for_apt_locks() {
-    info "Waiting for apt locks to be released..."
-    while sudo fuser /var/lib/dpkg/lock-frontend > /dev/null 2>&1 || sudo fuser /var/lib/apt/lists/lock > /dev/null 2>&1; do
-        sleep 1
-    done
+# Detect package manager (dnf preferred over yum)
+detect_pkg_manager() {
+    if command -v dnf > /dev/null 2>&1; then
+        echo "dnf"
+    elif command -v yum > /dev/null 2>&1; then
+        echo "yum"
+    else
+        die "No supported package manager found (dnf or yum required)"
+    fi
 }
+
+PKG_MANAGER=$(detect_pkg_manager)
+info "Using package manager: ${PKG_MANAGER}"
 
 install_base_packages() {
     info "Installing base packages"
-    require_cmds apt-get
 
-    wait_for_apt_locks
-    apt-get update
-    apt-get install -y \
-        bsdutils \
-        build-essential \
-        pkgconf \
-        zlib1g-dev \
-        libelf-dev \
-        libzstd-dev \
-        protobuf-compiler \
+    # Enable EPEL repository for additional packages
+    if [[ "${PKG_MANAGER}" == "dnf" ]]; then
+        ${PKG_MANAGER} install -y epel-release || ${PKG_MANAGER} install -y \
+            "https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm" || true
+    else
+        ${PKG_MANAGER} install -y epel-release || true
+    fi
+
+    # Enable CRB (CodeReady Builder) repository for additional packages
+    if command -v crb > /dev/null 2>&1; then
+        crb enable || true
+    elif ${PKG_MANAGER} config-manager --help > /dev/null 2>&1; then
+        ${PKG_MANAGER} config-manager --set-enabled crb 2> /dev/null \
+            || ${PKG_MANAGER} config-manager --set-enabled powertools 2> /dev/null || true
+    fi
+
+    # Use --allowerasing to handle curl-minimal vs curl conflicts in minimal images
+    ${PKG_MANAGER} install -y --allowerasing \
+        gcc \
+        gcc-c++ \
+        make \
+        pkgconfig \
+        zlib-devel \
+        elfutils-libelf-devel \
+        libzstd-devel \
         curl \
         tar \
+        xz \
         git \
-        make \
         ca-certificates \
         wget \
-        linux-tools-common \
-        iputils-ping \
-        netcat-openbsd \
-        bpftrace
+        iproute \
+        iputils \
+        nmap-ncat
+
+    # Install protobuf - package name varies by distro version
+    ${PKG_MANAGER} install -y protobuf-devel protobuf-compiler 2> /dev/null \
+        || ${PKG_MANAGER} install -y protobuf 2> /dev/null \
+        || warn "protobuf packages not available - may need manual installation"
+
+    # Install bpftrace if available
+    ${PKG_MANAGER} install -y bpftrace 2> /dev/null \
+        || warn "bpftrace not available in repositories"
 
     info "Base packages installed successfully"
 }
@@ -131,53 +160,55 @@ install_go_tools() {
 
     export GOROOT=/usr/local/go
     export GOPATH=/tmp/go
-    export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+    export PATH=${GOROOT}/bin:${GOPATH}/bin:${PATH}
 
     # Create GOPATH
-    mkdir -p "$GOPATH/bin"
+    mkdir -p "${GOPATH}/bin"
 
     # Install staticcheck
     info "Installing staticcheck ${STATICCHECK_VERSION}"
     go install "honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}"
-    cp "$GOPATH/bin/staticcheck" /usr/bin/
+    cp "${GOPATH}/bin/staticcheck" /usr/bin/
 
     # Install revive
     info "Installing revive ${REVIVE_VERSION}"
     go install "github.com/mgechev/revive@${REVIVE_VERSION}"
-    cp "$GOPATH/bin/revive" /usr/bin/
+    cp "${GOPATH}/bin/revive" /usr/bin/
 
     # Install goimports-reviser
     info "Installing goimports-reviser ${GOIMPORTS_REVISER_VERSION}"
     go install "github.com/incu6us/goimports-reviser/v3@${GOIMPORTS_REVISER_VERSION}"
-    cp "$GOPATH/bin/goimports-reviser" /usr/bin/
+    cp "${GOPATH}/bin/goimports-reviser" /usr/bin/
 
     # Install errcheck
     info "Installing errcheck ${ERRCHECK_VERSION}"
     go install "github.com/kisielk/errcheck@${ERRCHECK_VERSION}"
-    cp "$GOPATH/bin/errcheck" /usr/bin/
+    cp "${GOPATH}/bin/errcheck" /usr/bin/
 
     # Clean up GOPATH
-    rm -rf "$GOPATH"
+    rm -rf "${GOPATH}"
 
     info "Go tools installed successfully"
 }
 
 install_docker() {
     info "Installing Docker"
-    require_cmds apt-get curl
 
-    # Install lsb-release for Ubuntu codename detection
-    apt-get update
-    apt-get install -y lsb-release
+    # Remove old Docker installations
+    ${PKG_MANAGER} remove -y docker docker-client docker-client-latest \
+        docker-common docker-latest docker-latest-logrotate \
+        docker-logrotate docker-engine 2> /dev/null || true
 
-    # Add Docker GPG key and repository
-    rm -f /usr/share/keyrings/docker-archive-keyring.gpg
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    # Install Docker repository
+    ${PKG_MANAGER} install -y yum-utils || true
+    yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo 2> /dev/null \
+        || ${PKG_MANAGER} config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo || true
 
-    wait_for_apt_locks
-    apt-get update
-    apt-get install -y docker-ce-cli
+    # Install Docker CLI
+    ${PKG_MANAGER} install -y docker-ce-cli || {
+        warn "Could not install Docker from official repo, trying alternatives"
+        ${PKG_MANAGER} install -y docker || true
+    }
 
     info "Docker installed successfully"
 }
@@ -185,14 +216,20 @@ install_docker() {
 verify_installation() {
     info "Verifying installation"
 
-    # Check critical tools (Docker might not be available in some environments)
-    require_cmds go gofmt clang clang-format staticcheck revive goimports-reviser errcheck
+    # Check critical tools
+    require_cmds go gofmt clang staticcheck revive goimports-reviser errcheck
 
     # Show versions
     info "Installation verification:"
     go version
     clang --version | head -n1
-    clang-format --version | head -n1
+
+    if command -v clang-format > /dev/null 2>&1; then
+        clang-format --version | head -n1
+    else
+        warn "clang-format not available"
+    fi
+
     staticcheck -version
 
     # Check Docker availability (optional)
@@ -206,7 +243,7 @@ verify_installation() {
 }
 
 main() {
-    info "=== Tracee Dependencies Installation (Ubuntu/Debian) ==="
+    info "=== Tracee Dependencies Installation (CentOS/RHEL) ==="
 
     install_base_packages
     install_golang

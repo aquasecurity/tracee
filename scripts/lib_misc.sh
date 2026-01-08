@@ -290,6 +290,174 @@ next_available_fd() {
     printf '%s\n' "$((max_fd + 1))"
 }
 
+# verify_gpg_signature verifies a file's GPG signature using a provided public key.
+# Creates a temporary GPG home directory, imports the key, verifies the signature, and cleans up.
+#
+# $1: ARCHIVE_FILE - Path to the file to verify.
+# $2: SIGNATURE_FILE - Path to the detached signature file (.sig).
+# $3: PUBLIC_KEY_FILE - Path to the GPG public key file (.asc or .gpg).
+# $4: DESCRIPTION - Optional description for log messages (default: "file").
+#
+# Usage:
+#   verify_gpg_signature ARCHIVE_FILE SIGNATURE_FILE PUBLIC_KEY_FILE [DESCRIPTION]
+#
+# Example:
+#   verify_gpg_signature "awscliv2.zip" "awscliv2.zip.sig" "aws-cli-public-key.asc" "AWS CLI"
+#
+# Returns:
+#   0 if signature verification succeeds, non-zero on failure.
+verify_gpg_signature() {
+    verify_gpg_signature_archive="$1"
+    verify_gpg_signature_sig="$2"
+    verify_gpg_signature_key="$3"
+    verify_gpg_signature_desc="${4:-file}"
+    verify_gpg_signature_home=""
+    verify_gpg_signature_status=0
+
+    if [ -z "${verify_gpg_signature_archive}" ]; then
+        __error "verify_gpg_signature: No ARCHIVE_FILE provided"
+        return 1
+    fi
+    if [ -z "${verify_gpg_signature_sig}" ]; then
+        __error "verify_gpg_signature: No SIGNATURE_FILE provided"
+        return 1
+    fi
+    if [ -z "${verify_gpg_signature_key}" ]; then
+        __error "verify_gpg_signature: No PUBLIC_KEY_FILE provided"
+        return 1
+    fi
+
+    # Check that required files exist
+    if [ ! -f "${verify_gpg_signature_archive}" ]; then
+        __error "verify_gpg_signature: Archive file not found: ${verify_gpg_signature_archive}"
+        return 1
+    fi
+    if [ ! -f "${verify_gpg_signature_sig}" ]; then
+        __error "verify_gpg_signature: Signature file not found: ${verify_gpg_signature_sig}"
+        return 1
+    fi
+    if [ ! -f "${verify_gpg_signature_key}" ]; then
+        __error "verify_gpg_signature: Public key file not found: ${verify_gpg_signature_key}"
+        return 1
+    fi
+
+    info "Verifying ${verify_gpg_signature_desc} signature..."
+
+    # Create a temporary directory for GPG keyring
+    verify_gpg_signature_home="$(mktemp -d)" || {
+        __error "verify_gpg_signature: Failed to create temporary directory"
+        return 1
+    }
+
+    # Import the public key into temporary keyring
+    if ! gpg \
+        --homedir "${verify_gpg_signature_home}" \
+        --batch \
+        --quiet \
+        --import "${verify_gpg_signature_key}" 2> /dev/null; then
+        __error "verify_gpg_signature: Failed to import GPG public key"
+        rm -rf "${verify_gpg_signature_home}"
+        return 1
+    fi
+
+    # Verify the signature
+    if gpg \
+        --homedir "${verify_gpg_signature_home}" \
+        --batch \
+        --verify \
+        "${verify_gpg_signature_sig}" \
+        "${verify_gpg_signature_archive}" 2> /dev/null; then
+        info "${verify_gpg_signature_desc} signature verification succeeded"
+        verify_gpg_signature_status=0
+    else
+        error "${verify_gpg_signature_desc} signature verification FAILED"
+        error "The downloaded archive may have been tampered with"
+        verify_gpg_signature_status=1
+    fi
+
+    # Cleanup GPG home directory
+    rm -rf "${verify_gpg_signature_home}"
+    return "${verify_gpg_signature_status}"
+}
+
+# verify_sha256_checksum verifies a file's SHA256 checksum against an expected value.
+#
+# $1: TARGET_FILE - Path to the file to verify.
+# $2: EXPECTED_CHECKSUM - Expected SHA256 checksum (64 hex characters) or path to checksum file.
+# $3: DESCRIPTION - Optional description for log messages (default: "file").
+#
+# Usage:
+#   verify_sha256_checksum TARGET_FILE EXPECTED_CHECKSUM [DESCRIPTION]
+#
+# Example:
+#   verify_sha256_checksum "runner.tar.gz" "abc123..." "GitHub Actions Runner"
+#   verify_sha256_checksum "runner.tar.gz" "runner.tar.gz.sha256" "GitHub Actions Runner"
+#
+# Returns:
+#   0 if checksum verification succeeds, non-zero on failure.
+verify_sha256_checksum() {
+    verify_sha256_file="$1"
+    verify_sha256_expected="$2"
+    verify_sha256_desc="${3:-file}"
+    verify_sha256_computed=""
+
+    if [ -z "${verify_sha256_file}" ]; then
+        __error "verify_sha256_checksum: No TARGET_FILE provided"
+        return 1
+    fi
+    if [ -z "${verify_sha256_expected}" ]; then
+        __error "verify_sha256_checksum: No EXPECTED_CHECKSUM provided"
+        return 1
+    fi
+
+    # Check that the target file exists
+    if [ ! -f "${verify_sha256_file}" ]; then
+        __error "verify_sha256_checksum: Target file not found: ${verify_sha256_file}"
+        return 1
+    fi
+
+    # If expected is a file path, read the checksum from it
+    if [ -f "${verify_sha256_expected}" ]; then
+        # Checksum file format: "checksum  filename" or just "checksum"
+        verify_sha256_expected=$(awk '{print $1}' "${verify_sha256_expected}") || {
+            __error "verify_sha256_checksum: Failed to read checksum file"
+            return 1
+        }
+    fi
+
+    info "Verifying ${verify_sha256_desc} checksum..."
+
+    # Compute the SHA256 checksum - try shasum first (macOS), then sha256sum (Linux)
+    if command -v shasum > /dev/null 2>&1; then
+        verify_sha256_computed=$(shasum -a 256 "${verify_sha256_file}" | awk '{print $1}') || {
+            __error "verify_sha256_checksum: Failed to compute checksum with shasum"
+            return 1
+        }
+    elif command -v sha256sum > /dev/null 2>&1; then
+        verify_sha256_computed=$(sha256sum "${verify_sha256_file}" | awk '{print $1}') || {
+            __error "verify_sha256_checksum: Failed to compute checksum with sha256sum"
+            return 1
+        }
+    else
+        __error "verify_sha256_checksum: No SHA256 tool found (need shasum or sha256sum)"
+        return 1
+    fi
+
+    # Compare checksums (case-insensitive)
+    verify_sha256_expected_lower=$(printf '%s' "${verify_sha256_expected}" | tr '[:upper:]' '[:lower:]')
+    verify_sha256_computed_lower=$(printf '%s' "${verify_sha256_computed}" | tr '[:upper:]' '[:lower:]')
+
+    if [ "${verify_sha256_computed_lower}" = "${verify_sha256_expected_lower}" ]; then
+        info "${verify_sha256_desc} checksum verification succeeded"
+        return 0
+    else
+        error "${verify_sha256_desc} checksum verification FAILED"
+        error "Expected: ${verify_sha256_expected}"
+        error "Computed: ${verify_sha256_computed}"
+        return 1
+    fi
+}
+
 # capture_outputs captures the outputs of a command (stdout, stderr and return value) into variables.
 # It uses temporary files to store the outputs and ensures that the files are cleaned up afterwards.
 # The captured outputs are then assigned to the original variables.
