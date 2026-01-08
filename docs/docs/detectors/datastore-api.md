@@ -713,6 +713,10 @@ func (d *MyDetector) Init(params detection.DetectorParams) error {
 - Returns only live, running containers (excludes expired/dead)
 - Cleaner alternative to buffering `existing_container` events
 
+**Container Enrichment**:
+
+When `--enrichment container` flag is used, containers discovered at startup are automatically enriched with runtime metadata (name, image, digest, pod information). Without enrichment, only container ID and runtime are available from cgroup paths.
+
 ---
 
 ## SystemStore
