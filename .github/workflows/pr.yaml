@@ -522,6 +522,8 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
+      - name: "System Info"
+        run: ./scripts/system_info.sh
       - name: "Environment Variables"
         run: |
           if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
