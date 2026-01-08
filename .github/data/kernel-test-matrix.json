@@ -100,43 +100,27 @@
         "arch": "aarch64"
     },
     {
-        "name": "Noble 6.8 x86_64",
-        "ami": "0cc63426ae75d47c8",
+        "name": "Ubuntu 24.04 generic (6.8.0-90) [x86_64]",
+        "ami_name": "ubuntu-24.04-generic-6.8.0-90-x86_64",
+        "ami": "0aa4a09a843b6fa93",
         "arch": "x86_64"
     },
     {
-        "name": "Noble 6.8 aarch64",
-        "ami": "0f5260685b3ec2293",
+        "name": "Ubuntu 24.04 generic (6.8.0-90) [aarch64]",
+        "ami_name": "ubuntu-24.04-generic-6.8.0-90-aarch64",
+        "ami": "01a8165c076aa2864",
         "arch": "aarch64"
     },
     {
-        "name": "Noble 6.10 x86_64",
-        "ami": "0ae23eabda70efc60",
+        "name": "Ubuntu 24.04 generic (6.11.0-29) [x86_64]",
+        "ami_name": "ubuntu-24.04-generic-6.11.0-29-x86_64",
+        "ami": "03dbff05cae3a30d0",
         "arch": "x86_64"
     },
     {
-        "name": "Noble 6.10 aarch64",
-        "ami": "01ce0f71400b5ff38",
-        "arch": "aarch64"
-    },
-    {
-        "name": "Noble 6.11 x86_64",
-        "ami": "0ce1f88aa63091921",
-        "arch": "x86_64"
-    },
-    {
-        "name": "Noble 6.11 aarch64",
-        "ami": "0123508488affb578",
-        "arch": "aarch64"
-    },
-    {
-        "name": "Noble 6.12 x86_64",
-        "ami": "0e38f3caba1b4234d",
-        "arch": "x86_64"
-    },
-    {
-        "name": "Noble 6.12 aarch64",
-        "ami": "0547f429681dc1f2a",
+        "name": "Ubuntu 24.04 generic (6.11.0-29) [aarch64]",
+        "ami_name": "ubuntu-24.04-generic-6.11.0-29-aarch64",
+        "ami": "07774797557132122",
         "arch": "aarch64"
     }
 ]
