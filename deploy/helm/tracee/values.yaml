@@ -83,11 +83,13 @@ config:
   kernelArtifacts: ""
   kernelControlPlane: ""
   pipeline: ""
-  healthz: true
-  metrics: true
-  pprof: false
-  pyroscope: false
-  listenAddr: :3366
+  server:
+    httpAddress: ":3366"
+    grpcAddress: ""
+    metrics: true
+    healthz: true
+    pprof: false
+    pyroscope: false
   workdir: ""
   signaturesDir: ""
   log:
