@@ -6596,6 +6596,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#listcontainers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ListContainers
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9056,6 +9067,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#listcontainers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ListContainers
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9944,6 +9966,19 @@
 <span class="w">    </span><span class="c1">// GetContainerByName retrieves container by name</span>
 <span class="w">    </span><span class="c1">// Returns ErrNotFound if not found</span>
 <span class="w">    </span><span class="nx">GetContainerByName</span><span class="p">(</span><span class="nx">name</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="nx">ContainerInfo</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c1">// ListContainers returns currently running containers, optionally filtered</span>
+<span class="w">    </span><span class="c1">// Pass nil filter to return all containers</span>
+<span class="w">    </span><span class="c1">// Returns empty slice if no containers match the filter</span>
+<span class="w">    </span><span class="nx">ListContainers</span><span class="p">(</span><span class="nx">filter</span><span class="w"> </span><span class="o">*</span><span class="nx">ContainerFilter</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="o">*</span><span class="nx">ContainerInfo</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// ContainerFilter allows filtering containers by various criteria</span>
+<span class="c1">// All fields are optional - nil values mean the field is not used for filtering</span>
+<span class="kd">type</span><span class="w"> </span><span class="nx">ContainerFilter</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">Name</span><span class="w">    </span><span class="o">*</span><span class="kt">string</span><span class="w">  </span><span class="c1">// Filter by container name (exact match)</span>
+<span class="w">    </span><span class="nx">Image</span><span class="w">   </span><span class="o">*</span><span class="kt">string</span><span class="w">  </span><span class="c1">// Filter by image name (exact match)</span>
+<span class="w">    </span><span class="nx">Runtime</span><span class="w"> </span><span class="o">*</span><span class="kt">string</span><span class="w">  </span><span class="c1">// Filter by runtime (e.g., &quot;docker&quot;, &quot;containerd&quot;)</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>Important:</strong> Container enrichment (<code>--enrichment container</code>) is required for container metadata:</p>
@@ -10052,11 +10087,71 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;failed to get container: %w&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span>
 <span class="p">}</span>
 
-<span class="nx">d</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nx">Infow</span><span class="p">(</span><span class="s">&quot;Found container by name&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s">&quot;name&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">container</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span>
-<span class="w">    </span><span class="s">&quot;id&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">container</span><span class="p">.</span><span class="nx">ID</span><span class="p">,</span>
-<span class="w">    </span><span class="s">&quot;image&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">container</span><span class="p">.</span><span class="nx">Image</span><span class="p">)</span>
+<span class="nx">d</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nx">Infow</span><span class="p">(</span><span class="s">&quot;Found container&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">container</span><span class="p">.</span><span class="nx">ID</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;image&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">container</span><span class="p">.</span><span class="nx">Image</span><span class="p">)</span>
 </code></pre></div>
+<h4 id="listcontainers">ListContainers<a class="headerlink" href="#listcontainers" title="Permanent link">&para;</a></h4>
+<p>List all currently running containers, with optional filtering by name, image, or runtime using functional options.</p>
+<p><strong>Signature</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="nx">ListContainers</span><span class="p">(</span><span class="nx">opts</span><span class="w"> </span><span class="o">...</span><span class="nx">ContainerFilterOption</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="o">*</span><span class="nx">ContainerInfo</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Filter Options</strong>:</p>
+<ul>
+<li><code>WithName(name string)</code>: Filter by exact container name match</li>
+<li><code>WithImage(image string)</code>: Filter by exact image name match</li>
+<li><code>WithRuntime(runtime string)</code>: Filter by runtime type ("docker", "containerd", "crio", "podman")</li>
+</ul>
+<p><strong>Returns</strong>:</p>
+<ul>
+<li><code>[]*ContainerInfo</code>: Slice of containers matching the filter (empty if none found)</li>
+<li><code>error</code>: Error if the operation fails (never returns <code>ErrNotFound</code>)</li>
+</ul>
+<p><strong>Use Cases</strong>:</p>
+<ul>
+<li>Container discovery at startup</li>
+<li>Periodic container inventory</li>
+<li>Finding all containers running a specific image</li>
+<li>Filtering containers by runtime type</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// List all containers (no filter)</span>
+<span class="nx">containers</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">d</span><span class="p">.</span><span class="nx">dataStores</span><span class="p">.</span><span class="nx">Containers</span><span class="p">().</span><span class="nx">ListContainers</span><span class="p">()</span>
+<span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;failed to list containers: %w&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// Filter by image</span>
+<span class="nx">nginxContainers</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">d</span><span class="p">.</span><span class="nx">dataStores</span><span class="p">.</span><span class="nx">Containers</span><span class="p">().</span><span class="nx">ListContainers</span><span class="p">(</span>
+<span class="w">    </span><span class="nx">datastores</span><span class="p">.</span><span class="nx">WithImage</span><span class="p">(</span><span class="s">&quot;nginx:latest&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1">// Filter by multiple criteria (AND logic)</span>
+<span class="nx">containers</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">d</span><span class="p">.</span><span class="nx">dataStores</span><span class="p">.</span><span class="nx">Containers</span><span class="p">().</span><span class="nx">ListContainers</span><span class="p">(</span>
+<span class="w">    </span><span class="nx">datastores</span><span class="p">.</span><span class="nx">WithImage</span><span class="p">(</span><span class="s">&quot;redis:7&quot;</span><span class="p">),</span>
+<span class="w">    </span><span class="nx">datastores</span><span class="p">.</span><span class="nx">WithRuntime</span><span class="p">(</span><span class="s">&quot;docker&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1">// Discover containers at detector initialization</span>
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">d</span><span class="w"> </span><span class="o">*</span><span class="nx">MyDetector</span><span class="p">)</span><span class="w"> </span><span class="nx">Init</span><span class="p">(</span><span class="nx">params</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorParams</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">containers</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">params</span><span class="p">.</span><span class="nx">DataStores</span><span class="p">.</span><span class="nx">Containers</span><span class="p">().</span><span class="nx">ListContainers</span><span class="p">()</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;failed to discover containers: %w&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="c1">// Initialize state based on existing containers</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">c</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">containers</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">d</span><span class="p">.</span><span class="nx">trackContainer</span><span class="p">(</span><span class="nx">c</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Notes</strong>:</p>
+<ul>
+<li>Pass <code>nil</code> filter to list all containers</li>
+<li>All filters use AND logic (must match all specified criteria)</li>
+<li>Returns only live, running containers (excludes expired/dead)</li>
+<li>Cleaner alternative to buffering <code>existing_container</code> events</li>
+</ul>
+<p><strong>Container Enrichment</strong>:</p>
+<p>When <code>--enrichment container</code> flag is used, containers discovered at startup are automatically enriched with runtime metadata (name, image, digest, pod information). Without enrichment, only container ID and runtime are available from cgroup paths.</p>
 <hr />
 <h2 id="systemstore">SystemStore<a class="headerlink" href="#systemstore" title="Permanent link">&para;</a></h2>
 <h3 id="interface_2">Interface<a class="headerlink" href="#interface_2" title="Permanent link">&para;</a></h3>
