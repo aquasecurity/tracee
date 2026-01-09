@@ -1,6 +1,6 @@
 # YAML Detectors
 
-YAML detectors provide a declarative way to define threat detection and derived events without writing Go code. They offer the same capabilities as Go detectors but with a simpler, configuration-based approach.
+YAML detectors provide a declarative way to define threat detection and derived events without writing Go code. They offer a simpler, configuration-based approach for common detection patterns.
 
 ## Overview
 
@@ -8,41 +8,11 @@ YAML detectors enable you to:
 
 - **Detect threats** by filtering events and generating alerts
 - **Derive events** by enriching or transforming existing events
-- **Extract runtime data** using CEL expressions or simple field names
 - **Write dynamic conditions** using Common Expression Language (CEL)
+- **Extract runtime data** using CEL expressions
 - **Auto-populate fields** like threat metadata and process ancestry
 - **Reuse policy syntax** for static event filtering
 - **Chain detectors** to build complex multi-level detection logic
-
-## File Format
-
-All YAML detector files must include a `type` field at the top:
-
-```yaml
-type: detector
-id: your-detector-id
-# ... rest of detector definition
-```
-
-**Type field values:**
-- `detector` - For threat and derived event detectors
-- `string_list` - For shared list variables
-
-The `type` field is **case-insensitive** (`detector`, `Detector`, `DETECTOR` all work).
-
-### Directory Structure
-
-Detectors and lists can coexist in the same flat directory:
-
-```
-detectors/
-  ├── suspicious_exec.yaml        # type: detector
-  ├── hidden_file.yaml            # type: detector
-  ├── shell_binaries.yaml         # type: string_list
-  └── suspicious_ports.yaml       # type: string_list
-```
-
-**Note:** Only the top-level directory is scanned - subdirectories are ignored.
 
 ## Quick Start
 
@@ -90,74 +60,10 @@ auto_populate:
 # Simple field extraction using CEL
 output:
   fields:
-    - name: pathname
-      expression: getEventData("pathname")
-    - name: binary_name
-      expression: getEventData("comm")
-```
-
-### Simplified CEL Syntax
-
-#### 1. Data Field Access
-
-The `getEventData()` function extracts event data fields:
-
-```yaml
-output:
-  fields:
     - name: binary_path
       expression: getEventData("pathname")
-    - name: user_id
-      expression: getEventData("uid")
-    - name: process_id
-      expression: getEventData("pid")
-```
-
-**Works with any type:**
-```yaml
-conditions:
-  - getEventData("pathname").startsWith("/tmp")    # String operations
-  - getEventData("pid") > 1000                     # Numeric comparisons
-  - getEventData("uid") == 0                       # Any type supported
-```
-
-#### 2. Top-Level Variables
-
-Access workload and timestamp directly:
-
-```yaml
-conditions:
-  - workload.container.id != ""
-  - workload.process.pid > 1000
-
-output:
-  fields:
-    - name: container_id
-      expression: workload.container.id
-    - name: pod_name
-      expression: workload.kubernetes.pod_name
-```
-
-**Available variables:**
-- `workload` - Process, container, and Kubernetes context
-- `timestamp` - Event timestamp
-
-**Example:**
-```yaml
-conditions:
-  - hasData("pathname")
-  - getEventData("pathname").startsWith("/tmp")
-  - getEventData("uid") == 0
-  - workload.container.id != ""
-
-output:
-  fields:
-    - name: binary
-      expression: getEventData("pathname")
-    - name: uid
-      expression: getEventData("uid")
-    - name: container
-      expression: workload.container.id
+    - name: binary_name
+      expression: workload.process.name
 ```
 
 ## Schema Reference
@@ -166,6 +72,7 @@ output:
 
 | Field | Required | Description |
 |-------|----------|-------------|
+| `type` | Yes | File type: `detector` (for detectors) or `string_list` (for shared lists). Case-insensitive. |
 | `id` | Yes | Unique detector identifier (e.g., `yaml-001`) |
 | `produced_event` | Yes | Definition of the event this detector produces |
 | `requirements` | Yes | Events and conditions required for this detector |
@@ -239,6 +146,7 @@ Filters use the same syntax as Tracee policies:
 - **Wildcards**: Prefix (`/tmp*`) or suffix (`*shadow`) matching
 
 Examples:
+
 ```yaml
 data_filters:
   - pathname=/etc/passwd
@@ -288,7 +196,7 @@ YAML detectors support dynamic runtime conditions using Common Expression Langua
 conditions:
   - hasData("pathname")  # Check if field exists
   - getEventData("pathname").startsWith("/tmp")  # String operations
-  - getEventData("uid") > 1000  # Numeric comparisons
+  - workload.process.uid > 1000  # Numeric comparisons
   - workload.container.id != ""  # Check container context
 ```
 
@@ -304,7 +212,7 @@ conditions:
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `getEventData("field")` | Extract data field | `getEventData("pathname")`, `getEventData("pid")` |
+| `getEventData("field")` | Extract data field | `getEventData("pathname")`, `getEventData("fd")` |
 | `hasData("field")` | Check if data field exists | `hasData("pathname")` |
 
 **String Utility Functions:**
@@ -321,6 +229,7 @@ conditions:
 | `dirname(path)` | Get directory from path | `dirname("/path/to/file.txt")` → `"/path/to"` |
 
 **Performance:**
+
 - Conditions are evaluated with 5ms timeout by default
 - Failed evaluations are logged and treated as `false`
 - CEL programs are compiled once at load time
@@ -348,14 +257,178 @@ output:
 | Extract directory | `dirname(getEventData("pathname"))` |
 | Split path components | `split(getEventData("pathname"), "/")` |
 | Join path components | `join(["usr", "bin", "nc"], "/")` |
-| Normalize case | `lower(getEventData("comm"))` |
+| Normalize case | `lower(workload.process.name)` |
 | Replace substring | `replace(getEventData("pathname"), "/tmp", "/var/tmp")` |
-| Combine fields | `getEventData("comm") + ":" + string(getEventData("pid"))` |
+| Combine fields | `workload.process.name + ":" + string(workload.process.pid)` |
 
 **Field Semantics:**
+
 - **name**: Required, the output field name
 - **expression**: Required, CEL expression to compute the value
 - **optional**: If `true`, missing/failed fields are skipped without error
+
+## Working with CEL
+
+Common Expression Language (CEL) is used throughout YAML detectors for conditions and data extraction. This section explains the key concepts and available functions.
+
+### Data Access
+
+#### Event Data Fields
+
+The `getEventData()` function extracts fields from the event's `data` section:
+
+```yaml
+output:
+  fields:
+    - name: binary_path
+      expression: getEventData("pathname")
+    - name: file_descriptor
+      expression: getEventData("fd")
+    - name: syscall_return
+      expression: getEventData("ret")
+```
+
+Use in conditions:
+
+```yaml
+conditions:
+  - getEventData("pathname").startsWith("/tmp")    # String operations
+  - getEventData("fd") > 2                         # Numeric comparisons
+  - getEventData("ret") == 0                       # Any type supported
+```
+
+#### Workload Context
+
+Access process, container, and Kubernetes information directly through the `workload` variable:
+
+```yaml
+conditions:
+  - workload.container.id != ""
+  - workload.process.pid > 1000
+  - workload.process.uid == 0
+
+output:
+  fields:
+    - name: container_id
+      expression: workload.container.id
+    - name: pod_name
+      expression: workload.kubernetes.pod_name
+    - name: process_name
+      expression: workload.process.name
+```
+
+**Available variables:**
+
+- `workload.process.*` - Process ID, name, uid, gid, etc.
+- `workload.container.*` - Container ID, name, image
+- `workload.kubernetes.*` - Pod name, namespace, labels
+- `timestamp` - Event timestamp
+
+### Complete Example
+
+```yaml
+conditions:
+  - hasData("pathname")                            # Check field exists
+  - getEventData("pathname").startsWith("/tmp")    # Event data
+  - workload.process.uid == 0                      # Workload context
+  - workload.container.id != ""                    # Container check
+
+output:
+  fields:
+    - name: binary
+      expression: getEventData("pathname")
+    - name: uid
+      expression: workload.process.uid
+    - name: container
+      expression: workload.container.id
+```
+
+## Shared Lists
+
+Shared lists allow you to define reusable lists of values (e.g., shell binaries, sensitive paths) that multiple detectors can reference. This avoids duplication and makes maintenance easier.
+
+### List Definition Format
+
+Lists are defined in YAML files placed in the **same directory** as your detectors.
+
+Each list file defines a named list:
+
+```yaml
+name: SHELL_BINARIES
+type: string_list
+values:
+  - /bin/sh
+  - /bin/bash
+  - /bin/dash
+  - /bin/zsh
+  - /usr/bin/sh
+  - /usr/bin/bash
+```
+
+**Naming convention:** List names must be uppercase snake_case (e.g., `SHELL_BINARIES`, `SENSITIVE_PATHS`).
+
+**Type:** Currently, only `string_list` is supported.
+
+### Using Lists in Detectors
+
+Reference list variables in CEL conditions using the `in` operator:
+
+```yaml
+id: yaml-shell-exec
+produced_event:
+  name: shell_execution_detected
+  version: 1.0.0
+  description: Detects execution of shell binaries
+  tags:
+    - execution
+  fields:
+    - name: shell_path
+      type: string
+
+requirements:
+  events:
+    - name: sched_process_exec
+
+conditions:
+  - getEventData("pathname") in SHELL_BINARIES  # Uses shared list
+
+output:
+  fields:
+    - name: shell_path
+      expression: getEventData("pathname")
+```
+
+### Complex List Expressions
+
+Lists work with standard CEL operators:
+
+```yaml
+conditions:
+  # Check membership in multiple lists
+  - getEventData("pathname") in SHELL_BINARIES || getEventData("pathname") in SCRIPT_INTERPRETERS
+
+  # Combine with other conditions
+  - getEventData("pathname") in SENSITIVE_PATHS && workload.container.id != ""
+
+  # Negate membership
+  - !(getEventData("pathname") in ALLOWED_BINARIES)
+```
+
+### List Loading Behavior
+
+- Lists are loaded once at startup from the same directory as detectors
+- Lists must have `type: string_list` at the top of the file
+- Lists are shared across all detectors in the same directory
+- Lists are optional - detectors without lists work as before
+- Invalid list files prevent all detectors in that directory from loading
+- Duplicate list names are not allowed
+
+### Benefits
+
+1. **No duplication**: Define common lists once, use in multiple detectors
+2. **Easy maintenance**: Update lists in one place
+3. **Zero runtime overhead**: Lists are compiled into the CEL environment at load time
+4. **Type safety**: Undefined list references are caught at compile time
 
 ## Detector Composition
 
@@ -482,96 +555,11 @@ Level 3: cryptominer_production_alert
 4. **Document Dependencies**: Clearly state what events are consumed
 5. **Version Carefully**: Breaking changes in base detectors affect all consumers
 
-## Shared Lists
+## Advanced: Datastore Functions
 
-Shared lists allow you to define reusable lists of values (e.g., shell binaries, sensitive paths) that multiple detectors can reference. This avoids duplication and makes maintenance easier.
+For complex detections that require querying system state beyond the current event, YAML detectors can use datastore functions in CEL conditions and output expressions. This enables detectors to make decisions based on process ancestry, container metadata, system information, and more.
 
-### List Definition Format
-
-Lists are defined in YAML files placed in the **same directory** as your detectors.
-
-Each list file defines a named list:
-
-```yaml
-name: SHELL_BINARIES
-type: string_list
-values:
-  - /bin/sh
-  - /bin/bash
-  - /bin/dash
-  - /bin/zsh
-  - /usr/bin/sh
-  - /usr/bin/bash
-```
-
-**Naming convention:** List names must be uppercase snake_case (e.g., `SHELL_BINARIES`, `SENSITIVE_PATHS`).
-
-**Type:** Currently, only `string_list` is supported.
-
-### Using Lists in Detectors
-
-Reference list variables in CEL conditions using the `in` operator:
-
-```yaml
-id: yaml-shell-exec
-produced_event:
-  name: shell_execution_detected
-  version: 1.0.0
-  description: Detects execution of shell binaries
-  tags:
-    - execution
-  fields:
-    - name: shell_path
-      type: string
-
-requirements:
-  events:
-    - name: sched_process_exec
-
-conditions:
-  - getEventData("pathname") in SHELL_BINARIES  # Uses shared list
-
-output:
-  fields:
-    - name: shell_path
-      expression: getEventData("pathname")
-```
-
-### Complex List Expressions
-
-Lists work with standard CEL operators:
-
-```yaml
-conditions:
-  # Check membership in multiple lists
-  - getEventData("pathname") in SHELL_BINARIES || getEventData("pathname") in SCRIPT_INTERPRETERS
-
-  # Combine with other conditions
-  - getEventData("pathname") in SENSITIVE_PATHS && workload.container.id != ""
-
-  # Negate membership
-  - !(getEventData("pathname") in ALLOWED_BINARIES)
-```
-
-### List Loading Behavior
-
-- Lists are loaded once at startup from the same directory as detectors
-- Lists must have `type: string_list` at the top of the file
-- Lists are shared across all detectors in the same directory
-- Lists are optional - detectors without lists work as before
-- Invalid list files prevent all detectors in that directory from loading
-- Duplicate list names are not allowed
-
-### Benefits
-
-1. **No duplication**: Define common lists once, use in multiple detectors
-2. **Easy maintenance**: Update lists in one place
-3. **Zero runtime overhead**: Lists are compiled into the CEL environment at load time
-4. **Type safety**: Undefined list references are caught at compile time
-
-## Datastore Functions
-
-YAML detectors can query system state using datastore functions in CEL conditions and output expressions. This enables detectors to make decisions based on process ancestry, container metadata, system information, and more.
+**Note:** Most detectors won't need these functions. Use static filters in `requirements` when possible for better performance.
 
 ### Process Functions
 
@@ -589,6 +577,7 @@ conditions:
 ```
 
 Returns a process object with fields:
+
 - `entity_id` (uint64) - Unique entity ID
 - `pid` (uint32) - Process ID
 - `ppid` (uint32) - Parent process ID
@@ -648,6 +637,7 @@ conditions:
 ```
 
 Returns a container object with fields:
+
 - `id` (string) - Container ID
 - `name` (string) - Container name
 - `image` (string) - Container image
@@ -694,6 +684,7 @@ conditions:
 ```
 
 Returns a system info object with fields:
+
 - `architecture` (string) - System architecture (x86_64, arm64, etc.)
 - `kernel_release` (string) - Kernel version (e.g., "5.15.0-91-generic")
 - `hostname` (string) - System hostname
@@ -719,6 +710,7 @@ conditions:
 ```
 
 Returns a list of symbol objects (multiple if aliases exist):
+
 - `name` (string) - Symbol name
 - `address` (uint64) - Symbol address
 - `module` (string) - Module name (e.g., "vmlinux")
@@ -754,6 +746,7 @@ conditions:
 ```
 
 Returns a DNS response object:
+
 - `query` (string) - Original DNS query
 - `ips` (list of strings) - Resolved IP addresses
 - `domains` (list of strings) - CNAME chain
@@ -791,15 +784,18 @@ Returns the syscall ID as `int`, or `-1` if not found.
 ### Return Values and Error Handling
 
 **Null handling:**
+
 - Functions return `null` when an entity is not found (safe for conditions)
 - Non-existent datastores return `null` (graceful degradation)
 - Use null-safe checks: `container.get(id) != null` or `container.get(id).image`
 
 **Error propagation:**
+
 - Unexpected errors (not "not found") cause condition evaluation to fail
 - The detector will log the error and skip the event
 
 **Performance considerations:**
+
 - Datastore lookups add latency (typically <1ms)
 - Use judiciously in high-frequency events
 - Prefer static filters (in `requirements`) over dynamic lookups when possible
@@ -884,6 +880,25 @@ conditions:
 ```
 
 ## Deployment
+
+### Directory Structure
+
+Detectors and lists can coexist in the same flat directory:
+
+```
+detectors/
+  ├── suspicious_exec.yaml        # type: detector
+  ├── hidden_file.yaml            # type: detector
+  ├── shell_binaries.list.yaml    # type: string_list
+  └── suspicious_ports.list.yaml  # type: string_list
+```
+
+**File Requirements:**
+
+- All files must include a `type` field: `detector` or `string_list`
+- The `type` field is case-insensitive
+- Only the top-level directory is scanned - subdirectories are ignored
+- List files should use `.list.yaml` suffix for clarity (optional but recommended)
 
 ### Default Search Path
 
@@ -1011,7 +1026,6 @@ Current limitations of YAML detectors:
 
 - **No state management**: Cannot track state across events (use Go detectors)
 - **No complex logic**: Cannot implement conditional branching or loops
-- **No data stores**: Cannot query system state (process tree, DNS cache, etc.)
 - **No custom types**: Limited to basic protobuf types
 - **No hot reload**: Requires Tracee restart to load new/updated detectors
 
