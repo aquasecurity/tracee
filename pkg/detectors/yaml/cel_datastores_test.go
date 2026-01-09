@@ -160,6 +160,30 @@ func (m *mockContainerStore) GetContainerByName(name string) (*datastores.Contai
 	return nil, datastores.ErrNotFound
 }
 
+func (m *mockContainerStore) ListContainers(opts ...datastores.ContainerFilterOption) ([]*datastores.ContainerInfo, error) {
+	// Build filter from options
+	filter := &datastores.ContainerFilter{}
+	for _, opt := range opts {
+		opt(filter)
+	}
+
+	var result []*datastores.ContainerInfo
+	for _, container := range m.containers {
+		// Apply filters
+		if filter.Name != nil && container.Name != *filter.Name {
+			continue
+		}
+		if filter.Image != nil && container.Image != *filter.Image {
+			continue
+		}
+		if filter.Runtime != nil && container.Runtime != *filter.Runtime {
+			continue
+		}
+		result = append(result, container)
+	}
+	return result, nil
+}
+
 // Mock SystemStore
 
 type mockSystemStore struct {
