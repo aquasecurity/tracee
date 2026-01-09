@@ -76,6 +76,7 @@ outputfile="${SCRIPT_TMP_DIR}/tracee-output-$$"
 tracee_command="./dist/tracee \
     --runtime workdir=$TRACEE_TMP_DIR \
     --output json:$outputfile \
+    --output option:exec-env \
     --logging file=$logfile \
     --server healthz \
     --policy ./tests/policies/kernel/kernel.yaml 2>&1 \
@@ -152,9 +153,32 @@ kill -SIGKILL "${tracee_pids[@]}" >/dev/null 2>&1
 
 info "= CHECKING TESTS RESULTS ======================================"
 info
+
+# Map detector IDs to event names (detectors produce events with "name" field, not "signatureID")
+# This is needed because detectors emit events with custom names (not just their detector ID)
+# Only detectors that produce events with different names than their ID need to be listed here
+declare -A detector_to_event=(
+    ["TRC-102"]="anti_debugging"
+    ["TRC-103"]="ptrace_code_injection"
+    ["TRC-104"]="dynamic_code_loading"
+    ["TRC-105"]="fileless_execution"
+    ["TRC-107"]="ld_preload"
+    ["TRC-1010"]="cgroup_release_agent"
+    ["TRC-1014"]="disk_mount"
+    ["TRC-1016"]="illegitimate_shell"
+    ["TRC-1018"]="k8s_cert_theft"
+    ["TRC-1022"]="dropped_executable"
+)
+
 for TEST in $TESTS; do
 found=0
-    cat $outputfile | grep "\"signatureID\":\"$TEST\"" -B2 && found=1
+    EVENT_NAME="${detector_to_event[$TEST]}"
+    if [[ -n "$EVENT_NAME" ]]; then
+        cat $outputfile | grep "\"name\":\"$EVENT_NAME\"" -B2 && found=1
+    else
+        info "$TEST: detector ID not mapped to event name; will be reported as failed if not found."
+        cat $outputfile | grep "\"signatureID\":\"$TEST\"" -B2 && found=1
+    fi
     info
     if [[ $found -eq 1 ]]; then
         info "$TEST: SUCCESS"

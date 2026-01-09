@@ -655,6 +655,29 @@ type DetectorOutput struct {
 ```
 {% endraw %}
 
+### Helper Functions
+
+For cleaner, self-documenting code, use these helpers instead of constructing `DetectorOutput` directly:
+
+{% raw %}
+```go
+// Simple detection - all info in triggering event, auto-populated by engine
+return detection.Detected(), nil
+
+// Detection with additional data
+return detection.DetectedWithData([]*v1beta1.EventValue{
+    v1beta1.NewStringValue("env_var", envValue),
+}), nil
+
+// Complex cases - use struct literal for multiple fields
+return []detection.DetectorOutput{{
+    Data:          data,
+    Threat:        customThreat,
+    AncestryDepth: &depth,
+}}, nil
+```
+{% endraw %}
+
 ### Creating Event Data
 
 Use helper functions to create type-safe event values:
@@ -676,15 +699,13 @@ v1beta1.NewBoolValue("is_suspicious", true)
 // Byte array values
 v1beta1.NewBytesValue("data", []byte{0x01, 0x02})
 
-// Complex example
-return []detection.DetectorOutput{{
-    Data: []*v1beta1.EventValue{
-        v1beta1.NewStringValue("command", "/bin/bash -c 'curl evil.com'"),
-        v1beta1.NewStringValue("shell", "bash"),
-        v1beta1.NewInt32Value("risk_score", int32(85)),
-        v1beta1.NewBoolValue("known_ioc", true),
-    },
-}}, nil
+// Complex example with multiple data fields
+return detection.DetectedWithData([]*v1beta1.EventValue{
+    v1beta1.NewStringValue("command", "/bin/bash -c 'curl evil.com'"),
+    v1beta1.NewStringValue("shell", "bash"),
+    v1beta1.NewInt32Value("risk_score", int32(85)),
+    v1beta1.NewBoolValue("known_ioc", true),
+}), nil
 ```
 {% endraw %}
 
