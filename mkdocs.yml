@@ -238,6 +238,7 @@ nav:
           - Event Documentation Guide: contributing/event-documentation-guide.md
           - Code Coverage: contributing/testing-coverage.md
           - Performance: contributing/performance.md
+          - Event Generator (evt): contributing/evt-tool.md
           - Kubernetes: contributing/kubernetes.md
           - Setup Development Machine with Vagrant: contributing/setup-development-machine-with-vagrant.md
           - Building:

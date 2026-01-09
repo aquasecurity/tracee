@@ -355,6 +355,13 @@ help::
 	@echo "    $$ make format-pr                # print formatted text for PR"
 	@echo "    $$ make fix-fmt                  # fix formatting"
 	@echo ""
+	@echo "# performance testing"
+	@echo ""
+	@echo "    $$ make evt                      # build evt binary for stress testing"
+	@echo "    $$ make evt-trigger-runner       # build container image for evt stress"
+	@echo "    $$ EVT_TRIGGER_RUNNER_IMAGE=my-runner:dev make evt-trigger-runner  # custom image"
+	@echo "    $$ make clean-evt-trigger-runner # clean evt trigger runner container"
+	@echo ""
 	@echo "# flags"
 	@echo ""
 	@echo "    $$ STATIC=1 make ...             # build static binaries"
@@ -765,11 +772,10 @@ evt:: $(OUTPUT_DIR)/evt
 
 $(OUTPUT_DIR)/evt:: \
 	$(EVT_SRC) \
-	$(OUTPUT_DIR)/tracee \
 	| .eval_goenv \
 	.checkver_$(CMD_GO) \
 #
-	$(GO_ENV_EBPF) $(CMD_GO) build \
+	$(CMD_GO) build \
 		-ldflags="$(GO_DEBUG_FLAG) \
 			" \
 		-v -o $@ \
@@ -782,6 +788,18 @@ clean-evt::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/evt
 	$(CMD_RM) -rf $(OUTPUT_DIR)/evt-triggers
+
+
+
+.PHONY: evt-trigger-runner
+evt-trigger-runner:
+#
+	$(MAKE) -f builder/Makefile.evt-trigger-runner build
+
+.PHONY: clean-evt-trigger-runner
+clean-evt-trigger-runner:
+#
+	$(MAKE) -f builder/Makefile.evt-trigger-runner clean
 
 # tracee-bench
 
@@ -1200,35 +1218,7 @@ LOGFROM ?= main
 format-pr:: \
 	| .check_$(CMD_GIT)
 #
-	@echo
-	@echo "👇 PR Comment BEGIN"
-	@echo
-
-	@$(CMD_GIT) \
-		log $(LOGFROM)..HEAD \
-		--pretty=format:'%C(auto,yellow)%h%Creset **%C(auto,red)%s%Creset**'
-
-	@echo
-	@echo
-
-	@output=$$($(CMD_GIT) rev-list $(LOGFROM)..HEAD | while read commit; do \
-		body="$$($(CMD_GIT) show --no-patch --format=%b $$commit | sed ':a;N;$$!ba;s/\n$$//')"; \
-		if [ -n "$$body" ]; then \
-			$(CMD_GIT) \
-				show -s $$commit \
-				--color=always \
-				--format='%C(auto,yellow)%h%Creset **%C(auto,red)%s%Creset**%n'; \
-			echo "$$body" | sed 's/^/> /'; \
-			echo; \
-			echo "--"; \
-			echo; \
-		fi; \
-	done); \
-	echo "$$output"
-
-	@echo
-	@echo "👆 PR Comment END"
-	@echo
+	@$(CURDIR)/scripts/checkpatch.sh pr-format
 
 .PHONY: check-pr
 check-pr::

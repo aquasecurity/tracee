@@ -1,0 +1,53 @@
+# Dockerfile for evt container with trigger scripts
+# This container is used by 'evt stress' command to run event triggers in isolation
+
+# Stage 1: Build evt binary
+FROM golang:1.24.11-alpine@sha256:ef75fa8822a4c0fb53a390548b3dc1c39639339ec3373c58f5441117e1ff46ae AS builder
+
+WORKDIR /tracee
+
+# Copy entire source tree
+COPY . .
+
+# Install make
+RUN apk add --no-cache make
+
+# Build evt using the project's Makefile
+RUN make clean-evt && \
+    make evt
+
+# Stage 2: Final runtime image
+FROM alpine:3.22.2@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412
+
+# Install dependencies needed by trigger scripts
+RUN apk add --no-cache \
+    bash \
+    coreutils \
+    procps \
+    iputils \
+    netcat-openbsd \
+    util-linux \
+    findutils \
+    grep \
+    strace \
+    bpftrace \
+    sudo \
+    && rm -rf /var/cache/apk/*
+
+# Create directories
+RUN mkdir -p /usr/local/bin /usr/local/share/evt-triggers
+
+# Copy evt binary and trigger scripts from builder stage
+COPY --from=builder /tracee/dist/evt /usr/local/bin/evt
+COPY --from=builder /tracee/dist/evt-triggers /usr/local/share/evt-triggers
+
+# Make evt binary and all trigger scripts executable
+RUN chmod +x /usr/local/bin/evt && \
+    find /usr/local/share/evt-triggers -type f -name "*.sh" -exec chmod +x {} \; && \
+    ln -s /usr/local/share/evt-triggers /usr/local/bin/evt-triggers
+
+# Set PATH so trigger scripts can find themselves
+ENV PATH="/usr/local/share/evt-triggers:/usr/local/share/evt-triggers/common:${PATH}"
+
+# Default command - can be overridden by docker run
+CMD ["/bin/sh"]
