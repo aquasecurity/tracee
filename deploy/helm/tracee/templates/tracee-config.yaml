@@ -29,11 +29,27 @@ data:
         pipeline: {{ .Values.config.pipeline }}
         {{- end }}
     {{- end }}
-    healthz: {{ .Values.config.healthz }}
-    metrics: {{ .Values.config.metrics }}
-    pprof: {{ .Values.config.pprof }}
-    pyroscope: {{ .Values.config.pyroscope }}
-    listen-addr: {{ .Values.config.listenAddr }}
+    {{- if or .Values.config.server.httpAddress .Values.config.server.metrics .Values.config.server.healthz .Values.config.server.pprof .Values.config.server.pyroscope }}
+    server:
+        {{- if .Values.config.server.httpAddress }}
+        http-address: {{ .Values.config.server.httpAddress | quote }}
+        {{- end }}
+        {{- if .Values.config.server.grpcAddress }}
+        grpc-address: {{ .Values.config.server.grpcAddress | quote }}
+        {{- end }}
+        {{- if .Values.config.server.metrics }}
+        metrics: {{ .Values.config.server.metrics }}
+        {{- end }}
+        {{- if .Values.config.server.healthz }}
+        healthz: {{ .Values.config.server.healthz }}
+        {{- end }}
+        {{- if .Values.config.server.pprof }}
+        pprof: {{ .Values.config.server.pprof }}
+        {{- end }}
+        {{- if .Values.config.server.pyroscope }}
+        pyroscope: {{ .Values.config.server.pyroscope }}
+        {{- end }}
+    {{- end }}
     {{- if .Values.config.workdir }}
     runtime:
       - workdir={{ .Values.config.workdir }}
@@ -129,9 +145,11 @@ data:
             {{- end }}
         {{- end }}
     output:
-        {{ .Values.config.output.format }}:
-            files:
-                - stdout
+        destinations:
+            - name: stdout_json
+              type: file
+              format: {{ .Values.config.output.format | default "json" }}
+              path: stdout
         options:
             parse-arguments: {{ .Values.config.output.options.parseArguments }}
             stack-addresses: {{ .Values.config.output.options.stackAddresses }}
