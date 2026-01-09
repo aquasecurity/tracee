@@ -6,7 +6,7 @@ tracee \f[B]\-\-stores\f[R] \- Configure data stores for DNS cache and
 process tree
 .SS SYNOPSIS
 tracee \f[B]\-\-stores\f[R]
-[dns|dns.max\-entries=\f[I]size\f[R]|process|process.max\-processes=\f[I]size\f[R]|process.max\-threads=\f[I]size\f[R]|process.source=\f[I]source\f[R]|process.use\-procfs]
+[dns|dns.max\-entries=\f[I]size\f[R]|process|process.max\-processes=\f[I]size\f[R]|process.max\-threads=\f[I]size\f[R]|process.use\-procfs]
 [\f[B]\-\-stores\f[R] \&...]
 .SS DESCRIPTION
 The \f[B]\-\-stores\f[R] flag allows you to configure data stores for
@@ -28,11 +28,12 @@ don\[cq]t need to also specify \f[CR]\-\-stores dns\f[R].
 \f[B]process\f[R]: Enable the process tree store with default settings.
 When enabled, Tracee will maintain a tree of processes and threads for
 enrichment of events.
+\f[B]Note: Process tree is enabled by default.\f[R]
 .IP \[bu] 2
 \f[B]process.max\-processes\f[R]=\f[I]size\f[R]: Enable the process tree
 store and set the maximum number of processes to cache in the process
 tree.
-Default is 10928.
+Default is 10000.
 This is an LRU cache that will evict least recently accessed entries
 when full.
 \f[B]Note\f[R]: Using this option automatically enables process, so you
@@ -41,27 +42,11 @@ don\[cq]t need to also specify \f[CR]\-\-stores process\f[R].
 \f[B]process.max\-threads\f[R]=\f[I]size\f[R]: Enable the process tree
 store and set the maximum number of threads to cache in the process
 tree.
-Default is 21856.
+Default is 0 (thread tracking disabled to save memory).
 This is an LRU cache that will evict least recently accessed entries
 when full.
 \f[B]Note\f[R]: Using this option automatically enables process, so you
 don\[cq]t need to also specify \f[CR]\-\-stores process\f[R].
-.IP \[bu] 2
-\f[B]process.source\f[R]=\f[I]source\f[R]: Enable the process tree store
-and set the source for process tree enrichment.
-Valid values are:
-.RS 2
-.IP \[bu] 2
-\f[B]signals\f[R]: Process tree is built from signals (default).
-.IP \[bu] 2
-\f[B]events\f[R]: Process tree is built from events.
-.IP \[bu] 2
-\f[B]both\f[R]: Process tree is built from both events and signals.
-.PP
-\f[B]Note\f[R]: Using this option automatically enables process, so you
-don\[cq]t need to also specify \f[CR]\-\-stores process\f[R].
-If no source is specified, the default is \f[CR]signals\f[R].
-.RE
 .IP \[bu] 2
 \f[B]process.use\-procfs\f[R]: Enable the process tree store and enable
 procfs initialization and querying.
@@ -122,28 +107,6 @@ Note: \f[CR]process.max\-processes\f[R] and
 \f[CR]\-\-stores process\f[R] is not needed.
 .RE
 .IP "5." 3
-Enable process tree with events source:
-.RS 4
-.IP
-.EX
-\-\-stores process.source=events
-.EE
-.PP
-Note: \f[CR]process.source\f[R] automatically enables process, so
-\f[CR]\-\-stores process\f[R] is not needed.
-.RE
-.IP "6." 3
-Enable process tree with both events and signals sources:
-.RS 4
-.IP
-.EX
-\-\-stores process.source=both
-.EE
-.PP
-Note: \f[CR]process.source\f[R] automatically enables process, so
-\f[CR]\-\-stores process\f[R] is not needed.
-.RE
-.IP "7." 3
 Enable process tree with procfs support:
 .RS 4
 .IP
@@ -154,24 +117,25 @@ Enable process tree with procfs support:
 Note: \f[CR]process.use\-procfs\f[R] automatically enables process, so
 \f[CR]\-\-stores process\f[R] is not needed.
 .RE
-.IP "8." 3
+.IP "6." 3
 Combine DNS and process stores:
 .RS 4
 .IP
 .EX
-\-\-stores dns.max\-entries=5000 \-\-stores process.source=both \-\-stores process.max\-processes=8192
+\-\-stores dns.max\-entries=5000 \-\-stores process.max\-processes=8192
 .EE
 .PP
-Note: Since \f[CR]dns.max\-entries\f[R] and \f[CR]process.source\f[R]
-automatically enable their respective stores, you don\[cq]t need
-\f[CR]\-\-stores dns\f[R] or \f[CR]\-\-stores process\f[R].
+Note: Since \f[CR]dns.max\-entries\f[R] automatically enables DNS and
+\f[CR]process.max\-processes\f[R] automatically enables process, you
+don\[cq]t need \f[CR]\-\-stores dns\f[R] or
+\f[CR]\-\-stores process\f[R].
 .RE
-.IP "9." 3
+.IP "7." 3
 Complete configuration example:
 .RS 4
 .IP
 .EX
-\-\-stores dns.max\-entries=5000 \-\-stores process.max\-processes=8192 \-\-stores process.max\-threads=16384 \-\-stores process.source=both \-\-stores process.use\-procfs
+\-\-stores dns.max\-entries=5000 \-\-stores process.max\-processes=8192 \-\-stores process.max\-threads=16384 \-\-stores process.use\-procfs
 .EE
 .PP
 Note: All process options automatically enable process, and

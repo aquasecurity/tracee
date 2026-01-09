@@ -9008,7 +9008,7 @@ make<span class="w"> </span>tracee
 </code></pre></div>
 <h2 id="step-3-run-tracee">Step 3: Run Tracee<a class="headerlink" href="#step-3-run-tracee" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="c1"># Start Tracee with process tree and JSON output</span>
-sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--stores<span class="w"> </span>process.source<span class="o">=</span>both<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--stores<span class="w"> </span>process<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
 </code></pre></div>
 <h2 id="step-4-trigger-your-detector">Step 4: Trigger Your Detector<a class="headerlink" href="#step-4-trigger-your-detector" title="Permanent link">&para;</a></h2>
 <p>In a third terminal, access a sensitive file:</p>
@@ -9251,7 +9251,7 @@ sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--stores<span c
 <h2 id="debugging-tips">Debugging Tips<a class="headerlink" href="#debugging-tips" title="Permanent link">&para;</a></h2>
 <h3 id="enable-debug-logging">Enable Debug Logging<a class="headerlink" href="#enable-debug-logging" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run with debug logs</span>
-sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--logging<span class="w"> </span>debug<span class="w"> </span>--stores<span class="w"> </span>process.source<span class="o">=</span>both
+sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--logging<span class="w"> </span>debug<span class="w"> </span>--stores<span class="w"> </span>process
 </code></pre></div>
 <h3 id="check-detector-registration">Check Detector Registration<a class="headerlink" href="#check-detector-registration" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># List detector events</span>
@@ -9318,7 +9318,7 @@ sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>list<span class
 <h3 id="process-ancestry-empty">Process Ancestry Empty<a class="headerlink" href="#process-ancestry-empty" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: <code>workload.process.ancestors</code> is null</p>
 <p><strong>Solution</strong>: Enable process tree:
-<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--stores<span class="w"> </span>process.source<span class="o">=</span>both
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--stores<span class="w"> </span>process
 </code></pre></div></p>
 <h3 id="build-errors">Build Errors<a class="headerlink" href="#build-errors" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: Compilation fails</p>
@@ -9387,7 +9387,7 @@ make<span class="w"> </span>tracee
 make<span class="w"> </span>tracee
 
 <span class="c1"># Run with process tree</span>
-sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--stores<span class="w"> </span>process.source<span class="o">=</span>both
+sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--stores<span class="w"> </span>process
 
 <span class="c1"># View detections in JSON</span>
 sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq

@@ -10088,7 +10088,7 @@
 </code></pre></div>
 <p><strong>Requirements</strong>:</p>
 <ul>
-<li>Tracee must run with <code>--stores process.source=both</code></li>
+<li>Tracee must run with <code>--stores process</code></li>
 <li>Process must be in the process tree</li>
 <li>Default depth: 5 levels (parent → grandparent → great-grandparent → ...)</li>
 </ul>
@@ -11048,7 +11048,7 @@ sudo<span class="w"> </span>./dist/tracee<span class="w"> </span>--logging<span 
 <h3 id="problem-datastore-returns-errnotfound">Problem: DataStore Returns ErrNotFound<a class="headerlink" href="#problem-datastore-returns-errnotfound" title="Permanent link">&para;</a></h3>
 <p><strong>Symptoms</strong>: <code>GetProcess()</code>, <code>GetContainer()</code> return <code>ErrNotFound</code></p>
 <p><strong>Possible causes</strong>:
-1. Process tree not enabled: <code>--stores process.source=both</code>
+1. Process tree not enabled: <code>--stores process</code>
 2. Process exited before query
 3. Container not tracked yet</p>
 <p><strong>Solutions</strong>:</p>
