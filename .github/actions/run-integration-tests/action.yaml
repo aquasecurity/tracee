@@ -9,6 +9,9 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Build Tracee # some tests as Test_TraceeCapture run the binary itself (they should be moved out)
+      run: make tracee
+      shell: bash
     - name: Run Integration Tests
       run: |
         env "PATH=$PATH" make test-integration
