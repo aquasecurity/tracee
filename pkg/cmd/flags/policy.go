@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
@@ -12,7 +14,7 @@ import (
 )
 
 // PrepareFilterMapsForPolicies prepares the scope and events PolicyFilterMap for the policies
-func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeMap, PolicyEventMap, error) {
+func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface, detectors []detection.EventDetector) (PolicyScopeMap, PolicyEventMap, error) {
 	policyScopeMap := make(PolicyScopeMap)
 	policyEventsMap := make(PolicyEventMap)
 
@@ -95,6 +97,7 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeM
 		policyEventsMap[pIdx] = policyEvents{
 			policyName: p.GetName(),
 			eventFlags: eventFlags,
+			detectors:  detectors,
 		}
 	}
 
@@ -130,7 +133,7 @@ func createSinglePolicy(policyIdx int, policyScope policyScopes, policyEvents po
 		return nil, err
 	}
 
-	if err := parseEventFilters(p, policyEvents.eventFlags); err != nil {
+	if err := parseEventFilters(p, policyEvents.eventFlags, policyEvents.detectors); err != nil {
 		return nil, err
 	}
 
@@ -242,7 +245,9 @@ func parseScopeFilters(p *policy.Policy, scopeFlags []scopeFlag) error {
 	return nil
 }
 
-func parseEventFilters(p *policy.Policy, eventFlags []eventFlag) error {
+// parseEventFilters populates the policy's event rules based on parsed event flags.
+// If detectors is non-nil, threat.* patterns will be expanded into matching detector event IDs.
+func parseEventFilters(p *policy.Policy, eventFlags []eventFlag, detectors []detection.EventDetector) error {
 	eventNamesToID := events.Core.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventNamesToID {
@@ -265,6 +270,30 @@ func parseEventFilters(p *policy.Policy, eventFlags []eventFlag) error {
 	for _, evtFlag := range eventFlags {
 		if evtFlag.eventOptionType == "" && evtFlag.operator == "-" {
 			excludedEvents = append(excludedEvents, evtFlag.eventName)
+			continue
+		}
+
+		// Check if this is a threat.* pattern - expand into detector event IDs
+		// Note: parseEventFlag splits "threat.severity=critical" into eventName="threat", eventOptionType="severity"
+		if evtFlag.eventName == "threat" && evtFlag.eventOptionType != "" && detectors != nil {
+			matchingEventIDs, err := expandThreatPattern(evtFlag, detectors, eventNamesToID)
+			if err != nil {
+				return err
+			}
+
+			// Add all matching detector events to the policy
+			for eventId := range matchingEventIDs {
+				if _, ok := p.Rules[eventId]; !ok {
+					p.Rules[eventId] = policy.RuleData{
+						EventID:     eventId,
+						ScopeFilter: filters.NewScopeFilter(),
+						DataFilter:  filters.NewDataFilter(),
+						RetFilter:   filters.NewIntFilter(),
+					}
+				}
+			}
+
+			// Skip regular event processing for threat patterns
 			continue
 		}
 
@@ -353,4 +382,162 @@ func parseEventFilters(p *policy.Policy, eventFlags []eventFlag) error {
 	}
 
 	return nil
+}
+
+// expandThreatPattern expands a threat.* pattern into matching detector event IDs.
+// Supports patterns like:
+//   - threat.severity=critical
+//   - threat.severity>=high
+//   - threat.mitre.technique=T1055
+//   - threat.mitre.tactic="Defense Evasion"
+//   - threat.name=process_injection
+func expandThreatPattern(evtFlag eventFlag, detectors []detection.EventDetector, eventNamesToID map[string]events.ID) (map[events.ID]string, error) {
+	if detectors == nil {
+		return nil, errfmt.Errorf("no detectors provided for threat pattern: %s", evtFlag.full)
+	}
+
+	// Parse the threat property path from eventOptionType and eventOptionName
+	// eventFlag parsing splits "threat.severity=critical" into:
+	//   eventName="threat", eventOptionType="severity", values="critical"
+	// or "threat.mitre.technique=T1055" into:
+	//   eventName="threat", eventOptionType="mitre", eventOptionName="technique", values="T1055"
+
+	if evtFlag.eventName != "threat" {
+		return nil, errfmt.Errorf("invalid threat pattern: %s", evtFlag.full)
+	}
+
+	if evtFlag.eventOptionType == "" {
+		return nil, errfmt.Errorf("invalid threat pattern: %s", evtFlag.full)
+	}
+
+	// Build the property path from eventOptionType and eventOptionName
+	propertyPath := evtFlag.eventOptionType
+	if evtFlag.eventOptionName != "" {
+		propertyPath = evtFlag.eventOptionType + "." + evtFlag.eventOptionName
+	}
+
+	// Threat patterns must have an operator and value
+	if evtFlag.operator == "" || evtFlag.values == "" {
+		return nil, errfmt.Errorf("threat pattern requires operator and value: %s", evtFlag.full)
+	}
+
+	matchingEvents := make(map[events.ID]string)
+
+	// Iterate through all detectors and check their threat metadata
+	for _, detector := range detectors {
+		def := detector.GetDefinition()
+
+		// Skip detectors without threat metadata
+		if def.ThreatMetadata == nil {
+			continue
+		}
+
+		// Check if this detector matches the threat pattern
+		matches, err := matchesThreatCriteria(def.ThreatMetadata, propertyPath, evtFlag.operator, evtFlag.values)
+		if err != nil {
+			return nil, err
+		}
+
+		if matches {
+			// Get the event name and ID for this detector
+			eventName := def.ProducedEvent.Name
+			if eventID, ok := eventNamesToID[eventName]; ok {
+				matchingEvents[eventID] = eventName
+			}
+		}
+	}
+
+	// If no detectors matched, return an error
+	if len(matchingEvents) == 0 {
+		return nil, errfmt.Errorf("no detectors match threat pattern: %s", evtFlag.full)
+	}
+
+	return matchingEvents, nil
+}
+
+// matchesThreatCriteria checks if threat metadata matches the given criteria
+// propertyPath can be: "severity", "name", "mitre.technique", "mitre.tactic"
+func matchesThreatCriteria(threat *v1beta1.Threat, propertyPath, operator, value string) (bool, error) {
+	switch propertyPath {
+	case "severity":
+		return matchSeverity(threat.Severity, operator, value)
+
+	case "mitre.technique":
+		// Match MITRE technique ID (e.g., T1055)
+		if threat.Mitre == nil || threat.Mitre.Technique == nil {
+			return false, nil
+		}
+		return matchString(threat.Mitre.Technique.Id, operator, value)
+
+	case "mitre.tactic":
+		// Match MITRE tactic name (e.g., "Defense Evasion")
+		if threat.Mitre == nil || threat.Mitre.Tactic == nil {
+			return false, nil
+		}
+		return matchString(threat.Mitre.Tactic.Name, operator, value)
+
+	case "name":
+		// Match threat name
+		return matchString(threat.Name, operator, value)
+
+	default:
+		return false, errfmt.Errorf("unsupported threat property: %s (supported: severity, name, mitre.technique, mitre.tactic)", propertyPath)
+	}
+}
+
+// matchSeverity checks if a severity value matches the given criteria
+// Supports both numeric values (0-4) and string names (info, low, medium, high, critical)
+// Supports operators: =, !=, <, >, <=, >=
+func matchSeverity(severity v1beta1.Severity, operator, value string) (bool, error) {
+	// Parse target severity value (can be numeric or string)
+	var targetSeverity int32
+
+	switch strings.ToLower(value) {
+	case "info", "0":
+		targetSeverity = 0
+	case "low", "1":
+		targetSeverity = 1
+	case "medium", "2":
+		targetSeverity = 2
+	case "high", "3":
+		targetSeverity = 3
+	case "critical", "4":
+		targetSeverity = 4
+	default:
+		return false, errfmt.Errorf("invalid severity value: %s (must be info/low/medium/high/critical or 0-4)", value)
+	}
+
+	severityValue := int32(severity)
+
+	switch operator {
+	case "=":
+		return severityValue == targetSeverity, nil
+	case "!=":
+		return severityValue != targetSeverity, nil
+	case "<":
+		return severityValue < targetSeverity, nil
+	case ">":
+		return severityValue > targetSeverity, nil
+	case "<=":
+		return severityValue <= targetSeverity, nil
+	case ">=":
+		return severityValue >= targetSeverity, nil
+	default:
+		return false, errfmt.Errorf("unsupported operator for severity: %s", operator)
+	}
+}
+
+// matchString checks if a string value matches the given criteria
+// Supports operators: = (equality), != (inequality)
+func matchString(actual, operator, pattern string) (bool, error) {
+	switch operator {
+	case "=":
+		return actual == pattern, nil
+
+	case "!=":
+		return actual != pattern, nil
+
+	default:
+		return false, errfmt.Errorf("unsupported operator for string matching: %s", operator)
+	}
 }

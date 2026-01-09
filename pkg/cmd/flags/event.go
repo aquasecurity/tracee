@@ -3,6 +3,7 @@ package flags
 import (
 	"strings"
 
+	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/errfmt"
 )
 
@@ -51,6 +52,7 @@ type PolicyEventMap map[int]policyEvents
 type policyEvents struct {
 	policyName string
 	eventFlags []eventFlag
+	detectors  []detection.EventDetector // Available detectors for threat pattern expansion
 }
 
 // eventFlag holds pre-parsed event flag fields
@@ -66,7 +68,7 @@ type eventFlag struct {
 	filter            string
 }
 
-func PrepareEventMapFromFlags(eventsArr []string) (PolicyEventMap, error) {
+func PrepareEventMapFromFlags(eventsArr []string, detectors []detection.EventDetector) (PolicyEventMap, error) {
 	// parse and store events flags
 	var evtFlags []eventFlag
 	for _, evtFlag := range eventsArr {
@@ -79,7 +81,10 @@ func PrepareEventMapFromFlags(eventsArr []string) (PolicyEventMap, error) {
 	}
 
 	eventMap := make(PolicyEventMap)
-	eventMap[0] = policyEvents{eventFlags: evtFlags}
+	eventMap[0] = policyEvents{
+		eventFlags: evtFlags,
+		detectors:  detectors,
+	}
 
 	return eventMap, nil
 }

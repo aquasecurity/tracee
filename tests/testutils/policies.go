@@ -50,7 +50,7 @@ func NewPolicies(polsFilesID []PolicyFileWithID) []*policy.Policy {
 		polsFiles = append(polsFiles, polFile.PolicyFile)
 	}
 
-	policyScopeMap, policyEventMap, err := flags.PrepareFilterMapsFromPolicies(polsFiles)
+	policyScopeMap, policyEventMap, err := flags.PrepareFilterMapsFromPolicies(polsFiles, nil)
 	if err != nil {
 		panic(err)
 	}
