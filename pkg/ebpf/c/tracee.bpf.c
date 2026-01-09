@@ -1983,9 +1983,14 @@ statfunc int send_bpf_attach(
     bpf_probe_read_kernel_str(&prog_name, BPF_OBJ_NAME_LEN, prog_aux->name);
 
     // get usage of helpers
+    // In some systems, the 'check_map_func_compatibility' and 'check_helper_call' verifier symbols
+    // are not available (for example, due to kernel build configuration or stripped/kallsyms-
+    // restricted kernels). In these cases, the map won't hold information about the used helpers.
+    // We still want to output the bpf_attach event, just with zero values for helpers.
+    bpf_used_helpers_t zero_helpers = (bpf_used_helpers_t) {0};
     bpf_used_helpers_t *val = bpf_map_lookup_elem(&bpf_attach_map, &prog_id);
     if (val == NULL)
-        return 0;
+        val = &zero_helpers;
 
     // submit the event
 
@@ -1999,8 +2004,9 @@ statfunc int send_bpf_attach(
 
     events_perf_submit(p);
 
-    // delete from map
-    bpf_map_delete_elem(&bpf_attach_map, &prog_id);
+    // delete from map (only if it existed)
+    if (val != &zero_helpers)
+        bpf_map_delete_elem(&bpf_attach_map, &prog_id);
 
     return 0;
 }
@@ -2011,16 +2017,20 @@ statfunc int
 send_bpf_perf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf_event_file)
 {
     // get real values of TRACE_EVENT_FL_KPROBE and TRACE_EVENT_FL_UPROBE.
-    // these values were changed in kernels >= 5.15.
-    int TRACE_EVENT_FL_KPROBE_BIT;
-    int TRACE_EVENT_FL_UPROBE_BIT;
-    if (bpf_core_field_exists(((struct trace_event_call *) 0)->module)) { // kernel >= 5.15
+    // Bit positions changed across kernel versions:
+    // - Kernel < 5.15: KPROBE=5, UPROBE=6
+    // - Kernel 5.15-6.12: KPROBE=6, UPROBE=7 (module field added to trace_event_call)
+    // - Kernel >= 6.13: KPROBE=5, UPROBE=6 (TRACE_EVENT_FL_FILTERED_BIT and filter field removed)
+    int TRACE_EVENT_FL_KPROBE_BIT = 5;
+    int TRACE_EVENT_FL_UPROBE_BIT = 6;
+
+    // Override for kernel 5.15-6.12 (both filter and module fields exist)
+    if (bpf_core_field_exists(((struct trace_event_call *) 0)->filter) &&
+        bpf_core_field_exists(((struct trace_event_call *) 0)->module)) {
         TRACE_EVENT_FL_KPROBE_BIT = 6;
         TRACE_EVENT_FL_UPROBE_BIT = 7;
-    } else { // kernel < 5.15
-        TRACE_EVENT_FL_KPROBE_BIT = 5;
-        TRACE_EVENT_FL_UPROBE_BIT = 6;
     }
+
     int TRACE_EVENT_FL_KPROBE = (1 << TRACE_EVENT_FL_KPROBE_BIT);
     int TRACE_EVENT_FL_UPROBE = (1 << TRACE_EVENT_FL_UPROBE_BIT);
 

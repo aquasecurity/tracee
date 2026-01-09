@@ -1290,6 +1290,7 @@ struct trace_event_call {
         char *name;
         struct tracepoint *tp;
     };
+    void *filter; // removed in kernel 6.13, used for CO-RE detection
     void *module; // only from 5.15
     int flags;
 };
