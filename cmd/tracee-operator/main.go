@@ -32,6 +32,7 @@ type Config struct {
 	ProbeAddr            string
 	TraceeNamespace      string
 	TraceeName           string
+	ConfigMapName        string
 	EnableLeaderElection bool
 	LoggingOpts          zap.Options
 }
@@ -60,14 +61,29 @@ func main() {
 	// Register the PolicyReconciler with the controller manager. This will cause the
 	// PolicyReconciler to watch for changes to Policy objects and deal with them.
 
-	reconciler := &controller.PolicyReconciler{
+	policyReconciler := &controller.PolicyReconciler{
 		Client:          mgr.GetClient(),
 		Scheme:          mgr.GetScheme(),
 		TraceeNamespace: config.TraceeNamespace,
 		TraceeName:      config.TraceeName,
 	}
-	if err := reconciler.SetupWithManager(mgr); err != nil {
+	if err := policyReconciler.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PolicyReconciler")
+		os.Exit(1)
+	}
+
+	// Register the ConfigMapReconciler with the controller manager. This will cause the
+	// ConfigMapReconciler to watch for changes to the Tracee ConfigMap and deal with them.
+
+	configMapReconciler := &controller.ConfigMapReconciler{
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		TraceeNamespace: config.TraceeNamespace,
+		TraceeName:      config.TraceeName,
+		ConfigMapName:   config.ConfigMapName,
+	}
+	if err := configMapReconciler.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ConfigMapReconciler")
 		os.Exit(1)
 	}
 
@@ -100,6 +116,7 @@ func parseConfig() Config {
 	flag.StringVar(&cfg.ProbeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.StringVar(&cfg.TraceeNamespace, "tracee-namespace", "tracee-system", "The namespace where Tracee is installed.")
 	flag.StringVar(&cfg.TraceeName, "tracee-name", "tracee", "The name of the Tracee DaemonSet.")
+	flag.StringVar(&cfg.ConfigMapName, "configmap-name", "tracee-config", "The name of the Tracee ConfigMap.")
 	flag.BoolVar(&cfg.EnableLeaderElection, "leader-elect", false, "Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	cfg.LoggingOpts = zap.Options{
 		Development: true,
@@ -113,6 +130,9 @@ func parseConfig() Config {
 	}
 	if name := os.Getenv("TRACEE_NAME"); name != "" {
 		cfg.TraceeName = name
+	}
+	if configMapName := os.Getenv("TRACEE_CONFIGMAP_NAME"); configMapName != "" {
+		cfg.ConfigMapName = configMapName
 	}
 
 	return cfg
