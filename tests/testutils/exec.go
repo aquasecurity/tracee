@@ -69,7 +69,8 @@ func ExecPinnedCmdWithTimeout(command string, timeout time.Duration) (int, error
 
 	pid := cmd.Process.Pid
 
-	cmdDone := make(chan error)
+	// Use buffered channel to prevent goroutine leak when timeout fires
+	cmdDone := make(chan error, 1)
 	go func() {
 		cmdDone <- cmd.Wait() // wait for command to exit
 	}()
