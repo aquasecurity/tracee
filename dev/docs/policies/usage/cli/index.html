@@ -1786,6 +1786,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#event-selection-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event Selection Shortcuts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7978,6 +7989,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#event-selection-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event Selection Shortcuts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8047,6 +8069,18 @@
 <p>By specifying individual policies:</p>
 <div class="highlight"><pre><span></span><code><span class="go">tracee --policy ./policy-one.yaml --policy ./policy-two.yaml </span>
 </code></pre></div>
+<h2 id="event-selection-shortcuts">Event Selection Shortcuts<a class="headerlink" href="#event-selection-shortcuts" title="Permanent link">&para;</a></h2>
+<p>Instead of defining policies in YAML files, you can use the <code>--events</code> flag for quick event selection:</p>
+<div class="highlight"><pre><span></span><code><span class="gp"># </span>Trace<span class="w"> </span>specific<span class="w"> </span>events
+<span class="go">tracee --events execve,openat</span>
+
+<span class="gp"># </span>Select<span class="w"> </span>detectors<span class="w"> </span>by<span class="w"> </span>threat<span class="w"> </span>severity
+<span class="go">tracee --events threat.severity=critical</span>
+
+<span class="gp"># </span>Combine<span class="w"> </span>regular<span class="w"> </span>events<span class="w"> </span>with<span class="w"> </span>threat-based<span class="w"> </span>selection
+<span class="go">tracee --events write --events &#39;threat.severity&gt;=high&#39;</span>
+</code></pre></div>
+<p>See the <a href="../../../flags/events.1/">events flag documentation</a> for complete details on threat-based detector selection.</p>
 <h2 id="example">EXAMPLE<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="go">tracee --config ./config.yaml --policy ./policy.yaml &amp;&amp; cat /tmp/debug.json</span>
 </code></pre></div>

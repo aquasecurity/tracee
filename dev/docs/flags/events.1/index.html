@@ -27,7 +27,7 @@
     
     
       
-        <title>TRACEE-EVENTS - Tracee</title>
+        <title>events - Tracee</title>
       
     
     
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              TRACEE-EVENTS
+              events
             
           </span>
         </div>
@@ -1385,6 +1385,45 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#threat-based-detector-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        THREAT-BASED DETECTOR SELECTION
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="THREAT-BASED DETECTOR SELECTION">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#threat-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        THREAT PROPERTIES
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#detector-tag-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DETECTOR TAG SELECTION
+      
+    </span>
+  </a>
   
 </li>
       
@@ -8090,6 +8129,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#threat-based-detector-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        THREAT-BASED DETECTOR SELECTION
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="THREAT-BASED DETECTOR SELECTION">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#threat-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        THREAT PROPERTIES
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#detector-tag-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DETECTOR TAG SELECTION
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8119,6 +8197,12 @@
 
   <h1>events</h1>
 
+<p>--
+title: TRACEE-EVENTS
+section: 1
+header: Tracee Events Flag Manual
+date: 2024/12
+...</p>
 <h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
 <p>tracee <strong>--events</strong> - Select which events to trace</p>
 <h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
@@ -8129,6 +8213,9 @@
 <ul>
 <li>
 <p>Event or set name: Select specific events using 'event-name1,event-name2...' or predefined event sets using 'event_set_name1,event_set_name2...'. To exclude events, prepend the event name with a dash '-': '-event-name'.</p>
+</li>
+<li>
+<p>Detector selection by threat properties: Select detectors based on their threat metadata using 'threat.property=value'. See THREAT-BASED DETECTOR SELECTION section below.</p>
 </li>
 <li>
 <p>Event data: Filter events based on their data using 'event-name.data.event_data'. The event data expression follows the syntax of a string expression.</p>
@@ -8172,6 +8259,38 @@
 <ul>
 <li>event names</li>
 </ul>
+<h2 id="threat-based-detector-selection">THREAT-BASED DETECTOR SELECTION<a class="headerlink" href="#threat-based-detector-selection" title="Permanent link">&para;</a></h2>
+<p>Detectors can be selected based on their threat metadata properties. This allows you to enable all detectors that match specific security criteria without knowing their individual event names.</p>
+<h3 id="threat-properties">THREAT PROPERTIES<a class="headerlink" href="#threat-properties" title="Permanent link">&para;</a></h3>
+<p><strong>threat.severity</strong> - Severity level (info, low, medium, high, critical or 0-4). Supports: =, !=, &lt;, &gt;, &lt;=, &gt;=</p>
+<div class="highlight"><pre><span></span><code><span class="go">--events threat.severity=critical                # Only critical threats</span>
+<span class="go">--events &#39;threat.severity&gt;=high&#39;                 # High and critical threats</span>
+</code></pre></div>
+<p><strong>threat.mitre.technique</strong> - MITRE ATT&amp;CK technique ID (e.g., T1055). Supports: =, !=</p>
+<div class="highlight"><pre><span></span><code><span class="go">--events threat.mitre.technique=T1055</span>
+</code></pre></div>
+<p><strong>threat.mitre.tactic</strong> - MITRE ATT&amp;CK tactic name (e.g., "Defense Evasion"). Supports: =, !=</p>
+<div class="highlight"><pre><span></span><code><span class="go">--events &#39;threat.mitre.tactic=&quot;Defense Evasion&quot;&#39;</span>
+</code></pre></div>
+<p><strong>threat.name</strong> - Threat name/identifier. Supports: =, !=</p>
+<div class="highlight"><pre><span></span><code><span class="go">--events threat.name=process_injection</span>
+</code></pre></div>
+<p>Threat selection can be combined with regular events. Multiple <code>--events</code> flags are combined additively (OR logic):</p>
+<div class="highlight"><pre><span></span><code><span class="go">--events threat.severity=critical --events write    # Critical threats OR write events</span>
+<span class="go">--events fs --events &#39;threat.severity&gt;=high&#39;        # Filesystem events OR high+ threats</span>
+</code></pre></div>
+<p><strong>Note:</strong> Detector selection based on threat properties is performed once at startup. Matching detectors are enabled; non-matching detectors are never loaded.</p>
+<h2 id="detector-tag-selection">DETECTOR TAG SELECTION<a class="headerlink" href="#detector-tag-selection" title="Permanent link">&para;</a></h2>
+<p>Detectors can be categorized with tags. You can select all detectors with a specific tag:</p>
+<div class="highlight"><pre><span></span><code><span class="go">--events containers       # All detectors tagged with &quot;containers&quot;</span>
+<span class="go">--events malware          # All detectors tagged with &quot;malware&quot;</span>
+<span class="go">--events detectors        # All detectors (existing behavior)</span>
+</code></pre></div>
+<p>Tags can be combined with other selection methods:</p>
+<div class="highlight"><pre><span></span><code><span class="go">--events containers,execve                # Detectors with &quot;containers&quot; tag + execve syscall</span>
+<span class="go">--events &#39;threat.severity=critical&#39;       # Critical threats (any tag)</span>
+<span class="go">--events malware,&#39;threat.severity&gt;=high&#39;  # Detectors with &quot;malware&quot; tag OR high+ severity threats</span>
+</code></pre></div>
 <h2 id="examples">EXAMPLES<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <ul>
 <li>To trace only 'execve' and 'open' events, use the following flag:</li>
@@ -8228,15 +8347,37 @@
 </ul>
 <div class="highlight"><pre><span></span><code><span class="go">--events security_file_open.scope.container</span>
 </code></pre></div>
+<ul>
+<li>To trace all detectors with critical severity, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--events threat.severity=critical</span>
+</code></pre></div>
+<ul>
+<li>To trace all detectors with high or critical severity, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--events &#39;threat.severity&gt;=high&#39;</span>
+</code></pre></div>
+<ul>
+<li>To trace detectors for a specific MITRE ATT&amp;CK technique, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--events threat.mitre.technique=T1055</span>
+</code></pre></div>
+<ul>
+<li>To trace detectors for a specific MITRE ATT&amp;CK tactic, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--events &#39;threat.mitre.tactic=&quot;Defense Evasion&quot;&#39;</span>
+</code></pre></div>
+<ul>
+<li>To combine threat-based selection with regular events, use the following flags:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--events write --events threat.severity=critical</span>
+</code></pre></div>
 
 
 
 
 
 
-
-  
-  
 
 
 

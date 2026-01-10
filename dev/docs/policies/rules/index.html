@@ -1704,6 +1704,89 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#threat-based-detector-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Threat-Based Detector Selection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Threat-Based Detector Selection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#selecting-by-severity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selecting by Severity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#selecting-by-mitre-attck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selecting by MITRE ATT&amp;CK
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#selecting-by-threat-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selecting by Threat Name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#selecting-by-detector-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selecting by Detector Tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#combining-with-regular-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Combining with Regular Events
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-threat-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available Threat Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8208,6 +8291,89 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#threat-based-detector-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Threat-Based Detector Selection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Threat-Based Detector Selection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#selecting-by-severity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selecting by Severity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#selecting-by-mitre-attck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selecting by MITRE ATT&amp;CK
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#selecting-by-threat-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selecting by Threat Name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#selecting-by-detector-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selecting by Detector Tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#combining-with-regular-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Combining with Regular Events
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-threat-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available Threat Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8526,6 +8692,115 @@
 <p>The value of an <code>event</code> is the event name from the supported events.</p>
 <p>For example: <code>syscall</code> event would be the <code>syscall</code> event name.</p>
 <p>The <a href="../../events/">events</a> section provides further information on the type of events that Tracee can trace.</p>
+<h3 id="threat-based-detector-selection">Threat-Based Detector Selection<a class="headerlink" href="#threat-based-detector-selection" title="Permanent link">&para;</a></h3>
+<p>Instead of specifying individual detector event names, you can select multiple detectors based on their threat metadata properties. This is especially useful for:</p>
+<ul>
+<li>Enabling all high-severity detectors without knowing their names</li>
+<li>Selecting detectors by MITRE ATT&amp;CK framework categories</li>
+<li>Filtering by threat characteristics</li>
+</ul>
+<h4 id="selecting-by-severity">Selecting by Severity<a class="headerlink" href="#selecting-by-severity" title="Permanent link">&para;</a></h4>
+<p>Select detectors based on their severity level (info, low, medium, high, critical):</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tracee.aquasec.com/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Policy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical-threats-only</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Enable all critical severity detectors</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">scope</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
+<span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">threat.severity=critical</span>
+</code></pre></div>
+<p>You can also use comparison operators:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">threat.severity&gt;=high</span><span class="w">  </span><span class="c1"># Enable high and critical threats</span>
+</code></pre></div>
+<h4 id="selecting-by-mitre-attck">Selecting by MITRE ATT&amp;CK<a class="headerlink" href="#selecting-by-mitre-attck" title="Permanent link">&para;</a></h4>
+<p>Select detectors by MITRE ATT&amp;CK technique or tactic:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tracee.aquasec.com/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Policy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">process-injection-detectors</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Enable all process injection detectors</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">scope</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
+<span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">threat.mitre.technique=T1055</span>
+</code></pre></div>
+<p>Or by tactic:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">threat.mitre.tactic=Defense Evasion</span>
+</code></pre></div>
+<h4 id="selecting-by-threat-name">Selecting by Threat Name<a class="headerlink" href="#selecting-by-threat-name" title="Permanent link">&para;</a></h4>
+<p>Select detectors by exact threat name:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">threat.name=process_injection</span>
+</code></pre></div>
+<h4 id="selecting-by-detector-tags">Selecting by Detector Tags<a class="headerlink" href="#selecting-by-detector-tags" title="Permanent link">&para;</a></h4>
+<p>Detectors can be categorized with tags. Select all detectors with a specific tag:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">containers</span><span class="w">        </span><span class="c1"># All detectors with &quot;containers&quot; tag</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">malware</span><span class="w">          </span><span class="c1"># All detectors with &quot;malware&quot; tag</span>
+</code></pre></div>
+<h4 id="combining-with-regular-events">Combining with Regular Events<a class="headerlink" href="#combining-with-regular-events" title="Permanent link">&para;</a></h4>
+<p>Threat-based selection can be combined with regular event selection:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tracee.aquasec.com/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Policy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mixed-events</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Trace specific events and all critical threats</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">scope</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
+<span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">security_file_open</span>
+<span class="w">      </span><span class="nt">filters</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data.pathname=/etc/*</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">threat.severity=critical</span>
+</code></pre></div>
+<h4 id="available-threat-properties">Available Threat Properties<a class="headerlink" href="#available-threat-properties" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+<th>Example Values</th>
+<th>Operators</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>threat.severity</code></td>
+<td>Severity level</td>
+<td>info, low, medium, high, critical (or 0-4)</td>
+<td>=, !=, &lt;, &gt;, &lt;=, &gt;=</td>
+</tr>
+<tr>
+<td><code>threat.mitre.technique</code></td>
+<td>MITRE technique ID</td>
+<td>T1055, T1071</td>
+<td>=, !=</td>
+</tr>
+<tr>
+<td><code>threat.mitre.tactic</code></td>
+<td>MITRE tactic name</td>
+<td>Defense Evasion, Execution</td>
+<td>=, !=</td>
+</tr>
+<tr>
+<td><code>threat.name</code></td>
+<td>Threat identifier</td>
+<td>process_injection</td>
+<td>=, !=</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Note:</strong> Detector selection based on threat properties is performed once when Tracee starts. Matching detectors are enabled; non-matching detectors are never loaded. Multiple rules in a policy are combined with OR logic.</p>
 <h2 id="filters">Filters<a class="headerlink" href="#filters" title="Permanent link">&para;</a></h2>
 <p>Filters enable you to refine the policy's scope by specifying conditions for particular events. This allows you to narrow down the criteria to precisely target the events you're interested in, ensuring that the policy applies only under specific circumstances.</p>
 <p>Every <code>event</code> that is specified within the <code>rules</code> section supports three types of filters: <code>scope</code>, <code>data</code> and <code>return value</code>.</p>
