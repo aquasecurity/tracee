@@ -1,65 +1,29 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
-
-	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/cmd"
-	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
-	"github.com/aquasecurity/tracee/pkg/detectors"
-	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 )
 
 func init() {
 	rootCmd.AddCommand(listCmd)
-	listCmd.Flags().BoolP(
-		"wide",
-		"w",
-		false,
-		"no wrapping of output lines",
-	)
-	listCmd.Flags().StringArray(
-		"signatures-dir",
-		[]string{},
-		"Directories where to search for signatures in Go plugin (.so) format",
-	)
+
+	// Add subcommands
+	listCmd.AddCommand(listEventsCmd)
+	listCmd.AddCommand(listDetectorsCmd)
+	listCmd.AddCommand(listPoliciesCmd)
 }
 
 var listCmd = &cobra.Command{
-	Use:     "list",
+	Use:     "list <subcommand>",
 	Aliases: []string{"l"},
-	Short:   "List traceable events",
-	Long:    ``,
-	Run: func(c *cobra.Command, args []string) {
-		// Get signatures to update event list
-		sigsDir, err := c.Flags().GetStringArray("signatures-dir")
-		if err != nil {
-			logger.Fatalw("Failed to get signatures-dir flag", "err", err)
-			os.Exit(1)
-		}
+	Short:   "List traceable events, detectors, or policies",
+	Long: `List traceable events, detectors, or policies.
 
-		signatures, _, err := signature.Find(sigsDir, nil)
-		if err != nil {
-			logger.Fatalw("Failed to find signatures", "err", err)
-			os.Exit(1)
-		}
+Subcommands:
+  events     List traceable events with optional filtering
+  detectors  List available detectors
+  policies   List policies from a directory
 
-		sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
-
-		// Collect and register detector events
-		allDetectors := detectors.CollectAllDetectors(nil) // Use default search paths
-		_, err = detectors.CreateEventsFromDetectors(events.StartDetectorID, allDetectors)
-		if err != nil {
-			logger.Fatalw("Failed to register detector events", "err", err)
-			os.Exit(1)
-		}
-
-		includeSigs := true
-		wideOutput := c.Flags().Lookup("wide").Value.String() == "true"
-		cmd.PrintEventList(includeSigs, wideOutput) // list events
-	},
+Use 'tracee list <subcommand> --help' for more information about a subcommand.`,
 	DisableFlagsInUseLine: true,
 }

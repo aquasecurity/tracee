@@ -58,6 +58,10 @@ func init() {
 		enrichmentCmd,
 		eventCmd,
 		eventsCmd,
+		listCmd_,
+		listEventsCmd_,
+		listDetectorsCmd_,
+		listPoliciesCmd_,
 		loggingCmd,
 		outputCmd,
 		policyCmd,
@@ -224,6 +228,42 @@ var signaturesDirCmd = &cobra.Command{
 	Short:   "Show manual page for the --signatures-dir flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("signatures-dir")
+	},
+}
+
+var listCmd_ = &cobra.Command{
+	Use:     "list",
+	Aliases: []string{},
+	Short:   "Show manual page for the list command",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runManForFlag("list")
+	},
+}
+
+var listEventsCmd_ = &cobra.Command{
+	Use:     "list-events",
+	Aliases: []string{},
+	Short:   "Show manual page for the list events command",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runManForFlag("list-events")
+	},
+}
+
+var listDetectorsCmd_ = &cobra.Command{
+	Use:     "list-detectors",
+	Aliases: []string{},
+	Short:   "Show manual page for the list detectors command",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runManForFlag("list-detectors")
+	},
+}
+
+var listPoliciesCmd_ = &cobra.Command{
+	Use:     "list-policies",
+	Aliases: []string{},
+	Short:   "Show manual page for the list policies command",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runManForFlag("list-policies")
 	},
 }
 
