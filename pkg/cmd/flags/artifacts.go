@@ -64,18 +64,18 @@ type ArtifactsConfig struct {
 
 // FileWriteConfig is the configuration for file write capture.
 type FileWriteConfig struct {
-	Enabled    bool                   `mapstructure:"enabled"`
-	Filters    []string               `mapstructure:"filters"`
-	PathFilter []string               `mapstructure:"-"`
-	TypeFilter config.FileCaptureType `mapstructure:"-"`
+	Enabled    bool                     `mapstructure:"enabled"`
+	Filters    []string                 `mapstructure:"filters"`
+	PathFilter []string                 `mapstructure:"-"`
+	TypeFilter config.FileArtifactsType `mapstructure:"-"`
 }
 
 // FileReadConfig is the configuration for file read capture.
 type FileReadConfig struct {
-	Enabled    bool                   `mapstructure:"enabled"`
-	Filters    []string               `mapstructure:"filters"`
-	PathFilter []string               `mapstructure:"-"`
-	TypeFilter config.FileCaptureType `mapstructure:"-"`
+	Enabled    bool                     `mapstructure:"enabled"`
+	Filters    []string                 `mapstructure:"filters"`
+	PathFilter []string                 `mapstructure:"-"`
+	TypeFilter config.FileArtifactsType `mapstructure:"-"`
 }
 
 // NetworkConfig is the configuration for network capture.
@@ -103,61 +103,61 @@ type DirConfig struct {
 	Clear bool   `mapstructure:"clear"`
 }
 
-// GetCapture returns the capture configuration in the old format.
-func (a *ArtifactsConfig) GetCapture() config.CaptureConfig {
-	capture := config.CaptureConfig{}
+// GetArtifactsConfig returns the artifacts configuration.
+func (a *ArtifactsConfig) GetArtifactsConfig() config.ArtifactsConfig {
+	artifacts := config.ArtifactsConfig{}
 
 	// Set output path
 	outDir := defaultArtifactsDir
 	if a.Dir.Path != "" {
 		outDir = a.Dir.Path
 	}
-	capture.OutputPath = filepath.Join(outDir, "out")
+	artifacts.OutputPath = filepath.Join(outDir, "out")
 
 	// File write - just copy the already-parsed data
 	if a.FileWrite.Enabled {
-		capture.FileWrite.Capture = true
-		capture.FileWrite.PathFilter = a.FileWrite.PathFilter
-		capture.FileWrite.TypeFilter = a.FileWrite.TypeFilter
+		artifacts.FileWrite.Capture = true
+		artifacts.FileWrite.PathFilter = a.FileWrite.PathFilter
+		artifacts.FileWrite.TypeFilter = a.FileWrite.TypeFilter
 	}
 
 	// File read - just copy the already-parsed data
 	if a.FileRead.Enabled {
-		capture.FileRead.Capture = true
-		capture.FileRead.PathFilter = a.FileRead.PathFilter
-		capture.FileRead.TypeFilter = a.FileRead.TypeFilter
+		artifacts.FileRead.Capture = true
+		artifacts.FileRead.PathFilter = a.FileRead.PathFilter
+		artifacts.FileRead.TypeFilter = a.FileRead.TypeFilter
 	}
 
 	// Executable
-	capture.Exec = a.Executable
+	artifacts.Exec = a.Executable
 
 	// Kernel modules
-	capture.Module = a.KernelModules
+	artifacts.Module = a.KernelModules
 
 	// BPF programs
-	capture.Bpf = a.BpfPrograms
+	artifacts.Bpf = a.BpfPrograms
 
 	// Memory regions
-	capture.Mem = a.MemoryRegions
+	artifacts.Mem = a.MemoryRegions
 
 	// Network - just copy the already-parsed data
 	if a.Network.Enabled {
-		capture.Net.CaptureSingle = a.Network.CaptureSingle
-		capture.Net.CaptureProcess = a.Network.CaptureProcess
-		capture.Net.CaptureContainer = a.Network.CaptureContainer
-		capture.Net.CaptureCommand = a.Network.CaptureCommand
-		capture.Net.CaptureFiltered = a.Network.CaptureFiltered
-		capture.Net.CaptureLength = a.Network.CaptureLength
+		artifacts.Net.CaptureSingle = a.Network.CaptureSingle
+		artifacts.Net.CaptureProcess = a.Network.CaptureProcess
+		artifacts.Net.CaptureContainer = a.Network.CaptureContainer
+		artifacts.Net.CaptureCommand = a.Network.CaptureCommand
+		artifacts.Net.CaptureFiltered = a.Network.CaptureFiltered
+		artifacts.Net.CaptureLength = a.Network.CaptureLength
 	}
 
 	// Clear dir if needed
 	if a.Dir.Clear {
-		if err := os.RemoveAll(capture.OutputPath); err != nil {
+		if err := os.RemoveAll(artifacts.OutputPath); err != nil {
 			logger.Warnw("Removing all", "error", err)
 		}
 	}
 
-	return capture
+	return artifacts
 }
 
 // flags returns the flags for the artifacts configuration.
@@ -363,24 +363,24 @@ func PrepareArtifacts(artifactsSlice []string) (ArtifactsConfig, error) {
 	// This happens after all options are processed
 	if len(artifacts.FileWrite.Filters) > 0 {
 		for _, filter := range artifacts.FileWrite.Filters {
-			var captureConfig config.FileCaptureConfig
-			if err := parseFileCaptureSubOption(filter, &captureConfig); err != nil {
+			var artifactsConfig config.FileArtifactsConfig
+			if err := parseFileArtifactsSubOption(filter, &artifactsConfig); err != nil {
 				return ArtifactsConfig{}, errfmt.WrapError(err)
 			}
-			artifacts.FileWrite.PathFilter = append(artifacts.FileWrite.PathFilter, captureConfig.PathFilter...)
-			artifacts.FileWrite.TypeFilter |= captureConfig.TypeFilter
+			artifacts.FileWrite.PathFilter = append(artifacts.FileWrite.PathFilter, artifactsConfig.PathFilter...)
+			artifacts.FileWrite.TypeFilter |= artifactsConfig.TypeFilter
 		}
 		artifacts.FileWrite.Filters = nil // Clear after parsing
 	}
 
 	if len(artifacts.FileRead.Filters) > 0 {
 		for _, filter := range artifacts.FileRead.Filters {
-			var captureConfig config.FileCaptureConfig
-			if err := parseFileCaptureSubOption(filter, &captureConfig); err != nil {
+			var artifactsConfig config.FileArtifactsConfig
+			if err := parseFileArtifactsSubOption(filter, &artifactsConfig); err != nil {
 				return ArtifactsConfig{}, errfmt.WrapError(err)
 			}
-			artifacts.FileRead.PathFilter = append(artifacts.FileRead.PathFilter, captureConfig.PathFilter...)
-			artifacts.FileRead.TypeFilter |= captureConfig.TypeFilter
+			artifacts.FileRead.PathFilter = append(artifacts.FileRead.PathFilter, artifactsConfig.PathFilter...)
+			artifacts.FileRead.TypeFilter |= artifactsConfig.TypeFilter
 		}
 		artifacts.FileRead.Filters = nil // Clear after parsing
 	}
@@ -430,9 +430,9 @@ func PrepareArtifacts(artifactsSlice []string) (ArtifactsConfig, error) {
 	return artifacts, nil
 }
 
-// parseFileCaptureSubOption parses file capture sub-options in the format '<sub-opt>=<value>'.
+// parseFileArtifactsSubOption parses file artifacts sub-options in the format '<sub-opt>=<value>'.
 // This is shared logic between the legacy capture flag and the new artifacts flag.
-func parseFileCaptureSubOption(option string, captureConfig *config.FileCaptureConfig) error {
+func parseFileArtifactsSubOption(option string, artifactsConfig *config.FileArtifactsConfig) error {
 	optAndValue := strings.SplitN(option, "=", 2)
 	if len(optAndValue) != 2 || len(optAndValue[1]) == 0 {
 		return errfmt.Errorf("invalid file capture option format: %s", option)
@@ -446,59 +446,59 @@ func parseFileCaptureSubOption(option string, captureConfig *config.FileCaptureC
 		}
 		pathPrefix := strings.TrimSuffix(value, "*")
 		if len(pathPrefix) == 0 {
-			return errfmt.Errorf("capture path filter cannot be empty")
+			return errfmt.Errorf("artifacts path filter cannot be empty")
 		}
-		captureConfig.PathFilter = append(captureConfig.PathFilter, pathPrefix)
+		artifactsConfig.PathFilter = append(artifactsConfig.PathFilter, pathPrefix)
 	case "type":
 		typeFilter := strings.TrimPrefix(option, "type=")
-		filterFlag, err := parseFileCaptureType(typeFilter)
+		filterFlag, err := parseFileArtifactsType(typeFilter)
 		if err != nil {
 			return err
 		}
-		captureConfig.TypeFilter |= filterFlag
+		artifactsConfig.TypeFilter |= filterFlag
 	case "fd":
 		typeFilter := strings.TrimPrefix(option, "fd=")
-		filterFlag, err := parseFileCaptureFDs(typeFilter)
+		filterFlag, err := parseFileArtifactsFDs(typeFilter)
 		if err != nil {
 			return err
 		}
-		captureConfig.TypeFilter |= filterFlag
+		artifactsConfig.TypeFilter |= filterFlag
 	default:
-		return errfmt.Errorf("unrecognized file capture option: %s", opt)
+		return errfmt.Errorf("unrecognized file artifacts option: %s", opt)
 	}
 
 	return nil
 }
 
-var captureFileTypeStringToFlag = map[string]config.FileCaptureType{
-	"pipe":    config.CapturePipeFiles,
-	"socket":  config.CaptureSocketFiles,
-	"regular": config.CaptureRegularFiles,
-	"elf":     config.CaptureELFFiles,
+var artifactsFileTypeStringToFlag = map[string]config.FileArtifactsType{
+	"pipe":    config.ArtifactsPipeFiles,
+	"socket":  config.ArtifactsSocketFiles,
+	"regular": config.ArtifactsRegularFiles,
+	"elf":     config.ArtifactsELFFiles,
 }
 
-// parseFileCaptureType parses file type string to its matching bit-flag value.
-func parseFileCaptureType(filter string) (config.FileCaptureType, error) {
-	filterFlag, ok := captureFileTypeStringToFlag[filter]
+// parseFileArtifactsType parses file type string to its matching bit-flag value.
+func parseFileArtifactsType(filter string) (config.FileArtifactsType, error) {
+	filterFlag, ok := artifactsFileTypeStringToFlag[filter]
 	if ok {
 		return filterFlag, nil
 	}
-	return 0, errfmt.Errorf("unsupported file type filter value for capture - %s", filter)
+	return 0, errfmt.Errorf("unsupported file type filter value for artifacts - %s", filter)
 }
 
-var captureFDsStringToFlag = map[string]config.FileCaptureType{
-	"stdin":  config.CaptureStdinFiles,
-	"stdout": config.CaptureStdoutFiles,
-	"stderr": config.CaptureStderrFiles,
+var artifactsFDsStringToFlag = map[string]config.FileArtifactsType{
+	"stdin":  config.ArtifactsStdinFiles,
+	"stdout": config.ArtifactsStdoutFiles,
+	"stderr": config.ArtifactsStderrFiles,
 }
 
-// parseFileCaptureFDs parses file standard FD string to its matching bit-flag value.
-func parseFileCaptureFDs(filter string) (config.FileCaptureType, error) {
-	filterFlag, ok := captureFDsStringToFlag[filter]
+// parseFileArtifactsFDs parses file standard FD string to its matching bit-flag value.
+func parseFileArtifactsFDs(filter string) (config.FileArtifactsType, error) {
+	filterFlag, ok := artifactsFDsStringToFlag[filter]
 	if ok {
 		return filterFlag, nil
 	}
-	return 0, errfmt.Errorf("unsupported file FD filter value for capture - %s", filter)
+	return 0, errfmt.Errorf("unsupported file FD filter value for artifacts - %s", filter)
 }
 
 // parseFileArtifactOptionWrite parses file-write artifact options.
@@ -511,13 +511,13 @@ func parseFileArtifactOptionWrite(fileConfig *FileWriteConfig, subOpt string) er
 			return errfmt.Errorf("file write filter cannot be empty")
 		}
 		// Parse filter immediately and store in the config
-		var captureConfig config.FileCaptureConfig
-		if err := parseFileCaptureSubOption(filterStr, &captureConfig); err != nil {
+		var artifactsConfig config.FileArtifactsConfig
+		if err := parseFileArtifactsSubOption(filterStr, &artifactsConfig); err != nil {
 			return errfmt.WrapError(err)
 		}
 		// Merge the parsed filter into fileConfig
-		fileConfig.PathFilter = append(fileConfig.PathFilter, captureConfig.PathFilter...)
-		fileConfig.TypeFilter |= captureConfig.TypeFilter
+		fileConfig.PathFilter = append(fileConfig.PathFilter, artifactsConfig.PathFilter...)
+		fileConfig.TypeFilter |= artifactsConfig.TypeFilter
 		return nil
 	}
 
@@ -534,13 +534,13 @@ func parseFileArtifactOptionRead(fileConfig *FileReadConfig, subOpt string) erro
 			return errfmt.Errorf("file read filter cannot be empty")
 		}
 		// Parse filter immediately and store in the config
-		var captureConfig config.FileCaptureConfig
-		if err := parseFileCaptureSubOption(filterStr, &captureConfig); err != nil {
+		var artifactsConfig config.FileArtifactsConfig
+		if err := parseFileArtifactsSubOption(filterStr, &artifactsConfig); err != nil {
 			return errfmt.WrapError(err)
 		}
 		// Merge the parsed filter into fileConfig
-		fileConfig.PathFilter = append(fileConfig.PathFilter, captureConfig.PathFilter...)
-		fileConfig.TypeFilter |= captureConfig.TypeFilter
+		fileConfig.PathFilter = append(fileConfig.PathFilter, artifactsConfig.PathFilter...)
+		fileConfig.TypeFilter |= artifactsConfig.TypeFilter
 		return nil
 	}
 

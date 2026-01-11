@@ -204,8 +204,8 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	if err != nil {
 		return runner, err
 	}
-	capture := artifactsConfig.GetCapture()
-	cfg.Capture = &capture
+	artifacts := artifactsConfig.GetArtifactsConfig()
+	cfg.Artifacts = &artifacts
 
 	// Capabilities command line flags
 

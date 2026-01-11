@@ -69,7 +69,7 @@ func (b *EventBuffer) GetCopy() []*pb.Event {
 }
 
 // load tracee into memory with args
-func StartTracee(ctx context.Context, t *testing.T, cfg config.Config, output *config.OutputConfig, capture *config.CaptureConfig) (*tracee.Tracee, error) {
+func StartTracee(ctx context.Context, t *testing.T, cfg config.Config, output *config.OutputConfig, artifacts *config.ArtifactsConfig) (*tracee.Tracee, error) {
 	initialize.SetLibbpfgoCallbacks()
 
 	kernelConfig, err := initialize.KernelConfig()
@@ -89,11 +89,11 @@ func StartTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 		return nil, err
 	}
 
-	if capture == nil {
-		capture = PrepareCapture()
+	if artifacts == nil {
+		artifacts = PrepareArtifacts()
 	}
 
-	cfg.Capture = capture
+	cfg.Artifacts = artifacts
 
 	defaultBufferPages := (4096 * 1024) / os.Getpagesize() // 4 MB of contiguous pages
 	cfg.Buffers = config.BuffersConfig{
@@ -157,12 +157,12 @@ func StartTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 	return trc, nil
 }
 
-// prepareCapture prepares a capture config for tracee
-func PrepareCapture() *config.CaptureConfig {
+// prepareArtifacts prepares an artifacts config for tracee
+func PrepareArtifacts() *config.ArtifactsConfig {
 	// taken from tracee-rule github project, might have to adjust...
-	// prepareCapture is called with nil input
-	return &config.CaptureConfig{
-		FileWrite: config.FileCaptureConfig{
+	// prepareArtifacts is called with nil input
+	return &config.ArtifactsConfig{
+		FileWrite: config.FileArtifactsConfig{
 			PathFilter: []string{},
 		},
 		OutputPath: filepath.Join("/tmp/tracee", "out"),

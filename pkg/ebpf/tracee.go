@@ -81,7 +81,7 @@ type Tracee struct {
 	eventDerivations derive.Table
 	// Artifacts
 	fileHashes     *digest.Cache
-	capturedFiles  map[string]int64
+	artifactsFiles map[string]int64
 	writtenFiles   map[string]string
 	netCapturePcap *pcaps.Pcaps
 	// Internal Data
@@ -242,31 +242,31 @@ func New(cfg config.Config) (*Tracee, error) {
 	// NOTE: This deep copy is a *reminder* that the inner slices are not shared
 	// between the original and the injected config.
 	// TODO: This logic should be removed when config changes in runtime is a thing.
-	getNewCaptureConfig := func() config.CaptureConfig {
-		fileReadPathFilter := make([]string, 0, len(cfg.Capture.FileRead.PathFilter))
-		copy(fileReadPathFilter, cfg.Capture.FileRead.PathFilter)
-		fileRead := config.FileCaptureConfig{
-			Capture:    cfg.Capture.FileRead.Capture,
+	getNewArtifactsConfig := func() config.ArtifactsConfig {
+		fileReadPathFilter := make([]string, 0, len(cfg.Artifacts.FileRead.PathFilter))
+		copy(fileReadPathFilter, cfg.Artifacts.FileRead.PathFilter)
+		fileRead := config.FileArtifactsConfig{
+			Capture:    cfg.Artifacts.FileRead.Capture,
 			PathFilter: fileReadPathFilter,
-			TypeFilter: cfg.Capture.FileRead.TypeFilter,
+			TypeFilter: cfg.Artifacts.FileRead.TypeFilter,
 		}
 
-		fileWritePathFilter := make([]string, 0, len(cfg.Capture.FileWrite.PathFilter))
-		copy(fileWritePathFilter, cfg.Capture.FileWrite.PathFilter)
-		fileWrite := config.FileCaptureConfig{
-			Capture:    cfg.Capture.FileWrite.Capture,
+		fileWritePathFilter := make([]string, 0, len(cfg.Artifacts.FileWrite.PathFilter))
+		copy(fileWritePathFilter, cfg.Artifacts.FileWrite.PathFilter)
+		fileWrite := config.FileArtifactsConfig{
+			Capture:    cfg.Artifacts.FileWrite.Capture,
 			PathFilter: fileWritePathFilter,
-			TypeFilter: cfg.Capture.FileWrite.TypeFilter,
+			TypeFilter: cfg.Artifacts.FileWrite.TypeFilter,
 		}
 
-		return config.CaptureConfig{
+		return config.ArtifactsConfig{
 			FileRead:  fileRead,
 			FileWrite: fileWrite,
-			Module:    cfg.Capture.Module,
-			Exec:      cfg.Capture.Exec,
-			Mem:       cfg.Capture.Mem,
-			Bpf:       cfg.Capture.Bpf,
-			Net:       cfg.Capture.Net,
+			Module:    cfg.Artifacts.Module,
+			Exec:      cfg.Artifacts.Exec,
+			Mem:       cfg.Artifacts.Mem,
+			Bpf:       cfg.Artifacts.Bpf,
+			Net:       cfg.Artifacts.Net,
 		}
 	}
 
@@ -274,7 +274,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		HeartbeatEnabled:   cfg.HealthzEnabled,
 		DNSStoreConfig:     cfg.DNSStore,
 		ProcessStoreConfig: cfg.ProcessStore,
-		CaptureConfig:      getNewCaptureConfig(),
+		ArtifactsConfig:    getNewArtifactsConfig(),
 	}
 	pm, err := policy.NewManager(pmCfg, depsManager, initialPolicies...)
 	if err != nil {
@@ -289,7 +289,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		stats:              metrics.NewStats(),
 		writtenFiles:       make(map[string]string),
 		readFiles:          make(map[string]string),
-		capturedFiles:      make(map[string]int64),
+		artifactsFiles:     make(map[string]int64),
 		streamsManager:     streams.NewStreamsManager(),
 		policyManager:      pm,
 		eventsDependencies: depsManager,
@@ -635,14 +635,14 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
-	// Initialize capture directory
+	// Initialize artifacts directory
 
-	if err := os.MkdirAll(t.config.Capture.OutputPath, 0755); err != nil {
+	if err := os.MkdirAll(t.config.Artifacts.OutputPath, 0755); err != nil {
 		t.Close()
 		return errfmt.Errorf("error creating output path: %v", err)
 	}
 
-	t.OutDir, err = fileutil.OpenExistingDir(t.config.Capture.OutputPath)
+	t.OutDir, err = fileutil.OpenExistingDir(t.config.Artifacts.OutputPath)
 	if err != nil {
 		t.Close()
 		return errfmt.Errorf("error opening out directory: %v", err)
@@ -650,7 +650,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize network capture (all needed pcap files)
 
-	t.netCapturePcap, err = pcaps.New(t.config.Capture.Net, t.OutDir)
+	t.netCapturePcap, err = pcaps.New(t.config.Artifacts.Net, t.OutDir)
 	if err != nil {
 		t.Close()
 		return errfmt.Errorf("error initializing network capture: %v", err)
@@ -974,19 +974,19 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	if t.config.Output.StackAddresses {
 		cOptVal = cOptVal | optStackAddresses
 	}
-	if t.config.Capture.FileWrite.Capture {
+	if t.config.Artifacts.FileWrite.Capture {
 		cOptVal = cOptVal | optCaptureFilesWrite
 	}
-	if t.config.Capture.FileRead.Capture {
+	if t.config.Artifacts.FileRead.Capture {
 		cOptVal = cOptVal | optCaptureFileRead
 	}
-	if t.config.Capture.Module {
+	if t.config.Artifacts.Module {
 		cOptVal = cOptVal | optCaptureModules
 	}
-	if t.config.Capture.Bpf {
+	if t.config.Artifacts.Bpf {
 		cOptVal = cOptVal | optCaptureBpf
 	}
-	if t.config.Capture.Mem {
+	if t.config.Artifacts.Mem {
 		cOptVal = cOptVal | optExtractDynCode
 	}
 	switch t.cgroups.GetDefaultCgroup().(type) {
@@ -1374,16 +1374,16 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize the net_packet configuration eBPF map.
-	if pcaps.PcapsEnabled(t.config.Capture.Net) {
+	if pcaps.PcapsEnabled(t.config.Artifacts.Net) {
 		bpfNetConfigMap, err := t.bpfModule.GetMap("netconfig_map")
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
 
 		netConfigVal := make([]byte, 8) // u32 capture_options + u32 capture_length
-		options := pcaps.GetPcapOptions(t.config.Capture.Net)
+		options := pcaps.GetPcapOptions(t.config.Artifacts.Net)
 		binary.LittleEndian.PutUint32(netConfigVal[0:4], uint32(options))
-		binary.LittleEndian.PutUint32(netConfigVal[4:8], t.config.Capture.Net.CaptureLength)
+		binary.LittleEndian.PutUint32(netConfigVal[4:8], t.config.Artifacts.Net.CaptureLength)
 
 		cZero := uint32(0)
 		err = bpfNetConfigMap.Update(unsafe.Pointer(&cZero), unsafe.Pointer(&netConfigVal[0]))
@@ -1410,8 +1410,8 @@ func (t *Tracee) populateBPFMaps() error {
 		return err
 	}
 
-	for i := uint32(0); i < uint32(len(t.config.Capture.FileWrite.PathFilter)); i++ {
-		filterFilePathWriteBytes := []byte(t.config.Capture.FileWrite.PathFilter[i])
+	for i := uint32(0); i < uint32(len(t.config.Artifacts.FileWrite.PathFilter)); i++ {
+		filterFilePathWriteBytes := []byte(t.config.Artifacts.FileWrite.PathFilter[i])
 		if err = fileWritePathFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&filterFilePathWriteBytes[0])); err != nil {
 			return err
 		}
@@ -1423,8 +1423,8 @@ func (t *Tracee) populateBPFMaps() error {
 		return err
 	}
 
-	for i := uint32(0); i < uint32(len(t.config.Capture.FileRead.PathFilter)); i++ {
-		filterFilePathReadBytes := []byte(t.config.Capture.FileRead.PathFilter[i])
+	for i := uint32(0); i < uint32(len(t.config.Artifacts.FileRead.PathFilter)); i++ {
+		filterFilePathReadBytes := []byte(t.config.Artifacts.FileRead.PathFilter[i])
 		if err = fileReadPathFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&filterFilePathReadBytes[0])); err != nil {
 			return err
 		}
@@ -1438,7 +1438,7 @@ func (t *Tracee) populateBPFMaps() error {
 
 	// Should match the value of CAPTURE_READ_TYPE_FILTER_IDX in eBPF code
 	captureReadTypeFilterIndex := uint32(0)
-	captureReadTypeFilterVal := uint32(t.config.Capture.FileRead.TypeFilter)
+	captureReadTypeFilterVal := uint32(t.config.Artifacts.FileRead.TypeFilter)
 	if err = fileTypeFilterMap.Update(unsafe.Pointer(&captureReadTypeFilterIndex),
 		unsafe.Pointer(&captureReadTypeFilterVal)); err != nil {
 		return errfmt.WrapError(err)
@@ -1446,7 +1446,7 @@ func (t *Tracee) populateBPFMaps() error {
 
 	// Should match the value of CAPTURE_WRITE_TYPE_FILTER_IDX in eBPF code
 	captureWriteTypeFilterIndex := uint32(1)
-	captureWriteTypeFilterVal := uint32(t.config.Capture.FileWrite.TypeFilter)
+	captureWriteTypeFilterVal := uint32(t.config.Artifacts.FileWrite.TypeFilter)
 	if err = fileTypeFilterMap.Update(unsafe.Pointer(&captureWriteTypeFilterIndex),
 		unsafe.Pointer(&captureWriteTypeFilterVal)); err != nil {
 		return errfmt.WrapError(err)
@@ -1744,7 +1744,7 @@ func (t *Tracee) initBPF() error {
 		}
 	}
 
-	if pcaps.PcapsEnabled(t.config.Capture.Net) {
+	if pcaps.PcapsEnabled(t.config.Artifacts.Net) {
 		t.netCapChannel = make(chan []byte, 1000)
 		t.lostNetCapChannel = make(chan uint64)
 		t.netCapPerfMap, err = t.bpfModule.InitPerfBuf(
@@ -1837,7 +1837,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 	// Network capture perf buffer (similar to regular pipeline)
 
-	if pcaps.PcapsEnabled(t.config.Capture.Net) {
+	if pcaps.PcapsEnabled(t.config.Artifacts.Net) {
 		t.netCapPerfMap.Poll(pollTimeout)
 		go t.handleNetCaptureEvents(ctx)
 	}
@@ -1864,7 +1864,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	if t.config.Buffers.Kernel.Artifacts > 0 {
 		t.fileWrPerfMap.Stop()
 	}
-	if pcaps.PcapsEnabled(t.config.Capture.Net) {
+	if pcaps.PcapsEnabled(t.config.Artifacts.Net) {
 		t.netCapPerfMap.Stop()
 	}
 	t.bpfLogsPerfMap.Stop()
@@ -1872,16 +1872,16 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	// TODO: move logic below somewhere else (related to file writes)
 
 	// record index of written files
-	if t.config.Capture.FileWrite.Capture {
-		err := updateCaptureMapFile(t.OutDir, "written_files", t.writtenFiles, t.config.Capture.FileWrite)
+	if t.config.Artifacts.FileWrite.Capture {
+		err := updateArtifactsMapFile(t.OutDir, "written_files", t.writtenFiles, t.config.Artifacts.FileWrite)
 		if err != nil {
 			return err
 		}
 	}
 
 	// record index of read files
-	if t.config.Capture.FileRead.Capture {
-		err := updateCaptureMapFile(t.OutDir, "read_files", t.readFiles, t.config.Capture.FileRead)
+	if t.config.Artifacts.FileRead.Capture {
+		err := updateArtifactsMapFile(t.OutDir, "read_files", t.readFiles, t.config.Artifacts.FileRead)
 		if err != nil {
 			return err
 		}
@@ -1892,7 +1892,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	return nil
 }
 
-func updateCaptureMapFile(fileDir *os.File, filePath string, capturedFiles map[string]string, cfg config.FileCaptureConfig) error {
+func updateArtifactsMapFile(fileDir *os.File, filePath string, artifactsFiles map[string]string, cfg config.FileArtifactsConfig) error {
 	f, err := fileutil.OpenAt(fileDir, filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return errfmt.Errorf("error logging captured files")
@@ -1902,16 +1902,16 @@ func updateCaptureMapFile(fileDir *os.File, filePath string, capturedFiles map[s
 			logger.Errorw("Closing file", "error", err)
 		}
 	}()
-	for fileName, filePath := range capturedFiles {
-		captureFiltered := false
-		// TODO: We need a method to decide if the capture was filtered by FD or type.
+	for fileName, filePath := range artifactsFiles {
+		artifactsFiltered := false
+		// TODO: We need a method to decide if the artifacts was filtered by FD or type.
 		for _, filterPrefix := range cfg.PathFilter {
 			if !strings.HasPrefix(filePath, filterPrefix) {
-				captureFiltered = true
+				artifactsFiltered = true
 				break
 			}
 		}
-		if captureFiltered {
+		if artifactsFiltered {
 			// Don't write mapping of files that were not actually captured
 			continue
 		}
@@ -2176,7 +2176,7 @@ func (t *Tracee) netEnabled() bool {
 	}
 
 	// if called before capture meta-events are set to be traced:
-	return pcaps.PcapsEnabled(t.config.Capture.Net)
+	return pcaps.PcapsEnabled(t.config.Artifacts.Net)
 }
 
 // AddReadyCallback sets a callback function to be called when the tracee started all its probes

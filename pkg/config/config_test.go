@@ -16,7 +16,7 @@ func validConfig() Config {
 				Artifacts: 512,  // power of 2
 			},
 		},
-		Capture:     &CaptureConfig{},
+		Artifacts:   &ArtifactsConfig{},
 		Output:      &OutputConfig{},
 		BPFObjBytes: []byte{1, 2, 3},
 	}
@@ -68,7 +68,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "too many file-write path filters",
 			config: func() Config {
 				cfg := validConfig()
-				cfg.Capture.FileWrite.PathFilter = []string{"/tmp*", "/var*", "/usr*", "/etc*"} // 4 filters > 3
+				cfg.Artifacts.FileWrite.PathFilter = []string{"/tmp*", "/var*", "/usr*", "/etc*"} // 4 filters > 3
 				return cfg
 			}(),
 			expectError:   true,
@@ -78,7 +78,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "too many file-read path filters",
 			config: func() Config {
 				cfg := validConfig()
-				cfg.Capture.FileRead.PathFilter = []string{"/tmp*", "/var*", "/usr*", "/etc*"} // 4 filters > 3
+				cfg.Artifacts.FileRead.PathFilter = []string{"/tmp*", "/var*", "/usr*", "/etc*"} // 4 filters > 3
 				return cfg
 			}(),
 			expectError:   true,
@@ -89,7 +89,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: func() Config {
 				cfg := validConfig()
 				longFilter := "/this/is/a/very/long/path/that/exceeds/fifty/characters*"
-				cfg.Capture.FileWrite.PathFilter = []string{longFilter}
+				cfg.Artifacts.FileWrite.PathFilter = []string{longFilter}
 				return cfg
 			}(),
 			expectError:   true,
@@ -100,8 +100,8 @@ func TestConfig_Validate(t *testing.T) {
 			config: func() Config {
 				cfg := validConfig()
 				longFilter := "/this/is/a/very/long/path/that/exceeds/fifty/characters*"
-				cfg.Capture.FileRead.PathFilter = []string{"/tmp*"}
-				cfg.Capture.FileWrite.PathFilter = []string{longFilter}
+				cfg.Artifacts.FileRead.PathFilter = []string{"/tmp*"}
+				cfg.Artifacts.FileWrite.PathFilter = []string{longFilter}
 				return cfg
 			}(),
 			expectError:   true,
@@ -111,7 +111,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "valid path filter length - exactly 50 characters",
 			config: func() Config {
 				cfg := validConfig()
-				cfg.Capture.FileWrite.PathFilter = []string{"/this/is/a/path/exactly/fifty/characters/long*"}
+				cfg.Artifacts.FileWrite.PathFilter = []string{"/this/is/a/path/exactly/fifty/characters/long*"}
 				return cfg
 			}(),
 			expectError: false,
@@ -175,8 +175,8 @@ func TestConfig_Validate(t *testing.T) {
 			name: "maximum valid path filters",
 			config: func() Config {
 				cfg := validConfig()
-				cfg.Capture.FileWrite.PathFilter = []string{"/tmp*", "/var*", "/usr*"} // exactly 3 filters
-				cfg.Capture.FileRead.PathFilter = []string{"/etc*", "/opt*", "/home*"} // exactly 3 filters
+				cfg.Artifacts.FileWrite.PathFilter = []string{"/tmp*", "/var*", "/usr*"} // exactly 3 filters
+				cfg.Artifacts.FileRead.PathFilter = []string{"/etc*", "/opt*", "/home*"} // exactly 3 filters
 				return cfg
 			}(),
 			expectError: false,

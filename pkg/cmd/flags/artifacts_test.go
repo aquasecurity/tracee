@@ -19,10 +19,10 @@ func TestPrepareArtifacts(t *testing.T) {
 
 	t.Run("various artifacts options", func(t *testing.T) {
 		testCases := []struct {
-			testName        string
-			artifactsSlice  []string
-			expectedCapture config.CaptureConfig
-			expectedError   error
+			testName          string
+			artifactsSlice    []string
+			expectedArtifacts config.ArtifactsConfig
+			expectedError     error
 		}{
 			{
 				testName:       "invalid artifacts option - no dot",
@@ -37,9 +37,9 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts file-write with filters auto-enables",
 				artifactsSlice: []string{"file-write.filters=path=/tmp*"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileWrite: config.FileCaptureConfig{
+					FileWrite: config.FileArtifactsConfig{
 						Capture:    true,
 						PathFilter: []string{"/tmp"},
 					},
@@ -48,9 +48,9 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts file-read with filters auto-enables",
 				artifactsSlice: []string{"file-read.filters=path=/etc*"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileRead: config.FileCaptureConfig{
+					FileRead: config.FileArtifactsConfig{
 						Capture:    true,
 						PathFilter: []string{"/etc"},
 					},
@@ -79,22 +79,22 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "invalid file-write filter - empty path",
 				artifactsSlice: []string{"file-write.filters=path=*"},
-				expectedError:  errors.New("capture path filter cannot be empty"),
+				expectedError:  errors.New("artifacts path filter cannot be empty"),
 			},
 			{
 				testName:       "invalid file-write type filter",
 				artifactsSlice: []string{"file-write.filters=type=non-existing"},
-				expectedError:  errors.New("unsupported file type filter value for capture - non-existing"),
+				expectedError:  errors.New("unsupported file type filter value for artifacts - non-existing"),
 			},
 			{
 				testName:       "invalid file-write fd filter",
 				artifactsSlice: []string{"file-write.filters=fd=non-existing"},
-				expectedError:  errors.New("unsupported file FD filter value for capture - non-existing"),
+				expectedError:  errors.New("unsupported file FD filter value for artifacts - non-existing"),
 			},
 			{
 				testName:       "artifacts memory-regions enabled",
 				artifactsSlice: []string{"memory-regions"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Mem:        true,
 				},
@@ -102,7 +102,7 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts executable enabled",
 				artifactsSlice: []string{"executable"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Exec:       true,
 				},
@@ -110,7 +110,7 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts kernel-modules enabled",
 				artifactsSlice: []string{"kernel-modules"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Module:     true,
 				},
@@ -118,9 +118,9 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts file-write enabled",
 				artifactsSlice: []string{"file-write"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileWrite: config.FileCaptureConfig{
+					FileWrite: config.FileArtifactsConfig{
 						Capture: true,
 					},
 				},
@@ -128,7 +128,7 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts network enabled",
 				artifactsSlice: []string{"network"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: config.PcapsConfig{
 						CaptureSingle: true,
@@ -139,7 +139,7 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts network with pcap split",
 				artifactsSlice: []string{"network.pcap.split=process,command,container"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: config.PcapsConfig{
 						CaptureSingle:    false,
@@ -153,7 +153,7 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts network with multiple pcap split types",
 				artifactsSlice: []string{"network.pcap.split=command,container"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: config.PcapsConfig{
 						CaptureSingle:    false,
@@ -167,7 +167,7 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts network with pcap split and snaplen",
 				artifactsSlice: []string{"network.pcap.split=command,container", "network.pcap.snaplen=120b"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: config.PcapsConfig{
 						CaptureSingle:    false,
@@ -181,7 +181,7 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts network with pcap options filtered",
 				artifactsSlice: []string{"network.pcap.options=filtered"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: config.PcapsConfig{
 						CaptureSingle:   true,
@@ -193,7 +193,7 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts network with pcap options none",
 				artifactsSlice: []string{"network.pcap.options=none"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: config.PcapsConfig{
 						CaptureSingle:   true,
@@ -205,7 +205,7 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts network with pcap snaplen max",
 				artifactsSlice: []string{"network.pcap.snaplen=max"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: config.PcapsConfig{
 						CaptureSingle: true,
@@ -216,7 +216,7 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts network with pcap snaplen headers",
 				artifactsSlice: []string{"network.pcap.snaplen=headers"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: config.PcapsConfig{
 						CaptureSingle: true,
@@ -227,7 +227,7 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts network with pcap snaplen default",
 				artifactsSlice: []string{"network.pcap.snaplen=default"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: config.PcapsConfig{
 						CaptureSingle: true,
@@ -238,7 +238,7 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts network with pcap snaplen kb",
 				artifactsSlice: []string{"network.pcap.snaplen=1kb"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: config.PcapsConfig{
 						CaptureSingle: true,
@@ -249,7 +249,7 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts bpf-programs enabled",
 				artifactsSlice: []string{"bpf-programs"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 					Bpf:        true,
 				},
@@ -257,9 +257,9 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts file-write filtered by path",
 				artifactsSlice: []string{"file-write.filters=path=/tmp*"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileWrite: config.FileCaptureConfig{
+					FileWrite: config.FileArtifactsConfig{
 						Capture:    true,
 						PathFilter: []string{"/tmp"},
 					},
@@ -268,9 +268,9 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts file-read enabled",
 				artifactsSlice: []string{"file-read"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileRead: config.FileCaptureConfig{
+					FileRead: config.FileArtifactsConfig{
 						Capture: true,
 					},
 				},
@@ -278,9 +278,9 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts file-read filtered by path",
 				artifactsSlice: []string{"file-read.filters=path=/tmp*"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileRead: config.FileCaptureConfig{
+					FileRead: config.FileArtifactsConfig{
 						Capture:    true,
 						PathFilter: []string{"/tmp"},
 					},
@@ -289,53 +289,53 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts file-read filtered by type",
 				artifactsSlice: []string{"file-read.filters=type=pipe"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileRead: config.FileCaptureConfig{
+					FileRead: config.FileArtifactsConfig{
 						Capture:    true,
-						TypeFilter: config.CapturePipeFiles,
+						TypeFilter: config.ArtifactsPipeFiles,
 					},
 				},
 			},
 			{
 				testName:       "artifacts file-read filtered by fd",
 				artifactsSlice: []string{"file-read.filters=fd=stdin"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileRead: config.FileCaptureConfig{
+					FileRead: config.FileArtifactsConfig{
 						Capture:    true,
-						TypeFilter: config.CaptureStdinFiles,
+						TypeFilter: config.ArtifactsStdinFiles,
 					},
 				},
 			},
 			{
 				testName:       "artifacts file-write filtered by type",
 				artifactsSlice: []string{"file-write.filters=type=socket"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileWrite: config.FileCaptureConfig{
+					FileWrite: config.FileArtifactsConfig{
 						Capture:    true,
-						TypeFilter: config.CaptureSocketFiles,
+						TypeFilter: config.ArtifactsSocketFiles,
 					},
 				},
 			},
 			{
 				testName:       "artifacts file-write filtered by fd",
 				artifactsSlice: []string{"file-write.filters=fd=stdout"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileWrite: config.FileCaptureConfig{
+					FileWrite: config.FileArtifactsConfig{
 						Capture:    true,
-						TypeFilter: config.CaptureStdoutFiles,
+						TypeFilter: config.ArtifactsStdoutFiles,
 					},
 				},
 			},
 			{
 				testName:       "multiple artifacts options",
 				artifactsSlice: []string{"file-write", "executable", "memory-regions", "kernel-modules", "bpf-programs"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileWrite:  config.FileCaptureConfig{Capture: true},
+					FileWrite:  config.FileArtifactsConfig{Capture: true},
 					Mem:        true,
 					Exec:       true,
 					Module:     true,
@@ -345,14 +345,14 @@ func TestPrepareArtifacts(t *testing.T) {
 			{
 				testName:       "artifacts dir path",
 				artifactsSlice: []string{"dir.path=/custom/path"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/custom/path/out",
 				},
 			},
 			{
 				testName:       "artifacts dir clear",
 				artifactsSlice: []string{"dir.clear"},
-				expectedCapture: config.CaptureConfig{
+				expectedArtifacts: config.ArtifactsConfig{
 					OutputPath: "/tmp/tracee/out",
 				},
 			},
@@ -381,8 +381,8 @@ func TestPrepareArtifacts(t *testing.T) {
 				artifactsConfig, err := PrepareArtifacts(tc.artifactsSlice)
 				if tc.expectedError == nil {
 					require.NoError(t, err)
-					capture := artifactsConfig.GetCapture()
-					assert.Equal(t, tc.expectedCapture, capture, tc.testName)
+					artifacts := artifactsConfig.GetArtifactsConfig()
+					assert.Equal(t, tc.expectedArtifacts, artifacts, tc.testName)
 				} else {
 					require.Error(t, err)
 					// Extract just the error message without function prefix
@@ -400,8 +400,8 @@ func TestPrepareArtifacts(t *testing.T) {
 		d, _ := os.CreateTemp("", "TestPrepareArtifacts-*")
 		artifactsConfig, err := PrepareArtifacts([]string{fmt.Sprintf("dir.path=%s", d.Name()), "dir.clear"})
 		require.NoError(t, err)
-		capture := artifactsConfig.GetCapture()
-		assert.Equal(t, config.CaptureConfig{OutputPath: fmt.Sprintf("%s/out", d.Name())}, capture)
+		artifacts := artifactsConfig.GetArtifactsConfig()
+		assert.Equal(t, config.ArtifactsConfig{OutputPath: fmt.Sprintf("%s/out", d.Name())}, artifacts)
 		require.NoDirExists(t, d.Name()+"out")
 	})
 }
