@@ -90,6 +90,21 @@ func CreateEventsFromDetectors(startID events.ID, detectors []detection.EventDet
 			}
 		}
 
+		// Build properties map including threat metadata for list/filter support
+		properties := map[string]interface{}{"detectorID": def.ID}
+		if def.ThreatMetadata != nil {
+			properties["Severity"] = def.ThreatMetadata.Severity.String()
+			if def.ThreatMetadata.Mitre != nil {
+				if def.ThreatMetadata.Mitre.Technique != nil {
+					properties["mitre_technique_id"] = def.ThreatMetadata.Mitre.Technique.Id
+					properties["mitre_technique_name"] = def.ThreatMetadata.Mitre.Technique.Name
+				}
+				if def.ThreatMetadata.Mitre.Tactic != nil {
+					properties["mitre_tactic_name"] = def.ThreatMetadata.Mitre.Tactic.Name
+				}
+			}
+		}
+
 		// Build event definition with detector's schema
 		eventDef := events.NewDefinition(
 			eventID,                // id
@@ -102,7 +117,7 @@ func CreateEventsFromDetectors(startID events.ID, detectors []detection.EventDet
 			append([]string{"detectors", "default"}, def.ProducedEvent.Tags...), // sets - include detector tags
 			events.NewDependencyStrategy(dependencies),                          // deps
 			convertFieldsToDataFields(def.ProducedEvent.Fields),                 // fields
-			map[string]interface{}{"detectorID": def.ID},                        // properties
+			properties, // properties including threat metadata
 		)
 
 		// Add to events.Core
