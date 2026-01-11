@@ -506,7 +506,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *events.PipelineEv
 	errc := make(chan error, 1)
 
 	// Some "informational" events are started here (TODO: API server?)
-	t.invokeInitEvents(out)
+	t.invokeInitEvents(ctx, out)
 
 	go func() {
 		defer close(out)
