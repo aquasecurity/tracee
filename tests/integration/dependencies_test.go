@@ -32,7 +32,7 @@ func Test_EventsDependencies(t *testing.T) {
 	testCases := []struct {
 		name              string
 		events            []events.ID
-		captureConfig     *config.CaptureConfig // For internal/capture events
+		artifactsConfig   *config.ArtifactsConfig // For internal/artifacts events
 		expectedLogs      []string
 		expectedEvents    []events.ID
 		unexpectedEvents  []events.ID
@@ -202,7 +202,7 @@ func Test_EventsDependencies(t *testing.T) {
 		{
 			name:            "capture_mem requires security_file_mprotect",
 			events:          []events.ID{events.ExecTest}, // Avoid triggering default event set
-			captureConfig:   &config.CaptureConfig{Mem: true, OutputPath: "/tmp/tracee-test"},
+			artifactsConfig: &config.ArtifactsConfig{Mem: true, OutputPath: "/tmp/tracee-test"},
 			expectedKprobes: []string{"security_file_mprotect"},
 		},
 	}
@@ -276,7 +276,7 @@ func Test_EventsDependencies(t *testing.T) {
 			defer closeLogsDone()
 
 			// start tracee
-			trc, err := testutils.StartTracee(ctx, t, testConfig, nil, testCaseInst.captureConfig)
+			trc, err := testutils.StartTracee(ctx, t, testConfig, nil, testCaseInst.artifactsConfig)
 			if err != nil {
 				cancel()
 				t.Fatal(err)

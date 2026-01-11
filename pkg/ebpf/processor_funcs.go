@@ -26,7 +26,7 @@ import (
 // processWriteEvent processes a write event by indexing the written file.
 func (t *Tracee) processWriteEvent(event *trace.Event) error {
 	// only capture written files
-	if !t.config.Capture.FileWrite.Capture {
+	if !t.config.Artifacts.FileWrite.Capture {
 		return nil
 	}
 	filePath, err := parse.ArgVal[string](event.Args, "pathname")
@@ -65,7 +65,7 @@ func (t *Tracee) processWriteEvent(event *trace.Event) error {
 // processReadEvent processes a read event by indexing the read file.
 func (t *Tracee) processReadEvent(event *trace.Event) error {
 	// only capture read files
-	if !t.config.Capture.FileRead.Capture {
+	if !t.config.Artifacts.FileRead.Capture {
 		return nil
 	}
 	filePath, err := parse.ArgVal[string](event.Args, "pathname")
@@ -126,7 +126,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	}
 
 	// capture executed files
-	if t.config.Capture.Exec || t.config.Output.CalcHashes != digest.CalcHashesNone {
+	if t.config.Artifacts.Exec || t.config.Output.CalcHashes != digest.CalcHashesNone {
 		filePath, err := parse.ArgVal[string](event.Args, "pathname")
 		if err != nil {
 			return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
@@ -154,7 +154,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 
 			capturedFileID := fmt.Sprintf("%s:%s", containerId, filePath)
 			// capture exec'ed files ?
-			if t.config.Capture.Exec {
+			if t.config.Artifacts.Exec {
 				destinationDirPath := containerId
 				if err := fileutil.MkdirAtExist(t.OutDir, destinationDirPath, 0755); err != nil {
 					return errfmt.WrapError(err)
@@ -168,7 +168,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 					),
 				)
 				// don't capture same file twice unless it was modified
-				lastCtime, ok := t.capturedFiles[capturedFileID]
+				lastCtime, ok := t.artifactsFiles[capturedFileID]
 				if !ok || lastCtime != castedSourceFileCtime {
 					// capture (SchedProcessExec sets base capabilities to have cap.SYS_PTRACE set.
 					// This is needed at this point because raising and dropping capabilities too
@@ -183,7 +183,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 						continue
 					}
 					// mark this file as captured
-					t.capturedFiles[capturedFileID] = castedSourceFileCtime
+					t.artifactsFiles[capturedFileID] = castedSourceFileCtime
 				}
 			}
 			// check exec'ed hash ?

@@ -40,7 +40,7 @@ func invalidStreamConfigError(streamName string) error {
 // proper management.
 type Config struct {
 	InitialPolicies   []interface{} // due to circular dependency, policy.Policy cannot be used here
-	Capture           *CaptureConfig
+	Artifacts         *ArtifactsConfig
 	Capabilities      *CapabilitiesConfig
 	Output            *OutputConfig
 	ProcessStore      process.ProcTreeConfig
@@ -72,19 +72,19 @@ func (c Config) Validate() error {
 		return invalidKernelArtifactsBufferSizeError
 	}
 
-	// Capture
-	if len(c.Capture.FileWrite.PathFilter) > 3 {
+	// Artifacts
+	if len(c.Artifacts.FileWrite.PathFilter) > 3 {
 		return invalidArtifactsFileWriteTooManyPathFiltersError
 	}
-	for _, filter := range c.Capture.FileWrite.PathFilter {
+	for _, filter := range c.Artifacts.FileWrite.PathFilter {
 		if len(filter) > 50 {
 			return invalidPathFilterError(filter)
 		}
 	}
-	if len(c.Capture.FileRead.PathFilter) > 3 {
+	if len(c.Artifacts.FileRead.PathFilter) > 3 {
 		return invalidArtifactsFileReadTooManyPathFiltersError
 	}
-	for _, filter := range c.Capture.FileWrite.PathFilter {
+	for _, filter := range c.Artifacts.FileWrite.PathFilter {
 		if len(filter) > 50 {
 			return invalidPathFilterError(filter)
 		}
@@ -106,13 +106,13 @@ func (c Config) Validate() error {
 }
 
 //
-// Capture
+// Artifacts
 //
 
-type CaptureConfig struct {
+type ArtifactsConfig struct {
 	OutputPath string
-	FileWrite  FileCaptureConfig
-	FileRead   FileCaptureConfig
+	FileWrite  FileArtifactsConfig
+	FileRead   FileArtifactsConfig
 	Module     bool
 	Exec       bool
 	Mem        bool
@@ -120,30 +120,30 @@ type CaptureConfig struct {
 	Net        PcapsConfig
 }
 
-type FileCaptureConfig struct {
+type FileArtifactsConfig struct {
 	Capture    bool
 	PathFilter []string
-	TypeFilter FileCaptureType
+	TypeFilter FileArtifactsType
 }
 
-// FileCaptureType represents file type capture configuration flags
+// FileArtifactsType represents file type artifacts configuration flags
 // Values should match the filter values in the eBPF file (
-// CaptureRegularFiles -> FILTER_NORMAL_FILES)
-type FileCaptureType uint
+// ArtifactsRegularFiles -> FILTER_NORMAL_FILES)
+type FileArtifactsType uint
 
 // Filters for file types flags
 const (
-	CaptureRegularFiles FileCaptureType = 1 << iota
-	CapturePipeFiles
-	CaptureSocketFiles
-	CaptureELFFiles
+	ArtifactsRegularFiles FileArtifactsType = 1 << iota
+	ArtifactsPipeFiles
+	ArtifactsSocketFiles
+	ArtifactsELFFiles
 )
 
 // Filters for FDs flags
 const (
-	CaptureStdinFiles FileCaptureType = 1 << (iota + 16)
-	CaptureStdoutFiles
-	CaptureStderrFiles
+	ArtifactsStdinFiles FileArtifactsType = 1 << (iota + 16)
+	ArtifactsStdoutFiles
+	ArtifactsStderrFiles
 )
 
 type PcapsConfig struct {

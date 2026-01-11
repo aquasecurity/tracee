@@ -178,7 +178,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 		// length field to the length of the captured data.
 		//
 
-		captureLength := t.config.Capture.Net.CaptureLength // after last known header
+		captureLength := t.config.Artifacts.Net.CaptureLength // after last known header
 
 		// parse packet
 		layer3 := packet.NetworkLayer()

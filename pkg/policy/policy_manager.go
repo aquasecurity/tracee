@@ -22,7 +22,7 @@ import (
 type ManagerConfig struct {
 	DNSStoreConfig     dns.Config
 	ProcessStoreConfig process.ProcTreeConfig
-	CaptureConfig      config.CaptureConfig
+	ArtifactsConfig    config.ArtifactsConfig
 	HeartbeatEnabled   bool
 }
 
@@ -219,41 +219,41 @@ func (m *Manager) selectConfiguredEvents() {
 		m.selectEvent(events.SignalHeartbeat, newEventFlags(eventFlagsWithSubmit(PolicyAll)))
 	}
 
-	// Pseudo events added by capture (if enabled by the user)
+	// Pseudo events added by artifacts (if enabled by the user)
 
-	getCaptureEventsFlags := func(cfg config.CaptureConfig) map[events.ID]*eventFlags {
-		captureEvents := make(map[events.ID]*eventFlags)
+	getArtifactsEventsFlags := func(cfg config.ArtifactsConfig) map[events.ID]*eventFlags {
+		artifactsEvents := make(map[events.ID]*eventFlags)
 
-		// INFO: All capture events should be placed, at least for now, to all matched policies, or else
-		// the event won't be set to matched policy in eBPF and should_submit() won't submit the capture
+		// INFO: All artifacts events should be placed, at least for now, to all matched policies, or else
+		// the event won't be set to matched policy in eBPF and should_submit() won't submit the artifacts
 		// event to userland.
 
 		if cfg.Exec {
-			captureEvents[events.CaptureExec] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
+			artifactsEvents[events.CaptureExec] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
 		}
 		if cfg.FileWrite.Capture {
-			captureEvents[events.CaptureFileWrite] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
+			artifactsEvents[events.CaptureFileWrite] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
 		}
 		if cfg.FileRead.Capture {
-			captureEvents[events.CaptureFileRead] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
+			artifactsEvents[events.CaptureFileRead] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
 		}
 		if cfg.Module {
-			captureEvents[events.CaptureModule] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
+			artifactsEvents[events.CaptureModule] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
 		}
 		if cfg.Mem {
-			captureEvents[events.CaptureMem] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
+			artifactsEvents[events.CaptureMem] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
 		}
 		if cfg.Bpf {
-			captureEvents[events.CaptureBpf] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
+			artifactsEvents[events.CaptureBpf] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
 		}
 		if pcaps.PcapsEnabled(cfg.Net) {
-			captureEvents[events.CaptureNetPacket] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
+			artifactsEvents[events.CaptureNetPacket] = newEventFlags(eventFlagsWithSubmit(PolicyAll))
 		}
 
-		return captureEvents
+		return artifactsEvents
 	}
 
-	for id, flags := range getCaptureEventsFlags(m.cfg.CaptureConfig) {
+	for id, flags := range getArtifactsEventsFlags(m.cfg.ArtifactsConfig) {
 		m.selectEvent(id, flags)
 	}
 }
