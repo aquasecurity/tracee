@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"errors"
 	"os"
 	"reflect"
@@ -60,7 +61,10 @@ func GetFtraceBaseEvent() *trace.Event {
 
 // FtraceHookEvent check for ftrace hooks periodically and reports them.
 // It wakes up every random time to check if there was a change in the hooks.
-func FtraceHookEvent(eventsCounter *counter.Counter, out chan *PipelineEvent, baseEvent *trace.Event, selfLoadedProgs map[string]int) {
+func FtraceHookEvent(ctx context.Context, eventsCounter *counter.Counter, out chan *PipelineEvent, baseEvent *trace.Event, selfLoadedProgs map[string]int) {
+	logger.Debugw("Starting ftraceHook goroutine")
+	defer logger.Debugw("Stopped ftraceHook goroutine")
+
 	if reportedFtraceHooks == nil { // Failed allocating cache - no point in running
 		return
 	}
@@ -69,12 +73,18 @@ func FtraceHookEvent(eventsCounter *counter.Counter, out chan *PipelineEvent, ba
 
 	// Trigger from time to time or on demand
 	for {
-		err := checkFtraceHooks(eventsCounter, out, baseEvent, &def, selfLoadedProgs)
+		err := checkFtraceHooks(ctx, eventsCounter, out, baseEvent, &def, selfLoadedProgs)
 		if err != nil {
+			// Context cancelled - exit gracefully
+			if ctx.Err() != nil {
+				return
+			}
 			logger.Errorw("error occurred checking ftrace hooks", "error", err)
 		}
 
 		select {
+		case <-ctx.Done():
+			return
 		case <-FtraceWakeupChan:
 		case <-time.After(timeutil.GenerateRandomDuration(10, 300)):
 		}
@@ -129,7 +139,7 @@ func initFtraceArgs(fields []DataField) []trace.Argument {
 }
 
 // checkFtraceHooks checks for ftrace hooks
-func checkFtraceHooks(eventsCounter *counter.Counter, out chan *PipelineEvent, baseEvent *trace.Event, ftraceDef *Definition, selfLoadedProgs map[string]int) error {
+func checkFtraceHooks(ctx context.Context, eventsCounter *counter.Counter, out chan *PipelineEvent, baseEvent *trace.Event, ftraceDef *Definition, selfLoadedProgs map[string]int) error {
 	ftraceHooksBytes, err := getFtraceHooksData()
 	if err != nil {
 		return err
@@ -138,6 +148,11 @@ func checkFtraceHooks(eventsCounter *counter.Counter, out chan *PipelineEvent, b
 	directArg := false // Direct arg flag
 
 	for _, ftraceLine := range strings.Split(string(ftraceHooksBytes), "\n") {
+		// Check for context cancellation early to avoid unnecessary work
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		if len(ftraceLine) == 0 {
 			continue
 		}
@@ -193,8 +208,13 @@ func checkFtraceHooks(eventsCounter *counter.Counter, out chan *PipelineEvent, b
 		event.Args = args
 		event.ArgsNum = len(args)
 
-		out <- NewPipelineEvent(&event)
-		_ = eventsCounter.Increment()
+		// Use select to avoid sending on closed channel during shutdown
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case out <- NewPipelineEvent(&event):
+			_ = eventsCounter.Increment()
+		}
 	}
 
 	return nil

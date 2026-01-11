@@ -2103,7 +2103,7 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 // invokeInitEvents emits Tracee events, called Initialization Events, that are generated from the
 // userland process itself, and not from the kernel. These events usually serve as informational
 // events for the signatures engine/logic.
-func (t *Tracee) invokeInitEvents(out chan *events.PipelineEvent) {
+func (t *Tracee) invokeInitEvents(ctx gocontext.Context, out chan *events.PipelineEvent) {
 	var matchedPolicies uint64
 
 	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64) {
@@ -2154,7 +2154,6 @@ func (t *Tracee) invokeInitEvents(out chan *events.PipelineEvent) {
 	if matchedPolicies > 0 {
 		ftraceBaseEvent := events.GetFtraceBaseEvent()
 		setMatchedPolicies(ftraceBaseEvent, matchedPolicies)
-		logger.Debugw("started ftraceHook goroutine")
 
 		// TODO: Ideally, this should be inside the goroutine and be computed before each run,
 		// as in the future tracee events may be changed in run time.
@@ -2164,7 +2163,7 @@ func (t *Tracee) invokeInitEvents(out chan *events.PipelineEvent) {
 		// once that happens.
 		selfLoadedFtraceProgs := t.getSelfLoadedPrograms(true)
 
-		go events.FtraceHookEvent(t.stats.EventCount, out, ftraceBaseEvent, selfLoadedFtraceProgs)
+		go events.FtraceHookEvent(ctx, t.stats.EventCount, out, ftraceBaseEvent, selfLoadedFtraceProgs)
 	}
 }
 
