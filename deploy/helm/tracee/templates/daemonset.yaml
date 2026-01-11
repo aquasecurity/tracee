@@ -42,13 +42,19 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+          {{- if or .Values.config.server.httpAddress .Values.config.server.metrics .Values.config.server.healthz }}
+          ports:
+            - name: metrics
+              containerPort: {{ trimPrefix ":" (.Values.config.server.httpAddress | default ":3366") }}
+              protocol: TCP
+          {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          {{- if .Values.config.healthz }}
+          {{- if .Values.config.server.healthz }}
           readinessProbe:
             httpGet:
               path: /healthz
-              port: {{ trimPrefix ":" .Values.config.listenAddr }}
+              port: {{ trimPrefix ":" (.Values.config.server.httpAddress | default ":3366") }}
           {{- end }}
           volumeMounts:
             - name: tmp-tracee
