@@ -114,19 +114,6 @@ func initCmd() error {
 		"[file|dir]\t\t\t\tPath to a policy or directory with policies",
 	)
 
-	// Runtime flags
-
-	rootCmd.Flags().StringArrayP(
-		flags.RuntimeFlag,
-		"r",
-		[]string{"workdir=" + flags.WorkdirDefault},
-		fmt.Sprintf("[workdir=%s]\t\tControl runtime configurations", flags.WorkdirDefault),
-	)
-	err := viper.BindPFlag(flags.RuntimeFlag, rootCmd.Flags().Lookup(flags.RuntimeFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
 	// Output flags
 
 	rootCmd.Flags().StringArrayP(
@@ -135,7 +122,7 @@ func initCmd() error {
 		[]string{"table"},
 		"[json|none|webhook...]\t\tControl how and where output is printed",
 	)
-	err = viper.BindPFlag("output", rootCmd.Flags().Lookup("output"))
+	err := viper.BindPFlag("output", rootCmd.Flags().Lookup("output"))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

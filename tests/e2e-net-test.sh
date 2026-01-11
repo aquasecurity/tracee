@@ -84,7 +84,6 @@ logfile="${SCRIPT_TMP_DIR}/tracee-log-$$"
 outputfile="${SCRIPT_TMP_DIR}/tracee-output-$$"
 
 tracee_command="./dist/tracee \
-    --runtime workdir=$TRACEE_TMP_DIR \
     --output json:$outputfile \
     --logging file=$logfile \
     --server healthz \

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"os"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
@@ -16,7 +15,6 @@ import (
 
 type Runner struct {
 	TraceeConfig config.Config
-	Workdir      string
 	HTTP         *http.Server
 	GRPC         *grpc.Server
 }
@@ -58,12 +56,6 @@ func (r Runner) Run(ctx context.Context) error {
 	err = t.Init(ctx)
 	if err != nil {
 		return errfmt.Errorf("error initializing Tracee: %v", err)
-	}
-
-	// Ensure workdir exists
-
-	if err := os.MkdirAll(r.Workdir, 0755); err != nil {
-		return errfmt.Errorf("could not create workdir path: %v", err)
 	}
 
 	// Run Tracee

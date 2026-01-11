@@ -37,7 +37,6 @@ nav:
                             - logging: docs/flags/logging.1.md
                             - output: docs/flags/output.1.md
                             - policy: docs/flags/policy.1.md
-                            - runtime: docs/flags/runtime.1.md
                             - scope: docs/flags/scope.1.md
                             - server: docs/flags/server.1.md
                             - signatures-dir: docs/flags/signatures-dir.1.md

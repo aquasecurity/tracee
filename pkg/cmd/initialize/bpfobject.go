@@ -16,11 +16,11 @@ import (
 
 // BpfObject sets up and configures a BPF object for tracing and monitoring
 // system events within the kernel. It takes pointers to tracee.Config,
-// environment.KernelConfig, and environment.OSInfo structures, as well as an
-// installation path and a version string. The function unpacks the CO-RE eBPF
-// object binary, checks if BTF is enabled, unpacks the BTF file from BTF Hub if
-// necessary, and assigns the kernel configuration and BPF object bytes.
-func BpfObject(cfg *config.Config, kConfig *environment.KernelConfig, osInfo *environment.OSInfo, installPath string, version string) error {
+// environment.KernelConfig, and environment.OSInfo structures, as well as a
+// version string. The function unpacks the CO-RE eBPF object binary, checks if
+// BTF is enabled, unpacks the BTF file from BTF Hub if necessary (using a temp
+// directory), and assigns the kernel configuration and BPF object bytes.
+func BpfObject(cfg *config.Config, kConfig *environment.KernelConfig, osInfo *environment.OSInfo, version string) error {
 	btfFilePath, err := checkEnvPath("TRACEE_BTF_FILE")
 	if btfFilePath == "" && err != nil {
 		return errfmt.WrapError(err)
@@ -39,7 +39,12 @@ func BpfObject(cfg *config.Config, kConfig *environment.KernelConfig, osInfo *en
 	// BTF unavailable: check embedded BTF files
 
 	if !environment.OSBTFEnabled() && btfFilePath == "" {
-		unpackBTFFile := filepath.Join(installPath, "/tracee.btf")
+		// Use temp directory for BTF file unpacking
+		tempDir := filepath.Join(os.TempDir(), "tracee-btf")
+		if err := os.MkdirAll(tempDir, 0755); err != nil {
+			return errfmt.Errorf("could not create temp dir for BTF: %v", err)
+		}
+		unpackBTFFile := filepath.Join(tempDir, "tracee.btf")
 		err = unpackBTFHub(unpackBTFFile, osInfo)
 		if err == nil {
 			logger.Debugw("BTF: btfhub embedded BTF file", "file", unpackBTFFile)
