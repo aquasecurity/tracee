@@ -11,7 +11,7 @@ tracee **\-\-enrichment** - Configure enrichment for container events and other 
 
 ## SYNOPSIS
 
-tracee **\-\-enrichment** [container|container.cgroupfs.path=*path*|container.cgroupfs.force|container.docker.socket=*socket_path*|container.containerd.socket=*socket_path*|container.crio.socket=*socket_path*|container.podman.socket=*socket_path*|resolve-fd|exec-hash|exec-hash.mode=*mode*|user-stack-trace] [**\-\-enrichment** ...]
+tracee **\-\-enrichment** [container|container.cgroupfs.path=*path*|container.cgroupfs.force|container.docker.socket=*socket_path*|container.containerd.socket=*socket_path*|container.crio.socket=*socket_path*|container.podman.socket=*socket_path*|resolve-fd|exec-env|exec-hash|exec-hash.mode=*mode*|user-stack-trace] [**\-\-enrichment** ...]
 
 ## DESCRIPTION
 
@@ -30,7 +30,7 @@ The `--enrichment` flag allows you to configure enrichment options for container
 - **container.cgroupfs.force**: Force the usage of the provided mountpoint path, skipping auto-detection. **Note**: This option requires `container.cgroupfs.path` to be set. It cannot be used alone.
   Example:
   ```console
-  --enrichment container.cgroupfs.path=/sys/fs/cgroup container.cgroupfs.force
+  --enrichment container.cgroupfs.path=/sys/fs/cgroup --enrichment container.cgroupfs.force
   ```
 
 - **container.docker.socket**=*socket_path*: Enable container enrichment and configure container runtime sockets for enrichment. Configure the path to the Docker socket. **Note**: Using this option automatically enables container, so you don't need to also specify `--enrichment container`.
@@ -63,11 +63,22 @@ The `--enrichment` flag allows you to configure enrichment options for container
   - Docker     (`docker`)
   - Podman     (`podman`)
 
-- **resolve-fd**
-  Enable resolve-fd. Presence of the flag enables it, absence disables it.
+- **resolve-fd**: Enable resolve-fd. When enabled, Tracee will resolve file descriptor arguments to show associated file paths instead of just the descriptor number. This enriches file descriptors with file path translation. May cause pipeline slowdowns.
   Example:
   ```console
   --enrichment resolve-fd
+  ```
+
+- **parse-arguments**: Enable parse-arguments. When enabled, Tracee will parse event arguments into human-readable strings instead of raw machine-readable values. This converts numeric flags, permissions, syscall types, and other raw values into readable format (e.g., `O_RDONLY` instead of `0`, `PROT_READ` instead of `1`). Recommended for interactive use and readability, but may add processing overhead that impacts performance on high-volume event streams.
+  Example:
+  ```console
+  --enrichment parse-arguments
+  ```
+
+- **exec-env**: Enable exec-env. When enabled, Tracee will include execution environment variables in process execution events (particularly useful for `execve` events).
+  Example:
+  ```console
+  --enrichment exec-env
   ```
 
 - **exec-hash**: Enable exec-hash with default settings. When enabled, Tracee will compute hash values for executed binaries.
@@ -106,13 +117,13 @@ The `--enrichment` flag allows you to configure enrichment options for container
 
 4. Combine multiple flags:
    ```console
-   --enrichment container.docker.socket=/var/run/docker.sock container.cgroupfs.path=/sys/fs/cgroup
+   --enrichment container.docker.socket=/var/run/docker.sock --enrichment container.cgroupfs.path=/sys/fs/cgroup
    ```
    Note: Since `container.docker.socket` and `container.cgroupfs.path` automatically enable container, you don't need `--enrichment container`.
 
-5. Enable resolve-fd and exec-hash:
+5. Enable resolve-fd, exec-env, and exec-hash:
    ```console
-   --enrichment resolve-fd exec-hash
+   --enrichment resolve-fd --enrichment exec-env --enrichment exec-hash
    ```
 
 6. Enable exec-hash with custom mode:

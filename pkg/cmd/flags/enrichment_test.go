@@ -121,6 +121,24 @@ func TestEnrichmentConfig_flags(t *testing.T) {
 			},
 		},
 		{
+			name: "exec-env enabled",
+			config: EnrichmentConfig{
+				ExecEnv: true,
+			},
+			expected: []string{
+				"exec-env",
+			},
+		},
+		{
+			name: "parse-arguments enabled",
+			config: EnrichmentConfig{
+				ParseArguments: true,
+			},
+			expected: []string{
+				"parse-arguments",
+			},
+		},
+		{
 			name: "all options enabled",
 			config: EnrichmentConfig{
 				Container: ContainerEnrichmentConfig{
@@ -140,6 +158,8 @@ func TestEnrichmentConfig_flags(t *testing.T) {
 					Mode:    "dev-inode",
 				},
 				UserStackTrace: true,
+				ExecEnv:        true,
+				ParseArguments: true,
 			},
 			expected: []string{
 				"container",
@@ -150,9 +170,11 @@ func TestEnrichmentConfig_flags(t *testing.T) {
 				"container.crio.socket=/var/run/crio/crio.sock",
 				"container.podman.socket=/var/run/podman/podman.sock",
 				"resolve-fd",
+				"exec-env",
 				"exec-hash",
 				"exec-hash.mode=dev-inode",
 				"user-stack-trace",
+				"parse-arguments",
 			},
 		},
 		{
@@ -316,6 +338,22 @@ func TestPrepareEnrichment(t *testing.T) {
 				UserStackTrace: true,
 			},
 		},
+		// valid single exec-env flags
+		{
+			testName: "valid exec-env",
+			flags:    []string{"exec-env"},
+			expectedReturn: EnrichmentConfig{
+				ExecEnv: true,
+			},
+		},
+		// valid single parse-arguments flags
+		{
+			testName: "valid parse-arguments",
+			flags:    []string{"parse-arguments"},
+			expectedReturn: EnrichmentConfig{
+				ParseArguments: true,
+			},
+		},
 		// valid multiple flags
 		{
 			testName: "valid multiple container flags",
@@ -345,7 +383,7 @@ func TestPrepareEnrichment(t *testing.T) {
 		},
 		{
 			testName: "valid all flags",
-			flags:    []string{"container", "container.cgroupfs.path=/host/sys/fs/cgroup", "container.cgroupfs.force", "container.docker.socket=/var/run/docker.sock", "container.containerd.socket=/var/run/containerd/containerd.sock", "container.crio.socket=/var/run/crio/crio.sock", "container.podman.socket=/var/run/podman/podman.sock", "resolve-fd", "exec-hash", "exec-hash.mode=dev-inode", "user-stack-trace"},
+			flags:    []string{"container", "container.cgroupfs.path=/host/sys/fs/cgroup", "container.cgroupfs.force", "container.docker.socket=/var/run/docker.sock", "container.containerd.socket=/var/run/containerd/containerd.sock", "container.crio.socket=/var/run/crio/crio.sock", "container.podman.socket=/var/run/podman/podman.sock", "resolve-fd", "exec-env", "exec-hash", "exec-hash.mode=dev-inode", "user-stack-trace", "parse-arguments"},
 			expectedReturn: EnrichmentConfig{
 				Container: ContainerEnrichmentConfig{
 					Enabled: true,
@@ -358,7 +396,9 @@ func TestPrepareEnrichment(t *testing.T) {
 					CrioSocket:       "/var/run/crio/crio.sock",
 					PodmanSocket:     "/var/run/podman/podman.sock",
 				},
-				ResolveFd: true,
+				ResolveFd:      true,
+				ExecEnv:        true,
+				ParseArguments: true,
 				ExecHash: ExecHashConfig{
 					Enabled: true,
 					Mode:    "dev-inode",
@@ -431,6 +471,18 @@ func TestPrepareEnrichment(t *testing.T) {
 			flags:          []string{"user-stack-trace=true"},
 			expectedReturn: EnrichmentConfig{},
 			expectedError:  invalidEnrichmentFlagError("user-stack-trace=true"),
+		},
+		{
+			testName:       "invalid boolean flag exec-env with =true",
+			flags:          []string{"exec-env=true"},
+			expectedReturn: EnrichmentConfig{},
+			expectedError:  invalidEnrichmentFlagError("exec-env=true"),
+		},
+		{
+			testName:       "invalid boolean flag parse-arguments with =true",
+			flags:          []string{"parse-arguments=true"},
+			expectedReturn: EnrichmentConfig{},
+			expectedError:  invalidEnrichmentFlagError("parse-arguments=true"),
 		},
 		{
 			testName:       "invalid boolean flag container.cgroupfs.force with =true",
@@ -536,6 +588,8 @@ func TestPrepareEnrichment(t *testing.T) {
 				assert.Equal(t, tc.expectedReturn.Container.CrioSocket, enrichment.Container.CrioSocket)
 				assert.Equal(t, tc.expectedReturn.Container.PodmanSocket, enrichment.Container.PodmanSocket)
 				assert.Equal(t, tc.expectedReturn.ResolveFd, enrichment.ResolveFd)
+				assert.Equal(t, tc.expectedReturn.ExecEnv, enrichment.ExecEnv)
+				assert.Equal(t, tc.expectedReturn.ParseArguments, enrichment.ParseArguments)
 				assert.Equal(t, tc.expectedReturn.ExecHash.Enabled, enrichment.ExecHash.Enabled)
 				assert.Equal(t, tc.expectedReturn.ExecHash.Mode, enrichment.ExecHash.Mode)
 				assert.Equal(t, tc.expectedReturn.UserStackTrace, enrichment.UserStackTrace)

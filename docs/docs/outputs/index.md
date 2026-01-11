@@ -93,7 +93,7 @@ tracee --output destinations.file_out.format=json --output destinations.file_out
 
 **Default table output with parsed arguments:**
 ```console
-tracee --output option:parse-arguments
+tracee --enrichment parse-arguments
 ```
 
 **Send events to webhook:**

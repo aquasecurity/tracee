@@ -126,13 +126,15 @@ config:
     #       - debug
     #     regex:
     #       - ^excludedPattern
+  enrichment:
+    parse-arguments: true
+    user-stack-trace: false
+    exec-env: false
+    exec-hash:
+      enabled: true
+      mode: dev-inode
   output:
     format: json
-    options:
-      parseArguments: true
-      stackAddresses: false
-      execEnv: false
-      execHash: dev-inode
     sortEvents: false
     # uncomment config.output.webhook to enable a single webhook
     # to configure multiple webhooks, use the configFile field

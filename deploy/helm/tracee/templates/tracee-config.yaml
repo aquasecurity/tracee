@@ -140,17 +140,35 @@ data:
                 {{- end }}
             {{- end }}
         {{- end }}
+    {{- $enrichment := .Values.config.enrichment }}
+    {{- if or (index $enrichment "parse-arguments") (index $enrichment "user-stack-trace") (index $enrichment "exec-env") (or (index (index $enrichment "exec-hash") "enabled") (index (index $enrichment "exec-hash") "mode")) }}
+    enrichment:
+        {{- if (index $enrichment "parse-arguments") }}
+        parse-arguments: {{ index $enrichment "parse-arguments" }}
+        {{- end }}
+        {{- if (index $enrichment "user-stack-trace") }}
+        user-stack-trace: {{ index $enrichment "user-stack-trace" }}
+        {{- end }}
+        {{- if (index $enrichment "exec-env") }}
+        exec-env: {{ index $enrichment "exec-env" }}
+        {{- end }}
+        {{- $execHash := index $enrichment "exec-hash" }}
+        {{- if or (index $execHash "enabled") (index $execHash "mode") }}
+        exec-hash:
+            {{- if (index $execHash "enabled") }}
+            enabled: {{ index $execHash "enabled" }}
+            {{- end }}
+            {{- if (index $execHash "mode") }}
+            mode: {{ index $execHash "mode" }}
+            {{- end }}
+        {{- end }}
+    {{- end }}
     output:
         destinations:
             - name: stdout_json
               type: file
               format: {{ .Values.config.output.format | default "json" }}
               path: stdout
-        options:
-            parse-arguments: {{ .Values.config.output.options.parseArguments }}
-            stack-addresses: {{ .Values.config.output.options.stackAddresses }}
-            exec-env: {{ .Values.config.output.options.execEnv }}
-            exec-hash: {{ .Values.config.output.options.execHash }}
         sort-events: {{ .Values.config.output.sortEvents }}
         {{- with .Values.config.output.webhook }}
         webhook:

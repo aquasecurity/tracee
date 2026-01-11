@@ -6,7 +6,6 @@ tracee \f[B]\-\-output\f[R] \- Control how and where output is printed
 .SS SYNOPSIS
 tracee \f[B]\-\-output\f[R]
 destinations.\f[I]name\f[R].\f[I]field\f[R]=\f[I]value\f[R] |
-option:{stack\-addresses,exec\-env,exec\-hash[={inode,dev\-inode,digest\-inode}],parse\-arguments,parse\-arguments\-fds} |
 sort\-events
 .SS DESCRIPTION
 The \f[B]\-\-output\f[R] flag allows you to control how and where the
@@ -43,50 +42,15 @@ template format
 protocol
 .SS Output Options
 .IP \[bu] 2
-\f[B]option:{stack\-addresses,exec\-env,exec\-hash,parse\-arguments,parse\-arguments\-fds}\f[R]:
-Augment output according to the given options.
-Multiple options can be specified, separated by commas.
-.RS 2
-.IP \[bu] 2
-\f[B]stack\-addresses\f[R]: Include stack memory addresses for each
-event.
-.IP \[bu] 2
-\f[B]exec\-env\f[R]: When tracing execve/execveat, show the environment
-variables that were used for execution.
-.IP \[bu] 2
-\f[B]exec\-hash\f[R]: When tracing file related events, show the file
-hash (sha256).
-.RS 2
-.IP \[bu] 2
-Affected events: \f[I]sched_process_exec\f[R],
-\f[I]shared_object_loaded\f[R]
-.IP \[bu] 2
-\f[B]inode\f[R]: Recalculates the file hash if the inode\[cq]s creation
-time (ctime) differs.
-Performant but not recommended; use only if container enrichment
-can\[cq]t be enabled.
-.IP \[bu] 2
-\f[B]dev\-inode\f[R] (default): Better performance by associating ctime
-with device and inode pair.
-Recommended if correctness is preferred over performance without
-container enrichment.
-.IP \[bu] 2
-\f[B]digest\-inode\f[R]: Most efficient, keys hash to container image
-digest and inode pair.
-Requires container enrichment.
-.RE
-.IP \[bu] 2
-\f[B]parse\-arguments\f[R]: Parse event arguments into human\-readable
-strings instead of raw machine\-readable values.
-.IP \[bu] 2
-\f[B]parse\-arguments\-fds\f[R]: Enable parse\-arguments and enrich file
-descriptors with file path translation.
-May cause pipeline slowdowns.
-.RE
-.IP \[bu] 2
 \f[B]sort\-events\f[R]: Enable sorting events before passing them to
 output.
 May decrease overall program efficiency.
+.PP
+!!!
+Note The enrichment \f[CR]parse\-arguments\f[R] option is automatically
+enabled when using table format output.
+It does not need to be specified separately via
+\f[CR]\-\-enrichment parse\-arguments\f[R].
 .SS EXAMPLES
 .IP \[bu] 2
 To output events as JSON to stdout using a destination named
@@ -111,14 +75,6 @@ To output events using a Go template:
 .IP
 .EX
 \-\-output destinations.template_out.format=gotemplate=/path/to/my.tmpl
-.EE
-.RE
-.IP \[bu] 2
-To output events as a table with stack addresses:
-.RS 2
-.IP
-.EX
-\-\-output destinations.stdout_table.format=table \-\-output option:stack\-addresses
 .EE
 .RE
 .IP \[bu] 2

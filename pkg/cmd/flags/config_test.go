@@ -264,11 +264,6 @@ logging:
 			yamlContent: `
 output:
     - none
-    - option:stack-addresses
-    - option:exec-env
-    - option:exec-hash=dev-inode
-    - option:parse-arguments
-    - option:parse-arguments-fds
     - sort-events
     - table:file1
     - json:file2    
@@ -277,11 +272,6 @@ output:
 			key: "output",
 			expectedFlags: []string{
 				"none",
-				"option:stack-addresses",
-				"option:exec-env",
-				"option:exec-hash=dev-inode",
-				"option:parse-arguments",
-				"option:parse-arguments-fds",
 				"sort-events",
 				"table:file1",
 				"json:file2",
@@ -416,9 +406,11 @@ enrichment:
     - container.crio.socket=/var/run/crio/crio.sock
     - container.podman.socket=/var/run/podman/podman.sock
     - resolve-fd
+    - exec-env
     - exec-hash
     - exec-hash.mode=dev-inode
     - user-stack-trace
+    - parse-arguments
 `,
 			key: "enrichment",
 			expectedFlags: []string{
@@ -430,9 +422,11 @@ enrichment:
 				"container.crio.socket=/var/run/crio/crio.sock",
 				"container.podman.socket=/var/run/podman/podman.sock",
 				"resolve-fd",
+				"exec-env",
 				"exec-hash",
 				"exec-hash.mode=dev-inode",
 				"user-stack-trace",
+				"parse-arguments",
 			},
 		},
 		{
@@ -449,10 +443,12 @@ enrichment:
         crio-socket: /var/run/crio/crio.sock
         podman-socket: /var/run/podman/podman.sock
     resolve-fd: true
+    exec-env: true
     exec-hash:
         enabled: true
         mode: dev-inode
     user-stack-trace: true
+    parse-arguments: true
 `,
 			key: "enrichment",
 			expectedFlags: []string{
@@ -464,9 +460,11 @@ enrichment:
 				"container.crio.socket=/var/run/crio/crio.sock",
 				"container.podman.socket=/var/run/podman/podman.sock",
 				"resolve-fd",
+				"exec-env",
 				"exec-hash",
 				"exec-hash.mode=dev-inode",
 				"user-stack-trace",
+				"parse-arguments",
 			},
 		},
 		{
