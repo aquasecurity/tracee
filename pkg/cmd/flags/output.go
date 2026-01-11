@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/pkg/config"
 )
@@ -17,13 +16,8 @@ const (
 	OutputFlag = "output"
 
 	// output option flags
-	noneFlag              = "none"
-	optionFlag            = "option"
-	stackAddressesFlag    = "stack-addresses"
-	execEnvFlag           = "exec-env"
-	parseArgumentsFlag    = "parse-arguments"
-	parseArgumentsFDsFlag = "parse-arguments-fds"
-	sortEventsFlag        = "sort-events"
+	noneFlag       = "none"
+	sortEventsFlag = "sort-events"
 
 	// output format flags
 	tableFlag        = "table"
@@ -79,19 +73,9 @@ type DestinationsConfig struct {
 	Url    string `mapstructure:"url"`
 }
 
-// OutputOptsConfig is the options of the output.
-type OutputOptsConfig struct {
-	None              bool   `mapstructure:"none"`
-	StackAddresses    bool   `mapstructure:"stack-addresses"`
-	ExecEnv           bool   `mapstructure:"exec-env"`
-	ExecHash          string `mapstructure:"exec-hash"`
-	ParseArguments    bool   `mapstructure:"parse-arguments"`
-	ParseArgumentsFDs bool   `mapstructure:"parse-arguments-fds"`
-}
-
 // OutputConfig is the config of the output.
 type OutputConfig struct {
-	Options      OutputOptsConfig     `mapstructure:"options"`
+	None         bool                 `mapstructure:"none"`
 	SortEvents   bool                 `mapstructure:"sort-events"`
 	Destinations []DestinationsConfig `mapstructure:"destinations"`
 	Streams      []StreamConfig       `mapstructure:"streams"`
@@ -102,23 +86,8 @@ func (c *OutputConfig) flags() []string {
 	flags := []string{}
 
 	// options flags
-	if c.Options.None {
+	if c.None {
 		flags = append(flags, noneFlag)
-	}
-	if c.Options.StackAddresses {
-		flags = append(flags, fmt.Sprintf("%s:%s", optionFlag, stackAddressesFlag))
-	}
-	if c.Options.ExecEnv {
-		flags = append(flags, fmt.Sprintf("%s:%s", optionFlag, execEnvFlag))
-	}
-	if c.Options.ExecHash != "" {
-		flags = append(flags, fmt.Sprintf("%s:exec-hash=%s", optionFlag, c.Options.ExecHash))
-	}
-	if c.Options.ParseArguments {
-		flags = append(flags, fmt.Sprintf("%s:%s", optionFlag, parseArgumentsFlag))
-	}
-	if c.Options.ParseArgumentsFDs {
-		flags = append(flags, fmt.Sprintf("%s:%s", optionFlag, parseArgumentsFDsFlag))
 	}
 	if c.SortEvents {
 		flags = append(flags, sortEventsFlag)
@@ -238,11 +207,6 @@ func PrepareOutput(outputSlice []string, containerMode config.ContainerMode) (*c
 			}
 
 			destinationMap[outputParts[1]] = webhookFlag
-		case optionFlag:
-			err := parseOption(outputParts, traceeConfig)
-			if err != nil {
-				return nil, err
-			}
 		default:
 			return nil, InvalidOutputFlagError(outputParts[0])
 		}
@@ -538,55 +502,6 @@ func PreparePrinterConfig(printerKind string, outputPath string) (config.Destina
 	return dest, nil
 }
 
-// SetOption sets the given option in the given config
-func SetOption(cfg *config.OutputConfig, option string) error {
-	switch option {
-	case stackAddressesFlag:
-		cfg.StackAddresses = true
-	case execEnvFlag:
-		cfg.ExecEnv = true
-	case parseArgumentsFlag:
-		cfg.ParseArguments = true
-	case parseArgumentsFDsFlag:
-		cfg.ParseArgumentsFDs = true
-		cfg.ParseArguments = true // no point in parsing file descriptor args only
-	default:
-		if strings.HasPrefix(option, "exec-hash") {
-			hashExecParts := strings.Split(option, "=")
-			if len(hashExecParts) == 1 {
-				if option != "exec-hash" {
-					goto invalidOption
-				}
-				// default
-				cfg.CalcHashes = digest.CalcHashesDevInode
-			} else if len(hashExecParts) == 2 {
-				hashExecOpt := hashExecParts[1]
-				switch hashExecOpt {
-				case "none":
-					cfg.CalcHashes = digest.CalcHashesNone
-				case "inode":
-					cfg.CalcHashes = digest.CalcHashesInode
-				case "dev-inode":
-					cfg.CalcHashes = digest.CalcHashesDevInode
-				case "digest-inode":
-					cfg.CalcHashes = digest.CalcHashesDigestInode
-				default:
-					goto invalidOption
-				}
-			} else {
-				goto invalidOption
-			}
-
-			return nil
-		}
-
-	invalidOption:
-		return InvalidOutputOptionError(option)
-	}
-
-	return nil
-}
-
 // getDestinationConfigs returns a slice of printer.Configs based on the given printerMap
 func getDestinationConfigs(printerMap map[string]string, traceeConfig *config.OutputConfig,
 	containerMode config.ContainerMode) ([]config.Destination, error) {
@@ -598,9 +513,7 @@ func getDestinationConfigs(printerMap map[string]string, traceeConfig *config.Ou
 		}
 
 		if printerKind == tableFlag {
-			if err := SetOption(traceeConfig, parseArgumentsFlag); err != nil {
-				return nil, err
-			}
+			traceeConfig.ParseArguments = true
 		}
 
 		printerCfg, err := PreparePrinterConfig(printerKind, outPath)
@@ -632,22 +545,6 @@ func parseFormat(outputParts []string, printerMap map[string]string) error {
 			return DuplicateOutputPathError(outPath)
 		}
 		printerMap[outPath] = outputParts[0]
-	}
-
-	return nil
-}
-
-// parseOption parses the given option and sets it in the given config
-func parseOption(outputParts []string, traceeConfig *config.OutputConfig) error {
-	if len(outputParts) == 1 || outputParts[1] == "" {
-		return EmptyOutputFlagError("option")
-	}
-
-	for _, option := range strings.Split(outputParts[1], ",") {
-		err := SetOption(traceeConfig, option)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

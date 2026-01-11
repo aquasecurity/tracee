@@ -175,7 +175,7 @@ WARN events dropped due to buffer overflow
 
 1. **Use proper output format**:
    ```bash
-   tracee --output json --output option:parse-arguments
+   tracee --output json --enrichment parse-arguments
    ```
 
 2. **Check for mixed output**:
@@ -192,7 +192,7 @@ WARN events dropped due to buffer overflow
 
 1. **Enable argument parsing**:
    ```bash
-   tracee --output option:parse-arguments
+   tracee --enrichment parse-arguments
    ```
 
 2. **Check event definition**: Some events may not include all expected fields

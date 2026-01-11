@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/datastores/container/runtime"
@@ -20,21 +21,23 @@ const (
 	containerCrioSocketFlag       = "container.crio.socket"
 	containerPodmanSocketFlag     = "container.podman.socket"
 	resolveFdFlag                 = "resolve-fd"
+	execEnvFlag                   = "exec-env"
 	execHashFlag                  = "exec-hash"
 	execHashModeFlag              = "exec-hash.mode"
 	userStackTraceFlag            = "user-stack-trace"
+	parseArgumentsFlag            = "parse-arguments"
 
 	enrichInvalidFlagFormat = "invalid enrichment flag: %s, use 'tracee man enrichment' for more info"
 )
 
 // EnrichmentConfig is the configuration for enrichment
 type EnrichmentConfig struct {
-	Container ContainerEnrichmentConfig `mapstructure:"container"`
-	// TODO: those are not used yet, it will come in a different PR,
-	// as we will have to redo --output first (@josedonizetti)
-	ResolveFd      bool           `mapstructure:"resolve-fd"`
-	ExecHash       ExecHashConfig `mapstructure:"exec-hash"`
-	UserStackTrace bool           `mapstructure:"user-stack-trace"`
+	Container      ContainerEnrichmentConfig `mapstructure:"container"`
+	ResolveFd      bool                      `mapstructure:"resolve-fd"`
+	ExecEnv        bool                      `mapstructure:"exec-env"`
+	ExecHash       ExecHashConfig            `mapstructure:"exec-hash"`
+	UserStackTrace bool                      `mapstructure:"user-stack-trace"`
+	ParseArguments bool                      `mapstructure:"parse-arguments"`
 }
 
 // ContainerEnrichmentConfig is the container enrichment configuration
@@ -110,6 +113,33 @@ func (e *EnrichmentConfig) GetRuntimeSockets() (runtime.Sockets, error) {
 	return sockets, nil
 }
 
+// GetCalcHashesOption converts ExecHashConfig to digest.CalcHashesOption
+func (e *EnrichmentConfig) GetCalcHashesOption() digest.CalcHashesOption {
+	if !e.ExecHash.Enabled && e.ExecHash.Mode == "" {
+		return digest.CalcHashesNone
+	}
+
+	// If mode is set, use it; otherwise default to dev-inode
+	mode := e.ExecHash.Mode
+	if mode == "" {
+		mode = "dev-inode"
+	}
+
+	switch mode {
+	case "none":
+		return digest.CalcHashesNone
+	case "inode":
+		return digest.CalcHashesInode
+	case "dev-inode":
+		return digest.CalcHashesDevInode
+	case "digest-inode":
+		return digest.CalcHashesDigestInode
+	default:
+		// Default to dev-inode if invalid mode
+		return digest.CalcHashesDevInode
+	}
+}
+
 // flags returns the flags for the enrichment configuration
 func (e *EnrichmentConfig) flags() []string {
 	flags := []string{}
@@ -143,6 +173,9 @@ func (e *EnrichmentConfig) flags() []string {
 	if e.ResolveFd {
 		flags = append(flags, resolveFdFlag)
 	}
+	if e.ExecEnv {
+		flags = append(flags, execEnvFlag)
+	}
 	// ExecHash: if Enabled is true OR Mode is set, add exec-hash flag
 	if e.ExecHash.Enabled || e.ExecHash.Mode != "" {
 		flags = append(flags, execHashFlag)
@@ -152,6 +185,9 @@ func (e *EnrichmentConfig) flags() []string {
 	}
 	if e.UserStackTrace {
 		flags = append(flags, userStackTraceFlag)
+	}
+	if e.ParseArguments {
+		flags = append(flags, parseArgumentsFlag)
 	}
 
 	return flags
@@ -196,6 +232,8 @@ func PrepareEnrichment(enrichment []string) (EnrichmentConfig, error) {
 			enrichmentConfig.Container.Enabled = true // Setting podman.socket enables container
 		case resolveFdFlag:
 			enrichmentConfig.ResolveFd = true
+		case execEnvFlag:
+			enrichmentConfig.ExecEnv = true
 		case execHashFlag:
 			enrichmentConfig.ExecHash.Enabled = true
 		case execHashModeFlag:
@@ -203,6 +241,8 @@ func PrepareEnrichment(enrichment []string) (EnrichmentConfig, error) {
 			enrichmentConfig.ExecHash.Enabled = true // Setting exec-hash.mode enables exec-hash
 		case userStackTraceFlag:
 			enrichmentConfig.UserStackTrace = true
+		case parseArgumentsFlag:
+			enrichmentConfig.ParseArguments = true
 		default:
 			return EnrichmentConfig{}, errfmt.Errorf(enrichInvalidFlagFormat, flagName)
 		}
@@ -221,8 +261,10 @@ func isEnrichmentBoolFlag(flag string) bool {
 	return flag == containerFlag ||
 		flag == containerCgroupfsForceFlag ||
 		flag == resolveFdFlag ||
+		flag == execEnvFlag ||
 		flag == execHashFlag ||
-		flag == userStackTraceFlag
+		flag == userStackTraceFlag ||
+		flag == parseArgumentsFlag
 }
 
 // invalidEnrichmentFlagError formats the error message for an invalid enrichment flag.

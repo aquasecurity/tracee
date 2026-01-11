@@ -11,7 +11,7 @@ tracee **\-\-output** - Control how and where output is printed
 
 ## SYNOPSIS
 
-tracee **\-\-output** destinations.*name*.*field*=*value* | option:{stack-addresses,exec-env,exec-hash[={inode,dev-inode,digest-inode}],parse-arguments,parse-arguments-fds} | sort-events
+tracee **\-\-output** destinations.*name*.*field*=*value* | sort-events
 
 
 ## DESCRIPTION
@@ -37,19 +37,10 @@ Output destinations are configured using the format: `--output destinations.<nam
 
 ### Output Options
 
-- **option:{stack-addresses,exec-env,exec-hash,parse-arguments,parse-arguments-fds}**: Augment output according to the given options. Multiple options can be specified, separated by commas.
-
-  - **stack-addresses**: Include stack memory addresses for each event.
-  - **exec-env**: When tracing execve/execveat, show the environment variables that were used for execution.
-  - **exec-hash**: When tracing file related events, show the file hash (sha256).
-    - Affected events: *sched_process_exec*, *shared_object_loaded*
-    - **inode**: Recalculates the file hash if the inode's creation time (ctime) differs. Performant but not recommended; use only if container enrichment can't be enabled.
-    - **dev-inode** (default): Better performance by associating ctime with device and inode pair. Recommended if correctness is preferred over performance without container enrichment.
-    - **digest-inode**: Most efficient, keys hash to container image digest and inode pair. Requires container enrichment.
-  - **parse-arguments**: Parse event arguments into human-readable strings instead of raw machine-readable values.
-  - **parse-arguments-fds**: Enable parse-arguments and enrich file descriptors with file path translation. May cause pipeline slowdowns.
-
 - **sort-events**: Enable sorting events before passing them to output. May decrease overall program efficiency.
+
+!!! Note
+    The enrichment `parse-arguments` option is automatically enabled when using table format output. It does not need to be specified separately via `--enrichment parse-arguments`.
 
 ## EXAMPLES
 
@@ -69,12 +60,6 @@ Output destinations are configured using the format: `--output destinations.<nam
 
   ```console
   --output destinations.template_out.format=gotemplate=/path/to/my.tmpl
-  ```
-
-- To output events as a table with stack addresses:
-
-  ```console
-  --output destinations.stdout_table.format=table --output option:stack-addresses
   ```
 
 - To send events via the Forward protocol to a FluentBit receiver:

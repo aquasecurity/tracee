@@ -49,8 +49,10 @@ enrichment:
     # - container.crio.socket=/var/run/crio/crio.sock
     # - container.podman.socket=/var/run/podman/podman.sock
     # - resolve-fd
+    # - parse-arguments
+    # - exec-env
     # - exec-hash
-    # - exec-hash.mode=sha256
+    # - exec-hash.mode=dev-inode
     # - user-stack-trace
     #
     # Structured format:
@@ -64,9 +66,11 @@ enrichment:
     #     crio-socket: /var/run/crio/crio.sock
     #     podman-socket: /var/run/podman/podman.sock
     # resolve-fd: true
+    # parse-arguments: true
+    # exec-env: false
     # exec-hash:
     #     enabled: true
-    #     mode: sha256
+    #     mode: dev-inode     # Options: none, inode, dev-inode, digest-inode
     # user-stack-trace: true
 
 # Artifacts capture configuration
@@ -173,10 +177,6 @@ output:
     # Output options
     # options:
     #     none: false
-    #     stack-addresses: true
-    #     exec-env: false
-    #     exec-hash: dev-inode     # Options: none, inode, dev-inode, digest-inode
-    #     parse-arguments: true
     #     parse-arguments-fds: false
     # sort-events: false
 

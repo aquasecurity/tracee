@@ -50,15 +50,17 @@ data:
     listen-addr: :3366
     log:
         level: info
+    enrichment:
+        parse-arguments: true
+        user-stack-trace: false
+        exec-env: false
+        exec-hash:
+            enabled: true
+            mode: dev-inode
     output:
         json:
           files:
             - stdout
-        options:
-            parse-arguments: true
-            stack-addresses: false
-            exec-env: false
-            exec-hash: dev-inode
         sort-events: false
 ---
 # Source: tracee/templates/role.yaml
