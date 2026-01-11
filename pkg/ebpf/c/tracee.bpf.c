@@ -576,8 +576,11 @@ int sys_dup_exit_tail(void *ctx)
 statfunc void update_thread_stack(void *ctx, task_info_t *task_info, struct task_struct *task)
 {
     // Kernel threads and group leaders are not relevant, reset their stack area
-    if (get_task_flags(task) & PF_KTHREAD || BPF_CORE_READ(task, pid) == BPF_CORE_READ(task, tgid))
+    if (get_task_flags(task) & PF_KTHREAD ||
+        BPF_CORE_READ(task, pid) == BPF_CORE_READ(task, tgid)) {
         task_info->stack = (address_range_t) {0};
+        return;
+    }
 
     // Get user SP of new thread
 #if defined(bpf_target_x86)
@@ -595,8 +598,17 @@ statfunc void update_thread_stack(void *ctx, task_info_t *task_info, struct task
     // For example: stack VMA mapped at 0x1000 with size 0x1000,
     // SP is set to 0x2000 (which is not part of the VMA whose address range is 0x1000-0x1fff).
     struct vm_area_struct *vma = find_vma(ctx, task, thread_sp - 1);
-    if (unlikely(vma == NULL))
-        return;
+    if (unlikely(vma == NULL)) {
+        // Some rare race conditions may cause the VMA lookup to fail.
+        // Try the lookup again, and in the exceedingly rare case that the
+        // second lookup fails as well, reset the stack area to indicate
+        // that this thread's stack isn't tracked, to prevent false positives.
+        vma = find_vma(ctx, task, thread_sp - 1);
+        if (unlikely(vma == NULL)) {
+            task_info->stack = (address_range_t) {0};
+            return;
+        }
+    }
 
     // Add the VMA address range to the task info
     task_info->stack = (address_range_t) {.start = BPF_CORE_READ(vma, vm_start),
