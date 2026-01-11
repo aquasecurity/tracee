@@ -21,7 +21,7 @@ Usage: $0 [OPTIONS] [-- ADDITIONAL_TRACEE_ARGS]
 
 Options:
     --bin, -b PATH           Path to tracee binary (default: ${TRACEE_BIN_DEFAULT})
-    --workdir, -w PATH       Working directory for tracee (default: ${TRACEE_WORKDIR_DEFAULT})
+    --workdir, -w PATH       Directory for script-managed output and log files (default: ${TRACEE_WORKDIR_DEFAULT})
     --output-file, -o FILE   Output file for events in JSON format (default: <workdir>/${EVENT_OUTPUT_FILE_DEFAULT})
     --log-file, -l FILE      Output file for logs in JSON format (default: <workdir>/${LOG_OUTPUT_FILE_DEFAULT})
     --log-level, -L LEVEL    Log level (default: ${LOG_LEVEL_DEFAULT})
@@ -31,8 +31,8 @@ Options:
 
 Note: All outputs are automatically configured in JSON format.
       
-      The script manages runtime workdir, output, and log flags internally before passing them to tracee.
-      Do not pass --runtime workdir, --output or --log flags as additional arguments as they will conflict
+      The script manages output and log flags internally before passing them to tracee.
+      Do not pass --output or --log flags as additional arguments as they will conflict
       with the script's managed flags and may cause Tracee to behave unexpectedly.
       
       Other tracee-specific arguments like -e (events), -p (policies), -s (scope), etc. should be
@@ -195,7 +195,6 @@ set -- "${TRACEE_BIN}" \
     "--output" "json:${EVENT_OUTPUT_FILE}" \
     "--logging" "file=${LOG_OUTPUT_FILE}" \
     "--logging" "level=${LOG_LEVEL}" \
-    "--runtime" "workdir=${TRACEE_WORKDIR}" \
     "--server" "healthz" \
     "--server" "http-address=:${HEALTHZ_PORT}"
 
@@ -270,4 +269,6 @@ info "Wait ${cooldown} seconds for Tracee to finish initializing"
 sleep "${cooldown}"
 
 info "Tracee successfully started"
+info "Event output: ${EVENT_OUTPUT_FILE}"
+info "Log output: ${LOG_OUTPUT_FILE}"
 info "To stop Tracee, run: ./scripts/tracee_stop.sh -w ${TRACEE_WORKDIR}"

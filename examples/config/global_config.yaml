@@ -108,10 +108,6 @@ detectors:
     # yaml-dir:
     #     - /path/to/detector/dir
 
-# Runtime configuration
-runtime:
-    workdir: /tmp/tracee
-
 # Logging configuration
 logging:
     level: info

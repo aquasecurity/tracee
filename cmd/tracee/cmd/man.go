@@ -65,7 +65,6 @@ func init() {
 		loggingCmd,
 		outputCmd,
 		policyCmd,
-		runtimeCmd,
 		scopeCmd,
 		serverCmd,
 		signaturesDirCmd,
@@ -210,15 +209,6 @@ var policyCmd = &cobra.Command{
 	Short:   "Show manual page for the --policy flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("policy")
-	},
-}
-
-var runtimeCmd = &cobra.Command{
-	Use:     "runtime",
-	Aliases: []string{"r"},
-	Short:   "Show manual page for the --runtime flag",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runManForFlag("runtime")
 	},
 }
 

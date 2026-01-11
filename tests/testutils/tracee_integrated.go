@@ -84,7 +84,7 @@ func StartTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 		return nil, err
 	}
 
-	err = initialize.BpfObject(&cfg, kernelConfig, osInfo, "/tmp/tracee", "")
+	err = initialize.BpfObject(&cfg, kernelConfig, osInfo, "")
 	if err != nil {
 		return nil, err
 	}

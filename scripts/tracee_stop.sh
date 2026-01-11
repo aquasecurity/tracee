@@ -15,14 +15,14 @@ show_help() {
 Usage: $0 [OPTIONS]
 
 Options:
-    --workdir, -w PATH       Working directory for tracee (default: ${TRACEE_WORKDIR_DEFAULT})
+    --workdir, -w PATH       Directory for script-managed files (used to identify tracee instance) (default: ${TRACEE_WORKDIR_DEFAULT})
     --timeout, -t SECONDS    Timeout to wait for graceful shutdown (default: ${TIMEOUT_DEFAULT})
     --force, -f              Force immediate termination (SIGKILL)
     --help, -h               Show this help message
 
 Examples:
     $0                                          # Stop tracee in default location
-    $0 --workdir /var/tracee                    # Stop tracee in custom location
+    $0 --workdir /var/tracee                    # Stop tracee using custom workdir
     $0 --timeout 30                             # Wait up to 30 seconds for graceful shutdown
     $0 --force                                  # Immediately send KILL signal
 EOF

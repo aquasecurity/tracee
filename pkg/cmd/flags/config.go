@@ -28,8 +28,6 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &LogConfig{}
 	case OutputFlag:
 		flagger = &OutputConfig{}
-	case RuntimeFlag:
-		flagger = &RuntimeConfig{}
 	case StoresFlag:
 		flagger = &StoresConfig{}
 	case BuffersFlag:

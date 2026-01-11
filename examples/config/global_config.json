@@ -29,9 +29,6 @@
     "enrichment": {},
     "artifacts": {},
     "detectors": {},
-    "runtime": {
-        "workdir": "/tmp/tracee"
-    },
     "logging": {
         "level": "info"
     },

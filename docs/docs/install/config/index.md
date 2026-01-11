@@ -77,24 +77,6 @@ A complete example config file with all available options can be found [here](ht
       enabled: true
   ```
 
-### Runtime
-
-- **`--runtime` (`-r`)**: Controls runtime configurations for Tracee.
-
-  CLI Examples:
-  ```bash
-  # Set working directory
-  tracee --runtime workdir=/opt/tracee
-  ```
-
-  YAML:
-  ```yaml
-  runtime:
-    - workdir=/opt/tracee
-  ```
-
-  __NOTE__: The workdir is the path where Tracee will install or lookup its resources. The default is `/tmp/tracee`. This option is useful when running Tracee in environments where `/tmp` is not suitable or secure.
-
 ### Log
 
 - **`--logging` (`-l`)**: Controls Tracee logging options, like verbosity,

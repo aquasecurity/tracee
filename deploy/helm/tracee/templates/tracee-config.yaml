@@ -50,10 +50,6 @@ data:
         pyroscope: {{ .Values.config.server.pyroscope }}
         {{- end }}
     {{- end }}
-    {{- if .Values.config.workdir }}
-    runtime:
-      - workdir={{ .Values.config.workdir }}
-    {{- end }}
     {{- if .Values.config.signaturesDir }}
     signatures-dir: {{ .Values.config.signaturesDir }}
     {{- end }}

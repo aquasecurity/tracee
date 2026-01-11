@@ -90,7 +90,6 @@ config:
     healthz: true
     pprof: false
     pyroscope: false
-  workdir: ""
   signaturesDir: ""
   log:
     level: info

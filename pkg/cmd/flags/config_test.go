@@ -409,28 +409,6 @@ server:
 			},
 		},
 		{
-			name: "Test runtime configuration (cli flags)",
-			yamlContent: `
-runtime:
-    - workdir=/tmp/tracee
-`,
-			key: "runtime",
-			expectedFlags: []string{
-				"workdir=/tmp/tracee",
-			},
-		},
-		{
-			name: "Test runtime configuration (structured flags)",
-			yamlContent: `
-runtime:
-    workdir: /opt/tracee
-`,
-			key: "runtime",
-			expectedFlags: []string{
-				"workdir=/opt/tracee",
-			},
-		},
-		{
 			name: "Test enrich configuration (cli flags)",
 			yamlContent: `
 enrichment:
