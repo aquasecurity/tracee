@@ -15,9 +15,10 @@ Event Selection:
    --events execve,open                              | trace specific events
    --events 'open*'                                  | trace events with prefix 'open'
 
-2. Event Sets:
-   --events fs                                       | trace all filesystem events
-   --events fs --events -open,-openat                | trace fs events except open(at)
+2. Event Tags (Sets):
+   --events tag=fs                                   | trace all filesystem events
+   --events tag=fs,network                           | trace fs OR network events
+   --events tag=fs --events -open,-openat            | trace fs events except open(at)
 
 Event Filtering:
 1. Event Scope (event_name.scope.field):
@@ -164,6 +165,26 @@ func parseEventFlag(flag string) ([]eventFlag, error) {
 
 	// validate event filter
 	evtFilter := flag[:operatorIdx]
+
+	// Handle "tag=value" syntax specially - it doesn't follow the event.option format
+	if evtFilter == "tag" {
+		opAndValParts, err := getOperatorAndValuesParts(flag, operatorIdx)
+		if err != nil {
+			return []eventFlag{}, errfmt.WrapError(err)
+		}
+
+		return []eventFlag{
+			{
+				full:              flag,                            // "tag=fs"
+				eventFilter:       evtFilter,                       // "tag"
+				eventName:         "tag",                           // special marker for tag selection
+				operator:          opAndValParts.operator,          // "="
+				values:            opAndValParts.values,            // "fs" or "fs,network"
+				operatorAndValues: opAndValParts.operatorAndValues, // "=fs"
+			},
+		}, nil
+	}
+
 	evtParts, err := getEventFilterParts(evtFilter, flag)
 	if err != nil {
 		return []eventFlag{}, errfmt.WrapError(err)

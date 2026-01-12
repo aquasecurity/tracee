@@ -112,7 +112,7 @@ ERRO permission denied loading eBPF program
    ```yaml
    rules:
      - event: execve        # Specific event
-     # - event: syscalls    # Avoid broad sets
+     # - event: tag=syscalls    # Avoid broad tags
    ```
 
 ## Container Issues

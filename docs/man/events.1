@@ -8,9 +8,7 @@ date: 2024/12 \&...
 tracee \f[B]\-\-events\f[R] \- Select which events to trace
 .SS SYNOPSIS
 tracee \f[B]\-\-events\f[R] [<event\-name1(,[\-]event\-name2\&...)> |
-<[\-]event\-name1(,set1\&...)> |
-<set1(,[\-]event\-name1,[\-]event\-name2\&...)> |
-<event1.data.data\-field[=|!=]value> |
+<tag=tag1(,tag2\&...)> | <event1.data.data\-field[=|!=]value> |
 <event1.retval[=|!=|<|>|<=|>=]value> |
 <event1.scope.field[=|!=|<|>|<=|>=]value> | <event.scope.container>]
 \&...
@@ -19,11 +17,14 @@ The \f[B]\-\-events\f[R] flag allows you to select which events to trace
 by defining filters.
 .SS FILTERS
 .IP \[bu] 2
-Event or set name: Select specific events using
-`event\-name1,event\-name2\&...' or predefined event sets using
-`event_set_name1,event_set_name2\&...'.
+Event name: Select specific events using
+`event\-name1,event\-name2\&...'.
 To exclude events, prepend the event name with a dash `\-':
 `\-event\-name'.
+.IP \[bu] 2
+Tag selection: Select events by tag (set) using `tag=tag1,tag2\&...'.
+Multiple tags are combined with OR logic.
+Common tags include: syscalls, fs, network, proc, default.
 .IP \[bu] 2
 Detector selection by threat properties: Select detectors based on their
 threat metadata using `threat.property=value'.
@@ -135,29 +136,29 @@ Multiple \f[CR]\-\-events\f[R] flags are combined additively (OR logic):
 .IP
 .EX
 \-\-events threat.severity=critical \-\-events write    # Critical threats OR write events
-\-\-events fs \-\-events \[aq]threat.severity>=high\[aq]        # Filesystem events OR high+ threats
+\-\-events tag=fs \-\-events \[aq]threat.severity>=high\[aq]    # Filesystem events OR high+ threats
 .EE
 .PP
 \f[B]Note:\f[R] Detector selection based on threat properties is
 performed once at startup.
 Matching detectors are enabled; non\-matching detectors are never
 loaded.
-.SS DETECTOR TAG SELECTION
-Detectors can be categorized with tags.
-You can select all detectors with a specific tag:
+.SS TAG SELECTION
+Events are categorized with tags (also known as sets).
+You can select all events with a specific tag:
 .IP
 .EX
-\-\-events containers       # All detectors tagged with \[dq]containers\[dq]
-\-\-events malware          # All detectors tagged with \[dq]malware\[dq]
-\-\-events detectors        # All detectors (existing behavior)
+\-\-events tag=containers       # All events tagged with \[dq]containers\[dq]
+\-\-events tag=fs               # All filesystem\-related events
+\-\-events tag=detectors        # All detector events
 .EE
 .PP
 Tags can be combined with other selection methods:
 .IP
 .EX
-\-\-events containers,execve                # Detectors with \[dq]containers\[dq] tag + execve syscall
-\-\-events \[aq]threat.severity=critical\[aq]       # Critical threats (any tag)
-\-\-events malware,\[aq]threat.severity>=high\[aq]  # Detectors with \[dq]malware\[dq] tag OR high+ severity threats
+\-\-events tag=containers,execve            # Events with \[dq]containers\[dq] tag + execve syscall
+\-\-events tag=fs,network                   # Filesystem OR network events
+\-\-events tag=fs \-\-events \-open,\-openat    # Filesystem events except open(at)
 .EE
 .SS EXAMPLES
 .IP \[bu] 2
@@ -181,7 +182,7 @@ To trace all file\-system related events, use the following flag:
 .RS 2
 .IP
 .EX
-\-\-events fs
+\-\-events tag=fs
 .EE
 .RE
 .IP \[bu] 2
@@ -190,7 +191,7 @@ use the following flag:
 .RS 2
 .IP
 .EX
-\-\-events fs \-\-events \[aq]\-open,\-openat\[aq]
+\-\-events tag=fs \-\-events \[aq]\-open,\-openat\[aq]
 .EE
 .RE
 .IP \[bu] 2

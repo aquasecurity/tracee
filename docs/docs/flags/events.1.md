@@ -11,7 +11,7 @@ tracee **\-\-events** - Select which events to trace
 
 ## SYNOPSIS
 
-tracee **\-\-events** [<event-name1(,[-]event-name2...)\> | <[-]event-name1(,set1...)\> | <set1(,[-]event-name1,[-]event-name2...)\> | <event1.data.data-field[=|!=]value\> | <event1.retval[=|!=|<|\>|<=|\>=]value\> | <event1.scope.field[=|!=|<|\>|<=|\>=]value\> | <event.scope.container\>] ...
+tracee **\-\-events** [<event-name1(,[-]event-name2...)\> | <tag=tag1(,tag2...)\> | <event1.data.data-field[=|!=]value\> | <event1.retval[=|!=|<|\>|<=|\>=]value\> | <event1.scope.field[=|!=|<|\>|<=|\>=]value\> | <event.scope.container\>] ...
 
 ## DESCRIPTION
 
@@ -19,7 +19,9 @@ The **\-\-events** flag allows you to select which events to trace by defining f
 
 ## FILTERS
 
-- Event or set name: Select specific events using 'event-name1,event-name2...' or predefined event sets using 'event_set_name1,event_set_name2...'. To exclude events, prepend the event name with a dash '-': '-event-name'.
+- Event name: Select specific events using 'event-name1,event-name2...'. To exclude events, prepend the event name with a dash '-': '-event-name'.
+
+- Tag selection: Select events by tag (set) using 'tag=tag1,tag2...'. Multiple tags are combined with OR logic. Common tags include: syscalls, fs, network, proc, default.
 
 - Detector selection by threat properties: Select detectors based on their threat metadata using 'threat.property=value'. See THREAT-BASED DETECTOR SELECTION section below.
 
@@ -108,27 +110,27 @@ Threat selection can be combined with regular events. Multiple `--events` flags 
 
 ```console
 --events threat.severity=critical --events write    # Critical threats OR write events
---events fs --events 'threat.severity>=high'        # Filesystem events OR high+ threats
+--events tag=fs --events 'threat.severity>=high'    # Filesystem events OR high+ threats
 ```
 
 **Note:** Detector selection based on threat properties is performed once at startup. Matching detectors are enabled; non-matching detectors are never loaded.
 
-## DETECTOR TAG SELECTION
+## TAG SELECTION
 
-Detectors can be categorized with tags. You can select all detectors with a specific tag:
+Events are categorized with tags (also known as sets). You can select all events with a specific tag:
 
 ```console
---events containers       # All detectors tagged with "containers"
---events malware          # All detectors tagged with "malware"
---events detectors        # All detectors (existing behavior)
+--events tag=containers       # All events tagged with "containers"
+--events tag=fs               # All filesystem-related events
+--events tag=detectors        # All detector events
 ```
 
 Tags can be combined with other selection methods:
 
 ```console
---events containers,execve                # Detectors with "containers" tag + execve syscall
---events 'threat.severity=critical'       # Critical threats (any tag)
---events malware,'threat.severity>=high'  # Detectors with "malware" tag OR high+ severity threats
+--events tag=containers,execve            # Events with "containers" tag + execve syscall
+--events tag=fs,network                   # Filesystem OR network events
+--events tag=fs --events -open,-openat    # Filesystem events except open(at)
 ```
 
 ## EXAMPLES
@@ -148,13 +150,13 @@ Tags can be combined with other selection methods:
 - To trace all file-system related events, use the following flag:
 
   ```console
-  --events fs
+  --events tag=fs
   ```
 
 - To trace all file-system related events, but not 'open' or 'openat', use the following flag:
 
   ```console
-  --events fs --events '-open,-openat'
+  --events tag=fs --events '-open,-openat'
   ```
 
 - To trace only 'close' events that have 'fd' equal to 5, use the following flag:
