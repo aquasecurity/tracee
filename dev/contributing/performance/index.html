@@ -16,7 +16,7 @@
         <link rel="prev" href="../testing-coverage/">
       
       
-        <link rel="next" href="../kubernetes/">
+        <link rel="next" href="../evt-tool/">
       
       
         
@@ -7609,6 +7609,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../evt-tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event Generator (evt)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../kubernetes/" class="md-nav__link">
         
   
@@ -7681,10 +7709,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
         
           
-          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="">
             
   
   
@@ -7702,8 +7730,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_10">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_11">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -7865,7 +7893,17 @@
 </code></pre></div>
 </li>
 <li>
-<p><strong>Benchmarking:</strong> Before submitting significant code changes, consider running benchmarks to assess their impact on Tracee's performance. (Details on specific benchmarking tools or scripts used within the Tracee project should be added here. If there are existing benchmarks, provide instructions on how to run them. If not, suggest a methodology).</p>
+<p><strong>Benchmarking and Stress Testing:</strong> Before submitting significant code changes, use the <code>evt</code> tool to run stress tests and assess their impact on Tracee's performance:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Build evt and trigger runner container</span>
+make<span class="w"> </span>evt<span class="w"> </span>evt-trigger-runner
+
+<span class="c1"># Run stress test with profiling</span>
+evt<span class="w"> </span>stress<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--events<span class="w"> </span>security_file_open:instances<span class="o">=</span><span class="m">16</span>:ops<span class="o">=</span><span class="m">100000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--pyroscope<span class="w"> </span>--pprof<span class="w"> </span>--metrics<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--keep-tracee
+</code></pre></div>
+<p>For comprehensive documentation on the <code>evt</code> tool, see <a href="../evt-tool/">evt - Event Generator and Stress Testing Tool</a>.</p>
 </li>
 <li>
 <p><strong>Common Performance Pitfalls:</strong></p>
