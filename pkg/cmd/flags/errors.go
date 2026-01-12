@@ -9,6 +9,10 @@ func InvalidEventError(event string) error {
 	return fmt.Errorf("invalid event to trace: %s", event)
 }
 
+func InvalidTagError(tag string) error {
+	return fmt.Errorf("invalid tag: %s", tag)
+}
+
 func InvalidEventExcludeError(event string) error {
 	return fmt.Errorf("invalid event to exclude: %s", event)
 }

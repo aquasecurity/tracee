@@ -2524,8 +2524,12 @@ func TestParseEventFiltersDetectorTags(t *testing.T) {
 		{
 			name: "detector tag selection - test_tag_a",
 			eventFlags: []eventFlag{{
-				full:      "test_tag_a",
-				eventName: "test_tag_a",
+				full:              "tag=test_tag_a",
+				eventFilter:       "tag",
+				eventName:         "tag",
+				operator:          "=",
+				values:            "test_tag_a",
+				operatorAndValues: "=test_tag_a",
 			}},
 			validate: func(t *testing.T, p *policy.Policy, eMap map[string]events.ID) {
 				// Should have detector_event1 and detector_event3 (both have "test_tag_a" tag)
@@ -2538,8 +2542,12 @@ func TestParseEventFiltersDetectorTags(t *testing.T) {
 		{
 			name: "detector tag selection - test_tag_b",
 			eventFlags: []eventFlag{{
-				full:      "test_tag_b",
-				eventName: "test_tag_b",
+				full:              "tag=test_tag_b",
+				eventFilter:       "tag",
+				eventName:         "tag",
+				operator:          "=",
+				values:            "test_tag_b",
+				operatorAndValues: "=test_tag_b",
 			}},
 			validate: func(t *testing.T, p *policy.Policy, eMap map[string]events.ID) {
 				// Should have only detector_event2
@@ -2553,8 +2561,12 @@ func TestParseEventFiltersDetectorTags(t *testing.T) {
 			name: "detector tag with regular event",
 			eventFlags: []eventFlag{
 				{
-					full:      "test_tag_a",
-					eventName: "test_tag_a",
+					full:              "tag=test_tag_a",
+					eventFilter:       "tag",
+					eventName:         "tag",
+					operator:          "=",
+					values:            "test_tag_a",
+					operatorAndValues: "=test_tag_a",
 				},
 				{
 					full:      "write",
@@ -2570,10 +2582,14 @@ func TestParseEventFiltersDetectorTags(t *testing.T) {
 			},
 		},
 		{
-			name: "all detectors set",
+			name: "all detectors tag",
 			eventFlags: []eventFlag{{
-				full:      "detectors",
-				eventName: "detectors",
+				full:              "tag=detectors",
+				eventFilter:       "tag",
+				eventName:         "tag",
+				operator:          "=",
+				values:            "detectors",
+				operatorAndValues: "=detectors",
 			}},
 			validate: func(t *testing.T, p *policy.Policy, eMap map[string]events.ID) {
 				// Should have all detector events (including built-in detectors, so check for ours)

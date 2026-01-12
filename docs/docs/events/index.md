@@ -51,8 +51,8 @@ tracee list --wide
 **Use in policies:**
 ```yaml
 rules:
-  - event: syscalls     # All system calls
-  - event: fs           # File system events
+  - event: tag=syscalls     # All system calls
+  - event: tag=fs           # File system events
 ```
 
 **Use on command line:**

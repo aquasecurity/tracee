@@ -223,6 +223,43 @@ func TestParseEventFlag(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		// Tag selection
+		{
+			name:      "ValidEventFlag_TagSelection",
+			eventFlag: "tag=fs",
+			expected: []eventFlag{
+				{
+					full:              "tag=fs",
+					eventFilter:       "tag",
+					eventName:         "tag",
+					eventOptionType:   "",
+					eventOptionName:   "",
+					operator:          "=",
+					values:            "fs",
+					operatorAndValues: "=fs",
+					filter:            "",
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name:      "ValidEventFlag_TagSelectionMultiple",
+			eventFlag: "tag=fs,network",
+			expected: []eventFlag{
+				{
+					full:              "tag=fs,network",
+					eventFilter:       "tag",
+					eventName:         "tag",
+					eventOptionType:   "",
+					eventOptionName:   "",
+					operator:          "=",
+					values:            "fs,network",
+					operatorAndValues: "=fs,network",
+					filter:            "",
+				},
+			},
+			expectedError: nil,
+		},
 
 		// Invalid
 		// InvalidFlagEmpty

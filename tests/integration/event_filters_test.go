@@ -736,7 +736,7 @@ func Test_EventFilters(t *testing.T) {
 							DefaultActions: []string{"log"},
 							Rules: []k8s.Rule{
 								{
-									Event:   "fs", // fs set
+									Event:   "tag=fs", // fs tag (set)
 									Filters: []string{},
 								},
 							},

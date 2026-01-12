@@ -297,6 +297,36 @@ func parseEventFilters(p *policy.Policy, eventFlags []eventFlag, detectors []det
 			continue
 		}
 
+		// Check if this is a tag= pattern - expand into events with matching tags (sets)
+		if evtFlag.eventName == "tag" && evtFlag.operator == "=" {
+			// Parse comma-separated tag values (OR logic within values)
+			tags := strings.Split(evtFlag.values, ",")
+			found := false
+			for _, tag := range tags {
+				tag = strings.TrimSpace(tag)
+				if tag == "" {
+					continue
+				}
+				if setEvents, ok := setsToEvents[tag]; ok {
+					for _, id := range setEvents {
+						if _, ok := p.Rules[id]; !ok {
+							p.Rules[id] = policy.RuleData{
+								EventID:     id,
+								ScopeFilter: filters.NewScopeFilter(),
+								DataFilter:  filters.NewDataFilter(),
+								RetFilter:   filters.NewIntFilter(),
+							}
+						}
+					}
+					found = true
+				}
+			}
+			if !found {
+				return InvalidTagError(evtFlag.values)
+			}
+			continue
+		}
+
 		eventIdToName := make(map[events.ID]string)
 		if strings.HasSuffix(evtFlag.eventName, "*") {
 			found := false
@@ -313,17 +343,11 @@ func parseEventFilters(p *policy.Policy, eventFlags []eventFlag, detectors []det
 		} else {
 			id, ok := eventNamesToID[evtFlag.eventName]
 			if !ok {
-				// no matching event - maybe it is actually a set?
-				setEvents, ok := setsToEvents[evtFlag.eventName]
-				if !ok {
-					return InvalidEventError(evtFlag.eventName)
-				}
-				for _, id := range setEvents {
-					eventIdToName[id] = events.Core.GetDefinitionByID(id).GetName()
-				}
-			} else {
-				eventIdToName[id] = evtFlag.eventName
+				// Event name not found - no longer falls back to sets
+				// Use explicit tag=<set_name> syntax instead
+				return InvalidEventError(evtFlag.eventName)
 			}
+			eventIdToName[id] = evtFlag.eventName
 		}
 
 		for eventId := range eventIdToName {
