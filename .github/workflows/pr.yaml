@@ -276,12 +276,13 @@ jobs:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       volumes:
         - /opt:/opt:rw,rshared
-        # The following volume mount is a workaround for GitHub Actions runner limitations.
-        # Some GitHub-hosted runners expect Node.js to be available at /__e/node20, which is not present in the base container.
+        # The following volume mounts are a workaround for GitHub Actions runner limitations.
+        # Some GitHub-hosted runners expect Node.js to be available at /__e/node20 or /__e/node24, which is not present in the base container.
         # This mapping provides Node.js from the host's /opt directory to the expected location in the container.
         # WARNING: This creates a fragile dependency on the runner's internal filesystem layout.
         # If the runner environment changes, this workflow may break. Consider updating this step if a more robust solution becomes available.
         - /opt:/__e/node20:ro,rshared
+        - /opt:/__e/node24:ro,rshared
     steps:
       - name: Allow Linux musl containers on ARM64 runners
         run: |
@@ -355,12 +356,13 @@ jobs:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       volumes:
         - /opt:/opt:rw,rshared
-        # The following volume mount is a workaround for GitHub Actions runner limitations.
-        # Some GitHub-hosted runners expect Node.js to be available at /__e/node20, which is not present in the base container.
+        # The following volume mounts are a workaround for GitHub Actions runner limitations.
+        # Some GitHub-hosted runners expect Node.js to be available at /__e/node20 or /__e/node24, which is not present in the base container.
         # This mapping provides Node.js from the host's /opt directory to the expected location in the container.
         # WARNING: This creates a fragile dependency on the runner's internal filesystem layout.
         # If the runner environment changes, this workflow may break. Consider updating this step if a more robust solution becomes available.
         - /opt:/__e/node20:ro,rshared
+        - /opt:/__e/node24:ro,rshared
     steps:
       - name: Allow Linux musl containers on ARM64 runners
         run: |
@@ -394,26 +396,40 @@ jobs:
       - graas_ami-03dbff05cae3a30d0_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123 # Noble 6.12.62 x86_64 GRAAS AMI
       - EXECUTION_TYPE=SHORT
       - INSTANCE_TYPE=MEDIUM
-    container:
-      image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
-      options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    # NOTE: Container execution disabled - running directly on host AMI which has all required tooling pre-installed.
+    # Re-enable container if host execution causes issues or for environment isolation.
+    # container:
+    #   image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
+    #   options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
     steps:
-      - name: Install Git
+      - name: Prepare Environment
         run: |
-          export DEBIAN_FRONTEND=noninteractive
-          apt-get update
-          apt-get install -y --no-install-recommends git-core ca-certificates
-          update-ca-certificates
+          mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
+      # NOTE: Git installation not needed when running on host - AMI already has git installed.
+      # - name: Install Git
+      #   run: |
+      #     export DEBIAN_FRONTEND=noninteractive
+      #     apt-get update
+      #     apt-get install -y --no-install-recommends git-core ca-certificates
+      #     update-ca-certificates
       - name: Checkout Code
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0  # Fetch full history for codecov base comparison
-      - name: Fix Git ownership
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-      - name: Setup Tracee
-        uses: ./.github/actions/setup-tracee-ubuntu
+      # NOTE: Git ownership fix not needed when running on host (only required in containers).
+      # - name: Fix Git ownership
+      #   run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      # NOTE: Setup Tracee not needed - AMI has tooling pre-installed. Re-enable when tooling version
+      # bump is required. If re-enabled, update action to auto-detect distro (Ubuntu/CentOS/Alpine/etc).
+      # - name: Setup Tracee
+      #   uses: ./.github/actions/setup-tracee-ubuntu
       - name: Pull test images
         uses: ./.github/actions/pull-test-images
       - name: Run Integration Tests
@@ -430,26 +446,40 @@ jobs:
       - graas_ami-07774797557132122_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }} # Noble 6.12 aarch64 GRAAS AMI
       - EXECUTION_TYPE=SHORT
       - INSTANCE_TYPE=MEDIUM
-    container:
-      image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
-      options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    # NOTE: Container execution disabled - running directly on host AMI which has all required tooling pre-installed.
+    # Re-enable container if host execution causes issues or for environment isolation.
+    # container:
+    #   image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
+    #   options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
     steps:
-      - name: Install Git
+      - name: Prepare Environment
         run: |
-          export DEBIAN_FRONTEND=noninteractive
-          apt-get update
-          apt-get install -y --no-install-recommends git-core ca-certificates
-          update-ca-certificates
+          mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
+      # NOTE: Git installation not needed when running on host - AMI already has git installed.
+      # - name: Install Git
+      #   run: |
+      #     export DEBIAN_FRONTEND=noninteractive
+      #     apt-get update
+      #     apt-get install -y --no-install-recommends git-core ca-certificates
+      #     update-ca-certificates
       - name: Checkout Code
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0  # Fetch full history for codecov base comparison
-      - name: Fix Git ownership
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-      - name: Setup Tracee
-        uses: ./.github/actions/setup-tracee-ubuntu
+      # NOTE: Git ownership fix not needed when running on host (only required in containers).
+      # - name: Fix Git ownership
+      #   run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      # NOTE: Setup Tracee not needed - AMI has tooling pre-installed. Re-enable when tooling version
+      # bump is required. If re-enabled, update action to auto-detect distro (Ubuntu/CentOS/Alpine/etc).
+      # - name: Setup Tracee
+      #   uses: ./.github/actions/setup-tracee-ubuntu
       - name: Pull test images
         uses: ./.github/actions/pull-test-images
       - name: Run Integration Tests
@@ -517,6 +547,9 @@ jobs:
       GOCACHE: "/tmp/go-cache"
       GOROOT: "/usr/local/go"
     steps:
+      - name: Prepare Environment
+        run: |
+          mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
       - name: "Checkout"
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
