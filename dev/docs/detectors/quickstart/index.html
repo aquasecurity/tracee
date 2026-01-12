@@ -9019,15 +9019,14 @@ make<span class="w"> </span>env
 <span class="w">    </span><span class="c1">// Extract executable path (nil-safe protobuf getters)</span>
 <span class="w">    </span><span class="nx">executablePath</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">GetWorkload</span><span class="p">().</span><span class="nx">GetProcess</span><span class="p">().</span><span class="nx">GetExecutable</span><span class="p">().</span><span class="nx">GetPath</span><span class="p">()</span>
 
-<span class="w">    </span><span class="c1">// Return output data - engine handles the rest (threat, ancestry, etc.)</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorOutput</span><span class="p">{{</span>
-<span class="w">        </span><span class="nx">Data</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">EventValue</span><span class="p">{</span>
-<span class="w">            </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewStringValue</span><span class="p">(</span><span class="s">&quot;file_path&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">pathname</span><span class="p">),</span>
-<span class="w">            </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewStringValue</span><span class="p">(</span><span class="s">&quot;executable&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">executablePath</span><span class="p">),</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">    </span><span class="p">}},</span><span class="w"> </span><span class="kc">nil</span>
+<span class="w">    </span><span class="c1">// Return detection with data - engine handles the rest (threat, ancestry, etc.)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectedWithData</span><span class="p">([]</span><span class="o">*</span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">EventValue</span><span class="p">{</span>
+<span class="w">        </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewStringValue</span><span class="p">(</span><span class="s">&quot;file_path&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">pathname</span><span class="p">),</span>
+<span class="w">        </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewStringValue</span><span class="p">(</span><span class="s">&quot;executable&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">executablePath</span><span class="p">),</span>
+<span class="w">    </span><span class="p">}),</span><span class="w"> </span><span class="kc">nil</span>
 <span class="p">}</span>
 </code></pre></div>
+<p><strong>Helper Functions</strong>: For cleaner code, use <code>detection.Detected()</code> for simple detections with no extra data, or <code>detection.DetectedWithData(data)</code> when including additional event values.</p>
 <h2 id="step-2-build-tracee">Step 2: Build Tracee<a class="headerlink" href="#step-2-build-tracee" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="c1"># Build with your detector included</span>
 make<span class="w"> </span>tracee

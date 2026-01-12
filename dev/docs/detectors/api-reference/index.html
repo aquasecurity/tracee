@@ -6523,6 +6523,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#helper-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helper Functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#creating-event-data" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8969,6 +8980,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#helper-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helper Functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#creating-event-data" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9945,6 +9967,23 @@
 <span class="w">    </span><span class="nx">AncestryDepth</span><span class="w"> </span><span class="o">*</span><span class="kt">uint32</span>
 <span class="p">}</span>
 </code></pre></div>
+<h3 id="helper-functions">Helper Functions<a class="headerlink" href="#helper-functions" title="Permanent link">&para;</a></h3>
+<p>For cleaner, self-documenting code, use these helpers instead of constructing <code>DetectorOutput</code> directly:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// Simple detection - all info in triggering event, auto-populated by engine</span>
+<span class="k">return</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">Detected</span><span class="p">(),</span><span class="w"> </span><span class="kc">nil</span>
+
+<span class="c1">// Detection with additional data</span>
+<span class="k">return</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectedWithData</span><span class="p">([]</span><span class="o">*</span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">EventValue</span><span class="p">{</span>
+<span class="w">    </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewStringValue</span><span class="p">(</span><span class="s">&quot;env_var&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">envValue</span><span class="p">),</span>
+<span class="p">}),</span><span class="w"> </span><span class="kc">nil</span>
+
+<span class="c1">// Complex cases - use struct literal for multiple fields</span>
+<span class="k">return</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorOutput</span><span class="p">{{</span>
+<span class="w">    </span><span class="nx">Data</span><span class="p">:</span><span class="w">          </span><span class="nx">data</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">Threat</span><span class="p">:</span><span class="w">        </span><span class="nx">customThreat</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">AncestryDepth</span><span class="p">:</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">depth</span><span class="p">,</span>
+<span class="p">}},</span><span class="w"> </span><span class="kc">nil</span>
+</code></pre></div>
 <h3 id="creating-event-data">Creating Event Data<a class="headerlink" href="#creating-event-data" title="Permanent link">&para;</a></h3>
 <p>Use helper functions to create type-safe event values:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// String values</span>
@@ -9962,15 +10001,13 @@
 <span class="c1">// Byte array values</span>
 <span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewBytesValue</span><span class="p">(</span><span class="s">&quot;data&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[]</span><span class="kt">byte</span><span class="p">{</span><span class="mh">0x01</span><span class="p">,</span><span class="w"> </span><span class="mh">0x02</span><span class="p">})</span>
 
-<span class="c1">// Complex example</span>
-<span class="k">return</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorOutput</span><span class="p">{{</span>
-<span class="w">    </span><span class="nx">Data</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">EventValue</span><span class="p">{</span>
-<span class="w">        </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewStringValue</span><span class="p">(</span><span class="s">&quot;command&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/bin/bash -c &#39;curl evil.com&#39;&quot;</span><span class="p">),</span>
-<span class="w">        </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewStringValue</span><span class="p">(</span><span class="s">&quot;shell&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;bash&quot;</span><span class="p">),</span>
-<span class="w">        </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewInt32Value</span><span class="p">(</span><span class="s">&quot;risk_score&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">int32</span><span class="p">(</span><span class="mi">85</span><span class="p">)),</span>
-<span class="w">        </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewBoolValue</span><span class="p">(</span><span class="s">&quot;known_ioc&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">),</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="p">}},</span><span class="w"> </span><span class="kc">nil</span>
+<span class="c1">// Complex example with multiple data fields</span>
+<span class="k">return</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectedWithData</span><span class="p">([]</span><span class="o">*</span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">EventValue</span><span class="p">{</span>
+<span class="w">    </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewStringValue</span><span class="p">(</span><span class="s">&quot;command&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/bin/bash -c &#39;curl evil.com&#39;&quot;</span><span class="p">),</span>
+<span class="w">    </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewStringValue</span><span class="p">(</span><span class="s">&quot;shell&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;bash&quot;</span><span class="p">),</span>
+<span class="w">    </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewInt32Value</span><span class="p">(</span><span class="s">&quot;risk_score&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">int32</span><span class="p">(</span><span class="mi">85</span><span class="p">)),</span>
+<span class="w">    </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewBoolValue</span><span class="p">(</span><span class="s">&quot;known_ioc&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">),</span>
+<span class="p">}),</span><span class="w"> </span><span class="kc">nil</span>
 </code></pre></div>
 <h3 id="multiple-outputs">Multiple Outputs<a class="headerlink" href="#multiple-outputs" title="Permanent link">&para;</a></h3>
 <p>Return multiple detections from a single input:</p>
