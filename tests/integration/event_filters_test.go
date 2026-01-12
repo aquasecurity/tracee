@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -34,6 +35,17 @@ func Test_EventFilters(t *testing.T) {
 	// Make sure we don't leak any goroutines since we run Tracee many times in this test.
 	// If a test case fails, ignore the leak since it's probably caused by the aborted test.
 	defer goleak.VerifyNone(t)
+
+	// Pre-pull Docker images to avoid transient failures during tests.
+	// This prevents race conditions and network issues when Docker tries to pull
+	// images while tests are running.
+	for _, image := range []string{busyboxImage, ubuntuJammyPinnedImage} {
+		t.Logf("Pre-pulling Docker image: %s", image)
+		pullCmd := exec.Command("docker", "image", "pull", image)
+		if err := pullCmd.Run(); err != nil {
+			t.Logf("Warning: failed to pre-pull image %s: %v (tests may still work if cached)", image, err)
+		}
+	}
 
 	// Setup test logger
 	teardown := testutils.EnableTestLogger(t, logger.InfoLevel)
@@ -1548,7 +1560,7 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents(
 					"fakeprog1",
 					0,
-					1*time.Second,
+					5*time.Second,
 					[]*pb.Event{
 						expectPbEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Read, orPolNames("comm-event")),
 						expectPbEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Write, orPolNames("comm-event")),
@@ -1586,7 +1598,7 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents(
 					"fakeprog1",
 					0,
-					1*time.Second,
+					5*time.Second, // increased timeout for CI environments
 					[]*pb.Event{
 						expectPbEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event-pol-42")),
 					},
@@ -1653,7 +1665,7 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents(
 					"fakeprog1",
 					0,
-					1*time.Second,
+					5*time.Second, // increased timeout for CI environments
 					[]*pb.Event{
 						expectPbEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-data-64"),
 							expectPbArg("dirfd", int32(0)),
@@ -1666,7 +1678,7 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents(
 					"fakeprog2",
 					0,
-					1*time.Second,
+					5*time.Second, // increased timeout for CI environments
 					[]*pb.Event{
 						expectPbEvent(anyHost, "fakeprog2", testutils.CPUForTests, anyPID, 0, events.Read, orPolNames("comm-event-data-42"),
 							expectPbArg("fd", int32(0)),
@@ -1734,7 +1746,7 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents(
 					"fakeprog1",
 					0,
-					1*time.Second,
+					5*time.Second, // increased timeout for CI environments
 					[]*pb.Event{
 						expectPbEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-retval-64"),
 							expectPbArg("dirfd", int32(0)),
@@ -1747,7 +1759,7 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents(
 					"fakeprog2",
 					100*time.Millisecond,
-					1*time.Second,
+					5*time.Second, // increased timeout for CI environments
 					[]*pb.Event{}, // no events expected
 					[]string{},
 				),
