@@ -12,11 +12,10 @@ func BenchmarkProcessTree(b *testing.B) {
 	defer cancel()
 
 	config := ProcTreeConfig{
-		Source:               SourceBoth,
-		ProcessCacheSize:     DefaultProcessCacheSize,
-		ThreadCacheSize:      DefaultThreadCacheSize,
-		ProcfsInitialization: false,
-		ProcfsQuerying:       false,
+		Source:                   SourceBoth,
+		ProcessCacheSize:         DefaultProcessCacheSize,
+		ThreadCacheSize:          DefaultThreadCacheSize,
+		SkipProcfsInitForTesting: true,
 	}
 
 	pt, err := NewProcessTree(ctx, config)

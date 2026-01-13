@@ -152,8 +152,6 @@ config:
       enabled: ""
       maxProcesses: ""
       maxThreads: ""
-      source: ""
-      useProcfs: ""
 
 defaultPolicy: true
 

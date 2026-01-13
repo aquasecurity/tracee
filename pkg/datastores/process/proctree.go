@@ -64,12 +64,11 @@ func (s SourceType) String() string {
 }
 
 type ProcTreeConfig struct {
-	Enabled              bool
-	Source               SourceType
-	ProcessCacheSize     int
-	ThreadCacheSize      int
-	ProcfsInitialization bool // Determine whether to scan procfs data for process tree initialization
-	ProcfsQuerying       bool // Determine whether to query procfs for missing information during runtime
+	Enabled                  bool
+	Source                   SourceType
+	ProcessCacheSize         int
+	ThreadCacheSize          int
+	SkipProcfsInitForTesting bool
 }
 
 // ProcessTree is a tree of processes and threads.
@@ -81,8 +80,7 @@ type ProcessTree struct {
 	procfsChan        chan int32                     // channel of pids to read from procfs
 	procfsOnce        *sync.Once                     // busy loop debug message throttling
 	ctx               context.Context                // context for the process tree
-	procfsQuery       bool
-	lastAccessNano    atomic.Int64 // last datastore access time (Unix nano)
+	lastAccessNano    atomic.Int64                   // last datastore access time (Unix nano)
 
 	// mutexes
 	processesThreadsMtx  sync.RWMutex
@@ -103,7 +101,6 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 		processesChildren: make(map[uint32]map[uint32]struct{}),
 		procfsOnce:        new(sync.Once),
 		ctx:               ctx,
-		procfsQuery:       config.ProcfsQuerying,
 		forkFeedPool: &sync.Pool{
 			New: func() interface{} {
 				return &ForkFeed{}
@@ -205,7 +202,7 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 		}
 	}()
 
-	if config.ProcfsInitialization {
+	if !config.SkipProcfsInitForTesting {
 		// Walk procfs and feed the process tree with data.
 		procTree.FeedFromProcFSAsync(AllPIDs)
 	}
