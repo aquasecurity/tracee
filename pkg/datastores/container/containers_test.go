@@ -31,7 +31,8 @@ func TestParseContainerIdFromCgroupPath(t *testing.T) {
 			expectedIsRoot:      true,
 		},
 		{
-			name:                "crio systemd format with conmon prefix (should be skipped)",
+			// not a container - for more see parseContainerIdFromCgroupPath() logic
+			name:                "crio systemd format with conmon prefix (Unknown)",
 			cgroupPath:          "/kubepods.slice/kubepods-besteffort.slice/kubepods-besteffort-podb13213a6_d47e_4bd1_bc00_f175d1ad3b6e.slice/crio-conmon-eb5a56051cf7c5e9e588d0dca94d6673d67d43604686e1485984732b18701057.scope",
 			expectedContainerId: "",
 			expectedRuntime:     runtime.Unknown,
@@ -57,6 +58,14 @@ func TestParseContainerIdFromCgroupPath(t *testing.T) {
 			expectedContainerId: "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			expectedRuntime:     runtime.Podman,
 			expectedIsRoot:      true,
+		},
+		{
+			// not a container - for more see parseContainerIdFromCgroupPath() logic
+			name:                "podman systemd format with conmon prefix (Unknown)",
+			cgroupPath:          "/machine.slice/libpod-conmon-64de256b4158dbfd331e27f93bf807f141883be795fd1b2ae7f40294f32c5bfd.scope",
+			expectedContainerId: "",
+			expectedRuntime:     runtime.Unknown,
+			expectedIsRoot:      false,
 		},
 		{
 			name:                "docker non-systemd format",

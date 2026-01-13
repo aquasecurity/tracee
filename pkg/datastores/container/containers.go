@@ -362,8 +362,12 @@ func parseContainerIdFromCgroupPath(cgroupPath string) (string, runtime.RuntimeI
 			contRuntime = runtime.Containerd
 			id = pc[strings.LastIndex(pc, ":cri-containerd:")+len(":cri-containerd:"):]
 		case strings.HasPrefix(id, "libpod-"):
-			contRuntime = runtime.Podman
 			id = strings.TrimPrefix(id, "libpod-")
+			// Skip conmon cgroups - conmon is a monitoring process, not a container
+			if strings.HasPrefix(id, "conmon-") {
+				continue
+			}
+			contRuntime = runtime.Podman
 		}
 
 		if contRuntime != runtime.Unknown {
