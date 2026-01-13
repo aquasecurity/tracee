@@ -649,6 +649,22 @@
          <lastmod>2026-01-13</lastmod>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/flags/list-detectors.1/</loc>
+         <lastmod>2026-01-13</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/flags/list-events.1/</loc>
+         <lastmod>2026-01-13</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/flags/list-policies.1/</loc>
+         <lastmod>2026-01-13</lastmod>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/flags/list.1/</loc>
+         <lastmod>2026-01-13</lastmod>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/flags/logging.1/</loc>
          <lastmod>2026-01-13</lastmod>
     </url>
