@@ -58,10 +58,10 @@ func init() {
 		enrichmentCmd,
 		eventCmd,
 		eventsCmd,
-		listCmd_,
-		listEventsCmd_,
-		listDetectorsCmd_,
-		listPoliciesCmd_,
+		manListCmd,
+		manListEventsCmd,
+		manListDetectorsCmd,
+		manListPoliciesCmd,
 		loggingCmd,
 		outputCmd,
 		policyCmd,
@@ -231,7 +231,7 @@ var signaturesDirCmd = &cobra.Command{
 	},
 }
 
-var listCmd_ = &cobra.Command{
+var manListCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{},
 	Short:   "Show manual page for the list command",
@@ -240,7 +240,7 @@ var listCmd_ = &cobra.Command{
 	},
 }
 
-var listEventsCmd_ = &cobra.Command{
+var manListEventsCmd = &cobra.Command{
 	Use:     "list-events",
 	Aliases: []string{},
 	Short:   "Show manual page for the list events command",
@@ -249,7 +249,7 @@ var listEventsCmd_ = &cobra.Command{
 	},
 }
 
-var listDetectorsCmd_ = &cobra.Command{
+var manListDetectorsCmd = &cobra.Command{
 	Use:     "list-detectors",
 	Aliases: []string{},
 	Short:   "Show manual page for the list detectors command",
@@ -258,7 +258,7 @@ var listDetectorsCmd_ = &cobra.Command{
 	},
 }
 
-var listPoliciesCmd_ = &cobra.Command{
+var manListPoliciesCmd = &cobra.Command{
 	Use:     "list-policies",
 	Aliases: []string{},
 	Short:   "Show manual page for the list policies command",

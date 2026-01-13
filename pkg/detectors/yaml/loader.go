@@ -28,43 +28,60 @@ func (e *LoaderError) Unwrap() error {
 	return e.Err
 }
 
-// LoadFromDirectory scans a directory for YAML detector files and loads them
-// Returns successfully loaded detectors and a slice of errors for failed files
+// ListEntry represents a shared list with its source location
+type ListEntry struct {
+	Name      string
+	Values    []string
+	SourceDir string
+}
+
+// LoadResult contains the results of loading from a directory
+type LoadResult struct {
+	Detectors []detection.EventDetector
+	Lists     []ListEntry
+	Errors    []error
+}
+
+// LoadFromDirectory scans a directory for YAML detector and list files and loads them
+// Returns successfully loaded detectors, lists, and a slice of errors for failed files
 // Errors are non-fatal - the function continues processing other files
-func LoadFromDirectory(dir string) ([]detection.EventDetector, []error) {
-	detectors := make([]detection.EventDetector, 0)
-	loaderErrors := make([]error, 0)
+func LoadFromDirectory(dir string) LoadResult {
+	result := LoadResult{
+		Detectors: make([]detection.EventDetector, 0),
+		Lists:     make([]ListEntry, 0),
+		Errors:    make([]error, 0),
+	}
 
 	// Check if directory exists
 	info, err := os.Stat(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Directory doesn't exist - not an error, just return empty results
-			return detectors, nil
+			return result
 		}
-		loaderErrors = append(loaderErrors, &LoaderError{
+		result.Errors = append(result.Errors, &LoaderError{
 			FilePath: dir,
 			Err:      fmt.Errorf("failed to stat directory: %w", err),
 		})
-		return detectors, loaderErrors
+		return result
 	}
 
 	if !info.IsDir() {
-		loaderErrors = append(loaderErrors, &LoaderError{
+		result.Errors = append(result.Errors, &LoaderError{
 			FilePath: dir,
 			Err:      errors.New("path is not a directory"),
 		})
-		return detectors, loaderErrors
+		return result
 	}
 
 	// Read directory (flat - no subdirectories)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		loaderErrors = append(loaderErrors, &LoaderError{
+		result.Errors = append(result.Errors, &LoaderError{
 			FilePath: dir,
 			Err:      fmt.Errorf("failed to read directory: %w", err),
 		})
-		return detectors, loaderErrors
+		return result
 	}
 
 	// PASS 1: Categorize all YAML files by type (read each file ONCE)
@@ -88,7 +105,7 @@ func LoadFromDirectory(dir string) ([]detection.EventDetector, []error) {
 		// Peek at type field
 		fileType, err := peekFileType(path)
 		if err != nil {
-			loaderErrors = append(loaderErrors, &LoaderError{
+			result.Errors = append(result.Errors, &LoaderError{
 				FilePath: path,
 				Err:      fmt.Errorf("failed to read type field: %w", err),
 			})
@@ -102,12 +119,12 @@ func LoadFromDirectory(dir string) ([]detection.EventDetector, []error) {
 		case TypeDetector:
 			detectorPaths = append(detectorPaths, path)
 		case "":
-			loaderErrors = append(loaderErrors, &LoaderError{
+			result.Errors = append(result.Errors, &LoaderError{
 				FilePath: path,
 				Err:      errors.New("missing required field 'type'"),
 			})
 		default:
-			loaderErrors = append(loaderErrors, &LoaderError{
+			result.Errors = append(result.Errors, &LoaderError{
 				FilePath: path,
 				Err:      fmt.Errorf("invalid type '%s', must be 'detector' or 'string_list'", fileType),
 			})
@@ -115,11 +132,12 @@ func LoadFromDirectory(dir string) ([]detection.EventDetector, []error) {
 	}
 
 	// PASS 2: Load all lists
-	lists := make(map[string][]string)
+	// listsMap is used for detector validation (lists are scoped to directory)
+	listsMap := make(map[string][]string)
 	for _, path := range listPaths {
 		listDef, err := loadListFile(path)
 		if err != nil {
-			loaderErrors = append(loaderErrors, &LoaderError{
+			result.Errors = append(result.Errors, &LoaderError{
 				FilePath: path,
 				Err:      err,
 			})
@@ -128,37 +146,42 @@ func LoadFromDirectory(dir string) ([]detection.EventDetector, []error) {
 
 		// Validate list name
 		if err := validateListName(listDef.Name); err != nil {
-			loaderErrors = append(loaderErrors, &LoaderError{
+			result.Errors = append(result.Errors, &LoaderError{
 				FilePath: path,
 				Err:      err,
 			})
 			continue
 		}
 
-		// Check for duplicates
-		if _, exists := lists[listDef.Name]; exists {
-			loaderErrors = append(loaderErrors, &LoaderError{
+		// Check for duplicates within directory
+		if _, exists := listsMap[listDef.Name]; exists {
+			result.Errors = append(result.Errors, &LoaderError{
 				FilePath: path,
 				Err:      fmt.Errorf("duplicate list name '%s'", listDef.Name),
 			})
 			continue
 		}
 
-		lists[listDef.Name] = listDef.Values
+		listsMap[listDef.Name] = listDef.Values
+		result.Lists = append(result.Lists, ListEntry{
+			Name:      listDef.Name,
+			Values:    listDef.Values,
+			SourceDir: dir,
+		})
 	}
 
 	// PASS 3: Load all detectors with lists context
 	for _, path := range detectorPaths {
-		detector, err := LoadFromFile(path, lists)
+		detector, err := LoadFromFile(path, listsMap)
 		if err != nil {
-			loaderErrors = append(loaderErrors, err)
+			result.Errors = append(result.Errors, err)
 			continue
 		}
 
-		detectors = append(detectors, detector)
+		result.Detectors = append(result.Detectors, detector)
 	}
 
-	return detectors, loaderErrors
+	return result
 }
 
 // peekFileType reads just the type field from a YAML file
@@ -181,19 +204,24 @@ func peekFileType(path string) (string, error) {
 	return strings.TrimSpace(strings.ToLower(peek.Type)), nil
 }
 
-// LoadFromDirectories loads detectors from multiple directories
-// Returns all successfully loaded detectors and all errors encountered
-func LoadFromDirectories(dirs []string) ([]detection.EventDetector, []error) {
-	allDetectors := make([]detection.EventDetector, 0)
-	allErrors := make([]error, 0)
-
-	for _, dir := range dirs {
-		detectors, loaderErrors := LoadFromDirectory(dir)
-		allDetectors = append(allDetectors, detectors...)
-		allErrors = append(allErrors, loaderErrors...)
+// LoadFromDirectories loads detectors and lists from multiple directories
+// Returns all successfully loaded detectors, all lists with source info, and all errors encountered
+func LoadFromDirectories(dirs []string) LoadResult {
+	combined := LoadResult{
+		Detectors: make([]detection.EventDetector, 0),
+		Lists:     make([]ListEntry, 0),
+		Errors:    make([]error, 0),
 	}
 
-	return allDetectors, allErrors
+	for _, dir := range dirs {
+		result := LoadFromDirectory(dir)
+		combined.Detectors = append(combined.Detectors, result.Detectors...)
+		combined.Errors = append(combined.Errors, result.Errors...)
+		// Lists from each directory are collected separately with source info
+		combined.Lists = append(combined.Lists, result.Lists...)
+	}
+
+	return combined
 }
 
 // GetDefaultSearchPaths returns the default directories to search for YAML detectors
@@ -203,7 +231,7 @@ func GetDefaultSearchPaths() []string {
 	}
 }
 
-// LoadFromDefaultPaths loads detectors from default search paths
-func LoadFromDefaultPaths() ([]detection.EventDetector, []error) {
+// LoadFromDefaultPaths loads detectors and lists from default search paths
+func LoadFromDefaultPaths() LoadResult {
 	return LoadFromDirectories(GetDefaultSearchPaths())
 }

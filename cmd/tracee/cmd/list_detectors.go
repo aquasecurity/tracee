@@ -19,20 +19,20 @@ func init() {
 
 var listDetectorsCmd = &cobra.Command{
 	Use:   "detectors [paths...]",
-	Short: "List available detectors",
-	Long: `List all available detectors from built-in and YAML sources.
+	Short: "List available detectors and shared lists",
+	Long: `List all available detectors and shared lists from built-in and YAML sources.
 
 Detectors analyze events and produce threat detections or derived events.
+Shared lists are reusable value sets referenced by YAML detectors in CEL expressions.
 
 Arguments:
-  [paths...]  Directories or files to search for YAML detectors.
+  [paths...]  Directories or files to search for YAML detectors and lists.
               If not specified, uses default paths (/etc/tracee/detectors).
 
 Examples:
-  tracee list detectors                       # All detectors from default paths
-  tracee list detectors ./my-detectors        # Detectors from custom directory
-  tracee list detectors ./dir1 ./dir2         # Detectors from multiple directories
-  tracee list detectors ./detector.yaml       # Single detector file
+  tracee list detectors                       # All detectors and lists from default paths
+  tracee list detectors ./my-detectors        # Detectors and lists from custom directory
+  tracee list detectors ./dir1 ./dir2         # Detectors and lists from multiple directories
   tracee list detectors --json                # JSON output for scripting`,
 	Run: func(c *cobra.Command, args []string) {
 		logger.Init(logger.NewDefaultLoggingConfig())
@@ -45,11 +45,12 @@ Examples:
 			searchDirs = args
 		}
 
-		// Collect all detectors
+		// Collect all detectors and shared lists
 		allDetectors := detectors.CollectAllDetectors(searchDirs)
+		allLists := detectors.CollectAllLists(searchDirs)
 
-		// Print detector list
-		if err := cmd.PrintDetectorList(allDetectors, jsonOutput); err != nil {
+		// Print detector and list info
+		if err := cmd.PrintDetectorList(allDetectors, allLists, jsonOutput); err != nil {
 			logger.Fatalw("Failed to print detector list", "err", err)
 		}
 	},

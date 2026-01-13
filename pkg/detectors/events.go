@@ -22,29 +22,53 @@ func CollectAllDetectors(yamlSearchDirs []string) []detection.EventDetector {
 	allDetectors = append(allDetectors, builtin.GetAllDetectors()...)
 
 	// Load YAML detectors from search directories
+	result := loadYAMLContent(yamlSearchDirs)
+
+	if len(result.Detectors) > 0 {
+		logger.Debugw("Loaded YAML detectors", "count", len(result.Detectors))
+		allDetectors = append(allDetectors, result.Detectors...)
+	}
+
+	logger.Debugw("Collected detectors", "total", len(allDetectors), "yaml", len(result.Detectors))
+
+	return allDetectors
+}
+
+// CollectAllLists gathers all shared lists from YAML directories.
+// Lists are used by YAML detectors in CEL expressions for matching against sets of values.
+// Returns list entries with source directory information.
+func CollectAllLists(yamlSearchDirs []string) []yamldetectors.ListEntry {
+	result := loadYAMLContent(yamlSearchDirs)
+
+	if len(result.Lists) > 0 {
+		logger.Debugw("Loaded shared lists", "count", len(result.Lists))
+	}
+
+	return result.Lists
+}
+
+// loadYAMLContent loads YAML detectors and lists from the specified directories
+func loadYAMLContent(yamlSearchDirs []string) yamldetectors.LoadResult {
 	var yamlDirs []string
 	if len(yamlSearchDirs) > 0 {
 		yamlDirs = yamlSearchDirs
 	} else {
-		// Use default search paths if none specified
 		yamlDirs = yamldetectors.GetDefaultSearchPaths()
 	}
 
-	yamlDets, errors := yamldetectors.LoadFromDirectories(yamlDirs)
-	if len(errors) > 0 {
-		for _, err := range errors {
-			logger.Warnw("Failed to load YAML detector", "error", err)
+	result := yamldetectors.LoadFromDirectories(yamlDirs)
+	if len(result.Errors) > 0 {
+		for _, err := range result.Errors {
+			logger.Warnw("Failed to load YAML content", "error", err)
 		}
 	}
 
-	if len(yamlDets) > 0 {
-		logger.Debugw("Loaded YAML detectors", "count", len(yamlDets), "directories", yamlDirs)
-		allDetectors = append(allDetectors, yamlDets...)
-	}
+	return result
+}
 
-	logger.Debugw("Collected detectors", "total", len(allDetectors), "yaml", len(yamlDets))
-
-	return allDetectors
+// GetDefaultSearchPaths returns the default directories to search for YAML detectors and lists
+func GetDefaultSearchPaths() []string {
+	return yamldetectors.GetDefaultSearchPaths()
 }
 
 // CreateEventsFromDetectors pre-registers detector events in events.Core before policy initialization.

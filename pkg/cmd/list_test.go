@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
+	yamldetectors "github.com/aquasecurity/tracee/pkg/detectors/yaml"
 	"github.com/aquasecurity/tracee/pkg/events"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -252,28 +253,68 @@ func TestPrintDetectorListToEmpty(t *testing.T) {
 	t.Parallel()
 
 	var buf bytes.Buffer
-	err := PrintDetectorListTo(&buf, nil, false)
+	err := PrintDetectorListTo(&buf, nil, nil, false)
 	require.NoError(t, err)
 
 	output := buf.String()
-	assert.Contains(t, output, "No detectors found")
+	assert.Contains(t, output, "No detectors")
 }
 
 func TestPrintDetectorListToEmptyJSON(t *testing.T) {
 	t.Parallel()
 
 	var buf bytes.Buffer
-	err := PrintDetectorListTo(&buf, nil, true)
+	err := PrintDetectorListTo(&buf, nil, nil, true)
+	require.NoError(t, err)
+
+	// Verify it's valid JSON with new structure
+	var output DetectorListOutput
+	err = json.Unmarshal(buf.Bytes(), &output)
+	require.NoError(t, err)
+	assert.Empty(t, output.Detectors)
+	assert.Empty(t, output.Lists)
+}
+
+func TestPrintDetectorListWithLists(t *testing.T) {
+	t.Parallel()
+
+	lists := []yamldetectors.ListEntry{
+		{Name: "SHELL_BINARIES", Values: []string{"/bin/sh", "/bin/bash", "/bin/zsh"}, SourceDir: "/etc/tracee/detectors"},
+		{Name: "SENSITIVE_PATHS", Values: []string{"/etc/passwd", "/etc/shadow"}, SourceDir: "/etc/tracee/detectors"},
+	}
+
+	var buf bytes.Buffer
+	err := PrintDetectorListTo(&buf, nil, lists, false)
 	require.NoError(t, err)
 
 	output := buf.String()
-	assert.Contains(t, output, "[]")
+	assert.Contains(t, output, "Shared Lists")
+	assert.Contains(t, output, "SHELL_BINARIES")
+	assert.Contains(t, output, "SENSITIVE_PATHS")
+	assert.Contains(t, output, "3")                     // count for SHELL_BINARIES
+	assert.Contains(t, output, "2")                     // count for SENSITIVE_PATHS
+	assert.Contains(t, output, "/etc/tracee/detectors") // source directory
+}
 
-	// Verify it's valid JSON
-	var detectors []DetectorInfo
-	err = json.Unmarshal(buf.Bytes(), &detectors)
+func TestPrintDetectorListWithListsJSON(t *testing.T) {
+	t.Parallel()
+
+	lists := []yamldetectors.ListEntry{
+		{Name: "SHELL_BINARIES", Values: []string{"/bin/sh", "/bin/bash"}, SourceDir: "/custom/dir"},
+	}
+
+	var buf bytes.Buffer
+	err := PrintDetectorListTo(&buf, nil, lists, true)
 	require.NoError(t, err)
-	assert.Empty(t, detectors)
+
+	var output DetectorListOutput
+	err = json.Unmarshal(buf.Bytes(), &output)
+	require.NoError(t, err)
+	assert.Empty(t, output.Detectors)
+	assert.Len(t, output.Lists, 1)
+	assert.Equal(t, "SHELL_BINARIES", output.Lists[0].Name)
+	assert.Equal(t, 2, output.Lists[0].ValueCount)
+	assert.Equal(t, "/custom/dir", output.Lists[0].SourceDir)
 }
 
 // Policy list tests
