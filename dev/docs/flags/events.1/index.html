@@ -1417,10 +1417,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#detector-tag-selection" class="md-nav__link">
+  <a href="#tag-selection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        DETECTOR TAG SELECTION
+        TAG SELECTION
       
     </span>
   </a>
@@ -8185,10 +8185,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#detector-tag-selection" class="md-nav__link">
+  <a href="#tag-selection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        DETECTOR TAG SELECTION
+        TAG SELECTION
       
     </span>
   </a>
@@ -8234,13 +8234,16 @@ date: 2024/12
 <h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
 <p>tracee <strong>--events</strong> - Select which events to trace</p>
 <h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--events</strong> [&lt;event-name1(,[-]event-name2...)&gt; | &lt;[-]event-name1(,set1...)&gt; | &lt;set1(,[-]event-name1,[-]event-name2...)&gt; | &lt;event1.data.data-field[=|!=]value&gt; | &lt;event1.retval[=|!=|&lt;|&gt;|&lt;=|&gt;=]value&gt; | &lt;event1.scope.field[=|!=|&lt;|&gt;|&lt;=|&gt;=]value&gt; | &lt;event.scope.container&gt;] ...</p>
+<p>tracee <strong>--events</strong> [&lt;event-name1(,[-]event-name2...)&gt; | &lt;tag=tag1(,tag2...)&gt; | &lt;event1.data.data-field[=|!=]value&gt; | &lt;event1.retval[=|!=|&lt;|&gt;|&lt;=|&gt;=]value&gt; | &lt;event1.scope.field[=|!=|&lt;|&gt;|&lt;=|&gt;=]value&gt; | &lt;event.scope.container&gt;] ...</p>
 <h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>The <strong>--events</strong> flag allows you to select which events to trace by defining filters.</p>
 <h2 id="filters">FILTERS<a class="headerlink" href="#filters" title="Permanent link">&para;</a></h2>
 <ul>
 <li>
-<p>Event or set name: Select specific events using 'event-name1,event-name2...' or predefined event sets using 'event_set_name1,event_set_name2...'. To exclude events, prepend the event name with a dash '-': '-event-name'.</p>
+<p>Event name: Select specific events using 'event-name1,event-name2...'. To exclude events, prepend the event name with a dash '-': '-event-name'.</p>
+</li>
+<li>
+<p>Tag selection: Select events by tag (set) using 'tag=tag1,tag2...'. Multiple tags are combined with OR logic. Common tags include: syscalls, fs, network, proc, default.</p>
 </li>
 <li>
 <p>Detector selection by threat properties: Select detectors based on their threat metadata using 'threat.property=value'. See THREAT-BASED DETECTOR SELECTION section below.</p>
@@ -8305,19 +8308,19 @@ date: 2024/12
 </code></pre></div>
 <p>Threat selection can be combined with regular events. Multiple <code>--events</code> flags are combined additively (OR logic):</p>
 <div class="highlight"><pre><span></span><code><span class="go">--events threat.severity=critical --events write    # Critical threats OR write events</span>
-<span class="go">--events fs --events &#39;threat.severity&gt;=high&#39;        # Filesystem events OR high+ threats</span>
+<span class="go">--events tag=fs --events &#39;threat.severity&gt;=high&#39;    # Filesystem events OR high+ threats</span>
 </code></pre></div>
 <p><strong>Note:</strong> Detector selection based on threat properties is performed once at startup. Matching detectors are enabled; non-matching detectors are never loaded.</p>
-<h2 id="detector-tag-selection">DETECTOR TAG SELECTION<a class="headerlink" href="#detector-tag-selection" title="Permanent link">&para;</a></h2>
-<p>Detectors can be categorized with tags. You can select all detectors with a specific tag:</p>
-<div class="highlight"><pre><span></span><code><span class="go">--events containers       # All detectors tagged with &quot;containers&quot;</span>
-<span class="go">--events malware          # All detectors tagged with &quot;malware&quot;</span>
-<span class="go">--events detectors        # All detectors (existing behavior)</span>
+<h2 id="tag-selection">TAG SELECTION<a class="headerlink" href="#tag-selection" title="Permanent link">&para;</a></h2>
+<p>Events are categorized with tags (also known as sets). You can select all events with a specific tag:</p>
+<div class="highlight"><pre><span></span><code><span class="go">--events tag=containers       # All events tagged with &quot;containers&quot;</span>
+<span class="go">--events tag=fs               # All filesystem-related events</span>
+<span class="go">--events tag=detectors        # All detector events</span>
 </code></pre></div>
 <p>Tags can be combined with other selection methods:</p>
-<div class="highlight"><pre><span></span><code><span class="go">--events containers,execve                # Detectors with &quot;containers&quot; tag + execve syscall</span>
-<span class="go">--events &#39;threat.severity=critical&#39;       # Critical threats (any tag)</span>
-<span class="go">--events malware,&#39;threat.severity&gt;=high&#39;  # Detectors with &quot;malware&quot; tag OR high+ severity threats</span>
+<div class="highlight"><pre><span></span><code><span class="go">--events tag=containers,execve            # Events with &quot;containers&quot; tag + execve syscall</span>
+<span class="go">--events tag=fs,network                   # Filesystem OR network events</span>
+<span class="go">--events tag=fs --events -open,-openat    # Filesystem events except open(at)</span>
 </code></pre></div>
 <h2 id="examples">EXAMPLES<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <ul>
@@ -8333,12 +8336,12 @@ date: 2024/12
 <ul>
 <li>To trace all file-system related events, use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--events fs</span>
+<div class="highlight"><pre><span></span><code><span class="go">--events tag=fs</span>
 </code></pre></div>
 <ul>
 <li>To trace all file-system related events, but not 'open' or 'openat', use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--events fs --events &#39;-open,-openat&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="go">--events tag=fs --events &#39;-open,-openat&#39;</span>
 </code></pre></div>
 <ul>
 <li>To trace only 'close' events that have 'fd' equal to 5, use the following flag:</li>

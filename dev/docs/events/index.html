@@ -8096,8 +8096,8 @@
 </code></pre></div></p>
 <p><strong>Use in policies:</strong>
 <div class="highlight"><pre><span></span><code><span class="nt">rules</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">syscalls</span><span class="w">     </span><span class="c1"># All system calls</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fs</span><span class="w">           </span><span class="c1"># File system events</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tag=syscalls</span><span class="w">     </span><span class="c1"># All system calls</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tag=fs</span><span class="w">           </span><span class="c1"># File system events</span>
 </code></pre></div></p>
 <p><strong>Use on command line:</strong>
 <div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--events<span class="w"> </span>syscalls,net
