@@ -259,6 +259,9 @@ func dealWithThread(pt *ProcessTree, givenPid, givenTid int32) error {
 
 	// update tree for the given thread
 	thread := pt.GetOrCreateThreadByHash(threadHash)
+	if thread == nil {
+		return nil // Thread cache disabled
+	}
 	threadInfo := thread.GetInfo()
 
 	// Check if the thread info was already set AT THE START TIME

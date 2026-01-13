@@ -19,7 +19,6 @@ const (
 	processMaxProcs   = "process.max-processes"
 	processMaxThreads = "process.max-threads"
 	processSource     = "process.source"
-	processUseProcfs  = "process.use-procfs"
 
 	processSourceEvents  = "events"
 	processSourceSignals = "signals"
@@ -34,7 +33,6 @@ type ProcessConfig struct {
 	MaxProcesses int    `mapstructure:"max-processes"`
 	MaxThreads   int    `mapstructure:"max-threads"`
 	Source       string `mapstructure:"source"`
-	Procfs       bool   `mapstructure:"use-procfs"`
 }
 
 // DNSConfig is the config for the DNS cache
@@ -63,7 +61,7 @@ func (s *StoresConfig) flags() []string {
 
 	// Process: if Enabled is true OR any Process field is set, add process flag
 	// Note: Source is deprecated and ignored, so we don't include it in the output
-	if s.Process.Enabled || s.Process.MaxProcesses != 0 || s.Process.MaxThreads != 0 || s.Process.Procfs {
+	if s.Process.Enabled || s.Process.MaxProcesses != 0 || s.Process.MaxThreads != 0 {
 		flags = append(flags, processFlag)
 	}
 	if s.Process.MaxProcesses != 0 {
@@ -71,9 +69,6 @@ func (s *StoresConfig) flags() []string {
 	}
 	if s.Process.MaxThreads != 0 {
 		flags = append(flags, fmt.Sprintf("%s=%d", processMaxThreads, s.Process.MaxThreads))
-	}
-	if s.Process.Procfs {
-		flags = append(flags, processUseProcfs)
 	}
 
 	return flags
@@ -102,12 +97,11 @@ func (s *StoresConfig) GetProcessStoreConfig() process.ProcTreeConfig {
 	}
 
 	return process.ProcTreeConfig{
-		Enabled:              s.Process.Enabled,
-		Source:               source,
-		ProcessCacheSize:     s.Process.MaxProcesses,
-		ThreadCacheSize:      s.Process.MaxThreads,
-		ProcfsInitialization: s.Process.Procfs,
-		ProcfsQuerying:       s.Process.Procfs,
+		Enabled:                  s.Process.Enabled,
+		Source:                   source,
+		ProcessCacheSize:         s.Process.MaxProcesses,
+		ThreadCacheSize:          s.Process.MaxThreads,
+		SkipProcfsInitForTesting: false,
 	}
 }
 
@@ -132,7 +126,6 @@ func PrepareStores(storeSlice []string) (StoresConfig, error) {
 			MaxProcesses: process.DefaultProcessCacheSize,
 			MaxThreads:   process.DefaultThreadCacheSize,
 			Source:       "", // Deprecated field, kept only for backward compatibility with old configs
-			Procfs:       false,
 		},
 	}
 
@@ -185,9 +178,6 @@ func PrepareStores(storeSlice []string) (StoresConfig, error) {
 			}
 			config.Process.Source = values[1]
 			config.Process.Enabled = true // Setting source enables process
-		case processUseProcfs:
-			config.Process.Procfs = true
-			config.Process.Enabled = true // Setting use-procfs enables process
 		default:
 			return config, errfmt.Errorf(storesInvalidFlag, flag)
 		}
@@ -207,7 +197,7 @@ func parseSize(value, flag string) (int, error) {
 
 // isStoresBoolFlag checks if a flag is a boolean flag for the stores config
 func isStoresBoolFlag(flagName string) bool {
-	return flagName == dnsFlag || flagName == processFlag || flagName == processUseProcfs
+	return flagName == dnsFlag || flagName == processFlag
 }
 
 // invalidStoresFlagError formats the error message for an invalid stores flag.

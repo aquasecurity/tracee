@@ -166,7 +166,7 @@ data:
                 content-type: {{ .contentType }}
                 {{- end }}
         {{- end }}
-    {{- if or .Values.config.stores.dns.enabled .Values.config.stores.dns.maxEntries .Values.config.stores.process.enabled .Values.config.stores.process.maxProcesses .Values.config.stores.process.maxThreads .Values.config.stores.process.useProcfs }}
+    {{- if or .Values.config.stores.dns.enabled .Values.config.stores.dns.maxEntries .Values.config.stores.process.enabled .Values.config.stores.process.maxProcesses .Values.config.stores.process.maxThreads }}
     stores:
         {{- if or .Values.config.stores.dns.enabled .Values.config.stores.dns.maxEntries }}
         dns:
@@ -177,7 +177,7 @@ data:
             max-entries: {{ .Values.config.stores.dns.maxEntries }}
             {{- end }}
         {{- end }}
-        {{- if or .Values.config.stores.process.enabled .Values.config.stores.process.maxProcesses .Values.config.stores.process.maxThreads .Values.config.stores.process.useProcfs }}
+        {{- if or .Values.config.stores.process.enabled .Values.config.stores.process.maxProcesses .Values.config.stores.process.maxThreads }}
         process:
             {{- if .Values.config.stores.process.enabled }}
             enabled: {{ .Values.config.stores.process.enabled }}
@@ -187,9 +187,6 @@ data:
             {{- end }}
             {{- if .Values.config.stores.process.maxThreads }}
             max-threads: {{ .Values.config.stores.process.maxThreads }}
-            {{- end }}
-            {{- if .Values.config.stores.process.useProcfs }}
-            use-procfs: {{ .Values.config.stores.process.useProcfs }}
             {{- end }}
         {{- end }}
     {{- end }}

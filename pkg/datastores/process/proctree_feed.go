@@ -61,10 +61,6 @@ func (pt *ProcessTree) setParentFeed(
 
 	// Release the feed back to the pool as soon as it is not needed anymore
 	pt.PutTaskInfoFeedInPool(taskInfoFeed)
-
-	if pt.procfsQuery {
-		pt.FeedFromProcFSAsync(forkFeed.ParentPid) // try to enrich ppid and name from procfs
-	}
 }
 
 func (pt *ProcessTree) setLeaderFeed(
@@ -91,10 +87,6 @@ func (pt *ProcessTree) setLeaderFeed(
 
 	// Release the feed back to the pool as soon as it is not needed anymore
 	pt.PutTaskInfoFeedInPool(taskInfoFeed)
-
-	if pt.procfsQuery {
-		pt.FeedFromProcFSAsync(forkFeed.LeaderPid) // try to enrich name from procfs if needed
-	}
 }
 
 func (pt *ProcessTree) setThreadFeed(

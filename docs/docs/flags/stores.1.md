@@ -11,7 +11,7 @@ tracee **\-\-stores** - Configure data stores for DNS cache and process tree
 
 ## SYNOPSIS
 
-tracee **\-\-stores** [dns|dns.max-entries=*size*|process|process.max-processes=*size*|process.max-threads=*size*|process.use-procfs] [**\-\-stores** ...]
+tracee **\-\-stores** [dns|dns.max-entries=*size*|process|process.max-processes=*size*|process.max-threads=*size*] [**\-\-stores** ...]
 
 ## DESCRIPTION
 
@@ -31,11 +31,7 @@ The **\-\-stores** flag allows you to configure data stores for DNS cache and pr
 
 - **process.max-threads**=*size*: Enable the process tree store and set the maximum number of threads to cache in the process tree. Default is 0 (thread tracking disabled to save memory). This is an LRU cache that will evict least recently accessed entries when full. **Note**: Using this option automatically enables process, so you don't need to also specify `--stores process`.
 
-- **process.use-procfs**: Enable the process tree store and enable procfs initialization and querying. When enabled, Tracee will:
-  - Scan procfs during initialization to fill all existing processes and threads.
-  - Query specific processes at runtime in case of missing information caused by missing events.
-
-  **Note**: Using this option automatically enables process, so you don't need to also specify `--stores process`. The procfs query might increase the feature toll on CPU and memory. The runtime query might have a snowball effect on lost events, as it will reduce the system resources in the processes of filling missing information.
+**Note**: Procfs initialization happens automatically when the process tree is enabled. At startup, Tracee scans `/proc` to populate the process tree with all existing processes and threads, ensuring complete process ancestry information is available.
 
 ## EXAMPLES
 
@@ -63,23 +59,16 @@ The **\-\-stores** flag allows you to configure data stores for DNS cache and pr
    
    Note: `process.max-processes` and `process.max-threads` automatically enable process, so `--stores process` is not needed.
 
-5. Enable process tree with procfs support:
-   ```console
-   --stores process.use-procfs
-   ```
-   
-   Note: `process.use-procfs` automatically enables process, so `--stores process` is not needed.
-
-6. Combine DNS and process stores:
+5. Combine DNS and process stores:
    ```console
    --stores dns.max-entries=5000 --stores process.max-processes=8192
    ```
    
    Note: Since `dns.max-entries` automatically enables DNS and `process.max-processes` automatically enables process, you don't need `--stores dns` or `--stores process`.
 
-7. Complete configuration example:
+6. Complete configuration example:
    ```console
-   --stores dns.max-entries=5000 --stores process.max-processes=8192 --stores process.max-threads=16384 --stores process.use-procfs
+   --stores dns.max-entries=5000 --stores process.max-processes=8192 --stores process.max-threads=16384
    ```
    
    Note: All process options automatically enable process, and `dns.max-entries` automatically enables DNS, so you don't need `--stores dns` or `--stores process`.

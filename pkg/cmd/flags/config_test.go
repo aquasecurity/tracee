@@ -89,7 +89,6 @@ stores:
     - process
     - process.max-processes=8192
     - process.max-threads=4096
-    - process.use-procfs
 `,
 			key: "stores",
 			expectedFlags: []string{
@@ -98,7 +97,6 @@ stores:
 				"process",
 				"process.max-processes=8192",
 				"process.max-threads=4096",
-				"process.use-procfs",
 			},
 		},
 		{
@@ -112,7 +110,6 @@ stores:
         enabled: true
         max-processes: 8192
         max-threads: 4096
-        use-procfs: true
 `,
 			key: "stores",
 			expectedFlags: []string{
@@ -121,7 +118,6 @@ stores:
 				"process",
 				"process.max-processes=8192",
 				"process.max-threads=4096",
-				"process.use-procfs",
 			},
 		},
 		{
