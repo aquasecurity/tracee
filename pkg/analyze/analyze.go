@@ -3,143 +3,183 @@ package analyze
 import (
 	"bufio"
 	"context"
-	"encoding/json"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/cmd/initialize/sigs"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
+	"github.com/aquasecurity/tracee/pkg/datastores"
+	"github.com/aquasecurity/tracee/pkg/detectors"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/events/findings"
-	"github.com/aquasecurity/tracee/pkg/signatures/engine"
-	"github.com/aquasecurity/tracee/pkg/signatures/signature"
-	"github.com/aquasecurity/tracee/types/detect"
-	"github.com/aquasecurity/tracee/types/protocol"
-	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/aquasecurity/tracee/pkg/policy"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type Config struct {
-	Source          *os.File
-	Printer         printer.EventPrinter
-	Legacy          bool // TODO: remove once tracee-rules legacy is over
-	LegacyOut       *os.File
-	SignatureDirs   []string
-	SignatureEvents []string
+	Source            *os.File
+	Printer           printer.EventPrinter
+	Detectors         []detection.EventDetector
+	PolicyManager     *policy.Manager
+	EnrichmentOptions *detectors.EnrichmentOptions
 }
 
 func Analyze(cfg Config) {
-	signatures, _, err := signature.Find(cfg.SignatureDirs, cfg.SignatureEvents)
-
-	if err != nil {
-		logger.Fatalw("Failed to find signature event", "err", err)
-	}
-
-	if len(signatures) == 0 {
-		logger.Fatalw("No signature event loaded")
+	if len(cfg.Detectors) == 0 {
+		logger.Fatalw("No detectors available")
 	}
 
 	logger.Infow(
-		"Signatures loaded",
-		"total", len(signatures),
-		"signatures", getSigsNames(signatures),
+		"Detectors loaded",
+		"total", len(cfg.Detectors),
 	)
 
-	sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
+	// Detector events are already registered in cobra.go before replay mode
+	// Create detector engine
+	detectorEngine := detectors.NewEngine(cfg.PolicyManager, cfg.EnrichmentOptions)
 
-	engineConfig := engine.Config{
-		Mode:                engine.ModeAnalyze,
-		AvailableSignatures: signatures,
-		SelectedSignatures:  signatures, // in analyze mode, load all signatures
+	// Register all detectors with the engine
+	// For analyze mode, we need to create detector params
+	// Since we don't have datastores in analyze mode, create empty registry
+	// Create a logger adapter that wraps tracee's logger
+	loggerAdapter := &loggerAdapter{}
+	params := detection.DetectorParams{
+		Logger:     loggerAdapter,
+		Config:     detection.NewEmptyDetectorConfig(),
+		DataStores: datastores.NewRegistry(),
 	}
 
-	// two seperate contexts.
-	// 1. signal notifiable context that can terminate both analyze and engine work
-	// 2. signal solely to notify internally inside analyze once file input is over
+	for _, detector := range cfg.Detectors {
+		if err := detectorEngine.RegisterDetector(detector, params); err != nil {
+			logger.Errorw("Failed to register detector", "error", err, "detector", detector.GetDefinition().ID)
+			continue
+		}
+		// Enable all detectors for analyze mode
+		if err := detectorEngine.EnableDetector(detector.GetDefinition().ID); err != nil {
+			logger.Errorw("Failed to enable detector", "error", err, "detector", detector.GetDefinition().ID)
+		}
+	}
+
+	// Create contexts for signal handling
 	signalCtx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	fileReadCtx, stop := context.WithCancel(signalCtx)
 
-	count := 0
-	engineOutput := make(chan *detect.Finding)
-	engineInput := make(chan protocol.Event)
-	fromFile := make(chan protocol.Event)
-
-	source := engine.EventSources{Tracee: engineInput}
-	sigEngine, err := engine.NewEngine(engineConfig, source, engineOutput)
-	if err != nil {
-		logger.Fatalw("Failed to create engine", "err", err)
-	}
-
-	err = sigEngine.Init()
-	if err != nil {
-		logger.Fatalw("failed to initialize signature engine", "err", err)
-	}
-
-	go sigEngine.Start(signalCtx)
-
-	// decide process output
-	var process func(*detect.Finding)
-	if cfg.Legacy {
-		process = processLegacy(cfg.LegacyOut)
-	} else {
-		process = processWithPrinter(cfg.Printer)
-	}
-
-	// producer
+	// Producer: read events from file (protobuf JSON format)
+	fromFile := make(chan *v1beta1.Event, 100)
 	go produce(fileReadCtx, stop, cfg.Source, fromFile)
 
 	cfg.Printer.Preamble()
 	defer cfg.Printer.Close()
-	// consumer
+
+	count := 0
+	// Consumer: process events and dispatch to detectors
 	for {
 		select {
 		case event, ok := <-fromFile:
 			if !ok {
+				logger.Debugw("Finished processing file", "detector_outputs", count)
 				return
 			}
-			engineInput <- event
-		case finding, ok := <-engineOutput:
-			if !ok {
-				return
+
+			// Translate protobuf event ID to internal event ID
+			// Events from file have protobuf event IDs, but dispatch map uses internal IDs
+			protobufEventID := event.Id
+			internalEventID := events.TranslateFromProtoEventID(protobufEventID)
+			event.Id = v1beta1.EventId(internalEventID)
+
+			logger.Debugw("Processing event", "event", event.Name, "protobuf_id", protobufEventID, "internal_id", internalEventID)
+
+			// Check if this event was selected by --events flag
+			// If so, print it before dispatching to detectors
+			if cfg.PolicyManager != nil && cfg.PolicyManager.IsEventSelected(internalEventID) {
+				cfg.Printer.Print(event)
 			}
-			count++
-			process(finding)
+
+			// Dispatch to detector engine (event is already v1beta1.Event)
+			detectorOutputs, err := detectorEngine.DispatchToDetectors(signalCtx, event)
+			if err != nil {
+				logger.Errorw("Failed to dispatch event to detectors", "error", err, "event", event.Name)
+				continue
+			}
+
+			if len(detectorOutputs) > 0 {
+				logger.Debugw("Detector outputs produced", "count", len(detectorOutputs), "event", event.Name)
+			}
+
+			// Print detector outputs
+			for _, output := range detectorOutputs {
+				count++
+				cfg.Printer.Print(output)
+			}
+
+			// Handle detector chains: process detector outputs that might trigger other detectors
+			// Use breadth-first processing to handle chains
+			queue := make([]*v1beta1.Event, 0, len(detectorOutputs))
+			queue = append(queue, detectorOutputs...)
+
+			for len(queue) > 0 {
+				chainEvent := queue[0]
+				queue = queue[1:]
+
+				// Dispatch chain event to detectors
+				chainOutputs, err := detectorEngine.DispatchToDetectors(signalCtx, chainEvent)
+				if err != nil {
+					logger.Errorw("Failed to dispatch chain event to detectors", "error", err, "event", chainEvent.Name)
+					continue
+				}
+
+				// Print chain outputs and add to queue for further processing
+				for _, output := range chainOutputs {
+					count++
+					cfg.Printer.Print(output)
+					queue = append(queue, output)
+				}
+			}
+
 		case <-fileReadCtx.Done():
-			// ensure the engineInput channel will be closed
+			// File reading finished, drain remaining events
 			goto drain
 		case <-signalCtx.Done():
-			// ensure the engineInput channel will be closed
+			// Signal received, drain remaining events
 			goto drain
 		}
 	}
+
 drain:
-	// drain
-	defer close(engineInput)
+	// Drain remaining events from file
 	for {
 		select {
 		case event, ok := <-fromFile:
 			if !ok {
+				logger.Debugw("Drained file events", "detector_outputs", count)
 				return
 			}
-			engineInput <- event
-		case finding, ok := <-engineOutput:
-			if !ok {
-				return
+
+			detectorOutputs, err := detectorEngine.DispatchToDetectors(signalCtx, event)
+			if err != nil {
+				logger.Errorw("Failed to dispatch event to detectors", "error", err, "event", event.Name)
+				continue
 			}
-			count++
-			process(finding)
+
+			for _, output := range detectorOutputs {
+				count++
+				cfg.Printer.Print(output)
+			}
 		default:
-			logger.Debugw("Drained engine output", "findings", count)
+			logger.Debugw("Drained all events", "detector_outputs", count)
 			return
 		}
 	}
 }
 
-func produce(ctx context.Context, cancel context.CancelFunc, inputFile *os.File, engineInput chan<- protocol.Event) {
+func produce(ctx context.Context, cancel context.CancelFunc, inputFile *os.File, eventChan chan<- *v1beta1.Event) {
 	scanner := bufio.NewScanner(inputFile)
 	scanner.Split(bufio.ScanLines)
+	unmarshaler := protojson.UnmarshalOptions{
+		DiscardUnknown: true, // Ignore unknown fields for forward compatibility
+	}
 	count := 0
 	for {
 		select {
@@ -154,76 +194,37 @@ func produce(ctx context.Context, cancel context.CancelFunc, inputFile *os.File,
 				}
 				// terminate analysis here and proceed to draining
 				cancel()
+				close(eventChan)
 				return
 			}
 			count++
 
-			var e trace.Event
-			err := json.Unmarshal(scanner.Bytes(), &e)
+			var e v1beta1.Event
+			err := unmarshaler.Unmarshal(scanner.Bytes(), &e)
 			if err != nil {
-				logger.Fatalw("Failed to unmarshal event", "err", err, "line", count)
+				logger.Errorw("Failed to unmarshal event", "error", err, "line", count)
+				continue
 			}
-			engineInput <- e.ToProtocol()
+			eventChan <- &e
 		}
 	}
 }
 
-func processWithPrinter(p printer.EventPrinter) func(finding *detect.Finding) {
-	return func(finding *detect.Finding) {
-		event, err := findings.FindingToEvent(finding)
-		if err != nil {
-			logger.Fatalw("Failed to convert finding to event", "err", err)
-		}
+// loggerAdapter adapts tracee's logger to detection.Logger interface
+type loggerAdapter struct{}
 
-		// Convert trace.Event to pb.Event for printing
-		pbEvent, err := events.ConvertTraceeEventToProto(*event)
-		if err != nil {
-			logger.Fatalw("Failed to convert event to proto", "err", err)
-		}
-
-		p.Print(pbEvent)
-	}
+func (l *loggerAdapter) Debugw(msg string, keysAndValues ...any) {
+	logger.Debugw(msg, keysAndValues...)
 }
 
-func processLegacy(outF *os.File) func(finding *detect.Finding) {
-	return func(finding *detect.Finding) {
-		evt, ok := finding.Event.Payload.(trace.Event)
-		if !ok {
-			logger.Fatalw("Failed to extract finding event payload (legacy output)")
-		}
-		out := legacyOutput{
-			Data:        finding.GetData(),
-			Event:       evt,
-			SigMetadata: finding.SigMetadata,
-		}
-
-		outBytes, err := json.Marshal(out)
-		if err != nil {
-			logger.Fatalw("Failed to convert finding to legacy output", "err", err)
-		}
-
-		_, err = fmt.Fprintln(outF, string(outBytes))
-		if err != nil {
-			logger.Errorw("failed to write legacy output to file", "err", err)
-		}
-	}
+func (l *loggerAdapter) Infow(msg string, keysAndValues ...any) {
+	logger.Infow(msg, keysAndValues...)
 }
 
-type legacyOutput struct {
-	Data        map[string]any           `json:"Data,omitempty"`
-	Event       trace.Event              `json:"Context,omitempty"`
-	SigMetadata detect.SignatureMetadata `json:"SigMetadata,omitempty"`
+func (l *loggerAdapter) Warnw(msg string, keysAndValues ...any) {
+	logger.Warnw(msg, keysAndValues...)
 }
 
-func getSigsNames(signatures []detect.Signature) []string {
-	var sigNames []string
-	for _, sig := range signatures {
-		sigMeta, err := sig.GetMetadata()
-		if err != nil {
-			logger.Warnw("Failed to get signature metadata", "err", err)
-			continue
-		}
-		sigNames = append(sigNames, sigMeta.Name)
-	}
-	return sigNames
+func (l *loggerAdapter) Errorw(msg string, keysAndValues ...any) {
+	logger.Errorw(msg, keysAndValues...)
 }

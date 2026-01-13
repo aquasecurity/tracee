@@ -6,6 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"kernel.org/pub/linux/libs/security/libcap/cap"
+
+	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/proc"
@@ -203,7 +206,44 @@ func dealWithProc(pt *ProcessTree, givenPid int32) error {
 	// Release the feed back to the pool as soon as it is not needed anymore
 	pt.PutTaskInfoFeedInPool(taskInfoFeed)
 
-	// TODO: Update executable with information from /proc/<pid>/exe
+	// Update executable with information from /proc/<pid>/exe
+	// Requires CAP_SYS_PTRACE to read exe symlink of other processes
+	var binPath string
+	var binErr error
+	caps := capabilities.GetInstance()
+	if caps != nil {
+		_ = caps.Specific(func() error {
+			binPath, binErr = proc.GetProcBinary(givenPid)
+			return nil
+		}, cap.SYS_PTRACE)
+	} else {
+		// Fallback: try without capability elevation (may work for same-user processes)
+		binPath, binErr = proc.GetProcBinary(givenPid)
+	}
+
+	if binErr != nil {
+		logger.Debugw("procfs executable enrichment failed", "pid", givenPid, "error", binErr)
+	}
+
+	if binPath != "" {
+		fileInfoFeed := pt.GetFileInfoFeedFromPool()
+		fileInfoFeed.Path = binPath
+		fileInfoFeed.Dev = math.MaxUint32       // not available from procfs
+		fileInfoFeed.Ctime = math.MaxUint64     // not available from procfs
+		fileInfoFeed.Inode = math.MaxUint64     // not available from procfs
+		fileInfoFeed.InodeMode = math.MaxUint16 // not available from procfs
+
+		// Try to get file stats for additional info
+		if stat, statErr := os.Stat(binPath); statErr == nil {
+			fileInfoFeed.InodeMode = uint16(stat.Mode())
+		}
+
+		process.GetExecutable().SetFeedAt(
+			fileInfoFeed,
+			timeutil.NsSinceEpochToTime(procfsTimeStamp),
+		)
+		pt.PutFileInfoFeedInPool(fileInfoFeed)
+	}
 
 	// update given process parent (if exists)
 	parent, err := getProcessByPID(pt, ppid)

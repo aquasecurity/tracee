@@ -74,7 +74,7 @@ func selectSignaturesBasedOnPolicies(availableSignatures []detect.Signature, pol
 }
 
 func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
-	var runner cmd.Runner
+	var traceeRunner cmd.TraceeRunner
 
 	// Log command line flags
 
@@ -83,12 +83,12 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	logFlags, err := flags.GetFlagsFromViper(flags.LoggingFlag)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	loggerConfig, err := flags.PrepareLogger(logFlags)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 	logger.Init(loggerConfig.GetLoggingConfig())
 
@@ -96,7 +96,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	signatures, dataSources, err := signature.Find(viper.GetStringSlice("signatures-dir"), nil)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	sigs.CreateEventsFromSignatures(events.StartSignatureID, signatures)
@@ -110,11 +110,11 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		// CLI format: --detectors yaml-dir=/path/to/dir
 		detectorsFlags, err := flags.GetFlagsFromViper(flags.DetectorsFlag)
 		if err != nil {
-			return runner, err
+			return traceeRunner, err
 		}
 		detectorsConfig, err := flags.PrepareDetectors(detectorsFlags)
 		if err != nil {
-			return runner, err
+			return traceeRunner, err
 		}
 		yamlDetectorDirs = detectorsConfig.YAMLDirs
 	}
@@ -124,16 +124,16 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	allDetectors := detectors.CollectAllDetectors(yamlDetectorDirs)
 	_, err = detectors.CreateEventsFromDetectors(events.StartDetectorID, allDetectors)
 	if err != nil {
-		return runner, fmt.Errorf("failed to create detector events: %w", err)
+		return traceeRunner, fmt.Errorf("failed to create detector events: %w", err)
 	}
 
 	buffersFlags, err := flags.GetFlagsFromViper(flags.BuffersFlag)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 	buffers, err := flags.PrepareBuffers(buffersFlags)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	// Initialize a tracee config structure
@@ -162,17 +162,17 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	enrichmentFlags, err := flags.GetFlagsFromViper(flags.EnrichmentFlag)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	enrichmentConfig, err := flags.PrepareEnrichment(enrichmentFlags)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	sockets, err := enrichmentConfig.GetRuntimeSockets()
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 	cfg.Sockets = sockets
 	cfg.EnrichmentEnabled = enrichmentConfig.Container.Enabled
@@ -182,12 +182,12 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	// Stores command line flags
 	storesFlags, err := flags.GetFlagsFromViper(flags.StoresFlag)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	stores, err := flags.PrepareStores(storesFlags)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	cfg.ProcessStore = stores.GetProcessStoreConfig()
@@ -197,12 +197,12 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	artifactsFlags, err := flags.GetFlagsFromViper(flags.ArtifactsFlag)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	artifactsConfig, err := flags.PrepareArtifacts(artifactsFlags)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 	artifacts := artifactsConfig.GetArtifactsConfig()
 	cfg.Artifacts = &artifacts
@@ -211,12 +211,12 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	capFlags, err := flags.GetFlagsFromViper(flags.CapabilitiesFlag)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	capsCfg, err := flags.PrepareCapabilities(capFlags)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 	cfg.Capabilities = &capsCfg
 
@@ -224,27 +224,27 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	policyFlags, err := c.Flags().GetStringArray("policy")
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	// Scope command line flags - via cobra flag
 
 	scopeFlags, err := c.Flags().GetStringArray("scope")
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 	if len(policyFlags) > 0 && len(scopeFlags) > 0 {
-		return runner, errors.New("policy and scope flags cannot be used together")
+		return traceeRunner, errors.New("policy and scope flags cannot be used together")
 	}
 
 	// Events command line flags - via cobra flag
 
 	eventFlags, err := c.Flags().GetStringArray("events")
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 	if len(policyFlags) > 0 && len(eventFlags) > 0 {
-		return runner, errors.New("policy and event flags cannot be used together")
+		return traceeRunner, errors.New("policy and event flags cannot be used together")
 	}
 
 	// Try to get policies from kubernetes CRD, policy files and CLI in that order
@@ -270,7 +270,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		initialPolicies, err = createPoliciesFromCLIFlags(scopeFlags, eventFlags, allDetectors)
 	}
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	ps := make([]interface{}, 0, len(initialPolicies))
@@ -292,7 +292,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	outputFlags, err := flags.GetFlagsFromViper(flags.OutputFlag)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	containerMode := cmd.GetContainerMode(
@@ -300,10 +300,20 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	output, err := flags.PrepareOutput(outputFlags, containerMode)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	cfg.Output = output
+
+	// Check if replay flag is set - if so, return ReplayRunner early
+	replayPath := viper.GetString("replay")
+	if replayPath != "" {
+		cfg.DetectorConfig = config.DetectorConfig{
+			Detectors:      allDetectors,
+			YAMLSearchDirs: yamlDetectorDirs,
+		}
+		return cmd.ReplayRunner{TraceeConfig: cfg}, nil
+	}
 
 	// Check kernel lockdown
 	lockdown, err := environment.Lockdown()
@@ -311,7 +321,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		logger.Debugw("OSInfo", "lockdown", err)
 	}
 	if err == nil && lockdown == environment.CONFIDENTIALITY {
-		return runner, errfmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
+		return traceeRunner, errfmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 	}
 
 	logger.Debugw("OSInfo", "security_lockdown", lockdown)
@@ -320,7 +330,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	enabled, err := environment.FtraceEnabled()
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 	if !enabled {
 		logger.Errorw("ftrace_enabled: ftrace is not enabled, kernel events won't be caught, make sure to enable it by executing echo 1 | sudo tee /proc/sys/kernel/ftrace_enabled")
@@ -330,42 +340,42 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	kernelConfig, err := initialize.KernelConfig()
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
 	// Decide BTF & BPF files to use (based in the kconfig, release & environment info)
 	err = initialize.BpfObject(&cfg, kernelConfig, osInfo, version)
 	if err != nil {
-		return runner, errfmt.Errorf("failed preparing BPF object: %v", err)
+		return traceeRunner, errfmt.Errorf("failed preparing BPF object: %v", err)
 	}
 
 	// Prepare the server
 
 	serverFlags, err := flags.GetFlagsFromViper(flags.ServerFlag)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 	serverConfig, err := flags.PrepareServer(serverFlags)
 	if err != nil {
-		return runner, err
+		return traceeRunner, err
 	}
 
-	runner.HTTP = serverConfig.GetHTTPServer()
-	runner.GRPC = serverConfig.GetGRPCServer()
+	traceeRunner.HTTP = serverConfig.GetHTTPServer()
+	traceeRunner.GRPC = serverConfig.GetGRPCServer()
 
-	if runner.HTTP != nil {
-		cfg.MetricsEnabled = runner.HTTP.IsMetricsEnabled()
-		cfg.HealthzEnabled = runner.HTTP.IsHealthzEnabled()
+	if traceeRunner.HTTP != nil {
+		cfg.MetricsEnabled = traceeRunner.HTTP.IsMetricsEnabled()
+		cfg.HealthzEnabled = traceeRunner.HTTP.IsHealthzEnabled()
 	}
 
-	runner.TraceeConfig = cfg
+	traceeRunner.TraceeConfig = cfg
 
 	noSignaturesMode := viper.GetBool("no-signatures")
 	if noSignaturesMode {
 		logger.Debugw("No-signatures mode enabled, using same signature selection as normal mode for fair comparison")
 	}
 
-	runner.TraceeConfig.EngineConfig = engine.Config{
+	traceeRunner.TraceeConfig.EngineConfig = engine.Config{
 		Mode:                engine.ModeSingleBinary,
 		NoSignatures:        noSignaturesMode,
 		AvailableSignatures: signatures,
@@ -373,10 +383,10 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		DataSources:         dataSources,
 	}
 
-	runner.TraceeConfig.DetectorConfig = config.DetectorConfig{
+	traceeRunner.TraceeConfig.DetectorConfig = config.DetectorConfig{
 		Detectors:      allDetectors,
 		YAMLSearchDirs: yamlDetectorDirs,
 	}
 
-	return runner, nil
+	return traceeRunner, nil
 }

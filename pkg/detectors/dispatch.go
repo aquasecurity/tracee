@@ -58,7 +58,18 @@ func (d *dispatcher) rebuild() {
 
 	for detectorID, detectorEntry := range d.registry.detectors {
 		// Policy filtering: Only add detector to dispatch map if its output event is selected
-		isSelected := d.policyManager != nil && d.policyManager.IsEventSelected(events.ID(detectorEntry.eventID))
+		isSelected := false
+		if d.policyManager != nil {
+			isSelected = d.policyManager.IsEventSelected(events.ID(detectorEntry.eventID))
+			// Debug: check what's in the policy manager
+			if !isSelected {
+				logger.Debugw("Detector output event not selected",
+					"detector", detectorID,
+					"output_event", detectorEntry.eventName,
+					"event_id", detectorEntry.eventID,
+					"policy_manager_nil", d.policyManager == nil)
+			}
+		}
 
 		logger.Debugw("Checking detector for dispatch",
 			"detector", detectorID,
@@ -71,6 +82,7 @@ func (d *dispatcher) rebuild() {
 		}
 
 		for _, req := range detectorEntry.definition.Requirements.Events {
+
 			// Lookup event ID by name (check predefined events first)
 			var eventID v1beta1.EventId
 			if predefinedID := events.LookupPredefinedEventID(req.Name); predefinedID != 0 {
@@ -97,7 +109,9 @@ func (d *dispatcher) rebuild() {
 					scopeFilter: detectorEntry.scopeFilters[eventID], // Will be nil if no filter
 					dataFilter:  detectorEntry.dataFilters[eventID],  // Will be nil if no filter
 				}
+
 				d.dispatchMap[eventID] = append(d.dispatchMap[eventID], subscription)
+
 			}
 		}
 	}

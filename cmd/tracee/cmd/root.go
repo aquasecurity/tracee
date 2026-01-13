@@ -266,6 +266,17 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
+	// Replay flag
+	rootCmd.Flags().String(
+		"replay",
+		"",
+		"<file>\t\t\t\tReplay past events from a file",
+	)
+	err = viper.BindPFlag("replay", rootCmd.Flags().Lookup("replay"))
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	rootCmd.Flags().SortFlags = false
 
 	return nil

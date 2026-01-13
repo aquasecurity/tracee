@@ -7,11 +7,16 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/analyze"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/pkg/detectors"
+	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/dependencies"
+	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
 func init() {
@@ -33,19 +38,11 @@ func init() {
 		"Output destination (file, webhook, fluentbit) and format (json, gotemplate=, table) set as <output_path>:<format>",
 	)
 
-	// events
-	analyzeCmd.Flags().StringArrayP(
-		"events",
-		"e",
-		[]string{},
-		"Define which signature events to load",
-	)
-
-	// signatures-dir
+	// detectors
 	analyzeCmd.Flags().StringArray(
-		"signatures-dir",
+		flags.DetectorsFlag,
 		[]string{},
-		"Directory where to search for signatures in Go plugin (.so) format",
+		"Detector configuration (e.g., yaml-dir=/path/to/dir)",
 	)
 
 	analyzeCmd.Flags().StringArrayP(
@@ -59,20 +56,19 @@ func init() {
 var analyzeCmd = &cobra.Command{
 	Use:     "analyze [--source file]",
 	Aliases: []string{},
-	Short:   "Analyze past events with signature events [Experimental]",
-	Long: `Analyze allow you to explore signature events with past events.
+	Short:   "Analyze past events with detectors [Experimental]",
+	Long: `Analyze allows you to explore detector events with past events.
 
 Tracee can be used to collect events and store it in a file. This file can be used as input to analyze.
 
 eg:
 tracee --events ptrace --output=json:events.json
-tracee analyze --events anti_debugging --source events.json`,
+tracee analyze --source events.json`,
 	PreRun: func(cmd *cobra.Command, args []string) {
-		bindViperFlag(cmd, "events")
 		bindViperFlag(cmd, "source")
 		bindViperFlag(cmd, "output")
 		bindViperFlag(cmd, flags.LoggingFlag)
-		bindViperFlag(cmd, "signatures-dir")
+		bindViperFlag(cmd, flags.DetectorsFlag)
 	},
 	Run:                   command,
 	DisableFlagsInUseLine: true,
@@ -99,22 +95,6 @@ func command(cmd *cobra.Command, args []string) {
 
 	// Set up printer output (outpath:format)
 	outputArg := viper.GetString("output")
-
-	// placeholder printer for legacy mode
-	p, err := printer.New([]config.Destination{
-		{
-			Name: "ignore",
-			File: os.Stdout,
-			Type: "ignore",
-		},
-	})
-
-	if err != nil {
-		logger.Fatalw("Failed to initialize initial printer")
-	}
-
-	isLegacy := false
-	legacyOutFile := os.Stdout
 	outputParts := strings.SplitN(outputArg, ":", 2)
 	if len(outputParts) > 2 || len(outputParts) == 0 {
 		logger.Fatalw("Failed to prepare output format (must be of format <format>:<optional_output_path>)")
@@ -126,42 +106,78 @@ func command(cmd *cobra.Command, args []string) {
 		outPath = outputParts[1]
 	}
 
-	if outFormat == "legacy" {
-		if outPath != "stdout" && outPath != "" {
-			legacyOutFile, err = flags.CreateOutputFile(outPath)
-			if err != nil {
-				logger.Fatalw("Failed to create output file for legacy output")
-			}
-		}
-		isLegacy = true
-	} else {
-		printerCfg, err := flags.PreparePrinterConfig(outFormat, outPath)
+	printerCfg, err := flags.PreparePrinterConfig(outFormat, outPath)
+	if err != nil {
+		logger.Fatalw("Failed to prepare output configuration", "error", err)
+	}
+	p, err := printer.New([]config.Destination{printerCfg})
+	if err != nil {
+		logger.Fatalw("Failed to create printer", "error", err)
+	}
+
+	// Get YAML detector directories
+	var yamlDetectorDirs []string
+	if viper.IsSet(flags.YAMLDirFlag) {
+		yamlDetectorDirs = viper.GetStringSlice(flags.YAMLDirFlag)
+	} else if viper.IsSet(flags.DetectorsFlag) {
+		detectorsFlags, err := flags.GetFlagsFromViper(flags.DetectorsFlag)
 		if err != nil {
-			logger.Fatalw("Failed to prepare output configuration", "error", err)
+			logger.Fatalw("Failed to get detectors flags", "error", err)
 		}
-		p, err = printer.New([]config.Destination{printerCfg})
+		detectorsConfig, err := flags.PrepareDetectors(detectorsFlags)
 		if err != nil {
-			logger.Fatalw("Failed to create printer", "error", err)
+			logger.Fatalw("Failed to prepare detectors config", "error", err)
+		}
+		yamlDetectorDirs = detectorsConfig.YAMLDirs
+	}
+
+	// Collect all detectors
+	allDetectors := detectors.CollectAllDetectors(yamlDetectorDirs)
+	if len(allDetectors) == 0 {
+		logger.Fatalw("No detectors available")
+	}
+
+	// Create detector events
+	_, err = detectors.CreateEventsFromDetectors(events.StartDetectorID, allDetectors)
+	if err != nil {
+		logger.Fatalw("Failed to create detector events", "error", err)
+	}
+
+	// Create dependencies manager for policy manager
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.DependencyStrategy {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	// Create policy manager with empty policies (all events enabled by default)
+	policyMgr, err := policy.NewManager(policy.ManagerConfig{}, depsManager)
+	if err != nil {
+		logger.Fatalw("Failed to create policy manager", "error", err)
+	}
+
+	// Enable all detector events in the policy manager
+	for _, detector := range allDetectors {
+		def := detector.GetDefinition()
+		eventName := def.ProducedEvent.Name
+		eventID, found := events.Core.GetDefinitionIDByName(eventName)
+		if found {
+			policyMgr.EnableEvent(eventID)
 		}
 	}
 
-	// Signature directory command line flags
-
-	signatureEvents := viper.GetStringSlice("events")
-	// if no event was passed, load all events
-	if len(signatureEvents) == 0 {
-		signatureEvents = nil
+	// Extract enrichment options (default to false for analyze mode)
+	enrichmentOpts := &detectors.EnrichmentOptions{
+		ExecEnv:      false,
+		ExecHashMode: digest.CalcHashesNone,
+		Container:    false,
 	}
-
-	signatureDirs := viper.GetStringSlice("signatures-dir")
 
 	analyze.Analyze(analyze.Config{
-		Source:          sourceFile,
-		Printer:         p,
-		Legacy:          isLegacy,
-		LegacyOut:       legacyOutFile,
-		SignatureDirs:   signatureDirs,
-		SignatureEvents: signatureEvents,
+		Source:            sourceFile,
+		Printer:           p,
+		Detectors:         allDetectors,
+		PolicyManager:     policyMgr,
+		EnrichmentOptions: enrichmentOpts,
 	})
 }
 
