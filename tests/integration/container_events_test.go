@@ -23,10 +23,17 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	testutils.AssureIsRoot(t)
-	failed := false
+
+	containerName := "tracee-test-container"
+	cleanupContainer := func() {
+		cmd := exec.Command("docker", "rm", "-f", containerName)
+		_ = cmd.Run()
+	}
+
+	// Clean up any leftover container from previous failed test runs
+	cleanupContainer()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
 
 	// Start by pulling the busybox image
 	pullCmd := exec.Command("docker", "pull", busyboxImage)
@@ -67,6 +74,17 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	traceeInstance, err := testutils.StartTracee(ctx, t, cfg, nil, nil)
 	require.NoError(t, err, "Failed to start Tracee")
 
+	// Ensure cleanup happens even if test fails early (prevents goroutine leaks)
+	defer func() {
+		cleanupContainer()
+		cancel()
+		if err := testutils.WaitForTraceeStop(traceeInstance); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		} else {
+			t.Log("  --- stopped tracee ---")
+		}
+	}()
+
 	err = testutils.WaitForTraceeStart(traceeInstance)
 	require.NoError(t, err, "Tracee failed to start")
 
@@ -90,15 +108,13 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	}()
 
 	// Run a test container
-	containerName := "tracee-test-container"
 	runCmd := exec.Command("docker", "run", "--name", containerName, "-d", busyboxImage, "sleep", "5")
 	err = runCmd.Run()
 	require.NoError(t, err, "Failed to start test container")
 
 	// Wait for container to finish and remove it
 	time.Sleep(6 * time.Second)
-	removeCmd := exec.Command("docker", "rm", "-f", containerName)
-	_ = removeCmd.Run()
+	cleanupContainer()
 
 	// Wait for events
 	err = testutils.WaitForTraceeOutputEvents(t, 10*time.Second, eventBuffer, 1, true)
@@ -181,20 +197,6 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	// Both events should be present - derived from cgroup_mkdir and cgroup_rmdir
 	assert.True(t, foundCreate, "ContainerCreate (derived) event should be captured")
 	assert.True(t, foundRemove, "ContainerRemove (derived) event should be captured")
-
-	// Stop tracee and wait for clean shutdown
-	cancel()
-	errStop := testutils.WaitForTraceeStop(traceeInstance)
-	if errStop != nil {
-		t.Log(errStop)
-		failed = true
-	} else {
-		t.Log("  --- stopped tracee ---")
-	}
-
-	if failed {
-		t.Fail()
-	}
 }
 
 // Test_ExistingContainers tests that ExistingContainer events are emitted
@@ -203,7 +205,6 @@ func Test_ExistingContainers(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	testutils.AssureIsRoot(t)
-	failed := false
 
 	// Start by pulling the busybox image
 	pullCmd := exec.Command("docker", "pull", busyboxImage)
@@ -222,7 +223,7 @@ func Test_ExistingContainers(t *testing.T) {
 	err = startCmd.Run()
 	require.NoError(t, err, "Failed to start existing container")
 
-	// Ensure cleanup at the end
+	// Ensure container cleanup at the end
 	defer func() {
 		removeCmd := exec.Command("docker", "rm", "-f", testContainerName)
 		_ = removeCmd.Run()
@@ -232,7 +233,6 @@ func Test_ExistingContainers(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
 
 	// Create event buffer
 	eventBuffer := testutils.NewEventBuffer()
@@ -266,6 +266,16 @@ func Test_ExistingContainers(t *testing.T) {
 	t.Log("  --- started tracee ---")
 	traceeInstance, err := testutils.StartTracee(ctx, t, cfg, nil, nil)
 	require.NoError(t, err, "Failed to start Tracee")
+
+	// Ensure Tracee cleanup happens even if test fails early (prevents goroutine leaks)
+	defer func() {
+		cancel()
+		if err := testutils.WaitForTraceeStop(traceeInstance); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		} else {
+			t.Log("  --- stopped tracee ---")
+		}
+	}()
 
 	// Subscribe to events BEFORE waiting for Tracee to start
 	// (ExistingContainer events are emitted during Tracee's initialization)
@@ -362,19 +372,5 @@ func Test_ExistingContainers(t *testing.T) {
 		assert.True(t, hasRuntime, "ExistingContainer should have 'runtime' field")
 		assert.True(t, hasContainerID, "ExistingContainer should have 'container_id' field")
 		assert.True(t, hasContainerName, "ExistingContainer should have 'container_name' field")
-	}
-
-	// Stop tracee and wait for clean shutdown
-	cancel()
-	errStop := testutils.WaitForTraceeStop(traceeInstance)
-	if errStop != nil {
-		t.Log(errStop)
-		failed = true
-	} else {
-		t.Log("  --- stopped tracee ---")
-	}
-
-	if failed {
-		t.Fail()
 	}
 }
