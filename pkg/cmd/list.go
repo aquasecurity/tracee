@@ -11,6 +11,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
+	yamldetectors "github.com/aquasecurity/tracee/pkg/detectors/yaml"
 	"github.com/aquasecurity/tracee/pkg/events"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 )
@@ -35,6 +36,19 @@ type DetectorInfo struct {
 	RequiredEvents []string `json:"required_events,omitempty"`
 	MITRETactic    string   `json:"mitre_tactic,omitempty"`
 	MITRETechnique string   `json:"mitre_technique,omitempty"`
+}
+
+// ListInfo represents shared list information for JSON output.
+type ListInfo struct {
+	Name       string `json:"name"`
+	ValueCount int    `json:"value_count"`
+	SourceDir  string `json:"source_dir,omitempty"`
+}
+
+// DetectorListOutput represents the combined output for detectors and lists in JSON format.
+type DetectorListOutput struct {
+	Detectors []DetectorInfo `json:"detectors"`
+	Lists     []ListInfo     `json:"lists,omitempty"`
 }
 
 // PolicyInfo represents policy information for JSON output.
@@ -171,22 +185,22 @@ func renderEventSection(w io.Writer, table *tablewriter.Table, defs []events.Def
 	return newEventTable(w)
 }
 
-// PrintDetectorList prints detectors in table or JSON format to stdout.
-func PrintDetectorList(detectorsList []detection.EventDetector, jsonOutput bool) error {
-	return PrintDetectorListTo(os.Stdout, detectorsList, jsonOutput)
+// PrintDetectorList prints detectors and lists in table or JSON format to stdout.
+func PrintDetectorList(detectorsList []detection.EventDetector, lists []yamldetectors.ListEntry, jsonOutput bool) error {
+	return PrintDetectorListTo(os.Stdout, detectorsList, lists, jsonOutput)
 }
 
-// PrintDetectorListTo prints detectors in table or JSON format to the given writer.
-func PrintDetectorListTo(w io.Writer, detectorsList []detection.EventDetector, jsonOutput bool) error {
+// PrintDetectorListTo prints detectors and lists in table or JSON format to the given writer.
+func PrintDetectorListTo(w io.Writer, detectorsList []detection.EventDetector, lists []yamldetectors.ListEntry, jsonOutput bool) error {
 	if jsonOutput {
-		return printDetectorsJSON(w, detectorsList)
+		return printDetectorsJSON(w, detectorsList, lists)
 	}
-	return printDetectorsTable(w, detectorsList)
+	return printDetectorsTable(w, detectorsList, lists)
 }
 
-// printDetectorsJSON outputs detectors in JSON format.
-func printDetectorsJSON(w io.Writer, detectorsList []detection.EventDetector) error {
-	infos := make([]DetectorInfo, 0, len(detectorsList))
+// printDetectorsJSON outputs detectors and lists in JSON format.
+func printDetectorsJSON(w io.Writer, detectorsList []detection.EventDetector, lists []yamldetectors.ListEntry) error {
+	detectorInfos := make([]DetectorInfo, 0, len(detectorsList))
 	for _, det := range detectorsList {
 		def := det.GetDefinition()
 		info := DetectorInfo{
@@ -213,60 +227,105 @@ func printDetectorsJSON(w io.Writer, detectorsList []detection.EventDetector) er
 			}
 		}
 
-		infos = append(infos, info)
+		detectorInfos = append(detectorInfos, info)
+	}
+
+	// Build list infos
+	listInfos := make([]ListInfo, 0, len(lists))
+	for _, entry := range lists {
+		listInfos = append(listInfos, ListInfo{
+			Name:       entry.Name,
+			ValueCount: len(entry.Values),
+			SourceDir:  entry.SourceDir,
+		})
+	}
+
+	output := DetectorListOutput{
+		Detectors: detectorInfos,
+		Lists:     listInfos,
 	}
 
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
-	return encoder.Encode(infos)
+	return encoder.Encode(output)
 }
 
-// printDetectorsTable outputs detectors in table format.
-func printDetectorsTable(w io.Writer, detectorsList []detection.EventDetector) error {
-	if len(detectorsList) == 0 {
-		fmt.Fprintln(w, "No detectors found.")
+// printDetectorsTable outputs detectors and lists in table format.
+func printDetectorsTable(w io.Writer, detectorsList []detection.EventDetector, lists []yamldetectors.ListEntry) error {
+	if len(detectorsList) == 0 && len(lists) == 0 {
+		fmt.Fprintln(w, "No detectors or shared lists found.")
 		return nil
 	}
 
-	fmt.Fprintf(w, "Available detectors (%d):\n\n", len(detectorsList))
+	// Print detectors section
+	if len(detectorsList) > 0 {
+		fmt.Fprintf(w, "Available Detectors (%d):\n\n", len(detectorsList))
 
-	table := tablewriter.NewWriter(w)
-	table.SetHeader([]string{"ID", "Name", "Severity", "Required Events", "MITRE"})
-	table.SetAutoWrapText(true)
-	table.SetRowLine(true)
-	table.SetAutoFormatHeaders(true)
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetHeaderLine(true)
-	table.SetBorder(true)
+		table := tablewriter.NewWriter(w)
+		table.SetHeader([]string{"ID", "Name", "Required Events", "Severity", "MITRE"})
+		table.SetAutoWrapText(true)
+		table.SetRowLine(true)
+		table.SetAutoFormatHeaders(true)
+		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+		table.SetAlignment(tablewriter.ALIGN_LEFT)
+		table.SetHeaderLine(true)
+		table.SetBorder(true)
 
-	for _, det := range detectorsList {
-		def := det.GetDefinition()
+		for _, det := range detectorsList {
+			def := det.GetDefinition()
 
-		severity := ""
-		mitre := ""
-		if def.ThreatMetadata != nil {
-			severity = def.ThreatMetadata.Severity.String()
-			if def.ThreatMetadata.Mitre != nil && def.ThreatMetadata.Mitre.Technique != nil {
-				mitre = def.ThreatMetadata.Mitre.Technique.Id
+			severity := ""
+			mitre := ""
+			if def.ThreatMetadata != nil {
+				severity = def.ThreatMetadata.Severity.String()
+				if def.ThreatMetadata.Mitre != nil && def.ThreatMetadata.Mitre.Technique != nil {
+					mitre = def.ThreatMetadata.Mitre.Technique.Id
+				}
 			}
+
+			requiredEvents := make([]string, 0, len(def.Requirements.Events))
+			for _, req := range def.Requirements.Events {
+				requiredEvents = append(requiredEvents, req.Name)
+			}
+
+			table.Append([]string{
+				def.ID,
+				def.ProducedEvent.Name,
+				strings.Join(requiredEvents, ", "),
+				severity,
+				mitre,
+			})
 		}
 
-		requiredEvents := make([]string, 0, len(def.Requirements.Events))
-		for _, req := range def.Requirements.Events {
-			requiredEvents = append(requiredEvents, req.Name)
-		}
-
-		table.Append([]string{
-			def.ID,
-			def.ProducedEvent.Name,
-			severity,
-			strings.Join(requiredEvents, ", "),
-			mitre,
-		})
+		table.Render()
+	} else {
+		fmt.Fprintln(w, "No detectors found.")
 	}
 
-	table.Render()
+	// Print lists section
+	if len(lists) > 0 {
+		fmt.Fprintf(w, "\nShared Lists (%d):\n\n", len(lists))
+
+		listTable := tablewriter.NewWriter(w)
+		listTable.SetHeader([]string{"Name", "Values", "Source"})
+		listTable.SetAutoWrapText(true)
+		listTable.SetAutoFormatHeaders(true)
+		listTable.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+		listTable.SetAlignment(tablewriter.ALIGN_LEFT)
+		listTable.SetHeaderLine(true)
+		listTable.SetBorder(true)
+
+		for _, entry := range lists {
+			listTable.Append([]string{
+				entry.Name,
+				fmt.Sprintf("%d", len(entry.Values)),
+				entry.SourceDir,
+			})
+		}
+
+		listTable.Render()
+	}
+
 	return nil
 }
 

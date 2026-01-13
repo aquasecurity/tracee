@@ -31,17 +31,17 @@ func TestLoadFromFile(t *testing.T) {
 
 func TestLoadFromDirectory(t *testing.T) {
 	t.Run("load testdata directory", func(t *testing.T) {
-		detectors, errors := LoadFromDirectory("testdata")
+		result := LoadFromDirectory("testdata")
 
 		// Should load valid detectors
-		assert.NotEmpty(t, detectors)
+		assert.NotEmpty(t, result.Detectors)
 
 		// Should have errors for invalid files
-		assert.NotEmpty(t, errors)
+		assert.NotEmpty(t, result.Errors)
 
 		// Check we got the valid ones
 		ids := make(map[string]bool)
-		for _, d := range detectors {
+		for _, d := range result.Detectors {
 			ids[d.GetDefinition().ID] = true
 		}
 
@@ -51,34 +51,36 @@ func TestLoadFromDirectory(t *testing.T) {
 	})
 
 	t.Run("non-existent directory", func(t *testing.T) {
-		detectors, errors := LoadFromDirectory("testdata/doesnotexist")
-		assert.Empty(t, detectors)
-		assert.Empty(t, errors) // Non-existent directory is not an error
+		result := LoadFromDirectory("testdata/doesnotexist")
+		assert.Empty(t, result.Detectors)
+		assert.Empty(t, result.Lists)
+		assert.Empty(t, result.Errors) // Non-existent directory is not an error
 	})
 
 	t.Run("file instead of directory", func(t *testing.T) {
-		detectors, errors := LoadFromDirectory("testdata/valid_threat.yaml")
-		assert.Empty(t, detectors)
-		assert.NotEmpty(t, errors)
+		result := LoadFromDirectory("testdata/valid_threat.yaml")
+		assert.Empty(t, result.Detectors)
+		assert.NotEmpty(t, result.Errors)
 	})
 }
 
 func TestLoadFromDirectories(t *testing.T) {
 	t.Run("multiple directories", func(t *testing.T) {
 		dirs := []string{"testdata", "testdata"} // Same dir twice
-		detectors, errors := LoadFromDirectories(dirs)
+		result := LoadFromDirectories(dirs)
 
 		// Should load detectors (may have duplicates from same dir twice)
-		assert.NotEmpty(t, detectors)
+		assert.NotEmpty(t, result.Detectors)
 
 		// Should have some errors from invalid files
-		assert.NotEmpty(t, errors)
+		assert.NotEmpty(t, result.Errors)
 	})
 
 	t.Run("empty list", func(t *testing.T) {
-		detectors, errors := LoadFromDirectories([]string{})
-		assert.Empty(t, detectors)
-		assert.Empty(t, errors)
+		result := LoadFromDirectories([]string{})
+		assert.Empty(t, result.Detectors)
+		assert.Empty(t, result.Lists)
+		assert.Empty(t, result.Errors)
 	})
 }
 

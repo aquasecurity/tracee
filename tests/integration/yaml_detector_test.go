@@ -45,17 +45,17 @@ func createTempYAMLDetector(t *testing.T, yamlDir, filename, content string) {
 // startTraceeWithYAMLDetectors starts Tracee with YAML detector directory configured
 func startTraceeWithYAMLDetectors(ctx context.Context, t *testing.T, yamlDir string) (*tracee.Tracee, *testutils.EventBuffer, *streams.Stream) {
 	// Load YAML detectors from test directory
-	yamlDets, _ := yamldetectors.LoadFromDirectories([]string{yamlDir})
+	result := yamldetectors.LoadFromDirectories([]string{yamlDir})
 	// Errors are expected in error handling tests and suppressed via logger setup
 
 	// Allocate unique event IDs for this test to avoid conflicts in global events.Core
 	// Each test gets its own range of IDs
-	startID := events.ID(nextDetectorEventID.Add(uint32(len(yamlDets))))
-	startID -= events.ID(len(yamlDets)) // Adjust back to the start of this test's range
+	startID := events.ID(nextDetectorEventID.Add(uint32(len(result.Detectors))))
+	startID -= events.ID(len(result.Detectors)) // Adjust back to the start of this test's range
 
 	// Pre-register YAML detector events in events.Core before starting Tracee
 	// This is required for detector registration to succeed
-	eventNameToID, err := detectors.CreateEventsFromDetectors(startID, yamlDets)
+	eventNameToID, err := detectors.CreateEventsFromDetectors(startID, result.Detectors)
 	require.NoError(t, err, "Failed to create detector events")
 
 	// Build list of all events to select: detector outputs + their input dependencies
@@ -68,7 +68,7 @@ func startTraceeWithYAMLDetectors(ctx context.Context, t *testing.T, yamlDir str
 
 	// Add input events that detectors depend on
 	inputEventNames := make(map[string]bool)
-	for _, det := range yamlDets {
+	for _, det := range result.Detectors {
 		def := det.GetDefinition()
 		for _, req := range def.Requirements.Events {
 			inputEventNames[req.Name] = true
@@ -95,7 +95,7 @@ func startTraceeWithYAMLDetectors(ctx context.Context, t *testing.T, yamlDir str
 		},
 		InitialPolicies: initialPolicies, // Select detector output events
 		DetectorConfig: config.DetectorConfig{
-			Detectors:      yamlDets, // Only use YAML detectors for testing
+			Detectors:      result.Detectors, // Only use YAML detectors for testing
 			YAMLSearchDirs: []string{yamlDir},
 		},
 	}
