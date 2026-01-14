@@ -19,7 +19,7 @@ The **\-\-policy** flag allows you to specify one or more policy files or direct
 
 Policies define which events to trace and how to filter them. When using the **\-\-policy** flag, you cannot use the **\-\-scope** or **\-\-events** flags together, as they serve different purposes for event selection.
 
-Policy files are YAML files that follow the Tracee Policy API specification. They define:
+Policy files are YAML files that follow the Tracee Policy API specification. Tracee supports two formats: **Kubernetes CRD format** and **Plain YAML format**. Both formats are fully interchangeable and Tracee automatically detects the format when loading policies. They define:
 
 - **Scope**: Which workloads to trace (e.g., global, specific containers, processes)
 - **Rules**: Which events to trace and optional filters to apply
@@ -60,7 +60,9 @@ When specifying a directory, Tracee will load all policy files found in that dir
 
 ## POLICY FILE FORMAT
 
-Policy files use YAML format and follow this structure:
+Policy files use YAML format. Tracee supports two formats:
+
+### Kubernetes CRD Format
 
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
@@ -78,7 +80,23 @@ spec:
         - filter_expression
 ```
 
-For more information about policy file format and options, refer to the Tracee Policy documentation.
+### Plain YAML Format
+
+```yaml
+type: policy
+name: policy-name
+description: Policy description
+scope:
+  - global
+rules:
+  - event: event_name
+    filters:
+      - filter_expression
+```
+
+Tracee automatically detects the format when loading policies. Both formats are fully interchangeable and produce identical results.
+
+For more information about policy file formats and options, refer to the [Policy Documentation](../policies/index.md).
 
 ## NOTES
 

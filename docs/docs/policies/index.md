@@ -4,7 +4,15 @@ Policies allow users to specify which [events](../events/index.md) to trace in w
 
 It is possible to load up to 64 policies into Tracee.
 
-Here is an example policy:
+## Policy Formats
+
+Tracee supports two policy formats: **Kubernetes CRD format** and **Plain format** (YAML or JSON). Both formats are fully interchangeable and produce identical results. Tracee automatically detects the format when loading policies.
+
+### Kubernetes CRD Format
+
+The Kubernetes CRD format follows the standard Kubernetes Custom Resource Definition structure. Use this format for Kubernetes deployments or when managing policies as Kubernetes resources.
+
+**Example:**
 
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
@@ -23,7 +31,26 @@ spec:
         - data.pathname=/tmp/*
 ```
 
-This policy applies to any workload (`global`) and will log the `dropped_executable`, and `security_file_open` events. A data filter (`data.pathname`) is set on the `security_file_open` event to log only files which were opened from the `/tmp` directory.
+### Plain Format
+
+The plain format provides a simpler, more concise syntax. Use this format for local development, testing, or non-Kubernetes environments.
+
+**Example:**
+
+```yaml
+type: policy
+name: overview-policy
+description: sample overview policy
+scope:
+  - global
+rules:
+  - event: dropped_executable
+  - event: security_file_open
+    filters:
+      - data.pathname=/tmp/*
+```
+
+Both formats support the same functionality. Tracee automatically detects the format by checking for `type: policy` (plain format) or `apiVersion` and `kind` fields (K8s CRD format). You can mix both formats in the same directory - Tracee will detect and load them correctly.
 
 !!! Note
     Each event type can only be defined once in a policy

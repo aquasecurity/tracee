@@ -1,0 +1,9 @@
+type: policy
+name: dig
+description: traces dns events from the dig executable
+scope:
+  - executable=/usr/bin/dig
+rules:
+  - event: net_packet_dns_request
+  - event: net_packet_dns_response
+
