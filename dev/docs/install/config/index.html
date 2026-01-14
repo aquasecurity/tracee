@@ -1049,17 +1049,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#runtime" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Runtime
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#log" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1503,34 +1492,6 @@
     
   
     policy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../flags/runtime.1/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    runtime
   
 
     
@@ -8106,17 +8067,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#runtime" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Runtime
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#log" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8250,19 +8200,6 @@ tracee<span class="w"> </span>--server<span class="w"> </span>metrics<span class
 <span class="w">  </span><span class="nt">dns</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div></p>
-<h3 id="runtime">Runtime<a class="headerlink" href="#runtime" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><code>--runtime</code> (<code>-r</code>)</strong>: Controls runtime configurations for Tracee.</li>
-</ul>
-<p>CLI Examples:
-  <div class="highlight"><pre><span></span><code><span class="c1"># Set working directory</span>
-tracee<span class="w"> </span>--runtime<span class="w"> </span><span class="nv">workdir</span><span class="o">=</span>/opt/tracee
-</code></pre></div></p>
-<p>YAML:
-  <div class="highlight"><pre><span></span><code><span class="nt">runtime</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workdir=/opt/tracee</span>
-</code></pre></div></p>
-<p><strong>NOTE</strong>: The workdir is the path where Tracee will install or lookup its resources. The default is <code>/tmp/tracee</code>. This option is useful when running Tracee in environments where <code>/tmp</code> is not suitable or secure.</p>
 <h3 id="log">Log<a class="headerlink" href="#log" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><code>--logging</code> (<code>-l</code>)</strong>: Controls Tracee logging options, like verbosity,
