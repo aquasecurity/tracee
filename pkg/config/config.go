@@ -84,7 +84,7 @@ func (c Config) Validate() error {
 	if len(c.Artifacts.FileRead.PathFilter) > 3 {
 		return invalidArtifactsFileReadTooManyPathFiltersError
 	}
-	for _, filter := range c.Artifacts.FileWrite.PathFilter {
+	for _, filter := range c.Artifacts.FileRead.PathFilter {
 		if len(filter) > 50 {
 			return invalidPathFilterError(filter)
 		}

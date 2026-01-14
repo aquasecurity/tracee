@@ -96,12 +96,12 @@ func TestConfig_Validate(t *testing.T) {
 			expectedError: invalidPathFilterError("/this/is/a/very/long/path/that/exceeds/fifty/characters*"),
 		},
 		{
-			name: "file-read path filter too long - note: validation bug checks FileWrite instead",
+			name: "file-read path filter too long",
 			config: func() Config {
 				cfg := validConfig()
 				longFilter := "/this/is/a/very/long/path/that/exceeds/fifty/characters*"
-				cfg.Artifacts.FileRead.PathFilter = []string{"/tmp*"}
-				cfg.Artifacts.FileWrite.PathFilter = []string{longFilter}
+				cfg.Artifacts.FileWrite.PathFilter = []string{"/tmp*"}
+				cfg.Artifacts.FileRead.PathFilter = []string{longFilter}
 				return cfg
 			}(),
 			expectError:   true,
