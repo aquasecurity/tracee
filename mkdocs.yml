@@ -41,6 +41,14 @@ nav:
                             - server: docs/flags/server.1.md
                             - signatures-dir: docs/flags/signatures-dir.1.md
                             - stores: docs/flags/stores.1.md
+                      - Commands Reference:
+                            - list:
+                                  - Overview: docs/flags/list.1.md
+                                  - events: docs/flags/list-events.1.md
+                                  - detectors: docs/flags/list-detectors.1.md
+                                  - policies: docs/flags/list-policies.1.md
+                            - version: docs/flags/version.1.md
+                            - man: docs/flags/man.1.md
           - Policies:
                 - Overview: docs/policies/index.md
                 - Scopes: docs/policies/scopes.md
