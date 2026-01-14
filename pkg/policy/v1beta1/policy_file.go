@@ -2,6 +2,7 @@ package v1beta1
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -15,6 +16,16 @@ import (
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 )
 
+// PolicyFormat represents the detected policy file format
+type PolicyFormat string
+
+const (
+	FormatK8sCRD    PolicyFormat = "k8s"
+	FormatPlainYAML PolicyFormat = "plain"
+
+	TypePolicy = "policy"
+)
+
 // PolicyFile is the structure of the policy file
 type PolicyFile struct {
 	APIVersion string         `yaml:"apiVersion" json:"apiVersion"`
@@ -23,9 +34,38 @@ type PolicyFile struct {
 	Spec       k8s.PolicySpec `yaml:"spec" json:"spec"`
 }
 
+// Metadata is the structure of the metadata in the policy file
 type Metadata struct {
 	Name        string            `yaml:"name" json:"name"`
 	Annotations map[string]string `yaml:"annotations" json:"annotations"`
+}
+
+// PlainPolicySpec represents the plain policy specification (YAML or JSON).
+// It maps directly to the file structure and provides full parity
+// with the Kubernetes CRD PolicySpec format.
+type PlainPolicySpec struct {
+	// Type identifies the file type
+	// Value: "policy"
+	Type string `yaml:"type" json:"type"`
+
+	// Name is the policy name
+	// Must be a valid DNS-1123 subdomain
+	Name string `yaml:"name" json:"name"`
+
+	// Description is a human-readable description
+	Description string `yaml:"description" json:"description"`
+
+	// Version is an optional version field reserved for future use
+	Version string `yaml:"version,omitempty" json:"version,omitempty"`
+
+	// Scope defines which workloads trace and optional filters
+	Scope []string `yaml:"scope" json:"scope"`
+
+	// Rules define which events to trace and optional filters
+	Rules []k8s.Rule `yaml:"rules" json:"rules"`
+
+	// DefaultActions specifies default actions for all rules
+	DefaultActions []string `yaml:"defaultActions,omitempty" json:"defaultActions,omitempty"`
 }
 
 func (p PolicyFile) GetName() string {
@@ -370,20 +410,159 @@ func getPoliciesFromFile(filePath string) (PolicyFile, error) {
 		return p, err
 	}
 
-	// Detect file format by extension and use appropriate unmarshaler
-	if strings.HasSuffix(filePath, ".json") {
-		err = json.Unmarshal(data, &p)
-	} else {
-		err = yaml.Unmarshal(data, &p)
-	}
+	// Detect format from data
+	isJSON := strings.HasSuffix(filePath, ".json")
+	format, err := peekPolicyFormat(data, isJSON)
 	if err != nil {
 		return p, err
 	}
 
+	// Route to appropriate parser based on detected format
+	switch format {
+	case FormatPlainYAML:
+		var spec PlainPolicySpec
+		if isJSON {
+			err = json.Unmarshal(data, &spec)
+		} else {
+			err = yaml.Unmarshal(data, &spec)
+		}
+		if err != nil {
+			return p, fmt.Errorf("failed to parse plain policy: %w", err)
+		}
+
+		// Convert to PolicyFile (normalize to existing structure)
+		p, err = getPolicyFileFromPlainPolicy(&spec)
+		if err != nil {
+			return p, err
+		}
+
+	case FormatK8sCRD:
+		// Parse K8s CRD format (existing logic)
+		if isJSON {
+			err = json.Unmarshal(data, &p)
+		} else {
+			err = yaml.Unmarshal(data, &p)
+		}
+		if err != nil {
+			return p, err
+		}
+
+	default:
+		return p, errfmt.Errorf("unsupported policy format: %s", format)
+	}
+
+	// Validate the policy (works for both formats since both normalize to PolicyFile)
 	err = p.Validate()
 	if err != nil {
 		return p, err
 	}
 
 	return p, nil
+}
+
+// getPolicyFileFromPlainPolicy converts a PlainPolicySpec to a PolicyFile (normalizes to existing structure)
+// This allows both formats to use the same PolicyFile validation and interface
+func getPolicyFileFromPlainPolicy(spec *PlainPolicySpec) (PolicyFile, error) {
+	var p PolicyFile
+
+	if spec == nil {
+		return p, errfmt.Errorf("spec cannot be nil")
+	}
+
+	// Validate plain-specific fields only (K8s validation will handle scope/rules)
+	if spec.Type == "" {
+		return p, errfmt.Errorf("policy type is required")
+	}
+
+	normalizedType := strings.TrimSpace(strings.ToLower(spec.Type))
+	if normalizedType != TypePolicy {
+		return p, errfmt.Errorf("invalid policy type '%s', must be 'policy'", spec.Type)
+	}
+
+	// Convert to PolicyFile structure (K8s CRD format)
+	p.APIVersion = "tracee.aquasec.com/v1beta1"
+	p.Kind = "Policy"
+	p.Metadata = Metadata{
+		Name: spec.Name,
+		Annotations: map[string]string{
+			"description": spec.Description,
+		},
+	}
+	p.Spec = k8s.PolicySpec{
+		Scope:          spec.Scope,
+		Rules:          spec.Rules,
+		DefaultActions: spec.DefaultActions,
+	}
+
+	return p, nil
+}
+
+// peekPolicyFormat detects the format of policy data by examining its structure
+// Returns the format type or an error if format cannot be determined
+func peekPolicyFormat(data []byte, isJSON bool) (PolicyFormat, error) {
+	if isJSON {
+		return peekJSONFormat(data)
+	}
+	return peekYAMLFormat(data)
+}
+
+// peekJSONFormat detects the format of JSON policy data
+func peekJSONFormat(data []byte) (PolicyFormat, error) {
+	// Check for plain JSON format (type field)
+	var typeCheck struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &typeCheck); err == nil {
+		normalizedType := strings.TrimSpace(strings.ToLower(typeCheck.Type))
+		if normalizedType == TypePolicy {
+			return FormatPlainYAML, nil
+		}
+	}
+
+	// Check for K8s CRD format (apiVersion and kind fields)
+	var k8sCheck struct {
+		APIVersion string `json:"apiVersion"`
+		Kind       string `json:"kind"`
+	}
+	if err := json.Unmarshal(data, &k8sCheck); err == nil {
+		if k8sCheck.APIVersion == "tracee.aquasec.com/v1beta1" && k8sCheck.Kind == "Policy" {
+			return FormatK8sCRD, nil
+		}
+	}
+
+	return FormatK8sCRD, nil
+}
+
+// peekYAMLFormat detects the format of YAML policy data
+func peekYAMLFormat(data []byte) (PolicyFormat, error) {
+	// Check for plain YAML format (type field)
+	var typeCheck struct {
+		Type string `yaml:"type"`
+	}
+	typeErr := yaml.Unmarshal(data, &typeCheck)
+	if typeErr != nil {
+		return "", fmt.Errorf("failed to parse JSON: %w", typeErr)
+	}
+
+	normalizedType := strings.TrimSpace(strings.ToLower(typeCheck.Type))
+	if normalizedType == TypePolicy {
+		return FormatPlainYAML, nil
+	}
+
+	// Check for K8s CRD format (apiVersion and kind fields)
+	var k8sCheck struct {
+		APIVersion string `yaml:"apiVersion"`
+		Kind       string `yaml:"kind"`
+	}
+	k8sErr := yaml.Unmarshal(data, &k8sCheck)
+	if k8sErr != nil {
+		return "", fmt.Errorf("failed to parse YAML: %w", k8sErr)
+	}
+
+	if k8sCheck.APIVersion == "tracee.aquasec.com/v1beta1" && k8sCheck.Kind == "Policy" {
+		return FormatK8sCRD, nil
+	}
+
+	// If neither format detected, return error
+	return "", errfmt.Errorf("unable to determine policy format: file must have either 'type: policy' (plain format) or 'apiVersion' and 'kind' fields (K8s CRD)")
 }

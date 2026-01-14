@@ -1077,3 +1077,368 @@ spec:
 		})
 	}
 }
+
+func TestPeekPolicyFormat(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		testName       string
+		fileContent    string
+		expectedFormat PolicyFormat
+		expectError    bool
+	}{
+		{
+			testName: "detect plain YAML format",
+			fileContent: `type: policy
+name: test-policy
+description: Test policy
+scope:
+  - global
+rules:
+  - event: sched_process_exec
+`,
+			expectedFormat: FormatPlainYAML,
+			expectError:    false,
+		},
+		{
+			testName: "detect K8s CRD format",
+			fileContent: `apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: test-policy
+  annotations:
+    description: Test policy
+spec:
+  scope:
+    - global
+  rules:
+    - event: sched_process_exec
+`,
+			expectedFormat: FormatK8sCRD,
+			expectError:    false,
+		},
+		{
+			testName: "detect K8s CRD format with different type field",
+			fileContent: `type: something-else
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: test-policy
+spec:
+  scope:
+    - global
+  rules:
+    - event: sched_process_exec
+`,
+			expectedFormat: FormatK8sCRD,
+			expectError:    false,
+		},
+		{
+			testName: "invalid format - no type or apiVersion",
+			fileContent: `name: test-policy
+scope:
+  - global
+rules:
+  - event: sched_process_exec
+`,
+			expectedFormat: "",
+			expectError:    true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			t.Parallel()
+
+			data := []byte(test.fileContent)
+			format, err := peekPolicyFormat(data, false)
+			if test.expectError {
+				assert.Assert(t, err != nil, "expected error but got none")
+			} else {
+				assert.NilError(t, err)
+				assert.Equal(t, format, test.expectedFormat)
+			}
+		})
+	}
+}
+
+func TestPeekPolicyFormatJSON(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		testName       string
+		fileContent    string
+		expectedFormat PolicyFormat
+		expectError    bool
+	}{
+		{
+			testName: "detect plain JSON format",
+			fileContent: `{
+  "type": "policy",
+  "name": "test-policy",
+  "description": "Test policy",
+  "scope": ["global"],
+  "rules": [{"event": "sched_process_exec"}]
+}`,
+			expectedFormat: FormatPlainYAML,
+			expectError:    false,
+		},
+		{
+			testName: "detect K8s CRD JSON format",
+			fileContent: `{
+  "apiVersion": "tracee.aquasec.com/v1beta1",
+  "kind": "Policy",
+  "metadata": {
+    "name": "test-policy",
+    "annotations": {
+      "description": "Test policy"
+    }
+  },
+  "spec": {
+    "scope": ["global"],
+    "rules": [{"event": "sched_process_exec"}]
+  }
+}`,
+			expectedFormat: FormatK8sCRD,
+			expectError:    false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			t.Parallel()
+
+			data := []byte(test.fileContent)
+			format, err := peekPolicyFormat(data, true)
+			if test.expectError {
+				assert.Assert(t, err != nil, "expected error but got none")
+			} else {
+				assert.NilError(t, err)
+				assert.Equal(t, format, test.expectedFormat)
+			}
+		})
+	}
+}
+
+func TestFromPlainPolicySpec(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		testName    string
+		spec        *PlainPolicySpec
+		expectError bool
+		validate    func(t *testing.T, pf PolicyFile)
+	}{
+		{
+			testName: "valid plain policy spec",
+			spec: &PlainPolicySpec{
+				Type:        "policy",
+				Name:        "test-policy",
+				Description: "Test policy description",
+				Scope:       []string{"global"},
+				Rules: []k8s.Rule{
+					{Event: "sched_process_exec"},
+				},
+				DefaultActions: []string{"log"},
+			},
+			expectError: false,
+			validate: func(t *testing.T, pf PolicyFile) {
+				assert.Equal(t, pf.APIVersion, "tracee.aquasec.com/v1beta1")
+				assert.Equal(t, pf.Kind, "Policy")
+				assert.Equal(t, pf.GetName(), "test-policy")
+				assert.Equal(t, pf.GetDescription(), "Test policy description")
+				assert.Equal(t, len(pf.GetScope()), 1)
+				assert.Equal(t, pf.GetScope()[0], "global")
+				assert.Equal(t, len(pf.GetRules()), 1)
+				assert.Equal(t, pf.GetRules()[0].Event, "sched_process_exec")
+				assert.Equal(t, len(pf.GetDefaultActions()), 1)
+				assert.Equal(t, pf.GetDefaultActions()[0], "log")
+			},
+		},
+		{
+			testName: "missing type",
+			spec: &PlainPolicySpec{
+				Name:        "test-policy",
+				Description: "Test policy",
+				Scope:       []string{"global"},
+				Rules:       []k8s.Rule{{Event: "sched_process_exec"}},
+			},
+			expectError: true,
+			validate:    nil,
+		},
+		{
+			testName: "invalid type",
+			spec: &PlainPolicySpec{
+				Type:        "invalid",
+				Name:        "test-policy",
+				Description: "Test policy",
+				Scope:       []string{"global"},
+				Rules:       []k8s.Rule{{Event: "sched_process_exec"}},
+			},
+			expectError: true,
+			validate:    nil,
+		},
+		{
+			testName: "missing name (validated by PolicyFile.Validate)",
+			spec: &PlainPolicySpec{
+				Type:        "policy",
+				Description: "Test policy",
+				Scope:       []string{"global"},
+				Rules:       []k8s.Rule{{Event: "sched_process_exec"}},
+			},
+			expectError: false, // Conversion succeeds, validation happens in Validate()
+			validate:    nil,
+		},
+		{
+			testName: "missing description (validated by PolicyFile.Validate)",
+			spec: &PlainPolicySpec{
+				Type:  "policy",
+				Name:  "test-policy",
+				Scope: []string{"global"},
+				Rules: []k8s.Rule{{Event: "sched_process_exec"}},
+			},
+			expectError: false, // Conversion succeeds, validation happens in Validate()
+			validate:    nil,
+		},
+		{
+			testName: "empty scope (validated by PolicyFile.Validate)",
+			spec: &PlainPolicySpec{
+				Type:        "policy",
+				Name:        "test-policy",
+				Description: "Test policy",
+				Scope:       []string{},
+				Rules:       []k8s.Rule{{Event: "sched_process_exec"}},
+			},
+			expectError: false, // Conversion succeeds, validation happens in Validate()
+			validate:    nil,
+		},
+		{
+			testName: "empty rules (validated by PolicyFile.Validate)",
+			spec: &PlainPolicySpec{
+				Type:        "policy",
+				Name:        "test-policy",
+				Description: "Test policy",
+				Scope:       []string{"global"},
+				Rules:       []k8s.Rule{},
+			},
+			expectError: false, // Conversion succeeds, validation happens in Validate()
+			validate:    nil,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			t.Parallel()
+
+			pf, err := getPolicyFileFromPlainPolicy(test.spec)
+			if test.expectError {
+				assert.Assert(t, err != nil, "expected error but got none")
+			} else {
+				assert.NilError(t, err)
+				if test.validate != nil {
+					test.validate(t, pf)
+				}
+			}
+		})
+	}
+}
+
+func TestPlainYAMLPolicyLoading(t *testing.T) {
+	t.Parallel()
+
+	eventName := "sched_process_exec"
+	validPlainYAML := fmt.Sprintf(`type: policy
+name: plain-test-policy
+description: Test plain YAML policy
+scope:
+  - global
+rules:
+  - event: %s
+`, eventName)
+
+	tests := []struct {
+		testName    string
+		setupFiles  func(t *testing.T) []string
+		expectError bool
+		validate    func(t *testing.T, policies []k8s.PolicyInterface)
+	}{
+		{
+			testName: "load plain YAML policy",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+				policyFile := filepath.Join(tempDir, "policy.yaml")
+				err := os.WriteFile(policyFile, []byte(validPlainYAML), 0644)
+				assert.NilError(t, err)
+				return []string{policyFile}
+			},
+			expectError: false,
+			validate: func(t *testing.T, policies []k8s.PolicyInterface) {
+				assert.Equal(t, len(policies), 1)
+				assert.Equal(t, policies[0].GetName(), "plain-test-policy")
+				assert.Equal(t, policies[0].GetDescription(), "Test plain YAML policy")
+				assert.Equal(t, len(policies[0].GetScope()), 1)
+				assert.Equal(t, policies[0].GetScope()[0], "global")
+				assert.Equal(t, len(policies[0].GetRules()), 1)
+				assert.Equal(t, policies[0].GetRules()[0].Event, eventName)
+			},
+		},
+		{
+			testName: "load mixed formats from directory",
+			setupFiles: func(t *testing.T) []string {
+				tempDir := t.TempDir()
+
+				// Create plain YAML file
+				plainFile := filepath.Join(tempDir, "plain.yaml")
+				err := os.WriteFile(plainFile, []byte(validPlainYAML), 0644)
+				assert.NilError(t, err)
+
+				// Create K8s CRD YAML file
+				k8sFile := filepath.Join(tempDir, "k8s.yaml")
+				k8sPolicy := fmt.Sprintf(`apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: k8s-test-policy
+  annotations:
+    description: Test K8s CRD policy
+spec:
+  scope:
+    - global
+  rules:
+    - event: %s
+`, eventName)
+				err = os.WriteFile(k8sFile, []byte(k8sPolicy), 0644)
+				assert.NilError(t, err)
+
+				return []string{tempDir}
+			},
+			expectError: false,
+			validate: func(t *testing.T, policies []k8s.PolicyInterface) {
+				assert.Equal(t, len(policies), 2)
+				names := make(map[string]bool)
+				for _, p := range policies {
+					names[p.GetName()] = true
+				}
+				assert.Assert(t, names["plain-test-policy"])
+				assert.Assert(t, names["k8s-test-policy"])
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			t.Parallel()
+
+			paths := test.setupFiles(t)
+			policies, err := PoliciesFromPaths(paths)
+
+			if test.expectError {
+				assert.Error(t, err, "expected error but got none")
+			} else {
+				assert.NilError(t, err)
+				if test.validate != nil {
+					test.validate(t, policies)
+				}
+			}
+		})
+	}
+}
