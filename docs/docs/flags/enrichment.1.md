@@ -11,7 +11,7 @@ tracee **\-\-enrichment** - Configure enrichment for container events and other 
 
 ## SYNOPSIS
 
-tracee **\-\-enrichment** [container|container.cgroupfs.path=*path*|container.cgroupfs.force|container.docker.socket=*socket_path*|container.containerd.socket=*socket_path*|container.crio.socket=*socket_path*|container.podman.socket=*socket_path*|resolve-fd|exec-env|exec-hash|exec-hash.mode=*mode*|user-stack-trace] [**\-\-enrichment** ...]
+tracee **\-\-enrichment** [container|container.cgroupfs.path=*path*|container.cgroupfs.force|container.docker.socket=*socket_path*|container.containerd.socket=*socket_path*|container.crio.socket=*socket_path*|container.podman.socket=*socket_path*|fd-paths|environment|executable-hash|executable-hash.mode=*mode*|user-stack|decoded-data] [**\-\-enrichment** ...]
 
 ## DESCRIPTION
 
@@ -63,37 +63,37 @@ The `--enrichment` flag allows you to configure enrichment options for container
   - Docker     (`docker`)
   - Podman     (`podman`)
 
-- **resolve-fd**: Enable resolve-fd. When enabled, Tracee will resolve file descriptor arguments to show associated file paths instead of just the descriptor number. This enriches file descriptors with file path translation. May cause pipeline slowdowns.
+- **fd-paths**: Enable fd-paths. When enabled, Tracee will resolve file descriptor arguments to show associated file paths instead of just the descriptor number. This enriches file descriptors with file path translation. May cause pipeline slowdowns.
   Example:
   ```console
-  --enrichment resolve-fd
+  --enrichment fd-paths
   ```
 
-- **parse-arguments**: Enable parse-arguments. When enabled, Tracee will parse event arguments into human-readable strings instead of raw machine-readable values. This converts numeric flags, permissions, syscall types, and other raw values into readable format (e.g., `O_RDONLY` instead of `0`, `PROT_READ` instead of `1`). Recommended for interactive use and readability, but may add processing overhead that impacts performance on high-volume event streams.
+- **decoded-data**: Enable decoded-data. When enabled, Tracee will decode event arguments into human-readable strings instead of raw machine-readable values. This converts numeric flags, permissions, syscall types, and other raw values into readable format (e.g., `O_RDONLY` instead of `0`, `PROT_READ` instead of `1`). Recommended for interactive use and readability, but may add processing overhead that impacts performance on high-volume event streams.
   Example:
   ```console
-  --enrichment parse-arguments
+  --enrichment decoded-data
   ```
 
-- **exec-env**: Enable exec-env. When enabled, Tracee will include execution environment variables in process execution events (particularly useful for `execve` events).
+- **environment**: Enable environment. When enabled, Tracee will include execution environment variables in process execution events (particularly useful for `execve` events).
   Example:
   ```console
-  --enrichment exec-env
+  --enrichment environment
   ```
 
-- **exec-hash**: Enable exec-hash with default settings. When enabled, Tracee will compute hash values for executed binaries.
+- **executable-hash**: Enable executable-hash with default settings. When enabled, Tracee will compute hash values for executed binaries.
 
-- **exec-hash.mode**=*mode*: Enable exec-hash and configure the mode for exec-hash. **Note**: Using this option automatically enables exec-hash, so you don't need to also specify `--enrichment exec-hash`.
+- **executable-hash.mode**=*mode*: Enable executable-hash and configure the mode for executable-hash. **Note**: Using this option automatically enables executable-hash, so you don't need to also specify `--enrichment executable-hash`.
   Example:
   ```console
-  --enrichment exec-hash.mode=sha256
+  --enrichment executable-hash.mode=sha256
   ```
 
-- **user-stack-trace**
-  Enable user-stack-trace. Presence of the flag enables it, absence disables it.
+- **user-stack**
+  Enable user-stack. Presence of the flag enables it, absence disables it.
   Example:
   ```console
-  --enrichment user-stack-trace
+  --enrichment user-stack
   ```
 
 ## EXAMPLES
@@ -121,16 +121,16 @@ The `--enrichment` flag allows you to configure enrichment options for container
    ```
    Note: Since `container.docker.socket` and `container.cgroupfs.path` automatically enable container, you don't need `--enrichment container`.
 
-5. Enable resolve-fd, exec-env, and exec-hash:
+5. Enable fd-paths, environment, and executable-hash:
    ```console
-   --enrichment resolve-fd --enrichment exec-env --enrichment exec-hash
+   --enrichment fd-paths --enrichment environment --enrichment executable-hash
    ```
 
-6. Enable exec-hash with custom mode:
+6. Enable executable-hash with custom mode:
    ```console
-   --enrichment exec-hash.mode=sha256
+   --enrichment executable-hash.mode=sha256
    ```
-   Note: `exec-hash.mode` automatically enables exec-hash, so `--enrichment exec-hash` is not needed.
+   Note: `executable-hash.mode` automatically enables executable-hash, so `--enrichment executable-hash` is not needed.
 
 Please refer to the [documentation](../install/container-engines.md) for more information on container events enrichment.
 

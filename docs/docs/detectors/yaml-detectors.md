@@ -128,9 +128,9 @@ requirements:
       scope_filters:            # Scope filters (optional)
         - container=true
   enrichments:                  # Required enrichments (optional)
-    - name: exec-env            # Enrichment name
+    - name: environment         # Enrichment name
       dependency: required      # required or optional
-    - name: exec-hash
+    - name: executable-hash
       config: digest-inode      # Enrichment-specific config
     - name: container           # Container enrichment
       dependency: required

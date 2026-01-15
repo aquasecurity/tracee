@@ -51,10 +51,10 @@ data:
     log:
         level: info
     enrichment:
-        parse-arguments: true
-        user-stack-trace: false
-        exec-env: false
-        exec-hash:
+        decoded-data: true
+        user-stack: false
+        environment: false
+        executable-hash:
             enabled: true
             mode: dev-inode
     output:

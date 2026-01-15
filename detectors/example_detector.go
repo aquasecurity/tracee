@@ -65,11 +65,11 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 			},
 			// Enrichments: []detection.EnrichmentRequirement{
 			// 	{
-			// 		Name:       detection.EnrichmentExecEnv,
+			// 		Name:       detection.EnrichmentEnvironment,
 			// 		Dependency: detection.DependencyRequired, // Detector requires env vars
 			// 	},
 			// 	{
-			// 		Name:       detection.EnrichmentExecHash,
+			// 		Name:       detection.EnrichmentExecutableHash,
 			// 		Dependency: detection.DependencyOptional, // Detector works without hashes
 			// 		// Config:  "inode", // Uncomment to require specific hash mode
 			// 	},

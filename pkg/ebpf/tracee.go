@@ -207,7 +207,7 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Initialize capabilities rings soon
 
 	useBaseEbpf := func(c config.Config) bool {
-		return c.Output.StackAddresses
+		return c.Output.UserStack
 	}
 
 	err = capabilities.Initialize(
@@ -465,7 +465,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize Detector Engine
 	enrichOpts := &detectors.EnrichmentOptions{
-		ExecEnv:      t.config.Output.ExecEnv,
+		Environment:  t.config.Output.Environment,
 		ExecHashMode: t.config.Output.CalcHashes,
 		Container:    t.config.EnrichmentEnabled,
 	}
@@ -968,10 +968,10 @@ const (
 func (t *Tracee) getOptionsConfig() uint32 {
 	var cOptVal uint32
 
-	if t.config.Output.ExecEnv {
+	if t.config.Output.Environment {
 		cOptVal = cOptVal | optExecEnv
 	}
-	if t.config.Output.StackAddresses {
+	if t.config.Output.UserStack {
 		cOptVal = cOptVal | optStackAddresses
 	}
 	if t.config.Artifacts.FileWrite.Capture {
@@ -993,7 +993,7 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	case *cgroup.CgroupV1:
 		cOptVal = cOptVal | optCgroupV1
 	}
-	if t.config.Output.ParseArgumentsFDs {
+	if t.config.Output.FdPaths {
 		cOptVal = cOptVal | optTranslateFDFilePath
 	}
 	switch t.config.ProcessStore.Source {

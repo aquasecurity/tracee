@@ -405,12 +405,12 @@ enrichment:
     - container.containerd.socket=/var/run/containerd/containerd.sock
     - container.crio.socket=/var/run/crio/crio.sock
     - container.podman.socket=/var/run/podman/podman.sock
-    - resolve-fd
-    - exec-env
-    - exec-hash
-    - exec-hash.mode=dev-inode
-    - user-stack-trace
-    - parse-arguments
+    - fd-paths
+    - environment
+    - executable-hash
+    - executable-hash.mode=dev-inode
+    - user-stack
+    - decoded-data
 `,
 			key: "enrichment",
 			expectedFlags: []string{
@@ -421,12 +421,12 @@ enrichment:
 				"container.containerd.socket=/var/run/containerd/containerd.sock",
 				"container.crio.socket=/var/run/crio/crio.sock",
 				"container.podman.socket=/var/run/podman/podman.sock",
-				"resolve-fd",
-				"exec-env",
-				"exec-hash",
-				"exec-hash.mode=dev-inode",
-				"user-stack-trace",
-				"parse-arguments",
+				"fd-paths",
+				"environment",
+				"executable-hash",
+				"executable-hash.mode=dev-inode",
+				"user-stack",
+				"decoded-data",
 			},
 		},
 		{
@@ -442,13 +442,13 @@ enrichment:
         containerd-socket: /var/run/containerd/containerd.sock
         crio-socket: /var/run/crio/crio.sock
         podman-socket: /var/run/podman/podman.sock
-    resolve-fd: true
-    exec-env: true
-    exec-hash:
+    fd-paths: true
+    environment: true
+    executable-hash:
         enabled: true
         mode: dev-inode
-    user-stack-trace: true
-    parse-arguments: true
+    user-stack: true
+    decoded-data: true
 `,
 			key: "enrichment",
 			expectedFlags: []string{
@@ -459,12 +459,12 @@ enrichment:
 				"container.containerd.socket=/var/run/containerd/containerd.sock",
 				"container.crio.socket=/var/run/crio/crio.sock",
 				"container.podman.socket=/var/run/podman/podman.sock",
-				"resolve-fd",
-				"exec-env",
-				"exec-hash",
-				"exec-hash.mode=dev-inode",
-				"user-stack-trace",
-				"parse-arguments",
+				"fd-paths",
+				"environment",
+				"executable-hash",
+				"executable-hash.mode=dev-inode",
+				"user-stack",
+				"decoded-data",
 			},
 		},
 		{

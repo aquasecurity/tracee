@@ -36,7 +36,7 @@ Tracee can capture the following types of artifacts:
        --output json \
        --scope comm=bash \
        --scope follow \
-       --enrichment parse-arguments \
+       --enrichment decoded-data \
        --artifacts dir.path=/tmp/tracee \
        --artifacts file-write.filters=path=/tmp/*
     ```
@@ -67,7 +67,7 @@ Tracee can capture the following types of artifacts:
        --output json \
        --scope comm=bash \
        --scope follow \
-       --enrichment parse-arguments \
+       --enrichment decoded-data \
        --artifacts dir.path=/tmp/tracee \
        --artifacts file-read.filters=type=pipe \
        --artifacts file-read.filters=fd=stdin
@@ -102,7 +102,7 @@ Tracee can capture the following types of artifacts:
        --output json \
        --scope comm=bash \
        --scope follow \
-       --enrichment parse-arguments \
+       --enrichment decoded-data \
        --artifacts dir.path=/tmp/tracee \
        --artifacts executable
     ```

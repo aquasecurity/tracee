@@ -29,8 +29,8 @@ output:
       type: file
       format: json
       path: /var/log/tracee/events.json
-  options:
-    parse-arguments: true
+  enrichment:
+    decoded-data: true
 ```
 
 ## Output Components
@@ -71,14 +71,10 @@ Learn about event ordering guarantees and how to enable chronological sorting wh
 
 ### [Options](./output-options.md)
 
-Enrich events with additional context:
+Configure output formatting and behavior:
 
-- `parse-arguments`: Convert raw values to human-readable format
-- `parse-arguments-fds`: Show file paths for file descriptor arguments
-- `stack-addresses`: Include stack traces in events
-- `exec-env`: Include environment variables for process execution events
-- `exec-hash`: Include file hashes for executed binaries
 - `sort-events`: Enable chronological event ordering
+
 
 ### [Logging](./logging.md)
 
@@ -93,7 +89,7 @@ tracee --output destinations.file_out.format=json --output destinations.file_out
 
 **Default table output with parsed arguments:**
 ```console
-tracee --enrichment parse-arguments
+tracee --enrichment decoded-data
 ```
 
 **Send events to webhook:**

@@ -21,7 +21,7 @@ Normally, all legitimate code runs from dedicated code regions mapped from execu
 ## DATA FIELDS
 
 **syscall** (*int32*)
-: The system call number invoked from the unusual location (parsed to name if parse-arguments enabled)
+: The system call number invoked from the unusual location (decoded to name if decoded-data enabled)
 
 **ip** (*trace.Pointer*)
 : The instruction pointer address from which the syscall was invoked
@@ -36,7 +36,7 @@ Normally, all legitimate code runs from dedicated code regions mapped from execu
 : Size of the VMA containing the triggering code
 
 **vma_flags** (*uint64*)
-: VMA flags (parsed to names if parse-arguments enabled)
+: VMA flags (decoded to names if decoded-data enabled)
 
 ## DEPENDENCIES
 

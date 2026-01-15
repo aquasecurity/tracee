@@ -159,7 +159,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 
 			// Add stack trace if needed
 			var stackAddresses []uint64
-			if t.config.Output.StackAddresses {
+			if t.config.Output.UserStack {
 				stackAddresses = t.getStackAddresses(eCtx.StackID)
 			}
 
@@ -799,14 +799,14 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *events.PipelineEvent
 			pbEvent.Policies.Matched = t.policyManager.MatchedNames(event.MatchedPoliciesBitmap)
 
 			// Parse arguments for output formatting if enabled.
-			if t.config.Output.ParseArguments {
+			if t.config.Output.DecodedData {
 				err := events.ParseDataFields(pbEvent.Data, int(pbEvent.Id))
 				if err != nil {
 					t.handleError(err)
 				}
 			}
 
-			if t.config.Output.ParseArgumentsFDs {
+			if t.config.Output.FdPaths {
 				// Use original timestamp from pipeline metadata for BPF map lookup
 				err := events.ParseDataFieldsFDs(pbEvent.Data, event.Timestamp, t.FDArgPathMap)
 				if err != nil {

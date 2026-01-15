@@ -118,11 +118,11 @@ filters, destination file and others.
       containerd-socket: /var/run/containerd/containerd.sock
       crio-socket: /var/run/crio/crio.sock
       podman-socket: /var/run/podman/podman.sock
-    resolve-fd: true
-    exec-hash:
+    fd-paths: true
+    executable-hash:
       enabled: true
       mode: sha256
-    user-stack-trace: true
+    user-stack: true
   ```
 
 ### Capabilities

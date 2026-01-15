@@ -40,7 +40,7 @@ Output destinations are configured using the format: `--output destinations.<nam
 - **sort-events**: Enable sorting events before passing them to output. May decrease overall program efficiency.
 
 !!! Note
-    The enrichment `parse-arguments` option is automatically enabled when using table format output. It does not need to be specified separately via `--enrichment parse-arguments`.
+    The enrichment `decoded-data` option is automatically enabled when using table format output. It does not need to be specified separately via `--enrichment decoded-data`.
 
 ## EXAMPLES
 

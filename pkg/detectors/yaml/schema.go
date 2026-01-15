@@ -77,7 +77,7 @@ type RequirementsSpec struct {
 	// Events lists the events this detector needs to receive
 	Events []EventRequirementSpec `yaml:"events,omitempty"`
 
-	// Enrichments lists required enrichment options (e.g., exec-hash)
+	// Enrichments lists required enrichment options (e.g., executable-hash)
 	Enrichments []EnrichmentRequirementSpec `yaml:"enrichments,omitempty"`
 
 	// Architectures lists supported CPU architectures (e.g., ["amd64", "arm64"])
@@ -118,7 +118,7 @@ type EventRequirementSpec struct {
 
 // EnrichmentRequirementSpec specifies a required enrichment option
 type EnrichmentRequirementSpec struct {
-	// Name is the enrichment option name (e.g., "exec-hash", "exec-env")
+	// Name is the enrichment option name (e.g., "executable-hash", "environment")
 	Name string `yaml:"name"`
 
 	// Dependency controls if this enrichment is required or optional
@@ -126,7 +126,7 @@ type EnrichmentRequirementSpec struct {
 	Dependency string `yaml:"dependency,omitempty"`
 
 	// Config contains enrichment-specific configuration
-	// For exec-hash: "inode", "dev-inode", "digest-inode"
+	// For executable-hash: "inode", "dev-inode", "digest-inode"
 	Config string `yaml:"config,omitempty"`
 }
 

@@ -38,7 +38,7 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "default format",
 			outputSlice: []string{},
 			expectedOutput: config.OutputConfig{
-				ParseArguments: true,
+				DecodedData: true,
 				Streams: []config.Stream{
 					{
 						Name: "default-stream",
@@ -53,7 +53,7 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to stdout",
 			outputSlice: []string{"table"},
 			expectedOutput: config.OutputConfig{
-				ParseArguments: true,
+				DecodedData: true,
 				Streams: []config.Stream{
 					{
 						Name: "default-stream",
@@ -68,7 +68,7 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to /tmp/table",
 			outputSlice: []string{"table:/tmp/table"},
 			expectedOutput: config.OutputConfig{
-				ParseArguments: true,
+				DecodedData: true,
 				Streams: []config.Stream{
 					{
 						Name: "default-stream",
@@ -83,7 +83,7 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to stdout, and to /tmp/table",
 			outputSlice: []string{"table", "table:/tmp/table"},
 			expectedOutput: config.OutputConfig{
-				ParseArguments: true,
+				DecodedData: true,
 				Streams: []config.Stream{
 					{
 						Name: "default-stream",
@@ -161,7 +161,7 @@ func TestPrepareOutput(t *testing.T) {
 				"gotemplate=template.tmpl:/tmp/gotemplate1",
 			},
 			expectedOutput: config.OutputConfig{
-				ParseArguments: true,
+				DecodedData: true,
 				Streams: []config.Stream{
 					{
 						Name: "default-stream",
@@ -284,8 +284,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "sort-events",
 			outputSlice: []string{"sort-events"},
 			expectedOutput: config.OutputConfig{
-				ParseArguments: true,
-				EventsSorting:  true,
+				DecodedData:   true,
+				EventsSorting: true,
 				Streams: []config.Stream{
 					{
 						Name: "default-stream",
@@ -627,10 +627,10 @@ func TestPrepareOutput(t *testing.T) {
 			} else {
 				assert.Equal(t, testcase.expectedOutput.CalcHashes, output.CalcHashes)
 				assert.Equal(t, testcase.expectedOutput.EventsSorting, output.EventsSorting)
-				assert.Equal(t, testcase.expectedOutput.ExecEnv, output.ExecEnv)
-				assert.Equal(t, testcase.expectedOutput.ParseArguments, output.ParseArguments)
-				assert.Equal(t, testcase.expectedOutput.ParseArgumentsFDs, output.ParseArgumentsFDs)
-				assert.Equal(t, testcase.expectedOutput.StackAddresses, output.StackAddresses)
+				assert.Equal(t, testcase.expectedOutput.Environment, output.Environment)
+				assert.Equal(t, testcase.expectedOutput.DecodedData, output.DecodedData)
+				assert.Equal(t, testcase.expectedOutput.FdPaths, output.FdPaths)
+				assert.Equal(t, testcase.expectedOutput.UserStack, output.UserStack)
 				assert.Equal(t, len(testcase.expectedOutput.Streams), len(output.Streams))
 
 				assertPrinterConfigs(t, testcase.expectedOutput.Streams, output.Streams)

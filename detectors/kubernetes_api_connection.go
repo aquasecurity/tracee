@@ -38,7 +38,7 @@ func (d *KubernetesApiConnection) GetDefinition() detection.DetectorDefinition {
 			},
 			Enrichments: []detection.EnrichmentRequirement{
 				{
-					Name:       "exec-env",
+					Name:       detection.EnrichmentEnvironment,
 					Dependency: detection.DependencyRequired,
 				},
 			},

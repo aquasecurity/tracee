@@ -686,133 +686,133 @@ func TestRegistry_EnrichmentValidation(t *testing.T) {
 			name:        "no enrichments required - should pass",
 			enrichments: []detection.EnrichmentRequirement{},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv: false,
+				Environment: false,
 			},
 			expectErr: false,
 		},
 		{
-			name: "exec-env required and enabled",
+			name: "enrichment environment required and enabled",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: "exec-env", Dependency: detection.DependencyRequired},
+				{Name: detection.EnrichmentEnvironment, Dependency: detection.DependencyRequired},
 			},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv: true,
+				Environment: true,
 			},
 			expectErr: false,
 		},
 		{
-			name: "exec-env required but not enabled",
+			name: "enrichment environment required but not enabled",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: "exec-env", Dependency: detection.DependencyRequired},
+				{Name: detection.EnrichmentEnvironment, Dependency: detection.DependencyRequired},
 			},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv: false,
+				Environment: false,
 			},
 			expectErr: true,
-			errMsg:    "requires enrichment \"exec-env\" which is not enabled",
+			errMsg:    "requires enrichment \"environment\" which is not enabled",
 		},
 		{
-			name: "exec-env optional and not enabled",
+			name: "enrichment environment optional and not enabled",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: "exec-env", Dependency: detection.DependencyOptional},
+				{Name: detection.EnrichmentEnvironment, Dependency: detection.DependencyOptional},
 			},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv: false,
+				Environment: false,
 			},
 			expectErr: false,
 		},
 		{
-			name: "exec-hash required and enabled",
+			name: "enrichment executable-hash required and enabled",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: "exec-hash", Dependency: detection.DependencyRequired},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired},
 			},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv:      false,
+				Environment:  false,
 				ExecHashMode: digest.CalcHashesInode,
 			},
 			expectErr: false,
 		},
 		{
-			name: "exec-hash required but not enabled",
+			name: "enrichment executable-hash required but not enabled",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: "exec-hash", Dependency: detection.DependencyRequired},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired},
 			},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv: false,
+				Environment: false,
 			},
 			expectErr: true,
-			errMsg:    "requires enrichment \"exec-hash\" which is not enabled",
+			errMsg:    "requires enrichment \"executable-hash\" which is not enabled",
 		},
 		{
-			name: "exec-hash with specific config - inode mode",
+			name: "enrichment executable-hash with specific config - inode mode",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: "exec-hash", Dependency: detection.DependencyRequired, Config: "inode"},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired, Config: "inode"},
 			},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv:      false,
+				Environment:  false,
 				ExecHashMode: digest.CalcHashesInode,
 			},
 			expectErr: false,
 		},
 		{
-			name: "exec-hash with specific config - dev-inode mode",
+			name: "enrichment executable-hash with specific config - dev-inode mode",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: "exec-hash", Dependency: detection.DependencyRequired, Config: "dev-inode"},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired, Config: "dev-inode"},
 			},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv:      false,
+				Environment:  false,
 				ExecHashMode: digest.CalcHashesDevInode,
 			},
 			expectErr: false,
 		},
 		{
-			name: "exec-hash with specific config - digest-inode mode",
+			name: "enrichment executable-hash with specific config - digest-inode mode",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: "exec-hash", Dependency: detection.DependencyRequired, Config: "digest-inode"},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired, Config: "digest-inode"},
 			},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv:      false,
+				Environment:  false,
 				ExecHashMode: digest.CalcHashesDigestInode,
 			},
 			expectErr: false,
 		},
 		{
-			name: "exec-hash mode mismatch - should fail",
+			name: "enrichment executable-hash mode mismatch - should fail",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: "exec-hash", Dependency: detection.DependencyRequired, Config: "digest-inode"},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired, Config: "digest-inode"},
 			},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv:      false,
+				Environment:  false,
 				ExecHashMode: digest.CalcHashesInode,
 			},
 			expectErr: true,
-			errMsg:    "requires enrichment \"exec-hash\" with mode \"digest-inode\", but current mode is \"inode\"",
+			errMsg:    "requires enrichment \"executable-hash\" with mode \"digest-inode\", but current mode is \"inode\"",
 		},
 		{
-			name: "exec-hash mode mismatch optional - should not fail",
+			name: "enrichment executable-hash mode mismatch optional - should not fail",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: "exec-hash", Dependency: detection.DependencyOptional, Config: "digest-inode"},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyOptional, Config: "digest-inode"},
 			},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv:      false,
+				Environment:  false,
 				ExecHashMode: digest.CalcHashesInode,
 			},
 			expectErr: false, // Optional dependency, should not fail
 		},
 		{
-			name: "multiple enrichments - all enabled",
+			name: "multiple enrichment options - all enabled",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: "exec-env", Dependency: detection.DependencyRequired},
-				{Name: "exec-hash", Dependency: detection.DependencyRequired},
+				{Name: detection.EnrichmentEnvironment, Dependency: detection.DependencyRequired},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired},
 			},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv:      true,
+				Environment:  true,
 				ExecHashMode: digest.CalcHashesInode,
 			},
 			expectErr: false,
 		},
 		{
-			name: "container enrichment required and enabled",
+			name: "enrichment container required and enabled",
 			enrichments: []detection.EnrichmentRequirement{
 				{Name: "container", Dependency: detection.DependencyRequired},
 			},
@@ -822,7 +822,7 @@ func TestRegistry_EnrichmentValidation(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name: "container enrichment required but not enabled",
+			name: "enrichment container required but not enabled",
 			enrichments: []detection.EnrichmentRequirement{
 				{Name: "container", Dependency: detection.DependencyRequired},
 			},
@@ -833,7 +833,7 @@ func TestRegistry_EnrichmentValidation(t *testing.T) {
 			errMsg:    "requires enrichment \"container\" which is not enabled",
 		},
 		{
-			name: "container enrichment optional and not enabled",
+			name: "enrichment container optional and not enabled",
 			enrichments: []detection.EnrichmentRequirement{
 				{Name: "container", Dependency: detection.DependencyOptional},
 			},
@@ -843,28 +843,28 @@ func TestRegistry_EnrichmentValidation(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name: "mixed enrichments: container required, exec-env optional",
+			name: "mixed enrichment options: container required, environment optional",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: "container", Dependency: detection.DependencyRequired},
-				{Name: "exec-env", Dependency: detection.DependencyOptional},
+				{Name: detection.EnrichmentContainer, Dependency: detection.DependencyRequired},
+				{Name: detection.EnrichmentEnvironment, Dependency: detection.DependencyOptional},
 			},
 			enrichOpts: &EnrichmentOptions{
-				Container: true,
-				ExecEnv:   false,
+				Container:   true,
+				Environment: false,
 			},
 			expectErr: false,
 		},
 		{
-			name: "multiple enrichments - one missing",
+			name: "multiple enrichment options - one missing",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: "exec-env", Dependency: detection.DependencyRequired},
-				{Name: "exec-hash", Dependency: detection.DependencyRequired},
+				{Name: detection.EnrichmentEnvironment, Dependency: detection.DependencyRequired},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired},
 			},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv: true,
+				Environment: true,
 			},
 			expectErr: true,
-			errMsg:    "requires enrichment \"exec-hash\" which is not enabled",
+			errMsg:    "requires enrichment \"executable-hash\" which is not enabled",
 		},
 		{
 			name: "unknown enrichment",
@@ -872,7 +872,7 @@ func TestRegistry_EnrichmentValidation(t *testing.T) {
 				{Name: "unknown-enrichment", Dependency: detection.DependencyRequired},
 			},
 			enrichOpts: &EnrichmentOptions{
-				ExecEnv: false,
+				Environment: false,
 			},
 			expectErr: true,
 			errMsg:    "requires unknown enrichment: unknown-enrichment",

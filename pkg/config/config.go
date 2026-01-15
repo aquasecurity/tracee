@@ -170,13 +170,13 @@ type CapabilitiesConfig struct {
 //
 
 type OutputConfig struct {
-	StackAddresses bool
-	ExecEnv        bool
-	CalcHashes     digest.CalcHashesOption
+	UserStack   bool
+	Environment bool
+	CalcHashes  digest.CalcHashesOption
 
-	ParseArguments    bool
-	ParseArgumentsFDs bool
-	EventsSorting     bool
+	DecodedData   bool
+	FdPaths       bool
+	EventsSorting bool
 
 	Streams []Stream
 }

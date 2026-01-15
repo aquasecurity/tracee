@@ -17,8 +17,8 @@ data:
       json:
         files:
           - /var/log/tracee.json
-      options:
-        parse-arguments: true
+    enrichment:
+      decoded-data: true
 ```
 
 ## Kubectl

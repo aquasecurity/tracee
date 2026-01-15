@@ -48,12 +48,12 @@ enrichment:
     # - container.containerd.socket=/var/run/containerd/containerd.sock
     # - container.crio.socket=/var/run/crio/crio.sock
     # - container.podman.socket=/var/run/podman/podman.sock
-    # - resolve-fd
-    # - parse-arguments
-    # - exec-env
-    # - exec-hash
-    # - exec-hash.mode=dev-inode
-    # - user-stack-trace
+    # - fd-paths
+    # - decoded-data
+    # - environment
+    # - executable-hash
+    # - executable-hash.mode=dev-inode
+    # - user-stack
     #
     # Structured format:
     # container:
@@ -65,13 +65,13 @@ enrichment:
     #     containerd-socket: /var/run/containerd/containerd.sock
     #     crio-socket: /var/run/crio/crio.sock
     #     podman-socket: /var/run/podman/podman.sock
-    # resolve-fd: true
-    # parse-arguments: true
-    # exec-env: false
-    # exec-hash:
+    # fd-paths: true
+    # decoded-data: true
+    # environment: false
+    # executable-hash:
     #     enabled: true
     #     mode: dev-inode     # Options: none, inode, dev-inode, digest-inode
-    # user-stack-trace: true
+    # user-stack: true
 
 # Artifacts capture configuration
 artifacts:
@@ -177,8 +177,6 @@ output:
     # Output options
     # options:
     #     none: false
-    #     parse-arguments-fds: false
-    # sort-events: false
-
+    #     sort-events: false
 # Signatures directory for custom signatures
 signatures-dir: ""

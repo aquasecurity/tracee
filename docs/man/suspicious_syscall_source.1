@@ -22,8 +22,8 @@ code injection attacks.
 .SS DATA FIELDS
 .TP
 \f[B]syscall\f[R] (\f[I]int32\f[R])
-The system call number invoked from the unusual location (parsed to name
-if parse\-arguments enabled)
+The system call number invoked from the unusual location (decoded to
+name if decoded\-data enabled)
 .TP
 \f[B]ip\f[R] (\f[I]trace.Pointer\f[R])
 The instruction pointer address from which the syscall was invoked
@@ -39,7 +39,7 @@ Start address of the VMA containing the triggering code
 Size of the VMA containing the triggering code
 .TP
 \f[B]vma_flags\f[R] (\f[I]uint64\f[R])
-VMA flags (parsed to names if parse\-arguments enabled)
+VMA flags (decoded to names if decoded\-data enabled)
 .SS DEPENDENCIES
 \f[B]Kernel Probes:\f[R]
 .IP \[bu] 2

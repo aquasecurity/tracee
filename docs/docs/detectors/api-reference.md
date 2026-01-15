@@ -468,8 +468,8 @@ type EnrichmentRequirement struct {
 
 **Available enrichments**:
 
-- `exec-env` - Execution environment variables
-- `exec-hash` - Executable file hashes (Config: "inode", "dev-inode", "digest-inode")
+- `environment` - Execution environment variables
+- `executable-hash` - Executable file hashes (Config: "inode", "dev-inode", "digest-inode")
 - `container` - Container metadata fields in Event struct (Name, Image, Pod info)
 
 **Example**:
@@ -480,7 +480,7 @@ DetectorDefinition{
     Requirements: detection.DetectorRequirements{
         Enrichments: []detection.EnrichmentRequirement{
             {
-                Name:       "exec-hash",
+                Name:       "executable-hash",
                 Config:     "digest-inode",
                 Dependency: detection.DependencyRequired,
             },
@@ -601,12 +601,12 @@ DetectorDefinition{
         // Enrichment requirements
         Enrichments: []detection.EnrichmentRequirement{
             {
-                Name:       "exec-hash",
+                Name:       "executable-hash",
                 Config:     "digest-inode",
                 Dependency: detection.DependencyRequired,
             },
             {
-                Name:       "exec-env",
+                Name:       "environment",
                 Dependency: detection.DependencyOptional,
             },
         },

@@ -75,7 +75,7 @@ outputfile="${SCRIPT_TMP_DIR}/tracee-output-$$"
 
 tracee_command="./dist/tracee \
     --output json:$outputfile \
-    --output option:exec-env \
+    --enrichment environment \
     --logging file=$logfile \
     --server healthz \
     --policy ./tests/policies/kernel/kernel.yaml 2>&1 \

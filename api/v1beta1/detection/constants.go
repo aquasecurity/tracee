@@ -2,9 +2,9 @@ package detection
 
 // Enrichment names for use in EnrichmentRequirement
 const (
-	EnrichmentExecEnv   = "exec-env"  // Capture exec environment variables
-	EnrichmentExecHash  = "exec-hash" // Calculate executable hashes
-	EnrichmentContainer = "container" // Enrich container metadata fields
+	EnrichmentEnvironment    = "environment"     // Capture exec environment variables
+	EnrichmentExecutableHash = "executable-hash" // Calculate executable hashes
+	EnrichmentContainer      = "container"       // Enrich container metadata fields
 )
 
 // DataStore names for use in DataStoreRequirement
