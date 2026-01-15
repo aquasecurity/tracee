@@ -34,7 +34,7 @@ outside the original stack region.
 \f[B]syscall\f[R] (\f[I]int32\f[R])
 The syscall which was invoked while the stack pointer was outside the
 stack.
-The syscall name is parsed if the \f[CR]parse\-arguments\f[R] option is
+The syscall name is decoded if the \f[CR]decoded\-data\f[R] option is
 specified.
 This argument is also used as a parameter to select which syscalls
 should be checked.
@@ -53,7 +53,7 @@ Start address of the memory region containing the stack pointer
 Size of the memory region containing the stack pointer
 .TP
 \f[B]vma_flags\f[R] (\f[I]uint64\f[R])
-Memory region flags (parsed if \f[CR]parse\-arguments\f[R] is enabled)
+Memory region flags (decoded if \f[CR]decoded\-data\f[R] is enabled)
 .SS DEPENDENCIES
 \f[B]Thread Tracking:\f[R]
 .IP \[bu] 2

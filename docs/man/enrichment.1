@@ -6,7 +6,7 @@ tracee \f[B]\-\-enrichment\f[R] \- Configure enrichment for container
 events and other enrichment options
 .SS SYNOPSIS
 tracee \f[B]\-\-enrichment\f[R]
-[container|container.cgroupfs.path=\f[I]path\f[R]|container.cgroupfs.force|container.docker.socket=\f[I]socket_path\f[R]|container.containerd.socket=\f[I]socket_path\f[R]|container.crio.socket=\f[I]socket_path\f[R]|container.podman.socket=\f[I]socket_path\f[R]|resolve\-fd|exec\-env|exec\-hash|exec\-hash.mode=\f[I]mode\f[R]|user\-stack\-trace]
+[container|container.cgroupfs.path=\f[I]path\f[R]|container.cgroupfs.force|container.docker.socket=\f[I]socket_path\f[R]|container.containerd.socket=\f[I]socket_path\f[R]|container.crio.socket=\f[I]socket_path\f[R]|container.podman.socket=\f[I]socket_path\f[R]|fd\-paths|environment|executable\-hash|executable\-hash.mode=\f[I]mode\f[R]|user\-stack|decoded\-data]
 [\f[B]\-\-enrichment\f[R] \&...]
 .SS DESCRIPTION
 The \f[CR]\-\-enrichment\f[R] flag allows you to configure enrichment
@@ -109,7 +109,7 @@ Docker (\f[CR]docker\f[R])
 Podman (\f[CR]podman\f[R])
 .RE
 .IP \[bu] 2
-\f[B]resolve\-fd\f[R]: Enable resolve\-fd.
+\f[B]fd\-paths\f[R]: Enable fd\-paths.
 When enabled, Tracee will resolve file descriptor arguments to show
 associated file paths instead of just the descriptor number.
 This enriches file descriptors with file path translation.
@@ -118,12 +118,12 @@ Example:
 .RS 2
 .IP
 .EX
-\-\-enrichment resolve\-fd
+\-\-enrichment fd\-paths
 .EE
 .RE
 .IP \[bu] 2
-\f[B]parse\-arguments\f[R]: Enable parse\-arguments.
-When enabled, Tracee will parse event arguments into human\-readable
+\f[B]decoded\-data\f[R]: Enable decoded\-data.
+When enabled, Tracee will decode event arguments into human\-readable
 strings instead of raw machine\-readable values.
 This converts numeric flags, permissions, syscall types, and other raw
 values into readable format (e.g., \f[CR]O_RDONLY\f[R] instead of
@@ -134,11 +134,11 @@ Example:
 .RS 2
 .IP
 .EX
-\-\-enrichment parse\-arguments
+\-\-enrichment decoded\-data
 .EE
 .RE
 .IP \[bu] 2
-\f[B]exec\-env\f[R]: Enable exec\-env.
+\f[B]environment\f[R]: Enable environment.
 When enabled, Tracee will include execution environment variables in
 process execution events (particularly useful for \f[CR]execve\f[R]
 events).
@@ -146,32 +146,34 @@ Example:
 .RS 2
 .IP
 .EX
-\-\-enrichment exec\-env
+\-\-enrichment environment
 .EE
 .RE
 .IP \[bu] 2
-\f[B]exec\-hash\f[R]: Enable exec\-hash with default settings.
+\f[B]executable\-hash\f[R]: Enable executable\-hash with default
+settings.
 When enabled, Tracee will compute hash values for executed binaries.
 .IP \[bu] 2
-\f[B]exec\-hash.mode\f[R]=\f[I]mode\f[R]: Enable exec\-hash and
-configure the mode for exec\-hash.
-\f[B]Note\f[R]: Using this option automatically enables exec\-hash, so
-you don\[cq]t need to also specify \f[CR]\-\-enrichment exec\-hash\f[R].
+\f[B]executable\-hash.mode\f[R]=\f[I]mode\f[R]: Enable executable\-hash
+and configure the mode for executable\-hash.
+\f[B]Note\f[R]: Using this option automatically enables
+executable\-hash, so you don\[cq]t need to also specify
+\f[CR]\-\-enrichment executable\-hash\f[R].
 Example:
 .RS 2
 .IP
 .EX
-\-\-enrichment exec\-hash.mode=sha256
+\-\-enrichment executable\-hash.mode=sha256
 .EE
 .RE
 .IP \[bu] 2
-\f[B]user\-stack\-trace\f[R] Enable user\-stack\-trace.
+\f[B]user\-stack\f[R] Enable user\-stack.
 Presence of the flag enables it, absence disables it.
 Example:
 .RS 2
 .IP
 .EX
-\-\-enrichment user\-stack\-trace
+\-\-enrichment user\-stack
 .EE
 .RE
 .SS EXAMPLES
@@ -218,23 +220,24 @@ Note: Since \f[CR]container.docker.socket\f[R] and
 don\[cq]t need \f[CR]\-\-enrichment container\f[R].
 .RE
 .IP "5." 3
-Enable resolve\-fd, exec\-env, and exec\-hash:
+Enable fd\-paths, environment, and executable\-hash:
 .RS 4
 .IP
 .EX
-\-\-enrichment resolve\-fd \-\-enrichment exec\-env \-\-enrichment exec\-hash
+\-\-enrichment fd\-paths \-\-enrichment environment \-\-enrichment executable\-hash
 .EE
 .RE
 .IP "6." 3
-Enable exec\-hash with custom mode:
+Enable executable\-hash with custom mode:
 .RS 4
 .IP
 .EX
-\-\-enrichment exec\-hash.mode=sha256
+\-\-enrichment executable\-hash.mode=sha256
 .EE
 .PP
-Note: \f[CR]exec\-hash.mode\f[R] automatically enables exec\-hash, so
-\f[CR]\-\-enrichment exec\-hash\f[R] is not needed.
+Note: \f[CR]executable\-hash.mode\f[R] automatically enables
+executable\-hash, so \f[CR]\-\-enrichment executable\-hash\f[R] is not
+needed.
 .RE
 .PP
 Please refer to the documentation for more information on container

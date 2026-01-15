@@ -4,9 +4,6 @@ Tracee supports different output options for enriching events with additional co
 
 ## Available Options
 
-!!! Note
-    The enrichment `parse-arguments` option is automatically enabled when using table format output. It does not need to be specified separately via `--enrichment parse-arguments`.
-
 ### sort-events
 
 Enable chronological sorting of events. On busy systems, events may be received out of order. This option ensures events are output in the order they occurred.

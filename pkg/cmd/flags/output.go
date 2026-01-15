@@ -513,7 +513,7 @@ func getDestinationConfigs(printerMap map[string]string, traceeConfig *config.Ou
 		}
 
 		if printerKind == tableFlag {
-			traceeConfig.ParseArguments = true
+			traceeConfig.DecodedData = true
 		}
 
 		printerCfg, err := PreparePrinterConfig(printerKind, outPath)

@@ -24,13 +24,13 @@ Memory protection changes are critical security events as they can indicate code
 : The path of the file associated with the memory region (if file-backed)
 
 **prot** (*int32*)
-: The new access protection for the memory region (parsed to string if parse-arguments enabled)
+: The new access protection for the memory region (decoded to string if decoded-data enabled)
 
 **ctime** (*uint64*)
 : The creation time of the file associated with the memory region
 
 **prev_prot** (*int32*)
-: The previous access protection for the memory region (parsed to string if parse-arguments enabled)
+: The previous access protection for the memory region (decoded to string if decoded-data enabled)
 
 **addr** (*trace.Pointer*)
 : The start of virtual memory address where protection change is requested

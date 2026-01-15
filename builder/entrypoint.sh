@@ -33,7 +33,7 @@ run_tracee() {
         --capabilities add=$CAPABILITIES_ADD \
         --capabilities drop=$CAPABILITIES_DROP \
         --output=json \
-        --enrichment parse-arguments \
+        --enrichment decoded-data \
         --events signatures,container_create,container_remove
     fi
 

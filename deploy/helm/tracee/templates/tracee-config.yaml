@@ -141,20 +141,20 @@ data:
             {{- end }}
         {{- end }}
     {{- $enrichment := .Values.config.enrichment }}
-    {{- if or (index $enrichment "parse-arguments") (index $enrichment "user-stack-trace") (index $enrichment "exec-env") (or (index (index $enrichment "exec-hash") "enabled") (index (index $enrichment "exec-hash") "mode")) }}
+    {{- if or (index $enrichment "decoded-data") (index $enrichment "user-stack") (index $enrichment "environment") (or (index (index $enrichment "executable-hash") "enabled") (index (index $enrichment "executable-hash") "mode")) }}
     enrichment:
-        {{- if (index $enrichment "parse-arguments") }}
-        parse-arguments: {{ index $enrichment "parse-arguments" }}
+        {{- if (index $enrichment "decoded-data") }}
+        decoded-data: {{ index $enrichment "decoded-data" }}
         {{- end }}
-        {{- if (index $enrichment "user-stack-trace") }}
-        user-stack-trace: {{ index $enrichment "user-stack-trace" }}
+        {{- if (index $enrichment "user-stack") }}
+        user-stack: {{ index $enrichment "user-stack" }}
         {{- end }}
-        {{- if (index $enrichment "exec-env") }}
-        exec-env: {{ index $enrichment "exec-env" }}
+        {{- if (index $enrichment "environment") }}
+        environment: {{ index $enrichment "environment" }}
         {{- end }}
-        {{- $execHash := index $enrichment "exec-hash" }}
+        {{- $execHash := index $enrichment "executable-hash" }}
         {{- if or (index $execHash "enabled") (index $execHash "mode") }}
-        exec-hash:
+        executable-hash:
             {{- if (index $execHash "enabled") }}
             enabled: {{ index $execHash "enabled" }}
             {{- end }}

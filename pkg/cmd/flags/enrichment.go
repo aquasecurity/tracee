@@ -20,24 +20,25 @@ const (
 	containerContainerdSocketFlag = "container.containerd.socket"
 	containerCrioSocketFlag       = "container.crio.socket"
 	containerPodmanSocketFlag     = "container.podman.socket"
-	resolveFdFlag                 = "resolve-fd"
-	execEnvFlag                   = "exec-env"
-	execHashFlag                  = "exec-hash"
-	execHashModeFlag              = "exec-hash.mode"
-	userStackTraceFlag            = "user-stack-trace"
-	parseArgumentsFlag            = "parse-arguments"
+	fdPathsFlag                   = "fd-paths"
+	executableHashFlag            = "executable-hash"
+	executableHashModeFlag        = "executable-hash.mode"
+	userStackFlag                 = "user-stack"
+	environmentFlag               = "environment"
+	decodedDataFlag               = "decoded-data"
 
+	// environmentFlag and decodedDataFlag are shared between output and enrichment
 	enrichInvalidFlagFormat = "invalid enrichment flag: %s, use 'tracee man enrichment' for more info"
 )
 
 // EnrichmentConfig is the configuration for enrichment
 type EnrichmentConfig struct {
 	Container      ContainerEnrichmentConfig `mapstructure:"container"`
-	ResolveFd      bool                      `mapstructure:"resolve-fd"`
-	ExecEnv        bool                      `mapstructure:"exec-env"`
-	ExecHash       ExecHashConfig            `mapstructure:"exec-hash"`
-	UserStackTrace bool                      `mapstructure:"user-stack-trace"`
-	ParseArguments bool                      `mapstructure:"parse-arguments"`
+	FdPaths        bool                      `mapstructure:"fd-paths"`
+	Environment    bool                      `mapstructure:"environment"`
+	ExecutableHash ExecutableHashConfig      `mapstructure:"executable-hash"`
+	UserStack      bool                      `mapstructure:"user-stack"`
+	DecodedData    bool                      `mapstructure:"decoded-data"`
 }
 
 // ContainerEnrichmentConfig is the container enrichment configuration
@@ -56,8 +57,8 @@ type ContainerCgroupfsConfig struct {
 	Force bool   `mapstructure:"force"`
 }
 
-// ExecHashConfig is the exec hash configuration
-type ExecHashConfig struct {
+// ExecutableHashConfig is the executable hash configuration
+type ExecutableHashConfig struct {
 	Enabled bool   `mapstructure:"enabled"`
 	Mode    string `mapstructure:"mode"`
 }
@@ -113,14 +114,14 @@ func (e *EnrichmentConfig) GetRuntimeSockets() (runtime.Sockets, error) {
 	return sockets, nil
 }
 
-// GetCalcHashesOption converts ExecHashConfig to digest.CalcHashesOption
+// GetCalcHashesOption converts ExecutableHashConfig to digest.CalcHashesOption
 func (e *EnrichmentConfig) GetCalcHashesOption() digest.CalcHashesOption {
-	if !e.ExecHash.Enabled && e.ExecHash.Mode == "" {
+	if !e.ExecutableHash.Enabled && e.ExecutableHash.Mode == "" {
 		return digest.CalcHashesNone
 	}
 
 	// If mode is set, use it; otherwise default to dev-inode
-	mode := e.ExecHash.Mode
+	mode := e.ExecutableHash.Mode
 	if mode == "" {
 		mode = "dev-inode"
 	}
@@ -170,24 +171,24 @@ func (e *EnrichmentConfig) flags() []string {
 	if e.Container.PodmanSocket != "" {
 		flags = append(flags, fmt.Sprintf("%s=%s", containerPodmanSocketFlag, e.Container.PodmanSocket))
 	}
-	if e.ResolveFd {
-		flags = append(flags, resolveFdFlag)
+	if e.FdPaths {
+		flags = append(flags, fdPathsFlag)
 	}
-	if e.ExecEnv {
-		flags = append(flags, execEnvFlag)
+	if e.Environment {
+		flags = append(flags, environmentFlag)
 	}
-	// ExecHash: if Enabled is true OR Mode is set, add exec-hash flag
-	if e.ExecHash.Enabled || e.ExecHash.Mode != "" {
-		flags = append(flags, execHashFlag)
+	// ExecutableHash: if Enabled is true OR Mode is set, add executable-hash flag
+	if e.ExecutableHash.Enabled || e.ExecutableHash.Mode != "" {
+		flags = append(flags, executableHashFlag)
 	}
-	if e.ExecHash.Mode != "" {
-		flags = append(flags, fmt.Sprintf("%s=%s", execHashModeFlag, e.ExecHash.Mode))
+	if e.ExecutableHash.Mode != "" {
+		flags = append(flags, fmt.Sprintf("%s=%s", executableHashModeFlag, e.ExecutableHash.Mode))
 	}
-	if e.UserStackTrace {
-		flags = append(flags, userStackTraceFlag)
+	if e.UserStack {
+		flags = append(flags, userStackFlag)
 	}
-	if e.ParseArguments {
-		flags = append(flags, parseArgumentsFlag)
+	if e.DecodedData {
+		flags = append(flags, decodedDataFlag)
 	}
 
 	return flags
@@ -230,19 +231,19 @@ func PrepareEnrichment(enrichment []string) (EnrichmentConfig, error) {
 		case containerPodmanSocketFlag:
 			enrichmentConfig.Container.PodmanSocket = parts[1]
 			enrichmentConfig.Container.Enabled = true // Setting podman.socket enables container
-		case resolveFdFlag:
-			enrichmentConfig.ResolveFd = true
-		case execEnvFlag:
-			enrichmentConfig.ExecEnv = true
-		case execHashFlag:
-			enrichmentConfig.ExecHash.Enabled = true
-		case execHashModeFlag:
-			enrichmentConfig.ExecHash.Mode = parts[1]
-			enrichmentConfig.ExecHash.Enabled = true // Setting exec-hash.mode enables exec-hash
-		case userStackTraceFlag:
-			enrichmentConfig.UserStackTrace = true
-		case parseArgumentsFlag:
-			enrichmentConfig.ParseArguments = true
+		case fdPathsFlag:
+			enrichmentConfig.FdPaths = true
+		case environmentFlag:
+			enrichmentConfig.Environment = true
+		case executableHashFlag:
+			enrichmentConfig.ExecutableHash.Enabled = true
+		case executableHashModeFlag:
+			enrichmentConfig.ExecutableHash.Mode = parts[1]
+			enrichmentConfig.ExecutableHash.Enabled = true // Setting executable-hash.mode enables executable-hash
+		case userStackFlag:
+			enrichmentConfig.UserStack = true
+		case decodedDataFlag:
+			enrichmentConfig.DecodedData = true
 		default:
 			return EnrichmentConfig{}, errfmt.Errorf(enrichInvalidFlagFormat, flagName)
 		}
@@ -260,11 +261,11 @@ func PrepareEnrichment(enrichment []string) (EnrichmentConfig, error) {
 func isEnrichmentBoolFlag(flag string) bool {
 	return flag == containerFlag ||
 		flag == containerCgroupfsForceFlag ||
-		flag == resolveFdFlag ||
-		flag == execEnvFlag ||
-		flag == execHashFlag ||
-		flag == userStackTraceFlag ||
-		flag == parseArgumentsFlag
+		flag == fdPathsFlag ||
+		flag == environmentFlag ||
+		flag == executableHashFlag ||
+		flag == userStackFlag ||
+		flag == decodedDataFlag
 }
 
 // invalidEnrichmentFlagError formats the error message for an invalid enrichment flag.

@@ -25,7 +25,7 @@ This event detects stack pivoting by checking the stack pointer at selected sysc
 ## DATA FIELDS
 
 **syscall** (*int32*)
-: The syscall which was invoked while the stack pointer was outside the stack. The syscall name is parsed if the `parse-arguments` option is specified. This argument is also used as a parameter to select which syscalls should be checked.
+: The syscall which was invoked while the stack pointer was outside the stack. The syscall name is decoded if the `decoded-data` option is specified. This argument is also used as a parameter to select which syscalls should be checked.
 
 **sp** (*trace.Pointer*)
 : The stack pointer value at the time of syscall invocation
@@ -40,7 +40,7 @@ This event detects stack pivoting by checking the stack pointer at selected sysc
 : Size of the memory region containing the stack pointer
 
 **vma_flags** (*uint64*)
-: Memory region flags (parsed if `parse-arguments` is enabled)
+: Memory region flags (decoded if `decoded-data` is enabled)
 
 ## DEPENDENCIES
 

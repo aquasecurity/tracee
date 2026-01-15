@@ -29,7 +29,7 @@
     make clean
     make tracee
     sudo ./dist/tracee \
-        --enrichment parse-arguments \
+        --enrichment decoded-data \
         --scope comm=bash \
         --scope follow
     ```

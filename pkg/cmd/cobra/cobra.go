@@ -308,11 +308,11 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	// Apply enrichment config to output config
 	// TODO: refactor it to maybe encapsulate enrichemnt as part of the output config,
 	// or as its own field on the config struct
-	cfg.Output.ExecEnv = enrichmentConfig.ExecEnv
-	cfg.Output.StackAddresses = enrichmentConfig.UserStackTrace
-	cfg.Output.ParseArgumentsFDs = enrichmentConfig.ResolveFd
-	cfg.Output.ParseArguments = enrichmentConfig.ParseArguments
-	if enrichmentConfig.ExecHash.Enabled || enrichmentConfig.ExecHash.Mode != "" {
+	cfg.Output.Environment = enrichmentConfig.Environment
+	cfg.Output.UserStack = enrichmentConfig.UserStack
+	cfg.Output.FdPaths = enrichmentConfig.FdPaths
+	cfg.Output.DecodedData = enrichmentConfig.DecodedData
+	if enrichmentConfig.ExecutableHash.Enabled || enrichmentConfig.ExecutableHash.Mode != "" {
 		cfg.Output.CalcHashes = enrichmentConfig.GetCalcHashesOption()
 	}
 

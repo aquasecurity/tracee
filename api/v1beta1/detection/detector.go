@@ -176,15 +176,15 @@ type DataStoreRequirement struct {
 
 // EnrichmentRequirement specifies a required event enrichment option.
 type EnrichmentRequirement struct {
-	// Name is the enrichment option name: "exec-env", "exec-hash"
+	// Name is the enrichment option name: "environment", "executable-hash"
 	Name string `yaml:"name"`
 
 	// Dependency controls whether this enrichment is required or optional
 	// Zero value (0) = DependencyRequired (default)
 	Dependency DependencyType `yaml:"dependency,omitempty"`
 
-	// Config contains enrichment-specific configuration (e.g., exec-hash mode)
-	// For exec-hash: "inode", "dev-inode", "digest-inode"
+	// Config contains enrichment-specific configuration (e.g., executable-hash mode)
+	// For executable-hash: "inode", "dev-inode", "digest-inode"
 	Config string `yaml:"config,omitempty"`
 }
 
